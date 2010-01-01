@@ -1,0 +1,57 @@
+---
+Checks: |-
+  *,
+  -android-*,
+  -*-bool-pointer-implicit-conversion,
+  -cert-dcl50-cpp,
+  -cert-dcl59-cpp,
+  -cert-err58-cpp,
+  -clang-diagnostic-*,
+  -clang-analyzer-*,
+  -*-avoid-c-arrays,
+  -*-narrowing-conversions,
+  -*-non-private-member-variables-in-classes,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-const-cast,
+  -cppcoreguidelines-pro-type-cstyle-cast,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-static-cast-downcast,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-no-malloc,
+  -fuchsia-*,
+  -google-*,
+  google-default-arguments,
+  google-runtime-operator,
+  google-readability-casting,
+  -hicpp-no-array-decay,
+  -hicpp-no-assembler,
+  -hicpp-signed-bitwise,
+  -hicpp-special-member-functions,
+  -hicpp-vararg,
+  -hicpp-no-malloc,
+  -llvm-*,
+  llvm-namespace-comment,
+  -llvmlibc-*,
+  -modernize-use-trailing-return-type,
+  -objc-*,
+  -readability-else-after-return,
+  -readability-implicit-bool-conversion,
+  -*-magic-numbers,
+  -modernize-use-nodiscard,
+  -modernize-concat-nested-namespaces,
+  -readability-named-parameter
+
+CheckOptions:
+  - key:             bugprone-suspicious-string-compare.WarnOnImplicitComparison
+    value:           0
+  - key:             bugprone-dangling-handle.HandleClasses
+    value:           'vk::string_view'
+  - key:             cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value:           1
+  - key:             cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value:           1
+...

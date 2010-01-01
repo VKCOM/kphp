@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JsonSchemaMappingsProjectConfiguration">
+    <state>
+      <map>
+        <entry key="JSON schema v4">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="JSON schema v4" />
+              <option name="relativePathToSchema" value="http://json-schema.org/draft-04/schema" />
+              <option name="applicationDefined" value="true" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="compiler/vertex-desc.config.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+        <entry key="vertex-desc.config">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="vertex-desc.config" />
+              <option name="relativePathToSchema" value="compiler/vertex-desc.config.json" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="compiler/vertex-desc.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+      </map>
+    </state>
+  </component>
+</project>

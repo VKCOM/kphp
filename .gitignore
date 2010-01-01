@@ -1,0 +1,13 @@
+*.o
+*.pyc
+/objs
+.build
+*.out
+*.bin
+.DS_Store
+
+.idea
+build
+*.iml
+/cmake-build-*
+

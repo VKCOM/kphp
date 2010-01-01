@@ -1,0 +1,50 @@
+#pragma once
+
+#include "kphp_core.h"
+
+
+string f$uniqid (const string &prefix = string(), bool more_entropy = false);
+
+
+OrFalse <string> f$iconv (const string &input_encoding, const string &output_encoding, const string &input_str);
+
+
+void f$sleep (const int &seconds);
+
+void f$usleep (const int &micro_seconds);
+
+
+const int IMAGETYPE_UNKNOWN = 0;
+const int IMAGETYPE_GIF = 1;
+const int IMAGETYPE_JPEG = 2;
+const int IMAGETYPE_PNG = 3;
+const int IMAGETYPE_SWF = 4;
+const int IMAGETYPE_PSD = 5;
+const int IMAGETYPE_BMP = 6;
+const int IMAGETYPE_TIFF_II = 7;
+const int IMAGETYPE_TIFF_MM = 8;
+const int IMAGETYPE_JPC = 9;
+const int IMAGETYPE_JPEG2000 = 9;
+const int IMAGETYPE_JP2 = 10;
+
+var f$getimagesize (const string &name);
+
+
+int f$posix_getpid (void);
+
+
+string f$serialize (const var &v);
+
+var f$unserialize (const string &v);
+
+string f$json_encode (const var &v, bool simple_encode = false);
+
+var f$json_decode (const string &v, bool assoc = false);
+
+string f$print_r (const var &v, bool buffered = false);
+
+void f$var_dump (const var &v);
+
+
+/** For local usage only **/
+int f$system (const string &query);
