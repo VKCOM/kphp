@@ -25,6 +25,7 @@
 #include "php-master.h"
 
 extern "C" {
+#include "common/crc32c.h"
 #include "common/kdb-data-common.h"
 #include "common/kprintf.h"
 #include "common/precise-time.h"
@@ -963,7 +964,7 @@ struct connection *create_pipe_reader (int pipe_fd, conn_type_t *type, void *ext
   c->status = conn_wait_answer;
   active_connections++;
   c->first_query = c->last_query = (struct conn_query *) c;
-  RPCC_DATA(c)->custom_crc_partial = crc32_partial;
+  RPCC_DATA(c)->custom_crc_partial = crc32c_partial;
 
   //assert (c->type->init_outbound (c) >= 0);
 

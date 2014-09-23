@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "common/crc32.h"
+#include "common/crc32c.h"
 #include "common/kdb-data-common.h"
 #include "common/kprintf.h"
 #include "common/md5.h"
@@ -408,6 +408,7 @@ const int queries_to_recreate_script = 100;
 
 void *php_script;
 typedef enum {http_worker, rpc_worker, once_worker} php_worker_mode_t;
+typedef enum {phpq_try_start, phpq_init_script, phpq_run, phpq_free_script, phpq_finish} php_worker_state_t;
 typedef struct {
   struct connection *conn;
 
@@ -426,7 +427,7 @@ typedef struct {
   double start_time;
   double finish_time;
 
-  enum {phpq_try_start, phpq_init_script, phpq_run, phpq_free_script, phpq_finish} state;
+  php_worker_state_t state;
   php_worker_mode_t mode;
 
   long long req_id;
@@ -1061,7 +1062,7 @@ void rpc_error (php_worker *worker, int code, const char *str) {
 
   int qn = 7 + all_len / 4;
   q[0] = qn * 4;
-  q[qn - 1] = (int)compute_crc32 (q, q[0] - 4);
+  q[qn - 1] = (int)~RPCS_DATA(c)->custom_crc_partial (q, q[0] - 4, -1);
 
   assert (write_out (&c->Out, q, q[0]) == q[0]);
 
@@ -2943,7 +2944,7 @@ void write_full_stats_to_pipe (void) {
     q[2] = RPC_PHP_FULL_STATS;
     memcpy (q + 3, stats, (size_t)stats_len);
 
-    prepare_rpc_query_raw (pipe_packet_id++, q, qsize, crc32_partial);
+    prepare_rpc_query_raw (pipe_packet_id++, q, qsize, crc32c_partial);
     int err = (int)write (master_pipe_write, q, (size_t)qsize);
     dl_passert (err == qsize, dl_pstr ("error during write to pipe [%d]\n", master_pipe_write));
     if (err != qsize) {
@@ -2965,7 +2966,7 @@ void write_immediate_stats_to_pipe (void) {
     q[2] = RPC_PHP_IMMEDIATE_STATS;
     memcpy (q + 3, get_imm_stats(), sizeof (php_immediate_stats_t));
 
-    prepare_rpc_query_raw (pipe_fast_packet_id++, q, qsize, crc32_partial);
+    prepare_rpc_query_raw (pipe_fast_packet_id++, q, qsize, crc32c_partial);
     int err = (int)write (master_pipe_fast_write, q, (size_t)qsize);
     dl_passert (err == qsize, dl_pstr ("error [%d] during write to pipe", errno));
   }
@@ -3127,7 +3128,7 @@ void start_server (void) {
     q[2] = RPC_INVOKE_REQ;
     int i;
     for (i = 0; i < run_once_count; i++) {
-      prepare_rpc_query_raw (i, q, qsize, crc32_partial);
+      prepare_rpc_query_raw (i, q, qsize, crc32c_partial);
       assert (write (write_fd, q, (size_t)qsize) == qsize);
     }
   }
