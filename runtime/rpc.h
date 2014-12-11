@@ -143,6 +143,8 @@ OrFalse <string> f$rpc_get (int request_id, double timeout = -1.0);
 bool f$rpc_get_and_parse (int request_id, double timeout = -1.0);
 
 
+inline int f$rpc_queue_create (void);
+
 inline int f$rpc_queue_create (const var &request_ids);
 
 inline int f$rpc_queue_push (int queue_id, const var &request_ids);
@@ -200,6 +202,10 @@ array <array <var> > f$rpc_tl_query_result (const array <T> &query_ids) {
 template <class T>
 array <array <var> > f$rpc_tl_query_result_synchronously (const array <T> &query_ids) {
   return f$rpc_tl_query_result_synchronously (array <int> (query_ids));
+}
+
+int f$rpc_queue_create (void) {
+  return f$wait_queue_create();
 }
 
 int f$rpc_queue_create (const var &request_ids) {

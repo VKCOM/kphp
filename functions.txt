@@ -587,7 +587,7 @@ function rpc_send_noflush ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int
 function rpc_flush () ::: void;
 function rpc_get ($request_id ::: int) resumable ::: OrFalse <string>;
 function rpc_get_and_parse ($request_id ::: int) resumable ::: bool;
-function rpc_queue_create ($request_ids ::: Any) ::: int;
+function rpc_queue_create ($request_ids ::: Any = TODO) ::: int;
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;
@@ -608,7 +608,7 @@ function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: array <arr
 function wait ($id ::: int, $timeout ::: float = -1.0) resumable ::: bool;
 function wait_result ($id ::: int, $timeout ::: float = -1.0) throws resumable ::: var;
 function wait_synchronously ($id ::: int) ::: bool;
-function wait_queue_create ($request_ids ::: Any) ::: int;
+function wait_queue_create ($request_ids ::: Any = TODO) ::: int;
 function wait_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function wait_queue_empty ($queue_id ::: int) ::: bool;
 function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;

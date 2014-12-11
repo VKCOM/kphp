@@ -108,6 +108,7 @@ Storage *get_started_storage (int resumable_id);
 Storage *get_forked_storage (int resumable_id);
 
 
+int f$wait_queue_create (void);
 int f$wait_queue_create (const var &request_ids);
 int wait_queue_create (const array <int> &resumable_ids);
 
