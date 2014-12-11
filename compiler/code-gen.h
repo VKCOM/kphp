@@ -1738,7 +1738,7 @@ void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
   FunctionPtr func = func_call->get_func_id();
   W << ";" << NL;
   if (lhs->type() != op_empty) {
-    W << "TRY_WAIT (" << lhs << ", " << TypeName (tinf::get_type (func_call)) << ");";
+    W << "TRY_WAIT(" << lhs << ", " << TypeName (tinf::get_type (func_call)) << ");";
   } else {
     W << "TRY_WAIT_VOID();";
   }
@@ -1746,7 +1746,7 @@ void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
 #ifdef FAST_EXCEPTIONS
   if (func->root->throws_flag) {
     W << NL;
-    W << "TRY_CALL_VOID_ (0,";
+    W << "CHECK_EXCEPTION(";
     compile_throw_fast_action (W);
     W << ")";
   }

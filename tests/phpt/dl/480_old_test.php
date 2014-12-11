@@ -241,7 +241,8 @@
 //  var_dump ($ip);
 
   $ip = gethostbynamel ('www.example.com');
-  sort ($ip);
+  var_dump (count ($ip));
+  $ip[0] = "127.0.0.1";
   $long = ip2long ($ip[0]);
 
   var_dump ($ip);

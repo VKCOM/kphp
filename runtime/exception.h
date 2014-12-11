@@ -31,6 +31,7 @@ extern Exception *CurException;
 
 #  define TRY_CALL_(CallT, call, action) ({CallT x_tmp___ = (call); if (CurException) {action;} x_tmp___;})
 #  define TRY_CALL_VOID_(call, action) ({(call); if (CurException) {action;} void();})
+#  define CHECK_EXCEPTION(action) if (CurException) {action;}
 
 #  define TRY_CALL_EXIT(CallT, message, call) ({CallT x_tmp___ = (call); if (CurException) {php_critical_error (message);} x_tmp___;})
 #  define TRY_CALL_VOID_EXIT(message, call) ({(call); if (CurException) {php_critical_error (message);} void();})
