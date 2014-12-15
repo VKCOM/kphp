@@ -124,7 +124,8 @@ void *calloc (size_t size_a, size_t size_b) {
 void *realloc (void *ptr, size_t size) {
   return zallocator->realloc (ptr, size);
 }
-void *memalign (size_t aligment, size_t size) {
+__attribute__((error("memalign function is assert(0), don't use it")))
+void *memalign (size_t aligment __attribute__((unused)), size_t size __attribute__((unused))) {
   assert (0);
   return NULL;
 }
@@ -165,7 +166,7 @@ void OneThreadScheduler::add_sync_node (Node *node) {
   sync_nodes.push (node);
 }
 
-void OneThreadScheduler::set_threads_count (int new_threads_count) {
+void OneThreadScheduler::set_threads_count (int new_threads_count __attribute__((unused))) {
   fprintf (stderr, "Using scheduler whithout threads, thread count is ignored");
 }
 void OneThreadScheduler::execute() {

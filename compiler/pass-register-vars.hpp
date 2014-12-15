@@ -239,10 +239,10 @@ class CollectConstVarsPass : public FunctionPassBase {
       local->need_recursion_flag = true;
       return root;
     }
-    bool need_recursion (VertexPtr root, LocalT *local) {
+    bool need_recursion (VertexPtr root __attribute__((unused)), LocalT *local) {
       return local->need_recursion_flag;
     }
-    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       in_param_list -= root->type() == op_func_param_list;
       return root;
     }
@@ -464,7 +464,7 @@ class RegisterVariables : public FunctionPassBase {
     }
 
     template <class VisitT>
-    bool user_recursion (VertexPtr v, LocalT *local, VisitT &visit) {
+    bool user_recursion (VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
       if (v->type() == op_func_param_list) {
         in_param_list++;
         visit_func_param_list (v, visit);
@@ -475,7 +475,7 @@ class RegisterVariables : public FunctionPassBase {
     }
 
 
-    bool need_recursion (VertexPtr root, LocalT *local) {
+    bool need_recursion (VertexPtr root __attribute__((unused)), LocalT *local __attribute__((unused))) {
       return local->need_recursion_flag;
     }
 };

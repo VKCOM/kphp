@@ -18,7 +18,7 @@ const char *get_assert_level_desc (AssertLevelT assert_level) {
   }
 }
 volatile int ce_locker;
-void on_compilation_error (const char *description, const char *file_name, int line_number,
+void on_compilation_error (const char *description __attribute__((unused)), const char *file_name, int line_number,
   const char *full_description, AssertLevelT assert_level) {
 
   AutoLocker <volatile int *> locker (&ce_locker);

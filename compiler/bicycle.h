@@ -78,7 +78,7 @@ class Maybe {
       has_value (false) {
       }
 
-    Maybe (Nothing x) :
+    Maybe (Nothing x __attribute__((unused))) :
       has_value (false) {
       }
 
@@ -229,7 +229,7 @@ class Node {
     virtual Task *get_task() = 0;
     virtual void on_finish() = 0;
 };
-#define DUMMY_ON_FINISH template <class OutputStreamT> void on_finish (OutputStreamT &os) {}
+#define DUMMY_ON_FINISH template <class OutputStreamT> void on_finish (OutputStreamT &os __attribute__((unused))) {}
 
 class TaskPull;
 class OneThreadScheduler : public SchedulerBase {

@@ -2506,7 +2506,7 @@ void compile_define (VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_defined (VertexPtr root, CodeGenerator &W) {
+void compile_defined (VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
   W << "false";
   //TODO: it is not CodeGen part
 }
@@ -2661,7 +2661,7 @@ void compile_string_build (VertexPtr root, CodeGenerator &W) {
 
 
 
-void compile_new (VertexPtr root, CodeGenerator &W) {
+void compile_new (VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
   //compile_type_name (tinf::get_type (root), w);
   //(*w) ("()");
 }

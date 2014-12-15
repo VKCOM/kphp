@@ -166,7 +166,7 @@ class OptimizationPass : public FunctionPassBase {
       return root;
     }
 
-    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (OpInfo::type (root->type()) == conv_op || root->type() == op_conv_array_l || root->type() == op_conv_int_l) {
         root = remove_extra_conversions (root);
       }
@@ -192,7 +192,7 @@ class OptimizationPass : public FunctionPassBase {
     }
 
     template <class VisitT>
-    bool user_recursion (VertexPtr root, LocalT *local, VisitT &visit) {
+    bool user_recursion (VertexPtr root, LocalT *local __attribute__((unused)), VisitT &visit) {
       if (root->type() == op_var) {
         VarPtr var = root->get_var_id();
         kphp_assert (var.not_null());

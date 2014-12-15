@@ -218,7 +218,7 @@ void Make::on_fail() {
 }
 
 int Make::signal_flag;
-void Make::sigint_handler (int sig) {
+void Make::sigint_handler (int sig __attribute__((unused))) {
   signal_flag = 1;
 }
 

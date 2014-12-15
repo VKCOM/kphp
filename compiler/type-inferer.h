@@ -619,7 +619,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
       return true;
     }
 
-    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
       if (v->type_rule.not_null()) {
         add_type_rule (v);
       }

@@ -35,21 +35,30 @@ class FunctionPassBase {
     }
     void on_finish() {
     }
-    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
       return vertex;
     }
-    void on_enter_edge (VertexPtr vertex, LocalT *local, VertexPtr dest_vertex, LocalT *dest_local) {
+    void on_enter_edge (VertexPtr vertex __attribute__((unused)),
+                        LocalT *local __attribute__((unused)),
+                        VertexPtr dest_vertex __attribute__((unused)),
+                        LocalT *dest_local __attribute__((unused))) {
     }
     template <class VisitT>
-    bool user_recursion (VertexPtr vertex, LocalT *local, VisitT &visit) {
+    bool user_recursion (VertexPtr vertex __attribute__((unused)), 
+                         LocalT *local __attribute__((unused)),
+                         VisitT &visit __attribute__((unused))) {
       return false;
     }
-    bool need_recursion (VertexPtr vertex, LocalT *local) {
+    bool need_recursion (VertexPtr vertex __attribute__((unused)),
+                         LocalT *local __attribute__((unused))) {
       return true;
     }
-    void on_exit_edge (VertexPtr vertex, LocalT *local, VertexPtr from_vertex, LocalT *from_local) {
+    void on_exit_edge (VertexPtr vertex __attribute__((unused)),
+                       LocalT *local __attribute__((unused)),
+                       VertexPtr from_vertex __attribute__((unused)),
+                       LocalT *from_local __attribute__((unused))) {
     }
-    VertexPtr on_exit_vertex (VertexPtr vertex, LocalT *local) {
+    VertexPtr on_exit_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
       return vertex;
     }
 };

@@ -71,7 +71,7 @@ class SplitSwitchPass : public FunctionPassBase {
     bool check_function (FunctionPtr function) {
       return default_check_function (function) && function->type() == FunctionData::func_global;
     }
-    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       depth++;
       if (root->type() != op_switch) {
         return root;
@@ -165,10 +165,10 @@ class SplitSwitchPass : public FunctionPassBase {
       return root;
     }
 
-    bool need_recursion (VertexPtr root, LocalT *local) {
+    bool need_recursion (VertexPtr root, LocalT *local __attribute__((unused))) {
       return depth < 2 || root->type() == op_seq || root->type() == op_try;
     }
-    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       depth--;
       return root;
     }

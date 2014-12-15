@@ -28,7 +28,7 @@ class CalcFuncDepPass : public FunctionPassBase {
     bool check_function (FunctionPtr function) {
       return default_check_function (function) && function->type() != FunctionData::func_extern;
     }
-    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
       //NB: There is no user functions in default values of any kind.
       if (vertex->type() == op_func_call) {
         VertexAdaptor <op_func_call> call = vertex;

@@ -75,7 +75,7 @@ void FunctionMatcher::set_function_set (FunctionSetPtr new_function_set) {
   function_set = new_function_set;
 }
 
-void FunctionMatcher::try_match (VertexPtr call) {
+void FunctionMatcher::try_match (VertexPtr call __attribute__((unused))) {
   kphp_assert (function_set.not_null());
   if (function_set->size() != 1) {
     return;

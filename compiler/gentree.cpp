@@ -1837,7 +1837,7 @@ void gen_tree_init() {
   GenTree::get_memfunc_prefix ("");
 }
 
-void php_gen_tree (vector <Token *> *tokens, const string &main_func_name, GenTreeCallbackBase *callback) {
+void php_gen_tree (vector <Token *> *tokens, const string &main_func_name __attribute__((unused)), GenTreeCallbackBase *callback) {
   GenTree gen;
   gen.init (tokens, callback);
   gen.run();

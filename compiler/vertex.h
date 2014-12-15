@@ -165,13 +165,13 @@ public:
   void init() {
   }
 
-  static void init_properties (OpProperties *p) {
+  static void init_properties (OpProperties *p __attribute__((unused))) {
   }
 
   const Operation &type() const {return type_;}
 
   virtual const FunctionPtr &get_func_id() const {dl_fail ("get_func_id is not supported");}
-  virtual void set_func_id (FunctionPtr func_ptr) {dl_fail ("set_func_id is not supported");}
+  virtual void set_func_id (FunctionPtr func_ptr __attribute__((unused))) {dl_fail ("set_func_id is not supported");}
 
   virtual const VarPtr &get_var_id() const {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
   virtual void set_var_id (const VarPtr &) {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}

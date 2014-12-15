@@ -69,7 +69,7 @@ const char *RestrictionIsset::get_description() {
   return desc.c_str();
 }
 
-void RestrictionIsset::find_dangerous_isset_warning (const vector <tinf::Node *> &bt, tinf::Node *node, const string &msg) {
+void RestrictionIsset::find_dangerous_isset_warning (const vector <tinf::Node *> &bt, tinf::Node *node, const string &msg __attribute__((unused))) {
   stringstream ss;
   ss << "isset, !==, ===, is_array or similar function result may differ from PHP\n" <<
         " Chain of assignments:\n";

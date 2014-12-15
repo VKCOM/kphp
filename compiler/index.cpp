@@ -102,7 +102,7 @@ const string &Index::get_dir() const {
 
 Index *Index::current_index = NULL;
 int Index::scan_dir_callback (const char *fpath, const struct stat *sb, int typeflag,
-    struct FTW *ftwbuf) {
+    struct FTW *ftwbuf __attribute__((unused))) {
   if (typeflag == FTW_D) {
     //skip
   } else if (typeflag == FTW_F) {

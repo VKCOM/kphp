@@ -97,7 +97,7 @@ namespace tinf {
       TypeNode (const TypeData *type) {
         set_type (type);
       }
-      void recalc (TypeInferer *inferer) {
+      void recalc (TypeInferer *inferer __attribute__((unused))) {
       }
       string get_description();
   };

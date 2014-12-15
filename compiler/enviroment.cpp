@@ -14,7 +14,7 @@ static void as_dir (string *s) {
     *s = "./" + *s;
   }
 }
-static void as_file (string *s) {
+static void as_file (string *s __attribute__((unused))) {
   return;
 }
 

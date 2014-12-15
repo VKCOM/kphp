@@ -59,7 +59,7 @@ class SyncPipeF {
       tmp_stream.set_sink (true);
     }
     template <class OutputStreamT>
-    void execute (T input, OutputStreamT &os) {
+    void execute (T input, OutputStreamT &os __attribute__((unused))) {
       tmp_stream << input;
     }
     template <class OutputStreamT>
@@ -140,7 +140,8 @@ class GenTreeCallback : public GenTreeCallbackBase {
     void register_function (VertexPtr root) {
       G->register_function (root, os);
     }
-    void register_class (const ClassInfo &info) {
+    __attribute__((error("register_class is not implemented yet")))
+    void register_class (const ClassInfo &info __attribute__((unused))) {
       //TODO;
     }
 };
@@ -417,7 +418,7 @@ class CalcLocationsPass : public FunctionPassBase {
     string get_description() {
       return "Calc locations";
     }
-    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
       stage::set_line (v->location.line);
       v->location = stage::get_location();
 
@@ -433,7 +434,7 @@ class CollectDefinesPass : public FunctionPassBase {
     string get_description() {
       return "Collect defines";
     }
-    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_define || root->type() == op_define_raw) {
         VertexAdaptor <meta_op_define> define = root;
         VertexPtr name = define->name(), val = define->value();
@@ -599,7 +600,7 @@ class RegisterDefinesPass : public FunctionPassBase {
     string get_description() {
       return "Register defines pass";
     }
-    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_defined) {
         bool is_defined = false;
 
@@ -656,7 +657,7 @@ class PreprocessEq3Pass : public FunctionPassBase {
     string get_description() {
       return "Preprocess eq3";
     }
-    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_eq3 || root->type() == op_neq3) {
         VertexAdaptor <meta_op_binary_op> eq_op = root;
         VertexPtr a = eq_op->lhs();
@@ -754,7 +755,7 @@ class PreprocessFunctionCPass : public FunctionPassBase {
       return default_check_function (function) && function->type() != FunctionData::func_extern;
     }
 
-    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_function_c) {
         CREATE_VERTEX (new_root, op_string);
         new_root->str_val = stage::get_function_name();
@@ -867,7 +868,10 @@ class CalcConstTypePass : public FunctionPassBase {
       return "Calc const types";
     }
 
-    void on_exit_edge (VertexPtr v, LocalT *v_local, VertexPtr from, LocalT *from_local) {
+    void on_exit_edge (VertexPtr v __attribute__((unused)), 
+                       LocalT *v_local,
+                       VertexPtr from __attribute__((unused)), 
+                       LocalT *from_local __attribute__((unused))) {
       v_local->has_nonconst |= from->const_type == cnst_nonconst_val;
     }
 
@@ -908,7 +912,7 @@ class CalcThrowEdgesPass : public FunctionPassBase {
       return "Collect throw edges";
     }
 
-    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
       if (v->type() == op_throw) {
         current_function->root->throws_flag = true;
       }
@@ -921,7 +925,7 @@ class CalcThrowEdgesPass : public FunctionPassBase {
     }
 
     template <class VisitT>
-    bool user_recursion (VertexPtr v, LocalT *local, VisitT &visit) {
+    bool user_recursion (VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
       if (v->type() == op_try) {
         VertexAdaptor <op_try> try_v = v;
         visit (try_v->catch_cmd());
@@ -999,7 +1003,7 @@ class CalcThrowsF {
     }
 
     template <class OutputStreamT>
-    void execute (FunctionAndEdges input, OutputStreamT &os) {
+    void execute (FunctionAndEdges input, OutputStreamT &os __attribute__((unused))) {
       tmp_stream << input;
     }
 
@@ -1152,7 +1156,7 @@ class CheckFunctionCallsPass : public FunctionPassBase {
       }
     }
 
-    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
       if (v->type() == op_func_ptr || v->type() == op_func_call) {
         check_func_call (v);
       }
@@ -1487,7 +1491,7 @@ class TypeInfererF {
     }
 
     template <class OutputStreamT>
-    void on_finish (OutputStreamT &os) {
+    void on_finish (OutputStreamT &os __attribute__((unused))) {
       //FIXME: rebalance Queues
       vector <Task *> tasks = tinf::get_inferer()->get_tasks();
       for (int i = 0; i < (int)tasks.size(); i++) {
@@ -1504,7 +1508,7 @@ class TypeInfererEndF {
       tmp_stream.set_sink (true);
     }
     template <class OutputStreamT>
-    void execute (FunctionAndCFG input, OutputStreamT &os) {
+    void execute (FunctionAndCFG input, OutputStreamT &os __attribute__((unused))) {
       tmp_stream << input;
     }
 
@@ -1558,7 +1562,7 @@ class CalcValRefPass : public FunctionPassBase {
       bool child_forbidden;
     };
 
-    void on_enter_edge (VertexPtr vertex, LocalT *local, VertexPtr dest_vertex, LocalT *dest_local) {
+    void on_enter_edge (VertexPtr vertex __attribute__((unused)), LocalT *local, VertexPtr dest_vertex, LocalT *dest_local __attribute__((unused))) {
       if (!local->child_forbidden && dest_vertex->rl_type != val_none && dest_vertex->rl_type != val_error) {
         const TypeData *tp = tinf::get_type (dest_vertex);
 
@@ -1602,7 +1606,7 @@ class CalcBadVarsF {
     }
 
     template <class OutputStreamT>
-    void execute (FunctionPtr function, OutputStreamT &os) {
+    void execute (FunctionPtr function, OutputStreamT &os __attribute__((unused))) {
       CalcFuncDepPass pass;
       run_function_pass (function, &pass);
       DepData *data = new DepData();
@@ -1660,7 +1664,7 @@ class FinalCheckPass : public FunctionPassBase {
       }
       return function->type() != FunctionData::func_extern;
     }
-    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
+    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
       if (vertex->type() == op_func_name) {
         kphp_error (0, "Unexpected function name");
       }
@@ -1668,7 +1672,7 @@ class FinalCheckPass : public FunctionPassBase {
       return vertex;
     }
     template <class VisitT>
-    bool user_recursion (VertexPtr v, LocalT *local, VisitT &visit) {
+    bool user_recursion (VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
       if (v->type() == op_function) {
         visit (v.as <op_function>()->cmd());
         return true;
@@ -1758,7 +1762,7 @@ class WriterCallback : public WriterCallbackBase {
   private:
     OutputStream &os;
   public:
-    WriterCallback (OutputStream &os, const string dir = "./") :
+    WriterCallback (OutputStream &os, const string dir __attribute__((unused)) = "./") :
       os (os) {
     }
 
@@ -1784,7 +1788,7 @@ class CodeGenF {
     }
 
     template <class OutputStreamT>
-    void execute (FunctionPtr input, OutputStreamT &os) {
+    void execute (FunctionPtr input, OutputStreamT &os __attribute__((unused))) {
       tmp_stream << input;
     }
 
@@ -1859,7 +1863,7 @@ class WriteFilesF {
   public:
     DUMMY_ON_FINISH;
     template <class OutputStreamT>
-      void execute (WriterData *data, OutputStreamT &os) {
+      void execute (WriterData *data, OutputStreamT &os __attribute__((unused))) {
         AUTO_PROF (end_write);
         stage::set_name ("Write files");
         string dir = G->cpp_dir;

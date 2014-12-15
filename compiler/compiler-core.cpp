@@ -45,7 +45,7 @@ bool CompilerCore::add_to_function_set (FunctionSetPtr function_set, FunctionPtr
   return function_set->is_required;
 }
 
-FunctionSetPtr CompilerCore::get_function_set (function_set_t type, const string &name, bool force) {
+FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__((unused)), const string &name, bool force) {
   HT <FunctionSetPtr> *ht = &function_set_ht;
 
   HT <FunctionSetPtr>::HTNode *node = ht->at (hash_ll (name));
