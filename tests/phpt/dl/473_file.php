@@ -25,7 +25,7 @@
   if (fwrite ($file, "") !== 0) {
     echo "error2\n";
   }
-  if (fwrite ("asdasdasd", "") !== false) {
+  if (@(fwrite ("asdasdasd", "") !== false)) {
     echo "error3\n";
   }
   fflush ($file);
@@ -34,7 +34,7 @@
   fflush ($file);
 //  var_dump (fread ($file, 100));
   fclose ($file);
-  if (fwrite ($file, "1231") !== false) {
+  if (@(fwrite ($file, "1231") !== false)) {
     echo "error4\n";
   }
 
@@ -62,7 +62,12 @@
 
   var_dump (file_get_contents ($filename));
   var_dump (file ($filename));
+  @var_dump (file_put_contents ('tmp', 'test'));
+  var_dump (file_put_contents ($filename, "test-test-test"));
+  var_dump (file_get_contents ($filename));
   unlink ($filename);
 
   @var_dump (realpath ("../dl/473-file.php"));
   @var_dump (realpath ("../dl/473_file.php"));
+  @var_dump (realpath ("phpt/dl/473-file.php"));
+  @var_dump (realpath ("phpt/dl/473_file.php"));

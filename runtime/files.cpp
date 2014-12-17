@@ -7,6 +7,7 @@
 
 #undef basename
 
+#include "array_functions.h"
 #include "files.h"
 #include "interface.h"
 #include "string_functions.h"//php_buf, TODO
@@ -270,6 +271,33 @@ OrFalse <string> f$file_get_contents (const string &name) {
   close_safe (file_fd);
   dl::leave_critical_section();
   return res;
+}
+
+OrFalse <int> f$file_put_contents (const string &name, const var &content_var) {
+  string content;
+  if (content_var.is_array()) {
+    content = f$implode (string(), content_var.to_array());
+  } else {
+    content = content_var.to_string();
+  }
+
+  dl::enter_critical_section();//OK
+  int file_fd = open_safe (name.c_str(), O_WRONLY | O_TRUNC | O_CREAT, 0644);
+  if (file_fd < 0) {
+    php_warning ("Can't open file \"%s\"", name.c_str());
+    dl::leave_critical_section();
+    return false;
+  }
+
+  if (write_safe (file_fd, content.c_str(), content.size()) < (ssize_t)content.size()) {
+    close_safe (file_fd);
+    dl::leave_critical_section();
+    return false;
+  }
+
+  close_safe (file_fd);
+  dl::leave_critical_section();
+  return content.size();
 }
 
 bool f$file_exists (const string &name) {

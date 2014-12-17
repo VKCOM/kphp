@@ -441,6 +441,7 @@ function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
 function file ($name ::: string) ::: OrFalse <array <string> >;
 function file_get_contents ($name ::: string) ::: OrFalse <string>;
+function file_put_contents ($name ::: string, $content ::: var) ::: OrFalse <int>;
 function file_exists ($name ::: string) ::: bool;
 function filesize ($name ::: string) ::: OrFalse <int>;
 function is_dir ($name ::: string) ::: bool;

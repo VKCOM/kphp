@@ -39,6 +39,8 @@ OrFalse <array <string> > f$file (const string &name);
 
 OrFalse <string> f$file_get_contents (const string &name);
 
+OrFalse <int> f$file_put_contents (const string &name, const var &content_var);
+
 bool f$file_exists (const string &name);
 
 OrFalse <int> f$filesize (const string &name);
