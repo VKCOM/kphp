@@ -481,45 +481,42 @@ namespace cfg {
         create_cfg_exit_cycle (action_finish, finish);
         break;
       }
-      case op_foreach_param: {
-        VertexAdaptor <op_foreach_param> foreach_param = tree_node;
-        recursive_flag = true;
+      case op_foreach: {
+        create_cfg_enter_cycle();
+
+        VertexAdaptor <op_foreach> foreach_op = tree_node;
+
+        //foreach_param
+        VertexAdaptor <op_foreach_param> foreach_param = foreach_op->params();
         Node val_start, val_finish;
         create_cfg (foreach_param->xs(), &val_start, &val_finish);
 
         Node writes = new_node();
-        Node finish = new_node();
         add_usage (writes, new_usage (usage_write_t, foreach_param->x()));
         if (foreach_param->has_key()) {
           add_usage (writes, new_usage (usage_write_t, foreach_param->key()));
         }
 
-        add_edge (val_finish, writes);
-        add_edge (writes, finish);
+        //?? not sure
+        add_subtree (val_start, new_subtree (foreach_param, true));
 
-        *res_start = val_start;
-        *res_finish = finish;
+        Node finish = new_node();
 
-        break;
-      }
-      case op_foreach: {
-        create_cfg_enter_cycle();
+        Node cond_start = val_start;
+        Node cond_check = new_node();
+        Node cond_true = writes;
+        Node cond_false = finish;
 
-        VertexAdaptor <op_foreach> foreach_op = tree_node;
-        Node cond_start, cond_finish;
-        create_cfg (foreach_op->params(), &cond_start, &cond_finish);
+        add_edge (val_finish, cond_check);
+        add_edge (cond_check, cond_true);
+        add_edge (cond_check, cond_false);
 
         Node action_start, action_finish_pre, action_finish = new_node();
         create_cfg (foreach_op->cmd(), &action_start, &action_finish_pre);
         add_edge (action_finish_pre, action_finish);
 
-        //TODO: cond start is visited only one
-        add_edge (cond_finish, action_start);
-        add_edge (action_finish, cond_start);
-
-        Node finish = new_node();
-        add_edge (action_finish, finish);
-        add_edge (cond_finish, finish);
+        add_edge (cond_true, action_start);
+        add_edge (action_finish, cond_check);
 
         *res_start = cond_start;
         *res_finish = finish;
