@@ -18,25 +18,12 @@
 
 static string_buffer drivers_SB (1024);
 
-static const int MAX_TIMEOUT_MS = MAX_TIMEOUT * 1000;
-static const int DB_TIMEOUT_MS = MAX_TIMEOUT_MS;
-static const int MAX_KEY_LEN = 1000;
-static const int MAX_VALUE_LEN = (1 << 20);
-static const int MAX_INPUT_VALUE_LEN = (1 << 24);
+const int DB_TIMEOUT_MS = 120000;
+const int MAX_KEY_LEN = 1000;
+const int MAX_VALUE_LEN = (1 << 20);
+const int MAX_INPUT_VALUE_LEN = (1 << 24);
 
-static const string UNDERSCORE ("_", 1);
-
-int timeout_convert_to_ms (double timeout) {
-  int timeout_ms = (int)(timeout * 1000 + 1);
-  if (timeout_ms <= 0) {
-    timeout_ms = 1;
-  }
-  if (timeout_ms >= MAX_TIMEOUT_MS) {
-    timeout_ms = MAX_TIMEOUT_MS;
-  }
-
-  return timeout_ms;
-}
+const string UNDERSCORE ("_", 1);
 
 
 extern var v$tg__;
@@ -333,6 +320,9 @@ void mc_version_callback (const char *result, int result_len) {
   }
 }
 
+
+MC_object::~MC_object() {
+}
 
 Memcache::host::host (void): host_num (-1),
                              host_weight (0),
@@ -749,7 +739,7 @@ var RpcMemcache::get (const var &key_var) {
     }
 
     host cur_host = get_host (string());
-    return f$rpc_mc_multiget (cur_host.conn, key_var.to_array());
+    return f$rpc_mc_multiget (cur_host.conn, key_var.to_array(), -1.0, false, true);
   } else {
     if (hosts.count() <= 0) {
       php_warning ("There is no available server to run RpcMemcache::get with key \"%s\"", key_var.to_string().c_str());
@@ -921,10 +911,14 @@ bool true_mc::replace (const string &key, const var &value, int flags, int expir
   return result;
 }
 
+
 var true_mc::get (const var &key_var) {
   if (mc == NULL) {
     php_warning ("Memcache object is NULL in true_mc->mc->get");
-    return key_var.is_array() ? var (array <var> ()) : var (false);
+    if (key_var.is_array()) {
+      return array <var> ();
+    }
+    return false;
   }
   query_index++;
 
@@ -1436,7 +1430,6 @@ MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag __attri
  *
  */
 
-
 var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout) {
   mc_method = "get";
   const string real_key = mc_prepare_key (key);
@@ -1447,12 +1440,18 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   update_precise_now();
-  slot_id_t request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout);
+  if (request_id <= 0) {
+    return false;
+  }
   if (is_immediate) {
     wait_net (0);
     return true;
   }
+
+  wait_synchronously (request_id);
   if (!f$rpc_get_and_parse (request_id, timeout)) {
+    php_assert (resumable_finished);
     return false;
   }
 
@@ -1505,12 +1504,18 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
   store_string (string_value.c_str(), string_value.size());
 
   update_precise_now();
-  slot_id_t request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout);
+  if (request_id <= 0) {
+    return false;
+  }
   if (is_immediate) {
     wait_net (0);
     return true;
   }
+
+  wait_synchronously (request_id);
   if (!f$rpc_get_and_parse (request_id, timeout)) {
+    php_assert (resumable_finished);
     return false;
   }
 
@@ -1543,12 +1548,18 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
   f$store_long (v);
 
   update_precise_now();
-  slot_id_t request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout);
+  if (request_id <= 0) {
+    return false;
+  }
   if (is_immediate) {
     wait_net (0);
     return 0;
   }
+
+  wait_synchronously (request_id);
   if (!f$rpc_get_and_parse (request_id, timeout)) {
+    php_assert (resumable_finished);
     return false;
   }
 
@@ -1580,12 +1591,18 @@ bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double time
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   update_precise_now();
-  slot_id_t request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout);
+  if (request_id <= 0) {
+    return false;
+  }
   if (is_immediate) {
     wait_net (0);
     return true;
   }
+
+  wait_synchronously (request_id);
   if (!f$rpc_get_and_parse (request_id, timeout)) {
+    php_assert (resumable_finished);
     return false;
   }
 

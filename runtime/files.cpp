@@ -802,10 +802,10 @@ bool f$fclose (const MyFile &file) {
   string filename = filename_or_false.val();
   if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
     dl::enter_critical_section();//NOT OK: opened_files
-    fclose (opened_files->get_value (filename));
+    int result = fclose (opened_files->get_value (filename));
     opened_files->unset (filename);
     dl::leave_critical_section();
-    return true;
+    return (result == 0);
   }
   return false;
 }

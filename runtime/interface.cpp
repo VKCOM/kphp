@@ -14,7 +14,9 @@
 #include "drivers.h"
 #include "exception.h"
 #include "files.h"
+#include "net_events.h"
 #include "openssl.h"
+#include "resumable.h"
 #include "rpc.h"
 #include "string_functions.h"
 #include "url.h"
@@ -155,6 +157,11 @@ static void header (const char *str, int str_len, bool replace = true, int http_
   if (str_len >= 5 && !strncasecmp (str, "HTTP/", 5)) {
     if (check_status_line (str, str_len)) {
       http_status_line = string (str, str_len);
+      int pos = 5;
+      while (str[pos] != ' ') {
+        pos++;
+      }
+      sscanf (str + pos, "%d", &http_return_code);
     } else {
       php_critical_error ("wrong status line '%s' specified in function header", str);
     }
@@ -1379,6 +1386,9 @@ OrFalse <string> f$ini_get (const string &s) {
     return ini_vars->get_value (s);
   }
 
+  if (!strcmp (s.c_str(), "sendmail_path")) {
+    return string ("/usr/sbin/sendmail -ti", 22);
+  }
   if (!strcmp (s.c_str(), "max_execution_time")) {
     return string ("30.0", 4);//TODO
   }
@@ -1421,7 +1431,9 @@ void init_static (void) {
   drivers_init_static();
   exception_init_static();
   files_init_static();
+  net_events_init_static();
   openssl_init_static();
+  resumable_init_static();
   rpc_init_static();
   
   shutdown_function = NULL;
@@ -1446,6 +1458,7 @@ void init_static (void) {
 
   //TODO
   header ("HTTP/1.0 200 OK", 15);
+  php_assert (http_return_code == 200);
   header ("Server: nginx/0.3.33", 20);
   string date = f$gmdate (HTTP_DATE);
   static_SB_spare.clean() + "Date: " + date;

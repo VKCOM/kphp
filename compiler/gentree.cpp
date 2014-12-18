@@ -1322,9 +1322,21 @@ VertexPtr GenTree::get_function (bool anonimous_flag) {
   CE (expect (tok_clpar, "')'"));
 
   bool throws_flag = false;
-  if (test_expect (tok_throws)) {
-    throws_flag = true;
-    CE (expect (tok_throws, "'throws'"));
+  bool resumable_flag = false;
+
+  bool flag = true;
+  while (flag) {
+    flag = false;
+    if (test_expect (tok_throws)) {
+      throws_flag = true;
+      CE (expect (tok_throws, "'throws'"));
+      flag = true;
+    }
+    if (test_expect (tok_resumable)) {
+      resumable_flag = true;
+      CE (expect (tok_resumable, "'resumable'"));
+      flag = true;
+    }
   }
 
   VertexPtr type_rule = get_type_rule();
@@ -1364,6 +1376,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag) {
   res->auto_flag = auto_flag;
   res->varg_flag = varg_flag;
   res->throws_flag = throws_flag;
+  res->resumable_flag = resumable_flag;
 
   if (in_class()) {
     res->extra_type = op_ex_func_member;
@@ -1701,9 +1714,14 @@ VertexPtr GenTree::post_process (VertexPtr root) {
       op = op_conv_long;
     } else if (str == "ulongval") {
       op = op_conv_ulong;
+    } else if (str == "fork") {
+      op = op_fork;
     }
     if (op != op_err) {
       VertexPtr arg = call->args()[0];
+      if (op == op_fork) {
+        arg->fork_flag = true;
+      }
       CREATE_META_VERTEX_1 (new_root, meta_op_base, op, arg);
       ::set_location (new_root, root->get_location());
       return post_process (new_root);

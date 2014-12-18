@@ -67,6 +67,7 @@ class CompilerCore {
     template <class DataStream>
     void register_function (VertexPtr root, DataStream &os);
     FunctionSetPtr get_function_set (function_set_t type, const string &name, bool force);
+    FunctionPtr get_function_unsafe (const string &name);
 
     bool register_define (DefinePtr def_id);
     DefinePtr get_define (const string &name);

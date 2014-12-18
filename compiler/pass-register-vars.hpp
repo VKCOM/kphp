@@ -146,11 +146,7 @@ class CollectConstVarsPass : public FunctionPassBase {
         return v;
       }
 
-      FunctionSetPtr unserialize_func_set = G->get_function_set (fs_function, "unserialize", true);
-      kphp_assert (unserialize_func_set->size() == 1);
-      FunctionPtr unserialize_func_id = unserialize_func_set[0];
-      kphp_assert (unserialize_func_id.not_null());
-
+      FunctionPtr unserialize_func_id = G->get_function_unsafe ("unserialize");
 
       int nodes_cnt = 0;
       bool valid;

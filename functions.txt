@@ -2,6 +2,7 @@
 
 if (0) {
   unserialize ("");
+  //wait (0);
   is_bool ("");
   is_array ("");
   is_string ("");
@@ -169,6 +170,9 @@ function is_bool ($v ::: Any) ::: bool;
 function is_int ($v ::: Any) ::: bool;
 function is_integer ($v ::: Any) ::: bool;
 function is_long ($v ::: Any) ::: bool;
+function is_finite ($v ::: float) ::: bool;
+function is_infinite ($v ::: float) ::: bool;
+function is_nan ($v ::: float) ::: bool;
 function is_float ($v ::: Any) ::: bool;
 function is_double ($v ::: Any) ::: bool;
 function is_real ($v ::: Any) ::: bool;
@@ -274,6 +278,10 @@ function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
 function gzuncompress ($str ::: string) ::: string;
 function base64_decode ($str ::: string) ::: string;
 function base64_encode ($str ::: string) ::: string;
+function base64url_decode_ulong ($str ::: string) ::: ULong;
+function base64url_encode_ulong ($val ::: ULong) ::: string;
+function base64url_decode_ulong_NN ($str ::: string) ::: ULong;
+function base64url_encode_ulong_NN ($val ::: ULong) ::: string;
 function http_build_query ($str ::: array) ::: string;
 function rawurldecode ($str ::: string) ::: string;
 function rawurlencode ($str ::: string) ::: string;
@@ -575,14 +583,16 @@ function store_double ($v ::: float) ::: bool;
 function store_string ($v ::: string) ::: bool;
 function store_finish() ::: bool;
 function rpc_send ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
-function rpc_get ($request_id ::: int) ::: OrFalse <string>;
-function rpc_get_and_parse ($request_id ::: int) ::: bool;
+function rpc_send_noflush ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
+function rpc_flush () ::: void;
+function rpc_get ($request_id ::: int) resumable ::: OrFalse <string>;
+function rpc_get_and_parse ($request_id ::: int) resumable ::: bool;
 function rpc_queue_create ($request_ids ::: Any) ::: int;
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
-function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: var;
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;
 function rpc_mc_get ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) throws ::: var;
-function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0) throws ::: OrFalse <array <var> >;
+function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) throws resumable ::: OrFalse <array <var> >;
 function rpc_mc_delete ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) throws ::: bool;
 function rpc_mc_add ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) throws ::: bool;
 function rpc_mc_set ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) throws ::: bool;
@@ -591,8 +601,19 @@ function rpc_mc_decrement ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $
 function rpc_mc_increment ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) throws ::: var;
 function rpc_tl_query_one ($rpc_conn ::: RPC, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
 function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0) ::: array <int>;
-function rpc_tl_query_result_one ($query_id ::: int) ::: array <var>;
-function rpc_tl_query_result ($query_ids ::: array) ::: array <array <var> >;
+function rpc_tl_query_result_one ($query_id ::: int) resumable ::: array <var>;
+function rpc_tl_query_result ($query_ids ::: array) resumable ::: array <array <var> >;
+function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: array <array <var> >;
+
+function wait ($id ::: int, $timeout ::: float = -1.0) resumable ::: bool;
+function wait_result ($id ::: int, $timeout ::: float = -1.0) throws resumable ::: var;
+function wait_synchronously ($id ::: int) ::: bool;
+function wait_queue_create ($request_ids ::: Any) ::: int;
+function wait_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
+function wait_queue_empty ($queue_id ::: int) ::: bool;
+function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;
+function wait_queue_next_synchronously ($queue_id ::: int) ::: int;
+function sched_yield() resumable ::: void;
 
 function query_x2 ($x ::: int) ::: int;
 
@@ -688,6 +709,7 @@ define (UPLOAD_ERR_NO_TMP_DIR, 6);
 define (UPLOAD_ERR_CANT_WRITE, 7);
 define (UPLOAD_ERR_EXTENSION, 8);
 
+function mail ($to ::: string, $subject ::: string, $message ::: string, $additional_headers ::: string = "") ::: bool;
 
 function curl_init ($url ::: string = "") ::: int;
 function curl_set_header_function ($id ::: int, callback ($x, $y)) ::: bool;

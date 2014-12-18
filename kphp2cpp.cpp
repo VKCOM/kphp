@@ -15,7 +15,7 @@ void usage (void) {
           "-i <file>\tExperimental. Index for faster compilations\n"
           "-I <directory>\tDirectory where php files will be searched\n"
           "-j <jobs_count>\tSpecifies the number of jobs (commands) to run simultaneously by make. By default equals to 1\n"
-          "-l <file>\tLink with <file>. Equals to $KPHP_LINK_FILE. $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME is used by default"
+          "-l <file>\tLink with <file>. Equals to $KPHP_LINK_FILE. $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME is used by default\n"
           "-M <mode>\tserver, net or cli. If <mode> == server/net, than $KPHP_LINK_FILE_NAME=php-server.a. If <mode> == cli, than $KPHP_LINK_FILE_NAME=php-cli.a\n"
           "-m\tRun make\n"
           "-o <file>\tPlace output into <file>\n"

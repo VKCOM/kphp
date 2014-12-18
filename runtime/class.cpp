@@ -118,8 +118,7 @@ template <class T>
 template <class T1>
 object_ptr <T>::object_ptr (const object_ptr <T1> &other): o (dynamic_cast <T *> (other.o)) {
   if (o == NULL) {
-    T some_object;
-    php_critical_error ("can't cast object of type %s to type %s", other.o->get_class(), some_object.get_class());
+    php_critical_error ("can't cast object of type %s to type %s", other.o->get_class(), "TODO");
   }
   o->data->ref_cnt++;
 }

@@ -1650,6 +1650,60 @@ class CheckUBF {
     }
 };
 
+class ExtractAsyncPass : public FunctionPassBase {
+  private:
+    AUTO_PROF (extract_async);
+  public:
+    string get_description() {
+      return "Extract async";
+    }
+    bool check_function (FunctionPtr function) {
+      return default_check_function (function) && function->type() != FunctionData::func_extern &&
+        function->root->resumable_flag;
+    }
+
+    struct LocalT : public FunctionPassBase::LocalT {
+      bool from_seq;
+    };
+
+    void on_enter_edge (VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex __attribute__((unused)), LocalT *dest_local) {
+      dest_local->from_seq = vertex->type() == op_seq;
+    }
+
+    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
+      if (local->from_seq == false) {
+        return vertex;
+      }
+      VertexAdaptor <op_func_call> func_call;
+      VertexPtr lhs;
+      if (vertex->type() == op_func_call) {
+        func_call = vertex;
+      } else if (vertex->type() == op_set) {
+        VertexAdaptor <op_set> set  = vertex;
+        VertexPtr rhs = set->rhs();
+        if (rhs->type() == op_func_call) {
+          func_call = rhs;
+          lhs = set->lhs();
+        }
+      }
+      if (func_call.is_null()) {
+        return vertex;
+      }
+      FunctionPtr func = func_call->get_func_id();
+      if (func->root->resumable_flag == false) {
+        return vertex;
+      }
+      if (lhs.is_null()) {
+        CREATE_VERTEX (empty, op_empty);
+        set_location (empty, vertex->get_location());
+        lhs = empty;
+      }
+      CREATE_VERTEX (async, op_async, lhs, func_call);
+      set_location (async, func_call->get_location());
+      return async;
+    }
+};
+
 class FinalCheckPass : public FunctionPassBase {
   private:
     AUTO_PROF (final_check);
@@ -2044,6 +2098,7 @@ void compiler_execute (KphpEnviroment *env) {
     Pipe <CheckUBF,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > check_ub_pipe (true);
+    FunctionPassPipe <ExtractAsyncPass>::Self extract_async_pipe (true);
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > third_sync_pipe (true, true);
@@ -2092,6 +2147,7 @@ void compiler_execute (KphpEnviroment *env) {
       calc_val_ref_pipe >>
       calc_bad_vars_pipe >> sync_node() >>
       check_ub_pipe >>
+      extract_async_pipe >>
       final_check_pass >>
       code_gen_pipe >> sync_node() >>
       write_files_pipe;
@@ -2104,6 +2160,7 @@ void compiler_execute (KphpEnviroment *env) {
     get_scheduler()->execute();
   }
 
+  stage::die_if_global_errors();
   int verbosity = G->env().get_verbosity();
   if (G->env().get_use_make()) {
     fprintf (stderr, "start make\n");

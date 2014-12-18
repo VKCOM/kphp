@@ -25,7 +25,7 @@ public:
 #ifdef FAST_EXCEPTIONS
 extern Exception *CurException;
 
-#  define THROW_EXCEPTION(e) {Exception x_tmp___ = e; CurException = (Exception *)dl::allocate (sizeof (Exception)); new (CurException) Exception ((x_tmp___));}
+#  define THROW_EXCEPTION(e) {Exception x_tmp___ = e; php_assert (!CurException); CurException = (Exception *)dl::allocate (sizeof (Exception)); new (CurException) Exception ((x_tmp___));}
 #  define TRY_CALL(CallT, ResT, call) ({CallT x_tmp___ = (call); if (CurException) return (ResT()); x_tmp___;})
 #  define TRY_CALL_VOID(ResT, call) ({(call); if (CurException) return (ResT()); void();})
 

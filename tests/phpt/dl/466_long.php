@@ -62,6 +62,9 @@
   }
 
   function longval ($x) {
+    if ($x[0] == '0' && $x[1] == 'x') {
+      $x = base_convert (substr ($x, 2), 16, 10);
+    }
     $x = bcmod ($x, "18446744073709551616");
     if (bccomp ($x, "9223372036854775807") == 1) {
       $x = bcsub ($x, "18446744073709551616");
@@ -129,6 +132,9 @@
   }
 
   function ulongval ($x) {
+    if ($x[0] == '0' && $x[1] == 'x') {
+      $x = base_convert (substr ($x, 2), 16, 10);
+    }
     $x = bcmod ($x, "18446744073709551616");
     if (bccomp ($x, "0") == -1) {
       $x = bcadd ($x, "18446744073709551616");
@@ -194,15 +200,53 @@
   }
 
   function uintval ($x) {
+    if ($x[0] == '0' && $x[1] == 'x') {
+      $x = base_convert (substr ($x, 2), 16, 10);
+    }
     $x = bcmod ($x, "4294967296");
     if (bccomp ($x, "0") == -1) {
       $x = bcadd ($x, "4294967296");
     }
     return $x;
   }
+
+  function base64url_encode($data) {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+  }
+
+  function base64url_decode($data) {
+    return base64_decode(str_pad(strtr($data, '-_', '+/'), ceil(strlen($data) / 4) * 4, '=', STR_PAD_RIGHT));
+  }
+
+  function base64url_decode_ulong ($secret_encoded) {
+    $secret_packed = base64url_decode($secret_encoded);
+    $secret_unpacked = unpack('Vlow/Vhigh', $secret_packed);
+    $secret = uladd(ulongval($secret_unpacked['low']), ulshl(ulongval($secret_unpacked['high']), 32));
+    return $secret;
+  }
+
+  function base64url_encode_ulong ($secret_long) {
+    $secret_long = ulongval(longval($secret_long));
+    $secret_encoded = pack('VV', intval(uland($secret_long, 0xFFFFFFFF)), intval(ulshr($secret_long, 32)));
+    return base64url_encode($secret_encoded);
+  }
+
+  function base64url_decode_ulong_NN ($secret_encoded) {
+    $secret_packed = base64url_decode($secret_encoded);
+    $secret_unpacked = unpack('Nlow/Nhigh', $secret_packed);
+    $secret = uladd(ulongval($secret_unpacked['low']), ulshl(ulongval($secret_unpacked['high']), 32));
+    return $secret;
+  }
+
+  function base64url_encode_ulong_NN ($secret_long) {
+    $secret_long = ulongval(longval($secret_long));
+    $secret_encoded = pack('NN', intval(uland($secret_long, 0xFFFFFFFF)), intval(ulshr($secret_long, 32)));
+    return base64url_encode($secret_encoded);
+  }
+
 #endif
 
-  $a = array (1, -123, longval (12345678901), -456789, -1, longval ("1234567890121"), longval (2131312321323), longval (-3843848384838483843), 2323223, 1, @longval ("-100000000000000000000000000000000123123123123"));
+  $a = array (1, -123, longval (12345678901), -456789, -1, longval ("1234567890121"), longval (2131312321323), longval (-3843848384838483843), 2323223, 1, @longval ("-100000000000000000000000000000000123123123123"), longval ("0x12345abcde"), longval ("0xfffffffffffffff"));
   $b = $a;
 
   foreach ($a as $va) {
@@ -228,10 +272,14 @@
   var_dump (strval (lpow (-2, 5)));
 
 
-  $ula = array (1, 123, ulongval (12345678901), -456789, 1, ulongval ("1234567890121"), ulongval (2131312321323), ulongval (3843848384838483843), 2323223, 1, @ulongval ("-100000000000000000000000000000000123123123123"));
+  $ula = array (1, 123, ulongval (12345678901), -456789, 1, ulongval ("1234567890121"), ulongval (2131312321323), ulongval (3843848384838483843), 2323223, 1, @ulongval ("-100000000000000000000000000000000123123123123"), ulongval ("0x12345abcde"), ulongval ("0xfffffffffffffff"));
   $ulb = $ula;
 
   foreach ($ula as $ulva) {
+    var_dump (base64url_encode_ulong ($ulva));
+    var_dump (strval (base64url_decode_ulong (base64url_encode_ulong ($ulva))));
+    var_dump (base64url_encode_ulong_NN ($ulva));
+    var_dump (strval (base64url_decode_ulong_NN (base64url_encode_ulong_NN ($ulva))));
     var_dump (strval (ulpow ($ulva, 9)));
     var_dump (strval (ulnot ($ulva)));
     foreach ($ulb as $ulvb) {
@@ -254,7 +302,7 @@
   var_dump (strval (ulpow (2, 62)));
 
 
-  $uia = array (1, -123, uintval (123456789), 456789, 1, uintval ("1137890121"), uintval (2331312321), uintval (-3843), 2323223, 1, -112312, @uintval ("100000000000000000000000000000000123123123123"));
+  $uia = array (1, -123, uintval (123456789), 456789, 1, uintval ("1137890121"), uintval (2331312321), uintval (-3843), 2323223, 1, -112312, @uintval ("100000000000000000000000000000000123123123123"), uintval ("0xabcde"), uintval ("0xfffffffe"), uintval ("0xa"));
   $uib = $uia;
 
   foreach ($uia as $uiva) {

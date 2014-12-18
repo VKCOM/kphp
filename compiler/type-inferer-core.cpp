@@ -137,6 +137,8 @@ namespace tinf {
 
       void execute() {
         AUTO_PROF (tinf_infer_infer);
+        stage::set_name ("Infer types");
+        stage::set_function (FunctionPtr());
         //double st = dl_time();
         //int cnt = (int)queue_->size();
         //int cnt2 = 

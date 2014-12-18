@@ -64,6 +64,13 @@ FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__
   kphp_assert (function_set->name == name/*, "Bug in compiler: hash collision"*/);
   return function_set;
 }
+FunctionPtr CompilerCore::get_function_unsafe (const string &name) {
+  FunctionSetPtr func_set = get_function_set (fs_function, name, true);
+  kphp_assert (func_set->size() == 1);
+  FunctionPtr func = func_set[0];
+  kphp_assert (func.not_null());
+  return func;
+}
 
 FunctionPtr CompilerCore::create_function (VertexAdaptor <meta_op_function>  function_root) {
   AUTO_PROF (create_function);

@@ -8,6 +8,8 @@ struct DepData {
   vector <VarPtr> used_ref_vars;
   vector <std::pair <VarPtr, VarPtr> > ref_ref_edges;
   vector <std::pair <VarPtr, VarPtr> > global_ref_edges;
+
+  vector <FunctionPtr> forks;
 };
 inline void swap (DepData &a, DepData &b) {
   swap (a.dep, b.dep);
@@ -15,6 +17,7 @@ inline void swap (DepData &a, DepData &b) {
   swap (a.used_ref_vars, b.used_ref_vars);
   swap (a.ref_ref_edges, b.ref_ref_edges);
   swap (a.global_ref_edges, b.global_ref_edges);
+  swap (a.forks, b.forks);
 }
 class CalcFuncDepPass : public FunctionPassBase {
   private:
@@ -66,6 +69,10 @@ class CalcFuncDepPass : public FunctionPassBase {
         if (var->is_reference) {
           data.used_ref_vars.push_back (var);
         }
+      } else if (vertex->type() == op_fork) {
+        VertexPtr func_call = vertex.as <op_fork>()->func_call();
+        kphp_error (func_call->type() == op_func_call, "Fork can be called only for function call.");
+        data.forks.push_back (func_call->get_func_id());
       }
 
       return vertex;
@@ -153,6 +160,36 @@ class MergeReachalbe {
     }
 };
 
+struct FuncCallGraph {
+    int n;
+    vector <FunctionPtr> functions;
+    IdMap < vector <FunctionPtr> > graph;
+    IdMap < vector <FunctionPtr> > rev_graph;
+
+    FuncCallGraph (vector <FunctionPtr> &other_functions, const vector <DepData *> dep_datas) :
+      n ((int)other_functions.size()),
+      functions(),
+      graph (n),
+      rev_graph (n) {
+
+      std::swap (functions, other_functions);
+
+      for (int cur_id = 0, i = 0; i < n; i++, cur_id++) {
+        set_index (&functions[i], cur_id);
+      }
+
+      for (int i = 0; i < n; i++) {
+        FunctionPtr to = functions[i];
+        DepData *data = dep_datas[i];
+
+        FOREACH ((data->dep), from) {
+          rev_graph[*from].push_back (to);
+        }
+        std::swap (graph[to], data->dep);
+      }
+    }
+};
+
 class CalcBadVars {
   private:
     class MergeBadVarsCallback : public MergeReachalbeCallback <FunctionPtr> {
@@ -191,30 +228,64 @@ class CalcBadVars {
       }
     }
 
-    void generate_bad_vars (vector <FunctionPtr> &functions, vector <DepData *> &dep_datas) {
-      int all_n = (int)functions.size();
-      for (int cur_id = 0, i = 0; i < all_n; i++, cur_id++) {
-        set_index (&functions[i], cur_id);
-        swap (functions[i]->tmp_vars, dep_datas[i]->used_global_vars);
-      }
+    void generate_bad_vars (FuncCallGraph &call_graph, vector <DepData *> &dep_datas) {
+      FunctionPtr wait_func = G->get_function_unsafe ("unserialize");
 
-      IdMap < vector <FunctionPtr> > rev_graph (all_n), graph (all_n);
-      for (int i = 0; i < all_n; i++) {
-        FunctionPtr to = functions[i];
-        DepData *data = dep_datas[i];
+      for (int i = 0; i < call_graph.n; i++) {
+        FunctionPtr func = call_graph.functions[i];
+        swap (func->tmp_vars, dep_datas[i]->used_global_vars);
 
-        FOREACH ((data->dep), from) {
-          rev_graph[*from].push_back (to);
+        if (func->root->resumable_flag) {
+          fprintf (stderr, "Resumable [%s]\n", func->name.c_str());
+          call_graph.graph[wait_func].push_back (func);
+          call_graph.rev_graph[func].push_back (wait_func);
+
+          call_graph.graph[func].push_back (wait_func);
+          call_graph.rev_graph[wait_func].push_back (func);
         }
-        std::swap (graph[to], data->dep);
       }
+
       MergeBadVarsCallback callback;
       MergeReachalbe <FunctionPtr> merge_bad_vars;
-      merge_bad_vars.run (graph, rev_graph, functions, &callback);
+      merge_bad_vars.run (call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
+    }
 
-      for (int i = 0; i < all_n; i++) {
-        FunctionPtr function = functions[i];
-        std::swap (function->dep, graph[function]);
+    template <class GraphT, class WasT, class VertexT>
+    void mark (const GraphT &graph, WasT &was, VertexT vertex) {
+      if (was[vertex]) {
+        return;
+      }
+      was[vertex] = 1;
+      FOREACH (graph[vertex], next) {
+        mark (graph, was, *next);
+      }
+    }
+
+    void calc_resumable (FuncCallGraph &call_graph, vector <DepData *> &dep_data) {
+      for (int i = 0; i < call_graph.n; i++) {
+        FOREACH (dep_data[i]->forks, fork) {
+          (*fork)->root->resumable_flag = true;
+        }
+      }
+      IdMap <char> from_resumable (call_graph.n);
+      IdMap <char> into_resumable (call_graph.n);
+      FOREACH (call_graph.functions, func) {
+        if ((*func)->root->resumable_flag) {
+          mark (call_graph.graph, from_resumable, *func);
+          mark (call_graph.rev_graph, into_resumable, *func);
+        }
+      }
+      FOREACH (call_graph.functions, func) {
+        if (from_resumable[*func] && into_resumable[*func]) {
+          (*func)->root->resumable_flag = true;
+        }
+      }
+    }
+
+    void save_func_dep (FuncCallGraph &call_graph) {
+      for (int i = 0; i < call_graph.n; i++) {
+        FunctionPtr function = call_graph.functions[i];
+        std::swap (function->dep, call_graph.graph[function]);
       }
     }
 
@@ -285,7 +356,13 @@ class CalcBadVars {
         dep_datas[i] = tmp_vec[i].second;
       }
 
-      generate_bad_vars (functions, dep_datas);
+      {
+        FuncCallGraph call_graph (functions, dep_datas);
+        calc_resumable (call_graph, dep_datas);
+        generate_bad_vars (call_graph, dep_datas);
+        save_func_dep (call_graph);
+      }
+
       generate_ref_vars (dep_datas);
     }
 };

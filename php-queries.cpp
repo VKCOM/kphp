@@ -701,7 +701,7 @@ sql_ansgen_t *sql_ansgen_packet_create (void) {
 
 /** new rpc interface **/
 static slot_id_t end_slot_id, begin_slot_id;
-static const slot_id_t max_slot_id = 2000000000;
+static const slot_id_t max_slot_id = 1000000000;
 void init_slots (void) {
   end_slot_id = begin_slot_id = lrand48() % (max_slot_id / 4) + 1;
 }
@@ -732,6 +732,9 @@ class StaticQueue  {
       end = 0;
       cnt = 0;
     }
+    bool empty() {
+      return cnt == 0;
+    }
     StaticQueue() {
       clear();
     }
@@ -757,7 +760,7 @@ class StaticQueue  {
       cnt--;
     }
     DataT *pop() {
-      if (cnt == 0) {
+      if (empty()) {
         return NULL;
       }
       DataT *res = &q[begin];
@@ -852,6 +855,10 @@ int create_rpc_answer_event (slot_id_t slot_id, int len, net_event_t **res) {
   assert (res != NULL);
   *res = event;
   return 1;
+}
+
+int net_events_empty() {
+  return net_events.empty();
 }
 
 net_query_t *create_net_query (net_query_type_t type) {

@@ -181,7 +181,7 @@ char* string::create (size_type n, bool b) {
   if (b) {
     r->set_length_and_sharable_force (0);
   } else {
-    r->set_length_and_sharable_force (b ? 0 : n);
+    r->set_length_and_sharable_force (n);
     r->ref_data()[n] = '\0';
   }
   return r->ref_data();

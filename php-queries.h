@@ -294,6 +294,7 @@ void free_net_query (net_query_t *query);
 
 int create_rpc_error_event (slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event (slot_id_t slot_id, int len, net_event_t **res);
+int net_events_empty();
 
 void php_queries_start (void);
 void php_queries_finish (void);

@@ -249,6 +249,31 @@ inline UInt f$uintval (ULong val);
 
 
 void Long::convert_from (const string &s) {
+  if (s[0] == '0' && s[1] == 'x') {
+    l = 0;
+    int len = (int)s.size();
+    int cur = 2;
+    while (cur < len) {
+      char c = s[cur];
+      if ('0' <= c && c <= '9') {
+        l = l * 16 + (c - '0');
+      } else {
+        c |= 0x20;
+        if ('a' <= c && c <= 'f') {
+          l = l * 16 + (c - 'a' + 10);
+        } else {
+          break;
+        }
+      }
+      cur++;
+    }
+
+    if (len == 2 || cur < len || 18 < len) {
+      php_warning ("Wrong conversion from hexadecimal string \"%s\" to Long", s.c_str());
+    }
+    return;
+  }
+
   int mul = 1, len = s.size(), cur = 0;
   if (len > 0 && (s[0] == '-' || s[0] == '+')) {
     if (s[0] == '-') {
@@ -464,6 +489,31 @@ string_buffer &operator + (string_buffer &buf, Long x) {
 
 
 void ULong::convert_from (const string &s) {
+  if (s[0] == '0' && s[1] == 'x') {
+    l = 0;
+    int len = (int)s.size();
+    int cur = 2;
+    while (cur < len) {
+      char c = s[cur];
+      if ('0' <= c && c <= '9') {
+        l = l * 16 + c - '0';
+      } else {
+        c |= 0x20;
+        if ('a' <= c && c <= 'f') {
+          l = l * 16 + c - 'a' + 10;
+        } else {
+          break;
+        }
+      }
+      cur++;
+    }
+
+    if (len == 2 || cur < len || 18 < len) {
+      php_warning ("Wrong conversion from hexadecimal string \"%s\" to ULong", s.c_str());
+    }
+    return;
+  }
+
   bool need_warning = false;
   int mul = 1, len = s.size(), cur = 0;
   if (len > 0 && (s[0] == '-' || s[0] == '+')) {
@@ -666,6 +716,31 @@ string_buffer &operator + (string_buffer &buf, ULong x) {
 
 
 void UInt::convert_from (const string &s) {
+  if (s[0] == '0' && s[1] == 'x') {
+    l = 0;
+    int len = (int)s.size();
+    int cur = 2;
+    while (cur < len) {
+      char c = s[cur];
+      if ('0' <= c && c <= '9') {
+        l = l * 16 + c - '0';
+      } else {
+        c |= 0x20;
+        if ('a' <= c && c <= 'f') {
+          l = l * 16 + c - 'a' + 10;
+        } else {
+          break;
+        }
+      }
+      cur++;
+    }
+
+    if (len == 2 || cur < len || 10 < len) {
+      php_warning ("Wrong conversion from hexadecimal string \"%s\" to UInt", s.c_str());
+    }
+    return;
+  }
+
   bool need_warning = false;
   int mul = 1, len = s.size(), cur = 0;
   if (len > 0 && (s[0] == '-' || s[0] == '+')) {

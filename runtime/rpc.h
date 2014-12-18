@@ -1,15 +1,14 @@
 #pragma once
 
-#include "PHP/common-net-functions.h"
-
 #include "kphp_core.h"
 
 #include "integer_types.h"
+#include "resumable.h"
 
 
-void update_precise_now (void);
+void process_rpc_answer (int request_id, char *result, int result_len);
 
-int wait_net (int timeout_ms);
+void process_rpc_error (int request_id, int error_code, const char *error_message);
 
 
 void rpc_parse (const int *new_rpc_data, int new_rpc_data_len);
@@ -133,21 +132,24 @@ bool f$rpc_clean (bool is_error = false);
 bool rpc_store (bool is_error = false);
 
 int f$rpc_send (const rpc_connection &conn, double timeout = -1.0);
-slot_id_t rpc_send (const rpc_connection &conn, double timeout);
+int rpc_send (const rpc_connection &conn, double timeout);
+
+int f$rpc_send_noflush (const rpc_connection &conn, double timeout = -1.0);
+
+void f$rpc_flush (void);
 
 OrFalse <string> f$rpc_get (int request_id, double timeout = -1.0);
 
 bool f$rpc_get_and_parse (int request_id, double timeout = -1.0);
 
-int f$rpc_queue_create (const var &request_ids);
 
-int f$rpc_queue_push (int queue_id, const var &request_ids);
-int rpc_queue_push (int queue_id, slot_id_t request_id);
+inline int f$rpc_queue_create (const var &request_ids);
 
-bool f$rpc_queue_empty (int queue_id);
+inline int f$rpc_queue_push (int queue_id, const var &request_ids);
 
-int f$rpc_queue_next (int queue_id, double timeout = -1.0);
-slot_id_t rpc_queue_next (int queue_id, double timeout);
+inline bool f$rpc_queue_empty (int queue_id);
+
+inline int f$rpc_queue_next (int queue_id, double timeout = -1.0);
 
 
 bool f$store_unsigned_int (const var &v);
@@ -167,6 +169,11 @@ array <array <var> > f$rpc_tl_query_result (const array <int> &query_ids);
 
 template <class T>
 array <array <var> > f$rpc_tl_query_result (const array <T> &query_ids);
+
+array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &query_ids);
+
+template <class T>
+array <array <var> > f$rpc_tl_query_result_synchronously (const array <T> &query_ids);
 
 int f$query_x2 (int x);
 
@@ -189,4 +196,26 @@ template <class T>
 array <array <var> > f$rpc_tl_query_result (const array <T> &query_ids) {
   return f$rpc_tl_query_result (array <int> (query_ids));
 }
+
+template <class T>
+array <array <var> > f$rpc_tl_query_result_synchronously (const array <T> &query_ids) {
+  return f$rpc_tl_query_result_synchronously (array <int> (query_ids));
+}
+
+int f$rpc_queue_create (const var &request_ids) {
+  return f$wait_queue_create (request_ids);
+}
+
+int f$rpc_queue_push (int queue_id, const var &request_ids) {
+  return f$wait_queue_push (queue_id, request_ids);
+}
+
+bool f$rpc_queue_empty (int queue_id) {
+  return f$wait_queue_empty (queue_id);
+}
+
+int f$rpc_queue_next (int queue_id, double timeout) {
+  return f$wait_queue_next (queue_id, timeout);
+}
+
 

@@ -3,6 +3,7 @@
 #include "gentree.h"
 
 #include "pass-ub.h"
+#include "compiler-core.h"
 /*** C++ undefined behaviour fixes ***/
 const int UB_SIGSEGV = 3;
 const int UB_ORDER = 1;
@@ -145,13 +146,11 @@ class UBMergeData {
       check (writes_, vars, is_same_var, UB_SIGSEGV, &err);
       return err;
     }
-    int called_by (VertexAdaptor <op_func_call> func_call) {
-      FunctionPtr function = func_call->get_func_id();
+    int called_by (FunctionPtr function) {
       int err = check (*this, function);
       functions_.push_back (function);
       return err;
     }
-
     static UBMergeData create_from_var (VertexAdaptor <op_var> var, bool index_flag) {
       UBMergeData res;
       if (var->rl_type == val_l) {
@@ -193,7 +192,8 @@ void fix_ub_dfs (VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr())
       res |= data->merge_with (node_data, do_not_check);
     }
     if (v->type() == op_func_call) {
-      res |= data->called_by (v);
+      FunctionPtr function = v.as <op_func_call>()->get_func_id();
+      res |= data->called_by (function);
     }
     stage::set_location (save_location);
 
@@ -205,10 +205,8 @@ void fix_ub_dfs (VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr())
       if (supported) {
         v->extra_type = op_ex_safe_version;
       } else {
-        PROF (B).start();
         kphp_warning (dl_pstr ("Dangerous undefined behaviour %s, [var = %s]", 
             OpInfo::str (v->type()).c_str(), (*last_ub_error)->name.c_str()));
-        PROF (B).finish();
       }
     }
   }

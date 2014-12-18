@@ -83,3 +83,4 @@ Exception, tok_Exception
 try, tok_try
 catch, tok_catch
 throws, tok_throws
+resumable, tok_resumable

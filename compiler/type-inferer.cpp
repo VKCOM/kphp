@@ -652,6 +652,7 @@ void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
     case op_not:
     case op_or:
     case op_and:
+    case op_fork:
       recalc_ptype <tp_int>();
       break;
 

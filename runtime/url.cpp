@@ -32,9 +32,57 @@ string f$base64_encode (const string &s) {
   return res;
 }
 
+ULong f$base64url_decode_ulong (const string &s) {
+  unsigned long long result;
+  int r = base64url_decode (s.c_str(), reinterpret_cast <unsigned char *> (&result), 8);
+  if (r != 8) {
+    php_warning ("Can't convert to ULong from base64url string \"%s\"", s.c_str());
+    return 0;
+  }
+  return result;
+}
+
+string f$base64url_encode_ulong (ULong val) {
+  string res (11, false);
+  php_assert (base64url_encode (reinterpret_cast <const unsigned char *> (&val.l), 8, res.buffer(), 12) == 0);
+
+  return res;
+}
+
+ULong f$base64url_decode_ulong_NN (const string &s) {
+  unsigned char result[8];
+  int r = base64url_decode (s.c_str(), result, 8);
+  if (r != 8) {
+    php_warning ("Can't convert to ULong from base64url string \"%s\"", s.c_str());
+    return 0;
+  }
+
+  return ((unsigned long long)result[0] << 24) | (result[1] << 16) | (result[2] << 8) | result[3] |
+         ((unsigned long long)result[4] << 56) | ((unsigned long long)result[5] << 48) | ((unsigned long long)result[6] << 40) | ((unsigned long long)result[7] << 32);
+}
+
+string f$base64url_encode_ulong_NN (ULong val) {
+  unsigned long long l = val.l;
+  unsigned char str[8];
+  str[0] = ((l >> 24) & 255);
+  str[1] = ((l >> 16) & 255);
+  str[2] = ((l >> 8) & 255);
+  str[3] = (l & 255);
+  str[4] = (l >> 56);
+  str[5] = ((l >> 48) & 255);
+  str[6] = ((l >> 40) & 255);
+  str[7] = ((l >> 32) & 255);
+
+  string res (11, false);
+  php_assert (base64url_encode (str, 8, res.buffer(), 12) == 0);
+
+  return res;
+}
+
+
 static void parse_str_set_array_value (var &arr, const char *left_br_pos, int key_len, const string &value) {
   php_assert (*left_br_pos == '[');
-  const char *right_br_pos = (const char *)memchr (left_br_pos + 1, ']', key_len - 1);
+  const char *right_br_pos = (const char *)memchr (left_br_pos, ']', key.size());
   if (right_br_pos != NULL) {
     string next_key (left_br_pos + 1, (dl::size_type)(right_br_pos - left_br_pos - 1));
     if (!arr.is_array()) {
@@ -46,20 +94,21 @@ static void parse_str_set_array_value (var &arr, const char *left_br_pos, int ke
     }
 
     if (right_br_pos[1] == '[') {
-      parse_str_set_array_value (arr[next_key], right_br_pos + 1, (int)(left_br_pos + key_len - (right_br_pos + 1)), value);
+      parse_str_set_array_value (arr[next_key], string (right_br_pos + 1, (dl::size_type)(key.c_str() + key.size() - (right_br_pos + 1))), value);
     } else {
       arr.set_value (next_key, value);
     }
-  } else {
-    arr = value;
+    return;
   }
+
+  arr = value;
 }
 
 void parse_str_set_value (var &arr, const string &key, const string &value) {
   const char *key_c = key.c_str();
   const char *left_br_pos = (const char *)memchr (key_c, '[', key.size());
-   if (left_br_pos != NULL) {
-    return parse_str_set_array_value (arr[string (key_c, (dl::size_type)(left_br_pos - key_c))], left_br_pos, (int)(key_c + key.size() - left_br_pos), value);
+  if (left_br_pos != NULL) {
+    return parse_str_set_array_value (arr[string (key_c, (dl::size_type)(left_br_pos - key_c))], string (left_br_pos, (dl::size_type)(key_c + key.size() - left_br_pos)), value);
   }
 
   arr.set_value (key, value);

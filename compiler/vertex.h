@@ -48,6 +48,10 @@ public:
   bool auto_flag : 1;
   bool varg_flag : 1;
   bool throws_flag : 1;
+  union {
+    bool resumable_flag : 1;
+    bool fork_flag : 1;
+  };
   bool parent_flag : 1;
 
   int n;
@@ -67,6 +71,7 @@ public:
     auto_flag(),
     varg_flag(),
     throws_flag(),
+    resumable_flag(),
     parent_flag(),
     n (-1) {
   }
@@ -86,6 +91,7 @@ public:
     auto_flag (from.auto_flag),
     varg_flag (from.varg_flag),
     throws_flag (from.throws_flag),
+    resumable_flag (from.resumable_flag),
     parent_flag (from.parent_flag),
     n (-1) {
   }
@@ -1329,6 +1335,25 @@ VA_BEGIN (op_try, meta_op_base)
   VertexPtr &try_cmd() {return ith (0);}
   VertexPtr &exception() {return ith (1);}
   VertexPtr &catch_cmd() {return ith (2);}
+VA_END
+VA_BEGIN (op_fork, meta_op_base)
+  PROPERTIES_BEGIN
+    OPP (type, common_op);
+    OPP (rl, rl_func);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "<TODO: fork>");
+  PROPERTIES_END
+  VertexPtr &func_call() {return ith (0);}
+VA_END
+VA_BEGIN (op_async, meta_op_base)
+  PROPERTIES_BEGIN
+    OPP (type, common_op);
+    //OPP (rl, rl_common);
+    //OPP (cnst, cnst_not_func);
+    OPP (str, "<TODO: async>");
+  PROPERTIES_END
+  VertexPtr &lhs() {return ith(0);}
+  VertexPtr &func_call() {return ith (1);}
 VA_END
 VA_BEGIN (op_array, meta_op_varg_)
   PROPERTIES_BEGIN

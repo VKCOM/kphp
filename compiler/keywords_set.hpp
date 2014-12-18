@@ -1,4 +1,4 @@
-/* C++ code produced by gperf version 3.0.4 */
+/* C++ code produced by gperf version 3.0.3 */
 /* Command-line: gperf -CGD -c -N get_type -Z KeywordsSet -K keyword -L C++ -t keywords.gperf  */
 /* Computed positions: -k'1,3-4' */
 
@@ -40,7 +40,7 @@ struct KeywordType_t
   TokenType type;
 };
 
-#define TOTAL_KEYWORDS 75
+#define TOTAL_KEYWORDS 76
 #define MIN_WORD_LENGTH 2
 #define MAX_WORD_LENGTH 15
 #define MIN_HASH_VALUE 2
@@ -255,6 +255,8 @@ static const struct KeywordType_t wordlist[] =
     {"return", tok_return},
 #line 43 "keywords.gperf"
     {"require", tok_require},
+#line 86 "keywords.gperf"
+    {"resumable", tok_resumable},
 #line 44 "keywords.gperf"
     {"require_once", tok_require_once}
   };
@@ -268,7 +270,7 @@ static const signed char lookup[] =
     -1, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, -1, 58, 59,
     60, -1, -1, 61, -1, 62, -1, 63, -1, -1, 64, 65, -1, 66,
     -1, 67, -1, -1, -1, 68, 69, -1, -1, -1, 70, 71, 72, 73,
-    -1, -1, -1, -1, 74
+    -1, 74, -1, -1, 75
   };
 
 const struct KeywordType_t *

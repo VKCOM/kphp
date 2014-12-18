@@ -10,8 +10,10 @@ struct CGContext {
   vector <int> catch_label_used;
   FunctionPtr parent_func;
   bool use_safe_integer_arithmetic;
+  bool resumable_flag;
   CGContext() :
-    use_safe_integer_arithmetic (false) {
+    use_safe_integer_arithmetic (false),
+    resumable_flag (false) {
   }
 };
 
@@ -193,6 +195,20 @@ struct FunctionName {
   inline void compile (CodeGenerator &W) const;
 };
 
+struct FunctionClassName {
+  FunctionPtr function;
+  inline FunctionClassName (FunctionPtr function);
+  inline void compile (CodeGenerator &W) const;
+};
+
+struct FunctionForkName {
+  FunctionPtr function;
+  inline FunctionForkName (FunctionPtr function);
+  inline void compile (CodeGenerator &W) const;
+};
+
+
+
 struct VarName {
   VarPtr var;
   inline VarName (VarPtr var);
@@ -217,11 +233,25 @@ struct FunctionDeclaration {
   inline FunctionDeclaration (FunctionPtr function, bool in_header = false);
   inline void compile (CodeGenerator &W) const;
 };
+struct FunctionForkDeclaration {
+  FunctionPtr function;
+  bool in_header;
+  inline FunctionForkDeclaration (FunctionPtr function, bool in_header = false);
+  inline void compile (CodeGenerator &W) const;
+};
+
+struct FunctionParams {
+  FunctionPtr function;
+  bool in_header;
+  inline FunctionParams (FunctionPtr function, bool in_header = false);
+  inline void compile (CodeGenerator &W) const;
+};
 
 struct VarDeclaration {
   VarPtr var;
   bool extern_flag;
-  inline VarDeclaration (VarPtr var, bool extern_flag = false);
+  bool defval_flag;
+  inline VarDeclaration (VarPtr var, bool extern_flag = false, bool defval_flag = true);
   inline void compile (CodeGenerator &W) const;
 };
 
@@ -233,6 +263,7 @@ struct Function {
 };
 
 VarDeclaration VarExternDeclaration (VarPtr var);
+VarDeclaration VarPlainDeclaration (VarPtr var);
 
 struct Operand {
   VertexPtr root;
@@ -392,6 +423,8 @@ inline void compile_throw (VertexAdaptor <op_throw> root, CodeGenerator &W);
 inline void compile_throw_fast (VertexAdaptor <op_throw> root, CodeGenerator &W);
 inline void compile_try (VertexAdaptor <op_try> root, CodeGenerator &W);
 inline void compile_try_fast (VertexAdaptor <op_try> root, CodeGenerator &W);
+inline void compile_fork (VertexAdaptor <op_fork> root, CodeGenerator &W);
+inline void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W);
 inline void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W);
 struct CaseInfo;
 inline void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W);
@@ -412,7 +445,7 @@ inline void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W);
 inline void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W);
 inline void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W);
 inline void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W);
-inline void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix = 0);
+inline void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix = 0, int state = 0);
 inline void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W);
 inline void compile_define (VertexPtr root, CodeGenerator &W);
 inline void compile_defined (VertexPtr root, CodeGenerator &W);
@@ -605,6 +638,20 @@ void FunctionName::compile (CodeGenerator &W) const {
   }
 }
 
+inline FunctionClassName::FunctionClassName (FunctionPtr function) :
+  function (function) {
+}
+void FunctionClassName::compile (CodeGenerator &W) const {
+  W << "c$" << function->name;
+}
+
+inline FunctionForkName::FunctionForkName (FunctionPtr function) :
+  function (function) {
+}
+void FunctionForkName::compile (CodeGenerator &W) const {
+  W << "f$fork$" << function->name;
+}
+
 inline VarName::VarName (VarPtr var) :
   var (var) {
 }
@@ -637,10 +684,30 @@ inline FunctionDeclaration::FunctionDeclaration (FunctionPtr function, bool in_h
 }
 
 inline void FunctionDeclaration::compile (CodeGenerator &W) const {
+  W << TypeName (tinf::get_type (function, -1)) << " " << FunctionName (function) <<
+       "(" << FunctionParams (function, in_header) << ")";
+}
+
+inline FunctionForkDeclaration::FunctionForkDeclaration (FunctionPtr function, bool in_header) :
+  function (function),
+  in_header (in_header) {
+}
+
+inline void FunctionForkDeclaration::compile (CodeGenerator &W) const {
+  W << "int " << FunctionForkName (function) <<
+       "(" << FunctionParams (function, in_header) << ")";
+}
+
+
+inline FunctionParams::FunctionParams (FunctionPtr function, bool in_header) :
+  function (function),
+  in_header (in_header) {
+}
+
+inline void FunctionParams::compile (CodeGenerator &W) const {
   VertexAdaptor <meta_op_function> root = function->root;
   assert (root->type() == op_function);
 
-  W << TypeName (tinf::get_type (function, -1)) << " " << FunctionName (function) << "(";
   if (function->varg_flag) {
     W << "array <var> VA_LIST";
   } else {
@@ -677,13 +744,13 @@ inline void FunctionDeclaration::compile (CodeGenerator &W) const {
       ii++;
     }
   }
-  W << ")";
 }
 
 
-inline VarDeclaration::VarDeclaration (VarPtr var, bool extern_flag) :
+inline VarDeclaration::VarDeclaration (VarPtr var, bool extern_flag, bool defval_flag) :
   var (var),
-  extern_flag (extern_flag) {
+  extern_flag (extern_flag),
+  defval_flag (defval_flag) {
 }
 void VarDeclaration::compile (CodeGenerator &W) const {
   const TypeData *type = tinf::get_type (var);
@@ -692,7 +759,7 @@ void VarDeclaration::compile (CodeGenerator &W) const {
        TypeName (type) << " " <<
        VarName (var);
 
-  if (!extern_flag) {
+  if (defval_flag) {
     if (type->ptype() == tp_float || type->ptype() == tp_int) {
       W << " = 0";
     } else if (type->ptype() == tp_bool ||
@@ -703,7 +770,10 @@ void VarDeclaration::compile (CodeGenerator &W) const {
   W << ";" << NL;
 }
 inline VarDeclaration VarExternDeclaration (VarPtr var) {
-  return VarDeclaration (var, true);
+  return VarDeclaration (var, true, false);
+}
+inline VarDeclaration VarPlainDeclaration (VarPtr var) {
+  return VarDeclaration (var, false, false);
 }
 
 inline Function::Function (FunctionPtr function, bool in_header) :
@@ -714,6 +784,9 @@ inline Function::Function (FunctionPtr function, bool in_header) :
 inline void Function::compile (CodeGenerator &W) const {
   if (in_header) {
     W << FunctionDeclaration (function, in_header) << ";";
+    if (function->root->resumable_flag) {
+      W << NL << FunctionForkDeclaration (function, in_header) << ";";
+    }
   } else {
     W << function->root;
   }
@@ -1142,6 +1215,13 @@ void DfsInit::compile_dfs_init_func (
   W << NL;
 }
 
+template <class It> void collect_vars (set <VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
+  for (;begin != end; begin++) {
+    int var_hash = hash ((*begin)->name);
+    int bucket = var_hash % used_vars_cnt;
+    used_vars[bucket].insert (*begin);
+  }
+}
 void DfsInit::collect_used_funcs_and_vars (
     FunctionPtr func,
     set <FunctionPtr> *visited_functions,
@@ -1157,11 +1237,16 @@ void DfsInit::collect_used_funcs_and_vars (
   int func_hash = hash (func->name);
   int bucket = func_hash % used_vars_cnt;
 
-  used_vars[bucket].insert (func->global_var_ids.begin(), func->global_var_ids.end());
-  used_vars[bucket].insert (func->header_global_var_ids.begin(), func->header_global_var_ids.end());
+  //used_vars[bucket].insert (func->global_var_ids.begin(), func->global_var_ids.end());
+  //used_vars[bucket].insert (func->header_global_var_ids.begin(), func->header_global_var_ids.end());
   used_vars[bucket].insert (func->static_var_ids.begin(), func->static_var_ids.end());
   used_vars[bucket].insert (func->const_var_ids.begin(), func->const_var_ids.end());
-  used_vars[bucket].insert (func->header_const_var_ids.begin(), func->header_const_var_ids.end());
+  //used_vars[bucket].insert (func->header_const_var_ids.begin(), func->header_const_var_ids.end());
+  collect_vars (used_vars, used_vars_cnt, func->global_var_ids.begin(), func->global_var_ids.end());
+  collect_vars (used_vars, used_vars_cnt, func->header_global_var_ids.begin(), func->header_global_var_ids.end());
+  //collect_vars (used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
+  //collect_vars (used_vars, used_vars_cnt, func->const_var_ids.begin(), func->const_var_ids.end());
+  collect_vars (used_vars, used_vars_cnt, func->header_const_var_ids.begin(), func->header_const_var_ids.end());
 }
 
 inline void DfsInit::compile (CodeGenerator &W) const {
@@ -1541,12 +1626,22 @@ void compile_require (VertexPtr root, CodeGenerator &W) {
 
 
 void compile_return (VertexAdaptor <op_return> root, CodeGenerator &W) {
-  W << "return ";
+  bool resumable_flag = W.get_context().resumable_flag;
+  if (resumable_flag) {
+    W << "RETURN (";
+  } else {
+    W << "return ";
+  }
+
   VertexPtr val = root->expr();
   if (val->type() == op_empty) {
     W << "var()";
   } else {
     W << val;
+  }
+
+  if (resumable_flag) {
+    W << ")";
   }
 }
 
@@ -1565,9 +1660,16 @@ void compile_throw_fast_action (CodeGenerator &W) {
   CGContext &context = W.get_context();
   if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
     const TypeData *tp = tinf::get_type (context.parent_func, -1);
-    W << "return ";
+    if (context.resumable_flag) { 
+      W << "RETURN (";
+    } else {
+      W << "return ";
+    }
     if (tp->ptype() != tp_void) {
       W << "(" << TypeName (tp) << "())";
+    }
+    if (context.resumable_flag) { 
+      W << ")";
     }
   } else {
     W << "goto " << context.catch_labels.back();
@@ -1619,6 +1721,36 @@ void compile_try_fast (VertexAdaptor <op_try> root, CodeGenerator &W) {
            root->catch_cmd() << NL <<
          END << NL;
   }
+}
+
+void compile_fork (VertexAdaptor <op_fork> root, CodeGenerator &W) {
+  compile_func_call (root->func_call(), W, 0, 2);
+}
+
+void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
+  VertexPtr lhs = root->lhs();
+  VertexAdaptor <op_func_call> func_call = root->func_call();
+  if (lhs->type() != op_empty) {
+    kphp_error (lhs->type() == op_var, "Can't save result of async call into non-var");
+    W << lhs << " = ";
+  }
+  compile_func_call (func_call, W, 0, 1);
+  FunctionPtr func = func_call->get_func_id();
+  W << ";" << NL;
+  if (lhs->type() != op_empty) {
+    W << "TRY_WAIT (" << lhs << ", " << TypeName (tinf::get_type (func_call)) << ");";
+  } else {
+    W << "TRY_WAIT_VOID();";
+  }
+
+#ifdef FAST_EXCEPTIONS
+  if (func->root->throws_flag) {
+    W << NL;
+    W << "TRY_CALL_VOID_ (0,";
+    compile_throw_fast_action (W);
+    W << ")";
+  }
+#endif
 }
 
 void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
@@ -1923,12 +2055,148 @@ void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   }
 }
 
+void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
+  VertexAdaptor <op_function> func_root = root;
+  FunctionPtr func = func_root->get_func_id();
+  W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
+  W << "class " << FunctionClassName (func) << " : public Resumable " <<
+       BEGIN <<
+         "private:" << NL << Indent (+2);
+ 
+
+  //MEMBER VARIABLES
+  if (func->varg_flag) {
+    W << "array <var> VA_LIST;" << NL;
+  }
+  FOREACH (func->param_ids, var) {
+    W << VarPlainDeclaration (*var);
+  }
+  FOREACH (func->local_var_ids, var) {
+    W << VarPlainDeclaration (*var);
+  }
+
+  W <<  Indent (-2) << "public:" << NL << Indent (+2);
+
+  //ReturnT
+  W << "typedef " << TypeName (tinf::get_type (func, -1)) << " ReturnT;" << NL;
+
+  //CONSTRUCTOR
+  W << FunctionClassName (func) << "(" << FunctionParams (func) << ")";
+  if (!func->param_ids.empty() || func->varg_flag) {
+    W <<  " :" << NL <<
+      Indent (+2);
+    bool flag = false;
+    if (func->varg_flag) {
+      flag = true;
+      W << "VA_LIST (VA_LIST)";
+    }
+    int i = 0;
+    FOREACH (func->param_ids, var) {
+      if (flag) {
+        W << "," << NL;
+      } else {
+        flag = true;
+      }
+      if (func->varg_flag) {
+        W << VarName (*var) << "(VA_LIST.isset (" << int_to_str (i) << ") ? " <<
+          "VA_LIST.get_value (" << int_to_str (i) << ")" << " : ";
+        VertexAdaptor <op_func_param_list> params = func_root->params();
+        VertexAdaptor <op_func_param> param = params->ith_param (i);
+        if (param->has_default()) {
+          VertexPtr default_val = param->default_value();
+          W << default_val;
+        } else {
+          W << "var()";
+        }
+        W << ")";
+      } else {
+        W << VarName (*var) << "(" << VarName (*var) << ")";
+      }
+      i++;
+    }
+    FOREACH (func->local_var_ids, var) {
+      if (flag) {
+        W << "," << NL;
+      } else {
+        flag = true;
+      }
+      W << VarName (*var) << "()";
+    }
+    W << Indent (-2);
+  }
+  W << " " << BEGIN << END << NL;
+
+  //RUN FUNCTION
+  W << "bool run() " << 
+       BEGIN <<
+         "RESUMABLE_BEGIN" << NL << Indent (+2);
+
+  W <<   AsSeq (func_root->cmd()) << NL;
+
+  W <<   Indent (-2) <<  
+         "RESUMABLE_END" << NL <<
+       END << NL;
+
+
+  W << Indent (-2);
+  W << END << ";" << NL;
+
+  //CALL FUNCTION
+  W << FunctionDeclaration (func, false) << " " <<
+       BEGIN;
+  W << "return start_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
+    "(new " << FunctionClassName (func) << "(";
+  if (func->varg_flag) {
+    W << "VA_LIST";
+  } else {
+    bool flag = false;
+    FOREACH (func->param_ids, var) {
+      if (flag) {
+        W << ", ";
+      } else {
+        flag = true;
+      }
+      W << VarName (*var);
+    }
+  }
+  W << "));" << NL;
+  W << END << NL;
+
+  //FORK FUNCTION
+  W << FunctionForkDeclaration (func, false) << " " <<
+       BEGIN;
+  W << "return fork_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
+    "(new " << FunctionClassName (func) << "(";
+  if (func->varg_flag) {
+    W << "VA_LIST";
+  } else {
+    bool flag = false;
+    FOREACH (func->param_ids, var) {
+      if (flag) {
+        W << ", ";
+      } else {
+        flag = true;
+      }
+      W << VarName (*var);
+    }
+  }
+  W << "));" << NL;
+  W << END << NL;
+
+}
+
 void compile_function (VertexPtr root, CodeGenerator &W) {
 
   VertexAdaptor <op_function> func_root = root;
   FunctionPtr func = func_root->get_func_id();
 
   W.get_context().parent_func = func;
+  W.get_context().resumable_flag = root->resumable_flag;
+
+  if (root->resumable_flag) {
+    compile_function_resumable (root, W);
+    return;
+  }
 
   W << FunctionDeclaration (func, false) << " " <<
        BEGIN;
@@ -2416,13 +2684,20 @@ void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W
 }
 
 //FIXME: remove int fix
-void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix) {
+void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix, int state) {
   FunctionPtr func;
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
   } else {
     func = root->get_func_id();
-    W << FunctionName (func);
+    if (state != 1 && state != 2 && W.get_context().resumable_flag && func->root->resumable_flag) {
+      kphp_error (0, dl_pstr ("Can't compile resumable function [%s] without async", func->name.c_str()));
+    }
+    if (state == 2) {
+      W << FunctionForkName (func);
+    } else {
+      W << FunctionName (func);
+    }
     if (0)
     if (func->name == "preg_match" || func->name == "preg_match_all" || func->name == "preg_replace_callback" ||
         func->name == "preg_split" || func->name == "preg_replace") {
@@ -2852,6 +3127,12 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       compile_try (root, W);
 #endif
       break;
+    case op_fork:
+      compile_fork (root, W);
+      break;
+    case op_async:
+      compile_async (root, W);
+      break;
     case op_function:
       compile_function (root, W);
       break;
@@ -2912,8 +3193,7 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       compile_noerr (root, W);
       break;
     default:
-      printf ("wtf??? %d\n", tp);
-      assert (0);
+      kphp_fail();
       break;
   }
 }

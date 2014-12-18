@@ -166,6 +166,8 @@ enum TokenType {
   tok_catch,
   tok_throws,
 
+  tok_resumable,
+
   tok_break_file,
 
   tok_end

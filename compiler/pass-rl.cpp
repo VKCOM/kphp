@@ -48,6 +48,9 @@ void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
     case op_seq_comma:
       rl_none_calc (root, (int)root->size() - 1);
       return;
+    case op_fork:
+      rl_none_calc (root, -1);
+      return;
     case op_array: //TODO: in fact it is wrong
     case op_print:
     case op_pack:

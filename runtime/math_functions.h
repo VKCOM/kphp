@@ -84,6 +84,12 @@ inline double f$floor (double v);
 
 inline double f$fmod (double x, double y);
 
+inline bool f$is_finite (double v);
+
+inline bool f$is_infinite (double v);
+
+inline bool f$is_nan (double v);
+
 inline double f$log (double v);
 
 inline double f$log (double v, double base);
@@ -216,6 +222,19 @@ double f$fmod (double x, double y) {
     return 0.0;
   }
   return fmod (x, y);
+}
+
+bool f$is_finite (double v) {
+  int v_class = __fpclassify (v);
+  return (v_class != FP_NAN && v_class != FP_INFINITE);
+}
+
+bool f$is_infinite (double v) {
+  return (__fpclassify (v) == FP_INFINITE);
+}
+
+bool f$is_nan (double v) {
+  return (__fpclassify (v) == FP_NAN);
 }
 
 double f$log (double v) {

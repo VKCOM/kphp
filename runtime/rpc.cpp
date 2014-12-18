@@ -4,10 +4,14 @@
 
 #include "common/rpc-const.h"
 
+#include "PHP/common-net-functions.h"
+
 #include "drivers.h"
 #include "exception.h"
 #include "files.h"
 #include "misc.h"
+#include "net_events.h"
+#include "resumable.h"
 #include "string_functions.h"//lhex_digits TODO
 #include "zlib.h"
 
@@ -618,33 +622,13 @@ bool rpc_store (bool is_error) {
 }
 
 
-static double precise_now;
-
-void update_precise_now (void) {
-  struct timespec T;
-  php_assert (clock_gettime (CLOCK_REALTIME, &T) >= 0);
-  precise_now = (double)T.tv_sec + (double)T.tv_nsec * 1e-9;
-}
-
 struct rpc_request {
+  int resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
   union {
-    struct {
-      double timeout;
-    };
-    struct {
-      int result_len;
-      int next_ready_request;
-      const char *error_message;
-    };
+    event_timer *timer;
+    char *answer;
+    const char *error;
   };
-  char *result;
-  int queue_id;
-};
-
-struct rpc_queue {
-  int first_ready_request;
-  int left_requests;
-  double timeout;
 };
 
 static rpc_request *rpc_requests;
@@ -654,12 +638,60 @@ static long long rpc_requests_last_query_num;
 static slot_id_t rpc_first_request_id;
 static slot_id_t rpc_next_request_id;
 
-static rpc_queue *rpc_queues;
-static int rpc_queues_size;
-static long long rpc_queues_last_query_num;
-static int rpc_next_queue_id;
+static int timeout_wakeup_id = -1;
 
-slot_id_t rpc_send (const rpc_connection &conn, double timeout) {
+var load_rpc_request_as_var (char *storage) {
+  rpc_request *data = reinterpret_cast <rpc_request *> (storage);
+  var result;
+  if (data->resumable_id == -2) {
+    result = false;
+  } else {
+    php_assert (data->resumable_id == -1);
+
+    string result_str;
+    result_str.assign_raw (data->answer - 12);
+    result = result_str;
+  }
+
+  data->resumable_id = -3;
+  return result;
+}
+
+class rpc_resumable: public Resumable {
+protected:
+  bool run (void) {
+    php_assert (dl::query_num == rpc_requests_last_query_num);
+    php_assert (0 <= pos_ && pos_ < rpc_next_request_id - rpc_first_request_id);
+
+    rpc_request *request = rpc_requests + pos_;
+    php_assert (request->resumable_id < 0);
+    php_assert (input_ == NULL);
+
+/*
+    if (request->resumable_id == -1) {
+      int len = *reinterpret_cast <int *>(request->answer - 12);
+      fprintf (stderr, "Receive  string of len %d at %p\n", len, request->answer);
+      for (int i = -12; i <= len; i++) {
+        fprintf (stderr, "%d: %x(%d)\t%c\n", i, request->answer[i], request->answer[i], request->answer[i] >= 32 ? request->answer[i] : '.');
+      }
+    }
+*/
+    pos_ = -1;
+    output_->save <rpc_request> (*request, load_rpc_request_as_var);
+    php_assert (request->resumable_id == -2 || request->resumable_id == -1);
+    request->resumable_id = -3;
+    request->answer = NULL;
+
+    return true;
+  }
+
+public:
+  rpc_resumable (int request_id): Resumable (request_id) {
+  }
+};
+
+
+int rpc_send (const rpc_connection &conn, double timeout) {
   if (unlikely (conn.host_num < 0)) {
     php_warning ("Wrong rpc_connection specified");
     return -1;
@@ -690,7 +722,7 @@ slot_id_t rpc_send (const rpc_connection &conn, double timeout) {
 
   slot_id_t result = rpc_send_query (conn.host_num, (char *)p, (int)request_size, timeout_convert_to_ms (timeout));
   if (result <= 0) {
-    return result;
+    return -1;
   }
 
   if (dl::query_num != rpc_requests_last_query_num) {
@@ -713,16 +745,16 @@ slot_id_t rpc_send (const rpc_connection &conn, double timeout) {
   }
 
   rpc_request *cur = rpc_requests + slot_id;
-  cur->timeout = precise_now + timeout;
-  cur->queue_id = -1;
-  cur->result = NULL;
 
-  return result;
+  cur->resumable_id = register_forked_resumable (new rpc_resumable (slot_id));
+  cur->timer = allocate_event_timer (timeout + get_precise_now(), timeout_wakeup_id, result);
+
+  return cur->resumable_id;
 }
 
 int f$rpc_send (const rpc_connection &conn, double timeout) {
   update_precise_now();
-  slot_id_t request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout);
   if (request_id > 0) {
     wait_net (0);
     return request_id;
@@ -731,312 +763,179 @@ int f$rpc_send (const rpc_connection &conn, double timeout) {
   }
 }
 
-
-static void add_request_to_queue (int slot_id) {
-  rpc_request *request = &rpc_requests[slot_id];
-//  fprintf (stderr, "Push request %lld to queue %d at %.6lf\n", slot_id + rpc_first_request_id, request->queue_id, (update_precise_now(), precise_now));
-  if (request->queue_id >= 0) {
-    php_assert (request->queue_id < rpc_next_queue_id);
-
-    rpc_queue *q = &rpc_queues[request->queue_id];
-    if (request->result_len >= 0) {
-      request->next_ready_request = q->first_ready_request;
-      q->first_ready_request = slot_id;
-    }
-
-    q->left_requests--;
-    request->queue_id = -2;
-  } else {
-    request->next_ready_request = -1;
-  }
-}
-
-static char empty_char_pointer[1];
-
-static bool process_net_event (net_event_t *e) {
-  if (e == NULL) {
-    return false;
-  }
-
-  slot_id_t request_id = e->slot_id;
-  if (request_id < rpc_first_request_id || request_id >= rpc_next_request_id) {
-    php_assert (0);
-    return true;
-  }
-
-  int slot_id = request_id - rpc_first_request_id;
-  rpc_request *request = &rpc_requests[slot_id];
-
-  if (e->type == ne_rpc_answer) {
-    request->result_len = e->result_len;
-    request->result = e->result != NULL ? e->result : empty_char_pointer;
-    request->error_message = NULL;
-  } else if (e->type == ne_rpc_error) {
-    request->result_len = -1;
-    request->result = empty_char_pointer;
-    request->error_message = e->error_message;
-  }
-
-  add_request_to_queue (slot_id);
-  return true;
-}
-
-static int process_net_events (void) {
-  int result = 0;
-  while (process_net_event (pop_net_event())) {
-    result++;
-  }
-  return result;
-}
-
-int wait_net (int timeout_ms) {
-  int ready_events = process_net_events();
-  if (ready_events) {
-    timeout_ms = 0;
-  }
-
-  wait_net_events (timeout_ms);
-  return ready_events + process_net_events();
-}
-
-
-static void rpc_wait_slot_id (int slot_id, double timeout) {
-  rpc_request *request = &rpc_requests[slot_id];
-  if (request->result != NULL) {
-    return;
-  }
-
-  if (timeout == 0.0) {
-    wait_net (0);
-    return;
-  }
-
+int f$rpc_send_noflush (const rpc_connection &conn, double timeout) {
   update_precise_now();
-  if (timeout < 0) {
-    timeout = request->timeout;
+  int request_id = rpc_send (conn, timeout);
+  if (request_id > 0) {
+    return request_id;
   } else {
-    timeout = min (request->timeout, timeout + precise_now);
-  }
-
-  while (wait_net (timeout_convert_to_ms (timeout - precise_now)) && request->result == NULL) {
-    update_precise_now();
+    return 0;
   }
 }
+
+void f$rpc_flush (void) {
+  update_precise_now();
+  wait_net (0);
+}
+
+
+void process_rpc_answer (int request_id, char *result, int result_len __attribute__((unused))) {
+  php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
+
+  int slot_id = (int)(request_id - rpc_first_request_id);
+  rpc_request *request = &rpc_requests[slot_id];
+
+  if (request->resumable_id < 0) {
+    php_assert (request->resumable_id != -1);
+    return;
+  }
+  int resumable_id = request->resumable_id;
+  request->resumable_id = -1;
+
+  remove_event_timer (request->timer);
+
+  php_assert (result != NULL);
+  request->answer = result;
+//  fprintf (stderr, "answer_len = %d\n", result_len);
+
+  php_assert (resumable_id > 0);
+  resumable_run_ready (resumable_id);
+}
+
+void process_rpc_error (int request_id, int error_code __attribute__((unused)), const char *error_message) {
+  php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
+
+  int slot_id = (int)(request_id - rpc_first_request_id);
+  rpc_request *request = &rpc_requests[slot_id];
+
+  if (request->resumable_id < 0) {
+    php_assert (request->resumable_id != -1);
+    return;
+  }
+  int resumable_id = request->resumable_id;
+  request->resumable_id = -2;
+
+  remove_event_timer (request->timer);
+
+  request->error = error_message;
+
+  php_assert (resumable_id > 0);
+  resumable_run_ready (resumable_id);
+}
+
+static void process_rpc_timeout (int request_id) {
+  process_rpc_error (request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
+}
+
+
+class rpc_get_resumable: public Resumable {
+  typedef OrFalse <string> ReturnT;
+  int resumable_id;
+  double timeout;
+
+  bool ready;
+protected:
+  bool run (void) {
+    RESUMABLE_BEGIN
+      ready = f$wait (resumable_id, timeout);
+      TRY_WAIT(ready, bool);
+      if (!ready) {
+        last_rpc_error = last_wait_error;
+        RETURN(false);
+      }
+
+      Storage *input = get_forked_storage (resumable_id);
+      if (input->getter_ == NULL) {
+        last_rpc_error = "Result already was gotten";
+        RETURN(false);
+      }
+      if (input->getter_ != load_rpc_request_as_var) {
+        last_rpc_error = "Not a rpc request";
+        RETURN(false);
+      }
+
+      rpc_request res = input->load <rpc_request, rpc_request> ();
+#ifdef FAST_EXCEPTIONS
+      php_assert (CurException == NULL);
+#endif
+
+      if (res.resumable_id == -2) {
+        last_rpc_error = res.error;
+        RETURN(false);
+      }
+
+      php_assert (res.resumable_id == -1);
+
+      string result;
+      result.assign_raw (res.answer - 12);
+      RETURN(result);
+    RESUMABLE_END
+  }
+
+public:
+  rpc_get_resumable (int resumable_id, double timeout): resumable_id (resumable_id), timeout (timeout) {
+  }
+};
+
 
 OrFalse <string> f$rpc_get (int request_id, double timeout) {
-  last_rpc_error = NULL;
-  if (dl::query_num != rpc_requests_last_query_num) {
-    last_rpc_error = "There was no rpc requests";
-    return false;
-  }
-  if (request_id < rpc_first_request_id || request_id >= rpc_next_request_id) {
-    last_rpc_error = "Wrong request id";
-    return false;
-  }
-
-  int slot_id = (int)(request_id - rpc_first_request_id);
-  rpc_wait_slot_id (slot_id, timeout);
-
-  rpc_request *request = &rpc_requests[slot_id];
-  if (request->result == NULL) {
-    last_rpc_error = "Timeout";
-    return false;
-  }
-  if (request->result_len < 0) {
-    php_assert (last_rpc_error == NULL);
-    if (request->error_message == NULL) {
-      last_rpc_error = "Result already was gotten";
-    } else {
-      last_rpc_error = request->error_message;
-    }
-    return false;
-  }
-
-//  fprintf (stderr, "Receive  string of len %d at %p\n", (int)request->result_len, request->result);
-//  for (int i = -12; i < request->result_len + 1; i++) {
-//    fprintf (stderr, "%d: %x(%d)\n", i, request->result[i], request->result[i]);
-//  }
-
-  string result;
-  if (request->result_len > 0) {
-    result.assign_raw (request->result - 12);
-  }
-  request->result_len = -1;
-  return result;
+  return start_resumable <OrFalse <string> > (new rpc_get_resumable (request_id, timeout));
 }
+
+
+class rpc_get_and_parse_resumable: public Resumable {
+  typedef bool ReturnT;
+  int resumable_id;
+  double timeout;
+
+  bool ready;
+protected:
+  bool run (void) {
+    RESUMABLE_BEGIN
+      ready = f$wait (resumable_id, timeout);
+      TRY_WAIT(ready, bool);
+      if (!ready) {
+        last_rpc_error = last_wait_error;
+        RETURN(false);
+      }
+
+      Storage *input = get_forked_storage (resumable_id);
+      if (input->getter_ == NULL) {
+        last_rpc_error = "Result already was gotten";
+        RETURN(false);
+      }
+      if (input->getter_ != load_rpc_request_as_var) {
+        last_rpc_error = "Not a rpc request";
+        RETURN(false);
+      }
+
+      rpc_request res = input->load <rpc_request, rpc_request> ();
+#ifdef FAST_EXCEPTIONS
+      php_assert (CurException == NULL);
+#endif
+
+      if (res.resumable_id == -2) {
+        last_rpc_error = res.error;
+        RETURN(false);
+      }
+
+      php_assert (res.resumable_id == -1);
+
+      string result;
+      result.assign_raw (res.answer - 12);
+      f$rpc_parse (result);
+
+      RETURN(true);
+    RESUMABLE_END
+  }
+
+public:
+  rpc_get_and_parse_resumable (int resumable_id, double timeout): resumable_id (resumable_id), timeout (timeout) {
+  }
+};
 
 bool f$rpc_get_and_parse (int request_id, double timeout) {
-  OrFalse <string> result = f$rpc_get (request_id, timeout);
-  if (!result.bool_value) {
-    return false;
-  }
-
-  return f$rpc_parse (result.value);
-}
-
-
-static int rpc_queue_create (void) {
-  if (dl::query_num != rpc_queues_last_query_num) {
-    rpc_queues_last_query_num = dl::query_num;
-    rpc_queues_size = 100;
-    rpc_queues = static_cast <rpc_queue *> (dl::allocate (sizeof (rpc_queue) * rpc_queues_size));
-    rpc_next_queue_id = 0;
-  }
-
-  if (rpc_next_queue_id >= rpc_queues_size) {
-    php_assert (rpc_next_queue_id == rpc_queues_size);
-    rpc_queues = static_cast <rpc_queue *> (dl::reallocate (rpc_queues, sizeof (rpc_queue) * 2 * rpc_queues_size, sizeof (rpc_queue) * rpc_queues_size));
-    rpc_queues_size *= 2;
-  }
-
-  rpc_queue *q = rpc_queues + rpc_next_queue_id;
-  q->first_ready_request = -1;
-  q->left_requests = 0;
-  q->timeout = 0.0;
-
-  return ++rpc_next_queue_id;
-}
-
-int rpc_queue_push (int queue_id, slot_id_t request_id) {
-  if (dl::query_num != rpc_requests_last_query_num || request_id < rpc_first_request_id || request_id >= rpc_next_request_id) {
-    php_warning ("Wrong request_id %lld in function rpc_queue_push", (long long)request_id);
-
-    return queue_id;
-  }
-  int slot_id = (int)(request_id - rpc_first_request_id);
-  rpc_request *request = &rpc_requests[slot_id];
-  if (request->queue_id != -1) {
-    php_warning ("Request_id %lld already in some queue", (long long)request_id);
-
-    return queue_id;
-  }
-
-  if (queue_id == -1) {
-    queue_id = rpc_queue_create();
-  } else {
-    if (dl::query_num != rpc_queues_last_query_num || queue_id <= 0 || queue_id > rpc_next_queue_id) {
-      php_warning ("Wrong queue_id %d", queue_id);
-
-      return queue_id;
-    }
-  }
-  rpc_queue *q = rpc_queues + queue_id - 1;
-
-  if (request->result == NULL) {
-    request->queue_id = queue_id - 1;
-
-//    fprintf (stderr, "Link request %lld with queue %d at %.6lf\n", request_id, request->queue_id, (update_precise_now(), precise_now));
-    q->left_requests++;
-    q->timeout = max (q->timeout, request->timeout);
-  } else {
-    request->queue_id = -2;
-
-    if (request->result_len >= 0) {
-      request->next_ready_request = q->first_ready_request;
-      q->first_ready_request = slot_id;
-    }
-  }
-
-  return queue_id;
-}
-
-int f$rpc_queue_create (const var &request_ids) {
-  return f$rpc_queue_push (-1, request_ids);
-}
-
-int f$rpc_queue_push (int queue_id, const var &request_ids) {
-  if (queue_id == -1) {
-    queue_id = rpc_queue_create();
-  }
-
-  if (request_ids.is_array()) {
-    for (array <var>::const_iterator p = request_ids.begin(), p_end = request_ids.end(); p != p_end; ++p) {
-      rpc_queue_push (queue_id, f$intval (p.get_value()));
-    }
-    return queue_id;
-  } else {
-    return rpc_queue_push (queue_id, f$intval (request_ids));
-  }
-}
-
-static int rpc_queue_create (const array <int> &request_ids) {
-  int queue_id = rpc_queue_create();
-
-  for (array <int>::const_iterator p = request_ids.begin(), p_end = request_ids.end(); p != p_end; ++p) {
-    rpc_queue_push (queue_id, p.get_value());
-  }
-  return queue_id;
-}
-
-
-static void rpc_queue_skip_gotten (rpc_queue *q) {
-  while (q->first_ready_request != -1 && rpc_requests[q->first_ready_request].result_len < 0) {
-    q->first_ready_request = rpc_requests[q->first_ready_request].next_ready_request;
-  }
-}
-
-bool f$rpc_queue_empty (int queue_id) {
-  if (dl::query_num != rpc_queues_last_query_num || queue_id <= 0 || queue_id > rpc_next_queue_id) {
-    php_warning ("Wrong queue_id %d in function rpc_queue_empty", queue_id);
-
-    return true;
-  }
-
-  rpc_queue *q = rpc_queues + queue_id - 1;
-  rpc_queue_skip_gotten (q);
-  return q->left_requests == 0 && q->first_ready_request == -1;
-}
-
-slot_id_t rpc_queue_next (int queue_id, double timeout) {
-  if (dl::query_num != rpc_queues_last_query_num || queue_id <= 0 || queue_id > rpc_next_queue_id) {
-    php_warning ("Wrong queue_id %d in function rpc_queue_next", queue_id);
-
-    return -1;
-  }
-  if (dl::query_num != rpc_requests_last_query_num) {
-    return -1;
-  }
-
-  rpc_queue *q = &rpc_queues[queue_id - 1];
-  rpc_queue_skip_gotten (q);
-  int ready_slot_id = q->first_ready_request;
-  if (ready_slot_id != -1) {
-    return ready_slot_id + rpc_first_request_id;
-  }
-  if (q->left_requests == 0) {
-    return -1;
-  }
-
-  if (timeout == 0.0) {
-    wait_net (0);
-
-    return q->first_ready_request == -1 ? -1 : q->first_ready_request + rpc_first_request_id;
-  }
-
-  update_precise_now();
-  if (timeout < 0) {
-    timeout = q->timeout;
-  } else {
-    timeout = min (q->timeout, timeout + precise_now);
-  }
-
-//  fprintf (stderr, "Left_requests: %d, first_ready_request: %d\n", q->left_requests, q->first_ready_request);
-  while (wait_net (timeout_convert_to_ms (timeout - precise_now)) && q->first_ready_request == -1) {
-//    fprintf (stderr, "Left_requests: %d, first_ready_request: %d\n", q->left_requests, q->first_ready_request);
-    update_precise_now();
-  }
-
-  return q->first_ready_request == -1 ? -1 : q->first_ready_request + rpc_first_request_id;
-}
-
-int f$rpc_queue_next (int queue_id, double timeout) {
-  slot_id_t ready_slot_id = rpc_queue_next (queue_id, timeout);
-  if (ready_slot_id == -1) {
-    return 0;
-  } else {
-    php_assert (rpc_first_request_id <= ready_slot_id && ready_slot_id < rpc_next_request_id);
-    return ready_slot_id;
-  }
+  return start_resumable <bool> (new rpc_get_and_parse_resumable (request_id, timeout));
 }
 
 
@@ -1466,7 +1365,7 @@ public:
 
 
 int get_constructor_by_name (const tl_type *t, const string &name) {
-  for (int i = 0; i < t->constructors_num; i++) {
+  for (int i = 0; i < t->constructors.count(); i++) {
     if (t->constructors.get_value (i)->name == name) {
       return i;
     }
@@ -1475,7 +1374,7 @@ int get_constructor_by_name (const tl_type *t, const string &name) {
 }
 
 int get_constructor_by_id (const tl_type *t, int id) {
-  for (int i = 0; i < t->constructors_num; i++) {
+  for (int i = 0; i < t->constructors.count(); i++) {
     if (t->constructors.get_value (i)->id == id) {
       return i;
     }
@@ -1650,6 +1549,8 @@ array <var> fetch_function (tl_tree *T) {
         if (!CurException) {
           string error = tl_parse_string();
           if (!CurException) {
+            T->destroy();
+
             return tl_fetch_error (error, error_code);
           }
         }
@@ -1658,6 +1559,8 @@ array <var> fetch_function (tl_tree *T) {
   }
 
   if (CurException) {
+    T->destroy();
+
     array <var> result = tl_fetch_error (CurException->message, TL_ERROR_SYNTAX);
     FREE_EXCEPTION;
     return result;
@@ -1666,6 +1569,8 @@ array <var> fetch_function (tl_tree *T) {
   try {
     x = rpc_lookup_int (string(), -1);//TODO file, line
     if (x == RPC_REQ_ERROR) {
+      T->destroy();
+
       php_assert (tl_parse_int() == RPC_REQ_ERROR);
       tl_parse_long();
       int error_code = tl_parse_int();
@@ -1673,6 +1578,8 @@ array <var> fetch_function (tl_tree *T) {
       return tl_fetch_error (error, error_code);
     }
   } catch (Exception &e) {
+    T->destroy();
+
     return tl_fetch_error (e.message, TL_ERROR_SYNTAX);
   }
 #endif
@@ -1738,6 +1645,10 @@ int f$rpc_tl_query_one (const rpc_connection &c, const var &tl_object, double ti
   }
 
   int query_id = f$rpc_send (c, timeout);
+  if (query_id <= 0) {
+    result_tree->destroy();
+    return 0;
+  }
 
   if (dl::query_num != rpc_tl_results_last_query_num) {
     new (rpc_tl_results_storage) array <tl_tree *>();
@@ -1757,7 +1668,7 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
 
     tl_tree *result_tree = store_function (it.get_value());
     if (result_tree == NULL) {
-      result.set_value (it.get_key(), false);
+      result.set_value (it.get_key(), 0);
       continue;
     }
 
@@ -1767,14 +1678,19 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
       update_precise_now();
       bytes_sent = data_buf.size();
     }
-    slot_id_t request_id = rpc_send (c, timeout);
+    int request_id = rpc_send (c, timeout);
+    if (request_id <= 0) {
+      result.set_value (it.get_key(), 0);
+      result_tree->destroy();
+      continue;
+    }
 
     if (dl::query_num != rpc_tl_results_last_query_num) {
       new (rpc_tl_results_storage) array <tl_tree *>();
       rpc_tl_results_last_query_num = dl::query_num;
     }
     rpc_tl_results->set_value (request_id, result_tree);
-    
+
     result.set_value (it.get_key(), request_id);
   }
   if (bytes_sent > 0) {
@@ -1784,46 +1700,124 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
   return result;
 }
 
-array <var> rpc_tl_query_result_one (slot_id_t query_id) {
+
+class rpc_tl_query_result_one_resumable: public Resumable {
+  typedef array <var> ReturnT;
+
+  int query_id;
+  tl_tree *T;
+
+protected:
+  bool run (void) {
+    bool ready;
+
+    RESUMABLE_BEGIN
+      last_rpc_error = NULL;
+      ready = f$rpc_get_and_parse (query_id, -1);
+      TRY_WAIT(ready, bool);
+      if (!ready) {
+        php_assert (last_rpc_error != NULL);
+        RETURN(tl_fetch_error (last_rpc_error, TL_ERROR_UNKNOWN));
+      }
+
+      array <var> tl_object = fetch_function (T);
+//      fprintf (stderr, "!!! %s\n", f$serialize (tl_object).c_str());
+      rpc_parse_restore_previous();
+      RETURN(tl_object);
+    RESUMABLE_END
+  }
+
+public:
+  rpc_tl_query_result_one_resumable (int query_id, tl_tree *T): query_id (query_id), T (T) {
+  }
+};
+
+
+array <var> f$rpc_tl_query_result_one (int query_id) {
   if (query_id <= 0) {
+    resumable_finished = true;
     return tl_fetch_error ("Wrong query_id", TL_ERROR_WRONG_QUERY_ID);
   }
 
-  if (!f$rpc_get_and_parse (query_id, -1)) {
-    php_assert (last_rpc_error != NULL);
-    return tl_fetch_error (last_rpc_error, TL_ERROR_UNKNOWN);
-  }
-
   if (dl::query_num != rpc_tl_results_last_query_num) {
+    resumable_finished = true;
     return tl_fetch_error ("There was no TL queries in current script run", TL_ERROR_INTERNAL);
   }
 
   tl_tree *T = rpc_tl_results->get_value (query_id);
   if (T == NULL) {
+    resumable_finished = true;
     return tl_fetch_error ("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
   }
   rpc_tl_results->unset (query_id);
 
-  array <var> tl_object = fetch_function (T);
-//  fprintf (stderr, "!!! %s\n", f$serialize (tl_object).c_str());
-  rpc_parse_restore_previous();
-  return tl_object;
+  return start_resumable <array <var> > (new rpc_tl_query_result_one_resumable (query_id, T));
 }
 
-array <var> f$rpc_tl_query_result_one (int query_id) {
-  return rpc_tl_query_result_one ((slot_id_t)query_id);
-}
+
+class rpc_tl_query_result_resumable: public Resumable {
+  typedef array <array <var> > ReturnT;
+
+  const array <int> query_ids;
+  array <array <var> > tl_objects_unsorted;
+  int queue_id;
+  int query_id;
+
+protected:
+  bool run (void) {
+    RESUMABLE_BEGIN
+      queue_id = wait_queue_create (query_ids);
+
+      while (true) {
+        query_id = f$wait_queue_next (queue_id, -1);
+        TRY_WAIT(query_id, int);
+        if (query_id <= 0) {
+          break;
+        }
+        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+        php_assert (resumable_finished);
+      }
+
+      array <array <var> > tl_objects (query_ids.size());
+      for (array <int>::const_iterator it = query_ids.begin(); it != query_ids.end(); ++it) {
+        int query_id = it.get_value();
+        if (!tl_objects_unsorted.isset (query_id)) {
+          if (query_id <= 0) {
+            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() + "Very wrong query_id " + query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+          } else {
+            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() + "No answer received or duplicate/wrong query_id " + query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+          }
+        } else {
+          tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
+        }
+      }
+
+      RETURN(tl_objects);
+    RESUMABLE_END
+  }
+
+public:
+  rpc_tl_query_result_resumable (const array <int> &query_ids):
+      query_ids (query_ids),
+      tl_objects_unsorted (array_size (query_ids.count(), 0, false)) {
+  }
+};
 
 array <array <var> > f$rpc_tl_query_result (const array <int> &query_ids) {
-  int queue_id = rpc_queue_create (query_ids);
+  return start_resumable <array <array <var> > > (new rpc_tl_query_result_resumable (query_ids));
+}
+
+array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &query_ids) {
+  int queue_id = wait_queue_create (query_ids);
 
   array <array <var> > tl_objects_unsorted (array_size (query_ids.count(), 0, false));
   while (true) {
-    slot_id_t query_id = rpc_queue_next (queue_id, -1);
-    if (query_id < 0) {
+    int query_id = f$wait_queue_next_synchronously (queue_id);
+    if (query_id <= 0) {
       break;
     }
-    tl_objects_unsorted[query_id] = rpc_tl_query_result_one (query_id);
+    tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+    php_assert (resumable_finished);
   }
 
   array <array <var> > tl_objects (query_ids.size());
@@ -1839,9 +1833,9 @@ array <array <var> > f$rpc_tl_query_result (const array <int> &query_ids) {
       tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
     }
   }
+
   return tl_objects;
 }
-
 
 void *tls_push (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
@@ -1929,28 +1923,29 @@ void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
   php_assert (t != NULL);
   bool is_bare = e->flags & FLAG_BARE;
 
-  if (t->constructors_num == 0) {
-    e->destroy();
-    return NULL;
-  }
-
-  int l = -1, r;
+  int l = -1;
   if (is_bare) {
-    l = 0;
-    r = t->constructors_num;
+    if (t->constructors_num == 1) {
+      l = 0;
+    }
   } else {
     int pos = tl_parse_save_pos();
     l = get_constructor_by_id (t, TRY_CALL(int, void_ptr, tl_parse_int()));
-    if (l < 0) {
-      if (t->flags & FLAG_DEFAULT_CONSTRUCTOR) {
-        l = t->constructors_num - 1;
-        tl_parse_restore_pos (pos);
-      } else {
-        e->destroy();
-        return NULL;
-      }
+    if (l < 0 && (t->flags & FLAG_DEFAULT_CONSTRUCTOR)) {
+      l = t->constructors_num - 1;
+      tl_parse_restore_pos (pos);
     }
+    if (l < 0) {
+      e->destroy();
+      return NULL;
+    }
+  }
+  int r;
+  if (l >= 0) {
     r = l + 1;
+  } else {
+    l = 0;
+    r = t->constructors_num;
   }
 
   int k = tl_parse_save_pos();
@@ -1964,7 +1959,7 @@ void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
     void *res = TLUNI_START (constructor->fetchIP, Data + 1, arr, new_vars);
     free_var_space (new_vars, constructor->var_count);
     if (res == TLUNI_OK) {
-      if (!is_bare && t->constructors_num > 1 && !(t->flags & FLAG_NOCONS)) {
+      if (!is_bare && (t->constructors_num > 1) && !(t->flags & FLAG_NOCONS)) {
         arr->set_value (UNDERSCORE, constructor->name);
       }
       if (r - l > 1) {
@@ -3385,8 +3380,8 @@ tl_tree *read_expr (int *var_count) {
 }
 
 array <arg> read_args_list (int *var_count) {
-  const int schema_flag_opt_field = 2 << (tl_schema_version >= 3);
-  const int schema_flag_has_vars = schema_flag_opt_field ^ 6;
+  int schema_flag_opt_field = 2 << (tl_schema_version >= 3);
+  int schema_flag_has_vars = schema_flag_opt_field ^ 6;
 
   int args_num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   array <arg> args = array <arg> (array_size (args_num, 0, true));
@@ -3570,6 +3565,10 @@ void read_tl_config (const char *file_name) {
 
 
 void rpc_init_static (void) {
+  if (timeout_wakeup_id == -1) {
+    timeout_wakeup_id = register_wakeup_callback (&process_rpc_timeout);
+  }
+
   INIT_VAR(string, rpc_data_copy);
   INIT_VAR(string, rpc_data_copy_backup);
 
@@ -3582,8 +3581,6 @@ void rpc_init_static (void) {
   rpc_pack_from = -1;
 
   last_var_ptr = vars_buffer + MAX_VARS;
-
-  precise_now = 0.0;
 }
 
 void rpc_free_static (void) {
@@ -3592,4 +3589,3 @@ void rpc_free_static (void) {
 
   clear_arr_space();
 }
-

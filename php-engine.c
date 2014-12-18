@@ -688,6 +688,8 @@ void php_worker_run_sql_query_packet (php_worker *worker, php_net_query_packet_t
 
   double timeout = fix_timeout (query->timeout) + precise_now;
   if (conn != NULL && conn->status == conn_ready) {
+//    assert (conn->type->check_ready (conn) == cr_ok);
+
     write_out (&conn->Out, query->data, query->data_len);
     SQLC_FUNC (conn)->sql_flush_packet (conn, query->data_len - 4);
     flush_connection_output (conn);
@@ -731,6 +733,7 @@ void php_worker_run_rpc_send_query (net_query_t *query) {
   struct connection *conn = get_target_connection (target, 0);
 
   if (conn != NULL) {
+    assert (conn->type->check_ready (conn) == cr_ok);
     send_rpc_query (conn, RPC_INVOKE_REQ, slot_id, (int *)query->request, query->request_size);
     conn->last_query_sent_time = precise_now;
   } else {
@@ -772,7 +775,7 @@ void php_worker_run_net_query (php_worker *worker, php_query_base_t *q_base) {
   }
 }
 
-void prepare_rpc_query_raw (int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom)(const void *q, long len, unsigned crc32_complement)) {
+void prepare_rpc_query_raw (int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom) (const void *q, long len, unsigned crc32_complement)) {
   assert (sizeof (int) == 4);
   q[0] = qsize;
   assert ((qsize & 3) == 0);
@@ -969,7 +972,12 @@ void php_worker_wait (php_worker *worker, int timeout_ms) {
       worker->waiting = 0;
     }
   } else {
-    worker->wakeup_time = precise_now + timeout_ms * 0.001;
+    if (!net_events_empty()) {
+      worker->waiting = 0;
+    } else {
+      vkprintf (2, "paused for some blocking net activity [req_id = %016llx] [timeout = %.3lf]\n", worker->req_id, timeout_ms * 0.001);
+      worker->wakeup_time = precise_now + timeout_ms * 0.001;
+    }
   }
   return;
 }
@@ -1101,20 +1109,30 @@ void php_worker_run (php_worker *worker) {
 //    fprintf (stderr, "state = %d, f = %d\n", php_script_get_state (php_script), f);
     switch (php_script_get_state (php_script)) {
       case rst_ready: {
-        vkprintf (2, "before php_script_iterate [req_id = %016llx] (before swap context)\n", worker->req_id);
         running_server_status();
         if (worker->waiting) {
           f = 0;
           worker->paused = 1;
           wait_net_server_status();
           worker->conn->status = conn_wait_net;
+          vkprintf (2, "php_script_iterate [req_id = %016llx] delayed due to net events\n", worker->req_id);
           break;
         }
+        vkprintf (2, "before php_script_iterate [req_id = %016llx] (before swap context)\n", worker->req_id);
         php_script_iterate (php_script);
         vkprintf (2, "after php_script_iterate [req_id = %016llx] (after swap context)\n", worker->req_id);
+        php_worker_wait (worker, 0); //check for net events
         break;
       }
       case rst_query: {
+        if (worker->waiting) {
+          f = 0;
+          worker->paused = 1;
+          wait_net_server_status();
+          worker->conn->status = conn_wait_net;
+          vkprintf (2, "query [req_id = %016llx] delayed due to net events\n", worker->req_id);
+          break;
+        }
         vkprintf (2, "got query [req_id = %016llx]\n", worker->req_id);
         php_worker_run_query (worker);
         php_worker_run_net_queue (worker);
@@ -2471,10 +2489,8 @@ int sqlp_becomes_ready (struct connection *c) {
       ansgen->func->ready (ansgen, c);
       break;
     } else {
-      //TODO: memory leak?
       //waiting_queries--;
-      delete_conn_query (q);
-      zfree (q, sizeof (*q));
+      pnet_query_delete (q);
     }
   }
   return 0;

@@ -24,8 +24,8 @@ array <array <string> > f$debug_backtrace (void) {
   }
 
   return res;
-
-/*  dl::enter_critical_section();//NOT OK
+/*
+  dl::enter_critical_section();//NOT OK
   void *buffer[64];
   int nptrs = fast_backtrace (buffer, 64);
   char **names = backtrace_symbols (buffer, nptrs);
@@ -63,7 +63,7 @@ array <array <string> > f$debug_backtrace (void) {
 
     string &func = current[function_key];
     if (func[0] == 'f' && func[1] == '$') {
-      const char *s = static_cast <const char *> (memchr (static_cast <void *> (func.c_str() + 2), '(', func.size() - 2));
+      const char *s = static_cast <const char *> (memchr (static_cast <const void *> (func.c_str() + 2), '(', func.size() - 2));
       if (s != NULL) {
         func = func.substr (2, s - func.c_str() - 2);
         if (func[0] == '_' && func[1] == 't' && func[2] == '_' && func[3] == 's' && func[4] == 'r' && func[5] == 'c' && func[6] == '_' && (int)func.size() > 18) {
@@ -78,7 +78,8 @@ array <array <string> > f$debug_backtrace (void) {
 
   free (names);
   dl::leave_critical_section();
-  return res;*/
+  return res;
+*/
 }
 
 

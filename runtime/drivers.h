@@ -3,9 +3,10 @@
 #include "kphp_core.h"
 
 #include "exception.h"
+#include "net_events.h"
+#include "resumable.h"
 #include "rpc.h"
 
-const int MAX_TIMEOUT = 120;
 
 void drivers_init_static (void);
 void drivers_free_static (void);
@@ -25,8 +26,6 @@ extern var (*debugServerLogS_pointer) (array <var>);
 extern var (*debugLogPlain_pointer) (string section, string text);
 
 
-int timeout_convert_to_ms (double timeout);
-
 const string mc_prepare_key (const string &key);
 
 var mc_get_value (string result_str, int flags);
@@ -38,6 +37,9 @@ const int MEMCACHE_SERIALIZED = 1;
 const int MEMCACHE_COMPRESSED = 2;
 
 class MC_object {
+protected:
+  ~MC_object();
+
 public:
   virtual bool addServer (const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1) = 0;
   virtual bool connect (const string &host_name, int port = 11211, int timeout = 1) = 0;
@@ -128,7 +130,6 @@ private:
   };
 
   array <host> hosts;
-
 
   inline host get_host (const string &key);
 
@@ -317,7 +318,7 @@ MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag = strin
 var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout = -1.0);
 
 template <class T>
-OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout = -1.0);
+OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
 
 bool f$rpc_mc_set (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0);
 
@@ -634,14 +635,76 @@ const int MEMCACHE_GET = 0xd33b13ae;
 
 extern const char *mc_method;
 
+class rpc_mc_multiget_resumable: public Resumable {
+  typedef OrFalse <array <var> > ReturnT;
+
+  int queue_id;
+  int first_request_id;
+  int keys_n;
+  int request_id;
+  array <string> query_names;
+  array <var> result;
+  bool return_false_if_not_found;
+
+protected:
+  bool run (void) {
+    RESUMABLE_BEGIN
+      while (keys_n > 0) {
+        request_id = f$wait_queue_next (queue_id, -1);
+        TRY_WAIT(request_id, int);
+
+        if (request_id <= 0) {
+          break;
+        }
+        keys_n--;
+
+        int k = (int)(request_id - first_request_id);
+        php_assert ((unsigned int)k < (unsigned int)query_names.count());
+
+        bool parse_result = f$rpc_get_and_parse (request_id, -1);
+        php_assert (resumable_finished);
+        if (!parse_result) {
+          continue;
+        }
+
+        int res = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
+        if (res != MEMCACHE_VALUE_STRING) {
+          if (return_false_if_not_found && res == MEMCACHE_VALUE_NOT_FOUND) {
+            result.set_value (query_names.get_value (k), false);
+          }
+          continue;
+        }
+
+        string value = TRY_CALL(string, bool, (f$fetch_string (string(), -1)));
+        int flags = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));
+        result.set_value (query_names.get_value (k), mc_get_value (value, flags));
+      }
+      RETURN(result);
+    RESUMABLE_END
+  }
+
+public:
+  rpc_mc_multiget_resumable (int queue_id, int first_request_id, int keys_n, array <string> query_names, bool return_false_if_not_found):
+      queue_id (queue_id),
+      first_request_id (first_request_id),
+      keys_n (keys_n),
+      request_id (-1),
+      query_names (query_names),
+      result (array_size (0, keys_n, false)),
+      return_false_if_not_found (return_false_if_not_found) {
+  }
+};
+
+
 template <class T>
-OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout) {
+OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously) {
   mc_method = "multiget";
+  resumable_finished = true;
 
   array <string> query_names (array_size (keys.count(), 0, true));
   int queue_id = -1;
   int keys_n = 0;
-  slot_id_t first_request_id = 0;
+  int first_request_id = 0;
   update_precise_now();
   int bytes_sent = 0;
   for (typeof (keys.begin()) it = keys.begin(); it != keys.end(); ++it) {
@@ -660,13 +723,13 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
       update_precise_now();
       bytes_sent = current_sent_size;
     }
-    slot_id_t request_id = rpc_send (conn, timeout);
+    int request_id = rpc_send (conn, timeout);
     if (request_id > 0) {
       if (first_request_id == 0) {
         first_request_id = request_id;
       }
       if (!is_immediate) {
-        queue_id = rpc_queue_push (queue_id, request_id);
+        queue_id = wait_queue_push_unsafe (queue_id, request_id);
         keys_n++;
       }
       query_names.push_back (key);
@@ -682,28 +745,41 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
     return array <var> ();
   }
 
-  array <var> result (array_size (0, keys_n, false));
-  for (int i = 0; i < keys_n; i++) {
-    slot_id_t request_id = rpc_queue_next (queue_id, timeout);
-    if (request_id <= 0) {
-      break;
+  if (run_synchronously) {
+    array <var> result (array_size (0, keys_n, false));
+
+    while (keys_n > 0) {
+      int request_id = wait_queue_next_synchronously (queue_id);
+      if (request_id <= 0) {
+        break;
+      }
+      keys_n--;
+
+      int k = (int)(request_id - first_request_id);
+      php_assert ((unsigned int)k < (unsigned int)query_names.count());
+
+      bool parse_result = f$rpc_get_and_parse (request_id, -1);
+      php_assert (resumable_finished);
+      if (!parse_result) {
+        continue;
+      }
+
+      int res = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
+      if (res != MEMCACHE_VALUE_STRING) {
+        if (return_false_if_not_found && res == MEMCACHE_VALUE_NOT_FOUND) {
+          result.set_value (query_names.get_value (k), false);
+        }
+        continue;
+      }
+
+      string value = TRY_CALL(string, bool, (f$fetch_string (string(), -1)));
+      int flags = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));
+      result.set_value (query_names.get_value (k), mc_get_value (value, flags));
     }
-    int k = (int)(request_id - first_request_id);
-    php_assert ((unsigned int)k < (unsigned int)keys_n);
-
-    php_assert (f$rpc_get_and_parse (request_id, timeout));
-
-    int res = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
-    if (res != MEMCACHE_VALUE_STRING) {
-      continue;
-    }
-
-    string value = TRY_CALL(string, bool, (f$fetch_string (string(), -1)));
-    int flags = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));
-    result.set_value (query_names.get_value (k), mc_get_value (value, flags));
+    return result;
   }
 
-  return result;
+  return start_resumable <OrFalse <array <var> > > (new rpc_mc_multiget_resumable (queue_id, first_request_id, keys_n, query_names, return_false_if_not_found));
 }
 
 
