@@ -1019,6 +1019,9 @@ const int ID_MAYBE_FALSE = 0x27930a7b;
 const int ID_BOOL_FALSE = 0xbc799737;
 const int ID_BOOL_TRUE = 0x997275b5;
 
+const int TYPE_ID_BOOL = 0x250be282;
+
+
 const int FLAG_OPT_VAR = (1 << 17);
 const int FLAG_EXCL = (1 << 18);
 const int FLAG_OPT_FIELD = (1 << 20);
@@ -1981,6 +1984,8 @@ void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP  :
  *
  ****/
+void *tlcomb_store_bool (void **IP, void **Data, var *arr, tl_tree **vars);
+
 void *tlcomb_store_type (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
   tl_tree_type *e = (tl_tree_type *)(*(--Data));
@@ -1989,6 +1994,10 @@ void *tlcomb_store_type (void **IP, void **Data, var *arr, tl_tree **vars) {
   php_assert (t != NULL);
 //  fprintf (stderr, "%s\n", t->name.c_str());
   php_assert (t->constructors_num != 0);
+  if (t->id == TYPE_ID_BOOL){
+      e->destroy();
+      return tlcomb_store_bool(IP, Data, arr, vars);
+  }
 
   int l = -1;
   if (t->constructors_num > 1) {
@@ -2365,6 +2374,31 @@ void *tlcomb_store_string (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
   f$store_string (f$strval (*arr));
   TLUNI_NEXT;
+}
+
+void *tlcomb_store_bool (void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  if (arr->is_array()) {
+    fprintf(stderr, "HERE!\n");
+    var v = arr->get_value(UNDERSCORE);
+    if (v.is_null())
+        v = arr->get_value(0);    
+    if (!v.is_null()) {
+      const string& s = v.to_string();
+      if (s == string("boolFalse", 9))
+        f$store_int(ID_BOOL_FALSE);
+      else if (s == string("boolTrue", 8))
+        f$store_int(ID_BOOL_TRUE);
+      else
+        return 0;
+      TLUNI_NEXT;
+    }
+    return 0;
+  } else {
+    bool a = arr->to_bool();
+    f$store_int(a ? ID_BOOL_TRUE : ID_BOOL_FALSE);
+    TLUNI_NEXT;
+  }
 }
 
 /****
