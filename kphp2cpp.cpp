@@ -2,11 +2,22 @@
 #include "compiler/compiler.h"
 #include "compiler/enviroment.h"
 
+#ifndef COMMIT
+#define COMMIT "unknown"
+#endif
+const char FullVersionStr[] = "compiled at " __DATE__ " " __TIME__ " by gcc " __VERSION__ " "
+#ifdef __LP64__
+     "64-bit"
+#else
+     "32-bit"
+#endif
+      " after commit " COMMIT;
+
 /***
  * Kitten compiler for PHP interface
  **/
 void usage (void) {
-  printf ( "kphp2cpp. Convert php code into C++ code, and compile it into a binary\n"
+  printf ( "kphp2cpp %s\nConvert php code into C++ code, and compile it into a binary\n"
           "-a\tUse safe integer arithmetic\n"
           "-b <directory>\tBase directory. Use it when compiling the same code from different directories\n"
           "-d <directory>\tDestination directory\n"
@@ -23,7 +34,8 @@ void usage (void) {
           "-t <thread_count>\tUse <threads_count> threads. By default equals to 16\n"
           "-s <directory>\tPath to kphp source. Equals to $KPHP_PATH. ~/engine/src is used by default\n"
           "-V <file>\t<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default"
-          "-v\tVerbosity\n");
+          "-v\tVerbosity\n",
+          FullVersionStr);
 }
 
 /*
