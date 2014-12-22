@@ -921,13 +921,17 @@ string f$json_encode (const var &v, bool simple_encode) {
   return static_SB.str();
 }
 
+static void json_skip_blanks(const char* s, int &i){
+  while (s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n') {
+    i++;
+  }
+}
+
 static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
   if (!v.is_null()) {
     v.destroy();
   }
-  while (s[i] == ' ') {
-    i++;
-  }
+  json_skip_blanks(s, i);
   switch (s[i]) {
     case 'n':
       if (s[i + 1] == 'u' &&
@@ -1077,9 +1081,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
     case '[': {
       array <var> res;
       i++;
-      while (s[i] == ' ') {
-        i++;
-      }
+      json_skip_blanks(s, i);
       if (s[i] != ']') {
         do {
           var value;
@@ -1087,9 +1089,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
             return false;
           }
           res.push_back (value);
-          while (s[i] == ' ') {
-            i++;
-          }
+          json_skip_blanks(s, i);
         } while (s[i++] == ',');
 
         if (s[i - 1] != ']') {
@@ -1105,18 +1105,14 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
     case '{': {
       array <var> res;
       i++;
-      while (s[i] == ' ') {
-        i++;
-      }
+      json_skip_blanks(s, i);
       if (s[i] != '}') {
         do {
           var key;
           if (!do_json_decode (s, s_len, i, key) || !key.is_string()) {
             return false;
           }
-          while (s[i] == ' ') {
-            i++;
-          }
+          json_skip_blanks(s, i);
           if (s[i++] != ':') {
             return false;
           }
@@ -1124,9 +1120,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
           if (!do_json_decode (s, s_len, i, res[key])) {
             return false;
           }
-          while (s[i] == ' ') {
-            i++;
-          }
+          json_skip_blanks(s, i);
         } while (s[i++] == ',');
 
         if (s[i - 1] != '}') {
