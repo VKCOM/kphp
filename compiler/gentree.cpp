@@ -2,6 +2,7 @@
 
 #include "io.h"
 #include "stage.h"
+#include "name-gen.h"
 
 GenTree::GenTree () {
 }
@@ -593,7 +594,7 @@ VertexPtr GenTree::get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, 
     } else {
       right = get_binary_op (bin_op_cur + left_to_right, bin_op_end, next, till_ternary && bin_op_cur >= OpInfo::ternaryP);
     }
-    if (right.is_null()) {
+    if (right.is_null() && !ternary) {
       kphp_error (0, dl_pstr ("Failed to parse second argument in [%s]", OpInfo::str (tp).c_str()));
       return VertexPtr();
     }
@@ -606,7 +607,8 @@ VertexPtr GenTree::get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, 
         kphp_error (0, dl_pstr ("Failed to parse third argument in [%s]", OpInfo::str (tp).c_str()));
         return VertexPtr();
       }
-      left = conv_to <tp_bool> (left);
+      if (!right.is_null())
+         left = conv_to <tp_bool> (left);
     }
 
 
@@ -624,8 +626,28 @@ VertexPtr GenTree::get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, 
 
     VertexPtr expr;
     if (ternary) {
-      CREATE_VERTEX (v, op_ternary, left, right, third);
-      expr = v;
+      if (!right.is_null()) {
+        CREATE_VERTEX (v, op_ternary, left, right, third);
+        expr = v;
+      } else {
+        static int cond_id = 0;
+        static char cond_id_buffer[40];
+        sprintf(cond_id_buffer, "shorthand_ternary_cond_%x", cond_id++);
+        string left_name = gen_unique_name(cond_id_buffer);
+        CREATE_VERTEX (left_var, op_var);
+        left_var->str_val = left_name;
+        left_var->extra_type = op_ex_var_superlocal;
+        CREATE_VERTEX (left_set, op_set, left_var, left);
+        left_set = conv_to<tp_bool>(left_set);
+
+        CREATE_VERTEX (left_var_copy, op_var);
+        left_var_copy->str_val = left_name;
+        left_var_copy->extra_type = op_ex_var_superlocal;
+
+        CREATE_VERTEX (result, op_ternary, left_set, left_var_copy, third);
+
+        expr = result;
+      }
     } else {
       CREATE_META_VERTEX_2 (v, meta_op_binary_op, tp, left, right);
       expr = v;
