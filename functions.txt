@@ -14,9 +14,9 @@ define (PHP_INT_MAX, 2147483647);
 define (PHP_INT_SIZE, 4);
 define (PHP_EOL, "\n");
 
-define (PHP_SAPI, "Kitten PHP");
-#define_raw ('INT_MIN', -2147483648);
-#define_raw ('INT_MAX', 2147483647);
+if (0) {
+  define (PHP_SAPI, php_sapi_name());//"Defined in source code"
+}
 
 $_SERVER ::: var;
 $_GET ::: var;

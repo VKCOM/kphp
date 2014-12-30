@@ -542,9 +542,10 @@ bool f$get_magic_quotes_gpc (void) {
   return false;
 }
 
+string v$d$PHP_SAPI  __attribute__ ((weak));
 
 string f$php_sapi_name (void) {
-  return string ("Kitten PHP", 10);
+  return v$d$PHP_SAPI;
 }
 
 
@@ -1052,6 +1053,8 @@ void arg_add (const char *value) {
 
 extern char **environ;
 
+extern int run_once;
+
 static void init_superglobals (const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
                                const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
                                const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
@@ -1301,6 +1304,8 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
   v$_SERVER.set_value (string ("argv", 4), v$argv);
   v$_SERVER.set_value (string ("argc", 4), v$argc);
 
+  v$d$PHP_SAPI = run_once ? string ("Kitten PHP", 10) : string ("Kitten PHP", 10);
+  
   php_assert (dl::in_critical_section == 0);
 }
 
@@ -1423,7 +1428,6 @@ bool f$ini_set (const string &s, const string &value) {
 #include <locale.h>
 
 
-
 void init_static (void) {
   bcmath_init_static();
   //curl_init_static();//lazy inited
@@ -1435,7 +1439,7 @@ void init_static (void) {
   openssl_init_static();
   resumable_init_static();
   rpc_init_static();
-  
+
   shutdown_function = NULL;
   finished = false;
   flushed = false;
@@ -1474,6 +1478,8 @@ void init_static (void) {
 
   INIT_VAR(var, v$argc);
   INIT_VAR(var, v$argv);
+
+  INIT_VAR(string, v$d$PHP_SAPI);
 
   php_assert (dl::in_critical_section == 0);
 }
