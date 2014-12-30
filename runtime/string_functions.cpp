@@ -946,7 +946,7 @@ string f$prepare_search_query (const string &query) {
 
 int f$printf (const array <var> &a) {
   string to_print = f$sprintf (a);
-  print (to_print.c_str(), to_print.size());
+  print (to_print);
   return to_print.size();
 }
 
@@ -2199,6 +2199,16 @@ array <var> f$unpack (const string &pattern, const string &data) {
     }
   }
   return result;
+}
+
+int f$vprintf (const string &format, array <var> args) {
+  args.unshift (format);
+  return f$printf (args);
+}
+
+string f$vsprintf (const string &format, array <var> args) {
+  args.unshift (format);
+  return f$sprintf (args);
 }
 
 string f$wordwrap (const string &str, int width, string brk, bool cut) {

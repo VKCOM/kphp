@@ -168,6 +168,10 @@ string f$ucwords (const string &str);
 
 array <var> f$unpack (const string &pattern, const string &data);
 
+int f$vprintf (const string &format, array <var> args);
+
+string f$vsprintf (const string &format, array <var> args);
+
 string f$wordwrap (const string &str, int width = 75, string brk = NEW_LINE, bool cut = false);
 
 /*
