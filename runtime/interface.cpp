@@ -381,6 +381,7 @@ void f$fastcgi_finish_request (void) {
     }
     default:
       php_assert (0);
+      exit (1);
   }
 
   ob_cur_buffer = 0;
@@ -543,6 +544,26 @@ bool f$get_magic_quotes_gpc (void) {
 }
 
 string v$d$PHP_SAPI  __attribute__ ((weak));
+
+extern int run_once;
+
+static string php_sapi_name (void) {
+  switch (query_type) {
+    case QUERY_TYPE_CONSOLE:
+      return string ("cli", 3);
+    case QUERY_TYPE_HTTP:
+      return string ("Kitten PHP", 10);
+    case QUERY_TYPE_RPC:
+      if (run_once) {
+        return string ("cli", 3);
+      } else {
+        return string ("Kitten PHP", 10);
+      }
+    default:
+      php_assert (0);
+      exit (1);
+  }
+}
 
 string f$php_sapi_name (void) {
   return v$d$PHP_SAPI;
@@ -1053,8 +1074,6 @@ void arg_add (const char *value) {
 
 extern char **environ;
 
-extern int run_once;
-
 static void init_superglobals (const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
                                const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
                                const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
@@ -1304,7 +1323,7 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
   v$_SERVER.set_value (string ("argv", 4), v$argv);
   v$_SERVER.set_value (string ("argc", 4), v$argc);
 
-  v$d$PHP_SAPI = run_once ? string ("Kitten PHP", 10) : string ("Kitten PHP", 10);
+  v$d$PHP_SAPI = php_sapi_name();
   
   php_assert (dl::in_critical_section == 0);
 }
