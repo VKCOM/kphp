@@ -16,8 +16,10 @@
 #include "files.h"
 #include "net_events.h"
 #include "openssl.h"
+#include "regexp.h"
 #include "resumable.h"
 #include "rpc.h"
+#include "streams.h"
 #include "string_functions.h"
 #include "url.h"
 #include "zlib.h"
@@ -519,22 +521,30 @@ int print (const string_buffer &sb) {
 }
 
 int dbg_echo (const char *s) {
+  dl::enter_critical_section();//OK
   fprintf (stderr, "%s", s);
+  dl::leave_critical_section();
   return 1;
 }
 
 int dbg_echo (const char *s, int s_len) {
+  dl::enter_critical_section();//OK
   fwrite (s, s_len, 1, stderr);
+  dl::leave_critical_section();
   return 1;
 }
 
 int dbg_echo (const string &s) {
+  dl::enter_critical_section();//OK
   fwrite (s.c_str(), s.size(), 1, stderr);
+  dl::leave_critical_section();
   return 1;
 }
 
 int dbg_echo (const string_buffer &sb) {
+  dl::enter_critical_section();//OK
   fwrite (sb.buffer(), sb.size(), 1, stderr);
+  dl::leave_critical_section();
   return 1;
 }
 
@@ -543,7 +553,7 @@ bool f$get_magic_quotes_gpc (void) {
   return false;
 }
 
-string v$d$PHP_SAPI  __attribute__ ((weak));
+string v$d$PHP_SAPI __attribute__ ((weak));
 
 extern int run_once;
 
@@ -586,6 +596,8 @@ static array <int> *uploaded_files = reinterpret_cast <array <int> *> (uploaded_
 static long long uploaded_files_last_query_num = -1;
 
 static const int MAX_FILES = 100;
+
+static string raw_post_data;
 
 bool f$is_uploaded_file (const string &filename) {
   return (dl::query_num == uploaded_files_last_query_num && uploaded_files->get_value (filename) == 1);
@@ -1220,7 +1232,11 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
 //    fprintf (stderr, "!!!%.*s!!!\n", post_len, post);
     if (strstr (content_type_lower.c_str(), "application/x-www-form-urlencoded")) {
       if (post != NULL) {
-        f$parse_str (string (post, post_len), v$_POST);
+        dl::enter_critical_section();//OK
+        raw_post_data.assign (post, post_len);
+        dl::leave_critical_section();
+
+        f$parse_str (raw_post_data, v$_POST);
       }
     } else if (strstr (content_type_lower.c_str(), "multipart/form-data")) {
       const char *p = strstr (content_type_lower.c_str(), "boundary");
@@ -1444,8 +1460,185 @@ bool f$ini_set (const string &s, const string &value) {
   return false; //unreachable
 }
 
-#include <locale.h>
 
+const Stream INPUT ("php://input", 11);
+const Stream STDOUT ("php://stdout", 12);
+const Stream STDERR ("php://stderr", 12);
+
+
+static OrFalse <int> php_fwrite (const Stream &stream, const string &text) {
+  if (eq2 (stream, STDOUT)) {
+    print (text);
+    return (int)text.size();
+  }
+
+  if (eq2 (stream, STDERR)) {
+    dbg_echo (text);
+    return (int)text.size();
+  }
+
+  if (eq2 (stream, INPUT)) {
+    php_warning ("Stream %s is not writeable", INPUT.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static int php_fseek (const Stream &stream, int offset __attribute__((unused)), int whence __attribute__((unused))) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use fseek with stream %s", stream.to_string().c_str());
+    return -1;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use fseek with stream %s", INPUT.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static OrFalse <int> php_ftell (const Stream &stream) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use ftell with stream %s", stream.to_string().c_str());
+    return -1;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use ftell with stream %s", INPUT.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static OrFalse <string> php_fread (const Stream &stream, int length __attribute__((unused))) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use fread with stream %s", stream.to_string().c_str());
+    return -1;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use fread with stream %s", INPUT.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static OrFalse <int> php_fpassthru (const Stream &stream) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use fpassthru with stream %s", stream.to_string().c_str());
+    return -1;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use fpassthru with stream %s", INPUT.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static bool php_fflush (const Stream &stream) {
+  if (eq2 (stream, STDOUT)) {
+    //TODO implement this
+    return false;
+  }
+
+  if (eq2 (stream, STDERR)) {
+    php_warning ("There is no reason to fflush %s", stream.to_string().c_str());
+    return true;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    php_warning ("Stream %s is not writeable, so there is no reason to fflush it", INPUT.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static OrFalse <string> php_file_get_contents (const string &url) {
+  if (eq2 (url, STDOUT) || eq2 (url, STDERR)) {
+    php_warning ("Can't use file_get_contents with stream %s", url.c_str());
+    return false;
+  }
+
+  if (eq2 (url, INPUT)) {
+    return raw_post_data;
+  }
+
+  php_warning ("Stream %s not found", url.c_str());
+  return false;
+}
+
+static OrFalse <int> php_file_put_contents (const string &url, const string &content) {
+  if (eq2 (url, STDOUT)) {
+    print (content);
+    return (int)content.size();
+  }
+
+  if (eq2 (url, STDERR)) {
+    dbg_echo (content);
+    return (int)content.size();
+  }
+
+  if (eq2 (url, INPUT)) {
+    php_warning ("Stream %s is not writeable", url.c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", url.c_str());
+  return false;
+}
+
+
+static void interface_init_static_once (void) {
+  static stream_functions php_stream_functions;
+
+  php_stream_functions.name = string ("php", 3);
+  php_stream_functions.fopen = NULL;
+  php_stream_functions.fwrite = php_fwrite;
+  php_stream_functions.fseek = php_fseek;
+  php_stream_functions.ftell = php_ftell;
+  php_stream_functions.fread = php_fread;
+  php_stream_functions.fpassthru = php_fpassthru;
+  php_stream_functions.fflush = php_fflush;
+  php_stream_functions.fclose = NULL;
+
+  php_stream_functions.file_get_contents = php_file_get_contents;
+  php_stream_functions.file_put_contents = php_file_put_contents;
+
+  php_stream_functions.stream_socket_client = NULL;
+  php_stream_functions.context_set_option = NULL;
+
+  register_stream_functions (&php_stream_functions, false);
+}
+
+
+void init_static_once (void) {
+  files_init_static_once();
+  interface_init_static_once();
+//  openssl_init_static_once();
+  regexp::init_static();
+  resumable_init_static_once();
+  rpc_init_static_once();
+}
+
+
+#include <clocale>
 
 void init_static (void) {
   bcmath_init_static();
@@ -1500,6 +1693,10 @@ void init_static (void) {
 
   INIT_VAR(string, v$d$PHP_SAPI);
 
+  dl::enter_critical_section();//OK
+  INIT_VAR(string, raw_post_data);
+  dl::leave_critical_section();
+
   php_assert (dl::in_critical_section == 0);
 }
 
@@ -1525,6 +1722,8 @@ void free_static (void) {
 
   CLEAR_VAR(string, empty_string);
   CLEAR_VAR(var, empty_var);
+
+  CLEAR_VAR(string, raw_post_data);
 
   dl::script_runned = false;
   php_assert (dl::use_script_allocator == false);

@@ -1087,7 +1087,7 @@ inline void StaticInit::compile (CodeGenerator &W) const {
 
   W << "void static_init_scripts (void)";
   W << " " << BEGIN;
-  W << "regexp::init_static();" << NL;
+  W << "init_static_once();" << NL;
   FOREACH (all_functions, i) {
     FunctionPtr to = *i;
     W << FunctionName (to) << "$static_init();" << NL;

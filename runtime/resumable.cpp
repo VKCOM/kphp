@@ -889,14 +889,17 @@ void f$sched_yield (void) {
   resumable_add_finished (id, true);
 }
 
+void resumable_init_static_once (void) {
+  php_assert (wait_timeout_wakeup_id == -1);
+  php_assert (wait_queue_timeout_wakeup_id == -1);
+
+  wait_timeout_wakeup_id = register_wakeup_callback (&process_wait_timeout);
+  wait_queue_timeout_wakeup_id = register_wakeup_callback (&process_wait_queue_timeout);
+}
 
 void resumable_init_static (void) {
-  if (wait_timeout_wakeup_id == -1) {
-    wait_timeout_wakeup_id = register_wakeup_callback (&process_wait_timeout);
-  }
-  if (wait_queue_timeout_wakeup_id == -1) {
-    wait_queue_timeout_wakeup_id = register_wakeup_callback (&process_wait_queue_timeout);
-  }
+  php_assert (wait_timeout_wakeup_id != -1);
+  php_assert (wait_queue_timeout_wakeup_id != -1);
 
   resumable_finished = true;
 

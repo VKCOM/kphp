@@ -127,6 +127,8 @@ bool f$ini_set (const string &s, const string &value);
 OrFalse <string> f$ini_get (const string &s);
 
 
+void init_static_once (void);
+
 void init_static (void);
 
 void free_static (void);

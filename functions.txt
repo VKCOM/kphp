@@ -634,8 +634,8 @@ function arrayval ($v ::: array) ::: ^1;
 
 
 /** files **/
-define (STDOUT, '::STDOUT::');
-define (STDERR, '::STDERR::');
+define (STDOUT, 'php://stdout');
+define (STDERR, 'php://stderr');
 
 define (SEEK_SET, 0);
 define (SEEK_END, 1);

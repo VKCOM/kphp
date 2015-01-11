@@ -7,16 +7,16 @@
 
 #undef basename
 
-#include "array_functions.h"
 #include "files.h"
 #include "interface.h"
+#include "streams.h"
 #include "string_functions.h"//php_buf, TODO
-
-string raw_post_data;//TODO static
 
 static int opened_fd;
 
 const string LETTER_a ("a", 1);
+
+const string file_wrapper_name ("file://", 7);
 
 int close_safe (int fd) {
   dl::enter_critical_section();//OK
@@ -225,81 +225,6 @@ OrFalse <array <string> > f$file (const string &name) {
   return result;
 }
 
-OrFalse <string> f$file_get_contents (const string &name) {
-  if ((int)name.size() == 11 && !memcmp (name.c_str(), "php://input", 11)) {
-    return raw_post_data;
-  }
-
-  struct stat stat_buf;
-  dl::enter_critical_section();//OK
-  int file_fd = open_safe (name.c_str(), O_RDONLY);
-  if (file_fd < 0) {
-    dl::leave_critical_section();
-    return false;
-  }
-  if (fstat (file_fd, &stat_buf) < 0) {
-    close_safe (file_fd);
-    dl::leave_critical_section();
-    return false;
-  }
-
-  if (!S_ISREG (stat_buf.st_mode)) {
-    php_warning ("Regular file expected as first argument in function file_get_contents, \"%s\" is given", name.c_str());
-    close_safe (file_fd);
-    dl::leave_critical_section();
-    return false;
-  }
-
-  size_t size = stat_buf.st_size;
-  if (size > string::max_size) {
-    php_warning ("File \"%s\" is too large", name.c_str());
-    close_safe (file_fd);
-    dl::leave_critical_section();
-    return false;
-  }
-  dl::leave_critical_section();
-
-  string res ((dl::size_type)size, false);
-
-  dl::enter_critical_section();//OK
-  if (read_safe (file_fd, &res[0], size) < (ssize_t)size) {
-    close_safe (file_fd);
-    dl::leave_critical_section();
-    return false;
-  }
-
-  close_safe (file_fd);
-  dl::leave_critical_section();
-  return res;
-}
-
-OrFalse <int> f$file_put_contents (const string &name, const var &content_var) {
-  string content;
-  if (content_var.is_array()) {
-    content = f$implode (string(), content_var.to_array());
-  } else {
-    content = content_var.to_string();
-  }
-
-  dl::enter_critical_section();//OK
-  int file_fd = open_safe (name.c_str(), O_WRONLY | O_TRUNC | O_CREAT, 0644);
-  if (file_fd < 0) {
-    php_warning ("Can't open file \"%s\"", name.c_str());
-    dl::leave_critical_section();
-    return false;
-  }
-
-  if (write_safe (file_fd, content.c_str(), content.size()) < (ssize_t)content.size()) {
-    close_safe (file_fd);
-    dl::leave_critical_section();
-    return false;
-  }
-
-  close_safe (file_fd);
-  dl::leave_critical_section();
-  return content.size();
-}
-
 bool f$file_exists (const string &name) {
   dl::enter_critical_section();//OK
   bool result = (access (name.c_str(), F_OK) == 0);
@@ -454,36 +379,57 @@ OrFalse <string> f$realpath (const string &path) {
   return false;
 }
 
-static OrFalse <string> full_realpath (const string &path) {
+static OrFalse <string> full_realpath (const string &path) { // realpath resolving only dirname to work with unexisted files
   static char full_realpath_cache_storage[sizeof (array <string>)];
   static array <string> *full_realpath_cache = reinterpret_cast <array <string> *> (full_realpath_cache_storage);
   static long long full_realpath_last_query_num = -1;
 
-  if ((int)path.size() == 1 && path[0] == '/') {
-    return path;
+  const dl::size_type offset = file_wrapper_name.size();
+  string wrapped_path;
+  if (strncmp (path.c_str(), file_wrapper_name.c_str(), offset)) {
+    wrapped_path = file_wrapper_name;
+    wrapped_path.append (path);
+  } else {
+    wrapped_path = path;
   }
 
-  char real_path[PATH_MAX];
+  if (wrapped_path.size() == offset + 1 && wrapped_path[offset] == '/') {
+    return wrapped_path;
+  }
 
   if (dl::query_num != full_realpath_last_query_num) {
     new (full_realpath_cache_storage) array <string>();
     full_realpath_last_query_num = dl::query_num;
   }
 
-  string &result_cache = (*full_realpath_cache)[path];
+  string &result_cache = (*full_realpath_cache)[wrapped_path];
   if (!result_cache.empty()) {
+    if (result_cache.size() == 1) {
+      return false;
+    }
+
+    php_assert (!strncmp (result_cache.c_str(), file_wrapper_name.c_str(), offset));
     return result_cache;
   }
 
-  string dir = f$dirname (path);
+  char real_path[PATH_MAX];
+  string dirname_path_copy (wrapped_path.c_str() + offset, wrapped_path.size() - offset);
+
   dl::enter_critical_section();//OK
-  bool result = (realpath (dir.c_str(), real_path) != NULL);
+  const char *dirname_c_str = dirname (dirname_path_copy.buffer());
+  bool result = (realpath (dirname_c_str, real_path) != NULL);
   dl::leave_critical_section();
 
   if (result) {
-    result_cache = (static_SB.clean() + real_path + '/' + f$basename (path)).str();
-    return result_cache;
+    string basename_path_copy (wrapped_path.c_str() + offset, wrapped_path.size() - offset);
+
+    dl::enter_critical_section();//OK
+    const char *basename_c_str = __xpg_basename (basename_path_copy.buffer());
+    dl::leave_critical_section();
+
+    return result_cache = (static_SB.clean() + file_wrapper_name + real_path + '/' + basename_c_str).str();
   }
+  result_cache = LETTER_a;
   return false;
 }
 
@@ -556,24 +502,34 @@ bool f$unlink (const string &name) {
   return result;
 }
 
-const MyFile STDOUT ("::STDOUT::", 10);
-const MyFile STDERR ("::STDERR::", 10);
 
 static char opened_files_storage[sizeof (array <FILE *>)];
 static array <FILE *> *opened_files = reinterpret_cast <array <FILE *> *> (opened_files_storage);
 static long long opened_files_last_query_num = -1;
 
-MyFile f$fopen (const string &filename, const string &mode) {
+
+static bool file_fclose (const Stream &stream);
+
+static FILE *get_file (const Stream &stream) {
+  OrFalse <string> filename_or_false = full_realpath (stream.to_string());
+  if (!f$boolval (filename_or_false)) {
+    php_warning ("Wrong file \"%s\" specified", stream.to_string().c_str());
+    return NULL;
+  }
+
+  string filename = filename_or_false.val();
+  if (dl::query_num != opened_files_last_query_num || !opened_files->has_key (filename)) {
+    php_warning ("File \"%s\" is not opened", filename.c_str());
+  }
+
+  return opened_files->get_value (filename);
+}
+
+static Stream file_fopen (const string &filename, const string &mode) {
   if (dl::query_num != opened_files_last_query_num) {
     new (opened_files_storage) array <FILE *>();
-    opened_files->set_value (STDOUT, stdout);
-    opened_files->set_value (STDERR, stderr);
 
     opened_files_last_query_num = dl::query_num;
-  }
-  if (eq2 (filename, STDOUT) || eq2 (filename, STDOUT)) {
-    php_warning ("Can't open STDERR or STDOUT");
-    return false;
   }
 
   OrFalse <string> real_filename_or_false = full_realpath (filename);
@@ -584,72 +540,45 @@ MyFile f$fopen (const string &filename, const string &mode) {
   string real_filename = real_filename_or_false.val();
   if (opened_files->has_key (real_filename)) {
     php_warning ("File \"%s\" already opened. Closing previous one", real_filename.c_str());
-    f$fclose (MyFile (real_filename));
+    file_fclose (real_filename);
   }
 
   dl::enter_critical_section();//NOT OK: opened_files
-  FILE *file = fopen (real_filename.c_str(), mode.c_str());
+  FILE *file = fopen (real_filename.c_str() + file_wrapper_name.size(), mode.c_str());
   if (file != NULL) {
     opened_files->set_value (real_filename, file);
     dl::leave_critical_section();
 
-    return MyFile (real_filename);
+    return real_filename;
   } else {
     dl::leave_critical_section();
 
-    return MyFile (false);
+    return false;
   }
 }
 
-OrFalse <int> f$fwrite (const MyFile &file, const string &text) {
-  if (eq2 (file, STDOUT)) {
-    print (text);
-    return (int)text.size();
-  }
-
-  int res = -1;
-  if (eq2 (file, STDERR)) {
+static OrFalse <int> file_fwrite (const Stream &stream, const string &text) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
     if (text.size() == 0) {
       return 0;
     }
 
     dl::enter_critical_section();//OK
-    res = (int)fwrite (text.c_str(), text.size(), 1, stderr);
+    int res = (int)fwrite (text.c_str(), text.size(), 1, f);
     dl::leave_critical_section();
+
+    if (res == 0) {
+      return false;
+    }
+    php_assert (res == 1);
+    return (int)text.size();
   } else {
-    OrFalse <string> filename_or_false = full_realpath (file.to_string());
-    if (!f$boolval (filename_or_false)) {
-      php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-      return false;
-    }
-    string filename = filename_or_false.val();
-    if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
-      if (text.size() == 0) {
-        return 0;
-      }
-
-      FILE *f = opened_files->get_value (filename);
-      dl::enter_critical_section();//OK
-      res = (int)fwrite (text.c_str(), text.size(), 1, f);
-      dl::leave_critical_section();
-    } else {
-      php_warning ("File \"%s\" is not opened", file.to_string().c_str());
-      return false;
-    }
-  }
-
-  if (res == 0) {
     return false;
   }
-  php_assert (res == 1);
-  return (int)text.size();
 }
 
-int f$fseek (const MyFile &file, int offset, int whence) {
-  if (eq2 (file, STDOUT) || eq2 (file, STDERR)) {
-    php_warning ("Can't use fseek with STDERR and STDOUT");
-    return -1;
-  }
+static int file_fseek (const Stream &stream, int offset, int whence) {
   const static int whences[3] = {SEEK_SET, SEEK_END, SEEK_CUR};
   if ((unsigned int)whence >= 3u) {
     php_warning ("Wrong parameter whence in function fseek");
@@ -657,97 +586,44 @@ int f$fseek (const MyFile &file, int offset, int whence) {
   }
   whence = whences[whence];
 
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
-  if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-    return -1;
-  }
-  string filename = filename_or_false.val();
-  if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
-    FILE *f = opened_files->get_value (filename);
+  FILE *f = get_file (stream);
+  if (f != NULL) {
     dl::enter_critical_section();//OK
     int res = fseek (f, (long)offset, whence);
     dl::leave_critical_section();
     return res;
   } else {
-    php_warning ("File \"%s\" is not opened", filename.c_str());
     return -1;
   }
 }
 
-bool f$rewind (const MyFile &file) {
-  if (eq2 (file, STDOUT) || eq2 (file, STDERR)) {
-    php_warning ("Can't use frewind with STDERR and STDOUT");
-    return false;
-  }
-
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
-  if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-    return false;
-  }
-  string filename = filename_or_false.val();
-  if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
-    FILE *f = opened_files->get_value (filename);
-    dl::enter_critical_section();//OK
-    rewind (f);
-    dl::leave_critical_section();
-    return true;
-  } else {
-    php_warning ("File \"%s\" is not opened", filename.c_str());
-    return false;
-  }
-}
-
-OrFalse <int> f$ftell (const MyFile &file) {
-  if (eq2 (file, STDOUT) || eq2 (file, STDERR)) {
-    php_warning ("Can't use ftell with STDERR and STDOUT");
-    return false;
-  }
-
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
-  if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-    return false;
-  }
-  string filename = filename_or_false.val();
-  if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
-    FILE *f = opened_files->get_value (filename);
+static OrFalse <int> file_ftell (const Stream &stream) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
     dl::enter_critical_section();//OK
     int result = (int)ftell (f);
     dl::leave_critical_section();
     return result;
   } else {
-    php_warning ("File \"%s\" is not opened", filename.c_str());
     return false;
   }
 }
 
-OrFalse <string> f$fread (const MyFile &file, int length) {
-  if (eq2 (file, STDOUT) || eq2 (file, STDERR)) {
-    php_warning ("Can't use fread with STDERR and STDOUT");
-    return false;
-  }
+static OrFalse <string> file_fread (const Stream &stream, int length) {
   if (length <= 0) {
     php_warning ("Parameter length in function fread must be positive");
     return false;
   }
 
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
-  if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-    return false;
-  }
-  string filename = filename_or_false.val();
+  FILE *f = get_file (stream);
   string res (length, false);
-  if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
-    FILE *f = opened_files->get_value (filename);
+  if (f != NULL) {
     dl::enter_critical_section();//OK
     clearerr (f);
     size_t res_size = fread (&res[0], 1, length, f);
     if (ferror (f)) {
       dl::leave_critical_section();
-      php_warning ("Error happened during fread from file \"%s\"", filename.c_str());
+      php_warning ("Error happened during fread from file \"%s\"", stream.to_string().c_str());
       return false;
     }
     dl::leave_critical_section();
@@ -755,34 +631,22 @@ OrFalse <string> f$fread (const MyFile &file, int length) {
     res.shrink ((dl::size_type)res_size);
     return res;
   } else {
-    php_warning ("File \"%s\" is not opened", filename.c_str());
     return false;
   }
 }
 
-OrFalse <int> f$fpassthru (const MyFile &file) {
-  if (eq2 (file, STDOUT) || eq2 (file, STDERR)) {
-    php_warning ("Can't use fpassthru with STDERR and STDOUT");
-    return false;
-  }
-
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
-  if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-    return false;
-  }
-  string filename = filename_or_false.val();
-  if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
+static OrFalse <int> file_fpassthru (const Stream &stream) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
     int result = 0;
 
-    FILE *f = opened_files->get_value (filename);
     dl::enter_critical_section();//OK
     while (!feof (f)) {
       clearerr (f);
       size_t res_size = fread (&php_buf[0], 1, PHP_BUF_LEN, f);
       if (ferror (f)) {
         dl::leave_critical_section();
-        php_warning ("Error happened during fpassthru from file \"%s\"", filename.c_str());
+        php_warning ("Error happened during fpassthru from file \"%s\"", stream.to_string().c_str());
         return false;
       }
       print (php_buf, (int)res_size);
@@ -791,40 +655,25 @@ OrFalse <int> f$fpassthru (const MyFile &file) {
     dl::leave_critical_section();
     return result;
   } else {
-    php_warning ("File \"%s\" is not opened", filename.c_str());
     return false;
   }
 }
 
-bool f$fflush (const MyFile &file) {
-  if (eq2 (file, STDOUT)) {
-    //TODO flush
-    return false;
-  }
-
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
-  if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
-    return false;
-  }
-  string filename = filename_or_false.val();
-  if (dl::query_num == opened_files_last_query_num && opened_files->has_key (filename)) {
+static bool file_fflush (const Stream &stream) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
     dl::enter_critical_section();//OK
-    fflush (opened_files->get_value (filename));
+    fflush (f);
     dl::leave_critical_section();
     return true;
   }
   return false;
 }
 
-bool f$fclose (const MyFile &file) {
-  if (eq2 (file, STDOUT) || eq2 (file, STDERR)) {
-    return true;
-  }
-
-  OrFalse <string> filename_or_false = full_realpath (file.to_string());
+static bool file_fclose (const Stream &stream) {
+  OrFalse <string> filename_or_false = full_realpath (stream.to_string());
   if (!f$boolval (filename_or_false)) {
-    php_warning ("Wrong file \"%s\" specified", file.to_string().c_str());
+    php_warning ("Wrong file \"%s\" specified", stream.to_string().c_str());
     return false;
   }
   string filename = filename_or_false.val();
@@ -839,12 +688,106 @@ bool f$fclose (const MyFile &file) {
 }
 
 
-void files_init_static (void) {
-  opened_fd = -1;
+OrFalse <string> file_file_get_contents (const string &name) {
+  dl::size_type offset = file_wrapper_name.size();
+  if (strncmp (name.c_str(), file_wrapper_name.c_str(), offset)) {
+    offset = 0;
+  }
+
+  struct stat stat_buf;
+  dl::enter_critical_section();//OK
+  int file_fd = open_safe (name.c_str() + offset, O_RDONLY);
+  if (file_fd < 0) {
+    dl::leave_critical_section();
+    return false;
+  }
+  if (fstat (file_fd, &stat_buf) < 0) {
+    close_safe (file_fd);
+    dl::leave_critical_section();
+    return false;
+  }
+
+  if (!S_ISREG (stat_buf.st_mode)) {
+    php_warning ("Regular file expected as first argument in function file_get_contents, \"%s\" is given", name.c_str());
+    close_safe (file_fd);
+    dl::leave_critical_section();
+    return false;
+  }
+
+  size_t size = stat_buf.st_size;
+  if (size > string::max_size) {
+    php_warning ("File \"%s\" is too large to get its content", name.c_str());
+    close_safe (file_fd);
+    dl::leave_critical_section();
+    return false;
+  }
+  dl::leave_critical_section();
+
+  string res ((dl::size_type)size, false);
 
   dl::enter_critical_section();//OK
-  INIT_VAR(string, raw_post_data);
+  if (read_safe (file_fd, &res[0], size) < (ssize_t)size) {
+    close_safe (file_fd);
+    dl::leave_critical_section();
+    return false;
+  }
+
+  close_safe (file_fd);
   dl::leave_critical_section();
+  return res;
+}
+
+static OrFalse <int> file_file_put_contents (const string &name, const string &content) {
+  dl::size_type offset = file_wrapper_name.size();
+  if (strncmp (name.c_str(), file_wrapper_name.c_str(), offset)) {
+    offset = 0;
+  }
+
+  dl::enter_critical_section();//OK
+  int file_fd = open (name.c_str() + offset, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+  if (file_fd < 0) {
+    php_warning ("Can't open file \"%s\"", name.c_str());
+    dl::leave_critical_section();
+    return false;
+  }
+
+  if (write_safe (file_fd, content.c_str(), content.size()) < (ssize_t)content.size()) {
+    close (file_fd);
+    unlink (name.c_str());
+    dl::leave_critical_section();
+    return false;
+  }
+
+  close (file_fd);
+  dl::leave_critical_section();
+  return content.size();
+}
+
+
+void files_init_static_once (void) {
+  static stream_functions file_stream_functions;
+
+  file_stream_functions.name = string ("file", 4);
+  file_stream_functions.fopen = file_fopen;
+  file_stream_functions.fwrite = file_fwrite;
+  file_stream_functions.fseek = file_fseek;
+  file_stream_functions.ftell = file_ftell;
+  file_stream_functions.fread = file_fread;
+  file_stream_functions.fpassthru = file_fpassthru;
+  file_stream_functions.fflush = file_fflush;
+  file_stream_functions.fclose = file_fclose;
+
+  file_stream_functions.file_get_contents = file_file_get_contents;
+  file_stream_functions.file_put_contents = file_file_put_contents;
+
+  file_stream_functions.stream_socket_client = NULL;
+  file_stream_functions.context_set_option = NULL;
+
+  register_stream_functions (&file_stream_functions, true);
+}
+
+void files_init_static (void) {
+  opened_fd = -1;
 }
 
 void files_free_static (void) {
@@ -852,9 +795,7 @@ void files_free_static (void) {
   if (dl::query_num == opened_files_last_query_num) {
     const array <FILE *> *const_opened_files = opened_files;
     for (array <FILE *>::const_iterator p = const_opened_files->begin(); p != const_opened_files->end(); ++p) {
-      if (neq2 (p.get_key(), STDOUT) && neq2 (p.get_key(), STDERR)) {
-        fclose (p.get_value());
-      }
+      fclose (p.get_value());
     }
     opened_files_last_query_num--;
   }
@@ -862,8 +803,6 @@ void files_free_static (void) {
   if (opened_fd != -1) {
     close_safe (opened_fd);
   }
-
-  CLEAR_VAR(string, raw_post_data);
   dl::leave_critical_section();
 }
 

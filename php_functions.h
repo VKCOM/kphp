@@ -18,6 +18,7 @@
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
+#include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
 #include "runtime/vkext.h"

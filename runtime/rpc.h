@@ -180,6 +180,8 @@ array <array <var> > f$rpc_tl_query_result_synchronously (const array <T> &query
 int f$query_x2 (int x);
 
 
+void rpc_init_static_once (void);
+
 void rpc_init_static (void);
 
 void rpc_free_static (void);

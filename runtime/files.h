@@ -7,8 +7,6 @@
 #include "kphp_core.h"
 
 
-extern string raw_post_data;
-
 extern const string LETTER_a;
 
 
@@ -37,10 +35,6 @@ string f$dirname (const string &name);
 
 OrFalse <array <string> > f$file (const string &name);
 
-OrFalse <string> f$file_get_contents (const string &name);
-
-OrFalse <int> f$file_put_contents (const string &name, const var &content_var);
-
 bool f$file_exists (const string &name);
 
 OrFalse <int> f$filesize (const string &name);
@@ -66,29 +60,10 @@ OrFalse <string> f$tempnam (const string &dir, const string &prefix);
 bool f$unlink (const string &name);
 
 
-typedef var MyFile;
+OrFalse <string> file_file_get_contents (const string &name);
 
-extern const MyFile STDOUT;
-extern const MyFile STDERR;
 
-MyFile f$fopen (const string &filename, const string &mode);
-
-OrFalse <int> f$fwrite (const MyFile &file, const string &text);
-
-int f$fseek (const MyFile &file, int offset, int whence = 0);
-
-bool f$rewind (const MyFile &file);
-
-OrFalse <int> f$ftell (const MyFile &file);
-
-OrFalse <string> f$fread (const MyFile &file, int length);
-
-OrFalse <int> f$fpassthru (const MyFile &file);
-
-bool f$fflush (const MyFile &file);
-
-bool f$fclose (const MyFile &file);
-
+void files_init_static_once (void);
 
 void files_init_static (void);
 

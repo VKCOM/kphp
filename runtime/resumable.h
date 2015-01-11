@@ -123,6 +123,7 @@ int f$wait_queue_next (int queue_id, double timeout = -1.0);
 int wait_queue_next_synchronously (int queue_id);
 int f$wait_queue_next_synchronously (int queue_id);
 
+void resumable_init_static_once (void);
 
 void resumable_init_static (void);
 

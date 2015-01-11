@@ -3587,7 +3587,7 @@ void read_tl_config (const char *file_name);
 }
 
 void read_tl_config (const char *file_name) {
-  OrFalse <string> config = f$file_get_contents (string (file_name, (dl::size_type)strlen (file_name)));
+  OrFalse <string> config = file_file_get_contents (string (file_name, (dl::size_type)strlen (file_name)));
   php_assert (f$boolval (config));
   php_assert (f$rpc_parse (config.val()));
   renew_tl_config();
@@ -3598,10 +3598,14 @@ void read_tl_config (const char *file_name) {
 }
 
 
+void rpc_init_static_once (void) {
+  php_assert (timeout_wakeup_id == -1);
+
+  timeout_wakeup_id = register_wakeup_callback (&process_rpc_timeout);
+}
+
 void rpc_init_static (void) {
-  if (timeout_wakeup_id == -1) {
-    timeout_wakeup_id = register_wakeup_callback (&process_rpc_timeout);
-  }
+  php_assert (timeout_wakeup_id != -1);
 
   INIT_VAR(string, rpc_data_copy);
   INIT_VAR(string, rpc_data_copy_backup);

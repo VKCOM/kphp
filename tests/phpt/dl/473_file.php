@@ -45,7 +45,7 @@
   rename ($filename, $new_filename);
   $filename = $new_filename;
 
-  fwrite (STDOUT, "Part of the answer\n");
+  file_put_contents (STDOUT, array ("Part", " of the answer\n"));
   fwrite (STDERR, "Not a part of the answer\n");
   
   var_dump (filesize ($filename));
