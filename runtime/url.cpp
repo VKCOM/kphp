@@ -80,7 +80,8 @@ string f$base64url_encode_ulong_NN (ULong val) {
 }
 
 
-static void parse_str_set_array_value (var &arr, const char *left_br_pos, int key_len, const string &value) {
+static void parse_str_set_array_value (var &arr, const string &key, const string &value) {
+  const char *left_br_pos = key.c_str();
   php_assert (*left_br_pos == '[');
   const char *right_br_pos = (const char *)memchr (left_br_pos, ']', key.size());
   if (right_br_pos != NULL) {
