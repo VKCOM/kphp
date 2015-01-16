@@ -1,5 +1,7 @@
 #define _FILE_OFFSET_BITS 64
 
+#include "files.h"
+
 #include <errno.h>
 #include <libgen.h>
 #include <sys/utsname.h>
@@ -7,7 +9,6 @@
 
 #undef basename
 
-#include "files.h"
 #include "interface.h"
 #include "streams.h"
 #include "string_functions.h"//php_buf, TODO
@@ -616,8 +617,8 @@ static OrFalse <string> file_fread (const Stream &stream, int length) {
   }
 
   FILE *f = get_file (stream);
-  string res (length, false);
   if (f != NULL) {
+    string res (length, false);
     dl::enter_critical_section();//OK
     clearerr (f);
     size_t res_size = fread (&res[0], 1, length, f);
@@ -668,6 +669,17 @@ static bool file_fflush (const Stream &stream) {
     return true;
   }
   return false;
+}
+
+static bool file_feof (const Stream &stream) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
+    dl::enter_critical_section();//OK
+    bool eof = (feof (f) != 0);
+    dl::leave_critical_section();
+    return eof;
+  }
+  return true;
 }
 
 static bool file_fclose (const Stream &stream) {
@@ -775,6 +787,7 @@ void files_init_static_once (void) {
   file_stream_functions.fread = file_fread;
   file_stream_functions.fpassthru = file_fpassthru;
   file_stream_functions.fflush = file_fflush;
+  file_stream_functions.feof = file_feof;
   file_stream_functions.fclose = file_fclose;
 
   file_stream_functions.file_get_contents = file_file_get_contents;
@@ -782,6 +795,8 @@ void files_init_static_once (void) {
 
   file_stream_functions.stream_socket_client = NULL;
   file_stream_functions.context_set_option = NULL;
+  file_stream_functions.stream_set_option = NULL;
+  file_stream_functions.get_fd = NULL;
 
   register_stream_functions (&file_stream_functions, true);
 }

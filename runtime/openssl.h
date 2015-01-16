@@ -30,6 +30,8 @@ bool f$openssl_private_decrypt (const string &data, var &result, const string &k
 OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &passphrase = string());
 
 
+void openssl_init_static_once (void);
+
 void openssl_init_static (void);
 
 void openssl_free_static (void);

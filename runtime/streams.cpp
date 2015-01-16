@@ -1,8 +1,11 @@
+#include "streams.h"
+
 #include <cstdlib>
 #include <cstring>
 
+#include <sys/select.h>
+
 #include "array_functions.h"
-#include "streams.h"
 
 static dl::size_type max_wrapper_name_size;
 
@@ -121,7 +124,10 @@ bool f$stream_context_set_option (var &context, const var &options_var) {
 }
 
 
-var f$stream_socket_client (const string &url, int &error_number, string &error_description, double timeout, int flags, const var &context) {
+var error_number_dummy;
+var error_description_dummy;
+
+var f$stream_socket_client (const string &url, var &error_number, var &error_description, double timeout, int flags, const var &context) {
   if (flags != STREAM_CLIENT_CONNECT) {
     php_warning ("Wrong parameter flags = %d in function stream_socket_client", flags);
     error_number = -1001;
@@ -143,9 +149,186 @@ var f$stream_socket_client (const string &url, int &error_number, string &error_
     return false;
   }
 
-  return functions->stream_socket_client (url, error_number, error_description, timeout, flags, context.get_value (functions->name));
+  int error_number_int = 0;
+  string error_description_string;
+  var result = functions->stream_socket_client (url, error_number_int, error_description_string, timeout, flags, context.get_value (functions->name));
+  error_number = error_number_int;
+  error_description = error_description_string;
+  return result;
 }
 
+bool f$stream_set_blocking (const Stream &stream, bool mode) {
+  const string &url = stream.to_string();
+
+  const stream_functions *functions = get_stream_functions_from_url (url);
+  if (functions == NULL) {
+    php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());
+    return false;
+  }
+  if (functions->stream_set_option == NULL) {
+    php_warning ("Wrapper \"%s\" doesn't support function stream_set_blocking", functions->name.c_str());
+    return false;
+  }
+
+  return functions->stream_set_option (stream, STREAM_SET_BLOCKING_OPTION, mode);
+}
+
+int f$stream_set_write_buffer (const Stream &stream, int size) {
+  const string &url = stream.to_string();
+
+  const stream_functions *functions = get_stream_functions_from_url (url);
+  if (functions == NULL) {
+    php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());
+    return -1;
+  }
+  if (functions->stream_set_option == NULL) {
+    php_warning ("Wrapper \"%s\" doesn't support function stream_set_write_buffer", functions->name.c_str());
+    return -1;
+  }
+
+  return functions->stream_set_option (stream, STREAM_SET_WRITE_BUFFER_OPTION, size);
+}
+
+int f$stream_set_read_buffer (const Stream &stream, int size) {
+  const string &url = stream.to_string();
+
+  const stream_functions *functions = get_stream_functions_from_url (url);
+  if (functions == NULL) {
+    php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());
+    return -1;
+  }
+  if (functions->stream_set_option == NULL) {
+    php_warning ("Wrapper \"%s\" doesn't support function stream_set_read_buffer", functions->name.c_str());
+    return -1;
+  }
+
+  return functions->stream_set_option (stream, STREAM_SET_READ_BUFFER_OPTION, size);
+}
+
+
+static void stream_array_to_fd_set (const var &streams_var, fd_set *fds, int *nfds) {
+	FD_ZERO(fds);
+
+  if (!streams_var.is_array()) {
+    if (!streams_var.is_null()) {
+      php_warning ("Not an array nor null passed to function stream_select");
+    }
+
+    return;
+  }
+
+  array <Stream> result;
+  const array <Stream> &streams = streams_var.to_array();
+  for (array <Stream>::const_iterator p = streams.begin(); p != streams.end(); ++p) {
+    const Stream &stream = p.get_value();
+    const string &url = stream.to_string();
+
+    const stream_functions *functions = get_stream_functions_from_url (url);
+    if (functions == NULL) {
+      php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());
+      continue;
+    }
+    if (functions->get_fd == NULL) {
+      php_warning ("Wrapper \"%s\" doesn't support stream_select", functions->name.c_str());
+      continue;
+    }
+
+    int fd = functions->get_fd (stream);
+    if (fd == -1) {
+      continue;
+    }
+
+    FD_SET(fd, fds);
+
+    if (fd > *nfds) {
+      *nfds = fd;
+    }
+  }
+}
+
+static void stream_array_from_fd_set (var &streams_var, fd_set *fds) {
+  if (!streams_var.is_array()) {
+    return;
+  }
+
+  const array <Stream> &streams = streams_var.to_array();
+  if (streams.empty()) {
+    return;
+  }
+
+  array <Stream> result;
+  for (array <Stream>::const_iterator p = streams.begin(); p != streams.end(); ++p) {
+    const Stream &stream = p.get_value();
+    const string &url = stream.to_string();
+
+    const stream_functions *functions = get_stream_functions_from_url (url);
+    if (functions == NULL) {
+      continue;
+    }
+    if (functions->get_fd == NULL) {
+      continue;
+    }
+
+    int fd = functions->get_fd (stream);
+    if (fd == -1) {
+      continue;
+    }
+
+    if (FD_ISSET(fd, fds)) {
+      result.set_value (p.get_key(), stream);
+    }
+  }
+
+  streams_var = result;
+}
+
+OrFalse <int> f$stream_select (var &read, var &write, var &except, const var &tv_sec_var, int tv_usec) {
+  struct timeval tv, *timeout = NULL;
+  if (!tv_sec_var.is_null()) {
+    int tv_sec = tv_sec_var.to_int();
+    if (tv_sec < 0) {
+      php_warning ("Wrong parameter tv_sec = %d\n", tv_sec);
+      return false;
+    }
+    if (tv_usec < 0 || tv_usec >= 1000000) {
+      php_warning ("Wrong parameter tv_usec = %d\n", tv_usec);
+      return false;
+    }
+
+    tv.tv_sec = tv_sec;
+    tv.tv_usec = tv_usec;
+
+    timeout = &tv;
+  }
+
+  fd_set rfds, wfds, efds;
+  int nfds = 0;
+
+  stream_array_to_fd_set (read, &rfds, &nfds);
+  stream_array_to_fd_set (write, &wfds, &nfds);
+  stream_array_to_fd_set (except, &efds, &nfds);
+
+  if (nfds == 0) {
+    php_warning ("No valid streams was passed to function stream_select");
+    return false;
+  }
+
+//TODO use pselect
+  dl::enter_critical_section();//OK
+  int select_result = select (nfds + 1, &rfds, &wfds, &efds, timeout);
+  dl::leave_critical_section();
+
+  if (select_result == -1) {
+    php_warning ("Call to select has failed: %m");
+    return false;
+  }
+
+  stream_array_from_fd_set (read, &rfds);
+  stream_array_from_fd_set (write, &wfds);
+  stream_array_from_fd_set (except, &efds);
+
+  return select_result;
+}
 
 
 #define STREAM_FUNCTION_BODY(function_name, error_result)                                             \
@@ -196,6 +379,10 @@ bool f$fflush (const Stream &stream) {
   STREAM_FUNCTION_BODY(fflush, false) (stream);
 }
 
+bool f$feof (const Stream &stream) {
+  STREAM_FUNCTION_BODY(feof, true) (stream);
+}
+
 bool f$fclose (const Stream &stream) {
   STREAM_FUNCTION_BODY(fclose, false) (stream);
 }
@@ -214,4 +401,15 @@ OrFalse <int> f$file_put_contents (const string &stream, const var &content_var)
   }
 
   STREAM_FUNCTION_BODY(file_put_contents, false) (url, content);
+}
+
+
+void streams_init_static (void) {
+  INIT_VAR(var, error_number_dummy);
+  INIT_VAR(var, error_description_dummy);
+}
+
+void streams_free_static (void) {
+  CLEAR_VAR(var, error_number_dummy);
+  CLEAR_VAR(var, error_description_dummy);
 }

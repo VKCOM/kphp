@@ -459,8 +459,8 @@ int f$posix_getpid (void) {
 }
 
 
-#define CONST_STRING(s) ((const string *)&s)
-#define CONST_ARRAY(a) ((const array <var> *)&a)
+#define AS_CONST_STRING(s) ((const string *)&s)
+#define AS_CONST_ARRAY(a) ((const array <var> *)&a)
 
 static inline void do_serialize (bool b) {
   static_SB.reserve (4);
@@ -511,9 +511,9 @@ void do_serialize (const var &v) {
     case var::FLOAT_TYPE:
       return do_serialize (v.f);
     case var::STRING_TYPE:
-      return do_serialize (*CONST_STRING(v.s));
+      return do_serialize (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE: {
-      const array <var> &a = *CONST_ARRAY(v.a);
+      const array <var> &a = *AS_CONST_ARRAY(v.a);
       static_SB.append ("a:", 2);
       static_SB += a.count();
       static_SB.append (":{", 2);
@@ -859,13 +859,13 @@ void do_json_encode (const var &v, bool simple_encode) {
       return;
     case var::STRING_TYPE:
       if (simple_encode) {
-        do_json_encode_string_vkext (CONST_STRING(v.s)->c_str(), CONST_STRING(v.s)->size());
+        do_json_encode_string_vkext (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
       } else {
-        do_json_encode_string_php (CONST_STRING(v.s)->c_str(), CONST_STRING(v.s)->size());
+        do_json_encode_string_php (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
       }
       return;
     case var::ARRAY_TYPE: {
-      const array <var> &a = *CONST_ARRAY(v.a);
+      const array <var> &a = *AS_CONST_ARRAY(v.a);
       bool is_vector = a.is_vector();
       if (!is_vector && a.size().string_size == 0 && a.get_next_key() == a.count()) {
         int n = 0;
@@ -1201,10 +1201,10 @@ void do_print_r (const var &v, int depth) {
       *coub += v.f;
       break;
     case var::STRING_TYPE:
-      *coub += *CONST_STRING(v.s);
+      *coub += *AS_CONST_STRING(v.s);
       break;
     case var::ARRAY_TYPE: {
-      const array <var> *a = CONST_ARRAY(v.a);
+      const array <var> *a = AS_CONST_ARRAY(v.a);
       *coub += "Array\n";
 
       string shift (depth << 3, ' ');
@@ -1251,10 +1251,10 @@ void do_var_dump (const var &v, int depth) {
       *coub + shift + "float(" + v.f + ')';
       break;
     case var::STRING_TYPE:
-      *coub + shift + "string(" + (int)CONST_STRING(v.s)->size() + ") \"" + *CONST_STRING(v.s) + '"';
+      *coub + shift + "string(" + (int)AS_CONST_STRING(v.s)->size() + ") \"" + *AS_CONST_STRING(v.s) + '"';
       break;
     case var::ARRAY_TYPE: {
-      const array <var> *a = CONST_ARRAY(v.a);
+      const array <var> *a = AS_CONST_ARRAY(v.a);
       string shift (depth * 2, ' ');
 
       *coub + shift + (0 && a->is_vector() ? "vector(" : "array(") + a->count() + ") {\n";
@@ -1284,8 +1284,8 @@ void do_var_dump (const var &v, int depth) {
   *coub += '\n';
 }
 
-#undef CONST_STRING
-#undef CONST_ARRAY
+#undef AS_CONST_STRING
+#undef AS_CONST_ARRAY
 
 string f$print_r (const var &v, bool buffered) {
   if (buffered) {

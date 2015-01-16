@@ -1495,17 +1495,17 @@ static int php_fseek (const Stream &stream, int offset __attribute__((unused)), 
   if (eq2 (stream, INPUT)) {
     //TODO implement this
     php_warning ("Can't use fseek with stream %s", INPUT.to_string().c_str());
-    return false;
+    return -1;
   }
 
   php_warning ("Stream %s not found", stream.to_string().c_str());
-  return false;
+  return -1;
 }
 
 static OrFalse <int> php_ftell (const Stream &stream) {
   if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
     php_warning ("Can't use ftell with stream %s", stream.to_string().c_str());
-    return -1;
+    return false;
   }
 
   if (eq2 (stream, INPUT)) {
@@ -1521,7 +1521,7 @@ static OrFalse <int> php_ftell (const Stream &stream) {
 static OrFalse <string> php_fread (const Stream &stream, int length __attribute__((unused))) {
   if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
     php_warning ("Can't use fread with stream %s", stream.to_string().c_str());
-    return -1;
+    return false;
   }
 
   if (eq2 (stream, INPUT)) {
@@ -1537,7 +1537,7 @@ static OrFalse <string> php_fread (const Stream &stream, int length __attribute_
 static OrFalse <int> php_fpassthru (const Stream &stream) {
   if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
     php_warning ("Can't use fpassthru with stream %s", stream.to_string().c_str());
-    return -1;
+    return false;
   }
 
   if (eq2 (stream, INPUT)) {
@@ -1568,6 +1568,22 @@ static bool php_fflush (const Stream &stream) {
 
   php_warning ("Stream %s not found", stream.to_string().c_str());
   return false;
+}
+
+static bool php_feof (const Stream &stream) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use feof with stream %s", stream.to_string().c_str());
+    return true;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use feof with stream %s", INPUT.to_string().c_str());
+    return true;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return true;
 }
 
 static OrFalse <string> php_file_get_contents (const string &url) {
@@ -1616,6 +1632,7 @@ static void interface_init_static_once (void) {
   php_stream_functions.fread = php_fread;
   php_stream_functions.fpassthru = php_fpassthru;
   php_stream_functions.fflush = php_fflush;
+  php_stream_functions.feof = php_feof;
   php_stream_functions.fclose = NULL;
 
   php_stream_functions.file_get_contents = php_file_get_contents;
@@ -1623,6 +1640,8 @@ static void interface_init_static_once (void) {
 
   php_stream_functions.stream_socket_client = NULL;
   php_stream_functions.context_set_option = NULL;
+  php_stream_functions.stream_set_option = NULL;
+  php_stream_functions.get_fd = NULL;
 
   register_stream_functions (&php_stream_functions, false);
 }
@@ -1631,7 +1650,7 @@ static void interface_init_static_once (void) {
 void init_static_once (void) {
   files_init_static_once();
   interface_init_static_once();
-//  openssl_init_static_once();
+  openssl_init_static_once();
   regexp::init_static();
   resumable_init_static_once();
   rpc_init_static_once();
@@ -1651,6 +1670,7 @@ void init_static (void) {
   openssl_init_static();
   resumable_init_static();
   rpc_init_static();
+  streams_init_static();
 
   shutdown_function = NULL;
   finished = false;
@@ -1708,6 +1728,7 @@ void free_static (void) {
   files_free_static();
   openssl_free_static();
   rpc_free_static();
+  streams_free_static();
 
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {

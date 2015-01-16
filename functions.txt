@@ -642,14 +642,28 @@ define (SEEK_END, 1);
 define (SEEK_CUR, 2);
 
 function fopen ($filename ::: string, $mode ::: string);
-function fwrite ($file, $text ::: string) ::: OrFalse <int>;
-function fseek ($file, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
-function rewind ($file) ::: bool;
-function ftell ($file) ::: OrFalse <int>;
-function fread ($file, $length ::: int) ::: OrFalse <string>;
-function fpassthru ($file) ::: OrFalse <int>;
-function fflush ($file) ::: bool;
-function fclose ($file) ::: bool;
+function fwrite ($stream, $text ::: string) ::: OrFalse <int>;
+function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
+function rewind ($stream) ::: bool;
+function ftell ($stream) ::: OrFalse <int>;
+function fread ($stream, $length ::: int) ::: OrFalse <string>;
+function fpassthru ($stream) ::: OrFalse <int>;
+function fflush ($stream) ::: bool;
+function feof ($stream) ::: bool;
+function fclose ($stream) ::: bool;
+
+function stream_context_create ($options ::: var = array());
+function stream_context_set_option (&$context, $options_or_wrapper_name ::: var, $option ::: string = TODO, $value ::: var = TODO) ::: bool;
+
+define (STREAM_CLIENT_CONNECT, 1);
+define (DEFAULT_SOCKET_TIMEOUT, 60);
+
+function stream_socket_client ($url ::: string, &$error_number = TODO, &$error_description = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null);
+function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
+function stream_set_write_buffer ($stream, $size ::: int) ::: bool;
+function stream_set_read_buffer ($stream, $size ::: int) ::: bool;
+function stream_select (&$read, &$write, &$except, $tv_sec, $tv_usec ::: int = 0) ::: OrFalse <int>;
+
 
 function is_uploaded_file ($filename ::: string) ::: bool;
 function move_uploaded_file ($oldname ::: string, $newname ::: string) ::: bool;

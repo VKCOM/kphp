@@ -1,8 +1,8 @@
 #define _FILE_OFFSET_BITS 64
 
-#include <cstdio>
-
 #include "mail.h"
+
+#include <cstdio>
 
 #include "interface.h"
 #include "string_functions.h"

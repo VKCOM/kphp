@@ -1,10 +1,10 @@
+#include "curl.h"
+
 #include <cstdio>
 #include <cstring>
 
 #include <curl/curl.h>
 #include <curl/easy.h>
-
-#include "curl.h"
 
 #include "integer_types.h"
 #include "interface.h"

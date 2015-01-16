@@ -175,6 +175,7 @@ public:
 
 inline bool operator == (const string &lhs, const string &rhs);
 
+#define CONST_STRING(const_str) string (const_str, sizeof (const_str) - 1)
 #define STRING_EQUALS(str, const_str) (str.size() + 1 == sizeof (const_str) && !strcmp (str.c_str(), const_str))
 
 inline bool operator != (const string &lhs, const string &rhs);
