@@ -182,12 +182,12 @@ string_buffer &string_buffer::operator + (const var &v) {
     case var::FLOAT_TYPE:
       return *this + string (v.f);
     case var::STRING_TYPE:
-      return *this + *STRING(v.s);
+      return *this + *AS_CONST_STRING(v.s);
     case var::ARRAY_TYPE:
       php_warning ("Convertion from array to string");
       return append ("Array", 5);
     case var::OBJECT_TYPE:
-      return *this + OBJECT(v.o)->to_string();
+      return *this + AS_CONST_OBJECT(v.o)->to_string();
     default:
       php_assert (0);
       exit (1);

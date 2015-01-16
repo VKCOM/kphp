@@ -495,12 +495,12 @@ string& string::append (const var &v) {
     case var::FLOAT_TYPE:
       return append (string (v.f));
     case var::STRING_TYPE:
-      return append (*STRING(v.s));
+      return append (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
       php_warning ("Convertion from array to string");
       return append ("Array", 5);
     case var::OBJECT_TYPE:
-      return append (OBJECT(v.o)->to_string());
+      return append (AS_CONST_OBJECT(v.o)->to_string());
     default:
       php_assert (0);
       exit (1);
@@ -591,9 +591,9 @@ string& string::append_unsafe (const var &v) {
     case var::FLOAT_TYPE:
       return append_unsafe (v.f);
     case var::STRING_TYPE:
-      return append_unsafe (*STRING(v.s));
+      return append_unsafe (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
-      return append_unsafe (*ARRAY(v.a));
+      return append_unsafe (*AS_CONST_ARRAY(v.a));
     case var::OBJECT_TYPE:
     default:
       php_assert (0);
@@ -945,7 +945,7 @@ const string string::get_value (const var &v) const {
     case var::FLOAT_TYPE:
       return get_value ((int)v.f);
     case var::STRING_TYPE:
-      return get_value (*STRING(v.s));
+      return get_value (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type %s", v.get_type_c_str());
@@ -1031,9 +1031,9 @@ dl::size_type max_string_size (const var &v) {
     case var::FLOAT_TYPE:
       return max_string_size (v.f);
     case var::STRING_TYPE:
-      return max_string_size (*STRING(v.s));
+      return max_string_size (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
-      return max_string_size (*ARRAY(v.a));
+      return max_string_size (*AS_CONST_ARRAY(v.a));
     case var::OBJECT_TYPE:
       //no return
     default:

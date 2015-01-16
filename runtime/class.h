@@ -35,9 +35,9 @@ public:
 
   inline virtual void unset (const string &key);
 
-  inline virtual string to_string (void);
+  inline virtual string to_string (void) const;
 
-  inline virtual array <var> to_array (void);
+  inline virtual array <var> to_array (void) const;
 
   inline virtual var call (const string &name, const array <var> &params);
 
@@ -97,9 +97,9 @@ public:
   inline void unset (const string &key);
 
   
-  inline string to_string (void);
+  inline string to_string (void) const;
 
-  inline array <var> to_array (void);
+  inline array <var> to_array (void) const;
 
   inline void swap (object_ptr &other);
 

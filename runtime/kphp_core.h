@@ -8,10 +8,12 @@
 #include "variable.h"
 #include "string_buffer.h"
 
-#define STRING(s) ((string *)&s)
-#define ARRAY(a) ((array <var> *)&a)
-#define CONST_ARRAY(a) ((const array <var> *)&a)
-#define OBJECT(o) ((object *)&o)
+#define AS_STRING(s) (reinterpret_cast <string *> (&s))
+#define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
+#define AS_ARRAY(a) (reinterpret_cast <array <var> *> (&a))
+#define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
+#define AS_OBJECT(o) (reinterpret_cast <object *> (&o))
+#define AS_CONST_OBJECT(o) (reinterpret_cast <const object *> (&o))
 
 #include "string.cpp"
 #include "array.cpp"
@@ -19,10 +21,11 @@
 #include "variable.cpp"
 #include "string_buffer.cpp"
 
-#undef STRING
-#undef ARRAY
-#undef CONST_ARRAY
-#undef OBJECT
+#undef AS_STRING
+#undef AS_ARRAY
+#undef AS_CONST_ARRAY
+#undef AS_OBJECT
+#undef AS_CONST_OBJECT
 
 class UnknownType {
 };

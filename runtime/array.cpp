@@ -66,11 +66,11 @@ template <>
 class force_convert_to <string, var> {
 public:
   inline static string& convert (var &x) {
-    return *STRING(x.s);
+    return *AS_STRING(x.s);
   }
 
   inline static const string& convert (const var &x) {
-    return *STRING(x.s);
+    return *AS_CONST_STRING(x.s);
   }
 };
 
@@ -78,11 +78,11 @@ template <>
 class force_convert_to <array <var>, var> {
 public:
   inline static array <var>& convert (var &x) {
-    return *ARRAY(x.a);
+    return *AS_ARRAY(x.a);
   }
 
   inline static const array <var>& convert (const var &x) {
-    return *ARRAY(x.a);
+    return *AS_CONST_ARRAY(x.a);
   }
 };
 
@@ -1278,10 +1278,10 @@ T& array <T, TT>::operator[] (const var &v) {
     case var::FLOAT_TYPE:
       return (*this)[(int)v.f];
     case var::STRING_TYPE:
-      return (*this)[*STRING(v.s)];
+      return (*this)[*AS_CONST_STRING(v.s)];
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return (*this)[ARRAY(v.a)->to_int()];
+      return (*this)[AS_CONST_ARRAY(v.a)->to_int()];
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return (*this)[1];
@@ -1451,10 +1451,10 @@ void array <T, TT>::set_value (const var &v, const T &value) {
     case var::FLOAT_TYPE:
       return set_value ((int)v.f, value);
     case var::STRING_TYPE:
-      return set_value (*STRING(v.s), value);
+      return set_value (*AS_CONST_STRING(v.s), value);
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return set_value (ARRAY(v.a)->to_int(), value);
+      return set_value (AS_CONST_ARRAY(v.a)->to_int(), value);
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return set_value (1, value);
@@ -1604,10 +1604,10 @@ const var array <T, TT>::get_var (const var &v) const {
     case var::FLOAT_TYPE:
       return get_var ((int)v.f);
     case var::STRING_TYPE:
-      return get_var (*STRING(v.s));
+      return get_var (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return get_var (ARRAY(v.a)->to_int());
+      return get_var (AS_CONST_ARRAY(v.a)->to_int());
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return get_var (1);
@@ -1645,10 +1645,10 @@ const T array <T, TT>::get_value (const var &v) const {
     case var::FLOAT_TYPE:
       return get_value ((int)v.f);
     case var::STRING_TYPE:
-      return get_value (*STRING(v.s));
+      return get_value (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return get_value (ARRAY(v.a)->to_int());
+      return get_value (AS_CONST_ARRAY(v.a)->to_int());
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return get_value (1);
@@ -1720,10 +1720,10 @@ bool array <T, TT>::has_key (const var &v) const {
     case var::FLOAT_TYPE:
       return has_key ((int)v.f);
     case var::STRING_TYPE:
-      return has_key (*STRING(v.s));
+      return has_key (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return has_key (ARRAY(v.a)->to_int());
+      return has_key (AS_CONST_ARRAY(v.a)->to_int());
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return has_key (1);
@@ -1794,10 +1794,10 @@ bool array <T, TT>::isset (const var &v) const {
     case var::FLOAT_TYPE:
       return isset ((int)v.f);
     case var::STRING_TYPE:
-      return isset (*STRING(v.s));
+      return isset (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return isset (ARRAY(v.a)->to_int());
+      return isset (AS_CONST_ARRAY(v.a)->to_int());
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return isset (1);
@@ -1887,10 +1887,10 @@ void array <T, TT>::unset (const var &v) {
     case var::FLOAT_TYPE:
       return unset ((int)v.f);
     case var::STRING_TYPE:
-      return unset (*STRING(v.s));
+      return unset (*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
-      return unset (ARRAY(v.a)->to_int());
+      return unset (AS_CONST_ARRAY(v.a)->to_int());
     case var::OBJECT_TYPE:
       php_warning ("Illegal offset type object");
       return unset (1);

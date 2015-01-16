@@ -73,11 +73,11 @@ void stdClass::unset (const string &key) {
   return data->unset_map_value (key.hash(), key);
 }
 
-string stdClass::to_string (void) {
+string stdClass::to_string (void) const {
   php_critical_error ("object of class %s can not be converted to string", get_class());
 }
 
-array <var> stdClass::to_array (void) {
+array <var> stdClass::to_array (void) const {
   array <var> result (array_size (0, data->string_size, false));
   for (const string_hash_entry *it = data->begin(); it != data->end(); it = data->next (it)) {
     if (it->string_key.is_int()) {
@@ -207,12 +207,12 @@ void object_ptr <T>::unset (const string &key) {
 
 
 template <class T>
-string object_ptr <T>::to_string (void) {
+string object_ptr <T>::to_string (void) const {
   return o->to_string();
 }
 
 template <class T>
-array <var> object_ptr <T>::to_array (void) {
+array <var> object_ptr <T>::to_array (void) const {
   return o->to_array();
 }
 
