@@ -156,6 +156,8 @@ int remove_expired_event_timers (void) {
 
 int wait_net (int timeout_ms) {
   bool some_expires = false;//TODO remove assert
+  double begin_time = precise_now;
+  double expire_event_time = 0.0;
 //  fprintf (stderr, "wait_net_begin\n");
   int finished_events = process_net_events();
   if (finished_events) {
@@ -166,6 +168,7 @@ int wait_net (int timeout_ms) {
         timeout_ms = timeout_convert_to_ms (event_timers_heap[1]->wakeup_time - precise_now);
       }
       some_expires = true;
+      expire_event_time = event_timers_heap[1]->wakeup_time;
     }
   }
 
@@ -176,8 +179,8 @@ int wait_net (int timeout_ms) {
   update_precise_now();
   finished_events += remove_expired_event_timers();
 
-  if (some_expires) {
-    php_assert (finished_events);
+  if (some_expires && !finished_events) {
+    php_warning ("Have no finished events, but we must have them. begin_time = %.9lf, expire_event_time = %.9lf, timeout_ms = %d, now = %.9lf", begin_time, expire_event_time, timeout_ms, precise_now);
   }
 
 //  fprintf (stderr, "wait_net_end %d\n", finished_events);
