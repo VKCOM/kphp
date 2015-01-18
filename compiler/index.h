@@ -25,6 +25,7 @@ class File {
     File();
     explicit File (const string &path);
     long long upd_mtime() __attribute__ ((warn_unused_result));
+    void set_mtime(long long mtime_value);
     void unlink();
 };
 

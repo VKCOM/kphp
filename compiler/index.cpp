@@ -1,5 +1,7 @@
 #include <ftw.h>
 #include <linux/limits.h>
+#include <sys/stat.h>
+
 
 #include "../common.h"
 #include "stage.h"
@@ -55,6 +57,15 @@ File::File(const string &path) :
   on_disk (false),
   needed (false),
   target (NULL) {
+}
+void File::set_mtime(long long mtime_value) {
+  timespec times[2]; // {atime, mtime}
+  times[0].tv_sec = times[0].tv_nsec = UTIME_NOW;
+  times[1].tv_sec = mtime_value / 1000000000ll;
+  times[1].tv_nsec = mtime_value % 1000000000ll;
+  if (utimensat(AT_FDCWD, path.c_str(), times, 0) < 0) {
+    kphp_warning(dl_pstr("Can't set mtime for %s with error %m", path.c_str()));
+  }
 }
 long long File::upd_mtime() {
   struct stat buf;
