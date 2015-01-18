@@ -46,6 +46,7 @@ File::File() :
   path(),
   mtime (0),
   crc64 (-1),
+  crc64_with_comments (-1),
   on_disk (false),
   needed (false),
   target (NULL) {
@@ -54,6 +55,7 @@ File::File(const string &path) :
   path (path),
   mtime (0),
   crc64 (-1),
+  crc64_with_comments (-1),
   on_disk (false),
   needed (false),
   target (NULL) {

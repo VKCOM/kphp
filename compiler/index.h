@@ -17,6 +17,7 @@ class File {
     string subdir;
     long long mtime;
     unsigned long long crc64;
+    unsigned long long crc64_with_comments;
     bool on_disk;
     bool needed;
     Target *target;

@@ -30,6 +30,8 @@
 #include "pass-optimize.hpp"
 #include "pass-ub.h"
 
+#include "crc32.h"
+
 bool is_const (VertexPtr root) {
   //TODO: make correct check
   switch (root->type()) {
@@ -1942,31 +1944,55 @@ class WriteFilesF {
             dl_passert (old_file != NULL, 
                 dl_pstr ("Failed to open [%s]", full_file_name.c_str()));
             unsigned long long old_crc;
+            unsigned long long old_crc_with_comments;
 
             if (fscanf (old_file, "//crc64:%Lx", &old_crc) != 1) {
               kphp_warning (dl_pstr ("can't read crc64 from [%s]\n", full_file_name.c_str()));
               old_crc = -1;
+            } else {
+              if (fscanf (old_file, " //crc64_with_comments:%Lx",&old_crc_with_comments) != 1) {
+                kphp_warning (dl_pstr ("can't read crc64 with comments from [%s]\n", full_file_name.c_str()));
+                old_crc_with_comments = -1;
+              }
             }
             fclose (old_file);
 
             file->crc64 = old_crc;
+            file->crc64_with_comments = old_crc_with_comments;
           }
         }
 
         bool need_del = false;
         bool need_fix = false;
+        bool need_save_time = false;
         unsigned long long crc = data->calc_crc();
+        string code_str;
+        data->dump (code_str);
+        unsigned long long crc_with_comments = compute_crc64(code_str.c_str(), code_str.length());
         if (file->on_disk) {
           if (file->crc64 != crc) {
             need_fix = true;
             need_del = true;
+          } else if (file->crc64_with_comments != crc_with_comments) {
+            need_fix = true;
+            need_del = true;
+            need_save_time = true;
           }
         } else {
           need_fix = true;
         }
 
         if (need_fix) {
-          fprintf (stderr, "File [%s] changed\n", full_file_name.c_str());
+          long long mtime_before = 0;
+          if (need_save_time) {
+            int upd_res = file->upd_mtime();
+            mtime_before = file->mtime;
+            if (upd_res <= 0) {
+              need_save_time = false;
+              kphp_warning(dl_pstr("Can't get modified time for %s\n", full_file_name.c_str()));
+            }
+          }
+          fprintf (stderr, "File [%s] %schanged\n", full_file_name.c_str(), need_save_time ? "line numbers " : "");
           string dest_file_name = full_file_name;
           if (need_del) {
             int err = unlink (dest_file_name.c_str());
@@ -1977,21 +2003,28 @@ class WriteFilesF {
               dl_pstr ("Failed to open [%s] for write\n", dest_file_name.c_str()));
 
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", ~crc));
-          string data_str;
-          data->dump (data_str);
-          dl_pcheck (fprintf (dest_file, "%s", data_str.c_str()));
+          dl_pcheck (fprintf (dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
+          dl_pcheck (fprintf (dest_file, "%s", code_str.c_str()));
           dl_pcheck (fflush (dest_file));
           dl_pcheck (fseek (dest_file, 0, SEEK_SET));
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", crc));
+          dl_pcheck (fprintf (dest_file, "//crc64_with_comments:%016Lx\n", crc_with_comments));
 
           dl_pcheck (fflush (dest_file));
           dl_pcheck (fclose (dest_file));
 
           file->crc64 =  crc;
+          file->crc64_with_comments = crc_with_comments;
           file->on_disk = true;
 
+          if (need_save_time) {
+            file->set_mtime(mtime_before);
+          }
           long long mtime = file->upd_mtime();
           dl_assert (mtime > 0, "Stat failed");
+          if (need_save_time && file->mtime != mtime_before){
+            kphp_warning("Failed to set previous mtime\n");
+          }
         }
         delete data;
       }
