@@ -1977,7 +1977,9 @@ class WriteFilesF {
               dl_pstr ("Failed to open [%s] for write\n", dest_file_name.c_str()));
 
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", ~crc));
-          data->dump (dest_file);
+          string data_str;
+          data->dump (data_str);
+          dl_pcheck (fprintf (dest_file, "%s", data_str.c_str()));
           dl_pcheck (fflush (dest_file));
           dl_pcheck (fseek (dest_file, 0, SEEK_SET));
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", crc));

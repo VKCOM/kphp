@@ -129,17 +129,17 @@ unsigned long long WriterData::calc_crc() {
   return crc;
 }
 
-void WriterData::write_code (FILE *dest_file, const Line &line) {
+void WriterData::write_code (string& dest_str, const Line &line) {
   const char *s = &text[line.begin_pos];
   int length = line.end_pos - line.begin_pos;
-  dl_pcheck (fprintf (dest_file, "%.*s\n", length, s));
+  dest_str += dl_pstr ("%.*s\n", length, s);
 }
 
-template <class T> void WriterData::dump (FILE *dest_file, T begin, T end, SrcFilePtr file) {
+template <class T> void WriterData::dump (string& dest_str,T begin, T end, SrcFilePtr file) {
   int l = (int)1e9, r = -1;
 
   if (file.not_null()) {
-    dl_pcheck (fprintf (dest_file, "//source = [%s]\n", file->unified_file_name.c_str()));
+    dest_str += dl_pstr ("//source = [%s]\n", file->unified_file_name.c_str());
   }
 
   vector <int> rev;
@@ -165,21 +165,20 @@ template <class T> void WriterData::dump (FILE *dest_file, T begin, T end, SrcFi
           while (cur_id < id) {
             cur_id++;
             if (cur_id + 10 > id) {
-              dl_pcheck (fprintf (dest_file, "//%d: ", cur_id));
+              dest_str += dl_pstr ("//%d: ", cur_id);
               string_ref comment = file->get_line (cur_id);
               for (int j = 0, nj = comment.length(); j < nj; j++) {
                 int c = comment.begin()[j];
                 if (c == '\n') {
-                  dl_pcheck (putc ('\\', dest_file));
-                  dl_pcheck (putc ('n', dest_file));
+                  dest_str += "\\n";
                 } else if (c > 13) {
-                  dl_pcheck (putc (c, dest_file));
+                  dest_str += c;
                 }
               }
               if (comment.length() > 0 && comment.begin()[comment.length() - 1] == '\\') {
-                dl_pcheck (putc (';', dest_file));
+                dest_str += ";";
               }
-              dl_pcheck (putc ('\n', dest_file));
+              dest_str += "\n";
             }
 
             int new_pos = rev[cur_id - l];
@@ -193,11 +192,11 @@ template <class T> void WriterData::dump (FILE *dest_file, T begin, T end, SrcFi
       if (t == 2) {
         if (pos == end_pos) {
           while (cur_line != i) {
-            write_code (dest_file, *cur_line);
+            write_code (dest_str, *cur_line);
             cur_line++;
           }
           do {
-            write_code (dest_file, *cur_line);
+            write_code (dest_str, *cur_line);
             cur_line++;
           } while (cur_line != end && cur_line->line_ids.empty());
         }
@@ -214,7 +213,7 @@ template <class T> void WriterData::dump (FILE *dest_file, T begin, T end, SrcFi
       rev.resize (r - l + 1, -1);
     } else if (t == 2) {
       while (cur_line != end) {
-        write_code (dest_file, *cur_line);
+        write_code (dest_str, *cur_line);
         cur_line++;
       }
     }
@@ -222,10 +221,10 @@ template <class T> void WriterData::dump (FILE *dest_file, T begin, T end, SrcFi
 
 }
 
-void WriterData::dump (FILE *dest_file) {
+void WriterData::dump (string& dest_str) {
   for (__typeof (lines.begin()) i = lines.begin(); i != lines.end();) {
     if (i->file.is_null()) {
-      dump (dest_file, i, i + 1, SrcFilePtr());
+      dump (dest_str, i, i + 1, SrcFilePtr());
       i++;
       continue;
     }
@@ -233,7 +232,7 @@ void WriterData::dump (FILE *dest_file) {
     __typeof (lines.begin()) j;
     for (j = i + 1; j != lines.end() && (j->file.is_null() || i->file == j->file) && !j->brk; j++) {
     }
-    dump (dest_file, i, j, i->file);
+    dump (dest_str, i, j, i->file);
     i = j;
   }
 }

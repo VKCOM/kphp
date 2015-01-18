@@ -46,8 +46,8 @@ class WriterData {
 
     vector <string> includes;
 
-    void write_code (FILE *dest_file, const Line &line);
-    template <class T> void dump (FILE *dest_file, T begin, T end, SrcFilePtr file);
+    void write_code (string& dest_str, const Line &line);
+    template <class T> void dump (string& dest_str, T begin, T end, SrcFilePtr file);
   public:
     string file_name;
     string subdir;
@@ -64,7 +64,7 @@ class WriterData {
     const vector <string> &get_includes();
 
     unsigned long long calc_crc();
-    void dump (FILE *dest_file);
+    void dump (string& dest_str);
 
     void swap (WriterData &other);
 };
