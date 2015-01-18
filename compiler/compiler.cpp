@@ -1950,7 +1950,7 @@ class WriteFilesF {
               kphp_warning (dl_pstr ("can't read crc64 from [%s]\n", full_file_name.c_str()));
               old_crc = -1;
             } else {
-              if (fscanf (old_file, " //crc64_with_comments:%Lx",&old_crc_with_comments) != 1) {
+              if (fscanf (old_file, " //crc64_with_comments:%Lx", &old_crc_with_comments) != 1) {
                 kphp_warning (dl_pstr ("can't read crc64 with comments from [%s]\n", full_file_name.c_str()));
                 old_crc_with_comments = -1;
               }
@@ -1968,7 +1968,7 @@ class WriteFilesF {
         unsigned long long crc = data->calc_crc();
         string code_str;
         data->dump (code_str);
-        unsigned long long crc_with_comments = compute_crc64(code_str.c_str(), code_str.length());
+        unsigned long long crc_with_comments = compute_crc64 (code_str.c_str(), code_str.length());
         if (file->on_disk) {
           if (file->crc64 != crc) {
             need_fix = true;
@@ -1989,10 +1989,11 @@ class WriteFilesF {
             mtime_before = file->mtime;
             if (upd_res <= 0) {
               need_save_time = false;
-              kphp_warning(dl_pstr("Can't get modified time for %s\n", full_file_name.c_str()));
             }
           }
-          fprintf (stderr, "File [%s] %schanged\n", full_file_name.c_str(), need_save_time ? "line numbers " : "");
+          if (!need_save_time) {
+            fprintf (stderr, "File [%s] changed\n", full_file_name.c_str());
+          }
           string dest_file_name = full_file_name;
           if (need_del) {
             int err = unlink (dest_file_name.c_str());
@@ -2022,9 +2023,7 @@ class WriteFilesF {
           }
           long long mtime = file->upd_mtime();
           dl_assert (mtime > 0, "Stat failed");
-          if (need_save_time && file->mtime != mtime_before){
-            kphp_warning("Failed to set previous mtime\n");
-          }
+          kphp_error(!need_save_time || file->mtime == mtime_before, "Failed to set previous mtime\n");
         }
         delete data;
       }

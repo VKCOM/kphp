@@ -129,17 +129,20 @@ unsigned long long WriterData::calc_crc() {
   return crc;
 }
 
-void WriterData::write_code (string& dest_str, const Line &line) {
+void WriterData::write_code (string &dest_str, const Line &line) {
   const char *s = &text[line.begin_pos];
   int length = line.end_pos - line.begin_pos;
-  dest_str += dl_pstr ("%.*s\n", length, s);
+  dest_str.append(s, length);
+  dest_str += "\n";
 }
 
-template <class T> void WriterData::dump (string& dest_str,T begin, T end, SrcFilePtr file) {
+template <class T> void WriterData::dump (string &dest_str, T begin, T end, SrcFilePtr file) {
   int l = (int)1e9, r = -1;
 
   if (file.not_null()) {
-    dest_str += dl_pstr ("//source = [%s]\n", file->unified_file_name.c_str());
+    dest_str += "//source = [";
+    dest_str += file->unified_file_name.c_str();
+    dest_str += "]\n";
   }
 
   vector <int> rev;
@@ -221,7 +224,7 @@ template <class T> void WriterData::dump (string& dest_str,T begin, T end, SrcFi
 
 }
 
-void WriterData::dump (string& dest_str) {
+void WriterData::dump (string &dest_str) {
   for (__typeof (lines.begin()) i = lines.begin(); i != lines.end();) {
     if (i->file.is_null()) {
       dump (dest_str, i, i + 1, SrcFilePtr());
