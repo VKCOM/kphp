@@ -125,6 +125,7 @@ int Index::scan_dir_callback (const char *fpath, const struct stat *sb, int type
     //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
     if (f->mtime != new_mtime) {
       f->crc64 = -1;
+      f->crc64_with_comments = -1;
     }
     f->mtime = new_mtime;
   } else {
@@ -251,8 +252,8 @@ void Index::save (FILE *f) {
   dl_pcheck (fprintf (f, "%d\n", (int)files.size()));
   FOREACH (files, it) {
     File *file = it->second;
-    dl_pcheck (fprintf (f, "%s %llu %llu\n", file->path.c_str(), 
-          (unsigned long long)file->mtime, file->crc64));
+    dl_pcheck (fprintf (f, "%s %llu %llu %llu\n", file->path.c_str(),
+          (unsigned long long)file->mtime, file->crc64, file->crc64_with_comments));
   }
 }
 void Index::load (FILE *f) {
@@ -263,11 +264,13 @@ void Index::load (FILE *f) {
     char tmp[500];
     unsigned long long mtime;
     unsigned long long crc64;
-    int err = fscanf (f, "%500s %llu %llu", tmp, &mtime, &crc64);
-    dl_passert (err == 3, "Failed to load index");
+    unsigned long long crc64_with_comments;
+    int err = fscanf (f, "%500s %llu %llu %llu", tmp, &mtime, &crc64, &crc64_with_comments);
+    dl_passert (err == 4, "Failed to load index");
     File *file = get_file (tmp, true);
     file->mtime = mtime;
     file->crc64 = crc64;
+    file->crc64_with_comments = crc64_with_comments;
   }
 }
 
