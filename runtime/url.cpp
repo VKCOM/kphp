@@ -80,10 +80,9 @@ string f$base64url_encode_ulong_NN (ULong val) {
 }
 
 
-static void parse_str_set_array_value (var &arr, const string &key, const string &value) {
-  const char *left_br_pos = key.c_str();
+static void parse_str_set_array_value (var &arr, const char *left_br_pos, int key_len, const string &value) {
   php_assert (*left_br_pos == '[');
-  const char *right_br_pos = (const char *)memchr (left_br_pos, ']', key.size());
+  const char *right_br_pos = (const char *)memchr (left_br_pos + 1, ']', key_len - 1);
   if (right_br_pos != NULL) {
     string next_key (left_br_pos + 1, (dl::size_type)(right_br_pos - left_br_pos - 1));
     if (!arr.is_array()) {
@@ -95,21 +94,20 @@ static void parse_str_set_array_value (var &arr, const string &key, const string
     }
 
     if (right_br_pos[1] == '[') {
-      parse_str_set_array_value (arr[next_key], string (right_br_pos + 1, (dl::size_type)(key.c_str() + key.size() - (right_br_pos + 1))), value);
+      parse_str_set_array_value (arr[next_key], right_br_pos + 1, (int)(left_br_pos + key_len - (right_br_pos + 1)), value);
     } else {
       arr.set_value (next_key, value);
     }
-    return;
+  } else {
+    arr = value;
   }
-
-  arr = value;
 }
 
 void parse_str_set_value (var &arr, const string &key, const string &value) {
   const char *key_c = key.c_str();
   const char *left_br_pos = (const char *)memchr (key_c, '[', key.size());
-  if (left_br_pos != NULL) {
-    return parse_str_set_array_value (arr[string (key_c, (dl::size_type)(left_br_pos - key_c))], string (left_br_pos, (dl::size_type)(key_c + key.size() - left_br_pos)), value);
+   if (left_br_pos != NULL) {
+    return parse_str_set_array_value (arr[string (key_c, (dl::size_type)(left_br_pos - key_c))], left_br_pos, (int)(key_c + key.size() - left_br_pos), value);
   }
 
   arr.set_value (key, value);
