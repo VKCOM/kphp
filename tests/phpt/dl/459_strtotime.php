@@ -1,6 +1,6 @@
 @ok
 <?php
-  date_default_timezone_set ("Etc/GMT-4");
+  date_default_timezone_set ("Etc/GMT-3");
 
   function test ($x, $y) {
     $r = strtotime ($x, $y);
