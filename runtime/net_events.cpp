@@ -40,7 +40,7 @@ static bool process_net_event (net_event_t *e) {
   } else if (e->type == ne_rpc_error) {
     process_rpc_error (e->slot_id, e->error_code, e->error_message);
   } else {
-    php_critical_error ("unsupportd net event %d", e->type);
+    php_critical_error ("unsupported net event %d", e->type);
   }
 
   return true;
