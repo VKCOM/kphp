@@ -298,6 +298,9 @@ int win_to_utf8 (const char *s, int len) {
     } else {
       state = 0;
     }
+    if (state == 3 && 0xd800 <= cur_num && cur_num <= 0xdfff){
+      cur_num = 32;
+    }
     if (state == 3 && (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x20000)) {
       write_buff_set_pos (save_pos);
       php_assert (save_pos == cur_buff_len);
