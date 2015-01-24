@@ -933,7 +933,7 @@ void php_worker_wakeup (php_worker *worker) {
 void php_worker_on_wakeup (php_worker *worker) {
   if (worker->waiting) {
     if (worker->wakeup_flag || 
-        (worker->wakeup_time != 0 && worker->wakeup_time < precise_now + 0.001)) {
+        (worker->wakeup_time != 0 && worker->wakeup_time <= precise_now)) {
       worker->waiting = 0;
       worker->wakeup_time = 0;
 //      php_script_query_answered (php_script);
