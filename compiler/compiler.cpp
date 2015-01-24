@@ -1951,7 +1951,6 @@ class WriteFilesF {
               old_crc = -1;
             } else {
               if (fscanf (old_file, " //crc64_with_comments:%Lx", &old_crc_with_comments) != 1) {
-                kphp_warning (dl_pstr ("can't read crc64 with comments from [%s]\n", full_file_name.c_str()));
                 old_crc_with_comments = -1;
               }
             }
