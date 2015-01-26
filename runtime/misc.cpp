@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <iconv.h>
+#include <pwd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -464,6 +465,22 @@ int f$posix_getuid (void) {
   dl::leave_critical_section();
   return result;
 }
+
+array<var> f$posix_getpwuid (int uid) {
+  dl::enter_critical_section();//OK
+  passwd *pwd = getpwuid(uid);
+  array<var> result(array_size (0, 7, false));
+  result.set_value(string("name", 4), string(pwd->pw_name, (dl::size_type)strlen(pwd->pw_name)));
+  result.set_value(string("passwd", 6), string(pwd->pw_passwd, (dl::size_type)strlen(pwd->pw_passwd)));
+  result.set_value(string("uid", 3), (int)pwd->pw_uid);
+  result.set_value(string("gid", 3), (int)pwd->pw_gid);
+  result.set_value(string("gecos", 5), string(pwd->pw_gecos, (dl::size_type)strlen(pwd->pw_gecos)));
+  result.set_value(string("dir", 3), string(pwd->pw_dir, (dl::size_type)strlen(pwd->pw_dir)));
+  result.set_value(string("shell", 5), string(pwd->pw_shell, (dl::size_type)strlen(pwd->pw_shell)));
+  dl::leave_critical_section();
+  return result;
+}
+
 
 #define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
 #define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
