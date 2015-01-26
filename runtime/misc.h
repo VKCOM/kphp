@@ -31,6 +31,7 @@ var f$getimagesize (const string &name);
 
 
 int f$posix_getpid (void);
+int f$posix_getuid (void);
 
 
 string f$serialize (const var &v);

@@ -458,6 +458,12 @@ int f$posix_getpid (void) {
   return result;
 }
 
+int f$posix_getuid (void) {
+  dl::enter_critical_section();//OK
+  int result = (int)getuid();
+  dl::leave_critical_section();
+  return result;
+}
 
 #define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
 #define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
