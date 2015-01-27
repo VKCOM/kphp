@@ -466,10 +466,14 @@ int f$posix_getuid (void) {
   return result;
 }
 
-array<var> f$posix_getpwuid (int uid) {
+OrFalse <array <var> > f$posix_getpwuid (int uid) {
   dl::enter_critical_section();//OK
   passwd *pwd = getpwuid(uid);
-  array<var> result(array_size (0, 7, false));
+  dl::leave_critical_section();
+  if (!pwd) {
+    return false;
+  }
+  array <var> result(array_size (0, 7, false));
   result.set_value(string("name", 4), string(pwd->pw_name, (dl::size_type)strlen(pwd->pw_name)));
   result.set_value(string("passwd", 6), string(pwd->pw_passwd, (dl::size_type)strlen(pwd->pw_passwd)));
   result.set_value(string("uid", 3), (int)pwd->pw_uid);
@@ -477,7 +481,6 @@ array<var> f$posix_getpwuid (int uid) {
   result.set_value(string("gecos", 5), string(pwd->pw_gecos, (dl::size_type)strlen(pwd->pw_gecos)));
   result.set_value(string("dir", 3), string(pwd->pw_dir, (dl::size_type)strlen(pwd->pw_dir)));
   result.set_value(string("shell", 5), string(pwd->pw_shell, (dl::size_type)strlen(pwd->pw_shell)));
-  dl::leave_critical_section();
   return result;
 }
 
