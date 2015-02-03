@@ -786,6 +786,8 @@ void process_rpc_answer (int request_id, char *result, int result_len __attribut
   rpc_request *request = &rpc_requests[slot_id];
 
   if (request->resumable_id < 0) {
+    php_assert (result != NULL);
+    dl::deallocate (result - 12, result_len + 13);
     php_assert (request->resumable_id != -1);
     return;
   }
