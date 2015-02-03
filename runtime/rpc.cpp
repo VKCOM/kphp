@@ -1535,6 +1535,7 @@ array <var> tl_fetch_error (const char *error, int error_code) {
 array <var> fetch_function (tl_tree *T) {
   if (tl_config.fetchIP == NULL) {
     php_warning ("tl_rpc_query_result not supported due to missing TL scheme");
+    php_critical_error ("unreachable");
     return tl_fetch_error ("TL scheme was not loaded", TL_ERROR_UNKNOWN_FUNCTION_ID);
   }
   //fprintf (stderr, "Before FETCH\n");
@@ -1722,6 +1723,7 @@ protected:
       TRY_WAIT(ready, bool);
       if (!ready) {
         php_assert (last_rpc_error != NULL);
+        T->destroy();
         RETURN(tl_fetch_error (last_rpc_error, TL_ERROR_UNKNOWN));
       }
 
