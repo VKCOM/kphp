@@ -226,7 +226,7 @@ var mc_get_value (string result_str, int flags) {
   }
 
   if (flags) {
-//    php_warning ("Wrong parameter flags %d with value \"%s\" returned in Memcache::get", flags, result_str.c_str());
+    php_warning ("Wrong parameter flags %d with value \"%s\" returned in Memcache::get", flags, result_str.c_str());
   }
 
   return result;
@@ -1558,14 +1558,26 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
     return false;
   }
 
-  int res = TRY_CALL(int, var, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
-  if (res != MEMCACHE_VALUE_STRING) {
+  int res = TRY_CALL(int, var, f$fetch_int (string(), -1));//TODO __FILE__ and __LINE__
+  if (res == MEMCACHE_VALUE_STRING) {
+    string value = TRY_CALL(string, var, f$fetch_string (string(), -1));
+    int flags = TRY_CALL(int, var, f$fetch_int (string(), -1));
+    return mc_get_value (value, flags);
+  } else if (res == MEMCACHE_VALUE_LONG) {
+    var value = TRY_CALL(var, var, f$fetch_long (string(), -1));
+    int flags = TRY_CALL(int, var, f$fetch_int (string(), -1));
+
+    if (flags != 0) {
+      php_warning ("Wrong parameter flags = %d returned in Memcache::get", flags);
+    }
+
+    return value;
+  } else {
+    if (res != MEMCACHE_VALUE_NOT_FOUND) {
+//      php_warning ("Wrong memcache.Value constructor = %x", res);
+    }
     return false;
   }
-
-  string value = TRY_CALL(string, var, (f$fetch_string (string(), -1)));
-  int flags = TRY_CALL(int, var, (f$fetch_int (string(), -1)));
-  return mc_get_value (value, flags);
 }
 
 bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
