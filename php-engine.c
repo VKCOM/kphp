@@ -3041,7 +3041,11 @@ void start_server (void) {
     if (logname_pattern != NULL) {
       reopen_logs();
     }
-  }
+  } else {
+    if (logname != NULL) {
+      reopen_logs();
+    }
+  } 
 
   prev_time = 0;
 
