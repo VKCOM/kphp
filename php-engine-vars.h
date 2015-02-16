@@ -124,6 +124,11 @@ extern int script_timeout;
 #define SIGSTAT (SIGRTMIN)
 #define MAX_WORKERS 1000
 
+/***
+  save of stdout/stderr fd
+ ***/
+extern int kstdout;
+extern int kstderr;
 
 #ifdef __cplusplus
 extern "C" {

@@ -692,7 +692,7 @@ void start_master (int *new_http_fd, int (*new_try_get_http_fd)(void), int new_h
 
   dl_assert (shmem_name.size() < NAME_MAX, "too long name for shared memory file");
   dl_assert (socket_name.size() < NAME_MAX, "too long socket name (for fd transfer)");
-  printf ("[%s] [%s]\n", shmem_name.c_str(), socket_name.c_str());
+  kprintf ("[%s] [%s]\n", shmem_name.c_str(), socket_name.c_str());
 
   http_fd = new_http_fd;
   http_fd_port = new_http_fd_port;

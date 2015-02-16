@@ -3044,6 +3044,16 @@ void start_server (void) {
     }
   } else {
     if (logname != NULL) {
+      kstdout = dup(1);
+      if (kstdout <= 2) {
+        kprintf("Can't save stdout before opening logs\n");
+        exit(1);
+      }
+      kstderr = dup(2);
+      if (kstderr <= 2) {
+        kprintf("Can't save stderr before opening logs\n");
+        exit(1);
+      }
       reopen_logs();
     }
   } 

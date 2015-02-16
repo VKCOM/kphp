@@ -6,6 +6,7 @@
 #include <netdb.h>
 
 #include "PHP/common-net-functions.h"
+#include "PHP/php-engine-vars.h"
 
 #include "array_functions.h"
 #include "bcmath.h"
@@ -23,6 +24,7 @@
 #include "string_functions.h"
 #include "url.h"
 #include "zlib.h"
+
 
 static enum {QUERY_TYPE_NONE, QUERY_TYPE_CONSOLE, QUERY_TYPE_HTTP, QUERY_TYPE_RPC} query_type;
 
@@ -504,7 +506,7 @@ extern int run_once;
 int print (const char *s) {
   if (run_once) {
     dl::enter_critical_section();//OK
-    fprintf (stdout, "%s", s);
+    dprintf (kstdout, "%s", s);
     dl::leave_critical_section();
     return 1;    
   }
@@ -515,7 +517,7 @@ int print (const char *s) {
 int print (const char *s, int s_len) {
   if (run_once) {
     dl::enter_critical_section();//OK
-    fwrite (s, s_len, 1, stdout);
+    write (kstdout, s, s_len);
     dl::leave_critical_section();
     return 1;
   }
@@ -526,7 +528,7 @@ int print (const char *s, int s_len) {
 int print (const string &s) {
   if (run_once) {
     dl::enter_critical_section();//OK
-    fwrite (s.c_str(), s.size(), 1, stdout);
+    write (kstdout, s.c_str(), s.size());
     dl::leave_critical_section();
     return 1;
   }
@@ -537,7 +539,7 @@ int print (const string &s) {
 int print (const string_buffer &sb) {
   if (run_once) {
     dl::enter_critical_section();//OK
-    fwrite (sb.buffer(), sb.size(), 1, stdout);
+    write (kstdout, sb.buffer(), sb.size());
     dl::leave_critical_section();
     return 1;
   }
@@ -547,28 +549,28 @@ int print (const string_buffer &sb) {
 
 int dbg_echo (const char *s) {
   dl::enter_critical_section();//OK
-  fprintf (stderr, "%s", s);
+  dprintf (kstderr, "%s", s);
   dl::leave_critical_section();
   return 1;
 }
 
 int dbg_echo (const char *s, int s_len) {
   dl::enter_critical_section();//OK
-  fwrite (s, s_len, 1, stderr);
+  write (kstderr, s, s_len);
   dl::leave_critical_section();
   return 1;
 }
 
 int dbg_echo (const string &s) {
   dl::enter_critical_section();//OK
-  fwrite (s.c_str(), s.size(), 1, stderr);
+  write (kstderr, s.c_str(), s.size());
   dl::leave_critical_section();
   return 1;
 }
 
 int dbg_echo (const string_buffer &sb) {
   dl::enter_critical_section();//OK
-  fwrite (sb.buffer(), sb.size(), 1, stderr);
+  write (kstderr, sb.buffer(), sb.size());
   dl::leave_critical_section();
   return 1;
 }
