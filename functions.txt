@@ -73,7 +73,9 @@ function header ($str ::: string, $replace ::: bool = true, $http_response_code 
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function register_shutdown_function (callback()) ::: void;//TODO var ::: callback()
-function fastcgi_finish_request() ::: void;
+if (0) { // removed because it's not working now. 
+  function fastcgi_finish_request() ::: void;
+}
 
 function func_get_args() ::: array <var>;
 function func_get_arg($i ::: int) ::: var;
