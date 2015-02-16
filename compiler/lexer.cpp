@@ -731,6 +731,13 @@ int TokenLexerHeredocString::parse (LexerData *lexer_data) const {
     s++;
   }
 
+  bool double_quote = s[0] == '"';
+  bool single_quote = s[0] == '\'';
+
+  if (double_quote || single_quote) {
+    s++;
+  }
+
   while (is_alpha (s[0])) {
     tag += *s++;
   }
@@ -738,14 +745,26 @@ int TokenLexerHeredocString::parse (LexerData *lexer_data) const {
   if (tag.empty()) {
     return TokenLexerError ("TAG expected").parse (lexer_data);
   }
+  if (double_quote && s[0] != '"') {
+    return TokenLexerError ("\" expected").parse (lexer_data);
+  }
+  if (single_quote && s[0] != '\'') {
+    return TokenLexerError ("' expected").parse (lexer_data);
+  }
+  if (double_quote || single_quote) {
+    s++;
+  }
   if (s[0] != '\n') {
     return TokenLexerError ("'\\n' expected").parse (lexer_data);
   }
   s++;
 
-  lexer_data->add_token (new Token (tok_str_begin), (int)(s - st));
-  assert (s == lexer_data->get_code());
-
+  if (!single_quote){
+    lexer_data->add_token (new Token (tok_str_begin), (int)(s - st));
+    assert (s == lexer_data->get_code());
+  } else {
+    lexer_data->start_str();
+  }
   bool first = true;
   while (true) {
     const char *s = lexer_data->get_code();
@@ -761,7 +780,12 @@ int TokenLexerHeredocString::parse (LexerData *lexer_data) const {
           semicolon = 1;
         }
         if (t[0] == '\n' || t[0] == 0) {
-          lexer_data->add_token (new Token (tok_str_end), (int)(t - st - semicolon));
+          if (!single_quote) {
+            lexer_data->add_token (new Token (tok_str_end), (int)(t - st - semicolon));
+          } else {
+            lexer_data->flush_str();
+            lexer_data->pass_raw (tag.size() + 1);
+          }
           break;
         }
       }
@@ -771,9 +795,13 @@ int TokenLexerHeredocString::parse (LexerData *lexer_data) const {
       return TokenLexerError("Unexpected end of file").parse (lexer_data);
     }
 
-    int res = parse_with_helper (lexer_data, h);
-    if (res) {
-      return res;
+    if (!single_quote) {
+      int res = parse_with_helper (lexer_data, h);
+      if (res) {
+        return res;
+      }
+    } else {
+      lexer_data->append_char(-1);
     }
     first = false;
   }
