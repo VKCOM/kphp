@@ -3010,6 +3010,7 @@ void start_server (void) {
     rpc_port = -1;
     http_port = -1;
     rpc_client_port = -1;
+    setvbuf (stdout, NULL, _IONBF, 0);
   }
 
   pending_signals = 0;

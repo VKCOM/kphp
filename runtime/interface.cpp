@@ -499,23 +499,48 @@ OrFalse <string> f$inet_pton (const string &address) {
   return string (buffer, size);
 }
 
+extern int run_once;
 
 int print (const char *s) {
+  if (run_once) {
+    dl::enter_critical_section();//OK
+    fprintf (stdout, "%s", s);
+    dl::leave_critical_section();
+    return 1;    
+  }
   *coub += s;
   return 1;
 }
 
 int print (const char *s, int s_len) {
+  if (run_once) {
+    dl::enter_critical_section();//OK
+    fwrite (s, s_len, 1, stdout);
+    dl::leave_critical_section();
+    return 1;
+  }
   coub->append (s, s_len);
   return 1;
 }
 
 int print (const string &s) {
+  if (run_once) {
+    dl::enter_critical_section();//OK
+    fwrite (s.c_str(), s.size(), 1, stdout);
+    dl::leave_critical_section();
+    return 1;
+  }
   *coub += s;
   return 1;
 }
 
 int print (const string_buffer &sb) {
+  if (run_once) {
+    dl::enter_critical_section();//OK
+    fwrite (sb.buffer(), sb.size(), 1, stdout);
+    dl::leave_critical_section();
+    return 1;
+  }
   coub->append (sb.buffer(), sb.size());
   return 1;
 }
@@ -555,7 +580,6 @@ bool f$get_magic_quotes_gpc (void) {
 
 string v$d$PHP_SAPI __attribute__ ((weak));
 
-extern int run_once;
 
 static string php_sapi_name (void) {
   switch (query_type) {
