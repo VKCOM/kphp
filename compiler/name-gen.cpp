@@ -23,7 +23,7 @@ string gen_shorthand_ternary_name () {
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
   char tmp[50];
-  sprintf (tmp, "%lld_%x", h, cur_i);
+  sprintf (tmp, "%llx_%d", h, cur_i);
   return string("shorthand_ternary_cond$ut") + tmp;
 }
 
