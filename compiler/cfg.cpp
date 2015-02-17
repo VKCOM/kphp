@@ -534,6 +534,22 @@ namespace cfg {
         Node prev_finish;
         Node prev_var_finish = cond_finish;
 
+        {
+          Node var_start_0, var_end_0;
+          Node var_start_1, var_end_1;
+          Node var_start_2, var_end_2;
+          Node var_start_3, var_end_3;
+          assert(switch_op->ss()->type() == op_var);
+          create_cfg (switch_op->ss(), &var_start_0, &var_end_0);
+          create_cfg (switch_op->ss_hash(), &var_start_1, &var_end_1);
+          create_cfg (switch_op->switch_var(), &var_start_2, &var_end_2);
+          create_cfg (switch_op->switch_flag(), &var_start_3, &var_end_3);
+          add_edge (cond_start, var_start_0);
+          add_edge (cond_start, var_start_1);
+          add_edge (cond_start, var_start_2);
+          add_edge (cond_start, var_start_3);
+        }
+
         bool was_default = false;
         Node default_start;
         FOREACH_VERTEX (switch_op->cases(), i) {

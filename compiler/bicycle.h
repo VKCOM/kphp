@@ -788,6 +788,7 @@ class ProfilerRaw {
   F (gentree)\
   F (apply_break_file)\
   F (split_switch)\
+  F (create_switch_vars)\
   F (collect_required)\
   F (calc_locations)\
   F (collect_defines)\

@@ -1226,6 +1226,13 @@ VertexPtr GenTree::get_switch() {
 
   CE (expect (tok_opbrc, "'{'"));
 
+  // they will be replaced by vars later. 
+  // It can't be done now, gen_name is not working here. 
+  CREATE_VERTEX(temp_ver1, op_empty); switch_next.push_back(temp_ver1);
+  CREATE_VERTEX(temp_ver2, op_empty); switch_next.push_back(temp_ver2);
+  CREATE_VERTEX(temp_ver3, op_empty); switch_next.push_back(temp_ver3);
+  CREATE_VERTEX(temp_ver4, op_empty); switch_next.push_back(temp_ver4);
+
   while ((*cur)->type() != tok_clbrc) {
     TokenType cur_type = (*cur)->type();
     VertexPtr case_val;

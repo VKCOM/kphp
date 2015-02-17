@@ -1267,7 +1267,11 @@ VA_BEGIN (op_switch, meta_op_cycle)
     OPP (str, "<TODO: switch>");
   PROPERTIES_END
   VertexPtr &expr() {return ith (0);}
-  VertexRange cases() {return VertexRange (begin() + 1, end());}
+  VertexPtr &switch_var() {return ith(1);}
+  VertexPtr &switch_flag() {return ith(2);}
+  VertexPtr &ss() {return ith(3);}
+  VertexPtr &ss_hash() {return ith(4);}
+  VertexRange cases() {return VertexRange (begin() + 5, end());}
 VA_END
 
 VA_BEGIN (meta_op_require, meta_op_varg_)

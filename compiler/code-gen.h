@@ -1877,17 +1877,12 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   }
 
   W << BEGIN;
+  W << "(void)" << root->switch_var() << ";" << NL;
+  W << root->ss() << " = f$strval (" << root->expr() << ");" << NL;
+  W << root->ss_hash() << " = " << root->ss() << ".hash();" << NL;
+  W << root->switch_flag()<< " = false;" << NL;
 
-  string string_name = gen_unique_name ("ss");
-  W << "string " << string_name << " = f$strval (" << root->expr() << ");" << NL;
-
-  string hash_name = gen_unique_name ("ss_hash");
-  W << "unsigned int " << hash_name << " = " << string_name << ".hash();" << NL;
-
-  string flag_name = gen_unique_name ("switch_flag");
-  W << "bool " << flag_name << " = false;" << NL;
-
-  W << "switch (" << hash_name << ") " <<
+  W << "switch (" << root->ss_hash() << ") " <<
        BEGIN;
   for (int i = 0; i < n; i++) {
     CaseInfo *cur = &cases[i];
@@ -1904,9 +1899,9 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
     }
 
     if (!cur->is_default) {
-      W << "if (!" << flag_name << ") " <<
+      W << "if (!" << root->switch_flag() << ") " <<
            BEGIN <<
-             "if (!equals (" << string_name << ", " << cur->expr << ")) " <<
+             "if (!equals (" << root->ss() << ", " << cur->expr << ")) " <<
              BEGIN;
       string next_goto;
       if (cur->next != NULL) {
@@ -1918,11 +1913,11 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
       W <<   END <<
              " else " <<
              BEGIN <<
-               flag_name << " = true;" << NL <<
+               root->switch_flag() << " = true;" << NL <<
              END << NL <<
            END << NL;
     } else {
-      W << flag_name << " = true;" << NL;
+      W << root->switch_flag() << " = true;" << NL;
     }
     W << cur->cmd << NL;
   }
@@ -1936,6 +1931,10 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
 void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   W << "switch (f$intval (" << root->expr() << "))" <<
         BEGIN;
+  W << "(void)" << root->ss() << ";" << NL;
+  W << "(void)" << root->ss_hash() << ";" << NL;
+  W << "(void)" << root->switch_var() << ";" << NL;
+  W << "(void)" << root->switch_flag() << ";" << NL;
 
   set <string> used;
   for (VertexRange i = root->cases(); !i.empty(); i.next()) {
@@ -1968,13 +1967,13 @@ void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W) {
 
 
 void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
-  string var_name = gen_unique_name ("switch_var");
-  string flag_name = gen_unique_name ("switch_flag"), goto_name;
+  string goto_name;
 
-  W << "do " <<
-       BEGIN <<
-         "var " << var_name << " = " << root->expr() << ";" << NL <<
-         "bool " << flag_name << " = false;" << NL;
+  W << "do " << BEGIN ;
+  W << "(void)" << root->ss() << ";" << NL;
+  W << "(void)" << root->ss_hash() << ";" << NL;
+  W << root->switch_var() << " = " << root->expr() << ";" << NL <<
+        root->switch_flag() << " = false;" << NL;
 
   FOREACH_VERTEX (root->cases(), i) {
     Operation tp = (*i)->type();
@@ -1990,10 +1989,10 @@ void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
       kphp_fail();
     }
 
-    W << "if (" << flag_name;
+    W << "if (" << root->switch_flag();
 
     if (tp == op_case) {
-      W << " || eq2 (" << var_name << ", " << expr << ")";
+      W << " || eq2 (" << root->switch_var() << ", " << expr << ")";
     }
     W << ") " <<
          BEGIN;
@@ -2002,18 +2001,18 @@ void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
       W << goto_name + ": ";
     }
 
-    W <<   flag_name << " = true;" <<
+    W <<   root->switch_flag() << " = true;" << NL <<
            AsSeq (cmd) <<
          END << NL;
   }
 
 
   if (!goto_name.empty()) {
-    W << "if (" << flag_name << ") " <<
+    W << "if (" << root->switch_flag() << ") " <<
          BEGIN <<
            "break;" << NL <<
          END << NL <<
-         flag_name << " = true;" << NL <<
+         root->switch_flag() << " = true;" << NL <<
          "goto " << goto_name << ";" << NL;
   }
 
@@ -2026,6 +2025,10 @@ void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
 
 
 void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
+  kphp_assert(root->ss()->type() == op_var);
+  kphp_assert(root->ss_hash()->type() == op_var);
+  kphp_assert(root->switch_var()->type() == op_var);
+  kphp_assert(root->switch_flag()->type() == op_var);
   int cnt_int = 0, cnt_str = 0, cnt_default = 0;
 
   FOREACH_VERTEX (root->cases(), i) {

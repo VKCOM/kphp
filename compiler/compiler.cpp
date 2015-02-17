@@ -411,6 +411,47 @@ class CollectRequiredF {
     }
 };
 
+/*** Create local variables for switches ***/
+class CreateSwitchVarsF : public FunctionPassBase {
+  private:
+    AUTO_PROF (create_switch_vars);
+  public:
+    string get_description() {
+      return "create switch vars";
+    }
+    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
+      if (v->type() != op_switch) {
+        return v;
+      }
+
+      VertexAdaptor <op_switch> switch_v = v;
+
+      CREATE_VERTEX (root_ss, op_var); 
+      root_ss->str_val = gen_unique_name("ss");
+      root_ss->extra_type = op_ex_var_superlocal;
+      root_ss->type_help = tp_string; 
+      switch_v->ss() = root_ss;
+
+      CREATE_VERTEX (root_ss_hash, op_var); 
+      root_ss_hash->str_val = gen_unique_name("ss_hash");
+      root_ss_hash->extra_type = op_ex_var_superlocal;
+      root_ss_hash->type_help = tp_int; 
+      switch_v->ss_hash() = root_ss_hash;
+
+      CREATE_VERTEX (root_switch_flag, op_var); 
+      root_switch_flag->str_val = gen_unique_name("switch_flag");
+      root_switch_flag->extra_type = op_ex_var_superlocal;
+      root_switch_flag->type_help = tp_bool; 
+      switch_v->switch_flag() = root_switch_flag;
+
+      CREATE_VERTEX (root_switch_var, op_var); 
+      root_switch_var->str_val = gen_unique_name("switch_var");
+      root_switch_var->extra_type = op_ex_var_superlocal;
+      root_switch_var->type_help = tp_var; 
+      switch_v->switch_var() = root_switch_var;
+      return switch_v;
+    }
+};
 
 /*** Calculate proper location field for each node ***/
 class CalcLocationsPass : public FunctionPassBase {
@@ -2073,6 +2114,9 @@ void compiler_execute (KphpEnviroment *env) {
     Pipe <SplitSwitchF,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > split_switch_pipe (true);
+    Pipe <FunctionPassF<CreateSwitchVarsF>,
+         DataStream <FunctionPtr>,
+         DataStream <FunctionPtr> > create_switch_vars_pipe (true);
     Pipe <CollectRequiredF,
          DataStream <FunctionPtr>,
          DataStreamTriple <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe (true);
@@ -2154,6 +2198,7 @@ void compiler_execute (KphpEnviroment *env) {
       parse_pipe >>
       apply_break_file_pipe >>
       split_switch_pipe >>
+      create_switch_vars_pipe >>
       collect_required_pipe >> use_first_output() >>
       calc_locations_pipe >>
       collect_defines_pipe >>
