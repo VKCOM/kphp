@@ -15,6 +15,19 @@ string register_unique_name (const string &prefix) {
   return prefix;
 }
 
+string gen_shorthand_ternary_name () {
+  AUTO_PROF (next_name);
+  SrcFilePtr file = stage::get_file();
+  unsigned long long h = hash_ll (file->unified_file_name);
+  static map<unsigned long long, int> name_map;
+  int *i = &(name_map[h]);
+  int cur_i = (*i)++;
+  char tmp[50];
+  sprintf (tmp, "%lld_%x", h, cur_i);
+  return string("shorthand_ternary_cond$ut") + tmp;
+}
+
+
 string gen_const_string_name (const string &str) {
   AUTO_PROF (next_const_string_name);
   unsigned long long h = hash_ll (str);

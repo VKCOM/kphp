@@ -630,10 +630,7 @@ VertexPtr GenTree::get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, 
         CREATE_VERTEX (v, op_ternary, left, right, third);
         expr = v;
       } else {
-        static int cond_id = 0;
-        static char cond_id_buffer[40];
-        sprintf(cond_id_buffer, "shorthand_ternary_cond_%x", cond_id++);
-        string left_name = gen_unique_name(cond_id_buffer);
+        string left_name = gen_shorthand_ternary_name();
         CREATE_VERTEX (left_var, op_var);
         left_var->str_val = left_name;
         left_var->extra_type = op_ex_var_superlocal;
