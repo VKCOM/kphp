@@ -2114,6 +2114,7 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
     W << "array <var> VA_LIST;" << NL;
   }
   FOREACH (func->param_ids, var) {
+    kphp_error(!(*var)->is_reference, "reference function parametrs are forbidden in resumable mode");
     W << VarPlainDeclaration (*var);
   }
   FOREACH (func->local_var_ids, var) {
