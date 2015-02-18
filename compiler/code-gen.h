@@ -768,6 +768,11 @@ void VarDeclaration::compile (CodeGenerator &W) const {
     }
   }
   W << ";" << NL;
+  if (var->needs_const_iterator_flag) {
+    W << (extern_flag ? "extern " : "") <<
+       "typeof(const_begin(" << VarName (var) <<"))" << " " <<
+       VarName (var) << "$it;" << NL;
+  }
 }
 inline VarDeclaration VarExternDeclaration (VarPtr var) {
   return VarDeclaration (var, true, false);
@@ -1753,9 +1758,9 @@ void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
 #endif
 }
 
-void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
+void compile_foreach_ref_header (VertexAdaptor<op_foreach> root, CodeGenerator &W) {
+  kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
   VertexAdaptor <op_foreach_param> params = root->params();
-  VertexPtr cmd = root->cmd();
 
   //foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
@@ -1765,21 +1770,13 @@ void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
     key = params->key();
   }
 
-
   string xs_copy_str;
   xs_copy_str = gen_unique_name ("tmp_expr");
   const TypeData *xs_type = tinf::get_type (xs);
 
   W << BEGIN;
   //save array to 'xs_copy_str'
-  if (!x->ref_flag) {
-    W << "const ";
-  }
-  W << TypeName (xs_type) << " ";
-  if (x->ref_flag) {
-    W << ("&");
-  }
-  W << xs_copy_str << " = " << xs << ";" << NL;
+  W << TypeName (xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
   string it = gen_unique_name ("it");
   W << "for (" <<
@@ -1790,21 +1787,66 @@ void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
 
 
   //save value
-  if (x->ref_flag) {
-    W << TypeName (tinf::get_type (x)) << " &";
-  }
+  W << TypeName (tinf::get_type (x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
   //save key
   if (key.not_null()) {
     W << key << " = " << it << ".get_key();" << NL;
   }
+}
+
+void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
+  VertexAdaptor <op_foreach_param> params = root->params();
+  //foreach (xs as [key =>] x)
+  VertexPtr x = params->x();
+  VertexPtr xs = params->xs();
+  VertexPtr key;
+  VertexAdaptor <op_var> temp_var = params->temp_var();
+  if (params->has_key()) {
+    key = params->key();
+  }
+
+
+
+  W << BEGIN;
+  //save array to 'xs_copy_str'
+  W << temp_var << " = " << xs << ";" << NL;
+  W << "for (" << temp_var <<"$it" << " = const_begin (" << temp_var << "); " <<
+          temp_var << "$it" << " != const_end (" << temp_var << "); " <<
+          "++" << temp_var <<"$it" << ")" <<
+        BEGIN;
+
+
+  //save value
+  W << x << " = " << temp_var << "$it" << ".get_value();" << NL;
+
+  //save key
+  if (key.not_null()) {
+    W << key << " = " << temp_var << "$it" << ".get_key();" << NL;
+  }
+}
+
+void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
+  VertexAdaptor <op_foreach_param> params = root->params();
+  VertexPtr cmd = root->cmd();
+
+  //foreach (xs as [key =>] x)
+  if (params->x()->ref_flag){
+    compile_foreach_ref_header(root, W);
+  } else {
+    compile_foreach_noref_header(root, W);    
+  }
 
   W <<     AsSeq (cmd) << NL <<
            Label (root->continue_label_id) <<
          END <<
-         Label (root->break_label_id) << NL <<
-       END;
+         Label (root->break_label_id) << NL;
+  if (!params->x()->ref_flag) {
+    VertexPtr temp_var = params->temp_var();
+    W << "clean_array(" << temp_var <<");" << NL;
+  }
+  W << END;
 }
 
 struct CaseInfo {

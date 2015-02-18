@@ -39,6 +39,19 @@ void rl_l_calc (VertexPtr root, int except) {
   }
 }
 
+void rl_l_none_calc (VertexPtr root, int except) {
+  int ii = 0;
+  FOREACH_VERTEX (root, i) {
+    if (ii != except) {
+      rl_calc (*i, val_l);
+    } else {
+      rl_calc (*i, val_none);
+    }
+    ii++;
+  }
+}
+
+
 void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
   kphp_error (expected_rl_type != val_l, "Function result cannot be used as lvalue");
   switch (root->type()) {
@@ -148,7 +161,7 @@ void rl_common_calc (VertexPtr root, RLValueType expected_rl_type) {
       break;
     case op_foreach_param:
       if (root.as <op_foreach_param>()->x()->ref_flag) {
-        rl_l_calc (root, -1);
+        rl_l_none_calc (root, 2);
       } else {
         rl_l_calc (root, 0);
       }

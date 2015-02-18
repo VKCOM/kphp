@@ -53,6 +53,7 @@ public:
     bool fork_flag : 1;
   };
   bool parent_flag : 1;
+  bool needs_const_iterator_flag : 1;
 
   int n;
 
@@ -1618,8 +1619,9 @@ VA_BEGIN (op_foreach_param, meta_op_base)
   PROPERTIES_END
   VertexPtr &xs() {return ith (0);}
   VertexPtr &x() {return ith (1);}
-  bool has_key() {return check_range (2);}
-  VertexPtr &key() {return ith (2);}
+  VertexPtr &temp_var() {return ith(2);}
+  bool has_key() {return check_range (3);}
+  VertexPtr &key() {return ith (3);}
 VA_END
 VA_UNARY_BEGIN (op_exit)
   OPP (type, conv_op);

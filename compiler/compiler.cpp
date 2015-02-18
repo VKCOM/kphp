@@ -412,17 +412,10 @@ class CollectRequiredF {
 };
 
 /*** Create local variables for switches ***/
-class CreateSwitchVarsF : public FunctionPassBase {
+class CreateSwitchForeachVarsF : public FunctionPassBase {
   private:
     AUTO_PROF (create_switch_vars);
-  public:
-    string get_description() {
-      return "create switch vars";
-    }
-    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
-      if (v->type() != op_switch) {
-        return v;
-      }
+    VertexPtr process_switch (VertexPtr v){
 
       VertexAdaptor <op_switch> switch_v = v;
 
@@ -451,6 +444,53 @@ class CreateSwitchVarsF : public FunctionPassBase {
       switch_v->switch_var() = root_switch_var;
       return switch_v;
     }
+
+    VertexPtr process_foreach (VertexPtr v){
+
+      VertexAdaptor <op_foreach> foreach_v = v;
+      VertexAdaptor <op_foreach_param> foreach_param = foreach_v->params(); 
+      VertexAdaptor <op_var> x = foreach_param->x();
+      //VertexPtr xs = foreach_param->xs();
+
+      if (!x->ref_flag) {
+        /*CREATE_VERTEX(temp_var, op_var);
+        temp_var->str_val = gen_unique_name ("tmp_expr");
+        temp_var->extra_type = op_ex_var_superlocal;
+        temp_var->needs_const_iterator_flag = true;
+        VertexPtr xs_clone = clone_vertex(xs);
+        CREATE_VERTEX(set_op, op_set, temp_var, xs_clone);
+
+
+        CREATE_VERTEX(seq_op, op_seq, set_op);
+        foreach_v->pre_cmd() = seq_op;*/
+
+        CREATE_VERTEX(temp_var2, op_var);
+        temp_var2->str_val = gen_unique_name ("tmp_expr");
+        temp_var2->extra_type = op_ex_var_superlocal;
+        temp_var2->needs_const_iterator_flag = true;
+        foreach_param->temp_var() = temp_var2;
+
+        foreach_v->params() = foreach_param;
+      }
+      return foreach_v;
+    }
+
+
+  public:
+    string get_description() {
+      return "create switch and foreach vars";
+    }
+    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
+      if (v->type() == op_switch) {
+        return process_switch(v);
+      }
+      if (v->type() == op_foreach) {
+        return process_foreach(v);
+      }
+
+      return v;
+    }
+
 };
 
 /*** Calculate proper location field for each node ***/
@@ -2114,9 +2154,9 @@ void compiler_execute (KphpEnviroment *env) {
     Pipe <SplitSwitchF,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > split_switch_pipe (true);
-    Pipe <FunctionPassF<CreateSwitchVarsF>,
+    Pipe <FunctionPassF<CreateSwitchForeachVarsF>,
          DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > create_switch_vars_pipe (true);
+         DataStream <FunctionPtr> > create_switch_foreach_vars_pipe (true);
     Pipe <CollectRequiredF,
          DataStream <FunctionPtr>,
          DataStreamTriple <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe (true);
@@ -2198,7 +2238,7 @@ void compiler_execute (KphpEnviroment *env) {
       parse_pipe >>
       apply_break_file_pipe >>
       split_switch_pipe >>
-      create_switch_vars_pipe >>
+      create_switch_foreach_vars_pipe >>
       collect_required_pipe >> use_first_output() >>
       calc_locations_pipe >>
       collect_defines_pipe >>

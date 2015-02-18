@@ -768,6 +768,8 @@ VertexPtr GenTree::get_foreach_param () {
   vector <VertexPtr> next;
   next.push_back (xs);
   next.push_back (x);
+  CREATE_VERTEX(empty, op_empty);
+  next.push_back(empty); // will be replaced
   if (key.not_null()) {
     next.push_back (key);
   }
@@ -1089,7 +1091,9 @@ VertexPtr GenTree::get_foreach() {
   VertexPtr second_node = get_statement();
   CE (!kphp_error (second_node.not_null(), "Failed to parse 'foreach' body"));
 
-  CREATE_VERTEX (foreach, op_foreach, first_node, embrace (second_node));
+  CREATE_VERTEX(temp_node, op_empty);
+
+  CREATE_VERTEX (foreach, op_foreach, first_node, embrace (second_node), temp_node);
   set_location (foreach, foreach_location);
   return foreach;
 }

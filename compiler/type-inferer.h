@@ -462,17 +462,19 @@ class CollectMainEdgesPass : public FunctionPassBase {
 
     void on_foreach (VertexAdaptor <op_foreach> foreach_op) {
       VertexAdaptor <op_foreach_param> params = foreach_op->params();
-      VertexPtr xs, x, key;
+      VertexPtr xs, x, key, temp_var;
       xs = params->xs();
       x = params->x();
+      temp_var = params->temp_var();
       if (params->has_key()) {
         key = params->key();
       }
       if (x->ref_flag) {
         LValue xs_tinf = as_lvalue (xs);
         create_set (xs_tinf, tp_array);
-
         create_set (params, x->get_var_id());
+      } else {
+        create_set (temp_var->get_var_id(), xs);        
       }
       create_set (x->get_var_id(), params);
       if (key.not_null()) {

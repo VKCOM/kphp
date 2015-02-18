@@ -38,6 +38,7 @@ public:
   bool optimize_flag;
   bool tinf_flag;
   bool global_init_flag;
+  bool needs_const_iterator_flag;
   void set_uninited_flag (bool f);
   bool get_uninited_flag();
 

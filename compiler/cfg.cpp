@@ -489,10 +489,14 @@ namespace cfg {
         //foreach_param
         VertexAdaptor <op_foreach_param> foreach_param = foreach_op->params();
         Node val_start, val_finish;
-        create_cfg (foreach_param->xs(), &val_start, &val_finish);
 
+        create_cfg (foreach_param->xs(), &val_start, &val_finish);
+        
         Node writes = new_node();
         add_usage (writes, new_usage (usage_write_t, foreach_param->x()));
+        if (!foreach_param->x()->ref_flag) {
+          add_usage (writes, new_usage (usage_write_t, foreach_param->temp_var()));
+        }
         if (foreach_param->has_key()) {
           add_usage (writes, new_usage (usage_write_t, foreach_param->key()));
         }

@@ -365,6 +365,9 @@ class RegisterVariables : public FunctionPassBase {
       } else {
         var = get_var (name);
       }
+      if (var_vertex->needs_const_iterator_flag) {
+        var->needs_const_iterator_flag = true;
+      }
       var_vertex->set_var_id (var);
     }
 
