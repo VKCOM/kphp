@@ -661,9 +661,9 @@ class rpc_resumable: public Resumable {
 protected:
   bool run (void) {
     php_assert (dl::query_num == rpc_requests_last_query_num);
-    php_assert (0 <= pos_ && pos_ < rpc_next_request_id - rpc_first_request_id);
+    php_assert (0 <= pos_old && pos_old < rpc_next_request_id - rpc_first_request_id);
 
-    rpc_request *request = rpc_requests + pos_;
+    rpc_request *request = rpc_requests + pos_old;
     php_assert (request->resumable_id < 0);
     php_assert (input_ == NULL);
 
@@ -676,7 +676,7 @@ protected:
       }
     }
 */
-    pos_ = -1;
+    pos_old = -1;
     output_->save <rpc_request> (*request, load_rpc_request_as_var);
     php_assert (request->resumable_id == -2 || request->resumable_id == -1);
     request->resumable_id = -3;
@@ -840,7 +840,7 @@ protected:
   bool run (void) {
     RESUMABLE_BEGIN
       ready = f$wait (resumable_id, timeout);
-      TRY_WAIT(ready, bool);
+      TRY_WAIT(rpc_get_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
         RETURN(false);
@@ -895,7 +895,7 @@ protected:
   bool run (void) {
     RESUMABLE_BEGIN
       ready = f$wait (resumable_id, timeout);
-      TRY_WAIT(ready, bool);
+      TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
         RETURN(false);
@@ -1720,7 +1720,7 @@ protected:
     RESUMABLE_BEGIN
       last_rpc_error = NULL;
       ready = f$rpc_get_and_parse (query_id, -1);
-      TRY_WAIT(ready, bool);
+      TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         php_assert (last_rpc_error != NULL);
         T->destroy();
@@ -1777,7 +1777,7 @@ protected:
 
       while (true) {
         query_id = f$wait_queue_next (queue_id, -1);
-        TRY_WAIT(query_id, int);
+        TRY_WAIT(rpc_tl_query_result_resumable_label_0, query_id, int);
         if (query_id <= 0) {
           break;
         }

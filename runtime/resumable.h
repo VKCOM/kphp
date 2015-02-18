@@ -10,11 +10,11 @@ extern const char *last_wait_error;
 
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
-#define TRY_WAIT(a, T) if (!resumable_finished) { pos_ = __LINE__; WAIT; case __LINE__: php_assert (input_ != NULL); a = input_->load <T, T> (); }
-#define TRY_WAIT_VOID() if (!resumable_finished) { pos_ = __LINE__; WAIT; case __LINE__: ; }
-#define RESUMABLE_BEGIN switch (pos_) case 0: {
+#define TRY_WAIT(labelName, a, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != NULL); a = input_->load <T, T> (); }
+#define TRY_WAIT_VOID(labelName) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: ; }
+#define RESUMABLE_BEGIN if (pos__ != NULL) goto *pos__; do {
 #define RESUMABLE_END \
-      } \
+      } while (0); \
       php_assert (0);\
       return false;\
 
@@ -51,7 +51,8 @@ class Resumable {
 protected:
   static Storage *input_;
   static Storage *output_;
-  int pos_;
+  void* pos__;
+  int pos_old;
 
   virtual bool run() = 0;
 

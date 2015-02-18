@@ -651,7 +651,7 @@ protected:
     RESUMABLE_BEGIN
       while (keys_n > 0) {
         request_id = f$wait_queue_next (queue_id, -1);
-        TRY_WAIT(request_id, int);
+        TRY_WAIT(rpc_mc_multiget_resumable_label_0, request_id, int);
 
         if (request_id <= 0) {
           break;

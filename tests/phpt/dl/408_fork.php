@@ -1,4 +1,4 @@
-@wa no_php
+@ok no_php
 <?php
 
   function g ($x) {

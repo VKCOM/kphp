@@ -41,11 +41,11 @@ void Resumable::operator delete (void *ptr, size_t size) {
 }
 
 Resumable::Resumable():
-  pos_ (0) {
+  pos__(NULL), pos_old (0) {
 }
 
 Resumable::Resumable (int pos):
-  pos_ (pos) {
+  pos__(NULL), pos_old (pos) {
 }
 
 Resumable::~Resumable() {
@@ -457,8 +457,8 @@ protected:
       timer = NULL;
     }
 
-    php_assert (first_forked_resumable_id <= pos_ && pos_ < current_forked_resumable_id);
-    int slot_id = pos_ - first_forked_resumable_id;
+    php_assert (first_forked_resumable_id <= pos_old && pos_old < current_forked_resumable_id);
+    int slot_id = pos_old - first_forked_resumable_id;
     forked_resumable_info *info = &forked_resumables[slot_id];
 
     if (info->queue_id < 0) {
@@ -469,7 +469,7 @@ protected:
       output_->save <bool> (false);
     }
 
-    pos_ = -1;
+    pos_old = -1;
     return true;
   }
 
@@ -497,7 +497,7 @@ protected:
   bool run (void) {
     RESUMABLE_BEGIN
       ready = f$wait (resumable_id, timeout);
-      TRY_WAIT(ready, bool);
+      TRY_WAIT(wait_result_resumbale_label_1, ready, bool);
       if (!ready) {
         if (last_wait_error == NULL) {
           last_wait_error = "Timeout in wait_result";
@@ -777,8 +777,8 @@ protected:
       timer = NULL;
     }
 
-    php_assert (0 < pos_ && pos_ <= wait_next_queue_id);
-    wait_queue *q = &wait_queues[pos_ - 1];
+    php_assert (0 < pos_old && pos_old <= wait_next_queue_id);
+    wait_queue *q = &wait_queues[pos_old - 1];
 
     php_assert (q->resumable_id > 0);
     q->resumable_id = 0;
@@ -790,7 +790,7 @@ protected:
       output_->save <int> (0);
     }
 
-    pos_ = -1;
+    pos_old = -1;
     return true;
   }
 
