@@ -154,7 +154,6 @@ def run_test_mode (test, mode, perf_read_only = True,
     except:
       print "%sFailed to run [%s] [%s]%s" % (bcolors.FAIL, test.short_path,
           mode, bcolors.ENDC)
-      return
       sys.exit (1)
 
     cur_ans_path, cur_perf_path = res
