@@ -1733,6 +1733,108 @@ class CheckUBF {
     }
 };
 
+class ExtractResumableCallsPass : public FunctionPassBase {
+  private:
+    AUTO_PROF (extract_resumable_calls);
+    void skip_conv_and_sets(VertexPtr* &replace) {
+      while (true) {
+        if (!replace) break;
+        Operation op = (*replace)->type(); 
+        if (op == op_set_add || op == op_set_sub ||
+            op == op_set_mul || op == op_set_div ||
+            op == op_set_mod || op == op_set_and ||
+            op == op_set_or  || op == op_set_xor ||
+            op == op_set_dot || op == op_set     ||
+            op == op_set_shr || op == op_set_shl) {
+          replace = &((*replace).as<meta_op_binary_op>()->rhs());
+        } else if (op == op_conv_int || op == op_conv_bool ||
+                   op == op_conv_int_l || op == op_conv_float ||
+                   op == op_conv_string || op == op_conv_array ||
+                   op == op_conv_array_l || op == op_conv_var ||
+                   op == op_conv_uint || op == op_conv_long ||
+                   op == op_conv_ulong || op == op_conv_regexp ||
+                   op == op_log_not) {
+          replace = &((*replace).as<meta_op_unary_op>()->expr());           
+        } else {
+          break;
+        }
+      }
+    }
+
+  public:
+    string get_description() {
+      return "Extract easy resumbale calls";
+    }
+    bool check_function (FunctionPtr function) {
+      return default_check_function (function) && function->type() != FunctionData::func_extern &&
+        function->root->resumable_flag;
+    }
+
+    struct LocalT : public FunctionPassBase::LocalT {
+      bool from_seq;
+    };
+
+    void on_enter_edge (VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex __attribute__((unused)), LocalT *dest_local) {
+      dest_local->from_seq = vertex->type() == op_seq;
+    }
+
+    VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
+      if (local->from_seq == false) {
+        return vertex;
+      }
+      VertexPtr* replace = NULL;
+      VertexAdaptor <op_func_call> func_call;
+      Operation op = vertex->type();
+      if (op == op_return) {
+        replace = &vertex.as<op_return>()->expr();
+      } else if (op == op_set_add || op == op_set_sub ||
+                 op == op_set_mul || op == op_set_div ||
+                 op == op_set_mod || op == op_set_and ||
+                 op == op_set_or  || op == op_set_xor ||
+                 op == op_set_dot || op == op_set     ||
+                 op == op_set_shr || op == op_set_shl) {
+        replace = &vertex.as<meta_op_binary_op>()->rhs();
+        if ((*replace)->type() == op_func_call && op == op_set){
+            return vertex;
+        }
+      } else if (op == op_list) {
+        replace = &vertex.as<op_list>()->array();
+      } else if (op == op_set_value) {
+        replace = &vertex.as<op_set_value>()->value();
+      } else if (op == op_push_back) {
+        replace = &vertex.as<op_push_back>()->value();
+      } else if (op == op_if) {
+        replace = &vertex.as<op_if>()->cond();
+      }
+      skip_conv_and_sets(replace);
+      if (replace) {
+        func_call = *replace;
+      }
+      if (!replace || func_call.is_null() || func_call->type() != op_func_call) {
+        return vertex;
+      }
+      FunctionPtr func = func_call->get_func_id();
+      if (func->root->resumable_flag == false) {
+        return vertex;
+      }
+      CREATE_VERTEX(temp_var, op_var);
+      temp_var->str_val = gen_unique_name("resumbale_temp_var");
+      VarPtr var = G->create_local_var (stage::get_function(), temp_var->str_val, VarData::var_local_t);
+      var->tinf_node.copy_type_from (tinf::get_type (func, -1));
+      temp_var->set_var_id(var);
+      CREATE_VERTEX(set_op, op_set, temp_var, func_call);
+
+      CREATE_VERTEX(temp_var2, op_var);
+      temp_var2->str_val = temp_var->str_val;
+      temp_var2->set_var_id(var);
+      *replace = temp_var2;
+
+      CREATE_VERTEX(seq, op_seq, set_op, vertex);
+      return seq;      
+    }
+};
+
+
 class ExtractAsyncPass : public FunctionPassBase {
   private:
     AUTO_PROF (extract_async);
@@ -2216,6 +2318,7 @@ void compiler_execute (KphpEnviroment *env) {
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > check_ub_pipe (true);
     FunctionPassPipe <ExtractAsyncPass>::Self extract_async_pipe (true);
+    FunctionPassPipe <ExtractResumableCallsPass>::Self extract_resumable_calls_pipe (true);
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > third_sync_pipe (true, true);
@@ -2265,6 +2368,7 @@ void compiler_execute (KphpEnviroment *env) {
       calc_val_ref_pipe >>
       calc_bad_vars_pipe >> sync_node() >>
       check_ub_pipe >>
+      extract_resumable_calls_pipe >>
       extract_async_pipe >>
       final_check_pass >>
       code_gen_pipe >> sync_node() >>

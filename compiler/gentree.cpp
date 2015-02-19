@@ -1137,9 +1137,7 @@ VertexPtr GenTree::get_if() {
   }
 
   if (third_node.not_null()) {
-    if (third_node->type() != op_if) {
-      third_node = embrace (third_node);
-    }
+    third_node = embrace (third_node);
     CREATE_VERTEX (v, op_if, first_node, second_node, third_node);
     if_vertex = v;
   } else {

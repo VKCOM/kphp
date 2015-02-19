@@ -816,6 +816,7 @@ class ProfilerRaw {
   F (calc_func_dep)\
   F (calc_bad_vars)\
   F (check_ub)\
+  F (extract_resumable_calls)\
   F (extract_async)\
   F (final_check)\
   F (code_gen)\
