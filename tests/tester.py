@@ -370,6 +370,7 @@ dl_switch_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/dl/switch/*.p
 phc_parsing_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/phc/parsing/*.php", ["phc", "parsing"]);
 phc_codegen_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/phc/codegen/*.php", ["phc", "codegen"]);
 #benchmark_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/benchmarks/*/*.php", ["benchmark", "bench"]);
+dl_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/pk/*.php", ["pk"])
 
 tests = []
 tests.extend (dl_tests)
@@ -379,6 +380,7 @@ tests.extend (manual_tests)
 tests.extend (phc_parsing_tests)
 tests.extend (phc_codegen_tests)
 #tests.extend (benchmark_tests)
+tests.extend (pk_tests)
 
 print all_tags
 
