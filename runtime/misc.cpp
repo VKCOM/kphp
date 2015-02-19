@@ -9,6 +9,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "PHP/php-engine-vars.h"
+
+
 #include "interface.h"
 #include "datetime.h"
 #include "files.h"
@@ -1321,11 +1324,19 @@ string f$print_r (const var &v, bool buffered) {
   }
 
   do_print_r (v, 0);
+  if (run_once) {
+    dprintf(kstdout, "%s", f$ob_get_contents().c_str());
+    f$ob_clean();
+  }
   return string();
 }
 
 void f$var_dump (const var &v) {
   do_var_dump (v, 0);
+  if (run_once) {
+    dprintf(kstdout, "%s", f$ob_get_contents().c_str());
+    f$ob_clean();
+  }
 }
 
 
