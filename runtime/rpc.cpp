@@ -1773,16 +1773,21 @@ class rpc_tl_query_result_resumable: public Resumable {
 protected:
   bool run (void) {
     RESUMABLE_BEGIN
-      queue_id = wait_queue_create (query_ids);
-
-      while (true) {
-        query_id = f$wait_queue_next (queue_id, -1);
+      if (query_ids.count() == 1) {
+        tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one (query_ids.begin().get_value());
         TRY_WAIT(rpc_tl_query_result_resumable_label_0, query_id, int);
-        if (query_id <= 0) {
-          break;
+      } else {
+        queue_id = wait_queue_create (query_ids);
+        
+        while (true) {
+          query_id = f$wait_queue_next (queue_id, -1);
+          TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id, int);
+          if (query_id <= 0) {
+            break;
+          }
+          tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+          php_assert (resumable_finished);
         }
-        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
-        php_assert (resumable_finished);
       }
 
       array <array <var> > tl_objects (query_ids.size());
@@ -1815,16 +1820,22 @@ array <array <var> > f$rpc_tl_query_result (const array <int> &query_ids) {
 }
 
 array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &query_ids) {
-  int queue_id = wait_queue_create (query_ids);
-
   array <array <var> > tl_objects_unsorted (array_size (query_ids.count(), 0, false));
-  while (true) {
-    int query_id = f$wait_queue_next_synchronously (queue_id);
-    if (query_id <= 0) {
-      break;
+  if (query_ids.count() == 1) {
+      f$wait_synchronously(query_ids.begin().get_value());
+      tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one (query_ids.begin().get_value());
+      php_assert (resumable_finished);
+  } else {
+    int queue_id = wait_queue_create (query_ids);
+
+    while (true) {
+      int query_id = f$wait_queue_next_synchronously (queue_id);
+      if (query_id <= 0) {
+        break;
+      }
+      tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+      php_assert (resumable_finished);
     }
-    tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
-    php_assert (resumable_finished);
   }
 
   array <array <var> > tl_objects (query_ids.size());
