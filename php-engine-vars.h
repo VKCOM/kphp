@@ -7,11 +7,8 @@
 #define VERSION "0.01"
 #define NAME "php-engine"
 #define NAME_VERSION NAME "-" VERSION
-#ifndef COMMIT
-#  define COMMIT "unknown"
-#endif
 
-extern const char *full_version_str;
+#include "version-string.h"
 
 /***
  DEFAULT GLOBAL VARIABLES

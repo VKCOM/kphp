@@ -1427,7 +1427,7 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
 
   sprintf (buf, "uptime\t\%d\n", now - start_time);
   header += buf;
-  sprintf (buf, "version\t%s\n", full_version_str);
+  sprintf (buf, "version\t%s\n", FullVersionStr);
   header += buf;
   if (engine_tag != NULL) {
     sprintf (buf + sprintf (buf, "kphp_version\t%s", engine_tag) - 2, "\n");

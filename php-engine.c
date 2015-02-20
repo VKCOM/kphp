@@ -3304,7 +3304,7 @@ void init_logname (const char *src) {
 void usage (void);
 
 void usage_default_info (void) {
-  printf ("\t%s\n", full_version_str);
+  printf ("\t%s\n", FullVersionStr);
 
 }
 
@@ -3543,6 +3543,7 @@ void init_default (void) {
 }
 
 int main (int argc, char *argv[]) {
+  init_version_string(NAME_VERSION);
   dl_block_all_signals();
   tcp_maximize_buffers = 1;
   max_special_connections = 1;

@@ -8,14 +8,6 @@
  DEFAULT GLOBAL VARIABLES
  ***/
 
-const char *full_version_str = NAME_VERSION " compiled at " __DATE__ " " __TIME__ " by gcc " __VERSION__ " "
-#ifdef __LP64__
-  "64-bit"
-#else
-  "32-bit"
-#endif
-" after commit " COMMIT;
-
 /** engine variables **/
 char *logname_pattern = NULL;
 int logname_id = 0;
