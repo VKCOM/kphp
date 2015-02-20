@@ -1774,8 +1774,11 @@ protected:
   bool run (void) {
     RESUMABLE_BEGIN
       if (query_ids.count() == 1) {
-        tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one (query_ids.begin().get_value());
-        TRY_WAIT(rpc_tl_query_result_resumable_label_0, query_id, int);
+        query_id = query_ids.begin().get_value();
+        f$wait(query_id);
+        TRY_WAIT_VOID(rpc_tl_query_result_resumable_label_0)
+        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+        php_assert (resumable_finished);
       } else {
         queue_id = wait_queue_create (query_ids);
         
