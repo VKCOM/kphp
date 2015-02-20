@@ -261,6 +261,7 @@ class CalcBadVars {
       }
     }
 
+
     void calc_resumable (FuncCallGraph &call_graph, vector <DepData *> &dep_data) {
       for (int i = 0; i < call_graph.n; i++) {
         FOREACH (dep_data[i]->forks, fork) {
@@ -278,6 +279,15 @@ class CalcBadVars {
       FOREACH (call_graph.functions, func) {
         if (from_resumable[*func] && into_resumable[*func]) {
           (*func)->root->resumable_flag = true;
+        }
+      }
+      if (G->env().get_print_resumable_graph()) {
+        FOREACH (call_graph.functions, func) {
+          if (!(*func)->root->resumable_flag) continue;
+          FOREACH (call_graph.graph[*func], next) {
+            if (!(*next)->root->resumable_flag) continue;
+            fprintf(stderr, "%s -> %s\n", (*func)->name.c_str(), (*next)->name.c_str());
+          }
         }
       }
     }

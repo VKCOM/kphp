@@ -160,6 +160,12 @@ void KphpEnviroment::inc_verbosity() {
 int KphpEnviroment::get_verbosity() const {
   return verbosity_int_;
 }
+void KphpEnviroment::set_print_resumable_graph() {
+  print_resumable_graph_ = 1;
+}
+int KphpEnviroment::get_print_resumable_graph() const {
+  return print_resumable_graph_;
+}
 void KphpEnviroment::add_main_file (const string &main_file) {
   main_files_.push_back (main_file);
 }

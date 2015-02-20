@@ -30,6 +30,7 @@ void usage (void) {
           "-M <mode>\tserver, net or cli. If <mode> == server/net, than $KPHP_LINK_FILE_NAME=php-server.a. If <mode> == cli, than $KPHP_LINK_FILE_NAME=php-cli.a\n"
           "-m\tRun make\n"
           "-o <file>\tPlace output into <file>\n"
+          "-p\tPrint graph of resumbale calls to stderr\n"
           "-r\tSplit output into multiple directories\n"
           "-t <thread_count>\tUse <threads_count> threads. By default equals to 16\n"
           "-s <directory>\tPath to kphp source. Equals to $KPHP_PATH. ~/engine/src is used by default\n"
@@ -76,7 +77,7 @@ int main (int argc, char *argv[]) {
   }
 
   //TODO: long options
-  while ((i = getopt (argc, argv, "ab:d:Ff:i:I:j:l:M:mo:rt:Ss:V:v")) != -1) {
+  while ((i = getopt (argc, argv, "ab:d:Ff:i:I:j:l:M:mo:prt:Ss:V:v")) != -1) {
     switch (i) {
     case 'a':
       env->set_use_safe_integer_arithmetic ("1");
@@ -116,6 +117,9 @@ int main (int argc, char *argv[]) {
       break;
     case 'o':
       env->set_user_binary_path (optarg);
+      break;
+    case 'p':
+      env->set_print_resumable_graph ();
       break;
     case 't':
       env->set_threads_count (optarg);
