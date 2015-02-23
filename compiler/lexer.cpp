@@ -764,6 +764,8 @@ int TokenLexerHeredocString::parse (LexerData *lexer_data) const {
     assert (s == lexer_data->get_code());
   } else {
     lexer_data->start_str();
+    lexer_data->pass_raw ((int)(s - st));
+    assert (s == lexer_data->get_code());
   }
   bool first = true;
   while (true) {
