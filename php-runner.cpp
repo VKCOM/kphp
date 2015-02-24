@@ -459,6 +459,17 @@ void sigsegv_handler (int signum __attribute__((unused)), siginfo_t *info, void 
   } else {
     write_str (2, "Error -2: Segmentation fault");
     //dl_runtime_handler (signum);
+    if (PHPScriptBase::current_script->data) {
+      http_query_data *data = PHPScriptBase::current_script->data->http_data;
+      write_str (2, "\nuri\n");
+      write(2, data->uri, data->uri_len);
+      write_str (2, "\nget\n");
+      write(2, data->get, data->get_len);
+      write_str (2, "\nheaders\n");
+      write(2, data->headers, data->headers_len);
+      write_str (2, "\npost\n");
+      write(2, data->post, data->post_len);
+    }
     dl_print_backtrace();
     _exit (123);
   }
