@@ -215,14 +215,13 @@ void PHPScriptBase::finish() {
   }
 
   static char buf[5000];
+  buf[0] = 0;
   if (data != NULL) {
     http_query_data *http_data = data->http_data;
     if (http_data != NULL) {
       sprintf (buf, "[uri = %.*s?%.*s]", min (http_data->uri_len, 200), http_data->uri,
                                          min (http_data->get_len, 4000), http_data->get);
     }
-  } else {
-    buf[0] = 0;
   }
   kprintf ("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
                          script_time + net_time, net_time, script_time, queries_cnt,
