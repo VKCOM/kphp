@@ -2109,12 +2109,28 @@ array <T, TT>& array <T, TT>::operator += (const array <T, TT> &other) {
       int size = other.p->int_size;
       TT *it = (TT *)other.p->int_entries;
 
-      if (p->int_buf_size < size + 2) {
+      if (p->ref_cnt > 0 || dl::memory_begin > (size_t)p || (size_t)p >= dl::memory_end) {
+        int my_size = p->int_size;
+        TT *my_it = (TT *)p->int_entries;
+
+        array_inner *new_array = array_inner::create (max (size, my_size), 0, true);
+
+        for (int i = 0; i < my_size; i++) {
+          new_array->push_back_vector_value (my_it[i]);
+        }
+
+        p->dispose();
+        p = new_array;
+      } else if (p->int_buf_size < size + 2) {
         int new_size = max (size + 2, p->int_buf_size * 2);
         p = (array_inner *)dl::reallocate ((void *)p,
                                            (dl::size_type)(sizeof (array_inner) + new_size * sizeof (TT)),
                                            (dl::size_type)(sizeof (array_inner) + p->int_buf_size * sizeof (TT)));
         p->int_buf_size = new_size;
+      }
+
+      if (p->int_size > 0 && size > 0) {
+        php_warning ("Strange usage of array operator += on two vectors. Did you mean array_merge?");
       }
 
       for (int i = p->int_size; i < size; i++) {
