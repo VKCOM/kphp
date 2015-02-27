@@ -688,8 +688,6 @@ void php_worker_run_sql_query_packet (php_worker *worker, php_net_query_packet_t
 
   double timeout = fix_timeout (query->timeout) + precise_now;
   if (conn != NULL && conn->status == conn_ready) {
-//    assert (conn->type->check_ready (conn) == cr_ok);
-
     write_out (&conn->Out, query->data, query->data_len);
     SQLC_FUNC (conn)->sql_flush_packet (conn, query->data_len - 4);
     flush_connection_output (conn);
@@ -733,7 +731,6 @@ void php_worker_run_rpc_send_query (net_query_t *query) {
   struct connection *conn = get_target_connection (target, 0);
 
   if (conn != NULL) {
-    assert (conn->type->check_ready (conn) == cr_ok);
     send_rpc_query (conn, RPC_INVOKE_REQ, slot_id, (int *)query->request, query->request_size);
     conn->last_query_sent_time = precise_now;
   } else {

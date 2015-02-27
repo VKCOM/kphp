@@ -1370,7 +1370,7 @@ public:
 
 
 int get_constructor_by_name (const tl_type *t, const string &name) {
-  for (int i = 0; i < t->constructors.count(); i++) {
+  for (int i = 0; i < t->constructors_num; i++) {
     if (t->constructors.get_value (i)->name == name) {
       return i;
     }
@@ -1379,7 +1379,7 @@ int get_constructor_by_name (const tl_type *t, const string &name) {
 }
 
 int get_constructor_by_id (const tl_type *t, int id) {
-  for (int i = 0; i < t->constructors.count(); i++) {
+  for (int i = 0; i < t->constructors_num; i++) {
     if (t->constructors.get_value (i)->id == id) {
       return i;
     }
@@ -3432,8 +3432,8 @@ tl_tree *read_expr (int *var_count) {
 }
 
 array <arg> read_args_list (int *var_count) {
-  int schema_flag_opt_field = 2 << (tl_schema_version >= 3);
-  int schema_flag_has_vars = schema_flag_opt_field ^ 6;
+  const int schema_flag_opt_field = 2 << (tl_schema_version >= 3);
+  const int schema_flag_has_vars = schema_flag_opt_field ^ 6;
 
   int args_num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   array <arg> args = array <arg> (array_size (args_num, 0, true));
