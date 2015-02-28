@@ -2397,7 +2397,6 @@ void *tlcomb_store_string (void **IP, void **Data, var *arr, tl_tree **vars) {
 void *tlcomb_store_bool (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   if (arr->is_array()) {
-    fprintf(stderr, "HERE!\n");
     var v = arr->get_value(UNDERSCORE);
     if (v.is_null())
         v = arr->get_value(0);    
