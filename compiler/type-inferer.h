@@ -773,6 +773,7 @@ class ExprNodeRecalc : public NodeRecalc {
     void recalc_array (VertexAdaptor <op_array> array);
     void recalc_plus_minus (VertexAdaptor <meta_op_unary_op> expr);
     void recalc_inc_dec (VertexAdaptor <meta_op_unary_op> expr);
+    void recalc_noerr (VertexAdaptor <op_noerr> expr);
     void recalc_arithm (VertexAdaptor <meta_op_binary_op> expr);
     void recalc_define_val (VertexAdaptor <op_define_val> define_val);
     void recalc_expr (VertexPtr expr);

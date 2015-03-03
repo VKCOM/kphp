@@ -555,6 +555,11 @@ void ExprNodeRecalc::recalc_inc_dec (VertexAdaptor <meta_op_unary_op> expr) {
   set_lca (drop_or_false (as_rvalue (expr->expr())));
 }
 
+void ExprNodeRecalc::recalc_noerr (VertexAdaptor <op_noerr> expr) {
+  set_lca (as_rvalue (expr->expr()));
+}
+
+
 void ExprNodeRecalc::recalc_arithm (VertexAdaptor <meta_op_binary_op> expr) {
   VertexPtr lhs = expr->lhs();
   VertexPtr rhs = expr->rhs();
@@ -714,10 +719,13 @@ void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
     case op_prefix_dec:
     case op_postfix_inc:
     case op_postfix_dec:
-    case op_noerr:
       recalc_inc_dec (expr);
       break;
 
+    case op_noerr:
+      recalc_noerr (expr);
+      break;
+    
     case op_sub:
     case op_add:
     case op_mul:

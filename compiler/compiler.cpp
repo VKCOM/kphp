@@ -1659,7 +1659,7 @@ class CalcValRefPass : public FunctionPassBase {
       local->forbidden = v->type() == op_eq3 || v->type() == op_neq3 || v->type() == op_eq2 ||
         v->type() == op_neq2 || v->type() == op_set || v->type() == op_return || v->type() == op_conv_bool ||
         (v->type() == op_func_call && !v->get_func_id()->is_extern) || v->type() == op_array ||
-        v->type() == op_double_arrow || v->type() == op_var_dump;
+        v->type() == op_double_arrow || v->type() == op_var_dump || v->type() == op_ternary || v->type() == op_noerr;
       return v;
     }
 
