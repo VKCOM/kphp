@@ -157,6 +157,8 @@ enum TokenType {
   tok_triple_gt,
   tok_triple_lt,
   tok_triple_eq,
+  tok_triple_colon_begin,
+  tok_triple_colon_end,
 
   tok_throw,
   tok_new,

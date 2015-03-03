@@ -68,7 +68,7 @@ void LexerData::add_token_ (Token *tok, int shift) {
   tok->line_num = line_num;
   tok->debug_str = string_ref (code, code + shift);
   tokens.push_back (tok);
-  //fprintf (stderr, "%.*s : %d\n", tok->debug_str.length(), tok->debug_str.begin(), line_num);
+  //fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
   pass (shift);
 }
 
@@ -566,7 +566,6 @@ int TokenLexerHexChar::parse (LexerData *lexer_data) const {
 
 
 Helper <TokenLexer> *TokenLexerStringExpr::gen_helper() {
-  //fprintf (stderr, "Create TokenLexerStringExpr helper\n");
   Helper <TokenLexer> *h = new Helper <TokenLexer> (new TokenLexerError ("Can't parse"));
 
   h->add_rule ("\'", Singleton <TokenLexerSimpleString>::instance());
@@ -619,6 +618,32 @@ int TokenLexerStringExpr::parse (LexerData *lexer_data) const {
   }
   return 0;
 }
+
+int TokenLexerTypeHint::parse (LexerData *lexer_data) const {
+  const char *s = lexer_data->get_code();
+  assert (!strncmp(s, "/*:", 3));
+
+  lexer_data->add_token (new Token (tok_triple_colon_begin), 3);
+
+  while (true) {
+    const char *s = lexer_data->get_code();
+
+    if (!strncmp(s, "*/", 2)) {
+      lexer_data->add_token(new Token (tok_triple_colon_end), 2);
+      return 0;
+    }
+
+    if (*s == 0) {
+      return TokenLexerError("Unclosed tipe-hint comment").parse (lexer_data);
+    }
+
+    int res = Singleton <TokenLexerPHP>::instance()->parse (lexer_data);
+    if (res) {
+      return res;
+    }
+  }
+}
+
 
 
 void TokenLexerString::add_esc (string s, char c) {
@@ -975,6 +1000,7 @@ Helper <TokenLexer> *TokenLexerPHP::gen_helper() {
 
   h->add_rule ("/*|//|#", Singleton <TokenLexerComment>::instance());
   h->add_rule ("#ifndef KittenPHP", Singleton <TokenLexerIfndefComment>::instance());
+  h->add_rule ("/*:", Singleton <TokenLexerTypeHint>::instance());
   h->add_rule ("\'", Singleton <TokenLexerSimpleString>::instance());
   h->add_rule ("\"", Singleton <TokenLexerString>::instance());
   h->add_rule ("<<<", Singleton <TokenLexerHeredocString>::instance());

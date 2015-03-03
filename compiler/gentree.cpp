@@ -864,10 +864,18 @@ PrimitiveType GenTree::get_ptype() {
 
 PrimitiveType GenTree::get_type_help (void) {
   PrimitiveType res = tp_Unknown;
-  if ((*cur)->type() == tok_triple_colon) {
+  if ((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin) {
+    bool should_end = (*cur)->type() == tok_triple_colon_begin;
     next_cur();
     res = get_ptype();
     kphp_error (res != tp_Error, "Cannot parse type");
+    if (should_end) {
+      if ((*cur)->type() == tok_triple_colon_end) {
+        next_cur();
+      } else {
+        kphp_error(false, "Unfinished type hint comment");
+      }
+    }
   }
   return res;
 }
@@ -962,8 +970,9 @@ VertexPtr GenTree::get_type_rule (void) {
 
   TokenType tp = (*cur)->type();
   if (tp == tok_triple_colon || tp == tok_triple_eq ||
-      tp == tok_triple_lt || tp == tok_triple_gt) {
+      tp == tok_triple_lt || tp == tok_triple_gt || tp == tok_triple_colon_begin) {
     AutoLocation rule_location (this);
+    bool should_end = tp == tok_triple_colon_begin;
     next_cur();
     first = get_type_rule_();
 
@@ -974,6 +983,14 @@ VertexPtr GenTree::get_type_rule (void) {
     );
 
     CREATE_META_VERTEX_1 (rule, meta_op_base, OpInfo::tok_to_op[tp], first);
+
+    if (should_end) {
+      if ((*cur)->type() == tok_triple_colon_end) {
+        next_cur();
+      } else {
+        kphp_error (false, "Unfinished type hint comment");
+      }
+    }
 
     set_location (rule, rule_location);
     res = rule;
