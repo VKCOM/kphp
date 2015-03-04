@@ -166,6 +166,12 @@ void KphpEnviroment::set_print_resumable_graph() {
 int KphpEnviroment::get_print_resumable_graph() const {
   return print_resumable_graph_;
 }
+void KphpEnviroment::set_enable_profiler() {
+  enable_profiler_ = 1;
+}
+int KphpEnviroment::get_enable_profiler() const {
+  return enable_profiler_;
+}
 void KphpEnviroment::add_main_file (const string &main_file) {
   main_files_.push_back (main_file);
 }

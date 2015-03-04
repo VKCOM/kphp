@@ -403,6 +403,10 @@ void finish (int exit_code) {
     shutdown_function();
   }
 
+  if (Profiler::is_enabled()){
+    Profiler::finalize();
+  }
+
   f$fastcgi_finish_request();
 
   finish_script (exit_code);

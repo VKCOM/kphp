@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "common/crc32.h"
 #include "common/kdb-data-common.h"

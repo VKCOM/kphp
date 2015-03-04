@@ -7,6 +7,7 @@
 #include "class.h"
 #include "variable.h"
 #include "string_buffer.h"
+#include "profiler.h"
 
 #define AS_STRING(s) (reinterpret_cast <string *> (&s))
 #define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))

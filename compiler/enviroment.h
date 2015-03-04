@@ -30,6 +30,7 @@ class KphpEnviroment {
     int verbosity_int_;
     vector <string> main_files_;
     int print_resumable_graph_;
+    int enable_profiler_;
 
     string cxx_;
     string cxx_flags_;
@@ -86,6 +87,8 @@ class KphpEnviroment {
     int get_verbosity() const;
     void set_print_resumable_graph();
     int get_print_resumable_graph() const;
+    void set_enable_profiler();
+    int get_enable_profiler() const;
     void add_main_file (const string &main_file);
     const vector <string> &get_main_files() const;
 

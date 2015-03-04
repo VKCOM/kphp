@@ -23,6 +23,7 @@ void usage (void) {
           "-d <directory>\tDestination directory\n"
           "-F\tForce make. Old object files and binary will be removed\n"
           "-f <file>\tInternal file with library headers and e.t.c. Equals to $KPHP_FUNCTIONS. $KPHP_PATH/PHP/functions.txt is used by default\n"
+          "-g\tGenerate slower code, but with profiler info"
           "-i <file>\tExperimental. Index for faster compilations\n"
           "-I <directory>\tDirectory where php files will be searched\n"
           "-j <jobs_count>\tSpecifies the number of jobs (commands) to run simultaneously by make. By default equals to 1\n"
@@ -77,7 +78,7 @@ int main (int argc, char *argv[]) {
   }
 
   //TODO: long options
-  while ((i = getopt (argc, argv, "ab:d:Ff:i:I:j:l:M:mo:prt:Ss:V:v")) != -1) {
+  while ((i = getopt (argc, argv, "ab:d:Ff:gi:I:j:l:M:mo:prt:Ss:V:v")) != -1) {
     switch (i) {
     case 'a':
       env->set_use_safe_integer_arithmetic ("1");
@@ -93,6 +94,9 @@ int main (int argc, char *argv[]) {
       break;
     case 'f':
       env->set_functions (optarg);
+      break;
+    case 'g':
+      env->set_enable_profiler ();
       break;
     case 'i':
       env->set_index (optarg);

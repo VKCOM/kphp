@@ -126,6 +126,7 @@ extern int script_timeout;
  ***/
 extern int kstdout;
 extern int kstderr;
+extern int kproffd;
 
 #ifdef __cplusplus
 extern "C" {

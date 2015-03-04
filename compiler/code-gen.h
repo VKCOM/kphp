@@ -4,6 +4,7 @@
 #include "vertex.h"
 
 #include "bicycle.h"
+#include "compiler-core.h"
 
 struct CGContext {
   vector <string> catch_labels;
@@ -2174,8 +2175,11 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
 
   //RUN FUNCTION
   W << "bool run() " << 
-       BEGIN <<
-         "RESUMABLE_BEGIN" << NL << Indent (+2);
+       BEGIN ;
+  if (G->env().get_enable_profiler()){
+    W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
+  }
+  W << "RESUMABLE_BEGIN" << NL << Indent (+2);
 
   W <<   AsSeq (func_root->cmd()) << NL;
 
@@ -2246,6 +2250,10 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
 
   W << FunctionDeclaration (func, false) << " " <<
        BEGIN;
+
+  if (G->env().get_enable_profiler()){
+    W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
+  }
 
   FOREACH (func->local_var_ids, var) {
     W << VarDeclaration (*var);
