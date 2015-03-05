@@ -133,6 +133,11 @@ void OpInfo::init_static() {
   add_op (tok_triple_lt, op_lt_type_rule);
   add_op (tok_triple_gt, op_gt_type_rule);
   add_op (tok_triple_eq, op_eq_type_rule);
+
+  add_op (tok_triple_colon_begin, op_common_type_rule);
+  add_op (tok_triple_lt_begin, op_lt_type_rule);
+  add_op (tok_triple_gt_begin, op_gt_type_rule);
+  add_op (tok_triple_eq_begin, op_eq_type_rule);
 }
 
 OpProperties OpInfo::P[Operation_size];

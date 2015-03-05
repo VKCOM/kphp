@@ -970,9 +970,12 @@ VertexPtr GenTree::get_type_rule (void) {
 
   TokenType tp = (*cur)->type();
   if (tp == tok_triple_colon || tp == tok_triple_eq ||
-      tp == tok_triple_lt || tp == tok_triple_gt || tp == tok_triple_colon_begin) {
+      tp == tok_triple_lt || tp == tok_triple_gt || 
+      tp == tok_triple_colon_begin || tp == tok_triple_eq_begin ||
+      tp == tok_triple_lt_begin || tp == tok_triple_gt_begin) {
     AutoLocation rule_location (this);
-    bool should_end = tp == tok_triple_colon_begin;
+    bool should_end = tp == tok_triple_colon_begin || tp == tok_triple_eq_begin ||
+                      tp == tok_triple_lt_begin || tp == tok_triple_gt_begin;
     next_cur();
     first = get_type_rule_();
 
