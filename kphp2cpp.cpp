@@ -23,7 +23,7 @@ void usage (void) {
           "-d <directory>\tDestination directory\n"
           "-F\tForce make. Old object files and binary will be removed\n"
           "-f <file>\tInternal file with library headers and e.t.c. Equals to $KPHP_FUNCTIONS. $KPHP_PATH/PHP/functions.txt is used by default\n"
-          "-g\tGenerate slower code, but with profiler info"
+          "-g\tGenerate slower code, but with profiling\n"
           "-i <file>\tExperimental. Index for faster compilations\n"
           "-I <directory>\tDirectory where php files will be searched\n"
           "-j <jobs_count>\tSpecifies the number of jobs (commands) to run simultaneously by make. By default equals to 1\n"
