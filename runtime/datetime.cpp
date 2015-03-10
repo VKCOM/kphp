@@ -36,10 +36,14 @@ static time_t gmmktime (struct tm *tm) {
   return result;
 }
 
+static inline int is_leap(int year){
+  return ((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0));
+}
+
 bool f$checkdate (int month, int day, int year) {
   return (1 <= month && month <= 12) &&
          (1 <= year && year <= 32767) &&
-         (1 <= day && day <= days_in_month[month - 1] + (month == 2 && ((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0))));
+         (1 <= day && day <= days_in_month[month - 1] + (month == 2 && is_leap(year)));
 }
 
 static inline int fix_year (int year) {
@@ -71,7 +75,50 @@ static int day_of_week_by_full_name (const char *day_of_week_name) {
   return 0;
 }
 
-static string date (const string &format, const tm &t, int timestamp) {
+void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
+  int y_leap, prev_y_leap, jan1weekday;
+
+  y_leap = is_leap(y);
+  prev_y_leap = is_leap(y-1);
+
+  jan1weekday = (weekday - (doy % 7) + 7) % 7;
+
+  if (weekday == 0) weekday = 7;
+  if (jan1weekday == 0) jan1weekday = 7;
+  /* Find if Y M D falls in YearNumber Y-1, WeekNumber 52 or 53 */
+  if (doy <= (7 - jan1weekday) && jan1weekday > 4) {
+    iy = y - 1;
+    if (jan1weekday == 5 || (jan1weekday == 6 && prev_y_leap)) {
+      iw = 53;
+    } else {
+      iw = 52;
+    }
+  } else {
+    iy = y;
+  }
+  /* Find if Y M D falls in YearNumber Y+1, WeekNumber 1 */
+  if (iy == y) {
+    int i;
+    i = y_leap ? 366 : 365;
+    if ((i - (doy - y_leap + 1)) < (4 - weekday)) {
+      iy = y + 1;
+      iw = 1;
+      return;
+    }
+  }
+  /* Find if Y M D falls in YearNumber Y, WeekNumber 1 through 53 */
+  if (iy == y) {
+    int j;
+    j = doy + (7 - weekday) + jan1weekday;
+    iw = j / 7;
+    if (jan1weekday > 4) {
+      iw -= 1;
+    }
+  }
+}
+
+
+static string date (const string &format, const tm &t, int timestamp, bool local) {
   string_buffer &SB = static_SB_spare;
 
   int year        = t.tm_year + 1900;
@@ -83,6 +130,8 @@ static string date (const string &format, const tm &t, int timestamp) {
   int second      = t.tm_sec;
   int day_of_week = t.tm_wday;
   int day_of_year = t.tm_yday;
+  int internet_time;
+  int iso_week, iso_year;
 
   SB.clean();
   for (int i = 0; i < (int)format.size(); i++) {
@@ -132,7 +181,9 @@ static string date (const string &format, const tm &t, int timestamp) {
         SB += day_of_year;
         break;
       case 'W':
-        SB += day_of_year / 7 + 1;
+        iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
+        SB += (char)('0' + iso_week / 10);
+        SB += (char)('0' + iso_week % 10);
         break;
       case 'F':
         SB += month_names_full[month - 1];
@@ -148,12 +199,15 @@ static string date (const string &format, const tm &t, int timestamp) {
         SB += month;
         break;
       case 't':
-        SB += days_in_month[month - 1] + (month == 2 && ((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0)));
+        SB += days_in_month[month - 1] + (month == 2 && is_leap(year));
         break;
       case 'L':
-        SB += (int)((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0));
+        SB += (int)is_leap(year);
         break;
       case 'o':
+        iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
+        SB += iso_year;
+        break;
       case 'Y':
         SB += year;
         break;
@@ -168,7 +222,10 @@ static string date (const string &format, const tm &t, int timestamp) {
         SB += hour < 12 ? "AM" : "PM";
         break;
       case 'B':
-        SB += (timestamp - 3600) % 86400 * 1000 / 86400;
+        internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
+        SB += (char)(internet_time / 100 + '0');
+        SB += (char)((internet_time / 10) % 10 + '0');
+        SB += (char)(internet_time % 10 + '0');
         break;
       case 'g':
         SB += hour12;
@@ -196,22 +253,42 @@ static string date (const string &format, const tm &t, int timestamp) {
         SB += "000000";
         break;
       case 'e':
-        SB += "UTC";
+        if (local) {
+          SB += "Europe/Moscow";
+        } else {
+          SB += "UTC";
+        }
         break;
       case 'I':
         SB += (int)(t.tm_isdst > 0);
         break;
       case 'O':
-        SB += "+0300";
+        if (local) {
+          SB += "+0300";
+        } else {
+          SB += "+0000";
+        }
         break;
       case 'P':
-        SB += "+03:00";
+        if (local) {
+          SB += "+03:00";
+        } else {
+          SB += "+00:00";
+        }
         break;
       case 'T':
-        SB += "MST";
+        if (local) {
+          SB += "MSK";
+        } else {
+          SB += "GMT";
+        }
         break;
       case 'Z':
-        SB += 3 * 3600;
+        if (local) {
+          SB += 3 * 3600;
+        } else {
+          SB += 0;
+        }
         break;
       case 'c':
         SB += year;
@@ -222,32 +299,43 @@ static string date (const string &format, const tm &t, int timestamp) {
         SB += (char)(day / 10 + '0');
         SB += (char)(day % 10 + '0');
         SB += "T";
-        SB += hour;
+        SB += (char)(hour / 10 + '0');
+        SB += (char)(hour % 10 + '0');
         SB += ':';
         SB += (char)(minute / 10 + '0');
         SB += (char)(minute % 10 + '0');
         SB += ':';
         SB += (char)(second / 10 + '0');
         SB += (char)(second % 10 + '0');
-        SB += "+03:00";
+        if (local) {
+          SB += "+03:00";
+        } else {
+          SB += "+00:00";
+        }
         break;
       case 'r':
         SB += day_of_week_names_short[day_of_week];
         SB += ", ";
-        SB += day;
+        SB += (char)(day / 10 + '0');
+        SB += (char)(day % 10 + '0');
         SB += ' ';
         SB += month_names_short[month - 1];
         SB += ' ';
         SB += year;
         SB += ' ';
-        SB += hour;
+        SB += (char)(hour / 10 + '0');
+        SB += (char)(hour % 10 + '0');
         SB += ':';
         SB += (char)(minute / 10 + '0');
         SB += (char)(minute % 10 + '0');
         SB += ':';
         SB += (char)(second / 10 + '0');
         SB += (char)(second % 10 + '0');
-        SB += " +0300";
+        if (local) {
+          SB += " +0300";
+        } else {
+          SB += " +0000";
+        }
         break;
       case 'U':
         SB += timestamp;
@@ -271,7 +359,7 @@ string f$date (const string &format, int timestamp) {
   time_t timestamp_t = timestamp;
   localtime_r (&timestamp_t, &t);
 
-  return date (format, t, timestamp);
+  return date (format, t, timestamp, true);
 }
 
 bool f$date_default_timezone_set (const string &s) {
@@ -322,7 +410,7 @@ string f$gmdate (const string &format, int timestamp) {
   time_t timestamp_t = timestamp;
   gmtime_r (&timestamp_t, &t);
 
-  return date (format, t, timestamp);
+  return date (format, t, timestamp, false);
 }
 
 int f$gmmktime (int h, int m, int s, int month, int day, int year) {
