@@ -519,7 +519,7 @@ function dbSetTimeout ($new_timeout ::: float) ::: void;
 function dbGetReturnDie() ::: bool;
 function dbSetReturnDie ($return_die ::: bool = true) ::: void;
 function dbFailed() ::: bool;
-function dbQuery ($the_query ::: string) throws ::: var;
+function dbQuery_internal ($the_query ::: string) throws ::: var;
 function dbQueryTry ($the_query ::: string, $tries_count ::: int = 3) throws ::: var;
 function dbFetchRow ($query_id ::: var = -1) throws ::: OrFalse <array <var> >;
 function dbAffectedRows() ::: int;

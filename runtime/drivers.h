@@ -353,7 +353,7 @@ void f$dbSetReturnDie (bool return_die = true);
 
 bool f$dbFailed (void);
 
-var f$dbQuery (const string &the_query);
+var f$dbQuery_internal (const string &the_query);
 
 var f$dbQueryTry (const string &the_query, int tries_count = 3);
 

@@ -2539,7 +2539,7 @@ bool f$dbFailed (void) {
   return v$DB_Proxy.db->failed;
 }
 
-var f$dbQuery (const string &the_query) {
+var f$dbQuery_internal (const string &the_query) {
   return db_query (v$DB_Proxy, the_query);
 }
 
@@ -2552,7 +2552,7 @@ var f$dbQueryTry (const string &the_query, int tries_count) {
     }
     bool db_old_failed = f$dbFailed();
     f$dbSetTimeout (30);
-    var query_result = TRY_CALL(var, var, f$dbQuery (the_query));
+    var query_result = TRY_CALL(var, var, f$dbQuery_internal (the_query));
     if (neq2 (query_result, false) && f$dbFailed() == db_old_failed) {
       result = query_result;
       break;
