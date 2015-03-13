@@ -440,6 +440,14 @@ function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) :::
 function mysql_errno() ::: int;
 function mysql_error() ::: string;
 
+function mysql_affected_rows($dn ::: DB) ::: int;
+function mysql_fetch_array($qid ::: var) ::: OrFalse <array <var> >; // should be used for DbProxy only
+function mysql_insert_id($dn ::: DB) ::: int;
+function mysql_num_rows($query_id ::: var) ::: int; // should be used for DbProxy only
+function mysql_query($query ::: string, $dn ::: DB) ::: var;
+function mysql_pconnect_db_proxy($dn ::: DB) ::: bool;
+
+
 function function_exists ($func_name ::: Any) ::: bool;
 
 function basename ($name ::: string, $suffix ::: string = '') ::: string;

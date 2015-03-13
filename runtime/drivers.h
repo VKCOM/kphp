@@ -377,6 +377,9 @@ string f$dbUpdateString (const array <T> &data);
 
 int f$dbId (void);
 
+
+class MyDB;
+
 class db_driver {
 private:
   int db_id;
@@ -412,6 +415,8 @@ public:
 
   void do_connect (void);
 
+  void do_connect_no_log (void);
+
   void set_timeout (double new_timeout = 0);
 
   var query (const string &query_str);
@@ -432,6 +437,8 @@ public:
 
 
   bool mysql_query (const string &query);
+
+  var mysql_query_update_last (const string &query_string);
 
   OrFalse <array <var> > mysql_fetch_array (int query_id);
 
@@ -476,9 +483,10 @@ public:
   friend string f$mysql_error (void);
 
   friend int f$mysql_errno (void);
+
+  friend int db_get_num_rows (const MyDB &db, int id);
 };
 
-class MyDB;
 template <class T>
 array <string> db_compile_db_insert_string (const MyDB &db, const array <T> &data, bool no_escape = false);
 
@@ -495,17 +503,23 @@ public:
 
   friend void db_do_connect (const MyDB &db);
 
+  friend void db_do_connect_no_log (const MyDB &db);
+
   friend void db_set_timeout (const MyDB &db, double new_timeout);
 
   friend var db_query (const MyDB &db, const string &query);
+
+  friend var db_mysql_query (const MyDB &db, const string &query);
 
   friend OrFalse <array <var> > db_fetch_row (const MyDB &db, const var &query_id_var);
 
   friend int db_get_affected_rows (const MyDB &db);
 
-  friend int db_get_num_rows (const MyDB &db);
+  friend int db_get_num_rows (const MyDB &db, int id);
 
   friend int db_get_insert_id (const MyDB &db);
+
+  friend OrFalse <array <var> > db_fetch_array (const MyDB& db, const var& query_id_var);
 
   template <class T>
   friend array <string> db_compile_db_insert_string (const MyDB &db, const array <T> &data, bool no_escape);
@@ -584,7 +598,7 @@ OrFalse <array <var> > db_fetch_row (const MyDB &db, const var &query_id_var);
 
 int db_get_affected_rows (const MyDB &db);
 
-int db_get_num_rows (const MyDB &db);
+int db_get_num_rows (const MyDB &db, int id = -1);
 
 int db_get_insert_id (const MyDB &db);
 
@@ -603,6 +617,19 @@ bool not_equals (const MyDB &my_db, bool value);
 string f$mysql_error (void);
 
 int f$mysql_errno (void);
+
+
+int f$mysql_affected_rows(const MyDB& dn);
+
+OrFalse <array <var> > f$mysql_fetch_array(const var &query_id);
+
+int f$mysql_insert_id(const MyDB& dn);
+
+int f$mysql_num_rows(const var& query_id_var);
+
+var f$mysql_query(string query, const MyDB& dn);
+
+bool f$mysql_pconnect_db_proxy(const MyDB& dn);
 
 
 void f$setDbNoDie (bool no_die = true);

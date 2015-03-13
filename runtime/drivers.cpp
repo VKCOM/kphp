@@ -1875,6 +1875,21 @@ bool db_driver::is_down (bool check_failed) {
   return false;
 }
 
+void db_driver::do_connect_no_log (void) {
+  if (connection_id >= 0 || connected) {
+    return;
+  }
+
+  connection_id = db_proxy_connect();
+
+  if (connection_id < 0) {
+    connected = -1;
+    return;
+  }
+
+  connected = 1;
+}
+
 void db_driver::do_connect (void) {
   double pconn_start = 0.0;
 
@@ -2078,6 +2093,15 @@ var db_driver::query (const string &query_str) {
 
   return last_query_id = real_query_id;
 }
+
+var db_driver::mysql_query_update_last (const string &query_string) {
+  bool query_id = mysql_query (query_string);
+  if (!query_id) {
+    return false;
+  }
+  return last_query_id = biggest_query_id;
+}
+
 
 OrFalse <array <var> > db_driver::fetch_row (const var &query_id_var) {
   if (connected < 0) {
@@ -2290,6 +2314,7 @@ bool db_driver::mysql_query (const string &query) {
   error = string();
   errno_ = 0;
   affected_rows = 0;
+
   insert_id = 0;
   array <array <var> > query_result;
   bool query_id = true;
@@ -2362,6 +2387,15 @@ void db_do_connect (const MyDB &db) {
   return db.db->do_connect();
 }
 
+void db_do_connect_no_log (const MyDB &db) {
+  if (db.db == NULL) {
+    php_warning ("DB object is NULL in DB->do_connect");
+    return;
+  }
+  return db.db->do_connect_no_log();
+}
+
+
 void db_set_timeout (const MyDB &db, double new_timeout) {
   if (db.db == NULL) {
     php_warning ("DB object is NULL in DB->set_timeout");
@@ -2377,6 +2411,16 @@ var db_query (const MyDB &db, const string &query) {
   }
   return db.db->query (query);
 }
+
+var db_mysql_query (const MyDB &db, const string &query) {
+  if (db.db == NULL) {
+    php_warning ("DB object is NULL in DB->mysql_query");
+    return false;
+  }
+  return db.db->mysql_query_update_last (query);
+}
+
+
 
 OrFalse <array <var> > db_fetch_row (const MyDB &db, const var &query_id_var) {
   if (db.db == NULL) {
@@ -2394,9 +2438,13 @@ int db_get_affected_rows (const MyDB &db) {
   return db.db->get_affected_rows();
 }
 
-int db_get_num_rows (const MyDB &db) {
+int db_get_num_rows (const MyDB &db, int id) {
   if (db.db == NULL) {
     php_warning ("DB object is NULL in DB->get_num_rows");
+    return 0;
+  }
+  if (id != -1 && id != db.db->last_query_id) {
+    php_warning ("mysql_num_rows is supported only for last request");
     return 0;
   }
   return db.db->get_num_rows();
@@ -2408,6 +2456,14 @@ int db_get_insert_id (const MyDB &db) {
     return -1;
   }
   return db.db->get_insert_id();
+}
+
+OrFalse< array< var > > db_fetch_array(const MyDB& db, const var &query_id_var) {
+  if (db.db == NULL) {
+    php_warning ("DB object is NULL in DB->get_insert_id");
+    return false;    
+  }
+  return db.db->mysql_fetch_array(f$intval(query_id_var));
 }
 
 
@@ -2627,6 +2683,32 @@ MyDB f$new_db_decl (int dn) {
     php_warning ("Wrong DB number %d specified to new db_decl", dn);
     return v$DB_Proxy;
   }
+}
+
+
+int f$mysql_affected_rows(const MyDB& dn){
+  return db_get_affected_rows(dn);
+}
+
+OrFalse <array <var> > f$mysql_fetch_array(const var& query_id_var){
+  return db_fetch_array(v$DB_Proxy, query_id_var);
+}
+
+int f$mysql_insert_id(const MyDB& dn){
+  return db_get_insert_id(dn);
+}
+
+int f$mysql_num_rows(const var& query_id_var){
+  return db_get_num_rows(v$DB_Proxy, f$intval(query_id_var));
+}
+
+var f$mysql_query(string query, const MyDB& dn){
+  return db_mysql_query(dn, query);
+}
+
+bool f$mysql_pconnect_db_proxy(const MyDB& dn){
+  db_do_connect_no_log(dn);
+  return !db_is_down(dn, 0);
 }
 
 
