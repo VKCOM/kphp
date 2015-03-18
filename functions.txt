@@ -182,6 +182,7 @@ function is_string ($v ::: Any) ::: bool;
 function is_array ($v ::: Any) ::: bool;
 function is_object ($v ::: Any) ::: bool;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
+function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
 
 define_raw ('DATE_ATOM', "Y-m-d\TH:i:sP");
 define_raw ('DATE_COOKIE', "l, d-M-y H:i:s T");

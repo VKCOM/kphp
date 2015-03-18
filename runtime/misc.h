@@ -47,6 +47,8 @@ string f$print_r (const var &v, bool buffered = false);
 
 void f$var_dump (const var &v);
 
+string f$var_export (const var &v, bool buffered = false);
+
 
 /** For local usage only **/
 int f$system (const string &query);

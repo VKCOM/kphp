@@ -1313,6 +1313,94 @@ void do_var_dump (const var &v, int depth) {
   *coub += '\n';
 }
 
+void var_export_escaped_string(const string &s) {
+  for (size_t i = 0; i < s.size(); i++) {
+    switch (s[i]) {
+      case '\'':
+      case '\\':
+        *coub + "\\";
+        *coub + s[i];
+        break;
+      case '\0':
+        *coub + "\' . \"\\0\" . \'";
+        break;
+      default:
+        *coub + s[i];
+    }
+  }
+}
+
+void do_var_export (const var &v, int depth, char endc) {
+  if (depth == 10) {
+    php_warning ("Depth %d reached. Recursion?", depth);
+    return;
+  }
+
+  string shift (depth * 2, ' ');
+
+  switch (v.type) {
+    case var::NULL_TYPE:
+      *coub + shift + "NULL";
+      break;
+    case var::BOOLEAN_TYPE:
+      *coub + shift + (v.b ? "true" : "false");
+      break;
+    case var::INTEGER_TYPE:
+      *coub + shift + v.i;
+      break;
+    case var::FLOAT_TYPE:
+      *coub + shift + v.f;
+      break;
+    case var::STRING_TYPE:
+      *coub + shift + '\'';
+      var_export_escaped_string(*AS_CONST_STRING(v.s));
+      *coub + '\'';
+      break;
+    case var::ARRAY_TYPE: {
+      const array <var> *a = AS_CONST_ARRAY(v.a);
+      string shift (depth * 2, ' ');
+
+      bool is_vector = a->is_vector();
+      *coub + shift + "array(\n";
+
+      for (array <var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+        if (!is_vector) {
+          *coub + shift;
+          if (array <var>::is_int_key (it.get_key())) {
+            *coub += it.get_key();
+          } else {
+            *coub + '\'' + it.get_key() + '\'';
+          }
+          *coub += " =>";
+          if (it.get_value().type == var::ARRAY_TYPE){
+            *coub += "\n";
+            do_var_export (it.get_value(), depth + 1, ',');
+          } else {
+            do_var_export (it.get_value(), 1, ',');
+          }
+        } else {
+          do_var_export (it.get_value(), depth + 1, ',');
+        }
+      }
+
+      *coub + shift + ")";
+      break;
+    }
+    case var::OBJECT_TYPE: {
+      //TODO
+      break;
+    }
+    default:
+      php_assert (0);
+      exit (1);
+  }
+  if (endc != 0) {
+    *coub += endc;
+  }
+  *coub += '\n';
+}
+
+
 #undef AS_CONST_STRING
 #undef AS_CONST_ARRAY
 
@@ -1338,6 +1426,21 @@ void f$var_dump (const var &v) {
     f$ob_clean();
   }
 }
+
+string f$var_export (const var &v, bool buffered) {
+  if (buffered) {
+    f$ob_start();
+    do_var_export (v, 0);
+    return f$ob_get_clean().val();
+  }
+  do_var_export (v, 0);
+  if (run_once) {
+    dprintf(kstdout, "%s", f$ob_get_contents().c_str());
+    f$ob_clean();
+  }
+  return string();
+}
+
 
 
 int f$system (const string &query) {
