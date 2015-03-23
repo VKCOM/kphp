@@ -1957,7 +1957,7 @@ void var::set_value (int int_key, const var &v) {
 
         (*AS_STRING(s))[int_key] = c;
       } else {
-        php_warning ("Illegal string offset %d", int_key);
+        php_warning ("%d is illegal offset for string", int_key);
       }
       return;
     }
@@ -1978,7 +1978,7 @@ void var::set_value (const string &string_key, const var &v) {
     if (type == STRING_TYPE) {
       int int_val;
       if (!string_key.try_to_int (&int_val)) {
-        php_warning ("Illegal string offset \"%s\"", string_key.c_str());
+        php_warning ("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
       }
       if (int_val < 0) {
@@ -2066,7 +2066,7 @@ const var var::get_value (const string &string_key) const {
     if (type == STRING_TYPE) {
       int int_val;
       if (!string_key.try_to_int (&int_val)) {
-        php_warning ("Illegal string offset \"%s\"", string_key.c_str());
+        php_warning ("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
       }
       if ((dl::size_type)int_val >= AS_CONST_STRING(s)->size()) {
@@ -2167,7 +2167,7 @@ bool var::isset (const string &string_key) const {
     if (type == STRING_TYPE) {
       int int_val;
       if (!string_key.try_to_int (&int_val)) {
-        php_warning ("Illegal string offset \"%s\"", string_key.c_str());
+        php_warning ("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
       }
       return (dl::size_type)int_val < AS_CONST_STRING(s)->size();

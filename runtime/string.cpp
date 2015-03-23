@@ -925,7 +925,7 @@ const string string::get_value (int int_key) const {
 const string string::get_value (const string &string_key) const {
   int int_val;
   if (!string_key.try_to_int (&int_val)) {
-    php_warning ("Illegal string offset \"%s\"", string_key.c_str());
+    php_warning ("\"%s\" is illegal offset for string", string_key.c_str());
     int_val = string_key.to_int();
   }
   if ((dl::size_type)int_val >= size()) {
