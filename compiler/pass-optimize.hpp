@@ -71,6 +71,7 @@ class OptimizationPass : public FunctionPassBase {
       if (root->rl_type == val_none) {
         CREATE_VERTEX (new_root, op_prefix_inc, root.as <op_postfix_inc>()->expr());
         new_root->rl_type = root->rl_type;
+        new_root->location = root->get_location();
         root = new_root;
       }
       return root;
@@ -80,6 +81,7 @@ class OptimizationPass : public FunctionPassBase {
       if (root->rl_type == val_none) {
         CREATE_VERTEX (new_root, op_prefix_dec, root.as <op_postfix_dec>()->expr());
         new_root->rl_type = root->rl_type;
+        new_root->location = root->get_location();
         root = new_root;
       }
       return root;
