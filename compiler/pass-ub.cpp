@@ -188,7 +188,9 @@ void fix_ub_dfs (VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr())
 
     for (VertexRange i = all (*v); !i.empty(); i.next()) {
       UBMergeData node_data;
+      VarPtr last_ub_error_save = *last_ub_error;
       fix_ub_dfs (*i, &node_data, v);
+      *last_ub_error = last_ub_error_save;
       res |= data->merge_with (node_data, do_not_check);
     }
     if (v->type() == op_func_call) {
