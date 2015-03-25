@@ -28,7 +28,7 @@ Profiler::Profiler(const char* s){
   }
   profiler_status = 0;
   function_name.push_back(s);
-  in_time.push_back(microtime(true));
+  in_time.push_back(microtime());
   calls_time.push_back(0);
 }
 
@@ -41,13 +41,13 @@ Profiler::~Profiler() {
   double start = in_time.back();
   php_assert(!function_name.empty());
   f$kphp_profiler_handle_call(string(function_name.back().c_str(), function_name.back().size()),
-                               microtime(true) - start,
+                               microtime() - start,
                                calls_time.back());
   function_name.pop_back();
   in_time.pop_back();
   calls_time.pop_back();
   if (!calls_time.empty()) {
-    calls_time.back() += microtime(true) - start;
+    calls_time.back() += microtime() - start;
   } 
   profiler_status = 0;
 } 

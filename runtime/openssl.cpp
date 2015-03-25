@@ -18,6 +18,7 @@
 #include "common/crc32.h"
 #include "common/resolver.h"
 
+#include "datetime.h"
 #include "files.h"
 #include "net_events.h"
 #include "streams.h"
@@ -454,6 +455,7 @@ static Stream ssl_stream_socket_client (const string &url, int &error_number, st
   if (timeout < 0) {
     timeout = DEFAULT_SOCKET_TIMEOUT;
   }
+  double end_time = microtime_monotonic() + timeout;
 
   int sock = -1;
 
@@ -527,12 +529,12 @@ static Stream ssl_stream_socket_client (const string &url, int &error_number, st
       RETURN_ERROR(false, -5, "Can't connect to tcp socket");
     }
 
-    //TODO adjust timeout
     pollfd poll_fds;
     poll_fds.fd = sock;
     poll_fds.events = POLLIN | POLLERR | POLLHUP | POLLOUT | POLLPRI;
 
-    if (poll (&poll_fds, 1, timeout_convert_to_ms (timeout)) <= 0) {
+    double left_time = end_time - microtime_monotonic();
+    if (left_time <= 0 || poll (&poll_fds, 1, timeout_convert_to_ms (left_time)) <= 0) {
       RETURN_ERROR(false, -6, "Can't connect to tcp socket");
     }
   }
@@ -616,13 +618,12 @@ static Stream ssl_stream_socket_client (const string &url, int &error_number, st
       RETURN_ERROR(true, -16, "Failed to do SSL_connect");
     }
 
-    //TODO adjust timeout
-
     pollfd poll_fds;
     poll_fds.fd = sock;
     poll_fds.events = POLLIN | POLLERR | POLLHUP | POLLOUT | POLLPRI;
 
-    if (poll (&poll_fds, 1, timeout_convert_to_ms (timeout)) <= 0) {
+    double left_time = end_time - microtime_monotonic();
+    if (left_time <= 0 || poll (&poll_fds, 1, timeout_convert_to_ms (left_time)) <= 0) {
       RETURN_ERROR(false, -17, "Can't establish SSL connect due to timeout");
     }
   }

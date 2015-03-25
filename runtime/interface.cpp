@@ -1352,7 +1352,7 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
     v$_SERVER.set_value (string ("CONTENT_TYPE", 12), content_type);
   }
 
-  double cur_time = microtime (true);
+  double cur_time = microtime();
   v$_SERVER.set_value (string ("GATEWAY_INTERFACE", 17), string ("CGI/1.1", 7));
   if (remote_ip) {
     v$_SERVER.set_value (string ("REMOTE_ADDR", 11), f$long2ip (remote_ip));

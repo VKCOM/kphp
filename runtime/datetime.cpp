@@ -473,7 +473,14 @@ array <var> f$localtime (int timestamp, bool is_associative) {
   return result;
 }
 
-string microtime (void) {
+
+double microtime_monotonic (void) {
+  struct timespec T;
+  php_assert (clock_gettime (CLOCK_MONOTONIC, &T) >= 0);
+  return (double)T.tv_sec + T.tv_nsec * 1e-9;
+}
+
+static string microtime_string (void) {
   struct timespec T;
   php_assert (clock_gettime (CLOCK_REALTIME, &T) >= 0);
   char buf[45];
@@ -481,19 +488,17 @@ string microtime (void) {
   return string (buf, len);
 }
 
-double microtime (bool get_as_float) {
-  php_assert (get_as_float == true);
-
+double microtime (void) {
   struct timespec T;
   php_assert (clock_gettime (CLOCK_REALTIME, &T) >= 0);
-  return (double)T.tv_sec + (double)T.tv_nsec * 1e-9;
+  return (double)T.tv_sec + T.tv_nsec * 1e-9;
 }
 
 var f$microtime (bool get_as_float) {
   if (get_as_float) {
-    return microtime (true);
-  } else {
     return microtime();
+  } else {
+    return microtime_string();
   }
 }
 

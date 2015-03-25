@@ -18,9 +18,9 @@ int f$gmmktime (int h = INT_MIN, int m = INT_MIN, int s = INT_MIN, int month = I
 
 array <var> f$localtime (int timestamp = INT_MIN, bool is_associative = false);
 
-string microtime (void);
+double microtime_monotonic (void);
 
-double microtime (bool get_as_float);
+double microtime (void);
 
 var f$microtime (bool get_as_float = false);
 

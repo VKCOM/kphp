@@ -60,7 +60,7 @@ static inline void mc_stats_do (const var& res) {
     }
     f$kphp_mcStats (mc_stats_port, string (mc_method, strlen (mc_method)),
                     string (mc_stats_key, strlen (mc_stats_key)),
-                    microtime (true) - mc_stats_time,
+                    microtime() - mc_stats_time,
                     res
     );
     mc_stats_time = -1;
@@ -75,7 +75,7 @@ static inline void mc_stats_init(int port, const char* key){
   }
   int prob = v$KPHP_MC_WRITE_STAT_PROBABILITY.to_int();
   if (prob > 0 && f$mt_rand(0, prob - 1) == 0) {
-    mc_stats_time = microtime(true);
+    mc_stats_time = microtime();
     mc_stats_port = port;
     if (mc_stats_key) {
       free(mc_stats_key);
@@ -89,7 +89,7 @@ static inline void mc_stats_init(int port, const char* key){
 static inline void mc_stats_init_multiget(int port, const var& key){
   int prob = v$KPHP_MC_WRITE_STAT_PROBABILITY.to_int();
   if (prob > 0 && f$mt_rand(0, prob - 1) == 0) {
-    mc_stats_time = microtime(true);
+    mc_stats_time = microtime();
     mc_stats_port = port;
     mc_stats_key = strdup(f$implode(string("\t",1), key.to_array()).c_str());
   }
@@ -979,9 +979,9 @@ bool true_mc::add (const string &key, const var &value, int flags, int expire) {
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   bool result = mc->add (key, value, flags, expire);
-  TRY_CALL_VOID(bool, check_result ("add", key, microtime (true) - begin_time, result));
+  TRY_CALL_VOID(bool, check_result ("add", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
@@ -993,9 +993,9 @@ bool true_mc::set (const string &key, const var &value, int flags, int expire) {
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   bool result = mc->set (key, value, flags, expire);
-  check_result ("set", key, microtime (true) - begin_time, result);
+  check_result ("set", key, microtime_monotonic() - begin_time, result);
 
   return result;
 }
@@ -1007,9 +1007,9 @@ bool true_mc::replace (const string &key, const var &value, int flags, int expir
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   bool result = mc->replace (key, value, flags, expire);
-  TRY_CALL_VOID(bool, check_result ("replace", key, microtime (true) - begin_time, result));
+  TRY_CALL_VOID(bool, check_result ("replace", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
@@ -1025,9 +1025,9 @@ var true_mc::get (const var &key_var) {
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   var result = mc->get (key_var);
-  TRY_CALL_VOID(bool, check_result ("get", key_var, microtime (true) - begin_time, result));
+  TRY_CALL_VOID(bool, check_result ("get", key_var, microtime_monotonic() - begin_time, result));
 
   return result;
 }
@@ -1039,9 +1039,9 @@ bool true_mc::delete_ (const string &key) {
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   bool result = mc->delete_ (key);
-  TRY_CALL_VOID(bool, check_result ("delete", key, microtime (true) - begin_time, result));
+  TRY_CALL_VOID(bool, check_result ("delete", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
@@ -1053,9 +1053,9 @@ var true_mc::decrement (const string &key, const var &v) {
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   var result = mc->decrement (key, v);
-  TRY_CALL_VOID(bool, check_result ("decrement", key, microtime (true) - begin_time, result));
+  TRY_CALL_VOID(bool, check_result ("decrement", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
@@ -1067,9 +1067,9 @@ var true_mc::increment (const string &key, const var &v) {
   }
   query_index++;
 
-  double begin_time = microtime (true);
+  double begin_time = microtime_monotonic();
   var result = mc->increment (key, v);
-  TRY_CALL_VOID(bool, check_result ("increment", key, microtime (true) - begin_time, result));
+  TRY_CALL_VOID(bool, check_result ("increment", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
@@ -2012,12 +2012,12 @@ void db_driver::do_connect (void) {
   }
 
   if (v$Durov.to_bool()) {
-    pconn_start = microtime (true);
+    pconn_start = microtime_monotonic();
   }
   connection_id = db_proxy_connect();
   if (v$Durov.to_bool()) {
     drivers_SB.clean();
-    double pconn_time = microtime (true) - pconn_start;
+    double pconn_time = microtime_monotonic() - pconn_start;
     bool is_slow = (pconn_time > 0.01);
 
     if (is_slow) {
@@ -2107,13 +2107,13 @@ var db_driver::query (const string &query_str) {
   }
   string query_string = drivers_SB.str();
 
-  double query_start = microtime (true);
+  double query_start = microtime_monotonic();
 
   v$DebugLastQuery = query_string;
   bool query_id = mysql_query (query_string);
   int real_query_id = biggest_query_id;
 
-  double query_time = microtime (true) - query_start;
+  double query_time = microtime_monotonic() - query_start;
   char buf[100];
   int len = snprintf (buf, 100, "%.2fms", query_time * 1000);
   php_assert (len < 100);
@@ -2240,13 +2240,13 @@ OrFalse <array <var> > db_driver::fetch_row (const var &query_id_var) {
 
   double query_start = 0.0;
   if (v$Durov.to_bool()) {
-    query_start = microtime (true);
+    query_start = microtime_monotonic();
   }
 
   OrFalse <array <var> > res = mysql_fetch_array (query_id);
 
   if (v$Durov.to_bool()) {
-    double query_time = microtime (true) - query_start;
+    double query_time = microtime_monotonic() - query_start;
     v$GlobalDBFetchTime += query_time;
     if (query_time > 0.01) {
       char buf[100];

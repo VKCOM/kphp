@@ -115,13 +115,13 @@ void f$usleep (const int &micro_seconds) {
   }
 
   if (time_left > sleep_time) {
-    double start_time = microtime (true);
+    double start_time = microtime_monotonic();
 
     dl::enter_critical_section();//OK
     usleep (sleep_time);
     dl::leave_critical_section();
 
-    time_left -= (long long)((microtime (true) - start_time) * 1000000);
+    time_left -= (long long)((microtime_monotonic() - start_time) * 1000000);
   } else {
     time_left = 1;
   }
