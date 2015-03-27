@@ -69,9 +69,23 @@ const char *RestrictionIsset::get_description() {
   return desc.c_str();
 }
 
+static string remove_after_tab(const string& s){
+  string ns = "";
+  for (size_t i = 0; i < s.size(); i++) {
+    if (s[i] == '\t') {
+      break;
+    } else {
+      ns += s[i];
+    }
+  }
+  return ns;
+}
+
 void RestrictionIsset::find_dangerous_isset_warning (const vector <tinf::Node *> &bt, tinf::Node *node, const string &msg __attribute__((unused))) {
   stringstream ss;
   ss << "isset, !==, ===, is_array or similar function result may differ from PHP\n" <<
+        " Probably, this happened because " << remove_after_tab(node->get_description()) << " of type "<<
+        type_out(node->get_type()) <<" can't be null in KPHP, while it can be in PHP\n" <<
         " Chain of assignments:\n";
 
   FOREACH (bt, it) {
