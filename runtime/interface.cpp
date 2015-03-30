@@ -1495,6 +1495,26 @@ const Stream INPUT ("php://input", 11);
 const Stream STDOUT ("php://stdout", 12);
 const Stream STDERR ("php://stderr", 12);
 
+static Stream php_fopen (const string &stream, const string &mode) {
+  if (eq2 (stream, STDOUT) || eq2(stream, STDERR)) {
+    if (neq2 (mode, string("w", 1)) && neq2 (mode, string("a", 1))) {
+      php_warning("%s should be opened in write or append mode", stream.to_string().c_str());
+      return false;
+    }
+    return stream;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    if (neq2 (mode, string("r", 1))) {
+      php_warning("%s should be opened in read mode", stream.to_string().c_str());
+      return false;
+    }
+    return stream;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
 
 static OrFalse <int> php_fwrite (const Stream &stream, const string &text) {
   if (eq2 (stream, STDOUT)) {
@@ -1583,6 +1603,7 @@ static OrFalse <int> php_fpassthru (const Stream &stream) {
 static bool php_fflush (const Stream &stream) {
   if (eq2 (stream, STDOUT)) {
     //TODO implement this
+    php_warning ("fflush of %s is not implemented yet", stream.to_string().c_str());
     return false;
   }
 
@@ -1650,12 +1671,22 @@ static OrFalse <int> php_file_put_contents (const string &url, const string &con
   return false;
 }
 
+static bool php_fclose (const Stream &stream) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR) || eq2 (stream, INPUT)) {
+    php_warning ("Can't close stream %s", stream.to_string().c_str());
+    return false;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
 
 static void interface_init_static_once (void) {
   static stream_functions php_stream_functions;
 
   php_stream_functions.name = string ("php", 3);
-  php_stream_functions.fopen = NULL;
+  php_stream_functions.fopen = php_fopen;
   php_stream_functions.fwrite = php_fwrite;
   php_stream_functions.fseek = php_fseek;
   php_stream_functions.ftell = php_ftell;
@@ -1663,7 +1694,7 @@ static void interface_init_static_once (void) {
   php_stream_functions.fpassthru = php_fpassthru;
   php_stream_functions.fflush = php_fflush;
   php_stream_functions.feof = php_feof;
-  php_stream_functions.fclose = NULL;
+  php_stream_functions.fclose = php_fclose;
 
   php_stream_functions.file_get_contents = php_file_get_contents;
   php_stream_functions.file_put_contents = php_file_put_contents;
