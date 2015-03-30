@@ -1608,7 +1608,6 @@ static bool php_fflush (const Stream &stream) {
   }
 
   if (eq2 (stream, STDERR)) {
-    php_warning ("There is no reason to fflush %s", stream.to_string().c_str());
     return true;
   }
 
