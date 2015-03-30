@@ -1907,6 +1907,19 @@ class FinalCheckPass : public FunctionPassBase {
       if (vertex->type() == op_func_name) {
         kphp_error (0, "Unexpected function name");
       }
+      if (vertex->type() == op_eq3) {
+          const TypeData *type_left = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->lhs());
+          const TypeData *type_right = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->rhs());
+          if (type_left->ptype() == tp_float || type_right->ptype() == tp_float) {
+            kphp_warning(dl_pstr("Using === with float operand"));
+          }
+          if (!can_be_same_type(type_left, type_right)) {
+              kphp_warning(dl_pstr("=== with %s and %s as operands will be always false", 
+                type_out(type_left).c_str(),
+                type_out(type_right).c_str()));
+
+          }
+      }
       //TODO: may be this should be moved to tinf_check 
       return vertex;
     }

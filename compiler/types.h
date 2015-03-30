@@ -126,7 +126,6 @@ private:
   template <flag_id_t FLAG> void set_flag (bool f);
 
   TypeData *write_at (const Key &key);
-  bool or_false_flag() const;
 public:
   class Writer {
   private:
@@ -151,6 +150,7 @@ public:
   ClassPtr class_type() const;
   void set_class_type (ClassPtr new_class_type);
 
+  bool or_false_flag() const;
   void set_or_false_flag (bool f);
   bool use_or_false() const;
   bool write_flag() const;
@@ -198,6 +198,7 @@ bool operator == (const TypeData &a, const TypeData &b);
 
 string type_out (const TypeData *type);
 int type_strlen (const TypeData *type);
+bool can_be_same_type (const TypeData *type1, const TypeData *type2);
 
 void test_TypeData();
 void test_PrimitiveType();

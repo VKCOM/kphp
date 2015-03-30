@@ -35,6 +35,8 @@ bool can_store_bool (PrimitiveType tp) {
          tp == tp_Exception || tp == tp_RPC || tp == tp_bool ||
          tp == tp_Any;
 }
+
+
 PrimitiveType type_lca (PrimitiveType a, PrimitiveType b) {
   if (a == b) {
     return a;
@@ -840,6 +842,24 @@ int type_strlen (const TypeData *type) {
   }
   return STRLEN_ERROR;
 }
+
+bool can_store_false (const TypeData* type) {
+  return type->ptype() == tp_False || can_store_bool(type->ptype()) || type->or_false_flag();
+}
+
+bool can_be_same_type(const TypeData* type1, const TypeData* type2) {
+  if (type1->ptype() == tp_var || type2->ptype() == tp_var) {
+    return true;
+  }
+  if (can_store_false(type1) && can_store_false(type2)){
+    return true;
+  }
+  if (type1->ptype() == type2->ptype()) {
+    return true;
+  }
+  return false;
+}
+
 
 void test_PrimitiveType() {
   const char *cur;
