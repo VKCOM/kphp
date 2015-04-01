@@ -72,11 +72,12 @@ private:
   class host {
   public:
     int host_num;
+    int host_port;
     int host_weight;
     int timeout_ms;
 
     host (void);
-    host (int host_num, int host_weight, int timeout_ms);
+    host (int host_num, int host_port, int host_weight, int timeout_ms);
   };
 
   array <host> hosts;

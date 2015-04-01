@@ -35,6 +35,7 @@ $MC_True ::: MC;
 $config ::: var;
 $Durov ::: var;
 $FullMCTime ::: var;
+$KPHP_MC_WRITE_STAT_PROBABILITY ::: var;
 
 $id ::: var;
 $GlobalDBQueryTime ::: var;
