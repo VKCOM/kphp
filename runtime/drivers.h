@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/rpc-const.h"
+
 #include "kphp_core.h"
 
 #include "exception.h"
@@ -729,6 +731,22 @@ protected:
           if (return_false_if_not_found) {
             result.set_value (query_names.get_value (k), false);
           }
+        } else if (res == RPC_REQ_ERROR) {
+          f$fetch_long (string(), -1);//query_id
+          if (CurException) {
+            RETURN(false);
+          }
+          int error_code = f$fetch_int (string(), -1);
+          if (CurException) {
+            RETURN(false);
+          }
+          string error = f$fetch_string (string(), -1);
+          if (CurException) {
+            RETURN(false);
+          }
+
+          (void)error_code;
+//          php_warning ("Receive RPC_REQ_ERROR %d in RpcMemcache.multiget: %s", error_code, error.c_str());
         } else {
           php_warning ("Wrong memcache.Value constructor = %x", res);
         }
@@ -839,8 +857,15 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
         if (return_false_if_not_found) {
           result.set_value (query_names.get_value (k), false);
         }
+      } else if (res == RPC_REQ_ERROR) {
+        TRY_CALL(var, bool, f$fetch_long (string(), -1));//query_id
+        int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
+        string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));
+
+        (void)error_code;
+//        php_warning ("Receive RPC_REQ_ERROR %d in RpcMemcache.multiget: %s", error_code, error.c_str());
       } else {
-//        php_warning ("Wrong memcache.Value constructor = %x", res);
+        php_warning ("Wrong memcache.Value constructor = %x", res);
       }
       if (!f$fetch_eof(string(), -1)) {
         php_warning ("Not all data fetched during fetch memcache.Value");

@@ -226,7 +226,7 @@ var mc_get_value (string result_str, int flags) {
   }
 
   if (flags) {
-    php_warning ("Wrong parameter flags %d with value \"%s\" returned in Memcache::get", flags, result_str.c_str());
+//    php_warning ("Wrong parameter flags %d with value \"%s\" returned in Memcache::get", flags, result_str.c_str());
   }
 
   return result;
@@ -1558,23 +1558,31 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
     return false;
   }
 
-  int res = TRY_CALL(int, var, f$fetch_int (string(), -1));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, bool, f$fetch_int (string(), -1));//TODO __FILE__ and __LINE__
   if (res == MEMCACHE_VALUE_STRING) {
-    string value = TRY_CALL(string, var, f$fetch_string (string(), -1));
-    int flags = TRY_CALL(int, var, f$fetch_int (string(), -1));
+    string value = TRY_CALL(string, bool, f$fetch_string (string(), -1));
+    int flags = TRY_CALL(int, bool, f$fetch_int (string(), -1));
     return mc_get_value (value, flags);
   } else if (res == MEMCACHE_VALUE_LONG) {
-    var value = TRY_CALL(var, var, f$fetch_long (string(), -1));
-    int flags = TRY_CALL(int, var, f$fetch_int (string(), -1));
+    var value = TRY_CALL(var, bool, f$fetch_long (string(), -1));
+    int flags = TRY_CALL(int, bool, f$fetch_int (string(), -1));
 
     if (flags != 0) {
       php_warning ("Wrong parameter flags = %d returned in Memcache::get", flags);
     }
 
     return value;
+  } else if (res == RPC_REQ_ERROR) {
+    TRY_CALL(var, var, f$fetch_long (string(), -1));//query_id
+    int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
+    string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));
+ 
+    (void)error_code;
+//    php_warning ("Receive RPC_REQ_ERROR %d in RpcMemcache.get: %s", error_code, error.c_str());
+    return false;
   } else {
     if (res != MEMCACHE_VALUE_NOT_FOUND) {
-//      php_warning ("Wrong memcache.Value constructor = %x", res);
+      php_warning ("Wrong memcache.Value constructor = %x", res);
     }
     return false;
   }

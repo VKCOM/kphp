@@ -1338,11 +1338,6 @@ const int TLS_COMBINATOR_LEFT_BUILTIN = 0xcd211f63;
 const int TLS_COMBINATOR_LEFT = 0x4c12c6d9;
 const int TLS_COMBINATOR_RIGHT_V2 = 0x2c064372;
 const int TLS_ARG_V2 = 0x29dfe61b;
-const int TLS_TREE_NAT_CONST = 0xc09f07d7;
-const int TLS_TREE_NAT_VAR = 0x90ea6f58;
-const int TLS_TREE_TYPE_VAR = 0x1caa237a;
-const int TLS_TREE_ARRAY = 0x80479360;
-const int TLS_TREE_TYPE = 0x10f32190;
 
 const int TLS_EXPR_TYPE = 0xecc9da78;
 
@@ -3291,7 +3286,6 @@ void gen_function_fetch (void ** &IP_res, void **IP, int l) {
 
 static int tl_schema_version = -1;
 
-tl_tree *read_tree (int *var_count);
 tl_tree *read_expr (int *var_count);
 tl_tree *read_nat_expr (int *var_count);
 array <arg> read_args_list (int *var_count);
@@ -3364,26 +3358,6 @@ tl_tree *read_type (int *var_count) {
     }
   }
   return T;
-}
-
-tl_tree *read_tree (int *var_count) {
-  int tree_type = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  switch (tree_type) {
-    case TLS_TREE_NAT_CONST:
-      return read_num_const (var_count);
-    case TLS_TREE_NAT_VAR:
-      return read_num_var (var_count);
-    case TLS_TREE_TYPE_VAR:
-      return read_type_var (var_count);
-    case TLS_TREE_TYPE:
-      return read_type (var_count);
-    case TLS_TREE_ARRAY:
-      return read_array (var_count);
-    default:
-      fprintf (stderr, "tree_type = %d\n", tree_type);
-      php_assert (0);
-      return NULL;
-  }
 }
 
 tl_tree *read_type_expr (int *var_count) {
