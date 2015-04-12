@@ -124,6 +124,7 @@ private:
   public:
     rpc_connection conn;
     int host_weight;
+    int actor_id;
 
     host (void);
     host (const string &host_name, int port, int actor_id, int host_weight, int timeout_ms);
