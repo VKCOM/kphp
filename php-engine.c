@@ -3099,7 +3099,7 @@ void start_server (void) {
   if (no_sql) {
     sql_target_id = -1;
   } else {
-    sql_target_id = get_target ("localhost", 3306, &db_ct);
+    sql_target_id = get_target ("localhost", db_ct.port, &db_ct);
     assert (sql_target_id != -1);
   }
 
@@ -3367,7 +3367,7 @@ int main_args_default_handler (int i) {
   return 1;
 }
 
-#define ARGS_STR "D:E:H:r:w:f:p:s:T:t:oqC"
+#define ARGS_STR "D:E:H:r:w:f:p:s:T:t:oqQ:C"
 
 void usage_params (void) {
   printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C]");
@@ -3379,6 +3379,7 @@ void usage_desc (void) {
     "\t-r<rpc_port>\trpc_port\n"
     "\t-w<host>:<port>\thost and port for client mode\n"
     "\t-q\tno sql\n"
+    "\t-Q\tsql port\n"
     "\t-E<error-tag-file>\tname of file with engine tag showed on every warning\n"
     "\t-f<workers_n>\trun workers_n workers\n"
     "\t-o\trun script once\n"
@@ -3460,6 +3461,14 @@ int main_args_handler (int i) {
     break;
   case 'q':
     no_sql = 1;
+    break;
+  case 'Q':
+    db_ct.port = atoi (optarg);
+    if (!(1000 <= db_ct.port && db_ct.port <= 0xffff)) {
+      vkprintf (-1, "-Q option: %d is strange port\n", db_ct.port);
+      usage();
+      return 2;
+    }
     break;
   case 'C':
     default_rpc_flags |= 2048;
