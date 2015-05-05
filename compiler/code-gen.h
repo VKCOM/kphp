@@ -1427,6 +1427,11 @@ inline AsSeq::AsSeq (VertexPtr root) :
   root (root) {
 }
 inline void AsSeq::compile (CodeGenerator &W) const {
+  if (root->type() != op_seq) {
+    W << root << ";" << NL;
+    return;
+  }
+
   FOREACH_VERTEX (root, i) {
     if ((*i)->type() != op_var) {
       W << *i << ";" << NL;
@@ -1567,7 +1572,9 @@ void compile_ternary_op (VertexAdaptor <op_ternary> root, CodeGenerator &W) {
 
 void compile_if (VertexAdaptor <op_if> root, CodeGenerator &W) {
   W << "if (" << root->cond() << ") " <<
-        root->true_cmd();
+      BEGIN <<
+        AsSeq (root->true_cmd()) <<
+      END;
 
   if (root->has_false_cmd()) {
     W << " else " << root->false_cmd();

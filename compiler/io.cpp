@@ -83,15 +83,18 @@ WriterData::WriterData() :
 
 
 void WriterData::append (const char *begin, size_t length) {
+//  fprintf (stdout, "%*s\n", (int)length, begin);
   text.append (begin, length);
 }
 void WriterData::append (size_t n, char c) {
   text.append (n, c);
 }
 void WriterData::begin_line() {
+//  fprintf (stdout, "<<<<BEGIN>>>>\n");
   lines.push_back (Line ((int)text.size()));
 }
 void WriterData::end_line() {
+//  fprintf (stdout, "<<<< END >>>>\n");
   lines.back().end_pos = (int)text.size();
 }
 void WriterData::brk() {
@@ -345,6 +348,7 @@ void Writer::operator() (SrcFilePtr file, int line_num) {
   if (lock_comments_cnt > 0) {
     return;
   }
+//  fprintf (stdout, "In %s:%d\n", file->short_file_name.c_str(), line_num);
   data.add_location (file, line_num);
 }
 void Writer::lock_comments() {

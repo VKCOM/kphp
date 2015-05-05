@@ -149,8 +149,8 @@ class SplitSwitchPass : public FunctionPassBase {
         CREATE_VERTEX (cmd_minus_one, op_break, one_2);
 
         CREATE_VERTEX (init, op_set, case_state_3, zero);
-        CREATE_VERTEX (if_one, op_if, eq_one, cmd_one);
-        CREATE_VERTEX (if_minus_one, op_if, eq_minus_one, cmd_minus_one);
+        CREATE_VERTEX (if_one, op_if, eq_one, GenTree::embrace (cmd_one));
+        CREATE_VERTEX (if_minus_one, op_if, eq_minus_one, GenTree::embrace (cmd_minus_one));
 
         vector <VertexPtr> new_seq_next;
         new_seq_next.push_back (init);

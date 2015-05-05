@@ -44,7 +44,7 @@ public:
   void next_cur();
   int open_parent();
 
-  VertexPtr embrace (VertexPtr v);
+  static VertexPtr embrace (VertexPtr v);
   VertexPtr gen_list (VertexPtr node, GetFunc f, TokenType delim, int flags);
   PrimitiveType get_ptype();
   PrimitiveType get_type_help (void);
