@@ -43,6 +43,7 @@ class KphpEnviroment {
     string dest_objs_dir_;
     string binary_path_;
     string user_binary_path_;
+    bool error_on_warns;
 
   public:
     KphpEnviroment();
@@ -89,6 +90,8 @@ class KphpEnviroment {
     int get_print_resumable_graph() const;
     void set_enable_profiler();
     int get_enable_profiler() const;
+    void set_error_on_warns();
+    int get_error_on_warns() const;
     void add_main_file (const string &main_file);
     const vector <string> &get_main_files() const;
 

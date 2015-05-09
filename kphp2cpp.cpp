@@ -26,7 +26,8 @@ void usage (void) {
           "-t <thread_count>\tUse <threads_count> threads. By default equals to 16\n"
           "-s <directory>\tPath to kphp source. Equals to $KPHP_PATH. ~/engine/src is used by default\n"
           "-V <file>\t<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default\n"
-          "-v\tVerbosity\n",
+          "-v\tVerbosity\n"
+          "-W\tAll compile time warnings will be errors\n",
           FullVersionStr);
 }
 
@@ -69,7 +70,7 @@ int main (int argc, char *argv[]) {
   }
 
   //TODO: long options
-  while ((i = getopt (argc, argv, "ab:d:Ff:gi:I:j:l:M:mo:prt:Ss:V:v")) != -1) {
+  while ((i = getopt (argc, argv, "ab:d:Ff:gi:I:j:l:M:mo:prt:Ss:V:vW")) != -1) {
     switch (i) {
     case 'a':
       env->set_use_safe_integer_arithmetic ("1");
@@ -131,6 +132,9 @@ int main (int argc, char *argv[]) {
     case 'v':
       verbosity++;
       env->inc_verbosity();
+      break;
+    case 'W':
+      env->set_error_on_warns();
       break;
     default:
       printf ("Unknown option '%c'", (char)i);

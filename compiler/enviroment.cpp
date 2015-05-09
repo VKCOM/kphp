@@ -194,6 +194,14 @@ const string &KphpEnviroment::get_ld_flags() const {
   return ld_flags_;
 }
 
+void KphpEnviroment::set_error_on_warns () {
+  error_on_warns = true;
+}
+
+int KphpEnviroment::get_error_on_warns () const {
+  return error_on_warns;
+}
+
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd (tmp, PATH_MAX);
