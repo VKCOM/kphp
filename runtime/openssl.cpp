@@ -482,16 +482,16 @@ static Stream ssl_stream_socket_client (const string &url, int &error_number, st
 #undef GET_OPTION
 
   if (host.empty()) {
-    RETURN_ERROR_FORMAT(false, -1, "Wrong host specified in url \"%s\"", url.c_str());
+    RETURN_ERROR_FORMAT(false, -1, "Wrong host specified in url \"%s\"", url);
   }
 
   if (port <= 0 || port >= 65536) {
-    RETURN_ERROR_FORMAT(false, -2, "Wrong port specified in url \"%s\"", url.c_str());
+    RETURN_ERROR_FORMAT(false, -2, "Wrong port specified in url \"%s\"", url);
   }
 
   struct hostent *h;
   if (!(h = kdb_gethostbyname (host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
-    RETURN_ERROR_FORMAT(false, -3, "Can't resolve host \"%s\"", host.c_str());
+    RETURN_ERROR_FORMAT(false, -3, "Can't resolve host \"%s\"", host);
   }
 
   struct sockaddr_storage addr;
@@ -555,25 +555,28 @@ static Stream ssl_stream_socket_client (const string &url, int &error_number, st
       SSL_CTX_set_verify_depth (ssl_ctx, verify_depth);
     }
 
-    if ((!cafile.empty() || !capath.empty()) && 
-        SSL_CTX_load_verify_locations (ssl_ctx, cafile.empty() ? NULL : cafile.c_str(), capath.empty() ? NULL : cafile.c_str()) == 0) {
-      RETURN_ERROR_FORMAT(true, -8, "Failed to load verify locations \"%s\" and \"%s\"", cafile.c_str(), capath.c_str());
+    if (cafile.empty() && capath.empty()) {
+      SSL_CTX_set_default_verify_paths (ssl_ctx);
+    } else {
+      if (SSL_CTX_load_verify_locations (ssl_ctx, cafile.empty() ? NULL : cafile.c_str(), capath.empty() ? NULL : capath.c_str()) == 0) {
+        RETURN_ERROR_FORMAT(true, -8, "Failed to load verify locations \"%s\" and \"%s\"", cafile, capath);
+      }
     }
   } else {
     SSL_CTX_set_verify (ssl_ctx, SSL_VERIFY_NONE, NULL);
   }
 
   if (SSL_CTX_set_cipher_list (ssl_ctx, cipher_list.empty() ? "DEFAULT" : cipher_list.c_str()) == 0) {
-    RETURN_ERROR_FORMAT(true, -9, "Failed to set cipher list \"%s\"", cipher_list.c_str());
+    RETURN_ERROR_FORMAT(true, -9, "Failed to set cipher list \"%s\"", cipher_list);
   }
 
   if (f$boolval (local_cert_file_path)) {
     if (SSL_CTX_use_certificate_chain_file (ssl_ctx, local_cert_file_path.val().c_str()) != 1) {
-      RETURN_ERROR_FORMAT(true, -10, "Failed to use certificate from local_cert \"%s\"", local_cert.c_str());
+      RETURN_ERROR_FORMAT(true, -10, "Failed to use certificate from local_cert \"%s\"", local_cert);
     }
 
     if (SSL_CTX_use_PrivateKey_file (ssl_ctx, local_cert_file_path.val().c_str(), SSL_FILETYPE_PEM) != 1) {
-      RETURN_ERROR_FORMAT(true, -11, "Failed to use private key from local_cert \"%s\"", local_cert.c_str());
+      RETURN_ERROR_FORMAT(true, -11, "Failed to use private key from local_cert \"%s\"", local_cert);
     }    
 
     if (SSL_CTX_check_private_key (ssl_ctx) != 1) {

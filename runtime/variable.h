@@ -24,6 +24,7 @@ class var {
   inline void copy_from (const var &other);
 
 public:
+  var (const void *); // deprecate conversion from pointer to boolean
   inline var (void);
   inline var (const Unknown &u);
   inline var (bool b);
