@@ -1203,6 +1203,7 @@ void php_worker_free_script (php_worker *worker) {
   vkprintf (1, "FINISH php script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, worker->req_id);
   idle_server_status();
   custom_server_status ("<none>", 6);
+  server_status_rpc(0, 0, 0, 0);
   if (worker->mode == once_worker) {
     static int left = run_once_count;
     if (!--left) {
@@ -3256,6 +3257,7 @@ void init_all (void) {
   init_scripts();
   idle_server_status();
   custom_server_status ("<none>", 6);
+  server_status_rpc (0, 0, 0, 0);
 
   worker_id = (int)lrand48();
 }

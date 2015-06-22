@@ -1002,6 +1002,10 @@ void engine_set_server_status (const char *status, int len) {
   custom_server_status (status, len);
 }
 
+void engine_set_server_status_rpc (int actor_id, int port, int constructor_id, double start_time) {
+  server_status_rpc (actor_id, port, constructor_id, start_time);
+}
+
 double engine_get_net_time (void) {
   return PHPScriptBase::current_script->get_net_time();
 }
@@ -1051,6 +1055,7 @@ void init_drivers (void) {
   http_set_result = http_set_result_;
   finish_script = finish_script_;
   set_server_status = engine_set_server_status;
+  set_server_status_rpc = engine_set_server_status_rpc;
   get_net_time = engine_get_net_time;
   get_script_time = engine_get_script_time;
   get_net_queries_count = engine_get_net_queries_count;

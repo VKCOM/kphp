@@ -650,6 +650,14 @@ php_immediate_stats_t *get_imm_stats (void) {
 void custom_server_status (const char *status, int status_len) {
   upd_server_status (ss_custom, status, status_len);
 }
+void server_status_rpc(int actor_id, int port, int constructor_id, double start_time) {
+  php_immediate_stats_t *imm = get_new_imm_stats();
+  imm->actor_id = actor_id;
+  imm->port = port;
+  imm->constructor_id = constructor_id;
+  imm->rpc_timestamp = start_time;
+  upd_imm_stats();
+}
 void idle_server_status (void) {
   upd_server_status (ss_idle, "Idle", 4);
 }

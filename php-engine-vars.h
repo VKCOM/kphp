@@ -87,6 +87,11 @@ typedef struct php_immediate_stats {
   char desc[IMM_STATS_DESC_LEN];
   double custom_timestamp;
   char custom_desc[IMM_STATS_DESC_LEN];
+
+  int actor_id; 
+  int port; 
+  int constructor_id;
+  double rpc_timestamp;
 } php_immediate_stats_t;
 
 

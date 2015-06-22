@@ -1473,8 +1473,9 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
         php_immediate_stats_t *imm = &w->stats->istats;
         imm->desc[IMM_STATS_DESC_LEN - 1] = 0;
         imm->custom_desc[IMM_STATS_DESC_LEN - 1] = 0;
-        sprintf (buf, "%d\t%s:%.3lf\t%s:%.3lf\n", w->pid, 
+        sprintf (buf, "%d\t%s:%.3lf\t%6d:%6d:%8x:%.3lf\t%s:%.3lf\n", w->pid, 
             imm->desc, precise_now - imm->timestamp,
+            imm->port, imm->actor_id, imm->constructor_id, precise_now - imm->rpc_timestamp,
             imm->custom_desc, precise_now - imm->custom_timestamp);
         header += buf;
       }
