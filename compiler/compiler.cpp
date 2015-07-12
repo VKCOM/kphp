@@ -1920,6 +1920,27 @@ class FinalCheckPass : public FunctionPassBase {
 
           }
       }
+      if (vertex->type() == op_add) {
+        const TypeData *type_left = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->lhs());
+        const TypeData *type_right = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->rhs());
+        if ((type_left->ptype() == tp_array) ^ (type_right->ptype() == tp_array)) {
+          if (type_left->ptype() != tp_var && type_right->ptype() != tp_var) {
+            kphp_warning (dl_pstr ("%s + %s is strange operation",
+                                   type_out (type_left).c_str (),
+                                   type_out (type_right).c_str ()));
+          }
+        }
+      }
+      if (vertex->type() == op_sub || vertex->type() == op_mul || vertex->type() == op_div || vertex->type() == op_mod) {
+        const TypeData *type_left = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->lhs());
+        const TypeData *type_right = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->rhs());
+        if ((type_left->ptype() == tp_array) || (type_right->ptype() == tp_array)) {
+          kphp_warning (dl_pstr ("%s %s %s is strange operation",
+                                 OpInfo::str (vertex->type()).c_str(),
+                                 type_out(type_left).c_str(),
+                                 type_out(type_right).c_str()));
+        }
+      }
       //TODO: may be this should be moved to tinf_check 
       return vertex;
     }
