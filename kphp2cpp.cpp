@@ -62,7 +62,7 @@ int main (int argc, char *argv[]) {
   struct passwd *user_pwd = getpwuid (getuid());
   dl_passert (user_pwd != NULL, "Failed to get user name");
   char *user = user_pwd->pw_name;
-  if (user != NULL && (!strcmp (user, "levlam") || !strcmp (user, "arseny30"))) {
+  if (user != NULL && (!strcmp (user, "levlam") || !strcmp (user, "arseny30") || !strcmp (user, "pkunyavskiy"))) {
     verbosity = 3;
     env->inc_verbosity();
     env->inc_verbosity();
