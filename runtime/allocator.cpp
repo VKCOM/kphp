@@ -85,7 +85,10 @@ public:
 
   pointer allocate (size_type n, void const * = 0) {
     php_assert (n == 1 && sizeof (T) < MAX_BLOCK_SIZE);
-    return static_cast <pointer> (dl::allocate (sizeof (T)));
+    pointer result = static_cast <pointer> (dl::allocate (sizeof (T)));
+    if (unlikely(!result))
+      php_critical_error ("not enough memory to continue");
+    return result;
   }
 
   void deallocate (pointer p, size_type n) {
