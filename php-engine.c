@@ -2417,6 +2417,8 @@ int sql_query_done (struct conn_query *q) {
 void create_pnet_delayed_query (struct connection *http_conn, struct conn_target *t, net_ansgen_t *gen, double finish_time) {
   struct conn_query *q = zmalloc (sizeof (struct conn_query));
 
+  kprintf("creating delayed query of type %s\n", query_stats.desc ? query_stats.desc : "unknown");
+
   q->custom_type = 0;
   q->outbound = NULL;
   q->requester = http_conn;
