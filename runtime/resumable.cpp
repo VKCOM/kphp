@@ -62,21 +62,25 @@ Storage *get_storage (int resumable_id) {
 bool Resumable::resume (int resumable_id, Storage *input) {
   int parent_id = runned_resumable_id;
 
-  output_ = get_storage (resumable_id);
   input_ = input;
   runned_resumable_id = resumable_id;
+  update_output();
 
   bool res = run();
 
-  if (parent_id != 0) {
-    output_ = get_storage (parent_id);
+  input_ = NULL;//must not be used
+  runned_resumable_id = parent_id;
+  update_output();
+
+  return res;
+}
+
+void Resumable::update_output (void) {
+  if (runned_resumable_id) {
+    output_ = get_storage (runned_resumable_id);
   } else {
     output_ = NULL;
   }
-  input_ = NULL;//must not be used
-  runned_resumable_id = parent_id;
-
-  return res;
 }
 
 
@@ -128,6 +132,8 @@ int register_forked_resumable (Resumable *resumable) {
   if (current_forked_resumable_id == first_forked_resumable_id + forked_resumables_size) {
     forked_resumables = static_cast <forked_resumable_info *> (dl::reallocate (forked_resumables, sizeof (forked_resumable_info) * 2 * forked_resumables_size, sizeof (forked_resumable_info) * forked_resumables_size));
     forked_resumables_size *= 2;
+
+    Resumable::update_output();
   }
   if (current_forked_resumable_id >= 2000000000) {
     php_critical_error ("too many forked resumables");
@@ -154,6 +160,8 @@ int register_started_resumable (Resumable *resumable) {
     }
 
     res_id = current_started_resumable_id++;
+
+    Resumable::update_output();
   }
   if (res_id >= 1000000000) {
     php_critical_error ("too many started resumables");
@@ -909,6 +917,7 @@ void resumable_init_static (void) {
   resumable_finished = true;
 
   runned_resumable_id = 0;
+  Resumable::update_output();
 
   first_forked_resumable_id = current_forked_resumable_id;
   if (first_forked_resumable_id >= 1500000000) {

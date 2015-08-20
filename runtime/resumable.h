@@ -66,6 +66,8 @@ public:
   virtual ~Resumable();
 
   bool resume (int resumable_id, Storage *input);
+
+  static void update_output (void);
 };
 
 
