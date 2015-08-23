@@ -82,6 +82,49 @@ void f$ob_start (const string &callback) {
   coub->clean();
 }
 
+void f$ob_flush (void) {
+  if (ob_cur_buffer == 0) {
+    php_warning ("ob_flush with no buffer opented");
+    return;
+  }
+  --ob_cur_buffer;
+  coub = &oub[ob_cur_buffer];
+  print(oub[ob_cur_buffer + 1]);
+  ++ob_cur_buffer;
+  coub = &oub[ob_cur_buffer];
+  f$ob_clean ();
+}
+
+bool f$ob_end_flush (void) {
+  if (ob_cur_buffer == 0) {
+    return false;
+  }
+  f$ob_flush ();
+  return f$ob_end_clean ();
+}
+
+OrFalse<string> f$ob_get_flush (void) {
+  if (ob_cur_buffer == 0) {
+    return false;
+  }
+  string result = coub->str ();
+  f$ob_flush ();
+  f$ob_end_clean ();
+  return result;
+}
+
+OrFalse<int> f$ob_get_length (void) {
+  if (ob_cur_buffer == 0) {
+    return false;
+  }
+  return coub->size ();
+}
+
+int f$ob_get_level (void) {
+  return ob_cur_buffer;
+}
+
+
 static int http_return_code;
 static string http_status_line;
 static char headers_storage[sizeof (array <string>)];
@@ -330,9 +373,13 @@ static var (*shutdown_function) (void);
 static bool finished;
 static bool flushed;
 
-void f$fastcgi_finish_request (void) {
+void f$fastcgi_finish_request (int exit_code) {
   if (flushed) {
     return;
+  }
+
+  if (!run_once) {
+    exit_code = 0; // TODO: is it correct?
   }
 
   flushed = true;
@@ -373,13 +420,13 @@ void f$fastcgi_finish_request (void) {
       }
 
       const string_buffer *headers = get_headers (compressed->size());
-      http_set_result (headers->buffer(), headers->size(), compressed->buffer(), compressed->size(), 0);//TODO remove exit_code parameter
+      http_set_result (headers->buffer(), headers->size(), compressed->buffer(), compressed->size(), exit_code);//TODO remove exit_code parameter
 
       break;
     }
     case QUERY_TYPE_RPC: {
       php_assert (rpc_set_result != NULL);
-      rpc_set_result (oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), 0);
+      rpc_set_result (oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), exit_code);
 
       break;
     }
@@ -407,7 +454,7 @@ void finish (int exit_code) {
     Profiler::finalize();
   }
 
-  f$fastcgi_finish_request();
+  f$fastcgi_finish_request(exit_code);
 
   finish_script (exit_code);
 
@@ -508,7 +555,7 @@ OrFalse <string> f$inet_pton (const string &address) {
 extern int run_once;
 
 int print (const char *s) {
-  if (run_once) {
+  if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     dprintf (kstdout, "%s", s);
     dl::leave_critical_section();
@@ -519,7 +566,7 @@ int print (const char *s) {
 }
 
 int print (const char *s, int s_len) {
-  if (run_once) {
+  if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     write (kstdout, s, s_len);
     dl::leave_critical_section();
@@ -530,7 +577,7 @@ int print (const char *s, int s_len) {
 }
 
 int print (const string &s) {
-  if (run_once) {
+  if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     write (kstdout, s.c_str(), s.size());
     dl::leave_critical_section();
@@ -541,7 +588,7 @@ int print (const string &s) {
 }
 
 int print (const string_buffer &sb) {
-  if (run_once) {
+  if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     write (kstdout, sb.buffer(), sb.size());
     dl::leave_critical_section();

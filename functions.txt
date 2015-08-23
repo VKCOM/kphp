@@ -70,6 +70,12 @@ function ob_end_clean() ::: bool;
 function ob_get_clean() ::: OrFalse <string>;
 function ob_get_contents() ::: string;
 function ob_start ($x ::: string = "") ::: void;
+function ob_flush () ::: void;
+function ob_end_flush () ::: bool;
+function ob_get_flush () ::: OrFalse <string>;
+function ob_get_length () ::: OrFalse <int>;
+function ob_get_level () ::: int;
+
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;

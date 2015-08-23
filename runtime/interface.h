@@ -17,6 +17,16 @@ string f$ob_get_contents (void);
 
 void f$ob_start (const string &callback = string());
 
+void f$ob_flush (void);
+
+bool f$ob_end_flush (void);
+
+OrFalse <string> f$ob_get_flush (void);
+
+OrFalse <int> f$ob_get_length (void);
+
+int f$ob_get_level (void);
+
 void f$header (const string &str, bool replace = true, int http_response_code = 0);
 
 void f$setcookie (const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
@@ -25,7 +35,7 @@ void f$setrawcookie (const string &name, const string &value, int expire = 0, co
 
 void f$register_shutdown_function (var (*f) (void));
 
-void f$fastcgi_finish_request (void);
+void f$fastcgi_finish_request (int exit_code = 0);
 
 void finish (int exit_code);
 
