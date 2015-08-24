@@ -8,7 +8,13 @@ inline void string_buffer::resize (dl::size_type new_buffer_len) {
     if (buffer_len + 1 < MAX_BUFFER_LEN) {
       new_buffer_len = MAX_BUFFER_LEN - 1;
     } else {
-      php_critical_error ("maximum buffer size exceeded. buffer_len = %d, new_buffer_len = %d", buffer_len, new_buffer_len);
+      if (string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_OFF) {
+        clean ();
+        string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_FAILED;
+        return;
+      } else {
+        php_critical_error ("maximum buffer size exceeded. buffer_len = %d, new_buffer_len = %d", buffer_len, new_buffer_len);
+      }
     }
   }
 
@@ -19,7 +25,7 @@ inline void string_buffer::resize (dl::size_type new_buffer_len) {
 
 inline void string_buffer::reserve_at_least (dl::size_type need) {
   dl::size_type new_buffer_len = need + size();
-  while (unlikely (buffer_len < new_buffer_len)) {
+  while (unlikely (buffer_len < new_buffer_len && string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize (((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
 }
@@ -61,6 +67,10 @@ string_buffer &string_buffer::operator + (double f) {
 string_buffer &string_buffer::operator + (const string &s) {
   dl::size_type l = s.size();
   reserve_at_least (l);
+
+  if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+    return *this;
+  }
 
   memcpy (buffer_end, s.c_str(), l);
   buffer_end += l;
@@ -231,6 +241,9 @@ string_buffer::~string_buffer (void) {
 string_buffer &string_buffer::append (const char *str, int len) {
   reserve_at_least (len);
 
+  if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+    return *this;
+  }
   memcpy (buffer_end, str, len);
   buffer_end += len;
 

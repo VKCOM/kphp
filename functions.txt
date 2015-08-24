@@ -556,6 +556,7 @@ function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error 
 function vk_win_to_utf8 ($text ::: string) ::: string;
 function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;
 function vk_json_encode ($v ::: Any) ::: string;
+function vk_json_encode_safe ($v ::: Any) throws ::: string;
 function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
 
 /** exceptions **/

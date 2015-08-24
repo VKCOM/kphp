@@ -41,6 +41,8 @@ var f$unserialize (const string &v);
 
 string f$json_encode (const var &v, bool simple_encode = false);
 
+string f$vk_json_encode_safe (const var &v, bool simple_encode = true);
+
 var f$json_decode (const string &v, bool assoc = false);
 
 string f$print_r (const var &v, bool buffered = false);

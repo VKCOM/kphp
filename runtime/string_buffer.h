@@ -7,6 +7,10 @@
  *
  */
 
+#define STRING_BUFFER_ERROR_FLAG_ON -1
+#define STRING_BUFFER_ERROR_FLAG_OFF 0
+#define STRING_BUFFER_ERROR_FLAG_FAILED 1
+
 class string_buffer {
   static const dl::size_type MIN_BUFFER_LEN = 266175;
   static const dl::size_type MAX_BUFFER_LEN = (1 << 24);
@@ -21,6 +25,7 @@ class string_buffer {
   inline void reserve_at_least (dl::size_type new_buffer_len);
 
 public:
+  static int string_buffer_error_flag;
   inline explicit string_buffer (dl::size_type buffer_len = 4000);
 
   inline string_buffer &clean (void);

@@ -17,6 +17,7 @@
 #include "files.h"
 #include "math_functions.h"
 #include "string_functions.h"
+#include "exception.h"
 
 
 string f$uniqid (const string &prefix, bool more_entropy) {
@@ -949,6 +950,23 @@ string f$json_encode (const var &v, bool simple_encode) {
 
   return static_SB.str();
 }
+
+int string_buffer::string_buffer_error_flag = 0; // TODO: move in more logic place
+
+string f$vk_json_encode_safe (const var &v, bool simple_encode) {
+  static_SB.clean();
+  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  do_json_encode (v, simple_encode);
+  if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+    static_SB.clean ();
+    string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+    THROW_EXCEPTION (f$new_Exception (string(__FILE__, (dl::size_type)strlen(__FILE__)), __LINE__, string("json_encode buffer overflow", 27)));
+    return string();
+  }
+  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+  return static_SB.str();
+}
+
 
 static void json_skip_blanks(const char* s, int &i){
   while (s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n') {
