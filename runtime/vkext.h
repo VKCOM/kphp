@@ -11,3 +11,15 @@ string f$vk_flex (const string &name, const string &case_name, int sex, const st
 string f$vk_json_encode (const var &v);
 
 string f$vk_whitespace_pack (const string &str, bool html_opt = false);
+
+string f$vk_sp_simplify (const string& s);
+
+string f$vk_sp_full_simplify (const string& s);
+
+string f$vk_sp_deunicode (const string& s);
+
+string f$vk_sp_to_upper (const string& s);
+
+string f$vk_sp_to_lower (const string& s);
+
+string f$vk_sp_to_sort (const string& s);

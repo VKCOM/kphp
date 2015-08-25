@@ -22,5 +22,6 @@
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
 #include "runtime/vkext.h"
+#include "runtime/vkext_stats.h"
 #include "runtime/zlib.h"
 

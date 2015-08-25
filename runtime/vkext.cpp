@@ -1,6 +1,7 @@
 #define _FILE_OFFSET_BITS 64
 
 #include "vkext.h"
+#include "string-processing.h"
 
 #include <sys/time.h>
 
@@ -570,4 +571,65 @@ string f$vk_whitespace_pack (const string &str, bool html_opt) {
     ctext = text;
   }
   return finish_buff (0);
+}
+
+
+string f$vk_sp_simplify (const string& s) {
+  sp_init();
+  char* t = sp_simplify (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_full_simplify (const string& s) {
+  sp_init();
+  char* t = sp_full_simplify (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_deunicode (const string& s) {
+  sp_init();
+  char* t = sp_deunicode (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_to_upper (const string& s) {
+  sp_init();
+  char* t = sp_to_upper (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_to_lower (const string& s) {
+  sp_init();
+  char* t = sp_to_lower (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_to_sort (const string& s) {
+  sp_init();
+  char* t = sp_sort (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
 }

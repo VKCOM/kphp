@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef CLION
+#include "kphp_core.h"
+#endif
+
 bool empty_bool __attribute__ ((weak));
 int empty_int __attribute__ ((weak));
 double empty_float __attribute__ ((weak));

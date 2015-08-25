@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef CLION
+#include "kphp_core.h"
+#endif
+
 /*
 template <class T>
 class force_convert_to <T, T> {
