@@ -1873,7 +1873,7 @@ void var::swap (var &other) {
 var& var::operator[] (int int_key) {
   if (unlikely (type != ARRAY_TYPE)) {
     if (type == STRING_TYPE) {
-      php_warning ("Lvalue string offset doesn't supported");
+      php_warning ("Writing to string by offset is't supported");
       empty_var = var();
       return empty_var;
     }
@@ -1894,7 +1894,7 @@ var& var::operator[] (int int_key) {
 var& var::operator[] (const string &string_key) {
   if (unlikely (type != ARRAY_TYPE)) {
     if (type == STRING_TYPE) {
-      php_warning ("Lvalue string offset doesn't supported");
+      php_warning ("Writing to string by offset is't supported");
       empty_var = var();
       return empty_var;
     }
