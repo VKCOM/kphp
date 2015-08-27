@@ -144,6 +144,7 @@ OrFalse<string> f$vk_stats_decompress_sample(const string& s) {
   int size = offsetof(sample_t, values) + max_size * sizeof(int);
   string result(size, false);
   sample_t* sample = (sample_t*)result.buffer();
+  sample->max_size = max_size;
   if (!decode_sample((void*)s.c_str(), s.size(), sample)) {
     return false;
   }
@@ -151,9 +152,9 @@ OrFalse<string> f$vk_stats_decompress_sample(const string& s) {
 }
 
 int check_sample(sample_t* sample, int len){
-  if (offsetof(sample_t, values) + sample->max_size * sizeof(int) != len)
+  if (len < 4)
     return 0;
-  if (sample->dataset_size > sample->max_size)
+  if (offsetof(sample_t, values) + sample->max_size * sizeof(int) != len)
     return 0;
   if (sample->dataset_size < 0)
     return 0;
