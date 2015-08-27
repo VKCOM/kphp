@@ -17,6 +17,8 @@ string register_unique_name (const string &prefix) {
 
 string gen_shorthand_ternary_name () {
   AUTO_PROF (next_name);
+  static volatile int x = 0;
+  AutoLocker <volatile int *> locker (&x);
   SrcFilePtr file = stage::get_file();
   unsigned long long h = hash_ll (file->unified_file_name);
   static map<unsigned long long, int> name_map;
