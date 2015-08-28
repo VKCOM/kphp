@@ -47,18 +47,19 @@ static double mc_stats_time;
 static int mc_stats_port;
 static char* mc_stats_key;
 
-var f$kphp_mcStats(int, string, string, double, bool) __attribute__((weak));
-var f$kphp_mcStats(int, string, string, double, bool) {
+var f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
+var f$kphp_mcStats(int, string, string, double, var) {
   return var();
 }
 
-static inline void mc_stats_do(bool success){
-  if (mc_stats_time > 0) {
-    f$kphp_mcStats(mc_stats_port, string(mc_method, strlen(mc_method)),
-                  string(mc_stats_key, strlen(mc_stats_key)),
-                  microtime(true) - mc_stats_time,
-                  success
-                );
+static inline void mc_stats_do () {
+  if (mc_stats_port != -1) {
+    bool bool_result = !strcmp(mc_method, "set") || !strcmp(mc_method, "delete");
+    f$kphp_mcStats (mc_stats_port, string (mc_method, strlen (mc_method)),
+                    string (mc_stats_key, strlen (mc_stats_key)),
+                    microtime (true) - mc_stats_time,
+                    bool_result ? var(mc_bool_res) : *mc_res
+    );
     mc_stats_time = -1;
     mc_stats_port = -1;
     free(mc_stats_key);
@@ -222,18 +223,18 @@ var mc_get_value (string result_str, int flags) {
 
 void mc_set_callback (const char *result, int result_len __attribute__((unused))) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do(false);
+    mc_stats_do ();
     return;
   }
 
   if (!strcmp (result, "STORED\r\n")) {
     mc_bool_res = true;
-    mc_stats_do(true);
+    mc_stats_do ();
     return;
   }
   if (!strcmp (result, "NOT_STORED\r\n")) {
     mc_bool_res = false;
-    mc_stats_do(true);
+    mc_stats_do ();
     return;
   }
 
@@ -243,7 +244,7 @@ void mc_set_callback (const char *result, int result_len __attribute__((unused))
 
 void mc_multiget_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do(false);
+    mc_stats_do ();
     return;
   }
   const char *full_result = result;
@@ -270,7 +271,7 @@ void mc_multiget_callback (const char *result, int result_len) {
       }
       case 'E':
         if (result_len == 5 && !strncmp (result, "END\r\n", 5)) {
-          mc_stats_do(true);
+          mc_stats_do ();
           return;
         }
       default:
@@ -281,7 +282,7 @@ void mc_multiget_callback (const char *result, int result_len) {
 
 void mc_get_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do(false);
+    mc_stats_do ();
     return;
   }
   const char *full_result = result;
@@ -310,7 +311,7 @@ void mc_get_callback (const char *result, int result_len) {
     }
     case 'E':
       if (result_len == 5 && !strncmp (result, "END\r\n", 5)) {
-        mc_stats_do(true);
+        mc_stats_do ();
         return;
       }
     default:
@@ -320,7 +321,7 @@ void mc_get_callback (const char *result, int result_len) {
 
 void mc_delete_callback (const char *result, int result_len __attribute__((unused))) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do(false);
+    mc_stats_do ();
     return;
   }
 
@@ -332,12 +333,12 @@ void mc_delete_callback (const char *result, int result_len __attribute__((unuse
     php_warning ("Strange result \"%s\" returned from memcached in Memcache::delete with key %s", result, mc_last_key);
     mc_bool_res = false;
   }
-  mc_stats_do(true);
+  mc_stats_do ();
 }
 
 void mc_increment_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do(false);
+    mc_stats_do ();
     return;
   }
 
@@ -350,12 +351,12 @@ void mc_increment_callback (const char *result, int result_len) {
       php_warning ("Wrong memcache response \"%s\" in Memcache::%sement with key %s", result, mc_method, mc_last_key);
     }
   }
-  mc_stats_do(true);
+  mc_stats_do ();
 }
 
 void mc_version_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do(false);
+    mc_stats_do ();
     return;
   }
 
@@ -371,7 +372,7 @@ void mc_version_callback (const char *result, int result_len) {
     default:
       php_warning ("Wrong memcache response \"%s\" in Memcache::getVersion", result);
   }
-  mc_stats_do(true);
+  mc_stats_do ();
 }
 
 
@@ -775,7 +776,7 @@ bool RpcMemcache::add (const string &key, const var &value, int flags, int expir
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_add (cur_host.conn, real_key, value, flags, expire);
-  mc_stats_do(true);
+  mc_stats_do ();
   return res;
 }
 
@@ -789,7 +790,7 @@ bool RpcMemcache::set (const string &key, const var &value, int flags, int expir
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_set (cur_host.conn, real_key, value, flags, expire);
-  mc_stats_do(true);
+  mc_stats_do ();
   return res;
 }
 
@@ -803,7 +804,7 @@ bool RpcMemcache::replace (const string &key, const var &value, int flags, int e
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_replace (cur_host.conn, real_key, value, flags, expire);
-  mc_stats_do(true);
+  mc_stats_do ();
   return res;
 }
 
@@ -817,7 +818,7 @@ var RpcMemcache::get (const var &key_var) {
     host cur_host = get_host (string());
     mc_stats_init_multiget (cur_host.actor_id, key_var);
     var res = f$rpc_mc_multiget (cur_host.conn, key_var.to_array(), -1.0, false, true);
-    mc_stats_do(true);
+    mc_stats_do ();
     return res;
   } else {
     if (hosts.count() <= 0) {
@@ -831,7 +832,7 @@ var RpcMemcache::get (const var &key_var) {
     host cur_host = get_host (real_key);
     mc_stats_init (cur_host.actor_id, real_key.c_str());
     var res = f$rpc_mc_get (cur_host.conn, real_key);
-    mc_stats_do (true);
+    mc_stats_do ();
     return res;
   }
 }
@@ -846,7 +847,7 @@ bool RpcMemcache::delete_ (const string &key) {
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_delete (cur_host.conn, real_key);
-  mc_stats_do(true);
+  mc_stats_do ();
   return res;
 }
 
@@ -860,7 +861,7 @@ var RpcMemcache::decrement (const string &key, const var &count) {
   host cur_host = get_host (real_key);
   mc_stats_init(cur_host.actor_id, real_key.c_str());
   var res = f$rpc_mc_decrement (cur_host.conn, real_key, count);
-  mc_stats_do (true);
+  mc_stats_do ();
   return res;
 }
 
@@ -874,7 +875,7 @@ var RpcMemcache::increment (const string &key, const var &count) {
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
   var res = f$rpc_mc_increment (cur_host.conn, real_key, count);
-  mc_stats_do (true);
+  mc_stats_do ();
   return res;
 }
 
