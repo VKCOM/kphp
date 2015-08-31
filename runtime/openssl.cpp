@@ -344,7 +344,7 @@ bool f$openssl_private_decrypt (const string &data, string &result, const string
   }
   dl::leave_critical_section();
   if (len == -1) {
-    php_warning ("RSA private decrypt failed");
+    //php_warning ("RSA private decrypt failed"); 
     result = string();
     return false;
   }
