@@ -223,7 +223,6 @@ var mc_get_value (string result_str, int flags) {
 
 void mc_set_callback (const char *result, int result_len __attribute__((unused))) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do ();
     return;
   }
 
@@ -244,7 +243,6 @@ void mc_set_callback (const char *result, int result_len __attribute__((unused))
 
 void mc_multiget_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do ();
     return;
   }
   const char *full_result = result;
@@ -282,7 +280,6 @@ void mc_multiget_callback (const char *result, int result_len) {
 
 void mc_get_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do ();
     return;
   }
   const char *full_result = result;
@@ -321,7 +318,6 @@ void mc_get_callback (const char *result, int result_len) {
 
 void mc_delete_callback (const char *result, int result_len __attribute__((unused))) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do ();
     return;
   }
 
@@ -338,7 +334,6 @@ void mc_delete_callback (const char *result, int result_len __attribute__((unuse
 
 void mc_increment_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do ();
     return;
   }
 
@@ -356,7 +351,6 @@ void mc_increment_callback (const char *result, int result_len) {
 
 void mc_version_callback (const char *result, int result_len) {
   if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do ();
     return;
   }
 
