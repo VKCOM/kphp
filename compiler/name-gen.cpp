@@ -29,6 +29,21 @@ string gen_shorthand_ternary_name () {
   return string("shorthand_ternary_cond$ut") + tmp;
 }
 
+string gen_anonymous_functinon_name () {
+  AUTO_PROF (next_name);
+  static volatile int x = 0;
+  AutoLocker <volatile int *> locker (&x);
+  SrcFilePtr file = stage::get_file();
+  unsigned long long h = hash_ll (file->unified_file_name);
+  static map<unsigned long long, int> name_map;
+  int *i = &(name_map[h]);
+  int cur_i = (*i)++;
+  char tmp[50];
+  sprintf (tmp, "%llx_%d", h, cur_i);
+  return string("anonymous_functinon$ut") + tmp;
+}
+
+
 
 string gen_const_string_name (const string &str) {
   AUTO_PROF (next_const_string_name);

@@ -1321,9 +1321,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag) {
   string name_str;
   AutoLocation name_location (this);
   if (anonimous_flag) {
-    string tmp_name = "a43f9d1_";
-    int id = atomic_int_inc (&anonimous_func_id);
-    tmp_name += int_to_str (id);
+    string tmp_name = gen_anonymous_functinon_name ();
     name_str = tmp_name;
   } else {
     CE (expect (tok_func_name, "'tok_func_name'"));
