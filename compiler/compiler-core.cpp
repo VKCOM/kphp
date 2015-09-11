@@ -13,6 +13,9 @@ void CompilerCore::start() {
 }
 
 void CompilerCore::finish() {
+  if (stage::warnings_count > 0) {
+    printf("[%d WARNINGS GENERATED]\n", stage::warnings_count);
+  }
   stage::die_if_global_errors();
   del_extra_files();
   save_index();

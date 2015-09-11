@@ -6,6 +6,8 @@
 #include "bicycle.h"
 #include "compiler-core.h"
 
+int stage::warnings_count;
+
 const char *get_assert_level_desc (AssertLevelT assert_level) {
   switch (assert_level) {
     case WRN_ASSERT_LEVEL:
@@ -35,6 +37,7 @@ void on_compilation_error (const char *description __attribute__((unused)), cons
   if (assert_level == CE_ASSERT_LEVEL || G->env().get_error_on_warns()) {
     stage::error();
   }
+  stage::warnings_count++;
 }
 
 Location::Location() :

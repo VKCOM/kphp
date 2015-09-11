@@ -67,6 +67,8 @@ namespace stage {
   const string &get_file_name();
   const string &get_function_name();
   string to_str (const Location &new_location);
+
+  extern int warnings_count;
 }
 
 
