@@ -1941,6 +1941,17 @@ class FinalCheckPass : public FunctionPassBase {
                                  type_out(type_right).c_str()));
         }
       }
+
+      if (vertex->type() == op_foreach) {
+        VertexPtr arr = vertex.as<op_foreach>()->params().as<op_foreach_param>()->xs();
+        const TypeData* arrayType = tinf::get_type (arr);
+        if (arrayType->ptype() == tp_array) {
+          const TypeData* valueType = arrayType->lookup_at (Key::any_key ());
+          if (valueType->ptype() == tp_Unknown && !valueType->or_false_flag ()) {
+            kphp_error (0, "Can not compile foreach on array of Unknown type");
+          }
+        }
+      }
       //TODO: may be this should be moved to tinf_check 
       return vertex;
     }
