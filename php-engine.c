@@ -3368,7 +3368,7 @@ int main_args_default_handler (int i) {
   return 1;
 }
 
-#define ARGS_STR "D:E:H:r:w:f:p:s:T:t:oqQ:C"
+#define ARGS_STR "D:E:H:r:w:f:p:s:T:t:oqQ:CU"
 
 void usage_params (void) {
   printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C]");
@@ -3389,6 +3389,7 @@ void usage_desc (void) {
     "\t-T<tl_config_file_name>\tname of file with TL config\n"
     "\t-t<script_time_limit>\ttime limit for script in seconds\n"
     "\t-C\tuse crc32c if can\n"
+    "\t-U\tdon't write get data in log\n"
     );
 }
 
@@ -3470,6 +3471,9 @@ int main_args_handler (int i) {
       usage();
       return 2;
     }
+    break;
+  case 'U':
+    no_get_data_in_log = 1;
     break;
   case 'C':
     default_rpc_flags |= 2048;
