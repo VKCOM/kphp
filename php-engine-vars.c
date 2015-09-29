@@ -61,7 +61,8 @@ int master_pipe_fast_write = -1;
 int sql_target_id = -1;
 int in_ready = 0;
 int script_timeout = 0;
-int no_get_data_in_log;
+int no_get_data_in_log = 0;
+int force_clear_sql_connection = 0;
 
 /***
   save of stdout/stderr fd

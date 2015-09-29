@@ -524,6 +524,16 @@ void php_worker_init_script (php_worker *worker) {
     return;
   }
 
+  if (force_clear_sql_connection && sql_target_id != -1) {
+    struct connection *c, *tmp;
+    for (c = Targets[sql_target_id].first_conn; c != (struct connection*)(Targets + sql_target_id);) {
+      tmp = c->next;
+      fail_connection (c, -17); // -17 for no error
+      c = tmp;
+    }
+    create_new_connections (&Targets[sql_target_id]);
+  }
+
   get_utime_monotonic();
   worker->start_time = precise_now;
   vkprintf (1, "START php script [req_id = %016llx]\n", worker->req_id);
@@ -3368,7 +3378,7 @@ int main_args_default_handler (int i) {
   return 1;
 }
 
-#define ARGS_STR "D:E:H:r:w:f:p:s:T:t:oqQ:CU"
+#define ARGS_STR "D:E:H:r:w:f:p:s:RT:t:oqQ:CU"
 
 void usage_params (void) {
   printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C]");
@@ -3379,6 +3389,7 @@ void usage_desc (void) {
     "\t-H<port>\thttp port\n"
     "\t-r<rpc_port>\trpc_port\n"
     "\t-w<host>:<port>\thost and port for client mode\n"
+    "\t-R\tforce clear sql connection every script run\n"
     "\t-q\tno sql\n"
     "\t-Q\tsql port\n"
     "\t-E<error-tag-file>\tname of file with engine tag showed on every warning\n"
@@ -3414,6 +3425,9 @@ int main_args_handler (int i) {
     break;
   case 'r':
     rpc_port = atoi (optarg);
+    break;
+  case 'R':
+    force_clear_sql_connection = 1;
     break;
   case 'w':
     rpc_client_host = optarg;
