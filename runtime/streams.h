@@ -26,6 +26,10 @@ struct stream_functions {
 
   OrFalse <string> (*fread) (const Stream &stream, int length);
 
+  OrFalse <string> (*fgetc) (const Stream &stream);
+
+  OrFalse <string> (*fgets) (const Stream &stream, int length);
+
   OrFalse <int> (*fpassthru) (const Stream &stream);
 
   bool (*fflush) (const Stream &stream);
@@ -60,6 +64,10 @@ bool f$rewind (const Stream &stream);
 OrFalse <int> f$ftell (const Stream &stream);
 
 OrFalse <string> f$fread (const Stream &stream, int length);
+
+OrFalse <string> f$fgetc (const Stream &stream);
+
+OrFalse <string> f$fgets (const Stream &stream, int length = -1);
 
 OrFalse <int> f$fpassthru (const Stream &stream);
 

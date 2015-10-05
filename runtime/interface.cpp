@@ -1539,6 +1539,7 @@ bool f$ini_set (const string &s, const string &value) {
 
 
 const Stream INPUT ("php://input", 11);
+const Stream STDIN ("php://stdin", 11);
 const Stream STDOUT ("php://stdout", 12);
 const Stream STDERR ("php://stderr", 12);
 
@@ -1574,8 +1575,8 @@ static OrFalse <int> php_fwrite (const Stream &stream, const string &text) {
     return (int)text.size();
   }
 
-  if (eq2 (stream, INPUT)) {
-    php_warning ("Stream %s is not writeable", INPUT.to_string().c_str());
+  if (eq2 (stream, INPUT) || eq2 (stream, STDIN)) {
+    php_warning ("Stream %s is not writeable", stream.to_string().c_str());
     return false;
   }
 
@@ -1591,7 +1592,12 @@ static int php_fseek (const Stream &stream, int offset __attribute__((unused)), 
 
   if (eq2 (stream, INPUT)) {
     //TODO implement this
-    php_warning ("Can't use fseek with stream %s", INPUT.to_string().c_str());
+    php_warning ("Can't use fseek with stream %s", stream.to_string().c_str());
+    return -1;
+  }
+
+  if (eq2 (stream, STDIN)) {
+    php_warning ("Can't use fseek with stream %s", stream.to_string().c_str());
     return -1;
   }
 
@@ -1607,7 +1613,12 @@ static OrFalse <int> php_ftell (const Stream &stream) {
 
   if (eq2 (stream, INPUT)) {
     //TODO implement this
-    php_warning ("Can't use ftell with stream %s", INPUT.to_string().c_str());
+    php_warning ("Can't use ftell with stream %s", stream.to_string().c_str());
+    return false;
+  }
+
+  if (eq2 (stream, STDIN)) {
+    php_warning ("Can't use ftell with stream %s", stream.to_string().c_str());
     return false;
   }
 
@@ -1616,6 +1627,11 @@ static OrFalse <int> php_ftell (const Stream &stream) {
 }
 
 static OrFalse <string> php_fread (const Stream &stream, int length __attribute__((unused))) {
+  if (length <= 0) {
+    php_warning ("Parameter length in function fread must be positive");
+    return false;
+  }
+
   if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
     php_warning ("Can't use fread with stream %s", stream.to_string().c_str());
     return false;
@@ -1623,8 +1639,90 @@ static OrFalse <string> php_fread (const Stream &stream, int length __attribute_
 
   if (eq2 (stream, INPUT)) {
     //TODO implement this
-    php_warning ("Can't use fread with stream %s", INPUT.to_string().c_str());
+    php_warning ("Can't use fread with stream %s", stream.to_string().c_str());
     return false;
+  }
+
+  if (eq2 (stream, STDIN)) {
+    string res (length, false);
+    dl::enter_critical_section();//OK
+    size_t res_size = fread(&res[0], length, 1, stdin);
+    dl::leave_critical_section();
+    php_assert (res_size <= (size_t)length);
+    res.shrink ((dl::size_type)res_size);
+    return res;
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static OrFalse <string> php_fgetc (const Stream &stream) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use fgetc with stream %s", stream.to_string().c_str());
+    return false;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use fgetc with stream %s", stream.to_string().c_str());
+    return false;
+  }
+
+  if (eq2 (stream, STDIN)) {
+    dl::enter_critical_section();//OK
+    clearerr (stdin);
+    int result = fgetc (stdin);
+    if (ferror (stdin)) {
+      dl::leave_critical_section();
+      php_warning ("Error happened during fgetc with stream %s", stream.to_string().c_str());
+      return false;
+    }
+    dl::leave_critical_section();
+    if (result == EOF) {
+      return false;
+    }
+
+    return string (1, static_cast<char>(result));
+  }
+
+  php_warning ("Stream %s not found", stream.to_string().c_str());
+  return false;
+}
+
+static OrFalse <string> php_fgets (const Stream &stream, int length) {
+  if (eq2 (stream, STDOUT) || eq2 (stream, STDERR)) {
+    php_warning ("Can't use fgetc with stream %s", stream.to_string().c_str());
+    return false;
+  }
+
+  if (eq2 (stream, INPUT)) {
+    //TODO implement this
+    php_warning ("Can't use fgetc with stream %s", stream.to_string().c_str());
+    return false;
+  }
+
+  if (eq2 (stream, STDIN)) {
+    if (length < 0) {
+      length = 1024; // TODO remove limit
+    }
+
+    string res (length, false);
+    dl::enter_critical_section();//OK
+    clearerr (stdin);
+    char *result = fgets (&res[0], length, stdin);
+    if (ferror (stdin)) {
+      dl::leave_critical_section();
+      php_warning ("Error happened during fgets with stream %s", stream.to_string().c_str());
+      return false;
+    }
+    dl::leave_critical_section();
+    if (result == NULL) {
+      return false;
+    }
+
+    res.shrink ((dl::size_type)strlen(res.c_str()));
+    return res;
   }
 
   php_warning ("Stream %s not found", stream.to_string().c_str());
@@ -1637,9 +1735,9 @@ static OrFalse <int> php_fpassthru (const Stream &stream) {
     return false;
   }
 
-  if (eq2 (stream, INPUT)) {
+  if (eq2 (stream, INPUT) || eq2 (stream, STDIN)) {
     //TODO implement this
-    php_warning ("Can't use fpassthru with stream %s", INPUT.to_string().c_str());
+    php_warning ("Can't use fpassthru with stream %s", stream.to_string().c_str());
     return false;
   }
 
@@ -1658,8 +1756,8 @@ static bool php_fflush (const Stream &stream) {
     return true;
   }
 
-  if (eq2 (stream, INPUT)) {
-    php_warning ("Stream %s is not writeable, so there is no reason to fflush it", INPUT.to_string().c_str());
+  if (eq2 (stream, INPUT) || eq2 (stream, STDIN)) {
+    php_warning ("Stream %s is not writeable, so there is no reason to fflush it", stream.to_string().c_str());
     return false;
   }
 
@@ -1675,8 +1773,15 @@ static bool php_feof (const Stream &stream) {
 
   if (eq2 (stream, INPUT)) {
     //TODO implement this
-    php_warning ("Can't use feof with stream %s", INPUT.to_string().c_str());
+    php_warning ("Can't use feof with stream %s", stream.to_string().c_str());
     return true;
+  }
+
+  if (eq2 (stream, STDIN)) {
+    dl::enter_critical_section();//OK
+    bool eof = (feof (stdin) != 0);
+    dl::leave_critical_section();
+    return eof;
   }
 
   php_warning ("Stream %s not found", stream.to_string().c_str());
@@ -1691,6 +1796,11 @@ static OrFalse <string> php_file_get_contents (const string &url) {
 
   if (eq2 (url, INPUT)) {
     return raw_post_data;
+  }
+
+  if (eq2 (url, STDIN)) {
+    php_warning ("Can't use file_get_contents with stream %s", url.to_string().c_str());
+    return false;
   }
 
   php_warning ("Stream %s not found", url.c_str());
@@ -1708,7 +1818,7 @@ static OrFalse <int> php_file_put_contents (const string &url, const string &con
     return (int)content.size();
   }
 
-  if (eq2 (url, INPUT)) {
+  if (eq2 (url, INPUT) || eq2 (url, STDIN)) {
     php_warning ("Stream %s is not writeable", url.c_str());
     return false;
   }
@@ -1737,6 +1847,8 @@ static void interface_init_static_once (void) {
   php_stream_functions.fseek = php_fseek;
   php_stream_functions.ftell = php_ftell;
   php_stream_functions.fread = php_fread;
+  php_stream_functions.fgetc = php_fgetc;
+  php_stream_functions.fgets = php_fgets;
   php_stream_functions.fpassthru = php_fpassthru;
   php_stream_functions.fflush = php_fflush;
   php_stream_functions.feof = php_feof;

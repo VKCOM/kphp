@@ -371,6 +371,14 @@ OrFalse <string> f$fread (const Stream &stream, int length) {
   STREAM_FUNCTION_BODY(fread, false) (stream, length);
 }
 
+OrFalse <string> f$fgetc (const Stream &stream) {
+  STREAM_FUNCTION_BODY(fgetc, false) (stream);
+}
+
+OrFalse <string> f$fgets (const Stream &stream, int length) {
+  STREAM_FUNCTION_BODY(fgets, false) (stream, length);
+}
+
 OrFalse <int> f$fpassthru (const Stream &stream) {
   STREAM_FUNCTION_BODY(fpassthru, false) (stream);
 }

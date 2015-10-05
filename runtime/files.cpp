@@ -636,6 +636,56 @@ static OrFalse <string> file_fread (const Stream &stream, int length) {
   }
 }
 
+static OrFalse <string> file_fgetc (const Stream &stream) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
+    dl::enter_critical_section();//OK
+    clearerr (f);
+    int result = fgetc (f);
+    if (ferror (f)) {
+      dl::leave_critical_section();
+      php_warning ("Error happened during fgetc from file \"%s\"", stream.to_string().c_str());
+      return false;
+    }
+    dl::leave_critical_section();
+    if (result == EOF) {
+      return false;
+    }
+
+    return string (1, static_cast<char>(result));
+  } else {
+    return false;
+  }
+}
+
+static OrFalse <string> file_fgets (const Stream &stream, int length) {
+  FILE *f = get_file (stream);
+  if (f != NULL) {
+    if (length < 0) {
+      length = 1024; // TODO remove limit
+    }
+
+    string res (length, false);
+    dl::enter_critical_section();//OK
+    clearerr (f);
+    char *result = fgets (&res[0], length, f);
+    if (ferror (f)) {
+      dl::leave_critical_section();
+      php_warning ("Error happened during fgets from file \"%s\"", stream.to_string().c_str());
+      return false;
+    }
+    dl::leave_critical_section();
+    if (result == NULL) {
+      return false;
+    }
+
+    res.shrink ((dl::size_type)strlen(res.c_str()));
+    return res;
+  } else {
+    return false;
+  }
+}
+
 static OrFalse <int> file_fpassthru (const Stream &stream) {
   FILE *f = get_file (stream);
   if (f != NULL) {
@@ -785,6 +835,8 @@ void files_init_static_once (void) {
   file_stream_functions.fseek = file_fseek;
   file_stream_functions.ftell = file_ftell;
   file_stream_functions.fread = file_fread;
+  file_stream_functions.fgetc = file_fgetc;
+  file_stream_functions.fgets = file_fgets;
   file_stream_functions.fpassthru = file_fpassthru;
   file_stream_functions.fflush = file_fflush;
   file_stream_functions.feof = file_feof;

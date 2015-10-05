@@ -60,6 +60,23 @@
   fclose ($file);
   var_dump (filesize ($filename));
 
+  $file = fopen ($filename, "rb");
+  var_dump (fgets ($file, 100));
+  var_dump (fgets ($file, 2));
+  var_dump (fgets ($file));
+  var_dump (rewind ($file));
+  var_dump (fgets ($file));
+  var_dump (fgetc ($file));
+  var_dump (fgetc ($file));
+  var_dump (fgets ($file));
+  var_dump (fgetc ($file));
+  var_dump (fgetc ($file));
+  var_dump (fgets ($file));
+  var_dump (fgetc ($file));
+  var_dump (fgetc ($file));
+  var_dump (fgets ($file));
+  var_dump (fgetc ($file));
+
   var_dump (file_get_contents ($filename));
   var_dump (file ($filename));
   @var_dump (file_put_contents ('tmp', 'test'));
@@ -71,3 +88,4 @@
   @var_dump (realpath ("../dl/473_file.php"));
   @var_dump (realpath ("phpt/dl/473-file.php"));
   @var_dump (realpath ("phpt/dl/473_file.php"));
+

@@ -946,6 +946,8 @@ void openssl_init_static_once (void) {
   ssl_stream_functions.fseek = NULL;
   ssl_stream_functions.ftell = NULL;
   ssl_stream_functions.fread = ssl_fread;
+  ssl_stream_functions.fgetc = NULL;
+  ssl_stream_functions.fgets = NULL;
   ssl_stream_functions.fpassthru = NULL;
   ssl_stream_functions.fflush = NULL;
   ssl_stream_functions.feof = ssl_feof;

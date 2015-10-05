@@ -671,6 +671,7 @@ function arrayval ($v ::: array) ::: ^1;
 
 
 /** files **/
+define (STDIN, 'php://stdin');
 define (STDOUT, 'php://stdout');
 define (STDERR, 'php://stderr');
 
@@ -684,6 +685,8 @@ function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
 function rewind ($stream) ::: bool;
 function ftell ($stream) ::: OrFalse <int>;
 function fread ($stream, $length ::: int) ::: OrFalse <string>;
+function fgetc ($stream) ::: OrFalse <string>;
+function fgets ($stream, $length ::: int = -1) ::: OrFalse <string>;
 function fpassthru ($stream) ::: OrFalse <int>;
 function fflush ($stream) ::: bool;
 function feof ($stream) ::: bool;
