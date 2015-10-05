@@ -3378,7 +3378,7 @@ int main_args_default_handler (int i) {
   return 1;
 }
 
-#define ARGS_STR "D:E:H:r:w:f:p:s:RT:t:oqQ:CU"
+#define ARGS_STR "D:E:H:r:w:f:p:s:RT:t:oqQ:CUL:"
 
 void usage_params (void) {
   printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C]");
@@ -3392,6 +3392,7 @@ void usage_desc (void) {
     "\t-R\tforce clear sql connection every script run\n"
     "\t-q\tno sql\n"
     "\t-Q\tsql port\n"
+    "\t-L\tlimit for static buffers length (in mebybytes)\n"
     "\t-E<error-tag-file>\tname of file with engine tag showed on every warning\n"
     "\t-f<workers_n>\trun workers_n workers\n"
     "\t-o\trun script once\n"
@@ -3428,6 +3429,9 @@ int main_args_handler (int i) {
     break;
   case 'R':
     force_clear_sql_connection = 1;
+    break;
+  case 'L':
+    static_buffer_length_limit = atoi (optarg) << 20;
     break;
   case 'w':
     rpc_client_host = optarg;

@@ -63,6 +63,7 @@ int in_ready = 0;
 int script_timeout = 0;
 int no_get_data_in_log = 0;
 int force_clear_sql_connection = 0;
+int static_buffer_length_limit = -1;
 
 /***
   save of stdout/stderr fd

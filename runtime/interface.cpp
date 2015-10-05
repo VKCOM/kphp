@@ -1766,6 +1766,9 @@ void init_static_once (void) {
 
 #include <clocale>
 
+dl::size_type string_buffer::MIN_BUFFER_LEN = 266175; //TODO: move to some better place
+dl::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24); //TODO: move to some better place
+
 void init_static (void) {
   bcmath_init_static();
   //curl_init_static();//lazy inited
@@ -1778,6 +1781,7 @@ void init_static (void) {
   resumable_init_static();
   rpc_init_static();
   streams_init_static();
+  string_buffer_init_static(static_buffer_length_limit);
 
   shutdown_function = NULL;
   finished = false;

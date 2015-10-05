@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef CLION
+#include "kphp_core.h"
+#endif
+
 inline void string_buffer::resize (dl::size_type new_buffer_len) {
   if (new_buffer_len < MIN_BUFFER_LEN) {
     new_buffer_len = MIN_BUFFER_LEN;
@@ -264,3 +268,10 @@ void string_buffer::reserve (int len) {
   reserve_at_least (len + 1);
 }
 
+inline void string_buffer_init_static (int max_length) {
+  string_buffer::MIN_BUFFER_LEN = 266175;
+  string_buffer::MAX_BUFFER_LEN = (1 << 24);
+  if (max_length > 0) {
+    string_buffer::MAX_BUFFER_LEN = max_length;
+  }
+}

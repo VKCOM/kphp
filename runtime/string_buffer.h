@@ -12,8 +12,8 @@
 #define STRING_BUFFER_ERROR_FLAG_FAILED 1
 
 class string_buffer {
-  static const dl::size_type MIN_BUFFER_LEN = 266175;
-  static const dl::size_type MAX_BUFFER_LEN = (1 << 24);
+  static dl::size_type MIN_BUFFER_LEN;
+  static dl::size_type MAX_BUFFER_LEN;
   string_buffer (const string_buffer &other);
   string_buffer &operator = (const string_buffer &other);
 
@@ -65,6 +65,8 @@ public:
   inline bool set_pos (int pos);
 
   inline ~string_buffer (void);
+
+  friend void string_buffer_init_static (int max_length);
 };
 
 string_buffer static_SB __attribute__ ((weak));

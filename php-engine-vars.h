@@ -98,6 +98,7 @@ extern int in_ready;
 extern int script_timeout;
 extern int no_get_data_in_log;
 extern int force_clear_sql_connection;
+extern int static_buffer_length_limit;
 
 #define RPC_INVOKE_KPHP_REQ 0x99a37fda
 #define RPC_INVOKE_REQ 0x2374df3d
