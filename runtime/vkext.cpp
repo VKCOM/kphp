@@ -269,7 +269,7 @@ void write_char_utf8 (int c) {
     write_buff_char_3 ((char)(0xe0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
-  if (c >= 0x1f000 && c <= 0x1f6ff) {
+  if (c >= 0x1f000 && c <= 0x1f9ff) {
     write_buff_char_4 ((char)(0xf0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
