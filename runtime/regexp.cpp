@@ -43,7 +43,7 @@ regexp::regexp (const char *regexp_string, int regexp_len):
   init (regexp_string, regexp_len);
 }
 
-bool regexp::is_valid_RE2_regexp (const char *regexp_string, int regexp_len) {
+bool regexp::is_valid_RE2_regexp (const char *regexp_string, int regexp_len, bool is_utf8) {
 //  return false;
   int brackets_depth = 0;
   bool prev_is_group = false;
@@ -187,18 +187,23 @@ bool regexp::is_valid_RE2_regexp (const char *regexp_string, int regexp_len) {
               case 'n':
               case 'r':
               case 't':
-              case 'd':
-              case 'D':
-              case 's':
-              case 'S':
-              case 'w':
-              case 'W':
               case -128 ... '/':
               case ':' ... '@':
               case '[' ... '`':
               case '{' ... 127:
                 i++;
                 continue;
+              case 'd':
+              case 'D':
+              case 's':
+              case 'S':
+              case 'w':
+              case 'W':
+                if (!is_utf8) {
+                  i++;
+                  continue;
+                }
+                return false;
               default:
                 return false;
             }
@@ -235,18 +240,23 @@ bool regexp::is_valid_RE2_regexp (const char *regexp_string, int regexp_len) {
           case 't':
           case 'b':
           case 'B':
-          case 'd':
-          case 'D':
-          case 's':
-          case 'S':
-          case 'w':
-          case 'W':
           case -128 ... '/':
           case ':' ... '@':
           case '[' ... '`':
           case '{' ... 127:
             i++;
             break;
+          case 'd':
+          case 'D':
+          case 's':
+          case 'S':
+          case 'w':
+          case 'W':
+            if (!is_utf8) {
+              i++;
+              continue;
+            }
+            return false;
           default:
             return false;
         }
@@ -417,6 +427,9 @@ void regexp::init (const char *regexp_string, int regexp_len) {
         break;
       case 'u':
         pcre_options |= PCRE_UTF8;
+#ifdef PCRE_UCP
+        pcre_options |= PCRE_UCP;
+#endif  
         RE2_options.set_encoding (RE2::Options::EncodingUTF8);
         is_utf8 = true;
         break;
@@ -428,7 +441,7 @@ void regexp::init (const char *regexp_string, int regexp_len) {
     }
   }
 
-  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp (static_SB.c_str(), static_SB.size());
+  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp (static_SB.c_str(), static_SB.size(), is_utf8);
 
   if (is_utf8 && !mb_UTF8_check (static_SB.c_str())) {
     php_warning ("Regexp \"%s\" contains not UTF-8 symbols", static_SB.c_str());
