@@ -130,7 +130,7 @@ static void set_server_status_default (const char *status __attribute__((unused)
   critical_error (__FUNCTION__);
 }
 
-static void set_server_status_rpc_default (int actor_id __attribute__((unused)), int port __attribute__((unused)), int constructor_id __attribute__((unused)), double start_time __attribute__((unused))) {
+static void set_server_status_rpc_default (int port __attribute__((unused)), long long actor_id __attribute__((unused)), double start_time __attribute__((unused))) {
   critical_error (__FUNCTION__);
 }
 
@@ -217,7 +217,7 @@ int (*http_load_long_query) (char *buf, int min_len, int max_len) = http_load_lo
 
 
 void (*set_server_status) (const char *status, int status_len) = set_server_status_default;
-void (*set_server_status_rpc) (int actor_id, int port, int constructor_id, double start_time) = set_server_status_rpc_default;
+void (*set_server_status_rpc) (int port, long long actor_id, double start_time) = set_server_status_rpc_default;
 
 
 double (*get_net_time) (void) = get_net_time_default;

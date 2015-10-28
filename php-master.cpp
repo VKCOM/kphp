@@ -1467,15 +1467,16 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
     header += acc_stats_to_str (std::string(), acc_stats);
   }
   if (!full_flag && worker_pid == -2) {
+    header +=" pid \t  state time\t  port  actor time\tcustom_server_status time\n";
     for (int i = 0; i < me_workers_n; i++) {
       worker_info_t *w = workers[i];
       if (!w->is_dying) {
         php_immediate_stats_t *imm = &w->stats->istats;
         imm->desc[IMM_STATS_DESC_LEN - 1] = 0;
         imm->custom_desc[IMM_STATS_DESC_LEN - 1] = 0;
-        sprintf (buf, "%d\t%s:%.3lf\t%6d:%6d:%8x:%.3lf\t%s:%.3lf\n", w->pid, 
-            imm->desc, precise_now - imm->timestamp,
-            imm->port, imm->actor_id, imm->constructor_id, precise_now - imm->rpc_timestamp,
+        sprintf (buf, "%5d\t%7s %.3lf\t%6d %6lld %.3lf\t%s %.3lf\n",
+            w->pid, imm->desc, precise_now - imm->timestamp,
+            imm->port, imm->actor_id, precise_now - imm->rpc_timestamp,
             imm->custom_desc, precise_now - imm->custom_timestamp);
         header += buf;
       }

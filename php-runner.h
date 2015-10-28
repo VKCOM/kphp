@@ -71,7 +71,7 @@ const char *php_script_get_error (void *ptr);
 php_immediate_stats_t *get_immediate_stats();
 php_immediate_stats_t *get_imm_stats();
 void custom_server_status (const char *status, int status_len);
-void server_status_rpc(int actor_id, int port, int constructor_id, double start_time);
+void server_status_rpc (int port, long long actor_id, double start_time);
 void idle_server_status (void);
 void wait_net_server_status (void);
 void running_server_status (void);

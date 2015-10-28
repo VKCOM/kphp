@@ -87,7 +87,7 @@ extern int (*db_proxy_connect) (void);
 extern void (*db_run_query) (int host_num, const char *request, int request_len, int timeout_ms, void (*callback) (const char *result, int result_len));
 
 extern void (*set_server_status) (const char *status, int status_len);
-extern void (*set_server_status_rpc) (int actor_id, int port, int constructor_id, double start_time);
+extern void (*set_server_status_rpc) (int port, long long actor_id, double start_time);
 
 extern double (*get_net_time) (void);
 extern double (*get_script_time) (void);

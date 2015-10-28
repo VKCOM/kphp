@@ -327,6 +327,7 @@ bool f$fetch_end (const string &file, int line) {
 rpc_connection::rpc_connection (void):
     bool_value (false),
     host_num (-1),
+    port (-1),
     timeout_ms (-1),
     default_actor_id (-1),
     connect_timeout (-1),
@@ -336,15 +337,17 @@ rpc_connection::rpc_connection (void):
 rpc_connection::rpc_connection (bool value):
     bool_value (value),
     host_num (-1),
+    port (-1),
     timeout_ms (-1),
     default_actor_id (-1),
     connect_timeout (-1),
     reconnect_timeout (-1) {
 }
 
-rpc_connection::rpc_connection (bool value, int host_num, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout):
+rpc_connection::rpc_connection (bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout):
     bool_value (value),
     host_num (host_num),
+    port (port),
     timeout_ms (timeout_ms),
     default_actor_id (default_actor_id),
     connect_timeout (connect_timeout),
@@ -363,7 +366,7 @@ rpc_connection f$new_rpc_connection (string host_name, int port, const var &defa
     return rpc_connection();
   }
 
-  return rpc_connection (true, host_num, timeout_convert_to_ms (timeout),
+  return rpc_connection (true, host_num, port, timeout_convert_to_ms (timeout),
                          store_parse_number <long long> (default_actor_id),
                          timeout_convert_to_ms (connect_timeout), timeout_convert_to_ms (reconnect_timeout));
 }
@@ -637,6 +640,7 @@ static long long rpc_requests_last_query_num;
 
 static slot_id_t rpc_first_request_id;
 static slot_id_t rpc_next_request_id;
+static slot_id_t rpc_first_unfinished_request_id;
 
 static int timeout_wakeup_id = -1;
 
@@ -658,6 +662,11 @@ var load_rpc_request_as_var (char *storage) {
 }
 
 class rpc_resumable: public Resumable {
+private:
+  int port;
+  long long actor_id;
+  double begin_time;
+
 protected:
   bool run (void) {
     php_assert (dl::query_num == rpc_requests_last_query_num);
@@ -676,6 +685,22 @@ protected:
       }
     }
 */
+    if (rpc_first_unfinished_request_id == pos_old + rpc_first_request_id) {
+      while (rpc_first_unfinished_request_id < rpc_next_request_id &&
+             rpc_requests[rpc_first_unfinished_request_id - rpc_first_request_id].resumable_id < 0) {
+        rpc_first_unfinished_request_id++;
+      }
+      if (rpc_first_unfinished_request_id < rpc_next_request_id) {
+        int resumable_id = rpc_requests[rpc_first_unfinished_request_id - rpc_first_request_id].resumable_id;
+        php_assert (resumable_id > 0);
+        const Resumable *resumable = get_forked_resumable (resumable_id);
+        php_assert (resumable != NULL);
+        static_cast <const rpc_resumable *>(resumable)->set_server_status_rpc();
+      } else {
+        ::set_server_status_rpc (0, 0, get_precise_now());
+      }
+    }
+
     pos_old = -1;
     output_->save <rpc_request> (*request, load_rpc_request_as_var);
     php_assert (request->resumable_id == -2 || request->resumable_id == -1);
@@ -685,8 +710,19 @@ protected:
     return true;
   }
 
+  void set_server_status_rpc() const {
+    ::set_server_status_rpc (port, actor_id, begin_time);
+  }
+
 public:
-  rpc_resumable (int request_id): Resumable (request_id) {
+  rpc_resumable (int request_id, int port, long long actor_id):
+      Resumable (request_id),
+      port (port),
+      actor_id (actor_id),
+      begin_time (get_precise_now()) {
+    if (rpc_first_unfinished_request_id == pos_old + rpc_first_request_id) {
+      set_server_status_rpc();
+    }
   }
 };
 
@@ -732,6 +768,7 @@ int rpc_send (const rpc_connection &conn, double timeout) {
 
     rpc_first_request_id = result;
     rpc_next_request_id = result + 1;
+    rpc_first_unfinished_request_id = result;
   } else {
     php_assert (rpc_next_request_id == result);
     rpc_next_request_id++;
@@ -746,7 +783,7 @@ int rpc_send (const rpc_connection &conn, double timeout) {
 
   rpc_request *cur = rpc_requests + slot_id;
 
-  cur->resumable_id = register_forked_resumable (new rpc_resumable (slot_id));
+  cur->resumable_id = register_forked_resumable (new rpc_resumable (slot_id, conn.port, conn.default_actor_id));
   cur->timer = allocate_event_timer (timeout + get_precise_now(), timeout_wakeup_id, result);
 
   return cur->resumable_id;

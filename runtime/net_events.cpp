@@ -22,7 +22,7 @@ static double precise_now;
 
 void update_precise_now (void) {
   struct timespec T;
-  php_assert (clock_gettime (CLOCK_REALTIME, &T) >= 0);
+  php_assert (clock_gettime (CLOCK_MONOTONIC, &T) >= 0);
   precise_now = (double)T.tv_sec + (double)T.tv_nsec * 1e-9;
 }
 

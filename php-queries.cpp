@@ -1002,8 +1002,8 @@ void engine_set_server_status (const char *status, int len) {
   custom_server_status (status, len);
 }
 
-void engine_set_server_status_rpc (int actor_id, int port, int constructor_id, double start_time) {
-  server_status_rpc (actor_id, port, constructor_id, start_time);
+void engine_set_server_status_rpc (int port, long long actor_id, double start_time) {
+  server_status_rpc (port, actor_id, start_time);
 }
 
 double engine_get_net_time (void) {

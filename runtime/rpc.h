@@ -57,6 +57,7 @@ bool f$fetch_end (const string &file, int line);
 struct rpc_connection {
   bool bool_value;
   int host_num;
+  int port;
   int timeout_ms;
   long long default_actor_id;
   int connect_timeout;
@@ -66,7 +67,7 @@ struct rpc_connection {
 
   rpc_connection (bool value);
 
-  rpc_connection (bool value, int host_num, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout);
+  rpc_connection (bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout);
 
   rpc_connection& operator = (bool value);
 };

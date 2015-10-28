@@ -178,6 +178,11 @@ Storage *get_forked_storage (int resumable_id) {
   return &forked_resumables[resumable_id - first_forked_resumable_id].output;
 }
 
+Resumable *get_forked_resumable (int resumable_id) {
+  php_assert (first_forked_resumable_id <= resumable_id && resumable_id < current_forked_resumable_id);
+  return forked_resumables[resumable_id - first_forked_resumable_id].continuation;
+}
+
 static void add_resumable_to_queue (int resumable_id, forked_resumable_info *resumable) {
   php_assert (resumable->queue_id <= wait_next_queue_id);
 
