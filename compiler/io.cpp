@@ -43,7 +43,7 @@ bool SrcFile::load(void) {
   text = string (text_size, ' ');
   std::copy (prefix.begin(), prefix.end(), text.begin());
   err = (int)read (fid, &text[0] + prefix_size, file_size);
-  dl_assert (err >= 0, "read failed");
+  dl_assert (err >= 0, dl_pstr("Can't read file [%s]: %m", file_name.c_str()));
 
   for (int i = 0; i < text_size; i++) {
     if (likely (text[i] == 0)) {
