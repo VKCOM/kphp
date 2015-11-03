@@ -184,7 +184,7 @@ void fix_ub_dfs (VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr())
     int res = 0;
     bool do_not_check = v->type() == op_ternary || v->type() == op_log_or || v->type() == op_log_and ||
       v->type() == op_log_or_let || v->type() == op_log_and_let || v->type() == op_require ||
-      v->type() == op_require_once;
+      v->type() == op_require_once || v->type() == op_unset;
 
     for (VertexRange i = all (*v); !i.empty(); i.next()) {
       UBMergeData node_data;
@@ -215,7 +215,7 @@ void fix_ub_dfs (VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr())
 }
 
 void fix_ub (VertexPtr v, vector <VarPtr> *foreach_vars) {
-  if (v->type() == op_global || v->type() == op_static || v->type() == op_unset) {
+  if (v->type() == op_global || v->type() == op_static) {
     return;
   }
   if (OpInfo::type (v->type()) == cycle_op ||
