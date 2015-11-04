@@ -1,7 +1,5 @@
 #pragma once
 
-#include "common/rpc-const.h"
-
 #include "kphp_core.h"
 
 #include "exception.h"
@@ -731,7 +729,7 @@ protected:
           if (return_false_if_not_found) {
             result.set_value (query_names.get_value (k), false);
           }
-        } else if (res == RPC_REQ_ERROR) {
+        } else if (res == MEMCACHE_ERROR) {
           f$fetch_long (string(), -1);//query_id
           if (CurException) {
             RETURN(false);
@@ -857,7 +855,7 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
         if (return_false_if_not_found) {
           result.set_value (query_names.get_value (k), false);
         }
-      } else if (res == RPC_REQ_ERROR) {
+      } else if (res == MEMCACHE_ERROR) {
         TRY_CALL(var, bool, f$fetch_long (string(), -1));//query_id
         int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
         string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));

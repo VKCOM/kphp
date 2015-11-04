@@ -1572,7 +1572,7 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
     }
 
     return value;
-  } else if (res == RPC_REQ_ERROR) {
+  } else if (res == MEMCACHE_ERROR) {
     TRY_CALL(var, var, f$fetch_long (string(), -1));//query_id
     int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
     string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));
