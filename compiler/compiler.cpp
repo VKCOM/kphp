@@ -1907,6 +1907,9 @@ class FinalCheckPass : public FunctionPassBase {
       if (vertex->type() == op_func_name) {
         kphp_error (0, "Unexpected function name");
       }
+      if (vertex->type() == op_addr) {
+        kphp_error (0, "Getting references is unsupported");
+      }
       if (vertex->type() == op_eq3) {
           const TypeData *type_left = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->lhs());
           const TypeData *type_right = tinf::get_type (VertexAdaptor<meta_op_binary_op>(vertex)->rhs());
