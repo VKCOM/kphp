@@ -1141,7 +1141,10 @@ public:
   }
 
   virtual void print (int shift = 0) const {
-    fprintf (stderr, "%*sType %s(%x) at (%p)\n", shift, "", type->name.c_str(), type->id, this);
+    fprintf (stderr, "%*sType %s(%x) at (%p)\n", shift, "", type->name.c_str (), type->id, this);
+    for (array<tl_tree *>::const_iterator iter = children.begin (); iter != children.end (); ++iter) {
+      iter.get_value ()->print (shift + 4);
+    }
   }
 
   virtual int get_type (void) const {
@@ -1564,6 +1567,36 @@ array <var> tl_fetch_error (const char *error, int error_code) {
   return tl_fetch_error (string (error, strlen (error)), error_code);
 }
 
+void hexdump (const void *start, const void *end) {
+  const char *ptr = (const char *)start;
+  char c;
+  while (ptr < (char *) end) {
+    int s = (const char *) end - ptr, i;
+    if (s > 16) {
+      s = 16;
+    }
+    fprintf (stderr, "%08x", (int) (ptr - (char *) start));
+    for (i = 0; i < 16; i++) {
+      c = ' ';
+      if (i == 8) {
+        fputc (' ', stderr);
+      }
+      if (i < s) {
+        fprintf (stderr, "%c%02x", c, (unsigned char) ptr[i]);
+      } else {
+        fprintf (stderr, "%c  ", c);
+      }
+    }
+    c = ' ';
+    fprintf (stderr, "%c  ", c);
+    for (i = 0; i < s; i++) {
+      putc ((unsigned char) ptr[i] < ' ' ? '.' : ptr[i], stderr);
+    }
+    putc ('\n', stderr);
+    ptr += 16;
+  }
+}
+
 array <var> fetch_function (tl_tree *T) {
   if (tl_config.fetchIP == NULL) {
     php_warning ("tl_rpc_query_result not supported due to missing TL scheme");
@@ -1628,6 +1661,8 @@ array <var> fetch_function (tl_tree *T) {
   void *res;
   last_arr_ptr = var_stack;
 
+  tl_tree *dbg_T = T->dup();
+
   //fprintf (stderr, "Before TLUNI_START in FETCH\n");
 #ifdef FAST_EXCEPTIONS
   res = (tl_tree *)((*(function_ptr *) tl_config.fetchIP) (tl_config.fetchIP + 1, Data_stack + 1, var_stack, vars_buffer + MAX_VARS));
@@ -1650,6 +1685,7 @@ array <var> fetch_function (tl_tree *T) {
   //fprintf (stderr, "After TLUNI_START in FETCH\n");
 
   if (res == TLUNI_OK) {
+    dbg_T->destroy ();
     if (!f$fetch_eof (string(), -1)) {
       php_warning ("Not all data fetched during fetch type %s", fetched_type.c_str());
       var_stack[0] = var();
@@ -1657,6 +1693,13 @@ array <var> fetch_function (tl_tree *T) {
     }
   } else {
     var_stack[0] = var();
+    php_warning ("incorrect result from engine during fetching type %s", fetched_type.c_str());
+    fprintf(stderr, "================= Bad result from engine start ====================\n");
+    dbg_T->print ();
+    dbg_T->destroy ();
+    hexdump(rpc_data_begin, rpc_data_begin + (rpc_data_copy.size() + 3) / 4);
+    fprintf(stderr, "================= Bad result from engine end ====================\n");
+
     return tl_fetch_error ("Incorrect result", TL_ERROR_SYNTAX);
   }
 
