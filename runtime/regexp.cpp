@@ -238,14 +238,14 @@ bool regexp::is_valid_RE2_regexp (const char *regexp_string, int regexp_len, boo
           case 'n':
           case 'r':
           case 't':
-          case 'b':
-          case 'B':
           case -128 ... '/':
           case ':' ... '@':
           case '[' ... '`':
           case '{' ... 127:
             i++;
             break;
+          case 'b':
+          case 'B':
           case 'd':
           case 'D':
           case 's':
@@ -657,10 +657,12 @@ OrFalse <int> regexp::match (const string &subject, var &matches, bool all_match
   pcre_last_error = 0;
 
   if (pcre_regexp == NULL && RE2_regexp == NULL) {
+    matches = array <var>();
     return false;
   }
 
   if (is_utf8 && !mb_UTF8_check (subject.c_str())) {
+    matches = array <var>();
     pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
   }
@@ -745,10 +747,12 @@ OrFalse <int> regexp::match (const string &subject, var &matches, int flags, boo
   pcre_last_error = 0;
 
   if (pcre_regexp == NULL && RE2_regexp == NULL) {
+    matches = array <var>();
     return false;
   }
 
   if (is_utf8 && !mb_UTF8_check (subject.c_str())) {
+    matches = array <var>();
     pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
   }
