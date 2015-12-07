@@ -369,7 +369,12 @@ static const string_buffer *get_headers (int content_length) {//can't use static
   return &static_SB_spare;
 }
 
-static var (*shutdown_function) (void);
+#define MAX_SHUTDOWN_FUNCTIONS 256
+
+typedef var (*shutdown_function_type) (void);
+
+static shutdown_function_type shutdown_functions[MAX_SHUTDOWN_FUNCTIONS];
+int shutdown_functions_count;
 static bool finished;
 static bool flushed;
 
@@ -441,13 +446,19 @@ void f$fastcgi_finish_request (int exit_code) {
 }
 
 void f$register_shutdown_function (var (*f) (void)) {
-  shutdown_function = f;
+  if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
+    php_warning ("Too many shutdown functions registered, ignore next one\n");
+    return;
+  }
+  shutdown_functions[shutdown_functions_count++] = f;
 }
 
 void finish (int exit_code) {
-  if (!finished && shutdown_function) {
+  if (!finished) {
     finished = true;
-    shutdown_function();
+    for (int i = 0; i < shutdown_functions_count; i++) {
+      shutdown_functions[i] ();
+    }
   }
 
   if (Profiler::is_enabled()){
@@ -1895,7 +1906,7 @@ void init_static (void) {
   streams_init_static();
   string_buffer_init_static(static_buffer_length_limit);
 
-  shutdown_function = NULL;
+  shutdown_functions_count = 0;
   finished = false;
   flushed = false;
 
