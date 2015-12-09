@@ -265,6 +265,7 @@ static void resumable_add_finished (int resumable_id, bool is_long) {
     finished_resumables_size *= 2;
   }
 
+//  fprintf(stderr, "Resumbale %d put to position %d of finised list\n", resumable_id, finished_resumables_count);
   finished_resumables[finished_resumables_count++] = is_long ? -resumable_id : resumable_id;
 }
 
@@ -495,6 +496,38 @@ public:
   }
 };
 
+class wait_multiple_resumable : public Resumable {
+protected:
+  bool run (void) {
+    RESUMABLE_BEGIN
+    while (true) {
+      php_assert (first_forked_resumable_id <= pos_old && pos_old < current_forked_resumable_id);
+      int slot_id = pos_old - first_forked_resumable_id;
+      forked_resumable_info *info = &forked_resumables[slot_id];
+
+      if (info->queue_id < 0) {
+        break;
+      } else {
+        if (!resumable_has_finished ()) {
+          wait_net (MAX_TIMEOUT);
+        }
+        f$sched_yield ();
+        TRY_WAIT_VOID (wait_many_resumable_label1);
+      }
+    }
+
+    output_->save <bool> (true);
+    pos_old = -1;
+    return true;
+    RESUMABLE_END
+  }
+
+public:
+  wait_multiple_resumable (int child_id): Resumable (child_id) {
+  }
+};
+
+
 void process_wait_timeout (int wait_resumable_id) {
   php_assert (first_started_resumable_id <= wait_resumable_id && wait_resumable_id < current_started_resumable_id);
 
@@ -594,6 +627,30 @@ bool f$wait (int resumable_id, double timeout) {
   return false;
 }
 
+bool f$wait_multiple (int resumable_id) {
+  resumable_finished = true;
+
+  last_wait_error = NULL;
+  if (resumable_id < first_forked_resumable_id || resumable_id >= current_forked_resumable_id) {
+    last_wait_error = "Wrong resumable id";
+    return false;
+  }
+
+  wait_net (0);
+
+  int slot_id = resumable_id - first_forked_resumable_id;
+  forked_resumable_info *resumable = &forked_resumables[slot_id];
+
+  if (resumable->queue_id < 0) {
+    return true;
+  }
+
+  if (resumable->queue_id > 0) {
+    return start_resumable<bool> (new wait_multiple_resumable(resumable_id));
+  }
+
+  return f$wait(resumable_id);
+}
 
 var f$wait_result (int resumable_id, double timeout) {
   return start_resumable <var> (new wait_result_resumable (resumable_id, timeout));

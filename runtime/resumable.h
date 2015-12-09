@@ -89,6 +89,8 @@ bool f$wait_synchronously (int resumable_id);
 
 bool f$wait (int resumable_id, double timeout = -1.0);
 
+bool f$wait_multiple (int resumable_id);
+
 var f$wait_result (int resumable_id, double timeout = -1.0);
 
 void f$sched_yield (void);
