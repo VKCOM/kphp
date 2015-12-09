@@ -663,6 +663,7 @@ var load_rpc_request_as_var (char *storage) {
 
 class rpc_resumable: public Resumable {
 private:
+  int request_id;
   int port;
   long long actor_id;
   double begin_time;
@@ -670,9 +671,9 @@ private:
 protected:
   bool run (void) {
     php_assert (dl::query_num == rpc_requests_last_query_num);
-    php_assert (0 <= pos_old && pos_old < rpc_next_request_id - rpc_first_request_id);
+    php_assert (0 <= request_id && request_id < rpc_next_request_id - rpc_first_request_id);
 
-    rpc_request *request = rpc_requests + pos_old;
+    rpc_request *request = rpc_requests + request_id;
     php_assert (request->resumable_id < 0);
     php_assert (input_ == NULL);
 
@@ -685,7 +686,7 @@ protected:
       }
     }
 */
-    if (rpc_first_unfinished_request_id == pos_old + rpc_first_request_id) {
+    if (rpc_first_unfinished_request_id == request_id + rpc_first_request_id) {
       while (rpc_first_unfinished_request_id < rpc_next_request_id &&
              rpc_requests[rpc_first_unfinished_request_id - rpc_first_request_id].resumable_id < 0) {
         rpc_first_unfinished_request_id++;
@@ -701,7 +702,7 @@ protected:
       }
     }
 
-    pos_old = -1;
+    request_id = -1;
     output_->save <rpc_request> (*request, load_rpc_request_as_var);
     php_assert (request->resumable_id == -2 || request->resumable_id == -1);
     request->resumable_id = -3;
@@ -716,11 +717,11 @@ protected:
 
 public:
   rpc_resumable (int request_id, int port, long long actor_id):
-      Resumable (request_id),
+      request_id (request_id),
       port (port),
       actor_id (actor_id),
       begin_time (get_precise_now()) {
-    if (rpc_first_unfinished_request_id == pos_old + rpc_first_request_id) {
+    if (rpc_first_unfinished_request_id == request_id + rpc_first_request_id) {
       set_server_status_rpc();
     }
   }

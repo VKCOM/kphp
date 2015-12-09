@@ -52,7 +52,6 @@ protected:
   static Storage *input_;
   static Storage *output_;
   void* pos__;
-  int pos_old;
 
   virtual bool run() = 0;
 
@@ -61,7 +60,6 @@ public:
   void operator delete (void *ptr, size_t size);
 
   Resumable();
-  explicit Resumable (int pos);
 
   virtual ~Resumable();
 
@@ -134,6 +132,7 @@ void resumable_init_static_once (void);
 
 void resumable_init_static (void);
 
+int f$get_running_fork_id();
 
 /*
  *

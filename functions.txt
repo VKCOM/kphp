@@ -656,6 +656,7 @@ function wait_queue_empty ($queue_id ::: int) ::: bool;
 function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;
 function wait_queue_next_synchronously ($queue_id ::: int) ::: int;
 function sched_yield() resumable ::: void;
+function get_running_fork_id() ::: int;
 
 function query_x2 ($x ::: int) ::: int;
 

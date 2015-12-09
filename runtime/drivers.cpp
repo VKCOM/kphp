@@ -92,6 +92,8 @@ static inline void mc_stats_init_multiget(int port, const var& key){
     mc_stats_time = microtime();
     mc_stats_port = port;
     mc_stats_key = strdup(f$implode(string("\t",1), key.to_array()).c_str());
+  } else {
+    mc_stats_port = -1;
   }
 }
 
