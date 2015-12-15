@@ -385,8 +385,8 @@ function ucfirst ($str ::: string) ::: string;
 function lcwords ($str ::: string) ::: string;
 function ucwords ($str ::: string) ::: string;
 
-function vprintf ($format ::: string, $args ::: array) ::: string;
-function vsprintf ($format ::: string, $args ::: array) ::: int;
+function vprintf ($format ::: string, $args ::: array) ::: int;
+function vsprintf ($format ::: string, $args ::: array) ::: string;
 
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
 //function strtr ($subject, $from, $to);
