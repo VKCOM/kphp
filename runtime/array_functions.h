@@ -81,7 +81,7 @@ bool f$array_key_exists (const var &v, const array <T> &a);
 
 
 template <class T, class T1>
-typename array <T>::key_type f$array_search (const T1 &val, const array <T> &a);
+typename array <T>::key_type f$array_search (const T1 &val, const array <T> &a, bool strict = false);
 
 template <class T>
 typename array <T>::key_type f$array_rand (const array <T> &a);
@@ -565,9 +565,10 @@ bool f$array_key_exists (const var &v, const array <T> &a) {
 
 
 template <class T, class T1>
-typename array <T>::key_type f$array_search (const T1 &val, const array <T> &a) {
+typename array <T>::key_type f$array_search (const T1 &val, const array <T> &a, bool strict) {
   for (typename array <T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    if (eq2 (it.get_value(), val)) {
+    bool found = strict ? equals (it.get_value(), val) : eq2(it.get_value(), val);
+    if (found) {
       return it.get_key();
     }
   }

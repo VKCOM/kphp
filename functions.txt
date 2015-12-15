@@ -149,7 +149,7 @@ function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
 function array_shift (&$a ::: array) ::: ^1[];
 function array_unshift (&$a ::: array, $val ::: Any) ::: int;
 function array_key_exists ($v ::: Any, $a ::: array) ::: bool;
-function array_search ($val ::: Any, $a ::: array) ::: var;
+function array_search ($val ::: Any, $a ::: array, $strict ::: bool = false) ::: var;
 function array_rand ($a ::: array, $num ::: int = 1) ::: var;
 function array_keys ($a ::: array) ::: array <var>;
 function array_values ($a ::: array) ::: ^1;
