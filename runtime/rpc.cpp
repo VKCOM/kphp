@@ -963,7 +963,8 @@ protected:
 
       string result;
       result.assign_raw (res.answer - 12);
-      f$rpc_parse (result);
+      bool parse_result = f$rpc_parse (result);
+      php_assert(parse_result);
 
       RETURN(true);
     RESUMABLE_END
