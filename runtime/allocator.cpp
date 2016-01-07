@@ -21,6 +21,7 @@ void check_stack_overflow (void) {
 namespace dl {
 
 const size_type MAX_BLOCK_SIZE = 16384;
+const size_type MAX_ALLOC = 0xFFFFFF00;
 
 
 volatile int in_critical_section;
@@ -433,9 +434,13 @@ void static_deallocate (void **p, size_type *n) {
   leave_critical_section();
 }
 
+// guaranteed alignment of dl::allocate
+const size_t MAX_ALIGNMENT = 8;
+
 void *malloc_replace (size_t x) {
-  size_t real_allocate = x + sizeof (size_t);
-  php_assert (real_allocate >= sizeof (size_t));
+  php_assert (x <= MAX_ALLOC - MAX_ALIGNMENT);
+  php_assert (sizeof (size_t) <= MAX_ALIGNMENT);
+  size_t real_allocate = x + MAX_ALIGNMENT;
   void *p;
   if (use_script_allocator) {
     p = allocate (real_allocate);
@@ -446,7 +451,7 @@ void *malloc_replace (size_t x) {
     php_critical_error ("not enough memory to continue");
   }
   *(size_t *)p = real_allocate;
-  return (void *)((char *)p + sizeof (size_t));
+  return (void *)((char *)p + MAX_ALIGNMENT);
 }
 
 void free_replace (void *p) {
@@ -454,7 +459,7 @@ void free_replace (void *p) {
     return;
   }
 
-  p = (void *)((char *)p - sizeof (size_t));
+  p = (void *)((char *)p - MAX_ALIGNMENT);
   if (use_script_allocator) {
     php_assert (memory_begin <= (size_t)p && (size_t)p < memory_end);
     deallocate (p, *(size_t *)p);
