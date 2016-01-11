@@ -3227,6 +3227,8 @@ void read_engine_tag (const char *file_name);
 
 void read_tl_config (const char *file_name);
 
+void update_tl_config (const char *data, unsigned int len);
+
 void arg_add (const char *value);
 
 void ini_set (const char *key, const char *value);
@@ -3386,6 +3388,9 @@ void usage_params (void) {
   printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C]");
 }
 
+const char* builtin_tl_schema __attribute__((weak));
+int builtin_tl_schema_length __attribute__((weak)) = -1;
+
 void usage_desc (void) {
   printf ("\t-D<key>=<value>\tset data for ini_get\n"
     "\t-H<port>\thttp port\n"
@@ -3400,12 +3405,15 @@ void usage_desc (void) {
     "\t-o\trun script once\n"
     "\t-p<master_port>\tport for memcached interface to master\n"
     "\t-s<cluster_name>\tused to distinguish clusters\n"
-    "\t-T<tl_config_file_name>\tname of file with TL config\n"
+    "\t-T<tl_config_file_name>\tname of file with TL config (%s)\n"
     "\t-t<script_time_limit>\ttime limit for script in seconds\n"
     "\t-C\tuse crc32c if can\n"
-    "\t-U\tdon't write get data in log\n"
+    "\t-U\tdon't write get data in log\n",
+     builtin_tl_schema_length == -1 ? "" : "will be ignored"
     );
 }
+
+
 
 int main_args_handler (int i) {
   switch (i) {
@@ -3467,7 +3475,11 @@ int main_args_handler (int i) {
     cluster_name = optarg;
     break;
   case 'T':
-    read_tl_config (optarg);
+    if (builtin_tl_schema_length == -1) {
+      read_tl_config (optarg);
+    } else {
+      kprintf("Ignoring given tl schema: builtin one will be used\n");
+    }
     break;
   case 't':
     script_timeout = atoi (optarg);
@@ -3581,6 +3593,9 @@ int main (int argc, char *argv[]) {
   max_special_connections = 1;
   assert (offsetof (struct rpc_client_functions, rpc_ready) == offsetof (struct rpc_server_functions, rpc_ready));
 
+  if (builtin_tl_schema_length != -1) {
+    update_tl_config (builtin_tl_schema, builtin_tl_schema_length);
+  }
   parse_main_args (argc, argv);
 
   load_time = -dl_time();

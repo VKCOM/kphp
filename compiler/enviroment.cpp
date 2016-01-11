@@ -142,6 +142,12 @@ void KphpEnviroment::set_threads_count (const string &threads_count) {
 int KphpEnviroment::get_threads_count() const {
   return threads_count_int_;
 }
+void KphpEnviroment::set_tl_schema_file (const string &tl_schema_file) {
+  tl_schema_file_ = tl_schema_file;
+}
+string KphpEnviroment::get_tl_schema_file() const {
+  return tl_schema_file_;
+}
 void KphpEnviroment::set_path (const string &path) {
   path_ = path;
 }

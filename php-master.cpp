@@ -1386,6 +1386,8 @@ int return_one_key_val (struct connection *c, const char *val, int vlen) {
 
 int update_mem_stats (void);
 
+extern unsigned tl_schema_crc32;
+
 std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
   std::string res, header;
   header = stats.to_string (me == NULL ? 0 : (int)me->pid, false, true);
@@ -1426,7 +1428,7 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
     }
   }
 
-  sprintf (buf, "uptime\t\%d\n", now - start_time);
+  sprintf (buf, "uptime\t%d\n", now - start_time);
   header += buf;
   sprintf (buf, "version\t%s\n", FullVersionStr);
   header += buf;
@@ -1434,7 +1436,7 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
     sprintf (buf + sprintf (buf, "kphp_version\t%s", engine_tag) - 2, "\n");
     header += buf;
   }
-  sprintf (buf, "cluster_name\t\%s\n", cluster_name);
+  sprintf (buf, "cluster_name\t%s\n", cluster_name);
   header += buf;
   sprintf (buf, "min_worker_uptime\t%.0lf\n", min_uptime);
   header += buf;
@@ -1461,6 +1463,8 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
   sprintf (buf, "workers_terminated\t%ld\n", workers_terminated);
   header += buf;
   sprintf (buf, "workers_failed\t%ld\n", workers_failed);
+  header += buf;
+  sprintf (buf, "tl_schema_crc32\t%08x\n", tl_schema_crc32);
   header += buf;
 
   if (full_flag) {

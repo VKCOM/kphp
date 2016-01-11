@@ -14,6 +14,7 @@
 #include "resumable.h"
 #include "string_functions.h"//lhex_digits TODO
 #include "zlib.h"
+#include "crc32.h"
 
 static const int GZIP_PACKED = 0x3072cfa1;
 static const int TL_RPC_DEST_ACTOR = 0x7568aabd;
@@ -3657,11 +3658,26 @@ void renew_tl_config (void) {
 
 extern "C" {
 void read_tl_config (const char *file_name);
+void update_tl_config (const char *data, dl::size_type data_len);
 }
+
+unsigned tl_schema_crc32 = 0;
+
+void update_tl_config (const char *data, dl::size_type data_len) {
+  tl_schema_crc32 = compute_crc32(data, data_len);
+  php_assert (f$rpc_parse (string(data, data_len)));
+  renew_tl_config();
+
+  rpc_parse (NULL, 0);//remove rpc_data_copy
+  rpc_parse (NULL, 0);//remove rpc_data_backup
+  free_arr_space();
+}
+
 
 void read_tl_config (const char *file_name) {
   OrFalse <string> config = file_file_get_contents (string (file_name, (dl::size_type)strlen (file_name)));
   php_assert (f$boolval (config));
+  tl_schema_crc32 = compute_crc32 (config.value.c_str(), config.value.size());
   php_assert (f$rpc_parse (config.val()));
   renew_tl_config();
 

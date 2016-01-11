@@ -31,6 +31,7 @@ class KphpEnviroment {
     vector <string> main_files_;
     int print_resumable_graph_;
     int enable_profiler_;
+    string tl_schema_file_;
 
     string cxx_;
     string cxx_flags_;
@@ -92,6 +93,8 @@ class KphpEnviroment {
     int get_enable_profiler() const;
     void set_error_on_warns();
     int get_error_on_warns() const;
+    void set_tl_schema_file (const string &tl_schema_file);
+    string get_tl_schema_file () const;
     void add_main_file (const string &main_file);
     const vector <string> &get_main_files() const;
 

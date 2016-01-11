@@ -75,6 +75,9 @@ int parse_args_f(int i) {
   case 't':
     env->set_threads_count (optarg);
     break;
+  case 'T':
+    env->set_tl_schema_file (optarg);
+    break;
   case 's':
     env->set_path (optarg);
     break;
@@ -127,6 +130,7 @@ int main (int argc, char *argv[]) {
   parse_option("print-graph", no_argument, NULL, 'p', "Print graph of resumbale calls to stderr");
   parse_option("incremental-link", no_argument, NULL, 'r', "Split output into multiple directories");
   parse_option("threads-count", required_argument, NULL, 't', "Use <threads_count> threads. By default equals to 16");
+  parse_option("tl-schema", required_argument, NULL, 'T', "Add builtin tl schema to kphp binary");
   parse_option("auto-dest-dir", no_argument, NULL, 'S', "Automatic destination dir");
   parse_option("source-path", required_argument, NULL, 's', "Path to kphp source. Equals to $KPHP_PATH. ~/engine/src is used by default");
   parse_option("version-file", required_argument, NULL, 'V', "<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default");

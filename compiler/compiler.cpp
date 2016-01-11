@@ -2143,6 +2143,27 @@ class CodeGenF {
         W << "//" << (const char *)tmp << NL;
         W << CloseFile();
       }
+
+      if (G->env().get_tl_schema_file() != "") {
+        W << OpenFile("_tl_schema.cpp");
+        W << "extern \"C\" " << BEGIN;
+        FILE* f = fopen(G->env ().get_tl_schema_file ().c_str(), "r");
+        const int MAX_SCHEMA_LEN = 1024 * 1024;
+        static char buf[MAX_SCHEMA_LEN + 1];
+        kphp_assert (f && "can't open tl schema file");
+        int len = fread(buf, 1, sizeof(buf), f);
+        kphp_assert (len > 0 && len < MAX_SCHEMA_LEN);
+        string s(buf, buf + len);
+        W << "const char* builtin_tl_schema = " << NL << Indent(2);
+        compile_string_raw (s, W);
+        kphp_assert (!fclose(f));
+        W << ";" << NL;
+        W << "int builtin_tl_schema_length = ";
+        sprintf(buf, "%d", len);
+        W << string(buf) << ";" << NL;
+        W << END;
+        W << CloseFile();
+      }
     }
 };
 
