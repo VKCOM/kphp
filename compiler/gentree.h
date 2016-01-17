@@ -84,6 +84,7 @@ public:
   template <Operation Op> VertexPtr get_varg_call();
   template <Operation Op> VertexPtr get_require();
   template <Operation Op, Operation EmptyOp> VertexPtr get_func_call();
+  VertexPtr get_short_array();
   VertexPtr get_string();
   VertexPtr get_string_build();
   VertexPtr get_def_value();

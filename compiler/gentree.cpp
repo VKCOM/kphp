@@ -236,6 +236,21 @@ template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   }
   return call;
 }
+VertexPtr GenTree::get_short_array() {
+  AutoLocation call_location (this);
+  next_cur();
+
+  vector <VertexPtr> next;
+  bool ok_next = gen_list<op_none> (&next, &GenTree::get_expression, tok_comma);
+  CE (!kphp_error (ok_next, "get_reqire failed"));
+  CE (expect (tok_clbrk, "']'"));
+
+  CREATE_VERTEX (arr, op_array, next);
+  set_location (arr, call_location);
+
+  return arr;
+}
+
 
 VertexPtr GenTree::get_string() {
   CREATE_VERTEX (str, op_string);
@@ -485,6 +500,9 @@ VertexPtr GenTree::get_expr_top() {
       break;
     case tok_array:
       res = get_func_call <op_array, op_none>();
+      break;
+    case tok_opbrk:
+      res = get_short_array();
       break;
     case tok_list:
       res = get_func_call <op_list_ce, op_lvalue_null>();
