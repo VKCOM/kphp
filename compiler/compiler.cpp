@@ -29,6 +29,7 @@
 #include "pass-rl.h"
 #include "pass-optimize.hpp"
 #include "pass-ub.h"
+#include "analizer.h"
 
 #include "crc32.h"
 
@@ -1733,6 +1734,27 @@ class CheckUBF {
     }
 };
 
+/*** C++ undefined behaviour fixes ***/
+class AnalizerF {
+public:
+  DUMMY_ON_FINISH;
+  template <class OutputStream> void execute (FunctionPtr function, OutputStream &os) {
+    AUTO_PROF (check_ub);
+    stage::set_name ("Try to detect common errors");
+    stage::set_function (function);
+
+    if (function->root->type() == op_function) {
+      analize_foreach (function);
+    }
+
+    if (stage::has_error()) {
+      return;
+    }
+
+    os << function;
+  }
+};
+
 class ExtractResumableCallsPass : public FunctionPassBase {
   private:
     AUTO_PROF (extract_resumable_calls);
@@ -2394,6 +2416,9 @@ void compiler_execute (KphpEnviroment *env) {
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > forth_sync_pipe (true, true);
+    Pipe <AnalizerF,
+      DataStream <FunctionPtr>,
+      DataStream <FunctionPtr> > analizer_pipe (true);
     FunctionPassPipe <FinalCheckPass>::Self final_check_pass (true);
     Pipe <CodeGenF,
          DataStream <FunctionPtr>,
@@ -2439,6 +2464,7 @@ void compiler_execute (KphpEnviroment *env) {
       check_ub_pipe >>
       extract_resumable_calls_pipe >>
       extract_async_pipe >>
+      analizer_pipe >>
       final_check_pass >>
       code_gen_pipe >> sync_node() >>
       write_files_pipe;
