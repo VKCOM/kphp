@@ -143,34 +143,9 @@ void analize_foreach (FunctionPtr function) {
   run_function_pass (function, &pass);
 }
 
-class CheckArraysPass : public FunctionPassBase {
-public:
+class CommonAnalizerPass : public FunctionPassBase {
 
-  string get_description() {
-    return "Try to detect common errors: arrays";
-  }
-
-  bool check_function (FunctionPtr function) {
-    return default_check_function (function) && function->type() != FunctionData::func_extern;
-  }
-
-
-  VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
-    VertexPtr to_check;
-    if (vertex->type() == op_array) {
-      to_check = vertex;
-    } else if (vertex->type() == op_var) {
-      VarPtr var = vertex.as<op_var>()->get_var_id ();
-      if (var->is_constant) {
-        VertexPtr init = var->init_val;
-        if (init->type () == op_array) {
-          to_check = init;
-        }
-      }
-    }
-    if (to_check.is_null()) {
-      return vertex;
-    }
+  void check_array(VertexPtr to_check) {
     bool have_arrow = false;
     bool have_int_key = false;
     set<string> used_keys;
@@ -190,21 +165,82 @@ public:
         }
       } else {
         if (have_arrow && have_int_key) {
-          return vertex;
+          return;
         }
         const string& str = int_to_str(id++);
         used_keys.insert(str);
       }
     }
+    return;
+  }
+
+  void check_set(VertexAdaptor<op_set> to_check) {
+    VertexPtr left = to_check->lhs();
+    VertexPtr right = to_check->rhs();
+    if (left->type() == op_var && right->type() == op_var) {
+      VarPtr lvar = left.as<op_var>()->get_var_id();
+      VarPtr rvar = right.as<op_var>()->get_var_id();
+      if (lvar->name == rvar->name) {
+        kphp_warning ("Assigning variable to itself\n");
+      }
+    }
+  }
+public:
+
+  string get_description() {
+    return "Try to detect common errors";
+  }
+
+  bool check_function (FunctionPtr function) {
+    return default_check_function (function) && function->type() != FunctionData::func_extern;
+  }
+
+  struct LocalT : public FunctionPassBase::LocalT {
+    bool from_seq;
+  };
+
+  void on_enter_edge (VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex __attribute__((unused)), LocalT *dest_local) {
+    dest_local->from_seq = vertex->type() == op_seq;
+  }
+
+  VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
+    VertexPtr to_check;
+    if (vertex->type() == op_array) {
+      check_array(vertex);
+      return vertex;
+    }
+    if (vertex->type() == op_var) {
+      VarPtr var = vertex.as<op_var>()->get_var_id ();
+      if (var->is_constant) {
+        VertexPtr init = var->init_val;
+        if (init->type () == op_array) {
+          check_array (init);
+        }
+      }
+      return vertex;
+    }
+    if (local->from_seq) {
+      if (OpInfo::P[vertex->type()].rl == rl_op && OpInfo::P[vertex->type()].cnst == cnst_const_func) {
+        if (vertex->type() != op_log_and && vertex->type() != op_log_or &&
+          vertex->type() != op_ternary && vertex->type() != op_log_and_let &&
+          vertex->type() != op_log_or_let && vertex->type() != op_unset) {
+          kphp_warning(dl_pstr("Statement has no effect [op = %s]", OpInfo::P[vertex->type()].str.c_str()));
+        }
+      }
+    }
+    if (vertex->type() == op_set) {
+      //TODO: $x = (int)$x;
+      //check_set(vertex.as<op_set>());
+      return vertex;
+    }
     return vertex;
   }
 };
 
-void analize_arrays (FunctionPtr function) {
+void analize_common (FunctionPtr function) {
   if (function->root->type() != op_function) {
     return;
   }
-  CheckArraysPass pass;
+  CommonAnalizerPass pass;
   run_function_pass (function, &pass);
 }
-

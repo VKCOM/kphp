@@ -30,4 +30,4 @@
 #pragma once
 
 void analize_foreach (FunctionPtr function);
-void analize_arrays (FunctionPtr function);
+void analize_common (FunctionPtr function);
