@@ -156,10 +156,27 @@ class CommonAnalizerPass : public FunctionPassBase {
         have_arrow = true;
         VertexPtr key = v.as<op_double_arrow>()->key();
         have_int_key |= key->type() == op_int_const;
+        string str;
         if (key->type() == op_string || key->type() == op_int_const) {
-          const string& str = key->get_string();
+          str = key->get_string ();
+        } else if (key->type() == op_var) {
+          VarPtr key_var = key.as<op_var>()->get_var_id();
+          if (key_var->is_constant) {
+            VertexPtr init = key_var->init_val;
+            if (init->type() == op_string) {
+              str = init->get_string();
+            }
+          }
+        } else if (key->type() == op_define_val) {
+          DefinePtr d = key.as<op_define_val>()->get_define_id();
+          VertexPtr dval = d->val;
+          if (dval->type() == op_string || dval->type() == op_int_const) {
+            str = dval->get_string();
+          }
+        }
+        if (str != "") {
           if (used_keys.find(str) != used_keys.end()) {
-            kphp_warning (dl_pstr("Duplicate key '%s' in array", str.c_str()));
+            kphp_warning(dl_pstr("Duplicate key '%s' in array", str.c_str()));
           }
           used_keys.insert(str);
         }
