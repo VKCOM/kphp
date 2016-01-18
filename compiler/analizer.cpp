@@ -142,3 +142,69 @@ void analize_foreach (FunctionPtr function) {
   CheckNestedForeachPass pass;
   run_function_pass (function, &pass);
 }
+
+class CheckArraysPass : public FunctionPassBase {
+public:
+
+  string get_description() {
+    return "Try to detect common errors: arrays";
+  }
+
+  bool check_function (FunctionPtr function) {
+    return default_check_function (function) && function->type() != FunctionData::func_extern;
+  }
+
+
+  VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
+    VertexPtr to_check;
+    if (vertex->type() == op_array) {
+      to_check = vertex;
+    } else if (vertex->type() == op_var) {
+      VarPtr var = vertex.as<op_var>()->get_var_id ();
+      if (var->is_constant) {
+        VertexPtr init = var->init_val;
+        if (init->type () == op_array) {
+          to_check = init;
+        }
+      }
+    }
+    if (to_check.is_null()) {
+      return vertex;
+    }
+    bool have_arrow = false;
+    bool have_int_key = false;
+    set<string> used_keys;
+    int id = 0;
+    for (VertexRange i = all(to_check); !i.empty(); i.next()) {
+      VertexPtr v = (*i);
+      if (v->type() == op_double_arrow) {
+        have_arrow = true;
+        VertexPtr key = v.as<op_double_arrow>()->key();
+        have_int_key |= key->type() == op_int_const;
+        if (key->type() == op_string || key->type() == op_int_const) {
+          const string& str = key->get_string();
+          if (used_keys.find(str) != used_keys.end()) {
+            kphp_warning (dl_pstr("Duplicate key '%s' in array", str.c_str()));
+          }
+          used_keys.insert(str);
+        }
+      } else {
+        if (have_arrow && have_int_key) {
+          return vertex;
+        }
+        const string& str = int_to_str(id++);
+        used_keys.insert(str);
+      }
+    }
+    return vertex;
+  }
+};
+
+void analize_arrays (FunctionPtr function) {
+  if (function->root->type() != op_function) {
+    return;
+  }
+  CheckArraysPass pass;
+  run_function_pass (function, &pass);
+}
+

@@ -1745,6 +1745,7 @@ public:
 
     if (function->root->type() == op_function) {
       analize_foreach (function);
+      analize_arrays (function);
     }
 
     if (stage::has_error()) {
