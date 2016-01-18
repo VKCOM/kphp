@@ -62,6 +62,7 @@ class OptimizationPass : public FunctionPassBase {
       vector <VertexPtr> collected;
       collect_concat (root, &collected);
       CREATE_VERTEX (new_root, op_string_build, collected);
+      new_root->location = root->get_location ();
       new_root->rl_type = root->rl_type;
 
       return new_root;
