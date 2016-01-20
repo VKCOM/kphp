@@ -230,9 +230,7 @@ public:
       VarPtr var = vertex.as<op_var>()->get_var_id ();
       if (var->is_constant) {
         VertexPtr init = var->init_val;
-        if (init->type () == op_array) {
-          check_array (init);
-        }
+        run_function_pass (init, this, local);
       }
       return vertex;
     }
