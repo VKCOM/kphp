@@ -29,6 +29,6 @@
 
 #pragma once
 
-void analize_foreach (FunctionPtr function);
-void analize_common (FunctionPtr function);
-void analizer_check_array(VertexPtr to_check);
+void analyze_foreach (FunctionPtr function);
+void analyze_common (FunctionPtr function);
+void analyzer_check_array (VertexPtr to_check);

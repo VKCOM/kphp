@@ -29,7 +29,7 @@
 #include "pass-rl.h"
 #include "pass-optimize.hpp"
 #include "pass-ub.h"
-#include "analizer.h"
+#include "analyzer.h"
 
 #include "crc32.h"
 
@@ -1735,7 +1735,7 @@ class CheckUBF {
 };
 
 /*** C++ undefined behaviour fixes ***/
-class AnalizerF {
+class AnalyzerF {
 public:
   DUMMY_ON_FINISH;
   template <class OutputStream> void execute (FunctionPtr function, OutputStream &os) {
@@ -1744,8 +1744,8 @@ public:
     stage::set_function (function);
 
     if (function->root->type() == op_function) {
-      analize_foreach (function);
-      analize_common (function);
+      analyze_foreach (function);
+      analyze_common (function);
     }
 
     if (stage::has_error()) {
@@ -2417,9 +2417,9 @@ void compiler_execute (KphpEnviroment *env) {
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > forth_sync_pipe (true, true);
-    Pipe <AnalizerF,
+    Pipe <AnalyzerF,
       DataStream <FunctionPtr>,
-      DataStream <FunctionPtr> > analizer_pipe (true);
+      DataStream <FunctionPtr> > analyzer_pipe (true);
     FunctionPassPipe <FinalCheckPass>::Self final_check_pass (true);
     Pipe <CodeGenF,
          DataStream <FunctionPtr>,
@@ -2465,7 +2465,7 @@ void compiler_execute (KphpEnviroment *env) {
       check_ub_pipe >>
       extract_resumable_calls_pipe >>
       extract_async_pipe >>
-      analizer_pipe >>
+      analyzer_pipe >>
       final_check_pass >>
       code_gen_pipe >> sync_node() >>
       write_files_pipe;

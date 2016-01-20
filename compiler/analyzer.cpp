@@ -30,7 +30,7 @@
 #include "stage.h"
 #include "data.h"
 #include "function-pass.h"
-#include "analizer.h"
+#include "analyzer.h"
 
 class CheckNestedForeachPass : public FunctionPassBase {
   vector <VarPtr> foreach_vars;
@@ -136,7 +136,7 @@ public:
   }
 };
 
-void analize_foreach (FunctionPtr function) {
+void analyze_foreach (FunctionPtr function) {
   if (function->root->type() != op_function) {
     return;
   }
@@ -144,7 +144,7 @@ void analize_foreach (FunctionPtr function) {
   run_function_pass (function, &pass);
 }
 
-class CommonAnalizerPass : public FunctionPassBase {
+class CommonAnalyzerPass : public FunctionPassBase {
 
   void check_set(VertexAdaptor<op_set> to_check) {
     VertexPtr left = to_check->lhs();
@@ -178,7 +178,7 @@ public:
   VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
     VertexPtr to_check;
     if (vertex->type() == op_array) {
-      analizer_check_array(vertex);
+      analyzer_check_array (vertex);
       return vertex;
     }
     if (vertex->type() == op_var) {
@@ -207,15 +207,15 @@ public:
   }
 };
 
-void analize_common (FunctionPtr function) {
+void analyze_common (FunctionPtr function) {
   if (function->root->type() != op_function) {
     return;
   }
-  CommonAnalizerPass pass;
+  CommonAnalyzerPass pass;
   run_function_pass (function, &pass);
 }
 
-void analizer_check_array(VertexPtr to_check) {
+void analyzer_check_array (VertexPtr to_check) {
   bool have_arrow = false;
   bool have_int_key = false;
   set<string> used_keys;
