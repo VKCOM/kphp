@@ -30,6 +30,7 @@
 #include "stage.h"
 #include "data.h"
 #include "function-pass.h"
+#include "analizer.h"
 
 class CheckNestedForeachPass : public FunctionPassBase {
   vector <VarPtr> foreach_vars;
@@ -145,52 +146,6 @@ void analize_foreach (FunctionPtr function) {
 
 class CommonAnalizerPass : public FunctionPassBase {
 
-  void check_array(VertexPtr to_check) {
-    bool have_arrow = false;
-    bool have_int_key = false;
-    set<string> used_keys;
-    int id = 0;
-    for (VertexRange i = all(to_check); !i.empty(); i.next()) {
-      VertexPtr v = (*i);
-      if (v->type() == op_double_arrow) {
-        have_arrow = true;
-        VertexPtr key = v.as<op_double_arrow>()->key();
-        have_int_key |= key->type() == op_int_const;
-        string str;
-        if (key->type() == op_string || key->type() == op_int_const) {
-          str = key->get_string ();
-        } else if (key->type() == op_var) {
-          VarPtr key_var = key.as<op_var>()->get_var_id();
-          if (key_var->is_constant) {
-            VertexPtr init = key_var->init_val;
-            if (init->type() == op_string) {
-              str = init->get_string();
-            }
-          }
-        } else if (key->type() == op_define_val) {
-          DefinePtr d = key.as<op_define_val>()->get_define_id();
-          VertexPtr dval = d->val;
-          if (dval->type() == op_string || dval->type() == op_int_const) {
-            str = dval->get_string();
-          }
-        }
-        if (str != "") {
-          if (used_keys.find(str) != used_keys.end()) {
-            kphp_warning(dl_pstr("Duplicate key '%s' in array", str.c_str()));
-          }
-          used_keys.insert(str);
-        }
-      } else {
-        if (have_arrow && have_int_key) {
-          return;
-        }
-        const string& str = int_to_str(id++);
-        used_keys.insert(str);
-      }
-    }
-    return;
-  }
-
   void check_set(VertexAdaptor<op_set> to_check) {
     VertexPtr left = to_check->lhs();
     VertexPtr right = to_check->rhs();
@@ -223,7 +178,7 @@ public:
   VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
     VertexPtr to_check;
     if (vertex->type() == op_array) {
-      check_array(vertex);
+      analizer_check_array(vertex);
       return vertex;
     }
     if (vertex->type() == op_var) {
@@ -258,4 +213,50 @@ void analize_common (FunctionPtr function) {
   }
   CommonAnalizerPass pass;
   run_function_pass (function, &pass);
+}
+
+void analizer_check_array(VertexPtr to_check) {
+  bool have_arrow = false;
+  bool have_int_key = false;
+  set<string> used_keys;
+  int id = 0;
+  for (VertexRange i = all(to_check); !i.empty(); i.next()) {
+    VertexPtr v = (*i);
+    if (v->type() == op_double_arrow) {
+      have_arrow = true;
+      VertexPtr key = v.as<op_double_arrow>()->key();
+      have_int_key |= key->type() == op_int_const;
+      string str;
+      if (key->type() == op_string || key->type() == op_int_const) {
+        str = key->get_string ();
+      } else if (key->type() == op_var) {
+        VarPtr key_var = key.as<op_var>()->get_var_id();
+        if (key_var->is_constant) {
+          VertexPtr init = key_var->init_val;
+          if (init->type() == op_string) {
+            str = init->get_string();
+          }
+        }
+      } else if (key->type() == op_define_val) {
+        DefinePtr d = key.as<op_define_val>()->get_define_id();
+        VertexPtr dval = d->val;
+        if (dval->type() == op_string || dval->type() == op_int_const) {
+          str = dval->get_string();
+        }
+      }
+      if (str != "") {
+        if (used_keys.find(str) != used_keys.end()) {
+          kphp_warning(dl_pstr("Duplicate key '%s' in array", str.c_str()));
+        }
+        used_keys.insert(str);
+      }
+    } else {
+      if (have_arrow && have_int_key) {
+        return;
+      }
+      const string& str = int_to_str(id++);
+      used_keys.insert(str);
+    }
+  }
+  return;
 }

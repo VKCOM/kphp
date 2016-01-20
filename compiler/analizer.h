@@ -31,3 +31,4 @@
 
 void analize_foreach (FunctionPtr function);
 void analize_common (FunctionPtr function);
+void analizer_check_array(VertexPtr to_check);

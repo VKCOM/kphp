@@ -1,5 +1,6 @@
 #pragma once
 #include "compiler-core.h"
+#include "analizer.h"
 
 /*** Replace constant expressions with const variables ***/
 class CollectConstVarsPass : public FunctionPassBase {
@@ -155,6 +156,8 @@ class CollectConstVarsPass : public FunctionPassBase {
       if (nodes_cnt < 100 || !valid) {
         return v;
       }
+
+      analizer_check_array (v);
 
       string serialized_str;
       serialize_const (v, &serialized_str);
