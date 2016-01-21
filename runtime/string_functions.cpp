@@ -1819,7 +1819,7 @@ inline var str_replace_string (const var &search, const var &replace, const stri
   } else {
     if (replace.is_array()) {
       php_warning ("Parameter mismatch, search is a string while replace is an array");
-      return false;
+      //return false;
     }
 
     return f$str_replace (f$strval (search), f$strval (replace), subject, replace_count);
