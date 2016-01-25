@@ -985,7 +985,7 @@ void php_worker_wait (php_worker *worker, int timeout_ms) {
       worker->waiting = 0;
     } else {
       vkprintf (2, "paused for some blocking net activity [req_id = %016llx] [timeout = %.3lf]\n", worker->req_id, timeout_ms * 0.001);
-      worker->wakeup_time = precise_now + timeout_ms * 0.001;
+      worker->wakeup_time = get_utime_monotonic() + timeout_ms * 0.001;
     }
   }
   return;
@@ -1392,7 +1392,7 @@ void hts_stop (void) {
     close (http_sfd);
     http_sfd = -1;
   }
-  sigterm_time = precise_now + SIGTERM_WAIT_TIMEOUT;
+  sigterm_time = get_utime_monotonic() + SIGTERM_WAIT_TIMEOUT;
   hts_stopped = 1;
 }
 
