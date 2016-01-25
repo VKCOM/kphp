@@ -2013,7 +2013,7 @@ int rpcx_execute (struct connection *c, int op, int len) {
     assert (len % (int)sizeof (int) == 0);
     len /= (int)sizeof (int);
     if (len < 6) {
-      return SKIP_ALL_BYTES;
+      return 0;
     }
 
     int *v = (int *)buf;
@@ -2022,7 +2022,7 @@ int rpcx_execute (struct connection *c, int op, int len) {
 
     if (op == TL_KPHP_START_LEASE) {
       if (len < 4) {
-        return SKIP_ALL_BYTES;
+        return 0;
       }
       assert (sizeof (xpid) == 12);
       xpid = *(npid_t *)v;
