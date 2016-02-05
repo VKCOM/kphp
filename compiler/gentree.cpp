@@ -223,7 +223,7 @@ template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   CE (expect (tok_oppar, "'('"));
   vector <VertexPtr> next;
   bool ok_next = gen_list<EmptyOp> (&next, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error (ok_next, "get_reqire failed"));
+  CE (!kphp_error (ok_next, "get argument list failed"));
   CE (expect (tok_clpar, "')'"));
 
   CREATE_VERTEX (call, Op, next);
@@ -242,7 +242,7 @@ VertexPtr GenTree::get_short_array() {
 
   vector <VertexPtr> next;
   bool ok_next = gen_list<op_none> (&next, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error (ok_next, "get_reqire failed"));
+  CE (!kphp_error (ok_next, "get short array failed"));
   CE (expect (tok_clbrk, "']'"));
 
   CREATE_VERTEX (arr, op_array, next);
