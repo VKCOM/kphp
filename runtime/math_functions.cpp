@@ -2,9 +2,30 @@
 
 #include "math_functions.h"
 
-#include <sys/time.h>//gettimeofday
+#include <sys/time.h> //gettimeofday
 
-#include "string_functions.h"//lhex_digits, TODO
+#include "string_functions.h" //lhex_digits, TODO
+
+int f$bindec (const string &number) {
+  unsigned int v = 0;
+  bool need_warning = number.empty();
+  for (int i = 0; i < (int)number.size(); i++) {
+    char c = number[i];
+    if (v >= 0x80000000) {
+      need_warning = true;
+    }
+    if ('0' <= c && c <= '1') {
+      v = v * 2 + c - '0';
+    } else {
+      need_warning = true;
+    }
+  }
+
+  if (need_warning) {
+    php_warning ("Wrong parameter \"%s\" in function bindec", number.c_str());
+  }
+  return (int)v;
+}
 
 string f$decbin (int number) {
   unsigned int v = number;
@@ -36,19 +57,28 @@ string f$dechex (int number) {
 
 int f$hexdec (const string &number) {
   unsigned int v = 0;
+  bool need_warning = number.empty();
   for (int i = 0; i < (int)number.size(); i++) {
     char c = number[i];
+    if (v >= 0x10000000) {
+      need_warning = true;
+    }
     if ('0' <= c && c <= '9') {
       v = v * 16 + c - '0';
     } else {
       c |= 0x20;
       if ('a' <= c && c <= 'f') {
         v = v * 16 + c - 'a' + 10;
+      } else {
+        need_warning = true;
       }
     }
   }
 
-  return v;
+  if (need_warning) {
+    php_warning ("Wrong parameter \"%s\" in function hexdec", number.c_str());
+  }
+  return (int)v;
 }
 
 double f$lcg_value (void) {

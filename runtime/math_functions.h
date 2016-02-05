@@ -2,6 +2,8 @@
 
 #include "kphp_core.h"
 
+int f$bindec (const string &number);
+
 string f$decbin (int number);
 
 string f$dechex (int number);

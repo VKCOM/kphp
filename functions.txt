@@ -340,6 +340,7 @@ define_raw ('ENT_NOQUOTES', 2);
 
 function addcslashes ($str ::: string, $what ::: string) ::: string;
 function addslashes ($str ::: string) ::: string;
+function bindec ($number ::: string) ::: int;
 function bin2hex ($str ::: string) ::: string;
 function chr ($v ::: int) ::: string;
 function convert_cyr_string ($str ::: string, $from ::: string, $to ::: string) ::: string;
