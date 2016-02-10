@@ -3408,7 +3408,7 @@ void usage_desc (void) {
     "\t-T<tl_config_file_name>\tname of file with TL config (%s)\n"
     "\t-t<script_time_limit>\ttime limit for script in seconds\n"
     "\t-C\tuse crc32c if can\n"
-    "\t-U\tdon't write get data in log\n",
+    "\t-U\tdon't write get data in log. If used twice, disables access log.\n",
      builtin_tl_schema_length == -1 ? "" : "will be ignored"
     );
 }
@@ -3505,7 +3505,7 @@ int main_args_handler (int i) {
     }
     break;
   case 'U':
-    no_get_data_in_log = 1;
+    disable_access_log++;
     break;
   case 'C':
     default_rpc_flags |= 2048;
