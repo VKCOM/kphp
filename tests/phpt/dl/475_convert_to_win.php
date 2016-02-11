@@ -1,4 +1,4 @@
-@ok benchmark
+@wa benchmark
 <?php
 #ifndef KittenPHP
 function charToWin($x) {
