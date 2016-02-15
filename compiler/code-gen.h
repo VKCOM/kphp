@@ -1852,7 +1852,7 @@ void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
          Label (root->break_label_id) << NL;
   if (!params->x()->ref_flag) {
     VertexPtr temp_var = params->temp_var();
-    W << "clean_array(" << temp_var <<");" << NL;
+    W << "clear_array(" << temp_var <<");" << NL;
   }
   W << END;
 }

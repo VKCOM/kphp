@@ -1118,6 +1118,12 @@ var::~var (void) {
 }
 
 
+void var::clear (void) {
+  destroy();
+  type = NULL_TYPE;
+}
+
+
 const var var::to_numeric (void) const {
   switch (type) {
     case NULL_TYPE:

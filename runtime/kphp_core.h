@@ -886,13 +886,13 @@ template <class T, class TT>
 inline typename array <T, TT>::const_iterator const_end (const OrFalse < array <T, TT> > &x);
 
 
-inline var& clean_array (var &v);
+inline void clear_array (var &v);
 
 template <class T>
-inline array <T>& clean_array (array <T> &a);
+inline void clear_array (array <T> &a);
 
 template <class T>
-inline OrFalse <array <T> >& clean_array (OrFalse <array <T> > &a);
+inline void clear_array (OrFalse <array <T> > &a);
 
 template <class T>
 inline void unset (array <T> &x);
@@ -2536,24 +2536,24 @@ typename array <T, TT>::const_iterator const_end (const OrFalse < array <T, TT> 
 }
 
 
-var& clean_array (var &v) {
-  v = array <var> ();
-  return v;
+void clear_array (var &v) {
+  v.clear();
 }
 
 template <class T>
-array <T>& clean_array (array <T> &a) {
-  return a = array <T> ();
+void clear_array (array <T> &a) {
+  a.clear();
 }
 
 template <class T>
-OrFalse <array <T> >& clean_array (OrFalse <array <T> > &a) {
-  return a = array <T> ();
+void clear_array (OrFalse <array <T> > &a) {
+  a.value.clear();
+  a.bool_value = false;
 }
 
 template <class T>
 void unset (array <T> &x) {
-  clean_array (x);
+  clear_array (x);
 }
 
 void unset (var &x) {

@@ -106,6 +106,14 @@ bool array <T, TT>::is_int_key (const typename array <T, TT>::key_type &key) {
   return key.is_int();
 }
 
+int empty_array_storage[] __attribute__ ((weak)) = {1000000000 /* ref_cnt */, -1 /* max_key */, 0 /* end_.next */, 0 /* end_.prev */,
+                                                    0 /* int_size */, 2 /* int_buf_size */, 0 /* string_size */, -1 /* string_buf_size */};
+
+template <class T, class TT>
+typename array <T, TT>::array_inner *array <T, TT>::array_inner::empty_array (void) {
+  return reinterpret_cast <array_inner *> (empty_array_storage);
+}
+
 template <class T, class TT>
 int array <T, TT>::array_inner::choose_bucket (const int key, const int buf_size) {
   return (unsigned int)(key << 2) /* 2654435761u */ % buf_size;
@@ -1062,7 +1070,7 @@ void array <T, TT>::copy_from (const array <T1, TT1> &other) {
 
 
 template <class T, class TT>
-array <T, TT>::array (void): p (array_inner::create (0, 0, true)) {
+array <T, TT>::array (void): p (array_inner::empty_array()) {
 }
 
 
@@ -1230,6 +1238,13 @@ array <T, TT>::~array (void) {
   if (p) {//for zeroed global variables
     destroy();
   }
+}
+
+
+template <class T, class TT>
+void array <T, TT>::clear (void) {
+  destroy();
+  p = array_inner::empty_array();
 }
 
 

@@ -142,6 +142,8 @@ public:
   inline void destroy (void);
   inline ~var (void);
 
+  inline void clear (void);
+
   inline const var to_numeric (void) const;
   inline bool to_bool (void) const;
   inline int to_int (void) const;

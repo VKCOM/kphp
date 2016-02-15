@@ -118,7 +118,7 @@ bool use_script_allocator = false;
 bool allocator_inited = false;
 
 size_t memory_begin;
-size_t memory_end = LONG_MAX;
+size_t memory_end = ULONG_MAX;
 size_type memory_limit;
 size_type memory_used;
 size_type max_memory_used;

@@ -246,6 +246,8 @@ private:
 
     inline static array_inner *create (int new_int_size, int new_string_size, bool is_vector);
 
+    inline static array_inner *empty_array (void) __attribute__ ((always_inline));
+
     inline void dispose (void) __attribute__ ((always_inline));
 
     inline array_inner *ref_copy (void) __attribute__ ((always_inline));
@@ -269,9 +271,9 @@ private:
     inline bool isset_value (int int_key, const string &string_key) const;
     inline void unset_map_value (int int_key, const string &string_key);
 
-    inline array_inner (void) __attribute__ ((always_inline));
-    inline array_inner (const array_inner &other) __attribute__ ((always_inline));
-    inline array_inner& operator = (const array_inner &other) __attribute__ ((always_inline));
+    inline array_inner (void) __attribute__ ((always_inline)); // deleted
+    inline array_inner (const array_inner &other) __attribute__ ((always_inline)); // deleted
+    inline array_inner& operator = (const array_inner &other) __attribute__ ((always_inline)); // deleted
   };
 
   array_inner *p;
@@ -374,6 +376,8 @@ public:
   inline array& operator = (const array <T1, TT> &other) __attribute__ ((always_inline));
 
   inline ~array (void) /*__attribute__ ((always_inline))*/;
+
+  inline void clear (void) __attribute__ ((always_inline));
 
   inline bool is_vector (void) const __attribute__ ((always_inline));
 
