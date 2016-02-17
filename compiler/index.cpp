@@ -163,7 +163,7 @@ void Index::del_extra_files() {
       fprintf (stderr, "unlink %s\n", file->path.c_str());
       int err = unlink (file->path.c_str());
       if (err != 0) {
-        kphp_error (0, "Failed to unlink file");
+        kphp_error (0, dl_pstr("Failed to unlink file %s: %m", file->path.c_str()));
         kphp_fail();
       }
       file->on_disk = false;
