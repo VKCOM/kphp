@@ -457,6 +457,8 @@ function mysql_pconnect_db_proxy($dn ::: DB) ::: bool;
 
 function function_exists ($func_name ::: Any) ::: bool;
 
+define(FILE_APPEND, 1);
+
 function basename ($name ::: string, $suffix ::: string = '') ::: string;
 function chmod ($name ::: string, $mode ::: int) ::: bool;
 function clearstatcache() ::: void;
@@ -464,7 +466,7 @@ function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
 function file ($name ::: string) ::: OrFalse <array <string> >;
 function file_get_contents ($name ::: string) ::: OrFalse <string>;
-function file_put_contents ($name ::: string, $content ::: var) ::: OrFalse <int>;
+function file_put_contents ($name ::: string, $content ::: var, $flags ::: int = 0) ::: OrFalse <int>;
 function file_exists ($name ::: string) ::: bool;
 function filesize ($name ::: string) ::: OrFalse <int>;
 function is_dir ($name ::: string) ::: bool;

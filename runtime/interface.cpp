@@ -1818,7 +1818,7 @@ static OrFalse <string> php_file_get_contents (const string &url) {
   return false;
 }
 
-static OrFalse <int> php_file_put_contents (const string &url, const string &content) {
+static OrFalse <int> php_file_put_contents (const string &url, const string &content, int flags __attribute__((unused))) {
   if (eq2 (url, STDOUT)) {
     print (content);
     return (int)content.size();

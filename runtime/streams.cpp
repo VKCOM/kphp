@@ -400,7 +400,7 @@ OrFalse <string> f$file_get_contents (const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false) (url);
 }
 
-OrFalse <int> f$file_put_contents (const string &stream, const var &content_var) {
+OrFalse <int> f$file_put_contents (const string &stream, const var &content_var, int flags) {
   string content;
   if (content_var.is_array()) {
     content = f$implode (string(), content_var.to_array());
@@ -408,7 +408,12 @@ OrFalse <int> f$file_put_contents (const string &stream, const var &content_var)
     content = content_var.to_string();
   }
 
-  STREAM_FUNCTION_BODY(file_put_contents, false) (url, content);
+  if (flags & ~FILE_APPEND) {
+    php_warning("Flags other, than FILE_APPEND are not supported in file_put_contents");
+    flags &= FILE_APPEND;
+  }
+
+  STREAM_FUNCTION_BODY(file_put_contents, false) (url, content, flags);
 }
 
 

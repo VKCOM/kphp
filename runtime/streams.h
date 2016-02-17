@@ -10,6 +10,8 @@ const int STREAM_SET_BLOCKING_OPTION = 0;
 const int STREAM_SET_WRITE_BUFFER_OPTION = 1;
 const int STREAM_SET_READ_BUFFER_OPTION = 2;
 
+const int FILE_APPEND = 1;
+
 
 struct stream_functions {
   string name;
@@ -40,7 +42,7 @@ struct stream_functions {
 
   OrFalse <string> (*file_get_contents) (const string &url);
 
-  OrFalse <int> (*file_put_contents) (const string &url, const string &content);
+  OrFalse <int> (*file_put_contents) (const string &url, const string &content, int flags);
   
   bool (*context_set_option) (var &context, const string &option, const var &value);
 
@@ -80,7 +82,7 @@ bool f$fclose (const Stream &stream);
 
 OrFalse <string> f$file_get_contents (const string &url);
 
-OrFalse <int> f$file_put_contents (const string &url, const var &content_var);
+OrFalse <int> f$file_put_contents (const string &url, const var &content_var, int flags = 0);
 
 
 var f$stream_context_create (const var &options = array <var>());

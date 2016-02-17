@@ -799,14 +799,15 @@ OrFalse <string> file_file_get_contents (const string &name) {
   return res;
 }
 
-static OrFalse <int> file_file_put_contents (const string &name, const string &content) {
+static OrFalse <int> file_file_put_contents (const string &name, const string &content, int flags) {
   dl::size_type offset = file_wrapper_name.size();
   if (strncmp (name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;
   }
 
   dl::enter_critical_section();//OK
-  int file_fd = open (name.c_str() + offset, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+  int append_flag = (flags & FILE_APPEND) ? O_APPEND : O_TRUNC;
+  int file_fd = open (name.c_str() + offset, O_WRONLY | O_CREAT | append_flag, 0644);
   if (file_fd < 0) {
     php_warning ("Can't open file \"%s\"", name.c_str());
     dl::leave_critical_section();
