@@ -60,22 +60,32 @@ string f$hash (const string &algo, const string &s, bool raw_output) {
 }
 
 string f$hash_hmac (const string &algo, const string &data, const string &key, bool raw_output) {
+  const EVP_MD *evp_md = NULL;
+  int hash_len = 0;
   if (!strcmp (algo.c_str(), "sha1")) {
+    evp_md = EVP_sha1();
+    hash_len = 20;
+  } else if (!strcmp (algo.c_str(), "sha256")) {
+    evp_md = EVP_sha256();
+    hash_len = 32;
+  }
+
+  if (evp_md != NULL) {
     string res;
     if (raw_output) {
-      res.assign ((dl::size_type)20, false);
+      res.assign ((dl::size_type)hash_len, false);
     } else {
-      res.assign ((dl::size_type)40, false);
+      res.assign ((dl::size_type)hash_len * 2, false);
     }
 
     unsigned int md_len;
-    HMAC (EVP_sha1(), static_cast <const void *> (key.c_str()), (int)key.size(),
-                      reinterpret_cast <const unsigned char *> (data.c_str()), (int)data.size(),
-                      reinterpret_cast <unsigned char *> (res.buffer()), &md_len);
-    php_assert (md_len == 20);
+    HMAC (evp_md, static_cast <const void *> (key.c_str()), (int)key.size(),
+                  reinterpret_cast <const unsigned char *> (data.c_str()), (int)data.size(),
+                  reinterpret_cast <unsigned char *> (res.buffer()), &md_len);
+    php_assert (md_len == (unsigned int)hash_len);
 
     if (!raw_output) {
-      for (int i = 19; i >= 0; i--) {
+      for (int i = hash_len - 1; i >= 0; i--) {
         res[2 * i + 1] = lhex_digits[res[i] & 15];
         res[2 * i] = lhex_digits[(res[i] >> 4) & 15];
       }

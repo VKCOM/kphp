@@ -22,6 +22,12 @@
     var_dump (md5 ($s));
     var_dump (hash_hmac ('sha1', $s, $s, true));
     var_dump (hash_hmac ('sha1', $s, $s));
+    var_dump (hash_hmac ('sha256', $s, $s, true));
+    var_dump (hash_hmac ('sha256', $s, $s));
+    var_dump (hash_hmac ('sha256', $s, "dummy", true));
+    var_dump (hash_hmac ('sha256', $s, "dummy"));
+    var_dump (hash_hmac ('sha256', "dummy", $s, true));
+    var_dump (hash_hmac ('sha256', "dummy", $s));
 
     foreach ($algos as $a) {
       var_dump (hash ($a, $s, true));
