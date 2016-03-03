@@ -100,6 +100,8 @@ bool f$store_header (const var &cluster_id, int flags = 0);
 bool store_error (int error_code, const char *error_text);
 bool f$store_error (int error_code, const string &error_text);
 
+bool f$store_raw (const string &data);
+
 bool f$store_int (int v);
 
 bool f$store_UInt (UInt v);
@@ -129,6 +131,10 @@ bool f$store_many (const array <var> &a);
 bool f$store_finish (void);
 
 bool f$rpc_clean (bool is_error = false);
+
+string f$rpc_get_contents (void);
+
+string f$rpc_get_clean (void);
 
 bool rpc_store (bool is_error = false);
 

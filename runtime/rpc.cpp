@@ -442,6 +442,15 @@ inline bool store_raw (T v) {
   return true;
 }
 
+bool f$store_raw (const string &data) {
+  int data_len = (int)data.size();
+  if (data_len & 3) {
+    return false;
+  }
+  data_buf.append (data.c_str(), data_len);
+  return true;
+}
+
 bool store_header (long long cluster_id, int flags) {
   if (flags) {
     f$store_int (TL_RPC_DEST_ACTOR_FLAGS);
@@ -608,6 +617,17 @@ bool f$rpc_clean (bool is_error) {
   rpc_pack_from = -1;
   return true;
 }
+
+string f$rpc_get_clean (void) {
+  string data = string (data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
+  f$rpc_clean();
+  return data;
+}
+
+string f$rpc_get_contents (void) {
+  return string (data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
+}
+
 
 bool rpc_store (bool is_error) {
   if (rpc_stored) {
