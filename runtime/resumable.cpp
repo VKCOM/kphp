@@ -55,7 +55,13 @@ Storage *get_storage (int resumable_id) {
   }
 }
 
+bool check_started_storage(Storage* s);
+bool check_forked_storage(Storage* s);
+
 bool Resumable::resume (int resumable_id, Storage *input) {
+  if (input) {
+    php_assert(check_started_storage(input) || check_forked_storage(input));
+  }
   int parent_id = runned_resumable_id;
 
   input_ = input;
@@ -165,6 +171,7 @@ int f$get_running_fork_id() {
 
 int register_started_resumable (Resumable *resumable) {
   int res_id;
+  bool is_new = false;
   if (first_free_started_resumable_id) {
     res_id = first_free_started_resumable_id;
     first_free_started_resumable_id = started_resumables[first_free_started_resumable_id - first_started_resumable_id].parent_id;
@@ -175,6 +182,7 @@ int register_started_resumable (Resumable *resumable) {
     }
 
     res_id = current_started_resumable_id++;
+    is_new = true;
 
     Resumable::update_output();
   }
@@ -183,6 +191,8 @@ int register_started_resumable (Resumable *resumable) {
   }
 
   started_resumable_info *res = &started_resumables[res_id - first_started_resumable_id];
+
+  php_assert (is_new || res->output.getter_ == NULL);
 
   new (&res->output) Storage();
   res->continuation = resumable;
@@ -202,6 +212,15 @@ Storage *get_forked_storage (int resumable_id) {
   return &forked_resumables[resumable_id - first_forked_resumable_id].output;
 }
 
+bool check_started_storage(Storage* storage) {
+  return ((void*)started_resumables <= (void*)storage && (void*)storage < (void*)(started_resumables + started_resumables_size));
+}
+
+bool check_forked_storage(Storage* storage) {
+  return ((void*)forked_resumables <= (void*)storage && (void*)storage < (void*)(forked_resumables + forked_resumables_size));
+}
+
+
 Resumable *get_forked_resumable (int resumable_id) {
   php_assert (first_forked_resumable_id <= resumable_id && resumable_id < current_forked_resumable_id);
   return forked_resumables[resumable_id - first_forked_resumable_id].continuation;
@@ -210,13 +229,15 @@ Resumable *get_forked_resumable (int resumable_id) {
 static void add_resumable_to_queue (int resumable_id, forked_resumable_info *resumable) {
   php_assert (resumable->queue_id <= wait_next_queue_id);
 
-  wait_queue *q = &wait_queues[resumable->queue_id - 1];
+  int queue_id = resumable->queue_id;
+  wait_queue *q = &wait_queues[queue_id - 1];
 //  fprintf (stderr, "Push resumable %d to queue %d(%d,%d,%d) at %.6lf\n", resumable_id, resumable->queue_id, q->resumable_id, q->first_finished_function, q->left_functions, (update_precise_now(), get_precise_now()));
   resumable->queue_id = q->first_finished_function;
   q->first_finished_function = -resumable_id;
 
   if (q->resumable_id) {
     resumable_run_ready (q->resumable_id);
+    q = &wait_queues[queue_id - 1]; // can be reallocated in run_ready
   }
 
   q->left_functions--;
@@ -243,7 +264,7 @@ void finish_forked_resumable (int resumable_id) {
     res->queue_id = -1;
   }
 
-  php_assert (res->queue_id < 0);
+  php_assert (forked_resumables[slot_id].queue_id < 0);
 }
 
 void finish_started_resumable (int resumable_id) {
@@ -347,8 +368,8 @@ void resumable_run_ready (int resumable_id) {
   }
 }
 
-void run_sheduller (double timeout) {
-//  fprintf (stderr, "!!! run sheduller %d\n", finished_resumables_count);
+void run_scheduller (double timeout) {
+//  fprintf (stderr, "!!! run scheduller %d\n", finished_resumables_count);
   int left_resumables = 1000;
   while (resumable_has_finished() && --left_resumables >= 0) {
     if (get_precise_now() > timeout) {
@@ -368,7 +389,7 @@ void run_sheduller (double timeout) {
     started_resumable_info *res = &started_resumables[slot_id];
     php_assert (res->continuation == NULL);
 
-//    fprintf (stderr, "!!! process %d(%d) with parent %d in sheduller\n", resumable_id, is_long, res->parent_id);
+//    fprintf (stderr, "!!! process %d(%d) with parent %d in scheduller\n", resumable_id, is_long, res->parent_id);
     int parent_id = res->parent_id;
     if (parent_id == 0) {
       res->parent_id = -1;
@@ -456,9 +477,9 @@ static bool wait_forked_resumable (int resumable_id, double timeout) {
       return true;
     }
 
-    run_sheduller (timeout);
+    run_scheduller (timeout);
 
-    resumable = &forked_resumables[slot_id];//can change in sheduller
+    resumable = &forked_resumables[slot_id];//can change in scheduller
     if (resumable->queue_id < 0) {
       return true;
     }
@@ -487,9 +508,9 @@ bool wait_started_resumable (int resumable_id) {
   do {
     php_assert (resumable->parent_id == 0);
 
-    run_sheduller (get_precise_now() + MAX_TIMEOUT);
+    run_scheduller (get_precise_now() + MAX_TIMEOUT);
 
-    resumable = &started_resumables[slot_id];//can change in sheduller
+    resumable = &started_resumables[slot_id];//can change in scheduller
     if (resumable->parent_id == -1) {
       return true;
     }
@@ -727,7 +748,7 @@ int wait_queue_push (int queue_id, int resumable_id) {
       return queue_id;
     }
   }
-  wait_queue *q = wait_queues + queue_id - 1;
+  wait_queue *q = &wait_queues[queue_id - 1];
 
   if (resumable->queue_id == 0) {
     resumable->queue_id = queue_id;
@@ -770,7 +791,7 @@ int f$wait_queue_create (void) {
     php_critical_error ("too many wait queues");
   }
 
-  wait_queue *q = wait_queues + wait_next_queue_id;
+  wait_queue *q = &wait_queues[wait_next_queue_id];
   q->first_finished_function = -2;
   q->left_functions = 0;
   q->resumable_id = 0;
@@ -825,7 +846,7 @@ bool f$wait_queue_empty (int queue_id) {
     return true;
   }
 
-  wait_queue *q = wait_queues + queue_id - 1;
+  wait_queue *q = &wait_queues[queue_id - 1];
   wait_queue_skip_gotten (q);
   return q->left_functions == 0 && q->first_finished_function == -2;
 }
@@ -842,9 +863,9 @@ static void wait_queue_next (int queue_id, double timeout) {
       return;
     }
 
-    run_sheduller (timeout);
+    run_scheduller (timeout);
 
-    q = &wait_queues[queue_id - 1];//can change in sheduller
+    q = &wait_queues[queue_id - 1];//can change in scheduller
     wait_queue_skip_gotten (q);
     if (q->first_finished_function != -2 || q->left_functions == 0) {
       return;
@@ -969,7 +990,7 @@ int f$wait_queue_next (int queue_id, double timeout) {
   if (in_main_thread()) {
     wait_queue_next (queue_id, timeout);
 
-    q = &wait_queues[queue_id - 1];//can change in sheduller
+    q = &wait_queues[queue_id - 1];//can change in scheduller
     return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
   }
 

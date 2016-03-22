@@ -831,6 +831,7 @@ var RpcMemcache::get (const var &key_var) {
     host cur_host = get_host (string());
     mc_stats_init_multiget (cur_host.actor_id, key_var);
     var res = f$rpc_mc_multiget (cur_host.conn, key_var.to_array(), -1.0, false, true);
+    php_assert(resumable_finished);
     mc_stats_do (res);
     return res;
   } else {
