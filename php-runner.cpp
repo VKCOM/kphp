@@ -478,6 +478,7 @@ void sigsegv_handler (int signum __attribute__((unused)), siginfo_t *info, void 
       }
     }
     dl_print_backtrace();
+    raise(SIGQUIT); // hack for generate core dump
     _exit (123);
   }
 }

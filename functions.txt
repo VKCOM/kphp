@@ -965,3 +965,4 @@ function unimplemented_function ($a1 = "", $a2 = "", $a3 = "", $a4 = "", $a5 = "
 
 /** For local usage only **/
 function system ($query ::: string) ::: int;
+function raise_sigsegv () ::: void;

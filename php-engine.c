@@ -17,6 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/prctl.h>
 
 #include "common/crc32c.h"
 #include "common/kdb-data-common.h"
@@ -3100,6 +3101,8 @@ void start_server (void) {
     exit (1);
   }
 
+  prctl (PR_SET_DUMPABLE, 1);
+
   if (http_sfd >= 0) {
     init_listening_tcpv6_connection (http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
   }
@@ -3584,11 +3587,13 @@ void init_default (void) {
     vkprintf (-1, "fatal: cannot change user to %s\n", username ? username : "(none)");
     exit (1);
   }
+
 }
 
 int main (int argc, char *argv[]) {
   init_version_string(NAME_VERSION);
   dl_block_all_signals();
+  set_core_dump_rlimit (1LL << 40);
   tcp_maximize_buffers = 1;
   max_special_connections = 1;
   assert (offsetof (struct rpc_client_functions, rpc_ready) == offsetof (struct rpc_server_functions, rpc_ready));

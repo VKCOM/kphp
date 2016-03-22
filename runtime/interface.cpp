@@ -2041,3 +2041,6 @@ void read_engine_tag (const char *file_name) {
   engine_tag = strdup (buf);
 }
 
+void f$raise_sigsegv() {
+  raise(SIGSEGV);
+}

@@ -153,3 +153,6 @@ template <class T>
 string f$long2ip (const T &v) {
   return f$long2ip (f$intval (v));
 }
+
+// for degug use only
+void f$raise_sigsegv();
