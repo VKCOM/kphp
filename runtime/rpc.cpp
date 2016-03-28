@@ -1853,10 +1853,9 @@ protected:
     RESUMABLE_BEGIN
       if (query_ids.count() == 1) {
         query_id = query_ids.begin().get_value();
-        f$wait(query_id);
-        TRY_WAIT_VOID(rpc_tl_query_result_resumable_label_0)
+
         tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
-        php_assert (resumable_finished);
+        TRY_WAIT(rpc_tl_query_result_resumable_label_0, tl_objects_unsorted[query_id], array <var>);
       } else {
         queue_id = wait_queue_create (query_ids);
         
