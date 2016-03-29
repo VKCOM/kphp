@@ -2077,7 +2077,7 @@ const char *db_regexp3_c = "/FROM\\s+([a-z\\_]+)(\\d+)?\\s+WHERE/i";
 const string db_regexp3 (db_regexp3_c, (dl::size_type)strlen (db_regexp3_c));
 const char *db_regexp4_c = "/UPDATE\\s+([a-z\\_]+)(\\d+)?\\s+SET/i";
 const string db_regexp4 (db_regexp4_c, (dl::size_type)strlen (db_regexp4_c));
-const char *db_regexp5_c = "/INSERT\\s+([a-z\\_]+)(\\d+)?\\s+SET/i";
+const char *db_regexp5_c = "/INSERT\\sINTO\\s+([a-z\\_]+)(\\d+)?\\s+SET/i";;
 const string db_regexp5 (db_regexp5_c, (dl::size_type)strlen (db_regexp5_c));
 const char *db_regexp6_c = "/\\*\\?\\s+FROM\\s+db (\\d+)\\s+\\*/i";
 const string db_regexp6 (db_regexp6_c, (dl::size_type)strlen (db_regexp6_c));
@@ -2397,7 +2397,7 @@ void db_driver::fatal_error (const string &the_error, const string &query, bool 
     if (!matches.isset (1)) {
       f$preg_match (db_regexp5, query, matches);
     }
-    if (!matches.isset (1)) {
+    if (matches.isset (1)) {
       string table_name = (drivers_SB.clean() + matches[1] + matches[2]).str();
       string table_prefix = matches[1].to_string();
       f$preg_match (db_regexp6, query, matches);
