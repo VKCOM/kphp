@@ -316,7 +316,7 @@ static bool resumable_has_finished (void) {
   return finished_resumables_count > 0 || yielded_resumables_l != yielded_resumables_r;
 }
 
-static void yielded_resumables_push(int id) {
+static void yielded_resumables_push (int id) {
   yielded_resumables[yielded_resumables_r] = id;
   yielded_resumables_r++;
   if (yielded_resumables_r == yielded_resumables_size) {
@@ -330,7 +330,7 @@ static void yielded_resumables_push(int id) {
   }
 }
 
-static int yielded_resumables_pop() {
+static int yielded_resumables_pop (void) {
   php_assert (yielded_resumables_l != yielded_resumables_r);
   int result = yielded_resumables[yielded_resumables_l];
   yielded_resumables_l++;
@@ -341,7 +341,7 @@ static int yielded_resumables_pop() {
 }
 
 
-static void resumable_add_finished (int resumable_id, bool is_long) {
+static void resumable_add_finished (int resumable_id) {
   php_assert (first_started_resumable_id <= resumable_id && resumable_id < current_started_resumable_id);
   if (finished_resumables_count >= finished_resumables_size) {
     php_assert (finished_resumables_count == finished_resumables_size);
@@ -349,22 +349,19 @@ static void resumable_add_finished (int resumable_id, bool is_long) {
     finished_resumables_size *= 2;
   }
 
+//    fprintf (stderr, "!!! process %d(%d) with parent %d in sheduller\n", resumable_id, is_yielded, res->parent_id);
 //  fprintf(stderr, "Resumbale %d put to position %d of finised list\n", resumable_id, finished_resumables_count);
-  finished_resumables[finished_resumables_count++] = is_long ? -resumable_id : resumable_id;
+  finished_resumables[finished_resumables_count++] = resumable_id;
 }
 
-static void resumable_get_finished (int *resumable_id, bool *is_long) {
+static void resumable_get_finished (int *resumable_id, bool *is_yielded) {
   php_assert (resumable_has_finished());
   if (finished_resumables_count) {
-    if ((*resumable_id = finished_resumables[--finished_resumables_count]) < 0) {
-      *resumable_id = -*resumable_id;
-      *is_long = true;
-    } else {
-      *is_long = false;
-    }
+    *resumable_id = finished_resumables[--finished_resumables_count];
+    *is_yielded = false;
   } else {
     *resumable_id = yielded_resumables_pop();
-    *is_long = true;
+    *is_yielded = true;
   }
 }
 
@@ -386,7 +383,7 @@ void resumable_run_ready (int resumable_id) {
     started_resumable_info *res = &started_resumables[slot_id];
     php_assert (res->continuation->resume (resumable_id, NULL));
     finish_started_resumable (resumable_id);
-    resumable_add_finished (resumable_id, false);
+    resumable_add_finished (resumable_id);
   }
 }
 
@@ -399,9 +396,9 @@ void run_scheduller (double timeout) {
     }
 
     int resumable_id;
-    bool is_long;
-    resumable_get_finished (&resumable_id, &is_long);
-    if (is_long) {
+    bool is_yielded;
+    resumable_get_finished (&resumable_id, &is_yielded);
+    if (is_yielded) {
       left_resumables = 0;
     }
     
@@ -427,7 +424,7 @@ void run_scheduller (double timeout) {
       php_assert (parent->parent_id != -2);
       if (parent->continuation->resume (parent_id, &res->output)) {
         finish_started_resumable (parent_id);
-        resumable_add_finished (parent_id, false);
+        resumable_add_finished (parent_id);
         left_resumables++;
       }
     } else {
@@ -1095,7 +1092,7 @@ void resumable_init_static (void) {
 
   yielded_resumables_size = 170;
   yielded_resumables_l = yielded_resumables_r = 0;
-  yielded_resumables = static_cast <int *> (dl::allocate (sizeof (int) * finished_resumables_size));
+  yielded_resumables = static_cast <int *> (dl::allocate (sizeof (int) * yielded_resumables_size));
 
   wait_queues_size = 101;
   wait_queues = static_cast <wait_queue *> (dl::allocate (sizeof (wait_queue) * wait_queues_size));
