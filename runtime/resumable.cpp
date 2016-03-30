@@ -631,7 +631,7 @@ protected:
   bool run (void) {
     RESUMABLE_BEGIN
       ready = f$wait (resumable_id, timeout);
-      TRY_WAIT(wait_result_resumbale_label_1, ready, bool);
+      TRY_WAIT(wait_result_resumable_label_1, ready, bool);
       if (!ready) {
         if (last_wait_error == NULL) {
           last_wait_error = "Timeout in wait_result";

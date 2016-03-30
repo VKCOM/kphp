@@ -1786,7 +1786,7 @@ class ExtractResumableCallsPass : public FunctionPassBase {
 
   public:
     string get_description() {
-      return "Extract easy resumbale calls";
+      return "Extract easy resumable calls";
     }
     bool check_function (FunctionPtr function) {
       return default_check_function (function) && function->type() != FunctionData::func_extern &&
@@ -1841,7 +1841,7 @@ class ExtractResumableCallsPass : public FunctionPassBase {
         return vertex;
       }
       CREATE_VERTEX(temp_var, op_var);
-      temp_var->str_val = gen_unique_name("resumbale_temp_var");
+      temp_var->str_val = gen_unique_name("resumable_temp_var");
       VarPtr var = G->create_local_var (stage::get_function(), temp_var->str_val, VarData::var_local_t);
       var->tinf_node.copy_type_from (tinf::get_type (func, -1));
       temp_var->set_var_id(var);

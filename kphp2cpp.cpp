@@ -127,7 +127,7 @@ int main (int argc, char *argv[]) {
   parse_option("mode", required_argument, NULL, 'M', "server, net or cli. If <mode> == server/net, than $KPHP_LINK_FILE_NAME=php-server.a. If <mode> == cli, than $KPHP_LINK_FILE_NAME=php-cli.a");
   parse_option("make", no_argument, NULL, 'm', "Run make");
   parse_option(0, required_argument, NULL, 'o', "Place output into <file>");
-  parse_option("print-graph", no_argument, NULL, 'p', "Print graph of resumbale calls to stderr");
+  parse_option("print-graph", no_argument, NULL, 'p', "Print graph of resumable calls to stderr");
   parse_option("incremental-link", no_argument, NULL, 'r', "Split output into multiple directories");
   parse_option("threads-count", required_argument, NULL, 't', "Use <threads_count> threads. By default equals to 16");
   parse_option("tl-schema", required_argument, NULL, 'T', "Add builtin tl schema to kphp binary");
