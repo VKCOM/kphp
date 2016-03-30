@@ -12,6 +12,12 @@ Storage::Storage():
   memset (storage_, 0, sizeof (var));
 }
 
+var Storage::load_void (char *storage __attribute__((unused))) {
+  // result of void function should not be loaded
+  php_assert (0);
+  return var();
+}
+
 var Storage::load_exception (char *storage) {
   php_assert (CurException == NULL);
   CurException = *reinterpret_cast <Exception **> (storage);
@@ -27,6 +33,22 @@ var Storage::load_as_var() {
   Getter getter = getter_;
   getter_ = NULL;
   return getter (storage_);
+}
+
+void Storage::save_void (void) {
+  if (CurException) {
+    save_exception();
+  } else {
+    getter_ = load_void;
+  }
+}
+
+void Storage::save_exception (void) {
+  php_assert (CurException != NULL);
+  php_assert (sizeof (Exception *) <= sizeof (var));
+  *reinterpret_cast <Exception **> (storage_) = CurException;
+  CurException = NULL;
+  getter_ = load_exception;
 }
 
 Storage *Resumable::input_;
@@ -581,7 +603,7 @@ protected:
           wait_net (MAX_TIMEOUT);
         }
         f$sched_yield ();
-        TRY_WAIT_VOID (wait_many_resumable_label1);
+        TRY_WAIT_DROP_RESULT (wait_many_resumable_label1, void);
       }
     }
 
@@ -1025,6 +1047,8 @@ void f$sched_yield (void) {
   resumable_finished = false;
 
   int id = register_started_resumable (NULL);
+
+  get_started_storage (id)->save_void();
 
   yielded_resumables_push (id);
 }

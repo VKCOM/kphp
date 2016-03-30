@@ -1751,9 +1751,9 @@ void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
   FunctionPtr func = func_call->get_func_id();
   W << ";" << NL;
   if (lhs->type() != op_empty) {
-    W << "TRY_WAIT(" <<gen_unique_name("resumable_label") <<", " << lhs << ", " << TypeName (tinf::get_type (func_call)) << ");";
+    W << "TRY_WAIT(" << gen_unique_name ("resumable_label") << ", " << lhs << ", " << TypeName (tinf::get_type (func_call)) << ");";
   } else {
-    W << "TRY_WAIT_VOID("<< gen_unique_name("resumable_label") << ");";
+    W << "TRY_WAIT_DROP_RESULT(" << gen_unique_name ("resumable_label") << ", " << TypeName (tinf::get_type (func_call)) << ");";
   }
 
 #ifdef FAST_EXCEPTIONS

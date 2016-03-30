@@ -11,7 +11,7 @@ extern const char *last_wait_error;
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
 #define TRY_WAIT(labelName, a, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != NULL); a = input_->load <T, T> (); }
-#define TRY_WAIT_VOID(labelName) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: ; }
+#define TRY_WAIT_DROP_RESULT(labelName, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != NULL); input_->load <T, T> (); }
 #define RESUMABLE_BEGIN if (pos__ != NULL) goto *pos__; do {
 #define RESUMABLE_END \
       } while (0); \
@@ -29,7 +29,11 @@ private:
   template <class X, class Y>
   static Y load_implementation (char *storage);
 
+  static var load_void (char *storage);
+
   static var load_exception (char *storage);
+
+  void save_exception (void);
 
 public:
   typedef var (*Getter) (char *);
@@ -40,6 +44,8 @@ public:
 
   template <class T1, class T2>
   void save (const T2 &x, Getter getter = load_implementation <T1, var>);
+
+  void save_void (void);
 
   template <class X, class Y>
   Y load();
@@ -152,10 +158,7 @@ Y Storage::load_implementation (char *storage) {
 template <class T1, class T2>
 void Storage::save (const T2 &x, Getter getter) {
   if (CurException) {
-    php_assert (sizeof (Exception *) <= sizeof (var));
-    *reinterpret_cast <Exception **> (storage_) = CurException;
-    CurException = NULL;
-    getter_ = load_exception;
+    save_exception();
   } else {
     php_assert (sizeof (T1) <= sizeof (var));
     new (storage_) T1 (x);
@@ -177,6 +180,17 @@ Y Storage::load() {
   return load_implementation <X, Y> (storage_);
 }
 
+template <>
+inline void Storage::load<void, void>() {
+  php_assert (getter_ != NULL);
+  if (getter_ == load_exception) {
+    getter_ = NULL;
+    load_exception (storage_);
+    return;
+  }
+
+  getter_ = NULL;
+}
 
 
 template <class T>
