@@ -226,9 +226,11 @@ function inet_pton ($address ::: string) ::: OrFalse <string>;
 
 function unpack ($pattern ::: string, $data ::: string) ::: array <var>;
 
+define_raw ('JSON_UNESCAPED_UNICODE', 1);
+
 function serialize ($v ::: Any) ::: string;
 function unserialize ($v ::: string) ::: CONST var;
-function json_encode ($v ::: Any) ::: string;
+function json_encode ($v ::: Any, $options ::: int = 0) ::: string;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 
 define_raw ('PREG_PATTERN_ORDER', 1);

@@ -39,7 +39,9 @@ string f$serialize (const var &v);
 
 var f$unserialize (const string &v);
 
-string f$json_encode (const var &v, bool simple_encode = false);
+const int JSON_UNESCAPED_UNICODE = 1;
+
+string f$json_encode (const var &v, int options = 0, bool simple_encode = false);
 
 string f$vk_json_encode_safe (const var &v, bool simple_encode = true);
 

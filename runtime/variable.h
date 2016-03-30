@@ -259,7 +259,7 @@ public:
   friend void do_var_dump (const var &v, int depth);
   friend void do_var_export (const var &v, int depth, char endc = 0);
   friend void do_serialize (const var &v);
-  friend void do_json_encode (const var &v, bool simple_encode);
+  friend void do_json_encode (const var &v, int options, bool simple_encode);
   friend dl::size_type max_string_size (const var &v);
 
   friend class string;

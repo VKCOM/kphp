@@ -529,7 +529,7 @@ string f$vk_flex (const string &name, const string &case_name, int sex, const st
 }
 
 string f$vk_json_encode (const var &v) {
-  return f$json_encode (v, true);
+  return f$json_encode (v, 0, true);
 }
 
 string f$vk_whitespace_pack (const string &str, bool html_opt) {

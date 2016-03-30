@@ -733,9 +733,13 @@ static bool json_append_char (unsigned int c) {
   }
 }
 
-static void do_json_encode_string_php (const char *s, int len) {
+static void do_json_encode_string_php (const char *s, int len, int options) {
   int begin_pos = static_SB.size();
-  static_SB.reserve (6 * len + 2);
+  if (options & JSON_UNESCAPED_UNICODE) {
+    static_SB.reserve (2 * len + 2);
+  } else {
+    static_SB.reserve (6 * len + 2);
+  }
   static_SB.append_char ('"');
 
 #define ERROR {static_SB.set_pos (begin_pos); static_SB.append ("null", 4); return;}
@@ -790,7 +794,12 @@ static void do_json_encode_string_php (const char *s, int len) {
       CHECK((b & 0xc0) == 0x80);
       if ((a & 0x20) == 0) {
         CHECK((a & 0x1e) > 0);
-        APPEND_CHAR(((a & 0x1f) << 6) | (b & 0x3f));
+        if (options & JSON_UNESCAPED_UNICODE) {
+          static_SB.append_char (a);
+          static_SB.append_char (b);
+        } else {
+          APPEND_CHAR(((a & 0x1f) << 6) | (b & 0x3f));
+        }
         break;
       }
 
@@ -798,7 +807,13 @@ static void do_json_encode_string_php (const char *s, int len) {
       CHECK((c & 0xc0) == 0x80);
       if ((a & 0x10) == 0) {
         CHECK(((a & 0x0f) | (b & 0x20)) > 0);
-        APPEND_CHAR(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f));
+        if (options & JSON_UNESCAPED_UNICODE) {
+          static_SB.append_char (a);
+          static_SB.append_char (b);
+          static_SB.append_char (c);
+        } else {
+          APPEND_CHAR(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f));
+        }
         break;
       }
 
@@ -806,7 +821,14 @@ static void do_json_encode_string_php (const char *s, int len) {
       CHECK((d & 0xc0) == 0x80);
       if ((a & 0x08) == 0) {
         CHECK(((a & 0x07) | (b & 0x30)) > 0);
-        APPEND_CHAR(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
+        if (options & JSON_UNESCAPED_UNICODE) {
+          static_SB.append_char (a);
+          static_SB.append_char (b);
+          static_SB.append_char (c);
+          static_SB.append_char (d);
+        } else {
+          APPEND_CHAR(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
+        }
         break;
       }
 
@@ -864,7 +886,7 @@ static void do_json_encode_string_vkext (const char *s, int len) {
   static_SB.append_char ('"');
 }
 
-void do_json_encode (const var &v, bool simple_encode) {
+void do_json_encode (const var &v, int options, bool simple_encode) {
   switch (v.type) {
     case var::NULL_TYPE:
       static_SB.append ("null", 4);
@@ -891,7 +913,7 @@ void do_json_encode (const var &v, bool simple_encode) {
       if (simple_encode) {
         do_json_encode_string_vkext (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
       } else {
-        do_json_encode_string_php (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
+        do_json_encode_string_php (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size(), options);
       }
       return;
     case var::ARRAY_TYPE: {
@@ -922,12 +944,12 @@ void do_json_encode (const var &v, bool simple_encode) {
           if (array <var>::is_int_key (key)) {
             static_SB + '"' + key.to_int() + '"';
           } else {
-            do_json_encode (key, simple_encode);
+            do_json_encode (key, options, simple_encode);
           }
           static_SB += ':';
         }
 
-        do_json_encode (p.get_value(), simple_encode);
+        do_json_encode (p.get_value(), options, simple_encode);
       }
 
       static_SB += "}]"[is_vector];
@@ -943,10 +965,15 @@ void do_json_encode (const var &v, bool simple_encode) {
   }
 }
 
-string f$json_encode (const var &v, bool simple_encode) {
+string f$json_encode (const var &v, int options, bool simple_encode) {
+  if (options & ~JSON_UNESCAPED_UNICODE) {
+    php_warning ("Wrong parameter options = %d in function json_encode", options);
+    return CONST_STRING("null");
+  }
+
   static_SB.clean();
 
-  do_json_encode (v, simple_encode);
+  do_json_encode (v, options, simple_encode);
 
   return static_SB.str();
 }
@@ -956,7 +983,7 @@ int string_buffer::string_buffer_error_flag = 0; // TODO: move in more logic pla
 string f$vk_json_encode_safe (const var &v, bool simple_encode) {
   static_SB.clean();
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
-  do_json_encode (v, simple_encode);
+  do_json_encode (v, 0, simple_encode);
   if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     static_SB.clean ();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
