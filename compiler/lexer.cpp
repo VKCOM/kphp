@@ -827,7 +827,7 @@ int TokenLexerHeredocString::parse (LexerData *lexer_data) const {
             lexer_data->add_token (new Token (tok_str_end), (int)(t - st - semicolon));
           } else {
             lexer_data->flush_str();
-            lexer_data->pass_raw (tag.size() + 1);
+            lexer_data->pass_raw ((int)(t - st - semicolon));;
           }
           break;
         }
