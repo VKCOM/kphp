@@ -2201,7 +2201,7 @@ var db_driver::query (const string &query_str) {
       log_event.set_value (string ("query_time_real", 15), query_time);
       log_event.set_value (string ("message", 7), (drivers_SB.clean() + text_plain + '|' + additional_log_info).str());
       log_event.set_value (string ("db_id", 5), db_id);
-      log_event.set_value (string ("table_name", 11), table_name);
+      log_event.set_value (string ("table_name", 10), table_name);
       log_event.set_value (string ("table_prefix", 12), table_prefix);
       log_event.set_value (string ("place", 5), 1);
       TRY_CALL(var, var, addNewLogEvent_pointer (string ("db_failure", 10), log_event, string ("fail_log", 8), false, false, false, false));
