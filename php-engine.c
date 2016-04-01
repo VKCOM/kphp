@@ -3353,14 +3353,8 @@ int main_args_default_handler (int i) {
     init_logname (optarg);
     break;
   case 'm':
-    max_memory = atoi (optarg);
-    if (max_memory < 1) {
-      max_memory = 1;
-    }
-    if (max_memory > 2047) {
-      max_memory = 2047;
-    }
-    max_memory *= 1048576;
+    max_memory = parse_memory_limit_default (optarg, 'm');
+    assert((1 << 20) <= max_memory && max_memory < (2047LL << 20));
     break;
   case 'u':
     username = optarg;
