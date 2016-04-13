@@ -390,8 +390,11 @@ void resumable_run_ready (int resumable_id) {
 void run_scheduller (double timeout) {
 //  fprintf (stderr, "!!! run scheduller %d\n", finished_resumables_count);
   int left_resumables = 1000;
+  int force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
-    if (get_precise_now() > timeout) {
+    if (force_run_next) {
+      force_run_next = false;
+    } else if (get_precise_now() > timeout) {
       return;
     }
 
@@ -426,6 +429,7 @@ void run_scheduller (double timeout) {
         finish_started_resumable (parent_id);
         resumable_add_finished (parent_id);
         left_resumables++;
+        force_run_next = true;
       }
     } else {
       php_assert (first_forked_resumable_id <= parent_id && parent_id < current_forked_resumable_id);
