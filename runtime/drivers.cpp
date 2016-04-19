@@ -2073,14 +2073,6 @@ const char *db_regexp1_c = "/(select|delete|insert).*(?: from| into)\\s+([^\\s\\
 const string db_regexp1 (db_regexp1_c, (dl::size_type)strlen (db_regexp1_c));
 const char *db_regexp2_c = "/(update)(?:low_priority|ignore|\\s)+([^\\s]+)\\s+(?:set\\s.+=.+)/i";
 const string db_regexp2 (db_regexp2_c, (dl::size_type)strlen (db_regexp2_c));
-const char *db_regexp3_c = "/FROM\\s+([a-z\\_]+)(\\d+)?\\s+WHERE/i";
-const string db_regexp3 (db_regexp3_c, (dl::size_type)strlen (db_regexp3_c));
-const char *db_regexp4_c = "/UPDATE\\s+([a-z\\_]+)(\\d+)?\\s+SET/i";
-const string db_regexp4 (db_regexp4_c, (dl::size_type)strlen (db_regexp4_c));
-const char *db_regexp5_c = "/INSERT\\sINTO\\s+([a-z\\_]+)(\\d+)?\\s+SET/i";;
-const string db_regexp5 (db_regexp5_c, (dl::size_type)strlen (db_regexp5_c));
-const char *db_regexp6_c = "/\\*\\?\\s+FROM\\s+db (\\d+)\\s+\\*/i";
-const string db_regexp6 (db_regexp6_c, (dl::size_type)strlen (db_regexp6_c));
 const char *db_regexp7_c = "/^\\d+\\.\\d+\\.\\d+\\.\\d+$/";
 const string db_regexp7 (db_regexp7_c, (dl::size_type)strlen (db_regexp7_c));
 
@@ -2179,34 +2171,8 @@ var db_driver::query (const string &query_str) {
     string additional_log_info = (drivers_SB.clean() + "[" + f$date (string ("Y-m-d H:i:s", 11)) + "] ").str();
     f$memcached_set (v$MC, mc_key_db_timeout_fail, (drivers_SB.clean() + additional_log_info + query_string).str(), 0, 86400);
 
-    var matches;
-    f$preg_match (db_regexp3, query_string, matches);
-    if (!matches.isset (1)) {
-      f$preg_match (db_regexp4, query_string, matches);
-    }
-    if (!matches.isset (1)) {
-      f$preg_match (db_regexp5, query_string, matches);
-    }
-    if (matches.isset (1)) {
-      string table_name = matches[1].to_string();
-      string table_prefix = table_name;
-      if (matches.isset (2)) {
-        table_name.append (matches[2].to_string());
-      }
-      f$preg_match (db_regexp6, query_string, matches);
-      int db_id = f$intval (matches[1]);
-      array <var> log_event (array_size (0, 8, false));
-      log_event.set_value (string ("query", 5), query_string);
-      log_event.set_value (string ("query_time", 10), f$intval (query_time));
-      log_event.set_value (string ("query_time_real", 15), query_time);
-      log_event.set_value (string ("message", 7), (drivers_SB.clean() + text_plain + '|' + additional_log_info).str());
-      log_event.set_value (string ("db_id", 5), db_id);
-      log_event.set_value (string ("table_name", 10), table_name);
-      log_event.set_value (string ("table_prefix", 12), table_prefix);
-      log_event.set_value (string ("place", 5), 1);
-      TRY_CALL(var, var, addNewLogEvent_pointer (string ("db_failure", 10), log_event, string ("fail_log", 8), false, false, false, false));
-      fail_logged = true;
-    }
+    TRY_CALL (var, var, dbParseQueryOnFatal_pointer (query_string, query_time, (drivers_SB.clean () + text_plain + '|' + additional_log_info).str (), 1));
+    fail_logged = true;
   }
   if (query_time >= cur_timeout_ms * 0.000333 || query_time > 1.0) {
     fprintf (stderr, "%35sLONG query to MySQL (len = %d, time = %.3lf): %.*s\n", "", (int)query_string.size(), query_time, 1000, query_string.c_str());
@@ -2389,30 +2355,7 @@ void db_driver::fatal_error (const string &the_error, const string &query, bool 
   }
 
   if (!fail_logged) {
-    var matches;
-    f$preg_match (db_regexp3, query, matches);
-    if (!matches.isset (1)) {
-      f$preg_match (db_regexp4, query, matches);
-    }
-    if (!matches.isset (1)) {
-      f$preg_match (db_regexp5, query, matches);
-    }
-    if (matches.isset (1)) {
-      string table_name = (drivers_SB.clean() + matches[1] + matches[2]).str();
-      string table_prefix = matches[1].to_string();
-      f$preg_match (db_regexp6, query, matches);
-      int db_id = f$intval (matches[1]);
-      array <var> log_event (array_size (0, 8, false));
-      log_event.set_value (string ("query", 5), query);
-      log_event.set_value (string ("query_time", 10), f$intval (query_time));
-      log_event.set_value (string ("query_time_real", 15), query_time);
-      log_event.set_value (string ("message", 7), outF);
-      log_event.set_value (string ("db_id", 5), db_id);
-      log_event.set_value (string ("table_name", 10), table_name);
-      log_event.set_value (string ("table_prefix", 12), table_prefix);
-      log_event.set_value (string ("server", 6), this_server);
-      TRY_CALL(var, void, addNewLogEvent_pointer (string ("db_failure", 10), log_event, string ("fail_log", 8), false, false, false, false));
-    }
+    TRY_CALL (var, void, dbParseQueryOnFatal_pointer (query, query_time, outF, 2));
   }
 
   if (DBNoDie || return_die || quiet) {
@@ -2857,12 +2800,8 @@ bool adminNotifyPM_pointer_dummy (string message __attribute__((unused)), var ch
   return false;
 }
 
-var addNewLogEvent_pointer_dummy (string name, array <var> description, string engine __attribute__((unused)), var from_id, var ip, var ua_hash, var remix_sid) {
-  return logAddEvent_pointer (name, description, from_id, ip, ua_hash, remix_sid, false);
-}
-
-var logAddEvent_pointer_dummy (string event_type __attribute__((unused)), array <var> event __attribute__((unused)), var uid __attribute__((unused)), var ip_ulong __attribute__((unused)), var ua_hash __attribute__((unused)), var remix_sid __attribute__((unused)), var port __attribute__((unused))) {
-  return false;
+var dbParseQueryOnFatal_pointer_dummy (string query __attribute__((unused)), double query_time __attribute__((unused)), string message __attribute__((unused)), int place __attribute__((unused))) {
+  return var();
 }
 
 var uaHash_pointer_dummy (string user_agent __attribute__((unused))) {
@@ -2888,9 +2827,7 @@ var (*apiWrapError_pointer) (var error_code, var error_description, Exception ex
 
 bool (*adminNotifyPM_pointer) (string message, var chat_name, var options) = adminNotifyPM_pointer_dummy;
 
-var (*addNewLogEvent_pointer) (string name, array <var> description, string engine, var from_id, var ip, var ua_hash, var remix_sid) = addNewLogEvent_pointer_dummy;
-
-var (*logAddEvent_pointer) (string event_type, array <var> event, var uid, var ip_ulong, var ua_hash, var remix_sid, var port) = logAddEvent_pointer_dummy;
+var (*dbParseQueryOnFatal_pointer) (string query, double query_time, string message, int place) = dbParseQueryOnFatal_pointer_dummy;
 
 var (*uaHash_pointer) (string user_agent) = uaHash_pointer_dummy;
 
