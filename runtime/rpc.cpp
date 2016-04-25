@@ -660,10 +660,19 @@ static int rpc_requests_size;
 static long long rpc_requests_last_query_num;
 
 static slot_id_t rpc_first_request_id;
+static slot_id_t rpc_first_array_request_id;
 static slot_id_t rpc_next_request_id;
 static slot_id_t rpc_first_unfinished_request_id;
 
+static rpc_request gotten_rpc_request;
+
 static int timeout_wakeup_id = -1;
+
+static inline rpc_request* get_rpc_request(slot_id_t request_id) {
+  php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
+  if (request_id < rpc_first_array_request_id) return &gotten_rpc_request;
+  return &rpc_requests[request_id - rpc_first_array_request_id];
+}
 
 var load_rpc_request_as_var (char *storage) {
   rpc_request *data = reinterpret_cast <rpc_request *> (storage);
@@ -692,9 +701,7 @@ private:
 protected:
   bool run (void) {
     php_assert (dl::query_num == rpc_requests_last_query_num);
-    php_assert (0 <= request_id && request_id < rpc_next_request_id - rpc_first_request_id);
-
-    rpc_request *request = rpc_requests + request_id;
+    rpc_request *request = get_rpc_request(request_id);
     php_assert (request->resumable_id < 0);
     php_assert (input_ == NULL);
 
@@ -707,13 +714,13 @@ protected:
       }
     }
 */
-    if (rpc_first_unfinished_request_id == request_id + rpc_first_request_id) {
+    if (rpc_first_unfinished_request_id == request_id) {
       while (rpc_first_unfinished_request_id < rpc_next_request_id &&
-             rpc_requests[rpc_first_unfinished_request_id - rpc_first_request_id].resumable_id < 0) {
+             get_rpc_request(rpc_first_unfinished_request_id)->resumable_id < 0) {
         rpc_first_unfinished_request_id++;
       }
       if (rpc_first_unfinished_request_id < rpc_next_request_id) {
-        int resumable_id = rpc_requests[rpc_first_unfinished_request_id - rpc_first_request_id].resumable_id;
+        int resumable_id = get_rpc_request (rpc_first_unfinished_request_id)->resumable_id;
         php_assert (resumable_id > 0);
         const Resumable *resumable = get_forked_resumable (resumable_id);
         php_assert (resumable != NULL);
@@ -742,7 +749,7 @@ public:
       port (port),
       actor_id (actor_id),
       begin_time (get_precise_now()) {
-    if (rpc_first_unfinished_request_id == request_id + rpc_first_request_id) {
+    if (rpc_first_unfinished_request_id == request_id) {
       set_server_status_rpc();
     }
   }
@@ -789,23 +796,32 @@ int rpc_send (const rpc_connection &conn, double timeout) {
     rpc_requests = static_cast <rpc_request *> (dl::allocate (sizeof (rpc_request) * rpc_requests_size));
 
     rpc_first_request_id = result;
+    rpc_first_array_request_id = result;
     rpc_next_request_id = result + 1;
     rpc_first_unfinished_request_id = result;
+    gotten_rpc_request.resumable_id = -3;
+    gotten_rpc_request.answer = NULL;
   } else {
     php_assert (rpc_next_request_id == result);
     rpc_next_request_id++;
   }
 
-  int slot_id = (int)(result - rpc_first_request_id);
-  if (slot_id >= rpc_requests_size) {
-    php_assert (slot_id == rpc_requests_size);
-    rpc_requests = static_cast <rpc_request *> (dl::reallocate (rpc_requests, sizeof (rpc_request) * 2 * rpc_requests_size, sizeof (rpc_request) * rpc_requests_size));
-    rpc_requests_size *= 2;
+  if (result - rpc_first_array_request_id >= rpc_requests_size) {
+    php_assert (result - rpc_first_array_request_id == rpc_requests_size);
+    if (rpc_first_unfinished_request_id >= rpc_first_array_request_id + rpc_requests_size / 2) {
+      memcpy (rpc_requests,
+              rpc_requests + rpc_first_unfinished_request_id - rpc_first_array_request_id,
+              sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
+      rpc_first_array_request_id = rpc_first_unfinished_request_id;
+    } else {
+      rpc_requests = static_cast <rpc_request *> (dl::reallocate (rpc_requests, sizeof (rpc_request) * 2 * rpc_requests_size, sizeof (rpc_request) * rpc_requests_size));
+      rpc_requests_size *= 2;
+    }
   }
 
-  rpc_request *cur = rpc_requests + slot_id;
+  rpc_request *cur = get_rpc_request (result);
 
-  cur->resumable_id = register_forked_resumable (new rpc_resumable (slot_id, conn.port, conn.default_actor_id));
+  cur->resumable_id = register_forked_resumable (new rpc_resumable (result, conn.port, conn.default_actor_id));
   cur->timer = allocate_event_timer (timeout + get_precise_now(), timeout_wakeup_id, result);
 
   return cur->resumable_id;
@@ -839,10 +855,7 @@ void f$rpc_flush (void) {
 
 
 void process_rpc_answer (int request_id, char *result, int result_len __attribute__((unused))) {
-  php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
-
-  int slot_id = (int)(request_id - rpc_first_request_id);
-  rpc_request *request = &rpc_requests[slot_id];
+  rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
     php_assert (result != NULL);
@@ -864,10 +877,7 @@ void process_rpc_answer (int request_id, char *result, int result_len __attribut
 }
 
 void process_rpc_error (int request_id, int error_code __attribute__((unused)), const char *error_message) {
-  php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
-
-  int slot_id = (int)(request_id - rpc_first_request_id);
-  rpc_request *request = &rpc_requests[slot_id];
+  rpc_request *request = get_rpc_request (request_id);
 
   if (request->resumable_id < 0) {
     php_assert (request->resumable_id != -1);
@@ -1888,6 +1898,8 @@ protected:
           tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
           php_assert (resumable_finished);
         }
+
+        unregister_wait_queue(queue_id);
       }
 
       array <array <var> > tl_objects (query_ids.size());
@@ -1936,6 +1948,8 @@ array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &que
       tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
       php_assert (resumable_finished);
     }
+
+    unregister_wait_queue (queue_id);
   }
 
   array <array <var> > tl_objects (query_ids.size());

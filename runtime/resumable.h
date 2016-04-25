@@ -122,6 +122,7 @@ Resumable *get_forked_resumable (int resumable_id);
 int f$wait_queue_create (void);
 int f$wait_queue_create (const var &request_ids);
 int wait_queue_create (const array <int> &resumable_ids);
+void unregister_wait_queue(int queue_id);
 
 int f$wait_queue_push (int queue_id, const var &request_ids);
 int wait_queue_push (int queue_id, int request_id);
