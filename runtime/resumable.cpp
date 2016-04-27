@@ -1092,11 +1092,11 @@ void resumable_init_static (void) {
   runned_resumable_id = 0;
   Resumable::update_output();
 
-  first_forked_resumable_id = first_array_forked_resumable_id = current_forked_resumable_id;
+  first_forked_resumable_id = current_forked_resumable_id;
   if (first_forked_resumable_id >= 1500000000) {
     first_forked_resumable_id = 1111111111;
   }
-  current_forked_resumable_id = first_forked_resumable_id;
+  first_array_forked_resumable_id = current_forked_resumable_id = first_forked_resumable_id;
 
   first_started_resumable_id = current_started_resumable_id;
   if (first_started_resumable_id >= 500000000) {
