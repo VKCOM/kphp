@@ -809,17 +809,16 @@ int wait_queue_push_unsafe (int queue_id, int resumable_id) {
 int first_free_queue_id;
 
 void unregister_wait_queue(int queue_id) {
-  get_wait_queue (queue_id)->resumable_id = -first_free_queue_id;
+  get_wait_queue (queue_id)->resumable_id = -first_free_queue_id - 1;
   first_free_queue_id = queue_id;
 }
 
 int f$wait_queue_create (void) {
   int res_id;
-  if (first_free_queue_id != -2) {
+  if (first_free_queue_id != 0) {
     res_id = first_free_queue_id;
-    first_free_queue_id = -wait_queues[res_id - 1].resumable_id;
-    php_assert (first_free_queue_id == -2 || (0 < first_free_queue_id && first_free_queue_id <= wait_next_queue_id));
-    wait_queues[res_id - 1].resumable_id = 0;
+    first_free_queue_id = -wait_queues[res_id - 1].resumable_id - 1;
+    php_assert (0 <= first_free_queue_id && first_free_queue_id <= wait_next_queue_id);
   } else {
     if (wait_next_queue_id >= wait_queues_size) {
       php_assert (wait_next_queue_id == wait_queues_size);
@@ -827,13 +826,12 @@ int f$wait_queue_create (void) {
       wait_queues_size *= 2;
     }
     res_id = ++wait_next_queue_id;
-    wait_queues[res_id - 1].resumable_id = 0;
   }
   if (wait_next_queue_id >= 99999999) {
     php_critical_error ("too many wait queues");
   }
 
-  wait_queue *q = get_wait_queue (res_id);
+  wait_queue *q = &wait_queues[res_id - 1];
   q->first_finished_function = -2;
   q->left_functions = 0;
   q->resumable_id = 0;
@@ -1124,7 +1122,7 @@ void resumable_init_static (void) {
   wait_queues_size = 101;
   wait_queues = static_cast <wait_queue *> (dl::allocate (sizeof (wait_queue) * wait_queues_size));
   wait_next_queue_id = 0;
-  first_free_queue_id = -2;
+  first_free_queue_id = 0;
   new(&gotten_forked_resumable_info.output) Storage;
   gotten_forked_resumable_info.queue_id = -1;
   gotten_forked_resumable_info.continuation = NULL;
