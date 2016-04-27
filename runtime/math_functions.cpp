@@ -269,6 +269,7 @@ int pow_int (int x, int y) {
 
 double pow_float (double x, double y) {
   if (x < 0.0) {
+    php_warning ("Calculating pow with negative base and double exp will produce zero");
     return 0.0;
   }
 
