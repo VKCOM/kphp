@@ -808,7 +808,7 @@ int rpc_send (const rpc_connection &conn, double timeout) {
 
   if (result - rpc_first_array_request_id >= rpc_requests_size) {
     php_assert (result - rpc_first_array_request_id == rpc_requests_size);
-    if (rpc_first_unfinished_request_id >= rpc_first_array_request_id + rpc_requests_size / 2) {
+    if (rpc_first_unfinished_request_id > rpc_first_array_request_id + rpc_requests_size / 2) {
       memcpy (rpc_requests,
               rpc_requests + rpc_first_unfinished_request_id - rpc_first_array_request_id,
               sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
