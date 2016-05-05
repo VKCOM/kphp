@@ -284,6 +284,7 @@ class Scheduler : public SchedulerBase {
 template <class DataT>
 class DataStreamRaw : Lockable {
   private:
+    static const int MAX_STREAM_ELEMENTS = 100000;
     DataT *data;
     volatile int *ready;
     volatile int write_i, read_i;
@@ -295,8 +296,8 @@ class DataStreamRaw : Lockable {
       read_i (0),
       sink (false) {
       //FIXME
-      data =  new DataT[50000]();
-      ready = new int[50000]();
+      data =  new DataT[MAX_STREAM_ELEMENTS]();
+      ready = new int[MAX_STREAM_ELEMENTS]();
     }
     bool empty() {
       return read_i == write_i;
@@ -328,7 +329,7 @@ class DataStreamRaw : Lockable {
       }
       while (true) {
         int old_write_i = write_i;
-        assert (old_write_i < 50000);
+        assert (old_write_i < MAX_STREAM_ELEMENTS);
         if (__sync_bool_compare_and_swap (&write_i, old_write_i, old_write_i + 1)) {
           data[old_write_i] = input;
           __sync_synchronize();
