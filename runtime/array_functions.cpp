@@ -30,7 +30,7 @@ array <string> explode (char delimiter, const string &str, int limit) {
 }
 
 array <string> f$explode (const string &delimiter, const string &str, int limit) {
-  if (limit <= 1) {
+  if (limit < 1) {
     php_warning ("Wrong limit %d specified in function explode", limit);
     limit = 1;
   }
