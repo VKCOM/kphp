@@ -4,6 +4,7 @@
 
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <getopt.h>
 
 #include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
@@ -1159,6 +1160,60 @@ void f$parse_multipart (const string &post, const string &boundary) {
 
 static char arg_vars_storage[sizeof (array <string>)];
 static array <string> *arg_vars = NULL;
+
+OrFalse< array<var> > f$getopt(const string &options, array<string> longopts) {
+  if (!arg_vars) return false;
+  string real_options = string("+", 1);
+  real_options.append(options);
+  const char* php_argv[arg_vars->count()];
+  int php_argc = 0;
+  for (array<string>::iterator iter = arg_vars->begin(); iter != arg_vars->end(); ++iter) {
+    php_argv[php_argc++] = iter.get_value().c_str();
+  }
+
+  option real_longopts[longopts.count()];
+  int longopts_count = 0;
+  for (array<string>::iterator iter = longopts.begin(); iter != longopts.end(); ++iter) {
+    string opt = iter.get_value();
+    dl::size_type count = 0;
+    while (count < opt.size() && opt[opt.size() - count - 1] == ':') {
+      count++;
+    }
+    if (count > 2 || count == opt.size()) return false;
+    iter.get_value() = opt.substr(0, opt.size() - count);
+    real_longopts[longopts_count].name = strdup(iter.get_value().c_str());
+    real_longopts[longopts_count].flag = 0;
+    real_longopts[longopts_count].val = 300 + longopts_count;
+    real_longopts[longopts_count].has_arg = (count == 0 ? no_argument : (count == 1 ? required_argument : optional_argument));
+    longopts_count++;
+  }
+
+  array<var> result;
+
+  optind = 0;
+  while (int i = getopt_long(php_argc, (char * const*)php_argv, real_options.c_str(), real_longopts, NULL)) {
+    if (i == -1 || i == '?') break;
+    string key = (i < 255 ? string(1, (char)i) : string(real_longopts[i - 300].name, (dl::size_type) strlen(real_longopts[i - 300].name)));
+    var value;
+    if (optarg) {
+      value = string(optarg, (dl::size_type) strlen(optarg));
+    } else {
+      value = false;
+    }
+
+    if (result.has_key(key)) {
+      if (!f$is_array(result.get_value(key))) {
+        result.set_value(key, array<var>(result.get_value(key), value));
+      } else {
+        result[key].push_back(value);
+      }
+    } else {
+      result.set_value(key, value);
+    }
+  }
+
+  return result;
+}
 
 void arg_add (const char *value) {
   php_assert (dl::query_num == 0);

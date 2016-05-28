@@ -220,6 +220,7 @@ function debug_backtrace() ::: array <array <string> >;
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
 function posix_getpwuid($uid ::: int) ::: OrFalse <array <var> >;
+function getopt ($options ::: string, $longopt ::: array = array()) ::: OrFalse <array <var> >;
 function gethostbynamel ($name ::: string) ::: OrFalse <array <string> >;
 function inet_pton ($address ::: string) ::: OrFalse <string>;
 
