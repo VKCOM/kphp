@@ -2183,26 +2183,29 @@ class CodeGenF {
         W << CloseFile();
       }
 
+      string schema;
+      int schema_length = -1;
       if (G->env().get_tl_schema_file() != "") {
-        W << OpenFile("_tl_schema.cpp");
-        W << "extern \"C\" " << BEGIN;
-        FILE* f = fopen(G->env ().get_tl_schema_file ().c_str(), "r");
+        FILE *f = fopen(G->env().get_tl_schema_file().c_str(), "r");
         const int MAX_SCHEMA_LEN = 1024 * 1024;
         static char buf[MAX_SCHEMA_LEN + 1];
         kphp_assert (f && "can't open tl schema file");
-        int len = fread(buf, 1, sizeof(buf), f);
-        kphp_assert (len > 0 && len < MAX_SCHEMA_LEN);
-        string s(buf, buf + len);
-        W << "const char* builtin_tl_schema = " << NL << Indent(2);
-        compile_string_raw (s, W);
+        schema_length = fread(buf, 1, sizeof(buf), f);
+        kphp_assert (schema_length > 0 && schema_length < MAX_SCHEMA_LEN);
+        schema.assign(buf, buf + schema_length);
         kphp_assert (!fclose(f));
-        W << ";" << NL;
-        W << "int builtin_tl_schema_length = ";
-        sprintf(buf, "%d", len);
-        W << string(buf) << ";" << NL;
-        W << END;
-        W << CloseFile();
       }
+      W << OpenFile("_tl_schema.cpp");
+      W << "extern \"C\" " << BEGIN;
+      W << "const char *builtin_tl_schema = " << NL << Indent(2);
+      compile_string_raw(schema, W);
+      W << ";" << NL;
+      W << "int builtin_tl_schema_length = ";
+      char buf[100];
+      sprintf(buf, "%d", schema_length);
+      W << string(buf) << ";" << NL;
+      W << END;
+      W << CloseFile();
     }
 };
 
