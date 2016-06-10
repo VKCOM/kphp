@@ -130,6 +130,20 @@ FunctionData::FunctionData (VertexPtr root) :
   is_callback (false) {
 }
 
+bool FunctionData::is_static_init_empty_body() const {
+  FOREACH (const_var_ids, i) {
+    if (!(*i)->global_init_flag) {
+      return false;
+    }
+  }
+  FOREACH (header_const_var_ids, i) {
+    if (!(*i)->global_init_flag) {
+      return false;
+    }
+  }
+  return true;
+}
+
 
 
 /*** DefineData ***/

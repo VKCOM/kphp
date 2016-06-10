@@ -1057,6 +1057,9 @@ inline FunctionStaticInit::FunctionStaticInit (FunctionPtr function, bool in_hea
   in_header (in_header) {
 }
 void FunctionStaticInit::compile (CodeGenerator &W) const {
+  if (function->is_static_init_empty_body()) {
+    return;
+  }
   W << "void " << FunctionName (function) << "$static_init (void)";
   if (in_header) {
     W << ";" << NL;
@@ -1096,6 +1099,9 @@ inline void StaticInit::compile (CodeGenerator &W) const {
   W << "init_static_once();" << NL;
   FOREACH (all_functions, i) {
     FunctionPtr to = *i;
+    if (to->is_static_init_empty_body()) {
+      continue;
+    }
     W << FunctionName (to) << "$static_init();" << NL;
   }
   W << "const_vars_init();" << NL;

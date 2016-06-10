@@ -168,6 +168,7 @@ public:
 
   inline func_type_t &type() {return type_;}
 
+  bool is_static_init_empty_body() const;
 private:
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
 };
