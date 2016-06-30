@@ -1320,7 +1320,11 @@ void FunctionH::compile (CodeGenerator &W) const {
     W << "extern bool " << FunctionCallFlag (function) << ";" << NL;
   }
 
-  W << Function (function, true);
+  if (function->root->inline_flag) {
+    W << Function (function, false);
+  } else {
+    W << Function (function, true);
+  }
 
   W << FunctionStaticInit (function, true);
 
@@ -1332,6 +1336,9 @@ inline FunctionCpp::FunctionCpp (FunctionPtr function) :
 }
 
 void FunctionCpp::compile (CodeGenerator &W) const {
+  if (function->root->inline_flag) {
+    return;
+  }
   W << OpenFile (function->src_name, function->subdir);
   W << Include (function->header_full_name);
 
@@ -2259,6 +2266,10 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
   if (root->resumable_flag) {
     compile_function_resumable (root, W);
     return;
+  }
+
+  if (root->inline_flag) {
+    W << "static inline ";
   }
 
   W << FunctionDeclaration (func, false) << " " <<

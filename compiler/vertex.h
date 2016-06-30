@@ -54,6 +54,7 @@ public:
   };
   bool parent_flag : 1;
   bool needs_const_iterator_flag : 1;
+  bool inline_flag : 1;
 
   int n;
 
@@ -74,6 +75,7 @@ public:
     throws_flag(),
     resumable_flag(),
     parent_flag(),
+    inline_flag(),
     n (-1) {
   }
 
@@ -94,6 +96,7 @@ public:
     throws_flag (from.throws_flag),
     resumable_flag (from.resumable_flag),
     parent_flag (from.parent_flag),
+    inline_flag (from.inline_flag),
     n (-1) {
   }
   virtual ~vertex_inner() {

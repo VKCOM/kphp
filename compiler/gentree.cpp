@@ -1333,8 +1333,15 @@ VertexPtr GenTree::get_function (bool anonimous_flag) {
   AutoLocation func_location (this);
 
   TokenType type = (*cur)->type();
-  kphp_assert (test_expect (tok_function) || test_expect (tok_ex_function));
-  next_cur();
+  bool inline_flag = false;
+  if (test_expect (tok_inlinefun)) {
+    inline_flag = true;
+    next_cur();
+    CE (expect (tok_function, "Expected function declaration after @inline"));
+  } else {
+    kphp_assert (test_expect(tok_function) || test_expect(tok_ex_function));
+    next_cur();
+  }
 
   string name_str;
   AutoLocation name_location (this);
@@ -1441,6 +1448,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag) {
   res->varg_flag = varg_flag;
   res->throws_flag = throws_flag;
   res->resumable_flag = resumable_flag;
+  res->inline_flag = inline_flag;
 
   if (in_class()) {
     res->extra_type = op_ex_func_member;
@@ -1587,6 +1595,7 @@ VertexPtr GenTree::get_statement() {
     case tok_switch:
       return get_switch();
 
+    case tok_inlinefun:
     case tok_ex_function:
     case tok_function:
       return get_function();

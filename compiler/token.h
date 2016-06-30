@@ -173,6 +173,8 @@ enum TokenType {
 
   tok_resumable,
 
+  tok_inlinefun,
+
   tok_break_file,
 
   tok_end

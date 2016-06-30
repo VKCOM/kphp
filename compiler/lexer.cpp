@@ -865,8 +865,21 @@ int TokenLexerComment::parse (LexerData *lexer_data) const {
     }
   } else {
     s += 2;
-    while (s[0] && (s[0] != '*' || s[1] != '/')) {
-      s++;
+    if (s[0] && s[1] && s[0] == '*' && s[1] != '/') { // phpdoc
+      while (s[0] && (s[0] != '*' || s[1] != '/')) {
+        if (s[0] == '@' && s[1] == 'i' && s[2] == 'n' && s[3] == 'l' && s[4] == 'i' && s[5] == 'n' && s[6] == 'e') {
+          lexer_data->pass ((int)(s - st));
+          st = s;
+          Token *token = new Token (tok_inlinefun, string_ref_dup ("@inline"));
+          lexer_data->add_token (token, 0);
+          token->debug_str = string_ref_dup ("@inline");
+        }
+        s++;
+      }
+    } else {
+      while (s[0] && (s[0] != '*' || s[1] != '/')) {
+        s++;
+      }
     }
     if (s[0]) {
       s += 2;
