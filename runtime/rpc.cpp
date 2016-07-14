@@ -755,6 +755,7 @@ public:
   }
 };
 
+static array <double> rpc_request_need_timer;
 
 int rpc_send (const rpc_connection &conn, double timeout) {
   if (unlikely (conn.host_num < 0)) {
@@ -822,16 +823,31 @@ int rpc_send (const rpc_connection &conn, double timeout) {
   rpc_request *cur = get_rpc_request (result);
 
   cur->resumable_id = register_forked_resumable (new rpc_resumable (result, conn.port, conn.default_actor_id));
-  cur->timer = allocate_event_timer (timeout + get_precise_now(), timeout_wakeup_id, result);
+  cur->timer = NULL;
+  rpc_request_need_timer.set_value(result, timeout);
 
   return cur->resumable_id;
+}
+
+void f$rpc_flush (void) {
+  update_precise_now();
+  wait_net (0);
+  update_precise_now();
+  for (array<double>::iterator iter = rpc_request_need_timer.begin(); iter != rpc_request_need_timer.end(); ++iter) {
+    int id = iter.get_key().to_int();
+    rpc_request *cur = get_rpc_request (iter.get_key().to_int());
+    if (cur->resumable_id > 0 && !cur->timer) {
+      cur->timer = allocate_event_timer(iter.get_value() + get_precise_now(), timeout_wakeup_id, id);
+    }
+  }
+  rpc_request_need_timer.clear();
 }
 
 int f$rpc_send (const rpc_connection &conn, double timeout) {
   update_precise_now();
   int request_id = rpc_send (conn, timeout);
   if (request_id > 0) {
-    wait_net (0);
+    f$rpc_flush();
     return request_id;
   } else {
     return 0;
@@ -848,10 +864,6 @@ int f$rpc_send_noflush (const rpc_connection &conn, double timeout) {
   }
 }
 
-void f$rpc_flush (void) {
-  update_precise_now();
-  wait_net (0);
-}
 
 
 void process_rpc_answer (int request_id, char *result, int result_len __attribute__((unused))) {
@@ -866,7 +878,9 @@ void process_rpc_answer (int request_id, char *result, int result_len __attribut
   int resumable_id = request->resumable_id;
   request->resumable_id = -1;
 
-  remove_event_timer (request->timer);
+  if (request->timer) {
+    remove_event_timer (request->timer);
+  }
 
   php_assert (result != NULL);
   request->answer = result;
@@ -886,7 +900,9 @@ void process_rpc_error (int request_id, int error_code __attribute__((unused)), 
   int resumable_id = request->resumable_id;
   request->resumable_id = -2;
 
-  remove_event_timer (request->timer);
+  if (request->timer) {
+    remove_event_timer (request->timer);
+  }
 
   request->error = error_message;
 
@@ -1788,8 +1804,7 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
 
     bytes_sent += data_buf.size();//estimate
     if (bytes_sent >= (1 << 15) && bytes_sent > (int)data_buf.size()) {
-      wait_net (0);
-      update_precise_now();
+      f$rpc_flush();
       bytes_sent = data_buf.size();
     }
     int request_id = rpc_send (c, timeout);
@@ -1808,7 +1823,7 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
     result.set_value (it.get_key(), request_id);
   }
   if (bytes_sent > 0) {
-    wait_net (0);
+    f$rpc_flush();
   }
 
   return result;
@@ -3731,6 +3746,7 @@ void rpc_init_static (void) {
 
   INIT_VAR(string, rpc_data_copy);
   INIT_VAR(string, rpc_data_copy_backup);
+  INIT_VAR(array <double>, rpc_request_need_timer);
 
   rpc_parse (NULL, 0);
   rpc_parse (NULL, 0);//init backup
@@ -3746,6 +3762,7 @@ void rpc_init_static (void) {
 void rpc_free_static (void) {
   CLEAR_VAR(string, rpc_data_copy);
   CLEAR_VAR(string, rpc_data_copy_backup);
+  CLEAR_VAR(array <double>, rpc_request_need_timer);
 
   clear_arr_space();
 }
