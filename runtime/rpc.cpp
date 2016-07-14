@@ -824,7 +824,7 @@ int rpc_send (const rpc_connection &conn, double timeout) {
 
   cur->resumable_id = register_forked_resumable (new rpc_resumable (result, conn.port, conn.default_actor_id));
   cur->timer = NULL;
-  rpc_request_need_timer.set_value(result, timeout);
+  rpc_request_need_timer.set_value (result, timeout);
 
   return cur->resumable_id;
 }
@@ -835,16 +835,16 @@ void f$rpc_flush (void) {
   update_precise_now();
   for (array<double>::iterator iter = rpc_request_need_timer.begin(); iter != rpc_request_need_timer.end(); ++iter) {
     int id = iter.get_key().to_int();
-    rpc_request *cur = get_rpc_request (iter.get_key().to_int());
-    if (cur->resumable_id > 0 && !cur->timer) {
-      cur->timer = allocate_event_timer(iter.get_value() + get_precise_now(), timeout_wakeup_id, id);
+    rpc_request *cur = get_rpc_request (id);
+    if (cur->resumable_id > 0) {
+      php_assert (cur->timer == NULL);
+      cur->timer = allocate_event_timer (iter.get_value() + get_precise_now(), timeout_wakeup_id, id);
     }
   }
   rpc_request_need_timer.clear();
 }
 
 int f$rpc_send (const rpc_connection &conn, double timeout) {
-  update_precise_now();
   int request_id = rpc_send (conn, timeout);
   if (request_id > 0) {
     f$rpc_flush();
@@ -855,7 +855,6 @@ int f$rpc_send (const rpc_connection &conn, double timeout) {
 }
 
 int f$rpc_send_noflush (const rpc_connection &conn, double timeout) {
-  update_precise_now();
   int request_id = rpc_send (conn, timeout);
   if (request_id > 0) {
     return request_id;
@@ -1791,7 +1790,6 @@ int f$rpc_tl_query_one (const rpc_connection &c, const var &tl_object, double ti
 
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout) {
   array <var> result (tl_objects.size());
-  update_precise_now();
   int bytes_sent = 0;
   for (typeof (tl_objects.begin()) it = tl_objects.begin(); it != tl_objects.end(); ++it) {
     f$rpc_clean();
