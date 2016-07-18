@@ -1060,6 +1060,9 @@ void FunctionStaticInit::compile (CodeGenerator &W) const {
   if (function->is_static_init_empty_body()) {
     return;
   }
+  if (function->root->inline_flag) {
+    W << "static inline ";
+  }
   W << "void " << FunctionName (function) << "$static_init (void)";
   if (in_header) {
     W << ";" << NL;
@@ -1300,6 +1303,18 @@ inline void DfsInit::compile (CodeGenerator &W) const {
   W << CloseFile();
 }
 
+static inline void include_dependent_headers (FunctionPtr function, CodeGenerator &W) {
+  FOREACH (function->dep, it) {
+    FunctionPtr to_include = *it;
+    if (to_include == function ||
+        to_include->type() == FunctionData::func_extern) {
+      continue;
+    }
+
+    W << Include (to_include->header_full_name);
+  }
+}
+
 inline FunctionH::FunctionH (FunctionPtr function) :
   function (function) {
 }
@@ -1321,12 +1336,20 @@ void FunctionH::compile (CodeGenerator &W) const {
   }
 
   if (function->root->inline_flag) {
-    W << Function (function, false);
+    W << "static inline " << Function (function, true);
+    stage::set_function (function);
+    FOREACH (function->const_var_ids, const_var) {
+      W << VarExternDeclaration (*const_var) << NL;
+    }
+    include_dependent_headers (function, W);
+    W << UnlockComments();
+    W << Function (function);
+    W << LockComments();
+    W << FunctionStaticInit (function);
   } else {
     W << Function (function, true);
+    W << FunctionStaticInit (function, true);
   }
-
-  W << FunctionStaticInit (function, true);
 
   W << CloseFile();
 }
@@ -1344,15 +1367,7 @@ void FunctionCpp::compile (CodeGenerator &W) const {
 
   stage::set_function (function);
 
-  FOREACH (function->dep, it) {
-    FunctionPtr to_include = *it;
-    if (to_include == function ||
-        to_include->type() == FunctionData::func_extern) {
-      continue;
-    }
-
-    W << Include (to_include->header_full_name);
-  }
+  include_dependent_headers (function, W);
 
   FOREACH (function->global_var_ids, global_var) {
     W << VarExternDeclaration (*global_var) << NL;
