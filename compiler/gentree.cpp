@@ -1337,7 +1337,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag) {
   if (test_expect (tok_inlinefun)) {
     inline_flag = true;
     next_cur();
-    CE (expect (tok_function, "Expected function declaration after @inline"));
+    CE (expect (tok_function, "Expected function declaration after @kphp-inline"));
   } else {
     kphp_assert (test_expect(tok_function) || test_expect(tok_ex_function));
     next_cur();
