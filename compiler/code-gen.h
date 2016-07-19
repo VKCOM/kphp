@@ -1315,6 +1315,18 @@ static inline void include_dependent_headers (FunctionPtr function, CodeGenerato
   }
 }
 
+static inline void declare_global_vars (FunctionPtr function, CodeGenerator &W) {
+  FOREACH (function->global_var_ids, global_var) {
+    W << VarExternDeclaration (*global_var) << NL;
+  }
+}
+
+static inline void declare_const_vars (FunctionPtr function, CodeGenerator &W) {
+  FOREACH (function->const_var_ids, const_var) {
+    W << VarExternDeclaration (*const_var) << NL;
+  }
+}
+
 inline FunctionH::FunctionH (FunctionPtr function) :
   function (function) {
 }
@@ -1338,9 +1350,8 @@ void FunctionH::compile (CodeGenerator &W) const {
   if (function->root->inline_flag) {
     W << "static inline " << Function (function, true);
     stage::set_function (function);
-    FOREACH (function->const_var_ids, const_var) {
-      W << VarExternDeclaration (*const_var) << NL;
-    }
+    declare_global_vars (function, W);
+    declare_const_vars (function, W);
     include_dependent_headers (function, W);
     W << UnlockComments();
     W << Function (function);
@@ -1369,12 +1380,8 @@ void FunctionCpp::compile (CodeGenerator &W) const {
 
   include_dependent_headers (function, W);
 
-  FOREACH (function->global_var_ids, global_var) {
-    W << VarExternDeclaration (*global_var) << NL;
-  }
-  FOREACH (function->const_var_ids, const_var) {
-    W << VarExternDeclaration (*const_var) << NL;
-  }
+  declare_global_vars (function, W);
+  declare_const_vars (function, W);
   FOREACH (function->static_var_ids, static_var) {
     W << VarDeclaration (*static_var) << NL;
   }
