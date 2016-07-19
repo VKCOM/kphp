@@ -866,16 +866,12 @@ int TokenLexerComment::parse (LexerData *lexer_data) const {
   } else {
     s += 2;
     if (s[0] && s[1] && s[0] == '*' && s[1] != '/') { // phpdoc
+      char const *phpdoc_start = s;
       while (s[0] && (s[0] != '*' || s[1] != '/')) {
-        if (!strncmp ("@kphp-inline", s, 12)) {
-          lexer_data->pass ((int) (s - st));
-          st = s;
-          Token *token = new Token (tok_inlinefun, string_ref_dup ("@kphp-inline"));
-          lexer_data->add_token (token, 0);
-          token->debug_str = string_ref_dup ("@kphp-inline");
-        }
         s++;
       }
+      Token *token = new Token (tok_phpdoc, phpdoc_start, s);
+      lexer_data->add_token (token, 0);
     } else {
       while (s[0] && (s[0] != '*' || s[1] != '/')) {
         s++;

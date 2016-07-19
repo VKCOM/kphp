@@ -173,7 +173,7 @@ enum TokenType {
 
   tok_resumable,
 
-  tok_inlinefun,
+  tok_phpdoc,
 
   tok_break_file,
 
