@@ -1,4 +1,4 @@
-@ok
+@ok no_php
 <?php
 
 

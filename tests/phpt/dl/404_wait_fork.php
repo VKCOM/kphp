@@ -1,4 +1,4 @@
-@ok
+@ok no_php
 <?php
   function my_usleep ($t) {
     $end_time = microtime (true) + $t * 1e-6;
