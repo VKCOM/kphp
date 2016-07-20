@@ -166,6 +166,7 @@ function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 function array_filter ($a ::: array, callback ($x) = TODO) ::: ^1;
 function array_map (callback ($x), $a ::: array) ::: array <var>;
+function array_reduce ($a ::: array, callback ($carry, $item), $initial ::: var = null) ::: var;
 
 function empty ($val ::: Any) ::: bool;
 function count ($val ::: Any) ::: int;

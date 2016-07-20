@@ -32,6 +32,9 @@ array <T> f$array_filter (const array <T> &a, const T1 callback);
 template <class T, class T1>
 array <var> f$array_map (const T1 callback, const array <T> &a);
 
+template <class T, class T1>
+var f$array_reduce (const array <T> &a, const T1 callback, const var initial = var());
+
 template <class T>
 T f$array_merge (const T &a1);
 
@@ -418,6 +421,18 @@ array <var> f$array_map (const T1 callback, const array <T> &a) {
   array <var> result (a.size());
   for (typename array <T>::const_iterator it = a.begin(); it != a.end(); ++it) {
     result.set_value (it.get_key(), callback (it.get_value()));
+  }
+
+  return result;
+}
+
+template <class T, class T1>
+var f$array_reduce (const array <T> &a, const T1 callback, const var initial) {
+  php_assert (callback != NULL);
+
+  var result = initial;
+  for (typename array <T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+    result = callback(result, it.get_value());
   }
 
   return result;
