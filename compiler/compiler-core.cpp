@@ -349,6 +349,13 @@ void CompilerCore::init_dest_dir() {
   cpp_dir = cpp_index.get_dir();
 }
 
+bool compare_mtime(File *f, File *g) {
+  if (f->mtime != g->mtime) {
+    return f->mtime > g->mtime;
+  }
+  return f->path < g->path;
+}
+
 bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir, 
     File *lib_version_file, File *link_file, const KphpEnviroment &kphp_env) {
   KphpMake make;
@@ -366,9 +373,27 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
   }
   make.create_cpp_target (link_file);
 
+  vector <File *> objs;
+  vector <File *> files = cpp_dir->get_files();
+  std::sort (files.begin(), files.end(), compare_mtime);
+  vector<long long> header_mtime(files.size());
+  for (size_t i = 0; i < files.size(); i++) {
+    header_mtime[i] = files[i]->mtime;
+  }
+  FOREACH (files, h_file_i) {
+    File *h_file = *h_file_i;
+    if (h_file->ext == ".h") {
+      long long &h_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), h_file, compare_mtime) - files.begin()];
+      FOREACH (h_file->includes, it) {
+        File *header = cpp_dir->get_file (*it, false);
+        kphp_assert (header != NULL);
+        kphp_assert (header->on_disk);
+        long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
+        h_mtime = std::max(h_mtime, dep_mtime);
+      }
+    }
+  }
   if (G->env().get_use_subdirs()) {
-    vector <File *> objs;
-    vector <File *> files = cpp_dir->get_files();
     FOREACH (files, cpp_file_i) {
       File *cpp_file = *cpp_file_i;
       if (cpp_file->ext == ".cpp") {
@@ -379,7 +404,8 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
           File *header = cpp_dir->get_file (*it, false);
           kphp_assert (header != NULL);
           kphp_assert (header->on_disk);
-          cpp_target->force_changed (header->mtime);
+          long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
+          cpp_target->force_changed (dep_mtime);
         }
         cpp_target->force_changed (lib_mtime);
         objs.push_back (obj_file);
@@ -411,19 +437,17 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     objs.push_back (link_file);
     make.create_objs2bin_target (objs, bin);
   } else {
-    vector <File *> objs;
-    vector <File *> files = cpp_dir->get_files();
     FOREACH (files, cpp_file_i) {
       File *cpp_file = *cpp_file_i;
       if (cpp_file->ext == ".cpp") {
         File *obj_file = obj_dir->get_file (cpp_file->name + ".o", true);
-        make.create_cpp2obj_target (cpp_file, obj_file);
-        Target *cpp_target = cpp_file->target; 
+        Target *cpp_target = cpp_file->target;
         FOREACH (cpp_file->includes, it) {
           File *header = cpp_dir->get_file (*it, false);
           kphp_assert (header != NULL);
           kphp_assert (header->on_disk);
-          cpp_target->force_changed (header->mtime);
+          long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
+          cpp_target->force_changed (dep_mtime);
         }
         cpp_target->force_changed (lib_mtime);
         objs.push_back (obj_file);
