@@ -258,7 +258,6 @@ class RegisterVariables : public FunctionPassBase {
     map <string, VarPtr> registred_vars;
     bool global_function_flag;
     int in_param_list;
-    bool is_kphp_inline;
   public:
 
     struct LocalT : public FunctionPassBase::LocalT {
@@ -444,7 +443,6 @@ class RegisterVariables : public FunctionPassBase {
       }
       global_function_flag = function->type() == FunctionData::func_global ||
         function->type() == FunctionData::func_switch;
-      is_kphp_inline = function->root->inline_flag;
       return true;
     }
 
@@ -456,7 +454,7 @@ class RegisterVariables : public FunctionPassBase {
         CREATE_VERTEX (empty, op_empty);
         return empty;
       } else if (root->type() == op_static) {
-        kphp_error(!is_kphp_inline, "Inline functions don't support static variables");
+        kphp_error(!stage::get_function()->root->inline_flag, "Inline functions don't support static variables");
         visit_static_vertex (root);
         local->need_recursion_flag = false;
         CREATE_VERTEX (empty, op_empty);
