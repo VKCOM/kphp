@@ -508,6 +508,13 @@ OrFalse <array <string> > f$scandir (const string &directory) {
   dirent **namelist;
   int namelist_size = scandir (directory.c_str(), &namelist, NULL, alphasort);
   if (namelist_size < 0) {
+    if (errno == ENOENT) {
+      php_warning ("failed to open dir: No such file or directory");
+    } else if (errno == ENOTDIR) {
+      php_warning ("failed to open dir: Not a directory");
+    } else if (errno == ENOMEM) {
+      php_warning ("failed to open dir: Not enough memory to complete the operation");
+    }
     return false;
   }
   array<string> file_list (array_size (namelist_size, 0, true));
