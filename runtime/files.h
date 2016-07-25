@@ -59,6 +59,7 @@ OrFalse <string> f$tempnam (const string &dir, const string &prefix);
 
 bool f$unlink (const string &name);
 
+OrFalse <array<string> > f$scandir (const string &directory);
 
 OrFalse <string> file_file_get_contents (const string &name);
 

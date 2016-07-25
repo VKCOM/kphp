@@ -6,6 +6,7 @@
 #include <libgen.h>
 #include <sys/utsname.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #undef basename
 
@@ -503,6 +504,20 @@ bool f$unlink (const string &name) {
   return result;
 }
 
+OrFalse <array <string> > f$scandir (const string &directory) {
+  dirent **namelist;
+  int namelist_size = scandir (directory.c_str(), &namelist, NULL, alphasort);
+  if (namelist_size < 0) {
+    return false;
+  }
+  array<string> file_list (array_size (namelist_size, 0, true));
+  for (int i = 0; i < namelist_size; i++) {
+    char const *file_name = namelist[i]->d_name;
+    string::size_type file_name_length = (string::size_type) strlen(file_name);
+    file_list.set_value (i, string (file_name, file_name_length));
+  }
+  return file_list;
+}
 
 static char opened_files_storage[sizeof (array <FILE *>)];
 static array <FILE *> *opened_files = reinterpret_cast <array <FILE *> *> (opened_files_storage);

@@ -483,6 +483,7 @@ function rename ($oldname ::: string, $newname ::: string) ::: bool;
 function realpath ($path ::: string) ::: OrFalse <string>;
 function tempnam ($dir ::: string, $prefix ::: string) ::: OrFalse <string>;
 function unlink ($name ::: string) ::: bool;
+function scandir ($directory ::: string) ::: OrFalse <array <string> >;
 function sleep ($seconds ::: int) ::: void;
 function usleep ($micro_seconds ::: int) ::: void;
 
