@@ -757,7 +757,11 @@ public:
 
 static array <double> rpc_request_need_timer;
 
-int rpc_send (const rpc_connection &conn, double timeout) {
+static void process_rpc_timeout (int request_id) {
+  process_rpc_error (request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
+}
+
+int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (unlikely (conn.host_num < 0)) {
     php_warning ("Wrong rpc_connection specified");
     return -1;
@@ -824,7 +828,13 @@ int rpc_send (const rpc_connection &conn, double timeout) {
 
   cur->resumable_id = register_forked_resumable (new rpc_resumable (result, conn.port, conn.default_actor_id));
   cur->timer = NULL;
-  rpc_request_need_timer.set_value (result, timeout);
+  if (ignore_answer) {
+    int resumable_id = cur->resumable_id;
+    process_rpc_timeout (result);
+    get_forked_storage (resumable_id)->getter_ = NULL;
+  } else {
+    rpc_request_need_timer.set_value(result, timeout);
+  }
 
   return cur->resumable_id;
 }
@@ -907,10 +917,6 @@ void process_rpc_error (int request_id, int error_code __attribute__((unused)), 
 
   php_assert (resumable_id > 0);
   resumable_run_ready (resumable_id);
-}
-
-static void process_rpc_timeout (int request_id) {
-  process_rpc_error (request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
 }
 
 
@@ -1788,7 +1794,7 @@ int f$rpc_tl_query_one (const rpc_connection &c, const var &tl_object, double ti
   return query_id;
 }
 
-array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout) {
+array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout, bool ignore_answer) {
   array <var> result (tl_objects.size());
   int bytes_sent = 0;
   for (typeof (tl_objects.begin()) it = tl_objects.begin(); it != tl_objects.end(); ++it) {
@@ -1805,7 +1811,7 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
       f$rpc_flush();
       bytes_sent = data_buf.size();
     }
-    int request_id = rpc_send (c, timeout);
+    int request_id = rpc_send (c, timeout, ignore_answer);
     if (request_id <= 0) {
       result.set_value (it.get_key(), 0);
       result_tree->destroy();

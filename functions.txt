@@ -651,7 +651,7 @@ function rpc_mc_replace ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: 
 function rpc_mc_decrement ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) throws ::: var;
 function rpc_mc_increment ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) throws ::: var;
 function rpc_tl_query_one ($rpc_conn ::: RPC, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
-function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0) ::: array <int>;
+function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: array <int>;
 function rpc_tl_query_result_one ($query_id ::: int) resumable ::: array <var>;
 function rpc_tl_query_result ($query_ids ::: array) resumable ::: array <array <var> >;
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: array <array <var> >;

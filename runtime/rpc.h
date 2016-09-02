@@ -139,7 +139,7 @@ string f$rpc_get_clean (void);
 bool rpc_store (bool is_error = false);
 
 int f$rpc_send (const rpc_connection &conn, double timeout = -1.0);
-int rpc_send (const rpc_connection &conn, double timeout);
+int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer = false);
 
 int f$rpc_send_noflush (const rpc_connection &conn, double timeout = -1.0);
 
@@ -170,7 +170,7 @@ bool f$store_unsigned_long (const var &v);
 
 int f$rpc_tl_query_one (const rpc_connection &c, const var &arr, double timeout = -1.0);
 
-array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &arr, double timeout = -1.0);
+array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &arr, double timeout = -1.0, bool ignore_answer = false);
 
 array <var> f$rpc_tl_query_result_one (int query_id);
 
