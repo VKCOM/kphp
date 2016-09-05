@@ -831,7 +831,7 @@ int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (ignore_answer) {
     int resumable_id = cur->resumable_id;
     process_rpc_timeout (result);
-    get_forked_storage (resumable_id)->getter_ = NULL;
+    get_forked_storage (resumable_id)->load<rpc_request, rpc_request>();
   } else {
     rpc_request_need_timer.set_value(result, timeout);
   }
