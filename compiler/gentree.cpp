@@ -1802,12 +1802,13 @@ VertexPtr GenTree::post_process (VertexPtr root) {
     }
   }
 
-  if (root->type() == op_minus) {
-    VertexAdaptor <op_minus> minus = root;
+  if (root->type() == op_minus || root->type() == op_plus) {
+    VertexAdaptor <meta_op_unary_op> minus = root;
     VertexPtr maybe_num = minus->expr();
-    if (maybe_num->type() == op_int_const) {
-      VertexAdaptor <op_int_const> num = maybe_num;
-      num->str_val = "-" + num->str_val;
+    string prefix = root->type() == op_minus ? "-" : "";
+    if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
+      VertexAdaptor <meta_op_num> num = maybe_num;
+      num->str_val = prefix + num->str_val;
       minus->expr() = VertexPtr();
       return post_process (num);
     }
