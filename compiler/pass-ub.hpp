@@ -236,7 +236,9 @@ class CalcBadVars {
         swap (func->tmp_vars, dep_datas[i]->used_global_vars);
 
         if (func->root->resumable_flag) {
-          fprintf (stderr, "Resumable [%s]\n", func->name.c_str());
+          if (G->env().get_verbosity() > 1) {
+            fprintf(stderr, "Resumable [%s]\n", func->name.c_str());
+          }
           call_graph.graph[wait_func].push_back (func);
           call_graph.rev_graph[func].push_back (wait_func);
 

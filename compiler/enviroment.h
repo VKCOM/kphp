@@ -46,6 +46,10 @@ class KphpEnviroment {
     string user_binary_path_;
     bool error_on_warns;
 
+    string warnings_filename;
+    string stats_filename;
+    FILE *stats_file;
+
   public:
     KphpEnviroment();
     const string &get_home() const;
@@ -100,6 +104,14 @@ class KphpEnviroment {
 
     void set_dest_dir_subdir (const string &s);
     void init_dest_dirs();
+
+    void set_warnings_filename (const string &path);
+    void set_stats_filename (const string &path);
+    void set_stats_file (FILE *file);
+
+    const string &get_warnings_filename () const;
+    const string &get_stats_filename () const;
+    FILE *get_stats_file () const;
 
     const string &get_dest_cpp_dir() const;
     const string &get_dest_objs_dir() const;

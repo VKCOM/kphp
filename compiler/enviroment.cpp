@@ -208,6 +208,30 @@ int KphpEnviroment::get_error_on_warns () const {
   return error_on_warns;
 }
 
+void KphpEnviroment::set_warnings_filename (const string &path) {
+  warnings_filename = path;
+}
+
+void KphpEnviroment::set_stats_filename (const string &path) {
+  stats_filename = path;
+}
+
+const string &KphpEnviroment::get_warnings_filename () const {
+  return warnings_filename;
+}
+
+const string &KphpEnviroment::get_stats_filename () const {
+  return stats_filename;
+}
+
+FILE *KphpEnviroment::get_stats_file () const {
+  return stats_file;
+}
+
+void KphpEnviroment::set_stats_file (FILE *file) {
+  stats_file = file;
+}
+
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd (tmp, PATH_MAX);

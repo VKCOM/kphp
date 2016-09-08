@@ -2284,7 +2284,7 @@ class WriteFilesF {
               need_save_time = false;
             }
           }
-          if (!need_save_time) {
+          if (!need_save_time && G->env().get_verbosity() > 0) {
             fprintf (stderr, "File [%s] changed\n", full_file_name.c_str());
           }
           string dest_file_name = full_file_name;
@@ -2323,11 +2323,30 @@ class WriteFilesF {
 };
 
 
-void compiler_execute (KphpEnviroment *env) {
+bool compiler_execute (KphpEnviroment *env) {
   double st = dl_time();
   G = new CompilerCore();
   G->register_env (env);
   G->start();
+  if (!env->get_warnings_filename().empty()) {
+    int fd = open (env->get_warnings_filename().c_str(), O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
+    if (fd < 0) {
+      fprintf (stderr, "Can't open warnings-file %s\n", env->get_warnings_filename().c_str());
+      return false;
+    } else {
+      assert (close (fd) == 0);
+    }
+  }
+  if (!env->get_stats_filename().empty()) {
+    FILE *f = fopen (env->get_stats_filename().c_str(), "w");
+    if (!f) {
+      fprintf (stderr, "Can't open stats-file %s\n", env->get_stats_filename().c_str());
+      return false;
+    }
+    env->set_stats_file (f);
+  } else {
+    env->set_stats_file (NULL);
+  }
 
   //TODO: call it with pthread_once on need
   lexer_init();
@@ -2513,4 +2532,5 @@ void compiler_execute (KphpEnviroment *env) {
     get_mem_stats (getpid(), &mem_info);
     fprintf (stderr, "RSS: %lluKb\n", mem_info.rss);
   }
+  return true;
 }

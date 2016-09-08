@@ -3,4 +3,4 @@
 #include "enviroment.h"
 class Compiler;
 
-void compiler_execute (KphpEnviroment *args);
+bool compiler_execute (KphpEnviroment *args);

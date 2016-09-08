@@ -93,6 +93,12 @@ int parse_args_f(int i) {
   case 'W':
     env->set_error_on_warns();
     break;
+  case 2000:
+    env->set_warnings_filename (optarg);
+    break;
+  case 2001:
+    env->set_stats_filename (optarg);
+    break;
   default:
     return -1;
   }
@@ -136,6 +142,8 @@ int main (int argc, char *argv[]) {
   parse_option("version-file", required_argument, NULL, 'V', "<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default");
   parse_option(0, no_argument, NULL, 'v', "Verbosity");
   parse_option("Werror", no_argument, NULL, 'W', "All compile time warnings will be errors");
+  parse_option("warnings-file", required_argument, NULL, 2000, "Print all warnings to <file>, otherwise warnings are printed to stderr");
+  parse_option("stats-file", required_argument, NULL, 2001, "Print some statistics to <file>");
   parse_engine_options_long (argc, argv, parse_args_f);
 
 
@@ -156,7 +164,9 @@ int main (int argc, char *argv[]) {
   if (!ok) {
     return 1;
   }
-  compiler_execute (env);
+  if (!compiler_execute (env)) {
+    return 1;
+  }
 
   return 0;
 }

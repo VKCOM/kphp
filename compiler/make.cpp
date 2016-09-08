@@ -1,8 +1,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
+#include <fcntl.h>
 #include "make.h"
 #include "utils.h"
+#include "compiler-core.h"
 
 /*** Target ***/
 //TODO: review mtime
@@ -152,6 +154,11 @@ static int run_cmd (const string &cmd) {
   }
 
   if (pid == 0) {
+    const string &warnings_file = G->env().get_warnings_filename();
+    if (!warnings_file.empty()) {
+      int fd = open (warnings_file.c_str(), O_WRONLY | O_APPEND, 0);
+      dup2 (fd, 2);
+    }
     //prctl (PR_SET_PDEATHSIG, SIGKILL);
     execvp (argv[0], &argv[0]);
     perror ("execvp failed: ");
@@ -176,9 +183,9 @@ bool Make::finish_job (int pid, int return_code, int by_signal) {
   map <int, Target*>::iterator it = jobs.find (pid);
   assert (it != jobs.end());
   Target *target = it->second;
-  double passed = dl_time() - target->start_time;
-  if (passed > 50) {
-    fprintf (stdout, "SLOW: %lfs %80s\n", passed, target->get_cmd().c_str());
+  if (G->env().get_stats_file() != NULL) {
+    double passed = dl_time() - target->start_time;
+    fprintf (G->env().get_stats_file(), "%lfs %s\n", passed, target->get_name().c_str());
   }
   jobs.erase (it);
   if (return_code != 0) {
