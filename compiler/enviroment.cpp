@@ -232,12 +232,12 @@ void KphpEnviroment::set_stats_file (FILE *file) {
   stats_file = file;
 }
 
-int KphpEnviroment::get_warnings_fd () const {
-  return warnings_fd;
+FILE *KphpEnviroment::get_warnings_file () const {
+  return warnings_file;
 }
 
-void KphpEnviroment::set_warnings_fd (int fd) {
-  warnings_fd = fd;
+void KphpEnviroment::set_warnings_file (FILE *file) {
+  warnings_file = file;
 }
 
 bool KphpEnviroment::init() {

@@ -47,7 +47,7 @@ class KphpEnviroment {
     bool error_on_warns;
 
     string warnings_filename;
-    int warnings_fd;
+    FILE *warnings_file;
 
     string stats_filename;
     FILE *stats_file;
@@ -110,12 +110,12 @@ class KphpEnviroment {
     void set_warnings_filename (const string &path);
     void set_stats_filename (const string &path);
     void set_stats_file (FILE *file);
-    void set_warnings_fd (int fd);
+    void set_warnings_file (FILE *file);
 
     const string &get_warnings_filename () const;
     const string &get_stats_filename () const;
     FILE *get_stats_file () const;
-    int get_warnings_fd () const;
+    FILE *get_warnings_file () const;
 
     const string &get_dest_cpp_dir() const;
     const string &get_dest_objs_dir() const;

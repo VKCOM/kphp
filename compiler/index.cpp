@@ -6,6 +6,7 @@
 #include "../common.h"
 #include "stage.h"
 #include "index.h"
+#include "compiler-core.h"
 
 void mkpath (const string &s) {
   string path = s;
@@ -160,7 +161,9 @@ void Index::del_extra_files() {
     File *file = it->second;
     if (!file->needed) {
       kphp_assert (file->on_disk);
-      fprintf (stderr, "unlink %s\n", file->path.c_str());
+      if (G->env().get_verbosity() > 0) {
+        fprintf(stderr, "unlink %s\n", file->path.c_str());
+      }
       int err = unlink (file->path.c_str());
       if (err != 0) {
         kphp_error (0, dl_pstr("Failed to unlink file %s: %m", file->path.c_str()));

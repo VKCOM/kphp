@@ -154,9 +154,11 @@ static int run_cmd (const string &cmd) {
   }
 
   if (pid == 0) {
-    int fd = G->env().get_warnings_fd();
-    if (fd > 0) {
-      dup2 (fd, 2);
+    if (G->env().get_warnings_file()) {
+      int fd = fileno(G->env().get_warnings_file());
+      if (fd > 0) {
+        dup2(fd, 2);
+      }
     }
     //prctl (PR_SET_PDEATHSIG, SIGKILL);
     execvp (argv[0], &argv[0]);

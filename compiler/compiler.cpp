@@ -2329,15 +2329,15 @@ bool compiler_execute (KphpEnviroment *env) {
   G->register_env (env);
   G->start();
   if (!env->get_warnings_filename().empty()) {
-    int fd = open (env->get_warnings_filename().c_str(), O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
-    if (fd < 0) {
+    FILE *f = fopen (env->get_warnings_filename().c_str(), "w");
+    if (!f) {
       fprintf (stderr, "Can't open warnings-file %s\n", env->get_warnings_filename().c_str());
       return false;
     } else {
-      env->set_warnings_fd (fd);
+      env->set_warnings_file (f);
     }
   } else {
-    env->set_warnings_fd (0);
+    env->set_warnings_file (NULL);
   }
   if (!env->get_stats_filename().empty()) {
     FILE *f = fopen (env->get_stats_filename().c_str(), "w");

@@ -25,11 +25,15 @@ void on_compilation_error (const char *description __attribute__((unused)), cons
   const char *full_description, AssertLevelT assert_level) {
 
   AutoLocker <volatile int *> locker (&ce_locker);
-  printf ("%s [gen by %s at %d]\n", get_assert_level_desc (assert_level), file_name, line_number);
-  stage::print (stdout);
-  printf (" %s\n\n", full_description);
+  FILE *file = stdout;
+  if (assert_level == WRN_ASSERT_LEVEL && G->env().get_warnings_file()) {
+    file = G->env().get_warnings_file();
+  }
+  fprintf (file, "%s [gen by %s at %d]\n", get_assert_level_desc (assert_level), file_name, line_number);
+  stage::print (file);
+  fprintf (file, " %s\n\n", full_description);
   if (assert_level == FATAL_ASSERT_LEVEL) {
-    printf ("Compilation failed.\n"
+    fprintf (file, "Compilation failed.\n"
             "It is probably happened due to incorrect or unsupported PHP input.\n"
             "But it is still bug in compiler.\n");
     abort();
@@ -38,6 +42,7 @@ void on_compilation_error (const char *description __attribute__((unused)), cons
     stage::error();
   }
   stage::warnings_count++;
+  fflush (file);
 }
 
 Location::Location() :
