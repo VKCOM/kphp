@@ -154,9 +154,8 @@ static int run_cmd (const string &cmd) {
   }
 
   if (pid == 0) {
-    const string &warnings_file = G->env().get_warnings_filename();
-    if (!warnings_file.empty()) {
-      int fd = open (warnings_file.c_str(), O_WRONLY | O_APPEND, 0);
+    int fd = G->env().get_warnings_fd();
+    if (fd > 0) {
       dup2 (fd, 2);
     }
     //prctl (PR_SET_PDEATHSIG, SIGKILL);

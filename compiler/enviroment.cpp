@@ -232,6 +232,14 @@ void KphpEnviroment::set_stats_file (FILE *file) {
   stats_file = file;
 }
 
+int KphpEnviroment::get_warnings_fd () const {
+  return warnings_fd;
+}
+
+void KphpEnviroment::set_warnings_fd (int fd) {
+  warnings_fd = fd;
+}
+
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd (tmp, PATH_MAX);

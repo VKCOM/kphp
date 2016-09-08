@@ -2334,8 +2334,10 @@ bool compiler_execute (KphpEnviroment *env) {
       fprintf (stderr, "Can't open warnings-file %s\n", env->get_warnings_filename().c_str());
       return false;
     } else {
-      assert (close (fd) == 0);
+      env->set_warnings_fd (fd);
     }
+  } else {
+    env->set_warnings_fd (0);
   }
   if (!env->get_stats_filename().empty()) {
     FILE *f = fopen (env->get_stats_filename().c_str(), "w");
