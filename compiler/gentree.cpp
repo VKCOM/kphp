@@ -839,6 +839,12 @@ VertexPtr GenTree::get_actual_value (VertexPtr v) {
   if (v->type() == op_var && v->extra_type == op_ex_var_const) {
     return v->get_var_id()->init_val;
   }
+  if (v->type() == op_define_val) {
+    DefinePtr d = v.as <op_define_val>()->get_define_id();
+    if (d->type() == DefineData::def_php) {
+      return d->val;
+    }
+  }
   return v;
 }
 
