@@ -809,6 +809,9 @@ int wait_queue_push_unsafe (int queue_id, int resumable_id) {
 int first_free_queue_id;
 
 void unregister_wait_queue(int queue_id) {
+  if (queue_id == -1) {
+    return;
+  }
   get_wait_queue (queue_id)->resumable_id = -first_free_queue_id - 1;
   first_free_queue_id = queue_id;
 }
@@ -886,8 +889,9 @@ static void wait_queue_skip_gotten (wait_queue *q) {
 
 bool f$wait_queue_empty (int queue_id) {
   if (!is_wait_queue_id (queue_id)) {
-    php_warning ("Wrong queue_id %d in function wait_queue_empty", queue_id);
-
+    if (queue_id != -1) {
+      php_warning("Wrong queue_id %d in function wait_queue_empty", queue_id);
+    }
     return true;
   }
 
