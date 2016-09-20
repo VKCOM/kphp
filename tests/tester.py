@@ -398,7 +398,7 @@ if print_tests:
   print len (tests)
   exit(0)
 
-run_make()
+run_make(["php"])
 
 check_call ("rm -rf tmp", shell = True)
 check_call ("mkdir tmp", shell = True)
