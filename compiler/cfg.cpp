@@ -474,7 +474,7 @@ namespace cfg {
         }
         *res_finish = finish;
 
-        if (tree_node->type() == op_do) {
+        if (tree_node->type() == op_do && action_finish_pre.not_null()) {
           add_subtree (*res_start, new_subtree (cond, true));
         }
 

@@ -1,4 +1,4 @@
-@wa
+@ok
 <?php
   function a_0ads_test_111() {
     $from_id = 0;

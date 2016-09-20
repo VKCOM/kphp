@@ -1642,8 +1642,13 @@ void compile_do (VertexAdaptor <op_do> root, CodeGenerator &W) {
        BEGIN <<
          AsSeq (root->cmd()) <<
          Label (root->continue_label_id) <<
-       END << " while (" << root->cond() << ");" << NL <<
-       Label (root->break_label_id);
+       END << " while (";
+  if (root->cond()->type() == op_empty) {
+    W << "0";
+  } else {
+    W << root->cond();
+  }
+  W << ");" << NL << Label (root->break_label_id);
 }
 
 
