@@ -29,6 +29,9 @@ Target::Target() :
   }
 Target::~Target() {
 }
+void Target::compute_priority() {
+  priority = 0;
+}
 bool Target::after_run_success() {
   return true;
 }
@@ -71,6 +74,7 @@ void Make::run_target (Target *target) {
   }
   
   if (!ready) {
+    target->compute_priority();
     pending_jobs.push (target);
   } else {
     ready_target (target);
@@ -264,7 +268,7 @@ bool Make::make_target (Target *target, int jobs_count) {
           break;
         }
 
-        Target *target = pending_jobs.front();
+        Target *target = pending_jobs.top();
         pending_jobs.pop();
         if (!start_job (target)) {
           on_fail();
@@ -372,6 +376,14 @@ string FileTarget::get_cmd() {
   assert (0);
   return "";
 }
+void Cpp2ObjTarget::compute_priority() {
+  struct stat st;
+  priority = 0;
+  if (stat (get_name().c_str(), &st) == 0) {
+    priority = st.st_size;
+  }
+}
+
 string Cpp2ObjTarget::get_cmd() {
   std::stringstream ss;
   //ss << "echo " << target();

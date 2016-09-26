@@ -89,6 +89,7 @@ using std::string;
 using std::swap;
 using std::max;
 using std::min;
+using std::priority_queue;
 
 #define DL_ADD_SUFF_(A, B) A##_##B
 #define DL_ADD_SUFF(A, B) DL_ADD_SUFF_(A, B)

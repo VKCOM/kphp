@@ -19,10 +19,12 @@ class Target {
     bool upd_mtime (long long new_mtime) __attribute__ ((warn_unused_result));
     void set_mtime (long long new_mtime);
   public:
+    long long priority;
     double start_time;
     Target();
     virtual ~Target();
 
+    virtual void compute_priority();
     virtual string get_cmd() = 0;
     virtual string get_name() = 0;
     virtual void on_require() {} //can't fail
@@ -35,13 +37,20 @@ class Target {
     string dep_list();
 };
 
+class compare_by_priority {
+  public:
+    bool operator() (Target *a, Target *b) const {
+      return a->priority < b->priority;
+    }
+};
+
 class Make {
   private:
     int targets_waiting;
     int targets_left;
     vector <Target *> all_targets;
 
-    queue <Target *> pending_jobs;
+    priority_queue <Target *, vector<Target *>, compare_by_priority> pending_jobs;
     map <int, Target*> jobs;
 
     bool fail_flag;
@@ -99,6 +108,7 @@ class FileTarget : public KphpTarget {
 class Cpp2ObjTarget : public KphpTarget {
   public:
     string get_cmd();
+    void compute_priority();
 };
 class Objs2ObjTarget : public KphpTarget {
   public:
