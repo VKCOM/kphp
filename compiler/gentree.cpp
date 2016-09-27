@@ -226,6 +226,18 @@ template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   CE (!kphp_error (ok_next, "get argument list failed"));
   CE (expect (tok_clpar, "')'"));
 
+  if (Op == op_isset) {
+    CE (!kphp_error (!next.empty(), "isset function requires at least one argument"));
+    CREATE_VERTEX (left, op_isset, next[0]);
+    for (size_t i = 1; i < next.size(); i++) {
+      CREATE_VERTEX (right, op_isset, next[i]);
+      CREATE_VERTEX (log_and, op_log_and, left, right);
+      left = log_and;
+    }
+    set_location (left, call_location);
+    return left;
+  }
+
   CREATE_VERTEX (call, Op, next);
   set_location (call, call_location);
 

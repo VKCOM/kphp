@@ -2686,7 +2686,7 @@ void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W) {
     }
   }
 
-  W << arr_name << ";" <<
+  W << arr_name << ";" << NL <<
        END << ")";
 }
 
