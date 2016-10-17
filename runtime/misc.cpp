@@ -919,7 +919,8 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
     case var::ARRAY_TYPE: {
       const array <var> &a = *AS_CONST_ARRAY(v.a);
       bool is_vector = a.is_vector();
-      if (!is_vector && a.size().string_size == 0 && a.get_next_key() == a.count()) {
+      bool force_object = (bool) (JSON_FORCE_OBJECT & options);
+      if (!force_object && !is_vector && a.size().string_size == 0 && a.get_next_key() == a.count()) {
         int n = 0;
         for (array <var>::const_iterator p = a.begin(); p != a.end(); ++p) {
           if (p.get_key().to_int() != n) {
@@ -931,6 +932,7 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
           is_vector = true;
         }
       }
+      is_vector &= !force_object;
 
       static_SB += "{["[is_vector];
 
@@ -966,7 +968,7 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
 }
 
 string f$json_encode (const var &v, int options, bool simple_encode) {
-  if (options & ~JSON_UNESCAPED_UNICODE) {
+  if (options & ~JSON_UNESCAPED_UNICODE & ~JSON_FORCE_OBJECT) {
     php_warning ("Wrong parameter options = %d in function json_encode", options);
     return CONST_STRING("null");
   }

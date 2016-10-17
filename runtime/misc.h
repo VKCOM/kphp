@@ -40,6 +40,7 @@ string f$serialize (const var &v);
 var f$unserialize (const string &v);
 
 const int JSON_UNESCAPED_UNICODE = 1;
+const int JSON_FORCE_OBJECT = 16;
 
 string f$json_encode (const var &v, int options = 0, bool simple_encode = false);
 
