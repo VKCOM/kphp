@@ -679,7 +679,7 @@ void TypeData::upd_generation (TypeData::generation_t other_generation) {
   }
 }
 
-static inline bool cmp (const TypeData *a, const TypeData *b) {
+static inline int cmp (const TypeData *a, const TypeData *b) {
   if (a == b) {
     return 0;
   }
