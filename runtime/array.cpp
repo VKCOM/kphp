@@ -2637,6 +2637,12 @@ int array <T, TT>::get_reference_counter (void) const {
   return p->ref_cnt + 1;
 }
 
+template <class T, class TT>
+const T *array <T, TT>::get_const_vector_pointer (void) const {
+  php_assert (is_vector());
+  return &(p->get_vector_value(0));
+}
+
 
 template <class T, class TT>
 void swap (array <T, TT> &lhs, array <T, TT> &rhs) {

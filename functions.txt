@@ -582,6 +582,7 @@ function vk_stats_parse_sample($sample ::: string) ::: OrFalse< array<int> >;
 function vk_stats_hll_merge($str ::: var) ::: OrFalse<string>;
 function vk_stats_hll_count($str ::: string) ::: OrFalse<float>;
 
+function vk_dot_product auto ($a ::: array, $b ::: array) ::: lca<^1[], ^2[]>;
 
 /** exceptions **/
 function new_Exception ($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0) ::: Exception;

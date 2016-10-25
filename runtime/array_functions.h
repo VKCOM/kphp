@@ -1,5 +1,5 @@
 #pragma once
-
+#include "common/vector-product.h"
 #include "kphp_core.h"
 #include "string_functions.h"
 
@@ -1092,3 +1092,53 @@ array <var> f$create_vector (int n) {
   return res;
 }
 
+
+template<class T>
+T vk_dot_product_sparse(const array<T> &a, const array<T> &b) {
+  T result = T();
+  for (typename array <T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+    if (b.isset(it.get_key())) {
+      result += it.get_value() * b.get_value(it.get_key());
+    }
+  }
+  return result;
+}
+
+template<class T>
+T vk_dot_product_dense(const array<T> &a, const array<T> &b) {
+  T result = T();
+  int size = min(a.count(), b.count());
+  for (int i = 0; i < size; i++) {
+    result += a.get_value(i) * b.get_value(i);
+  }
+  return result;
+}
+
+template<>
+inline int vk_dot_product_dense<int>(const array<int> &a, const array<int> &b) {
+  int result = 0;
+  int size = min(a.count(), b.count());
+  const int *ap = a.get_const_vector_pointer();
+  const int *bp = b.get_const_vector_pointer();
+  for (int i = 0; i < size; i++) {
+    result += ap[i] * bp[i];
+  }
+  return result;
+}
+
+template<>
+inline double vk_dot_product_dense<double>(const array<double> &a, const array<double> &b) {
+  int size = min(a.count(), b.count());
+  const double *ap = a.get_const_vector_pointer();
+  const double *bp = b.get_const_vector_pointer();
+  return __vector_product(ap, bp, size);
+}
+
+
+template<class T>
+T f$vk_dot_product(const array<T> &a, const array<T> &b) {
+  if (a.is_vector() && b.is_vector()) {
+    return vk_dot_product_dense<T>(a, b);
+  }
+  return vk_dot_product_sparse<T>(a, b);
+}

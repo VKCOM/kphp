@@ -471,6 +471,8 @@ public:
 
   int get_reference_counter (void) const;
 
+  const T *get_const_vector_pointer (void) const; // unsafe
+
 
   template <class T1, class TT1>
   friend class array;
