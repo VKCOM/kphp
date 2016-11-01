@@ -114,9 +114,7 @@ void parse_str_set_value (var &arr, const string &key, const string &value) {
 }
 
 void f$parse_str (const string &str, var &arr) {
-  if (!arr.is_array()) {
-    arr = array <var> ();
-  }
+  arr = array <var> ();
 
   array <string> par = explode ('&', str, INT_MAX);
   int len = par.count();
