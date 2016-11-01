@@ -102,16 +102,19 @@ void stage::print_comment (FILE *f) {
   if (get_line() > 0) {
     string_ref comment = get_file()->get_line (get_line());
     fprintf (f, "//%4d:", get_line());
+    int last_printed = ':';
     for (int j = 0, nj = comment.length(); j < nj; j++) {
       int c = comment.begin()[j];
       if (c == '\n') {
         putc ('\\', f);
         putc ('n', f);
+        last_printed = 'n';
       } else if (c > 13) {
         putc (c, f);
+        last_printed = c;
       }
     }
-    if (comment.length() > 0 && comment.begin()[comment.length() - 1] == '\\') {
+    if (last_printed == '\\') {
       putc (';', f);
     }
     putc ('\n', f);

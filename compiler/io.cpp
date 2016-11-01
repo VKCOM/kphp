@@ -173,15 +173,18 @@ template <class T> void WriterData::dump (string &dest_str, T begin, T end, SrcF
             if (cur_id + 10 > id) {
               dest_str += dl_pstr ("//%d: ", cur_id);
               string_ref comment = file->get_line (cur_id);
+              int last_printed = ':';
               for (int j = 0, nj = comment.length(); j < nj; j++) {
                 int c = comment.begin()[j];
                 if (c == '\n') {
                   dest_str += "\\n";
+                  last_printed = 'n';
                 } else if (c > 13) {
                   dest_str += c;
+                  last_printed = c;
                 }
               }
-              if (comment.length() > 0 && comment.begin()[comment.length() - 1] == '\\') {
+              if (last_printed == '\\') {
                 dest_str += ";";
               }
               dest_str += "\n";
