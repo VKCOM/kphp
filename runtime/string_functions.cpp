@@ -1868,22 +1868,39 @@ array <string> f$str_split (const string &str, int split_length) {
   return result;
 }
 
-string f$substr (const string &str, int start, int length) {
-  int len = str.size();
-  if (start < 0) {
-    start += len;
+OrFalse<string> f$substr (const string &str, int start, int length) {
+  int str_len = str.size();
+
+  if (length < 0 && -length > str_len) {
+    return false;
   }
-  if (start > len) {
-    start = len;
+
+  if (length > str_len) {
+    length = str_len;
+  }
+
+  if (start >= str_len) {
+    return false;
+  }
+
+  if (length < 0 && length < start - str_len) {
+    return false;
+  }
+  if (start < 0) {
+    start = str_len + start;
+    if (start < 0) {
+      start = 0;
+    }
   }
   if (length < 0) {
-    length = len - start + length;
+    length = (str_len - start) + length;
+    if (length < 0) {
+      length = 0;
+    }
   }
-  if (length <= 0 || start < 0) {
-    return string();
-  }
-  if (len - start < length) {
-    length = len - start;
+
+  if (length > str_len - start) {
+    length = str_len - start;
   }
 
   return str.substr (start, length);

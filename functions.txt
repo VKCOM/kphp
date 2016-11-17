@@ -408,7 +408,7 @@ function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false
 function strrev ($str ::: string) ::: string;
 function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;
-function substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX) ::: string;
+function substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX) ::: OrFalse <string>;
 function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = INT_MAX) ::: int;
 
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;

@@ -156,7 +156,7 @@ var f$str_replace (const var &search, const var &replace, const var &subject, in
 
 array <string> f$str_split (const string &str, int split_length = 1);
 
-string f$substr (const string &str, int start, int length = INT_MAX);
+OrFalse<string> f$substr (const string &str, int start, int length = INT_MAX);
 
 int f$substr_count (const string &haystack, const string &needle, int offset = 0, int length = INT_MAX);
 
