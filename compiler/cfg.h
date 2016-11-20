@@ -99,6 +99,7 @@ namespace cfg {
     void create_full_cfg (VertexPtr tree_node, Node *res_start, Node *res_finish);
     void create_cfg (VertexPtr tree_node, Node *res_start, Node *res_finish,
          bool set_flag = false, bool weak_write_flag = false);
+    void create_condition_cfg (VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false);
 
     void calc_used (Node v);
     void confirm_usage (VertexPtr, bool recursive_flags);

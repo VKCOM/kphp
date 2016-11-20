@@ -223,6 +223,46 @@ namespace cfg {
     }
   }
 
+  void CFG::create_condition_cfg (VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false) {
+    switch (tree_node->type()) {
+      case op_conv_bool: {
+        create_condition_cfg (tree_node.as <op_conv_bool>()->expr(), res_start, res_true, res_false);
+        break;
+      }
+      case op_log_not: {
+        create_condition_cfg (tree_node.as <op_log_not>()->expr(), res_start, res_false, res_true);
+        break;
+      }
+      case op_log_and:
+      case op_log_or: {
+        Node first_start, first_true, first_false, second_start, second_true, second_false;
+        VertexAdaptor <meta_op_binary_op> op = tree_node;
+        create_condition_cfg (op->lhs(), &first_start, &first_true, &first_false);
+        create_condition_cfg (op->rhs(), &second_start, &second_true, &second_false);
+        *res_start = first_start;
+        *res_true = new_node();
+        *res_false = new_node();
+        add_edge (first_true, tree_node->type() == op_log_and ? second_start : *res_true);
+        add_edge (first_false, tree_node->type() == op_log_or ? second_start : *res_false);
+        add_edge (second_true, *res_true);
+        add_edge (second_false, *res_false);
+        break;
+      }
+      default: {
+        Node res_finish;
+        create_cfg (tree_node, res_start, &res_finish);
+        *res_true = new_node();
+        *res_false = new_node();
+        add_edge(res_finish, *res_true);
+        add_edge(res_finish, *res_false);
+        break;
+      }
+    }
+
+    add_subtree (*res_start, new_subtree (tree_node, false));
+  }
+
+
   void CFG::create_cfg (VertexPtr tree_node, Node *res_start, Node *res_finish, bool write_flag, bool weak_write_flag) {
     stage::set_location (tree_node->location);
     bool recursive_flag = false;
@@ -249,6 +289,21 @@ namespace cfg {
       }
       case op_log_not: {
         create_cfg (tree_node.as <op_log_not>()->expr(), res_start, res_finish);
+        break;
+      }
+      case op_neq3:
+      case op_eq3:
+      case op_eq2:
+      case op_neq2: {
+        VertexAdaptor <meta_op_binary_op> op = tree_node;
+        if (op->rhs()->type() == op_false || op->rhs()->type() == op_null) {
+          Node first_start, first_finish, second_start;
+          create_cfg (op->lhs(), res_start, &first_finish);
+          create_cfg (op->rhs(), &second_start, res_finish);
+          add_edge (first_finish, second_start);
+        } else {
+          create_full_cfg (tree_node, res_start, res_finish);
+        }
         break;
       }
       case op_index: {
@@ -365,19 +420,38 @@ namespace cfg {
       case op_if: {
         VertexAdaptor <op_if> if_op = tree_node;
         Node finish = new_node();
-        Node cond, if_start, if_finish;
-        create_cfg (if_op->cond(), res_start, &cond);
+        Node cond_true, cond_false, if_start, if_finish;
+        create_condition_cfg (if_op->cond(), res_start, &cond_true, &cond_false);
         create_cfg (if_op->true_cmd(), &if_start, &if_finish);
-        add_edge (cond, if_start);
+        add_edge (cond_true, if_start);
         add_edge (if_finish, finish);
         if (if_op->has_false_cmd()) {
           Node else_start, else_finish;
           create_cfg (if_op->false_cmd(), &else_start, &else_finish);
-          add_edge (cond, else_start);
+          add_edge (cond_false, else_start);
           add_edge (else_finish, finish);
         } else {
-          add_edge (cond, finish);
+          add_edge (cond_false, finish);
         }
+
+        *res_finish = finish;
+        break;
+      }
+      case op_ternary: {
+        VertexAdaptor <op_ternary> ternary_op = tree_node;
+        Node finish = new_node();
+        Node cond_true, cond_false;
+
+        Node if_start, if_finish;
+        create_condition_cfg (ternary_op->cond(), res_start, &cond_true, &cond_false);
+        create_cfg (ternary_op->true_expr(), &if_start, &if_finish);
+        add_edge (cond_true, if_start);
+        add_edge (if_finish, finish);
+
+        Node else_start, else_finish;
+        create_cfg (ternary_op->false_expr(), &else_start, &else_finish);
+        add_edge (cond_false, else_start);
+        add_edge (else_finish, finish);
 
         *res_finish = finish;
         break;
@@ -410,8 +484,8 @@ namespace cfg {
         Node init_start, init_finish;
         create_cfg (for_op->pre_cond(), &init_start, &init_finish);
 
-        Node cond_start, cond_finish;
-        create_cfg (for_op->cond(), &cond_start, &cond_finish);
+        Node cond_start, cond_finish_true, cond_finish_false;
+        create_condition_cfg (for_op->cond(), &cond_start, &cond_finish_true, &cond_finish_false);
 
         Node inc_start, inc_finish;
         create_cfg (for_op->post_cond(), &inc_start, &inc_finish);
@@ -421,12 +495,12 @@ namespace cfg {
         add_edge (action_finish_pre, action_finish);
 
         add_edge (init_finish, cond_start);
-        add_edge (cond_finish, action_start);
+        add_edge (cond_finish_true, action_start);
         add_edge (action_finish, inc_start);
         add_edge (inc_finish, cond_start);
 
         Node finish = new_node();
-        add_edge (cond_finish, finish);
+        add_edge (cond_finish_false, finish);
 
         *res_start = init_start;
         *res_finish = finish;
@@ -452,18 +526,18 @@ namespace cfg {
         }
 
 
-        Node cond_start, cond_finish;
-        create_cfg (cond, &cond_start, &cond_finish);
+        Node cond_start, cond_finish_true, cond_finish_false;
+        create_condition_cfg (cond, &cond_start, &cond_finish_true, &cond_finish_false);
 
         Node action_start, action_finish_pre, action_finish = new_node();
         create_cfg (cmd, &action_start, &action_finish_pre);
         add_edge (action_finish_pre, action_finish);
 
-        add_edge (cond_finish, action_start);
+        add_edge (cond_finish_true, action_start);
         add_edge (action_finish, cond_start);
 
         Node finish = new_node();
-        add_edge (cond_finish, finish);
+        add_edge (cond_finish_false, finish);
 
         if (tree_node->type() == op_do) {
           *res_start = action_start;
@@ -538,20 +612,16 @@ namespace cfg {
         Node prev_finish;
         Node prev_var_finish = cond_finish;
 
+        Node vars_init = new_node();
+        Node vars_read = new_node();
         {
-          Node var_start_0, var_end_0;
-          Node var_start_1, var_end_1;
-          Node var_start_2, var_end_2;
-          Node var_start_3, var_end_3;
-          assert(switch_op->ss()->type() == op_var);
-          create_cfg (switch_op->ss(), &var_start_0, &var_end_0);
-          create_cfg (switch_op->ss_hash(), &var_start_1, &var_end_1);
-          create_cfg (switch_op->switch_var(), &var_start_2, &var_end_2);
-          create_cfg (switch_op->switch_flag(), &var_start_3, &var_end_3);
-          add_edge (cond_start, var_start_0);
-          add_edge (cond_start, var_start_1);
-          add_edge (cond_start, var_start_2);
-          add_edge (cond_start, var_start_3);
+          add_edge (vars_init, vars_read);
+          for (VertexRange i = switch_op->variables(); !i.empty(); i.next()) {
+            add_usage (vars_init, new_usage (usage_write_t, *i));
+            add_usage (vars_read, new_usage (usage_read_t, *i));
+            add_subtree (vars_init, new_subtree (*i, false));
+            add_subtree (vars_read, new_subtree (*i, false));
+          }
         }
 
         bool was_default = false;
@@ -596,11 +666,12 @@ namespace cfg {
           add_edge (prev_var_finish, default_start);
         }
 
-        *res_start = cond_start;
+        add_edge (vars_read, cond_start);
+        *res_start = vars_init;
         *res_finish = finish;
 
         FOREACH_VERTEX (switch_op->cases(), i) {
-          add_subtree (*res_start, new_subtree (*i, false));
+          add_subtree (cond_start, new_subtree (*i, false));
         }
 
         create_cfg_exit_cycle (finish, finish);

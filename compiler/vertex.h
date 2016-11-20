@@ -1276,6 +1276,7 @@ VA_BEGIN (op_switch, meta_op_cycle)
   VertexPtr &ss() {return ith(3);}
   VertexPtr &ss_hash() {return ith(4);}
   VertexRange cases() {return VertexRange (begin() + 5, end());}
+  VertexRange variables() {return VertexRange (begin() + 1, begin() + 5);}
 VA_END
 
 VA_BEGIN (meta_op_require, meta_op_varg_)
