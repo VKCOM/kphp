@@ -3354,7 +3354,7 @@ int main_args_default_handler (int i) {
     break;
   case 'm':
     max_memory = parse_memory_limit_default (optarg, 'm');
-    assert((1 << 20) <= max_memory && max_memory < (2047LL << 20));
+    assert((1 << 20) <= max_memory && max_memory <= (2047LL << 20));
     break;
   case 'u':
     username = optarg;
