@@ -160,6 +160,8 @@ OrFalse<string> f$substr (const string &str, int start, int length = INT_MAX);
 
 int f$substr_count (const string &haystack, const string &needle, int offset = 0, int length = INT_MAX);
 
+OrFalse<string> f$substr_replace (const string &str, const string &replacement, int start, int length = INT_MAX);
+
 string f$trim (const string &s, const string &what = WHAT);
 
 string f$ucfirst (const string &str);

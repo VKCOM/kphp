@@ -1940,6 +1940,48 @@ int f$substr_count (const string &haystack, const string &needle, int offset, in
   } while (true);
 }
 
+OrFalse<string> f$substr_replace (const string &str, const string &replacement, int start, int length) {
+  int str_len = str.size();
+
+  if (length < 0 && -length > str_len) {
+    php_warning("bad length argument in substr function call");
+    return false;
+  }
+
+  if (length > str_len) {
+    length = str_len;
+  }
+
+  if (start >= str_len) {
+    php_warning("start is after string end in substr function call");
+    return false;
+  }
+
+  if (length < 0 && length < start - str_len) {
+    php_warning("start is in part removed by length argument in substr function call");
+    return false;
+  }
+  if (start < 0) {
+    start = str_len + start;
+    if (start < 0) {
+      php_warning("start is too low in substr function call");
+      start = 0;
+    }
+  }
+  if (length < 0) {
+    length = (str_len - start) + length;
+    if (length < 0) {
+      length = 0;
+    }
+  }
+
+  if (length > str_len - start) {
+    length = str_len - start;
+  }
+
+  return str.substr (0, start).append (replacement).append (str.substr (start + length, str.size() - (start + length)));
+}
+
 string f$trim (const string &s, const string &what) {
   const char *mask = get_mask (what);
 
