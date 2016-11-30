@@ -76,9 +76,9 @@ public:
 
   OrFalse <int> match (const string &subject, bool all_matches) const;
 
-  OrFalse <int> match (const string &subject, var &matches, bool all_matches) const;
+  OrFalse <int> match (const string &subject, var &matches, bool all_matches, int offset = 0) const;
 
-  OrFalse <int> match (const string &subject, var &matches, int flags, bool all_matches) const;
+  OrFalse <int> match (const string &subject, var &matches, int flags, bool all_matches, int offset = 0) const;
 
   OrFalse <array <var> > split (const string &subject, int limit, int flags) const;
 
@@ -106,7 +106,7 @@ inline OrFalse <int> f$preg_match (const regexp &regex, const string &subject, v
 
 inline OrFalse <int> f$preg_match_all (const regexp &regex, const string &subject, var &matches);
 
-inline OrFalse <int> f$preg_match (const regexp &regex, const string &subject, var &matches, int flags);
+inline OrFalse <int> f$preg_match (const regexp &regex, const string &subject, var &matches, int flags, int offset = 0);
 
 inline OrFalse <int> f$preg_match_all (const regexp &regex, const string &subject, var &matches, int flags);
 
@@ -118,7 +118,7 @@ inline OrFalse <int> f$preg_match (const string &regex, const string &subject, v
 
 inline OrFalse <int> f$preg_match_all (const string &regex, const string &subject, var &matches);
 
-inline OrFalse <int> f$preg_match (const string &regex, const string &subject, var &matches, int flags);
+inline OrFalse <int> f$preg_match (const string &regex, const string &subject, var &matches, int flags, int offset = 0);
 
 inline OrFalse <int> f$preg_match_all (const string &regex, const string &subject, var &matches, int flags);
 
@@ -341,8 +341,8 @@ OrFalse <int> f$preg_match_all (const regexp &regex, const string &subject, var 
   return regex.match (subject, matches, true);
 }
 
-OrFalse <int> f$preg_match (const regexp &regex, const string &subject, var &matches, int flags) {
-  return regex.match (subject, matches, flags, false);
+OrFalse <int> f$preg_match (const regexp &regex, const string &subject, var &matches, int flags, int offset) {
+  return regex.match (subject, matches, flags, false, offset);
 }
 
 OrFalse <int> f$preg_match_all (const regexp &regex, const string &subject, var &matches, int flags) {
@@ -365,8 +365,8 @@ OrFalse <int> f$preg_match_all (const string &regex, const string &subject, var 
   return f$preg_match_all (regexp (regex), subject, matches);
 }
 
-OrFalse <int> f$preg_match (const string &regex, const string &subject, var &matches, int flags) {
-  return f$preg_match (regexp (regex), subject, matches, flags);
+OrFalse <int> f$preg_match (const string &regex, const string &subject, var &matches, int flags, int offset) {
+  return f$preg_match (regexp (regex), subject, matches, flags, offset);
 }
 
 OrFalse <int> f$preg_match_all (const string &regex, const string &subject, var &matches, int flags) {

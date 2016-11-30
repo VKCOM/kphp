@@ -653,7 +653,7 @@ OrFalse <int> regexp::match (const string &subject, bool all_matches __attribute
   }
 }
 
-OrFalse <int> regexp::match (const string &subject, var &matches, bool all_matches) const {
+OrFalse <int> regexp::match (const string &subject, var &matches, bool all_matches, int offset) const {
   pcre_last_error = 0;
 
   if (pcre_regexp == NULL && RE2_regexp == NULL) {
@@ -681,7 +681,6 @@ OrFalse <int> regexp::match (const string &subject, var &matches, bool all_match
   pcre_last_error = 0;
 
   int result = 0;
-  int offset = 0;
   while (offset <= (int)subject.size()) {
     int count = exec (subject, offset, second_try);
 
@@ -743,7 +742,7 @@ OrFalse <int> regexp::match (const string &subject, var &matches, bool all_match
   }
 }
 
-OrFalse <int> regexp::match (const string &subject, var &matches, int flags, bool all_matches) const {
+OrFalse <int> regexp::match (const string &subject, var &matches, int flags, bool all_matches, int offset) const {
   pcre_last_error = 0;
 
   if (pcre_regexp == NULL && RE2_regexp == NULL) {
@@ -792,7 +791,6 @@ OrFalse <int> regexp::match (const string &subject, var &matches, int flags, boo
   bool second_try = false;//set after matching an empty string
 
   int result = 0;
-  int offset = 0;
   array <var> empty_match (string(), -1);
   while (offset <= (int)subject.size()) {
     int count = exec (subject, offset, second_try);
