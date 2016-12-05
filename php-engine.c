@@ -671,6 +671,7 @@ void php_worker_run_mc_query_packet (php_worker *worker, php_net_query_packet_t 
 
 void php_worker_run_sql_query_packet (php_worker *worker, php_net_query_packet_t *query) {
   query_stats.desc = "SQL";
+  query_stats.query = query->data;
 
   int connection_id = query->connection_id;
   php_script_query_readed (php_script);
