@@ -1978,23 +1978,27 @@ class FinalCheckPass : public FunctionPassBase {
           }
         }
       }
-      if (vertex->type() == op_unset) {
+      if (vertex->type() == op_unset || vertex->type() == op_isset) {
         for (VertexRange i = vertex.as<meta_op_xset>()->args(); !i.empty(); i.next()) {
           VertexPtr varVertex = *i;
           if (varVertex->type() != op_var) {
             continue;
           }
           VarPtr var = varVertex.as<op_var>()->get_var_id();
-          kphp_error(!var->is_reference, "Unset of reference variables is not supported");
-          if (var->type() == VarData::var_global_t) {
-            FunctionPtr f = stage::get_function();
-            if (f->type() != FunctionData::func_global && f->type() != FunctionData::func_switch) {
-              kphp_error(0, "Unset of global variables in functions is not supported");
+          if (vertex->type() == op_unset) {
+            kphp_error(!var->is_reference, "Unset of reference variables is not supported");
+            if (var->type() == VarData::var_global_t) {
+              FunctionPtr f = stage::get_function();
+              if (f->type() != FunctionData::func_global && f->type() != FunctionData::func_switch) {
+                kphp_error(0, "Unset of global variables in functions is not supported");
+              }
             }
+          } else {
+            kphp_error(var->type() != VarData::var_const_t, "Can't use isset on const variable");
           }
         }
       }
-      //TODO: may be this should be moved to tinf_check 
+      //TODO: may be this should be moved to tinf_check
       return vertex;
     }
     template <class VisitT>
