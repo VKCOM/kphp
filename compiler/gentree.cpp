@@ -1,4 +1,5 @@
 #include "gentree.h"
+#include "phpdoc.h"
 
 #include "io.h"
 #include "stage.h"
@@ -1434,8 +1435,86 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
     CE (expect (tok_semicolon, "';'"));
   }
 
+  int inline_flag = false;
+
   if (cmd.not_null()) {
     cmd = embrace (cmd);
+  }
+
+  if (cmd.not_null() && phpdoc != "") {
+    vector<php_doc_tag> tags = parse_php_doc(phpdoc);
+    int infer_type = 0;
+    int param_ptr = 0;
+    vector<VertexPtr> new_cmd_next;
+    for (int i = 0; i < tags.size(); i++) {
+      if (tags[i].name == "@kphp-inline") {
+        inline_flag = true;
+        continue;
+      }
+      if (tags[i].name == "@kphp-infer") {
+        CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
+        if (tags[i].value == "check") {
+          infer_type = 1;
+        } else if (tags[i].value == "hint") {
+          infer_type = 2;
+        } else if (tags[i].value == "check hint" || tags[i].value == "hint check") {
+          infer_type = 3;
+        } else {
+          CE(!kphp_error(0, "Unknown kphp-infer tag type"));
+        }
+      }
+      if (infer_type && tags[i].name == "@param") {
+        CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
+        size_t space_pos = tags[i].value.find(' ');
+        CE(!kphp_error(space_pos != string::npos, "Failed to parse @param tag"));
+        size_t second_space_pos = tags[i].value.find(' ', space_pos + 1);
+        string var_name = tags[i].value.substr(space_pos + 1, second_space_pos - space_pos - 1);
+        VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
+        CE(!kphp_error(var.not_null(), "Something strange happend during @param parsing"));
+        CE(!kphp_error(var_name == var->str_val,
+                       dl_pstr("@param tag var name mismatch. Expected %s, found %s.", var->str_val.c_str(), var_name.c_str())
+        ));
+        string type_help = tags[i].value.substr(0, space_pos);
+        param_ptr++;
+        VertexPtr doc_type = phpdoc_parse_type(type_help);
+        CE(doc_type.not_null())
+        switch (infer_type) {
+          case 3:
+          case 1: {
+            CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+            CREATE_VERTEX(doc_rule_var, op_var);
+            doc_rule_var->str_val = var_name;
+            doc_rule_var->type_rule = doc_type_check;
+            set_location(doc_rule_var, params_location);
+            new_cmd_next.push_back(doc_rule_var);
+            if (infer_type == 1) {
+              break;
+            }
+          }
+          case 2: {
+            CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
+            CREATE_VERTEX(doc_rule_var, op_var);
+            doc_rule_var->str_val = var_name;
+            doc_rule_var->type_rule = doc_type_check;
+            set_location(doc_rule_var, params_location);
+            new_cmd_next.push_back(doc_rule_var);
+            break;
+          }
+          default: {
+            kphp_assert(0);
+          }
+        }
+      }
+    }
+    CE(!kphp_error(!infer_type || param_ptr == params_next.size(), "Not enough @param tags"));
+    if (!new_cmd_next.empty()) {
+      for (VertexRange i = cmd.as<op_seq>()->args(); !i.empty(); i.next()) {
+        new_cmd_next.push_back(*i);
+      }
+      CREATE_VERTEX(new_cmd, op_seq, new_cmd_next);
+      ::set_location(new_cmd, cmd->get_location());
+      cmd = new_cmd;
+    }
   }
 
   VertexPtr res;
@@ -1459,7 +1538,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
   res->varg_flag = varg_flag;
   res->throws_flag = throws_flag;
   res->resumable_flag = resumable_flag;
-  res->inline_flag = phpdoc.find ("@kphp-inline") != string::npos;
+  res->inline_flag = inline_flag;
 
   if (in_class()) {
     res->extra_type = op_ex_func_member;
