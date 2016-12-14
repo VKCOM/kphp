@@ -15,6 +15,12 @@ static inline int mymin(int a, int b) {
 }
 
 #define HLL_FIRST_RANK_CHAR 0x30
+#define HLL_PACK_CHAR '!'
+#define HLL_PACK_CHAR_V2 '$'
+#define TO_HALF_BYTE(c) ((int)(((c > '9') ? (c - 7) : c) - '0'))
+#define HLL_BUFF_SIZE (1 << 14)
+
+static char hll_buf[HLL_BUFF_SIZE];
 
 // Merges std deviations of two sets
 // n1, n2 - number of elements
@@ -212,6 +218,17 @@ OrFalse< array<int> > f$vk_stats_parse_sample(const string &str) {
   return result;
 }
 
+static bool is_hll_unpacked(string const &hll) {
+  return hll.size() == 0 || (hll[0] != HLL_PACK_CHAR && hll[0] != HLL_PACK_CHAR_V2);
+}
+
+static int get_hll_size(string const &hll) {
+  if (is_hll_unpacked(hll)) {
+    return hll.size();
+  }
+  return hll[0] == HLL_PACK_CHAR ? (1 << 8) : (1 << (hll[1] - '0'));
+}
+
 OrFalse< string > f$vk_stats_hll_merge(const array<var>& a) {
   string result;
   char* result_buff = 0;
@@ -222,11 +239,11 @@ OrFalse< string > f$vk_stats_hll_merge(const array<var>& a) {
     }
     string cur = it.get_value().to_string();
     if (result_len == -1) {
-      result_len = cur.size();
-      result = cur;
-      result.make_not_shared();
+      result_len = get_hll_size(cur);
+      result.assign((string::size_type)result_len, (char)HLL_FIRST_RANK_CHAR);
       result_buff = result.buffer();
-    } else {
+    }
+    if (is_hll_unpacked(cur)) {
       if (result_len != cur.size()) {
         return false;
       }
@@ -235,20 +252,73 @@ OrFalse< string > f$vk_stats_hll_merge(const array<var>& a) {
         if (result_buff[i] < cur[i]) {
           result_buff[i] = cur[i];
         }
+    } else {
+      int i = 1 + (cur[0] == HLL_PACK_CHAR_V2);
+      while (i + 2 < cur.size()) {
+        int p;
+        if (cur[0] == HLL_PACK_CHAR) {
+          p = (TO_HALF_BYTE(cur[i]) << 4) + TO_HALF_BYTE(cur[i + 1]);
+        } else {
+          p = (((int)cur[i] - 1) & 0x7f) + (((int)cur[i + 1] - 1) << 7);
+        }
+        if (p >= result_len) {
+          return false;
+        }
+        if (result_buff[p] < cur[i + 2]) {
+          result_buff[p] = cur[i + 2];
+        }
+        i += 3;
+      }
     }
   }
   return result;
 }
 
-double hll_count (const char *hll_table, int m) {
-  int i;
+static int unpack_hll(string const &hll, char *res) {
+  assert(!is_hll_unpacked(hll));
+  int m = get_hll_size(hll);
+  int pos = 1 + (hll[0] == HLL_PACK_CHAR_V2);
+  memset(res, HLL_FIRST_RANK_CHAR, (size_t)m);
+  while (pos + 2 < hll.size()) {
+    int p;
+    if (hll[0] == HLL_PACK_CHAR) {
+      p = (TO_HALF_BYTE(hll[pos]) << 4) + TO_HALF_BYTE(hll[pos + 1]);
+    } else {
+      p = (((int)hll[pos] - 1) & 0x7f) + (((int)hll[pos + 1] - 1) << 7);
+    }
+    if (p >= m) {
+      return -1;
+    }
+    if (res[p] < hll[pos + 2]) {
+      res[p] = hll[pos + 2];
+    }
+    pos += 3;
+  }
+  if (pos != hll.size()) {
+    return -1;
+  }
+  return m;
+}
+
+
+OrFalse<double> hll_count (string const &hll, int m) {
   double pow_2_32 = (1LL << 32);
   double alpha_m = 0.7213 / (1.0 + 1.079 / m);
+  char const *s;
+  if (!is_hll_unpacked(hll)) {
+    if (unpack_hll(hll, hll_buf) != m) {
+      php_warning("Bad HLL string");
+      return false;
+    }
+    s = hll_buf;
+  } else {
+    s = hll.c_str();
+  }
   double c = 0;
   int vz = 0;
-  for (i = 0; i < m; ++i) {
-    c += 1.0 / (1LL << (hll_table[i] - HLL_FIRST_RANK_CHAR));
-    vz += (hll_table[i] == HLL_FIRST_RANK_CHAR);
+  for (int i = 0; i < m; ++i) {
+    c += 1.0 / (1LL << (s[i] - HLL_FIRST_RANK_CHAR));
+    vz += (s[i] == HLL_FIRST_RANK_CHAR);
   }
   double e = (alpha_m * m * m) / c;
   if (e <= 5.0 / 2.0 * m && vz > 0) {
@@ -275,8 +345,9 @@ double hll_count (const char *hll_table, int m) {
 }
 
 OrFalse<double> f$vk_stats_hll_count(const string &s) {
-  if (s.size() == (1 << 8) || s.size() == (1<<14)) {
-    return hll_count(s.c_str(), s.size());
+  int size = get_hll_size(s);
+  if (size == (1 << 8) || size == (1<<14)) {
+    return hll_count(s, size);
   } else {
     return false;
   }
