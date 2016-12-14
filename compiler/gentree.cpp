@@ -1442,6 +1442,8 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
   }
 
   if (cmd.not_null() && phpdoc != "") {
+    Location location_backup = stage::get_location();
+    stage::set_line(name->location.line);
     vector<php_doc_tag> tags = parse_php_doc(phpdoc);
     int infer_type = 0;
     int param_ptr = 0;
@@ -1453,14 +1455,19 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
       }
       if (tags[i].name == "@kphp-infer") {
         CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
-        if (tags[i].value == "check") {
-          infer_type = 1;
-        } else if (tags[i].value == "hint") {
-          infer_type = 2;
-        } else if (tags[i].value == "check hint" || tags[i].value == "hint check") {
-          infer_type = 3;
-        } else {
-          CE(!kphp_error(0, "Unknown kphp-infer tag type"));
+        stringstream stream;
+        stream << tags[i].value;
+        string token;
+        while (stream >> token) {
+          if (token == "check") {
+            infer_type |= 1;
+          } else if (token == "hint") {
+            infer_type |= 2;
+          } else if (token == "cast") {
+            infer_type |= 4;
+          } else {
+            CE(!kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str())));
+          }
         }
       }
       if (infer_type && tags[i].name == "@param") {
@@ -1471,39 +1478,35 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
         string var_name = tags[i].value.substr(space_pos + 1, second_space_pos - space_pos - 1);
         VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
         CE(!kphp_error(var.not_null(), "Something strange happend during @param parsing"));
-        CE(!kphp_error(var_name == var->str_val,
-                       dl_pstr("@param tag var name mismatch. Expected %s, found %s.", var->str_val.c_str(), var_name.c_str())
+        CE(!kphp_error(var_name == "$" + var->str_val,
+                       dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
         ));
         string type_help = tags[i].value.substr(0, space_pos);
-        param_ptr++;
         VertexPtr doc_type = phpdoc_parse_type(type_help);
         CE(doc_type.not_null())
-        switch (infer_type) {
-          case 3:
-          case 1: {
-            CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
-            CREATE_VERTEX(doc_rule_var, op_var);
-            doc_rule_var->str_val = var_name;
-            doc_rule_var->type_rule = doc_type_check;
-            set_location(doc_rule_var, params_location);
-            new_cmd_next.push_back(doc_rule_var);
-            if (infer_type == 1) {
-              break;
-            }
-          }
-          case 2: {
-            CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
-            CREATE_VERTEX(doc_rule_var, op_var);
-            doc_rule_var->str_val = var_name;
-            doc_rule_var->type_rule = doc_type_check;
-            set_location(doc_rule_var, params_location);
-            new_cmd_next.push_back(doc_rule_var);
-            break;
-          }
-          default: {
-            kphp_assert(0);
-          }
+        if (infer_type & 4) {
+          CE(!kphp_error(doc_type->type() == op_type_rule, dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
+          CE(!kphp_error(doc_type.as<op_type_rule>()->args().empty(), dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
+          CE(!kphp_error(params_next[param_ptr]->type_help == tp_Unknown, dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str())));
+          params_next[param_ptr]->type_help = doc_type.as<op_type_rule>()->type_help;
         }
+        if (infer_type & 1) {
+          CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+          CREATE_VERTEX(doc_rule_var, op_var);
+          doc_rule_var->str_val = var->str_val;
+          doc_rule_var->type_rule = doc_type_check;
+          set_location(doc_rule_var, params_location);
+          new_cmd_next.push_back(doc_rule_var);
+        }
+        if (infer_type & 2) {
+          CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
+          CREATE_VERTEX(doc_rule_var, op_var);
+          doc_rule_var->str_val = var->str_val;
+          doc_rule_var->type_rule = doc_type_check;
+          set_location(doc_rule_var, params_location);
+          new_cmd_next.push_back(doc_rule_var);
+        }
+        param_ptr++;
       }
     }
     CE(!kphp_error(!infer_type || param_ptr == params_next.size(), "Not enough @param tags"));
@@ -1515,6 +1518,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
       ::set_location(new_cmd, cmd->get_location());
       cmd = new_cmd;
     }
+    stage::set_location(location_backup);
   }
 
   VertexPtr res;
