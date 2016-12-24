@@ -51,7 +51,7 @@ string f$uniqid (const string &prefix, bool more_entropy) {
 OrFalse <string> f$iconv (const string &input_encoding, const string &output_encoding, const string &input_str) {
   iconv_t cd;
   if ((cd = iconv_open (output_encoding.c_str(), input_encoding.c_str())) == (iconv_t)-1) {
-    php_critical_error ("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());
+    php_warning ("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());
     return false;
   }
 
