@@ -1562,13 +1562,11 @@ conn_type_t ct_php_engine_rpc_server = {
   .connected = server_failed,
   .wakeup = rpcs_php_wakeup, //replaced
   .alarm = rpcs_php_wakeup, //replaced
-//#ifdef AES
   .crypto_init = aes_crypto_init,
   .crypto_free = aes_crypto_free,
   .crypto_encrypt_output = aes_crypto_encrypt_output,
   .crypto_decrypt_input = aes_crypto_decrypt_input,
   .crypto_needed_output_bytes = aes_crypto_needed_output_bytes,
-//#endif
 };
 
 conn_type_t ct_php_rpc_client = {
@@ -1587,13 +1585,11 @@ conn_type_t ct_php_rpc_client = {
   .wakeup = rpcc_php_wakeup, // replaced
   .alarm = rpcc_php_wakeup, // replaced
   .check_ready = rpc_client_check_ready,
-//#ifdef AES
   .crypto_init = aes_crypto_init,
   .crypto_free = aes_crypto_free,
   .crypto_encrypt_output = aes_crypto_encrypt_output,
   .crypto_decrypt_input = aes_crypto_decrypt_input,
   .crypto_needed_output_bytes = aes_crypto_needed_output_bytes,
-//#endif
 };
 
 int rpcs_php_wakeup (struct connection *c) {
