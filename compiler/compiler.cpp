@@ -510,6 +510,86 @@ class CalcLocationsPass : public FunctionPassBase {
     }
 };
 
+class PreprocessDefinesConcatenationPass : public FunctionPassBase {
+  private:
+    AUTO_PROF (collect_defines);
+    map<string, string> local_defines;
+  public:
+    string get_description() {
+      return "Process defines concatenation";
+    }
+
+    bool check_concat(VertexPtr v) {
+      if (v->type() == op_string) {
+        return true;
+      }
+      if (v->type() == op_concat || v->type() == op_string_build) {
+        FOREACH(v, i) {
+          if (!check_concat(*i)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      if (v->type() == op_func_name) {
+        return local_defines.find(v.as<op_func_name>()->str_val) != local_defines.end();
+      }
+      return false;
+    }
+
+    string collect_concat(VertexPtr v) {
+      if (v->type() == op_string) {
+        return v.as<op_string>()->str_val;
+      }
+      if (v->type() == op_concat || v->type() == op_string_build) {
+        string res;
+        FOREACH(v, i) {
+          res += collect_concat(*i);
+        }
+        return res;
+      }
+      if (v->type() == op_func_name) {
+        map<string,string>::iterator iter = local_defines.find(v.as<op_func_name>()->str_val);
+        kphp_assert(iter != local_defines.end());
+        return iter->second;
+      }
+      kphp_fail();
+    }
+
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
+      if (root->type() == op_define) {
+        VertexAdaptor <meta_op_define> define = root;
+        VertexPtr name = define->name(), val = define->value();
+
+        kphp_error_act (
+          name->type() == op_string,
+          "Define: first parameter must be a string",
+          return root
+        );
+
+        if (val->type() != op_string && check_concat(val)) {
+          string collected = collect_concat(val);
+          CREATE_VERTEX(new_val, op_string);
+          new_val->str_val = collected;
+          new_val->location = val->get_location();
+          val = new_val;
+          CREATE_VERTEX(new_define, op_define, name, val);
+          new_define->location = define->get_location();
+          define = new_define;
+        }
+
+        if (val->type() == op_string) {
+          local_defines[name.as<op_string>()->str_val] = val.as<op_string>()->str_val;
+        }
+
+        return define;
+      }
+
+      return root;
+    }
+};
+
+
 /*** Collect defines declarations ***/
 class CollectDefinesPass : public FunctionPassBase {
   private:
@@ -2401,6 +2481,7 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <FunctionPassF <CalcLocationsPass>,
          DataStream <ReadyFunctionPtr>,
          DataStream <FunctionPtr> > calc_locations_pipe (true);
+    FunctionPassPipe <PreprocessDefinesConcatenationPass>::Self process_defines_concat (true);
     FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
@@ -2483,6 +2564,7 @@ bool compiler_execute (KphpEnviroment *env) {
       create_switch_foreach_vars_pipe >>
       collect_required_pipe >> use_first_output() >>
       calc_locations_pipe >>
+      process_defines_concat >>
       collect_defines_pipe >>
       first_sync_pipe >> sync_node() >>
       prepare_function_pipe >>

@@ -225,7 +225,7 @@ class CollectConstVarsPass : public FunctionPassBase {
           root->type() == op_func_call;
 
         if (root->type() == op_conv_regexp) {
-          VertexPtr expr = root.as <op_conv_regexp>()->expr();
+          VertexPtr expr = GenTree::get_actual_value(root.as <op_conv_regexp>()->expr());
           conv_to_const |= expr->type() == op_string || expr->type() == op_concat ||
             expr->type() == op_string_build;
         }
