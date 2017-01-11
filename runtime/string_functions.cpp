@@ -1872,7 +1872,7 @@ OrFalse<string> f$substr (const string &str, int start, int length) {
   int str_len = str.size();
 
   if (length < 0 && -length > str_len) {
-    php_warning("bad length argument in substr function call");
+//    php_warning("bad length argument in substr function call");
     return false;
   }
 
@@ -1881,18 +1881,18 @@ OrFalse<string> f$substr (const string &str, int start, int length) {
   }
 
   if (start >= str_len) {
-    php_warning("start is after string end in substr function call");
+//    php_warning("start is after string end in substr function call");
     return false;
   }
 
   if (length < 0 && length < start - str_len) {
-    php_warning("start is in part removed by length argument in substr function call");
+//    php_warning("start is in part removed by length argument in substr function call");
     return false;
   }
   if (start < 0) {
     start = str_len + start;
     if (start < 0) {
-      php_warning("start is too low in substr function call");
+//      php_warning("start is too low in substr function call");
       start = 0;
     }
   }
