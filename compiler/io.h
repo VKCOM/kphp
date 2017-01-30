@@ -9,6 +9,7 @@ public:
   string prefix;
   string text, file_name, short_file_name;
   string unified_file_name;
+  string unified_dir_name;
   bool loaded;
   bool is_required;
 

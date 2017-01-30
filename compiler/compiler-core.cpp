@@ -205,6 +205,8 @@ SrcFilePtr CompilerCore::register_file (const string &file_name) {
       string func_name = gen_unique_name ("src$" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name (new_file->file_name);
+      size_t last_slash = new_file->unified_file_name.rfind("/");
+      new_file->unified_dir_name = last_slash == string::npos ? "" : new_file->unified_file_name.substr(0, last_slash);
       node->data = new_file;
     }
   }

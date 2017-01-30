@@ -340,6 +340,21 @@ class CollectRequiredPass : public FunctionPassBase {
       if (root->type() == op_func_call) {
         new_force_func_ptr = true;
         const string &name = root->get_string();
+        size_t pos$$ = name.find("$$");
+        if (pos$$ != string::npos) {
+          string class_name = name.substr(0, pos$$);
+          for (size_t i = 0; i < class_name.length(); i++) {
+            if (class_name[i] == '$') {
+              class_name[i] = '/';
+            }
+          }
+          string filename = class_name + ".php";
+          pair<SrcFilePtr, bool> res = callback->require_file(filename);
+          kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
+          if (res.second) {
+            res.first->req_id = current_function;
+          }
+        }
         if (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args") {
           current_function->varg_flag = true;
         }

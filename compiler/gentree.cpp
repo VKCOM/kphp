@@ -20,6 +20,8 @@ void GenTree::init (const vector <Token *> *tokens_new, GenTreeCallbackBase *cal
   cur = tokens->begin();
   end = tokens->end();
 
+  namespace_name = "";
+
   kphp_assert (cur != end);
   end--;
   kphp_assert ((*end)->type() == tok_end);
@@ -31,6 +33,10 @@ void GenTree::init (const vector <Token *> *tokens_new, GenTreeCallbackBase *cal
 bool GenTree::in_class() {
   return !class_stack.empty();
 }
+bool GenTree::in_namespace() {
+  return !namespace_name.empty();
+}
+
 ClassInfo &GenTree::cur_class() {
   kphp_assert (in_class());
   return class_stack.back();
@@ -39,7 +45,7 @@ void GenTree::register_function (VertexPtr func) {
   stage::set_line (0);
   func = post_process (func);
 
-  if (in_class()) {
+  if (in_class() && !in_namespace()) {
     cur_class().members.push_back (func);
   } else {
     callback->register_function (func);
@@ -48,11 +54,34 @@ void GenTree::register_function (VertexPtr func) {
 void GenTree::enter_class (const string &class_name) {
   class_stack.push_back (ClassInfo());
   cur_class().name = class_name;
+  if (in_namespace()) {
+    kphp_error(class_stack.size() <= 1, "Nested classes are not supported");
+  }
 }
 void GenTree::exit_and_register_class (VertexPtr root) {
   kphp_assert (in_class());
-  cur_class().root = root;
-  callback->register_class (cur_class());
+  if (!in_namespace()) {
+    kphp_error(false, "Only static classes are supported");
+    cur_class().root = root;
+    callback->register_class (cur_class());
+  } else {
+    string name_str = stage::get_file()->main_func_name;
+    vector<VertexPtr> empty;
+    CREATE_VERTEX (name, op_func_name);
+    name->str_val = name_str;
+    CREATE_VERTEX (params, op_func_param_list, empty);
+    CREATE_VERTEX (root, op_seq, empty);
+    CREATE_VERTEX (main, op_function, name, params, root);
+    func_force_return(main);
+
+    main->auto_flag = false;
+    main->varg_flag = false;
+    main->throws_flag = false;
+    main->resumable_flag = false;
+    main->extra_type = op_ex_func_global;
+
+    register_function(main);
+  }
   class_stack.pop_back();
 }
 
@@ -245,7 +274,26 @@ template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   //hack..
   if (Op == op_func_call) {
     VertexAdaptor <op_func_call> func_call = call;
-    func_call->str_val = name;
+    string fname = name;
+    if (name.find(':') != string::npos) {
+      string call_namespace = name.substr(0, name.find(':'));
+      if (call_namespace == "static") {
+        kphp_error(in_namespace(), "static::<func_name> can be used only inside namespace");
+        string class_name = cur_class().name;
+        fname = namespace_name + "$" + class_name + fname.substr(strlen("static"));
+      } else if (fname[0] == '\\') {
+        fname = fname.substr(1);
+      } else {
+        kphp_error(in_namespace(), "Relative namespaces can be used only inside other namespaces");
+        fname = namespace_name + "$" + fname;
+      }
+      for (size_t i = 0; i < fname.length(); i++) {
+        if (fname[i] == ':' || fname[i] == '\\') {
+          fname[i] = '$';
+        }
+      }
+    }
+    func_call->str_val = fname;
   }
   return call;
 }
@@ -1367,7 +1415,11 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
     next_cur();
   }
   if (in_class()) {
-    name_str = "mf_" + name_str;
+    if (in_namespace()) {
+      name_str = namespace_name + "$" + cur_class().name + "$$" + name_str;
+    } else {
+      name_str = "mf_" + name_str;
+    }
   }
   CREATE_VERTEX (name, op_func_name);
   set_location (name, name_location);
@@ -1383,7 +1435,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
 
   AutoLocation params_location (this);
   vector <VertexPtr> params_next;
-  if (in_class()) {
+  if (in_class() && !in_namespace()) {
     CREATE_VERTEX (this_var, op_var);
     set_location (this_var, params_location);
     this_var->str_val = "this$";
@@ -1544,10 +1596,12 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
   res->resumable_flag = resumable_flag;
   res->inline_flag = inline_flag;
 
-  if (in_class()) {
-    res->extra_type = op_ex_func_member;
-  } else if (in_func_cnt_ == 0) {
-    res->extra_type = op_ex_func_global;
+  if (!in_namespace()) {
+    if (in_class()) {
+      res->extra_type = op_ex_func_member;
+    } else if (in_func_cnt_ == 0) {
+      res->extra_type = op_ex_func_global;
+    }
   }
 
   register_function (res);
@@ -1590,6 +1644,11 @@ VertexPtr GenTree::get_class() {
   CE (!kphp_error (test_expect (tok_func_name), "Class name expected"));
 
   string name_str = (*cur)->str_val;
+  if (in_namespace()) {
+    string expected_name = stage::get_file()->short_file_name;
+    kphp_error (name_str == expected_name,
+                dl_pstr("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
+  }
   CREATE_VERTEX (name, op_func_name);
   set_location (name, AutoLocation (this));
   name->str_val = name_str;
@@ -1605,6 +1664,37 @@ VertexPtr GenTree::get_class() {
 
   exit_and_register_class (class_vertex);
   return VertexPtr();
+}
+
+VertexPtr GenTree::get_namespace_class() {
+  kphp_assert (test_expect (tok_namespace));
+  next_cur();
+  kphp_error (test_expect (tok_func_name), "Namespace name expected");
+  SrcFilePtr current_file = stage::get_file();
+  string namespace_name = (*cur)->str_val;
+  string expected_namespace_name = current_file->unified_dir_name;
+  for (size_t i = 0; i < expected_namespace_name.length(); i++) {
+    if (expected_namespace_name[i] == '/') {
+      expected_namespace_name[i] = '\\';
+    }
+  }
+  kphp_error (namespace_name == expected_namespace_name,
+                  dl_pstr("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
+  for (size_t i = 0; i < namespace_name.length(); i++) {
+    if (namespace_name[i] == '\\') {
+      namespace_name[i] = '$';
+    }
+  }
+  this->namespace_name = namespace_name;
+  next_cur();
+  expect (tok_semicolon, "';'");
+  if (stage::has_error()) {
+    while (cur != end) ++cur;
+    return VertexPtr();
+  }
+  VertexPtr cv = get_class();
+  CE (check_statement_end());
+  return cv;
 }
 
 VertexPtr GenTree::get_statement() {
@@ -1688,7 +1778,17 @@ VertexPtr GenTree::get_statement() {
       return get_foreach();
     case tok_switch:
       return get_switch();
-
+    case tok_public: {
+      CE (!kphp_error(in_class(), "'public' found not in class"));
+      next_cur();
+      expect (tok_static, "'static'");
+      CE (!kphp_error(test_expect(tok_function), "public static is not function"));
+      return get_function();
+    }
+    case tok_private:
+    case tok_protected: {
+      CE (!kphp_error(false, "private and protected is not supported yet"));
+    }
     case tok_phpdoc: {
       Token *token = *cur;
       next_cur();
@@ -2008,7 +2108,12 @@ VertexPtr GenTree::post_process (VertexPtr root) {
 }
 
 VertexPtr GenTree::run() {
-  VertexPtr res = get_statement();
+  VertexPtr res;
+  if (test_expect (tok_namespace)) {
+    res = get_namespace_class();
+  } else {
+    res = get_statement();
+  }
   kphp_assert (res.is_null());
   if (cur != end) {
     fprintf (stderr, "line %d: something wrong\n", line_num);

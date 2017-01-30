@@ -126,17 +126,25 @@ const map <string, string> &config_func() {
 void LexerData::post_process (const string &main_func_name) {
   vector <Token *> oldtokens = tokens;
   tokens.clear();
-  if (!main_func_name.empty()) {
-    tokens.push_back (new Token (tok_function));
-    tokens.push_back (new Token (tok_func_name, string_ref_dup (main_func_name)));
-    tokens.push_back (new Token (tok_oppar));
-    tokens.push_back (new Token (tok_clpar));
-  }
   int n = (int)oldtokens.size();
 
   int i = 0;
+  bool is_namespace = !oldtokens.empty() && oldtokens[0]->type() == tok_namespace;
+  if (is_namespace) {
+    for (; i < 3 && i < n; i++) {
+      tokens.push_back(oldtokens[i]); // namespace <name>;
+    }
+  } else {
 
-  tokens.push_back (new Token (tok_opbrc));
+    if (!main_func_name.empty()) {
+      tokens.push_back(new Token(tok_function));
+      tokens.push_back(new Token(tok_func_name, string_ref_dup(main_func_name)));
+      tokens.push_back(new Token(tok_oppar));
+      tokens.push_back(new Token(tok_clpar));
+    }
+
+    tokens.push_back(new Token(tok_opbrc));
+  }
   while (i < n) {
     TokenType tp = tok_empty;
     if (i + 2 < n && oldtokens[i]->type() == tok_oppar && oldtokens[i + 2]->type() == tok_clpar) {
@@ -242,7 +250,9 @@ void LexerData::post_process (const string &main_func_name) {
     }
   }
 
-  tokens.push_back (new Token (tok_clbrc));
+  if (!is_namespace) {
+    tokens.push_back(new Token(tok_clbrc));
+  }
   tokens.push_back (new Token (tok_end));
 }
 
@@ -304,10 +314,43 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
   }
 
   const char *t = s;
-  if (is_alpha (t[0])) {
-    t++;
-    while (is_alphanum (t[0])) {
+  if (type == tok_var_name) {
+    if (is_alpha(t[0])) {
       t++;
+      while (is_alphanum(t[0])) {
+        t++;
+      }
+    }
+  } else {
+    if (is_alpha(t[0]) || t[0] == '\\') {
+      t++;
+      while (is_alphanum(t[0]) || t[0] == '\\' || t[0] == ':') {
+        t++;
+      }
+    }
+    if (s != t) {
+      bool bad = false;
+      bool have_colons = false;
+      if (t[-1] == ':' || t[-1] == '\\') {
+        bad = true;
+      }
+      for (const char *cur = s; cur + 1 != t; cur++) {
+        if (cur[0] == '\\' && cur[1] == '\\') {
+          bad = true;
+          break;
+        }
+        if (cur[0] == ':') {
+          if (cur[1] != ':' || have_colons) {
+            bad = true;
+            break;
+          }
+          have_colons = true;
+          cur++;
+        }
+      }
+      if (bad) {
+        return TokenLexerError("Bad function name " + string(s, t)).parse(lexer_data);
+      }
     }
   }
 
@@ -1035,7 +1078,7 @@ Helper <TokenLexer> *TokenLexerPHP::gen_helper() {
   h->add_rule ("\'", Singleton <TokenLexerSimpleString>::instance());
   h->add_rule ("\"", Singleton <TokenLexerString>::instance());
   h->add_rule ("<<<", Singleton <TokenLexerHeredocString>::instance());
-  h->add_rule ("[a-zA-Z_$]", Singleton <TokenLexerName>::instance());
+  h->add_rule ("[a-zA-Z_$\\]", Singleton <TokenLexerName>::instance());
 
   h->add_rule ("[0-9]|.[0-9]", Singleton <TokenLexerNum>::instance());
 

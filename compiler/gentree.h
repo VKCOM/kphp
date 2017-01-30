@@ -32,6 +32,7 @@ public:
   void init (const vector <Token *> *tokens_new, GenTreeCallbackBase *callback_new);
   void register_function (VertexPtr func);
   bool in_class();
+  bool in_namespace();
   void enter_class (const string &class_name);
   ClassInfo &cur_class();
   void exit_and_register_class (VertexPtr root);
@@ -71,6 +72,7 @@ public:
   VertexPtr get_expression_impl (bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement();
+  VertexPtr get_namespace_class();
   VertexPtr get_seq();
   VertexPtr post_process (VertexPtr root);
   bool check_seq_end();
@@ -107,6 +109,7 @@ private:
   int in_func_cnt_;
   vector <Token *>::const_iterator cur, end;
   vector <ClassInfo> class_stack;
+  string namespace_name;
 };
 void gen_tree_init();
 

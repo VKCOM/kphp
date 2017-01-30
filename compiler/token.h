@@ -37,6 +37,7 @@ enum TokenType {
   tok_case,
   tok_switch,
   tok_class,
+  tok_namespace,
   tok_const,
   tok_default,
   tok_do,
@@ -170,6 +171,10 @@ enum TokenType {
   tok_try,
   tok_catch,
   tok_throws,
+
+  tok_public,
+  tok_private,
+  tok_protected,
 
   tok_resumable,
 
