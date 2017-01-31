@@ -325,6 +325,12 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
     if (is_alpha(t[0]) || t[0] == '\\') {
       t++;
       while (is_alphanum(t[0]) || t[0] == '\\' || t[0] == ':') {
+        if (t[0] == ':') {
+          if (t[1] != ':') {
+            break;
+          }
+          t++;
+        }
         t++;
       }
     }
@@ -340,7 +346,8 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
           break;
         }
         if (cur[0] == ':') {
-          if (cur[1] != ':' || have_colons) {
+          kphp_assert(cur[1] == ':');
+          if (have_colons) {
             bad = true;
             break;
           }
