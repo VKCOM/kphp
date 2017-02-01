@@ -2035,13 +2035,17 @@ void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W) {
       cmd = cs->cmd();
 
       VertexPtr val = GenTree::get_actual_value (cs->expr());
-      kphp_assert (val->type() == op_int_const);
-      string str = val.as <op_int_const>()->str_val;
-      W << "case " << str;
-
-      kphp_error (!used.count (str),
-          dl_pstr ("Switch: repeated cases found [%s]", str.c_str()));
-      used.insert (str);
+      kphp_assert (val->type() == op_int_const || is_const_int(val));
+      W << "case ";
+      if (val->type() == op_int_const) {
+        string str = val.as <op_int_const>()->str_val;
+        W << str;
+        kphp_error (!used.count (str),
+            dl_pstr ("Switch: repeated cases found [%s]", str.c_str()));
+        used.insert (str);
+      } else {
+        compile_vertex(val, W);
+      }
     } else if (tp == op_default) {
       W << "default";
       cmd = VertexAdaptor <op_default> (*i)->cmd();
@@ -2127,7 +2131,7 @@ void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
     } else {
       VertexAdaptor <op_case> cs = *i;
       VertexPtr val = GenTree::get_actual_value (cs->expr());
-      if (val->type() == op_int_const) {
+      if (val->type() == op_int_const || is_const_int(val)) {
         cnt_int++;
       } else if (val->type() == op_string) {
         cnt_str++;

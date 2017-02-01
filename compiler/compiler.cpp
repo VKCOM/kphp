@@ -34,6 +34,9 @@
 #include "crc32.h"
 
 bool is_const (VertexPtr root) {
+  if (is_const_int(root)) {
+    return true;
+  }
   //TODO: make correct check
   switch (root->type()) {
     case op_plus:
@@ -513,7 +516,8 @@ class CalcLocationsPass : public FunctionPassBase {
 class PreprocessDefinesConcatenationPass : public FunctionPassBase {
   private:
     AUTO_PROF (collect_defines);
-    map<string, string> local_defines;
+    map<string, string> local_str_defines;
+    map<string, VertexPtr> local_int_defines;
   public:
     string get_description() {
       return "Process defines concatenation";
@@ -532,9 +536,76 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
         return true;
       }
       if (v->type() == op_func_name) {
-        return local_defines.find(v.as<op_func_name>()->str_val) != local_defines.end();
+        return local_str_defines.find(v.as<op_func_name>()->str_val) != local_str_defines.end();
       }
       return false;
+    }
+
+    bool check_const(VertexPtr v) {
+      switch (v->type()) {
+        case op_int_const:
+          return true;
+        case op_conv_int:
+        case op_minus:
+        case op_plus:
+        case op_not:
+          return check_const(v.as<meta_op_unary_op>()->expr());
+        case op_add:
+        case op_mul:
+        case op_sub:
+        case op_div:
+        case op_mod:
+        case op_and:
+        case op_or:
+        case op_xor:
+        case op_shl:
+        case op_shr:
+          return check_const(v.as<meta_op_binary_op>()->rhs()) && check_const(v.as<meta_op_binary_op>()->lhs());
+        default:
+          break;
+      }
+      if (v->type() == op_func_name) {
+        return local_int_defines.find(v.as<op_func_name>()->str_val) != local_int_defines.end();
+      }
+      return false;
+    }
+
+    VertexPtr make_const(VertexPtr v) {
+      switch (v->type()) {
+        case op_conv_int:
+          return make_const(v.as<meta_op_unary_op>()->expr());
+        case op_int_const:
+          return v;
+        case op_minus:
+        case op_plus:
+        case op_not: {
+          v.as<meta_op_unary_op>()->expr() = make_const(v.as<meta_op_unary_op>()->expr());
+          return v;
+        }
+        case op_add:
+        case op_sub:
+        case op_mul:
+        case op_div:
+        case op_and:
+        case op_or:
+        case op_xor:
+        case op_shl:
+        case op_shr:
+        case op_mod: {
+          v.as<meta_op_binary_op>()->lhs() = make_const(v.as<meta_op_binary_op>()->lhs());
+          v.as<meta_op_binary_op>()->rhs() = make_const(v.as<meta_op_binary_op>()->rhs());
+          return v;
+        }
+        default:
+          break;
+      }
+      if (v->type() == op_func_name) {
+        map<string,VertexPtr>::iterator iter = local_int_defines.find(v.as<op_func_name>()->str_val);
+        kphp_assert(iter != local_int_defines.end());
+        return iter->second;
+      }
+      kphp_assert(false);
+      return VertexPtr();
     }
 
     string collect_concat(VertexPtr v) {
@@ -549,8 +620,8 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
         return res;
       }
       if (v->type() == op_func_name) {
-        map<string,string>::iterator iter = local_defines.find(v.as<op_func_name>()->str_val);
-        kphp_assert(iter != local_defines.end());
+        map<string,string>::iterator iter = local_str_defines.find(v.as<op_func_name>()->str_val);
+        kphp_assert(iter != local_str_defines.end());
         return iter->second;
       }
       kphp_fail();
@@ -578,8 +649,20 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
           define = new_define;
         }
 
+        if (val->type() != op_int_const && check_const(val)) {
+          val = make_const(val);
+          CREATE_VERTEX(new_define, op_define, name, val);
+          new_define->location = define->get_location();
+          define = new_define;
+          local_int_defines[name.as<op_string>()->str_val] = val;
+        }
+
         if (val->type() == op_string) {
-          local_defines[name.as<op_string>()->str_val] = val.as<op_string>()->str_val;
+          local_str_defines[name.as<op_string>()->str_val] = val.as<op_string>()->str_val;
+        }
+
+        if (val->type() == op_int_const) {
+          local_int_defines[name.as<op_string>()->str_val] = val;
         }
 
         return define;

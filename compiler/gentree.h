@@ -187,3 +187,28 @@ VertexPtr GenTree::conv_to (VertexPtr x) {
 inline void GenTree::set_location (VertexPtr v, const GenTree::AutoLocation &location) {
   v->location.line = location.line_num;
 }
+
+static inline bool is_const_int (VertexPtr root) {
+  switch (root->type()) {
+    case op_int_const:
+      return true;
+    case op_minus:
+    case op_plus:
+    case op_not:
+      return is_const_int(root.as<meta_op_unary_op>()->expr());
+    case op_add:
+    case op_mul:
+    case op_sub:
+    case op_div:
+    case op_and:
+    case op_or:
+    case op_xor:
+    case op_shl:
+    case op_shr:
+    case op_mod:
+      return is_const_int(root.as<meta_op_binary_op>()->lhs()) && is_const_int(root.as<meta_op_binary_op>()->rhs());
+    default:
+      break;
+  }
+  return false;
+}
