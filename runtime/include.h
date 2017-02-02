@@ -23,8 +23,7 @@
 #include "common/fast-backtrace.h"
 #include "common-php-functions.h"
 
-#define likely(x) __builtin_expect ((x),1)
-#define unlikely(x) __builtin_expect ((x),0)
+#include "common/likely.h"
 
 inline void php_warning (char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
