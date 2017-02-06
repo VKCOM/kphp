@@ -252,14 +252,17 @@ class CalcBadVars {
       merge_bad_vars.run (call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
     }
 
-    template <class GraphT, class WasT, class VertexT>
-    void mark (const GraphT &graph, WasT &was, VertexT vertex) {
+    template <class GraphT, class WasT, class VertexT, class ParentT>
+    void mark (const GraphT &graph, WasT &was, VertexT vertex, ParentT &parents) {
       if (was[vertex]) {
         return;
       }
       was[vertex] = 1;
       FOREACH (graph[vertex], next) {
-        mark (graph, was, *next);
+        if (!was[*next]) {
+          parents[*next] = vertex;
+          mark (graph, was, *next, parents);
+        }
       }
     }
 
@@ -272,15 +275,19 @@ class CalcBadVars {
       }
       IdMap <char> from_resumable (call_graph.n);
       IdMap <char> into_resumable (call_graph.n);
+      IdMap <FunctionPtr> from_parents (call_graph.n);
+      IdMap <FunctionPtr> to_parents (call_graph.n);
       FOREACH (call_graph.functions, func) {
         if ((*func)->root->resumable_flag) {
-          mark (call_graph.graph, from_resumable, *func);
-          mark (call_graph.rev_graph, into_resumable, *func);
+          mark (call_graph.graph, from_resumable, *func, from_parents);
+          mark (call_graph.rev_graph, into_resumable, *func, to_parents);
         }
       }
       FOREACH (call_graph.functions, func) {
         if (from_resumable[*func] && into_resumable[*func]) {
           (*func)->root->resumable_flag = true;
+          (*func)->fork_prev = from_parents[*func];
+          (*func)->wait_prev = to_parents[*func];
         }
       }
       if (G->env().get_print_resumable_graph()) {

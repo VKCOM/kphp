@@ -144,6 +144,7 @@ public:
   string src_full_name, header_full_name;
   SrcFilePtr file_id;
   FunctionPtr req_id;
+  FunctionPtr fork_prev, wait_prev;
   ClassPtr class_id;
   bool varg_flag;
 
@@ -169,6 +170,7 @@ public:
   inline func_type_t &type() {return type_;}
 
   bool is_static_init_empty_body() const;
+  string get_resumable_path() const;
 private:
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
 };

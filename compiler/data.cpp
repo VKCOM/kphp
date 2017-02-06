@@ -144,6 +144,29 @@ bool FunctionData::is_static_init_empty_body() const {
   return true;
 }
 
+string FunctionData::get_resumable_path() const {
+  vector<string> names;
+  FunctionPtr f = fork_prev;
+  while (f.not_null()) {
+    names.push_back(f->name);
+    f = f->fork_prev;
+  }
+  std::reverse(names.begin(), names.end());
+  names.push_back(name);
+  f = wait_prev;
+  while (f.not_null()) {
+    names.push_back(f->name);
+    f = f->wait_prev;
+  }
+  stringstream res;
+  for (int i = 0; i < names.size(); i++) {
+    if (i) {
+      res << " -> ";
+    }
+    res << names[i];
+  }
+  return res.str();
+}
 
 
 /*** DefineData ***/
