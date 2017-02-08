@@ -2091,7 +2091,7 @@ class FinalCheckPass : public FunctionPassBase {
     }
     VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
       if (vertex->type() == op_func_name) {
-        kphp_error (0, "Unexpected function name");
+        kphp_error (0, dl_pstr("Unexpected function name: '%s'", vertex.as<op_func_name>()->str_val.c_str()));
       }
       if (vertex->type() == op_addr) {
         kphp_error (0, "Getting references is unsupported");
