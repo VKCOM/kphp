@@ -75,13 +75,16 @@ FunctionPtr CompilerCore::get_function_unsafe (const string &name) {
   return func;
 }
 
-FunctionPtr CompilerCore::create_function (VertexAdaptor <meta_op_function>  function_root) {
+FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
+  VertexAdaptor <meta_op_function>  function_root = info.root;
   AUTO_PROF (create_function);
   string function_name = function_root->name().as <op_func_name>()->str_val;
   FunctionPtr function = FunctionPtr (new FunctionData());
 
   function->name = function_name;
   function->root = function_root;
+  function->namespace_name = info.namespace_name;
+  function->class_name = info.class_name;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
 

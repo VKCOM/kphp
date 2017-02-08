@@ -50,13 +50,14 @@ void CompilerCore::register_function_header (VertexAdaptor <meta_op_function> fu
 }
 
 template <class DataStream>
-void CompilerCore::register_function (VertexPtr root, DataStream &os) {
+void CompilerCore::register_function (const FunctionInfo &info, DataStream &os) {
+  const VertexPtr &root = info.root;
   if (root.is_null()) {
     return;
   }
   FunctionPtr function;
   if (root->type() == op_function || root->type() == op_func_decl) {
-    function = create_function (root);
+    function = create_function (info);
   } else if (root->type() == op_extern_func) {
     register_function_header (root, os);
     return;

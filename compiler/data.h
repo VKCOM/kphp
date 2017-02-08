@@ -50,6 +50,7 @@ struct ClassInfo {
   string name;
   VertexPtr root;
   vector <VertexPtr> members;
+  vector <VertexPtr> constants;
 };
 
 class ClassData {
@@ -117,6 +118,21 @@ class FunctionMatcher {
     bool is_ready();
 };
 
+class FunctionInfo {
+public:
+  VertexPtr root;
+  string namespace_name;
+  string class_name;
+
+  FunctionInfo(VertexPtr root) : root(root), namespace_name(), class_name() {
+  }
+
+  FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name) : root(root), 
+                                                                                         namespace_name(namespace_name),
+                                                                                         class_name(class_name) {
+  }
+};
+
 class FunctionData {
 public:
   int id;
@@ -158,6 +174,8 @@ public:
   bool is_extern;
   bool used_in_source;
   bool is_callback;
+  string namespace_name;
+  string class_name;
 
   FunctionSetPtr function_set;
 

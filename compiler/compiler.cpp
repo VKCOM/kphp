@@ -143,8 +143,8 @@ class GenTreeCallback : public GenTreeCallbackBase {
     GenTreeCallback (DataStream &os) :
       os (os) {
     }
-    void register_function (VertexPtr root) {
-      G->register_function (root, os);
+    void register_function (const FunctionInfo &info) {
+      G->register_function (info, os);
     }
     __attribute__((error("register_class is not implemented yet")))
     void register_class (const ClassInfo &info __attribute__((unused))) {
@@ -709,6 +709,8 @@ class CollectDefinesPass : public FunctionPassBase {
 
         DefineData::DefineType def_type;
         if (!is_const (val)) {
+          kphp_error(name->get_string().length() <= 1 || name->get_string().substr(0, 2) != "c#",
+                     dl_pstr("Couldn't calculate value of %s", name->get_string().substr(2).c_str()));
           def_type = DefineData::def_var;
 
           CREATE_VERTEX (var, op_var);
@@ -722,6 +724,7 @@ class CollectDefinesPass : public FunctionPassBase {
           set_location (new_root, root->get_location());
           root = new_root;
         } else {
+          printf("collected define = '%s'\n", name->get_string().c_str());
           def_type = DefineData::def_php;
           CREATE_VERTEX (new_root, op_empty);
           root = new_root;
@@ -858,10 +861,22 @@ class PrepareFunctionF  {
 class RegisterDefinesPass : public FunctionPassBase {
   private:
     AUTO_PROF (register_defines);
+    string cur_class_name;
+    string namespace_name;
   public:
     string get_description() {
       return "Register defines pass";
     }
+
+    bool on_start (FunctionPtr function) {
+      if (!FunctionPassBase::on_start(function)) {
+        return false;
+      }
+      cur_class_name = function->class_name;
+      namespace_name = function->namespace_name;
+      return true;
+    }
+
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_defined) {
         bool is_defined = false;
@@ -888,9 +903,32 @@ class RegisterDefinesPass : public FunctionPassBase {
       }
 
       if (root->type() == op_func_name) {
-        const string &name = root->get_string();
+        string name = root->get_string();
+        size_t pos = name.find("::");
+        if (pos != string::npos) {
+          string pref = name.substr(0, pos);
+          name = name.substr(pos + 2);
+          kphp_error(pref != "", "namespace name expected before '::', '' found");
+          for (size_t i = 0; i < pref.length(); i++) {
+            if (pref[i] == '\\') {
+              pref[i] = '$';
+            }
+          }
+          if (pref[0] == '$') {
+            pref = pref.substr(1);
+          } else {
+            if (pref == "static" || pref == "self") {
+              fprintf(stderr, "class_name = \"%s\"\n", cur_class_name.c_str());
+              kphp_error(cur_class_name != "", "'static::' or 'self::' can be used only inside class");
+              pref = cur_class_name;
+            }
+            pref = namespace_name + "$" + pref;
+          }
+          name = "c#" + pref + "$$" + name;
+        }
+        fprintf(stderr, "looking for define = '%s'\n", name.c_str());
         DefinePtr d = G->get_define (name);
-
+        if (d.not_null()) fprintf(stderr, "found define '%s'\n", name.c_str());
         if (d.not_null()) {
           assert (d->name == name);
           if (d->type() == DefineData::def_var) {

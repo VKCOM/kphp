@@ -41,14 +41,14 @@ ClassInfo &GenTree::cur_class() {
   kphp_assert (in_class());
   return class_stack.back();
 }
-void GenTree::register_function (VertexPtr func) {
+void GenTree::register_function (FunctionInfo info) {
   stage::set_line (0);
-  func = post_process (func);
+  info.root = post_process(info.root);
 
   if (in_class() && !in_namespace()) {
-    cur_class().members.push_back (func);
+    cur_class().members.push_back (info.root);
   } else {
-    callback->register_function (func);
+    callback->register_function (info);
   }
 }
 void GenTree::enter_class (const string &class_name) {
@@ -70,7 +70,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     CREATE_VERTEX (name, op_func_name);
     name->str_val = name_str;
     CREATE_VERTEX (params, op_func_param_list, empty);
-    CREATE_VERTEX (root, op_seq, empty);
+    CREATE_VERTEX (root, op_seq, cur_class().constants);
     CREATE_VERTEX (main, op_function, name, params, root);
     func_force_return(main);
 
@@ -80,7 +80,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->resumable_flag = false;
     main->extra_type = op_ex_func_global;
 
-    register_function(main);
+    register_function(FunctionInfo(main, namespace_name, cur_class().name));
   }
   class_stack.pop_back();
 }
@@ -275,20 +275,23 @@ template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   if (Op == op_func_call) {
     VertexAdaptor <op_func_call> func_call = call;
     string fname = name;
-    if (name.find(':') != string::npos) {
-      string call_namespace = name.substr(0, name.find(':'));
-      if (call_namespace == "static") {
-        kphp_error(in_namespace(), "static::<func_name> can be used only inside namespace");
+    size_t pos = name.find("::");
+    if (pos != string::npos) {
+      string call_namespace = name.substr(0, pos);
+      fname = name.substr(pos + 2);
+      if (call_namespace == "static" || call_namespace == "self") {
+        kphp_error(in_namespace(), "static::<func_name> or self::<func_name> can be used only inside class");
         string class_name = cur_class().name;
-        fname = namespace_name + "$" + class_name + fname.substr(strlen("static"));
-      } else if (fname[0] == '\\') {
-        fname = fname.substr(1);
+        call_namespace = namespace_name + "$" + class_name;
+      } else if (call_namespace[0] == '\\') {
+        call_namespace = call_namespace.substr(1);
       } else {
         kphp_error(in_namespace(), "Relative namespaces can be used only inside other namespaces");
-        fname = namespace_name + "$" + fname;
+        call_namespace = namespace_name + "$" + call_namespace;
       }
+      fname = call_namespace + "$$" + fname;
       for (size_t i = 0; i < fname.length(); i++) {
-        if (fname[i] == ':' || fname[i] == '\\') {
+        if (fname[i] == '\\') {
           fname[i] = '$';
         }
       }
@@ -1604,7 +1607,11 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
     }
   }
 
-  register_function (res);
+  if (in_class()) {
+    register_function(FunctionInfo(res, namespace_name, cur_class().name));
+  } else {
+    register_function(res);
+  }
 
   if (anonimous_flag) {
     CREATE_VERTEX (func_ptr, op_func_name);
@@ -1782,12 +1789,12 @@ VertexPtr GenTree::get_statement() {
       CE (!kphp_error(in_class(), "'public' found not in class"));
       next_cur();
       expect (tok_static, "'static'");
-      CE (!kphp_error(test_expect(tok_function), "public static is not function"));
+      CE (!kphp_error(test_expect(tok_function), "Expected 'function; after public static"));
       return get_function();
     }
     case tok_private:
     case tok_protected: {
-      CE (!kphp_error(false, "private and protected is not supported yet"));
+      CE (!kphp_error(false, "'private' and 'protected' are not supported yet"));
     }
     case tok_phpdoc: {
       Token *token = *cur;
@@ -1849,6 +1856,23 @@ VertexPtr GenTree::get_statement() {
     }
     case tok_clbrc: {
       return res;
+    }
+    case tok_const: {
+      AutoLocation const_location (this);
+      CE (!kphp_error(in_class() && in_namespace() && in_func_cnt_ == 0, "const expressions supported only inside classes and namespaces"));
+      next_cur();
+      CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
+      CREATE_VERTEX (name, op_func_name);
+      name->str_val = "c#" + namespace_name + "$" + cur_class().name + "$$" + string((*cur)->str_val);
+      next_cur();
+      CE (expect(tok_eq1, "'='"));
+      VertexPtr v = get_expression();
+      CREATE_VERTEX(def, op_define, name, v);
+      set_location(def, const_location);
+      CE (check_statement_end());
+      cur_class().constants.push_back(def);
+      CREATE_VERTEX (empty, op_empty);
+      return empty;
     }
     default:
       res = get_expression();

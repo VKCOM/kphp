@@ -109,7 +109,9 @@ FunctionData::FunctionData () :
   min_argn (0),
   is_extern (false),
   used_in_source (false),
-  is_callback (false) {
+  is_callback (false),
+  namespace_name (""),
+  class_name ("") {
 }
 
 FunctionData::FunctionData (VertexPtr root) :
@@ -127,7 +129,9 @@ FunctionData::FunctionData (VertexPtr root) :
   min_argn (0),
   is_extern (false),
   used_in_source (false),
-  is_callback (false) {
+  is_callback (false),
+  namespace_name (""),
+  class_name ("") {
 }
 
 bool FunctionData::is_static_init_empty_body() const {

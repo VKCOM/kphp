@@ -33,7 +33,7 @@ class CompilerCore {
 
     bool add_to_function_set (FunctionSetPtr function_set, FunctionPtr function,
                               bool req = false);
-    FunctionPtr create_function (VertexAdaptor <meta_op_function>  function_root);
+    FunctionPtr create_function (const FunctionInfo &info);
 
     inline bool try_require_file (SrcFilePtr file) {
       return __sync_bool_compare_and_swap (&file->is_required, false, true);
@@ -65,7 +65,7 @@ class CompilerCore {
     template <class DataStream>
     void register_function_header (VertexAdaptor <meta_op_function> function_header, DataStream &os);
     template <class DataStream>
-    void register_function (VertexPtr root, DataStream &os);
+    void register_function (const FunctionInfo &info, DataStream &os);
     FunctionSetPtr get_function_set (function_set_t type, const string &name, bool force);
     FunctionPtr get_function_unsafe (const string &name);
 
