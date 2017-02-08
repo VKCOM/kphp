@@ -724,7 +724,6 @@ class CollectDefinesPass : public FunctionPassBase {
           set_location (new_root, root->get_location());
           root = new_root;
         } else {
-          printf("collected define = '%s'\n", name->get_string().c_str());
           def_type = DefineData::def_php;
           CREATE_VERTEX (new_root, op_empty);
           root = new_root;
@@ -918,7 +917,6 @@ class RegisterDefinesPass : public FunctionPassBase {
             pref = pref.substr(1);
           } else {
             if (pref == "static" || pref == "self") {
-              fprintf(stderr, "class_name = \"%s\"\n", cur_class_name.c_str());
               kphp_error(cur_class_name != "", "'static::' or 'self::' can be used only inside class");
               pref = cur_class_name;
             }
@@ -926,9 +924,7 @@ class RegisterDefinesPass : public FunctionPassBase {
           }
           name = "c#" + pref + "$$" + name;
         }
-        fprintf(stderr, "looking for define = '%s'\n", name.c_str());
         DefinePtr d = G->get_define (name);
-        if (d.not_null()) fprintf(stderr, "found define '%s'\n", name.c_str());
         if (d.not_null()) {
           assert (d->name == name);
           if (d->type() == DefineData::def_var) {
