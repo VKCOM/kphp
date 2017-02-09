@@ -434,6 +434,22 @@ void sigusr2_handler (int signum) {
   }
 }
 
+void print_http_data() {
+  if (PHPScriptBase::current_script->data) {
+    http_query_data *data = PHPScriptBase::current_script->data->http_data;
+    if (data) {
+      write_str (2, "\nuri\n");
+      write(2, data->uri, data->uri_len);
+      write_str (2, "\nget\n");
+      write(2, data->get, data->get_len);
+      write_str (2, "\nheaders\n");
+      write(2, data->headers, data->headers_len);
+      write_str (2, "\npost\n");
+      write(2, data->post, data->post_len);
+    }
+  }
+}
+
 void sigsegv_handler (int signum __attribute__((unused)), siginfo_t *info, void *data __attribute__((unused))) {
   write_str (2, engine_tag);
   char buf[13], *s = buf + 13;
@@ -454,6 +470,7 @@ void sigsegv_handler (int signum __attribute__((unused)), siginfo_t *info, void 
       write_str (2, regex_ptr->c_str());
       write_str (2, "]\n");
     }*/
+    print_http_data();
     dl_print_backtrace();
     if (dl::in_critical_section) {
       kwrite_str (2, "In critical section: calling _exit (124)\n");
@@ -464,19 +481,7 @@ void sigsegv_handler (int signum __attribute__((unused)), siginfo_t *info, void 
   } else {
     write_str (2, "Error -2: Segmentation fault");
     //dl_runtime_handler (signum);
-    if (PHPScriptBase::current_script->data) {
-      http_query_data *data = PHPScriptBase::current_script->data->http_data;
-      if (data) {
-        write_str (2, "\nuri\n");
-        write(2, data->uri, data->uri_len);
-        write_str (2, "\nget\n");
-        write(2, data->get, data->get_len);
-        write_str (2, "\nheaders\n");
-        write(2, data->headers, data->headers_len);
-        write_str (2, "\npost\n");
-        write(2, data->post, data->post_len);
-      }
-    }
+    print_http_data();
     dl_print_backtrace();
     raise(SIGQUIT); // hack for generate core dump
     _exit (123);
