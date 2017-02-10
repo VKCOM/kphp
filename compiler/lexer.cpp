@@ -237,6 +237,14 @@ void LexerData::post_process (const string &main_func_name) {
         tokens.push_back (oldtokens[i]);
         tokens.back()->type() = tok_require_once;
         i++;
+      } else if (i + 2 < n && (oldtokens[i]->type() == tok_func_name || oldtokens[i]->type() == tok_static) &&
+                 oldtokens[i + 1]->type() == tok_double_colon &&
+                 (oldtokens[i + 2]->type() == tok_func_name || oldtokens[i + 2]->type() == tok_var_name)) {
+        tokens.push_back (new Token(oldtokens[i + 2]->type()));
+        string pref_name = (oldtokens[i]->type() == tok_static ? "static" : (string)oldtokens[i]->str_val);
+        tokens.back()->str_val = string_ref_dup(pref_name + "::" + (string)oldtokens[i + 2]->str_val);
+        tokens.back()->line_num = oldtokens[i]->line_num;
+        i += 3;
       } else {
         tokens.push_back (oldtokens[i]);
         i++;
@@ -324,35 +332,19 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
   } else {
     if (is_alpha(t[0]) || t[0] == '\\') {
       t++;
-      while (is_alphanum(t[0]) || t[0] == '\\' || t[0] == ':') {
-        if (t[0] == ':') {
-          if (t[1] != ':') {
-            break;
-          }
-          t++;
-        }
+      while (is_alphanum(t[0]) || t[0] == '\\') {
         t++;
       }
     }
     if (s != t) {
       bool bad = false;
-      bool have_colons = false;
-      if (t[-1] == ':' || t[-1] == '\\') {
+      if (t[-1] == '\\') {
         bad = true;
       }
       for (const char *cur = s; cur + 1 != t; cur++) {
         if (cur[0] == '\\' && cur[1] == '\\') {
           bad = true;
           break;
-        }
-        if (cur[0] == ':') {
-          kphp_assert(cur[1] == ':');
-          if (have_colons) {
-            bad = true;
-            break;
-          }
-          have_colons = true;
-          cur++;
         }
       }
       if (bad) {
