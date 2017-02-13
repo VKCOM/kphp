@@ -70,7 +70,10 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     CREATE_VERTEX (name, op_func_name);
     name->str_val = name_str;
     CREATE_VERTEX (params, op_func_param_list, empty);
-    CREATE_VERTEX (root, op_seq, cur_class().constants);
+    vector <VertexPtr> seq;
+    seq.insert(seq.end(), cur_class().constants.begin(), cur_class().constants.end());
+    seq.insert(seq.end(), cur_class().static_members.begin(), cur_class().static_members.end());
+    CREATE_VERTEX (root, op_seq, seq);
     CREATE_VERTEX (main, op_function, name, params, root);
     func_force_return(main);
 
@@ -274,29 +277,7 @@ template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   //hack..
   if (Op == op_func_call) {
     VertexAdaptor <op_func_call> func_call = call;
-    string fname = name;
-    size_t pos = name.find("::");
-    if (pos != string::npos) {
-      string call_namespace = name.substr(0, pos);
-      fname = name.substr(pos + 2);
-      if (call_namespace == "static" || call_namespace == "self") {
-        kphp_error(in_namespace(), "static::<func_name> or self::<func_name> can be used only inside class");
-        string class_name = cur_class().name;
-        call_namespace = namespace_name + "$" + class_name;
-      } else if (call_namespace[0] == '\\') {
-        call_namespace = call_namespace.substr(1);
-      } else {
-        kphp_error(in_namespace(), "Relative namespaces can be used only inside other namespaces");
-        call_namespace = namespace_name + "$" + call_namespace;
-      }
-      fname = call_namespace + "$$" + fname;
-      for (size_t i = 0; i < fname.length(); i++) {
-        if (fname[i] == '\\') {
-          fname[i] = '$';
-        }
-      }
-    }
-    func_call->str_val = fname;
+    func_call->set_string(name);
   }
   return call;
 }
@@ -1399,7 +1380,7 @@ VertexPtr GenTree::get_switch() {
 }
 
 static volatile int anonimous_func_id = 0;
-VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
+VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType access_type) {
   AutoLocation func_location (this);
 
   TokenType type = (*cur)->type();
@@ -1613,6 +1594,10 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc) {
     register_function(res);
   }
 
+  if (res->type() == op_function) {
+    res.as<op_function>()->get_func_id()->access_type = access_type;
+  }
+
   if (anonimous_flag) {
     CREATE_VERTEX (func_ptr, op_func_name);
     set_location (func_ptr, name_location);
@@ -1785,16 +1770,27 @@ VertexPtr GenTree::get_statement() {
       return get_foreach();
     case tok_switch:
       return get_switch();
-    case tok_public: {
-      CE (!kphp_error(in_class(), "'public' found not in class"));
+    case tok_public:
+    case tok_private: {
+      string modifier = type == tok_public ? "public" : "private";
+      CE (!kphp_error(in_class(), dl_pstr("'%s' found not in class", modifier.c_str())));
       next_cur();
-      expect (tok_static, "'static'");
-      CE (!kphp_error(test_expect(tok_function), "Expected 'function; after public static"));
-      return get_function();
+      if ((cur + 1 != end) && (*(cur + 1))->type() == tok_function) {
+        expect (tok_static, "'static'");
+        return get_function(false, "", type == tok_public ? access_public : access_private);
+      }
+      kphp_error(test_expect(tok_static), "'static' expected after 'public' or 'private'");
+      VertexPtr v = get_statement();
+      FOREACH_VERTEX(v, e) {
+        kphp_assert((*e)->type() == op_static);
+        (*e)->extra_type = type == tok_private ? op_ex_static_private : op_ex_static_public;
+      }
+      cur_class().static_members.push_back(v);
+      CREATE_VERTEX (empty, op_empty);
+      return empty;
     }
-    case tok_private:
     case tok_protected: {
-      CE (!kphp_error(false, "'private' and 'protected' are not supported yet"));
+      CE (!kphp_error(false, "'protected' is not supported yet"));
     }
     case tok_phpdoc: {
       Token *token = *cur;

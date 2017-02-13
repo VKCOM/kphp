@@ -23,7 +23,9 @@ typedef enum {
   op_ex_rule_const,
   op_ex_internal_func,
   op_ex_index_rval,
-  op_ex_safe_version
+  op_ex_safe_version,
+  op_ex_static_public,
+  op_ex_static_private
 } OperationExtra;
 
 typedef enum {error_op = 0, common_op, cycle_op, binary_op, binary_func_op, prefix_op, postfix_op, ternary_op, conv_op} OperationType;

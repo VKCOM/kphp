@@ -101,7 +101,7 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  VertexPtr get_function (bool anonimous_flag = false, string phpdoc = "");
+  VertexPtr get_function (bool anonimous_flag = false, string phpdoc = "", AccessType access_type = access_nonmember);
   VertexPtr get_class();
 private:
   const vector <Token *> *tokens;

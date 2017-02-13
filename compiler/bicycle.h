@@ -819,6 +819,7 @@ class ProfilerRaw {
   F (check_ub)\
   F (extract_resumable_calls)\
   F (extract_async)\
+  F (check_access_modifiers)\
   F (final_check)\
   F (code_gen)\
   F (writer)\

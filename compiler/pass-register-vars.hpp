@@ -252,6 +252,7 @@ class CollectConstVarsPass : public FunctionPassBase {
 // 2. Global variables
 // 3. Static local variables (with default values)
 // 4. Local variables
+// 5. Class static fields
 class RegisterVariables : public FunctionPassBase {
   private:
     AUTO_PROF (register_variables);
@@ -330,18 +331,41 @@ class RegisterVariables : public FunctionPassBase {
       return v->type() == op_var && v->get_var_id()->type() == VarData::var_global_t;
     }
 
-    void register_static_var (VertexAdaptor <op_var> var_vertex, VertexPtr default_value) {
-      kphp_error_return (!global_function_flag, "Keyword 'static' used in global function");
+    void register_static_var (VertexAdaptor <op_var> var_vertex, VertexPtr default_value, OperationExtra extra_type) {
+      kphp_error_return (!global_function_flag || extra_type == op_ex_static_private || extra_type == op_ex_static_public,
+                         "Keyword 'static' used in global function");
 
-      string name = var_vertex->str_val;
-      VarPtr var = create_local_var (name, VarData::var_static_t, true);
-      var->static_id = current_function;
+      VarPtr var;
+      string name;
+      if (global_function_flag) {
+        kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public);
+        name = current_function->namespace_name + "$" + current_function->class_name + "$$" + var_vertex->str_val;
+        var = get_global_var(name);
+      } else {
+        kphp_assert (extra_type == op_ex_none);
+        name = var_vertex->str_val;
+        var = create_local_var(name, VarData::var_static_t, true);
+        var->static_id = current_function;
+      }
       if (default_value.not_null()) {
         if (!kphp_error (is_const (default_value), dl_pstr ("Default value of [%s] is not constant", name.c_str()))) {
           var->init_val = default_value;
         }
       }
       var_vertex->set_var_id (var);
+      switch (extra_type) {
+        case op_ex_static_private:
+          var->access_type = access_private;
+          break;
+        case op_ex_static_public:
+          var->access_type = access_public;
+          break;
+        case op_ex_none:
+          var->access_type = access_nonmember;
+          break;
+        default:
+          kphp_assert(false);
+      }
     }
 
     void register_param_var (VertexAdaptor <op_var> var_vertex, VertexPtr default_value) {
@@ -362,7 +386,7 @@ class RegisterVariables : public FunctionPassBase {
     void register_var (VertexAdaptor <op_var> var_vertex) {
       VarPtr var;
       string name = var_vertex->str_val;
-      if ((var_vertex->extra_type != op_ex_var_superlocal && global_function_flag) || 
+      if (name.find("$$") != string::npos || (var_vertex->extra_type != op_ex_var_superlocal && global_function_flag) ||
           var_vertex->extra_type == op_ex_var_superglobal) {
         var = get_global_var (name);
       } else {
@@ -407,7 +431,7 @@ class RegisterVariables : public FunctionPassBase {
           kphp_error_act (0, "unexpected expression in 'static'", continue);
         }
 
-        register_static_var (var, default_value);
+        register_static_var (var, default_value, stat->extra_type);
       }
     }
     template <class VisitT>
@@ -480,5 +504,61 @@ class RegisterVariables : public FunctionPassBase {
 
     bool need_recursion (VertexPtr root __attribute__((unused)), LocalT *local __attribute__((unused))) {
       return local->need_recursion_flag;
+    }
+};
+
+class CheckAccessModifiers : public FunctionPassBase {
+  private:
+    AUTO_PROF (check_access_modifiers);
+    string namespace_name;
+    string class_name;
+  public:
+    CheckAccessModifiers() :
+      namespace_name(""),
+      class_name("") {
+    }
+
+    string get_description() {
+      return "Check access modifiers";
+    }
+
+    bool check_function (FunctionPtr function) {
+      return default_check_function (function) && function->type() != FunctionData::func_extern;
+    }
+
+    bool on_start (FunctionPtr function) {
+      if (!FunctionPassBase::on_start (function)) {
+        return false;
+      }
+      namespace_name = function->namespace_name;
+      class_name = function->class_name;
+      return true;
+    }
+
+    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
+      kphp_assert (root.not_null());
+      if (root->type() == op_var) {
+        VarPtr var_id = root.as<op_var>()->get_var_id();
+        string real_name = root.as<op_var>()->str_val;
+        string name = var_id->name;
+        size_t pos = name.find("$$");
+        if (pos != string::npos) {
+          kphp_error(var_id->access_type == access_private || var_id->access_type == access_public,
+                     dl_pstr("Field wasn't declared: %s", real_name.c_str()));
+          kphp_error(var_id->access_type != access_private || namespace_name + "$" + class_name == name.substr(0, pos),
+                            dl_pstr("Can't access private field %s", real_name.c_str()));
+        }
+      } else if (root->type() == op_func_call) {
+        FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
+        string name = func_id->name;
+        string real_name = root.as<op_func_call>()->str_val;
+        size_t pos = name.find("$$");
+        if (pos != string::npos) {
+          kphp_assert(func_id->access_type == access_private || func_id->access_type == access_public);
+          kphp_error(func_id->access_type != access_private || namespace_name + "$" + class_name == name.substr(0, pos),
+                     dl_pstr("Can't access private function %s", name.c_str()));
+        }
+      }
+      return root;
     }
 };

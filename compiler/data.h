@@ -18,6 +18,7 @@ struct DataTraits<Vertex> {
   typedef VertexPtr &value_type;
 };
 
+typedef enum {access_nonmember = 0, access_default, access_public, access_private, access_protected} AccessType;
 
 class VarData {
 public:
@@ -39,6 +40,7 @@ public:
   bool tinf_flag;
   bool global_init_flag;
   bool needs_const_iterator_flag;
+  AccessType access_type;
   void set_uninited_flag (bool f);
   bool get_uninited_flag();
 
@@ -51,6 +53,7 @@ struct ClassInfo {
   VertexPtr root;
   vector <VertexPtr> members;
   vector <VertexPtr> constants;
+  vector <VertexPtr> static_members;
 };
 
 class ClassData {
@@ -176,6 +179,7 @@ public:
   bool is_callback;
   string namespace_name;
   string class_name;
+  AccessType access_type;
 
   FunctionSetPtr function_set;
 

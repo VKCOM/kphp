@@ -327,6 +327,40 @@ class CollectRequiredPass : public FunctionPassBase {
       return "Collect required";
     }
 
+    string get_class_name(string const &name, char delim = '$') {
+      size_t pos$$ = name.find("::");
+      if (pos$$ != string::npos) {
+        string class_name = name.substr(0, pos$$);
+        kphp_assert(!class_name.empty());
+        if (class_name[0] == '\\') {
+          class_name = class_name.substr(1);
+        } else if (class_name == "static" || class_name == "self") {
+          kphp_error(current_function->namespace_name != "",
+                     "static::<func_name> or self::<func_name> can be used only inside class");
+          class_name = current_function->namespace_name + "\\" + current_function->class_name;
+        } else {
+          class_name = current_function->namespace_name + "\\" + class_name;
+        }
+        for (size_t i = 0; i < class_name.size(); i++) {
+          if (class_name[i] == '\\') {
+            class_name[i] = delim;
+          }
+        }
+        return class_name;
+      } else {
+        return "";
+      }
+    }
+
+    string process_static_member_name(string const &name) {
+      size_t pos$$ = name.find("::");
+      if (pos$$ != string::npos) {
+        return get_class_name(name) + "$$" + name.substr(pos$$ + 2);
+      } else {
+        return name;
+      }
+    }
+
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
       if (root->type() == op_string && force_func_ptr) {
         callback->require_function_set (fs_function, root->get_string(), current_function);
@@ -334,27 +368,25 @@ class CollectRequiredPass : public FunctionPassBase {
 
       bool new_force_func_ptr = false;
       if (root->type() == op_func_call || root->type() == op_func_name) {
-        callback->require_function_set (fs_function, root->get_string(), current_function);
+        callback->require_function_set (fs_function, process_static_member_name(root->get_string()), current_function);
       }
 
-      if (root->type() == op_func_call) {
-        new_force_func_ptr = true;
+      if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
         const string &name = root->get_string();
-        size_t pos$$ = name.find("$$");
-        if (pos$$ != string::npos) {
-          string class_name = name.substr(0, pos$$);
-          for (size_t i = 0; i < class_name.length(); i++) {
-            if (class_name[i] == '$') {
-              class_name[i] = '/';
-            }
-          }
+        string class_name = get_class_name(name, '/');
+        if (!class_name.empty()) {
           string filename = class_name + ".php";
           pair<SrcFilePtr, bool> res = callback->require_file(filename);
           kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
           if (res.second) {
             res.first->req_id = current_function;
           }
+          root->set_string(process_static_member_name(name));
         }
+      }
+      if (root->type() == op_func_call) {
+        new_force_func_ptr = true;
+        const string &name = root->get_string();
         if (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args") {
           current_function->varg_flag = true;
         }
@@ -860,8 +892,6 @@ class PrepareFunctionF  {
 class RegisterDefinesPass : public FunctionPassBase {
   private:
     AUTO_PROF (register_defines);
-    string cur_class_name;
-    string namespace_name;
   public:
     string get_description() {
       return "Register defines pass";
@@ -871,8 +901,6 @@ class RegisterDefinesPass : public FunctionPassBase {
       if (!FunctionPassBase::on_start(function)) {
         return false;
       }
-      cur_class_name = function->class_name;
-      namespace_name = function->namespace_name;
       return true;
     }
 
@@ -903,26 +931,8 @@ class RegisterDefinesPass : public FunctionPassBase {
 
       if (root->type() == op_func_name) {
         string name = root->get_string();
-        size_t pos = name.find("::");
-        if (pos != string::npos) {
-          string pref = name.substr(0, pos);
-          name = name.substr(pos + 2);
-          kphp_error(pref != "", "namespace name expected before '::', '' found");
-          for (size_t i = 0; i < pref.length(); i++) {
-            if (pref[i] == '\\') {
-              pref[i] = '$';
-            }
-          }
-          if (pref[0] == '$') {
-            pref = pref.substr(1);
-          } else {
-            if (pref == "static" || pref == "self") {
-              kphp_error(cur_class_name != "", "'static::' or 'self::' can be used only inside class");
-              pref = cur_class_name;
-            }
-            pref = namespace_name + "$" + pref;
-          }
-          name = "c#" + pref + "$$" + name;
+        if (name.find("$$") != string::npos) {
+          name = "c#" + name;
         }
         DefinePtr d = G->get_define (name);
         if (d.not_null()) {
@@ -2677,6 +2687,7 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <AnalyzerF,
       DataStream <FunctionPtr>,
       DataStream <FunctionPtr> > analyzer_pipe (true);
+    FunctionPassPipe <CheckAccessModifiers>::Self check_access_modifiers_pass(true);
     FunctionPassPipe <FinalCheckPass>::Self final_check_pass (true);
     Pipe <CodeGenF,
          DataStream <FunctionPtr>,
@@ -2724,6 +2735,7 @@ bool compiler_execute (KphpEnviroment *env) {
       extract_resumable_calls_pipe >>
       extract_async_pipe >>
       analyzer_pipe >>
+      check_access_modifiers_pass >>
       final_check_pass >>
       code_gen_pipe >> sync_node() >>
       write_files_pipe;
