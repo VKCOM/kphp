@@ -1245,9 +1245,7 @@ var f$json_decode (const string &v, bool assoc) {
   var result;
   int i = 0;
   if (do_json_decode (v.c_str(), v.size(), i, result)) {
-    while (v[i] == ' ') {
-      i++;
-    }
+    json_skip_blanks (v.c_str(), i);
     if (i == (int)v.size()) {
       return result;
     }
