@@ -344,6 +344,30 @@ OrFalse<double> hll_count (string const &hll, int m) {
   return e;
 }
 
+extern "C" void hll_add_shifted(unsigned char *a, int hll_size, long long value);
+
+OrFalse<string> f$vk_stats_hll_add (string hll, const array<var> &a) {
+  if (!is_hll_unpacked(hll)) {
+    return false;
+  }
+  if (hll.size() != (1 << 8) && hll.size() != (1 << 14)) {
+    return false;
+  }
+  int hll_size = __builtin_ctz(get_hll_size(hll));
+  memcpy(hll_buf, hll.c_str(), hll.size());
+  for (typename array <var>::const_iterator it = a.begin(); it != a.end(); ++it) {
+    hll_add_shifted((unsigned char *) hll_buf, hll_size, it.get_value().to_int());
+  }
+  return string(hll_buf, hll.size());
+}
+
+OrFalse<string> f$vk_stats_hll_create (const array<var> &a, int size) {
+  if (size != (1 << 8) && size != (1 << 14)) {
+    return false;
+  }
+  return f$vk_stats_hll_add(string((string::size_type) size, (char) HLL_FIRST_RANK_CHAR), a);
+}
+
 OrFalse<double> f$vk_stats_hll_count(const string &s) {
   int size = get_hll_size(s);
   if (size == (1 << 8) || size == (1<<14)) {

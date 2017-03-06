@@ -20,3 +20,5 @@ OrFalse<string> f$vk_stats_merge_samples (const array<var>& a);
 OrFalse< array<int> > f$vk_stats_parse_sample (const string &str);
 OrFalse<string> f$vk_stats_hll_merge (const array<var>& a);
 OrFalse<double> f$vk_stats_hll_count (const string &s);
+OrFalse<string> f$vk_stats_hll_create (const array<var> &a = array<var>(), int size = (1 << 8));
+OrFalse<string> f$vk_stats_hll_add (string hll, const array<var> &a);
