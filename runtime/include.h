@@ -59,12 +59,37 @@ void php_warning (char const *message, ...) {
     return;
   }
 
+  static const int warnings_time_period = 300;
+  static const int warnings_time_limit = 1000;
+
+  static int warnings_printed = 0;
+  static int warnings_count_time = 0;
+  static int skipped = 0;
+  int cur_time = (int)time(NULL);
+
+  if (cur_time >= warnings_count_time + warnings_time_period) {
+    warnings_printed = 0;
+    warnings_count_time = cur_time;
+    if (skipped > 0) {
+      fprintf(stderr, "[time=%d] Resuming writing warnings: %d skipped\n", (int)time(NULL), skipped);
+      skipped = 0;
+    }
+  }
+
+  if (++warnings_printed >= warnings_time_limit) {
+    if (warnings_printed == warnings_time_limit) {
+      fprintf(stderr, "[time=%d] Warnings limit reached. No more will be printed till %d\n", cur_time, warnings_count_time + warnings_time_period);
+    }
+    ++skipped;
+    return;
+  }
+
   dl::enter_critical_section();//OK
 
   va_list args;
   va_start (args, message);
 
-  fprintf (stderr, "%s%d%sWarning: ", engine_tag, (int)time (NULL), engine_pid);
+  fprintf (stderr, "%s%d%sWarning: ", engine_tag, cur_time, engine_pid);
   vfprintf (stderr, message, args);
   fprintf (stderr, "\n");
   va_end (args);
