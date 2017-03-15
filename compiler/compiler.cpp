@@ -339,7 +339,23 @@ class CollectRequiredPass : public FunctionPassBase {
                      "static::<func_name> or self::<func_name> can be used only inside class");
           class_name = current_function->namespace_name + "\\" + current_function->class_name;
         } else {
-          class_name = current_function->namespace_name + "\\" + class_name;
+          size_t slash_pos = class_name.find('\\');
+          if (slash_pos == string::npos) {
+            slash_pos = class_name.length();
+          }
+          string class_name_start = class_name.substr(0, slash_pos);
+          map<string, string> const &uses = current_function->namespace_uses;
+          bool use_used = false;
+          for (map<string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
+            if (class_name_start == it->first) {
+              class_name = it->second + class_name.substr(class_name_start.length());
+              use_used = true;
+              break;
+            }
+          }
+          if (!use_used) {
+            class_name = current_function->namespace_name + "\\" + class_name;
+          }
         }
         for (size_t i = 0; i < class_name.size(); i++) {
           if (class_name[i] == '\\') {

@@ -38,6 +38,7 @@ enum TokenType {
   tok_switch,
   tok_class,
   tok_namespace,
+  tok_use,
   tok_const,
   tok_default,
   tok_do,

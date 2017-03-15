@@ -110,6 +110,7 @@ private:
   vector <Token *>::const_iterator cur, end;
   vector <ClassInfo> class_stack;
   string namespace_name;
+  map<string, string> namespace_uses;
 };
 void gen_tree_init();
 

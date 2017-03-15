@@ -83,7 +83,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->resumable_flag = false;
     main->extra_type = op_ex_func_global;
 
-    register_function(FunctionInfo(main, namespace_name, cur_class().name));
+    register_function(FunctionInfo(main, namespace_name, cur_class().name, this->namespace_uses));
   }
   class_stack.pop_back();
 }
@@ -1589,7 +1589,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   }
 
   if (in_class()) {
-    register_function(FunctionInfo(res, namespace_name, cur_class().name));
+    register_function(FunctionInfo(res, namespace_name, cur_class().name, this->namespace_uses));
   } else {
     register_function(res);
   }
@@ -1672,20 +1672,56 @@ VertexPtr GenTree::get_namespace_class() {
   }
   kphp_error (namespace_name == expected_namespace_name,
                   dl_pstr("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
-  for (size_t i = 0; i < namespace_name.length(); i++) {
-    if (namespace_name[i] == '\\') {
-      namespace_name[i] = '$';
+  string dollar_namespace_name = namespace_name;
+  for (size_t i = 0; i < dollar_namespace_name.length(); i++) {
+    if (dollar_namespace_name[i] == '\\') {
+      dollar_namespace_name[i] = '$';
     }
   }
-  this->namespace_name = namespace_name;
+  this->namespace_name = dollar_namespace_name;
   next_cur();
   expect (tok_semicolon, "';'");
   if (stage::has_error()) {
     while (cur != end) ++cur;
     return VertexPtr();
   }
+  while (test_expect(tok_use)) {
+    next_cur();
+    while (true) {
+      if (!test_expect(tok_func_name)) {
+        expect(tok_func_name, "<namespace path>");
+      }
+      string name = (*cur)->str_val;
+      kphp_assert(!name.empty());
+      if (name[0] == '\\') {
+        name = name.substr(1);
+      }
+      string alias = name.substr(name.rfind('\\') + 1);
+      kphp_error(!alias.empty(), "KPHP doesn't support use of global namespace");
+      next_cur();
+      if (test_expect(tok_as)) {
+        next_cur();
+        if (!test_expect(tok_func_name)) {
+          expect(tok_func_name, "<use alias>");
+        }
+        alias = (*cur)->str_val;
+        next_cur();
+      }
+      map<string, string> &uses = this->namespace_uses;
+      if (uses.find(alias) == uses.end()) {
+        uses[alias] = name;
+      }
+      if (!test_expect(tok_comma)) {
+        break;
+      }
+      next_cur();
+    }
+    expect2(tok_semicolon, tok_comma, "';' or ','");
+  }
   VertexPtr cv = get_class();
   CE (check_statement_end());
+  this->namespace_name = "";
+  this->namespace_uses.clear();
   return cv;
 }
 

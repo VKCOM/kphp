@@ -126,13 +126,16 @@ public:
   VertexPtr root;
   string namespace_name;
   string class_name;
+  map<string, string> namespace_uses;
 
   FunctionInfo(VertexPtr root) : root(root), namespace_name(), class_name() {
   }
 
-  FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name) : root(root), 
-                                                                                         namespace_name(namespace_name),
-                                                                                         class_name(class_name) {
+  FunctionInfo(VertexPtr root, const string &namespace_name,
+               const string &class_name, const map<string, string> namespace_uses) : root(root),
+                                                                                     namespace_name(namespace_name),
+                                                                                     class_name(class_name),
+                                                                                     namespace_uses(namespace_uses) {
   }
 };
 
@@ -180,6 +183,7 @@ public:
   string namespace_name;
   string class_name;
   AccessType access_type;
+  map<string, string> namespace_uses;
 
   FunctionSetPtr function_set;
 

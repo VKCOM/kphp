@@ -40,12 +40,12 @@ struct KeywordType_t
   TokenType type;
 };
 
-#define TOTAL_KEYWORDS 80
+#define TOTAL_KEYWORDS 81
 #define MIN_WORD_LENGTH 2
 #define MAX_WORD_LENGTH 15
 #define MIN_HASH_VALUE 2
-#define MAX_HASH_VALUE 126
-/* maximum key range = 125, duplicates = 0 */
+#define MAX_HASH_VALUE 106
+/* maximum key range = 105, duplicates = 0 */
 
 class KeywordsSet
 {
@@ -60,32 +60,32 @@ KeywordsSet::hash (register const char *str, register unsigned int len)
 {
   static const unsigned char asso_values[] =
     {
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127,  55, 127,  30,   0,  40,
-        0, 127, 127,  20, 127, 127,  15,   5,  50, 127,
-      127, 127, 127,  65,  15,  20, 127, 127, 127, 127,
-      127, 127, 127, 127, 127,  35, 127,  10,  60,  15,
-        0,   0,  10,  15,   0,   5,   5,   5,  25,  15,
-        0,  30,  35,   0,  25,   0,   0,  65,   0,  45,
-       25,  70, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
-      127, 127, 127, 127, 127, 127
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107,  40, 107,  35,  15,  25,
+        0, 107, 107,  25, 107, 107,  10,  10,   0, 107,
+      107, 107, 107,  55,  50,   5, 107, 107, 107, 107,
+      107, 107, 107, 107, 107,  40, 107,  35,  10,  25,
+        0,   0,  10,  30,   0,   5,   0,   0,  30,  45,
+       10,  10,  60,   5,  15,   0,   0,  15,   5,  35,
+       15,  10, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
+      107, 107, 107, 107, 107, 107
     };
   register int hval = len;
 
@@ -125,146 +125,148 @@ static const struct KeywordType_t wordlist[] =
     {"isset", tok_isset},
 #line 27 "keywords.gperf"
     {"switch", tok_switch},
-#line 25 "keywords.gperf"
-    {"as", tok_as},
-#line 74 "keywords.gperf"
-    {"and", tok_log_and_let},
+#line 75 "keywords.gperf"
+    {"or", tok_log_or_let},
+#line 83 "keywords.gperf"
+    {"try", tok_try},
+#line 19 "keywords.gperf"
+    {"echo", tok_echo},
 #line 22 "keywords.gperf"
     {"extern_function", tok_ex_function},
-#line 36 "keywords.gperf"
-    {"static", tok_static},
-#line 48 "keywords.gperf"
-    {"min", tok_min},
-#line 26 "keywords.gperf"
-    {"case", tok_case},
-#line 29 "keywords.gperf"
-    {"const", tok_const},
+#line 65 "keywords.gperf"
+    {"object", tok_object},
+#line 91 "keywords.gperf"
+    {"use", tok_use},
+#line 68 "keywords.gperf"
+    {"true", tok_true},
+#line 54 "keywords.gperf"
+    {"unset", tok_unset},
 #line 76 "keywords.gperf"
     {"define", tok_define},
 #line 78 "keywords.gperf"
     {"defined", tok_defined},
-#line 18 "keywords.gperf"
-    {"continue", tok_continue},
-#line 87 "keywords.gperf"
-    {"namespace", tok_namespace},
-#line 79 "keywords.gperf"
-    {"define_raw", tok_define_raw},
-#line 77 "keywords.gperf"
-    {"DEFINE", tok_define},
-#line 30 "keywords.gperf"
-    {"default", tok_default},
 #line 55 "keywords.gperf"
     {"var", tok_var},
-#line 39 "keywords.gperf"
-    {"list", tok_list},
-#line 28 "keywords.gperf"
-    {"class", tok_class},
-#line 75 "keywords.gperf"
-    {"or", tok_log_or_let},
-#line 21 "keywords.gperf"
-    {"function", tok_function},
-#line 19 "keywords.gperf"
-    {"echo", tok_echo},
-#line 84 "keywords.gperf"
-    {"catch", tok_catch},
+#line 71 "keywords.gperf"
+    {"NULL", tok_null},
+#line 79 "keywords.gperf"
+    {"define_raw", tok_define_raw},
 #line 64 "keywords.gperf"
     {"string", tok_string},
 #line 51 "keywords.gperf"
     {"sprintf", tok_sprintf},
 #line 15 "keywords.gperf"
     {"for", tok_for},
-#line 32 "keywords.gperf"
-    {"eval", tok_eval},
-#line 67 "keywords.gperf"
-    {"false", tok_false},
-#line 65 "keywords.gperf"
-    {"object", tok_object},
-#line 16 "keywords.gperf"
-    {"foreach", tok_foreach},
-#line 49 "keywords.gperf"
-    {"max", tok_max},
-#line 40 "keywords.gperf"
-    {"auto", tok_auto},
-#line 46 "keywords.gperf"
-    {"print", tok_print},
-#line 52 "keywords.gperf"
-    {"printf", tok_printf},
-#line 89 "keywords.gperf"
-    {"private", tok_private},
-#line 80 "keywords.gperf"
-    {"new", tok_new},
-#line 37 "keywords.gperf"
-    {"goto", tok_goto},
-#line 23 "keywords.gperf"
-    {"array", tok_array},
-#line 41 "keywords.gperf"
-    {"include", tok_require},
-#line 73 "keywords.gperf"
-    {"xor", tok_log_xor_let},
-#line 72 "keywords.gperf"
-    {"null", tok_null},
-#line 63 "keywords.gperf"
-    {"float", tok_float},
-#line 42 "keywords.gperf"
-    {"include_once", tok_require_once},
-#line 20 "keywords.gperf"
-    {"dbg_echo", tok_dbg_echo},
-#line 50 "keywords.gperf"
-    {"pack", tok_pack},
+#line 26 "keywords.gperf"
+    {"case", tok_case},
 #line 81 "keywords.gperf"
     {"throw", tok_throw},
 #line 85 "keywords.gperf"
     {"throws", tok_throws},
-#line 59 "keywords.gperf"
-    {"__DIR__", tok_dir_c},
-#line 57 "keywords.gperf"
-    {"__FILE__", tok_file_c},
-#line 82 "keywords.gperf"
-    {"Exception", tok_Exception},
+#line 16 "keywords.gperf"
+    {"foreach", tok_foreach},
+#line 73 "keywords.gperf"
+    {"xor", tok_log_xor_let},
+#line 39 "keywords.gperf"
+    {"list", tok_list},
 #line 53 "keywords.gperf"
     {"store_many", tok_store_many},
-#line 58 "keywords.gperf"
-    {"__FUNCTION__", tok_func_c},
-#line 47 "keywords.gperf"
-    {"var_dump", tok_var_dump},
-#line 68 "keywords.gperf"
-    {"true", tok_true},
-#line 54 "keywords.gperf"
-    {"unset", tok_unset},
-#line 83 "keywords.gperf"
-    {"try", tok_try},
-#line 90 "keywords.gperf"
-    {"protected", tok_protected},
+#line 38 "keywords.gperf"
+    {"return", tok_return},
+#line 25 "keywords.gperf"
+    {"as", tok_as},
+#line 74 "keywords.gperf"
+    {"and", tok_log_and_let},
+#line 86 "keywords.gperf"
+    {"resumable", tok_resumable},
+#line 29 "keywords.gperf"
+    {"const", tok_const},
+#line 36 "keywords.gperf"
+    {"static", tok_static},
+#line 43 "keywords.gperf"
+    {"require", tok_require},
+#line 18 "keywords.gperf"
+    {"continue", tok_continue},
+#line 37 "keywords.gperf"
+    {"goto", tok_goto},
+#line 67 "keywords.gperf"
+    {"false", tok_false},
+#line 77 "keywords.gperf"
+    {"DEFINE", tok_define},
+#line 44 "keywords.gperf"
+    {"require_once", tok_require_once},
+#line 80 "keywords.gperf"
+    {"new", tok_new},
+#line 40 "keywords.gperf"
+    {"auto", tok_auto},
 #line 17 "keywords.gperf"
     {"break", tok_break},
+#line 30 "keywords.gperf"
+    {"default", tok_default},
+#line 21 "keywords.gperf"
+    {"function", tok_function},
+#line 66 "keywords.gperf"
+    {"bool", tok_bool},
+#line 84 "keywords.gperf"
+    {"catch", tok_catch},
+#line 35 "keywords.gperf"
+    {"global", tok_global},
+#line 58 "keywords.gperf"
+    {"__FUNCTION__", tok_func_c},
+#line 48 "keywords.gperf"
+    {"min", tok_min},
+#line 82 "keywords.gperf"
+    {"Exception", tok_Exception},
+#line 63 "keywords.gperf"
+    {"float", tok_float},
+#line 49 "keywords.gperf"
+    {"max", tok_max},
+#line 87 "keywords.gperf"
+    {"namespace", tok_namespace},
+#line 28 "keywords.gperf"
+    {"class", tok_class},
+#line 41 "keywords.gperf"
+    {"include", tok_require},
+#line 47 "keywords.gperf"
+    {"var_dump", tok_var_dump},
+#line 32 "keywords.gperf"
+    {"eval", tok_eval},
+#line 69 "keywords.gperf"
+    {"FALSE", tok_false},
+#line 42 "keywords.gperf"
+    {"include_once", tok_require_once},
+#line 57 "keywords.gperf"
+    {"__FILE__", tok_file_c},
+#line 72 "keywords.gperf"
+    {"null", tok_null},
+#line 11 "keywords.gperf"
+    {"while", tok_while},
+#line 89 "keywords.gperf"
+    {"private", tok_private},
+#line 20 "keywords.gperf"
+    {"dbg_echo", tok_dbg_echo},
+#line 90 "keywords.gperf"
+    {"protected", tok_protected},
+#line 46 "keywords.gperf"
+    {"print", tok_print},
+#line 52 "keywords.gperf"
+    {"printf", tok_printf},
 #line 60 "keywords.gperf"
     {"__LINE__", tok_line_c},
 #line 70 "keywords.gperf"
     {"TRUE", tok_true},
-#line 11 "keywords.gperf"
-    {"while", tok_while},
-#line 71 "keywords.gperf"
-    {"NULL", tok_null},
-#line 69 "keywords.gperf"
-    {"FALSE", tok_false},
-#line 56 "keywords.gperf"
-    {"__CLASS__", tok_class_c},
 #line 61 "keywords.gperf"
     {"__METHOD__", tok_method_c},
+#line 59 "keywords.gperf"
+    {"__DIR__", tok_dir_c},
+#line 50 "keywords.gperf"
+    {"pack", tok_pack},
+#line 23 "keywords.gperf"
+    {"array", tok_array},
+#line 56 "keywords.gperf"
+    {"__CLASS__", tok_class_c},
 #line 24 "keywords.gperf"
     {"Array", tok_array},
-#line 38 "keywords.gperf"
-    {"return", tok_return},
-#line 43 "keywords.gperf"
-    {"require", tok_require},
-#line 86 "keywords.gperf"
-    {"resumable", tok_resumable},
-#line 44 "keywords.gperf"
-    {"require_once", tok_require_once},
-#line 35 "keywords.gperf"
-    {"global", tok_global},
-#line 66 "keywords.gperf"
-    {"bool", tok_bool},
 #line 88 "keywords.gperf"
     {"public", tok_public}
   };
@@ -272,15 +274,13 @@ static const struct KeywordType_t wordlist[] =
 static const signed char lookup[] =
   {
     -1, -1,  0,  1,  2, -1,  3,  4,  5,  6,  7,  8,  9, 10,
-    -1, 11, 12, -1, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-    23, 24, 25, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-    36, 37, 38, 39, 40, 41, 42, 43, 44, -1, 45, 46, 47, 48,
-    -1, 49, 50, 51, 52, 53, 54, 55, 56, 57, -1, 58, 59, 60,
-    61, -1, -1, 62, 63, 64, -1, -1, 65, 66, 67, -1, -1, -1,
-    68, 69, -1, -1, -1, 70, 71, -1, -1, -1, -1, 72, 73, 74,
-    -1, 75, -1, -1, 76, -1, -1, -1, -1, -1, -1, -1, -1, 77,
-    -1, -1, -1, -1, -1, -1, -1, 78, -1, -1, -1, -1, -1, -1,
-    79
+    11, 12, 13, -1, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+    38, 39, 40, 41, 42, 43, 44, 45, 46, -1, 47, 48, 49, 50,
+    51, 52, 53, 54, 55, -1, -1, 56, 57, 58, -1, 59, 60, 61,
+    62, -1, 63, 64, 65, 66, -1, 67, 68, 69, 70, 71, -1, 72,
+    73, 74, -1, 75, -1, 76, 77, -1, -1, -1, 78, 79, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, 80
   };
 
 const struct KeywordType_t *

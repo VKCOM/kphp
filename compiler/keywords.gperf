@@ -88,3 +88,4 @@ namespace, tok_namespace
 public, tok_public
 private, tok_private
 protected, tok_protected
+use, tok_use
