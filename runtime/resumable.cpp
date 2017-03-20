@@ -1,11 +1,16 @@
+#include <typeinfo>
+
 #include "net_events.h"
 #include "resumable.h"
+#include "kprintf.h"
 
 bool resumable_finished;
 
 const char *last_wait_error;
 
 static int runned_resumable_id;
+
+void debug_print_resumables();
 
 Storage::Storage():
   getter_ (NULL) {
@@ -107,11 +112,12 @@ void Resumable::update_output (void) {
   }
 }
 
-
 struct forked_resumable_info {
   Storage output;
   Resumable *continuation;
   int queue_id;// == 0 - default, 2 * 10^9 > x > 10^8 - waited by x, 10^8 > x > 0 - in queue x, -1 if answer received and not in queue, x < 0 - (-id) of next finished function in the same queue or -2 if none
+  int son;
+  const char *name;
 };
 
 struct started_resumable_info {
@@ -119,6 +125,8 @@ struct started_resumable_info {
   Resumable *continuation;
   int parent_id;// x > 0 - has parent x, == 0 - in main thread, == -1 - finished
   int fork_id;
+  int son;
+  const char *name;
 };
 
 static int first_forked_resumable_id;
@@ -229,6 +237,8 @@ int register_forked_resumable (Resumable *resumable) {
   new (&res->output) Storage();
   res->continuation = resumable;
   res->queue_id = 0;
+  res->son = 0;
+  res->name = resumable ? typeid(*resumable).name() : "(null)";
 
   return res_id;
 }
@@ -276,6 +286,28 @@ int register_started_resumable (Resumable *resumable) {
   res->continuation = resumable;
   res->parent_id = runned_resumable_id;
   res->fork_id = f$get_running_fork_id();
+  res->son = 0;
+  res->name = resumable ? typeid(*resumable).name() : "(null)";
+
+  if (runned_resumable_id) {
+    if (is_started_resumable_id(runned_resumable_id)) {
+      started_resumable_info *parent = get_started_resumable_info(runned_resumable_id);
+      if (parent->son != 0) {
+        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, 0, res_id);
+        debug_print_resumables();
+        php_assert(parent->son == 0);
+      }
+      parent->son = res_id;
+    } else {
+      forked_resumable_info *parent = get_forked_resumable_info(runned_resumable_id);
+      if (parent->son != 0) {
+        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, 0, res_id);
+        debug_print_resumables();
+        php_assert(parent->son == 0);
+      }
+      parent->son = res_id;
+    }
+  }
 
   return res_id;
 }
@@ -329,13 +361,43 @@ void finish_started_resumable (int resumable_id) {
   res->continuation = NULL;
 }
 
-void unregister_started_resumable (int resumable_id) {
+void unregister_started_resumable_debug_hack (int resumable_id) {
   started_resumable_info *res = get_started_resumable_info (resumable_id);
   php_assert (res->continuation == NULL);
 
   res->parent_id = first_free_started_resumable_id;
   first_free_started_resumable_id = resumable_id;
 }
+
+void unregister_started_resumable (int resumable_id) {
+  started_resumable_info *res = get_started_resumable_info (resumable_id);
+  if (res->parent_id > 0) {
+    if (is_started_resumable_id(res->parent_id)) {
+      started_resumable_info *parent = get_started_resumable_info(res->parent_id);
+      if (parent->son != resumable_id && parent->son != 0) {
+        kprintf("Tring to change %d->son from %d to %d\n", res->parent_id, resumable_id, 0);
+        debug_print_resumables();
+        php_assert(parent->son == resumable_id || parent->son == 0);
+      }
+      parent->son = 0;
+    } else if (is_forked_resumable_id(res->fork_id)) {
+      forked_resumable_info *parent = get_forked_resumable_info(res->parent_id);
+      if (parent->son != resumable_id && parent->son != 0) {
+        kprintf("Tring to change %d->son from %d to %d\n", res->parent_id, resumable_id, 0);
+        debug_print_resumables();
+        php_assert(parent->son == resumable_id || parent->son == 0);
+      }
+      parent->son = 0;
+    } else {
+      php_assert(0);
+    }
+  }
+  php_assert (res->continuation == NULL);
+
+  res->parent_id = first_free_started_resumable_id;
+  first_free_started_resumable_id = resumable_id;
+}
+
 
 
 static bool resumable_has_finished (void) {
@@ -391,21 +453,49 @@ static void resumable_get_finished (int *resumable_id, bool *is_yielded) {
   }
 }
 
+void debug_print_resumables() {
+  fprintf(stderr, "first free resumable id: %d\n", first_free_started_resumable_id);
+  fprintf(stderr, "finished:");
+  for (int i = 0; i < finished_resumables_count; i++) {
+    fprintf(stderr, " %d", finished_resumables[i]);
+  }
+  fprintf(stderr, "\n");
+  for (int i = first_started_resumable_id; i < current_started_resumable_id; i++) {
+    started_resumable_info* info = get_started_resumable_info(i);
+    fprintf(stderr, "started id = %d, parent = %d, fork = %d, son = %d, continuation = %s, name = %s\n", i, info->parent_id, info->fork_id, info->son,
+            info->continuation ? typeid(*info->continuation).name() : "(none)", info->name ? info->name : "()");
+  }
+  for (int i = first_forked_resumable_id; i < current_forked_resumable_id; i++) {
+    forked_resumable_info* info = get_forked_resumable_info(i);
+    fprintf(stderr, "forked id = %d, queue_id = %d, son = %d, continuation = %s, name = %s\n", i, info->queue_id, info->son,
+            info->continuation ? typeid(*info->continuation).name()  : "(none)", info->name ? info->name : "()");
+  }
+}
+
 
 void resumable_run_ready (int resumable_id) {
 //  fprintf (stderr, "run ready %d\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info (resumable_id);
     php_assert (res->queue_id >= 0);
+    if (res->son) {
+      debug_print_resumables();
+      php_assert (res->son == 0);
+    }
     php_assert (res->continuation->resume (resumable_id, NULL));
     finish_forked_resumable (resumable_id);
   } else {
     started_resumable_info *res = get_started_resumable_info (resumable_id);
+    if (res->son) {
+      debug_print_resumables();
+      php_assert (res->son == 0);
+    }
     php_assert (res->continuation->resume (resumable_id, NULL));
     finish_started_resumable (resumable_id);
     resumable_add_finished (resumable_id);
   }
 }
+
 
 void run_scheduller (double timeout) {
 //  fprintf (stderr, "!!! run scheduller %d\n", finished_resumables_count);
@@ -438,8 +528,14 @@ void run_scheduller (double timeout) {
     php_assert (parent_id > 0);
     if (parent_id < 1000000000) {
       started_resumable_info *parent = get_started_resumable_info (parent_id);
+      if (parent->continuation == NULL || parent->son != resumable_id) {
+        kprintf("Will fail assert with resumbale_id = %d\n", resumable_id);
+        debug_print_resumables();
+      }
+      php_assert (parent->son == resumable_id);
       php_assert (parent->continuation != NULL);
       php_assert (parent->parent_id != -2);
+      parent->son = 0;
       if (parent->continuation->resume (parent_id, &res->output)) {
         finish_started_resumable (parent_id);
         resumable_add_finished (parent_id);
@@ -448,14 +544,20 @@ void run_scheduller (double timeout) {
       }
     } else {
       forked_resumable_info *parent = get_forked_resumable_info (parent_id);
+      if (parent->continuation == NULL || parent->son != resumable_id) {
+        kprintf("Will fail assert with resumbale_id = %d\n", resumable_id);
+        debug_print_resumables();
+      }
+      php_assert (parent->son == resumable_id);
       php_assert (parent->continuation != NULL);
       php_assert (parent->queue_id >= 0);
+      parent->son = 0;
       if (parent->continuation->resume (parent_id, &res->output)) {
         finish_forked_resumable (parent_id);
       }
     }
 
-    unregister_started_resumable (resumable_id);
+    unregister_started_resumable_debug_hack (resumable_id);
   }
 }
 
