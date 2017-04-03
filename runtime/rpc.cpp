@@ -53,6 +53,9 @@ static inline T store_parse_number (const string &v) {
 template <class T>
 static inline T store_parse_number (const var &v) {
   if (!v.is_string()) {
+    if (v.is_float()) {
+      return (T)v.to_float();
+    }
     return (T)v.to_int();
   }
   return store_parse_number <T> (v.to_string());
@@ -72,9 +75,12 @@ static inline T store_parse_number_unsigned (const string &v) {
 template <class T>
 static inline T store_parse_number_unsigned (const var &v) {
   if (!v.is_string()) {
+    if (v.is_float()) {
+      return (T)v.to_float();
+    }
     return (T)v.to_int();
   }
-  return store_parse_number <T> (v.to_string());
+  return store_parse_number_unsigned <T> (v.to_string());
 }
 
 template <class T>
