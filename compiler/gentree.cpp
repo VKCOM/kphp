@@ -599,7 +599,6 @@ VertexPtr GenTree::get_expr_top() {
 VertexPtr GenTree::get_unary_op() {
   Operation tp = OpInfo::tok_to_unary_op[(*cur)->type()];
   if (tp != op_err) {
-    vector <Token*>::const_iterator op = cur;
     AutoLocation expr_location (this);
     next_cur();
 
@@ -649,7 +648,6 @@ VertexPtr GenTree::get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, 
 
     bool left_to_right = OpInfo::fixity (tp) == left_opp;
 
-    vector <Token*>::const_iterator op = cur;
     next_cur();
     VertexPtr right, third;
     if (ternary) {
@@ -1034,7 +1032,6 @@ VertexPtr GenTree::get_type_rule_ (void) {
 }
 
 VertexPtr GenTree::get_type_rule (void) {
-  vector <Token*>::const_iterator op = cur;
   VertexPtr res, first;
 
   TokenType tp = (*cur)->type();
