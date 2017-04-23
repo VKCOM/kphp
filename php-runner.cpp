@@ -142,7 +142,11 @@ void dump_query_stats (void) {
     while (*t && *t != '\r' && *t != '\n') {
       t++;
     }
-    kprintf ("QUERY:[%.*s]\n", (int)(t - s), s);
+    if (t - s <= 1000) {
+      kprintf ("QUERY:[%.*s]\n", (int)(t - s), s);
+    } else {
+      kprintf ("QUERY:[%.*s]<truncated, real length = %d>\n", 1000, s, (int)(t - s));
+    }
   }
 }
 
