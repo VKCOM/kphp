@@ -23,3 +23,9 @@ string f$vk_sp_to_upper (const string& s);
 string f$vk_sp_to_lower (const string& s);
 
 string f$vk_sp_to_sort (const string& s);
+
+string f$vk_sp_remove_repeats (const string& s);
+
+string f$vk_sp_to_cyrillic (const string& s);
+
+string f$vk_sp_words_only (const string& s);

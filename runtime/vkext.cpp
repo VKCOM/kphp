@@ -633,3 +633,33 @@ string f$vk_sp_to_sort (const string& s) {
     return string (t, (string::size_type)strlen(t));
   }
 }
+
+string f$vk_sp_remove_repeats (const string& s) {
+  sp_init();
+  char* t = sp_remove_repeats (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_to_cyrillic (const string& s) {
+  sp_init();
+  char* t = sp_to_cyrillic (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
+
+string f$vk_sp_words_only (const string& s) {
+  sp_init();
+  char* t = sp_words_only (s.c_str());
+  if (!t) {
+    return string ();
+  } else {
+    return string (t, (string::size_type)strlen(t));
+  }
+}
