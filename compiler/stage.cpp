@@ -111,7 +111,9 @@ void stage::print_comment (FILE *f) {
         last_printed = 'n';
       } else if (c > 13) {
         putc (c, f);
-        last_printed = c;
+        if (c > 32) {
+          last_printed = c;
+        }
       }
     }
     if (last_printed == '\\') {

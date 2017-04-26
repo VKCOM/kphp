@@ -181,7 +181,9 @@ template <class T> void WriterData::dump (string &dest_str, T begin, T end, SrcF
                   last_printed = 'n';
                 } else if (c > 13) {
                   dest_str += c;
-                  last_printed = c;
+                  if (c > 32) {
+                    last_printed = c;
+                  }
                 }
               }
               if (last_printed == '\\') {
