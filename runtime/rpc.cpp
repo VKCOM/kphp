@@ -1551,7 +1551,7 @@ static const char *tl_current_function_name;
 
 tl_tree *store_function (const var &tl_object) {
   if (tl_config.fetchIP == NULL) {
-    php_warning ("tl_rpc_query not supported due to missing TL scheme");
+    php_warning ("rpc_tl_query not supported due to missing TL scheme");
     return NULL;
   }
   if (!tl_object.is_array()) {
@@ -1659,7 +1659,7 @@ void hexdump (const void *start, const void *end) {
 
 array <var> fetch_function (tl_tree *T) {
   if (tl_config.fetchIP == NULL) {
-    php_warning ("tl_rpc_query_result not supported due to missing TL scheme");
+    php_warning ("rpc_tl_query_result not supported due to missing TL scheme");
     php_critical_error ("unreachable");
     return tl_fetch_error ("TL scheme was not loaded", TL_ERROR_UNKNOWN_FUNCTION_ID);
   }
