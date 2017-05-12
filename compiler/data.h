@@ -128,9 +128,6 @@ public:
   string class_name;
   map<string, string> namespace_uses;
 
-  FunctionInfo(VertexPtr root) : root(root), namespace_name(), class_name() {
-  }
-
   FunctionInfo(VertexPtr root, const string &namespace_name,
                const string &class_name, const map<string, string> namespace_uses) : root(root),
                                                                                      namespace_name(namespace_name),

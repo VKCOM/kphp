@@ -73,6 +73,7 @@ public:
   VertexPtr get_expression();
   VertexPtr get_statement();
   VertexPtr get_namespace_class();
+  VertexPtr get_use();
   VertexPtr get_seq();
   VertexPtr post_process (VertexPtr root);
   bool check_seq_end();

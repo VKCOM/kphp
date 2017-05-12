@@ -258,7 +258,8 @@ class ApplyBreakFileF {
       }
 
       for (int i = 0; i < (int)splitted.size(); i++) {
-        G->register_function (splitted[i], os);
+        G->register_function (FunctionInfo(splitted[i], function->namespace_name,
+                                           function->class_name, function->namespace_uses), os);
       }
 
       os << function;
@@ -275,7 +276,8 @@ class SplitSwitchF {
 
       const vector <VertexPtr> &new_functions = split_switch.get_new_functions();
       for (int i = 0; i < (int)new_functions.size(); i++) {
-        G->register_function (new_functions[i], os);
+        G->register_function (FunctionInfo(new_functions[i], function->namespace_name,
+                                           function->class_name, function->namespace_uses), os);
       }
 
       if (stage::has_error()) {

@@ -1597,7 +1597,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   if (in_class()) {
     register_function(FunctionInfo(res, namespace_name, cur_class().name, this->namespace_uses));
   } else {
-    register_function(res);
+    register_function(FunctionInfo(res, "", "", this->namespace_uses));
   }
 
   if (res->type() == op_function) {
@@ -1664,6 +1664,42 @@ VertexPtr GenTree::get_class() {
   return VertexPtr();
 }
 
+VertexPtr GenTree::get_use() {
+  kphp_assert(test_expect(tok_use));
+  next_cur();
+  while (true) {
+    if (!test_expect(tok_func_name)) {
+      expect(tok_func_name, "<namespace path>");
+    }
+    string name = (*cur)->str_val;
+    kphp_assert(!name.empty());
+    if (name[0] == '\\') {
+      name = name.substr(1);
+    }
+    string alias = name.substr(name.rfind('\\') + 1);
+    kphp_error(!alias.empty(), "KPHP doesn't support use of global namespace");
+    next_cur();
+    if (test_expect(tok_as)) {
+      next_cur();
+      if (!test_expect(tok_func_name)) {
+        expect(tok_func_name, "<use alias>");
+      }
+      alias = (*cur)->str_val;
+      next_cur();
+    }
+    map<string, string> &uses = this->namespace_uses;
+    if (uses.find(alias) == uses.end()) {
+      uses[alias] = name;
+    }
+    if (!test_expect(tok_comma)) {
+      break;
+    }
+    next_cur();
+  }
+  expect2(tok_semicolon, tok_comma, "';' or ','");
+  return VertexPtr();
+}
+
 VertexPtr GenTree::get_namespace_class() {
   kphp_assert (test_expect (tok_namespace));
   next_cur();
@@ -1686,37 +1722,7 @@ VertexPtr GenTree::get_namespace_class() {
     return VertexPtr();
   }
   while (test_expect(tok_use)) {
-    next_cur();
-    while (true) {
-      if (!test_expect(tok_func_name)) {
-        expect(tok_func_name, "<namespace path>");
-      }
-      string name = (*cur)->str_val;
-      kphp_assert(!name.empty());
-      if (name[0] == '\\') {
-        name = name.substr(1);
-      }
-      string alias = name.substr(name.rfind('\\') + 1);
-      kphp_error(!alias.empty(), "KPHP doesn't support use of global namespace");
-      next_cur();
-      if (test_expect(tok_as)) {
-        next_cur();
-        if (!test_expect(tok_func_name)) {
-          expect(tok_func_name, "<use alias>");
-        }
-        alias = (*cur)->str_val;
-        next_cur();
-      }
-      map<string, string> &uses = this->namespace_uses;
-      if (uses.find(alias) == uses.end()) {
-        uses[alias] = name;
-      }
-      if (!test_expect(tok_comma)) {
-        break;
-      }
-      next_cur();
-    }
-    expect2(tok_semicolon, tok_comma, "';' or ','");
+    get_use();
   }
   VertexPtr cv = get_class();
   CE (check_statement_end());
@@ -1903,6 +1909,13 @@ VertexPtr GenTree::get_statement() {
       set_location(def, const_location);
       CE (check_statement_end());
       cur_class().constants.push_back(def);
+      CREATE_VERTEX (empty, op_empty);
+      return empty;
+    }
+    case tok_use: {
+      AutoLocation const_location (this);
+      CE (!kphp_error(!in_class() && in_func_cnt_ == 1, "'use' can be declared only in global scope"));
+      get_use();
       CREATE_VERTEX (empty, op_empty);
       return empty;
     }
