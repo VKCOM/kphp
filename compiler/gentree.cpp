@@ -30,6 +30,15 @@ void GenTree::init (const vector <Token *> *tokens_new, GenTreeCallbackBase *cal
   stage::set_line (line_num);
 }
 
+static string replace_backslashs(string s, char to) {
+  for (size_t i = 0; i < s.length(); i++) {
+    if (s[i] == '\\') {
+      s[i] = to;
+    }
+  }
+  return s;
+}
+
 bool GenTree::in_class() {
   return !class_stack.empty();
 }
@@ -1397,7 +1406,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   }
   if (in_class()) {
     if (in_namespace()) {
-      name_str = namespace_name + "$" + cur_class().name + "$$" + name_str;
+      name_str = replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + name_str;
     } else {
       name_str = "mf_" + name_str;
     }
@@ -1669,13 +1678,7 @@ VertexPtr GenTree::get_namespace_class() {
   }
   kphp_error (namespace_name == expected_namespace_name,
                   dl_pstr("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
-  string dollar_namespace_name = namespace_name;
-  for (size_t i = 0; i < dollar_namespace_name.length(); i++) {
-    if (dollar_namespace_name[i] == '\\') {
-      dollar_namespace_name[i] = '$';
-    }
-  }
-  this->namespace_name = dollar_namespace_name;
+  this->namespace_name = namespace_name;
   next_cur();
   expect (tok_semicolon, "';'");
   if (stage::has_error()) {
@@ -1892,7 +1895,7 @@ VertexPtr GenTree::get_statement() {
       next_cur();
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CREATE_VERTEX (name, op_func_name);
-      name->str_val = "c#" + namespace_name + "$" + cur_class().name + "$$" + string((*cur)->str_val);
+      name->str_val = "c#" + replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + string((*cur)->str_val);
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
