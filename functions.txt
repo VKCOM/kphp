@@ -242,7 +242,7 @@ define_raw ('PREG_SPLIT_NO_EMPTY', 8);
 define_raw ('PREG_SPLIT_DELIM_CAPTURE', 16);
 define_raw ('PREG_SPLIT_OFFSET_CAPTURE', 32);
 
-function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset = 0) ::: OrFalse <int>;//TODO
+function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: OrFalse <int>;//TODO
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0) ::: OrFalse <int>;//TODO
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
 function preg_replace_callback ($regex ::: regexp, callback($x), $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
