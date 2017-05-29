@@ -1457,7 +1457,7 @@ string f$print_r (const var &v, bool buffered) {
   }
 
   do_print_r (v, 0);
-  if (run_once) {
+  if (run_once && f$ob_get_level() == 0) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
   }
@@ -1466,7 +1466,7 @@ string f$print_r (const var &v, bool buffered) {
 
 void f$var_dump (const var &v) {
   do_var_dump (v, 0);
-  if (run_once) {
+  if (run_once && f$ob_get_level() == 0) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
   }
@@ -1479,7 +1479,7 @@ string f$var_export (const var &v, bool buffered) {
     return f$ob_get_clean().val();
   }
   do_var_export (v, 0);
-  if (run_once) {
+  if (run_once && f$ob_get_level() == 0) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
   }
