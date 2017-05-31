@@ -392,6 +392,7 @@ function ucwords ($str ::: string) ::: string;
 
 function vprintf ($format ::: string, $args ::: array) ::: int;
 function vsprintf ($format ::: string, $args ::: array) ::: string;
+function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
 
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
 //function strtr ($subject, $from, $to);

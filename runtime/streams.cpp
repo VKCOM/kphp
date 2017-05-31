@@ -395,6 +395,10 @@ bool f$fclose (const Stream &stream) {
   STREAM_FUNCTION_BODY(fclose, false) (stream);
 }
 
+OrFalse <int> f$vfprintf (const Stream &stream, const string &format, const array<var> &args) {
+  string text = f$vsprintf(format, args);
+  return f$fwrite(stream, text);
+}
 
 OrFalse <string> f$file_get_contents (const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false) (url);

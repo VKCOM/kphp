@@ -79,6 +79,7 @@ bool f$feof (const Stream &stream);
 
 bool f$fclose (const Stream &stream);
 
+OrFalse <int> f$vfprintf (const Stream &stream, const string &format, const array<var> &args);
 
 OrFalse <string> f$file_get_contents (const string &url);
 
