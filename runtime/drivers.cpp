@@ -1546,7 +1546,7 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   update_precise_now();
-  int request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1630,7 +1630,7 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
   store_string (string_value.c_str(), string_value.size());
 
   update_precise_now();
-  int request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1674,7 +1674,7 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
   f$store_long (v);
 
   update_precise_now();
-  int request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1717,7 +1717,7 @@ bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double time
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   update_precise_now();
-  int request_id = rpc_send (conn, timeout);
+  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }

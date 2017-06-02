@@ -795,7 +795,7 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
       update_precise_now();
       bytes_sent = current_sent_size;
     }
-    int request_id = rpc_send (conn, timeout);
+    int request_id = rpc_send (conn, timeout, (bool) is_immediate);
     if (request_id > 0) {
       if (first_request_id == 0) {
         first_request_id = request_id;
