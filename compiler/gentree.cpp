@@ -1848,6 +1848,7 @@ VertexPtr GenTree::get_statement() {
     }
     case tok_protected: {
       CE (!kphp_error(false, "'protected' is not supported yet"));
+      return VertexPtr();
     }
     case tok_phpdoc: {
       Token *token = *cur;
