@@ -30,10 +30,12 @@ class CompilerCore {
     HT <VarPtr> global_vars_ht;
     vector <SrcFilePtr> main_files;
     KphpEnviroment *env_;
+    HT <ClassPtr> classes_ht;
 
     bool add_to_function_set (FunctionSetPtr function_set, FunctionPtr function,
                               bool req = false);
     FunctionPtr create_function (const FunctionInfo &info);
+    ClassPtr create_class (const ClassInfo &info);
 
     inline bool try_require_file (SrcFilePtr file) {
       return __sync_bool_compare_and_swap (&file->is_required, false, true);
@@ -66,6 +68,8 @@ class CompilerCore {
     void register_function_header (VertexAdaptor <meta_op_function> function_header, DataStream &os);
     template <class DataStream>
     void register_function (const FunctionInfo &info, DataStream &os);
+    template <class DataStream>
+    void register_class(const ClassInfo &info, DataStream &os);
     FunctionSetPtr get_function_set (function_set_t type, const string &name, bool force);
     FunctionPtr get_function_unsafe (const string &name);
 
@@ -78,6 +82,7 @@ class CompilerCore {
 
     const vector <SrcFilePtr> &get_main_files();
     vector <VarPtr> get_global_vars();
+    vector <ClassPtr> get_classes();
 
     void load_index();
     void save_index();

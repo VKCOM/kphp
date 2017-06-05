@@ -657,7 +657,7 @@ inline VarName::VarName (VarPtr var) :
   var (var) {
 }
 void VarName::compile (CodeGenerator &W) const {
-  if (var->static_id.not_null()) {
+  if (var->static_id.not_null() && var->type() == VarData::var_static_t) {
     W << FunctionName (var->static_id) << "$";
   }
 
@@ -1232,9 +1232,15 @@ void DfsInit::compile_dfs_init_func (
 
 template <class It> void collect_vars (set <VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
   for (;begin != end; begin++) {
-    int var_hash = hash ((*begin)->name);
+    VarPtr var_id = *begin;
+    int var_hash;
+    if (var_id->static_id.not_null()) {
+      var_hash = hash (var_id->static_id->name);
+    } else {
+      var_hash = hash (var_id->name);
+    }
     int bucket = var_hash % used_vars_cnt;
-    used_vars[bucket].insert (*begin);
+    used_vars[bucket].insert (var_id);
   }
 }
 void DfsInit::collect_used_funcs_and_vars (
@@ -1272,6 +1278,10 @@ inline void DfsInit::compile (CodeGenerator &W) const {
   const int parts_n = 32;
   set <VarPtr> used_vars[parts_n];
   collect_used_funcs_and_vars (main_func, &used_functions, used_vars, parts_n);
+  vector <ClassPtr> classes = G->get_classes();
+  FOREACH(classes, ci) {
+    collect_used_funcs_and_vars ((*ci)->init_function, &used_functions, used_vars, parts_n);
+  }
 
   vector <string> header_names (parts_n);
   vector <string> src_names (parts_n);

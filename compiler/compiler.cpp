@@ -146,9 +146,9 @@ class GenTreeCallback : public GenTreeCallbackBase {
     void register_function (const FunctionInfo &info) {
       G->register_function (info, os);
     }
-    __attribute__((error("register_class is not implemented yet")))
-    void register_class (const ClassInfo &info __attribute__((unused))) {
-      //TODO;
+
+    void register_class (const ClassInfo &info) {
+      G->register_class(info, os);
     }
 };
 

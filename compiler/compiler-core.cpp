@@ -115,6 +115,17 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   return function;
 }
 
+ClassPtr CompilerCore::create_class(const ClassInfo &info) {
+  ClassPtr klass = ClassPtr (new ClassData());
+  klass->name = info.name;
+  klass->file_id = stage::get_file();
+  klass->root = info.root;
+
+  string init_function_name_str = stage::get_file()->main_func_name;
+  klass->init_function = get_function_unsafe (init_function_name_str);
+  return klass;
+}
+
 string CompilerCore::unify_file_name (const string &file_name) {
   if (env().get_base_dir().empty()) { //hack: directory of first file will be used ad base_dir
     size_t i = file_name.find_last_of ("/");
@@ -298,6 +309,11 @@ const vector <SrcFilePtr> &CompilerCore::get_main_files() {
 vector <VarPtr> CompilerCore::get_global_vars() {
   return global_vars_ht.get_all();
 }
+
+vector <ClassPtr> CompilerCore::get_classes() {
+  return classes_ht.get_all();
+}
+
 void CompilerCore::load_index() {
   string index_path = env().get_index();
   if (index_path.empty()) {

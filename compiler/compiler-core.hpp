@@ -82,6 +82,22 @@ void CompilerCore::register_function (const FunctionInfo &info, DataStream &os) 
 };
 
 template <class DataStream>
+void CompilerCore::register_class(const ClassInfo &info, DataStream &os) {
+  ClassPtr class_id = create_class(info);
+  HT <ClassPtr>::HTNode *node = classes_ht.at (hash_ll (class_id->name));
+  AutoLocker <Lockable *> locker (node);
+  kphp_error_act (
+    node->data.is_null(),
+    dl_pstr ("Redeclaration of class [%s], the previous declaration was in [%s]",
+             class_id->name.c_str(),
+             node->data->file_id->file_name.c_str()),
+    return
+  );
+  node->data = class_id;
+  os << class_id->init_function;
+}
+
+template <class DataStream>
 void CompilerCore::register_main_file (const string &file_name, DataStream &os) {
   SrcFilePtr res = register_file (file_name);
   if (res.not_null() && try_require_file (res)) {

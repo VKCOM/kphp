@@ -58,7 +58,6 @@ struct ClassInfo {
 
 class ClassData {
 public:
-  ClassInfo info;
   int id;
   bool is_inited;
   bool is_required;

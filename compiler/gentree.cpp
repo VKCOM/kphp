@@ -71,8 +71,6 @@ void GenTree::exit_and_register_class (VertexPtr root) {
   kphp_assert (in_class());
   if (!in_namespace()) {
     kphp_error(false, "Only static classes are supported");
-    cur_class().root = root;
-    callback->register_class (cur_class());
   } else {
     string name_str = stage::get_file()->main_func_name;
     vector<VertexPtr> empty;
@@ -94,6 +92,8 @@ void GenTree::exit_and_register_class (VertexPtr root) {
 
     register_function(FunctionInfo(main, namespace_name, cur_class().name, this->namespace_uses));
   }
+  cur_class().root = root;
+  callback->register_class (cur_class());
   class_stack.pop_back();
 }
 
