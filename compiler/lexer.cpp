@@ -207,7 +207,6 @@ void LexerData::post_process (const string &main_func_name) {
         tokens.push_back (oldtokens[i + 1]);
         tokens.back()->type() = tok_constructor_call;
         tokens.back()->str_val = oldtokens[i + 1]->str_val;
-        fprintf(stderr, "'%s'\n", string(oldtokens[i + 1]->str_val).c_str());
         tokens.push_back (oldtokens[i + 2]);
         tokens.push_back (new Token (tok_file_c));
         tokens.push_back (new Token (tok_comma));
