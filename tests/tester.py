@@ -141,6 +141,7 @@ def run_test_mode (test, mode, perf_read_only = True,
     test_path = in_tmp (test.path)
     for x in itertools.chain ([test.path], test.to_copy):
       prepare_test (x, in_tmp (x))
+    os.system("cp -r %s %s" % (os.path.join(tests_common_dir, "cl", "Classes"), in_tmp ("Classes")))
     
     try:
       if mode == "php":
@@ -372,6 +373,8 @@ phc_codegen_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/phc/codegen
 #benchmark_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/benchmarks/*/*.php", ["benchmark", "bench"]);
 pk_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/pk/*.php", ["pk"])
 nn_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/nn/*.php", ["nn"])
+cl_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/cl/*.php", ["cl"])
+
 
 tests = []
 tests.extend (dl_tests)
@@ -383,6 +386,7 @@ tests.extend (phc_codegen_tests)
 #tests.extend (benchmark_tests)
 tests.extend (pk_tests)
 tests.extend (nn_tests)
+tests.extend (cl_tests)
 
 print all_tags
 
