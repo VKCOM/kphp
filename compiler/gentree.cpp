@@ -82,8 +82,8 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     vector <VertexPtr> seq;
     seq.insert(seq.end(), cur_class().constants.begin(), cur_class().constants.end());
     seq.insert(seq.end(), cur_class().static_members.begin(), cur_class().static_members.end());
-    CREATE_VERTEX (root, op_seq, seq);
-    CREATE_VERTEX (main, op_function, name, params, root);
+    CREATE_VERTEX (func_root, op_seq, seq);
+    CREATE_VERTEX (main, op_function, name, params, func_root);
     func_force_return(main);
 
     main->auto_flag = false;
