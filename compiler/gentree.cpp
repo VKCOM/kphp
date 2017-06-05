@@ -1656,6 +1656,11 @@ VertexPtr GenTree::get_class() {
     string expected_name = stage::get_file()->short_file_name;
     kphp_error (name_str == expected_name,
                 dl_pstr("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
+    if (name_str == "Exception" || name_str == "RpcMemcache" || name_str == "Memcache" || name_str == "rpc_connection"
+        || name_str == "Long" || name_str == "ULong" || name_str == "UInt" || name_str == "true_mc" || name_str == "test_mc"
+        || name_str == "rich_mc" || name_str == "db_decl") {
+      kphp_error (false, dl_pstr("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
+    }
   }
   CREATE_VERTEX (name, op_func_name);
   set_location (name, AutoLocation (this));
