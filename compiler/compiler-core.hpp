@@ -50,17 +50,17 @@ void CompilerCore::register_function_header (VertexAdaptor <meta_op_function> fu
 }
 
 template <class DataStream>
-void CompilerCore::register_function (const FunctionInfo &info, DataStream &os) {
+FunctionPtr CompilerCore::register_function (const FunctionInfo &info, DataStream &os) {
   const VertexPtr &root = info.root;
   if (root.is_null()) {
-    return;
+    return FunctionPtr();
   }
   FunctionPtr function;
   if (root->type() == op_function || root->type() == op_func_decl) {
     function = create_function (info);
   } else if (root->type() == op_extern_func) {
     register_function_header (root, os);
-    return;
+    return FunctionPtr();
   } else {
     kphp_fail();
   }
@@ -79,10 +79,11 @@ void CompilerCore::register_function (const FunctionInfo &info, DataStream &os) 
     }
     os << function;
   }
+  return function;
 };
 
 template <class DataStream>
-void CompilerCore::register_class(const ClassInfo &info, DataStream &os __attribute__((unused))) {
+ClassPtr CompilerCore::register_class(const ClassInfo &info, DataStream &os __attribute__((unused))) {
   ClassPtr class_id = create_class(info);
   HT <ClassPtr>::HTNode *node = classes_ht.at (hash_ll (class_id->name));
   AutoLocker <Lockable *> locker (node);
@@ -91,9 +92,10 @@ void CompilerCore::register_class(const ClassInfo &info, DataStream &os __attrib
     dl_pstr ("Redeclaration of class [%s], the previous declaration was in [%s]",
              class_id->name.c_str(),
              node->data->file_id->file_name.c_str()),
-    return
+    return ClassPtr()
   );
   node->data = class_id;
+  return class_id;
 }
 
 template <class DataStream>

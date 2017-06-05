@@ -1507,6 +1507,8 @@ VA_BEGIN (op_class, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: class>");
   PROPERTIES_END
+  VertexPtr &name() {return ith (0);}
+  VertexPtr &parent() {return ith (1);}
 VA_END
 VA_BEGIN (op_seq, meta_op_varg_)
   PROPERTIES_BEGIN

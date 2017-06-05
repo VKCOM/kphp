@@ -67,9 +67,9 @@ class CompilerCore {
     template <class DataStream>
     void register_function_header (VertexAdaptor <meta_op_function> function_header, DataStream &os);
     template <class DataStream>
-    void register_function (const FunctionInfo &info, DataStream &os);
+    FunctionPtr register_function (const FunctionInfo &info, DataStream &os);
     template <class DataStream>
-    void register_class(const ClassInfo &info, DataStream &os);
+    ClassPtr register_class(const ClassInfo &info, DataStream &os);
     FunctionSetPtr get_function_set (function_set_t type, const string &name, bool force);
     FunctionPtr get_function_unsafe (const string &name);
 

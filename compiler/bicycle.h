@@ -471,6 +471,34 @@ class DataStreamTriple : public DataStreamPair <FirstDataT, SecondDataT> {
     }
 };
 
+template <class FirstDataT, class SecondDataT, class ThirdDataT, class FourthDataT>
+class DataStreamQuadruple : public DataStreamTriple <FirstDataT, SecondDataT, ThirdDataT> {
+  private:
+    typedef DataStreamTriple <FirstDataT, SecondDataT, ThirdDataT> Base;
+    DataStreamRaw <FourthDataT> *fourth_stream;
+  public:
+    typedef FourthDataT FourthDataType;
+    typedef DataStreamRaw <FourthDataT> FourthStreamType;
+
+    DataStreamQuadruple() : fourth_stream (NULL) {
+    }
+    virtual ~DataStreamQuadruple() {
+    }
+
+    DataStreamRaw <FourthDataT> *get_fourth_stream() {
+      return fourth_stream;
+    }
+    void set_fourth_stream (DataStreamRaw <FourthDataT> *new_fourth_stream) {
+      assert (fourth_stream == NULL);
+      fourth_stream = new_fourth_stream;
+    }
+
+    using Base::operator <<;
+    void operator << (const FourthDataT &fourth) {
+      *fourth_stream << fourth;
+    }
+};
+
 template <class PipeType>
 class PipeTask : public Task {
   private:
@@ -598,6 +626,23 @@ class ThirdStream {
 };
 
 template <class StreamT>
+class FourthStream {
+  private:
+    StreamT *ptr;
+  public:
+    typedef typename StreamT::FourthStreamType StreamType;
+    FourthStream (StreamT &ptr) :
+      ptr (&ptr) {
+    }
+    StreamType *get_stream() const {
+      return ptr->get_fourth_stream();
+    }
+    void set_stream (StreamType *stream) const {
+      ptr->set_fourth_stream (stream);
+    }
+};
+
+template <class StreamT>
 FirstStream <StreamT> first_stream (StreamT &stream) {
   return FirstStream <StreamT> (stream);
 }
@@ -610,6 +655,11 @@ SecondStream <StreamT> second_stream (StreamT &stream) {
 template <class StreamT>
 ThirdStream <StreamT> third_stream (StreamT &stream) {
   return ThirdStream <StreamT> (stream);
+}
+
+template <class StreamT>
+FourthStream <StreamT> fourth_stream (StreamT &stream) {
+  return FourthStream <StreamT> (stream);
 }
 
 template <class FirstT, class SecondT>
@@ -658,7 +708,8 @@ typedef enum {
   scc_sync_node,
   scc_use_first_output,
   scc_use_second_output,
-  scc_use_third_output
+  scc_use_third_output,
+  scc_use_fourth_output
 } SCCEnum;
 
 template <SCCEnum Cmd> struct SCC {
@@ -675,6 +726,9 @@ inline SCC <scc_use_second_output> use_second_output() {
 }
 inline SCC <scc_use_third_output> use_third_output() {
   return SCC <scc_use_third_output>();
+}
+inline SCC <scc_use_fourth_output> use_fourth_output() {
+  return SCC <scc_use_fourth_output>();
 }
 
 template <class SchedulerT, class PipeT, class PipeHolderT>
@@ -714,6 +768,9 @@ class SC_Pipe {
       return *this;
     }
     SC_Pipe <SchedulerT, PipeT, ThirdStream <PtrType> > operator >> (SCC <scc_use_third_output>) {
+      return *this;
+    }
+    SC_Pipe <SchedulerT, PipeT, FourthStream <PtrType> > operator >> (SCC <scc_use_fourth_output>) {
       return *this;
     }
 

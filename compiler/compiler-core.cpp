@@ -123,7 +123,13 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
 
   string init_function_name_str = stage::get_file()->main_func_name;
   klass->init_function = get_function_unsafe (init_function_name_str);
-  klass->init_function->class_id = klass;
+  FOREACH(info.static_methods, method_ptr) {
+    (*method_ptr)->class_id = klass;
+    if (*method_ptr == klass->init_function) {
+      continue;
+    }
+    klass->static_methods.push_back(*method_ptr);
+  }
   return klass;
 }
 

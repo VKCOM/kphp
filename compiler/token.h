@@ -38,6 +38,7 @@ enum TokenType {
   tok_case,
   tok_switch,
   tok_class,
+  tok_extends,
   tok_namespace,
   tok_use,
   tok_const,

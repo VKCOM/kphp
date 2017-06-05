@@ -57,7 +57,10 @@ void GenTree::register_function (FunctionInfo info) {
   if (in_class() && !in_namespace()) {
     cur_class().members.push_back (info.root);
   } else {
-    callback->register_function (info);
+    FunctionPtr function_ptr = callback->register_function (info);
+    if (in_class()) {
+      cur_class().static_methods.push_back(function_ptr);
+    }
   }
 }
 void GenTree::enter_class (const string &class_name) {
@@ -1668,11 +1671,23 @@ VertexPtr GenTree::get_class() {
 
   next_cur();
 
+  VertexPtr parent_name;
+
+  if (test_expect(tok_extends)) {
+    next_cur();
+    CE (!kphp_error (test_expect(tok_func_name), "Class name expected after 'extends'"));
+    CREATE_VERTEX (tmp, op_func_name);
+    set_location (tmp, AutoLocation (this));
+    tmp->str_val = (*cur)->str_val;
+    parent_name = tmp;
+    next_cur();
+  }
+
   enter_class (name_str);
   VertexPtr class_body = get_statement();
   CE (!kphp_error (class_body.not_null(), "Failed to parse class body"));
 
-  CREATE_VERTEX (class_vertex, op_class, name);
+  CREATE_VERTEX (class_vertex, op_class, name, parent_name);
   set_location (class_vertex, class_location);
 
   exit_and_register_class (class_vertex);

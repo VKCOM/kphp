@@ -143,12 +143,12 @@ class GenTreeCallback : public GenTreeCallbackBase {
     GenTreeCallback (DataStream &os) :
       os (os) {
     }
-    void register_function (const FunctionInfo &info) {
-      G->register_function (info, os);
+    FunctionPtr register_function (const FunctionInfo &info) {
+      return G->register_function (info, os);
     }
 
-    void register_class (const ClassInfo &info) {
-      G->register_class(info, os);
+    ClassPtr register_class (const ClassInfo &info) {
+      return G->register_class(info, os);
     }
 };
 
@@ -2569,6 +2569,37 @@ class WriteFilesF {
       }
 };
 
+class CollectClassF {
+  public:
+    DUMMY_ON_FINISH;
+    template <class OutputStreamT>
+    void execute (ReadyFunctionPtr ready_data, OutputStreamT &os) {
+      FunctionPtr data = ready_data.function;
+      if (data->class_id.is_null()) {
+        os << data;
+      } else if (data->class_id->init_function == data) {
+        os << data->class_id;
+      }
+    }
+};
+
+class GenerateInheritedMethodsF {
+  public:
+    DUMMY_ON_FINISH;
+    template <class OutputStreamT>
+    void execute (ClassPtr data, OutputStreamT &os __attribute__((unused))) {
+      VertexPtr parent = data->root.as<op_class>()->parent();
+      fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
+      fprintf(stdout, "init_function: ");
+      fprintf(stdout, "  %s\n", data->init_function->name.c_str());
+      os << ReadyFunctionPtr(data->init_function);
+      fprintf(stdout, "methods: ");
+      FOREACH(data->static_methods, method_ptr) {
+        fprintf(stdout, "  %s\n", (*method_ptr)->name.c_str());
+        os << ReadyFunctionPtr(*method_ptr);
+      }
+    }
+};
 
 bool compiler_execute (KphpEnviroment *env) {
   double st = dl_time();
@@ -2642,7 +2673,7 @@ bool compiler_execute (KphpEnviroment *env) {
          DataStream <FunctionPtr>,
          DataStreamTriple <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe (true);
     Pipe <FunctionPassF <CalcLocationsPass>,
-         DataStream <ReadyFunctionPtr>,
+         DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > calc_locations_pipe (true);
     FunctionPassPipe <PreprocessDefinesConcatenationPass>::Self process_defines_concat (true);
     FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
@@ -2655,6 +2686,12 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > second_sync_pipe (true, true);
+    Pipe <SyncPipeF <ReadyFunctionPtr>,
+         DataStream <ReadyFunctionPtr>,
+         DataStream <ReadyFunctionPtr> > first_class_sync_pipe (true, true);
+    Pipe <CollectClassF,
+          DataStream <ReadyFunctionPtr>,
+          DataStreamPair <FunctionPtr, ClassPtr> > collect_classes_pipe (true);
     FunctionPassPipe <RegisterDefinesPass>::Self register_defines_pipe (true);
     FunctionPassPipe <PreprocessEq3Pass>::Self preprocess_eq3_pipe (true);
     FunctionPassPipe <PreprocessFunctionCPass>::Self preprocess_function_c_pipe (true);
@@ -2716,6 +2753,9 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <WriteFilesF,
          DataStream <WriterData *>,
          EmptyStream> write_files_pipe (false);
+    Pipe <GenerateInheritedMethodsF,
+          DataStream <ClassPtr>,
+          DataStream <FunctionPtr> > generate_inherited_methods_pipe (true);
 
 
     pipe_input (load_file_pipe).set_stream (&file_stream);
@@ -2727,6 +2767,8 @@ bool compiler_execute (KphpEnviroment *env) {
       split_switch_pipe >>
       create_switch_foreach_vars_pipe >>
       collect_required_pipe >> use_first_output() >>
+      first_class_sync_pipe >> sync_node() >>
+      collect_classes_pipe >> use_first_output() >>
       calc_locations_pipe >>
       process_defines_concat >>
       collect_defines_pipe >>
@@ -2765,6 +2807,9 @@ bool compiler_execute (KphpEnviroment *env) {
       load_file_pipe;
     scheduler_constructor (*scheduler, collect_required_pipe) >> use_third_output() >>
       apply_break_file_pipe;
+    scheduler_constructor (*scheduler, collect_classes_pipe) >> use_second_output() >>
+      generate_inherited_methods_pipe >>
+      calc_locations_pipe;
 
     get_scheduler()->execute();
   }

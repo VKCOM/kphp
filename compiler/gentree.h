@@ -10,8 +10,8 @@ typedef VertexPtr (GenTree::*GetFunc) ();
 
 
 struct GenTreeCallbackBase {
-  virtual void register_function (const FunctionInfo &func) = 0;
-  virtual void register_class (const ClassInfo &info) = 0;
+  virtual FunctionPtr register_function (const FunctionInfo &func) = 0;
+  virtual ClassPtr register_class (const ClassInfo &info) = 0;
   virtual ~GenTreeCallbackBase(){}
 };
 
