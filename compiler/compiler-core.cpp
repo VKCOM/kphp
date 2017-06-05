@@ -123,6 +123,7 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
 
   string init_function_name_str = stage::get_file()->main_func_name;
   klass->init_function = get_function_unsafe (init_function_name_str);
+  klass->init_function->class_id = klass;
   return klass;
 }
 

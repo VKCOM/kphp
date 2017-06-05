@@ -350,12 +350,13 @@ class RegisterVariables : public FunctionPassBase {
         kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public);
         name = replace_backslashs(current_function->namespace_name, '$') + "$" + current_function->class_name + "$$" + var_vertex->str_val;
         var = get_global_var(name);
+        var->class_id = current_function->class_id;
       } else {
         kphp_assert (extra_type == op_ex_none);
         name = var_vertex->str_val;
         var = create_local_var(name, VarData::var_static_t, true);
+        var->static_id = current_function;
       }
-      var->static_id = current_function;
       if (default_value.not_null()) {
         if (!kphp_error (is_const (default_value), dl_pstr ("Default value of [%s] is not constant", name.c_str()))) {
           var->init_val = default_value;

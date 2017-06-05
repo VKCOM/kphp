@@ -657,7 +657,7 @@ inline VarName::VarName (VarPtr var) :
   var (var) {
 }
 void VarName::compile (CodeGenerator &W) const {
-  if (var->static_id.not_null() && var->type() == VarData::var_static_t) {
+  if (var->static_id.not_null()) {
     W << FunctionName (var->static_id) << "$";
   }
 
@@ -1234,8 +1234,8 @@ template <class It> void collect_vars (set <VarPtr> *used_vars, int used_vars_cn
   for (;begin != end; begin++) {
     VarPtr var_id = *begin;
     int var_hash;
-    if (var_id->static_id.not_null()) {
-      var_hash = hash (var_id->static_id->name);
+    if (var_id->class_id.not_null()) {
+      var_hash = hash (var_id->class_id->init_function->name);
     } else {
       var_hash = hash (var_id->name);
     }

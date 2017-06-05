@@ -32,6 +32,7 @@ public:
   VertexPtr init_val;
   FunctionPtr holder_func;
   FunctionPtr static_id; // id of function if variable is static
+  ClassPtr class_id; // id of class if variable is static fields
   vector <VarPtr> *bad_vars;
   bool is_constant;
   bool is_reference;
