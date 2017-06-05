@@ -247,6 +247,15 @@ class CollectConstVarsPass : public FunctionPassBase {
     }
 };
 
+static inline string replace_backslashs(string s, char to) {
+  for (size_t i = 0; i < s.length(); i++) {
+    if (s[i] == '\\') {
+      s[i] = to;
+    }
+  }
+  return s;
+}
+
 /*** Register variables ***/
 // 1. Function parametres (with default values)
 // 2. Global variables
@@ -339,7 +348,7 @@ class RegisterVariables : public FunctionPassBase {
       string name;
       if (global_function_flag) {
         kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public);
-        name = current_function->namespace_name + "$" + current_function->class_name + "$$" + var_vertex->str_val;
+        name = replace_backslashs(current_function->namespace_name, '$') + "$" + current_function->class_name + "$$" + var_vertex->str_val;
         var = get_global_var(name);
       } else {
         kphp_assert (extra_type == op_ex_none);
@@ -545,7 +554,8 @@ class CheckAccessModifiers : public FunctionPassBase {
         if (pos != string::npos) {
           kphp_error(var_id->access_type == access_private || var_id->access_type == access_public,
                      dl_pstr("Field wasn't declared: %s", real_name.c_str()));
-          kphp_error(var_id->access_type != access_private || namespace_name + "$" + class_name == name.substr(0, pos),
+          kphp_error(var_id->access_type != access_private ||
+                     replace_backslashs(namespace_name, '$') + "$" + class_name == name.substr(0, pos),
                             dl_pstr("Can't access private field %s", real_name.c_str()));
         }
       } else if (root->type() == op_func_call) {
@@ -555,7 +565,8 @@ class CheckAccessModifiers : public FunctionPassBase {
         size_t pos = name.find("$$");
         if (pos != string::npos) {
           kphp_assert(func_id->access_type == access_private || func_id->access_type == access_public);
-          kphp_error(func_id->access_type != access_private || namespace_name + "$" + class_name == name.substr(0, pos),
+          kphp_error(func_id->access_type != access_private ||
+                     replace_backslashs(namespace_name, '$') + "$" + class_name == name.substr(0, pos),
                      dl_pstr("Can't access private function %s", name.c_str()));
         }
       }
