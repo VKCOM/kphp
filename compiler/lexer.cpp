@@ -192,8 +192,8 @@ void LexerData::post_process (const string &main_func_name) {
       } else if (i + 1 < n && oldtokens[i]->type() == tok_new && oldtokens[i + 1]->type() == tok_func_name) {
         //new Memcached --> new_Memcached
         tokens.push_back (oldtokens[i]);
-        tokens.back()->type() = tok_func_name;
-        tokens.back()->str_val = string_ref_dup (string ("new_") + string (oldtokens[i + 1]->str_val));
+        tokens.back()->type() = tok_constructor_call;
+        tokens.back()->str_val = oldtokens[i + 1]->str_val;
         delete (oldtokens[i + 1]);
         i += 2;
         if (i == n || oldtokens[i]->type() != tok_oppar) {
@@ -205,8 +205,9 @@ void LexerData::post_process (const string &main_func_name) {
       } else if (i + 2 < n && oldtokens[i]->type() == tok_new && oldtokens[i + 1]->type() == tok_Exception &&
                  oldtokens[i + 2]->type() == tok_oppar) {
         tokens.push_back (oldtokens[i + 1]);
-        tokens.back()->type() = tok_func_name;
-        tokens.back()->str_val = string_ref_dup ("new_Exception");
+        tokens.back()->type() = tok_constructor_call;
+        tokens.back()->str_val = oldtokens[i + 1]->str_val;
+        fprintf(stderr, "'%s'\n", string(oldtokens[i + 1]->str_val).c_str());
         tokens.push_back (oldtokens[i + 2]);
         tokens.push_back (new Token (tok_file_c));
         tokens.push_back (new Token (tok_comma));
@@ -362,7 +363,7 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
   if (type == tok_func_name) {
     const KeywordType *tp = KeywordsSet::get_type (name.begin(), name.length());
     if (tp != NULL) {
-      lexer_data->add_token (new Token (tp->type), (int)(t - st));
+      lexer_data->add_token (new Token (tp->type, s, t), (int)(t - st));
       return 0;
     }
   } else if (type == tok_var_name) {

@@ -15,6 +15,7 @@ enum TokenType {
   tok_expr_end,
   tok_var_name,
   tok_func_name,
+  tok_constructor_call,
   tok_while,
   tok_for,
   tok_foreach,

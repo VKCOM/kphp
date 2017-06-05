@@ -40,7 +40,7 @@ struct KeywordType_t
   TokenType type;
 };
 
-#define TOTAL_KEYWORDS 81
+#define TOTAL_KEYWORDS 82
 #define MIN_WORD_LENGTH 2
 #define MAX_WORD_LENGTH 15
 #define MIN_HASH_VALUE 2
@@ -66,10 +66,10 @@ KeywordsSet::hash (register const char *str, register unsigned int len)
       107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
       107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
       107, 107, 107, 107, 107, 107, 107, 107, 107, 107,
-      107, 107, 107, 107, 107,  40, 107,  35,  15,  25,
-        0, 107, 107,  25, 107, 107,  10,  10,   0, 107,
-      107, 107, 107,  55,  50,   5, 107, 107, 107, 107,
-      107, 107, 107, 107, 107,  40, 107,  35,  10,  25,
+      107, 107, 107, 107, 107,  45, 107,  35,  15,  25,
+        0, 107, 107,  25, 107, 107,  10,  20,   0, 107,
+      107, 107, 107,  70,  50,   5, 107, 107, 107, 107,
+      107, 107,  20, 107, 107,  40, 107,  35,  10,  25,
         0,   0,  10,  30,   0,   5,   0,   0,  30,  45,
        10,  10,  60,   5,  15,   0,   0,  15,   5,  35,
        15,  10, 107, 107, 107, 107, 107, 107, 107, 107,
@@ -127,7 +127,7 @@ static const struct KeywordType_t wordlist[] =
     {"switch", tok_switch},
 #line 75 "keywords.gperf"
     {"or", tok_log_or_let},
-#line 83 "keywords.gperf"
+#line 84 "keywords.gperf"
     {"try", tok_try},
 #line 19 "keywords.gperf"
     {"echo", tok_echo},
@@ -135,7 +135,7 @@ static const struct KeywordType_t wordlist[] =
     {"extern_function", tok_ex_function},
 #line 65 "keywords.gperf"
     {"object", tok_object},
-#line 91 "keywords.gperf"
+#line 92 "keywords.gperf"
     {"use", tok_use},
 #line 68 "keywords.gperf"
     {"true", tok_true},
@@ -161,7 +161,7 @@ static const struct KeywordType_t wordlist[] =
     {"case", tok_case},
 #line 81 "keywords.gperf"
     {"throw", tok_throw},
-#line 85 "keywords.gperf"
+#line 86 "keywords.gperf"
     {"throws", tok_throws},
 #line 16 "keywords.gperf"
     {"foreach", tok_foreach},
@@ -177,7 +177,7 @@ static const struct KeywordType_t wordlist[] =
     {"as", tok_as},
 #line 74 "keywords.gperf"
     {"and", tok_log_and_let},
-#line 86 "keywords.gperf"
+#line 87 "keywords.gperf"
     {"resumable", tok_resumable},
 #line 29 "keywords.gperf"
     {"const", tok_const},
@@ -207,7 +207,7 @@ static const struct KeywordType_t wordlist[] =
     {"function", tok_function},
 #line 66 "keywords.gperf"
     {"bool", tok_bool},
-#line 84 "keywords.gperf"
+#line 85 "keywords.gperf"
     {"catch", tok_catch},
 #line 35 "keywords.gperf"
     {"global", tok_global},
@@ -221,7 +221,7 @@ static const struct KeywordType_t wordlist[] =
     {"float", tok_float},
 #line 49 "keywords.gperf"
     {"max", tok_max},
-#line 87 "keywords.gperf"
+#line 88 "keywords.gperf"
     {"namespace", tok_namespace},
 #line 28 "keywords.gperf"
     {"class", tok_class},
@@ -231,8 +231,8 @@ static const struct KeywordType_t wordlist[] =
     {"var_dump", tok_var_dump},
 #line 32 "keywords.gperf"
     {"eval", tok_eval},
-#line 69 "keywords.gperf"
-    {"FALSE", tok_false},
+#line 83 "keywords.gperf"
+    {"\\Exception", tok_Exception},
 #line 42 "keywords.gperf"
     {"include_once", tok_require_once},
 #line 57 "keywords.gperf"
@@ -241,11 +241,11 @@ static const struct KeywordType_t wordlist[] =
     {"null", tok_null},
 #line 11 "keywords.gperf"
     {"while", tok_while},
-#line 89 "keywords.gperf"
+#line 90 "keywords.gperf"
     {"private", tok_private},
 #line 20 "keywords.gperf"
     {"dbg_echo", tok_dbg_echo},
-#line 90 "keywords.gperf"
+#line 91 "keywords.gperf"
     {"protected", tok_protected},
 #line 46 "keywords.gperf"
     {"print", tok_print},
@@ -255,8 +255,8 @@ static const struct KeywordType_t wordlist[] =
     {"__LINE__", tok_line_c},
 #line 70 "keywords.gperf"
     {"TRUE", tok_true},
-#line 61 "keywords.gperf"
-    {"__METHOD__", tok_method_c},
+#line 69 "keywords.gperf"
+    {"FALSE", tok_false},
 #line 59 "keywords.gperf"
     {"__DIR__", tok_dir_c},
 #line 50 "keywords.gperf"
@@ -265,9 +265,11 @@ static const struct KeywordType_t wordlist[] =
     {"array", tok_array},
 #line 56 "keywords.gperf"
     {"__CLASS__", tok_class_c},
+#line 61 "keywords.gperf"
+    {"__METHOD__", tok_method_c},
 #line 24 "keywords.gperf"
     {"Array", tok_array},
-#line 88 "keywords.gperf"
+#line 89 "keywords.gperf"
     {"public", tok_public}
   };
 
@@ -280,7 +282,7 @@ static const signed char lookup[] =
     51, 52, 53, 54, 55, -1, -1, 56, 57, 58, -1, 59, 60, 61,
     62, -1, 63, 64, 65, 66, -1, 67, 68, 69, 70, 71, -1, 72,
     73, 74, -1, 75, -1, 76, 77, -1, -1, -1, 78, 79, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, 80
+    -1, -1, 80, -1, -1, -1, -1, -1, 81
   };
 
 const struct KeywordType_t *

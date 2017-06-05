@@ -259,7 +259,16 @@ template <Operation Op> VertexPtr GenTree::get_require() {
 }
 template <Operation Op, Operation EmptyOp> VertexPtr GenTree::get_func_call() {
   AutoLocation call_location (this);
-  const string &name = (*cur)->str_val;
+  string name = (*cur)->str_val;
+  if (test_expect (tok_constructor_call)) {
+    if (in_namespace()) {
+      CE (!kphp_error(name[0] == '\\', dl_pstr("Can't create instance of %s", (namespace_name + "\\" + name).c_str())));
+    }
+    if (name[0] == '\\') {
+      name = name.substr(1);
+    }
+    name = "new_" + name;
+  }
   next_cur();
 
   CE (expect (tok_oppar, "'('"));
@@ -530,6 +539,7 @@ VertexPtr GenTree::get_expr_top() {
       res = get_require <op_require_once>();
       break;
 
+    case tok_constructor_call:
     case tok_func_name:
       cur++;
       if (!test_expect (tok_oppar)) {
