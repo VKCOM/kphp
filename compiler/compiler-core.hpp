@@ -82,7 +82,7 @@ void CompilerCore::register_function (const FunctionInfo &info, DataStream &os) 
 };
 
 template <class DataStream>
-void CompilerCore::register_class(const ClassInfo &info, DataStream &os) {
+void CompilerCore::register_class(const ClassInfo &info, DataStream &os __attribute__((unused))) {
   ClassPtr class_id = create_class(info);
   HT <ClassPtr>::HTNode *node = classes_ht.at (hash_ll (class_id->name));
   AutoLocker <Lockable *> locker (node);
@@ -94,7 +94,6 @@ void CompilerCore::register_class(const ClassInfo &info, DataStream &os) {
     return
   );
   node->data = class_id;
-  os << class_id->init_function;
 }
 
 template <class DataStream>
