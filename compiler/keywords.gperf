@@ -47,10 +47,6 @@ print, tok_print
 var_dump, tok_var_dump
 min, tok_min
 max, tok_max
-pack, tok_pack
-sprintf, tok_sprintf
-printf, tok_printf
-store_many, tok_store_many
 unset, tok_unset
 var, tok_var
 __CLASS__, tok_class_c

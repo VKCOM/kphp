@@ -520,18 +520,6 @@ VertexPtr GenTree::get_expr_top() {
       break;
     }
 
-    case tok_pack:
-      res = get_varg_call <op_pack>();
-      break;
-    case tok_printf:
-      res = get_varg_call <op_printf>();
-      break;
-    case tok_sprintf:
-      res = get_varg_call <op_sprintf>();
-      break;
-    case tok_store_many:
-      res = get_varg_call <op_store_many>();
-      break;
     case tok_exit:
       res = get_exit();
       break;

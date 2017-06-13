@@ -66,10 +66,6 @@ void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
       return;
     case op_array: //TODO: in fact it is wrong
     case op_print:
-    case op_pack:
-    case op_printf:
-    case op_sprintf:
-    case op_store_many:
     case op_min:
     case op_max:
     case op_defined:

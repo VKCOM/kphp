@@ -225,6 +225,7 @@ function getopt ($options ::: string, $longopt ::: array = array()) ::: OrFalse 
 function gethostbynamel ($name ::: string) ::: OrFalse <array <string> >;
 function inet_pton ($address ::: string) ::: OrFalse <string>;
 
+function pack (...) ::: string;
 function unpack ($pattern ::: string, $data ::: string) ::: array <var>;
 
 define_raw ('JSON_UNESCAPED_UNICODE', 1);
@@ -391,7 +392,9 @@ function lcwords ($str ::: string) ::: string;
 function ucwords ($str ::: string) ::: string;
 
 function vprintf ($format ::: string, $args ::: array) ::: int;
+function printf (...) ::: int;
 function vsprintf ($format ::: string, $args ::: array) ::: string;
+function sprintf (...) ::: string;
 function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
 
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
@@ -641,6 +644,7 @@ function store_unsigned_int_hex ($v ::: string) ::: bool;
 function store_unsigned_long_hex ($v ::: string) ::: bool;
 function store_double ($v ::: float) ::: bool;
 function store_string ($v ::: string) ::: bool;
+function store_many (...) ::: bool;
 function store_finish() ::: bool;
 function rpc_send ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
 function rpc_send_noflush ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;

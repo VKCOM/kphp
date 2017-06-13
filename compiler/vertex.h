@@ -1554,39 +1554,6 @@ VA_BEGIN (op_defined, meta_op_unary_)
     OPP (str, "<TODO: defined>");
   PROPERTIES_END
 VA_END
-VA_BEGIN (op_pack, meta_op_unary_)
-  PROPERTIES_BEGIN
-    OPP (type, common_op);
-    OPP (rl, rl_func);
-    OPP (cnst, cnst_nonconst_func);
-    OPP (str, "<TODO: pack>");
-  PROPERTIES_END
-VA_END
-VA_BEGIN (meta_op_xprintf, meta_op_unary_)
-  PROPERTIES_BEGIN
-    OPP (type, common_op);
-    OPP (rl, rl_func);
-    OPP (cnst, cnst_nonconst_func);
-  PROPERTIES_END
-VA_END
-VA_BEGIN (op_printf, meta_op_xprintf)
-  PROPERTIES_BEGIN
-    OPP (str, "<TODO: printf>");
-  PROPERTIES_END
-VA_END
-VA_BEGIN (op_sprintf, meta_op_xprintf)
-  PROPERTIES_BEGIN
-    OPP (str, "<TODO: sprintf>");
-  PROPERTIES_END
-VA_END
-VA_BEGIN (op_store_many, meta_op_unary_)
-  PROPERTIES_BEGIN
-    OPP (type, common_op);
-    OPP (rl, rl_func);
-    OPP (cnst, cnst_nonconst_func);
-    OPP (str, "<TODO: store_many>");
-  PROPERTIES_END
-VA_END
 
 VA_BEGIN (meta_op_builtin_func, meta_op_varg_)
   PROPERTIES_BEGIN

@@ -439,9 +439,6 @@ inline void compile_as_printable (VertexPtr root, CodeGenerator &W);
 inline void compile_echo (VertexPtr root, CodeGenerator &W);
 inline void compile_var_dump (VertexPtr root, CodeGenerator &W);
 inline void compile_print (VertexAdaptor <op_print> root, CodeGenerator &W);
-inline void compile_store_many (VertexAdaptor <op_store_many> root, CodeGenerator &W);
-inline void compile_pack (VertexAdaptor <op_pack> root, CodeGenerator &W);
-inline void compile_xprintf (VertexAdaptor <meta_op_xprintf> root, CodeGenerator &W);
 inline void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W);
 inline void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W);
 inline void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W);
@@ -2607,31 +2604,6 @@ void compile_print (VertexAdaptor <op_print> root, CodeGenerator &W) {
   W << ")";
 }
 
-
-void compile_store_many (VertexAdaptor <op_store_many> root, CodeGenerator &W) {
-  W << "f$store_many (" << root->expr() << ")";
-}
-
-
-void compile_pack (VertexAdaptor <op_pack> root, CodeGenerator &W) {
-  W << "f$pack (" << root->expr() << ")";
-}
-
-
-void compile_xprintf (VertexAdaptor <meta_op_xprintf> root, CodeGenerator &W) {
-  if (root->type() == op_printf) {
-    W << "f$printf (";
-  } else if (root->type() == op_sprintf) {
-    W << "f$sprintf (";
-  } else {
-    assert (0);
-  }
-
-  W << root->expr() << ")";
-}
-
-
-
 void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W) {
   assert ((int)root->size() == 1 || root->type() == op_unset);
 
@@ -3221,16 +3193,6 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       break;
     case op_print:
       compile_print (root, W);
-      break;
-    case op_pack:
-      compile_pack (root, W);
-      break;
-    case op_printf:
-    case op_sprintf:
-      compile_xprintf (root, W);
-      break;
-    case op_store_many:
-      compile_store_many (root, W);
       break;
     case op_min:
     case op_max:
