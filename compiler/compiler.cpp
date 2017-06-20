@@ -889,6 +889,9 @@ void prepare_function (FunctionPtr function) {
   if (header.not_null()) {
     function_apply_header (function, header);
   }
+  if (function->root.not_null() && function->root->varg_flag) {
+    function->varg_flag = true;
+  }
 }
 
 class PrepareFunctionF  {

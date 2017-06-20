@@ -601,6 +601,7 @@ VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
       args = VertexAdaptor <op_varg> (call_args[0])->expr();
     } else {
       CREATE_VERTEX (new_args, op_array, call->get_next());
+      new_args->location = call->get_location();
       args = new_args;
     }
     vector <VertexPtr> tmp (1, GenTree::conv_to <tp_array> (args));
