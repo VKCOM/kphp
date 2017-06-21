@@ -395,6 +395,13 @@ bool f$fclose (const Stream &stream) {
   STREAM_FUNCTION_BODY(fclose, false) (stream);
 }
 
+OrFalse <int> f$fprintf (const array<var> &args) {
+  array<var> fprintf_args = args;
+  fprintf_args.shift();
+  fprintf_args.shift();
+  return f$vfprintf(args.get_value(0), args.get_value(1).to_string(), fprintf_args);
+}
+
 OrFalse <int> f$vfprintf (const Stream &stream, const string &format, const array<var> &args) {
   string text = f$vsprintf(format, args);
   return f$fwrite(stream, text);
