@@ -398,6 +398,8 @@ function sprintf (...) ::: string;
 function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
 function fprintf (...) ::: int;
 
+function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: OrFalse <int>;
+
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
 //function strtr ($subject, $from, $to);
 function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: var;//TODO

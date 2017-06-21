@@ -407,6 +407,61 @@ OrFalse <int> f$vfprintf (const Stream &stream, const string &format, const arra
   return f$fwrite(stream, text);
 }
 
+OrFalse <int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
+                        string enclosure, string escape) {
+  if (delimiter.size() < 1) {
+    php_warning("delimiter must be a character");
+    return false;
+  } else if (delimiter.size() > 1) {
+    php_warning("delimiter must be a single character");
+  }
+  if (enclosure.size() < 1) {
+    php_warning("enclosure must be a character");
+    return false;
+  } else if (enclosure.size() > 1) {
+    php_warning("enclosure must be a single character");
+  }
+  if (escape.size() < 1) {
+    php_warning("escape_char must be a character");
+    return false;
+  } else if (escape.size() > 1) {
+    php_warning("escape_char must be a single character");
+  }
+  char delimiter_char = delimiter[0];
+  char enclosure_char = enclosure[0];
+  char escape_char = escape[0];
+  string_buffer csvline;
+  string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char))
+                                          .append(string(1, enclosure_char))
+                                          .append(string(1, escape_char));
+  for (array<var>::const_iterator it = fields.begin(); it != fields.end(); ++it) {
+    if (it != fields.begin()) {
+      csvline.append_char(delimiter_char);
+    }
+    string const &value = it.get_value().to_string();
+    if (value.find_first_of (to_enclose) != string::npos) {
+      bool escaped = false;
+      csvline.append_char(enclosure_char);
+      for (string::size_type i = 0; i < value.size(); i++) {
+        char current = value[i];
+        if (current == escape_char) {
+          escaped = true;
+        } else if (!escaped && current == enclosure_char) {
+          csvline.append_char(enclosure_char);
+        } else {
+          escaped = false;
+        }
+        csvline.append_char(current);
+      }
+      csvline.append_char(enclosure_char);
+    } else {
+      csvline.append(value.c_str(), value.size());
+    }
+  }
+  csvline.append_char('\n');
+  return f$fwrite(stream, csvline.str());
+}
+
 OrFalse <string> f$file_get_contents (const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false) (url);
 }

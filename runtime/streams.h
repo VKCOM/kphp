@@ -83,6 +83,9 @@ OrFalse <int> f$fprintf (const array<var> &args);
 
 OrFalse <int> f$vfprintf (const Stream &stream, const string &format, const array<var> &args);
 
+OrFalse <int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter = string(",", 1),
+                        string enclosure = string("\"", 1), string escape_char = string("\\", 1));
+
 OrFalse <string> f$file_get_contents (const string &url);
 
 OrFalse <int> f$file_put_contents (const string &url, const var &content_var, int flags = 0);
