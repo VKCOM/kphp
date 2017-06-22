@@ -109,6 +109,8 @@ inline int f$strlen (const string &s);
 
 int f$strncmp (const string &lhs, const string &rhs, int len);
 
+int f$strnatcmp(string const &lhs, string const &rhs);
+
 OrFalse <string> f$strpbrk (const string &haystack, const string &char_list);
 
 OrFalse <int> f$strpos (const string &haystack, const string &needle, int offset = 0);

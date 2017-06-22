@@ -369,6 +369,7 @@ function strcmp ($str1 ::: string, $str2 ::: string) ::: int;
 function stripslashes ($str ::: string) ::: string;
 function strip_tags ($str ::: string, $allow ::: string = "") ::: string;
 function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
+function strnatcmp ($str1 ::: string, $str2 ::: string) ::: int;
 function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
 
 
