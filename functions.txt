@@ -265,6 +265,7 @@ function uasort (&$a ::: array, callback($x, $y)) ::: void;
 function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function uksort (&$a ::: array, callback($x, $y)) ::: void;
+function natsort (&$a ::: array) ::: void;
 
 function lcg_value() ::: float;
 function uniqid ($prefix ::: string = '', $more_entropy ::: int = false) ::: string;

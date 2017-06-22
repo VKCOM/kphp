@@ -201,6 +201,8 @@ void f$krsort (array <T> &a, int flag = SORT_REGULAR);
 template <class T, class T1>
 void f$uksort (array <T> &a, const T1 &compare);
 
+template <class T>
+void f$natsort (array <T> &a);
 
 int f$array_sum (const array <int> &a);
 
@@ -913,6 +915,13 @@ struct sort_compare_string {
 };
 
 template <class T>
+struct sort_compare_natural {
+  bool operator () (const T &h1, const T &h2) const {
+    return f$strnatcmp(f$strval (h1), f$strval (h2)) > 0;
+  }
+};
+
+template <class T>
 void f$sort (array <T> &a, int flag) {
   switch (flag) {
     case SORT_REGULAR:
@@ -1043,6 +1052,10 @@ void f$uksort (array <T> &a, const T1 &compare) {
   return a.ksort (compare);
 }
 
+template <class T>
+void f$natsort (array <T> &a) {
+  return a.sort(sort_compare_natural <typename array <T>::key_type> (), false);
+}
 
 template <class T>
 double f$array_sum (const array <T> &a) {
