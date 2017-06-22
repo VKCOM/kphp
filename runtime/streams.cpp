@@ -462,6 +462,292 @@ OrFalse <int> f$fputcsv(const Stream &stream, const array<var> &fields, string d
   return f$fwrite(stream, csvline.str());
 }
 
+// this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
+// function php_fgetcsv_lookup_trailing_spaces
+static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
+  int inc_len;
+  unsigned char last_chars[2] = { 0, 0 };
+
+  while (len > 0) {
+    inc_len = (*ptr == '\0' ? 1 : mblen(ptr, len));
+    switch (inc_len) {
+      case -2:
+      case -1:
+        inc_len = 1;
+        break;
+      case 0:
+        goto quit_loop;
+      case 1:
+      default:
+        last_chars[0] = last_chars[1];
+        last_chars[1] = *ptr;
+        break;
+    }
+    ptr += inc_len;
+    len -= inc_len;
+  }
+  quit_loop:
+  switch (last_chars[1]) {
+    case '\n':
+      if (last_chars[0] == '\r') {
+        return ptr - 2;
+      }
+      /* break is omitted intentionally */
+    case '\r':
+      return ptr - 1;
+  }
+  return ptr;
+}
+
+
+OrFalse <array <var> > f$fgetcsv (const Stream &stream, int length, string delimiter, string enclosure, string escape) {
+  if (delimiter.size() < 1) {
+    php_warning("delimiter must be a character");
+    return false;
+  } else if (delimiter.size() > 1) {
+    php_warning("delimiter must be a single character");
+  }
+  if (enclosure.size() < 1) {
+    php_warning("enclosure must be a character");
+    return false;
+  } else if (enclosure.size() > 1) {
+    php_warning("enclosure must be a single character");
+  }
+  if (escape.size() < 1) {
+    php_warning("escape_char must be a character");
+    return false;
+  } else if (escape.size() > 1) {
+    php_warning("escape_char must be a single character");
+  }
+  char delimiter_char = delimiter[0];
+  char enclosure_char = enclosure[0];
+  char escape_char = escape[0];
+  if (length < 0) {
+    php_warning("Length parameter may not be negative");
+    return false;
+  } else if (length == 0) {
+    length = -1;
+  }
+  OrFalse <string> buf_or_false = length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1);
+  if (!buf_or_false.bool_value) {
+    return false;
+  }
+  string buffer = buf_or_false.value;
+  array <var> answer;
+  int current_id = 0;
+  string_buffer tmp_buffer;
+  // this part is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c, function php_fgetcsv
+  char const *buf = buffer.c_str();
+  char const *bptr = buf;
+  size_t buf_len = buffer.size();
+  char const *tptr = fgetcsv_lookup_trailing_spaces(buf, buf_len);
+  size_t line_end_len = buf_len - (tptr - buf);
+  char const *line_end = tptr, *limit = tptr;
+  bool first_field = true;
+  size_t temp_len = buf_len;
+  int inc_len;
+  do {
+    char const *hunk_begin;
+
+    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
+    if (inc_len == 1) {
+      char const *tmp = bptr;
+      while ((*tmp != delimiter_char) && isspace((int)*(unsigned char *)tmp)) {
+        tmp++;
+      }
+      if (*tmp == enclosure_char) {
+        bptr = tmp;
+      }
+    }
+
+    if (first_field && bptr == line_end) {
+      answer.set_value(current_id++, var());
+      break;
+    }
+    first_field = 0;
+    /* 2. Read field, leaving bptr pointing at start of next field */
+    if (inc_len != 0 && *bptr == enclosure_char) {
+      int state = 0;
+
+      bptr++;	/* move on to first character in field */
+      hunk_begin = bptr;
+
+      /* 2A. handle enclosure delimited field */
+      for (;;) {
+        switch (inc_len) {
+          case 0:
+            switch (state) {
+              case 2:
+                tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin - 1));
+                hunk_begin = bptr;
+                goto quit_loop_2;
+
+              case 1:
+                tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
+                hunk_begin = bptr;
+                /* break is omitted intentionally */
+
+              case 0: {
+
+                if (hunk_begin != line_end) {
+                  tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
+                  hunk_begin = bptr;
+                }
+
+                /* add the embedded line end to the field */
+                tmp_buffer.append(line_end, (int) line_end_len);
+                string new_buffer;
+
+                if (stream.is_null()) {
+                  goto quit_loop_2;
+                } else {
+                  OrFalse<string> new_buffer_or_false = f$fgets(stream);
+                  if (!new_buffer_or_false.bool_value) {
+                    if ((size_t)temp_len > (size_t)(limit - buf)) {
+                      goto quit_loop_2;
+                    }
+                    return answer;
+                  }
+                  new_buffer = new_buffer_or_false.value;
+                }
+                temp_len += new_buffer.size();
+                buf_len = new_buffer.size();
+                buffer = new_buffer;
+                buf = bptr = buffer.c_str();
+                hunk_begin = buf;
+
+                line_end = limit = fgetcsv_lookup_trailing_spaces(buf, buf_len);
+                line_end_len = buf_len - (size_t)(limit - buf);
+
+                state = 0;
+              } break;
+            }
+            break;
+
+          case -2:
+          case -1:
+            /* break is omitted intentionally */
+          case 1:
+            /* we need to determine if the enclosure is
+             * 'real' or is it escaped */
+            switch (state) {
+              case 1: /* escaped */
+                bptr++;
+                state = 0;
+                break;
+              case 2: /* embedded enclosure ? let's check it */
+                if (*bptr != enclosure_char) {
+                  /* real enclosure */
+                  tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin - 1));
+                  hunk_begin = bptr;
+                  goto quit_loop_2;
+                }
+                tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
+                bptr++;
+                hunk_begin = bptr;
+                state = 0;
+                break;
+              default:
+                if (*bptr == enclosure_char) {
+                  state = 2;
+                } else if (*bptr == escape_char) {
+                  state = 1;
+                }
+                bptr++;
+                break;
+            }
+            break;
+
+          default:
+            switch (state) {
+              case 2:
+                /* real enclosure */
+                tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin - 1));
+                hunk_begin = bptr;
+                goto quit_loop_2;
+              case 1:
+                bptr += inc_len;
+                tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
+                hunk_begin = bptr;
+                state = 0;
+                break;
+              default:
+                bptr += inc_len;
+                break;
+            }
+            break;
+        }
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)): 0);
+      }
+
+      quit_loop_2:
+      /* look up for a delimiter */
+      for (;;) {
+        switch (inc_len) {
+          case 0:
+            goto quit_loop_3;
+
+          case -2:
+          case -1:
+            inc_len = 1;
+            /* break is omitted intentionally */
+          case 1:
+            if (*bptr == delimiter_char) {
+              goto quit_loop_3;
+            }
+            break;
+          default:
+            break;
+        }
+        bptr += inc_len;
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)): 0);
+      }
+
+      quit_loop_3:
+      tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
+      bptr += inc_len;
+    } else {
+      /* 2B. Handle non-enclosure field */
+
+      hunk_begin = bptr;
+
+      for (;;) {
+        switch (inc_len) {
+          case 0:
+            goto quit_loop_4;
+          case -2:
+          case -1:
+            inc_len = 1;
+            /* break is omitted intentionally */
+          case 1:
+            if (*bptr == delimiter_char) {
+              goto quit_loop_4;
+            }
+            break;
+          default:
+            break;
+        }
+        bptr += inc_len;
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)): 0);
+      }
+      quit_loop_4:
+      tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
+
+      char const *comp_end = (char *)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());
+      tmp_buffer.set_pos((int) (comp_end - tmp_buffer.c_str()));
+      if (*bptr == delimiter_char) {
+        bptr++;
+      }
+    }
+
+    /* 3. Now pass our field back to php */
+    answer.set_value(current_id++, tmp_buffer.str());
+    tmp_buffer.clean();
+  } while (inc_len > 0);
+
+  return answer;
+}
+
 OrFalse <string> f$file_get_contents (const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false) (url);
 }
