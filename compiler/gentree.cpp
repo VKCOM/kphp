@@ -330,9 +330,17 @@ VertexPtr GenTree::get_string_build() {
   AutoLocation sb_location (this);
   vector <VertexPtr> v_next;
   next_cur();
+  bool after_simple_expression = false;
   while (cur != end && (*cur)->type() != tok_str_end) {
     if ((*cur)->type() == tok_str) {
       v_next.push_back (get_string());
+      if (after_simple_expression) {
+        VertexAdaptor<op_string> last = v_next.back().as<op_string>();
+        if (last->str_val != "" && last->str_val[0] == '[') {
+          kphp_warning("Simple string expressions with [] can work wrong. Use more {}");
+        }
+      }
+      after_simple_expression = false;
     } else if ((*cur)->type() == tok_expr_begin) {
       next_cur();
 
@@ -341,7 +349,9 @@ VertexPtr GenTree::get_string_build() {
       v_next.push_back (add);
 
       CE (expect (tok_expr_end, "'}'"));
+      after_simple_expression = false;
     } else {
+      after_simple_expression = true;
       VertexPtr add = get_expression();
       CE (!kphp_error (add.not_null(), "Bad expression in string"));
       v_next.push_back (add);
