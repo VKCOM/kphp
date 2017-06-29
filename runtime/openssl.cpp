@@ -9,6 +9,7 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
+#include <openssl/evp.h>
 
 #include <errno.h>
 #include <netdb.h>
@@ -17,6 +18,7 @@
 
 #include "common/crc32.h"
 #include "common/resolver.h"
+#include "common/openssl.h"
 
 #include "datetime.h"
 #include "files.h"
@@ -253,8 +255,21 @@ static EVP_PKEY *openssl_get_evp (const string &key, const string &passphrase, b
     dl::leave_critical_section();
     return NULL;
   }
-
-  EVP_PKEY *evp_pkey = is_public ? PEM_read_bio_PUBKEY (in, NULL, NULL, NULL) : PEM_read_bio_PrivateKey (in, NULL, NULL, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
+  EVP_PKEY *evp_pkey;
+  X509 *cert = (X509 *) PEM_ASN1_read_bio((d2i_of_void *)d2i_X509, PEM_STRING_X509, in, NULL, NULL, NULL);
+  BIO_free (in);
+  if (cert == NULL) {
+    in = BIO_new_mem_buf (static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
+    if (in == NULL) {
+      dl::leave_critical_section();
+      return NULL;
+    }
+    evp_pkey = is_public ? PEM_read_bio_PUBKEY(in, NULL, NULL, NULL) : PEM_read_bio_PrivateKey(in, NULL, NULL, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
+    BIO_free (in);
+  } else {
+    evp_pkey = X509_get_pubkey(cert);
+    X509_free(cert);
+  }
 /*
   ERR_load_crypto_strings();
   if (evp_pkey == NULL) {
@@ -264,7 +279,6 @@ static EVP_PKEY *openssl_get_evp (const string &key, const string &passphrase, b
     }
   }
 */
-  BIO_free (in);
   dl::leave_critical_section();
 
   *from_cache = false;
@@ -282,7 +296,7 @@ bool f$openssl_public_encrypt (const string &data, string &result, const string 
     result = string();
     return false;
   }
-  if (pkey->type != EVP_PKEY_RSA && pkey->type != EVP_PKEY_RSA2) {
+  if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free (pkey);
     }
@@ -297,7 +311,7 @@ bool f$openssl_public_encrypt (const string &data, string &result, const string 
   php_assert (PHP_BUF_LEN >= key_size);
 
   if (RSA_public_encrypt ((int)data.size(), reinterpret_cast <const unsigned char *> (data.c_str()), 
-                          reinterpret_cast <unsigned char *> (php_buf), pkey->pkey.rsa, RSA_PKCS1_PADDING) != key_size) {
+                          reinterpret_cast <unsigned char *> (php_buf), EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_PADDING) != key_size) {
     if (!from_cache) {
       EVP_PKEY_free (pkey);
     }
@@ -336,7 +350,7 @@ bool f$openssl_private_decrypt (const string &data, string &result, const string
     php_warning ("Parameter key is not a valid private key");
     return false;
   }
-  if (pkey->type != EVP_PKEY_RSA && pkey->type != EVP_PKEY_RSA2) {
+  if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey)!= EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free (pkey);
     }
@@ -349,7 +363,7 @@ bool f$openssl_private_decrypt (const string &data, string &result, const string
   php_assert (PHP_BUF_LEN >= key_size);
 
   int len = RSA_private_decrypt ((int)data.size(), reinterpret_cast <const unsigned char *> (data.c_str()),
-                                 reinterpret_cast <unsigned char *> (php_buf), pkey->pkey.rsa, RSA_PKCS1_PADDING);
+                                 reinterpret_cast <unsigned char *> (php_buf), EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_PADDING);
   if (!from_cache) {
     EVP_PKEY_free (pkey);
   }
@@ -405,6 +419,38 @@ OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &pa
   return result;
 }
 
+int f$openssl_verify(string const &data, string const &signature, string const &pub_key_id) {
+  int err = 0;
+  EVP_PKEY *pkey;
+  EVP_MD_CTX *md_ctx;
+  dl::enter_critical_section();
+  const EVP_MD *mdtype = EVP_sha1();
+
+  if (signature.size() > UINT_MAX) {
+    php_warning("signature is too long");
+    dl::leave_critical_section();
+    return 0;
+  }
+
+  bool from_cache;
+  pkey = openssl_get_evp(pub_key_id, string("", 0), true, &from_cache);
+  if (pkey == NULL) {
+    php_warning("supplied key param cannot be converted into a public key");
+    dl::leave_critical_section();
+    return 0;
+  }
+
+  md_ctx = EVP_MD_CTX_create();
+  if (md_ctx == NULL ||
+      !EVP_VerifyInit (md_ctx, mdtype) ||
+      !EVP_VerifyUpdate (md_ctx, data.c_str(), data.size()) ||
+      (err = EVP_VerifyFinal(md_ctx, (unsigned char *)signature.c_str(), (unsigned int)signature.size(), pkey)) < 0) {
+  }
+  EVP_MD_CTX_destroy(md_ctx);
+  EVP_PKEY_free(pkey);
+  dl::leave_critical_section();
+  return err;
+}
 
 
 struct ssl_connection {
