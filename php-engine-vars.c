@@ -25,6 +25,8 @@ int workers_n = 0;
 int run_once = 0;
 int run_once_return_code = 0;
 
+int die_on_fail = 0;
+
 /** stats **/
 double load_time;
 acc_stats_t worker_acc_stats;

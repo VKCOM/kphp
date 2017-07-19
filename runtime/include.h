@@ -54,6 +54,8 @@ int php_warning_level __attribute__ ((weak)) = 2;
 const char *engine_tag __attribute__ ((weak)) = "[";
 const char *engine_pid __attribute__ ((weak)) = "] ";
 
+extern int die_on_fail;
+
 void php_warning (char const *message, ...) {
   if (php_warning_level == 0 || php_disable_warnings) {
     return;
@@ -175,6 +177,11 @@ void php_warning (char const *message, ...) {
   }
 
   dl::leave_critical_section();
+  if (die_on_fail) {
+    fprintf (stderr, "_exiting in php_warning, since such option is enabled\n");
+    raise (SIGUSR2);
+    _exit (1);
+  }
 }
 
 

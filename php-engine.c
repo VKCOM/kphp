@@ -3376,10 +3376,10 @@ int main_args_default_handler (int i) {
   return 1;
 }
 
-#define ARGS_STR "D:E:H:r:w:f:p:s:RT:t:oqQ:CUL:"
+#define ARGS_STR "D:E:H:r:w:f:p:s:RT:t:oqQ:CUL:K"
 
 void usage_params (void) {
-  printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C]");
+  printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C] [-K]");
 }
 
 const char* builtin_tl_schema __attribute__((weak));
@@ -3402,7 +3402,8 @@ void usage_desc (void) {
     "\t-T<tl_config_file_name>\tname of file with TL config (%s)\n"
     "\t-t<script_time_limit>\ttime limit for script in seconds\n"
     "\t-C\tuse crc32c if can\n"
-    "\t-U\tdon't write get data in log. If used twice, disables access log.\n",
+    "\t-U\tdon't write get data in log. If used twice, disables access log.\n"
+    "\t-K\tscript is killed, when warning happened\n",
      builtin_tl_schema_length == -1 ? "" : "will be ignored"
     );
 }
@@ -3503,6 +3504,9 @@ int main_args_handler (int i) {
     break;
   case 'C':
     default_rpc_flags |= 2048;
+    break;
+  case 'K':
+    die_on_fail = 1;
     break;
   default:
     return 0;

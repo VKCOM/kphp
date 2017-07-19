@@ -37,6 +37,8 @@ extern int workers_n;
 extern int run_once;
 extern int run_once_return_code;
 
+extern int die_on_fail;
+
 /** stats **/
 extern double load_time;
 //uptime
