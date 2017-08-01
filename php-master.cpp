@@ -1609,7 +1609,11 @@ int php_master_version (struct connection *c) {
 
 void php_master_rpc_stats (void) {
   std::string res (1 << 12, 0);
-  res.resize (prepare_stats (NULL, &res[0], (1 << 12) - 2));
+  stats_t stats;
+  stats.type = STATS_TYPE_TL;
+  stats.statsd_prefix = NULL;
+  sb_init(&stats.sb, &res[0], (1 << 12) - 2);
+  prepare_common_stats(&stats);
   res += php_master_prepare_stats (true, -1);
   tl_store_stats (res.c_str(), 0);
 }
