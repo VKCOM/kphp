@@ -1096,12 +1096,14 @@ void GenTree::func_force_return (VertexPtr root, VertexPtr val) {
   VertexPtr cmd = func->cmd();
   assert (cmd->type() == op_seq);
 
-  if (val.is_null()) {
+  bool no_result = val.is_null();
+  if (no_result) {
     CREATE_VERTEX (return_val, op_null);
     val = return_val;
   }
 
   CREATE_VERTEX (return_node, op_return, val);
+  return_node->void_flag = no_result;
   vector <VertexPtr> next = cmd->get_next();
   next.push_back (return_node);
   CREATE_VERTEX (seq, op_seq, next);
@@ -1136,14 +1138,17 @@ VertexPtr GenTree::get_return() {
   AutoLocation ret_location (this);
   next_cur();
   VertexPtr return_val = get_expression();
+  bool no_result = false;
   if (return_val.is_null()) {
     CREATE_VERTEX (tmp, op_null);
     set_location (tmp, AutoLocation(this));
     return_val = tmp;
+    no_result = true;
   }
   CREATE_VERTEX (ret, op_return, return_val);
   set_location (ret, ret_location);
   CE (expect (tok_semicolon, "';'"));
+  ret->void_flag = no_result;
   return ret;
 }
 

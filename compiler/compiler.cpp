@@ -800,6 +800,48 @@ class CollectDefinesPass : public FunctionPassBase {
     }
 };
 
+/*** Collect defines declarations ***/
+class CheckReturnsPass : public FunctionPassBase {
+  private:
+    bool have_void;
+    bool have_not_void;
+    bool errored;
+    AUTO_PROF (check_returns);
+  public:
+    string get_description() {
+      return "Check returns";
+    }
+    void init() {
+      have_void = have_not_void = errored = false;
+    }
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
+
+      if (root->type() == op_return) {
+        if (root->void_flag) {
+          have_void = true;
+        } else {
+          have_not_void = true;
+        }
+        if (have_void && have_not_void && !errored) {
+          errored = true;
+          FunctionPtr fun = stage::get_function();
+          if (fun->type() != FunctionData::func_switch && fun->name != fun->file_id->main_func_name) {
+            kphp_warning("Mixing void and not void returns in one function");
+          }
+        }
+      }
+
+      return root;
+    }
+
+    void on_finish() {
+      if (!have_not_void && !stage::get_function()->is_extern) {
+        stage::get_function()->root->void_flag = true;
+      }
+    }
+};
+
+
 /*** Apply function header ***/
 void function_apply_header (FunctionPtr func, VertexAdaptor <meta_op_function> header) {
   VertexAdaptor <meta_op_function> root = func->root;
@@ -2161,9 +2203,15 @@ class ExtractAsyncPass : public FunctionPassBase {
 class FinalCheckPass : public FunctionPassBase {
   private:
     AUTO_PROF (final_check);
+    int from_return;
   public:
+
     string get_description() {
       return "Final check";
+    }
+
+    void init() {
+      from_return = 0;
     }
 
     bool on_start (FunctionPtr function) {
@@ -2173,6 +2221,9 @@ class FinalCheckPass : public FunctionPassBase {
       return function->type() != FunctionData::func_extern;
     }
     VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
+      if (vertex->type() == op_return) {
+        from_return++;
+      }
       if (vertex->type() == op_func_name) {
         kphp_error (0, dl_pstr("Unexpected function name: '%s'", vertex.as<op_func_name>()->str_val.c_str()));
       }
@@ -2244,6 +2295,14 @@ class FinalCheckPass : public FunctionPassBase {
           }
         }
       }
+      if (vertex->type() == op_func_call) {
+        FunctionPtr fun = vertex.as<op_func_call>()->get_func_id();
+        if (fun->root->void_flag && vertex->rl_type == val_r && from_return == 0) {
+          if (fun->type() != FunctionData::func_switch && fun->file_id->main_func_name != fun->name) {
+            kphp_warning(dl_pstr("Using result of void function %s\n", fun->name.c_str()));
+          }
+        }
+      }
       //TODO: may be this should be moved to tinf_check
       return vertex;
     }
@@ -2277,6 +2336,13 @@ class FinalCheckPass : public FunctionPassBase {
       }
 
       return false;
+    }
+
+    VertexPtr on_exit_vertex (VertexPtr vertex, LocalT *local __attribute__((unused))) {
+      if (vertex->type() == op_return) {
+        from_return--;
+      }
+      return vertex;
     }
 };
 
@@ -2680,6 +2746,7 @@ bool compiler_execute (KphpEnviroment *env) {
          DataStream <FunctionPtr> > calc_locations_pipe (true);
     FunctionPassPipe <PreprocessDefinesConcatenationPass>::Self process_defines_concat (true);
     FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
+    FunctionPassPipe <CheckReturnsPass>::Self check_returns_pipe (true);
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > first_sync_pipe (true, true);
@@ -2802,6 +2869,7 @@ bool compiler_execute (KphpEnviroment *env) {
       extract_async_pipe >>
       analyzer_pipe >>
       check_access_modifiers_pass >>
+      check_returns_pipe >>
       final_check_pass >>
       code_gen_pipe >> sync_node() >>
       write_files_pipe;
