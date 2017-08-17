@@ -3317,7 +3317,7 @@ void init_logname (const char *src) {
 void usage (void);
 
 void usage_default_info (void) {
-  printf ("\t%s\n", FullVersionStr);
+  printf ("\t%s\n", get_version_string());
 
 }
 

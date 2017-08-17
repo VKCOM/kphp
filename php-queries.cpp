@@ -1029,7 +1029,7 @@ int engine_get_uptime (void) {
 }
 
 const char *engine_get_version (void) {
-  return FullVersionStr;
+  return get_version_string();
 }
 
 

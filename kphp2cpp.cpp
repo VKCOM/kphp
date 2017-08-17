@@ -9,7 +9,7 @@
  **/
 void usage (void) {
   printf ( "%s\nConvert php code into C++ code, and compile it into a binary\n",
-          FullVersionStr);
+          get_version_string());
   parse_usage();
   exit(1);
 }
