@@ -772,15 +772,8 @@ string f$pack (const array <var> &a) {
   int cur_arg = 1;
   for (int i = 0; i < (int)pattern.size(); ) {
     if (pattern[i] == '*') {
-      if (i + 1 == (int)pattern.size()) {
-        if (cur_arg == a.count()) {
-          break;
-        } else {
-          i--;
-        }
-      } else {
-        php_warning ("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
-        return string();
+      if (i > 0) {
+        --i;
       }
     }
     char format = pattern[i++];
@@ -799,11 +792,19 @@ string f$pack (const array <var> &a) {
       cnt = 0;
     }
 
-    int arg_num = cur_arg++;
+    int arg_num = cur_arg;
     if (arg_num >= a.count()) {
-      php_warning ("Not enough parameters to call function pack");
-      return string();
+      if (format == 'A' || format == 'a' || format == 'H' || format == 'h' || cnt != 0) {
+        php_warning ("Not enough parameters to call function pack");
+        return string();
+      }
+      if (i + 1 != (int)pattern.size()) {
+        php_warning ("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
+        return string();
+      }
+      break;
     }
+    cur_arg++;
 
     var arg = a.get_value (arg_num);
 
@@ -2201,10 +2202,6 @@ array <var> f$unpack (const string &pattern, const string &data) {
 
   int data_len = data.size(), data_pos = 0;
   for (int i = 0; i < (int)pattern.size(); ) {
-    if (data_pos >= data_len) {
-      php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
-      return result;
-    }
     char format = pattern[i++];
     int cnt = -1;
     if ('0' <= pattern[i] && pattern[i] <= '9') {
@@ -2220,6 +2217,13 @@ array <var> f$unpack (const string &pattern, const string &data) {
     } else if (pattern[i] == '*') {
       cnt = 0;
       i++;
+    }
+    if (data_pos >= data_len) {
+      if (format == 'A' || format == 'a' || format == 'H' || format == 'h' || cnt != 0) {
+        php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+        return result;
+      }
+      return result;
     }
 
     const char *key_end = strchrnul (&pattern[i], '/');
