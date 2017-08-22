@@ -19,7 +19,7 @@ static void as_file (string *s __attribute__((unused))) {
 }
 
 KphpEnviroment::KphpEnviroment() :
-  verbosity_int_ (0) {
+  verbosity_int_ (0), warnings_level (0) {
 };
 
 static void init_env_var (string *str, const string &var_name, const string &default_value) {
@@ -238,6 +238,14 @@ FILE *KphpEnviroment::get_warnings_file () const {
 
 void KphpEnviroment::set_warnings_file (FILE *file) {
   warnings_file = file;
+}
+
+void KphpEnviroment::set_warnings_level (int level) {
+  warnings_level = level;
+}
+
+int KphpEnviroment::get_warnings_level () const {
+  return warnings_level;
 }
 
 bool KphpEnviroment::init() {

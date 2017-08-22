@@ -99,6 +99,14 @@ int parse_args_f(int i) {
   case 2001:
     env->set_stats_filename (optarg);
     break;
+  case 2002: {
+    int level = atoi (optarg);
+    if (level < 0) {
+      return -1;
+    }
+    env->set_warnings_level (level);
+    break;
+  }
   default:
     return -1;
   }
@@ -144,6 +152,7 @@ int main (int argc, char *argv[]) {
   parse_option("Werror", no_argument, NULL, 'W', "All compile time warnings will be errors");
   parse_option("warnings-file", required_argument, NULL, 2000, "Print all warnings to <file>, otherwise warnings are printed to stderr");
   parse_option("stats-file", required_argument, NULL, 2001, "Print some statistics to <file>");
+  parse_option("warnings-level", required_argument, NULL, 2002, "Sets warnings level to <level>: prints more warnings, according to level set (Default value: 0)");
   parse_engine_options_long (argc, argv, parse_args_f);
 
 

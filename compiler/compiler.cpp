@@ -1904,8 +1904,9 @@ class CFGEndF {
       AUTO_PROF (CFG_End);
       stage::set_name ("Control flow graph. End");
       stage::set_function (data.function);
-
-      //data.callback->check_uninited();
+      if (G->env().get_warnings_level() >= 1) {
+        data.callback->check_uninited();
+      }
       data.callback->merge_same_type();
       delete data.callback;
 
