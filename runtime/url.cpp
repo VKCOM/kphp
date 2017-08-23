@@ -7,17 +7,103 @@
 #include "array_functions.h"
 #include "regexp.h"
 
-string f$base64_decode (const string &s) {
-  int result_len = s.size() / 4 * 3;
-  string res (result_len, false);
-  result_len = base64_decode (s.c_str(), reinterpret_cast <unsigned char *> (res.buffer()), result_len + 1);
+//string f$base64_decode (const string &s) {
+//  int result_len = s.size() / 4 * 3;
+//  string res (result_len, false);
+//  result_len = base64_decode (s.c_str(), reinterpret_cast <unsigned char *> (res.buffer()), result_len + 1);
+//
+//  if (result_len < 0) {
+//    return string();
+//  }
+//
+//  res.shrink (result_len);
+//  return res;
+//}
 
-  if (result_len < 0) {
-    return string();
+static const short base64_reverse_table[256] = {
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -2, -2, -1, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, 62, -2, -2, -2, 63,
+  52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -2, -2, -2, -2, -2, -2,
+  -2,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+  15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -2, -2, -2, -2, -2,
+  -2, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+  41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2
+};
+
+/* Function f$base64_decode ported from https://github.com/php/php-src/blob/master/ext/standard/base64.c#L130
+ * "This product includes PHP software, freely available from <http://www.php.net/software/>".
+*/
+OrFalse <string> f$base64_decode(const string &s, bool strict) {
+  /* run through the whole string, converting as we go */
+  string::size_type result_len = s.size() / 4 * 3;
+  string result(result_len, false);
+  int i = 0;
+  string::size_type j = 0;
+  int padding = 0;
+  for (size_t pos = 0; pos < s.size(); pos++) {
+    int ch = s[pos];
+    if (ch == '=') {
+      padding++;
+      continue;
+    }
+
+    ch = base64_reverse_table[ch];
+    if (!strict) {
+      /* skip unknown characters and whitespace */
+      if (ch < 0) {
+        continue;
+      }
+    } else {
+      /* skip whitespace */
+      if (ch == -1) {
+        continue;
+      }
+      /* fail on bad characters or if any data follows padding */
+      if (ch == -2 || padding) {
+        return false;
+      }
+    }
+
+    switch(i % 4) {
+      case 0:
+        result[j] = (unsigned char)(ch << 2);
+        break;
+      case 1:
+        result[j++] |= ch >> 4;
+        result[j] = (unsigned char)((ch & 0x0f) << 4);
+        break;
+      case 2:
+        result[j++] |= ch >> 2;
+        result[j] = (unsigned char)((ch & 0x03) << 6);
+        break;
+      case 3:
+        result[j++] |= ch;
+        break;
+    }
+    i++;
+  }
+  /* fail if the input is truncated (only one char in last group) */
+  if (strict && i % 4 == 1) {
+    return false;
+  }
+  /* fail if the padding length is wrong (not VV==, VVV=), but accept zero padding
+   * RFC 4648: "In some circumstances, the use of padding [--] is not required" */
+  if (strict && padding && (padding > 2 || (i + padding) % 4 != 0)) {
+    return false;
   }
 
-  res.shrink (result_len);
-  return res;
+  result.shrink (j);
+
+  return result;
 }
 
 string f$base64_encode (const string &s) {

@@ -295,7 +295,7 @@ function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
 function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
 function gzuncompress ($str ::: string) ::: string;
-function base64_decode ($str ::: string) ::: string;
+function base64_decode ($str ::: string, $strict ::: bool = false) ::: OrFalse <string>;
 function base64_encode ($str ::: string) ::: string;
 function base64url_decode_ulong ($str ::: string) ::: ULong;
 function base64url_encode_ulong ($val ::: ULong) ::: string;
