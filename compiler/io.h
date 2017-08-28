@@ -19,8 +19,10 @@ public:
 
   vector <string_ref> lines;
 
+  string class_context;
+
   SrcFile();
-  SrcFile (const string &file_name, const string &short_file_name);
+  SrcFile (const string &file_name, const string &short_file_name, const string &class_context);
   void add_prefix (const string &s);
   bool load();
 

@@ -100,7 +100,7 @@ ClassPtr CompilerCore::register_class(const ClassInfo &info, DataStream &os __at
 
 template <class DataStream>
 void CompilerCore::register_main_file (const string &file_name, DataStream &os) {
-  SrcFilePtr res = register_file (file_name);
+  SrcFilePtr res = register_file (file_name, "");
   if (res.not_null() && try_require_file (res)) {
     if (!env().get_functions().empty()) {
       string prefix = "<?php require_once (\"" + env().get_functions() + "\");?>";
@@ -111,8 +111,8 @@ void CompilerCore::register_main_file (const string &file_name, DataStream &os) 
   }
 }
 template <class DataStream>
-pair <SrcFilePtr, bool> CompilerCore::require_file (const string &file_name, DataStream &os) {
-  SrcFilePtr file = register_file (file_name);
+pair <SrcFilePtr, bool> CompilerCore::require_file (const string &file_name, const string &context, DataStream &os) {
+  SrcFilePtr file = register_file (file_name, context);
   bool required = false;
   if (file.not_null() && try_require_file (file)) {
     required = true;

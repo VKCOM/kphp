@@ -85,6 +85,8 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->root = function_root;
   function->namespace_name = info.namespace_name;
   function->class_name = info.class_name;
+  function->class_context_name = info.class_context;
+  function->class_extends = info.extends;
   function->namespace_uses = info.namespace_uses;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
@@ -117,9 +119,10 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
 
 ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   ClassPtr klass = ClassPtr (new ClassData());
-  klass->name = info.name;
+  klass->name = (info.namespace_name.empty() ? "" : info.namespace_name + "\\") + info.name;
   klass->file_id = stage::get_file();
   klass->root = info.root;
+  klass->extends = info.extends;
 
   string init_function_name_str = stage::get_file()->main_func_name;
   klass->init_function = get_function_unsafe (init_function_name_str);
@@ -146,7 +149,7 @@ string CompilerCore::unify_file_name (const string &file_name) {
   return file_name.substr (base_dir.size());
 }
 
-SrcFilePtr CompilerCore::register_file (const string &file_name) {
+SrcFilePtr CompilerCore::register_file (const string &file_name, const string &context) {
   if (file_name.empty()) {
     return SrcFilePtr();
   }
@@ -217,13 +220,13 @@ SrcFilePtr CompilerCore::register_file (const string &file_name) {
   }
 
   //register file if needed
-  HT <SrcFilePtr>::HTNode *node = file_ht.at (hash_ll (full_file_name));
+  HT <SrcFilePtr>::HTNode *node = file_ht.at (hash_ll (full_file_name + context));
   if (node->data.is_null()) {
     AutoLocker <Lockable *> locker (node);
     if (node->data.is_null()) {
-      SrcFilePtr new_file = SrcFilePtr (new SrcFile (full_file_name, short_file_name));
+      SrcFilePtr new_file = SrcFilePtr (new SrcFile (full_file_name, short_file_name, context));
       char tmp[50];
-      sprintf (tmp, "%x", hash (full_file_name));
+      sprintf (tmp, "%x", hash (full_file_name + context));
       string func_name = gen_unique_name ("src$" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name (new_file->file_name);
@@ -234,6 +237,10 @@ SrcFilePtr CompilerCore::register_file (const string &file_name) {
   }
   SrcFilePtr file = node->data;
   return file;
+}
+
+ClassPtr CompilerCore::get_class(const string &name) {
+  return classes_ht.at (hash_ll (name))->data;
 }
 
 bool CompilerCore::register_define (DefinePtr def_id) {

@@ -10,7 +10,7 @@ GenTree::GenTree () {
 
 #define CE(x) if (!(x)) {return VertexPtr();}
 
-void GenTree::init (const vector <Token *> *tokens_new, GenTreeCallbackBase *callback_new) {
+void GenTree::init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new) {
   line_num = 0;
   in_func_cnt_ = 0;
   tokens = tokens_new;
@@ -21,6 +21,7 @@ void GenTree::init (const vector <Token *> *tokens_new, GenTreeCallbackBase *cal
   end = tokens->end();
 
   namespace_name = "";
+  class_context = context;
 
   kphp_assert (cur != end);
   end--;
@@ -67,6 +68,7 @@ void GenTree::enter_class (const string &class_name) {
   class_stack.push_back (ClassInfo());
   cur_class().name = class_name;
   if (in_namespace()) {
+    cur_class().namespace_name = namespace_name;
     kphp_error(class_stack.size() <= 1, "Nested classes are not supported");
   }
 }
@@ -93,10 +95,14 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->resumable_flag = false;
     main->extra_type = op_ex_func_global;
 
-    register_function(FunctionInfo(main, namespace_name, cur_class().name, this->namespace_uses));
+    const FunctionInfo &info = FunctionInfo(main, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends);
+    register_function(info);
   }
   cur_class().root = root;
-  callback->register_class (cur_class());
+  cur_class().extends = class_extends;
+  if (namespace_name + "\\" + cur_class().name == class_context) {
+    kphp_assert(callback->register_class(cur_class()).not_null());
+  }
   class_stack.pop_back();
 }
 
@@ -1422,7 +1428,8 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   }
   if (in_class()) {
     if (in_namespace()) {
-      name_str = replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + name_str;
+      name_str = replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + name_str + 
+        "$$" + replace_backslashs(class_context, '$');
     } else {
       name_str = "mf_" + name_str;
     }
@@ -1611,9 +1618,9 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   }
 
   if (in_class()) {
-    register_function(FunctionInfo(res, namespace_name, cur_class().name, this->namespace_uses));
+    register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends));
   } else {
-    register_function(FunctionInfo(res, "", "", this->namespace_uses));
+    register_function(FunctionInfo(res, "", "", "", this->namespace_uses, ""));
   }
 
   if (res->type() == op_function) {
@@ -1667,6 +1674,9 @@ VertexPtr GenTree::get_class() {
         || name_str == "rich_mc" || name_str == "db_decl") {
       kphp_error (false, dl_pstr("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
     }
+    if (class_context.empty()) {
+      class_context = namespace_name + "\\" + name_str;
+    }
   }
   CREATE_VERTEX (name, op_func_name);
   set_location (name, AutoLocation (this));
@@ -1682,6 +1692,7 @@ VertexPtr GenTree::get_class() {
     CREATE_VERTEX (tmp, op_func_name);
     set_location (tmp, AutoLocation (this));
     tmp->str_val = (*cur)->str_val;
+    class_extends = (*cur)->str_val;
     parent_name = tmp;
     next_cur();
   }
@@ -1845,28 +1856,25 @@ VertexPtr GenTree::get_statement() {
       return get_foreach();
     case tok_switch:
       return get_switch();
+    case tok_protected:
     case tok_public:
     case tok_private: {
-      string modifier = type == tok_public ? "public" : "private";
+      string modifier = type == tok_public ? "public" : (type == tok_private ? "private" : "protected");
       CE (!kphp_error(in_class(), dl_pstr("'%s' found not in class", modifier.c_str())));
       next_cur();
       if ((cur + 1 != end) && (*(cur + 1))->type() == tok_function) {
         expect (tok_static, "'static'");
-        return get_function(false, "", type == tok_public ? access_public : access_private);
+        return get_function(false, "", type == tok_public ? access_public : (type == tok_private ? access_private : access_protected));
       }
-      kphp_error(test_expect(tok_static), "'static' expected after 'public' or 'private'");
+      kphp_error(test_expect(tok_static), "'static' expected after 'public', 'private' or 'protected'");
       VertexPtr v = get_statement();
       FOREACH_VERTEX(v, e) {
         kphp_assert((*e)->type() == op_static);
-        (*e)->extra_type = type == tok_private ? op_ex_static_private : op_ex_static_public;
+        (*e)->extra_type = type == tok_private ? op_ex_static_private : (type == tok_public ? op_ex_static_public : op_ex_static_protected);
       }
       cur_class().static_members.push_back(v);
       CREATE_VERTEX (empty, op_empty);
       return empty;
-    }
-    case tok_protected: {
-      CE (!kphp_error(false, "'protected' is not supported yet"));
-      return VertexPtr();
     }
     case tok_phpdoc: {
       Token *token = *cur;
@@ -2239,9 +2247,9 @@ void gen_tree_init() {
   GenTree::get_memfunc_prefix ("");
 }
 
-void php_gen_tree (vector <Token *> *tokens, const string &main_func_name __attribute__((unused)), GenTreeCallbackBase *callback) {
+void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name __attribute__((unused)), GenTreeCallbackBase *callback) {
   GenTree gen;
-  gen.init (tokens, callback);
+  gen.init (tokens, context, callback);
   gen.run();
 }
 

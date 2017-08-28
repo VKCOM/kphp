@@ -50,12 +50,12 @@ class CompilerCore {
     void register_env (KphpEnviroment *env);
     const KphpEnviroment &env();
     string unify_file_name (const string &file_name);
-    SrcFilePtr register_file (const string &file_name);
+    SrcFilePtr register_file (const string &file_name, const string &context);
 
     template <class DataStream>
     void register_main_file (const string &file_name, DataStream &os);
     template <class DataStream>
-    pair <SrcFilePtr, bool> require_file (const string &file_name, DataStream &os);
+    pair <SrcFilePtr, bool> require_file (const string &file_name, const string &context, DataStream &os);
 
     template <class DataStream>
     void require_function_set (FunctionSetPtr function_set, FunctionPtr by_function,
@@ -72,6 +72,7 @@ class CompilerCore {
     ClassPtr register_class(const ClassInfo &info, DataStream &os);
     FunctionSetPtr get_function_set (function_set_t type, const string &name, bool force);
     FunctionPtr get_function_unsafe (const string &name);
+    ClassPtr get_class(const string &name);
 
     bool register_define (DefinePtr def_id);
     DefinePtr get_define (const string &name);

@@ -29,7 +29,7 @@ public:
 
   GenTree ();
 
-  void init (const vector <Token *> *tokens_new, GenTreeCallbackBase *callback_new);
+  void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new);
   void register_function (FunctionInfo info);
   bool in_class();
   bool in_namespace();
@@ -111,11 +111,13 @@ private:
   vector <Token *>::const_iterator cur, end;
   vector <ClassInfo> class_stack;
   string namespace_name;
+  string class_context;
+  string class_extends;
   map<string, string> namespace_uses;
 };
 void gen_tree_init();
 
-void php_gen_tree (vector <Token *> *tokens, const string &main_func_name, GenTreeCallbackBase *callback);
+void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name, GenTreeCallbackBase *callback);
 
 template <PrimitiveType ToT>
 VertexPtr GenTree::conv_to_lval (VertexPtr x) {

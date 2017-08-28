@@ -553,11 +553,13 @@ class CheckAccessModifiers : public FunctionPassBase {
         string name = var_id->name;
         size_t pos = name.find("$$");
         if (pos != string::npos) {
-          kphp_error(var_id->access_type == access_private || var_id->access_type == access_public,
+          kphp_error(var_id->access_type == access_private || var_id->access_type == access_public ||
+                       var_id->access_type == access_protected,
                      dl_pstr("Field wasn't declared: %s", real_name.c_str()));
           kphp_error(var_id->access_type != access_private ||
                      replace_backslashs(namespace_name, '$') + "$" + class_name == name.substr(0, pos),
                             dl_pstr("Can't access private field %s", real_name.c_str()));
+          // TODO: check protected
         }
       } else if (root->type() == op_func_call) {
         FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
@@ -565,10 +567,12 @@ class CheckAccessModifiers : public FunctionPassBase {
         string real_name = root.as<op_func_call>()->str_val;
         size_t pos = name.find("$$");
         if (pos != string::npos) {
-          kphp_assert(func_id->access_type == access_private || func_id->access_type == access_public);
+          kphp_assert(func_id->access_type == access_private || func_id->access_type == access_public ||
+                        func_id->access_type == access_protected);
           kphp_error(func_id->access_type != access_private ||
                      replace_backslashs(namespace_name, '$') + "$" + class_name == name.substr(0, pos),
                      dl_pstr("Can't access private function %s", name.c_str()));
+          // TODO: check protected
         }
       }
       return root;

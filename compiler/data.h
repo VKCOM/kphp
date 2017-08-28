@@ -51,7 +51,9 @@ public:
 
 struct ClassInfo {
   string name;
+  string namespace_name;
   VertexPtr root;
+  string extends;
   vector <VertexPtr> members;
   vector <VertexPtr> constants;
   vector <VertexPtr> static_members;
@@ -65,6 +67,7 @@ public:
   bool is_required;
   FunctionPtr req_func;
   string name;
+  string extends;
   VertexPtr root;
 
   FunctionPtr init_function;
@@ -127,13 +130,18 @@ public:
   VertexPtr root;
   string namespace_name;
   string class_name;
+  string class_context;
   map<string, string> namespace_uses;
+  string extends;
 
-  FunctionInfo(VertexPtr root, const string &namespace_name,
-               const string &class_name, const map<string, string> namespace_uses) : root(root),
-                                                                                     namespace_name(namespace_name),
-                                                                                     class_name(class_name),
-                                                                                     namespace_uses(namespace_uses) {
+  FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
+               const string &class_context, const map<string, string> namespace_uses,
+               string extends)                                                        : root(root),
+                                                                                        namespace_name(namespace_name),
+                                                                                        class_name(class_name),
+                                                                                        class_context(class_context),
+                                                                                        namespace_uses(namespace_uses),
+                                                                                        extends(extends) {
   }
 };
 
@@ -180,6 +188,8 @@ public:
   bool is_callback;
   string namespace_name;
   string class_name;
+  string class_context_name;
+  string class_extends;
   AccessType access_type;
   map<string, string> namespace_uses;
 
