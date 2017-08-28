@@ -2362,6 +2362,16 @@ class FinalCheckPass : public FunctionPassBase {
           }
         }
       }
+      if (vertex->type() == op_list) {
+        VertexPtr arr = vertex.as<op_list>()->array();
+        const TypeData* arrayType = tinf::get_type (arr);
+        if (arrayType->ptype() == tp_array) {
+          const TypeData* valueType = arrayType->lookup_at (Key::any_key ());
+          if (valueType->ptype() == tp_Unknown && !valueType->or_false_flag ()) {
+            kphp_error (0, "Can not compile list with array of Unknown type");
+          }
+        }
+      }
       if (vertex->type() == op_unset || vertex->type() == op_isset) {
         for (VertexRange i = vertex.as<meta_op_xset>()->args(); !i.empty(); i.next()) {
           VertexPtr varVertex = *i;
