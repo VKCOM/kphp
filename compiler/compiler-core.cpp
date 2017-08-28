@@ -88,6 +88,7 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->class_context_name = info.class_context;
   function->class_extends = info.extends;
   function->namespace_uses = info.namespace_uses;
+  function->disabled_warnings = info.disabled_warnings;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
 
