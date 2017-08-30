@@ -920,7 +920,7 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
       const array <var> &a = *AS_CONST_ARRAY(v.a);
       bool is_vector = a.is_vector();
       bool force_object = (bool) (JSON_FORCE_OBJECT & options);
-      if (!force_object && !is_vector && a.size().string_size == 0 && a.get_next_key() == a.count()) {
+      if (!force_object && !is_vector && a.size().string_size == 0) {
         int n = 0;
         for (array <var>::const_iterator p = a.begin(); p != a.end(); ++p) {
           if (p.get_key().to_int() != n) {
@@ -929,7 +929,11 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
           n++;
         }
         if (n == a.count()) {
-          is_vector = true;
+          if (a.get_next_key() == a.count()) {
+            is_vector = true;
+          } else {
+            php_warning("Corner case in json convertion, [] could be easy transformed to {}");
+          }
         }
       }
       is_vector &= !force_object;
