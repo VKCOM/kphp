@@ -3314,223 +3314,143 @@ void init_logname (const char *src) {
 }
 
 /** main arguments parsing **/
-void usage (void);
-
-void usage_default_info (void) {
-  printf ("\t%s\n", get_version_string());
-
-}
-
-#define ARGS_STR_DEFAULT "b:c:l:m:u:dhkv"
-
-void usage_default_params (void) {
-  printf ("[-d] [-k] [-v] [-m<memory>] [-u<username>] [-b<backlog>] [-c<max-conn>] [-l<log-name>]");
-}
-
-void usage_default_desc (void) {
-  printf ("\t-d\tdaemonize\n"
-    "\t-k\tlock paged memory\n"
-    "\t-v\toutput statistical and debug information into stderr\n"
-    "\t-m<memory>\tmaximal size of used memory in megabytes not including zmemory for struct conn_query in mebibytes\n"
-    "\t-u<username>\tuser name\n"
-    "\t-b<backlog>\tset backlog\n"
-    "\t-c<max-conn>\tset maximum connections number\n"
-    "\t-l<log-name>\tset log name\n");
-}
-
-int main_args_default_handler (int i) {
-  switch (i) {
-  case 'b':
-    set_backlog (optarg);
-    break;
-  case 'c':
-    set_maxconn (optarg);
-    break;
-  case 'l':
-    init_logname (optarg);
-    break;
-  case 'm':
-    max_memory = parse_memory_limit_default (optarg, 'm');
-    assert((1 << 20) <= max_memory && max_memory <= (2047LL << 20));
-    break;
-  case 'u':
-    username = optarg;
-    break;
-  case 'd':
-    daemonize ^= 1;
-    break;
-  case 'h':
-    usage();
-    return 2;
-  case 'k':
-    if (mlockall (MCL_CURRENT | MCL_FUTURE) != 0) {
-      vkprintf (-1, "error: fail to lock paged memory\n");
-    }
-    break;
-  case 'v':
-    verbosity++;
-    break;
-  default:
-    return 0;
-  }
-  return 1;
-}
-
-#define ARGS_STR "D:E:H:r:w:f:p:s:RT:t:oqQ:CUL:K"
-
-void usage_params (void) {
-  printf ("[-H<port>] [-r<rpc_port>] [-w<host>:<port>] [-q] [f<workers_n>] [-D<key>=<value>] [-o] [-p<master_port>] [-s<cluster_name>] [-T<tl_config_file_name>] [-t<script_time_limit>] [-C] [-K]");
-}
-
 const char* builtin_tl_schema __attribute__((weak));
 int builtin_tl_schema_length __attribute__((weak)) = -1;
 
-void usage_desc (void) {
-  printf ("\t-D<key>=<value>\tset data for ini_get\n"
-    "\t-H<port>\thttp port\n"
-    "\t-r<rpc_port>\trpc_port\n"
-    "\t-w<host>:<port>\thost and port for client mode\n"
-    "\t-R\tforce clear sql connection every script run\n"
-    "\t-q\tno sql\n"
-    "\t-Q\tsql port\n"
-    "\t-L\tlimit for static buffers length (in mebybytes)\n"
-    "\t-E<error-tag-file>\tname of file with engine tag showed on every warning\n"
-    "\t-f<workers_n>\trun workers_n workers\n"
-    "\t-o\trun script once\n"
-    "\t-p<master_port>\tport for memcached interface to master\n"
-    "\t-s<cluster_name>\tused to distinguish clusters\n"
-    "\t-T<tl_config_file_name>\tname of file with TL config (%s)\n"
-    "\t-t<script_time_limit>\ttime limit for script in seconds\n"
-    "\t-C\tuse crc32c if can\n"
-    "\t-U\tdon't write get data in log. If used twice, disables access log.\n"
-    "\t-K\tscript is killed, when warning happened\n",
-     builtin_tl_schema_length == -1 ? "" : "will be ignored"
-    );
-}
-
-
-
-int main_args_handler (int i) {
-  switch (i) {
-  case 'D':
-    {
-      char *key = optarg, *value;
-      char *eq = strchr (key, '=');
-      if (eq == NULL) {
-        vkprintf (-1, "-D option, can't find '='\n");
-        usage();
-        return 2;
-      }
-      value = eq + 1;
-      *eq = 0;
-      ini_set (key, value);
-    }
-    break;
-  case 'H':
-    http_port = atoi (optarg);
-    break;
-  case 'r':
-    rpc_port = atoi (optarg);
-    break;
-  case 'R':
-    force_clear_sql_connection = 1;
-    break;
-  case 'L':
-    static_buffer_length_limit = atoi (optarg) << 20;
-    break;
-  case 'w':
-    rpc_client_host = optarg;
-    {
-      char *colon = strrchr ((char *)rpc_client_host, ':');
-      if (colon == NULL) {
-        vkprintf (-1, "-w option, can't find ':'\n");
-        usage();
-        return 2;
-      }
-      *colon++ = 0;
-      rpc_client_port = atoi (colon);
-    }
-    break;
-  case 'E':
-    read_engine_tag (optarg);
-    break;
-  case 'f':
-    workers_n = atoi (optarg);
-    if (workers_n >= 0) {
-      if (workers_n > MAX_WORKERS) {
-        workers_n = MAX_WORKERS;
-      }
-      master_flag = 1;
-    }
-    break;
-  case 'p':
-    master_port = atoi (optarg);
-    break;
-  case 's':
-    cluster_name = optarg;
-    break;
-  case 'T':
-    if (builtin_tl_schema_length == -1) {
-      read_tl_config (optarg);
-    } else {
-      kprintf("Ignoring given tl schema: builtin one will be used\n");
-    }
-    break;
-  case 't':
-    script_timeout = atoi (optarg);
-    if (script_timeout < 1) {
-      script_timeout = 1;
-    }
-    if (script_timeout > MAX_SCRIPT_TIMEOUT) {
-      script_timeout = MAX_SCRIPT_TIMEOUT;
-    }
-    break;
-  case 'o':
-    run_once = 1;
-    break;
-  case 'q':
-    no_sql = 1;
-    break;
-  case 'Q':
-    db_ct.port = atoi (optarg);
-    if (!(1000 <= db_ct.port && db_ct.port <= 0xffff)) {
-      vkprintf (-1, "-Q option: %d is strange port\n", db_ct.port);
-      usage();
-      return 2;
-    }
-    break;
-  case 'U':
-    disable_access_log++;
-    break;
-  case 'C':
-    default_rpc_flags |= 2048;
-    break;
-  case 'K':
-    die_on_fail = 1;
-    break;
-  default:
-    return 0;
-  }
-  return 1;
-}
-
 void usage (void) {
-  printf ("usage: %s ", progname);
-
-  usage_default_params();
-  printf (" ");
-  usage_params();
-
-  printf ("\n");
-
-  usage_default_info();
-
-  usage_default_desc();
-  usage_desc();
-
+  printf ("usage: %s\n", progname);
+  printf ("\t%s\n", get_version_string());
+  parse_usage();
   exit (2);
 }
 
+int main_args_handler (int i) {
+  switch (i) {
+    case 'D': {
+      char *key = optarg, *value;
+      char *eq = strchr(key, '=');
+      if (eq == NULL) {
+        kprintf ("-D option, can't find '='\n");
+        return -1;
+      }
+      value = eq + 1;
+      *eq = 0;
+      ini_set(key, value);
+      return 0;
+    }
+    case 'l': {
+      init_logname(optarg);
+      return 0;
+    }
+    case 'H': {
+      http_port = atoi(optarg);
+      return 0;
+    }
+    case 'r': {
+      rpc_port = atoi(optarg);
+      return 0;
+    }
+    case 'R': {
+      force_clear_sql_connection = 1;
+      return 0;
+    }
+    case 'L': {
+      static_buffer_length_limit = parse_memory_limit_default(optarg, 'm');
+      return 0;
+    }
+    case 'w': {
+      rpc_client_host = strdup(optarg);
+      char *colon = strrchr((char *)rpc_client_host, ':');
+      if (colon == NULL) {
+        kprintf ("-w option, can't find ':'\n");
+        return -1;
+      }
+      *colon++ = 0;
+      rpc_client_port = atoi(colon);
+      return 0;
+    }
+    case 'E': {
+      read_engine_tag(optarg);
+      return 0;
+    }
+    case 'm': {
+      max_memory = parse_memory_limit_default(optarg, 'm');
+      assert((1 << 20) <= max_memory && max_memory <= (2047LL << 20));
+      return 0;
+    }
+    case 'f': {
+      workers_n = atoi(optarg);
+      if (workers_n >= 0) {
+        if (workers_n > MAX_WORKERS) {
+          workers_n = MAX_WORKERS;
+        }
+        master_flag = 1;
+      }
+      return 0;
+    }
+    case 'p': {
+      master_port = atoi(optarg);
+      return 0;
+    }
+    case 's': {
+      cluster_name = optarg;
+      return 0;
+    }
+    case 'T': {
+      if (builtin_tl_schema_length == -1) {
+        read_tl_config(optarg);
+      } else {
+        kprintf("Ignoring given tl schema: builtin one will be used\n");
+      }
+      return 0;
+    }
+    case 't': {
+      script_timeout = atoi(optarg);
+      if (script_timeout < 1 || script_timeout > MAX_SCRIPT_TIMEOUT) {
+        kprintf("Bad script timeout, schould be [%d..%d]", 1, MAX_SCRIPT_TIMEOUT);
+      }
+      if (script_timeout < 1) {
+        script_timeout = 1;
+      }
+      if (script_timeout > MAX_SCRIPT_TIMEOUT) {
+        script_timeout = MAX_SCRIPT_TIMEOUT;
+      }
+      return 0;
+    }
+    case 'o': {
+      run_once = 1;
+      return 0;
+    }
+    case 'q': {
+      no_sql = 1;
+      return 0;
+    }
+    case 'Q': {
+      db_ct.port = atoi(optarg);
+      if (!(1000 <= db_ct.port && db_ct.port <= 0xffff)) {
+        kprintf ("-Q option: %d is strange port\n", db_ct.port);
+        return -1;
+      }
+      return 0;
+    }
+    case 'U': {
+      disable_access_log += atoi(optarg);
+      return 0;
+    }
+    case 'K': {
+      die_on_fail = 1;
+      return 0;
+    }
+    case 'k': {
+      if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+        kprintf ("error: fail to lock paged memory\n");
+      }
+      return 0;
+    }
+    default:
+      return -1;
+  }
+}
 
 void parse_main_args_end (int argc, char *argv[]) {
   if (run_once) {
@@ -3545,13 +3465,31 @@ void parse_main_args_end (int argc, char *argv[]) {
 
 void parse_main_args (int argc, char *argv[]) {
   progname = argv[0];
-  int i;
-  while ((i = getopt (argc, argv, ARGS_STR_DEFAULT ARGS_STR)) != -1) {
-    if (!main_args_default_handler (i) && !main_args_handler (i)) {
-      usage();
-    }
-  }
-
+  init_parse_options(LONGOPT_OTHER_NET_SET, 0);
+  remove_parse_option('l');
+  remove_parse_option('p');
+  parse_option("log", required_argument, 0, 'l', "set log name. %% can be used for log-file per worker");
+  parse_option("lock-memory", no_argument, 0, 'k', "lock paged memory");
+  parse_option("define", required_argument, 0, 'D', "set data for ini_get (in form key=value)");
+  parse_option("http-port", required_argument, 0, 'H', "http port");
+  parse_option("rpc-port", required_argument, 0, 'r', "rpc port");
+  parse_option("rpc-client", required_argument, 0, 'w', "host and port for client mode (host:port)");
+  parse_option("hard-memory-limit", required_argument, 0, 'm', "maximal size of memory used by script");
+  parse_option("force-clear-sql", no_argument, 0, 'R', "force clear sql connection every script run");
+  parse_option("disable-sql", no_argument, 0, 'q', "disable using sql");
+  parse_option("sql-port", required_argument, 0, 'Q', "sql port");
+  parse_option("static-buffers-size", required_argument, 0, 'L', "limit for static buffers length (e.g. limits script output size)");
+  parse_option("error-tag", required_argument, 0, 'E', "name of file with engine tag showed on every warning");
+  parse_option("workers-num", required_argument, 0, 'f', "run workers_n workers");
+  parse_option("once", no_argument, 0, 'o', "run script once");
+  parse_option("master-port", required_argument, 0, 'p', "port for memcached interface to master");
+  parse_option("cluster-name", required_argument, 0, 's', "only one kphp with same cluster name will be run on one machine");
+  parse_option("tl-schema", required_argument, 0, 'T', "name of file with TL config %s", builtin_tl_schema_length == -1 ? "" : "(will be ignored)");
+  parse_option("time-limit", required_argument, 0, 't', "time limit for script in seconds");
+  parse_option_alias("crc32c", 'C');
+  parse_option("small-acsess-log", optional_argument, 0, 'U', "don't write get data in log. If used twice (or with value 2), disables access log.");
+  parse_option("fatal-warnings", no_argument, 0, 'K', "script is killed, when warning happened");
+  parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_end (argc, argv);
 }
 
