@@ -22,6 +22,11 @@ void GenTree::init (const vector <Token *> *tokens_new, const string &context, G
 
   namespace_name = "";
   class_context = context;
+  if (!class_context.empty()) {
+    context_class_ptr = callback_new->get_class_by_name(class_context);
+  } else {
+    context_class_ptr = ClassPtr();
+  }
 
   kphp_assert (cur != end);
   end--;
@@ -60,8 +65,13 @@ FunctionPtr GenTree::register_function (FunctionInfo info) {
     return FunctionPtr();
   } else {
     FunctionPtr function_ptr = callback->register_function (info);
-    if (in_class()) {
-      cur_class().static_methods.push_back(function_ptr);
+    if (in_class() && function_ptr->type() != FunctionData::func_global) {
+      string const &name = function_ptr->name;
+      size_t first = name.find("$$") + 2;
+      kphp_assert(first != string::npos);
+      size_t second = name.find("$$", first);
+      kphp_assert(second != string::npos);
+      cur_class().static_methods[name.substr(first, second - first)] = function_ptr;
     }
     return function_ptr;
   }
@@ -98,7 +108,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->extra_type = op_ex_func_global;
 
     const FunctionInfo &info = FunctionInfo(main, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends);
-    register_function(info);
+    kphp_assert(register_function(info).not_null());
   }
   cur_class().root = root;
   cur_class().extends = class_extends;
@@ -1428,6 +1438,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
     name_str = (*cur)->str_val;
     next_cur();
   }
+  string real_name = name_str;
   if (in_class()) {
     if (in_namespace()) {
       name_str = replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + name_str + 
@@ -1620,6 +1631,48 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   }
 
   if (in_class()) {
+    if (context_class_ptr.not_null()) {
+      map <string, FunctionPtr> &methods = context_class_ptr->static_methods;
+      if (methods.find(real_name) == methods.end()) {
+        CREATE_VERTEX(new_name, op_func_name);
+        new_name->set_string(replace_backslashs(class_context, '$') + "$$" + real_name + "$$" + replace_backslashs(class_context, '$'));
+        vector <VertexPtr> new_params_next;
+        vector <VertexPtr> new_params_call;
+        FOREACH(params_next, parameter) {
+          if ((*parameter)->type() == op_func_param) {
+            CLONE_VERTEX(new_var_param, op_var, (*parameter).as<op_func_param>()->var().as<op_var>());
+            CLONE_VERTEX(new_var, op_var, new_var_param);
+            CREATE_VERTEX(new_parameter, op_func_param, new_var_param);
+            new_params_call.push_back(new_var);
+            new_params_next.push_back(new_parameter);
+          } else if ((*parameter)->type() == op_func_param_callback) {
+            CE (kphp_error(false, "Callbacks are not supported in class static methods"));
+//            CLONE_VERTEX(new_parameter, op_func_param_callback, (*parameter).as<op_func_param_callback>());
+//            new_params_next.push_back(new_parameter);
+          }
+        }
+        CREATE_VERTEX(new_func_call, op_func_call, new_params_call);
+        new_func_call->set_string("parent::" + real_name);
+        CREATE_VERTEX(new_return, op_return, new_func_call);
+        CREATE_VERTEX(new_cmd, op_seq, new_return);
+        CREATE_VERTEX(new_params, op_func_param_list, new_params_next);
+        CREATE_VERTEX(func, op_function, new_name, new_params, new_cmd);
+        func_force_return(func);
+        set_location(func, func_location);
+        func->type_rule = type_rule;
+        func->auto_flag = auto_flag;
+        func->varg_flag = varg_flag;
+        func->throws_flag = throws_flag;
+        func->resumable_flag = resumable_flag;
+        func->inline_flag = true;
+        size_t pos = class_context.rfind('\\');
+        string context_namespace_name = class_context.substr(0, pos);
+        string context_class_name = class_context.substr(pos + 1);
+        methods[real_name] = register_function(FunctionInfo(func, context_namespace_name, context_class_name,
+                                                            class_context, map<string, string>(), context_class_ptr->extends));
+        func->get_func_id()->access_type = access_type;
+      }
+    }
     register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends));
   } else {
     register_function(FunctionInfo(res, "", "", "", this->namespace_uses, ""));

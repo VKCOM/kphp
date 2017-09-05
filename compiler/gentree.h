@@ -12,6 +12,7 @@ typedef VertexPtr (GenTree::*GetFunc) ();
 struct GenTreeCallbackBase {
   virtual FunctionPtr register_function (const FunctionInfo &func) = 0;
   virtual ClassPtr register_class (const ClassInfo &info) = 0;
+  virtual ClassPtr get_class_by_name (string const &class_name) = 0;
   virtual ~GenTreeCallbackBase(){}
 };
 
@@ -112,6 +113,7 @@ private:
   vector <ClassInfo> class_stack;
   string namespace_name;
   string class_context;
+  ClassPtr context_class_ptr;
   string class_extends;
   map<string, string> namespace_uses;
 };

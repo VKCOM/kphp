@@ -150,6 +150,10 @@ class GenTreeCallback : public GenTreeCallbackBase {
     ClassPtr register_class (const ClassInfo &info) {
       return G->register_class(info, os);
     }
+
+    ClassPtr get_class_by_name (string const &class_name) {
+      return G->get_class(class_name);
+    }
 };
 
 class ParseF {
@@ -314,6 +318,50 @@ class CollectRequiredCallbackBase {
     }
 };
 
+static inline string resolve_uses(FunctionPtr current_function, string class_name, char delim = '$') {
+  if (class_name[0] != '\\') {
+    if (class_name == "static" || class_name == "self" || class_name == "parent") {
+      kphp_error(!current_function->namespace_name.empty(),
+                 "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
+      if (class_name == "parent") {
+        kphp_assert(!current_function->class_extends.empty());
+        class_name = resolve_uses(current_function, current_function->class_extends, delim);
+      } else if (class_name == "static") {
+        class_name = current_function->class_context_name;
+      } else {
+        class_name = current_function->namespace_name + "\\" + current_function->class_name;
+      }
+    } else {
+      size_t slash_pos = class_name.find('\\');
+      if (slash_pos == string::npos) {
+        slash_pos = class_name.length();
+      }
+      string class_name_start = class_name.substr(0, slash_pos);
+      map<string, string> const &uses = current_function->namespace_uses;
+      bool use_used = false;
+      for (map<string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
+        if (class_name_start == it->first) {
+          class_name = it->second + class_name.substr(class_name_start.length());
+          use_used = true;
+          break;
+        }
+      }
+      if (!use_used) {
+        class_name = current_function->namespace_name + "\\" + class_name;
+      }
+    }
+  }
+  if (class_name[0] == '\\') {
+    class_name = class_name.substr(1);
+  }
+  for (size_t i = 0; i < class_name.size(); i++) {
+    if (class_name[i] == '\\') {
+      class_name[i] = delim;
+    }
+  }
+  return class_name;
+}
+
 class CollectRequiredPass : public FunctionPassBase {
   private:
     AUTO_PROF (collect_required);
@@ -331,21 +379,26 @@ class CollectRequiredPass : public FunctionPassBase {
       return "Collect required";
     }
 
+    void require_class(string class_name, string context_name) {
+      pair<SrcFilePtr, bool> res = callback->require_file(class_name + ".php", context_name);
+      kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
+      if (res.second) {
+        res.first->req_id = current_function;
+      }
+    }
+
     template <class VisitT>
     bool user_recursion (VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit __attribute__((unused))) {
       if (v->type() == op_function && v.as<op_function>()->name().as<op_func_name>()->get_string() == current_function->name) {
         if (current_function->type() == FunctionData::func_global && !current_function->class_name.empty()) {
           if (!current_function->class_extends.empty()) {
-            string class_name = get_class_name(current_function->class_extends, '/');
-            pair<SrcFilePtr, bool> res = callback->require_file(class_name + ".php",
-                                                                current_function->class_context_name);
-            kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
-            if (res.second) {
-              res.first->req_id = current_function;
-            }
+            require_class(get_class_name(current_function->class_extends, '/'), current_function->class_context_name);
           }
           if ((current_function->namespace_name + "\\" + current_function->class_name) != current_function->class_context_name) {
             return true;
+          }
+          if (!current_function->class_extends.empty()) {
+            require_class(get_class_name(current_function->class_extends, '/'), "");
           }
         }
       }
@@ -353,47 +406,7 @@ class CollectRequiredPass : public FunctionPassBase {
     }
 
     string get_class_name(string class_name, char delim = '$') {
-      if (class_name[0] != '\\') {
-        if (class_name == "static" || class_name == "self" || class_name == "parent") {
-          kphp_error(!current_function->namespace_name.empty(),
-                     "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
-          if (class_name == "parent") {
-            kphp_assert(!current_function->class_extends.empty());
-            class_name = get_class_name(current_function->class_extends, delim);
-          } else if (class_name == "static") {
-            class_name = current_function->class_context_name;
-          } else {
-            class_name = current_function->namespace_name + "\\" + current_function->class_name;
-          }
-        } else {
-          size_t slash_pos = class_name.find('\\');
-          if (slash_pos == string::npos) {
-            slash_pos = class_name.length();
-          }
-          string class_name_start = class_name.substr(0, slash_pos);
-          map<string, string> const &uses = current_function->namespace_uses;
-          bool use_used = false;
-          for (map<string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
-            if (class_name_start == it->first) {
-              class_name = it->second + class_name.substr(class_name_start.length());
-              use_used = true;
-              break;
-            }
-          }
-          if (!use_used) {
-            class_name = current_function->namespace_name + "\\" + class_name;
-          }
-        }
-      }
-      if (class_name[0] == '\\') {
-        class_name = class_name.substr(1);
-      }
-      for (size_t i = 0; i < class_name.size(); i++) {
-        if (class_name[i] == '\\') {
-          class_name[i] = delim;
-        }
-      }
-      return class_name;
+      return resolve_uses(current_function, class_name, delim);
     }
 
     string get_context(string const &class_name, char delim = '$') {
@@ -401,6 +414,17 @@ class CollectRequiredPass : public FunctionPassBase {
         return get_class_name("\\" + current_function->class_context_name, delim);
       }
       return get_class_name(class_name, delim);
+    }
+
+    string get_context_for(string const &name, char delim = '$') {
+      size_t pos$$ = name.find("::");
+      if (pos$$ != string::npos) {
+        string class_name = name.substr(0, pos$$);
+        kphp_assert(!class_name.empty());
+        return get_context(class_name, delim);
+      } else {
+        return "";
+      }
     }
 
     string get_class_name_for(string const &name, char delim = '$') {
@@ -441,12 +465,11 @@ class CollectRequiredPass : public FunctionPassBase {
         const string &name = root->get_string();
         string class_name = get_class_name_for(name, '/');
         if (!class_name.empty()) {
-          string filename = class_name + ".php";
-          pair<SrcFilePtr, bool> res = callback->require_file(filename, "");
-          kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
-          if (res.second) {
-            res.first->req_id = current_function;
+          string context = get_context_for(name, '\\');
+          if (replace_backslashs(context, '/') == class_name) {
+            context = "";
           }
+          require_class(class_name, context);
           root->set_string(process_static_member_name(name, root->type() == op_func_call));
         }
       }
@@ -522,6 +545,11 @@ class CollectRequiredF {
       run_function_pass (function, &pass);
 
       if (stage::has_error()) {
+        return;
+      }
+
+      if (function->type() == FunctionData::func_global && !function->class_name.empty() &&
+        (function->namespace_name + "\\" + function->class_name) != function->class_context_name) {
         return;
       }
 
@@ -2691,12 +2719,9 @@ class CollectClassF {
     template <class OutputStreamT>
     void execute (ReadyFunctionPtr ready_data, OutputStreamT &os) {
       FunctionPtr data = ready_data.function;
-      if (data->class_id.is_null()) {
-        os << data;
-      } else if (data->class_id->init_function == data) {
+      os << data;
+      if (data->class_id.not_null() && data->class_id->init_function == data) {
         os << data->class_id;
-      } else {
-        os << data;
       }
     }
 };
@@ -2713,7 +2738,7 @@ class GenerateInheritedMethodsF {
       os << ReadyFunctionPtr(data->init_function);
       fprintf(stdout, "methods: ");
       FOREACH(data->static_methods, method_ptr) {
-        fprintf(stdout, "  %s\n", (*method_ptr)->name.c_str());
+        fprintf(stdout, "  %s\n", method_ptr->second->name.c_str());
 //        os << ReadyFunctionPtr(*method_ptr);
       }
     }

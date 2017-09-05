@@ -57,7 +57,7 @@ struct ClassInfo {
   vector <VertexPtr> members;
   vector <VertexPtr> constants;
   vector <VertexPtr> static_members;
-  vector <FunctionPtr> static_methods;
+  map <string, FunctionPtr> static_methods;
 };
 
 class ClassData {
@@ -72,7 +72,7 @@ public:
 
   FunctionPtr init_function;
   FunctionPtr new_function;
-  vector <FunctionPtr> static_methods;
+  map <string, FunctionPtr> static_methods;
 
   string header_name;
   string subdir;
