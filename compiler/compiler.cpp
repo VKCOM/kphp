@@ -331,6 +331,27 @@ class CollectRequiredPass : public FunctionPassBase {
       return "Collect required";
     }
 
+    template <class VisitT>
+    bool user_recursion (VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit __attribute__((unused))) {
+      if (v->type() == op_function && v.as<op_function>()->name().as<op_func_name>()->get_string() == current_function->name) {
+        if (current_function->type() == FunctionData::func_global && !current_function->class_name.empty()) {
+          if (!current_function->class_extends.empty()) {
+            string class_name = get_class_name(current_function->class_extends, '/');
+            pair<SrcFilePtr, bool> res = callback->require_file(class_name + ".php",
+                                                                current_function->class_context_name);
+            kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
+            if (res.second) {
+              res.first->req_id = current_function;
+            }
+          }
+          if ((current_function->namespace_name + "\\" + current_function->class_name) != current_function->class_context_name) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     string get_class_name(string class_name, char delim = '$') {
       if (class_name[0] != '\\') {
         if (class_name == "static" || class_name == "self" || class_name == "parent") {
@@ -497,20 +518,7 @@ class CollectRequiredF {
     template <class OutputStream> void execute (FunctionPtr function, OutputStream &os) {
       CollectRequiredCallback <OutputStream> callback (&os);
       CollectRequiredPass pass (&callback);
-      if (function->type() == FunctionData::func_global && !function->class_name.empty()) {
-        if (!function->class_extends.empty()) {
-          string class_name = pass.get_class_name(function->class_extends, '/');
-          pair<SrcFilePtr, bool> res = callback.require_file(class_name + ".php",
-                                                             function->class_context_name);
-          kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
-          if (res.second) {
-            res.first->req_id = function;
-          }
-        }
-        if ((function->namespace_name + "\\" + function->class_name) != function->class_context_name) {
-          return;
-        }
-      }
+
       run_function_pass (function, &pass);
 
       if (stage::has_error()) {

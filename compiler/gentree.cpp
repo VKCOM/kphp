@@ -51,17 +51,19 @@ ClassInfo &GenTree::cur_class() {
   kphp_assert (in_class());
   return class_stack.back();
 }
-void GenTree::register_function (FunctionInfo info) {
+FunctionPtr GenTree::register_function (FunctionInfo info) {
   stage::set_line (0);
   info.root = post_process(info.root);
 
   if (in_class() && !in_namespace()) {
     cur_class().members.push_back (info.root);
+    return FunctionPtr();
   } else {
     FunctionPtr function_ptr = callback->register_function (info);
     if (in_class()) {
       cur_class().static_methods.push_back(function_ptr);
     }
+    return function_ptr;
   }
 }
 void GenTree::enter_class (const string &class_name) {

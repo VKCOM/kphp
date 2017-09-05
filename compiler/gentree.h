@@ -30,7 +30,7 @@ public:
   GenTree ();
 
   void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new);
-  void register_function (FunctionInfo info);
+  FunctionPtr register_function (FunctionInfo info);
   bool in_class();
   bool in_namespace();
   void enter_class (const string &class_name);
