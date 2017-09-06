@@ -284,7 +284,7 @@ class Scheduler : public SchedulerBase {
 template <class DataT>
 class DataStreamRaw : Lockable {
   private:
-    static const int MAX_STREAM_ELEMENTS = 100000;
+    static const int MAX_STREAM_ELEMENTS = 200000;
     DataT *data;
     volatile int *ready;
     volatile int write_i, read_i;
