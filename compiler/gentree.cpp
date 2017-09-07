@@ -24,6 +24,7 @@ void GenTree::init (const vector <Token *> *tokens_new, const string &context, G
   class_context = context;
   if (!class_context.empty()) {
     context_class_ptr = callback_new->get_class_by_name(class_context);
+    kphp_assert(context_class_ptr.not_null());
   } else {
     context_class_ptr = ClassPtr();
   }
@@ -95,7 +96,9 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     name->str_val = name_str;
     CREATE_VERTEX (params, op_func_param_list, empty);
     vector <VertexPtr> seq;
-    seq.insert(seq.end(), cur_class().constants.begin(), cur_class().constants.end());
+    FOREACH(cur_class().constants, i) {
+      seq.push_back((*i).second);
+    }
     seq.insert(seq.end(), cur_class().static_members.begin(), cur_class().static_members.end());
     CREATE_VERTEX (func_root, op_seq, seq);
     CREATE_VERTEX (main, op_function, name, params, func_root);
@@ -1926,6 +1929,26 @@ VertexPtr GenTree::get_statement() {
       FOREACH_VERTEX(v, e) {
         kphp_assert((*e)->type() == op_static);
         (*e)->extra_type = type == tok_private ? op_ex_static_private : (type == tok_public ? op_ex_static_public : op_ex_static_protected);
+        VertexAdaptor <op_static> seq = *e;
+        for (VertexRange i = seq->args(); !i.empty(); i.next()) {
+          VertexPtr node = *i;
+          VertexAdaptor <op_var> var;
+          if (node->type() == op_var) {
+            var = node;
+          } else if (node->type() == op_set) {
+            VertexAdaptor <op_set> set_expr = node;
+            var = set_expr->lhs();
+            kphp_error_act (
+              var->type() == op_var,
+              "unexpected expression in 'static'",
+              continue
+            );
+          } else {
+            kphp_error_act (0, "unexpected expression in 'static'", continue);
+          }
+          kphp_error(cur_class().static_fields.insert(var->str_val).second,
+                     dl_pstr("static field %s was redeclared", var->str_val.c_str()));
+        }
       }
       cur_class().static_members.push_back(v);
       CREATE_VERTEX (empty, op_empty);
@@ -1998,14 +2021,16 @@ VertexPtr GenTree::get_statement() {
       next_cur();
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CREATE_VERTEX (name, op_func_name);
-      name->str_val = "c#" + replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + string((*cur)->str_val);
+      string const_name = (*cur)->str_val;
+      name->str_val = "c#" + replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + const_name;
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
       CREATE_VERTEX(def, op_define, name, v);
       set_location(def, const_location);
       CE (check_statement_end());
-      cur_class().constants.push_back(def);
+      kphp_error(cur_class().constants.find(const_name) == cur_class().constants.end(), dl_pstr("Redeclaration of const %s", const_name.c_str()));
+      cur_class().constants[const_name] = def;
       CREATE_VERTEX (empty, op_empty);
       return empty;
     }

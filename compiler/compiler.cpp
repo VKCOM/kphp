@@ -466,7 +466,7 @@ class CollectRequiredPass : public FunctionPassBase {
         string class_name = get_class_name_for(name, '/');
         if (!class_name.empty()) {
           string context = get_context_for(name, '\\');
-          if (replace_backslashs(context, '/') == class_name) {
+          if (replace_characters(context, '\\', '/') == class_name) {
             context = "";
           }
           require_class(class_name, context);
@@ -1071,8 +1071,20 @@ class RegisterDefinesPass : public FunctionPassBase {
 
       if (root->type() == op_func_name) {
         string name = root->get_string();
-        if (name.find("$$") != string::npos) {
-          name = "c#" + name;
+        size_t pos$$ = name.find("$$");
+        if (pos$$ != string::npos) {
+          string class_name = name.substr(0, pos$$);
+          string define_name = name.substr(pos$$ + 2);
+          const string &real_class_name = replace_characters(class_name, '$', '\\');
+          ClassPtr klass = G->get_class(real_class_name);
+          if (klass.not_null()) {
+            while (klass.not_null() && klass->constants.find(define_name) == klass->constants.end()) {
+              klass = klass->parent_class;
+            }
+            if (klass.not_null()) {
+              name = "c#" + replace_characters(klass->name, '\\', '$') + "$$" + define_name;
+            }
+          }
         }
         DefinePtr d = G->get_define (name);
         if (d.not_null()) {
@@ -2721,6 +2733,9 @@ class CollectClassF {
       FunctionPtr data = ready_data.function;
       os << data;
       if (data->class_id.not_null() && data->class_id->init_function == data) {
+        if (!data->class_extends.empty()) {
+          data->class_id->extends = resolve_uses(data, data->class_extends, '\\');
+        }
         os << data->class_id;
       }
     }
@@ -2731,6 +2746,13 @@ class GenerateInheritedMethodsF {
     DUMMY_ON_FINISH;
     template <class OutputStreamT>
     void execute (ClassPtr data, OutputStreamT &os __attribute__((unused))) {
+      stage::set_name("generate-inherited-methods");
+      if (!data->extends.empty()) {
+        data->parent_class = G->get_class(data->extends);
+        kphp_assert(data->parent_class.not_null());
+      } else {
+        data->parent_class = ClassPtr();
+      }
       VertexPtr parent = data->root.as<op_class>()->parent();
       fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
       fprintf(stdout, "init_function: ");

@@ -55,8 +55,9 @@ struct ClassInfo {
   VertexPtr root;
   string extends;
   vector <VertexPtr> members;
-  vector <VertexPtr> constants;
+  map <string, VertexPtr> constants;
   vector <VertexPtr> static_members;
+  set <string> static_fields;
   map <string, FunctionPtr> static_methods;
 };
 
@@ -68,11 +69,14 @@ public:
   FunctionPtr req_func;
   string name;
   string extends;
+  ClassPtr parent_class;
   VertexPtr root;
 
   FunctionPtr init_function;
   FunctionPtr new_function;
   map <string, FunctionPtr> static_methods;
+  set <string> static_fields;
+  set <string> constants;
 
   string header_name;
   string subdir;

@@ -127,6 +127,10 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   string init_function_name_str = stage::get_file()->main_func_name;
   klass->init_function = get_function_unsafe (init_function_name_str);
   klass->init_function->class_id = klass;
+  klass->static_fields.insert(info.static_fields.begin(), info.static_fields.end());
+  FOREACH(info.constants, i) {
+    klass->constants.insert((*i).first);
+  }
   FOREACH(info.static_methods, method_ptr) {
     (*method_ptr).second->class_id = klass;
     if ((*method_ptr).second == klass->init_function) {

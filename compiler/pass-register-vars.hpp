@@ -247,9 +247,9 @@ class CollectConstVarsPass : public FunctionPassBase {
     }
 };
 
-static inline string replace_backslashs(string s, char to) {
+static inline string replace_characters(string s, char from, char to) {
   for (size_t i = 0; i < s.length(); i++) {
-    if (s[i] == '\\') {
+    if (s[i] == from) {
       s[i] = to;
     }
   }
@@ -341,14 +341,16 @@ class RegisterVariables : public FunctionPassBase {
     }
 
     void register_static_var (VertexAdaptor <op_var> var_vertex, VertexPtr default_value, OperationExtra extra_type) {
-      kphp_error_return (!global_function_flag || extra_type == op_ex_static_private || extra_type == op_ex_static_public,
+      kphp_error_return (!global_function_flag || extra_type == op_ex_static_private || extra_type == op_ex_static_public
+                         || extra_type == op_ex_static_protected,
                          "Keyword 'static' used in global function");
 
       VarPtr var;
       string name;
       if (global_function_flag) {
-        kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public);
-        name = replace_backslashs(current_function->namespace_name, '$') + "$" + current_function->class_name + "$$" + var_vertex->str_val;
+        kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public || extra_type == op_ex_static_protected);
+        name = replace_characters(current_function->namespace_name, '\\', '$') + "$" +
+          current_function->class_name + "$$" + var_vertex->str_val;
         var = get_global_var(name);
         var->class_id = current_function->class_id;
       } else {
@@ -369,6 +371,9 @@ class RegisterVariables : public FunctionPassBase {
           break;
         case op_ex_static_public:
           var->access_type = access_public;
+          break;
+        case op_ex_static_protected:
+          var->access_type = access_protected;
           break;
         case op_ex_none:
           var->access_type = access_nonmember;
@@ -396,8 +401,20 @@ class RegisterVariables : public FunctionPassBase {
     void register_var (VertexAdaptor <op_var> var_vertex) {
       VarPtr var;
       string name = var_vertex->str_val;
-      if (name.find("$$") != string::npos || (var_vertex->extra_type != op_ex_var_superlocal && global_function_flag) ||
+      size_t pos$$ = name.find("$$");
+      if (pos$$ != string::npos || (var_vertex->extra_type != op_ex_var_superlocal && global_function_flag) ||
           var_vertex->extra_type == op_ex_var_superglobal) {
+        if (pos$$ != string::npos) {
+          string class_name = name.substr(0, pos$$);
+          string var_name = name.substr(pos$$ + 2);
+          ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
+          kphp_assert(klass.not_null());
+          while (klass.not_null() && klass->static_fields.find(var_name) == klass->static_fields.end()) {
+            klass = klass->parent_class;
+          }
+          kphp_error(klass.not_null(), dl_pstr("static field not found: %s", name.c_str()));
+          name = replace_characters(klass->name, '\\', '$') + "$$" + var_name;
+        }
         var = get_global_var (name);
       } else {
         var = get_var (name);
@@ -557,7 +574,7 @@ class CheckAccessModifiers : public FunctionPassBase {
                        var_id->access_type == access_protected,
                      dl_pstr("Field wasn't declared: %s", real_name.c_str()));
           kphp_error(var_id->access_type != access_private ||
-                     replace_backslashs(namespace_name, '$') + "$" + class_name == name.substr(0, pos),
+                     replace_characters(namespace_name, '\\', '$') + "$" + class_name == name.substr(0, pos),
                             dl_pstr("Can't access private field %s", real_name.c_str()));
           // TODO: check protected
         }
@@ -570,7 +587,7 @@ class CheckAccessModifiers : public FunctionPassBase {
           kphp_assert(func_id->access_type == access_private || func_id->access_type == access_public ||
                         func_id->access_type == access_protected);
           kphp_error(func_id->access_type != access_private ||
-                     replace_backslashs(namespace_name, '$') + "$" + class_name == name.substr(0, pos),
+                     replace_characters(namespace_name, '\\', '$') + "$" + class_name == name.substr(0, pos),
                      dl_pstr("Can't access private function %s", name.c_str()));
           // TODO: check protected
         }
