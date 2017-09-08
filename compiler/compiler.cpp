@@ -143,12 +143,16 @@ class GenTreeCallback : public GenTreeCallbackBase {
     GenTreeCallback (DataStream &os) :
       os (os) {
     }
-    void register_function (const FunctionInfo &info) {
-      G->register_function (info, os);
+    FunctionPtr register_function (const FunctionInfo &info) {
+      return G->register_function (info, os);
     }
 
-    void register_class (const ClassInfo &info) {
-      G->register_class(info, os);
+    ClassPtr register_class (const ClassInfo &info) {
+      return G->register_class(info, os);
+    }
+
+    ClassPtr get_class_by_name (string const &class_name) {
+      return G->get_class(class_name);
     }
 };
 
@@ -162,7 +166,7 @@ class ParseF {
       kphp_assert (file_and_tokens.file.not_null());
 
       GenTreeCallback <OutputStream> callback (os);
-      php_gen_tree (file_and_tokens.tokens, file_and_tokens.file->main_func_name, &callback);
+      php_gen_tree (file_and_tokens.tokens, file_and_tokens.file->class_context, file_and_tokens.file->main_func_name, &callback);
     }
 };
 
@@ -259,7 +263,8 @@ class ApplyBreakFileF {
 
       for (int i = 0; i < (int)splitted.size(); i++) {
         G->register_function (FunctionInfo(splitted[i], function->namespace_name,
-                                           function->class_name, function->namespace_uses, set<string>()), os);
+                                           function->class_name, function->class_context_name,
+                                           function->namespace_uses, function->class_extends, set<string>()), os);
       }
 
       os << function;
@@ -277,7 +282,8 @@ class SplitSwitchF {
       const vector <VertexPtr> &new_functions = split_switch.get_new_functions();
       for (int i = 0; i < (int)new_functions.size(); i++) {
         G->register_function (FunctionInfo(new_functions[i], function->namespace_name,
-                                           function->class_name, function->namespace_uses, set<string>()), os);
+                                           function->class_name, function->class_context_name, function->namespace_uses,
+                                           function->class_extends, set<string>()), os);
       }
 
       if (stage::has_error()) {
@@ -303,7 +309,7 @@ struct ReadyFunctionPtr {
 
 class CollectRequiredCallbackBase {
   public:
-    virtual pair <SrcFilePtr, bool> require_file (const string &file_name) = 0;
+    virtual pair <SrcFilePtr, bool> require_file (const string &file_name, const string &class_context) = 0;
     virtual void require_function_set (
         function_set_t type,
         const string &name,
@@ -311,6 +317,50 @@ class CollectRequiredCallbackBase {
     virtual ~CollectRequiredCallbackBase() {
     }
 };
+
+static inline string resolve_uses(FunctionPtr current_function, string class_name, char delim = '$') {
+  if (class_name[0] != '\\') {
+    if (class_name == "static" || class_name == "self" || class_name == "parent") {
+      kphp_error(!current_function->namespace_name.empty(),
+                 "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
+      if (class_name == "parent") {
+        kphp_assert(!current_function->class_extends.empty());
+        class_name = resolve_uses(current_function, current_function->class_extends, delim);
+      } else if (class_name == "static") {
+        class_name = current_function->class_context_name;
+      } else {
+        class_name = current_function->namespace_name + "\\" + current_function->class_name;
+      }
+    } else {
+      size_t slash_pos = class_name.find('\\');
+      if (slash_pos == string::npos) {
+        slash_pos = class_name.length();
+      }
+      string class_name_start = class_name.substr(0, slash_pos);
+      map<string, string> const &uses = current_function->namespace_uses;
+      bool use_used = false;
+      for (map<string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
+        if (class_name_start == it->first) {
+          class_name = it->second + class_name.substr(class_name_start.length());
+          use_used = true;
+          break;
+        }
+      }
+      if (!use_used) {
+        class_name = current_function->namespace_name + "\\" + class_name;
+      }
+    }
+  }
+  if (class_name[0] == '\\') {
+    class_name = class_name.substr(1);
+  }
+  for (size_t i = 0; i < class_name.size(); i++) {
+    if (class_name[i] == '\\') {
+      class_name[i] = delim;
+    }
+  }
+  return class_name;
+}
 
 class CollectRequiredPass : public FunctionPassBase {
   private:
@@ -329,54 +379,73 @@ class CollectRequiredPass : public FunctionPassBase {
       return "Collect required";
     }
 
-    string get_class_name(string const &name, char delim = '$') {
+    void require_class(string class_name, string context_name) {
+      pair<SrcFilePtr, bool> res = callback->require_file(class_name + ".php", context_name);
+      kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
+      if (res.second) {
+        res.first->req_id = current_function;
+      }
+    }
+
+    template <class VisitT>
+    bool user_recursion (VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit __attribute__((unused))) {
+      if (v->type() == op_function && v.as<op_function>()->name().as<op_func_name>()->get_string() == current_function->name) {
+        if (current_function->type() == FunctionData::func_global && !current_function->class_name.empty()) {
+          if (!current_function->class_extends.empty()) {
+            require_class(get_class_name(current_function->class_extends, '/'), current_function->class_context_name);
+          }
+          if ((current_function->namespace_name + "\\" + current_function->class_name) != current_function->class_context_name) {
+            return true;
+          }
+          if (!current_function->class_extends.empty()) {
+            require_class(get_class_name(current_function->class_extends, '/'), "");
+          }
+        }
+      }
+      return false;
+    }
+
+    string get_class_name(string class_name, char delim = '$') {
+      return resolve_uses(current_function, class_name, delim);
+    }
+
+    string get_context(string const &class_name, char delim = '$') {
+      if (class_name == "static" || class_name == "self" || class_name == "parent") {
+        return get_class_name("\\" + current_function->class_context_name, delim);
+      }
+      return get_class_name(class_name, delim);
+    }
+
+    string get_context_for(string const &name, char delim = '$') {
       size_t pos$$ = name.find("::");
       if (pos$$ != string::npos) {
         string class_name = name.substr(0, pos$$);
         kphp_assert(!class_name.empty());
-        if (class_name[0] != '\\') {
-          if (class_name == "static" || class_name == "self") {
-            kphp_error(current_function->namespace_name != "",
-                       "static::<func_name> or self::<func_name> can be used only inside class");
-            class_name = current_function->namespace_name + "\\" + current_function->class_name;
-          } else {
-            size_t slash_pos = class_name.find('\\');
-            if (slash_pos == string::npos) {
-              slash_pos = class_name.length();
-            }
-            string class_name_start = class_name.substr(0, slash_pos);
-            map<string, string> const &uses = current_function->namespace_uses;
-            bool use_used = false;
-            for (map<string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
-              if (class_name_start == it->first) {
-                class_name = it->second + class_name.substr(class_name_start.length());
-                use_used = true;
-                break;
-              }
-            }
-            if (!use_used) {
-              class_name = current_function->namespace_name + "\\" + class_name;
-            }
-          }
-        }
-        if (class_name[0] == '\\') {
-          class_name = class_name.substr(1);
-        }
-        for (size_t i = 0; i < class_name.size(); i++) {
-          if (class_name[i] == '\\') {
-            class_name[i] = delim;
-          }
-        }
-        return class_name;
+        return get_context(class_name, delim);
       } else {
         return "";
       }
     }
 
-    string process_static_member_name(string const &name) {
+    string get_class_name_for(string const &name, char delim = '$') {
       size_t pos$$ = name.find("::");
       if (pos$$ != string::npos) {
-        return get_class_name(name) + "$$" + name.substr(pos$$ + 2);
+        string class_name = name.substr(0, pos$$);
+        kphp_assert(!class_name.empty());
+        return get_class_name(class_name, delim);
+      } else {
+        return "";
+      }
+    }
+
+    string process_static_member_name(string const &name, bool append_with_context) {
+      size_t pos$$ = name.find("::");
+      if (pos$$ != string::npos) {
+        string new_name = get_class_name(name.substr(0, pos$$)) + "$$" + name.substr(pos$$ + 2);
+        if (append_with_context) {
+          new_name += "$$" + get_context(name.substr(0, pos$$));
+        }
+        return new_name;
       } else {
         return name;
       }
@@ -389,20 +458,15 @@ class CollectRequiredPass : public FunctionPassBase {
 
       bool new_force_func_ptr = false;
       if (root->type() == op_func_call || root->type() == op_func_name) {
-        callback->require_function_set (fs_function, process_static_member_name(root->get_string()), current_function);
+        callback->require_function_set (fs_function, process_static_member_name(root->get_string(), root->type() == op_func_call), current_function);
       }
 
       if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
         const string &name = root->get_string();
-        string class_name = get_class_name(name, '/');
+        string class_name = get_class_name_for(name, '/');
         if (!class_name.empty()) {
-          string filename = class_name + ".php";
-          pair<SrcFilePtr, bool> res = callback->require_file(filename);
-          kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
-          if (res.second) {
-            res.first->req_id = current_function;
-          }
-          root->set_string(process_static_member_name(name));
+          require_class(class_name, "");
+          root->set_string(process_static_member_name(name, root->type() == op_func_call));
         }
       }
       if (root->type() == op_func_call) {
@@ -427,7 +491,7 @@ class CollectRequiredPass : public FunctionPassBase {
         for (VertexRange i = require->args(); !i.empty(); i.next()) {
           kphp_error_act ((*i)->type() == op_string, "Not a string in 'require' arguments", continue);
           VertexAdaptor <op_string> cur = *i;
-          pair <SrcFilePtr, bool> tmp = callback->require_file (cur->str_val);
+          pair <SrcFilePtr, bool> tmp = callback->require_file (cur->str_val, "");
           SrcFilePtr file = tmp.first;
           bool required = tmp.second;
           if (required) {
@@ -456,8 +520,8 @@ class CollectRequiredCallback : public CollectRequiredCallbackBase {
     CollectRequiredCallback (DataStream *os) :
       os (os) {
     }
-    pair <SrcFilePtr, bool> require_file (const string &file_name) {
-      return G->require_file (file_name, *os);
+    pair <SrcFilePtr, bool> require_file (const string &file_name, const string &class_context) {
+      return G->require_file (file_name, class_context, *os);
     }
     void require_function_set (
         function_set_t type,
@@ -473,9 +537,15 @@ class CollectRequiredF {
     template <class OutputStream> void execute (FunctionPtr function, OutputStream &os) {
       CollectRequiredCallback <OutputStream> callback (&os);
       CollectRequiredPass pass (&callback);
+
       run_function_pass (function, &pass);
 
       if (stage::has_error()) {
+        return;
+      }
+
+      if (function->type() == FunctionData::func_global && !function->class_name.empty() &&
+        (function->namespace_name + "\\" + function->class_name) != function->class_context_name) {
         return;
       }
 
@@ -997,8 +1067,20 @@ class RegisterDefinesPass : public FunctionPassBase {
 
       if (root->type() == op_func_name) {
         string name = root->get_string();
-        if (name.find("$$") != string::npos) {
-          name = "c#" + name;
+        size_t pos$$ = name.find("$$");
+        if (pos$$ != string::npos) {
+          string class_name = name.substr(0, pos$$);
+          string define_name = name.substr(pos$$ + 2);
+          const string &real_class_name = replace_characters(class_name, '$', '\\');
+          ClassPtr klass = G->get_class(real_class_name);
+          if (klass.not_null()) {
+            while (klass.not_null() && klass->constants.find(define_name) == klass->constants.end()) {
+              klass = klass->parent_class;
+            }
+            if (klass.not_null()) {
+              name = "c#" + replace_characters(klass->name, '\\', '$') + "$$" + define_name;
+            }
+          }
         }
         DefinePtr d = G->get_define (name);
         if (d.not_null()) {
@@ -2649,6 +2731,46 @@ class WriteFilesF {
       }
 };
 
+class CollectClassF {
+  public:
+    DUMMY_ON_FINISH;
+    template <class OutputStreamT>
+    void execute (ReadyFunctionPtr ready_data, OutputStreamT &os) {
+      FunctionPtr data = ready_data.function;
+      os << data;
+      if (data->class_id.not_null() && data->class_id->init_function == data) {
+        if (!data->class_extends.empty()) {
+          data->class_id->extends = resolve_uses(data, data->class_extends, '\\');
+        }
+        os << data->class_id;
+      }
+    }
+};
+
+class GenerateInheritedMethodsF {
+  public:
+    DUMMY_ON_FINISH;
+    template <class OutputStreamT>
+    void execute (ClassPtr data, OutputStreamT &os __attribute__((unused))) {
+      stage::set_name("generate-inherited-methods");
+      if (!data->extends.empty()) {
+        data->parent_class = G->get_class(data->extends);
+        kphp_assert(data->parent_class.not_null());
+      } else {
+        data->parent_class = ClassPtr();
+      }
+      VertexPtr parent = data->root.as<op_class>()->parent();
+      fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
+      fprintf(stdout, "init_function: ");
+      fprintf(stdout, "  %s\n", data->init_function->name.c_str());
+      os << ReadyFunctionPtr(data->init_function);
+      fprintf(stdout, "methods: ");
+      FOREACH(data->static_methods, method_ptr) {
+        fprintf(stdout, "  %s\n", method_ptr->second->name.c_str());
+//        os << ReadyFunctionPtr(*method_ptr);
+      }
+    }
+};
 
 bool compiler_execute (KphpEnviroment *env) {
   double st = dl_time();
@@ -2722,7 +2844,7 @@ bool compiler_execute (KphpEnviroment *env) {
          DataStream <FunctionPtr>,
          DataStreamTriple <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe (true);
     Pipe <FunctionPassF <CalcLocationsPass>,
-         DataStream <ReadyFunctionPtr>,
+         DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > calc_locations_pipe (true);
     FunctionPassPipe <PreprocessDefinesConcatenationPass>::Self process_defines_concat (true);
     FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
@@ -2736,6 +2858,12 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > second_sync_pipe (true, true);
+    Pipe <SyncPipeF <ReadyFunctionPtr>,
+         DataStream <ReadyFunctionPtr>,
+         DataStream <ReadyFunctionPtr> > first_class_sync_pipe (true, true);
+    Pipe <CollectClassF,
+          DataStream <ReadyFunctionPtr>,
+          DataStreamPair <FunctionPtr, ClassPtr> > collect_classes_pipe (true);
     FunctionPassPipe <RegisterDefinesPass>::Self register_defines_pipe (true);
     FunctionPassPipe <PreprocessEq3Pass>::Self preprocess_eq3_pipe (true);
     FunctionPassPipe <PreprocessFunctionCPass>::Self preprocess_function_c_pipe (true);
@@ -2797,6 +2925,9 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <WriteFilesF,
          DataStream <WriterData *>,
          EmptyStream> write_files_pipe (false);
+    Pipe <GenerateInheritedMethodsF,
+          DataStream <ClassPtr>,
+          DataStream <FunctionPtr> > generate_inherited_methods_pipe (true);
 
 
     pipe_input (load_file_pipe).set_stream (&file_stream);
@@ -2808,6 +2939,8 @@ bool compiler_execute (KphpEnviroment *env) {
       split_switch_pipe >>
       create_switch_foreach_vars_pipe >>
       collect_required_pipe >> use_first_output() >>
+      first_class_sync_pipe >> sync_node() >>
+      collect_classes_pipe >> use_first_output() >>
       calc_locations_pipe >>
       process_defines_concat >>
       collect_defines_pipe >>
@@ -2847,6 +2980,9 @@ bool compiler_execute (KphpEnviroment *env) {
       load_file_pipe;
     scheduler_constructor (*scheduler, collect_required_pipe) >> use_third_output() >>
       apply_break_file_pipe;
+    scheduler_constructor (*scheduler, collect_classes_pipe) >> use_second_output() >>
+      generate_inherited_methods_pipe >>
+      calc_locations_pipe;
 
     get_scheduler()->execute();
   }
