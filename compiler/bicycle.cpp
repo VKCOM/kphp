@@ -4,8 +4,6 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-#include "common/container_of.h"
-
 __thread int bicycle_thread_id;
 
 /*** Malloc hooks ***/
@@ -35,7 +33,7 @@ class ZAllocatorRaw {
     block_t *free_blocks[MAX_BLOCK_SIZE >> 3];
   public:
     block_t *to_block (void *ptr) {
-      return container_of(ptr, block_t, data);
+      return (block_t *) ((char *)ptr - offsetof (block_t, data));
     }
     void *from_block (block_t *block) {
       return &block->data;
