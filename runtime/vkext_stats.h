@@ -1,6 +1,7 @@
 #pragma once
 
-#include "kphp_core.h"
+#include "runtime/kphp_core.h"
+#include "runtime/integer_types.h"
 
 #pragma pack(push,4)
 struct sample {

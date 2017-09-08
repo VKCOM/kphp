@@ -29,6 +29,8 @@
 
 #pragma once
 
+#include "compiler/data_ptr.h"
+
 void analyze_foreach (FunctionPtr function);
 void analyze_common (FunctionPtr function);
 void analyzer_check_array (VertexPtr to_check);

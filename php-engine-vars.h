@@ -2,13 +2,13 @@
 
 // for: struct in_addr
 #include <netinet/in.h>
+#include "common/version-string.h"
 
 // Names and versions
 #define VERSION "0.01"
 #define NAME "php-engine"
 #define NAME_VERSION NAME "-" VERSION
 
-#include "version-string.h"
 
 /***
  DEFAULT GLOBAL VARIABLES

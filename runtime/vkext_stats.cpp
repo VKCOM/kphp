@@ -3,7 +3,7 @@
 #include <limits.h>
 #include "integer_types.h"
 
-#include "../degorov/de-archiver.h"
+#include "degorov/de-archiver.h"
 
 #include "vkext_stats.h"
 
