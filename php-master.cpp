@@ -1,5 +1,8 @@
 #define _FILE_OFFSET_BITS 64
 
+#include "PHP/php-master.h"
+
+#include <algorithm>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -9,6 +12,7 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/signalfd.h>
@@ -18,11 +22,6 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-#include <string>
-#include <algorithm>
-
-#include "php-master.h"
 
 extern "C" {
 #include "common/crc32c.h"

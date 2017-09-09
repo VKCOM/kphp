@@ -1,11 +1,11 @@
+#include "PHP/common-net-functions.h"
+
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include "drinkless/dl-utils-lite.h"
-
-#include "common-net-functions.h"
 
 http_query_data *http_query_data_create (const char *qUri, int qUriLen, const char *qGet, int qGetLen, const char *qHeaders,
   int qHeadersLen, const char *qPost, int qPostLen, const char *request_method, int keep_alive, unsigned int ip, unsigned int port) {

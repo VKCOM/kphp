@@ -1,11 +1,11 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "url.h"
+#include "runtime/url.h"
 
 #include "common/base64.h"
 
-#include "array_functions.h"
-#include "regexp.h"
+#include "runtime/array_functions.h"
+#include "runtime/regexp.h"
 
 //string f$base64_decode (const string &s) {
 //  int result_len = s.size() / 4 * 3;

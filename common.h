@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "drinkless/dl-utils-lite.h"
+
 #include "common-php-functions.h"
 
 size_t total_mem_used __attribute__ ((weak));

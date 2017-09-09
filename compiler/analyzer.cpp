@@ -27,10 +27,11 @@
               2014 Aliaksei Levin
 */
 
-#include "stage.h"
-#include "data.h"
-#include "function-pass.h"
-#include "analyzer.h"
+#include "compiler/analyzer.h"
+
+#include "compiler/data.h"
+#include "compiler/function-pass.h"
+#include "compiler/stage.h"
 
 class CheckNestedForeachPass : public FunctionPassBase {
   vector <VarPtr> foreach_vars;

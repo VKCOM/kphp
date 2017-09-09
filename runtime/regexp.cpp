@@ -1,9 +1,9 @@
 #define _FILE_OFFSET_BITS 64
 
+#include "runtime/regexp.h"
+
 #include <cstddef>
 #include <re2/re2.h>
-
-#include "regexp.h"
 
 int preg_replace_count_dummy;
 

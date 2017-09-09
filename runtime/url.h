@@ -1,7 +1,7 @@
 #pragma once
 
-#include "kphp_core.h"
-#include "integer_types.h"
+#include "runtime/integer_types.h"
+#include "runtime/kphp_core.h"
 
 OrFalse <string> f$base64_decode (const string &s, bool strict = false);
 

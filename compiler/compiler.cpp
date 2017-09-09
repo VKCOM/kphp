@@ -1,37 +1,32 @@
+#include "compiler/compiler.h"
+
 #include <dirent.h>
+#include <fcntl.h>
+#include <ftw.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <ftw.h>
 
-#include "stage.h"
-#include "compiler.h"
-#include "data_ptr.h"
-#include "io.h"
-#include "name-gen.h"
+#include "common/crc32.h"
 
-#include "lexer.h"
-#include "gentree.h"
-
-#include "bicycle.h"
-#include "function-pass.h"
-
-#include "cfg.h"
-#include "type-inferer.h"
-#include "code-gen.h"
-
-#include "compiler-core.h"
-#include "compiler.h"
-
-#include "pass-split-switch.hpp"
-#include "pass-register-vars.hpp"
-#include "pass-rl.h"
-#include "pass-optimize.hpp"
-#include "pass-ub.h"
-#include "analyzer.h"
-
-#include "crc32.h"
+#include "compiler/analyzer.h"
+#include "compiler/bicycle.h"
+#include "compiler/cfg.h"
+#include "compiler/code-gen.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data_ptr.h"
+#include "compiler/function-pass.h"
+#include "compiler/gentree.h"
+#include "compiler/io.h"
+#include "compiler/lexer.h"
+#include "compiler/name-gen.h"
+#include "compiler/pass-optimize.hpp"
+#include "compiler/pass-register-vars.hpp"
+#include "compiler/pass-rl.h"
+#include "compiler/pass-split-switch.hpp"
+#include "compiler/pass-ub.h"
+#include "compiler/stage.h"
+#include "compiler/type-inferer.h"
 
 bool is_const (VertexPtr root) {
   if (is_const_int(root)) {

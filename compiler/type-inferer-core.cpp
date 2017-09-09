@@ -1,6 +1,6 @@
-#include "type-inferer-core.h"
+#include "compiler/type-inferer-core.h"
 
-#include "data.h"
+#include "compiler/data.h"
 
 namespace tinf {
   Node::Node() :

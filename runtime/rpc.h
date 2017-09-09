@@ -1,10 +1,8 @@
 #pragma once
 
-#include "kphp_core.h"
-
-#include "integer_types.h"
-#include "resumable.h"
-
+#include "runtime/integer_types.h"
+#include "runtime/kphp_core.h"
+#include "runtime/resumable.h"
 
 void process_rpc_answer (int request_id, char *result, int result_len);
 

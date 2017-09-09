@@ -1,15 +1,16 @@
 #define _FILE_OFFSET_BITS 64
 
+#include "PHP/php-queries.h"
+
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
-#include "php-queries.h"
-#include "php-runner.h"
-#include "php_script.h"
-
 #include "runtime/allocator.h"
+
+#include "PHP/php-runner.h"
+#include "PHP/php_script.h"
 
 extern long long cur_qres_id, first_qres_id;
 

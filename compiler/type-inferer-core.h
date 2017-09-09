@@ -1,9 +1,9 @@
 #pragma once
-#include "../common.h"
-#include "bicycle.h"
-#include "types.h"
-#include "data_ptr.h"
+#include "PHP/common.h"
 
+#include "compiler/bicycle.h"
+#include "compiler/data_ptr.h"
+#include "compiler/types.h"
 
 namespace tinf {
   class Edge;

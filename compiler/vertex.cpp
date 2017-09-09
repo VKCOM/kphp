@@ -1,5 +1,6 @@
-#include "vertex.h"
-#include "data.h"
+#include "compiler/vertex.h"
+
+#include "compiler/data.h"
 
 VertexPtr create_vertex (Operation op, VertexPtr first) {
   switch (op) {

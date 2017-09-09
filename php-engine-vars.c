@@ -1,8 +1,8 @@
 #define _FILE_OFFSET_BITS 64
 
-#include <stdlib.h>
+#include "PHP/php-engine-vars.h"
 
-#include "php-engine-vars.h"
+#include <stdlib.h>
 
 /***
  DEFAULT GLOBAL VARIABLES

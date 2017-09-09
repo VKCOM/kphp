@@ -1,5 +1,5 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
 
 int hash (const string &s);
 //string next_const_string_name (const string &str);

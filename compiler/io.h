@@ -1,7 +1,8 @@
 #pragma once
-#include "../common.h"
-#include "utils.h"
-#include "data_ptr.h"
+#include "PHP/common.h"
+
+#include "compiler/data_ptr.h"
+#include "compiler/utils.h"
 
 class SrcFile {
 public:

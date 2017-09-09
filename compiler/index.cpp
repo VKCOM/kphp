@@ -1,12 +1,14 @@
+#include "compiler/index.h"
+
+#include <fcntl.h>
 #include <ftw.h>
 #include <linux/limits.h>
 #include <sys/stat.h>
 
+#include "PHP/common.h"
 
-#include "../common.h"
-#include "stage.h"
-#include "index.h"
-#include "compiler-core.h"
+#include "compiler/compiler-core.h"
+#include "compiler/stage.h"
 
 void mkpath (const string &s) {
   string path = s;

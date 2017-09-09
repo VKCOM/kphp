@@ -1,6 +1,7 @@
 #pragma once
-#include "operation.h"
-#include "graph.h"
+#include "compiler/graph.h"
+#include "compiler/operation.h"
+
 /** used pointers to **/
 class TypeInf;
 

@@ -1,6 +1,8 @@
 #pragma once
-#include "../common.h"
-#include "bicycle.h"
+#include "PHP/common.h"
+
+#include "compiler/bicycle.h"
+
 inline string get_full_path (const string &file_name) {
   char name[PATH_MAX + 1];
   char *ptr = realpath (file_name.c_str(), name);

@@ -1,9 +1,9 @@
-#include "net_events.h"
+#include "runtime/net_events.h"
 
 #include "PHP/common-net-functions.h"
 
-#include "allocator.h"
-#include "rpc.h"
+#include "runtime/allocator.h"
+#include "runtime/rpc.h"
 
 int timeout_convert_to_ms (double timeout) {
   int timeout_ms = (int)(timeout * 1000 + 1);

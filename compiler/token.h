@@ -1,6 +1,7 @@
 #pragma once
-#include "../common.h"
-#include "utils.h"
+#include "PHP/common.h"
+
+#include "compiler/utils.h"
 
 enum TokenType {
   tok_empty,

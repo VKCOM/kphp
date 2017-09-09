@@ -1,22 +1,20 @@
 #pragma once
 #include <dirent.h>
+#include <fcntl.h>
+#include <ftw.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <ftw.h>
 
-#include "stage.h"
-#include "data_ptr.h"
-#include "io.h"
-#include "name-gen.h"
-#include "data.h"
-#include "compiler.h"
-#include "function-pass.h"
-#include "index.h"
-
-#include "bicycle.h"
-
+#include "compiler/bicycle.h"
+#include "compiler/compiler.h"
+#include "compiler/data.h"
+#include "compiler/data_ptr.h"
+#include "compiler/function-pass.h"
+#include "compiler/index.h"
+#include "compiler/io.h"
+#include "compiler/name-gen.h"
+#include "compiler/stage.h"
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization

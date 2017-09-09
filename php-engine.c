@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
@@ -12,12 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/prctl.h>
 
 #include "common/crc32c.h"
 #include "common/kdb-data-common.h"
@@ -27,23 +27,23 @@
 #include "common/resolver.h"
 #include "common/rpc-const.h"
 #include "common/server-functions.h"
+#include "db-proxy/passwd.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
 #include "net/net-events.h"
 #include "net/net-http-server.h"
-#include "net/net-memcache-server.h"
 #include "net/net-memcache-client.h"
+#include "net/net-memcache-server.h"
 #include "net/net-mysql-client.h"
-#include "net/net-rpc-server.h"
 #include "net/net-rpc-client.h"
 #include "net/net-rpc-common.h"
+#include "net/net-rpc-server.h"
 
-#include "php-engine-vars.h"
-#include "php-master.h"
-#include "php-queries.h"
-#include "php-runner.h"
-#include "db-proxy/passwd.h"
+#include "PHP/php-engine-vars.h"
+#include "PHP/php-master.h"
+#include "PHP/php-queries.h"
+#include "PHP/php-runner.h"
 
 /** drinkless headers **/
 #include "drinkless/dl-utils-lite.h"

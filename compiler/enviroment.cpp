@@ -1,5 +1,6 @@
-#include "enviroment.h"
-#include "utils.h"
+#include "compiler/enviroment.h"
+
+#include "compiler/utils.h"
 
 /*** Enviroment ***/
 

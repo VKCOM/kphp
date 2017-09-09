@@ -33,7 +33,8 @@ typedef enum {WRN_ASSERT_LEVEL, CE_ASSERT_LEVEL, FATAL_ASSERT_LEVEL} AssertLevel
 void on_compilation_error (const char *description, const char *file_name, int line_number,
   const char *full_description, AssertLevelT assert_level);
 
-#include "location.h"
+#include "compiler/location.h"
+
 namespace stage {
   struct StageInfo {
     string name;

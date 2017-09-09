@@ -1,4 +1,5 @@
-#include "token.h"
+#include "compiler/token.h"
+
 /*** Token ***/
 Token::Token (TokenType type_)
   : type_ (type_), line_num(-1) {

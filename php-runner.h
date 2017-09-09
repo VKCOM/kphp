@@ -3,7 +3,8 @@
 #include <ucontext.h>
 
 #include "drinkless/dl-utils-lite.h"
-#include "php_script.h"
+
+#include "PHP/php_script.h"
 
 #ifdef __cplusplus
 extern "C" {

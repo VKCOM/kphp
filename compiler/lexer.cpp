@@ -1,9 +1,9 @@
-#include "lexer.h"
-#include "stage.h"
-#include "io.h"
+#include "compiler/lexer.h"
 
-#include "keywords_set.hpp"
-#include "bicycle.h"
+#include "compiler/bicycle.h"
+#include "compiler/io.h"
+#include "compiler/keywords_set.hpp"
+#include "compiler/stage.h"
 
 //FILE *F = fopen ("tok", "w");
 

@@ -1,5 +1,6 @@
 #pragma once
 
-#include "data_ptr.h"
-#include "operation.h"
+#include "compiler/data_ptr.h"
+#include "compiler/operation.h"
+
 void rl_calc (VertexPtr root, RLValueType expected_rl_type);

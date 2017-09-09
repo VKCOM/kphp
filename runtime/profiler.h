@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>           
-#include <string>   
+#include <string>
+#include <vector>
 
 class Profiler {
   static std::vector <std::string> function_name;

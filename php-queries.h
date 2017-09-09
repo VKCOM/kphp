@@ -1,7 +1,7 @@
 #pragma once
 #include <stddef.h>
 
-#include "common-net-functions.h"
+#include "PHP/common-net-functions.h"
 
 #pragma pack(push,4)
 

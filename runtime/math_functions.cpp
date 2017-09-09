@@ -1,10 +1,10 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "math_functions.h"
+#include "runtime/math_functions.h"
 
 #include <sys/time.h> //gettimeofday
 
-#include "string_functions.h" //lhex_digits, TODO
+#include "runtime/string_functions.h"
 
 int f$bindec (const string &number) {
   unsigned int v = 0;

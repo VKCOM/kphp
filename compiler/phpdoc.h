@@ -1,9 +1,9 @@
 #pragma once
 
-#include "data_ptr.h"
-
 #include <string>
 #include <vector>
+
+#include "compiler/data_ptr.h"
 
 struct php_doc_tag {
   std::string name;

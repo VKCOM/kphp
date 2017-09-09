@@ -1,5 +1,5 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
 
 /*** Index ***/
 void mkpath (const string &s);

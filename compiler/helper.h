@@ -1,6 +1,7 @@
 #pragma once
-#include "../common.h"
-#include "trie.h"
+#include "PHP/common.h"
+
+#include "compiler/trie.h"
 
 template <typename T> struct Helper {
   Trie <T*> trie;

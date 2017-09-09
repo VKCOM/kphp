@@ -1,12 +1,12 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "string_functions.h"
+#include "runtime/string_functions.h"
 
 #include <clocale>
 
 #include "common/unicode-utils.h"
 
-#include "interface.h"
+#include "runtime/interface.h"
 
 const string COLON (",", 1);
 const string CP1251 ("1251", 4);

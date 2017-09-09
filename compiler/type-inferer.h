@@ -1,10 +1,10 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
 
-#include "type-inferer-core.h"
-#include "stage.h"
-#include "data.h"
-#include "function-pass.h"
+#include "compiler/data.h"
+#include "compiler/function-pass.h"
+#include "compiler/stage.h"
+#include "compiler/type-inferer-core.h"
 
 tinf::Node *get_tinf_node (VertexPtr vertex);
 tinf::Node *get_tinf_node (VarPtr var);

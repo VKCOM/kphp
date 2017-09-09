@@ -1,7 +1,7 @@
-#include "pass-rl.h"
+#include "compiler/pass-rl.h"
 
-#include "stage.h"
-#include "data.h"
+#include "compiler/data.h"
+#include "compiler/stage.h"
 
 void rl_none_calc (VertexPtr root, int except) {
   int ii = 0;

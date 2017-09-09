@@ -1,9 +1,11 @@
 #define __PASS_UB_CPP__
-#include "../common.h"
-#include "gentree.h"
+#include "compiler/pass-ub.h"
 
-#include "pass-ub.h"
-#include "compiler-core.h"
+#include "PHP/common.h"
+
+#include "compiler/compiler-core.h"
+#include "compiler/gentree.h"
+
 /*** C++ undefined behaviour fixes ***/
 const int UB_SIGSEGV = 3;
 const int UB_ORDER = 1;

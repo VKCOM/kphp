@@ -1,6 +1,6 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "bcmath.h"
+#include "runtime/bcmath.h"
 
 static int bc_scale;
 

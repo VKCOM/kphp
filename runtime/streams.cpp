@@ -1,11 +1,10 @@
-#include "streams.h"
+#include "runtime/streams.h"
 
 #include <cstdlib>
 #include <cstring>
-
 #include <sys/select.h>
 
-#include "array_functions.h"
+#include "runtime/array_functions.h"
 
 static dl::size_type max_wrapper_name_size;
 

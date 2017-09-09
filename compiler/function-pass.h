@@ -1,8 +1,8 @@
 #pragma once
-#include "../common.h"
-#include "bicycle.h"
+#include "PHP/common.h"
 
-#include "stage.h"
+#include "compiler/bicycle.h"
+#include "compiler/stage.h"
 
 /*** Function Pass ***/
 class FunctionPassBase {

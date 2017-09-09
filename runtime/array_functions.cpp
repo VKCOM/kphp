@@ -1,6 +1,6 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "array_functions.h"
+#include "runtime/array_functions.h"
 
 array <string> explode (char delimiter, const string &str, int limit) {
   array <string> res (array_size (limit < 10 ? limit : 1, 0, true));

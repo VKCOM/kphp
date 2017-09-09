@@ -1,5 +1,6 @@
 #pragma once
-#include "data_ptr.h"
+#include "compiler/data_ptr.h"
+
 class Location {
 public:
   SrcFilePtr file;

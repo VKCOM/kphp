@@ -1,10 +1,12 @@
+#include "compiler/make.h"
+
+#include <fcntl.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/prctl.h>
-#include <fcntl.h>
-#include "make.h"
-#include "utils.h"
-#include "compiler-core.h"
+
+#include "compiler/compiler-core.h"
+#include "compiler/utils.h"
 
 /*** Target ***/
 //TODO: review mtime

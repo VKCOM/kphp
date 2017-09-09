@@ -1,8 +1,7 @@
 #pragma once
 
-#include "kphp_core.h"
-
-#include "exception.h"
+#include "runtime/exception.h"
+#include "runtime/kphp_core.h"
 
 extern bool resumable_finished;
 

@@ -1,21 +1,21 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "drivers.h"
+#include "runtime/drivers.h"
 
 #include <cstdlib>
 #include <ctime>
 
 #include "PHP/common-net-functions.h"
 
-#include "array_functions.h"
-#include "datetime.h"
-#include "interface.h"
-#include "math_functions.h"
-#include "misc.h"
+#include "runtime/array_functions.h"
+#include "runtime/datetime.h"
+#include "runtime/interface.h"
+#include "runtime/math_functions.h"
+#include "runtime/misc.h"
 #include "runtime/openssl.h"
-#include "regexp.h"
-#include "string_functions.h"
-#include "zlib.h"
+#include "runtime/regexp.h"
+#include "runtime/string_functions.h"
+#include "runtime/zlib.h"
 
 static string_buffer drivers_SB (1024);
 

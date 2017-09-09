@@ -1,6 +1,7 @@
-#include "php_functions.h"
-#include "php_script.h"
 #include "drinkless/dl-utils-lite.h"
+
+#include "php_functions.h"
+#include "PHP/php_script.h"
 
 static char memory_buffer[1 << 29];
 

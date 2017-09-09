@@ -1,7 +1,8 @@
 #pragma once
 #include "common/vector-product.h"
-#include "kphp_core.h"
-#include "string_functions.h"
+
+#include "runtime/kphp_core.h"
+#include "runtime/string_functions.h"
 
 template <class T>
 string f$implode (const string &s, const array <T> &a);

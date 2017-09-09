@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kphp_core.h"
+#include "runtime/kphp_core.h"
 
 //We want these types to be as fast as native types, no all definitions will be in header
 

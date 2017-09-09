@@ -1,20 +1,19 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "rpc.h"
-
-#include "common/rpc-const.h"
+#include "runtime/rpc.h"
 
 #include "PHP/common-net-functions.h"
+#include "common/crc32.h"
+#include "common/rpc-const.h"
 
-#include "drivers.h"
-#include "exception.h"
-#include "files.h"
-#include "misc.h"
-#include "net_events.h"
-#include "resumable.h"
-#include "string_functions.h"//lhex_digits TODO
-#include "zlib.h"
-#include "crc32.h"
+#include "runtime/drivers.h"
+#include "runtime/exception.h"
+#include "runtime/files.h"
+#include "runtime/misc.h"
+#include "runtime/net_events.h"
+#include "runtime/resumable.h"
+#include "runtime/string_functions.h"
+#include "runtime/zlib.h"
 
 static const int GZIP_PACKED = 0x3072cfa1;
 static const int TL_RPC_DEST_ACTOR = 0x7568aabd;

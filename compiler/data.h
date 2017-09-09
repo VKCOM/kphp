@@ -1,9 +1,9 @@
 #pragma once
-#include "utils.h"
-#include "data_ptr.h"
-#include "vertex.h"
-#include "bicycle.h"
-#include "type-inferer-core.h"
+#include "compiler/bicycle.h"
+#include "compiler/data_ptr.h"
+#include "compiler/type-inferer-core.h"
+#include "compiler/utils.h"
+#include "compiler/vertex.h"
 
 extern IdGen <VertexPtr> tree_id_gen;
 #define reg_vertex(V) ({                  \

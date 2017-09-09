@@ -1,7 +1,6 @@
 #pragma once
 
-#include "kphp_core.h"
-
+#include "runtime/kphp_core.h"
 
 typedef var Stream;
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "kphp_core.h"
-
 #include "PHP/common-net-functions.h"
+
+#include "runtime/kphp_core.h"
 
 extern string_buffer *coub;//TODO static
 

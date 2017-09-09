@@ -1,5 +1,6 @@
-#include "types.h"
-#include "data.h"
+#include "compiler/types.h"
+
+#include "compiler/data.h"
 
 /*** PrimitiveType ***/
 map <string, PrimitiveType> name_to_ptype;

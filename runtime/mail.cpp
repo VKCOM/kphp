@@ -1,11 +1,11 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "mail.h"
+#include "runtime/mail.h"
 
 #include <cstdio>
 
-#include "interface.h"
-#include "string_functions.h"
+#include "runtime/interface.h"
+#include "runtime/string_functions.h"
 
 static bool check_header (const string &str) {
   int str_len = (int)str.size();

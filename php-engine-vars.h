@@ -2,6 +2,7 @@
 
 // for: struct in_addr
 #include <netinet/in.h>
+
 #include "common/version-string.h"
 
 // Names and versions

@@ -1,7 +1,6 @@
 #pragma once
-#include "utils.h"
-
-#include "token.h"
+#include "compiler/token.h"
+#include "compiler/utils.h"
 
 typedef enum {
   op_err = 0,

@@ -2,8 +2,8 @@
 
 #include <climits>
 
-#include "kphp_core.h"
-#include "string_functions.h"
+#include "runtime/kphp_core.h"
+#include "runtime/string_functions.h"
 
 bool mb_UTF8_check (const char *s);
 

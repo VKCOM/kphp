@@ -1,9 +1,9 @@
-#include "gentree.h"
-#include "phpdoc.h"
+#include "compiler/gentree.h"
 
-#include "io.h"
-#include "stage.h"
-#include "name-gen.h"
+#include "compiler/io.h"
+#include "compiler/name-gen.h"
+#include "compiler/phpdoc.h"
+#include "compiler/stage.h"
 
 GenTree::GenTree () {
 }

@@ -1,6 +1,8 @@
 #pragma once
-#include "../common.h"
-#include "enviroment.h"
+#include "PHP/common.h"
+
+#include "compiler/enviroment.h"
+
 class Compiler;
 
 bool compiler_execute (KphpEnviroment *args);

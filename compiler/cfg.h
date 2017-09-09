@@ -1,6 +1,7 @@
 #pragma once
 
-#include "gentree.h"
+#include "compiler/gentree.h"
+
 namespace cfg {
   struct CFGCallbackBase {
     virtual void split_var (VarPtr var, vector < vector <VertexPtr> > &parts) = 0;

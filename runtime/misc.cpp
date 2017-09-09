@@ -1,6 +1,6 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "misc.h"
+#include "runtime/misc.h"
 
 #include <errno.h>
 #include <iconv.h>
@@ -11,14 +11,12 @@
 
 #include "PHP/php-engine-vars.h"
 
-
-#include "interface.h"
-#include "datetime.h"
-#include "files.h"
-#include "math_functions.h"
-#include "string_functions.h"
-#include "exception.h"
-
+#include "runtime/datetime.h"
+#include "runtime/exception.h"
+#include "runtime/files.h"
+#include "runtime/interface.h"
+#include "runtime/math_functions.h"
+#include "runtime/string_functions.h"
 
 string f$uniqid (const string &prefix, bool more_entropy) {
   if (!more_entropy) {

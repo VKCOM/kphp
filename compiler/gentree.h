@@ -1,9 +1,9 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
 
-#include "token.h"
-#include "operation.h"
-#include "data.h"
+#include "compiler/data.h"
+#include "compiler/operation.h"
+#include "compiler/token.h"
 
 struct GenTree;
 typedef VertexPtr (GenTree::*GetFunc) ();

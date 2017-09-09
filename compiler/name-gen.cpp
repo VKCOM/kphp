@@ -1,7 +1,8 @@
-#include "name-gen.h"
-#include "stage.h"
-#include "io.h"
-#include "data.h"
+#include "compiler/name-gen.h"
+
+#include "compiler/data.h"
+#include "compiler/io.h"
+#include "compiler/stage.h"
 
 string register_unique_name (const string &prefix) {
   //static set <string> v;

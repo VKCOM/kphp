@@ -1,13 +1,12 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "datetime.h"
+#include "runtime/datetime.h"
 
 #include <clocale>
 #include <ctime>
-
 #include <sys/time.h>
 
-#include "string_functions.h"//for f$trim, php_buf
+#include "runtime/string_functions.h"
 
 extern long timezone;
 

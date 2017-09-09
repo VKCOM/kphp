@@ -1,8 +1,9 @@
 #include <pwd.h>
-#include "server-functions.h"
+
 #include "compiler/compiler.h"
 #include "compiler/enviroment.h"
-#include "version-string.h"
+#include "common/server-functions.h"
+#include "common/version-string.h"
 
 /***
  * Kitten compiler for PHP interface

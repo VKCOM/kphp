@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kphp_core.h"
+#include "runtime/kphp_core.h"
 
 extern const string COLON;
 extern const string CP1251;

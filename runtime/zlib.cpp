@@ -1,10 +1,10 @@
 #define _FILE_OFFSET_BITS 64
 
+#include "runtime/zlib.h"
+
 #include <zlib.h>
 
-#include "zlib.h"
-
-#include "string_functions.h"//php_buf, TODO
+#include "runtime/string_functions.h"
 
 static voidpf zlib_alloc (voidpf opaque, uInt items, uInt size) {
   int *buf_pos = (int *)opaque;

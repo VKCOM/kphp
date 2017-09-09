@@ -1,5 +1,5 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
 
 template <typename T> struct Trie {
   Trie *next[256];

@@ -1,8 +1,8 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "exception.h"
+#include "runtime/exception.h"
 
-#include "string_functions.h"//strtoupper
+#include "runtime/string_functions.h"
 
 array <array <string> > f$debug_backtrace (void) {
   dl::enter_critical_section();//OK

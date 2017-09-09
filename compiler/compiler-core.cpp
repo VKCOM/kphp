@@ -1,7 +1,7 @@
-#include "compiler-core.h"
+#include "compiler/compiler-core.h"
 
-#include "gentree.h"
-#include "make.h"
+#include "compiler/gentree.h"
+#include "compiler/make.h"
 
 CompilerCore::CompilerCore() :
   env_ (NULL) {

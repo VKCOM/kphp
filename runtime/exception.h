@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kphp_core.h"
+#include "runtime/kphp_core.h"
 
 array <array <string> > f$debug_backtrace (void);
 

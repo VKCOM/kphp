@@ -1,4 +1,4 @@
-#include "type-inferer.h"
+#include "compiler/type-inferer.h"
 
 void init_functions_tinf_nodes (FunctionPtr function) {
   assert (function->tinf_state == 1);

@@ -1,15 +1,14 @@
 #pragma once
-#include <cstdio>
+#include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <cstring>
 #include <map>
 #include <string>
-#include <algorithm>
 
-#include "utils.h"
-#include "data_ptr.h"
-
-#include "bicycle.h"
+#include "compiler/bicycle.h"
+#include "compiler/data_ptr.h"
+#include "compiler/utils.h"
 
 //H
 /*** PrimitiveType ***/

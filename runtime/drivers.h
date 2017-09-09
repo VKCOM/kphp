@@ -1,12 +1,10 @@
 #pragma once
 
-#include "kphp_core.h"
-
-#include "exception.h"
-#include "net_events.h"
-#include "resumable.h"
-#include "rpc.h"
-
+#include "runtime/exception.h"
+#include "runtime/kphp_core.h"
+#include "runtime/net_events.h"
+#include "runtime/resumable.h"
+#include "runtime/rpc.h"
 
 void drivers_init_static (void);
 void drivers_free_static (void);

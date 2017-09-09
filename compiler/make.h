@@ -1,6 +1,6 @@
 #pragma once
-#include "index.h"
-#include "enviroment.h"
+#include "compiler/enviroment.h"
+#include "compiler/index.h"
 
 class Target {
   friend class Make;

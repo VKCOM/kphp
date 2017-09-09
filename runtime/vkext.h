@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kphp_core.h"
+#include "runtime/kphp_core.h"
 
 string f$vk_utf8_to_win (const string &text, int max_len = 0, bool exit_on_error = false);
 

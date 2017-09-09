@@ -1,5 +1,6 @@
-#include "data.h"
-#include "bicycle.h"
+#include "compiler/data.h"
+
+#include "compiler/bicycle.h"
 
 //IdGen <VertexPtr> tree_id_gen;
 //BikeIdGen <VertexPtr> bike_tree_id_gen;

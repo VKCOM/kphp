@@ -1,9 +1,10 @@
+#include "compiler/phpdoc.h"
+
 #include <cstdio>
 
-#include "phpdoc.h"
-#include "stage.h"
-#include "vertex.h"
-#include "data.h"
+#include "compiler/data.h"
+#include "compiler/stage.h"
+#include "compiler/vertex.h"
 
 using std::vector;
 using std::string;

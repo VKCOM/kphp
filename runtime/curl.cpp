@@ -1,13 +1,12 @@
-#include "curl.h"
+#include "runtime/curl.h"
 
 #include <cstdio>
 #include <cstring>
-
 #include <curl/curl.h>
 #include <curl/easy.h>
 
-#include "integer_types.h"
-#include "interface.h"
+#include "runtime/integer_types.h"
+#include "runtime/interface.h"
 
 //TODO
 //curl-config --static-libs

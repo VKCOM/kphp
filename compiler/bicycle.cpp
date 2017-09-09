@@ -1,4 +1,5 @@
-#include "bicycle.h"
+#include "compiler/bicycle.h"
+
 #include <pthread.h>
 #include <stdarg.h>
 #include <stddef.h>

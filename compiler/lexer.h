@@ -1,10 +1,9 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
 
-#include "helper.h"
-#include "utils.h"
-
-#include "data.h"
+#include "compiler/data.h"
+#include "compiler/helper.h"
+#include "compiler/utils.h"
 
 struct LexerData {
   LexerData ();

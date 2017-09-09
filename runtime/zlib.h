@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kphp_core.h"
+#include "runtime/kphp_core.h"
 
 const int ZLIB_COMPRESS = 0x0f;
 const int ZLIB_ENCODE = 0x1f;

@@ -1,5 +1,7 @@
-#include "cfg.h"
-#include "stage.h"
+#include "compiler/cfg.h"
+
+#include "compiler/stage.h"
+
 //Control Flow Graph constructions
 namespace cfg {
   //just simple int id type

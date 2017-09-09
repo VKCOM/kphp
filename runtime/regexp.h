@@ -2,8 +2,8 @@
 
 #include <pcre.h>
 
-#include "kphp_core.h"
-#include "mbstring.h"
+#include "runtime/kphp_core.h"
+#include "runtime/mbstring.h"
 
 namespace re2 {
   class RE2;

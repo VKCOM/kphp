@@ -1,5 +1,6 @@
 #pragma once
-#include "../common.h"
+#include "PHP/common.h"
+
 class KphpEnviroment {
   private:
     string cur_dir_;

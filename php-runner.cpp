@@ -1,4 +1,6 @@
 #define _FILE_OFFSET_BITS 64
+#include "PHP/php-runner.h"
+
 #include <assert.h>
 #include <signal.h>
 #include <stdio.h>
@@ -8,8 +10,6 @@
 #include <sys/time.h>
 #include <ucontext.h>
 #include <unistd.h>
-
-#include "php-runner.h"
 
 extern "C" {
 #include "common/kprintf.h"

@@ -1,13 +1,15 @@
+#include "compiler/io.h"
+
 #include <dirent.h>
+#include <fcntl.h>
+#include <ftw.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <ftw.h>
 
-#include "io.h"
-#include "crc32.h"
-#include "stage.h"
+#include "common/crc32.h"
+
+#include "compiler/stage.h"
 
 SrcFile::SrcFile() {
 }

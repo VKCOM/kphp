@@ -1,31 +1,30 @@
 #define _FILE_OFFSET_BITS 64
 
-#include "interface.h"
+#include "runtime/interface.h"
 
 #include <arpa/inet.h>
-#include <netdb.h>
 #include <getopt.h>
+#include <netdb.h>
 
 #include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
 
-#include "array_functions.h"
-#include "bcmath.h"
-#include "curl.h"
-#include "datetime.h"
-#include "drivers.h"
-#include "exception.h"
-#include "files.h"
-#include "net_events.h"
+#include "runtime/array_functions.h"
+#include "runtime/bcmath.h"
+#include "runtime/curl.h"
+#include "runtime/datetime.h"
+#include "runtime/drivers.h"
+#include "runtime/exception.h"
+#include "runtime/files.h"
+#include "runtime/net_events.h"
 #include "runtime/openssl.h"
-#include "regexp.h"
-#include "resumable.h"
-#include "rpc.h"
-#include "streams.h"
-#include "string_functions.h"
-#include "url.h"
-#include "zlib.h"
-
+#include "runtime/regexp.h"
+#include "runtime/resumable.h"
+#include "runtime/rpc.h"
+#include "runtime/streams.h"
+#include "runtime/string_functions.h"
+#include "runtime/url.h"
+#include "runtime/zlib.h"
 
 static enum {QUERY_TYPE_NONE, QUERY_TYPE_CONSOLE, QUERY_TYPE_HTTP, QUERY_TYPE_RPC} query_type;
 

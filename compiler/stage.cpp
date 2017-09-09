@@ -1,10 +1,11 @@
-#include "stage.h"
-#include "data.h"
-#include "io.h"
-#include "../common.h"
+#include "compiler/stage.h"
 
-#include "bicycle.h"
-#include "compiler-core.h"
+#include "PHP/common.h"
+
+#include "compiler/bicycle.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data.h"
+#include "compiler/io.h"
 
 int stage::warnings_count;
 
