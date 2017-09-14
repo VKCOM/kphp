@@ -67,6 +67,7 @@ void *php_script_create (size_t mem_size, size_t stack_size);
 void php_script_terminate (void *ptr, const char *error_message);
 void php_script_set_timeout (double t);
 const char *php_script_get_error (void *ptr);
+long long php_script_memory_get_total_usage(void *ptr);
 
 /** script **/
 php_immediate_stats_t *get_immediate_stats();
@@ -137,6 +138,7 @@ public:
   double get_net_time (void) const;
   double get_script_time (void);
   int get_net_queries_count (void) const;
+  long long memory_get_total_usage(void) const;
 
   script_t *run_main;
   php_query_data *data;

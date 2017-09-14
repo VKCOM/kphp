@@ -344,6 +344,10 @@ double PHPScriptBase::get_net_time (void) const {
   return net_time;
 }
 
+long long PHPScriptBase::memory_get_total_usage(void) const {
+  return dl::memory_get_total_usage();
+}
+
 double PHPScriptBase::get_script_time (void) {
   assert (state == rst_running);
   update_script_time();
@@ -581,6 +585,10 @@ void php_script_terminate (void *ptr, const char *error_message) {
 
 const char *php_script_get_error (void *ptr) {
   return ((PHPScriptBase *)ptr)->error_message;
+}
+
+long long php_script_memory_get_total_usage (void *ptr) {
+  return ((PHPScriptBase *)ptr)->memory_get_total_usage();
 }
 
 void php_script_set_timeout (double t) {

@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "common/crc32c.h"
 #include "common/kdb-data-common.h"
@@ -405,7 +406,8 @@ void lease_change_state (lease_state_t new_state) {
 }
 
 #define run_once_count 1
-const int queries_to_recreate_script = 100;
+int queries_to_recreate_script = 100;
+long long memory_used_to_recreate_script = LLONG_MAX;
 
 void *php_script;
 typedef enum {http_worker, rpc_worker, once_worker} php_worker_mode_t;
@@ -1227,9 +1229,10 @@ void php_worker_free_script (php_worker *worker) {
   php_script_clear (php_script);
 
   static int finished_queries = 0;
-  if ((++finished_queries) % queries_to_recreate_script == 0) {
+  if ((++finished_queries) % queries_to_recreate_script == 0 || php_script_memory_get_total_usage(php_script) > memory_used_to_recreate_script) {
     php_script_free (php_script);
     php_script = NULL;
+    finished_queries = 0;
   }
 
   worker->state = phpq_finish;
@@ -3447,6 +3450,22 @@ int main_args_handler (int i) {
       }
       return 0;
     }
+    case 2000: {
+      queries_to_recreate_script = atoi(optarg);
+      if (queries_to_recreate_script <= 0) {
+        kprintf("worker-queries-to-reload has to be positive\n");
+        return -1;
+      }
+      return 0;
+    }
+    case 2001: {
+      memory_used_to_recreate_script = parse_memory_limit(optarg);
+      if (memory_used_to_recreate_script <= 0) {
+        kprintf("couldn't parse worker-memory-to-reload argument\n");
+        return -1;
+      }
+      return 0;
+    }
     default:
       return -1;
   }
@@ -3489,6 +3508,8 @@ void parse_main_args (int argc, char *argv[]) {
   parse_option_alias("crc32c", 'C');
   parse_option("small-acsess-log", optional_argument, 0, 'U', "don't write get data in log. If used twice (or with value 2), disables access log.");
   parse_option("fatal-warnings", no_argument, 0, 'K', "script is killed, when warning happened");
+  parse_option("worker-queries-to-reload", required_argument, 0, 2000, "worker script is reloaded, when <queries> queries processed (default: 100)");
+  parse_option("worker-memory-to-reload", required_argument, 0, 2001, "worker script is reloaded, when <memory> queries processed");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_end (argc, argv);
 }
