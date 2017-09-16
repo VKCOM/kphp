@@ -4,6 +4,7 @@
 
 #include <sys/time.h>
 
+#include "auto/runtime/vkext_flex_auto.h"
 #include "common/string-processing.h"
 
 #include "runtime/misc.h"
@@ -350,8 +351,6 @@ static inline bool is_pre_tag (const char *s) {
   }
   return false;
 }
-
-#include "vkext_flex_auto.h"
 
 string f$vk_utf8_to_win (const string &text, int max_len, bool exit_on_error) {
   init_buff();

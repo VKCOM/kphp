@@ -1,8 +1,8 @@
 #include "compiler/lexer.h"
 
+#include "auto/compiler/keywords_set.hpp"
 #include "compiler/bicycle.h"
 #include "compiler/io.h"
-#include "compiler/keywords_set.hpp"
 #include "compiler/stage.h"
 
 //FILE *F = fopen ("tok", "w");
