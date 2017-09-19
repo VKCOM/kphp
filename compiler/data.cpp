@@ -25,7 +25,8 @@ VarData::VarData (VarData::Type type_) :
   uninited_flag (false),
   optimize_flag (false),
   tinf_flag (false),
-  global_init_flag (false) {
+  global_init_flag (false),
+  needs_const_iterator_flag (false) {
 }
 
 void VarData::set_uninited_flag (bool f) {
