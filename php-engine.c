@@ -3437,7 +3437,11 @@ int main_args_handler (int i) {
       return 0;
     }
     case 'U': {
-      disable_access_log += atoi(optarg);
+      if (optarg) {
+        disable_access_log += atoi(optarg);
+      } else {
+        disable_access_log++;
+      }
       return 0;
     }
     case 'K': {
