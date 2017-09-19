@@ -323,6 +323,9 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
 
   const char *t = s;
   if (type == tok_var_name) {
+    if (t[0] == '{') {
+      return TokenLexerError("${ is not supported by kPHP").parse(lexer_data);
+    }
     if (is_alpha(t[0])) {
       t++;
       while (is_alphanum(t[0])) {
@@ -726,7 +729,7 @@ Helper <TokenLexer> *TokenLexerString::gen_helper() {
   h->add_rule ("\\[0-7]", Singleton <TokenLexerOctChar>::instance());
   h->add_rule ("\\x[0-9A-Fa-f]", Singleton <TokenLexerHexChar>::instance());
 
-  h->add_rule ("$[A-Za-z_]", Singleton <TokenLexerName>::instance());
+  h->add_rule ("$[A-Za-z_{]", Singleton <TokenLexerName>::instance());
   h->add_rule ("{$", Singleton <TokenLexerStringExpr>::instance());
 
   return h;
@@ -746,7 +749,7 @@ Helper <TokenLexer> *TokenLexerHeredocString::gen_helper() {
   h->add_rule ("\\[0-7]", Singleton <TokenLexerOctChar>::instance());
   h->add_rule ("\\x[0-9A-Fa-f]", Singleton <TokenLexerHexChar>::instance());
 
-  h->add_rule ("$[A-Za-z]", Singleton <TokenLexerName>::instance());
+  h->add_rule ("$[A-Za-z{]", Singleton <TokenLexerName>::instance());
   h->add_rule ("{$", Singleton <TokenLexerStringExpr>::instance());
 
   return h;
