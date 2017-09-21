@@ -8,7 +8,7 @@
 #include "runtime/regexp.h"
 
 //string f$base64_decode (const string &s) {
-//  int result_len = s.size() / 4 * 3;
+//  int result_len = (s.size() + 3) / 4 * 3;
 //  string res (result_len, false);
 //  result_len = base64_decode (s.c_str(), reinterpret_cast <unsigned char *> (res.buffer()), result_len + 1);
 //
@@ -44,7 +44,7 @@ static const short base64_reverse_table[256] = {
 */
 OrFalse <string> f$base64_decode(const string &s, bool strict) {
   /* run through the whole string, converting as we go */
-  string::size_type result_len = s.size() / 4 * 3;
+  string::size_type result_len = (s.size() + 3) / 4 * 3;
   string result(result_len, false);
   int i = 0;
   string::size_type j = 0;
