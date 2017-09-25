@@ -576,7 +576,16 @@ class CheckAccessModifiers : public FunctionPassBase {
           kphp_error(var_id->access_type != access_private ||
                      replace_characters(namespace_name, '\\', '$') + "$" + class_name == name.substr(0, pos),
                             dl_pstr("Can't access private field %s", real_name.c_str()));
-          // TODO: check protected
+          if (var_id->access_type == access_protected) {
+            kphp_error_act(!namespace_name.empty() && !class_name.empty(), dl_pstr("Can't access protected field %s", real_name.c_str()), return root);
+            ClassPtr var_class = var_id->class_id;
+            ClassPtr klass = G->get_class(namespace_name + "\\" + class_name);
+            kphp_assert(klass.not_null());
+            while (klass.not_null() && var_class.ptr != klass.ptr) {
+              klass = klass->parent_class;
+            }
+            kphp_error(klass.not_null(), dl_pstr("Can't access protected field %s", real_name.c_str()));
+          }
         }
       } else if (root->type() == op_func_call) {
         FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
