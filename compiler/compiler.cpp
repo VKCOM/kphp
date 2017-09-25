@@ -34,6 +34,15 @@ bool is_const (VertexPtr root) {
   }
   //TODO: make correct check
   switch (root->type()) {
+    case op_array: {
+      VertexAdaptor <op_array> root_array = root;
+      FOREACH(root_array->args(), i) {
+        if (!is_const(*i)) {
+          return false;
+        }
+      }
+      return true;
+    }
     case op_plus:
       return is_const (root.as <op_plus>()->expr());
     case op_minus:

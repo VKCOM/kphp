@@ -1928,8 +1928,8 @@ VertexPtr GenTree::get_statement() {
     }
     case tok_const: {
       AutoLocation const_location (this);
-      CE (!kphp_error(in_class() && in_namespace() && in_func_cnt_ == 0, "const expressions supported only inside classes and namespaces"));
       next_cur();
+      CE (!kphp_error(in_class() && in_namespace() && in_func_cnt_ == 0, "const expressions supported only inside classes and namespaces"));
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CREATE_VERTEX (name, op_func_name);
       name->str_val = "c#" + replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + string((*cur)->str_val);
