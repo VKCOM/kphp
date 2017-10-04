@@ -191,7 +191,8 @@ int get_target_impl (struct conn_target *ct) {
 }
 
 int get_target_by_pid (int ip, int port, struct conn_target *ct) {
-  ct->target.s_addr = htonl (ip);
+  ct->addr.family = AF_INET;
+  ct->addr.target.s_addr = htonl (ip);
   ct->port = port;
 
   return get_target_impl (ct);
@@ -230,7 +231,8 @@ int get_target (const char *host, int port, struct conn_target *ct) {
     return -1;
   }
 
-  ct->target = *(struct in_addr *) h->h_addr;
+  ct->addr.family = AF_INET;
+  ct->addr.target = *(struct in_addr *) h->h_addr;
   ct->port = port;
 
   return get_target_impl (ct);
@@ -641,7 +643,7 @@ void php_worker_run_mc_query_packet (php_worker *worker, php_net_query_packet_t 
     return;
   }
 
-  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s:%d]", inet_ntoa (target->target), target->port));
+  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s:%d]", conn_address_as_str(&target->addr), target->port));
 
   query_stats.port = target->port;
 
@@ -698,7 +700,7 @@ void php_worker_run_sql_query_packet (php_worker *worker, php_net_query_packet_t
     return;
   }
 
-  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s:%d]", inet_ntoa (target->target), target->port));
+  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s:%d]", conn_address_as_str(&target->addr), target->port));
 
   struct connection *conn = get_target_connection (target, 0);
 
