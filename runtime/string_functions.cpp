@@ -1,6 +1,7 @@
 #define _FILE_OFFSET_BITS 64
 
 #include "runtime/string_functions.h"
+#include "runtime/integer_types.h"
 
 #include <clocale>
 
@@ -904,6 +905,11 @@ string f$pack (const array <var> &a) {
             case 'd': {
               double value = arg.to_float();
               static_SB.append ((const char *)&value, sizeof (double));
+              break;
+            }
+            case 'q': {
+              long long value = Long(arg.to_string()).l;
+              static_SB.append ((const char *)&value, sizeof (long long));
               break;
             }
             default:
@@ -2397,6 +2403,15 @@ array <var> f$unpack (const string &pattern, const string &data) {
               }
               value = *(double *)(data.c_str() + data_pos);
               data_pos += (int)sizeof (double);
+              break;
+            }
+            case 'q': {
+              if (data_pos + (int)sizeof (long long) > data_len) {
+                php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+                return result;
+              }
+              value = f$strval (Long (*(long long *)(data.c_str() + data_pos)));
+              data_pos += (int)sizeof (long long);
               break;
             }
             default:
