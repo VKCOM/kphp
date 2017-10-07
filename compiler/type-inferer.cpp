@@ -217,11 +217,11 @@ string tinf::VarNode::get_description() {
     }
   }
   if (param_i == -2) {
-    ss << "[$" << var_->name << "]";
+    ss << "[$" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << "]";
   } else if (param_i == -1) {
     ss << "[return .]";
   } else {
-    ss << "[arg #" << int_to_str (param_i) << " ($" << var_->name << ")]";
+    ss << "[arg #" << int_to_str (param_i) << " ($" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << ")]";
   }
   if (function_.not_null()) {
     ss << "\tat [function = " << function_->name << "]";
@@ -309,7 +309,7 @@ void NodeRecalc::set_lca_at (const MultiKey *key, const RValue &rvalue) {
     types_stack.back()->set_lca_at (*key, type, !rvalue.drop_or_false);
   }
   if (new_type_->error_flag()) {
-    kphp_error (0, dl_pstr ("Type Error [%s]\n", node_->get_description().c_str()));
+    kphp_error (0, dl_pstr ("Type Error [%s] updated by [%s]\n", node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
   }
 }
 void NodeRecalc::set_lca_at (const MultiKey *key, VertexPtr expr) {
