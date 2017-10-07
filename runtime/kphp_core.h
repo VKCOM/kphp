@@ -47,9 +47,6 @@ class UnknownType {
   }                                        \
 })
 
-#define f$func_get_args() (VA_LIST)
-#define f$func_get_arg(i) (VA_LIST.get_value (i))
-#define f$func_num_args() (f$count (VA_LIST))
 #define INIT_VAR(type, x) new (&x) type()
 #define CLEAR_VAR(type, x) memset (&x, 0, sizeof (x))
 

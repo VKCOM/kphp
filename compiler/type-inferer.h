@@ -430,7 +430,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
       }
 
 
-      if (!function->varg_flag) {
+      if (!function->varg_flag || !function->is_extern) {
         int ii = 0;
         FOREACH_VERTEX (call->args(), arg) {
 
@@ -445,15 +445,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
 
           ii++;
         }
-      } else {
-        FOREACH_VERTEX (call->args(), arg) {
-          //meant <= array <var>, but it is array, so <= var is enough
-          if (!function->is_extern) {
-            create_less (*arg, tp_var);
-          }
-        }
       }
-
     }
 
     void on_return (VertexAdaptor <op_return> v) {
@@ -570,7 +562,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
           //FIXME?.. just use pointer to node?..
           create_set (as_lvalue (function, i), function->param_ids[i]);
           create_set (function->param_ids[i], as_rvalue (function, i));
-          if (function->varg_flag || function->is_callback) {
+          if (function->is_callback) {
             create_set (as_lvalue (function, i), tp_var);
           }
         }
@@ -588,6 +580,9 @@ class CollectMainEdgesPass : public FunctionPassBase {
               }
             } else {
               x = params[i]->type_help;
+              if (function->varg_flag && x == tp_Unknown) {
+                x = tp_array;
+              }
             }
 
             if (x == tp_Unknown) {

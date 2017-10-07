@@ -2,12 +2,12 @@
 
 if (0) {
   unserialize ("");
-  //wait (0);
   is_bool ("");
   is_array ("");
   is_string ("");
   is_integer ("");
   is_float ("");
+  count(array());
 }
 
 define (PHP_INT_MAX, 2147483647);
@@ -82,10 +82,6 @@ function register_shutdown_function (callback()) ::: void;//TODO var ::: callbac
 /* // removed because it's not working now. 
   function fastcgi_finish_request() ::: void;
 */
-
-function func_get_args() ::: array <var>;
-function func_get_arg($i ::: int) ::: var;
-function func_num_args() ::: int;
 
 define_raw ('E_ERROR', 1);
 define_raw ('E_WARNING', 2);

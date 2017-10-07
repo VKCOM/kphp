@@ -1311,6 +1311,101 @@ class PreprocessBreakPass : public FunctionPassBase {
     }
 };
 
+
+class PreprocessVarargPass : public FunctionPassBase {
+  private:
+    AUTO_PROF (preprocess_break);
+
+    VertexPtr create_va_list_var(Location loc) {
+      CREATE_VERTEX(result, op_var);
+      result->str_val = "$VA_LIST";
+      set_location(result, loc);
+      return result;
+    }
+
+
+  public:
+
+    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
+      if (root->type() == op_func_call) {
+        VertexPtr call = root.as<op_func_call>();
+        string name = call->get_string();
+        if (name == "func_get_args") {
+          kphp_error(call->size() == 0, "Strange func_get_args with arguments");
+          return create_va_list_var(call->location);
+        } else if (name == "func_get_arg") {
+          kphp_error(call->size() == 1, "Strange func_num_arg not one argument");
+          VertexPtr arr = create_va_list_var(call->location);
+          CREATE_VERTEX(index, op_index, arr, call->ith(0));
+          return index;
+        } else if (name == "func_num_args") {
+          kphp_error(call->size() == 0, "Strange func_num_args with arguments");
+          VertexPtr arr = create_va_list_var(call->location);
+          CREATE_VERTEX(count_call, op_func_call, arr);
+          count_call->str_val = "count";
+          set_location(count_call, call->location);
+          return count_call;
+        }
+        return root;
+      }
+      if (root->type() == op_function) {
+        VertexPtr old_params = root.as<op_function>()->params();
+        vector<VertexPtr> params_varg;
+        VertexPtr va_list_var = create_va_list_var(root->location);
+        CREATE_VERTEX(va_list_param, op_func_param, va_list_var);
+        params_varg.push_back(va_list_param);
+        CREATE_VERTEX (params_new, op_func_param_list, params_varg);
+
+        root.as<op_function>()->params() = params_new;
+
+        vector<VertexPtr> params_init;
+        int ii = 0;
+        FOREACH (old_params, i) {
+          VertexAdaptor<op_func_param> arg = *i;
+          kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
+          VertexPtr var = arg->var();
+          VertexPtr def;
+          if (arg->has_default()) {
+            def = arg->default_value();
+          } else {
+            CREATE_VERTEX(null, op_null);
+            def = null;
+          }
+
+          CREATE_VERTEX(id0, op_int_const);
+          id0->str_val = int_to_str(ii);
+          CREATE_VERTEX(isset_value, op_index, create_va_list_var(root->location), id0);
+          CREATE_VERTEX(isset, op_isset, isset_value);
+
+          CREATE_VERTEX(id1, op_int_const);
+          id1->str_val = int_to_str(ii);
+          CREATE_VERTEX(result_value, op_index, create_va_list_var(root->location), id1);
+
+
+          CREATE_VERTEX(expr, op_ternary, isset, result_value, def);
+          CREATE_VERTEX(set, op_set, var, expr);
+          params_init.push_back(set);
+        }
+
+        if (!params_init.empty()) {
+          VertexPtr seq = root.as<op_function>()->cmd();
+          kphp_assert(seq->type() == op_seq);
+          FOREACH(seq, i) {
+            params_init.push_back(*i);
+          }
+          CREATE_VERTEX(new_seq, op_seq, params_init);
+          root.as<op_function>()->cmd() = new_seq;
+        }
+      }
+      return root;
+    }
+
+    virtual bool check_function (FunctionPtr function) {
+      return function->varg_flag && default_check_function (function);
+    }
+};
+
+
 /*** Calculate const_type for all nodes ***/
 class CalcConstTypePass : public FunctionPassBase {
   private:
@@ -2870,6 +2965,7 @@ bool compiler_execute (KphpEnviroment *env) {
           DataStream <ReadyFunctionPtr>,
           DataStreamPair <FunctionPtr, ClassPtr> > collect_classes_pipe (true);
     FunctionPassPipe <RegisterDefinesPass>::Self register_defines_pipe (true);
+    FunctionPassPipe <PreprocessVarargPass>::Self preprocess_vararg_pipe (true);
     FunctionPassPipe <PreprocessEq3Pass>::Self preprocess_eq3_pipe (true);
     FunctionPassPipe <PreprocessFunctionCPass>::Self preprocess_function_c_pipe (true);
     FunctionPassPipe <PreprocessBreakPass>::Self preprocess_break_pipe (true);
@@ -2953,6 +3049,7 @@ bool compiler_execute (KphpEnviroment *env) {
       prepare_function_pipe >>
       second_sync_pipe >> sync_node() >>
       register_defines_pipe >>
+      preprocess_vararg_pipe >>
       preprocess_eq3_pipe >>
       preprocess_function_c_pipe >>
       preprocess_break_pipe >>

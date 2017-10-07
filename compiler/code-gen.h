@@ -705,41 +705,37 @@ inline void FunctionParams::compile (CodeGenerator &W) const {
   VertexAdaptor <meta_op_function> root = function->root;
   assert (root->type() == op_function);
 
-  if (function->varg_flag) {
-    W << "array <var> VA_LIST";
-  } else {
-    bool first = true;
-    int ii = 0;
-    VertexAdaptor <op_func_param_list> params = root->params();
-    FOREACH (params->params(), i) {
-      if ((*i)->type() == op_func_param) {
-        assert ("functions with callback are not supported");
-      }
-
-      VertexAdaptor <op_func_param> param = *i;
-      VertexPtr var = param->var();
-      VertexPtr def_val;
-      if (param->has_default()) {
-        def_val = param->default_value();
-      }
-
-      if (first) {
-        first = false;
-      } else {
-        W << ", ";
-      }
-      W << TypeName (tinf::get_type (function, ii)) << " ";
-      if (var->ref_flag) {
-        W << "&";
-      }
-      W << VarName (var->get_var_id());
-
-      if (def_val.not_null() && in_header) {
-        W << " = " << def_val;
-      }
-
-      ii++;
+  bool first = true;
+  int ii = 0;
+  VertexAdaptor <op_func_param_list> params = root->params();
+  FOREACH (params->params(), i) {
+    if ((*i)->type() == op_func_param) {
+      assert ("functions with callback are not supported");
     }
+
+    VertexAdaptor <op_func_param> param = *i;
+    VertexPtr var = param->var();
+    VertexPtr def_val;
+    if (param->has_default()) {
+      def_val = param->default_value();
+    }
+
+    if (first) {
+      first = false;
+    } else {
+      W << ", ";
+    }
+    W << TypeName (tinf::get_type (function, ii)) << " ";
+    if (var->ref_flag) {
+      W << "&";
+    }
+    W << VarName (var->get_var_id());
+
+    if (def_val.not_null() && in_header) {
+      W << " = " << def_val;
+    }
+
+    ii++;
   }
 }
 
@@ -2168,9 +2164,6 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
  
 
   //MEMBER VARIABLES
-  if (func->varg_flag) {
-    W << "array <var> VA_LIST;" << NL;
-  }
   FOREACH (func->param_ids, var) {
     kphp_error(!(*var)->is_reference, "reference function parametrs are forbidden in resumable mode");
     W << VarPlainDeclaration (*var);
@@ -2186,14 +2179,10 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
 
   //CONSTRUCTOR
   W << FunctionClassName (func) << "(" << FunctionParams (func) << ")";
-  if (!func->param_ids.empty() || func->varg_flag) {
+  if (!func->param_ids.empty()) {
     W <<  " :" << NL <<
       Indent (+2);
     bool flag = false;
-    if (func->varg_flag) {
-      flag = true;
-      W << "VA_LIST (VA_LIST)";
-    }
     int i = 0;
     FOREACH (func->param_ids, var) {
       if (flag) {
@@ -2201,21 +2190,7 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
       } else {
         flag = true;
       }
-      if (func->varg_flag) {
-        W << VarName (*var) << "(VA_LIST.isset (" << int_to_str (i) << ") ? " <<
-          "VA_LIST.get_value (" << int_to_str (i) << ")" << " : ";
-        VertexAdaptor <op_func_param_list> params = func_root->params();
-        VertexAdaptor <op_func_param> param = params->ith_param (i);
-        if (param->has_default()) {
-          VertexPtr default_val = param->default_value();
-          W << default_val;
-        } else {
-          W << "var()";
-        }
-        W << ")";
-      } else {
-        W << VarName (*var) << "(" << VarName (*var) << ")";
-      }
+      W << VarName (*var) << "(" << VarName (*var) << ")";
       i++;
     }
     FOREACH (func->local_var_ids, var) {
@@ -2253,18 +2228,14 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
        BEGIN;
   W << "return start_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
     "(new " << FunctionClassName (func) << "(";
-  if (func->varg_flag) {
-    W << "VA_LIST";
-  } else {
-    bool flag = false;
-    FOREACH (func->param_ids, var) {
-      if (flag) {
-        W << ", ";
-      } else {
-        flag = true;
-      }
-      W << VarName (*var);
+  bool flag = false;
+  FOREACH (func->param_ids, var) {
+    if (flag) {
+      W << ", ";
+    } else {
+      flag = true;
     }
+    W << VarName (*var);
   }
   W << "));" << NL;
   W << END << NL;
@@ -2274,18 +2245,14 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
        BEGIN;
   W << "return fork_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
     "(new " << FunctionClassName (func) << "(";
-  if (func->varg_flag) {
-    W << "VA_LIST";
-  } else {
-    bool flag = false;
-    FOREACH (func->param_ids, var) {
-      if (flag) {
-        W << ", ";
-      } else {
-        flag = true;
-      }
-      W << VarName (*var);
+  flag = false;
+  FOREACH (func->param_ids, var) {
+    if (flag) {
+      W << ", ";
+    } else {
+      flag = true;
     }
+    W << VarName (*var);
   }
   W << "));" << NL;
   W << END << NL;
@@ -2318,25 +2285,6 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
 
   FOREACH (func->local_var_ids, var) {
     W << VarDeclaration (*var);
-  }
-
-  if (func->varg_flag) {
-    VertexAdaptor <op_func_param_list> params = func_root->params();
-    for (int i = 0; i < (int)func->param_ids.size(); i++) {
-      VarPtr var = func->param_ids[i];
-      W << "var " << VarName (var) << " = VA_LIST.isset (" << int_to_str (i) << ") ? " <<
-              "VA_LIST.get_value (" << int_to_str (i) << ")" << " : ";
-
-      VertexAdaptor <op_func_param> param = params->ith_param (i);
-      if (param->has_default()) {
-        VertexPtr default_val = param->default_value();
-        W << default_val;
-      } else {
-        W << "var()";
-      }
-
-      W << ";" << NL;
-    }
   }
 
   W <<  AsSeq (func_root->cmd()) << NL <<
