@@ -290,6 +290,7 @@ function openssl_public_encrypt ($data ::: string, &$result ::: var, $key ::: st
 function openssl_private_decrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
 function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: OrFalse <string>;
 function openssl_verify ($data ::: string, $signature ::: string, $key ::: string) ::: int;
+function openssl_random_pseudo_bytes ($length::: int) ::: OrFalse <string>;
 
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;

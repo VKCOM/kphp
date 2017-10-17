@@ -31,6 +31,8 @@ OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &pa
 
 int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id);
 
+OrFalse <string> f$openssl_random_pseudo_bytes (int length);
+
 void openssl_init_static_once (void);
 
 void openssl_init_static (void);

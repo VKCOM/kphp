@@ -13,6 +13,7 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <poll.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "common/crc32.h"
@@ -449,6 +450,22 @@ int f$openssl_verify(string const &data, string const &signature, string const &
   EVP_PKEY_free(pkey);
   dl::leave_critical_section();
   return err;
+}
+
+OrFalse <string> f$openssl_random_pseudo_bytes (int length) {
+  if (length <= 0) {
+    return false;
+  }
+  string buffer(length, ' ');
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+  RAND_add(&tv, sizeof(tv), 0.0);
+
+  if (RAND_bytes((unsigned char *)buffer.buffer(), length) <= 0) {
+    return false;
+  }
+  return buffer;
 }
 
 
