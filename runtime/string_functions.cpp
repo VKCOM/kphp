@@ -1921,6 +1921,49 @@ static string str_replace_char (char c, const string &replace, const string &sub
   return string();
 }
 
+static void str_replace_inplace (const string &search, const string &replace, string &subject, int &replace_count) {
+  if ((int)search.size() == 0) {
+    php_warning ("Parameter search is empty in function str_replace");
+    return;
+  }
+
+  subject.make_not_shared();
+
+  int count = 0;
+  const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
+  char *output = subject.buffer();
+  bool length_no_change = search.size() == replace.size();
+  while (1) {
+    const char *pos = static_cast <const char *> (memmem (piece, piece_end - piece, search.c_str(), search.size()));
+    if (pos == NULL) {
+      if (count == 0) {
+        return;
+      }
+      replace_count += count;
+      if (!length_no_change) {
+        memmove (output, piece, piece_end - piece);
+      }
+      output += piece_end - piece;
+      if (!length_no_change) {
+        subject.shrink (static_cast <string::size_type> (output - subject.c_str()));
+      }
+      return;
+    }
+
+    ++count;
+
+    if (!length_no_change) {
+      memmove (output, piece, pos - piece);
+    }
+    output += pos - piece;
+    memcpy (output, replace.c_str(), replace.size());
+    output += replace.size();
+
+    piece = pos + search.size();
+  }
+  php_assert (0); // unreachable
+}
+
 static string str_replace (const string &search, const string &replace, const string &subject, int &replace_count) {
   if ((int)search.size() == 0) {
     php_warning ("Parameter search is empty in function str_replace");
@@ -1954,7 +1997,7 @@ static string str_replace (const string &search, const string &replace, const st
 
 inline var str_replace_string (const var &search, const var &replace, const string &subject, int &replace_count) {
   if (search.is_array()) {
-    var result = subject;
+    string result = subject;
 
     string replace_value;
     array <var>::const_iterator cur_replace_val;
@@ -1974,7 +2017,12 @@ inline var str_replace_string (const var &search, const var &replace, const stri
         }
       }
 
-      result = str_replace (f$strval (it.get_value()), replace_value, result.to_string(), replace_count);
+      const string &search_string = f$strval (it.get_value());
+      if (search_string.size() >= replace_value.size()) {
+        str_replace_inplace (search_string, replace_value, result, replace_count);
+      } else {
+        result = str_replace (search_string, replace_value, result, replace_count);
+      }
     }
 
     return result;
