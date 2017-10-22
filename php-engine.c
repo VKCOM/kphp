@@ -40,6 +40,7 @@
 #include "net/net-rpc-client.h"
 #include "net/net-rpc-common.h"
 #include "net/net-rpc-server.h"
+#include "net/net-sockaddr-storage.h"
 
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-master.h"
@@ -141,15 +142,14 @@ struct conn_target db_ct = {
   .type = &ct_mysql_client,
   .extra = &db_client_outbound,
   .reconnect_timeout = 1,
-  .port = 3306
 };
+static int db_port = 3306;
 
 struct conn_target rpc_ct = {
   .min_connections = 2,
   .max_connections = 3,
   .type = &ct_rpc_client,
   .extra = (void *)&rpc_client_outbound,
-  .port = 11210,
   .reconnect_timeout = 1
 };
 
@@ -191,9 +191,7 @@ int get_target_impl (struct conn_target *ct) {
 }
 
 int get_target_by_pid (int ip, int port, struct conn_target *ct) {
-  ct->addr.family = AF_INET;
-  ct->addr.target.s_addr = htonl (ip);
-  ct->port = port;
+  ct->endpoint = make_inet_sockaddr_storage(ntohl(ip), port);
 
   return get_target_impl (ct);
 }
@@ -231,9 +229,7 @@ int get_target (const char *host, int port, struct conn_target *ct) {
     return -1;
   }
 
-  ct->addr.family = AF_INET;
-  ct->addr.target = *(struct in_addr *) h->h_addr;
-  ct->port = port;
+  ct->endpoint = make_inet_sockaddr_storage(*(uint32_t*)h->h_addr, port);
 
   return get_target_impl (ct);
 }
@@ -643,9 +639,9 @@ void php_worker_run_mc_query_packet (php_worker *worker, php_net_query_packet_t 
     return;
   }
 
-  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s:%d]", conn_address_as_str(&target->addr), target->port));
+  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s]", sockaddr_storage_to_string(&target->endpoint)));
 
-  query_stats.port = target->port;
+  query_stats.port = inet_sockaddr_port(&target->endpoint);
 
   struct connection *conn = get_target_connection_force (target);
   if (conn == NULL) {
@@ -700,7 +696,7 @@ void php_worker_run_sql_query_packet (php_worker *worker, php_net_query_packet_t
     return;
   }
 
-  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s:%d]", conn_address_as_str(&target->addr), target->port));
+  net_ansgen->func->set_desc (net_ansgen, qmem_pstr ("[%s]", sockaddr_storage_to_string(&target->endpoint)));
 
   struct connection *conn = get_target_connection (target, 0);
 
@@ -1676,7 +1672,6 @@ struct conn_target rpc_client_ct = {
   //.type = &ct_rpc_client,
   .type = &ct_php_rpc_client,
   .extra = (void *)&rpc_client_methods,
-  .port = 11210,
   .reconnect_timeout = 1
 };
 
@@ -3116,7 +3111,7 @@ void start_server (void) {
   if (no_sql) {
     sql_target_id = -1;
   } else {
-    sql_target_id = get_target ("localhost", db_ct.port, &db_ct);
+    sql_target_id = get_target ("localhost", db_port, &db_ct);
     assert (sql_target_id != -1);
   }
 
@@ -3431,9 +3426,9 @@ int main_args_handler (int i) {
       return 0;
     }
     case 'Q': {
-      db_ct.port = atoi(optarg);
-      if (!(1000 <= db_ct.port && db_ct.port <= 0xffff)) {
-        kprintf ("-Q option: %d is strange port\n", db_ct.port);
+      db_port = atoi(optarg);
+      if (!(1000 <= db_port && db_port <= 0xffff)) {
+        kprintf("-Q option: %d is strange port\n", db_port);
         return -1;
       }
       return 0;
