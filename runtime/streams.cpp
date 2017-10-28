@@ -491,7 +491,7 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
       if (last_chars[0] == '\r') {
         return ptr - 2;
       }
-      /* break is omitted intentionally */
+      /* fallthrough */
     case '\r':
       return ptr - 1;
   }
@@ -584,8 +584,7 @@ OrFalse <array <var> > f$fgetcsv (const Stream &stream, int length, string delim
               case 1:
                 tmp_buffer.append(hunk_begin, (int) (bptr - hunk_begin));
                 hunk_begin = bptr;
-                /* break is omitted intentionally */
-
+                /* fallthrough */
               case 0: {
 
                 if (hunk_begin != line_end) {
@@ -689,7 +688,7 @@ OrFalse <array <var> > f$fgetcsv (const Stream &stream, int length, string delim
           case -2:
           case -1:
             inc_len = 1;
-            /* break is omitted intentionally */
+            /* fallthrough */
           case 1:
             if (*bptr == delimiter_char) {
               goto quit_loop_3;
@@ -717,7 +716,7 @@ OrFalse <array <var> > f$fgetcsv (const Stream &stream, int length, string delim
           case -2:
           case -1:
             inc_len = 1;
-            /* break is omitted intentionally */
+            /* fallthrough */
           case 1:
             if (*bptr == delimiter_char) {
               goto quit_loop_4;

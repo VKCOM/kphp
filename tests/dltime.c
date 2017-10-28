@@ -37,6 +37,7 @@ int main (int argc, char **argv) {
         break;
       default:
         printf ("Unknown option '%c'", (char)i);
+        /* fallthrough */
       case 'h':
         usage();
         _exit (1);

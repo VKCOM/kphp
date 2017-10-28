@@ -343,6 +343,7 @@ static string date (const string &format, const tm &t, int timestamp, bool local
         if (format[i + 1]) {
           i++;
         }
+        /* fallthrough */
       default:
         SB += format[i];
     }

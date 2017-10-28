@@ -1140,6 +1140,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
                   }
                   break;
                 }
+                /* fallthrough */
               default:
                 return false;
             }

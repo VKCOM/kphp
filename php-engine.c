@@ -2353,6 +2353,7 @@ int memcache_client_execute (struct connection *c, int op) {
   case mcrt_CLIENT_ERROR:
     vkprintf (-1, "CLIENT_ERROR received from connection %d (%s:%d)\n", c->fd, conv_addr (c->remote_ip, NULL), c->remote_port);
     //client_errors_received++;
+    /* fallthrough */
   case mcrt_ERROR:
     //errors_received++;
     /*if (verbosity > -2 && errors_received < 32) {

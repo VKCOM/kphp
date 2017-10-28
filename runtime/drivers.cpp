@@ -287,6 +287,7 @@ void mc_multiget_callback (const char *result, int result_len) {
           mc_stats_do (*mc_res);
           return;
         }
+        /* fallthrough */
       default:
         php_warning ("Wrong memcache response \"%s\" in Memcache::get with multikey %s", full_result, mc_last_key);
     }
@@ -322,11 +323,13 @@ void mc_get_callback (const char *result, int result_len) {
       result = new_result;
       *mc_res = mc_get_value (string (value, value_len), flags);
     }
+    /* fallthrough */
     case 'E':
       if (result_len == 5 && !strncmp (result, "END\r\n", 5)) {
         mc_stats_do (*mc_res);
         return;
       }
+    /* fallthrough */
     default:
       php_warning ("Wrong memcache response \"%s\" in Memcache::get with key %s", full_result, mc_last_key);
   }
@@ -382,6 +385,7 @@ void mc_version_callback (const char *result, int result_len) {
         }
       }
     }
+    /* fallthrough */
     default:
       php_warning ("Wrong memcache response \"%s\" in Memcache::getVersion", result);
   }
@@ -1932,6 +1936,7 @@ void mysql_query_callback (const char *result_, int result_len) {
         break;
       }
       mysql_callback_state = 4;
+      /* fallthrough */
     case 4:
       if (len != 5 || result[0] != 254) {
         *query_id_ptr = false;

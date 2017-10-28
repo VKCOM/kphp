@@ -1343,6 +1343,7 @@ class CalcConstTypePass : public FunctionPassBase {
               break;
             }
           }
+          /* fallthrough */
         case cnst_const_func:
           v->const_type = local->has_nonconst ? cnst_nonconst_val : cnst_const_val;
           break;

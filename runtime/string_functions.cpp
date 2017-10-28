@@ -108,6 +108,7 @@ string f$addslashes (const string &str) {
       case '\"':
       case '\\':
         static_SB.append_char ('\\');
+        /* fallthrough */
       default:
         static_SB.append_char (str[i]);
     }
@@ -655,7 +656,7 @@ string f$mysql_escape_string (const string &str) {
       case '\"':
       case '\\':
         static_SB.append_char ('\\');
-        //no break
+        /* fallthrough */
       default:
         static_SB.append_char (str[i]);
     }
@@ -818,6 +819,7 @@ string f$pack (const array <var> &a) {
     switch (format) {
       case 'A':
         filler = ' ';
+          /* fallthrough */
       case 'a': {
         string arg_str = arg.to_string();
         int len = arg_str.size();
@@ -1450,6 +1452,7 @@ string f$strip_tags (const string &str, const string &allow) {
           state = 2;
           break;
         }
+        /* fall-through */
       case 'E':
       case 'e':
         /* !DOCTYPE exception */
@@ -2296,6 +2299,7 @@ array <var> f$unpack (const string &pattern, const string &data) {
     switch (format) {
       case 'A':
         filler = ' ';
+        /* fallthrough */
       case 'a': {
         if (cnt == 0) {
           cnt = data_len - data_pos;
