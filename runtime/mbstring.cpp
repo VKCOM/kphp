@@ -295,11 +295,18 @@ OrFalse <int> f$mb_stripos (const string &haystack, const string &needle, int of
   return f$mb_strpos (f$mb_strtolower (haystack, encoding), f$mb_strtolower (needle, encoding), offset, encoding);
 }
 
-string f$mb_substr (const string &str, int start, int length, const string &encoding) {
+string f$mb_substr (const string &str, int start, const var &length_var, const string &encoding) {
   int encoding_num = mb_detect_encoding (encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_substr", encoding.c_str());
     return str;
+  }
+
+  int length;
+  if (length_var.is_null()) {
+    length = INT_MAX;
+  } else {
+    length = length_var.to_int();
   }
 
   if (encoding_num == 1251) {

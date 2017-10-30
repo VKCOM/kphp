@@ -19,4 +19,4 @@ OrFalse <int> f$mb_strpos (const string &haystack, const string &needle, int off
 
 OrFalse <int> f$mb_stripos (const string &haystack, const string &needle, int offset = 0, const string &encoding = CP1251);
 
-string f$mb_substr (const string &str, int start, int length = INT_MAX, const string &encoding = CP1251);
+string f$mb_substr (const string &str, int start, const var &length = INT_MAX, const string &encoding = CP1251);

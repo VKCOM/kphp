@@ -446,7 +446,7 @@ function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 
 function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: OrFalse <int>;
 function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
 function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX, $encoding ::: string = "1251") ::: string;
+function mb_substr ($str ::: string, $start ::: int, $length ::: var = INT_MAX, $encoding ::: string = "1251") ::: string;
 
 define_raw ('PHP_ROUND_HALF_UP', 123423141);
 define_raw ('PHP_ROUND_HALF_DOWN', 123423144);
