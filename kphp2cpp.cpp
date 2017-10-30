@@ -128,7 +128,7 @@ int main (int argc, char *argv[]) {
     env->inc_verbosity();
   }
 
-  remove_all_default_options();
+  remove_all_options();
   parse_option("safe-arithmetic", no_argument, NULL, 'a', "Use safe integer arithmetic");
   parse_option("base-directiory", required_argument, NULL, 'b', "Base directory. Use it when compiling the same code from different directories");
   parse_option("destination-directory", required_argument, NULL, 'd', "Destination directory");
@@ -136,12 +136,12 @@ int main (int argc, char *argv[]) {
   parse_option("functions-file", required_argument, NULL, 'f', "Internal file with library headers and e.t.c. Equals to $KPHP_FUNCTIONS. $KPHP_PATH/PHP/functions.txt is used by default");
   parse_option("profiler", no_argument, NULL, 'g', "Generate slower code, but with profiling");
   parse_option("index-file", required_argument, NULL, 'i', "Experimental. Index for faster compilations");
-  parse_option(0, required_argument, NULL, 'I', "Directory where php files will be searched");
-  parse_option(0, required_argument, NULL, 'j', "Specifies the number of jobs (commands) to run simultaneously by make. By default equals to 1");
+  parse_option("include-dir", required_argument, NULL, 'I', "Directory where php files will be searched");
+  parse_option("jobs-num", required_argument, NULL, 'j', "Specifies the number of jobs (commands) to run simultaneously by make. By default equals to 1");
   parse_option("link-with", required_argument, NULL, 'l', "Link with <file>. Equals to $KPHP_LINK_FILE. $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME is used by default");
   parse_option("mode", required_argument, NULL, 'M', "server, net or cli. If <mode> == server/net, than $KPHP_LINK_FILE_NAME=php-server.a. If <mode> == cli, than $KPHP_LINK_FILE_NAME=php-cli.a");
   parse_option("make", no_argument, NULL, 'm', "Run make");
-  parse_option(0, required_argument, NULL, 'o', "Place output into <file>");
+  parse_option("output-file", required_argument, NULL, 'o', "Place output into <file>");
   parse_option("print-graph", no_argument, NULL, 'p', "Print graph of resumable calls to stderr");
   parse_option("incremental-link", no_argument, NULL, 'r', "Split output into multiple directories");
   parse_option("threads-count", required_argument, NULL, 't', "Use <threads_count> threads. By default equals to 16");
@@ -149,7 +149,7 @@ int main (int argc, char *argv[]) {
   parse_option("auto-dest-dir", no_argument, NULL, 'S', "Automatic destination dir");
   parse_option("source-path", required_argument, NULL, 's', "Path to kphp source. Equals to $KPHP_PATH. ~/engine/src is used by default");
   parse_option("version-file", required_argument, NULL, 'V', "<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default");
-  parse_option(0, no_argument, NULL, 'v', "Verbosity");
+  parse_option("verbosity", no_argument, NULL, 'v', "Verbosity");
   parse_option("Werror", no_argument, NULL, 'W', "All compile time warnings will be errors");
   parse_option("warnings-file", required_argument, NULL, 2000, "Print all warnings to <file>, otherwise warnings are printed to stderr");
   parse_option("stats-file", required_argument, NULL, 2001, "Print some statistics to <file>");
