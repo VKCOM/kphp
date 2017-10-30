@@ -58,7 +58,7 @@ vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
 
 VertexPtr phpdoc_parse_type_expression(const string &s, size_t &pos);
 
-VertexPtr phpdoc_creatre_simple_vertex(PrimitiveType type) {
+VertexPtr phpdoc_create_simple_vertex(PrimitiveType type) {
   CREATE_VERTEX(type_rule, op_type_rule);
   type_rule->type_help = type;
   return type_rule;
@@ -80,75 +80,77 @@ VertexPtr phpdoc_parse_simple_type(const string &s, size_t &pos) {
     case 's': {
       if (s.substr(pos, 6) == "string") {
         pos += 6;
-        return phpdoc_creatre_simple_vertex(tp_string);
+        return phpdoc_create_simple_vertex(tp_string);
       }
       break;
     }
     case 'i': {
       if (s.substr(pos, 3) == "int") {
         pos += 3;
-        return phpdoc_creatre_simple_vertex(tp_int);
+        return phpdoc_create_simple_vertex(tp_int);
       }
       if (s.substr(pos, 7) == "integer") {
         pos += 7;
-        return phpdoc_creatre_simple_vertex(tp_int);
+        return phpdoc_create_simple_vertex(tp_int);
       }
       break;
     }
     case 'b': {
       if (s.substr(pos, 4) == "bool") {
         pos += 4;
-        return phpdoc_creatre_simple_vertex(tp_bool);
+        return phpdoc_create_simple_vertex(tp_bool);
       }
       if (s.substr(pos, 7) == "boolean") {
         pos += 8;
-        return phpdoc_creatre_simple_vertex(tp_bool);
+        return phpdoc_create_simple_vertex(tp_bool);
       }
       break;
     }
     case 'f': {
       if (s.substr(pos, 5) == "float") {
         pos += 5;
-        return phpdoc_creatre_simple_vertex(tp_float);
+        return phpdoc_create_simple_vertex(tp_float);
       }
       if (s.substr(pos, 5) == "false") {
         pos += 5;
-        return phpdoc_creatre_simple_vertex(tp_False);
+        return phpdoc_create_simple_vertex(tp_False);
       }
       break;
     }
     case 'd': {
       if (s.substr(pos, 6) == "double") {
         pos += 6;
-        return phpdoc_creatre_simple_vertex(tp_float);
+        return phpdoc_create_simple_vertex(tp_float);
       }
       break;
     }
     case 'm': {
       if (s.substr(pos, 5) == "mixed") {
         pos += 5;
-        return phpdoc_creatre_simple_vertex(tp_var);
+        return phpdoc_create_simple_vertex(tp_var);
       }
       break;
     }
     case 'n': {
       if (s.substr(pos, 4) == "null") {
         pos += 4;
-        return phpdoc_creatre_simple_vertex(tp_var);
+        return phpdoc_create_simple_vertex(tp_var);
       }
       break;
     }
     case 't': {
       if (s.substr(pos, 4) == "true") {
         pos += 4;
-        return phpdoc_creatre_simple_vertex(tp_bool);
+        return phpdoc_create_simple_vertex(tp_bool);
       }
       break;
     }
     case 'a': {
       if (s.substr(pos, 5) == "array") {
         pos += 5;
-        return phpdoc_creatre_simple_vertex(tp_array);
+        CREATE_VERTEX(res, op_type_rule, phpdoc_create_simple_vertex(tp_var));
+        res->type_help = tp_array;
+        return res;
       }
       break;
     }
