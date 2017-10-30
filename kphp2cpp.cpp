@@ -8,11 +8,16 @@
 /***
  * Kitten compiler for PHP interface
  **/
-void usage (void) {
-  printf ( "%s\nConvert php code into C++ code, and compile it into a binary\n",
-          get_version_string());
+
+extern "C" {
+
+void usage(void) {
+  printf("%s\nConvert php code into C++ code, and compile it into a binary\n",
+         get_version_string());
   parse_usage();
   exit(1);
+}
+
 }
 
 /*
@@ -28,6 +33,9 @@ static KphpEnviroment *env;
 
 int parse_args_f(int i) {
   switch (i) {
+  case 'h':
+    usage();
+    exit(2);
   case 'a':
     env->set_use_safe_integer_arithmetic ("1");
     break;
@@ -108,6 +116,10 @@ int parse_args_f(int i) {
     env->set_warnings_level (level);
     break;
   }
+  case 249:
+    printf("%s\n", get_version_string());
+    exit(0);
+    break;
   default:
     return -1;
   }
@@ -129,6 +141,7 @@ int main (int argc, char *argv[]) {
   }
 
   remove_all_options();
+  parse_option("help", no_argument, 0, 'h', "prints help and exits");
   parse_option("safe-arithmetic", no_argument, NULL, 'a', "Use safe integer arithmetic");
   parse_option("base-directiory", required_argument, NULL, 'b', "Base directory. Use it when compiling the same code from different directories");
   parse_option("destination-directory", required_argument, NULL, 'd', "Destination directory");
@@ -154,6 +167,7 @@ int main (int argc, char *argv[]) {
   parse_option("warnings-file", required_argument, NULL, 2000, "Print all warnings to <file>, otherwise warnings are printed to stderr");
   parse_option("stats-file", required_argument, NULL, 2001, "Print some statistics to <file>");
   parse_option("warnings-level", required_argument, NULL, 2002, "Sets warnings level to <level>: prints more warnings, according to level set (Default value: 0)");
+  parse_option("version", no_argument, 0, 2003, "prints version and exits");
   parse_engine_options_long (argc, argv, parse_args_f);
 
 
