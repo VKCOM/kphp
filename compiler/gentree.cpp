@@ -4,6 +4,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include <sstream>
 
 GenTree::GenTree () {
 }
@@ -1539,16 +1540,15 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
       }
       if (infer_type && tags[i].name == "@param") {
         CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
-        size_t space_pos = tags[i].value.find(' ');
-        CE(!kphp_error(space_pos != string::npos, "Failed to parse @param tag"));
-        size_t second_space_pos = tags[i].value.find(' ', space_pos + 1);
-        string var_name = tags[i].value.substr(space_pos + 1, second_space_pos - space_pos - 1);
+        std::istringstream is(tags[i].value);
+        string type_help, var_name;
+        CE(!kphp_error(is >> type_help, "Failed to parse @param tag"));
+        CE(!kphp_error(is >> var_name, "Failed to parse @param tag"));
         VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
         CE(!kphp_error(var.not_null(), "Something strange happened during @param parsing"));
         CE(!kphp_error(var_name == "$" + var->str_val,
                        dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
         ));
-        string type_help = tags[i].value.substr(0, space_pos);
         VertexPtr doc_type = phpdoc_parse_type(type_help);
         CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
         if (infer_type & 1) {
