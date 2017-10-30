@@ -1,10 +1,11 @@
 #include "compiler/gentree.h"
 
+#include <sstream>
+
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
-#include <sstream>
 
 GenTree::GenTree () {
 }
