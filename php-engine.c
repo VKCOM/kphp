@@ -229,7 +229,7 @@ int get_target (const char *host, int port, struct conn_target *ct) {
     return -1;
   }
 
-  ct->endpoint = make_inet_sockaddr_storage(*(uint32_t*)h->h_addr, port);
+  ct->endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t*)h->h_addr), port);
 
   return get_target_impl (ct);
 }
@@ -1509,7 +1509,7 @@ int hts_func_execute (struct connection *c, int op) {
 
   /** save query here **/
   http_query_data *http_data = http_query_data_create (qUri, qUriLen, qGet, qGetLen, qHeaders, qHeadersLen, qPost,
-      qPostLen, D->query_type == htqt_get ? "GET" : "POST", D->query_flags & QF_KEEPALIVE, c->remote_ip, c->remote_port);
+      qPostLen, D->query_type == htqt_get ? "GET" : "POST", D->query_flags & QF_KEEPALIVE, inet_sockaddr_address(&c->remote_endpoint), inet_sockaddr_port(&c->remote_endpoint));
 
   static long long http_script_req_id = 0;
   php_worker *worker = php_worker_create (http_worker, c, http_data, NULL, script_timeout, ++http_script_req_id);
@@ -1682,8 +1682,8 @@ void rpc_send_ready (struct connection *c) {
   int q[100], qn = 0;
   qn += 2;
   q[qn++] = -1;
-  q[qn++] = (int)c->our_ip; // addr
-  q[qn++] = (int)c->our_port; // port
+  q[qn++] = (int) inet_sockaddr_address(&c->local_endpoint);
+  q[qn++] = (int) inet_sockaddr_port(&c->local_endpoint);
   q[qn++] = pid; // pid
   q[qn++] = start_time; // start_time
   q[qn++] = worker_id; // id
@@ -1696,8 +1696,8 @@ void rpc_send_stopped (struct connection *c) {
   int q[100], qn = 0;
   qn += 2;
   q[qn++] = -1;
-  q[qn++] = (int)c->our_ip; // addr
-  q[qn++] = (int)c->our_port; // port
+  q[qn++] = (int) inet_sockaddr_address(&c->local_endpoint);
+  q[qn++] = (int) inet_sockaddr_port(&c->local_endpoint);
   q[qn++] = pid; // pid
   q[qn++] = start_time; // start_time
   q[qn++] = worker_id; // id
@@ -2351,7 +2351,7 @@ int memcache_client_execute (struct connection *c, int op) {
     return SKIP_ALL_BYTES;
 
   case mcrt_CLIENT_ERROR:
-    vkprintf (-1, "CLIENT_ERROR received from connection %d (%s:%d)\n", c->fd, conv_addr (c->remote_ip, NULL), c->remote_port);
+    vkprintf (-1, "CLIENT_ERROR received from connection %d (%s)\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint));
     //client_errors_received++;
     /* fallthrough */
   case mcrt_ERROR:
