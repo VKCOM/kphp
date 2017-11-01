@@ -1411,7 +1411,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   string name_str;
   AutoLocation name_location (this);
   if (anonimous_flag) {
-    string tmp_name = gen_anonymous_functinon_name ();
+    string tmp_name = gen_anonymous_function_name ();
     name_str = tmp_name;
   } else {
     CE (expect (tok_func_name, "'tok_func_name'"));

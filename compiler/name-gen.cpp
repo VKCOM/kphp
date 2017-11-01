@@ -30,7 +30,7 @@ string gen_shorthand_ternary_name () {
   return string("shorthand_ternary_cond$ut") + tmp;
 }
 
-string gen_anonymous_functinon_name () {
+string gen_anonymous_function_name () {
   AUTO_PROF (next_name);
   static volatile int x = 0;
   AutoLocker <volatile int *> locker (&x);
@@ -41,7 +41,7 @@ string gen_anonymous_functinon_name () {
   int cur_i = (*i)++;
   char tmp[50];
   sprintf (tmp, "%llx_%d", h, cur_i);
-  return string("anonymous_functinon$ut") + tmp;
+  return string("anonymous_function$ut") + tmp;
 }
 
 
