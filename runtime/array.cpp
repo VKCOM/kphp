@@ -780,9 +780,9 @@ void array <T, TT>::mutate_if_map_needed_string (void) {
 }
 
 template <class T, class TT>
-void array <T, TT>::reserve (int int_size, int string_size) {
+void array <T, TT>::reserve (int int_size, int string_size, bool make_vector_if_possible) {
   if (int_size > p->int_buf_size || (string_size > 0 && string_size > p->string_buf_size)) {
-    if (is_vector() && string_size == 0) {
+    if (is_vector() && string_size == 0 && make_vector_if_possible) {
       mutate_to_size (int_size);
     } else {
       int new_int_size = max (int_size, p->int_buf_size);

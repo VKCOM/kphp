@@ -165,7 +165,7 @@ template <class T>
 T f$array_pop (array <T> &a);
 
 template <class T>
-void f$array_reserve (array <T> &a, int int_size, int string_size);
+void f$array_reserve (array <T> &a, int int_size, int string_size, bool make_vector_if_possible = true);
 
 
 array <var> f$range (const var &from, const var &to, int step = 1);
@@ -871,8 +871,8 @@ T f$array_pop (array <T> &a) {
 }
 
 template <class T>
-void f$array_reserve (array <T> &a, int int_size, int string_size) {
-  a.reserve(int_size, string_size);
+void f$array_reserve (array <T> &a, int int_size, int string_size, bool make_vector_if_possible) {
+  a.reserve(int_size, string_size, make_vector_if_possible);
 }
 
 

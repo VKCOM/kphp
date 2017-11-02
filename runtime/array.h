@@ -475,7 +475,7 @@ public:
 
   const T *get_const_vector_pointer (void) const; // unsafe
 
-  void reserve (int int_size, int string_size);
+  void reserve (int int_size, int string_size, bool make_vector_if_possible);
 
   template <class T1, class TT1>
   friend class array;
