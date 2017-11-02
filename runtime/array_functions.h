@@ -164,6 +164,9 @@ int f$array_push (array <T1> &a, const T2 &val2, const T3 &val3, const T4 &val4,
 template <class T>
 T f$array_pop (array <T> &a);
 
+template <class T>
+void f$array_reserve (array <T> &a, int int_size, int string_size);
+
 
 array <var> f$range (const var &from, const var &to, int step = 1);
 
@@ -865,6 +868,11 @@ int f$array_push (array <T1> &a, const T2 &val2, const T3 &val3, const T4 &val4,
 template <class T>
 T f$array_pop (array <T> &a) {
   return a.pop();
+}
+
+template <class T>
+void f$array_reserve (array <T> &a, int int_size, int string_size) {
+  a.reserve(int_size, string_size);
 }
 
 

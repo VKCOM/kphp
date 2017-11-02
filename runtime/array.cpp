@@ -667,8 +667,13 @@ bool array <T, TT>::is_vector (void) const {
 
 template <class T, class TT>
 bool array <T, TT>::mutate_if_vector_shared (int mul) {
+    return mutate_to_size_if_vector_shared (mul * p->int_size);
+}
+
+template <class T, class TT>
+bool array <T, TT>::mutate_to_size_if_vector_shared (int int_size) {
   if (p->ref_cnt > 0 || dl::memory_begin > (size_t)p || (size_t)p >= dl::memory_end) {
-    array_inner *new_array = array_inner::create (p->int_size * mul, 0, true);
+    array_inner *new_array = array_inner::create (int_size, 0, true);
 
     int size = p->int_size;
     TT *it = (TT *)p->int_entries;
@@ -711,11 +716,19 @@ void array <T, TT>::mutate_if_vector_needed_int (void) {
   }
 
   if (p->int_size == p->int_buf_size) {
-    p = (array_inner *)dl::reallocate ((void *)p,
-                                       (dl::size_type)(sizeof (array_inner) + 2 * p->int_buf_size * sizeof (TT)),
-                                       (dl::size_type)(sizeof (array_inner) + p->int_buf_size * sizeof (TT)));
-    p->int_buf_size *= 2;
+    mutate_to_size (p->int_buf_size * 2);
   }
+}
+
+template <class T, class TT>
+void array <T, TT>::mutate_to_size (int int_size) {
+  if (mutate_to_size_if_vector_shared (int_size)) {
+    return;
+  }
+  p = (array_inner *)dl::reallocate ((void *)p,
+                                     (dl::size_type)(sizeof (array_inner) + int_size * sizeof (TT)),
+                                     (dl::size_type)(sizeof (array_inner) + p->int_buf_size * sizeof (TT)));
+  p->int_buf_size = int_size;
 }
 
 template <class T, class TT>
@@ -763,6 +776,37 @@ void array <T, TT>::mutate_if_map_needed_string (void) {
 
     p->dispose();
     p = new_array;
+  }
+}
+
+template <class T, class TT>
+void array <T, TT>::reserve (int int_size, int string_size) {
+  if (int_size > p->int_buf_size || (string_size > 0 && string_size > p->string_buf_size)) {
+    if (is_vector() && string_size == 0) {
+      mutate_to_size (int_size);
+    } else {
+      int new_int_size = max (int_size, p->int_buf_size);
+      int new_string_size = max (string_size, p->string_buf_size);
+      array_inner *new_array = array_inner::create (new_int_size, new_string_size, false);
+
+      if (is_vector()) {
+        for (int it = 0; it != p->int_size; it++) {
+          new_array->set_map_value (it, ((TT *)p->int_entries)[it], false);
+        }
+        php_assert (new_array->max_key == p->max_key);
+      } else {
+        for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next (it)) {
+          if (p->is_string_hash_entry (it)) {
+            new_array->set_map_value (it->int_key, it->string_key, it->value, false);
+          } else {
+            new_array->set_map_value (it->int_key, it->value, false);
+          }
+        }
+      }
+
+      p->dispose();
+      p = new_array;
+    }
   }
 }
 
