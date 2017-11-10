@@ -599,6 +599,9 @@ function vk_stats_hll_add($str ::: string, $a ::: array) ::: OrFalse<string>;
 
 function vk_dot_product auto ($a ::: array, $b ::: array) ::: lca<^1[], ^2[]>;
 
+/** defined in kphp_core.h **/
+function LIKELY ($x ::: bool) ::: bool;
+
 /** exceptions **/
 function new_Exception ($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0) ::: Exception;
 function exception_getMessage ($e ::: Exception) ::: string;

@@ -59,6 +59,7 @@ class UnknownType {
 #define NOERR(a, a_type) ({php_disable_warnings++; a_type a_tmp___ = a; php_disable_warnings--; a_tmp___;})
 #define NOERR_VOID(a) ({php_disable_warnings++; a; php_disable_warnings--;})
 
+#define f$LIKELY likely
 
 inline bool lt (const bool &lhs, const bool &rhs);
 
