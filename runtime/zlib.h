@@ -9,6 +9,8 @@ const string_buffer *zlib_encode (const char *s, int s_len, int level, int encod
 
 string f$gzcompress (const string &s, int level = -1);
 
+const char* gzuncompress_raw (const char *s, int s_len, string::size_type *result_len);
+
 string f$gzuncompress (const string &s);
 
 string f$gzencode (const string &s, int level = -1);

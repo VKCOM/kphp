@@ -25,7 +25,7 @@ extern var (*debugLogPlain_pointer) (string section, string text);
 
 const string mc_prepare_key (const string &key);
 
-var mc_get_value (string result_str, int flags);
+var mc_get_value (const char *result_str, int result_str_len, int flags);
 
 bool mc_is_immediate_query (const string &key);
 
@@ -693,58 +693,21 @@ protected:
           continue;
         }
 
-        int res = f$fetch_int (string(), -1);//TODO __FILE__ and __LINE__
-        if (CurException) {
-          RETURN(false);
-        }
-        if (res == MEMCACHE_VALUE_STRING) {
-          string value = f$fetch_string (string(), -1);
-          if (CurException) {
-            RETURN(false);
-          }
-          int flags = f$fetch_int (string(), -1);
-          if (CurException) {
-            RETURN(false);
-          }
-          result.set_value (query_names.get_value (k), mc_get_value (value, flags));
-        } else if (res == MEMCACHE_VALUE_LONG) {
-          var value = f$fetch_long (string(), -1);
-          if (CurException) {
-            RETURN(false);
-          }
-          int flags = f$fetch_int (string(), -1);
-          if (CurException) {
-            RETURN(false);
-          }
-
-          if (flags != 0) {
-            php_warning ("Wrong parameter flags = %d returned in Memcache::get", flags);
-          }
-
-          result.set_value (query_names.get_value (k), value);
-        } else if (res == MEMCACHE_VALUE_NOT_FOUND) {
+        int op = TRY_CALL_(int, rpc_lookup_int(string(), -1), RETURN(false));
+        if (op == MEMCACHE_ERROR) {
+          TRY_CALL_VOID_(f$fetch_int (string(), -1), RETURN(false));//op
+          TRY_CALL_VOID_(f$fetch_long (string(), -1), RETURN(false));//query_id
+          TRY_CALL_VOID_(f$fetch_int (string(), -1), RETURN(false)); // error_code
+          TRY_CALL_VOID_(f$fetch_string (string(), -1), RETURN(false)); // error
           if (return_false_if_not_found) {
-            result.set_value (query_names.get_value (k), false);
+            result.set_value(query_names.get_value(k), false);
           }
-        } else if (res == MEMCACHE_ERROR) {
-          f$fetch_long (string(), -1);//query_id
-          if (CurException) {
-            RETURN(false);
-          }
-          int error_code = f$fetch_int (string(), -1);
-          if (CurException) {
-            RETURN(false);
-          }
-          string error = f$fetch_string (string(), -1);
-          if (CurException) {
-            RETURN(false);
-          }
-
-          (void)error_code;
-//          php_warning ("Receive RPC_REQ_ERROR %d in RpcMemcache.multiget: %s", error_code, error.c_str());
+        } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
         } else {
-          php_warning ("Wrong memcache.Value constructor = %x", res);
+          var q_result = TRY_CALL_(var, f$fetch_memcache_value(string(), -1), RETURN(false));
+          result.set_value(query_names.get_value(k), q_result);
         }
+
         if (!f$fetch_eof(string(), -1)) {
           php_warning ("Not all data fetched during fetch memcache.Value");
         }
@@ -834,34 +797,21 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
         continue;
       }
 
-      int res = TRY_CALL(int, bool, f$fetch_int (string(), -1));//TODO __FILE__ and __LINE__
-      if (res == MEMCACHE_VALUE_STRING) {
-        string value = TRY_CALL(string, bool, f$fetch_string (string(), -1));
-        int flags = TRY_CALL(int, bool, f$fetch_int (string(), -1));
-        result.set_value (query_names.get_value (k), mc_get_value (value, flags));
-      } else if (res == MEMCACHE_VALUE_LONG) {
-        var value = TRY_CALL(var, bool, f$fetch_long (string(), -1));
-        int flags = TRY_CALL(int, bool, f$fetch_int (string(), -1));
-
-        if (flags != 0) {
-          php_warning ("Wrong parameter flags = %d returned in Memcache::get", flags);
-        }
-
-        result.set_value (query_names.get_value (k), value);
-      } else if (res == MEMCACHE_VALUE_NOT_FOUND) {
+      int op = TRY_CALL(int, bool, rpc_lookup_int(string(), -1));
+      if (op == MEMCACHE_ERROR) {
+        TRY_CALL_VOID(bool, f$fetch_int (string(), -1));//op
+        TRY_CALL_VOID(bool, f$fetch_long (string(), -1));//query_id
+        TRY_CALL_VOID(bool, f$fetch_int (string(), -1));
+        TRY_CALL_VOID(bool, f$fetch_string (string(), -1));
         if (return_false_if_not_found) {
-          result.set_value (query_names.get_value (k), false);
+          result.set_value(query_names.get_value(k), false);
         }
-      } else if (res == MEMCACHE_ERROR) {
-        TRY_CALL(var, bool, f$fetch_long (string(), -1));//query_id
-        int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
-        string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));
-
-        (void)error_code;
-//        php_warning ("Receive RPC_REQ_ERROR %d in RpcMemcache.multiget: %s", error_code, error.c_str());
+      } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
       } else {
-        php_warning ("Wrong memcache.Value constructor = %x", res);
+        var q_result = TRY_CALL(var, bool, f$fetch_memcache_value(string(), -1));
+        result.set_value(query_names.get_value(k), q_result);
       }
+
       if (!f$fetch_eof(string(), -1)) {
         php_warning ("Not all data fetched during fetch memcache.Value");
       }

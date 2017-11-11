@@ -37,6 +37,7 @@ OrFalse <array <var> > f$posix_getpwuid (int uid);
 string f$serialize (const var &v);
 
 var f$unserialize (const string &v);
+var unserialize_raw (const char *v, int v_len);
 
 const int JSON_UNESCAPED_UNICODE = 1;
 const int JSON_FORCE_OBJECT = 16;

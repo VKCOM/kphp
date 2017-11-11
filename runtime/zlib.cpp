@@ -64,18 +64,27 @@ string f$gzcompress (const string &s, int level) {
   return zlib_encode (s.c_str(), s.size(), level, ZLIB_COMPRESS)->str();
 }
 
-string f$gzuncompress (const string &s) {
+const char* gzuncompress_raw (const char *s, int s_len, string::size_type *result_len) {
   unsigned long res_len = PHP_BUF_LEN;
 
   dl::enter_critical_section();//OK
-  if (uncompress (reinterpret_cast <unsigned char *> (php_buf), &res_len, reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size()) == Z_OK) {
+  if (uncompress (reinterpret_cast <unsigned char *> (php_buf), &res_len, reinterpret_cast <const unsigned char *> (s), (unsigned long)s_len) == Z_OK) {
     dl::leave_critical_section();
-    return string (php_buf, (dl::size_type)res_len);
+    *result_len = res_len;
+    return php_buf;
   }
   dl::leave_critical_section();
 
-  php_warning ("Error during unpack of string of length %d", (int)s.size());
-  return string();
+  php_warning ("Error during unpack of string of length %d", (int)s_len);
+  *result_len = 0;
+  return "";
+}
+
+
+string f$gzuncompress (const string &s) {
+  string::size_type res_len;
+  const char *res = gzuncompress_raw(s.c_str(), s.size(), &res_len);
+  return string(res, res_len);
 }
 
 string f$gzencode (const string &s, int level) {

@@ -626,6 +626,7 @@ function fetch_unsigned_int_str ($file ::: string, $line ::: int) throws ::: str
 function fetch_unsigned_long_str ($file ::: string, $line ::: int) throws ::: string;
 function fetch_double ($file ::: string, $line ::: int) throws ::: float;
 function fetch_string ($file ::: string, $line ::: int) throws ::: string;
+function fetch_memcache_value ($file ::: string, $line ::: int) throws ::: var;
 function fetch_eof ($file ::: string, $line ::: int) ::: bool;
 function fetch_end ($file ::: string, $line ::: int) throws ::: bool;
 function rpc_parse ($data) ::: bool;

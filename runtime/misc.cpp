@@ -694,14 +694,19 @@ static int do_unserialize (const char *s, int s_len, var &v) {
   return 0;
 }
 
-var f$unserialize (const string &v) {
+var unserialize_raw (const char *v, int v_len) {
   var result;
 
-  if (do_unserialize (v.c_str(), v.size(), result) == (int)v.size()) {
+  if (do_unserialize (v, v_len, result) == v_len) {
     return result;
   }
 
   return false;
+}
+
+
+var f$unserialize (const string &v) {
+  return unserialize_raw(v.c_str(), v.size());
 }
 
 

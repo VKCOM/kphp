@@ -47,6 +47,8 @@ double f$fetch_double (const string &file, int line);
 
 string f$fetch_string (const string &file, int line);
 
+var f$fetch_memcache_value(const string& file, int line);
+
 bool f$fetch_eof (const string &file, int line);//TODO remove parameters
 
 bool f$fetch_end (const string &file, int line);

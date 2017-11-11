@@ -297,24 +297,61 @@ double f$fetch_double (const string &file, int line) {
   return result;
 }
 
-string f$fetch_string (const string &file, int line) {
-  TRY_CALL_VOID(string, (check_rpc_data_len (file, line, 1)));
+static inline const char* f$fetch_string_raw (const string &file, int line, int *string_len) {
+  TRY_CALL_VOID_(check_rpc_data_len (file, line, 1), return NULL);
   const char *str = reinterpret_cast <const char *> (rpc_data);
   int result_len = (unsigned char)*str++;
   if (result_len < 254) {
-    TRY_CALL_VOID(string, (check_rpc_data_len (file, line, result_len >> 2)));
+    TRY_CALL_VOID_(check_rpc_data_len (file, line, result_len >> 2), return NULL);
     rpc_data += (result_len >> 2) + 1;
   } else if (result_len == 254) {
     result_len = (unsigned char)str[0] + ((unsigned char)str[1] << 8) + ((unsigned char)str[2] << 16);
     str += 3;
-    TRY_CALL_VOID(string, (check_rpc_data_len (file, line, (result_len + 3) >> 2)));
+    TRY_CALL_VOID_(check_rpc_data_len (file, line, (result_len + 3) >> 2), return NULL);
     rpc_data += ((result_len + 7) >> 2);
   } else {
     THROW_EXCEPTION(Exception (file, line, string ("Can't fetch string, 255 found", 29), -3));
-    return string();
+    return NULL;
   }
 
+  *string_len = result_len;
+  return str;
+}
+
+string f$fetch_string (const string &file, int line) {
+  int result_len;
+  const char *str = TRY_CALL(const char*, string, f$fetch_string_raw(file, line, &result_len));
   return string (str, result_len);
+}
+
+var f$fetch_memcache_value(const string& file, int line) {
+  int res = TRY_CALL(int, bool, f$fetch_int(string(), -1));
+  switch (res) {
+    case MEMCACHE_VALUE_STRING: {
+      int value_len;
+      const char* value = TRY_CALL(const char*, bool, f$fetch_string_raw(string(), -1, &value_len));
+      int flags = TRY_CALL(int, bool, f$fetch_int(string(), -1));
+      return mc_get_value(value, value_len, flags);
+    }
+    case MEMCACHE_VALUE_LONG: {
+      var value = TRY_CALL(var, bool, f$fetch_long(string(), -1));
+      int flags = TRY_CALL(int, bool, f$fetch_int(string(), -1));
+
+      if (flags != 0) {
+        php_warning("Wrong parameter flags = %d returned in Memcache::get", flags);
+      }
+
+      return value;
+    }
+    case MEMCACHE_VALUE_NOT_FOUND: {
+      return false;
+    }
+    default: {
+      php_warning("Wrong memcache.Value constructor = %x", res);
+      THROW_EXCEPTION(Exception (file, line, string ("Wrong memcache.Value constructor", 24), -1));
+      return var();
+    }
+  }
 }
 
 bool f$fetch_eof (const string &file __attribute__((unused)), int line __attribute__((unused))) {

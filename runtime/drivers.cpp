@@ -213,18 +213,20 @@ const char *mc_parse_value (const char *result, int result_len, const char **key
   return result + i + 2;
 }
 
-var mc_get_value (string result_str, int flags) {
+var mc_get_value (const char *result_str, int result_str_len, int flags) {
   var result;
   if (flags & MEMCACHE_COMPRESSED) {
     flags ^= MEMCACHE_COMPRESSED;
-    result_str = f$gzuncompress (result_str);
+    string::size_type uncompressed_len;
+    result_str = gzuncompress_raw (result_str, result_str_len, &uncompressed_len);
+    result_str_len = uncompressed_len;
   }
 
   if (flags & MEMCACHE_SERIALIZED) {
     flags ^= MEMCACHE_SERIALIZED;
-    result = f$unserialize (result_str);
+    result = unserialize_raw (result_str, result_str_len);
   } else {
-    result = result_str;
+    result = string(result_str, result_str_len);
   }
 
   if (flags) {
@@ -279,7 +281,7 @@ void mc_multiget_callback (const char *result, int result_len) {
         result_len -= (int)(new_result - result);
         php_assert (result_len >= 0);
         result = new_result;
-        mc_res->set_value (string (key, key_len), mc_get_value (string (value, value_len), flags));
+        mc_res->set_value (string (key, key_len), mc_get_value (value, value_len, flags));
         break;
       }
       case 'E':
@@ -321,7 +323,7 @@ void mc_get_callback (const char *result, int result_len) {
       result_len -= (int)(new_result - result);
       php_assert (result_len >= 0);
       result = new_result;
-      *mc_res = mc_get_value (string (value, value_len), flags);
+      *mc_res = mc_get_value (value, value_len, flags);
     }
     /* fallthrough */
     case 'E':
@@ -1565,34 +1567,17 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
     return false;
   }
 
-  int res = TRY_CALL(int, bool, f$fetch_int (string(), -1));//TODO __FILE__ and __LINE__
-  if (res == MEMCACHE_VALUE_STRING) {
-    string value = TRY_CALL(string, bool, f$fetch_string (string(), -1));
-    int flags = TRY_CALL(int, bool, f$fetch_int (string(), -1));
-    return mc_get_value (value, flags);
-  } else if (res == MEMCACHE_VALUE_LONG) {
-    var value = TRY_CALL(var, bool, f$fetch_long (string(), -1));
-    int flags = TRY_CALL(int, bool, f$fetch_int (string(), -1));
-
-    if (flags != 0) {
-      php_warning ("Wrong parameter flags = %d returned in Memcache::get", flags);
-    }
-
-    return value;
-  } else if (res == MEMCACHE_ERROR) {
-    TRY_CALL(var, var, f$fetch_long (string(), -1));//query_id
+  int op = TRY_CALL(int, var, rpc_lookup_int(string(), -1));
+  if (op == MEMCACHE_ERROR) {
+    TRY_CALL_VOID(var, f$fetch_int (string(), -1));//op
+    TRY_CALL_VOID(var, f$fetch_long (string(), -1));//query_id
     int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
     string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));
- 
     (void)error_code;
-//    php_warning ("Receive RPC_REQ_ERROR %d in RpcMemcache.get: %s", error_code, error.c_str());
-    return false;
-  } else {
-    if (res != MEMCACHE_VALUE_NOT_FOUND) {
-      php_warning ("Wrong memcache.Value constructor = %x", res);
-    }
     return false;
   }
+  var result = TRY_CALL(var, var, f$fetch_memcache_value(string(), -1));
+  return result;
 }
 
 bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
