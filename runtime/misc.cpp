@@ -626,6 +626,7 @@ static int do_unserialize (const char *s, int s_len, var &v) {
               new (&v) var (s, j);
               return j + 3;
             }
+            return 0;
           }
           j++;
         }
@@ -667,20 +668,74 @@ static int do_unserialize (const char *s, int s_len, var &v) {
           array <var> res (size);
 
           while (len-- > 0) {
-            var key;
-            int length = do_unserialize (s, s_len, key);
-            if (!(length && (key.is_int() || key.is_string()))) {
-              return 0;
-            }
-            s += length;
-            s_len -= length;
+            if (s[0] == 'i' && s[1] == ':') {
+              s += 2;
+              int k = 0;
+              while (s[k]) {
+                if (s[k] == ';') {
+                  int intval;
+                  if (php_try_to_int (s, k, &intval)) {
+                    s += k + 1;
+                    s_len -= k + 3;
+                    int length = do_unserialize (s, s_len, res[intval]);
+                    if (!length) {
+                      return 0;
+                    }
+                    s += length;
+                    s_len -= length;
+                    break;
+                  }
 
-            length = do_unserialize (s, s_len, res[key]);
-            if (!length) {
+                  int q = 0;
+                  if (s[q] == '-' || s[q] == '+') {
+                    q++;
+                  }
+                  while ('0' <= s[q] && s[q] <= '9') {
+                    q++;
+                  }
+                  if (q == k) {
+                    string key(s, k);
+                    s += k + 1;
+                    s_len -= k + 3;
+                    int length = do_unserialize (s, s_len, res[key]);
+                    if (!length) {
+                      return 0;
+                    }
+                    s += length;
+                    s_len -= length;
+                    break;
+                  }
+                  return 0;
+                }
+                k++;
+              }
+            } else if (s[0] == 's' && s[1] == ':') {
+              s += 2;
+              int k = 0, str_len = 0;
+              while ('0' <= s[k] && s[k] <= '9') {
+                str_len = str_len * 10 + s[k++] - '0';
+              }
+              if (k > 0 && s[k] == ':' && s[k + 1] == '"' && (dl::size_type)str_len < string::max_size && k + 2 + str_len < s_len) {
+                s += k + 2;
+
+                if (s[str_len] == '"' && s[str_len + 1] == ';') {
+                  string key (s, str_len);
+                  s += str_len + 2;
+                  s_len -= str_len + 6 + k;
+                  int length = do_unserialize (s, s_len, res[key]);
+                  if (!length) {
+                    return 0;
+                  }
+                  s += length;
+                  s_len -= length;
+                }
+              } else {
+                return 0;
+              }
+
+            } else {
               return 0;
             }
-            s += length;
-            s_len -= length;
           }
 
           if (s[0] == '}') {
