@@ -27,6 +27,7 @@ static const int *rpc_data_begin;
 static const int *rpc_data;
 static int rpc_data_len;
 static string rpc_data_copy;
+static string rpc_filename;
 
 static const int *rpc_data_begin_backup;
 static const int *rpc_data_backup;
@@ -325,17 +326,17 @@ string f$fetch_string (const string &file, int line) {
 }
 
 var f$fetch_memcache_value(const string& file, int line) {
-  int res = TRY_CALL(int, bool, f$fetch_int(string(), -1));
+  int res = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
   switch (res) {
     case MEMCACHE_VALUE_STRING: {
       int value_len;
-      const char* value = TRY_CALL(const char*, bool, f$fetch_string_raw(string(), -1, &value_len));
-      int flags = TRY_CALL(int, bool, f$fetch_int(string(), -1));
+      const char* value = TRY_CALL(const char*, bool, f$fetch_string_raw(rpc_filename, __LINE__, &value_len));
+      int flags = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
       return mc_get_value(value, value_len, flags);
     }
     case MEMCACHE_VALUE_LONG: {
-      var value = TRY_CALL(var, bool, f$fetch_long(string(), -1));
-      int flags = TRY_CALL(int, bool, f$fetch_int(string(), -1));
+      var value = TRY_CALL(var, bool, f$fetch_long(rpc_filename, __LINE__));
+      int flags = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
 
       if (flags != 0) {
         php_warning("Wrong parameter flags = %d returned in Memcache::get", flags);
@@ -1108,23 +1109,23 @@ bool f$store_unsigned_long (const var &v) {
 
 
 int tl_parse_int (void) {
-  return TRY_CALL(int, int, (f$fetch_int (string(), -1)));
+  return TRY_CALL(int, int, (f$fetch_int (rpc_filename, __LINE__)));
 }
 
 long long tl_parse_long (void) {
-  return TRY_CALL(long long, int, (f$fetch_Long (string(), -1).l));
+  return TRY_CALL(long long, int, (f$fetch_Long (rpc_filename, __LINE__).l));
 }
 
 double tl_parse_double (void) {
-  return TRY_CALL(double, double, (f$fetch_double (string(), -1)));
+  return TRY_CALL(double, double, (f$fetch_double (rpc_filename, __LINE__)));
 }
 
 string tl_parse_string (void) {
-  return TRY_CALL(string, string, (f$fetch_string (string(), -1)));
+  return TRY_CALL(string, string, (f$fetch_string (rpc_filename, __LINE__)));
 }
 
 void tl_parse_end (void) {
-  TRY_CALL_VOID(void, (f$fetch_end (string(), -1)));
+  TRY_CALL_VOID(void, (f$fetch_end (rpc_filename, __LINE__)));
 }
 
 int tl_parse_save_pos (void) {
@@ -1707,7 +1708,7 @@ array <var> fetch_function (tl_tree *T) {
   int x = 0;
 
 #ifdef FAST_EXCEPTIONS
-  x = rpc_lookup_int (string(), -1);//TODO file, line
+  x = rpc_lookup_int (rpc_filename, __LINE__);
   if (x == RPC_REQ_ERROR && !CurException) {
     php_assert (tl_parse_int() == RPC_REQ_ERROR);
     if (!CurException) {
@@ -1735,7 +1736,7 @@ array <var> fetch_function (tl_tree *T) {
   }
 #else
   try {
-    x = rpc_lookup_int (string(), -1);//TODO file, line
+    x = rpc_lookup_int (rpc_filename, __LINE__);
     if (x == RPC_REQ_ERROR) {
       T->destroy();
 
@@ -1783,7 +1784,7 @@ array <var> fetch_function (tl_tree *T) {
 
   if (res == TLUNI_OK) {
     dbg_T->destroy ();
-    if (!f$fetch_eof (string(), -1)) {
+    if (!f$fetch_eof (rpc_filename, __LINE__)) {
       php_warning ("Not all data fetched during fetch type %s", fetched_type.c_str());
       var_stack[0] = var();
       return tl_fetch_error ("Not all data fetched", TL_ERROR_EXTRA_DATA);
@@ -2363,25 +2364,25 @@ void *tlcomb_fetch_array (void **IP, void **Data, var *arr, tl_tree **vars) {
 
 void *tlcomb_fetch_int (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(int, void_ptr, (f$fetch_int (string(), -1)));
+  *arr = TRY_CALL(int, void_ptr, (f$fetch_int (rpc_filename, __LINE__)));
   TLUNI_NEXT;
 }
 
 void *tlcomb_fetch_long (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(var, void_ptr, (f$fetch_long (string(), -1)));
+  *arr = TRY_CALL(var, void_ptr, (f$fetch_long (rpc_filename, __LINE__)));
   TLUNI_NEXT;
 }
 
 void *tlcomb_fetch_double (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(double, void_ptr, (f$fetch_double (string(), -1)));
+  *arr = TRY_CALL(double, void_ptr, (f$fetch_double (rpc_filename, __LINE__)));
   TLUNI_NEXT;
 }
 
 void *tlcomb_fetch_string (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(string, void_ptr, (f$fetch_string (string(), -1)));
+  *arr = TRY_CALL(string, void_ptr, (f$fetch_string (rpc_filename, __LINE__)));
   TLUNI_NEXT;
 }
 
@@ -3796,6 +3797,7 @@ void rpc_init_static_once (void) {
 void rpc_init_static (void) {
   php_assert (timeout_wakeup_id != -1);
 
+  INIT_VAR(string, rpc_filename);
   INIT_VAR(string, rpc_data_copy);
   INIT_VAR(string, rpc_data_copy_backup);
   INIT_VAR(array <double>, rpc_request_need_timer);
@@ -3807,11 +3809,13 @@ void rpc_init_static (void) {
   rpc_stored = 0;
   rpc_pack_threshold = -1;
   rpc_pack_from = -1;
+  rpc_filename = string("rpc.cpp", 7);
 
   last_var_ptr = vars_buffer + MAX_VARS;
 }
 
 void rpc_free_static (void) {
+  CLEAR_VAR(string, rpc_filename);
   CLEAR_VAR(string, rpc_data_copy);
   CLEAR_VAR(string, rpc_data_copy_backup);
   CLEAR_VAR(array <double>, rpc_request_need_timer);

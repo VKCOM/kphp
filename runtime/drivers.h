@@ -22,6 +22,7 @@ extern var (*debugServerLog_pointer) (array <var>);
 extern var (*debugServerLogS_pointer) (array <var>);
 extern var (*debugLogPlain_pointer) (string section, string text);
 
+extern string drivers_h_filename;
 
 const string mc_prepare_key (const string &key);
 
@@ -693,22 +694,23 @@ protected:
           continue;
         }
 
-        int op = TRY_CALL_(int, rpc_lookup_int(string(), -1), RETURN(false));
+        int op = TRY_CALL_(int, rpc_lookup_int(drivers_h_filename, __LINE__), RETURN(false));
         if (op == MEMCACHE_ERROR) {
-          TRY_CALL_VOID_(f$fetch_int (string(), -1), RETURN(false));//op
-          TRY_CALL_VOID_(f$fetch_long (string(), -1), RETURN(false));//query_id
-          TRY_CALL_VOID_(f$fetch_int (string(), -1), RETURN(false)); // error_code
-          TRY_CALL_VOID_(f$fetch_string (string(), -1), RETURN(false)); // error
+          TRY_CALL_VOID_(f$fetch_int (drivers_h_filename, __LINE__), RETURN(false));//op
+          TRY_CALL_VOID_(f$fetch_long (drivers_h_filename, __LINE__), RETURN(false));//query_id
+          TRY_CALL_VOID_(f$fetch_int (drivers_h_filename, __LINE__), RETURN(false)); // error_code
+          TRY_CALL_VOID_(f$fetch_string (drivers_h_filename, __LINE__), RETURN(false)); // error
           if (return_false_if_not_found) {
             result.set_value(query_names.get_value(k), false);
           }
         } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
+          TRY_CALL_VOID_(f$fetch_int(drivers_h_filename, __LINE__), RETURN(false)); // op
         } else {
-          var q_result = TRY_CALL_(var, f$fetch_memcache_value(string(), -1), RETURN(false));
+          var q_result = TRY_CALL_(var, f$fetch_memcache_value(drivers_h_filename, __LINE__), RETURN(false));
           result.set_value(query_names.get_value(k), q_result);
         }
 
-        if (!f$fetch_eof(string(), -1)) {
+        if (!f$fetch_eof(drivers_h_filename, __LINE__)) {
           php_warning ("Not all data fetched during fetch memcache.Value");
         }
       }
@@ -797,22 +799,23 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
         continue;
       }
 
-      int op = TRY_CALL(int, bool, rpc_lookup_int(string(), -1));
+      int op = TRY_CALL(int, bool, rpc_lookup_int(drivers_h_filename, __LINE__));
       if (op == MEMCACHE_ERROR) {
-        TRY_CALL_VOID(bool, f$fetch_int (string(), -1));//op
-        TRY_CALL_VOID(bool, f$fetch_long (string(), -1));//query_id
-        TRY_CALL_VOID(bool, f$fetch_int (string(), -1));
-        TRY_CALL_VOID(bool, f$fetch_string (string(), -1));
+        TRY_CALL_VOID(bool, f$fetch_int (drivers_h_filename, __LINE__));//op
+        TRY_CALL_VOID(bool, f$fetch_long (drivers_h_filename, __LINE__));//query_id
+        TRY_CALL_VOID(bool, f$fetch_int (drivers_h_filename, __LINE__));
+        TRY_CALL_VOID(bool, f$fetch_string (drivers_h_filename, __LINE__));
         if (return_false_if_not_found) {
           result.set_value(query_names.get_value(k), false);
         }
       } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
+        TRY_CALL_VOID(bool, f$fetch_int (drivers_h_filename, __LINE__));//op
       } else {
-        var q_result = TRY_CALL(var, bool, f$fetch_memcache_value(string(), -1));
+        var q_result = TRY_CALL(var, bool, f$fetch_memcache_value(drivers_h_filename, __LINE__));
         result.set_value(query_names.get_value(k), q_result);
       }
 
-      if (!f$fetch_eof(string(), -1)) {
+      if (!f$fetch_eof(drivers_h_filename, __LINE__)) {
         php_warning ("Not all data fetched during fetch memcache.Value");
       }
     }

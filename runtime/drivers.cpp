@@ -47,6 +47,10 @@ static double mc_stats_time;
 static int mc_stats_port;
 static char* mc_stats_key;
 
+string drivers_cpp_filename;
+string drivers_h_filename;
+
+
 var f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
 var f$kphp_mcStats(int, string, string, double, var) {
   return var();
@@ -1567,16 +1571,16 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
     return false;
   }
 
-  int op = TRY_CALL(int, var, rpc_lookup_int(string(), -1));
+  int op = TRY_CALL(int, var, rpc_lookup_int(drivers_cpp_filename, __LINE__));
   if (op == MEMCACHE_ERROR) {
-    TRY_CALL_VOID(var, f$fetch_int (string(), -1));//op
-    TRY_CALL_VOID(var, f$fetch_long (string(), -1));//query_id
-    int error_code = TRY_CALL(int, bool, f$fetch_int (string(), -1));
-    string error = TRY_CALL(string, bool, f$fetch_string (string(), -1));
+    TRY_CALL_VOID(var, f$fetch_int (drivers_cpp_filename, __LINE__));//op
+    TRY_CALL_VOID(var, f$fetch_long (drivers_cpp_filename, __LINE__));//query_id
+    int error_code = TRY_CALL(int, bool, f$fetch_int (drivers_cpp_filename, __LINE__));
+    string error = TRY_CALL(string, bool, f$fetch_string (drivers_cpp_filename, __LINE__));
     (void)error_code;
     return false;
   }
-  var result = TRY_CALL(var, var, f$fetch_memcache_value(string(), -1));
+  var result = TRY_CALL(var, var, f$fetch_memcache_value(drivers_cpp_filename, __LINE__));
   return result;
 }
 
@@ -1634,7 +1638,7 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
     return false;
   }
 
-  int res = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, bool, (f$fetch_int (drivers_cpp_filename, __LINE__)));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
 
@@ -1678,9 +1682,9 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
     return false;
   }
 
-  int res = TRY_CALL(int, var, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, var, (f$fetch_int (drivers_cpp_filename, __LINE__)));//TODO __FILE__ and __LINE__
   if (res == MEMCACHE_VALUE_LONG) {
-    return TRY_CALL(var, var, (f$fetch_long (string(), -1)));
+    return TRY_CALL(var, var, (f$fetch_long (drivers_cpp_filename, __LINE__)));
   }
 
   return false;
@@ -1721,7 +1725,7 @@ bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double time
     return false;
   }
 
-  int res = TRY_CALL(int, bool, (f$fetch_int (string(), -1)));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, bool, (f$fetch_int (drivers_cpp_filename, __LINE__)));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
 
@@ -2879,6 +2883,13 @@ void drivers_init_static (void) {
   INIT_VAR(var, *mc_res_storage);
   mc_res = reinterpret_cast <var *> (mc_res_storage);
 
+  INIT_VAR(string, drivers_cpp_filename);
+  INIT_VAR(string, drivers_h_filename);
+
+  drivers_cpp_filename = string("drivers.cpp", 11);
+  drivers_h_filename = string("drivers.h", 9);
+
+
   DBNoDie = false;
 }
 
@@ -2902,4 +2913,7 @@ void drivers_free_static (void) {
   CLEAR_VAR(MyDB, v$DB_Proxy);
   CLEAR_VAR(MyDB, v$DB6666);
   CLEAR_VAR(MyDB, v$DB7778);
+
+  CLEAR_VAR(string, drivers_cpp_filename);
+  CLEAR_VAR(string, drivers_h_filename);
 }
