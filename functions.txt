@@ -425,6 +425,8 @@ function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 
+function xor_strings ($s ::: string, $t ::: string) ::: string;
+
 define_raw ('LC_ALL', 6);
 define_raw ('LC_COLLATE', 3);
 define_raw ('LC_CTYPE', 0);

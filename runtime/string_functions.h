@@ -315,3 +315,4 @@ inline string f$strtr (const string &subject, const var &replace_pairs) {
   return f$strtr (subject, replace_pairs.as_array ("strtr", 2));
 }
 
+string f$xor_strings (const string &s, const string &t);

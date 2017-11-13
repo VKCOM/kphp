@@ -2526,3 +2526,18 @@ string f$wordwrap (const string &str, int width, string brk, bool cut) {
   result.append (str, first, str.size() - first);
   return result;
 }
+
+string f$xor_strings (const string &s, const string &t) {
+  string::size_type length = min(s.size(), t.size());
+  string result(length, ' ');
+  const char *s_str = s.c_str();
+  const char *t_str = t.c_str();
+  char *res_str = result.buffer();
+  for (string::size_type i = 0; i < length; i++) {
+    *res_str = *s_str ^ *t_str;
+    ++s_str;
+    ++t_str;
+    ++res_str;
+  }
+  return result;
+}
