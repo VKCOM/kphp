@@ -23,6 +23,7 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 
@@ -1938,6 +1939,7 @@ void init_static_once (void) {
   regexp::init_static();
   resumable_init_static_once();
   rpc_init_static_once();
+  udp_init_static_once();
 }
 
 
@@ -1959,6 +1961,7 @@ void init_static (void) {
   rpc_init_static();
   streams_init_static();
   string_buffer_init_static(static_buffer_length_limit);
+  udp_init_static();
 
   shutdown_functions_count = 0;
   finished = false;
@@ -2017,6 +2020,7 @@ void free_static (void) {
   openssl_free_static();
   rpc_free_static();
   streams_free_static();
+  udp_free_static();
 
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {

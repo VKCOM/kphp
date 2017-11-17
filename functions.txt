@@ -734,7 +734,7 @@ function stream_context_set_option (&$context, $options_or_wrapper_name ::: var,
 define (STREAM_CLIENT_CONNECT, 1);
 define (DEFAULT_SOCKET_TIMEOUT, 60);
 
-function stream_socket_client ($url ::: string, &$error_number = TODO, &$error_description = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null);
+function stream_socket_client ($url ::: string, &$error_number ::: var = TODO, &$error_description ::: var = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null);
 function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
 function stream_set_write_buffer ($stream, $size ::: int) ::: bool;
 function stream_set_read_buffer ($stream, $size ::: int) ::: bool;
