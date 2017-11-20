@@ -874,7 +874,6 @@ class CollectDefinesPass : public FunctionPassBase {
     }
 };
 
-/*** Collect defines declarations ***/
 class CheckReturnsPass : public FunctionPassBase {
   private:
     bool have_void;
