@@ -1385,6 +1385,7 @@ class PreprocessVarargPass : public FunctionPassBase {
           CREATE_VERTEX(expr, op_ternary, isset, result_value, def);
           CREATE_VERTEX(set, op_set, var, expr);
           params_init.push_back(set);
+          ii++;
         }
 
         if (!params_init.empty()) {
