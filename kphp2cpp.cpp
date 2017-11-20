@@ -116,7 +116,7 @@ int parse_args_f(int i) {
     env->set_warnings_level (level);
     break;
   }
-  case 249:
+  case 2003:
     printf("%s\n", get_version_string());
     exit(0);
     break;
