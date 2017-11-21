@@ -1,5 +1,3 @@
-#define _FILE_OFFSET_BITS 64
-
 #include "runtime/string_functions.h"
 #include "runtime/integer_types.h"
 

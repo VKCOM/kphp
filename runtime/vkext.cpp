@@ -1,5 +1,3 @@
-#define _FILE_OFFSET_BITS 64
-
 #include "runtime/vkext.h"
 
 #include <sys/time.h>

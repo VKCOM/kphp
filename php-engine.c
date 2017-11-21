@@ -1,5 +1,3 @@
-#define _FILE_OFFSET_BITS 64
-
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>

@@ -1,5 +1,3 @@
-#define _FILE_OFFSET_BITS 64
-
 #include "PHP/php-queries.h"
 
 #include <cassert>

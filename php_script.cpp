@@ -1,4 +1,3 @@
-#define _FILE_OFFSET_BITS 64
 #include "PHP/php_script.h"
 
 #include <cassert>

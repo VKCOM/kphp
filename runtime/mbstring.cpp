@@ -1,5 +1,3 @@
-#define _FILE_OFFSET_BITS 64
-
 #include "runtime/mbstring.h"
 
 #include "common/unicode-utils.h"

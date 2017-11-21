@@ -1,5 +1,3 @@
-#define _FILE_OFFSET_BITS 64
-
 #include "runtime/array_functions.h"
 
 array <string> explode (char delimiter, const string &str, int limit) {
