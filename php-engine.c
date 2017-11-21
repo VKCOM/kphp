@@ -191,7 +191,7 @@ int get_target_impl (struct conn_target *ct) {
 }
 
 int get_target_by_pid (int ip, int port, struct conn_target *ct) {
-  ct->endpoint = make_inet_sockaddr_storage(ntohl(ip), port);
+  ct->endpoint = make_inet_sockaddr_storage(ip, port);
 
   return get_target_impl (ct);
 }
