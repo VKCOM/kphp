@@ -1839,7 +1839,7 @@ class CFGCallback : public cfg::CFGCallbackBase {
       for (int i = 0; i < (int)uninited_vars.size(); i++) {
         VertexPtr v = uninited_vars[i];
         VarPtr var = v->get_var_id();
-        if (tinf::get_type (v)->ptype() == tp_var) {
+        if (tinf::get_type (v)->ptype() == tp_var || v->extra_type == op_ex_var_superlocal) {
           continue;
         }
 
