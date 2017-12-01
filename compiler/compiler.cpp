@@ -2847,12 +2847,12 @@ class CollectClassF {
     }
 };
 
-class GenerateInheritedMethodsF {
+class ClassSetParentPass {
   public:
     DUMMY_ON_FINISH;
     template <class OutputStreamT>
     void execute (ClassPtr data, OutputStreamT &os __attribute__((unused))) {
-      stage::set_name("generate-inherited-methods");
+      stage::set_name("class-set-parent");
       if (!data->extends.empty()) {
         data->parent_class = G->get_class(data->extends);
         kphp_assert(data->parent_class.not_null());
@@ -3026,9 +3026,9 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <WriteFilesF,
          DataStream <WriterData *>,
          EmptyStream> write_files_pipe (false);
-    Pipe <GenerateInheritedMethodsF,
+    Pipe <ClassSetParentPass,
           DataStream <ClassPtr>,
-          DataStream <FunctionPtr> > generate_inherited_methods_pipe (true);
+          DataStream <FunctionPtr> > class_set_parent_pipe (true);
 
 
     pipe_input (load_file_pipe).set_stream (&file_stream);
@@ -3083,7 +3083,7 @@ bool compiler_execute (KphpEnviroment *env) {
     scheduler_constructor (*scheduler, collect_required_pipe) >> use_third_output() >>
       apply_break_file_pipe;
     scheduler_constructor (*scheduler, collect_classes_pipe) >> use_second_output() >>
-      generate_inherited_methods_pipe >>
+      class_set_parent_pipe >>
       calc_locations_pipe;
 
     get_scheduler()->execute();
