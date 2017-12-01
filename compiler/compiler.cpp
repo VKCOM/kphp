@@ -2860,15 +2860,15 @@ class ClassSetParentPass {
         data->parent_class = ClassPtr();
       }
       VertexPtr parent = data->root.as<op_class>()->parent();
-      fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
-      fprintf(stdout, "init_function: ");
-      fprintf(stdout, "  %s\n", data->init_function->name.c_str());
+//      fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
+//      fprintf(stdout, "init_function: ");
+//      fprintf(stdout, "  %s\n", data->init_function->name.c_str());
       os << ReadyFunctionPtr(data->init_function);
-      fprintf(stdout, "methods: ");
-      FOREACH(data->static_methods, method_ptr) {
-        fprintf(stdout, "  %s\n", method_ptr->second->name.c_str());
-//        os << ReadyFunctionPtr(*method_ptr);
-      }
+//      fprintf(stdout, "methods: ");
+//      FOREACH(data->static_methods, method_ptr) {
+//        fprintf(stdout, "  %s\n", method_ptr->second->name.c_str());
+////        os << ReadyFunctionPtr(*method_ptr);
+//      }
     }
 };
 
