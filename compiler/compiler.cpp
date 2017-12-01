@@ -2859,7 +2859,7 @@ class ClassSetParentPass {
       } else {
         data->parent_class = ClassPtr();
       }
-      VertexPtr parent = data->root.as<op_class>()->parent();
+//      VertexPtr parent = data->root.as<op_class>()->parent();
 //      fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
 //      fprintf(stdout, "init_function: ");
 //      fprintf(stdout, "  %s\n", data->init_function->name.c_str());
