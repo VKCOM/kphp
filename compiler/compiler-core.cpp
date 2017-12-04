@@ -554,19 +554,38 @@ bool try_optimize_var (VarPtr var) {
   return __sync_bool_compare_and_swap (&var->optimize_flag, false, true);
 }
 
-VertexPtr conv_to_func_ptr (VertexPtr call) {
-  if (call->type() != op_func_ptr) {
-    VertexPtr name_v = GenTree::get_actual_value (call);
-    string name;
-    if (name_v->type() == op_string) {
-      name = name_v.as <op_string>()->str_val;
-    } else if (name_v->type() == op_func_name) {
-      name = name_v.as <op_func_name>()->str_val;
+string conv_to_func_ptr_name(VertexPtr call) {
+  VertexPtr name_v = GenTree::get_actual_value (call);
+  string name;
+  if (name_v->type() == op_string) {
+    name = name_v.as <op_string>()->str_val;
+  } else if (name_v->type() == op_func_name) {
+    name = name_v.as <op_func_name>()->str_val;
+  } else if (name_v->type() == op_array) {
+    if (name_v->size() == 2) {
+      VertexPtr class_name = name_v->ith(0);
+      VertexPtr fun_name = name_v->ith(1);
+      class_name = GenTree::get_actual_value(class_name);
+      fun_name = GenTree::get_actual_value(fun_name);
+      if (class_name->type() == op_string && fun_name->type() == op_string) {
+        name = class_name.as<op_string>()->str_val + "::" + fun_name.as<op_string>()->str_val;
+      }
     }
+  }
+  if (name.find("::") != string::npos && name[0] != '\\') {
+    return "";
+  }
+  return name;
+}
+
+VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function) {
+  if (call->type() != op_func_ptr) {
+    string name = conv_to_func_ptr_name(call);
     if (!name.empty()) {
+      name = get_full_static_member_name(current_function, name, true);
       CREATE_VERTEX (new_call, op_func_ptr);
       new_call->str_val = name;
-      set_location (new_call, name_v->get_location());
+      set_location (new_call, call->get_location());
       call = new_call;
     }
   }
@@ -635,7 +654,7 @@ VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
           call_args[i] = GenTree::conv_to (call_args[i], param->type_help, param->var()->ref_flag);
         }
       } else if (func_args[i]->type() == op_func_param_callback) {
-        call_args[i] = conv_to_func_ptr (call_args[i]);
+        call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
         kphp_error (call_args[i]->type() == op_func_ptr, "Function pointer expected");
       } else {
         kphp_fail();

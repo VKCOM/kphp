@@ -90,7 +90,10 @@ namespace tinf {
     if (node->try_start_recalc()) {
       Q->push (node);
     } else if (is_finished()) {
-      kphp_assert (node->get_holder_id() == get_thread_id());
+      if (node->get_holder_id() != get_thread_id()) {
+        fprintf(stderr, "node->get_holder_id() = %d, get_thread_id = %d\n", node->get_holder_id(), get_thread_id());
+        kphp_assert(node->get_holder_id() == get_thread_id());
+      }
     }
   }
   bool TypeInferer::add_node (Node *node) {

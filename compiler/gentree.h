@@ -72,7 +72,7 @@ public:
   VertexPtr get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary);
   VertexPtr get_expression_impl (bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement();
+  VertexPtr get_statement(const string& php_doc = "");
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
