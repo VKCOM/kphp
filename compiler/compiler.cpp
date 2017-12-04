@@ -383,10 +383,12 @@ class CollectRequiredPass : public FunctionPassBase {
         if (name != "") {
           string fun_name = get_full_static_member_name(current_function, name, true);
           callback->require_function_set(fs_function, name, current_function);
+          /* TODO fix it
           string class_name = get_class_name_for(name, '/');
           if (!class_name.empty()) {
             require_class(class_name, "");
           }
+          */
         }
       }
 
