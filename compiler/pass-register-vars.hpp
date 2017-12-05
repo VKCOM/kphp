@@ -247,15 +247,6 @@ class CollectConstVarsPass : public FunctionPassBase {
     }
 };
 
-static inline string replace_characters(string s, char from, char to) {
-  for (size_t i = 0; i < s.length(); i++) {
-    if (s[i] == from) {
-      s[i] = to;
-    }
-  }
-  return s;
-}
-
 /*** Register variables ***/
 // 1. Function parametres (with default values)
 // 2. Global variables

@@ -849,6 +849,7 @@ class ProfilerRaw {
   F (create_switch_vars)\
   F (collect_required)\
   F (calc_locations)\
+  F (preprocess_defines)\
   F (collect_defines)\
   F (check_returns)\
   F (register_defines)\

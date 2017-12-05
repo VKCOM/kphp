@@ -1,5 +1,6 @@
 #include "compiler/name-gen.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data.h"
 #include "compiler/io.h"
 #include "compiler/stage.h"
@@ -155,4 +156,23 @@ string get_full_static_member_name(FunctionPtr function, string const &name, boo
   } else {
     return name;
   }
+}
+
+string resolve_define_name(string name) {
+  size_t pos$$ = name.find("$$");
+  if (pos$$ != string::npos) {
+    string class_name = name.substr(0, pos$$);
+    string define_name = name.substr(pos$$ + 2);
+    const string &real_class_name = replace_characters(class_name, '$', '\\');
+    ClassPtr klass = G->get_class(real_class_name);
+    if (klass.not_null()) {
+      while (klass.not_null() && klass->constants.find(define_name) == klass->constants.end()) {
+        klass = klass->parent_class;
+      }
+      if (klass.not_null()) {
+        name = "c#" + replace_characters(klass->name, '\\', '$') + "$$" + define_name;
+      }
+    }
+  }
+  return name;
 }

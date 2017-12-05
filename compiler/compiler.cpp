@@ -486,7 +486,6 @@ class CollectRequiredF {
         (function->namespace_name + "\\" + function->class_name) != function->class_context_name) {
         return;
       }
-
       os << ReadyFunctionPtr (function);
     }
 };
@@ -570,7 +569,6 @@ class CreateSwitchForeachVarsF : public FunctionPassBase {
 
       return v;
     }
-
 };
 
 /*** Calculate proper location field for each node ***/
@@ -589,15 +587,59 @@ class CalcLocationsPass : public FunctionPassBase {
     }
 };
 
-class PreprocessDefinesConcatenationPass : public FunctionPassBase {
+class CollectDefinesToVectorPass : public FunctionPassBase {
   private:
-    AUTO_PROF (collect_defines);
-    map<string, string> local_str_defines;
-    map<string, VertexPtr> local_int_defines;
+    vector<VertexPtr> defines;
   public:
     string get_description() {
       return "Process defines concatenation";
     }
+    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
+      if (root->type() == op_define) {
+        defines.push_back(root);
+      }
+      return root;
+    }
+    const vector<VertexPtr>& get_vector() {
+      return defines;
+    }
+};
+
+class PreprocessDefinesConcatenationF {
+  private:
+    AUTO_PROF (preprocess_defines);
+    map<string, string> str_defines;
+    map<string, VertexPtr> int_defines;
+    set<string> in_progress;
+    set<string> done;
+    map<string, VertexPtr> define_vertex;
+    vector<string> stack;
+
+    DataStreamRaw<VertexPtr> defines_stream;
+    DataStreamRaw<FunctionPtr> all_fun;
+  public:
+
+    PreprocessDefinesConcatenationF() {
+      defines_stream.set_sink(true);
+      all_fun.set_sink(true);
+    }
+
+    string get_description() {
+      return "Process defines concatenation";
+    }
+
+    template <class OutputStreamT>
+    void execute (FunctionPtr function, OutputStreamT &os __attribute__((unused))) {
+      CollectDefinesToVectorPass pass;
+      run_function_pass (function, &pass);
+
+      vector<VertexPtr> vs = pass.get_vector();
+      for (size_t i = 0; i < vs.size(); i++) {
+        defines_stream << vs[i];
+      }
+      all_fun << function;
+    }
+
 
     bool check_concat(VertexPtr v) {
       if (v->type() == op_string) {
@@ -612,7 +654,8 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
         return true;
       }
       if (v->type() == op_func_name) {
-        return local_str_defines.find(v.as<op_func_name>()->str_val) != local_str_defines.end();
+        string name = v.as<op_func_name>()->str_val;
+        return str_defines.find(resolve_define_name(name)) != str_defines.end();
       }
       return false;
     }
@@ -641,7 +684,8 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
           break;
       }
       if (v->type() == op_func_name) {
-        return local_int_defines.find(v.as<op_func_name>()->str_val) != local_int_defines.end();
+        string name = v.as<op_func_name>()->str_val;
+        return int_defines.find(resolve_define_name(name)) != int_defines.end();
       }
       return false;
     }
@@ -676,8 +720,9 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
           break;
       }
       if (v->type() == op_func_name) {
-        map<string,VertexPtr>::iterator iter = local_int_defines.find(v.as<op_func_name>()->str_val);
-        kphp_assert(iter != local_int_defines.end());
+        string name = v.as<op_func_name>()->str_val;
+        map<string,VertexPtr>::iterator iter = int_defines.find(resolve_define_name(name));
+        kphp_assert(iter != int_defines.end());
         return iter->second;
       }
       kphp_assert(false);
@@ -696,56 +741,126 @@ class PreprocessDefinesConcatenationPass : public FunctionPassBase {
         return res;
       }
       if (v->type() == op_func_name) {
-        map<string,string>::iterator iter = local_str_defines.find(v.as<op_func_name>()->str_val);
-        kphp_assert(iter != local_str_defines.end());
+        string name = v.as<op_func_name>()->str_val;
+        map<string,string>::iterator iter = str_defines.find(resolve_define_name(name));
+        kphp_assert(iter != str_defines.end());
         return iter->second;
       }
       kphp_fail();
     }
 
-    VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
-      if (root->type() == op_define) {
-        VertexAdaptor <meta_op_define> define = root;
-        VertexPtr name = define->name(), val = define->value();
+    template <class OutputStreamT>
+    void on_finish (OutputStreamT &os) {
+      stage::set_name ("Preprocess defines");
+      stage::set_file (SrcFilePtr());
 
-        kphp_error_act (
-          name->type() == op_string,
-          "Define: first parameter must be a string",
-          return root
+      stage::die_if_global_errors();
+
+      vector<VertexPtr> defines = defines_stream.get_as_vector();
+      for (size_t i = 0; i < defines.size(); i++) {
+        VertexPtr name_v = defines[i].as<op_define>()->name();
+        stage::set_location(defines[i].as<op_define>()->location);
+        kphp_error_return (
+          name_v->type() == op_string,
+          "Define: first parameter must be a string"
         );
 
-        if (val->type() != op_string && check_concat(val)) {
-          string collected = collect_concat(val);
-          CREATE_VERTEX(new_val, op_string);
-          new_val->str_val = collected;
-          new_val->location = val->get_location();
-          val = new_val;
-          CREATE_VERTEX(new_define, op_define, name, val);
-          new_define->location = define->get_location();
-          define = new_define;
+        string name = name_v.as<op_string>()->str_val;
+        if (!define_vertex.insert(make_pair(name, defines[i])).second) {
+          kphp_error_return(0, "Duplicate define declaration");
         }
+      }
+      for (size_t i = 0; i < defines.size(); i++) {
+        process_define(defines[i]);
+      }
+      vector<FunctionPtr> funs = all_fun.get_as_vector();
+      for (size_t i = 0; i < funs.size(); i++) {
+        os << funs[i];
+      }
+    }
 
-        if (val->type() != op_int_const && check_const(val)) {
-          val = make_const(val);
-          CREATE_VERTEX(new_define, op_define, name, val);
-          new_define->location = define->get_location();
-          define = new_define;
-          local_int_defines[name.as<op_string>()->str_val] = val;
+    void process_define_recursive(VertexPtr root) {
+      if (root->type() == op_func_name) {
+        string name = root.as<op_func_name>()->str_val;
+        name = resolve_define_name(name);
+        map<string, VertexPtr>::iterator it = define_vertex.find(name);
+        if (it != define_vertex.end()) {
+          process_define(it->second);
+        } else {
+          fprintf(stderr, "Unknown func_name %s in define\n", name.c_str());
         }
+      }
+      FOREACH(root, i) {
+        process_define_recursive(*i);
+      }
+    }
 
-        if (val->type() == op_string) {
-          local_str_defines[name.as<op_string>()->str_val] = val.as<op_string>()->str_val;
-        }
+    void process_define(VertexPtr root) {
+      stage::set_location(root->location);
+      VertexAdaptor <meta_op_define> define = root;
+      VertexPtr name_v = define->name(), val = define->value();
 
-        if (val->type() == op_int_const) {
-          local_int_defines[name.as<op_string>()->str_val] = val;
-        }
+      kphp_error_return (
+        name_v->type() == op_string,
+        "Define: first parameter must be a string"
+      );
 
-        return define;
+      string name = name_v.as<op_string>()->str_val;
+
+      if (done.find(name) != done.end()) {
+        return;
       }
 
-      return root;
+      if (in_progress.find(name) != in_progress.end()) {
+        stringstream stream;
+        int id = -1;
+        for (size_t i = 0; i < stack.size(); i++) {
+          if (stack[i] == name) {
+            id = i;
+            break;
+          }
+        }
+        kphp_assert(id != -1);
+        for (size_t i = id; i < stack.size(); i++) {
+          stream << stack[i] << " -> ";
+        }
+        stream << name;
+        kphp_error_return(0, dl_pstr("Recursive define dependency:\n%s\n", stream.str().c_str()));
+      }
+
+      in_progress.insert(name);
+      stack.push_back(name);
+
+      process_define_recursive(val);
+      stage::set_location(root->location);
+
+      in_progress.erase(name);
+      stack.pop_back();
+      done.insert(name);
+
+      if (val->type() != op_string && check_concat(val)) {
+        string collected = collect_concat(val);
+        CREATE_VERTEX(new_val, op_string);
+        new_val->str_val = collected;
+        new_val->location = val->get_location();
+        define->value() = val = new_val;
+      }
+
+      if (val->type() == op_int_const) {
+        int_defines[name] = val;
+      } else {
+        if (check_const(val)) {
+          VertexPtr new_val = make_const(val);
+          define->value() = val = new_val;
+          int_defines[name] = val;
+        }
+      }
+
+      if (val->type() == op_string) {
+        str_defines[name] = val.as<op_string>()->str_val;
+      }
     }
+
 };
 
 
@@ -1004,21 +1119,7 @@ class RegisterDefinesPass : public FunctionPassBase {
 
       if (root->type() == op_func_name) {
         string name = root->get_string();
-        size_t pos$$ = name.find("$$");
-        if (pos$$ != string::npos) {
-          string class_name = name.substr(0, pos$$);
-          string define_name = name.substr(pos$$ + 2);
-          const string &real_class_name = replace_characters(class_name, '$', '\\');
-          ClassPtr klass = G->get_class(real_class_name);
-          if (klass.not_null()) {
-            while (klass.not_null() && klass->constants.find(define_name) == klass->constants.end()) {
-              klass = klass->parent_class;
-            }
-            if (klass.not_null()) {
-              name = "c#" + replace_characters(klass->name, '\\', '$') + "$$" + define_name;
-            }
-          }
-        }
+        name = resolve_define_name(name);
         DefinePtr d = G->get_define (name);
         if (d.not_null()) {
           assert (d->name == name);
@@ -2771,38 +2872,19 @@ class CollectClassF {
     template <class OutputStreamT>
     void execute (ReadyFunctionPtr ready_data, OutputStreamT &os) {
       FunctionPtr data = ready_data.function;
-      os << data;
       if (data->class_id.not_null() && data->class_id->init_function == data) {
+        ClassPtr klass = data->class_id;
         if (!data->class_extends.empty()) {
-          data->class_id->extends = resolve_uses(data, data->class_extends, '\\');
+          klass->extends = resolve_uses(data, data->class_extends, '\\');
         }
-        os << data->class_id;
+        if (!klass->extends.empty()) {
+          klass->parent_class = G->get_class(klass->extends);
+          kphp_assert(klass->parent_class.not_null());
+        } else {
+          klass->parent_class = ClassPtr();
+        }
       }
-    }
-};
-
-class ClassSetParentPass {
-  public:
-    DUMMY_ON_FINISH;
-    template <class OutputStreamT>
-    void execute (ClassPtr data, OutputStreamT &os __attribute__((unused))) {
-      stage::set_name("class-set-parent");
-      if (!data->extends.empty()) {
-        data->parent_class = G->get_class(data->extends);
-        kphp_assert(data->parent_class.not_null());
-      } else {
-        data->parent_class = ClassPtr();
-      }
-//      VertexPtr parent = data->root.as<op_class>()->parent();
-//      fprintf(stdout, "we have class %s, its parent %s\n", data->name.c_str(), parent.is_null() ? "null" : string(parent.as<op_func_name>()->str_val).c_str());
-//      fprintf(stdout, "init_function: ");
-//      fprintf(stdout, "  %s\n", data->init_function->name.c_str());
-      os << ReadyFunctionPtr(data->init_function);
-//      fprintf(stdout, "methods: ");
-//      FOREACH(data->static_methods, method_ptr) {
-//        fprintf(stdout, "  %s\n", method_ptr->second->name.c_str());
-////        os << ReadyFunctionPtr(*method_ptr);
-//      }
+      os << data;
     }
 };
 
@@ -2880,7 +2962,9 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <FunctionPassF <CalcLocationsPass>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > calc_locations_pipe (true);
-    FunctionPassPipe <PreprocessDefinesConcatenationPass>::Self process_defines_concat (true);
+    Pipe <PreprocessDefinesConcatenationF,
+        DataStream<FunctionPtr>,
+        DataStream<FunctionPtr> > process_defines_concat (true);
     FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
     FunctionPassPipe <CheckReturnsPass>::Self check_returns_pipe (true);
     Pipe <SyncPipeF <FunctionPtr>,
@@ -2896,8 +2980,8 @@ bool compiler_execute (KphpEnviroment *env) {
          DataStream <ReadyFunctionPtr>,
          DataStream <ReadyFunctionPtr> > first_class_sync_pipe (true, true);
     Pipe <CollectClassF,
-          DataStream <ReadyFunctionPtr>,
-          DataStreamPair <FunctionPtr, ClassPtr> > collect_classes_pipe (true);
+         DataStream <ReadyFunctionPtr>,
+         DataStream <FunctionPtr> > collect_classes_pipe (true);
     FunctionPassPipe <RegisterDefinesPass>::Self register_defines_pipe (true);
     FunctionPassPipe <PreprocessVarargPass>::Self preprocess_vararg_pipe (true);
     FunctionPassPipe <PreprocessEq3Pass>::Self preprocess_eq3_pipe (true);
@@ -2960,9 +3044,6 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <WriteFilesF,
          DataStream <WriterData *>,
          EmptyStream> write_files_pipe (false);
-    Pipe <ClassSetParentPass,
-          DataStream <ClassPtr>,
-          DataStream <FunctionPtr> > class_set_parent_pipe (true);
 
 
     pipe_input (load_file_pipe).set_stream (&file_stream);
@@ -2975,9 +3056,9 @@ bool compiler_execute (KphpEnviroment *env) {
       create_switch_foreach_vars_pipe >>
       collect_required_pipe >> use_first_output() >>
       first_class_sync_pipe >> sync_node() >>
-      collect_classes_pipe >> use_first_output() >>
+      collect_classes_pipe >>
       calc_locations_pipe >>
-      process_defines_concat >>
+      process_defines_concat >> sync_node() >>
       collect_defines_pipe >>
       first_sync_pipe >> sync_node() >>
       prepare_function_pipe >>
@@ -3016,9 +3097,6 @@ bool compiler_execute (KphpEnviroment *env) {
       load_file_pipe;
     scheduler_constructor (*scheduler, collect_required_pipe) >> use_third_output() >>
       apply_break_file_pipe;
-    scheduler_constructor (*scheduler, collect_classes_pipe) >> use_second_output() >>
-      class_set_parent_pipe >>
-      calc_locations_pipe;
 
     get_scheduler()->execute();
   }
