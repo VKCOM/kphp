@@ -1553,13 +1553,12 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
   f$store_int (MEMCACHE_GET);
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-  update_precise_now();
   int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
+  f$rpc_flush();
   if (is_immediate) {
-    wait_net (0);
     return true;
   }
 
@@ -1620,13 +1619,12 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
   f$store_int (expire);
   store_string (string_value.c_str(), string_value.size());
 
-  update_precise_now();
   int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
+  f$rpc_flush();
   if (is_immediate) {
-    wait_net (0);
     return true;
   }
 
@@ -1664,13 +1662,12 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
   f$store_long (v);
 
-  update_precise_now();
   int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
+  f$rpc_flush();
   if (is_immediate) {
-    wait_net (0);
     return 0;
   }
 
@@ -1707,13 +1704,12 @@ bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double time
   f$store_int (MEMCACHE_DELETE);
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-  update_precise_now();
   int request_id = rpc_send (conn, timeout, (bool) is_immediate);
   if (request_id <= 0) {
     return false;
   }
+  f$rpc_flush();
   if (is_immediate) {
-    wait_net (0);
     return true;
   }
 

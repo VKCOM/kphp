@@ -740,7 +740,6 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
   int queue_id = -1;
   int keys_n = 0;
   int first_request_id = 0;
-  update_precise_now();
   int bytes_sent = 0;
   for (typeof (keys.begin()) it = keys.begin(); it != keys.end(); ++it) {
     const string key = f$strval (it.get_value());
@@ -754,8 +753,7 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
     int current_sent_size = real_key.size() + 32;//estimate
     bytes_sent += current_sent_size;
     if (bytes_sent >= (1 << 15) && bytes_sent > current_sent_size) {
-      wait_net (0);
-      update_precise_now();
+      f$rpc_flush();
       bytes_sent = current_sent_size;
     }
     int request_id = rpc_send (conn, timeout, (bool) is_immediate);
@@ -773,7 +771,7 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
     }
   }
   if (bytes_sent > 0) {
-    wait_net (0);
+    f$rpc_flush();
   }
 
   if (queue_id == -1) {
