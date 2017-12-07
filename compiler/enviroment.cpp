@@ -362,6 +362,7 @@ void KphpEnviroment::init_dest_dirs() {
   as_file (&user_binary_path_);
 
   cxx_flags_ += " -iquote" + get_dest_cpp_dir();
+  cxx_flags_ += " -std=gnu++03";
 }
 
 void KphpEnviroment::debug() const {
