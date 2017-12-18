@@ -323,6 +323,13 @@ string f$fetch_string (const string &file, int line) {
   return string (str, result_len);
 }
 
+int f$fetch_string_as_int (const string &file, int line) {
+  int result_len;
+  const char *str = TRY_CALL(const char*, int, f$fetch_string_raw(file, line, &result_len));
+  return string::to_int (str, result_len);
+}
+
+
 var f$fetch_memcache_value(const string& file, int line) {
   int res = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
   switch (res) {

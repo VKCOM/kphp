@@ -152,6 +152,7 @@ public:
 
   inline var to_numeric (void) const;
   inline bool to_bool (void) const;
+  inline static int to_int (const char *s, int l);
   inline int to_int (void) const;
   inline double to_float (void) const;
   inline const string &to_string (void) const;

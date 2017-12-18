@@ -780,24 +780,29 @@ bool string::to_bool (void) const {
   return l >= 2 || (l == 1 && p[0] != '0');
 }
 
-int string::to_int (void) const {
-  int mul = 1, l = size(), cur = 0;
-  if (l > 0 && (p[0] == '-' || p[0] == '+')) {
-    if (p[0] == '-') {
+int string::to_int (const char *s, int l) {
+  int mul = 1, cur = 0;
+  if (l > 0 && (s[0] == '-' || s[0] == '+')) {
+    if (s[0] == '-') {
       mul = -1;
     }
     cur++;
   }
 
   int val = 0;
-  while (cur < l && '0' <= p[cur] && p[cur] <= '9') {
-    val = val * 10 + p[cur++] - '0';
+  while (cur < l && '0' <= s[cur] && s[cur] <= '9') {
+    val = val * 10 + s[cur++] - '0';
   }
 
 //  if (cur < l) {
 //    php_warning ("Part of the string \"%s\" was ignored while converting to int", c_str());
 //  }
   return val * mul;
+}
+
+
+int string::to_int (void) const {
+  return to_int(p, size());
 }
 
 double string::to_float (void) const {
