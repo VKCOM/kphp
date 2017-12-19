@@ -888,7 +888,7 @@ bool string::is_numeric (void) const {
     return false;
   }
 
-  if (*s == 'e') {
+  if (*s == 'e' || *s == 'E') {
     s++;
     if (*s == '+' || *s == '-') {
       s++;
