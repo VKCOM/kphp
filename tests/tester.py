@@ -59,7 +59,7 @@ def run_test_mode_cmd (mode, cmd):
   return (ans_path, perf_path)
 
 def run_test_mode_php (path):
-  cmd = "php -n -d memory_limit=3072M %s" % (path)
+  cmd = "php -n -d memory_limit=3072M -d include_path=tmp %s" % (path)
   return run_test_mode_cmd ("php", cmd)
 def run_test_mode_hhvm (path):
   cmd = "hhvm  -v\"Eval.Jit=true\" %s" % (path)
