@@ -1661,7 +1661,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
       map <string, FunctionPtr> &methods = context_class_ptr->static_methods;
       if (methods.find(real_name) == methods.end()) {
         CREATE_VERTEX(new_name, op_func_name);
-        new_name->set_string(replace_backslashs(class_context, '$') + "$$" + real_name + "$$" + replace_backslashs(class_context, '$'));
+        new_name->set_string(replace_backslashs(class_context, '$') + "$$" + real_name);
         vector <VertexPtr> new_params_next;
         vector <VertexPtr> new_params_call;
         FOREACH(params_next, parameter) {
