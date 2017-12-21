@@ -1900,6 +1900,9 @@ static string str_replace_char (char c, const string &replace, const string &sub
   int count = 0;
   const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
   string result;
+  if (!replace.empty()) {
+    result.reserve_at_least(subject.size());
+  }
   while (1) {
     const char *pos = (const char *)memchr (piece, c, piece_end - piece);
     if (pos == NULL) {
