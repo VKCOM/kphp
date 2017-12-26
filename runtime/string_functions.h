@@ -154,6 +154,44 @@ string f$str_repeat (const string &s, int multiplier);
 
 string f$str_replace (const string &search, const string &replace, const string &subject, int &replace_count = str_replace_count_dummy);
 
+void str_replace_inplace (const string &search, const string &replace, string &subject, int &replace_count);
+string str_replace (const string &search, const string &replace, const string &subject, int &replace_count);
+
+template<typename T1, typename T2>
+string str_replace_string_array (const array<T1> &search, const array<T2> &replace, const string &subject, int &replace_count) {
+  string result = subject;
+
+  string replace_value;
+  typename array <T2>::const_iterator cur_replace_val;
+  cur_replace_val = replace.begin();
+
+  for (typename array <T1>::const_iterator it = search.begin(); it != search.end(); ++it) {
+    if (cur_replace_val != replace.end()) {
+      replace_value = f$strval (cur_replace_val.get_value());
+      ++cur_replace_val;
+    } else {
+      replace_value = string();
+    }
+
+    const string &search_string = f$strval (it.get_value());
+    if (search_string.size() >= replace_value.size()) {
+      str_replace_inplace (search_string, replace_value, result, replace_count);
+    } else {
+      result = str_replace (search_string, replace_value, result, replace_count);
+    }
+  }
+
+  return result;
+};
+
+template<typename T1, typename T2>
+string f$str_replace (const array<T1> &search, const array<T2> &replace, const string &subject, int &replace_count = str_replace_count_dummy) {
+  replace_count = 0;
+  return str_replace_string_array(search, replace, subject, replace_count);
+}
+
+string f$str_replace (const var &search, const var &replace, const string &subject, int &replace_count = str_replace_count_dummy);
+
 var f$str_replace (const var &search, const var &replace, const var &subject, int &replace_count = str_replace_count_dummy);
 
 array <string> f$str_split (const string &str, int split_length = 1);

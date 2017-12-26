@@ -1925,7 +1925,7 @@ static string str_replace_char (char c, const string &replace, const string &sub
   return string();
 }
 
-static void str_replace_inplace (const string &search, const string &replace, string &subject, int &replace_count) {
+void str_replace_inplace (const string &search, const string &replace, string &subject, int &replace_count) {
   if ((int)search.size() == 0) {
     php_warning ("Parameter search is empty in function str_replace");
     return;
@@ -1968,7 +1968,7 @@ static void str_replace_inplace (const string &search, const string &replace, st
   php_assert (0); // unreachable
 }
 
-static string str_replace (const string &search, const string &replace, const string &subject, int &replace_count) {
+string str_replace (const string &search, const string &replace, const string &subject, int &replace_count) {
   if ((int)search.size() == 0) {
     php_warning ("Parameter search is empty in function str_replace");
     return subject;
@@ -1999,28 +1999,14 @@ static string str_replace (const string &search, const string &replace, const st
   return string();
 }
 
-inline var str_replace_string (const var &search, const var &replace, const string &subject, int &replace_count) {
-  if (search.is_array()) {
+string str_replace_string (const var &search, const var &replace, const string &subject, int &replace_count) {
+  if (search.is_array() && replace.is_array()) {
+    return str_replace_string_array(search.as_array("", -1), replace.as_array("", -1), subject, replace_count);
+  } else if (search.is_array()) {
     string result = subject;
-
-    string replace_value;
-    array <var>::const_iterator cur_replace_val;
-    if (replace.is_array()) {
-      cur_replace_val = replace.begin();
-    } else {
-      replace_value = replace.to_string();
-    }
+    const string &replace_value = replace.to_string();
 
     for (array <var>::const_iterator it = search.begin(); it != search.end(); ++it) {
-      if (replace.is_array()) {
-        if (cur_replace_val != replace.end()) {
-          replace_value = f$strval (cur_replace_val.get_value());
-          ++cur_replace_val;
-        } else {
-          replace_value = string();
-        }
-      }
-
       const string &search_string = f$strval (it.get_value());
       if (search_string.size() >= replace_value.size()) {
         str_replace_inplace (search_string, replace_value, result, replace_count);
@@ -2028,7 +2014,6 @@ inline var str_replace_string (const var &search, const var &replace, const stri
         result = str_replace (search_string, replace_value, result, replace_count);
       }
     }
-
     return result;
   } else {
     if (replace.is_array()) {
@@ -2047,6 +2032,10 @@ string f$str_replace (const string &search, const string &replace, const string 
   } else {
     return str_replace (search, replace, subject, replace_count);
   }
+}
+
+string f$str_replace (const var &search, const var &replace, const string &subject, int &replace_count) {
+  return str_replace_string (search, replace, subject, replace_count);
 }
 
 var f$str_replace (const var &search, const var &replace, const var &subject, int &replace_count) {
