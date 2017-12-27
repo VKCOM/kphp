@@ -1051,6 +1051,8 @@ int run_worker (void) {
 
     active_outbound_connections = 0;
     active_connections = 0;
+
+    reset_PID();
     //TODO: fill other stats with zero
     //
 
