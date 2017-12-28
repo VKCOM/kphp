@@ -1,7 +1,6 @@
 #include "runtime/string_functions.h"
 
 #include <clocale>
-#include <errno.h>
 
 #include "common/unicode/unicode-utils.h"
 
@@ -396,23 +395,6 @@ string f$html_entity_decode (const string &str, int flags, const string &encodin
           }
         }
 
-        if (j > i + 2 && str[i + 1] == '#') {
-          long value = -1;
-
-          errno = 0;
-          if (str[i + 2] == 'x') {
-            value = strtol(str.c_str() + i + 3, NULL, 16);
-          } else {
-            value = strtol(str.c_str() + i + 2, NULL, 10);
-          }
-
-          if (errno == 0 && value > 0 && value < 128) {
-            *p++ = (char) value;
-            i = j;
-            continue;
-          }
-        }
-
         int l = 0, r = entities_size;
         while (l + 1 < r) {
           int m = (l + r) >> 1;
@@ -422,7 +404,6 @@ string f$html_entity_decode (const string &str, int flags, const string &encodin
             l = m;
           }
         }
-
         if (strncmp (str.c_str() + i + 1, ent_to_num_s[l], j - i - 1) == 0) {
           int num = ent_to_num_i[l];
           i = j;
