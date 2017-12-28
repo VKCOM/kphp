@@ -74,6 +74,21 @@ int Location::get_line() const {
   return line;
 }
 
+bool operator<(Location const & lhs, Location const & rhs) {
+  if ((lhs.file.not_null() && rhs.file.is_null()) ||
+      (lhs.file.is_null() && rhs.file.is_null()))
+  {
+    return true;
+  }
+
+  if (lhs.file.is_null() && rhs.file.not_null()) {
+    return false;
+  }
+
+  return lhs.file->file_name < rhs.file->file_name ||
+    (lhs.file->file_name == rhs.file->file_name && lhs.line < rhs.line);
+}
+
 namespace stage {
   static TLS <StageInfo> stage_info;
 }

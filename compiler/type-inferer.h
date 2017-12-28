@@ -5,6 +5,7 @@
 #include "compiler/function-pass.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer-core.h"
+#include "compiler/io.h"
 
 tinf::Node *get_tinf_node (VertexPtr vertex);
 tinf::Node *get_tinf_node (VarPtr var);
@@ -113,6 +114,9 @@ class Restriction : public tinf::RestrictionBase {
 };
 
 class RestrictionLess : public Restriction {
+  private:
+    set<Location> uniq_locations_;
+
   public:
     tinf::Node *a_, *b_;
     string desc;
@@ -123,7 +127,7 @@ class RestrictionLess : public Restriction {
 
       }
     const char *get_description() {
-      return dl_pstr ("type inference error [%s] <%s <= %s>", desc.c_str(),
+      return dl_pstr ("%s <%s <= %s>", desc.c_str(),
           a_->get_description().c_str(), b_->get_description().c_str());
     }
     int check_impl() {
@@ -138,12 +142,69 @@ class RestrictionLess : public Restriction {
       delete new_type;
 
       if (!ok) {
-        desc = type_out (a_type) + " <= " + type_out (b_type);
+        desc = "type inference error ";
+
+        if (find_call_trace_with_error(a_)) {
+          desc += "\n";
+
+          FOREACH(uniq_locations_, it) {
+            Location const & location = *it;
+            SrcFilePtr file_ptr = location.get_file();
+            int line = location.get_line();
+
+            string_ref line_with_wrong_code = file_ptr->get_line(line);
+
+            desc += stage::to_str(location) + "; " + line_with_wrong_code.str() + " \n";
+          }
+        }
+
+        desc += "[" + type_out (a_type) + " <= " + type_out (b_type) + "]";
+
         return 2;
       } else {
         return 0;
       }
 
+    }
+
+  private:
+    bool find_call_trace_with_error(tinf::Node *cur_node, tinf::Node *parent = NULL) {
+      assert(cur_node != NULL);
+
+      bool node_is_last = true;
+      bool error_trace_found = false;
+
+      FOREACH (cur_node->next_range(), it) {
+        tinf::Edge *e = *it;
+        tinf::Node *from = e->from;
+        tinf::Node *to = e->to;
+
+        if (from != cur_node && from != parent) {
+          error_trace_found = find_call_trace_with_error(from, cur_node);
+          node_is_last = false;
+        }
+
+        if (!error_trace_found && to != cur_node && to != parent) {
+          error_trace_found = find_call_trace_with_error(to, cur_node);
+          node_is_last = false;
+        }
+      }
+
+      if (error_trace_found || node_is_last) {
+        if (b_->get_type()->ptype() != cur_node->get_type()->ptype()) {
+          if (tinf::ExprNode * expr_node = dynamic_cast<tinf::ExprNode *>(cur_node)) {
+            Location const & location = expr_node->get_location();
+
+            if (location.file.not_null()) {
+              uniq_locations_.insert(location);
+            }
+          }
+
+          return true;
+        }
+      }
+
+      return error_trace_found;
     }
 };
 

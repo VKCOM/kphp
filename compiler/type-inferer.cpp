@@ -256,6 +256,10 @@ string tinf::ExprNode::get_description() {
   return ss.str();
 }
 
+Location const & tinf::ExprNode::get_location() {
+  return expr_->get_location();
+}
+
 const TypeData *NodeRecalc::new_type() {
   return new_type_;
 }

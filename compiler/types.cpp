@@ -687,7 +687,7 @@ static inline int cmp (const TypeData *a, const TypeData *b) {
   if (a == NULL) {
     return -1;
   }
-  if (b == 0) {
+  if (b == NULL) {
     return 1;
   }
   if (a->ptype() < b->ptype()) {

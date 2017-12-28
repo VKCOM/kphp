@@ -4,6 +4,7 @@
 #include "compiler/bicycle.h"
 #include "compiler/data_ptr.h"
 #include "compiler/types.h"
+#include "compiler/location.h"
 
 namespace tinf {
   class Edge;
@@ -91,6 +92,7 @@ namespace tinf {
         return expr_;
       }
       string get_description();
+      Location const & get_location();
   };
   class TypeNode : public Node {
     public:

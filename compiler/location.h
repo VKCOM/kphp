@@ -16,3 +16,5 @@ public:
   FunctionPtr get_function() const;
   int get_line() const;
 };
+
+bool operator<(Location const & lhs, Location const & rhs);
