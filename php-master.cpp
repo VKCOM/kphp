@@ -1006,13 +1006,15 @@ int run_worker (void) {
   assert (me_workers_n < MAX_WORKERS);
 
   int new_pipe[2];
-  err = pipe (new_pipe);
+  err = pipe2(new_pipe, O_CLOEXEC);
   dl_assert (err != -1, "failed to create a pipe");
   int new_fast_pipe[2];
-  err = pipe (new_fast_pipe);
+  err = pipe2(new_fast_pipe, O_CLOEXEC);
   dl_assert (err != -1, "failed to create a pipe");
 
   tot_workers_started++;
+  const size_t workers_count = me_workers_n;
+
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
@@ -1023,13 +1025,6 @@ int run_worker (void) {
       vkprintf (0, "parent is dead just after start\n");
       exit (123);
     }
-    //verbosity = 0;
-    verbosity = save_verbosity;
-    pid = getpid();
-
-    master_pipe_write = new_pipe[1];
-    master_pipe_fast_write = new_fast_pipe[1];
-    close (new_pipe[0]);
 
     //Epoll_close should clear internal structures but shouldn't change epoll_fd.
     //The same epoll_fd will be used by master
@@ -1040,6 +1035,30 @@ int run_worker (void) {
 
     init_epoll();
 
+    //verbosity = 0;
+    verbosity = save_verbosity;
+    pid = getpid();
+
+    master_pipe_write = new_pipe[1];
+    master_pipe_fast_write = new_fast_pipe[1];
+    close(new_pipe[0]);
+    close(new_fast_pipe[0]);
+    clear_event(new_pipe[0]);
+    clear_event(new_fast_pipe[0]);
+
+    for (size_t i = 0; i < workers_count; ++i) {
+      worker_info_t *worker = workers[i];
+      close(worker->pipes[0].pipe_read);
+      close(worker->pipes[1].pipe_read);
+      clear_event(worker->pipes[0].pipe_read);
+      clear_event(worker->pipes[1].pipe_read);
+    }
+
+    if (master_sfd > -1) {
+      close(master_sfd);
+      clear_event(master_sfd);
+      master_sfd = -1;
+    }
 
     for (int i = 0; i < MAX_CONNECTIONS; i++) {
       struct connection *conn = Connections + i;
