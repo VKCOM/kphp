@@ -1,10 +1,10 @@
 #include "runtime/string_functions.h"
-#include "runtime/integer_types.h"
 
 #include <clocale>
 
-#include "common/unicode-utils.h"
+#include "common/unicode/unicode-utils.h"
 
+#include "runtime/integer_types.h"
 #include "runtime/interface.h"
 
 const string COLON (",", 1);

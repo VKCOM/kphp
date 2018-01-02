@@ -1,7 +1,7 @@
 #include "runtime/mbstring.h"
 
-#include "common/unicode-utils.h"
-#include "common/utf8_utils.h"
+#include "common/unicode/unicode-utils.h"
+#include "common/unicode/utf8-utils.h"
 
 static int mb_detect_encoding (const string &encoding) {
   if (strstr (encoding.c_str(), "1251")) {
