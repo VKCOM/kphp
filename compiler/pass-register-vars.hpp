@@ -209,20 +209,30 @@ class CollectConstVarsPass : public FunctionPassBase {
       return default_check_function (function) && function->type() != FunctionData::func_extern;
     }
 
+    bool should_convert_to_const(VertexPtr root) {
+      return root->type() == op_string || root->type() == op_array ||
+             root->type() == op_concat || root->type() == op_string_build ||
+             root->type() == op_func_call;
+    }
+
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
       in_param_list += root->type() == op_func_param_list;
 
       local->need_recursion_flag = false;
-      if (root->type() == op_define_val || root->type() == op_defined ||
-          root->type() == op_require || root->type() == op_require_once) {
+      if (root->type() == op_define_val) {
+        VertexPtr expr = GenTree::get_actual_value(root);
+        if (should_convert_to_const(expr)) {
+          return create_const_variable(expr);
+        }
+        return root;
+      }
+      if (root->type() == op_defined || root->type() == op_require || root->type() == op_require_once) {
         return root;
       }
 
       if (root->const_type == cnst_const_val) {
         bool conv_to_const = false;
-        conv_to_const |= root->type() == op_string || root->type() == op_array ||
-          root->type() == op_concat || root->type() == op_string_build ||
-          root->type() == op_func_call;
+        conv_to_const |= should_convert_to_const(root);
 
         if (root->type() == op_conv_regexp) {
           VertexPtr expr = GenTree::get_actual_value(root.as <op_conv_regexp>()->expr());
