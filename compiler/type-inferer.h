@@ -115,7 +115,7 @@ class Restriction : public tinf::RestrictionBase {
 
 class RestrictionLess : public Restriction {
   private:
-    set<Location> uniq_locations_;
+    std::vector<Location> uniq_locations_;
 
   public:
     tinf::Node *a_, *b_;
@@ -179,12 +179,10 @@ class RestrictionLess : public Restriction {
         tinf::Node *from = e->from;
         tinf::Node *to = e->to;
 
-        if (from != cur_node && from != parent) {
-          error_trace_found = find_call_trace_with_error(from, cur_node);
-          node_is_last = false;
-        }
+        assert(from == cur_node);
+        assert(to != cur_node);
 
-        if (!error_trace_found && to != cur_node && to != parent) {
+        if (to != parent) {
           error_trace_found = find_call_trace_with_error(to, cur_node);
           node_is_last = false;
         }
@@ -195,8 +193,8 @@ class RestrictionLess : public Restriction {
           if (tinf::ExprNode * expr_node = dynamic_cast<tinf::ExprNode *>(cur_node)) {
             Location const & location = expr_node->get_location();
 
-            if (location.file.not_null()) {
-              uniq_locations_.insert(location);
+            if (uniq_locations_.empty() || uniq_locations_.back() != location) {
+              uniq_locations_.push_back(location);
             }
           }
 
