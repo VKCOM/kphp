@@ -742,6 +742,11 @@ static inline int cmp (const TypeData *a, const TypeData *b) {
 bool operator < (const TypeData &a, const TypeData &b) {
   return cmp (&a, &b) < 0;
 }
+
+bool operator > (const TypeData &a, const TypeData &b) {
+  return cmp (&a, &b) > 0;
+}
+
 bool operator == (const TypeData &a, const TypeData &b) {
   return cmp (&a, &b) == 0;
 }

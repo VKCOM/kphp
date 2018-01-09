@@ -116,6 +116,8 @@ class Restriction : public tinf::RestrictionBase {
 class RestrictionLess : public Restriction {
   private:
     std::vector<Location> uniq_locations_;
+    std::vector<tinf::Node *> node_path_;
+    static const unsigned long max_cnt_nodes_in_path = 20;
 
   public:
     tinf::Node *a_, *b_;
@@ -144,18 +146,18 @@ class RestrictionLess : public Restriction {
       if (!ok) {
         desc = "type inference error ";
 
-        if (find_call_trace_with_error(a_)) {
-          desc += "\n";
+        find_call_trace_with_error(a_);
+        desc += "\n";
 
-          FOREACH(uniq_locations_, it) {
-            Location const & location = *it;
-            SrcFilePtr file_ptr = location.get_file();
-            int line = location.get_line();
+        FOREACH(uniq_locations_, it) {
+          Location const & location = *it;
+          SrcFilePtr file_ptr = location.get_file();
+          int line = location.get_line();
 
-            string_ref line_with_wrong_code = file_ptr->get_line(line);
+          assert(file_ptr.not_null());
+          string_ref line_with_wrong_code = file_ptr->get_line(line);
 
-            desc += stage::to_str(location) + "; " + line_with_wrong_code.str() + " \n";
-          }
+          desc += stage::to_str(location) + "; " + line_with_wrong_code.str() + " \n";
         }
 
         desc += "[" + type_out (a_type) + " <= " + type_out (b_type) + "]";
@@ -168,41 +170,78 @@ class RestrictionLess : public Restriction {
     }
 
   private:
-    bool find_call_trace_with_error(tinf::Node *cur_node, tinf::Node *parent = NULL) {
-      assert(cur_node != NULL);
-
-      bool node_is_last = true;
-      bool error_trace_found = false;
-
-      FOREACH (cur_node->next_range(), it) {
-        tinf::Edge *e = *it;
-        tinf::Node *from = e->from;
-        tinf::Node *to = e->to;
-
-        assert(from == cur_node);
-        assert(to != cur_node);
-
-        if (to != parent) {
-          error_trace_found = find_call_trace_with_error(to, cur_node);
-          node_is_last = false;
-        }
-      }
-
-      if (error_trace_found || node_is_last) {
-        if (b_->get_type()->ptype() != cur_node->get_type()->ptype()) {
-          if (tinf::ExprNode * expr_node = dynamic_cast<tinf::ExprNode *>(cur_node)) {
-            Location const & location = expr_node->get_location();
-
-            if (uniq_locations_.empty() || uniq_locations_.back() != location) {
-              uniq_locations_.push_back(location);
-            }
-          }
-
+    bool is_parent_node(tinf::Node const * node) {
+      FOREACH(node_path_, parent_node_iterator) {
+        if (node == *parent_node_iterator) {
           return true;
         }
       }
 
-      return error_trace_found;
+      return false;
+    }
+
+    void find_call_trace_with_error_impl(tinf::Node *cur_node) {
+      assert(cur_node != NULL);
+
+      FOREACH (cur_node->next_range(), next_edge_iterator) {
+        tinf::Edge *e = *next_edge_iterator;
+        tinf::Node *from = e->from;
+        tinf::Node *to = e->to;
+
+        assert(from == cur_node);
+
+        if (to == cur_node) {
+          string warn_message = "loop edge: from: " + from->get_description() + "; to: " + to->get_description() + "\n";
+          kphp_warning(warn_message.c_str());
+          continue;
+        }
+
+        if (is_parent_node(to)) {
+          continue;
+        }
+
+        TypeData * type_of_to_node = to->get_type()->clone();
+        type_of_to_node->set_lca(b_->get_type());
+
+        if (*type_of_to_node > *(b_->get_type())) {
+
+          if (node_path_.size() == max_cnt_nodes_in_path) {
+            return;
+          }
+
+          node_path_.push_back(to);
+
+          find_call_trace_with_error_impl(to);
+
+          if (tinf::ExprNode *expr_node = dynamic_cast<tinf::ExprNode *>(cur_node)) {
+            Location const &location = expr_node->get_location();
+
+            if (uniq_locations_.empty() || uniq_locations_.back() != location) {
+              if (location.get_file().not_null()) {
+                uniq_locations_.push_back(location);
+              }
+            }
+          }
+
+          node_path_.pop_back();
+
+          return;
+        }
+      }
+    }
+
+    void find_call_trace_with_error(tinf::Node *cur_node) {
+      uniq_locations_.clear();
+      node_path_.clear();
+
+      uniq_locations_.reserve(max_cnt_nodes_in_path);
+      node_path_.reserve(max_cnt_nodes_in_path);
+
+      find_call_trace_with_error_impl(cur_node);
+
+      if (uniq_locations_.empty()) {
+        kphp_assert("can't find error path in type inferer");
+      }
     }
 };
 

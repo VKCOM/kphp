@@ -193,6 +193,7 @@ public:
 
 inline bool operator < (const TypeData::KeyValue &a, const TypeData::KeyValue &b);
 bool operator < (const TypeData &a, const TypeData &b);
+bool operator > (const TypeData &a, const TypeData &b);
 bool operator == (const TypeData &a, const TypeData &b);
 
 string type_out (const TypeData *type);
