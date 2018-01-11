@@ -233,19 +233,28 @@ string tinf::TypeNode::get_description() {
   return "type[" + type_out (type_) + "]";
 }
 static string get_expr_description (VertexPtr expr) {
-  if (expr->type() == op_var) {
-    return "$" + expr.as <op_var>()->get_var_id()->name;
-  } else if (expr->type() == op_func_call) {
-    return expr.as <op_func_call>()->get_func_id()->name + "(...)";
-  } else if (expr->type() == op_index) {
-    string suff = "";
-    while (expr->type() == op_index) {
-      suff += "[.]";
-      expr = expr.as <op_index>()->array();
+  switch (expr->type()) {
+    case op_var:
+      return "$" + expr.as <op_var>()->get_var_id()->name;
+
+    case op_func_call:
+      return expr.as <op_func_call>()->get_func_id()->name + "(...)";
+
+    case op_index: {
+      string suff = "";
+      while (expr->type() == op_index) {
+        suff += "[.]";
+        expr = expr.as <op_index>()->array();
+      }
+      return get_expr_description (expr) + suff;
     }
-    return get_expr_description (expr) + suff;
+
+    case op_int_const:
+      return expr.as <op_int_const>()->str_val;
+
+    default:
+      return OpInfo::str (expr->type());
   }
-  return OpInfo::str (expr->type());
 }
 string tinf::ExprNode::get_description() {
   stringstream ss;

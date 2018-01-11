@@ -115,7 +115,7 @@ class Restriction : public tinf::RestrictionBase {
 
 class RestrictionLess : public Restriction {
   private:
-    std::vector<Location> uniq_locations_;
+    std::vector<string> uniq_descriptions_;
     std::vector<tinf::Node *> node_path_;
     static const unsigned long max_cnt_nodes_in_path = 20;
 
@@ -149,15 +149,10 @@ class RestrictionLess : public Restriction {
         find_call_trace_with_error(a_);
         desc += "\n";
 
-        FOREACH(uniq_locations_, it) {
-          Location const & location = *it;
-          SrcFilePtr file_ptr = location.get_file();
-          int line = location.get_line();
+        FOREACH(uniq_descriptions_, it) {
+          const string & description = *it;
 
-          assert(file_ptr.not_null());
-          string_ref line_with_wrong_code = file_ptr->get_line(line);
-
-          desc += stage::to_str(location) + "; " + line_with_wrong_code.str() + " \n";
+          desc += description + " \n";
         }
 
         desc += "[" + type_out (a_type) + " <= " + type_out (b_type) + "]";
@@ -180,10 +175,26 @@ class RestrictionLess : public Restriction {
       return false;
     }
 
-    void find_call_trace_with_error_impl(tinf::Node *cur_node) {
-      assert(cur_node != NULL);
+    bool find_call_trace_with_error_impl(tinf::Node *cur_node) {
+      std::deque<tinf::Edge *> ordered_edges;
 
       FOREACH (cur_node->next_range(), next_edge_iterator) {
+        tinf::Edge *e = *next_edge_iterator;
+
+        if (e->from_at) {
+          TypeData * type_of_to_node = e->to->get_type()->clone();
+          type_of_to_node->set_lca_at(*e->from_at, b_->get_type());
+
+          if (*(b_->get_type()) < *type_of_to_node) {
+            ordered_edges.push_front(e);
+            continue;
+          }
+        }
+
+        ordered_edges.push_back(e);
+      }
+
+      FOREACH (ordered_edges, next_edge_iterator) {
         tinf::Edge *e = *next_edge_iterator;
         tinf::Node *from = e->from;
         tinf::Node *to = e->to;
@@ -200,48 +211,52 @@ class RestrictionLess : public Restriction {
           continue;
         }
 
-        TypeData * type_of_to_node = to->get_type()->clone();
-        type_of_to_node->set_lca(b_->get_type());
+        if (node_path_.size() == max_cnt_nodes_in_path) {
+          return false;
+        }
 
-        if (*type_of_to_node > *(b_->get_type())) {
+        node_path_.push_back(to);
 
-          if (node_path_.size() == max_cnt_nodes_in_path) {
-            return;
+        if (e->from_at) {
+          TypeData * type_of_to_node = to->get_type()->clone();
+          type_of_to_node->set_lca_at(*e->from_at, b_->get_type());
+
+          if (!(*(b_->get_type()) < *type_of_to_node)) {
+            node_path_.pop_back();
+            continue;
           }
+        }
 
-          node_path_.push_back(to);
-
-          find_call_trace_with_error_impl(to);
-
-          if (tinf::ExprNode *expr_node = dynamic_cast<tinf::ExprNode *>(cur_node)) {
-            Location const &location = expr_node->get_location();
-
-            if (uniq_locations_.empty() || uniq_locations_.back() != location) {
-              if (location.get_file().not_null()) {
-                uniq_locations_.push_back(location);
-              }
-            }
-          }
-
+        if (find_call_trace_with_error_impl(to) || e->from_at) {
           node_path_.pop_back();
 
-          return;
+          const string description = to->get_description();
+          if (uniq_descriptions_.empty() || uniq_descriptions_.back() != description) {
+            uniq_descriptions_.push_back(description);
+          }
+
+          return true;
         }
+
+        node_path_.pop_back();
       }
+
+      return false;
     }
 
     void find_call_trace_with_error(tinf::Node *cur_node) {
-      uniq_locations_.clear();
+      assert(cur_node != NULL);
+
+      uniq_descriptions_.clear();
       node_path_.clear();
 
-      uniq_locations_.reserve(max_cnt_nodes_in_path);
+      uniq_descriptions_.reserve(max_cnt_nodes_in_path);
       node_path_.reserve(max_cnt_nodes_in_path);
 
       find_call_trace_with_error_impl(cur_node);
 
-      if (uniq_locations_.empty()) {
-        kphp_assert("can't find error path in type inferer");
-      }
+      uniq_descriptions_.push_back(cur_node->get_description());
+      std::reverse(uniq_descriptions_.begin(), uniq_descriptions_.end());
     }
 };
 
