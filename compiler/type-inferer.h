@@ -115,7 +115,7 @@ class Restriction : public tinf::RestrictionBase {
 
 class RestrictionLess : public Restriction {
   private:
-    std::vector<string> uniq_descriptions_;
+    std::vector<string> descriptions_;
     std::vector<tinf::Node *> node_path_;
     static const unsigned long max_cnt_nodes_in_path = 20;
 
@@ -149,7 +149,7 @@ class RestrictionLess : public Restriction {
         find_call_trace_with_error(a_);
         desc += "\n";
 
-        FOREACH(uniq_descriptions_, it) {
+        FOREACH(descriptions_, it) {
           const string & description = *it;
 
           desc += description + " \n";
@@ -229,11 +229,7 @@ class RestrictionLess : public Restriction {
 
         if (find_call_trace_with_error_impl(to) || e->from_at) {
           node_path_.pop_back();
-
-          const string description = to->get_description();
-          if (uniq_descriptions_.empty() || uniq_descriptions_.back() != description) {
-            uniq_descriptions_.push_back(description);
-          }
+          descriptions_.push_back(to->get_description());
 
           return true;
         }
@@ -247,16 +243,16 @@ class RestrictionLess : public Restriction {
     void find_call_trace_with_error(tinf::Node *cur_node) {
       assert(cur_node != NULL);
 
-      uniq_descriptions_.clear();
+      descriptions_.clear();
       node_path_.clear();
 
-      uniq_descriptions_.reserve(max_cnt_nodes_in_path);
+      descriptions_.reserve(max_cnt_nodes_in_path);
       node_path_.reserve(max_cnt_nodes_in_path);
 
       find_call_trace_with_error_impl(cur_node);
 
-      uniq_descriptions_.push_back(cur_node->get_description());
-      std::reverse(uniq_descriptions_.begin(), uniq_descriptions_.end());
+      descriptions_.push_back(cur_node->get_description());
+      std::reverse(descriptions_.begin(), descriptions_.end());
     }
 };
 
