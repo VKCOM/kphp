@@ -2,7 +2,7 @@
 
 #include <sys/time.h>
 
-#include "auto/runtime/vkext_flex_auto.h"
+#include "auto/flex/vkext_flex_auto.h"
 #include "common/string-processing.h"
 
 #include "runtime/misc.h"
