@@ -364,12 +364,7 @@ string& string::append (const string &str) {
   const size_type n2 = str.size();
   if (n2) {
     const size_type len = n2 + size();
-
-    if (inner()->is_shared()) {
-      force_reserve (len);
-    } else if (len > capacity()) {
-      p = inner()->reserve (len);
-    }
+    reserve_at_least(len);
 
     memcpy (p + size(), str.p, n2);
     inner()->set_length_and_sharable_force (len);
@@ -387,11 +382,7 @@ string& string::append (const string& str, size_type pos2, size_type n2) {
   }
   if (n2) {
     const size_type len = n2 + size();
-    if (inner()->is_shared()) {
-      force_reserve (len);
-    } else if (len > capacity()) {
-      p = inner()->reserve (len);
-    }
+    reserve_at_least(len);
 
     memcpy (p + size(), str.p + pos2, n2);
     inner()->set_length_and_sharable_force (len);
@@ -429,11 +420,7 @@ string& string::append (size_type n, char c) {
       php_critical_error ("tried to allocate too big string of size %lld", (long long)size() + n);
     }
     const size_type len = n + size();
-    if (inner()->is_shared()) {
-      force_reserve (len);
-    } else if (len > capacity()) {
-      p = inner()->reserve (len);
-    }
+    reserve_at_least(len);
     memset (p + size(), c, n);
     inner()->set_length_and_sharable_force (len);
     p[len] = '\0';
@@ -513,11 +500,7 @@ string& string::append (const var &v) {
 
 void string::push_back (char c) {
   const size_type len = 1 + size();
-  if (inner()->is_shared()) {
-    force_reserve (len);
-  } else if (len > capacity()) {
-    p = inner()->reserve (len);
-  }
+  reserve_at_least(len);
   p[len - 1] = c;
   inner()->set_length_and_sharable_force (len);
   p[len] = '\0';
