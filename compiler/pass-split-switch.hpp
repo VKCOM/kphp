@@ -90,7 +90,7 @@ class SplitSwitchPass : public FunctionPassBase {
           kphp_fail();
         }
 
-        string func_name_str = gen_unique_name ("switch_func");
+        string func_name_str = stage::get_function_name() + "$" + gen_unique_name ("switch_func");
         CREATE_VERTEX (func_name, op_func_name);
         func_name->str_val = func_name_str;
 
