@@ -442,9 +442,6 @@ int TokenLexerNum::parse (LexerData *lexer_data) const {
           case 'e':
           case 'E': {
             t++;
-            if (*t == '+' || *t == '-') {
-              t++;
-            }
             state = after_e;
             break;
           }
@@ -503,6 +500,16 @@ int TokenLexerNum::parse (LexerData *lexer_data) const {
 
       case finish: {
         assert (0);
+      }
+    }
+  }
+
+  if (!is_float) {
+    if (s[0] == '0' && s[1] != 'x') {
+      for (int i = 0; i < t - s; i++) {
+        if (s[i] < '0' || s[i] > '7') {
+          return TokenLexerError("Bad octal number").parse(lexer_data);
+        }
       }
     }
   }
