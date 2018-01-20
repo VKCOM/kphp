@@ -172,7 +172,7 @@ class CollectConstVarsPass : public FunctionPassBase {
       return arrayval;
     }
 
-    VertexPtr create_const_variable (VertexPtr root) {
+    VertexPtr create_const_variable (VertexPtr root, Location loc) {
       string name;
       bool global_init_flag = false;
       if (root->type() == op_string) {
@@ -191,7 +191,7 @@ class CollectConstVarsPass : public FunctionPassBase {
       CREATE_VERTEX (var, op_var);
       var->str_val = name;
       var->extra_type = op_ex_var_const;
-      var->location = root->get_location();
+      var->location = loc;
 
       VarPtr var_id = G->get_global_var (name, VarData::var_const_t, optimize_const (root));
       var_id->global_init_flag = global_init_flag;
@@ -223,7 +223,7 @@ class CollectConstVarsPass : public FunctionPassBase {
       if (root->type() == op_define_val) {
         VertexPtr expr = GenTree::get_actual_value(root);
         if (should_convert_to_const(expr)) {
-          return create_const_variable(expr);
+          return create_const_variable(expr, root->location);
         }
         return root;
       }
@@ -242,7 +242,7 @@ class CollectConstVarsPass : public FunctionPassBase {
         }
 
         if (conv_to_const) {
-          return create_const_variable (root);
+          return create_const_variable (root, root->location);
         }
       }
 
