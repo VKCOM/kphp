@@ -1094,6 +1094,7 @@ inline void StaticInit::compile (CodeGenerator &W) const {
   W << "void static_init_scripts (void)";
   W << " " << BEGIN;
   W << "init_static_once();" << NL;
+  W << "const_vars_init();" << NL;
   FOREACH (all_functions, i) {
     FunctionPtr to = *i;
     if (to->is_static_init_empty_body()) {
@@ -1101,7 +1102,6 @@ inline void StaticInit::compile (CodeGenerator &W) const {
     }
     W << FunctionName (to) << "$static_init();" << NL;
   }
-  W << "const_vars_init();" << NL;
   W << "dl::allocator_init (NULL, 0);" << NL;
   W << END << NL;
 }
