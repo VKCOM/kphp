@@ -26,6 +26,7 @@
 #define kphp_error_act(x, y, act) if (kphp_error (x, y)) act;
 #define kphp_error_return(x, y) kphp_error_act (x, y, return)
 #define kphp_assert(x) compiler_assert (x, "", FATAL_ASSERT_LEVEL)
+#define kphp_assert_msg(x, y) compiler_assert (x, y, FATAL_ASSERT_LEVEL)
 #define kphp_fail() kphp_assert (0); _exit(1);
 
 typedef enum {WRN_ASSERT_LEVEL, CE_ASSERT_LEVEL, FATAL_ASSERT_LEVEL} AssertLevelT;
