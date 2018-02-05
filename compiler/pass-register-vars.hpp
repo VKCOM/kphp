@@ -172,39 +172,6 @@ class CollectConstVarsPass : public FunctionPassBase {
       }
     }
 
-    VertexPtr optimize_const (VertexPtr v) {
-      // 1. only strings, ints and arrays
-      // 2. more than 100 nodes
-      // 3. in arrays every element has a key or no element has a key
-      if (v->type() != op_array) {
-        return v;
-      }
-
-      FunctionPtr unserialize_func_id = G->get_function_unsafe ("unserialize");
-
-      int nodes_cnt = 0;
-      bool valid;
-      valid = check_const (v, &nodes_cnt);
-
-      if (nodes_cnt < 100 || !valid) {
-        return v;
-      }
-
-      analyzer_check_array (v);
-
-      string serialized_str;
-      serialize_const (v, &serialized_str);
-
-      CREATE_VERTEX (serialized, op_string);
-      serialized->str_val = serialized_str;
-      CREATE_VERTEX (unserialize, op_func_call, serialized);
-      unserialize->str_val = "unserialize";
-      unserialize = set_func_id (unserialize, unserialize_func_id);
-
-      CREATE_VERTEX (arrayval, op_conv_array, unserialize);
-      return arrayval;
-    }
-
     VertexPtr create_const_variable (VertexPtr root, Location loc) {
       string name;
       bool global_init_flag = false;
@@ -226,7 +193,7 @@ class CollectConstVarsPass : public FunctionPassBase {
       var->extra_type = op_ex_var_const;
       var->location = loc;
 
-      VarPtr var_id = G->get_global_var (name, VarData::var_const_t, optimize_const (root));
+      VarPtr var_id = G->get_global_var (name, VarData::var_const_t, root);
       var_id->global_init_flag = global_init_flag;
 
       if (in_param_list > 0) {
