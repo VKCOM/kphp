@@ -4,6 +4,7 @@
 #include "compiler/data.h"
 #include "compiler/io.h"
 #include "compiler/vertex.h"
+#include "compiler/pass-register-vars.hpp"
 
 struct CGContext {
   vector <string> catch_labels;
@@ -1059,6 +1060,12 @@ inline static void init_vars(const vector<VarPtr> & vars, CodeGenerator &W) {
       continue;
     }
     W << InitVar(var);
+
+    PrimitiveType ptype = var->tinf_node.get_type()->ptype();
+
+    if (ptype == tp_array || ptype == tp_var || ptype == tp_string) {
+      W << VarName(var) << ".set_reference_counter_to_const();" << NL;
+    }
   }
 }
 

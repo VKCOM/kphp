@@ -6,22 +6,20 @@
 
 const string::size_type string::max_size __attribute__ ((weak));
 
-string::size_type string::string_inner::empty_string_storage[sizeof (string_inner) / sizeof (size_type) + 1] __attribute__ ((weak));
+string::size_type string::string_inner::empty_string_storage[sizeof (string_inner) / sizeof (size_type) + 1] __attribute__ ((weak)) = {0 /* size */, 0 /* capacity */, REF_CNT_FOR_CONST};
 
 string::string_inner& string::string_inner::empty_string (void) {
   return *reinterpret_cast <string_inner *> (empty_string_storage);
 }
 
 bool string::string_inner::is_shared (void) const {
-  return ref_count > 0 || dl::memory_begin > (size_t)this || (size_t)this >= dl::memory_end;
+  return ref_count > 0;
 }
 
 void string::string_inner::set_length_and_sharable (size_type n) {
-  if (this != &empty_string()) {
-    ref_count = 0;
-    size = n;
-    ref_data()[n] = '\0';
-  }
+  ref_count = 0;
+  size = n;
+  ref_data()[n] = '\0';
 }
 
 void string::string_inner::set_length_and_sharable_force (size_type n) {
@@ -80,7 +78,7 @@ char* string::string_inner::reserve (size_type requested_capacity) {
 
 void string::string_inner::dispose (void) {
 //  fprintf (stderr, "dec ref cnt %d %s\n", ref_count - 1, ref_data());
-  if (dl::memory_begin <= (size_t)this && (size_t)this < dl::memory_end && this != &empty_string()) {
+  if (ref_count != REF_CNT_FOR_CONST) {
     ref_count--;
     if (ref_count <= -1) {
       destroy();
@@ -95,7 +93,7 @@ void string::string_inner::destroy (void) {
 
 char *string::string_inner::ref_copy (void) {
 //  fprintf (stderr, "inc ref cnt %d, %s\n", ref_count + 1, ref_data());
-  if (dl::memory_begin <= (size_t)this && (size_t)this < dl::memory_end && this != &empty_string()) {
+  if (ref_count != REF_CNT_FOR_CONST) {
     ref_count++;
   }
   return ref_data();

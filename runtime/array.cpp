@@ -106,7 +106,7 @@ bool array <T, TT>::is_int_key (const typename array <T, TT>::key_type &key) {
   return key.is_int();
 }
 
-int empty_array_storage[] __attribute__ ((weak)) = {1000000000 /* ref_cnt */, -1 /* max_key */, 0 /* end_.next */, 0 /* end_.prev */,
+int empty_array_storage[] __attribute__ ((weak)) = {REF_CNT_FOR_CONST /* ref_cnt */, -1 /* max_key */, 0 /* end_.next */, 0 /* end_.prev */,
                                                     0 /* int_size */, 2 /* int_buf_size */, 0 /* string_size */, -1 /* string_buf_size */};
 
 template <class T, class TT>
@@ -252,7 +252,7 @@ typename array <T, TT>::array_inner* array <T, TT>::array_inner::create (int new
 
 template <class T, class TT>
 void array <T, TT>::array_inner::dispose (void) {
-  if (dl::memory_begin <= (size_t)this && (size_t)this < dl::memory_end) {
+  if (ref_cnt != REF_CNT_FOR_CONST) {
     ref_cnt--;
     if (ref_cnt <= -1) {
       if (is_vector()) {
@@ -279,7 +279,7 @@ void array <T, TT>::array_inner::dispose (void) {
 
 template <class T, class TT>
 typename array <T, TT>::array_inner *array <T, TT>::array_inner::ref_copy (void) {
-  if (dl::memory_begin <= (size_t)this && (size_t)this < dl::memory_end) {
+  if (ref_cnt != REF_CNT_FOR_CONST) {
     ref_cnt++;
   }
   return this;
@@ -672,7 +672,7 @@ bool array <T, TT>::mutate_if_vector_shared (int mul) {
 
 template <class T, class TT>
 bool array <T, TT>::mutate_to_size_if_vector_shared (int int_size) {
-  if (p->ref_cnt > 0 || dl::memory_begin > (size_t)p || (size_t)p >= dl::memory_end) {
+  if (p->ref_cnt > 0) {
     array_inner *new_array = array_inner::create (int_size, 0, true);
 
     int size = p->int_size;
@@ -691,7 +691,7 @@ bool array <T, TT>::mutate_to_size_if_vector_shared (int int_size) {
 
 template <class T, class TT>
 bool array <T, TT>::mutate_if_map_shared (int mul) {
-  if (p->ref_cnt > 0 || dl::memory_begin > (size_t)p || (size_t)p >= dl::memory_end) {
+  if (p->ref_cnt > 0) {
     array_inner *new_array = array_inner::create (p->int_size * mul + 1, p->string_size * mul + 1, false);
 
     for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next (it)) {
@@ -2177,7 +2177,7 @@ array <T, TT>& array <T, TT>::operator += (const array <T, TT> &other) {
       int size = other.p->int_size;
       TT *it = (TT *)other.p->int_entries;
 
-      if (p->ref_cnt > 0 || dl::memory_begin > (size_t)p || (size_t)p >= dl::memory_end) {
+      if (p->ref_cnt > 0) {
         int my_size = p->int_size;
         TT *my_it = (TT *)p->int_entries;
 
@@ -2225,8 +2225,7 @@ array <T, TT>& array <T, TT>::operator += (const array <T, TT> &other) {
     int new_int_size = p->int_size + other.p->int_size;
     int new_string_size = p->string_size + other.p->string_size;
 
-    if (new_int_size * 5 > 3 * p->int_buf_size || new_string_size * 5 > 3 * p->string_buf_size ||
-        (p->ref_cnt > 0 || dl::memory_begin > (size_t)p || (size_t)p >= dl::memory_end)) {
+    if (new_int_size * 5 > 3 * p->int_buf_size || new_string_size * 5 > 3 * p->string_buf_size || p->ref_cnt > 0) {
       array_inner *new_array = array_inner::create (max (new_int_size, 2 * p->int_size) + 1, max (new_string_size, 2 * p->string_size) + 1, false);
 
       for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next (it)) {

@@ -503,6 +503,11 @@ void regexp::init (const char *regexp_string, int regexp_len) {
         for (int i = 0; i < named_subpatterns_count; i++) {
           int name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
           string name (name_table + 2, (dl::size_type)strlen (name_table + 2));
+
+          if (is_static) {
+            name.set_reference_counter_to_const();
+          }
+
           if (name.is_int()) {
             php_warning ("Numeric named subpatterns are not allowed");
           } else {

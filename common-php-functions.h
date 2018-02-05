@@ -167,7 +167,7 @@ inline int string_raw (char *dest, int dest_len, const char *src, int src_len) {
   int *dest_int = reinterpret_cast <int *> (dest);
   dest_int[0] = src_len;
   dest_int[1] = src_len;
-  dest_int[2] = 0;
+  dest_int[2] = REF_CNT_FOR_CONST;
   memcpy (dest + 3 * sizeof (int), src, src_len);
   dest[3 * sizeof (int) + src_len] = '\0';
 
