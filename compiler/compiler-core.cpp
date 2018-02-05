@@ -2,6 +2,7 @@
 
 #include "compiler/gentree.h"
 #include "compiler/make.h"
+#include "compiler/pass-register-vars.hpp"
 
 CompilerCore::CompilerCore() :
   env_ (NULL) {
@@ -289,10 +290,34 @@ VarPtr CompilerCore::get_global_var (const string &name, VarData::Type type,
   }
   VarPtr var = node->data;
   if (new_var.is_null()) {
-    kphp_assert (var->name == name/*, "bug in compiler (hash collision)"*/);
-    if (init_val.not_null() && init_val->type() == op_string) {
-      kphp_assert (var->init_val->type() == op_string);
-      kphp_assert (var->init_val->get_string() == init_val->get_string());
+    kphp_assert_msg(var->name == name, "bug in compiler (hash collision)");
+    if (init_val.not_null()) {
+      kphp_assert(var->init_val->type() == init_val->type());
+      switch (init_val->type()) {
+        case op_string:
+          kphp_assert(var->init_val->get_string() == init_val->get_string());
+          break;
+        case op_conv_regexp: {
+          string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+          string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+          string msg = "hash collision: " + new_regexp + "; " + hashed_regexp;
+
+          kphp_assert_msg(hashed_regexp == new_regexp, msg.c_str());
+          break;
+        }
+        case op_array: {
+          string new_array_repr, hashed_array_repr;
+          CollectConstVarsPass::serialize_array(init_val, &new_array_repr);
+          CollectConstVarsPass::serialize_array(var->init_val, &hashed_array_repr);
+
+          string msg = "hash collision: " + new_array_repr + "; " + hashed_array_repr;
+
+          kphp_assert_msg(new_array_repr == hashed_array_repr, msg.c_str());
+          break;
+        }
+        default:
+          break;
+      }
     }
   }
   return var;
