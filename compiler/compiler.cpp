@@ -2662,6 +2662,10 @@ class CodeGenF {
       tmp_stream << input;
     }
 
+    int calc_count_of_parts(size_t cnt_global_vars) {
+      return cnt_global_vars > 1000 ? 64 : 1;
+    }
+
     template <class OutputStreamT>
     void on_finish (OutputStreamT &os) {
       AUTO_PROF (code_gen);
@@ -2714,7 +2718,7 @@ class CodeGenF {
       W << Async (InitScriptsCpp (/*std::move*/main_files, source_functions, all_functions));
 
       vector <VarPtr> vars = G->get_global_vars();
-      int parts_cnt = (int)vars.size() > 1000 ? 64 : 1;
+      int parts_cnt = calc_count_of_parts(vars.size());
       W << Async (VarsCpp (vars, parts_cnt));
 
       FOREACH (subdir_hash, i) {
