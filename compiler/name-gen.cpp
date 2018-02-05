@@ -110,6 +110,21 @@ inline long long array_hash(VertexPtr vertex) {
   assert(/* "unreachable state" */ false);
 }
 
+bool is_array_suitable_for_hashing(VertexPtr vertex) {
+  if (vertex->type() != op_array) {
+    return false;
+  }
+
+  int unused = 0;
+  return CollectConstVarsPass::check_const(vertex, &unused);
+}
+
+string gen_const_array_name(const VertexAdaptor<op_array> & array) {
+  char tmp[50];
+  sprintf (tmp, "const_array$us%llx", array_hash(array));
+  return tmp;
+}
+
 string gen_unique_name (string prefix, bool flag) {
   for (int i = 0; i < (int)prefix.size(); i++) {
     int c = prefix[i];
