@@ -980,6 +980,10 @@ int string::get_reference_counter (void) const {
   return inner()->ref_count + 1;
 }
 
+inline void string::set_reference_counter_to_const() {
+  inner()->ref_count = REF_CNT_FOR_CONST;
+}
+
 
 bool operator == (const string &lhs, const string &rhs) {
   return lhs.compare (rhs) == 0;

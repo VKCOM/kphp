@@ -171,6 +171,7 @@ public:
   inline const string get_value (const var &v) const;
 
   inline int get_reference_counter (void) const;
+  inline void set_reference_counter_to_const();
 
   friend class var;
 

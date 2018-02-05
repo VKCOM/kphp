@@ -476,6 +476,7 @@ public:
 
 
   int get_reference_counter (void) const;
+  void set_reference_counter_to_const();
 
   const T *get_const_vector_pointer (void) const; // unsafe
 

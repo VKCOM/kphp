@@ -200,6 +200,7 @@ public:
   inline void swap (var &other);
 
   inline int get_reference_counter (void) const;
+  inline void set_reference_counter_to_const();
 
   inline friend const var operator - (const string &lhs);
 

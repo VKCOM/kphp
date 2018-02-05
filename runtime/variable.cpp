@@ -2352,6 +2352,23 @@ int var::get_reference_counter (void) const {
   }
 }
 
+void var::set_reference_counter_to_const() {
+  switch (type) {
+    case NULL_TYPE:
+    case BOOLEAN_TYPE:
+    case INTEGER_TYPE:
+    case FLOAT_TYPE:
+      return;
+    case STRING_TYPE:
+      return AS_STRING(s)->set_reference_counter_to_const();
+    case ARRAY_TYPE:
+      return AS_ARRAY(a)->set_reference_counter_to_const();
+    case OBJECT_TYPE:
+    default:
+      php_assert (0);
+      exit (1);
+  }
+}
 
 const var operator + (const var &lhs, const var &rhs) {
   if (likely (lhs.type == var::INTEGER_TYPE && rhs.type == var::INTEGER_TYPE)) {

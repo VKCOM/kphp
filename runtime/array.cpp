@@ -2687,6 +2687,11 @@ int array <T, TT>::get_reference_counter (void) const {
 }
 
 template <class T, class TT>
+void array <T, TT>::set_reference_counter_to_const() {
+  p->ref_cnt = REF_CNT_FOR_CONST;
+}
+
+template <class T, class TT>
 const T *array <T, TT>::get_const_vector_pointer (void) const {
   php_assert (is_vector());
   return &(p->get_vector_value(0));
