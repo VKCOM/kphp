@@ -4,6 +4,8 @@
 #include "compiler/data.h"
 #include "compiler/io.h"
 #include "compiler/stage.h"
+#include "compiler/gentree.h"
+#include "compiler/pass-register-vars.hpp"
 
 string register_unique_name (const string &prefix) {
   //static set <string> v;
@@ -61,6 +63,51 @@ string gen_const_regexp_name (const string &str) {
   char tmp[50];
   sprintf (tmp, "const_regexp$us%llx", h);
   return tmp;
+}
+
+inline long long array_hash(VertexPtr vertex) {
+  long long HASH_MULT = 56235515617499LL;
+
+  VertexPtr actual_vertex = GenTree::get_actual_value(vertex);
+
+  switch (actual_vertex->type()) {
+    case op_int_const:
+    case op_float_const:
+    case op_string: {
+      string s = actual_vertex->get_string() + OpInfo::str(actual_vertex->type());
+      return string_hash(s.c_str(), static_cast<int>(s.size()));
+    }
+
+    case op_true:
+    case op_null:
+    case op_false: {
+      string s = OpInfo::str(actual_vertex->type());
+      return string_hash(s.c_str(), static_cast<int>(s.size()));
+    }
+
+    case op_double_arrow: {
+      VertexPtr key = actual_vertex.as<op_double_arrow>()->key();
+      VertexPtr value = actual_vertex.as<op_double_arrow>()->value();
+
+      return (array_hash(key) * HASH_MULT + '-') * HASH_MULT + array_hash(value);
+    }
+
+    case op_array: {
+      long long res_hash = actual_vertex.as<op_array>()->args().size();
+      FOREACH(actual_vertex.as<op_array>()->args(), it) {
+        res_hash = res_hash * HASH_MULT + array_hash(*it);
+      }
+
+      return res_hash;
+    }
+
+    default: {
+      string msg = "unsupported type for hashing: " + OpInfo::str(actual_vertex->type());
+      kphp_assert_msg(false, msg.c_str());
+    }
+  }
+
+  assert(/* "unreachable state" */ false);
 }
 
 string gen_unique_name (string prefix, bool flag) {

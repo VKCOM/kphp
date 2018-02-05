@@ -10,6 +10,7 @@ string gen_anonymous_function_name ();
 string gen_unique_name (string prefix, bool flag = false);
 string gen_const_string_name (const string &str);
 string gen_const_regexp_name (const string &str);
+inline long long array_hash(VertexPtr vertex);
 
 string resolve_uses(FunctionPtr current_function, string class_name, char delim = '$');
 string get_context_by_prefix(FunctionPtr function, string const &class_name, char delim = '$');
