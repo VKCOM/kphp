@@ -1,6 +1,7 @@
 #pragma once
 #include "compiler-core.h"
 #include "analyzer.h"
+#include "compiler/gentree.h"
 
 /*** Replace constant expressions with const variables ***/
 class CollectConstVarsPass : public FunctionPassBase {
@@ -19,11 +20,11 @@ class CollectConstVarsPass : public FunctionPassBase {
     }
 
     /*** Serialize big consts if possible ***/
-    bool check_const (VertexPtr v, int *nodes_cnt) {
+    static bool check_const (VertexPtr v, int *nodes_cnt) {
       (*nodes_cnt)++;
 
       if (!(v->type() == op_string || v->type() == op_int_const || v->type() == op_array ||
-            v->type() == op_float_const || v->type() == op_true || v->type() == op_false)) {
+            v->type() == op_float_const || v->type() == op_true || v->type() == op_false || v->type() == op_null)) {
         return false;
       }
       if (v->type() == op_array) {
@@ -60,7 +61,7 @@ class CollectConstVarsPass : public FunctionPassBase {
     }
 
 
-    void serialize_int (string int_val, string *s) {
+    static void serialize_int (string int_val, string *s) {
       int val;
       sscanf (int_val.c_str(), "%i", &val);
       int_val = int_to_str (val);
@@ -69,19 +70,19 @@ class CollectConstVarsPass : public FunctionPassBase {
       (*s) += ";";
     }
 
-    void serialize_float (string float_val, string *s) {
+    static void serialize_float (string float_val, string *s) {
       (*s) += "d:";
       (*s) += float_val;
       (*s) += ";";
     }
 
-    void serialize_bool (bool f, string *s) {
+    static void serialize_bool (bool f, string *s) {
       (*s) += "b:";
       (*s) += f ? "1" : "0";
       (*s) += ";";
     }
 
-    void serialize_string (string str_val, string *s) {
+    static void serialize_string (string str_val, string *s) {
       (*s) += "s:";
       (*s) += int_to_str ((int)str_val.size());
       (*s) += ":";
@@ -91,7 +92,7 @@ class CollectConstVarsPass : public FunctionPassBase {
       (*s) += ";";
     }
 
-    void serialize_array (VertexAdaptor <op_array> arr, string *s) {
+    static void serialize_array (VertexAdaptor <op_array> arr, string *s) {
       VertexRange args = arr->args();
       int ni = (int)args.size();
       (*s) += "a:";
@@ -113,10 +114,11 @@ class CollectConstVarsPass : public FunctionPassBase {
       (*s) += "}";
     }
 
-    void serialize_const (VertexPtr v, string *s) {
-      switch (v->type()) {
+    static void serialize_const (VertexPtr v, string *s) {
+      VertexPtr actual_v = GenTree::get_actual_value(v);
+      switch (actual_v->type()) {
         case op_int_const:
-          serialize_int (v.as <op_int_const>()->str_val, s);
+          serialize_int (actual_v.as <op_int_const>()->str_val, s);
           break;
         case op_true:
           serialize_bool (true, s);
@@ -125,17 +127,31 @@ class CollectConstVarsPass : public FunctionPassBase {
           serialize_bool (false, s);
           break;
         case op_float_const:
-          serialize_float (v.as <op_float_const>()->str_val, s);
+          serialize_float (actual_v.as <op_float_const>()->str_val, s);
           break;
         case op_string:
-          serialize_string (v.as <op_string>()->str_val, s);
+          serialize_string (actual_v.as <op_string>()->str_val, s);
           break;
         case op_array:
-          serialize_array (v, s);
+          serialize_array (actual_v, s);
           break;
-        default:
-          assert (0 && "unexpected type");
+        case op_conv_int:
+          serialize_const(v.as<meta_op_unary_>()->expr(), s);
+        case op_add: {
+          VertexAdaptor<meta_op_binary_op> binary = v.as<meta_op_binary_op>();
+          serialize_const(binary->lhs(), s);
+          (*s) += OpInfo::str(actual_v->type());
+          serialize_const(binary->rhs(), s);
+        }
+        case op_null:
+          *s = "op_null";
           break;
+
+        default: {
+          string msg = "unexpected type: " + OpInfo::str(actual_v->type());
+          kphp_assert_msg(false, msg.c_str());
+          break;
+        }
       }
     }
 
