@@ -1050,6 +1050,18 @@ inline FunctionStaticInit::FunctionStaticInit (FunctionPtr function, bool in_hea
   function (function),
   in_header (in_header) {
 }
+
+inline static void init_vars(const vector<VarPtr> & vars, CodeGenerator &W) {
+  FOREACH (vars, i) {
+    VarPtr var = *i;
+
+    if (var->global_init_flag) {
+      continue;
+    }
+    W << InitVar(var);
+  }
+}
+
 void FunctionStaticInit::compile (CodeGenerator &W) const {
   if (function->is_static_init_empty_body()) {
     return;
@@ -1064,20 +1076,15 @@ void FunctionStaticInit::compile (CodeGenerator &W) const {
   }
 
   W << " " << BEGIN;
-  FOREACH (function->const_var_ids, i) {
-    VarPtr var = *i;
-    if (var->global_init_flag) {
-      continue;
-    }
-    W << InitVar (var);
-  }
-  FOREACH (function->header_const_var_ids, i) {
-    VarPtr var = *i;
-    if (var->global_init_flag) {
-      continue;
-    }
-    W << InitVar (var);
-  }
+
+  std::vector<VarPtr> ordered_vars;
+  ordered_vars.insert(ordered_vars.end(), function->const_var_ids.begin(), function->const_var_ids.end());
+  ordered_vars.insert(ordered_vars.end(), function->header_const_var_ids.begin(), function->header_const_var_ids.end());
+
+  std::sort(ordered_vars.begin(), ordered_vars.end());
+
+  init_vars(ordered_vars, W);
+
   W << END << NL;
 }
 
