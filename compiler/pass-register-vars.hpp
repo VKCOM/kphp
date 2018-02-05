@@ -8,6 +8,23 @@ class CollectConstVarsPass : public FunctionPassBase {
   private:
     AUTO_PROF (collect_const_vars);
     int in_param_list;
+
+    int get_dependency_level(VertexPtr vertex) {
+      if (vertex->type() == op_var) {
+        VertexAdaptor<op_var> var_adaptor = vertex.as<op_var>();
+        return var_adaptor->get_var_id()->dependency_level;
+      }
+
+      if (vertex->type() == op_double_arrow) {
+        int dep_key = get_dependency_level(vertex.as<op_double_arrow>()->key());
+        int dep_value = get_dependency_level(vertex.as<op_double_arrow>()->value());
+
+        return std::max(dep_key, dep_value);
+      }
+
+      return 0;
+    }
+
   public:
     struct LocalT : public FunctionPassBase::LocalT {
       bool need_recursion_flag;
