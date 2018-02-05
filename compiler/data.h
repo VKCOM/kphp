@@ -42,6 +42,7 @@ public:
   bool global_init_flag;
   bool needs_const_iterator_flag;
   AccessType access_type;
+  int dependency_level;
   void set_uninited_flag (bool f);
   bool get_uninited_flag();
 
@@ -223,6 +224,11 @@ inline bool operator < (const VarPtr &a, const VarPtr &b) {
     }
     return (unsigned long)a.ptr < (unsigned long)b.ptr;
   }
+
+  if (a->dependency_level != b->dependency_level) {
+    return a->dependency_level < b->dependency_level;
+  }
+
   return a->name < b->name;
 }
 
