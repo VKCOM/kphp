@@ -1130,7 +1130,7 @@ VA_BEGIN (op_false, meta_op_base)
     OPP (type, common_op);
     OPP (rl, rl_const);
     OPP (cnst, cnst_const_func);
-    OPP (str, "<TODO: todo1>");
+    OPP (str, "<TODO: op_false>");
   PROPERTIES_END
 VA_END
 VA_BEGIN (op_true, meta_op_base)
@@ -1138,7 +1138,7 @@ VA_BEGIN (op_true, meta_op_base)
     OPP (type, common_op);
     OPP (rl, rl_const);
     OPP (cnst, cnst_const_func);
-    OPP (str, "<TODO: todo2>");
+    OPP (str, "<TODO: op_true>");
   PROPERTIES_END
 VA_END
 VA_BEGIN (op_null, meta_op_base)
@@ -1146,7 +1146,7 @@ VA_BEGIN (op_null, meta_op_base)
     OPP (type, common_op);
     OPP (rl, rl_const);
     OPP (cnst, cnst_const_func);
-    OPP (str, "<TODO: todo3>");
+    OPP (str, "<TODO: op_null>");
   PROPERTIES_END
 VA_END
 VA_BEGIN_2 (op_var, meta_op_base, variable, string)
