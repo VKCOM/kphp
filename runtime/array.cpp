@@ -1639,6 +1639,11 @@ void array <T, TT>::set_value (const iterator &it) {
   }
 }
 
+template <class T, class TT>
+void array<T, TT>::assign_raw(const char * s) {
+  php_assert(sizeof(array_inner) == 8 * sizeof(int));
+  p = reinterpret_cast<array_inner *>(const_cast<char *>(s));
+}
 
 template <class T, class TT>
 const var array <T, TT>::get_var (int int_key) const {

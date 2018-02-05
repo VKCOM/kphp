@@ -395,6 +395,10 @@ public:
   void set_value (const const_iterator &it);
   void set_value (const iterator &it);
 
+  // assign binary array_inner representation
+  // can be used only on empty arrays to receive logically const array
+  void assign_raw(const char * s);
+
   const var get_var (int int_key) const;
   const var get_var (const string &s) const;
   const var get_var (const var &v) const;
