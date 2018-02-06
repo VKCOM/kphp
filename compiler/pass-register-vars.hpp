@@ -180,6 +180,8 @@ class CollectConstVarsPass : public FunctionPassBase {
         name = gen_const_string_name(root.as<op_string>()->str_val);
       } else if (root->type() == op_conv_regexp && root.as<op_conv_regexp>()->expr()->type() == op_string) {
         name = gen_const_regexp_name(root.as<op_conv_regexp>()->expr().as<op_string>()->str_val);
+      } else if (is_array_suitable_for_hashing(root)) {
+          name = gen_const_array_name(root.as<op_array>());
       } else {
         global_init_flag = false;
         name = gen_unique_name("const_var");

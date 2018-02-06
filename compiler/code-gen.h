@@ -1066,17 +1066,25 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   W << ExternInclude ("php_functions.h");
 
   vector <VarPtr> const_string_vars;
+  vector <VarPtr> const_array_vars;
   vector <VarPtr> const_regexp_vars;
   FOREACH (vars, var) {
     W << VarDeclaration (*var);
-    if ((*var)->type ()== VarData::var_const_t &&
-        (*var)->global_init_flag) {
-      if ((*var)->init_val->type() == op_string) {
-        const_string_vars.push_back (*var);
-      } else if ((*var)->init_val->type() == op_conv_regexp) {
-        const_regexp_vars.push_back (*var);
-      } else {
-        kphp_fail();
+    if ((*var)->type ()== VarData::var_const_t && (*var)->global_init_flag) {
+      switch ((*var)->init_val->type()) {
+        case op_string:
+          const_string_vars.push_back(*var);
+          break;
+        case op_conv_regexp:
+          const_regexp_vars.push_back(*var);
+          break;
+        case op_array: {
+          add_dependent_declarations((*var)->init_val, W);
+          const_array_vars.push_back(*var);
+          break;
+        }
+        default:
+          kphp_fail();
       }
     }
   }
@@ -1108,17 +1116,36 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   W << "static const char *raw = ";
   compile_string_raw (raw_data, W);
   W << ";" << NL;
-  W << "void const_vars_init" << int_to_str (file_num) << "()";
-  W << BEGIN;
-  ii = 0;
-  FOREACH (const_string_vars, var) {
-    W << VarName (*var) << ".assign_raw (&raw[" << int_to_str (const_string_shifts[ii]) << "]);" << NL;
-    ii++;
+
+  vector<int> const_array_shifts = compile_arrays_raw_representation(const_array_vars, W);
+  assert(const_array_shifts.size() == const_array_vars.size());
+
+  for (int pr = 0; pr <= max_dependency_level; ++pr) {
+    W << NL << "void const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(file_num) << "()";
+    W << BEGIN;
+
+    for (size_t ii = 0; ii < const_string_vars.size(); ++ii) {
+      VarPtr var = const_string_vars[ii];
+      if (var->dependency_level == pr) {
+        W << VarName(var) << ".assign_raw (&raw[" << int_to_str(const_string_shifts[ii]) << "]);" << NL;
+      }
+    }
+
+    FOREACH (const_regexp_vars, var) {
+      if ((*var)->dependency_level == pr) {
+        W << InitVar(*var);
+      }
+    }
+
+    for (size_t array_id = 0; array_id < const_array_vars.size(); ++array_id) {
+      VarPtr var = const_array_vars[array_id];
+
+      if (var->dependency_level == pr) {
+        compile_raw_array(W, var, const_array_shifts[array_id]);
+      }
+    }
+    W << END << NL;
   }
-  FOREACH (const_regexp_vars, var) {
-    W << InitVar (*var);
-  }
-  W << END;
 
   W << CloseFile();
 }
@@ -1146,13 +1173,15 @@ inline void VarsCpp::compile (CodeGenerator &W) const {
   }
 
   W << OpenFile ("vars.cpp");
-  for (int i = 0; i < parts_cnt; i++) {
-    W << "void const_vars_init" << int_to_str (i) << "();" << NL;
-  }
 
   W << "void const_vars_init()" << BEGIN;
-  for (int i = 0; i < parts_cnt; i++) {
-    W << "const_vars_init" << int_to_str (i) << "();" << NL;
+  for (int pr = 0; pr <= max_dependency_level; ++pr) {
+    for (int i = 0; i < parts_cnt; i++) {
+      // function declaration
+      W << "void const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(i) << "();" << NL;
+
+      W << "const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(i) << "();" << NL;
+    }
   }
   W << END;
   W << CloseFile();
