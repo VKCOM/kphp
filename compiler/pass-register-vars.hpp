@@ -194,6 +194,17 @@ class CollectConstVarsPass : public FunctionPassBase {
       var->location = loc;
 
       VarPtr var_id = G->get_global_var (name, VarData::var_const_t, root);
+      if (root->type() != op_array) {
+        var_id->dependency_level = 0;
+      } else {
+        int max_dep_level = 1;
+        FOREACH(root.as<op_array>()->args(), it) {
+          max_dep_level = std::max(max_dep_level, get_dependency_level(*it) + 1);
+        }
+
+        var_id->dependency_level = max_dep_level;
+      }
+
       var_id->global_init_flag = global_init_flag;
 
       if (in_param_list > 0) {

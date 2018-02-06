@@ -361,8 +361,9 @@ struct RunFunction {
 
 struct VarsCppPart {
   int file_num;
+  int max_dependency_level;
   const vector <VarPtr> &vars;
-  inline VarsCppPart (int file_num, const vector <VarPtr> &vars);
+  inline VarsCppPart (int file_num, const vector <VarPtr> &vars, int max_dependency_level);
   inline void compile (CodeGenerator &W) const;
 private:
   DISALLOW_COPY_AND_ASSIGN (VarsCppPart);
@@ -927,10 +928,13 @@ inline void InitScriptsCpp::compile (CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars) :
+inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars, int max_dependency_level):
   file_num (file_num),
+  max_dependency_level (max_dependency_level),
   vars (vars) {
+  assert(max_dependency_level >= 0);
 }
+
 inline void VarsCppPart::compile (CodeGenerator &W) const {
   string file_name = string ("vars") + int_to_str (file_num) + ".cpp";
   W << OpenFile (file_name);
@@ -1005,14 +1009,16 @@ inline void VarsCpp::compile (CodeGenerator &W) const {
   kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
   vector <vector <VarPtr> > vcpp (parts_cnt);
 
+  int max_dependency_level = 0;
   FOREACH (vars, i) {
     int vi = (unsigned)hash ((*i)->name) % parts_cnt;
     vcpp[vi].push_back (*i);
+    max_dependency_level = std::max(max_dependency_level, (*i)->dependency_level);
   }
 
   for (int i = 0; i < parts_cnt; i++) {
     sort (vcpp[i].begin(), vcpp[i].end());
-    W << VarsCppPart (i, vcpp[i]);
+    W << VarsCppPart (i, vcpp[i], max_dependency_level);
   }
 
   W << OpenFile ("vars.cpp");
