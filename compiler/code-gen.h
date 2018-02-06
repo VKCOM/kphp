@@ -971,13 +971,13 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
       raw_data.append (shift_to_align, 0);
     }
     const string &s = (*var)->init_val.as <op_string>()->get_string();
-    int raw_len = string_raw_len (s.size());
+    int raw_len = string_raw_len (static_cast<int>(s.size()));
     kphp_assert (raw_len != -1);
     const_string_shifts[ii] = (int)raw_data.size();
     raw_data.append (raw_len, 0);
     int err = string_raw (&raw_data[const_string_shifts[ii]], raw_len, s.c_str(), (int)s.size());
     kphp_assert (err == raw_len);
-    const_string_length[ii] = (int)raw_data.size() - const_string_shifts[ii];
+    const_string_length[ii] = raw_len;
     ii++;
   }
 

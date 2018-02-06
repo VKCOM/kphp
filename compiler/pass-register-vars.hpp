@@ -174,18 +174,15 @@ class CollectConstVarsPass : public FunctionPassBase {
 
     VertexPtr create_const_variable (VertexPtr root, Location loc) {
       string name;
-      bool global_init_flag = false;
+      bool global_init_flag = true;
+
       if (root->type() == op_string) {
-        name = gen_const_string_name (root.as <op_string>()->str_val);
-        global_init_flag = true;
-      } else if (root->type() == op_conv_regexp &&
-                 root.as <op_conv_regexp>()->expr()->type() == op_string) {
-        name = gen_const_regexp_name (
-            root.as <op_conv_regexp>()->expr().
-                 as <op_string>()->str_val);
-        global_init_flag = true;
+        name = gen_const_string_name(root.as<op_string>()->str_val);
+      } else if (root->type() == op_conv_regexp && root.as<op_conv_regexp>()->expr()->type() == op_string) {
+        name = gen_const_regexp_name(root.as<op_conv_regexp>()->expr().as<op_string>()->str_val);
       } else {
-        name = gen_unique_name ("const_var");
+        global_init_flag = false;
+        name = gen_unique_name("const_var");
       }
 
       CREATE_VERTEX (var, op_var);
@@ -231,41 +228,51 @@ class CollectConstVarsPass : public FunctionPassBase {
       in_param_list += root->type() == op_func_param_list;
 
       local->need_recursion_flag = false;
-      if (root->type() == op_define_val) {
-        VertexPtr expr = GenTree::get_actual_value(root);
-        if (should_convert_to_const(expr)) {
-          return create_const_variable(expr, root->location);
-        }
-        return root;
-      }
+
       if (root->type() == op_defined || root->type() == op_require || root->type() == op_require_once) {
         return root;
       }
 
-      if (root->const_type == cnst_const_val) {
-        bool conv_to_const = false;
-        conv_to_const |= should_convert_to_const(root);
+      if (root->const_type == cnst_const_val && root->type() == op_conv_regexp) {
+        VertexPtr expr = GenTree::get_actual_value(root.as <op_conv_regexp>()->expr());
 
-        if (root->type() == op_conv_regexp) {
-          VertexPtr expr = GenTree::get_actual_value(root.as <op_conv_regexp>()->expr());
-          conv_to_const |= expr->type() == op_string || expr->type() == op_concat ||
-            expr->type() == op_string_build;
-        }
+        bool conv_to_const =
+          expr->type() == op_string ||
+          expr->type() == op_concat ||
+          expr->type() == op_string_build ||
+          should_convert_to_const(root);
 
         if (conv_to_const) {
           return create_const_variable (root, root->location);
         }
       }
-
       local->need_recursion_flag = true;
+
       return root;
     }
     bool need_recursion (VertexPtr root __attribute__((unused)), LocalT *local) {
       return local->need_recursion_flag;
     }
+
     VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
+      VertexPtr res = root;
+
+      if (root->type() == op_define_val) {
+        VertexPtr expr = GenTree::get_actual_value(root);
+        if (should_convert_to_const(expr)) {
+          res = create_const_variable(expr, root->location);
+        }
+      }
+
+      if (root->const_type == cnst_const_val) {
+        if (should_convert_to_const(root)) {
+          res = create_const_variable(root, root->location);
+        }
+      }
+
       in_param_list -= root->type() == op_func_param_list;
-      return root;
+
+      return res;
     }
 };
 
