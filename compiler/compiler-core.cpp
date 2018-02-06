@@ -644,11 +644,11 @@ VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
   for (int i = 0; i < call_args_n; i++) {
     if (i < func_args_n) {
       if (func_args[i]->type() == op_func_param) {
-        kphp_error_act (
-          call_args[i]->type() != op_func_name,
-          "Unexpected function pointer",
-          continue
-        );
+        if (call_args[i]->type() == op_func_name) {
+          string msg = "Unexpected function pointer: " + call_args[i]->get_string();
+          kphp_error(false, msg.c_str());
+          continue;
+        }
         VertexAdaptor <op_func_param> param = func_args[i];
         if (param->type_help != tp_Unknown) {
           call_args[i] = GenTree::conv_to (call_args[i], param->type_help, param->var()->ref_flag);
