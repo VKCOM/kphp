@@ -154,11 +154,13 @@ class CollectConstVarsPass : public FunctionPassBase {
           break;
         case op_conv_int:
           serialize_const(v.as<meta_op_unary_>()->expr(), s);
+          break;
         case op_add: {
           VertexAdaptor<meta_op_binary_op> binary = v.as<meta_op_binary_op>();
           serialize_const(binary->lhs(), s);
           (*s) += OpInfo::str(actual_v->type());
           serialize_const(binary->rhs(), s);
+          break;
         }
         case op_null:
           *s = "op_null";
