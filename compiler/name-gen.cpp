@@ -93,10 +93,17 @@ inline long long array_hash(VertexPtr vertex) {
     }
 
     case op_array: {
+      const static long long MAGIC1 = 536536536536960LL;
+      const static long long MAGIC2 = 288288288288069LL;
+
       long long res_hash = actual_vertex.as<op_array>()->args().size();
+      res_hash = res_hash * HASH_MULT + MAGIC1;
+
       FOREACH(actual_vertex.as<op_array>()->args(), it) {
         res_hash = res_hash * HASH_MULT + array_hash(*it);
       }
+
+      res_hash = res_hash * HASH_MULT + MAGIC2;
 
       return res_hash;
     }
