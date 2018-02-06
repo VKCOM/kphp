@@ -935,6 +935,130 @@ inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars, int 
   assert(max_dependency_level >= 0);
 }
 
+
+inline static void add_dependent_declarations(VertexPtr vertex, CodeGenerator & W) {
+  FOREACH(vertex.as<op_array>(), array_el_it) {
+    if ((*array_el_it)->type() == op_var) {
+      W << VarDeclaration((*array_el_it)->get_var_id(), true, true);
+    }
+  }
+}
+
+inline int array_len() {
+  return (8 * sizeof(int)) / sizeof(double);
+}
+
+
+inline void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
+  if (shift == -1) {
+    W << InitVar(var);
+    W << VarName(var) << ".set_reference_counter_to_const();" << NL << NL;
+    return;
+  }
+
+  const Location &save_location = stage::get_location();
+  W << UnlockComments();
+  W << UpdateLocation (var->init_val->location);
+
+  W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << int_to_str(shift) <<"]);" << NL << NL;
+
+  W << LockComments();
+  stage::set_location(save_location);
+}
+
+static inline bool can_generate_raw_representation(VertexAdaptor<op_array> vertex) {
+  FOREACH(vertex->args(), it) {
+    switch (GenTree::get_actual_value(*it)->type()) {
+      case op_int_const:
+      case op_float_const:
+        continue;
+      default:
+        return false;
+    }
+  }
+
+  return true;
+}
+
+std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_array_vars, CodeGenerator &W) {
+  std::vector<int> shifts;
+  shifts.reserve(const_array_vars.size());
+
+  int shift = 0;
+
+  W << "static const union { struct { unsigned int a; unsigned int b; } is; double d; } raw_arrays[] = { ";
+
+  FOREACH(const_array_vars, var_it) {
+    VertexAdaptor<op_array> vertex = (*var_it)->init_val.as<op_array>();
+
+    TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at(Key::any_key());
+
+
+    int array_size = vertex->size();
+    int array_len_in_doubles = -1;
+
+    if (0 <= array_size && array_size <= (1 << 30) - array_len()) {
+      if (vertex_inner_type->ptype() == tp_int) {
+        array_len_in_doubles = array_len() + (array_size + 1) / 2;
+      } else if (vertex_inner_type->ptype() == tp_float) {
+        array_len_in_doubles = array_len() + array_size;
+      }
+    }
+
+    if (array_len_in_doubles == -1 || !can_generate_raw_representation(vertex)) {
+      shifts.push_back(-1);
+      continue;
+    }
+
+    if (shift != 0) {
+      W << ",";
+    }
+
+    shifts.push_back(shift);
+    shift += array_len_in_doubles;
+
+    // ref_cnt, max_key
+    W << "{ .is = { .a = " << int_to_str(REF_CNT_FOR_CONST) << ", .b = " << int_to_str(array_size - 1) << "}},";
+
+    // end_.next, end_.prev
+    W << "{ .is = { .a = 0, .b = 0}},";
+
+    // int_size, int_buf_size
+    W << "{ .is = { .a = " << int_to_str(array_size) << ", .b = " << int_to_str(array_size) << "}},";
+
+    // string_size, string_buf_size
+    W << "{ .is = { .a = 0 , .b = (unsigned int) -1 }}";
+
+    for (VertexRange it = vertex->args(); !it.empty();) {
+      VertexPtr actual_vertex = GenTree::get_actual_value(*it);
+      kphp_assert(vertex_inner_type->ptype() == tp_int || vertex_inner_type->ptype() == tp_float);
+
+      if (vertex_inner_type->ptype() == tp_int) {
+        W << ",{ .is = { .a = (unsigned int) " << actual_vertex->get_string() << ", .b = (unsigned int) ";
+        it.next();
+
+        if (!it.empty()) {
+          actual_vertex = GenTree::get_actual_value(*it);
+          W << actual_vertex->get_string() << "}}";
+        } else {
+          W << "0}}";
+          break;
+        }
+      } else {
+        assert(vertex_inner_type->ptype() == tp_float);
+
+        W << ", { .d =" << actual_vertex->get_string() << " }";
+      }
+
+      it.next();
+    }
+  }
+
+  W << "};\n";
+
+  return shifts;
+}
+
 inline void VarsCppPart::compile (CodeGenerator &W) const {
   string file_name = string ("vars") + int_to_str (file_num) + ".cpp";
   W << OpenFile (file_name);
