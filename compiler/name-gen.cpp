@@ -107,7 +107,7 @@ inline long long array_hash(VertexPtr vertex) {
     }
   }
 
-  assert(/* "unreachable state" */ false);
+  kphp_fail(/* unreachable state */);
 }
 
 bool is_array_suitable_for_hashing(VertexPtr vertex) {

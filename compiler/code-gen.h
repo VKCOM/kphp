@@ -932,7 +932,7 @@ inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars, int 
   file_num (file_num),
   max_dependency_level (max_dependency_level),
   vars (vars) {
-  assert(max_dependency_level >= 0);
+  kphp_assert(max_dependency_level >= 0);
 }
 
 
@@ -986,7 +986,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
 
   int shift = 0;
 
-  W << "static const union { struct { unsigned int a; unsigned int b; } is; double d; } raw_arrays[] = { ";
+  W << "static const union { struct { int a; int b; } is; double d; } raw_arrays[] = { ";
 
   FOREACH(const_array_vars, var_it) {
     VertexAdaptor<op_array> vertex = (*var_it)->init_val.as<op_array>();
@@ -1027,19 +1027,19 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     W << "{ .is = { .a = " << int_to_str(array_size) << ", .b = " << int_to_str(array_size) << "}},";
 
     // string_size, string_buf_size
-    W << "{ .is = { .a = 0 , .b = (unsigned int) -1 }}";
+    W << "{ .is = { .a = 0 , .b = -1 }}";
 
     for (VertexRange it = vertex->args(); !it.empty();) {
       VertexPtr actual_vertex = GenTree::get_actual_value(*it);
       kphp_assert(vertex_inner_type->ptype() == tp_int || vertex_inner_type->ptype() == tp_float);
 
       if (vertex_inner_type->ptype() == tp_int) {
-        W << ",{ .is = { .a = (unsigned int) " << actual_vertex->get_string() << ", .b = (unsigned int) ";
+        W << ",{ .is = { .a = " << actual_vertex << ", .b = ";
         it.next();
 
         if (!it.empty()) {
           actual_vertex = GenTree::get_actual_value(*it);
-          W << actual_vertex->get_string() << "}}";
+          W << actual_vertex << "}}";
         } else {
           W << "0}}";
           break;
@@ -1047,7 +1047,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
       } else {
         assert(vertex_inner_type->ptype() == tp_float);
 
-        W << ", { .d =" << actual_vertex->get_string() << " }";
+        W << ", { .d =" << actual_vertex << " }";
       }
 
       it.next();
