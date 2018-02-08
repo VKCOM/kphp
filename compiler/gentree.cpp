@@ -2257,7 +2257,7 @@ VertexPtr GenTree::post_process (VertexPtr root) {
   if (root->type() == op_func_call && root->get_string() == "call_user_func_array") {
     VertexRange args = root.as <op_func_call>()->args();
     kphp_error ((int)args.size() == 2, dl_pstr ("Call_user_func_array expected 2 arguments, got %d", (int)root->size()));
-    kphp_error (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string");
+    kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
     CREATE_VERTEX (arg, op_varg, args[1]);
     ::set_location (arg, args[1]->get_location());
     CREATE_VERTEX (new_root, op_func_call, arg);

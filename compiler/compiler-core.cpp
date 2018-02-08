@@ -648,6 +648,9 @@ VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
           string msg = "Unexpected function pointer: " + call_args[i]->get_string();
           kphp_error(false, msg.c_str());
           continue;
+        } else if (call_args[i]->type() == op_varg) {
+          string msg = "function: `" + func->name +"` must takes variable-length argument list";
+          kphp_error_act(false, msg.c_str(), break);
         }
         VertexAdaptor <op_func_param> param = func_args[i];
         if (param->type_help != tp_Unknown) {
