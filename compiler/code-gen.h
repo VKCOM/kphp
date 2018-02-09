@@ -937,10 +937,29 @@ inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars, int 
 
 
 inline static void add_dependent_declarations(VertexPtr vertex, CodeGenerator & W) {
-  FOREACH(vertex.as<op_array>(), array_el_it) {
-    if ((*array_el_it)->type() == op_var) {
-      W << VarDeclaration((*array_el_it)->get_var_id(), true, true);
+  switch (vertex->type()) {
+    case op_var:
+      W << VarDeclaration(vertex->get_var_id(), true, true);
+      break;
+
+    case op_double_arrow: {
+      VertexAdaptor <op_double_arrow> arrow = vertex.as<op_double_arrow>();
+      VertexPtr key = arrow->key();
+      VertexPtr value = arrow->value();
+
+      add_dependent_declarations(key, W);
+      add_dependent_declarations(value, W);
+      break;
     }
+
+    case op_array:
+      FOREACH(vertex.as<op_array>(), array_el_it) {
+        add_dependent_declarations(*array_el_it, W);
+      }
+      break;
+
+    default:
+      return;
   }
 }
 

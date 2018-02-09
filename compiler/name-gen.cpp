@@ -73,7 +73,8 @@ inline long long array_hash(VertexPtr vertex) {
   switch (actual_vertex->type()) {
     case op_int_const:
     case op_float_const:
-    case op_string: {
+    case op_string:
+    case op_var: {
       string s = actual_vertex->get_string() + OpInfo::str(actual_vertex->type());
       return string_hash(s.c_str(), static_cast<int>(s.size()));
     }

@@ -40,6 +40,14 @@ class CollectConstVarsPass : public FunctionPassBase {
     static bool check_const (VertexPtr v, int *nodes_cnt) {
       (*nodes_cnt)++;
 
+      if (v->type() == op_var) {
+        if (v->get_var_id()->is_constant) {
+          return check_const(v->get_var_id()->init_val, nodes_cnt);
+        }
+
+        return false;
+      }
+
       if (!(v->type() == op_string || v->type() == op_int_const || v->type() == op_array ||
             v->type() == op_float_const || v->type() == op_true || v->type() == op_false || v->type() == op_null)) {
         return false;
@@ -56,7 +64,7 @@ class CollectConstVarsPass : public FunctionPassBase {
 
             has_key = true;
 
-            if (key->type() != op_int_const && key->type() != op_string) {
+            if (key->type() != op_int_const && key->type() != op_string && key->type() != op_var) {
               return false;
             }
 
@@ -237,17 +245,24 @@ class CollectConstVarsPass : public FunctionPassBase {
         return root;
       }
 
-      if (root->const_type == cnst_const_val && root->type() == op_conv_regexp) {
-        VertexPtr expr = GenTree::get_actual_value(root.as <op_conv_regexp>()->expr());
+      if (root->const_type == cnst_const_val) {
+        if(root->type() == op_conv_regexp) {
+          VertexPtr expr = GenTree::get_actual_value(root.as<op_conv_regexp>()->expr());
 
-        bool conv_to_const =
-          expr->type() == op_string ||
-          expr->type() == op_concat ||
-          expr->type() == op_string_build ||
-          should_convert_to_const(root);
+          bool conv_to_const =
+            expr->type() == op_string ||
+            expr->type() == op_concat ||
+            expr->type() == op_string_build ||
+            should_convert_to_const(root);
 
-        if (conv_to_const) {
-          return create_const_variable (root, root->location);
+          if (conv_to_const) {
+            return create_const_variable(root, root->location);
+          }
+        }
+        if (root->type() != op_string && root->type() != op_array) {
+           if (should_convert_to_const(root)) {
+             return create_const_variable(root, root->location);
+           }
         }
       }
       local->need_recursion_flag = true;
