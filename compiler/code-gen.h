@@ -936,10 +936,10 @@ inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars, int 
 }
 
 
-inline static void add_dependent_declarations(VertexPtr vertex, CodeGenerator & W) {
+inline static void add_dependent_declarations(VertexPtr vertex, std::map<std::string, VertexPtr> &dependent_vars) {
   switch (vertex->type()) {
     case op_var:
-      W << VarDeclaration(vertex->get_var_id(), true, true);
+      dependent_vars[vertex->get_var_id()->name] = vertex;
       break;
 
     case op_double_arrow: {
@@ -947,14 +947,14 @@ inline static void add_dependent_declarations(VertexPtr vertex, CodeGenerator & 
       VertexPtr key = arrow->key();
       VertexPtr value = arrow->value();
 
-      add_dependent_declarations(key, W);
-      add_dependent_declarations(value, W);
+      add_dependent_declarations(key, dependent_vars);
+      add_dependent_declarations(value, dependent_vars);
       break;
     }
 
     case op_array:
       FOREACH(vertex.as<op_array>(), array_el_it) {
-        add_dependent_declarations(*array_el_it, W);
+        add_dependent_declarations(*array_el_it, dependent_vars);
       }
       break;
 
@@ -1087,6 +1087,8 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   vector <VarPtr> const_string_vars;
   vector <VarPtr> const_array_vars;
   vector <VarPtr> const_regexp_vars;
+  std::map<std::string, VertexPtr> dependent_vars;
+
   FOREACH (vars, var) {
     W << VarDeclaration (*var);
     if ((*var)->type ()== VarData::var_const_t && (*var)->global_init_flag) {
@@ -1098,7 +1100,7 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
           const_regexp_vars.push_back(*var);
           break;
         case op_array: {
-          add_dependent_declarations((*var)->init_val, W);
+          add_dependent_declarations((*var)->init_val, dependent_vars);
           const_array_vars.push_back(*var);
           break;
         }
@@ -1106,6 +1108,10 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
           kphp_fail();
       }
     }
+  }
+
+  FOREACH(dependent_vars, name_vertex_it) {
+    W << VarDeclaration(name_vertex_it->second->get_var_id(), true, true);
   }
 
   if (file_num == 0) {
