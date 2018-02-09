@@ -318,13 +318,13 @@ static inline const char* f$fetch_string_raw (const string &file, int line, int 
 }
 
 string f$fetch_string (const string &file, int line) {
-  int result_len;
+  int result_len = 0;
   const char *str = TRY_CALL(const char*, string, f$fetch_string_raw(file, line, &result_len));
   return string (str, result_len);
 }
 
 int f$fetch_string_as_int (const string &file, int line) {
-  int result_len;
+  int result_len = 0;
   const char *str = TRY_CALL(const char*, int, f$fetch_string_raw(file, line, &result_len));
   return string::to_int (str, result_len);
 }
