@@ -3089,7 +3089,7 @@ void start_server (void) {
   }
 
   if (verbosity > 0 && http_sfd >= 0) {
-    vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", conv_addr (settings_addr.s_addr, NULL), port, http_sfd);
+    vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), port, http_sfd);
   }
 
   if (change_user (username) < 0) {
