@@ -380,7 +380,7 @@ command_t *create_command_net_writer (const char *data, int data_len, command_t 
 int rpc_main_target = -1;
 int rpc_lease_target = -1;
 double rpc_lease_timeout = -1;
-npid_t lease_pid;
+process_id_t lease_pid;
 
 double lease_stats_start_time;
 double lease_stats_time;
@@ -1708,7 +1708,7 @@ void rpc_send_lease_stats (struct connection *c) {
   int q[100], qn = 0;
   qn += 2;
   q[qn++] = -1;
-  *(npid_t *)(q + qn) = lease_pid;
+  *(process_id_t*)(q + qn) = lease_pid;
   assert (sizeof (lease_pid) == 12);
   qn += 3;
   *(double *)(q + qn) = precise_now - lease_stats_start_time;
@@ -1867,7 +1867,7 @@ void do_rpc_stop_lease (void) {
   run_rpc_lease();
 }
 
-int do_rpc_start_lease (npid_t pid, double timeout) {
+int do_rpc_start_lease (process_id_t pid, double timeout) {
   if (rpc_main_target == -1) {
     return -1;
   }
@@ -1992,7 +1992,7 @@ int rpcx_execute (struct connection *c, int op, int len) {
   if (sigterm_on && sigterm_time < precise_now) {
     return SKIP_ALL_BYTES;
   }
-  npid_t xpid;
+  process_id_t xpid;
 
   switch (op) {
   case TL_KPHP_STOP_LEASE:
@@ -2021,7 +2021,7 @@ int rpcx_execute (struct connection *c, int op, int len) {
         return 0;
       }
       assert (sizeof (xpid) == 12);
-      xpid = *(npid_t *)v;
+      xpid = *(process_id_t *)v;
       v += 3;
       len -= 3;
       int timeout = *v++;
@@ -3484,9 +3484,11 @@ void parse_main_args_end (int argc, char *argv[]) {
 
 void parse_main_args (int argc, char *argv[]) {
   progname = argv[0];
-  init_parse_options(LONGOPT_OTHER_NET_SET, 0);
-  remove_parse_option('l');
-  remove_parse_option('p');
+  const char *sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOISTY, NULL};
+  init_parse_options(sections);
+
+  remove_parse_option("log");
+  remove_parse_option("port");
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
@@ -3535,7 +3537,7 @@ void init_default (void) {
     exit (1);
   }
 
-  aes_load_pwd_file (NULL);
+  aes_load_default_pwd_file();
 
   if (change_user (username) < 0) {
     vkprintf (-1, "fatal: cannot change user to %s\n", username ? username : "(none)");
