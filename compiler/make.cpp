@@ -172,6 +172,18 @@ static int run_cmd (const string &cmd) {
 bool Make::start_job (Target *target) {
   target->start_time = dl_time();
   string cmd = target->get_cmd();
+
+  if (Cpp2ObjTarget *cpp_target = dynamic_cast<Cpp2ObjTarget *>(target)) {
+    if (cpp_target->get_file()->name_without_ext.substr(0, 4) == "vars") {
+      string const & needle = "-ggdb";
+      size_t pos = cmd.find(needle);
+      if (pos != std::string::npos) {
+        std::string::iterator it = cmd.begin() + pos;
+        cmd.erase(it, it + needle.length());
+      }
+    }
+  }
+
   int pid = run_cmd (cmd);
   if (pid < 0) {
     return false;
@@ -314,7 +326,7 @@ bool Make::make_target (Target *target, int jobs_count) {
   //TODO: use old handlers instead SIG_DFL
   dl_signal (SIGINT, SIG_DFL);
   dl_signal (SIGTERM, SIG_DFL);
-  return !fail_flag && target->is_ready; 
+  return !fail_flag && target->is_ready;
 }
 Make::Make() :
   targets_waiting (0),
@@ -369,6 +381,11 @@ void KphpTarget::set_file (File *new_file) {
   file = new_file;
   set_mtime (file->mtime);
 }
+
+File * KphpTarget::get_file () const{
+  return file;
+}
+
 void KphpTarget::set_env (KphpMakeEnv *new_env) {
   assert (env == NULL);
   env = new_env;

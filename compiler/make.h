@@ -99,6 +99,7 @@ class KphpTarget : public Target {
     virtual bool after_run_success();
     virtual void after_run_fail();
     void set_file (File *new_file);
+    File * get_file () const;
     void set_env (KphpMakeEnv *new_env);
 };
 class FileTarget : public KphpTarget {
