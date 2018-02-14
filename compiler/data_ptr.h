@@ -13,7 +13,7 @@ class SrcFile;
 class Token;
 class FunctionSet;
 class FunctionMatcher;
-struct Location;
+class Location;
 
 typedef Id <FunctionData> FunctionPtr;
 typedef Id <VarData> VarPtr;

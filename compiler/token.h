@@ -185,7 +185,8 @@ enum TokenType {
   tok_end
 };
 
-struct Token {
+class Token {
+public:
   TokenType type_;
   string_ref str_val;
   string_ref debug_str;

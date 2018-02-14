@@ -1430,7 +1430,6 @@ VertexPtr GenTree::get_switch() {
   return switch_vertex;
 }
 
-static volatile int anonimous_func_id = 0;
 VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType access_type) {
   AutoLocation func_location (this);
 

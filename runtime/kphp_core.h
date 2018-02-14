@@ -228,16 +228,16 @@ template <class T>
 inline double divide (const T &lhs, bool rhs);
 
 template <class T>
-inline double divide (bool lhs, const array <T> &rhs);
+inline double divide (bool, const array <T> &rhs);
 
 template <class T>
-inline double divide (const array <T> &lhs, bool rhs);
+inline double divide (const array <T> &lhs, bool);
 
 template <class T>
-inline double divide (bool lhs, const object_ptr <T> &rhs);
+inline double divide (bool, const object_ptr <T> &);
 
 template <class T>
-inline double divide (const object_ptr <T> &lhs, bool rhs);
+inline double divide (const object_ptr <T> &, bool);
 
 
 template <class T, class T1>
@@ -248,29 +248,29 @@ inline double divide (const T1 &lhs, const array <T> &rhs);
 
 
 template <class T, class T1>
-inline double divide (const object_ptr <T> &lhs, const T1 &rhs);
+inline double divide (const object_ptr <T> &, const T1 &rhs);
 
 template <class T, class T1>
-inline double divide (const T1 &lhs, const object_ptr <T> &rhs);
+inline double divide (const T1 &lhs, const object_ptr <T> &);
 
 
 template <class T>
-inline double divide (const array <T> &lhs, const array <T> &rhs);
+inline double divide (const array <T> &, const array <T> &);
 
 template <class T>
-inline double divide (const object_ptr <T> &lhs, const object_ptr <T> &rhs);
+inline double divide (const object_ptr <T> &, const object_ptr <T> &);
 
 template <class T, class T1>
-inline double divide (const array <T> &lhs, const array <T1> &rhs);
+inline double divide (const array <T> &, const array <T1> &);
 
 template <class T, class T1>
-inline double divide (const object_ptr <T> &lhs, const object_ptr <T1> &rhs);
+inline double divide (const object_ptr <T> &, const object_ptr <T1> &);
 
 template <class T, class T1>
-inline double divide (const array <T> &lhs, const object_ptr <T1> &rhs);
+inline double divide (const array <T> &, const object_ptr <T1> &);
 
 template <class T, class T1>
-inline double divide (const object_ptr <T1> &lhs, const array <T> &rhs);
+inline double divide (const object_ptr <T1> &, const array <T> &);
 
 
 template <class T1, class T2>
@@ -1194,8 +1194,14 @@ double divide (const var &lhs, const var &rhs) {
 }
 
 
-double divide (bool lhs, bool rhs __attribute__((unused))) {
+double divide (bool lhs, bool rhs) {
   php_warning ("Both arguments of operator '/' are bool");
+
+  if (rhs == 0) {
+    php_warning ("Float division by zero");
+    return 0;
+  }
+
   return lhs;
 }
 
@@ -1208,29 +1214,35 @@ double divide (bool lhs, const T &rhs) {
 template <class T>
 double divide (const T &lhs, bool rhs) {
   php_warning ("Second argument of operator '/' is bool");
+
+  if (rhs == 0) {
+    php_warning ("Float division by zero");
+    return 0;
+  }
+
   return f$floatval (lhs);
 }
 
 template <class T>
-double divide (bool lhs, const array <T> &rhs) {
+double divide (bool, const array <T> &) {
   php_warning ("Unsupported operand types for operator '/' bool and array");
   return 0.0;
 }
 
 template <class T>
-double divide (const array <T> &lhs, bool rhs) {
+double divide (const array <T> &, bool) {
   php_warning ("Unsupported operand types for operator '/' array and bool");
   return 0.0;
 }
 
 template <class T>
-double divide (bool lhs, const object_ptr <T> &rhs) {
+double divide (bool, const object_ptr <T> &) {
   php_warning ("Unsupported operand types for operator '/' bool and object");
   return 0.0;
 }
 
 template <class T>
-double divide (const object_ptr <T> &lhs, bool rhs) {
+double divide (const object_ptr <T> &, bool) {
   php_warning ("Unsupported operand types for operator '/' object and bool");
   return 0.0;
 }
@@ -1250,50 +1262,50 @@ double divide (const T1 &lhs, const array <T> &rhs) {
 
 
 template <class T, class T1>
-double divide (const object_ptr <T> &lhs, const T1 &rhs) {
+double divide (const object_ptr <T> &, const T1 &rhs) {
   php_warning ("First argument of operator '/' is object");
   return divide (1.0, rhs);
 }
 
 template <class T, class T1>
-double divide (const T1 &lhs, const object_ptr <T> &rhs) {
+double divide (const T1 &lhs, const object_ptr <T> &) {
   php_warning ("Second argument of operator '/' is object");
   return lhs;
 }
 
 
 template <class T>
-double divide (const array <T> &lhs, const array <T> &rhs) {
+double divide (const array <T> &, const array <T> &) {
   php_warning ("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
 template <class T>
-double divide (const object_ptr <T> &lhs, const object_ptr <T> &rhs) {
+double divide (const object_ptr <T> &, const object_ptr <T> &) {
   php_warning ("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const array <T> &lhs, const array <T1> &rhs) {
+double divide (const array <T> &, const array <T1> &) {
   php_warning ("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const object_ptr <T> &lhs, const object_ptr <T1> &rhs) {
+double divide (const object_ptr <T> &, const object_ptr <T1> &) {
   php_warning ("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const array <T> &lhs, const object_ptr <T1> &rhs) {
+double divide (const array <T> &, const object_ptr <T1> &) {
   php_warning ("Unsupported operand types for operator '/' array and object");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const object_ptr <T1> &lhs, const array <T> &rhs) {
+double divide (const object_ptr <T1> &, const array <T> &) {
   php_warning ("Unsupported operand types for operator '/' object and array");
   return 0.0;
 }
@@ -1371,7 +1383,7 @@ bool f$boolval (const array <T> &val) {
 }
 
 template <class T>
-bool f$boolval (const object_ptr <T> &val) {
+bool f$boolval (const object_ptr <T> &) {
   return true;
 }
 
@@ -1403,7 +1415,7 @@ int f$intval (const array <T> &val) {
 }
 
 template <class T>
-int f$intval (const object_ptr <T> &val) {
+int f$intval (const object_ptr <T> &) {
   php_warning ("Wrong convertion from object to int");
   return 1;
 }
@@ -1439,7 +1451,7 @@ int f$safe_intval (const array <T> &val) {
 }
 
 template <class T>
-int f$safe_intval (const object_ptr <T> &val) {
+int f$safe_intval (const object_ptr <T> &) {
   php_warning ("Wrong convertion from object to int");
   return 1;
 }
@@ -1472,7 +1484,7 @@ double f$floatval (const array <T> &val) {
 }
 
 template <class T>
-double f$floatval (const object_ptr <T> &val) {
+double f$floatval (const object_ptr <T> &) {
   php_warning ("Wrong convertion from object to float");
   return 1.0;
 }
@@ -1499,7 +1511,7 @@ string f$strval (const string &val) {
 }
 
 template <class T>
-string f$strval (const array <T> &val) {
+string f$strval (const array <T> &) {
   php_warning ("Convertion from array to string");
   return string ("Array", 5);
 }
@@ -1631,7 +1643,7 @@ const string& strval_ref (const var &val) {
 
 
 template <class T>
-array <T>& arrayval_ref (array <T> &val, const char *function, int parameter_num) {
+array <T>& arrayval_ref (array <T> &val, const char *, int ) {
   return val;
 }
 
@@ -1640,7 +1652,7 @@ array <var>& arrayval_ref (var &val, const char *function, int parameter_num) {
 }
 
 template <class T>
-const array <T>& arrayval_ref (const array <T> &val, const char *function, int parameter_num) {
+const array <T>& arrayval_ref (const array <T> &val, const char *, int ) {
   return val;
 }
 
@@ -1711,7 +1723,7 @@ const T& convert_to <T>::convert (const T &val) {
 }
 
 template <class T>
-T convert_to <T>::convert (const Unknown &val) {
+T convert_to <T>::convert (const Unknown &) {
   return T();
 }
 
@@ -1787,7 +1799,7 @@ bool f$empty (const array <T> &a) {
 }
 
 template <class T>
-bool f$empty (const object_ptr <T> &a) {
+bool f$empty (const object_ptr <T> &) {
   return false;
 }
 
@@ -1806,7 +1818,7 @@ int f$count (const array <T> &a) {
 }
 
 template <class T>
-int f$count (const T &v) {
+int f$count (const T &) {
   php_warning ("Count on non-array");
   return 1;
 }
@@ -2329,7 +2341,7 @@ string f$gettype (const var &v) {
 }
 
 template <class T>
-bool f$function_exists (const T &a1) {
+bool f$function_exists (const T &) {
   return true;
 }
 

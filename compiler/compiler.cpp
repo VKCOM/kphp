@@ -2781,15 +2781,15 @@ class WriteFilesF {
             FILE *old_file = fopen (full_file_name.c_str(), "r");
             dl_passert (old_file != NULL, 
                 dl_pstr ("Failed to open [%s]", full_file_name.c_str()));
-            unsigned long long old_crc;
-            unsigned long long old_crc_with_comments;
+            unsigned long long old_crc = 0;
+            unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
 
             if (fscanf (old_file, "//crc64:%Lx", &old_crc) != 1) {
               kphp_warning (dl_pstr ("can't read crc64 from [%s]\n", full_file_name.c_str()));
-              old_crc = -1;
+              old_crc = static_cast<unsigned long long>(-1);
             } else {
               if (fscanf (old_file, " //crc64_with_comments:%Lx", &old_crc_with_comments) != 1) {
-                old_crc_with_comments = -1;
+                old_crc_with_comments = static_cast<unsigned long long>(-1);
               }
             }
             fclose (old_file);

@@ -3193,19 +3193,19 @@ bool eq2 (bool lhs, const array <T> &rhs) {
 }
 
 template <class T>
-bool eq2 (int lhs, const array <T> &rhs) {
+bool eq2 (int, const array <T> &) {
   php_warning ("Unsupported operand types for operator == (int and array)");
   return false;
 }
 
 template <class T>
-bool eq2 (double lhs, const array <T> &rhs) {
+bool eq2 (double, const array <T> &) {
   php_warning ("Unsupported operand types for operator == (float and array)");
   return false;
 }
 
 template <class T>
-bool eq2 (const string &lhs, const array <T> &rhs) {
+bool eq2 (const string &, const array <T> &) {
   php_warning ("Unsupported operand types for operator == (string and array)");
   return false;
 }
@@ -3216,78 +3216,78 @@ bool eq2 (const array <T> &lhs, bool rhs) {
 }
 
 template <class T>
-bool eq2 (const array <T> &lhs, int rhs) {
+bool eq2 (const array <T> &, int ) {
   php_warning ("Unsupported operand types for operator == (array and int)");
   return false;
 }
 
 template <class T>
-bool eq2 (const array <T> &lhs, double rhs) {
+bool eq2 (const array <T> &, double ) {
   php_warning ("Unsupported operand types for operator == (array and float)");
   return false;
 }
 
 template <class T>
-bool eq2 (const array <T> &lhs, const string &rhs) {
+bool eq2 (const array <T> &, const string &) {
   php_warning ("Unsupported operand types for operator == (array and string)");
   return false;
 }
 
 
 template <class T>
-bool eq2 (bool lhs, const object_ptr <T> &rhs) {
+bool eq2 (bool lhs, const object_ptr <T> &) {
   return lhs;
 }
 
 template <class T>
-bool eq2 (int lhs, const object_ptr <T> &rhs) {
+bool eq2 (int, const object_ptr <T> &) {
   php_warning ("Unsupported operand types for operator == (int and object)");
   return false;
 }
 
 template <class T>
-bool eq2 (double lhs, const object_ptr <T> &rhs) {
+bool eq2 (double , const object_ptr <T> &) {
   php_warning ("Unsupported operand types for operator == (float and object)");
   return false;
 }
 
 template <class T>
-bool eq2 (const string &lhs, const object_ptr <T> &rhs) {
+bool eq2 (const string &, const object_ptr <T> &) {
   php_warning ("Unsupported operand types for operator == (string and object)");
   return false;
 }
 
 template <class T, class T1>
-bool eq2 (const array <T1> &lhs, const object_ptr <T> &rhs) {
+bool eq2 (const array <T1> &, const object_ptr <T> &) {
   php_warning ("Unsupported operand types for operator == (array and object)");
   return false;
 }
 
 template <class T>
-bool eq2 (const object_ptr <T> &lhs, bool rhs) {
+bool eq2 (const object_ptr <T> &, bool rhs) {
   return rhs;
 }
 
 template <class T>
-bool eq2 (const object_ptr <T> &lhs, int rhs) {
+bool eq2 (const object_ptr <T> &, int) {
   php_warning ("Unsupported operand types for operator == (object and int)");
   return false;
 }
 
 template <class T>
-bool eq2 (const object_ptr <T> &lhs, double rhs) {
+bool eq2 (const object_ptr <T> &, double) {
   php_warning ("Unsupported operand types for operator == (object and float)");
   return false;
 }
 
 template <class T>
-bool eq2 (const object_ptr <T> &lhs, const string &rhs) {
+bool eq2 (const object_ptr <T> &, const string &) {
   php_warning ("Unsupported operand types for operator == (object and string)");
   return false;
 }
 
 template <class T, class T1>
-bool eq2 (const object_ptr <T> &lhs, const array <T1> &rhs) {
+bool eq2 (const object_ptr <T> &, const array <T1> &) {
   php_warning ("Unsupported operand types for operator == (object and array)");
   return false;
 }
@@ -3538,7 +3538,7 @@ bool equals (const T &lhs, const T &rhs) {
 }
 
 template <class T1, class T2>
-bool equals (const T1 &lhs, const T2 &rhs) {
+bool equals (const T1 &, const T2 &) {
   return false;
 }
 

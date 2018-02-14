@@ -8,7 +8,6 @@
 
 /*** C++ undefined behaviour fixes ***/
 const int UB_SIGSEGV = 3;
-const int UB_ORDER = 1;
 TLS <VarPtr> last_ub_error;
 
 template <class T>
@@ -49,12 +48,6 @@ bool is_var_written (const FunctionPtr &function, const VarPtr &var) {
     return true;
   }
   return vectors_intersect (var->bad_vars, function->bad_vars);
-}
-
-__attribute__((error("is_var_read is not implemented")))
-bool is_var_read (const FunctionPtr &function __attribute__((unused)), const VarPtr &var __attribute__((unused))) {
-  //TODO
-  return false;
 }
 
 bool is_ub_functions (const FunctionPtr &first, const FunctionPtr &second) {

@@ -42,7 +42,10 @@ public:
   Storage();
 
   template <class T1, class T2>
-  void save (const T2 &x, Getter getter = load_implementation <T1, var>);
+  void save (const T2 &x, Getter getter);
+
+  template <class T1, class T2>
+  void save (const T2 &x);
 
   void save_void (void);
 
@@ -165,6 +168,11 @@ void Storage::save (const T2 &x, Getter getter) {
     getter_ = getter;
     php_assert (getter_ != NULL);
   }
+}
+
+template <class T1, class T2>
+void Storage::save (const T2 &x) {
+  save<T1, T2>(x, load_implementation <T1, var>);
 }
 
 template <class X, class Y>

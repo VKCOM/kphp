@@ -5,7 +5,7 @@
 #include "compiler/operation.h"
 #include "compiler/token.h"
 
-struct GenTree;
+class GenTree;
 typedef VertexPtr (GenTree::*GetFunc) ();
 
 

@@ -698,11 +698,12 @@ public:
 
 class wait_multiple_resumable : public Resumable {
   int child_id;
+  forked_resumable_info *info;
 protected:
   bool run (void) {
     RESUMABLE_BEGIN
     while (true) {
-      forked_resumable_info *info = get_forked_resumable_info (child_id);
+      info = get_forked_resumable_info (child_id);
 
       if (info->queue_id < 0) {
         break;
