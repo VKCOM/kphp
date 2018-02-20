@@ -81,10 +81,12 @@ class KphpMakeEnv {
     string cxx;
     string cxx_flags;
     string ld_flags;
+    string debug_level;
   public:
     const string &get_cxx() const;
     const string &get_cxx_flags() const;
     const string &get_ld_flags() const;
+    const string &get_debug_level() const;
 };
 
 class KphpTarget : public Target {

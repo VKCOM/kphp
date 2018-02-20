@@ -249,6 +249,14 @@ int KphpEnviroment::get_warnings_level () const {
   return warnings_level;
 }
 
+void KphpEnviroment::set_debug_level (const string &level) {
+  debug_level = level;
+}
+
+const string &KphpEnviroment::get_debug_level () const {
+  return debug_level;
+}
+
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd (tmp, PATH_MAX);

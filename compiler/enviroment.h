@@ -53,6 +53,7 @@ class KphpEnviroment {
     string stats_filename;
     FILE *stats_file;
     int warnings_level;
+    string debug_level;
 
   public:
     KphpEnviroment();
@@ -114,12 +115,14 @@ class KphpEnviroment {
     void set_stats_file (FILE *file);
     void set_warnings_file (FILE *file);
     void set_warnings_level (int level);
+    void set_debug_level (const string &level);
 
     const string &get_warnings_filename () const;
     const string &get_stats_filename () const;
     FILE *get_stats_file () const;
     FILE *get_warnings_file () const;
     int get_warnings_level () const;
+    const string &get_debug_level () const;
 
     const string &get_dest_cpp_dir() const;
     const string &get_dest_objs_dir() const;
