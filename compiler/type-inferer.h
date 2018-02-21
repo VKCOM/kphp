@@ -168,6 +168,56 @@ class RestrictionLess : public Restriction {
       return false;
     }
 
+    struct ComparatorByEdgePriorityRelativeToExpectedType {
+      enum {
+        e_default_priority = 4
+      };
+
+      const TypeData *expected;
+
+      int get_priority(const tinf::Edge *edge) const {
+        const tinf::Node *to_node = edge->to;
+        const TypeData *to_type = to_node->get_type();
+        bool different_types = are_different_types(to_type, expected, edge->from_at);
+
+        if (const tinf::ExprNode *expr_node = dynamic_cast<const tinf::ExprNode *>(to_node)) {
+          VertexPtr expr_vertex = expr_node->get_expr();
+
+          if (OpInfo::arity(expr_vertex->type()) == binary_opp) {
+            to_type = tinf::get_type(expr_vertex.as<meta_op_binary_op>()->rhs());
+          } else {
+            to_type = tinf::get_type(expr_vertex);
+          }
+        } else {
+          if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(to_node)) {
+            if (var_node->is_argument_of_function()) {
+              return different_types ? 1 : (e_default_priority + 1);
+            }
+          } else if (dynamic_cast<const tinf::TypeNode *>(to_node)) {
+            return different_types ? 2 : (e_default_priority + 2);
+          }
+        }
+
+        if (to_type->ptype() == tp_array && to_type->lookup_at(Key::any_key()) == NULL) {
+          return different_types ? 3 : (e_default_priority + 3);
+        }
+
+        if (are_different_types(to_type, expected, edge->from_at)) {
+          return 0;
+        }
+
+        return e_default_priority;
+      }
+
+      explicit ComparatorByEdgePriorityRelativeToExpectedType(const TypeData *expected)
+        : expected(expected)
+      {}
+
+      bool operator()(const tinf::Edge *lhs, const tinf::Edge *rhs) const {
+        return get_priority(lhs) < get_priority(rhs);
+      }
+    };
+
     bool find_call_trace_with_error_impl(tinf::Node *cur_node) {
       std::deque<tinf::Edge *> ordered_edges;
 
