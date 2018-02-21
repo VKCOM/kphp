@@ -133,17 +133,10 @@ class RestrictionLess : public Restriction {
           a_->get_description().c_str(), b_->get_description().c_str());
     }
     int check_impl() {
-      const TypeData *a_type = a_->get_type(), *b_type = b_->get_type();
+      const TypeData *a_type = a_->get_type();
+      const TypeData *b_type = b_->get_type();
 
-      TypeData *new_type = b_type->clone();
-      string first = type_out (new_type);
-      new_type->set_lca (a_type);
-      string second = type_out (new_type);
-
-      bool ok = first == second;
-      delete new_type;
-
-      if (!ok) {
+      if (are_different_types(a_type, b_type)) {
         desc = "type inference error ";
 
         find_call_trace_with_error(a_);
@@ -238,6 +231,18 @@ class RestrictionLess : public Restriction {
       }
 
       return false;
+    }
+
+    static bool are_different_types(const TypeData *given, const TypeData *expected, const MultiKey *from_at = NULL) {
+      std::auto_ptr<TypeData> type_of_to_node(expected->clone());
+
+      if (from_at) {
+        type_of_to_node->set_lca_at(*from_at, given);
+      } else {
+        type_of_to_node->set_lca(given);
+      }
+
+      return type_out(type_of_to_node.get()) != type_out(expected);
     }
 
     void find_call_trace_with_error(tinf::Node *cur_node) {
