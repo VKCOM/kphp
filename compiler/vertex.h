@@ -481,6 +481,9 @@ VA_END
 VA_BEGIN (meta_op_binary_, meta_op_base)
   VertexPtr &lhs() {return ith (0);}
   VertexPtr &rhs() {return ith (1);}
+
+  const VertexPtr &lhs() const {return ith (0);}
+  const VertexPtr &rhs() const {return ith (1);}
 VA_END
 
 VA_BEGIN (meta_op_binary_op, meta_op_binary_)

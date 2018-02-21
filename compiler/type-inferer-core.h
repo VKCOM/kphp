@@ -113,6 +113,11 @@ namespace tinf {
       VertexPtr get_expr() {
         return expr_;
       }
+
+      const VertexPtr get_expr() const {
+        return expr_;
+      }
+
       string get_description();
       Location const & get_location();
   };
