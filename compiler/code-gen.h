@@ -137,7 +137,8 @@ struct UnlockComments {
 struct OpenFile {
   string file_name;
   string subdir;
-  inline OpenFile (const string &file_name, const string &subdir = "");
+  bool compile_with_debug_info_flag;
+  inline OpenFile (const string &file_name, const string &subdir = "", bool compile_with_debug_info_flag = true);
   inline void compile (CodeGenerator &W) const;
 };
 
@@ -538,14 +539,15 @@ inline void UnlockComments::compile (CodeGenerator &W) const {
   W.get_writer().unlock_comments();
 }
 
-inline OpenFile::OpenFile (const string &file_name, const string &subdir) :
+inline OpenFile::OpenFile (const string &file_name, const string &subdir, bool compile_with_debug_info_flag) :
   file_name (file_name),
-  subdir (subdir) {
+  subdir (subdir),
+  compile_with_debug_info_flag (compile_with_debug_info_flag) {
 }
 inline void OpenFile::compile (CodeGenerator &W) const {
   W.lock_writer();
   W.get_writer().set_callback (W.callback());
-  W.get_writer().begin_write();
+  W.get_writer().begin_write(compile_with_debug_info_flag);
   W.get_writer().set_file_name (file_name, subdir);
 }
 
@@ -862,7 +864,7 @@ inline void RunFunction::compile (CodeGenerator &W) const {
 }
 
 inline void InitScriptsH::compile (CodeGenerator &W) const {
-  W << OpenFile ("init_scripts.h");
+  W << OpenFile ("init_scripts.h", "", false);
 
   W << "#ifdef  __cplusplus" << NL <<
        "  extern \"C\" {" << NL <<
@@ -891,7 +893,7 @@ inline InitScriptsCpp::InitScriptsCpp (
 }
 
 inline void InitScriptsCpp::compile (CodeGenerator &W) const {
-  W << OpenFile ("init_scripts.cpp");
+  W << OpenFile ("init_scripts.cpp", "", false);
 
   W << ExternInclude ("php_functions.h") <<
     ExternInclude ("php_script.h") <<
@@ -1080,7 +1082,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
 
 inline void VarsCppPart::compile (CodeGenerator &W) const {
   string file_name = string ("vars") + int_to_str (file_num) + ".cpp";
-  W << OpenFile (file_name);
+  W << OpenFile (file_name, "", false);
 
   W << ExternInclude ("php_functions.h");
 
@@ -1197,7 +1199,7 @@ inline void VarsCpp::compile (CodeGenerator &W) const {
     W << VarsCppPart (i, vcpp[i], max_dependency_level);
   }
 
-  W << OpenFile ("vars.cpp");
+  W << OpenFile ("vars.cpp", "", false);
 
   W << "void const_vars_init()" << BEGIN;
   for (int pr = 0; pr <= max_dependency_level; ++pr) {
@@ -1486,21 +1488,21 @@ inline void DfsInit::compile (CodeGenerator &W) const {
   }
 
   for (int i = 0; i < parts_n; i++) {
-    W << OpenFile (header_names[i]);
+    W << OpenFile (header_names[i], "", false);
     compile_dfs_init_part (main_func, used_vars[i], false, i, W);
     W << CloseFile();
 
-    W << OpenFile (src_names[i]);
+    W << OpenFile (src_names[i], "", false);
     W << ExternInclude ("php_functions.h");
     compile_dfs_init_part (main_func, used_vars[i], true, i, W);
     W << CloseFile();
   }
 
-  W << OpenFile ("dfs." + main_func->header_name);
+  W << OpenFile ("dfs." + main_func->header_name, "", false);
   compile_dfs_init_func (main_func, used_functions, false, header_names, W);
   W << CloseFile();
 
-  W << OpenFile ("dfs." + main_func->src_name);
+  W << OpenFile ("dfs." + main_func->src_name, "", false);
   compile_dfs_init_func (main_func, used_functions, true, header_names, W);
   W << CloseFile();
 }

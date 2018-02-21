@@ -2724,7 +2724,7 @@ class CodeGenF {
       FOREACH (subdir_hash, i) {
         string dir = i->first;
         long long hash = i->second;
-        W << OpenFile ("_dep.cpp", dir);
+        W << OpenFile ("_dep.cpp", dir, false);
         char tmp[100];
         sprintf (tmp, "%llx", hash);
         W << "//" << (const char *)tmp << NL;
@@ -2743,7 +2743,7 @@ class CodeGenF {
         schema.assign(buf, buf + schema_length);
         kphp_assert (!fclose(f));
       }
-      W << OpenFile("_tl_schema.cpp");
+      W << OpenFile("_tl_schema.cpp", "", false);
       W << "extern \"C\" " << BEGIN;
       W << "const char *builtin_tl_schema = " << NL << Indent(2);
       compile_string_raw(schema, W);
@@ -2779,6 +2779,7 @@ class WriteFilesF {
         File *file =  G->get_file_info (full_file_name);
         file->needed = true;
         file->includes = data->get_includes();
+        file->compile_with_debug_info_flag = data->compile_with_debug_info();
 
         if (file->on_disk) {
           if (file->crc64 == (unsigned long long)-1) {

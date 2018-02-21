@@ -333,9 +333,11 @@ Make::~Make() {
 const string &KphpMakeEnv::get_cxx() const {
   return cxx;
 }
+
 const string &KphpMakeEnv::get_cxx_flags() const {
   return cxx_flags;
 }
+
 const string &KphpMakeEnv::get_ld_flags() const {
   return ld_flags;
 }
@@ -403,6 +405,11 @@ string Cpp2ObjTarget::get_cmd() {
     " -c -o " << target() <<
     " " << dep_list() << 
     " " << env->get_cxx_flags();
+
+  if (get_file()->compile_with_debug_info_flag) {
+    ss << " " << env->get_debug_level();
+  }
+
   return ss.str();
 }
 string Objs2ObjTarget::get_cmd() {
@@ -481,6 +488,7 @@ void KphpMake::init_env (const KphpEnviroment &kphp_env) {
   env.cxx = kphp_env.get_cxx();
   env.cxx_flags = kphp_env.get_cxx_flags();
   env.ld_flags = kphp_env.get_ld_flags();
+  env.debug_level = kphp_env.get_debug_level();
 }
 bool KphpMake::make_target (File *bin, int jobs_count) {
   return make.make_target (to_target (bin), jobs_count);

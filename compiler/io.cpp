@@ -76,10 +76,11 @@ string_ref SrcFile::get_line (int id) {
   return lines[id];
 }
 
-WriterData::WriterData() :
+WriterData::WriterData(bool compile_with_debug_info_flag) :
   lines(),
   text(),
   crc (-1),
+  compile_with_debug_info_flag(compile_with_debug_info_flag),
   file_name(),
   subdir() {
 }
@@ -258,6 +259,11 @@ void WriterData::swap (WriterData &other) {
   std::swap (file_name, other.file_name);
   std::swap (subdir, other.subdir);
   std::swap (includes, other.includes);
+  std::swap (compile_with_debug_info_flag, other.compile_with_debug_info_flag);
+}
+
+bool WriterData::compile_with_debug_info() const {
+  return compile_with_debug_info_flag;
 }
 
 Writer::Writer() :
@@ -300,13 +306,13 @@ void Writer::set_callback (WriterCallbackBase *new_callback) {
   callback = new_callback;
 }
 
-void Writer::begin_write() {
+void Writer::begin_write(bool compile_with_debug_info_flag) {
   assert (state == w_stopped);
   state = w_running;
 
   indent_level = 0;
   need_indent = 0;
-  data = WriterData();
+  data = WriterData(compile_with_debug_info_flag);
   begin_line();
 }
 void Writer::end_write() {

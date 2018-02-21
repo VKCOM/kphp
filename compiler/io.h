@@ -49,14 +49,18 @@ class WriterData {
     unsigned long long crc;
 
     vector <string> includes;
+    bool compile_with_debug_info_flag;
 
-    void write_code (string &dest_str, const Line &line);
-    template <class T> void dump (string &dest_str, T begin, T end, SrcFilePtr file);
   public:
     string file_name;
     string subdir;
 
-    WriterData();
+  private:
+    void write_code (string &dest_str, const Line &line);
+    template <class T> void dump (string &dest_str, T begin, T end, SrcFilePtr file);
+
+  public:
+    explicit WriterData(bool compile_with_debug_info_flag = true);
 
     void append (const char *begin, size_t length);
     void append (size_t n, char c);
@@ -71,6 +75,8 @@ class WriterData {
     void dump (string &dest_str);
 
     void swap (WriterData &other);
+
+    bool compile_with_debug_info() const;
 };
 
 class WriterCallbackBase {
@@ -107,7 +113,7 @@ class Writer {
     void set_file_name (const string &file_name, const string &subdir = "");
     void set_callback (WriterCallbackBase *new_callback);
 
-    void begin_write();
+    void begin_write(bool compile_with_debug_info_flag = true);
     void end_write();
 
     void operator() (const string &s);

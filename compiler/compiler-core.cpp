@@ -465,6 +465,7 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
       File *cpp_file = *cpp_file_i;
       if (cpp_file->ext == ".cpp") {
         File *obj_file = obj_dir->get_file (cpp_file->name_without_ext + ".o", true);
+        obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
         make.create_cpp2obj_target (cpp_file, obj_file);
         Target *cpp_target = cpp_file->target;
         FOREACH (cpp_file->includes, it) {

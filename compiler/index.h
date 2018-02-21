@@ -23,6 +23,8 @@ class File {
     Target *target;
     //Don't know where else I can save it
     vector <string> includes;
+    bool compile_with_debug_info_flag;
+
     File();
     explicit File (const string &path);
     long long upd_mtime() __attribute__ ((warn_unused_result));

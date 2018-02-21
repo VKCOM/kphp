@@ -51,7 +51,7 @@ namespace tinf {
       void start_recalc();
       bool try_finish_recalc();
 
-      const TypeData *get_type() {
+      const TypeData *get_type() const {
         return type_;
       }
       void set_type (const TypeData *type) {
