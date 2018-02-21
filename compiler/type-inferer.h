@@ -117,7 +117,7 @@ class RestrictionLess : public Restriction {
   private:
     std::vector<string> descriptions_;
     std::vector<tinf::Node *> node_path_;
-    static const unsigned long max_cnt_nodes_in_path = 20;
+    static const unsigned long max_cnt_nodes_in_path = 30;
 
   public:
     tinf::Node *a_, *b_;
@@ -136,7 +136,7 @@ class RestrictionLess : public Restriction {
       const TypeData *a_type = a_->get_type();
       const TypeData *b_type = b_->get_type();
 
-      if (are_different_types(a_type, b_type)) {
+      if (is_less(a_type, b_type)) {
         desc = "type inference error ";
 
         find_call_trace_with_error(a_);
@@ -168,23 +168,42 @@ class RestrictionLess : public Restriction {
       return false;
     }
 
+    /* эвристика упорядочивания ребер для поиска наиболее подходящего, для вывода ошибки на экран, полученная эмпирическим путем */
     struct ComparatorByEdgePriorityRelativeToExpectedType {
+    private:
       enum {
         e_default_priority = 4
       };
 
       const TypeData *expected;
 
+      static bool is_same_vars(const tinf::Node * node, VertexPtr vertex) {
+        if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
+          return vertex->type() == op_var && vertex->get_var_id()->name == var_node->var_->name;
+        }
+
+        return false;
+      }
+
       int get_priority(const tinf::Edge *edge) const {
+        const tinf::Node *from_node = edge->from;
         const tinf::Node *to_node = edge->to;
         const TypeData *to_type = to_node->get_type();
-        bool different_types = are_different_types(to_type, expected, edge->from_at);
+        bool different_types = is_less(to_type, expected, edge->from_at);
 
         if (const tinf::ExprNode *expr_node = dynamic_cast<const tinf::ExprNode *>(to_node)) {
           VertexPtr expr_vertex = expr_node->get_expr();
 
           if (OpInfo::arity(expr_vertex->type()) == binary_opp) {
-            to_type = tinf::get_type(expr_vertex.as<meta_op_binary_op>()->rhs());
+            VertexAdaptor<meta_op_binary_op> binary_vertex = expr_vertex.as<meta_op_binary_op>();
+            VertexPtr lhs = binary_vertex->lhs();
+            VertexPtr rhs = binary_vertex->rhs();
+
+            if (is_same_vars(from_node, lhs)) {
+              to_type = tinf::get_type(rhs);
+            } else if (is_same_vars(from_node, rhs)) {
+              to_type = tinf::get_type(lhs);
+            }
           } else {
             to_type = tinf::get_type(expr_vertex);
           }
@@ -202,40 +221,44 @@ class RestrictionLess : public Restriction {
           return different_types ? 3 : (e_default_priority + 3);
         }
 
-        if (are_different_types(to_type, expected, edge->from_at)) {
+        if (is_less(to_type, expected, edge->from_at)) {
           return 0;
         }
 
         return e_default_priority;
       }
 
+    public:
       explicit ComparatorByEdgePriorityRelativeToExpectedType(const TypeData *expected)
         : expected(expected)
       {}
+
+      bool is_priority_less_than_default(tinf::Node *cur_node) const {
+        tinf::Edge edge_with_cur_node = {
+          .from    = NULL,
+          .to      = cur_node,
+          .from_at = NULL
+        };
+
+        return get_priority(&edge_with_cur_node) < ComparatorByEdgePriorityRelativeToExpectedType::e_default_priority;
+      }
 
       bool operator()(const tinf::Edge *lhs, const tinf::Edge *rhs) const {
         return get_priority(lhs) < get_priority(rhs);
       }
     };
 
-    bool find_call_trace_with_error_impl(tinf::Node *cur_node) {
-      std::deque<tinf::Edge *> ordered_edges;
+    bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected) {
+      ComparatorByEdgePriorityRelativeToExpectedType comparator(expected);
 
-      FOREACH (cur_node->next_range(), next_edge_iterator) {
-        tinf::Edge *e = *next_edge_iterator;
+      typeof(cur_node->next_range()) node_range = cur_node->next_range();
 
-        if (e->from_at) {
-          TypeData * type_of_to_node = e->to->get_type()->clone();
-          type_of_to_node->set_lca_at(*e->from_at, b_->get_type());
-
-          if (*(b_->get_type()) < *type_of_to_node) {
-            ordered_edges.push_front(e);
-            continue;
-          }
-        }
-
-        ordered_edges.push_back(e);
+      if (node_range.empty()) {
+        return comparator.is_priority_less_than_default(cur_node);
       }
+
+      std::vector<tinf::Edge *> ordered_edges(node_range.begin, node_range.end);
+      std::sort(ordered_edges.begin(), ordered_edges.end(), comparator);
 
       FOREACH (ordered_edges, next_edge_iterator) {
         tinf::Edge *e = *next_edge_iterator;
@@ -260,17 +283,12 @@ class RestrictionLess : public Restriction {
 
         node_path_.push_back(to);
 
+        const TypeData *expected_type_in_level_of_multi_key = expected;
         if (e->from_at) {
-          TypeData * type_of_to_node = to->get_type()->clone();
-          type_of_to_node->set_lca_at(*e->from_at, b_->get_type());
-
-          if (!(*(b_->get_type()) < *type_of_to_node)) {
-            node_path_.pop_back();
-            continue;
-          }
+          expected_type_in_level_of_multi_key = expected->const_read_at(*e->from_at);
         }
 
-        if (find_call_trace_with_error_impl(to) || e->from_at) {
+        if (find_call_trace_with_error_impl(to, expected_type_in_level_of_multi_key)) {
           node_path_.pop_back();
           descriptions_.push_back(to->get_description());
 
@@ -283,7 +301,7 @@ class RestrictionLess : public Restriction {
       return false;
     }
 
-    static bool are_different_types(const TypeData *given, const TypeData *expected, const MultiKey *from_at = NULL) {
+    static bool is_less(const TypeData *given, const TypeData *expected, const MultiKey *from_at = NULL) {
       std::auto_ptr<TypeData> type_of_to_node(expected->clone());
 
       if (from_at) {
@@ -304,7 +322,7 @@ class RestrictionLess : public Restriction {
       descriptions_.reserve(max_cnt_nodes_in_path);
       node_path_.reserve(max_cnt_nodes_in_path);
 
-      find_call_trace_with_error_impl(cur_node);
+      find_call_trace_with_error_impl(cur_node, b_->get_type());
 
       descriptions_.push_back(cur_node->get_description());
       std::reverse(descriptions_.begin(), descriptions_.end());
