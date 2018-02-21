@@ -1,6 +1,6 @@
 #pragma once
-#include "compiler-core.h"
-#include "analyzer.h"
+#include "compiler/compiler-core.h"
+#include "compiler/analyzer.h"
 #include "compiler/gentree.h"
 
 /*** Replace constant expressions with const variables ***/
@@ -404,22 +404,11 @@ class RegisterVariables : public FunctionPassBase {
         }
       }
       var_vertex->set_var_id (var);
-      switch (extra_type) {
-        case op_ex_static_private:
-          var->access_type = access_private;
-          break;
-        case op_ex_static_public:
-          var->access_type = access_public;
-          break;
-        case op_ex_static_protected:
-          var->access_type = access_protected;
-          break;
-        case op_ex_none:
-          var->access_type = access_nonmember;
-          break;
-        default:
-          kphp_assert(false);
-      }
+      var->access_type =
+          extra_type == op_ex_static_public ? access_static_public :
+          extra_type == op_ex_static_private ? access_static_private :
+          extra_type == op_ex_static_protected ? access_static_protected :
+          access_nonmember;
     }
 
     void register_param_var (VertexAdaptor <op_var> var_vertex, VertexPtr default_value) {
@@ -609,13 +598,12 @@ class CheckAccessModifiers : public FunctionPassBase {
         string name = var_id->name;
         size_t pos = name.find("$$");
         if (pos != string::npos) {
-          kphp_error(var_id->access_type == access_private || var_id->access_type == access_public ||
-                       var_id->access_type == access_protected,
+          kphp_error(var_id->access_type != access_nonmember,
                      dl_pstr("Field wasn't declared: %s", real_name.c_str()));
-          kphp_error(var_id->access_type != access_private ||
+          kphp_error(var_id->access_type != access_static_private ||
                      replace_characters(namespace_name, '\\', '$') + "$" + class_name == name.substr(0, pos),
                             dl_pstr("Can't access private field %s", real_name.c_str()));
-          if (var_id->access_type == access_protected) {
+          if (var_id->access_type == access_static_protected) {
             kphp_error_act(!namespace_name.empty() && !class_name.empty(), dl_pstr("Can't access protected field %s", real_name.c_str()), return root);
             ClassPtr var_class = var_id->class_id;
             ClassPtr klass = G->get_class(namespace_name + "\\" + class_name);
@@ -629,12 +617,10 @@ class CheckAccessModifiers : public FunctionPassBase {
       } else if (root->type() == op_func_call) {
         FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
         string name = func_id->name;
-        string real_name = root.as<op_func_call>()->str_val;
         size_t pos = name.find("$$");
         if (pos != string::npos) {
-          kphp_assert(func_id->access_type == access_private || func_id->access_type == access_public ||
-                        func_id->access_type == access_protected);
-          kphp_error(func_id->access_type != access_private ||
+          kphp_assert(func_id->access_type != access_nonmember);
+          kphp_error(func_id->access_type != access_static_private ||
                      replace_characters(namespace_name, '\\', '$') + "$" + class_name == name.substr(0, pos),
                      dl_pstr("Can't access private function %s", name.c_str()));
           // TODO: check protected

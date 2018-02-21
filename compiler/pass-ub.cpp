@@ -1,4 +1,6 @@
+#ifndef CLION
 #define __PASS_UB_CPP__
+#endif
 #include "compiler/pass-ub.h"
 
 #include "PHP/common.h"

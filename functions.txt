@@ -1,15 +1,5 @@
 <?php
 
-if (0) {
-  unserialize ("");
-  is_bool ("");
-  is_array ("");
-  is_string ("");
-  is_integer ("");
-  is_float ("");
-  count(array());
-}
-
 define (PHP_INT_MAX, 2147483647);
 define (PHP_INT_SIZE, 4);
 define (PHP_EOL, "\n");
@@ -166,6 +156,7 @@ function is_real ($v ::: Any) ::: bool;
 function is_string ($v ::: Any) ::: bool;
 function is_array ($v ::: Any) ::: bool;
 function is_object ($v ::: Any) ::: bool;
+function get_class ($v ::: Any) ::: string;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
 

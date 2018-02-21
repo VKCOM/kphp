@@ -1,6 +1,6 @@
 #pragma once
 #ifndef __PASS_UB_CPP__
-#include "compiler-core.h"
+#include "compiler/compiler-core.h"
 struct DepData {
   vector <FunctionPtr> dep;
   vector <VarPtr> used_global_vars;
@@ -59,6 +59,8 @@ class CalcFuncDepPass : public FunctionPassBase {
         }
       } else if (vertex->type() == op_func_ptr) {
         data.dep.push_back (vertex.as <op_func_ptr>()->get_func_id());
+      } else if (vertex->type() == op_constructor_call) {
+        data.dep.push_back (vertex.as <op_constructor_call>()->get_func_id());
       } else if (vertex->type() == op_var/* && vertex->rl_type == val_l*/) {
         VarPtr var = vertex.as <op_var>()->get_var_id();
         if (var->type() == VarData::var_global_t) {

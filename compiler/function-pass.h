@@ -3,6 +3,7 @@
 
 #include "compiler/bicycle.h"
 #include "compiler/stage.h"
+#include "compiler/debug.h"
 
 /*** Function Pass ***/
 class FunctionPassBase {

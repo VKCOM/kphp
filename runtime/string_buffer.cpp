@@ -200,8 +200,6 @@ string_buffer &string_buffer::operator + (const var &v) {
     case var::ARRAY_TYPE:
       php_warning ("Convertion from array to string");
       return append ("Array", 5);
-    case var::OBJECT_TYPE:
-      return *this + AS_CONST_OBJECT(v.o)->to_string();
     default:
       php_assert (0);
       exit (1);

@@ -8,7 +8,9 @@
  */
 
 class var {
-  enum var_type {NULL_TYPE, BOOLEAN_TYPE, INTEGER_TYPE, FLOAT_TYPE, STRING_TYPE, ARRAY_TYPE, OBJECT_TYPE};
+  enum var_type {
+    NULL_TYPE, BOOLEAN_TYPE, INTEGER_TYPE, FLOAT_TYPE, STRING_TYPE, ARRAY_TYPE
+  };
 
   var_type type;
 
@@ -18,7 +20,6 @@ class var {
     double f;
     void *s;//string
     void *a;//array <var>
-    void *o;//object
   };
 
   inline void copy_from (const var &other);
@@ -34,8 +35,6 @@ public:
   inline var (const char *s, int len);
   template <class T>
   inline var (const array <T> &a);
-  template <class T>
-  inline var (const object_ptr <T> &o);
   inline var (const var &v);
 
   inline var (const OrFalse <int> &v);
@@ -43,8 +42,6 @@ public:
   inline var (const OrFalse <string> &v);
   template <class T>
   inline var (const OrFalse <array <T> > &v);
-  template <class T>
-  inline var (const OrFalse <object_ptr <T> > &v);
 
   inline var& operator = (bool other);
   inline var& operator = (int other);
@@ -53,8 +50,6 @@ public:
   inline var& assign (const char *other, int len);
   template <class T>
   inline var& operator = (const array <T> &other);
-  template <class T>
-  inline var& operator = (const object_ptr <T> &other);
   inline var& operator = (const var &other);
 
   inline var& operator = (const OrFalse <int> &other);
@@ -62,8 +57,6 @@ public:
   inline var& operator = (const OrFalse <string> &other);
   template <class T>
   inline var& operator = (const OrFalse <array <T> > &other);
-  template <class T>
-  inline var& operator = (const OrFalse <object_ptr <T> > &other);
 
   inline const var operator -(void) const;
   inline const var operator +(void) const;
@@ -150,7 +143,6 @@ public:
   inline double to_float (void) const;
   inline const string to_string (void) const;
   inline const array <var> to_array (void) const;
-  inline const object to_object (void) const;
 
   inline int safe_to_int (void) const;
 
@@ -183,7 +175,6 @@ public:
   inline bool is_float (void) const;
   inline bool is_string (void) const;
   inline bool is_array (void) const;
-  inline bool is_object (void) const;
 
   inline const string get_type (void) const;
   inline const char *get_type_c_str (void) const;
@@ -230,15 +221,12 @@ public:
   template <class T>
   inline friend bool eq2 (const array <T> &lhs, const var &rhs);
   template <class T>
-  inline friend bool eq2 (const object_ptr <T> &lhs, const var &rhs);
   inline friend bool eq2 (const var &lhs, bool rhs);
   inline friend bool eq2 (const var &lhs, int rhs);
   inline friend bool eq2 (const var &lhs, double rhs);
   inline friend bool eq2 (const var &lhs, const string &rhs);
   template <class T>
   inline friend bool eq2 (const var &lhs, const array <T> &rhs);
-  template <class T>
-  inline friend bool eq2 (const var &lhs, const object_ptr <T> &rhs);
 
   inline friend bool equals (bool lhs, const var &rhs);
   inline friend bool equals (int lhs, const var &rhs);
@@ -246,16 +234,12 @@ public:
   inline friend bool equals (const string &lhs, const var &rhs);
   template <class T>
   inline friend bool equals (const array <T> &lhs, const var &rhs);
-  template <class T>
-  inline friend bool equals (const object_ptr <T> &lhs, const var &rhs);
   inline friend bool equals (const var &lhs, bool rhs);
   inline friend bool equals (const var &lhs, int rhs);
   inline friend bool equals (const var &lhs, double rhs);
   inline friend bool equals (const var &lhs, const string &rhs);
   template <class T>
   inline friend bool equals (const var &lhs, const array <T> &rhs);
-  template <class T>
-  inline friend bool equals (const var &lhs, const object_ptr <T> &rhs);
 
 
   friend void do_print_r (const var &v, int depth);
@@ -440,34 +424,34 @@ inline bool eq2 (const array <T> &lhs, const string &rhs);
 
 
 template <class T>
-inline bool eq2 (bool lhs, const object_ptr <T> &rhs);
+inline bool eq2 (bool lhs, const class_instance <T> &rhs);
 
 template <class T>
-inline bool eq2 (int lhs, const object_ptr <T> &rhs);
+inline bool eq2 (int lhs, const class_instance <T> &rhs);
 
 template <class T>
-inline bool eq2 (double lhs, const object_ptr <T> &rhs);
+inline bool eq2 (double lhs, const class_instance <T> &rhs);
 
 template <class T>
-inline bool eq2 (const string &lhs, const object_ptr <T> &rhs);
+inline bool eq2 (const string &lhs, const class_instance <T> &rhs);
 
 template <class T, class T1>
-inline bool eq2 (const array <T1> &lhs, const object_ptr <T> &rhs);
+inline bool eq2 (const array <T1> &lhs, const class_instance <T> &rhs);
 
 template <class T>
-inline bool eq2 (const object_ptr <T> &lhs, bool rhs);
+inline bool eq2 (const class_instance <T> &lhs, bool rhs);
 
 template <class T>
-inline bool eq2 (const object_ptr <T> &lhs, int rhs);
+inline bool eq2 (const class_instance <T> &lhs, int rhs);
 
 template <class T>
-inline bool eq2 (const object_ptr <T> &lhs, double rhs);
+inline bool eq2 (const class_instance <T> &lhs, double rhs);
 
 template <class T>
-inline bool eq2 (const object_ptr <T> &lhs, const string &rhs);
+inline bool eq2 (const class_instance <T> &lhs, const string &rhs);
 
 template <class T, class T1>
-inline bool eq2 (const object_ptr <T> &lhs, const array <T1> &rhs);
+inline bool eq2 (const class_instance <T> &lhs, const array <T1> &rhs);
 
 
 inline bool eq2 (bool lhs, const var &rhs);
@@ -482,7 +466,7 @@ template <class T>
 inline bool eq2 (const array <T> &lhs, const var &rhs);
 
 template <class T>
-inline bool eq2 (const object_ptr <T> &lhs, const var &rhs);
+inline bool eq2 (const class_instance <T> &lhs, const var &rhs);
 
 inline bool eq2 (const var &lhs, bool rhs);
 
@@ -496,7 +480,7 @@ template <class T>
 inline bool eq2 (const var &lhs, const array <T> &rhs);
 
 template <class T>
-inline bool eq2 (const var &lhs, const object_ptr <T> &rhs);
+inline bool eq2 (const var &lhs, const class_instance <T> &rhs);
 
 
 template <class T1, class T2>
@@ -515,7 +499,7 @@ template <class T>
 inline bool equals (const array <T> &lhs, const var &rhs);
 
 template <class T>
-inline bool equals (const object_ptr <T> &lhs, const var &rhs);
+inline bool equals (const class_instance <T> &lhs, bool rhs);
 
 inline bool equals (const var &lhs, bool rhs);
 
@@ -529,7 +513,16 @@ template <class T>
 inline bool equals (const var &lhs, const array <T> &rhs);
 
 template <class T>
-inline bool equals (const var &lhs, const object_ptr <T> &rhs);
+inline bool equals (const class_instance <T> &lhs, const class_instance <T> &rhs);
+
+template <class T1, class T2>
+inline bool equals (const class_instance <T1> &lhs, const class_instance <T2> &rhs);
+
+template <class T>
+inline bool equals (const var &lhs, const class_instance <T> &rhs);
+
+template <class T>
+inline bool equals (bool lhs, const class_instance <T> &rhs);
 
 template <class T>
 inline bool equals (const T &lhs, const T &rhs);

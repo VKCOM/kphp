@@ -472,7 +472,6 @@ public:
   inline bool to_bool (void) const __attribute__ ((always_inline));
   inline int to_int (void) const __attribute__ ((always_inline));
   inline double to_float (void) const __attribute__ ((always_inline));
-  inline const object to_object (void) const;
 
 
   int get_reference_counter (void) const;
@@ -486,8 +485,6 @@ public:
   friend class array;
 
   friend class var;
-
-  friend class stdClass;
 };
 
 template <class T, class TT>

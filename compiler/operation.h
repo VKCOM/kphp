@@ -2,14 +2,14 @@
 #include "compiler/token.h"
 #include "compiler/utils.h"
 
-typedef enum {
+enum Operation {                        
   op_err = 0,
 #define FOREACH_OP(op) op,
 #include "foreach_op.h"
   Operation_size
-} Operation;
+};
 
-typedef enum {
+enum OperationExtra {
   op_ex_none = 0,
   op_ex_func_switch,
   op_ex_func_global,
@@ -26,62 +26,62 @@ typedef enum {
   op_ex_static_public,
   op_ex_static_private,
   op_ex_static_protected
-} OperationExtra;
+};
 
-typedef enum {error_op = 0, common_op, cycle_op, binary_op, binary_func_op, prefix_op, postfix_op, ternary_op, conv_op} OperationType;
-typedef enum {rl_error = 0, rl_set, rl_index, rl_op, rl_common, rl_const, rl_var, rl_func, rl_mem_func, rl_op_l, rl_other} RLOperationType;
-typedef enum {val_error = 0, val_r, val_l, val_none} RLValueType;
-typedef enum {cnst_error = -1, cnst_not_func, cnst_nonconst_func, cnst_const_func, cnst_func} ConstOperationType;
-typedef enum {cnst_error_ = 0, cnst_not_val, cnst_nonconst_val, cnst_const_val} ConstValueType;
+enum OperationType {error_op = 0, common_op, cycle_op, binary_op, binary_func_op, prefix_op, postfix_op, ternary_op, conv_op};
+enum RLOperationType {rl_error = 0, rl_set, rl_index, rl_op, rl_common, rl_const, rl_var, rl_func, rl_mem_func, rl_op_l, rl_instance_prop, rl_other};
+enum RLValueType {val_error = 0, val_r, val_l, val_none};
+enum ConstOperationType {cnst_error = -1, cnst_not_func, cnst_nonconst_func, cnst_const_func, cnst_func};
+enum ConstValueType {cnst_error_ = 0, cnst_not_val, cnst_nonconst_val, cnst_const_val};
 
 const int no_property = 0;
-typedef enum {
+enum opp_main_t {
   omain_none = no_property,
   statement_opp,
   expression_opp
-} opp_main_t;
+};
 
-typedef enum {
+enum opp_arity_t {
   oarity_none = no_property,
   unary_opp,
   binary_opp,
   ternary_opp
-} opp_arity_t;
+};
 
-typedef enum {
+enum opp_fixity_t {
   ofixity_none = no_property,
   right_opp,
   left_opp
-} opp_fixity_t;
+};
 
-typedef enum {
+enum opp_xfix_t {
   oxfix_none = no_property,
   prefix_opp,
   postfix_opp,
   funcfix_opp
-} opp_xfix_t;
+};
 
-typedef enum {
+enum opp_math_t {
   omath_none = no_property,
   logic_opp,
   compare_opp,
   bitwise_opp,
   arithmetic_opp
-} opp_math_t;
+};
 
-typedef enum {
+enum opp_extra_t {
   oextra_none = no_property,
   set_opp,
   conv_opp
-} opp_extra_t;
+};
 
 
-typedef enum {
+enum opp_minor_t {
   ominor_none = no_property,
   cycle_opp,
   term_opp,
   operator_opp
-} opp_minor_t;
+};
 
 struct OpProperties {
   Operation op;

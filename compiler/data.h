@@ -4,30 +4,26 @@
 #include "compiler/type-inferer-core.h"
 #include "compiler/utils.h"
 #include "compiler/vertex.h"
+#include "compiler/class-assumptions.h"
 
-extern IdGen <VertexPtr> tree_id_gen;
-#define reg_vertex(V) ({                  \
-    VertexPtr reg_vertex_tmp_res__ = reg_vertex_impl (V);  \
-    reg_vertex_tmp_res__;                                  \
-})
-VertexPtr reg_vertex_impl (VertexPtr v);
+class Assumption;
 
-//hack :(
-template <>
-struct DataTraits<Vertex> {
-  typedef VertexPtr &value_type;
+enum AccessType {
+  access_nonmember = 0,
+  access_static_public, access_static_private, access_static_protected,   // static   functions/vars of a class
+  access_public, access_private, access_protected,                        // instance functions/vars of a class
 };
-
-typedef enum {access_nonmember = 0, access_default, access_public, access_private, access_protected} AccessType;
 
 class VarData {
 public:
-  typedef enum {var_unknown_t = 0, var_local_t, var_global_t, var_param_t, var_const_t, var_static_t} Type;
+  enum Type {
+    var_unknown_t = 0, var_local_t, var_global_t, var_param_t, var_const_t, var_static_t, var_instance_t
+  };
+
   Type type_;
   int id;
   int param_i;
   string name;
-  TypeInfPtr tinf;
   tinf::VarNode tinf_node;
   VertexPtr init_val;
   FunctionPtr holder_func;
@@ -43,6 +39,8 @@ public:
   bool needs_const_iterator_flag;
   AccessType access_type;
   int dependency_level;
+  Token *phpdoc_token;
+
   void set_uninited_flag (bool f);
   bool get_uninited_flag();
 
@@ -57,17 +55,25 @@ struct ClassInfo {
   string extends;
   vector <VertexPtr> members;
   map <string, VertexPtr> constants;
+  // todo разобраться со static_members и static_methods и static_fields, members и будущим methods
+  // (а ещё лучше — сначала таки вкостылить methods, потом написать тесты, а потом рефакторить)
   vector <VertexPtr> static_members;
+  vector <VertexPtr> this_type_rules;
+  vector <VertexPtr> vars;    // vector of op_class_var  todo потом избавиться от vars, их можно вычислить из members
   set <string> static_fields;
   map <string, FunctionPtr> static_methods;
+  vector <VertexPtr> methods;
+  FunctionPtr new_function;
+  Token *phpdoc_token;
+
+  inline bool has_vars() const {
+    return !vars.empty();
+  }
 };
 
 class ClassData {
 public:
   int id;
-  bool is_inited;
-  bool is_required;
-  FunctionPtr req_func;
   string name;
   string extends;
   ClassPtr parent_class;
@@ -78,13 +84,29 @@ public:
   map <string, FunctionPtr> static_methods;
   set <string> static_fields;
   set <string> constants;
+  vector <VarPtr> vars;
+  vector <FunctionPtr> methods;
 
-  string header_name;
-  string subdir;
-  string header_full_name;
+  std::vector <Assumption> assumptions;
+  int assumptions_inited_vars;
+
   SrcFilePtr file_id;
+  string src_name, header_name;
 
   ClassData();
+
+  inline VarPtr find_var (const std::string &var_name) const {
+    for (std::vector <VarPtr>::const_iterator i = vars.begin(); i != vars.end(); ++i) {
+      if ((*i)->name == var_name) {
+        return *i;
+      }
+    }
+    return VarPtr();
+  }
+
+  inline bool is_fully_static () const {
+    return 0 == vars.size();
+  }
 };
 
 template <>
@@ -113,22 +135,6 @@ class FunctionSet : public Lockable {
     FunctionPtr operator[] (int i);
 };
 
-class FunctionMatcher {
-  private:
-    DISALLOW_COPY_AND_ASSIGN (FunctionMatcher);
-
-    //data:
-    FunctionSetPtr function_set;
-    FunctionPtr match;
-
-  public:
-    FunctionMatcher();
-    void set_function_set (FunctionSetPtr new_function_set);
-    void try_match (VertexPtr call);
-    FunctionPtr get_function();
-    //equivalent to this->get_function().not_null()
-    bool is_ready();
-};
 
 class FunctionInfo {
 public:
@@ -139,22 +145,20 @@ public:
   map<string, string> namespace_uses;
   string extends;
   set<string> disabled_warnings;
-  bool kphp_required;
-  bool should_be_sync;
+  AccessType access_type;
 
   FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
                const string &class_context, const map<string, string> namespace_uses,
-               string extends, const set<string> disabled_warnings, bool kphp_required, bool should_be_sync)
-    : root(root)
-    , namespace_name(namespace_name)
-    , class_name(class_name)
-    , class_context(class_context)
-    , namespace_uses(namespace_uses)
-    , extends(extends)
-    , disabled_warnings(disabled_warnings)
-    , kphp_required(kphp_required)
-    , should_be_sync(should_be_sync)
-  {}
+               string extends, const set <string> disabled_warnings, AccessType access_type)
+      : root(root),
+        namespace_name(namespace_name),
+        class_name(class_name),
+        class_context(class_context),
+        namespace_uses(namespace_uses),
+        extends(extends),
+        disabled_warnings(disabled_warnings),
+        access_type(access_type) {
+  }
 };
 
 class FunctionData {
@@ -165,10 +169,8 @@ public:
   VertexPtr header;
 
   bool is_required;
-  typedef enum {func_global, func_local, func_switch, func_extern} func_type_t;
+  enum func_type_t {func_global, func_local, func_switch, func_extern};
   func_type_t type_;
-
-  bool lazy_flag;
 
   vector <VarPtr> local_var_ids, global_var_ids, static_var_ids, header_global_var_ids;
   vector <VarPtr> tmp_vars;
@@ -176,8 +178,11 @@ public:
   vector <DefinePtr> define_ids;
   set <VarPtr> const_var_ids, header_const_var_ids;
   vector <VarPtr> param_ids;
-  vector <FunctionPtr> dep, rdep;
-  queue <pair <VertexPtr , FunctionPtr> > calls_to_process;
+  vector <FunctionPtr> dep;
+
+  std::vector <Assumption> assumptions;
+  int assumptions_inited_args;
+  int assumptions_inited_return;
 
   string src_name, header_name;
   string subdir;
@@ -188,17 +193,16 @@ public:
   ClassPtr class_id;
   bool varg_flag;
 
-  vector <TypeInfPtr > tinf;
   int tinf_state;
   vector <tinf::VarNode> tinf_nodes;
 
   VertexPtr const_data;
+  Token *phpdoc_token;
 
   int min_argn;
   bool is_extern;
   bool used_in_source;
   bool is_callback;
-  bool should_be_sync;
   string namespace_name;
   string class_name;
   string class_context_name;
@@ -219,6 +223,15 @@ public:
 
   bool is_static_init_empty_body() const;
   string get_resumable_path() const;
+
+  inline bool is_instance_function () const {
+    return access_type == access_public || access_type == access_protected || access_type == access_private;
+  }
+
+  inline bool is_constructor () const {
+    return class_id.not_null() && class_id->new_function.ptr == this;
+  }
+
 private:
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
 };
@@ -265,7 +278,7 @@ public:
   string name;
   int pos_begin, pos_end;
   SrcFilePtr file_id;
-  typedef enum {def_php, def_raw, def_var} DefineType;
+  enum DefineType {def_php, def_raw, def_var};
 
   DefineType type_;
 
@@ -280,7 +293,3 @@ private:
 
 typedef Range <vector <FunctionPtr>::iterator > FunctionRange;
 typedef Range <vector <SrcFilePtr>::iterator> SrcFileRange;
-
-extern int tree_node_dfs_cnt;
-
-

@@ -123,26 +123,9 @@ const map <string, string> &config_func() {
   return to;
 }
 
-static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, TokenType type) {
-  return pos + 1 < tokens.size() && tokens[pos + 1]->type() == type;
-}
-
-static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, TokenType type1, TokenType type2) {
-  return pos + 2 < tokens.size() &&
-         tokens[pos + 1]->type() == type1 &&
-         tokens[pos + 2]->type() == type2;
-}
-
-static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, TokenType type1, TokenType type2, TokenType type3) {
-  return pos + 3 < tokens.size() &&
-         tokens[pos + 1]->type() == type1 &&
-         tokens[pos + 2]->type() == type2 &&
-         tokens[pos + 3]->type() == type3;
-}
-
 void LexerData::post_process (const string &main_func_name) {
-  vector <Token *> oldtokens;
-  oldtokens.swap(tokens);
+  vector <Token *> oldtokens = tokens;
+  tokens.clear();
   int n = (int)oldtokens.size();
 
   int i = 0;
@@ -191,126 +174,80 @@ void LexerData::post_process (const string &main_func_name) {
       }
     }
     if (tp == tok_empty) {
-      int old_i = i;
-      const string_ref& str_val = oldtokens[i]->str_val;
-
-      switch (oldtokens[i]->type()) {
-        case tok_elseif: {
-          tokens.push_back(new Token(tok_else));
-          tokens.push_back(new Token(tok_if));
-          delete oldtokens[i];
-          oldtokens[i] = NULL;
-          i++;
-          break;
+      if (oldtokens[i]->type() == tok_elseif) {
+        tokens.push_back (new Token (tok_else));
+        tokens.push_back (new Token (tok_if));
+        delete oldtokens[i];
+        i++;
+      } else if (i + 1 < n && oldtokens[i]->type() == tok_str_begin && oldtokens[i + 1]->type() == tok_str_end) {
+        tokens.push_back(new Token (tok_str));
+        delete oldtokens[i];
+        delete oldtokens[i + 1];
+        i += 2;
+      } else if (i + 2 < n && oldtokens[i]->type() == tok_str_begin && oldtokens[i + 1]->type() == tok_str && oldtokens[i + 2]->type() == tok_str_end) {
+        tokens.push_back(oldtokens[i + 1]);
+        delete oldtokens[i];
+        delete oldtokens[i + 2];
+        i += 3;
+      } else if (oldtokens[i]->type() == tok_func_name && oldtokens[i]->str_val.eq ("static")) {
+        i++;
+      } else if (i + 2 < n && oldtokens[i]->type() == tok_new && oldtokens[i + 1]->type() == tok_Exception &&
+                 oldtokens[i + 2]->type() == tok_oppar) {
+        // прямо на этапе генерации токенов заменяем new Exception() на new Exception(__FILE__, __LINE__)
+        tokens.push_back (oldtokens[i + 1]);
+        tokens.back()->type() = tok_constructor_call;
+        tokens.back()->str_val = oldtokens[i + 1]->str_val;
+        tokens.push_back (oldtokens[i + 2]);
+        tokens.push_back (new Token (tok_file_c));
+        tokens.push_back (new Token (tok_comma));
+        tokens.push_back (new Token (tok_line_c));
+        tokens.back()->line_num = oldtokens[i]->line_num;
+        if (i + 3 < n && oldtokens[i + 3]->type() != tok_clpar) {
+          tokens.push_back (new Token (tok_comma));
         }
-
-        case tok_str_begin: {
-          if (are_next_tokens(oldtokens, i, tok_str_end)) {
-            tokens.push_back(new Token(tok_str));
-            delete oldtokens[i];
-            delete oldtokens[i + 1];
-            oldtokens[i] = NULL;
-            oldtokens[i + 1] = NULL;
-            i += 2;
-          } else if (are_next_tokens(oldtokens, i, tok_str, tok_str_end)) {
-            tokens.push_back(oldtokens[i + 1]);
-            delete oldtokens[i];
-            delete oldtokens[i + 2];
-            oldtokens[i] = NULL;
-            oldtokens[i + 2] = NULL;
-            i += 3;
-          }
-          break;
+        i += 3;
+      } else if (i + 1 < n && oldtokens[i]->type() == tok_new) {
+        tokens.push_back (oldtokens[i]);
+        tokens.back()->type() = tok_constructor_call;
+        tokens.back()->str_val = oldtokens[i + 1]->str_val;
+        delete (oldtokens[i + 1]);
+        i += 2;
+        if (i == n || oldtokens[i]->type() != tok_oppar) {
+          tokens.push_back (new Token (tok_oppar));
+          tokens.push_back (new Token (tok_clpar));
         }
-
-        case tok_new: {
-          if (are_next_tokens(oldtokens, i, tok_func_name)) {
-            //new Memcached --> new_Memcached
-            tokens.push_back(oldtokens[i]);
-            tokens.back()->type() = tok_constructor_call;
-            tokens.back()->str_val = oldtokens[i + 1]->str_val;
-            delete oldtokens[i + 1];
-            oldtokens[i + 1] = NULL;
-            if (i + 2 == n || oldtokens[i + 2]->type() != tok_oppar) {
-              tokens.push_back(new Token(tok_oppar));
-              tokens.push_back(new Token(tok_clpar));
-            }
-            i += 2;
-          } else if (are_next_tokens(oldtokens, i, tok_Exception, tok_oppar)) {
-            tokens.push_back(oldtokens[i + 1]);
-            tokens.back()->type() = tok_constructor_call;
-            tokens.back()->str_val = oldtokens[i + 1]->str_val;
-            tokens.push_back(oldtokens[i + 2]);
-            tokens.push_back(new Token(tok_file_c));
-            tokens.push_back(new Token(tok_comma));
-            tokens.push_back(new Token(tok_line_c));
-            tokens.back()->line_num = oldtokens[i]->line_num;
-            if (i + 3 < n && oldtokens[i + 3]->type() != tok_clpar) {
-              tokens.push_back(new Token(tok_comma));
-            }
-            i += 3;
-          }
-          break;
-        }
-
-        case tok_func_name: {
-          if (str_val == "static") {
-            i++;
-            break;
-          } else if (i == 0 || (oldtokens[i - 1] != NULL && oldtokens[i - 1]->type() != tok_function)) {
-            if (str_val == "err" && are_next_tokens(oldtokens, i, tok_oppar)) {
-              tokens.push_back(oldtokens[i]);
-              tokens.push_back(oldtokens[i + 1]);
-              tokens.push_back(new Token(tok_file_c));
-              tokens.push_back(new Token(tok_comma));
-              tokens.push_back(new Token(tok_line_c));
-              if (i + 2 < n && oldtokens[i + 2]->type() != tok_clpar) {
-                tokens.push_back(new Token(tok_comma));
-              }
-              i += 2;
-              break;
-            } else if (str_val == "requireOnce") {
-              tokens.push_back(oldtokens[i]);
-              tokens.back()->type() = tok_require_once;
-              i++;
-              break;
-            }
-          }
-        }
-          /* fallthrough */
-        case tok_static: {
-          if (are_next_tokens(oldtokens, i, tok_double_colon, tok_func_name) ||
-              are_next_tokens(oldtokens, i, tok_double_colon, tok_var_name)) {
-            tokens.push_back(new Token(oldtokens[i + 2]->type()));
-            string pref_name = (oldtokens[i]->type() == tok_static ? "static" : (string)oldtokens[i]->str_val);
-            tokens.back()->str_val = string_ref_dup(pref_name + "::" + (string)oldtokens[i + 2]->str_val);
-            tokens.back()->line_num = oldtokens[i]->line_num;
-            i += 3;
-          }
-          break;
-        }
-
-        case tok_var_name: {
-          if (are_next_tokens(oldtokens, i + 3, tok_eq1)) {
-            break;
-          }
-
-          if (str_val == "config" &&
-              are_next_tokens(oldtokens, i, tok_opbrk, tok_str, tok_clbrk) &&
-              config_func().count(oldtokens[i + 2]->str_val)) {
-            tokens.push_back(new Token(tok_func_name));
-            tokens.back()->str_val = string_ref_dup((config_func().find(string(oldtokens[i + 2]->str_val)))->second);
-            i += 4;
-          }
-          break;
-        }
-
-        default:
-          break;
       }
-
-      if (old_i == i) {
-        tokens.push_back(oldtokens[i]);
+      if ((i == 0 || oldtokens[i - 1]->type() != tok_function) && oldtokens[i]->type() == tok_func_name && oldtokens[i + 1]->type() == tok_oppar && (!strncmp (oldtokens[i]->str_val.begin(), "fetch_", 6) || oldtokens[i]->str_val.eq ("err"))) {
+        tokens.push_back (oldtokens[i]);
+        tokens.push_back (oldtokens[i + 1]);
+        tokens.push_back (new Token (tok_file_c));
+        tokens.push_back (new Token (tok_comma));
+        tokens.push_back (new Token (tok_line_c));
+        if (i + 2 < n && oldtokens[i + 2]->type() != tok_clpar) {
+          tokens.push_back (new Token (tok_comma));
+        }
+        i += 2;
+      } else if (i + 3 < n && oldtokens[i]->type() == tok_var_name && oldtokens[i]->str_val.eq ("config") && oldtokens[i + 1]->type() == tok_opbrk &&
+                 oldtokens[i + 2]->type() == tok_str && config_func().count (oldtokens[i + 2]->str_val) && oldtokens[i + 3]->type() == tok_clbrk &&
+                 (i + 4 == n || oldtokens[i + 4]->type() != tok_eq1)) {
+        tokens.push_back (new Token (tok_func_name));
+        tokens.back()->str_val = string_ref_dup ((config_func().find (string (oldtokens[i + 2]->str_val)))->second);
+        i += 4;
+      } else if ((i == 0 || oldtokens[i - 1]->type() != tok_function) && oldtokens[i]->type() == tok_func_name &&
+          oldtokens[i]->str_val.eq ("requireOnce")) {
+        tokens.push_back (oldtokens[i]);
+        tokens.back()->type() = tok_require_once;
+        i++;
+      } else if (i + 2 < n && (oldtokens[i]->type() == tok_func_name || oldtokens[i]->type() == tok_static) &&
+                 oldtokens[i + 1]->type() == tok_double_colon &&
+                 (oldtokens[i + 2]->type() == tok_func_name || oldtokens[i + 2]->type() == tok_var_name)) {
+        tokens.push_back (new Token(oldtokens[i + 2]->type()));
+        string pref_name = (oldtokens[i]->type() == tok_static ? "static" : (string)oldtokens[i]->str_val);
+        tokens.back()->str_val = string_ref_dup(pref_name + "::" + (string)oldtokens[i + 2]->str_val);
+        tokens.back()->line_num = oldtokens[i]->line_num;
+        i += 3;
+      } else {
+        tokens.push_back (oldtokens[i]);
         i++;
       }
     } else {
@@ -318,9 +255,6 @@ void LexerData::post_process (const string &main_func_name) {
       delete oldtokens[i];
       delete oldtokens[i + 1];
       delete oldtokens[i + 2];
-      oldtokens[i] = NULL;
-      oldtokens[i + 1] = NULL;
-      oldtokens[i + 2] = NULL;
       i += 3;
     }
   }
@@ -435,8 +369,10 @@ int TokenLexerName::parse (LexerData *lexer_data) const {
       lexer_data->add_token (new Token (tp->type, s, t), (int)(t - st));
       return 0;
     }
-  } else if (type == tok_var_name && name == "GLOBALS") {
-    return TokenLexerError ("$GLOBALS is not supported").parse (lexer_data);
+  } else if (type == tok_var_name) {
+    if (name.length() == 7 && !strncmp (name.begin(), "GLOBALS", 7)) {
+      return TokenLexerError ("$GLOBALS is not supported").parse (lexer_data);
+    }
   }
 
   lexer_data->add_token (new Token (type, name), (int)(t - st));
@@ -985,15 +921,21 @@ int TokenLexerComment::parse (LexerData *lexer_data) const {
     if (s[0] && s[1] && s[0] == '*' && s[1] != '/') { // phpdoc
       char const *phpdoc_start = s;
       bool is_kphpdoc = false;
+      bool is_regular = false;
       while (s[0] && (s[0] != '*' || s[1] != '/')) {
-        if (!strncmp (s, "@kphp", 5)) {
-          is_kphpdoc = true;
+        if (s[0] == '@') {
+          if (!strncmp(s, "@kphp", 5)) {
+            is_kphpdoc = true;
+          } else {      // @return, @var, @param, @type, etc
+            is_regular = true;
+          }
         }
         s++;
       }
       if (is_kphpdoc) {
-        Token *token = new Token(tok_phpdoc, phpdoc_start, s);
-        lexer_data->add_token(token, 0);
+        lexer_data->add_token(new Token(tok_phpdoc_kphp, phpdoc_start, s), 0);
+      } else if (is_regular) {
+        lexer_data->add_token(new Token(tok_phpdoc, phpdoc_start, s), 0);
       }
     } else {
       while (s[0] && (s[0] != '*' || s[1] != '/')) {

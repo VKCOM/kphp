@@ -87,7 +87,7 @@ class WriterCallbackBase {
 
 class Writer {
   private:
-    typedef enum {w_stopped, w_running} state_t;
+    enum state_t {w_stopped, w_running};
 
     state_t state;
 

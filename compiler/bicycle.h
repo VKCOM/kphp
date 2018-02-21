@@ -704,13 +704,13 @@ void connect (const FirstT &first, SecondT &second) {
   connect (new_first, second);
 }
 
-typedef enum {
+enum SCCEnum {
   scc_sync_node,
   scc_use_first_output,
   scc_use_second_output,
   scc_use_third_output,
   scc_use_fourth_output
-} SCCEnum;
+};
 
 template <SCCEnum Cmd> struct SCC {
 };
@@ -857,6 +857,7 @@ class ProfilerRaw {
   F (preprocess_function_c)\
   F (preprocess_break)\
   F (register_variables)\
+  F (check_instance_props)\
   F (calc_const_type)\
   F (collect_const_vars)\
   F (calc_throw_edges)\
@@ -891,10 +892,10 @@ class ProfilerRaw {
   F (total)
 
 #define DECLARE_PROF_E(x) PROF_E(x),
-typedef enum {
+enum ProfilerId {
   FOREACH_PROF (DECLARE_PROF_E)
   ProfilerId_size
-} ProfilerId;
+};
 
 class Profiler {
   public:

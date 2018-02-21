@@ -32,7 +32,7 @@ const char *ptype_name (PrimitiveType id) {
 }
 
 bool can_store_bool (PrimitiveType tp) {
-  return tp == tp_var || tp == tp_MC || tp == tp_DB ||
+  return tp == tp_var || tp == tp_MC || tp == tp_DB || tp == tp_Class ||
          tp == tp_Exception || tp == tp_RPC || tp == tp_bool ||
          tp == tp_Any;
 }
@@ -59,10 +59,6 @@ PrimitiveType type_lca (PrimitiveType a, PrimitiveType b) {
 
   if (a > b) {
     std::swap (a, b);
-  }
-
-  if (b == tp_Error) {
-    return tp_Error;
   }
 
   if (a == tp_Unknown) {
@@ -393,19 +389,27 @@ void TypeData::set_ptype (PrimitiveType new_ptype) {
 }
 
 ClassPtr TypeData::class_type() const {
-  if (ptype() == tp_Class) {
-    return class_type_;
-  }
-  return ClassPtr();
+  return class_type_;
 }
 
 void TypeData::set_class_type (ClassPtr new_class_type) {
   if (class_type_.is_null()) {
     class_type_ = new_class_type;
     on_changed();
-  } else if (!(class_type_ == new_class_type)) {
-    set_ptype (tp_Error);
+  } else if (class_type_.ptr != new_class_type.ptr) {
+    // нельзя в одной переменной/массиве смешивать инстансы разных классов
+    set_ptype(tp_Error);
   }
+}
+
+ClassData *TypeData::get_class_type_inside () const {
+  if (class_type().not_null()) {
+    return class_type().ptr;
+  }
+  if (ptype() == tp_array && any_next_ != NULL) {
+    return any_next_->get_class_type_inside();
+  }
+  return NULL;
 }
 
 type_flags_t TypeData::flags() const {
@@ -760,24 +764,26 @@ void type_out_impl (const TypeData *type, string *res) {
     *res += "OrFalse < ";
   }
 
-  if (tp == tp_Class) {
-    *res += type->class_type()->name;
-  } else if (tp == tp_DB) {
+  if (tp == tp_DB) {
     *res += "MyDB";
   } else if (tp == tp_MC) {
     *res += "MyMemcache";
+  } else if (tp == tp_Class) {
+    *res += "class_instance<";
+    *res += type->class_type()->src_name;
+    *res += ">";
   } else if (tp == tp_RPC) {
     *res += "rpc_connection";
   } else if (tp == tp_float) {
     *res += "double";
   } else {
-    *res += ptype_name (tp);
+    *res += ptype_name(tp);
   }
 
-  type = type->lookup_at (Key::any_key());
+  type = type->lookup_at(Key::any_key());
   if (type != NULL) {
     *res += "< ";
-    type_out_impl (type, res);
+    type_out_impl(type, res);
     *res += " >";
   }
 

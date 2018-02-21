@@ -1,5 +1,5 @@
 #pragma once
-#include "compiler-core.h"
+#include "compiler/compiler-core.h"
 
 //NB: rl_val, tinf should make sence after this function
 class OptimizationPass : public FunctionPassBase {
@@ -104,6 +104,13 @@ class OptimizationPass : public FunctionPassBase {
       return index;
     }
 
+    VertexPtr optimize_instance_prop (VertexAdaptor <op_instance_prop> index) {
+      if (index->rl_type != val_l) {
+        index->extra_type = op_ex_index_rval;
+      }
+      return index;
+    }
+
     template <Operation FromOp, Operation ToOp>
       VertexPtr fix_int_const (VertexPtr from, const string &from_func) {
         VertexPtr *tmp;
@@ -184,6 +191,8 @@ class OptimizationPass : public FunctionPassBase {
         root = optimize_postfix_dec (root);
       } else if (root->type() == op_index) {
         root = optimize_index (root);
+      } else if (root->type() == op_instance_prop) {
+        root = optimize_instance_prop(root);
       }
 
       root = fix_int_const (root);

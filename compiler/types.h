@@ -16,11 +16,11 @@
 //foreach_ptype.h contain calls of FOREACH_PTYPE(tp) for each primitive_type name.
 //All new primitive types should be added to foreach_ptype.h
 //All primitive type names must start with tp_
-typedef enum {
+enum PrimitiveType {
 #define FOREACH_PTYPE(tp) tp,
 #include "foreach_ptype.h"
   ptype_size
-} PrimitiveType;
+};
 
 //interface to PrimitiveType
 template <PrimitiveType T_ID> inline const char *ptype_name();
@@ -44,7 +44,7 @@ public:
   Key();
   Key (const Key &other);
   Key &operator = (const Key &other);
-  typedef enum {string_key_e, int_key_e, any_key_e} KeyType;
+  enum KeyType {string_key_e, int_key_e, any_key_e};
   static Key any_key ();
   static Key string_key (const string &key);
   static Key int_key (int key);
@@ -120,7 +120,7 @@ private:
   TypeData *at (const Key &key) const;
   TypeData *at_force (const Key &key);
 
-  typedef enum {write_flag_e = 1, read_flag_e = 2, or_false_flag_e = 4, error_flag_e = 8} flag_id_t;
+  enum flag_id_t {write_flag_e = 1, read_flag_e = 2, or_false_flag_e = 4, error_flag_e = 8};
   template <flag_id_t FLAG> bool get_flag() const;
   template <flag_id_t FLAG> void set_flag (bool f);
 
@@ -148,6 +148,7 @@ public:
 
   ClassPtr class_type() const;
   void set_class_type (ClassPtr new_class_type);
+  ClassData *get_class_type_inside() const;
 
   bool or_false_flag() const;
   void set_or_false_flag (bool f);

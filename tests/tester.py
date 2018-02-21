@@ -43,7 +43,7 @@ def prepare_test (src, dest, init_code = ""):
 def in_tmp (path):
   return os.path.join ("tmp/", os.path.basename (path))
 
-supported_modes = ["php", "kphp", "hhvm", "custom", "none"];
+supported_modes = ["php", "kphp", "hhvm", "none"];
 def run_test_mode_cmd (mode, cmd):
   ans_path = "tmp/ans"
   perf_path = "tmp/perf"
@@ -69,9 +69,6 @@ def run_test_mode_kphp (path):
   check_call (make_cmd, shell = True)
   cmd = "tmp/main"
   return run_test_mode_cmd ("kphp", cmd)
-def run_test_mode_custom (path):
-  cmd = "..."
-  return run_test_mode_cmd ("custom", cmd)
 
 def get_ans_path (path):
   path = os.path.relpath (path, tests_common_dir)
@@ -123,6 +120,7 @@ def perf_cmp_memory (baseline, current):
 total_cnt = 0
 wa_cnt = 0
 wa_tests = []
+
 def run_test_mode (test, mode, perf_read_only = True, 
     ans_read_only = True, compare_with_modes = [], keep_going = False):
   global total_cnt
@@ -134,6 +132,7 @@ def run_test_mode (test, mode, perf_read_only = True,
 
   perfs = []
   was_run = False
+  was_kphp_fail = False
   if mode != "none":
     was_run = True
     total_cnt += 1
@@ -150,27 +149,30 @@ def run_test_mode (test, mode, perf_read_only = True,
         res = run_test_mode_kphp (test_path)
       elif mode == "hhvm":
         res = run_test_mode_hhvm (test_path)
-      elif mode == "custom":
-        res = run_rest_mode_hhvm (test_path)
     except:
-      print "%sFailed to run [%s] [%s]%s" % (bcolors.FAIL, test.short_path,
-          mode, bcolors.ENDC)
-      sys.exit (1)
+      if mode == "kphp" and "kphp_should_fail" in test.tags:
+        was_kphp_fail = True
+        res = ("", "")
+      else:
+        print "%sFailed to run [%s] [%s]%s" % (bcolors.FAIL, test.short_path,
+                                               mode, bcolors.ENDC)
+        sys.exit(1)
 
     cur_ans_path, cur_perf_path = res
 
     ok = True
     if ans_read_only:
-      if not test.check_answer (cur_ans_path, mode, keep_going):
+      if not test.check_answer(cur_ans_path, mode, keep_going, was_kphp_fail):
         wa_cnt += 1
         wa_tests.append (test)
         ok = False
     else:
       test.save_answer (cur_ans_path, mode)
 
-    if ok and not perf_read_only:
-      test.save_perf (cur_perf_path, mode)
-    perfs.append (("now." + mode, open (cur_perf_path, "r").read().split()))
+    if not was_kphp_fail:
+      if ok and not perf_read_only:
+        test.save_perf(cur_perf_path, mode)
+      perfs.append(("now." + mode, open(cur_perf_path, "r").read().split()))
 
   for other_mode in compare_with_modes:
     perf = test.get_perf (other_mode)
@@ -213,24 +215,26 @@ class Test:
     if not os.path.isfile (self.ans_path):
       self.tags |= set (["no_ans"])
       all_tags |= set (["no_ans"])
-  def check_answer (self, ans_path, mode, keep_going = False):
+
+  def check_answer(self, ans_path, mode, keep_going=False, was_kphp_fail=False):
     if not os.path.isfile (self.ans_path):
-      print "No answer for test [%s] found: %sNO ANSWER%s" % (self.short_path,
-      bcolors.FAIL, bcolors.ENDC)
-      if not keep_going:
-        sys.exit (1)
-      return False
+      if was_kphp_fail and mode == "kphp":
+        print "Test [%s] [%s]: %sCompilation failed, OK%s" % (self.short_path, mode, bcolors.OKGREEN, bcolors.ENDC)
+        return True
+      else:
+        print "No answer for test [%s] found: %sNO ANSWER%s" % (self.short_path, bcolors.FAIL, bcolors.ENDC)
+        if not keep_going:
+          sys.exit(1)
+        return False
     cmd = " ".join (["diff", self.ans_path, ans_path])
     err = call (cmd, shell = True)
     if err:
-      print "Test [%s] [%s]: %sWA%s" % (self.short_path, mode, bcolors.FAIL,
-          bcolors.ENDC)
+      print "Test [%s] [%s]: %sWA%s" % (self.short_path, mode, bcolors.FAIL, bcolors.ENDC)
       if not keep_going:
         sys.exit (1)
       return False
     else:
-      print "Test [%s] [%s]: %sOK%s" % (self.short_path, mode, bcolors.OKGREEN,
-          bcolors.ENDC)
+      print "Test [%s] [%s]: %sOK%s" % (self.short_path, mode, bcolors.OKGREEN, bcolors.ENDC)
       open(test.path + ".ok", 'w').close()
       return True
 
@@ -306,7 +310,7 @@ def usage():
   print "\t-c<mode> --- compare with modes"
   print "\t-k --- keep going"
   print "\t-l --- just print test names"
-  print "\t-m<mode> --- run in mode (kphp, php, hhvm, custom, none)"
+  print "\t-m<mode> --- run in mode (kphp, php, hhvm, none)"
   print "\t-i --- test till infinity"
 
 print_tests = False

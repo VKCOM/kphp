@@ -156,11 +156,11 @@ string gen_unique_name (string prefix, bool flag) {
   return register_unique_name (prefix + tmp);
 }
 
-inline string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
+inline string resolve_uses (FunctionPtr current_function, string class_name, char delim) {
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       kphp_error(!current_function->namespace_name.empty(),
-                 "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
+          "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
       if (class_name == "parent") {
         kphp_assert(!current_function->class_extends.empty());
         class_name = resolve_uses(current_function, current_function->class_extends, delim);
@@ -175,9 +175,9 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
         slash_pos = class_name.length();
       }
       string class_name_start = class_name.substr(0, slash_pos);
-      map<string, string> const &uses = current_function->namespace_uses;
+      map <string, string> const &uses = current_function->namespace_uses;
       bool use_used = false;
-      for (map<string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
+      for (map <string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
         if (class_name_start == it->first) {
           class_name = it->second + class_name.substr(class_name_start.length());
           use_used = true;
@@ -197,15 +197,103 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
   return class_name;
 }
 
+static string _err_instance_access (VertexPtr v, const char *desc) {
+  if (v->type() == op_func_call) {
+    return std::string("Invalid call ...->" + v->get_string() + "(): " + desc);
+  }
 
-string get_context_by_prefix(FunctionPtr function, string const &class_name, char delim) {
+  return std::string("Invalid property ...->" + v->get_string() + ": " + desc);
+}
+
+/*
+ * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
+ */
+string resolve_constructor_fname (FunctionPtr current_function, VertexAdaptor <op_constructor_call> call) {
+  if (likely(!call->type_help)) {
+    return resolve_uses(current_function, call->get_string()) + "$$" + "__construct";
+  }
+
+  return "new_" + call->get_string();   // Memcache, RpcMemcache, Exception, true_mc, test_mc, rich_mc
+}
+
+/*
+ * На уровне gentree конструкция '...->method(...)' превращается в 'SOMEMETHOD(...,...)'.
+ * Вот тут определяем, что за SOMEMETHOD — это из какого-то класса — именно того, что в левой части (= первый параметр).
+ * Например, $a->method(), если $a имеет тип Classes\A, то на самом деле это Classes$A$$method
+ */
+string resolve_instance_fname (FunctionPtr function, VertexAdaptor <op_func_call> call) {
+  ClassPtr klass = resolve_expr_class(function, call);
+
+  if (likely(klass.not_null() && klass->new_function.not_null())) {
+    return replace_characters(klass->name, '\\', '$').append("$$").append(call->get_string());
+  }
+
+  // особый кейс зарезервированных классов: $mc->get() это memcached_get($mc) и пр.
+  if (klass.not_null() && klass->name == "Exception") {
+    return "exception_" + call->get_string();
+  }
+  if (klass.not_null() && klass->name == "Memcache") {
+    return "memcached_" + call->get_string();
+  }
+
+  return std::string();
+}
+
+/*
+ * Когда есть любое выражение expr перед стрелочкой ('$a->...', '(new A())->...', 'get()->nestedArr[0]->...'),
+ * то слева ожидается инстанс какого-то класса.
+ * Определяем, что это за класс, и кидаем осмысленную ошибку, если там оказалось что-то не то.
+ * Например, '$a = 42; $a->...' скажет, что '$a is not an instance'
+ */
+ClassPtr resolve_expr_class (FunctionPtr function, VertexPtr v) {
+  VertexPtr arg = v->ith(0);
+  Operation type = arg->type();
+  ClassPtr klass;
+  AssumType assum = assum_unknown;
+
+  if (type == op_constructor_call) {
+    assum = infer_class_of_expr(function, arg, klass);
+    kphp_assert(assum == assum_instance && klass.not_null());
+  } else if (type == op_var) {
+    assum = infer_class_of_expr(function, arg, klass);
+    kphp_error(assum == assum_instance,
+        _err_instance_access(v, dl_pstr("$%s is not an instance", arg->get_string().c_str())).c_str());
+  } else if (type == op_func_call) {
+    assum = infer_class_of_expr(function, arg, klass);
+    kphp_error(assum == assum_instance,
+        _err_instance_access(v, dl_pstr("%s() does not return instance", arg->get_string().c_str())).c_str());
+  } else if (type == op_instance_prop) {
+    assum = infer_class_of_expr(function, arg, klass);
+    kphp_error(assum == assum_instance,
+        _err_instance_access(v, dl_pstr("$%s->%s is not an instance", arg->ith(0)->get_string().c_str(), arg->get_string().c_str())).c_str());
+  } else if (type == op_index && arg->size() == 2 && arg->ith(0)->type() == op_var) {
+    assum = infer_class_of_expr(function, arg->ith(0), klass);
+    kphp_error(assum == assum_instance_array,
+        _err_instance_access(v, dl_pstr("$%s is not an array of instances", arg->ith(0)->get_string().c_str())).c_str());
+  } else if (type == op_index && arg->size() == 2 && arg->ith(0)->type() == op_func_call) {
+    assum = infer_class_of_expr(function, arg->ith(0), klass);
+    kphp_error(assum == assum_instance_array,
+        _err_instance_access(v, dl_pstr("%s() does not return array of instances", arg->ith(0)->get_string().c_str())).c_str());
+  } else if (type == op_index && arg->size() == 2 && arg->ith(0)->type() == op_instance_prop) {
+    assum = infer_class_of_expr(function, arg->ith(0), klass);
+    kphp_error(assum == assum_instance_array,
+        _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", arg->ith(0)->ith(0)->get_string().c_str(), arg->ith(0)->get_string().c_str())).c_str());
+  } else {
+    kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting").c_str());
+  }
+
+  return klass;
+}
+
+
+string get_context_by_prefix (FunctionPtr function, string const &class_name, char delim) {
   if (class_name == "static" || class_name == "self" || class_name == "parent") {
     return resolve_uses(function, "\\" + function->class_context_name, delim);
   }
   return resolve_uses(function, class_name, delim);
 }
 
-string get_full_static_member_name(FunctionPtr function, string const &name, bool append_with_context) {
+string get_full_static_member_name (FunctionPtr function, string const &name, bool append_with_context) {
   size_t pos$$ = name.find("::");
   if (pos$$ != string::npos) {
     string prefix_name = name.substr(0, pos$$);
@@ -224,7 +312,7 @@ string get_full_static_member_name(FunctionPtr function, string const &name, boo
   }
 }
 
-string resolve_define_name(string name) {
+string resolve_define_name (string name) {
   size_t pos$$ = name.find("$$");
   if (pos$$ != string::npos) {
     string class_name = name.substr(0, pos$$);

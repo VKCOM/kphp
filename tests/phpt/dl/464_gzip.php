@@ -1,9 +1,11 @@
 @ok
 <?php
 #ifndef KittenPHP
+if(!function_exists('gzdecode')){
 function gzdecode($string) {
   $string = substr($string, 10);
   return gzinflate($string);
+}
 }
 #endif
   $s = gzcompress ("Hello world");

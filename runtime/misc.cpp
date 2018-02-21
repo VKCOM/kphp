@@ -555,10 +555,6 @@ void do_serialize (const var &v) {
       static_SB += '}';
       return;
     }
-    case var::OBJECT_TYPE: {
-      //TODO
-      return;
-    }
     default:
       php_assert (0);
       exit (1);
@@ -1015,10 +1011,6 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
       }
 
       static_SB += "}]"[is_vector];
-
-    }
-    case var::OBJECT_TYPE: {
-      //TODO
       return;
     }
     default:
@@ -1354,10 +1346,6 @@ void do_print_r (const var &v, int depth) {
       *coub + shift + ")\n";
       break;
     }
-    case var::OBJECT_TYPE: {
-      //TODO
-      break;
-    }
     default:
       php_assert (0);
       exit (1);
@@ -1390,7 +1378,6 @@ void do_var_dump (const var &v, int depth) {
       break;
     case var::ARRAY_TYPE: {
       const array <var> *a = AS_CONST_ARRAY(v.a);
-      string shift (depth * 2, ' ');
 
       *coub + shift + (0 && a->is_vector() ? "vector(" : "array(") + a->count() + ") {\n";
 
@@ -1406,10 +1393,6 @@ void do_var_dump (const var &v, int depth) {
       }
 
       *coub + shift + "}";
-      break;
-    }
-    case var::OBJECT_TYPE: {
-      //TODO
       break;
     }
     default:
@@ -1464,7 +1447,6 @@ void do_var_export (const var &v, int depth, char endc) {
       break;
     case var::ARRAY_TYPE: {
       const array <var> *a = AS_CONST_ARRAY(v.a);
-      string shift (depth * 2, ' ');
 
       bool is_vector = a->is_vector();
       *coub + shift + "array(\n";
@@ -1490,10 +1472,6 @@ void do_var_export (const var &v, int depth, char endc) {
       }
 
       *coub + shift + ")";
-      break;
-    }
-    case var::OBJECT_TYPE: {
-      //TODO
       break;
     }
     default:

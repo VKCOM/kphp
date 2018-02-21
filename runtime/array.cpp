@@ -1345,9 +1345,6 @@ T& array <T, TT>::operator[] (const var &v) {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return (*this)[AS_CONST_ARRAY(v.a)->to_int()];
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return (*this)[1];
     default:
       php_assert (0);
       exit (1);
@@ -1518,9 +1515,6 @@ void array <T, TT>::set_value (const var &v, const T &value) {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return set_value (AS_CONST_ARRAY(v.a)->to_int(), value);
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return set_value (1, value);
     default:
       php_assert (0);
       exit (1);
@@ -1676,9 +1670,6 @@ const var array <T, TT>::get_var (const var &v) const {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return get_var (AS_CONST_ARRAY(v.a)->to_int());
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return get_var (1);
     default:
       php_assert (0);
       exit (1);
@@ -1717,9 +1708,6 @@ const T array <T, TT>::get_value (const var &v) const {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return get_value (AS_CONST_ARRAY(v.a)->to_int());
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return get_value (1);
     default:
       php_assert (0);
       exit (1);
@@ -1792,9 +1780,6 @@ bool array <T, TT>::has_key (const var &v) const {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return has_key (AS_CONST_ARRAY(v.a)->to_int());
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return has_key (1);
     default:
       php_assert (0);
       exit (1);
@@ -1866,9 +1851,6 @@ bool array <T, TT>::isset (const var &v) const {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return isset (AS_CONST_ARRAY(v.a)->to_int());
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return isset (1);
     default:
       php_assert (0);
       exit (1);
@@ -1959,9 +1941,6 @@ void array <T, TT>::unset (const var &v) {
     case var::ARRAY_TYPE:
       php_warning ("Illegal offset type array");
       return unset (AS_CONST_ARRAY(v.a)->to_int());
-    case var::OBJECT_TYPE:
-      php_warning ("Illegal offset type object");
-      return unset (1);
     default:
       php_assert (0);
       exit (1);
@@ -2652,33 +2631,6 @@ template <class T, class TT>
 double array <T, TT>::to_float (void) const {
   return p->int_size + p->string_size;
 }
-
-template <class T, class TT>
-const object array <T, TT>::to_object (void) const {
-  object res;
-  array <var, var>::array_inner *data = res.o->data;
-
-  if (is_vector()) {
-    int size = p->int_size;
-    const TT *it = reinterpret_cast <const TT *> (p->int_entries);
-
-    for (int i = 0; i < size; i++) {
-      string string_key (i);
-      data->set_map_value (string_key.hash(), string_key, it[i], false);
-    }
-  } else {
-    for (string_hash_entry *it = p->begin(); it != p->end(); it = p->next (it)) {
-      if (p->is_string_hash_entry (it)) {
-        data->set_map_value (it->int_key, it->string_key, it->value, false);
-      } else {
-        string string_key (it->int_key);
-        data->set_map_value (string_key.hash(), string_key, it->value, false);
-      }
-    }
-  }
-  return res;
-}
-
 
 template <class T, class TT>
 int array <T, TT>::get_reference_counter (void) const {

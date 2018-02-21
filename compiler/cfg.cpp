@@ -338,7 +338,8 @@ namespace cfg {
         *res_finish = finish;
         break;
       }
-      case op_func_call: {
+      case op_func_call:
+      case op_constructor_call: {
         FunctionPtr func = tree_node->get_func_id();
         VertexRange params;
         bool params_inited = false;
@@ -352,8 +353,7 @@ namespace cfg {
         start = new_node();
         *res_start = start;
 
-        VertexAdaptor <op_func_call> call = tree_node;
-        VertexRange cur_params = call->args();
+        VertexRange cur_params = tree_node.as<op_func_call>()->args();
         int ii = 0;
         FOREACH_VERTEX (cur_params, i) {
           bool weak_write_flag = false;

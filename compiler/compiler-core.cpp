@@ -11,6 +11,7 @@ void CompilerCore::start() {
   PROF (total).start();
   stage::die_if_global_errors();
   load_index();
+  create_builtin_classes();
 }
 
 void CompilerCore::finish() {
@@ -65,7 +66,7 @@ FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__
     }
   }
   FunctionSetPtr function_set = node->data;
-  kphp_assert_msg (function_set->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", function_set->name.c_str(), name.c_str()));
+  kphp_assert (function_set->name == name/*, "Bug in compiler: hash collision"*/);
   return function_set;
 }
 FunctionPtr CompilerCore::get_function_unsafe (const string &name) {
@@ -90,9 +91,9 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->class_extends = info.extends;
   function->namespace_uses = info.namespace_uses;
   function->disabled_warnings = info.disabled_warnings;
+  function->access_type = info.access_type;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
-  function->should_be_sync = info.should_be_sync;
 
   if (function_root->type() == op_func_decl) {
     function->is_extern = true;
@@ -120,10 +121,24 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   return function;
 }
 
+void CompilerCore::create_builtin_classes () {
+  ClassPtr exception = ClassPtr(new ClassData());
+  exception->name = "Exception";
+  exception->init_function = FunctionPtr(new FunctionData());
+  classes_ht.at(hash_ll(exception->name))->data = exception;
+
+  ClassPtr memcache = ClassPtr(new ClassData());
+  memcache->name = "Memcache";
+  memcache->init_function = FunctionPtr(new FunctionData());
+  classes_ht.at(hash_ll(memcache->name))->data = memcache;
+}
+
 ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   ClassPtr klass = ClassPtr (new ClassData());
   klass->name = (info.namespace_name.empty() ? "" : info.namespace_name + "\\") + info.name;
   klass->file_id = stage::get_file();
+  klass->src_name = std::string("C$").append(replace_characters(klass->name, '\\', '$'));
+  klass->header_name = klass->src_name + ".h";
   klass->root = info.root;
   klass->extends = info.extends;
 
@@ -131,6 +146,23 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   klass->init_function = get_function_unsafe (init_function_name_str);
   klass->init_function->class_id = klass;
   klass->static_fields.insert(info.static_fields.begin(), info.static_fields.end());
+
+  for (std::vector <VertexPtr>::const_iterator v = info.vars.begin(); v != info.vars.end(); ++v) {
+    OperationExtra extra_type = (*v)->extra_type;
+
+    VarPtr var = VarPtr(new VarData(VarData::var_instance_t));
+    var->param_i = int(v - info.vars.begin());
+    var->class_id = klass;
+    var->name = (*v)->get_string();
+    var->phpdoc_token = ((VertexPtr) (*v)).as <op_class_var>()->phpdoc_token;
+    var->access_type =
+        extra_type == op_ex_static_public ? access_public :
+        extra_type == op_ex_static_private ? access_private :
+        extra_type == op_ex_static_protected ? access_protected :
+        access_public;
+    klass->vars.push_back(var);
+  }
+
   FOREACH(info.constants, i) {
     klass->constants.insert((*i).first);
   }
@@ -141,6 +173,19 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
     }
     klass->static_methods.insert(*method_ptr);
   }
+  FOREACH(info.methods, method) {
+    FunctionPtr f = ((VertexPtr) (*method)).as <op_function>()->get_func_id();
+    f->class_id = klass;
+    klass->methods.push_back(f);
+  }
+  for (vector <VertexPtr>::const_iterator i = info.this_type_rules.begin(); i != info.this_type_rules.end(); ++i) {
+    ((VertexPtr) (*i)).as <op_class_type_rule>()->class_ptr = klass;
+  }
+
+  kphp_error(info.new_function.is_null() || !klass->is_fully_static(),
+      dl_pstr("Class %s has __construct() but does not have any fields", klass->name.c_str()));
+  klass->new_function = info.new_function;
+
   return klass;
 }
 
@@ -424,18 +469,18 @@ bool compare_mtime(File *f, File *g) {
   return f->path < g->path;
 }
 
-bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir, 
+bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     File *lib_version_file, File *link_file, const KphpEnviroment &kphp_env) {
   KphpMake make;
   long long lib_mtime = lib_version_file->mtime;
   if (lib_mtime == 0) {
-    fprintf (stdout, "Can't read mtime of lib_version_file [%s]\n", 
+    fprintf (stdout, "Can't read mtime of lib_version_file [%s]\n",
         lib_version_file->path.c_str());
     return false;
   }
   long long link_mtime = link_file->mtime;
   if (link_mtime == 0) {
-    fprintf (stdout, "Can't read mtime of link_file [%s]\n", 
+    fprintf (stdout, "Can't read mtime of link_file [%s]\n",
         link_file->path.c_str());
     return false;
   }
@@ -448,11 +493,10 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
   for (size_t i = 0; i < files.size(); i++) {
     header_mtime[i] = files[i]->mtime;
   }
-
-  for (size_t i = 0; i < files.size(); ++i) {
-    File *h_file = files[i];
+  FOREACH (files, h_file_i) {
+    File *h_file = *h_file_i;
     if (h_file->ext == ".h") {
-      long long &h_mtime = header_mtime[i];
+      long long &h_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), h_file, compare_mtime) - files.begin()];
       FOREACH (h_file->includes, it) {
         File *header = cpp_dir->get_file (*it, false);
         kphp_assert (header != NULL);
@@ -600,6 +644,9 @@ string conv_to_func_ptr_name(VertexPtr call) {
       }
     }
   }
+  if (name.find("::") != string::npos && name[0] != '\\') {
+    return "";
+  }
   return name;
 }
 
@@ -619,7 +666,7 @@ VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function) {
 }
 
 VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
-  kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call);
+  kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
   kphp_assert (func.not_null());
   kphp_assert (call->get_func_id().is_null() || call->get_func_id() == func);
   if (call->get_func_id() == func) {
@@ -640,7 +687,8 @@ VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
 
   VertexAdaptor <meta_op_function> func_root = func->root;
   VertexAdaptor <op_func_param_list> param_list = func_root->params();
-  VertexRange call_args = call.as <op_func_call>()->args();
+  VertexRange call_args =
+      call->type() == op_constructor_call ? call.as <op_constructor_call>()->args() : call.as <op_func_call>()->args();
   VertexRange func_args = param_list->params();
   int call_args_n = (int)call_args.size();
   int func_args_n = (int)func_args.size();
@@ -692,38 +740,51 @@ VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
   return call;
 }
 
-VertexPtr try_set_func_id (VertexPtr call) {
-  if (call->type() != op_func_ptr && call->type() != op_func_call) {
-    return call;
-  }
-
+/*
+ * Имея vertex вида 'fn(...)' или 'new A(...)', сопоставить этому vertex реальную FunctionPtr
+ *  (он будет доступен через vertex->get_func_id()).
+ * Вызовы instance-методов вида $a->fn(...) были на уровне gentree преобразованы в op_func_call fn($a, ...),
+ * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
+ */
+VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function) {
   if (call->get_func_id().not_null()) {
     return call;
   }
 
-  const string &name = call->get_string();
+  const string &name =
+      call->type() == op_constructor_call
+      ? resolve_constructor_fname(current_function, call)
+      : call->type() == op_func_call && call->extra_type == op_ex_func_member
+        ? resolve_instance_fname(current_function, call)
+        : call->get_string();
+
   FunctionSetPtr function_set = G->get_function_set (fs_function, name, true);
+  FunctionPtr function;
+  int functions_cnt = (int)function_set->size();
 
-  switch (function_set->size()) {
-    case 1: {
-      if (!function_set->is_required) {
-        kphp_error(false, dl_pstr("Function is not required. Maybe you want to use `@kphp-required` for this function [%s]\n%s\n", name.c_str(), stage::get_function_history().c_str()));
-        break;
-      }
-      call = set_func_id(call, function_set[0]);
-      break;
+  if (functions_cnt == 0) {
+    if (call->type() == op_constructor_call) {
+      kphp_error(0, dl_pstr("Calling 'new %s()', but this class does not have fields and constructor\n%s\n",
+          call->get_string().c_str(), stage::get_function_history().c_str()));
+    } else {
+      kphp_error(0, dl_pstr("Unknown function [%s]\n%s\n",
+          name.c_str(), stage::get_function_history().c_str()));
     }
-
-    case 0: {
-      kphp_error(false, dl_pstr("Unknown function [%s]; \n%s\n", name.c_str(), stage::get_function_history().c_str()));
-      break;
-    }
-
-    default: {
-      kphp_error(false, dl_pstr("Function overloading is not supported properly [%s]", name.c_str()));
-      break;
-    }
+    return call;
   }
 
+  kphp_assert (function_set->is_required);
+
+  if (functions_cnt == 1) {
+    function = function_set[0];
+  }
+
+  kphp_error_act (
+    function.not_null(),
+    dl_pstr ("Function overloading is not supported properly [%s]", name.c_str()),
+    return call
+  );
+
+  call = set_func_id (call, function);
   return call;
 }

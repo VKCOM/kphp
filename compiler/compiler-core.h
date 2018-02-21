@@ -18,7 +18,7 @@
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization
-typedef enum {fs_function, fs_member_function} function_set_t;
+enum function_set_t {fs_function, fs_member_function};
 class CompilerCore {
   private:
     Index cpp_index;
@@ -34,6 +34,7 @@ class CompilerCore {
                               bool req = false);
     FunctionPtr create_function (const FunctionInfo &info);
     ClassPtr create_class (const ClassInfo &info);
+    void create_builtin_classes();
 
     inline bool try_require_file (SrcFilePtr file) {
       return __sync_bool_compare_and_swap (&file->is_required, false, true);
@@ -94,9 +95,9 @@ extern CompilerCore *G;
 
 /*** Misc functions ***/
 bool try_optimize_var (VarPtr var);
-string conv_to_func_ptr_name(VertexPtr call);
-VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function);
+string conv_to_func_ptr_name (VertexPtr call);
+VertexPtr conv_to_func_ptr (VertexPtr call, FunctionPtr current_function);
 VertexPtr set_func_id (VertexPtr call, FunctionPtr func);
-VertexPtr try_set_func_id (VertexPtr call);
+VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function);
 
 #include "compiler-core.hpp"

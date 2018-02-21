@@ -73,6 +73,7 @@ void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
       rl_r_calc (root, -1);
       return;
     case op_func_call:
+    case op_constructor_call:
       break;
     default:
       kphp_fail();
@@ -212,13 +213,33 @@ void rl_calc (VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          kphp_error (array->type() == op_var || array->type() == op_index || array->type() == op_func_call,
+          kphp_error (array->type() == op_var || array->type() == op_index ||
+                      array->type() == op_func_call || array->type() == op_instance_prop,
               "op_index has to be used on lvalue");
           rl_calc (array, val_r);
 
           if (index->has_key()) {
             rl_calc (index->key(), val_r);
           }
+          break;
+        default:
+          assert (0);
+          break;
+      }
+      break;
+    }
+    case rl_instance_prop: {
+      VertexPtr lhs = root.as <op_instance_prop>()->lhs();   // lhs() это слева от ->, а str_val — название свойства
+      switch (expected_rl_type) {
+        case val_l:
+          break;
+        case val_r:
+        case val_none:
+          kphp_error (lhs->type() == op_var || lhs->type() == op_index
+                      || lhs->type() == op_func_call || lhs->type() == op_constructor_call
+                      || lhs->type() == op_instance_prop,
+              "op_instance_prop has to be used on lvalue");
+          rl_calc(lhs, val_r);
           break;
         default:
           assert (0);

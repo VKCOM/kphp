@@ -27,7 +27,6 @@
 #include "compiler/pass-ub.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer.h"
-#include "common/version-string.h"
 
 bool is_const (VertexPtr root) {
   if (is_const_int(root)) {
@@ -152,6 +151,10 @@ class GenTreeCallback : public GenTreeCallbackBase {
       return G->register_function (info, os);
     }
 
+    void require_function_set (FunctionPtr function) {
+      G->require_function_set(fs_function, function->name, FunctionPtr(), os);
+    }
+
     ClassPtr register_class (const ClassInfo &info) {
       return G->register_class(info, os);
     }
@@ -267,9 +270,11 @@ class ApplyBreakFileF {
       }
 
       for (int i = 0; i < (int)splitted.size(); i++) {
-        G->register_function (FunctionInfo(splitted[i], function->namespace_name,
-                                           function->class_name, function->class_context_name,
-                                           function->namespace_uses, function->class_extends, set<string>(), false, false), os);
+        G->register_function(FunctionInfo(
+            splitted[i], function->namespace_name,
+            function->class_name, function->class_context_name,
+            function->namespace_uses, function->class_extends, set <string>(), access_nonmember
+        ), os);
       }
 
       os << function;
@@ -288,7 +293,7 @@ class SplitSwitchF {
       for (int i = 0; i < (int)new_functions.size(); i++) {
         G->register_function (FunctionInfo(new_functions[i], function->namespace_name,
                                            function->class_name, function->class_context_name, function->namespace_uses,
-                                           function->class_extends, set<string>(), false, false), os);
+            function->class_extends, set <string>(), access_nonmember), os);
       }
 
       if (stage::has_error()) {
@@ -379,6 +384,20 @@ class CollectRequiredPass : public FunctionPassBase {
 
 
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
+      if ((root->type() == op_string || root->type() == op_array) && force_func_ptr) {
+        string name = conv_to_func_ptr_name(root);
+        if (name != "") {
+          string fun_name = get_full_static_member_name(current_function, name, true);
+          callback->require_function_set(fs_function, name, current_function);
+          /* TODO fix it
+          string class_name = get_class_name_for(name, '/');
+          if (!class_name.empty()) {
+            require_class(class_name, "");
+          }
+          */
+        }
+      }
+
       bool new_force_func_ptr = false;
       if (root->type() == op_func_call || root->type() == op_func_name) {
         string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
@@ -387,13 +406,22 @@ class CollectRequiredPass : public FunctionPassBase {
 
       if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
         const string &name = root->get_string();
-        string class_name = get_class_name_for(name, '/');
+        const string &class_name = get_class_name_for(name, '/');
         if (!class_name.empty()) {
           require_class(class_name, "");
           string member_name = get_full_static_member_name(current_function, name, root->type() == op_func_call);
           root->set_string(member_name);
         }
       }
+      if (root->type() == op_constructor_call) {
+        if (likely(!root->type_help)) {     // type_help <=> Memcache | Exception
+          const string &class_name = resolve_uses(current_function, root->get_string(), '/');
+          require_class(class_name, "");
+        } else {
+          callback->require_function_set(fs_function, resolve_constructor_fname(current_function, root), current_function);
+        }
+      }
+
       if (root->type() == op_func_call) {
         new_force_func_ptr = true;
         const string &name = root->get_string();
@@ -595,6 +623,8 @@ class CollectDefinesToVectorPass : public FunctionPassBase {
 class PreprocessDefinesConcatenationF {
   private:
     AUTO_PROF (preprocess_defines);
+    map<string, string> str_defines;
+    map<string, VertexPtr> int_defines;
     set<string> in_progress;
     set<string> done;
     map<string, VertexPtr> define_vertex;
@@ -607,14 +637,6 @@ class PreprocessDefinesConcatenationF {
     PreprocessDefinesConcatenationF() {
       defines_stream.set_sink(true);
       all_fun.set_sink(true);
-
-      CREATE_VERTEX(val, op_string);
-      val->set_string(get_version_string());
-      DefineData *data = new DefineData(val, DefineData::def_php);
-      data->name = "KPHP_COMPILER_VERSION";
-      DefinePtr def_id(data);
-
-      G->register_define(def_id);
     }
 
     string get_description() {
@@ -648,10 +670,7 @@ class PreprocessDefinesConcatenationF {
       }
       if (v->type() == op_func_name) {
         string name = v.as<op_func_name>()->str_val;
-        map<string, VertexPtr>::iterator it = define_vertex.find(resolve_define_name(name));
-        if (it != define_vertex.end()) {
-          return check_concat(it->second.as<op_define>()->value());
-        }
+        return str_defines.find(resolve_define_name(name)) != str_defines.end();
       }
       return false;
     }
@@ -659,11 +678,6 @@ class PreprocessDefinesConcatenationF {
     bool check_const(VertexPtr v) {
       switch (v->type()) {
         case op_int_const:
-        case op_float_const:
-        case op_string:
-        case op_false:
-        case op_true:
-        case op_null:
           return true;
         case op_conv_int:
         case op_minus:
@@ -681,30 +695,13 @@ class PreprocessDefinesConcatenationF {
         case op_shl:
         case op_shr:
           return check_const(v.as<meta_op_binary_op>()->rhs()) && check_const(v.as<meta_op_binary_op>()->lhs());
-
-        case op_func_name: {
-          string name = resolve_define_name(v.as<op_func_name>()->str_val);
-          map<string, VertexPtr>::iterator it = define_vertex.find(name);
-          if (it != define_vertex.end()) {
-            return check_const(it->second.as<op_define>()->value());
-          }
-          break;
-        }
-
-        case op_array: {
-          FOREACH(v, el_it) {
-            if (!check_const(*el_it)) {
-              return false;
-            }
-          }
-          return true;
-        }
-
         default:
           break;
       }
-
-
+      if (v->type() == op_func_name) {
+        string name = v.as<op_func_name>()->str_val;
+        return int_defines.find(resolve_define_name(name)) != int_defines.end();
+      }
       return false;
     }
 
@@ -713,11 +710,6 @@ class PreprocessDefinesConcatenationF {
         case op_conv_int:
           return make_const(v.as<meta_op_unary_op>()->expr());
         case op_int_const:
-        case op_float_const:
-        case op_string:
-        case op_false:
-        case op_true:
-        case op_null:
           return v;
         case op_minus:
         case op_plus:
@@ -739,26 +731,16 @@ class PreprocessDefinesConcatenationF {
           v.as<meta_op_binary_op>()->rhs() = make_const(v.as<meta_op_binary_op>()->rhs());
           return v;
         }
-
-        case op_func_name: {
-          string name = v.as<op_func_name>()->str_val;
-          map<string,VertexPtr>::iterator iter = define_vertex.find(resolve_define_name(name));
-          kphp_assert(iter != define_vertex.end());
-          return iter->second.as<op_define>()->value();
-        }
-
-        case op_array: {
-          FOREACH(v, el_it) {
-            *el_it = make_const(*el_it);
-          }
-          return v;
-        }
-
         default:
-          kphp_assert(false);
           break;
       }
-
+      if (v->type() == op_func_name) {
+        string name = v.as<op_func_name>()->str_val;
+        map<string,VertexPtr>::iterator iter = int_defines.find(resolve_define_name(name));
+        kphp_assert(iter != int_defines.end());
+        return iter->second;
+      }
+      kphp_assert(false);
       return VertexPtr();
     }
 
@@ -775,13 +757,9 @@ class PreprocessDefinesConcatenationF {
       }
       if (v->type() == op_func_name) {
         string name = v.as<op_func_name>()->str_val;
-        map<string, VertexPtr>::iterator iter = define_vertex.find(resolve_define_name(name));
-        kphp_assert(iter != define_vertex.end());
-
-        VertexAdaptor <meta_op_define> define = iter->second;
-        kphp_assert(resolve_define_name(name) == define->name()->get_string());
-
-        return define->value()->get_string();
+        map<string,string>::iterator iter = str_defines.find(resolve_define_name(name));
+        kphp_assert(iter != str_defines.end());
+        return iter->second;
       }
       kphp_fail();
     }
@@ -793,25 +771,23 @@ class PreprocessDefinesConcatenationF {
 
       stage::die_if_global_errors();
 
-      vector<VertexPtr> all_defines = defines_stream.get_as_vector();
-      FOREACH(all_defines, define) {
-        VertexPtr name_v = define->as<op_define>()->name();
-        stage::set_location(define->as<op_define>()->location);
+      vector<VertexPtr> defines = defines_stream.get_as_vector();
+      for (size_t i = 0; i < defines.size(); i++) {
+        VertexPtr name_v = defines[i].as<op_define>()->name();
+        stage::set_location(defines[i].as<op_define>()->location);
         kphp_error_return (
           name_v->type() == op_string,
           "Define: first parameter must be a string"
         );
 
         string name = name_v.as<op_string>()->str_val;
-        if (!define_vertex.insert(make_pair(name, *define)).second) {
-          kphp_error_return(0, dl_pstr("Duplicate define declaration: %s", name.c_str()));
+        if (!define_vertex.insert(make_pair(name, defines[i])).second) {
+          kphp_error_return(0, "Duplicate define declaration");
         }
       }
-
-      FOREACH(all_defines, define) {
-        process_define(*define);
+      for (size_t i = 0; i < defines.size(); i++) {
+        process_define(defines[i]);
       }
-
       vector<FunctionPtr> funs = all_fun.get_as_vector();
       for (size_t i = 0; i < funs.size(); i++) {
         os << funs[i];
@@ -825,6 +801,8 @@ class PreprocessDefinesConcatenationF {
         map<string, VertexPtr>::iterator it = define_vertex.find(name);
         if (it != define_vertex.end()) {
           process_define(it->second);
+        } else {
+          fprintf(stderr, "Unknown func_name %s in define\n", name.c_str());
         }
       }
       FOREACH(root, i) {
@@ -835,8 +813,7 @@ class PreprocessDefinesConcatenationF {
     void process_define(VertexPtr root) {
       stage::set_location(root->location);
       VertexAdaptor <meta_op_define> define = root;
-      VertexPtr name_v = define->name();
-      VertexPtr val = define->value();
+      VertexPtr name_v = define->name(), val = define->value();
 
       kphp_error_return (
         name_v->type() == op_string,
@@ -877,15 +854,26 @@ class PreprocessDefinesConcatenationF {
       done.insert(name);
 
       if (val->type() != op_string && check_concat(val)) {
+        string collected = collect_concat(val);
         CREATE_VERTEX(new_val, op_string);
-        new_val->str_val = collect_concat(val);
+        new_val->str_val = collected;
         new_val->location = val->get_location();
-
-        define->value() = new_val;
-      } else if (check_const(val)) {
-        define->value() = make_const(val);
+        define->value() = val = new_val;
       }
 
+      if (val->type() == op_int_const) {
+        int_defines[name] = val;
+      } else {
+        if (check_const(val)) {
+          VertexPtr new_val = make_const(val);
+          define->value() = val = new_val;
+          int_defines[name] = val;
+        }
+      }
+
+      if (val->type() == op_string) {
+        str_defines[name] = val.as<op_string>()->str_val;
+      }
     }
 
 };
@@ -899,12 +887,10 @@ class CollectDefinesPass : public FunctionPassBase {
     string get_description() {
       return "Collect defines";
     }
-
     VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_define || root->type() == op_define_raw) {
         VertexAdaptor <meta_op_define> define = root;
-        VertexPtr name = define->name();
-        VertexPtr val = define->value();
+        VertexPtr name = define->name(), val = define->value();
 
         kphp_error_act (
           name->type() == op_string,
@@ -1284,8 +1270,8 @@ class PreprocessFunctionCPass : public FunctionPassBase {
         root = new_root;
       }
 
-      if (root->type() == op_func_call || root->type() == op_func_ptr) {
-        root = try_set_func_id (root);
+      if (root->type() == op_func_call || root->type() == op_func_ptr || root->type() == op_constructor_call) {
+        root = try_set_func_id(root, current_function);
       }
 
       return root;
@@ -1467,6 +1453,36 @@ class PreprocessVarargPass : public FunctionPassBase {
     virtual bool check_function (FunctionPtr function) {
       return function->varg_flag && default_check_function (function);
     }
+};
+
+
+/**
+ * Для обращений к свойствам $a->b определяем тип $a, убеждаемся в наличии свойства b у класса,
+ * а также заполняем vertex<op_instance_prop>->var (понадобится для type inferring)
+ */
+class CheckInstanceProps : public FunctionPassBase {
+private:
+  AUTO_PROF (check_instance_props);
+public:
+  string get_description () {
+    return "Check instance properties";
+  }
+
+  VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
+
+    if (v->type() == op_instance_prop) {
+      ClassPtr klass = resolve_expr_class(current_function, v);
+      kphp_assert(klass.not_null());  // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_expr_class()
+
+      VarPtr var = klass->find_var(v->get_string());
+      v.as <op_instance_prop>()->var = var;
+
+      kphp_error(var.not_null(),
+          dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()));
+    }
+
+    return v;
+  }
 };
 
 
@@ -1695,8 +1711,6 @@ class CheckFunctionCallsPass : public FunctionPassBase {
     }
 
     void check_func_call (VertexPtr call) {
-      kphp_assert (call->type() == op_func_call || call->type() == op_func_ptr);
-
       FunctionPtr f = call->get_func_id();
       kphp_assert (f.not_null());
       kphp_error_return (f->root.not_null(), dl_pstr ("Function [%s] undeclared", f->name.c_str()));
@@ -1712,7 +1726,8 @@ class CheckFunctionCallsPass : public FunctionPassBase {
         return;
       }
 
-      VertexRange call_params = call.as <op_func_call>()->args();
+      VertexRange call_params = call->type() == op_constructor_call ? call.as <op_constructor_call>()->args()
+                                                                    : call.as <op_func_call>()->args();
       int func_params_n = (int)func_params.size(), call_params_n = (int)call_params.size();
 
       kphp_error_return (
@@ -1775,7 +1790,7 @@ class CheckFunctionCallsPass : public FunctionPassBase {
     }
 
     VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
-      if (v->type() == op_func_ptr || v->type() == op_func_call) {
+      if (v->type() == op_func_ptr || v->type() == op_func_call || v->type() == op_constructor_call) {
         check_func_call (v);
       }
       return v;
@@ -2297,7 +2312,7 @@ class ExtractResumableCallsPass : public FunctionPassBase {
     void skip_conv_and_sets(VertexPtr* &replace) {
       while (true) {
         if (!replace) break;
-        Operation op = (*replace)->type(); 
+        Operation op = (*replace)->type();
         if (op == op_set_add || op == op_set_sub ||
             op == op_set_mul || op == op_set_div ||
             op == op_set_mod || op == op_set_and ||
@@ -2312,7 +2327,7 @@ class ExtractResumableCallsPass : public FunctionPassBase {
                    op == op_conv_uint || op == op_conv_long ||
                    op == op_conv_ulong || op == op_conv_regexp ||
                    op == op_log_not) {
-          replace = &((*replace).as<meta_op_unary_op>()->expr());           
+          replace = &((*replace).as <meta_op_unary_op>()->expr());
         } else {
           break;
         }
@@ -2388,7 +2403,7 @@ class ExtractResumableCallsPass : public FunctionPassBase {
       *replace = temp_var2;
 
       CREATE_VERTEX(seq, op_seq, set_op, vertex);
-      return seq;      
+      return seq;
     }
 };
 
@@ -2571,33 +2586,26 @@ class FinalCheckPass : public FunctionPassBase {
       }
 
       if (v->type() == op_func_call || v->type() == op_var ||
-          v->type() == op_index) {
+          v->type() == op_index || v->type() == op_constructor_call) {
         if (v->rl_type == val_r) {
           const TypeData *type = tinf::get_type (v);
-          if (type->ptype() == tp_Unknown && !type->use_or_false()) {
+          // пока что, т.к. все методы всех классов считаются required, в реально неиспользуемых будет Unknown
+          // (потом когда-нибудь можно убирать реально неиспользуемые из required-списка, и убрать дополнительное условие)
+          if (type->ptype() == tp_Unknown && !type->use_or_false() && !current_function->is_instance_function()) {
             while (v->type() == op_index) {
               v = v.as <op_index>()->array();
             }
-            string desc = "Using Unknown type : ";
+            string desc;
             if (v->type() == op_var) {
               desc = "variable [$" + v.as <op_var>()->get_var_id()->name + "]";
             } else if (v->type() == op_func_call) {
               desc = "function [" + v.as <op_func_call>()->get_func_id()->name + "]";
+            } else if (v->type() == op_constructor_call) {
+              desc = "constructor [" + v.as <op_constructor_call>()->get_func_id()->name + "]";
             } else {
               desc = "...";
             }
-
-            if (v->type() == op_var) {
-              VarPtr var = v->get_var_id();
-              if (var.not_null()) {
-                FunctionPtr holder_func = var->holder_func;
-                if (holder_func.not_null() && holder_func->is_required) {
-                  desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
-                }
-              }
-            }
-
-            kphp_error (0, desc.c_str());
+            kphp_error (0, dl_pstr("Using Unknown type : %s", desc.c_str()));
             return true;
           }
         }
@@ -2614,6 +2622,62 @@ class FinalCheckPass : public FunctionPassBase {
     }
 };
 
+/*** CODE GENERATION ***/
+//FIXME
+map <string, long long> subdir_hash;
+string get_subdir (const string &file, const string &base) {
+  kphp_assert (G->env().get_use_subdirs());
+
+  int func_hash = hash (base);
+  int bucket = func_hash % 100;
+
+  string subdir = string ("o_") + int_to_str (bucket);
+
+  {
+    long long &cur_hash = subdir_hash[subdir];
+    cur_hash = cur_hash * 987654321 + hash (file);
+  }
+
+  return subdir;
+}
+
+void prepare_generate_function (FunctionPtr func) {
+  string file_name = func->name;
+  for (int i = 0; i < (int)file_name.size(); i++) {
+    if (file_name[i] == '$') {
+      file_name[i] = '@';
+    }
+  }
+
+  string file_subdir = func->file_id->short_file_name;
+
+  if (G->env().get_use_subdirs()) {
+    func->src_name = file_name + ".cpp";
+    func->header_name = file_name + ".h";
+
+    func->subdir = get_subdir (file_name, file_subdir);
+
+    func->src_full_name = func->subdir + "/" + func->src_name;
+    func->header_full_name = func->subdir + "/" + func->header_name;
+  } else {
+    string full_name = file_subdir + "." + file_name;
+    func->src_name = full_name + ".cpp";
+    func->header_name = full_name + ".h";
+    func->subdir = "";
+    func->src_full_name = func->src_name;
+    func->header_full_name = func->header_name;
+  }
+
+  my_unique (&func->static_var_ids);
+  my_unique (&func->global_var_ids);
+  my_unique (&func->header_global_var_ids);
+  my_unique (&func->local_var_ids);
+}
+
+void prepare_generate_class (ClassPtr klass __attribute__((unused))) {
+}
+
+set <string> new_subdirs;
 template <class OutputStream>
 class WriterCallback : public WriterCallbackBase {
   private:
@@ -2639,8 +2703,6 @@ class CodeGenF {
   //TODO: extract pattern
   private:
     DataStreamRaw <FunctionPtr> tmp_stream;
-    map <string, long long> subdir_hash;
-
   public:
     CodeGenF() {
       tmp_stream.set_sink (true);
@@ -2665,6 +2727,7 @@ class CodeGenF {
 
       vector <FunctionPtr> xall = tmp_stream.get_as_vector();
       sort (xall.begin(), xall.end());
+      const vector <ClassPtr> &all_classes = G->get_classes();
 
       //TODO: delete W_ptr
       CodeGenerator *W_ptr = new CodeGenerator();
@@ -2678,9 +2741,13 @@ class CodeGenF {
 
       W.init (new WriterCallback <OutputStreamT> (os));
 
-      //TODO: parallelize;
-      FOREACH(xall, fun) {
-        prepare_generate_function(*fun);
+      for (int i = 0; i < (int)xall.size(); i++) {
+        //TODO: parallelize;
+        prepare_generate_function (xall[i]);
+      }
+      for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
+        if (!(*c)->is_fully_static())
+          prepare_generate_class(*c);
       }
 
       vector <SrcFilePtr> main_files = G->get_main_files();
@@ -2699,6 +2766,12 @@ class CodeGenF {
         W << Async (FunctionCpp (function));
       }
 
+      for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
+        if (!(*c)->is_fully_static()) {
+          W << Async(ClassDeclaration(*c));
+        }
+      }
+
       //W << Async (XmainCpp());
       W << Async (InitScriptsH());
       FOREACH (main_files, j) {
@@ -2710,62 +2783,6 @@ class CodeGenF {
       int parts_cnt = calc_count_of_parts(vars.size());
       W << Async (VarsCpp (vars, parts_cnt));
 
-      write_hashes_of_subdirs_to_dep_files(W);
-
-      write_tl_schema(W);
-    }
-
-  private:
-    void prepare_generate_function (FunctionPtr func) {
-      string file_name = func->name;
-      std::replace(file_name.begin(), file_name.end(), '$', '@');
-
-      string file_subdir = func->file_id->short_file_name;
-
-      if (G->env().get_use_subdirs()) {
-        func->header_name = file_name + ".h";
-        func->subdir = get_subdir(file_subdir);
-
-        recalc_hash_of_subdirectory(func->subdir, func->header_name);
-
-        if (!func->root->inline_flag) {
-          func->src_name = file_name + ".cpp";
-          func->src_full_name = func->subdir + "/" + func->src_name;
-
-          recalc_hash_of_subdirectory(func->subdir, func->src_name);
-        }
-
-        func->header_full_name = func->subdir + "/" + func->header_name;
-      } else {
-        string full_name = file_subdir + "." + file_name;
-        func->src_name = full_name + ".cpp";
-        func->header_name = full_name + ".h";
-        func->subdir = "";
-        func->src_full_name = func->src_name;
-        func->header_full_name = func->header_name;
-      }
-
-      my_unique (&func->static_var_ids);
-      my_unique (&func->global_var_ids);
-      my_unique (&func->header_global_var_ids);
-      my_unique (&func->local_var_ids);
-    }
-
-    string get_subdir (const string &base) {
-      kphp_assert (G->env().get_use_subdirs());
-
-      int func_hash = hash(base);
-      int bucket = func_hash % 100;
-
-      return string("o_") + int_to_str(bucket);
-    }
-
-    void recalc_hash_of_subdirectory(const string &subdir, const string &file_name) {
-      long long &cur_hash = subdir_hash[subdir];
-      cur_hash = cur_hash * 987654321 + hash(file_name);
-    }
-
-    void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
       FOREACH (subdir_hash, i) {
         string dir = i->first;
         long long hash = i->second;
@@ -2775,9 +2792,7 @@ class CodeGenF {
         W << "//" << (const char *)tmp << NL;
         W << CloseFile();
       }
-    }
 
-    void write_tl_schema(CodeGenerator &W) {
       string schema;
       int schema_length = -1;
       if (G->env().get_tl_schema_file() != "") {
@@ -2883,13 +2898,14 @@ class WriteFilesF {
           if (!need_save_time && G->env().get_verbosity() > 0) {
             fprintf (stderr, "File [%s] changed\n", full_file_name.c_str());
           }
+          string dest_file_name = full_file_name;
           if (need_del) {
-            int err = unlink (full_file_name.c_str());
-            dl_passert (err == 0, dl_pstr ("Failed to unlink [%s]", full_file_name.c_str()));
+            int err = unlink (dest_file_name.c_str());
+            dl_passert (err == 0, dl_pstr ("Failed to unlink [%s]", dest_file_name.c_str()));
           }
-          FILE *dest_file = fopen (full_file_name.c_str(), "w");
+          FILE *dest_file = fopen (dest_file_name.c_str(), "w");
           dl_passert (dest_file != NULL, 
-              dl_pstr ("Failed to open [%s] for write\n", full_file_name.c_str()));
+              dl_pstr ("Failed to open [%s] for write\n", dest_file_name.c_str()));
 
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", ~crc));
           dl_pcheck (fprintf (dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
@@ -2922,6 +2938,8 @@ class CollectClassF {
     DUMMY_ON_FINISH;
     template <class OutputStreamT>
     void execute (ReadyFunctionPtr ready_data, OutputStreamT &os) {
+      stage::set_name("Collect classes");
+
       FunctionPtr data = ready_data.function;
       if (data->class_id.not_null() && data->class_id->init_function == data) {
         ClassPtr klass = data->class_id;
@@ -2931,12 +2949,125 @@ class CollectClassF {
         if (!klass->extends.empty()) {
           klass->parent_class = G->get_class(klass->extends);
           kphp_assert(klass->parent_class.not_null());
+          kphp_error(klass->is_fully_static() && klass->parent_class->is_fully_static(),
+              dl_pstr("Invalid class extends %s and %s: extends is available only if classes are only-static", klass->name.c_str(), klass->parent_class->name.c_str()));
         } else {
           klass->parent_class = ClassPtr();
         }
       }
       os << data;
     }
+};
+
+/*
+ * Для всех классов проверяем, что выведенный с помощью type inferring тип полей соответствует ожидаемым.
+ * Так, если написано / ** @var B * / public $b;, но вывелось, что $b это A или вовсе не класс, будет ошибка компиляции.
+ * todo потом сделать проверку и ошибки компиляции для типов-примитивов, т.е. парсить @var int и сравнивать с выведенным
+ */
+class CheckClassInferredVars {
+public:
+  DUMMY_ON_FINISH
+
+  template <class OutputStream>
+  void execute (FunctionPtr function, OutputStream &os) {
+    stage::set_name("Check inferred class vars");
+    stage::set_function(function);
+
+    if (function->class_id.not_null() && function->class_id->init_function == function) {
+      analyze_class(function->class_id);
+    }
+
+    if (stage::has_error()) {
+      return;
+    }
+
+    os << function;
+  }
+
+  void analyze_class (ClassPtr klass) {
+    FOREACH(klass->vars, var) {
+      const TypeData *type = (*var)->tinf_node.get_type();
+
+      if (unlikely(type->ptype() == tp_Unknown && !type->use_or_false())) {
+        kphp_error(0, dl_pstr("Instance prop %s::$%s is never written", klass->name.c_str(), (*var)->name.c_str()));
+      } else if (unlikely(type->ptype() == tp_Error)) {
+        kphp_error(0, dl_pstr("Instance prop %s::$%s inferred as error", klass->name.c_str(), (*var)->name.c_str()));
+      } else {
+        analyze_class_var(*var, type);
+      }
+    }
+  }
+
+  void analyze_class_var (VarPtr var, const TypeData *type) {
+    //printf("%s::%s is %s\n", var->class_id->name.c_str(), var->name.c_str(), type_out(type).c_str());
+    if (var->phpdoc_token) {
+      ClassPtr klass;
+      AssumType assum = assumption_get(var->class_id, var->name, klass);
+
+      if (assum == assum_instance) {
+        const TypeData *t = type;
+        kphp_error(t->ptype() == tp_Class && klass.ptr == t->class_type().ptr,
+            dl_pstr("var %s::$%s assumed to be %s, but inferred %s", var->class_id->name.c_str(), var->name.c_str(), klass->name.c_str(), type_out(t).c_str()));
+      } else if (assum == assum_instance_array) {
+        const TypeData *t = type->lookup_at(Key::any_key());
+        kphp_error(t != NULL && (t->ptype() == tp_Class && klass.ptr == t->class_type().ptr),
+            dl_pstr("var %s::$%s assumed to be %s[], but inferred %s", var->class_id->name.c_str(), var->name.c_str(), klass->name.c_str(), type_out(var->tinf_node.get_type()).c_str()));
+      }
+    }
+  }
+};
+
+/*
+ * Для всех функций, всех переменных проверяем, что если делались предположения насчёт классов, то они совпали с выведенными.
+ */
+class CheckInferredInstances {
+public:
+  DUMMY_ON_FINISH
+
+  template <class OutputStream>
+  void execute (FunctionPtr function, OutputStream &os) {
+    stage::set_name("Check inferred instances");
+    stage::set_function(function);
+
+    if (function->type() != FunctionData::func_extern && !function->assumptions.empty()) {
+      analyze_function_vars(function);
+    }
+
+    if (stage::has_error()) {
+      return;
+    }
+
+    os << function;
+  }
+
+  void analyze_function_vars (FunctionPtr function) {
+    FOREACH(function->local_var_ids, var) {
+      analyze_function_var(function, *var);
+    }
+    FOREACH(function->global_var_ids, var) {
+      analyze_function_var(function, *var);
+    }
+    FOREACH(function->static_var_ids, var) {
+      analyze_function_var(function, *var);
+    }
+  }
+
+  inline void analyze_function_var (FunctionPtr function, VarPtr var) {
+    ClassPtr klass;
+    AssumType assum = assumption_get(function, var->name, klass);
+
+    if (assum == assum_instance) {
+      const TypeData *t = var->tinf_node.get_type();
+      kphp_error((t->ptype() == tp_Class && klass.ptr == t->class_type().ptr)
+                 || (t->ptype() == tp_Exception || t->ptype() == tp_MC),
+          dl_pstr("var $%s assumed to be %s, but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(t).c_str()));
+    } else if (assum == assum_instance_array) {
+      const TypeData *t = var->tinf_node.get_type()->lookup_at(Key::any_key());
+      kphp_error(t != NULL && ((t->ptype() == tp_Class && klass.ptr == t->class_type().ptr)
+                               || (t->ptype() == tp_Exception || t->ptype() == tp_MC)),
+          dl_pstr("var $%s assumed to be %s[], but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(var->tinf_node.get_type()).c_str()));
+    }
+  }
 };
 
 bool compiler_execute (KphpEnviroment *env) {
@@ -3039,6 +3170,7 @@ bool compiler_execute (KphpEnviroment *env) {
     FunctionPassPipe <PreprocessFunctionCPass>::Self preprocess_function_c_pipe (true);
     FunctionPassPipe <PreprocessBreakPass>::Self preprocess_break_pipe (true);
     FunctionPassPipe <RegisterVariables>::Self register_variables_pipe (true);
+    FunctionPassPipe <CheckInstanceProps>::Self check_instance_props_pipe (true);
     FunctionPassPipe <CalcConstTypePass>::Self calc_const_type_pipe (true);
     FunctionPassPipe <CollectConstVarsPass>::Self collect_const_vars_pipe (true);
     Pipe <CalcThrowEdgesF,
@@ -3068,6 +3200,12 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <CFGEndF,
          DataStream <FunctionAndCFG>,
          DataStream <FunctionPtr> > cfg_end_pipe (true);
+    Pipe <CheckClassInferredVars,
+         DataStream <FunctionPtr>,
+         DataStream <FunctionPtr> > check_class_inferred_vars(true);
+    Pipe <CheckInferredInstances,
+         DataStream <FunctionPtr>,
+         DataStream <FunctionPtr> > check_inferred_instances_pipe(true);
     FunctionPassPipe <OptimizationPass>::Self optimization_pipe (true);
     FunctionPassPipe <CalcValRefPass>::Self calc_val_ref_pipe (true);
     Pipe <CalcBadVarsF,
@@ -3099,50 +3237,54 @@ bool compiler_execute (KphpEnviroment *env) {
 
     pipe_input (load_file_pipe).set_stream (&file_stream);
 
-    scheduler_constructor (*scheduler, load_file_pipe) >>
-      file_to_tokens_pipe >>
-      parse_pipe >>
-      apply_break_file_pipe >>
-      split_switch_pipe >>
-      create_switch_foreach_vars_pipe >>
-      collect_required_pipe >> use_first_output() >>
-      first_class_sync_pipe >> sync_node() >>
-      collect_classes_pipe >>
-      calc_locations_pipe >>
-      process_defines_concat >> sync_node() >>
-      collect_defines_pipe >>
-      first_sync_pipe >> sync_node() >>
-      prepare_function_pipe >>
-      second_sync_pipe >> sync_node() >>
-      register_defines_pipe >>
-      preprocess_vararg_pipe >>
-      preprocess_eq3_pipe >>
-      preprocess_function_c_pipe >>
-      preprocess_break_pipe >>
-      calc_const_type_pipe >>
-      collect_const_vars_pipe >>
-      register_variables_pipe >>
-      calc_throw_edges_pipe >>
-      calc_throws_pipe >> sync_node() >>
-      check_func_calls_pipe >>
-      calc_rl_pipe >>
-      cfg_begin_pipe >>
-      tmp_sync_pipe >> sync_node() >>
-      type_inferer_pipe >> sync_node() >>
-      type_inferer_end_pipe >> sync_node() >>
-      cfg_end_pipe >>
-      optimization_pipe >>
-      calc_val_ref_pipe >>
-      calc_bad_vars_pipe >> sync_node() >>
-      check_ub_pipe >>
-      extract_resumable_calls_pipe >>
-      extract_async_pipe >>
-      analyzer_pipe >>
-      check_access_modifiers_pass >>
-      check_returns_pipe >>
-      final_check_pass >>
-      code_gen_pipe >> sync_node() >>
-      write_files_pipe;
+    scheduler_constructor(*scheduler, load_file_pipe)
+        >>
+        file_to_tokens_pipe >>
+        parse_pipe >>
+        apply_break_file_pipe >>
+        split_switch_pipe >>
+        create_switch_foreach_vars_pipe >>
+        collect_required_pipe >> use_first_output() >>
+        first_class_sync_pipe >> sync_node() >>
+        collect_classes_pipe >>
+        calc_locations_pipe >>
+        process_defines_concat >> sync_node() >>
+        collect_defines_pipe >>
+        first_sync_pipe >> sync_node() >>
+        prepare_function_pipe >>
+        second_sync_pipe >> sync_node() >>
+        register_defines_pipe >>
+        preprocess_vararg_pipe >>
+        preprocess_eq3_pipe >>
+        preprocess_function_c_pipe >>
+        preprocess_break_pipe >>
+        calc_const_type_pipe >>
+        collect_const_vars_pipe >>
+        check_instance_props_pipe >>
+        register_variables_pipe >>
+        calc_throw_edges_pipe >>
+        calc_throws_pipe >> sync_node() >>
+        check_func_calls_pipe >>
+        calc_rl_pipe >>
+        cfg_begin_pipe >>
+        tmp_sync_pipe >> sync_node() >>
+        type_inferer_pipe >> sync_node() >>
+        type_inferer_end_pipe >> sync_node() >>
+        cfg_end_pipe >>
+        check_class_inferred_vars >>
+        check_inferred_instances_pipe >>
+        optimization_pipe >>
+        calc_val_ref_pipe >>
+        calc_bad_vars_pipe >> sync_node() >>
+        check_ub_pipe >>
+        extract_resumable_calls_pipe >>
+        extract_async_pipe >>
+        analyzer_pipe >>
+        check_access_modifiers_pass >>
+        check_returns_pipe >>
+        final_check_pass >>
+        code_gen_pipe >> sync_node() >>
+        write_files_pipe;
 
     scheduler_constructor (*scheduler, collect_required_pipe) >> use_second_output() >>
       load_file_pipe;

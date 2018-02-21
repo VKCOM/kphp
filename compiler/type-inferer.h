@@ -6,6 +6,7 @@
 #include "compiler/stage.h"
 #include "compiler/type-inferer-core.h"
 #include "compiler/io.h"
+#include "compiler/name-gen.h"
 
 tinf::Node *get_tinf_node (VertexPtr vertex);
 tinf::Node *get_tinf_node (VarPtr var);
@@ -20,7 +21,7 @@ const TypeData *fast_get_type (VarPtr var);
 const TypeData *fast_get_type (FunctionPtr function, int id);
 //TODO: remove extra CREATE_VERTEX?
 
-typedef enum {
+enum is_func_id_t {
   ifi_error = -1,
   ifi_unset = 1,
   ifi_isset = 1 << 1,
@@ -36,7 +37,7 @@ typedef enum {
   ifi_is_string = 1 << 11,
   ifi_is_array = 1 << 12,
   ifi_is_object = 1 << 13
-} is_func_id_t;
+};
 
 inline is_func_id_t get_ifi_id_ (VertexPtr v) {
   if (v->type() == op_unset) {
@@ -499,6 +500,10 @@ class CollectMainEdgesPass : public FunctionPassBase {
     }
 
     LValue as_lvalue (VertexPtr v) {
+      if (v->type() == op_instance_prop) {
+        return as_lvalue(v.as <op_instance_prop>()->var);
+      }
+
       int depth = 0;
       if (v->type() == op_foreach_param) {
         depth++;
@@ -511,21 +516,21 @@ class CollectMainEdgesPass : public FunctionPassBase {
 
       tinf::Node *value = NULL;
       if (v->type() == op_var) {
-        value = get_tinf_node (v->get_var_id());
+        value = get_tinf_node(v->get_var_id());
       } else if (v->type() == op_conv_array_l || v->type() == op_conv_int_l) {
         kphp_assert (depth == 0);
-        return as_lvalue (v.as <meta_op_unary_op>()->expr());
+        return as_lvalue(v.as <meta_op_unary_op>()->expr());
       } else if (v->type() == op_array) {
         kphp_fail();
       } else if (v->type() == op_func_call) {
-        value = get_tinf_node (v.as <op_func_call>()->get_func_id(), -1);
+        value = get_tinf_node(v.as <op_func_call>()->get_func_id(), -1);
       } else {
-        kphp_error (0, dl_pstr ("Bug in compiler: Trying to use [%s] as lvalue", OpInfo::str (v->type()).c_str()));
+        kphp_error (0, dl_pstr("Bug in compiler: Trying to use [%s] as lvalue", OpInfo::str(v->type()).c_str()));
         kphp_fail();
       }
 
       kphp_assert (value != 0);
-      return LValue (value, &MultiKey::any_key (depth));
+      return LValue(value, &MultiKey::any_key(depth));
     }
 
     LValue as_lvalue (FunctionPtr function, int id) {
@@ -629,11 +634,29 @@ class CollectMainEdgesPass : public FunctionPassBase {
 
           VertexAdaptor <meta_op_func_param> param = function_params[ii];
           if (param->var()->ref_flag) {
-            create_set (*arg, as_rvalue (function, ii));
+            create_set(*arg, as_rvalue(function, ii));
           }
 
           ii++;
         }
+      }
+    }
+
+    void on_constructor_call (VertexAdaptor <op_constructor_call> call) {
+      FunctionPtr function = call->get_func_id();
+      VertexRange function_params = get_function_params(function->root);
+
+      int ii = 0;
+      FOREACH_VERTEX (call->args(), arg) {
+
+        create_set(as_lvalue(function, ii), *arg);
+
+        VertexAdaptor <meta_op_func_param> param = function_params[ii];
+        if (param->var()->ref_flag) {
+          create_set(*arg, as_rvalue(function, ii));
+        }
+
+        ii++;
       }
     }
 
@@ -710,7 +733,9 @@ class CollectMainEdgesPass : public FunctionPassBase {
           continue;
         }
         if (cur->type() == op_var || (ifi_tp > ifi_isset && cur->type() == op_index)) {
-          create_set (cur, tp_var);
+          if (ifi_tp != ifi_is_object) {      // чтобы is_object() не обобщал класс до var
+            create_set(cur, tp_var);
+          }
         }
 
         if (cur->type() == op_var && ifi_tp != ifi_unset) {
@@ -819,6 +844,9 @@ class CollectMainEdgesPass : public FunctionPassBase {
         case op_func_call:
           on_func_call (v);
           break;
+        case op_constructor_call:
+          on_constructor_call(v);
+          break;
         case op_return:
           on_return (v);
           break;
@@ -915,6 +943,7 @@ class NodeRecalc {
     void set_lca (VertexPtr vertex, const MultiKey *key = NULL);
     void set_lca (const TypeData *type, const MultiKey *key  = NULL);
     void set_lca (VarPtr var);
+    void set_lca (ClassPtr klass);
     NodeRecalc (tinf::Node *node, tinf::TypeInferer *inferer);
     virtual ~NodeRecalc(){}
     void on_changed();
@@ -946,9 +975,11 @@ class ExprNodeRecalc : public NodeRecalc {
     void apply_index (VertexAdaptor <op_index> index, VertexPtr expr);
     void apply_type_rule (VertexPtr rule, VertexPtr expr);
     void recalc_func_call (VertexAdaptor <op_func_call> call);
+    void recalc_constructor_call (VertexAdaptor <op_constructor_call> call);
     void recalc_var (VertexAdaptor <op_var> var);
     void recalc_push_back_return (VertexAdaptor <op_push_back_return> pb);
     void recalc_index (VertexAdaptor <op_index> index);
+    void recalc_instance_prop (VertexAdaptor <op_instance_prop> index);
     void recalc_set (VertexAdaptor <op_set> set);
     void recalc_double_arrow (VertexAdaptor <op_double_arrow> arrow);
     void recalc_foreach_param (VertexAdaptor <op_foreach_param> param);

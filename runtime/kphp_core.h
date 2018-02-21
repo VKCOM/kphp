@@ -4,7 +4,7 @@
 #include "include.h"
 #include "string.h"
 #include "array.h"
-#include "class.h"
+#include "class_instance.h"
 #include "variable.h"
 #include "string_buffer.h"
 #include "profiler.h"
@@ -13,20 +13,16 @@
 #define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
 #define AS_ARRAY(a) (reinterpret_cast <array <var> *> (&a))
 #define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
-#define AS_OBJECT(o) (reinterpret_cast <object *> (&o))
-#define AS_CONST_OBJECT(o) (reinterpret_cast <const object *> (&o))
 
 #include "string.cpp"
 #include "array.cpp"
-#include "class.cpp"
+#include "class_instance.cpp"
 #include "variable.cpp"
 #include "string_buffer.cpp"
 
 #undef AS_STRING
 #undef AS_ARRAY
 #undef AS_CONST_ARRAY
-#undef AS_OBJECT
-#undef AS_CONST_OBJECT
 
 class UnknownType {
 };
@@ -228,16 +224,16 @@ template <class T>
 inline double divide (const T &lhs, bool rhs);
 
 template <class T>
-inline double divide (bool, const array <T> &rhs);
+inline double divide (bool lhs, const array <T> &rhs);
 
 template <class T>
-inline double divide (const array <T> &lhs, bool);
+inline double divide (const array <T> &lhs, bool rhs);
 
 template <class T>
-inline double divide (bool, const object_ptr <T> &);
+inline double divide (bool lhs, const class_instance <T> &rhs);
 
 template <class T>
-inline double divide (const object_ptr <T> &, bool);
+inline double divide (const class_instance <T> &lhs, bool rhs);
 
 
 template <class T, class T1>
@@ -248,29 +244,29 @@ inline double divide (const T1 &lhs, const array <T> &rhs);
 
 
 template <class T, class T1>
-inline double divide (const object_ptr <T> &, const T1 &rhs);
+inline double divide (const class_instance <T> &lhs, const T1 &rhs);
 
 template <class T, class T1>
-inline double divide (const T1 &lhs, const object_ptr <T> &);
+inline double divide (const T1 &lhs, const class_instance <T> &rhs);
 
 
 template <class T>
-inline double divide (const array <T> &, const array <T> &);
+inline double divide (const array <T> &lhs, const array <T> &rhs);
 
 template <class T>
-inline double divide (const object_ptr <T> &, const object_ptr <T> &);
+inline double divide (const class_instance <T> &lhs, const class_instance <T> &rhs);
 
 template <class T, class T1>
-inline double divide (const array <T> &, const array <T1> &);
+inline double divide (const array <T> &lhs, const array <T1> &rhs);
 
 template <class T, class T1>
-inline double divide (const object_ptr <T> &, const object_ptr <T1> &);
+inline double divide (const class_instance <T> &lhs, const class_instance <T1> &rhs);
 
 template <class T, class T1>
-inline double divide (const array <T> &, const object_ptr <T1> &);
+inline double divide (const array <T> &lhs, const class_instance <T1> &rhs);
 
 template <class T, class T1>
-inline double divide (const object_ptr <T1> &, const array <T> &);
+inline double divide (const class_instance <T1> &lhs, const array <T> &rhs);
 
 
 template <class T1, class T2>
@@ -312,7 +308,7 @@ template <class T>
 inline bool f$boolval (const array <T> &val);
 
 template <class T>
-inline bool f$boolval (const object_ptr <T> &val);
+inline bool f$boolval (const class_instance <T> &val);
 
 inline bool f$boolval (const var &val);
 
@@ -329,7 +325,7 @@ template <class T>
 inline int f$intval (const array <T> &val);
 
 template <class T>
-inline int f$intval (const object_ptr <T> &val);
+inline int f$intval (const class_instance <T> &val);
 
 inline int f$intval (const var &val);
 
@@ -346,7 +342,7 @@ template <class T>
 inline int f$safe_intval (const array <T> &val);
 
 template <class T>
-inline int f$safe_intval (const object_ptr <T> &val);
+inline int f$safe_intval (const class_instance <T> &val);
 
 inline int f$safe_intval (const var &val);
 
@@ -363,7 +359,7 @@ template <class T>
 inline double f$floatval (const array <T> &val);
 
 template <class T>
-inline double f$floatval (const object_ptr <T> &val);
+inline double f$floatval (const class_instance <T> &val);
 
 inline double f$floatval (const var &val);
 
@@ -380,7 +376,7 @@ template <class T>
 inline string f$strval (const array <T> &val);
 
 template <class T>
-inline string f$strval (const object_ptr <T> &val);
+inline string f$strval (const class_instance <T> &val);
 
 inline string f$strval (const var &val);
 
@@ -392,23 +388,9 @@ template <class T>
 inline const array <T> &f$arrayval (const array <T> &val);
 
 template <class T>
-inline array <var> f$arrayval (const object_ptr <T> &val);
+inline array <var> f$arrayval (const class_instance <T> &val);
 
 inline array <var> f$arrayval (const var &val);
-
-
-template <class T>
-inline object f$objectval (const T &val);
-
-inline const object &f$objectval (const object &val);
-
-template <class T>
-inline object f$objectval (const object_ptr <T> &val);
-
-template <class T>
-inline object f$objectval (const array <T> &val);
-
-inline object f$objectval (const var &val);
 
 
 inline bool& boolval_ref (bool &val);
@@ -505,173 +487,113 @@ public:
 
 
 inline bool f$empty (const bool &v);
-
 inline bool f$empty (const int &v);
-
 inline bool f$empty (const double &v);
-
 inline bool f$empty (const string &v);
-
 inline bool f$empty (const var &v);
-
 template <class T>
 inline bool f$empty (const array <T> &v);
-
 template <class T>
-inline bool f$empty (const object_ptr <T> &v);
+inline bool f$empty (const class_instance <T> &v);
 
 
 inline bool f$is_numeric (const bool &v);
-
 inline bool f$is_numeric (const int &v);
-
 inline bool f$is_numeric (const double &v);
-
 inline bool f$is_numeric (const string &v);
-
 inline bool f$is_numeric (const var &v);
-
 template <class T>
 inline bool f$is_numeric (const array <T> &v);
-
 template <class T>
-inline bool f$is_numeric (const object_ptr <T> &v);
+inline bool f$is_numeric (const class_instance <T> &v);
 
 
 inline bool f$is_null (const bool &v);
-
 inline bool f$is_null (const int &v);
-
 inline bool f$is_null (const double &v);
-
 inline bool f$is_null (const string &v);
-
 inline bool f$is_null (const var &v);
-
 template <class T>
 inline bool f$is_null (const array <T> &v);
-
 template <class T>
-inline bool f$is_null (const object_ptr <T> &v);
+inline bool f$is_null (const class_instance <T> &v);
 
 
 inline bool f$is_bool (const bool &v);
-
 inline bool f$is_bool (const int &v);
-
 inline bool f$is_bool (const double &v);
-
 inline bool f$is_bool (const string &v);
-
 inline bool f$is_bool (const var &v);
-
 template <class T>
 inline bool f$is_bool (const array <T> &v);
-
 template <class T>
-inline bool f$is_bool (const object_ptr <T> &v);
+inline bool f$is_bool (const class_instance <T> &v);
 
 
 inline bool f$is_int (const bool &v);
-
 inline bool f$is_int (const int &v);
-
 inline bool f$is_int (const double &v);
-
 inline bool f$is_int (const string &v);
-
 inline bool f$is_int (const var &v);
-
 template <class T>
 inline bool f$is_int (const array <T> &v);
-
 template <class T>
-inline bool f$is_int (const object_ptr <T> &v);
+inline bool f$is_int (const class_instance <T> &v);
 
 
 inline bool f$is_float (const bool &v);
-
 inline bool f$is_float (const int &v);
-
 inline bool f$is_float (const double &v);
-
 inline bool f$is_float (const string &v);
-
 inline bool f$is_float (const var &v);
-
 template <class T>
 inline bool f$is_float (const array <T> &v);
-
 template <class T>
-inline bool f$is_float (const object_ptr <T> &v);
+inline bool f$is_float (const class_instance <T> &v);
 
 
 inline bool f$is_scalar (const bool &v);
-
 inline bool f$is_scalar (const int &v);
-
 inline bool f$is_scalar (const double &v);
-
 inline bool f$is_scalar (const string &v);
-
 inline bool f$is_scalar (const var &v);
-
 template <class T>
 inline bool f$is_scalar (const array <T> &v);
-
 template <class T>
-inline bool f$is_scalar (const object_ptr <T> &v);
+inline bool f$is_scalar (const class_instance <T> &v);
 
 
 inline bool f$is_string (const bool &v);
-
 inline bool f$is_string (const int &v);
-
 inline bool f$is_string (const double &v);
-
 inline bool f$is_string (const string &v);
-
 inline bool f$is_string (const var &v);
-
 template <class T>
 inline bool f$is_string (const array <T> &v);
-
 template <class T>
-inline bool f$is_string (const object_ptr <T> &v);
+inline bool f$is_string (const class_instance <T> &v);
 
 
 inline bool f$is_array (const bool &v);
-
 inline bool f$is_array (const int &v);
-
 inline bool f$is_array (const double &v);
-
 inline bool f$is_array (const string &v);
-
 inline bool f$is_array (const var &v);
-
 template <class T>
 inline bool f$is_array (const array <T> &v);
-
 template <class T>
-inline bool f$is_array (const object_ptr <T> &v);
+inline bool f$is_array (const class_instance <T> &v);
 
 
 inline bool f$is_object (const bool &v);
-
 inline bool f$is_object (const int &v);
-
 inline bool f$is_object (const double &v);
-
 inline bool f$is_object (const string &v);
-
 inline bool f$is_object (const var &v);
-
 template <class T>
 inline bool f$is_object (const array <T> &v);
-
 template <class T>
-inline bool f$is_object (const object_ptr <T> &v);
+inline bool f$is_object (const class_instance <T> &v);
 
 
 template <class T>
@@ -688,23 +610,27 @@ inline bool f$is_real (const T &v);
 
 
 inline const char *get_type_c_str (const bool &v);
-
 inline const char *get_type_c_str (const int &v);
-
 inline const char *get_type_c_str (const double &v);
-
 inline const char *get_type_c_str (const string &v);
-
 inline const char *get_type_c_str (const var &v);
-
 template <class T>
 inline const char *get_type_c_str (const array <T> &v);
-
 template <class T>
-inline const char *get_type_c_str (const object_ptr <T> &v);
+inline const char *get_type_c_str (const class_instance <T> &v);
 
 template <class T>
 inline string f$get_type (const T &v);
+
+inline string f$get_class (const bool &v);
+inline string f$get_class (const int &v);
+inline string f$get_class (const double &v);
+inline string f$get_class (const string &v);
+inline string f$get_class (const var &v);
+template <class T>
+inline string f$get_class (const array <T> &v);
+template <class T>
+inline string f$get_class (const class_instance <T> &v);
 
 
 inline const string get_value (const string &v, int int_key);
@@ -810,7 +736,7 @@ template <class T, class TT>
 inline int f$get_reference_counter (const array <T, TT> &v);
 
 template <class T>
-inline int f$get_reference_counter (const object_ptr <T> &v);
+inline int f$get_reference_counter (const class_instance <T> &v);
 
 inline int f$get_reference_counter (const string &v);
 
@@ -895,6 +821,9 @@ inline void clear_array (OrFalse <array <T> > &a);
 
 template <class T>
 inline void unset (array <T> &x);
+
+template <class T>
+inline void unset (class_instance <T> &x);
 
 inline void unset (var &x);
 
@@ -1194,14 +1123,8 @@ double divide (const var &lhs, const var &rhs) {
 }
 
 
-double divide (bool lhs, bool rhs) {
+double divide (bool lhs, bool rhs __attribute__((unused))) {
   php_warning ("Both arguments of operator '/' are bool");
-
-  if (rhs == 0) {
-    php_warning ("Float division by zero");
-    return 0;
-  }
-
   return lhs;
 }
 
@@ -1214,35 +1137,29 @@ double divide (bool lhs, const T &rhs) {
 template <class T>
 double divide (const T &lhs, bool rhs) {
   php_warning ("Second argument of operator '/' is bool");
-
-  if (rhs == 0) {
-    php_warning ("Float division by zero");
-    return 0;
-  }
-
   return f$floatval (lhs);
 }
 
 template <class T>
-double divide (bool, const array <T> &) {
+double divide (bool lhs, const array <T> &rhs) {
   php_warning ("Unsupported operand types for operator '/' bool and array");
   return 0.0;
 }
 
 template <class T>
-double divide (const array <T> &, bool) {
+double divide (const array <T> &lhs, bool rhs) {
   php_warning ("Unsupported operand types for operator '/' array and bool");
   return 0.0;
 }
 
 template <class T>
-double divide (bool, const object_ptr <T> &) {
+double divide (bool lhs, const class_instance <T> &rhs) {
   php_warning ("Unsupported operand types for operator '/' bool and object");
   return 0.0;
 }
 
 template <class T>
-double divide (const object_ptr <T> &, bool) {
+double divide (const class_instance <T> &lhs, bool rhs) {
   php_warning ("Unsupported operand types for operator '/' object and bool");
   return 0.0;
 }
@@ -1262,50 +1179,50 @@ double divide (const T1 &lhs, const array <T> &rhs) {
 
 
 template <class T, class T1>
-double divide (const object_ptr <T> &, const T1 &rhs) {
+double divide (const class_instance <T> &lhs, const T1 &rhs) {
   php_warning ("First argument of operator '/' is object");
   return divide (1.0, rhs);
 }
 
 template <class T, class T1>
-double divide (const T1 &lhs, const object_ptr <T> &) {
+double divide (const T1 &lhs, const class_instance <T> &rhs) {
   php_warning ("Second argument of operator '/' is object");
   return lhs;
 }
 
 
 template <class T>
-double divide (const array <T> &, const array <T> &) {
+double divide (const array <T> &lhs, const array <T> &rhs) {
   php_warning ("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
 template <class T>
-double divide (const object_ptr <T> &, const object_ptr <T> &) {
+double divide (const class_instance <T> &lhs, const class_instance <T> &rhs) {
   php_warning ("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const array <T> &, const array <T1> &) {
+double divide (const array <T> &lhs, const array <T1> &rhs) {
   php_warning ("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const object_ptr <T> &, const object_ptr <T1> &) {
+double divide (const class_instance <T> &lhs, const class_instance <T1> &rhs) {
   php_warning ("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const array <T> &, const object_ptr <T1> &) {
+double divide (const array <T> &lhs, const class_instance <T1> &rhs) {
   php_warning ("Unsupported operand types for operator '/' array and object");
   return 0.0;
 }
 
 template <class T, class T1>
-double divide (const object_ptr <T1> &, const array <T> &) {
+double divide (const class_instance <T1> &lhs, const array <T> &rhs) {
   php_warning ("Unsupported operand types for operator '/' object and array");
   return 0.0;
 }
@@ -1383,8 +1300,8 @@ bool f$boolval (const array <T> &val) {
 }
 
 template <class T>
-bool f$boolval (const object_ptr <T> &) {
-  return true;
+bool f$boolval (const class_instance <T> &val) {
+  return !val.is_null();
 }
 
 bool f$boolval (const var &val) {
@@ -1415,7 +1332,7 @@ int f$intval (const array <T> &val) {
 }
 
 template <class T>
-int f$intval (const object_ptr <T> &) {
+int f$intval (const class_instance <T> &val) {
   php_warning ("Wrong convertion from object to int");
   return 1;
 }
@@ -1451,7 +1368,7 @@ int f$safe_intval (const array <T> &val) {
 }
 
 template <class T>
-int f$safe_intval (const object_ptr <T> &) {
+int f$safe_intval (const class_instance <T> &val) {
   php_warning ("Wrong convertion from object to int");
   return 1;
 }
@@ -1484,7 +1401,7 @@ double f$floatval (const array <T> &val) {
 }
 
 template <class T>
-double f$floatval (const object_ptr <T> &) {
+double f$floatval (const class_instance <T> &val) {
   php_warning ("Wrong convertion from object to float");
   return 1.0;
 }
@@ -1511,13 +1428,13 @@ string f$strval (const string &val) {
 }
 
 template <class T>
-string f$strval (const array <T> &) {
+string f$strval (const array <T> &val) {
   php_warning ("Convertion from array to string");
   return string ("Array", 5);
 }
 
 template <class T>
-string f$strval (const object_ptr <T> &val) {
+string f$strval (const class_instance <T> &val) {
   return val.to_string();
 }
 
@@ -1539,39 +1456,15 @@ const array <T> &f$arrayval (const array <T> &val) {
 }
 
 template <class T>
-array <var> f$arrayval (const object_ptr <T> &val) {
-  return val.to_array();
+array <var> f$arrayval (const class_instance <T> &val) {
+  php_warning("Can not convert class instance to array");
+  return array <var>();
 }
 
 array <var> f$arrayval (const var &val) {
   return val.to_array();
 }
 
-
-template <class T>
-inline object f$objectval (const T &val) {
-  object res;
-  res.set (string ("scalar", 6), val);
-  return res;
-}
-
-inline const object &f$objectval (const object &val) {
-  return val;
-}
-
-template <class T>
-inline object f$objectval (const object_ptr <T> &val) {
-  return val;
-}
-
-template <class T>
-inline object f$objectval (const array <T> &val) {
-  return val.to_object();
-}
-
-inline object f$objectval (const var &val) {
-  return val.to_object();
-}
 
 
 bool& boolval_ref (bool &val) {
@@ -1643,7 +1536,7 @@ const string& strval_ref (const var &val) {
 
 
 template <class T>
-array <T>& arrayval_ref (array <T> &val, const char *, int ) {
+array <T> &arrayval_ref (array <T> &val, const char *function, int parameter_num) {
   return val;
 }
 
@@ -1652,7 +1545,7 @@ array <var>& arrayval_ref (var &val, const char *function, int parameter_num) {
 }
 
 template <class T>
-const array <T>& arrayval_ref (const array <T> &val, const char *, int ) {
+const array <T> &arrayval_ref (const array <T> &val, const char *function, int parameter_num) {
   return val;
 }
 
@@ -1723,7 +1616,7 @@ const T& convert_to <T>::convert (const T &val) {
 }
 
 template <class T>
-T convert_to <T>::convert (const Unknown &) {
+T convert_to <T>::convert (const Unknown &val) {
   return T();
 }
 
@@ -1765,12 +1658,6 @@ array <var> convert_to <array <var> >::convert (const T1 &val) {
 
 template <>
 template <class T1>
-object convert_to <object>::convert (const T1 &val) {
-  return f$objectval (val);
-}
-
-template <>
-template <class T1>
 var convert_to <var>::convert (const T1 &val) {
   return var (val);
 }
@@ -1799,7 +1686,7 @@ bool f$empty (const array <T> &a) {
 }
 
 template <class T>
-bool f$empty (const object_ptr <T> &) {
+bool f$empty (const class_instance <T> &a) {
   return false;
 }
 
@@ -1818,7 +1705,7 @@ int f$count (const array <T> &a) {
 }
 
 template <class T>
-int f$count (const T &) {
+int f$count (const T &v) {
   php_warning ("Count on non-array");
   return 1;
 }
@@ -1859,7 +1746,7 @@ bool f$is_numeric (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_numeric (const object_ptr <T> &v) {
+bool f$is_numeric (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -1896,9 +1783,8 @@ bool f$is_null (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_null (const object_ptr <T> &v) {
-  (void)v;
-  return false;
+bool f$is_null (const class_instance <T> &v) {
+  return v.is_null();
 }
 
 
@@ -1933,7 +1819,7 @@ bool f$is_bool (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_bool (const object_ptr <T> &v) {
+bool f$is_bool (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -1970,7 +1856,7 @@ bool f$is_int (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_int (const object_ptr <T> &v) {
+bool f$is_int (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -2008,7 +1894,7 @@ bool f$is_float (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_float (const object_ptr <T> &v) {
+bool f$is_float (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -2045,7 +1931,7 @@ bool f$is_scalar (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_scalar (const object_ptr <T> &v) {
+bool f$is_scalar (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -2082,7 +1968,7 @@ bool f$is_string (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_string (const object_ptr <T> &v) {
+bool f$is_string (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -2119,7 +2005,7 @@ bool f$is_array (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_array (const object_ptr <T> &v) {
+bool f$is_array (const class_instance <T> &v) {
   (void)v;
   return false;
 }
@@ -2146,7 +2032,8 @@ bool f$is_object (const string &v) {
 }
 
 bool f$is_object (const var &v) {
-  return v.is_object();
+  (void) v;
+  return false;
 }
 
 template <class T>
@@ -2156,9 +2043,8 @@ bool f$is_object (const array <T> &v) {
 }
 
 template <class T>
-bool f$is_object (const object_ptr <T> &v) {
-  (void)v;
-  return true;
+bool f$is_object (const class_instance <T> &v) {
+  return !v.is_null();
 }
 
 
@@ -2214,7 +2100,7 @@ const char *get_type_c_str (const array <T> &v) {
 }
 
 template <class T>
-const char *get_type_c_str (const object_ptr <T> &v) {
+const char *get_type_c_str (const class_instance <T> &v) {
   (void)v;
   return "object";
 }
@@ -2222,8 +2108,51 @@ const char *get_type_c_str (const object_ptr <T> &v) {
 
 template <class T>
 string f$get_type (const T &v) {
-  char *res = get_type_c_str (v);
+  const char *res = get_type_c_str(v);
   return string (res, strlen (res));
+}
+
+
+string f$get_class (const bool &v) {
+  (void) v;
+  php_warning("Called get_class() on boolean");
+  return string();
+}
+
+string f$get_class (const int &v) {
+  (void) v;
+  php_warning("Called get_class() on integer");
+  return string();
+}
+
+string f$get_class (const double &v) {
+  (void) v;
+  php_warning("Called get_class() on double");
+  return string();
+}
+
+string f$get_class (const string &v) {
+  (void) v;
+  php_warning("Called get_class() on string");
+  return string();
+}
+
+string f$get_class (const var &v) {
+  php_warning("Called get_class() on %s", v.get_type_c_str());
+  return string();
+}
+
+template <class T>
+string f$get_class (const array <T> &v) {
+  (void) v;
+  php_warning("Called get_class() on array");
+  return string();
+}
+
+template <class T>
+string f$get_class (const class_instance <T> &v) {
+  const char *result = v.get_class();
+  return string (result, (dl::size_type)strlen (result));
 }
 
 
@@ -2341,7 +2270,7 @@ string f$gettype (const var &v) {
 }
 
 template <class T>
-bool f$function_exists (const T &) {
+bool f$function_exists (const T &a1) {
   return true;
 }
 
@@ -2396,7 +2325,7 @@ int f$get_reference_counter (const array <T, TT> &v) {
 }
 
 template <class T>
-int f$get_reference_counter (const object_ptr <T> &v) {
+int f$get_reference_counter (const class_instance <T> &v) {
   return v.get_reference_counter();
 }
 
@@ -2565,6 +2494,11 @@ void clear_array (OrFalse <array <T> > &a) {
 template <class T>
 void unset (array <T> &x) {
   clear_array (x);
+}
+
+template <class T>
+void unset (class_instance <T> &x) {
+  x.destroy();
 }
 
 void unset (var &x) {

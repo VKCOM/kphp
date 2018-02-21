@@ -32,15 +32,11 @@ inline void swap (T &lhs, T &rhs);
 template <class T, class TT>
 class array;
 
-class stdClass;
-
 template <class T>
-class object_ptr;
+class class_instance;
 
 template <class T>
 class convert_to;
-
-typedef object_ptr <stdClass> object;
 
 class var;
 

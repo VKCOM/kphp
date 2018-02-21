@@ -5,17 +5,12 @@
 //IdGen <VertexPtr> tree_id_gen;
 //BikeIdGen <VertexPtr> bike_tree_id_gen;
 
-VertexPtr reg_vertex_impl (VertexPtr v) {
-  //Suddenly I don't need it anymore;
-  return v;
-}
 
 
 /*** VarData ***/
 VarData::VarData (VarData::Type type_) :
   type_ (type_),
   id (-1),
-  tinf (NULL),
   tinf_node (VarPtr (this)),
   init_val (NULL),
   static_id(),
@@ -39,8 +34,6 @@ bool VarData::get_uninited_flag() {
 
 /*** ClassData ***/
 ClassData::ClassData() {
-  is_inited = false;
-  is_required = false;
 }
 
 /*** FunctionSet ***/
@@ -69,33 +62,6 @@ bool FunctionSet::add_function (FunctionPtr new_function) {
 
 
 
-/*** FunctionMatcher ***/
-FunctionMatcher::FunctionMatcher() {
-}
-
-void FunctionMatcher::set_function_set (FunctionSetPtr new_function_set) {
-  match = FunctionPtr();
-  function_set = new_function_set;
-}
-
-void FunctionMatcher::try_match (VertexPtr call __attribute__((unused))) {
-  kphp_assert (function_set.not_null());
-  if (function_set->size() != 1) {
-    return;
-  }
-  match = function_set[0];
-}
-
-FunctionPtr FunctionMatcher::get_function() {
-  return match;
-}
-
-bool FunctionMatcher::is_ready() {
-  return match.not_null();
-}
-
-
-
 /*** FunctionData ***/
 FunctionData::FunctionData () :
   root (NULL),
@@ -106,7 +72,6 @@ FunctionData::FunctionData () :
   req_id(),
   class_id(),
   varg_flag (false),
-  tinf (0),
   tinf_state (0),
   const_data (NULL),
   min_argn (0),
@@ -126,7 +91,6 @@ FunctionData::FunctionData (VertexPtr root) :
   req_id(),
   class_id(),
   varg_flag (false),
-  tinf (0),
   tinf_state (0),
   const_data (NULL),
   min_argn (0),
@@ -184,4 +148,3 @@ DefineData::DefineData ()
 DefineData::DefineData (VertexPtr val, DefineType type_)
   : val (val), type_ (type_) {
 }
-int tree_node_dfs_cnt = 0;

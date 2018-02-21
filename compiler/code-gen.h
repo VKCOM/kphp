@@ -190,6 +190,11 @@ struct Include {
 };
 Include ExternInclude (const PlainCode &plain_code);
 
+struct IncludeClass {
+  ClassData *klass;
+  IncludeClass (const TypeData *type);
+  inline void compile (CodeGenerator &W) const;
+};
 
 struct FunctionName {
   FunctionPtr function;
@@ -246,6 +251,12 @@ struct FunctionParams {
   FunctionPtr function;
   bool in_header;
   inline FunctionParams (FunctionPtr function, bool in_header = false);
+  inline void compile (CodeGenerator &W) const;
+};
+
+struct ClassDeclaration {
+  ClassPtr klass;
+  inline ClassDeclaration (ClassPtr klass);
   inline void compile (CodeGenerator &W) const;
 };
 
@@ -627,6 +638,17 @@ Include ExternInclude (const PlainCode &plain_code) {
   return Include (plain_code, true);
 }
 
+inline IncludeClass::IncludeClass (const TypeData *type) :
+    klass(type->get_class_type_inside()) {
+}
+
+inline void IncludeClass::compile (CodeGenerator &W) const {
+  if (klass != NULL) {
+    W << "#include \"cl/" << klass->header_name << "\"" << NL;
+  }
+}
+
+
 inline FunctionName::FunctionName (FunctionPtr function) :
   function (function) {
 }
@@ -746,6 +768,36 @@ inline void FunctionParams::compile (CodeGenerator &W) const {
 }
 
 
+ClassDeclaration::ClassDeclaration (ClassPtr klass) : klass(klass) {
+}
+
+void ClassDeclaration::compile (CodeGenerator &W) const {
+//  VertexAdaptor <op_class> root = klass->root;
+  W << OpenFile(klass->header_name, "cl");
+  W << "#pragma once" << NL;
+
+  FOREACH(klass->vars, var) {
+    ClassData *dep = (*var)->tinf_node.get_type()->get_class_type_inside();
+    if (dep != NULL && dep != klass.ptr) {
+      W << IncludeClass((*var)->tinf_node.get_type());
+    }
+  }
+
+  W << NL << "struct " << klass->src_name << " {\n";
+  W << "int $ref_cnt;\n\n";
+  FOREACH(klass->vars, var) {
+    W << type_out((*var)->tinf_node.get_type()) << " " << (*var)->name << ";\n";
+  }
+
+  W << "\ninline const char *get_class() const { return ";
+  compile_string_raw(klass->name, W);
+  W << "; }\n";
+
+  W << "};";
+  W << CloseFile();
+}
+
+
 inline VarDeclaration::VarDeclaration (VarPtr var, bool extern_flag, bool defval_flag) :
   var (var),
   extern_flag (extern_flag),
@@ -767,6 +819,9 @@ void VarDeclaration::compile (CodeGenerator &W) const {
     }
   }
   W << ";" << NL;
+  if (var->type() == VarData::var_local_t && type->ptype() == tp_Class && var->name == "this") {
+    W << VarName(var) << ".alloc();" << NL << NL;    // инициализация $this в самом начале __construct()
+  }
   if (var->needs_const_iterator_flag) {
     W << (extern_flag ? "extern " : "") <<
        "typeof(const_begin(" << VarName (var) <<"))" << " " <<
@@ -792,7 +847,14 @@ inline void Function::compile (CodeGenerator &W) const {
       W << NL << FunctionForkDeclaration (function, in_header) << ";";
     }
   } else {
-    W << function->root;
+    // временно: пока все методы классов априори required и не исключаются из списка, то не выводим методы с Unknown-параметрами
+    // (потому что это будет мешать при компиляции при разных присваиваниях и т.п.)
+    // потом, когда буду реально неиспользуемые instance-методы вычёркивать, эта проверка не понадобится
+    bool output_cpp = !function->is_instance_function() || function->param_ids.size() < 2 ||
+                      function->param_ids[1]->tinf_node.get_type()->ptype() != tp_Unknown;
+    if (output_cpp) {
+      W << function->root;
+    }
   }
   W << NL;
 }
@@ -1092,6 +1154,10 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   std::map<std::string, VertexPtr> dependent_vars;
 
   FOREACH (vars, var) {
+    if ((*var)->tinf_node.get_type()->get_class_type_inside()) {
+      W << IncludeClass((*var)->tinf_node.get_type());
+    }
+
     W << VarDeclaration (*var);
     if ((*var)->type ()== VarData::var_const_t && (*var)->global_init_flag) {
       switch ((*var)->init_val->type()) {
@@ -1318,6 +1384,10 @@ void DfsInit::compile_dfs_init_part (
 
   if (full_flag) {
     FOREACH (used_vars, var) {
+      if ((*var)->tinf_node.get_type()->get_class_type_inside()) {
+        W << IncludeClass((*var)->tinf_node.get_type());
+      }
+
       W << VarExternDeclaration (*var);
     }
   }
@@ -1539,6 +1609,12 @@ void FunctionH::compile (CodeGenerator &W) const {
   W << OpenFile (function->header_name, function->subdir);
   W << "#pragma once" << NL <<
        ExternInclude ("php_functions.h");
+
+  FOREACH(function->tinf_nodes, tinf_node) {
+    if (tinf_node->get_type()->get_class_type_inside()) {
+      W << IncludeClass(tinf_node->get_type());
+    }
+  }
 
   FOREACH (function->header_global_var_ids, global_var) {
     W << VarExternDeclaration (*global_var) << NL;
@@ -1918,7 +1994,7 @@ void compile_throw_fast_action (CodeGenerator &W) {
   CGContext &context = W.get_context();
   if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
     const TypeData *tp = tinf::get_type (context.parent_func, -1);
-    if (context.resumable_flag) { 
+    if (context.resumable_flag) {
       W << "RETURN (";
     } else {
       W << "return ";
@@ -1926,7 +2002,7 @@ void compile_throw_fast_action (CodeGenerator &W) {
     if (tp->ptype() != tp_void) {
       W << "(" << TypeName (tp) << "())";
     }
-    if (context.resumable_flag) { 
+    if (context.resumable_flag) {
       W << ")";
     }
   } else {
@@ -2088,7 +2164,7 @@ void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
   if (params->x()->ref_flag){
     compile_foreach_ref_header(root, W);
   } else {
-    compile_foreach_noref_header(root, W);    
+    compile_foreach_noref_header(root, W);
   }
 
   W <<     AsSeq (cmd) << NL <<
@@ -2409,7 +2485,7 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
   W << " " << BEGIN << END << NL;
 
   //RUN FUNCTION
-  W << "bool run() " << 
+  W << "bool run() " <<
        BEGIN ;
   if (G->env().get_enable_profiler()){
     W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
@@ -2418,7 +2494,7 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
 
   W <<   AsSeq (func_root->cmd()) << NL;
 
-  W <<   Indent (-2) <<  
+  W <<   Indent (-2) <<
          "RESUMABLE_END" << NL <<
        END << NL;
 
@@ -2674,6 +2750,10 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
   } else {
     kphp_fail();
   }
+}
+
+void compile_instance_prop (VertexAdaptor <op_instance_prop> root, CodeGenerator &W) {
+  W << root->lhs() << "->" << root->str_val;
 }
 
 void compile_as_printable (VertexPtr root, CodeGenerator &W) {
@@ -2978,7 +3058,6 @@ void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int
   }
   W << ")";
 }
-
 
 void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W) {
   if (root->str_val == "boolval") {
@@ -3369,6 +3448,7 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       compile_function (root, W);
       break;
     case op_func_call:
+    case op_constructor_call:
 #ifdef FAST_EXCEPTIONS
       compile_func_call_fast (root, W);
 #else
@@ -3383,6 +3463,9 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       break;
     case op_index:
       compile_index(root, W);
+      break;
+    case op_instance_prop:
+      compile_instance_prop(root, W);
       break;
     case op_isset:
       compile_xset (root, W);

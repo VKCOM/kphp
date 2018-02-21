@@ -11,6 +11,7 @@ typedef VertexPtr (GenTree::*GetFunc) ();
 
 struct GenTreeCallbackBase {
   virtual FunctionPtr register_function (const FunctionInfo &func) = 0;
+  virtual void require_function_set (FunctionPtr function) = 0;
   virtual ClassPtr register_class (const ClassInfo &info) = 0;
   virtual ClassPtr get_class_by_name (string const &class_name) = 0;
   virtual ~GenTreeCallbackBase(){}
@@ -34,20 +35,19 @@ public:
   FunctionPtr register_function (FunctionInfo info);
   bool in_class();
   bool in_namespace();
-  void enter_class (const string &class_name);
+  void enter_class (const string &class_name, Token *phpdoc_token);
   ClassInfo &cur_class();
   void exit_and_register_class (VertexPtr root);
   void enter_function();
   void exit_function();
 
-  bool expect (TokenType tp, const string &msg);
   bool test_expect (TokenType tp);
 
   void next_cur();
   int open_parent();
+  void skip_phpdoc_tokens();
 
   static VertexPtr embrace (VertexPtr v);
-  VertexPtr gen_list (VertexPtr node, GetFunc f, TokenType delim, int flags);
   PrimitiveType get_ptype();
   PrimitiveType get_type_help (void);
   VertexPtr get_type_rule_func (void);
@@ -60,7 +60,10 @@ public:
   static bool has_return (VertexPtr v);
   static void func_force_return (VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each (VertexPtr root, void (*callback) (VertexPtr ));
-  static string get_memfunc_prefix (const string &name);
+  VertexPtr create_vertex_this(const AutoLocation &location, bool with_type_rule = false);
+  void patch_func_constructor (VertexAdaptor <op_function> func, const ClassInfo &cur_class);
+  void patch_func_add_this (vector <VertexPtr> &params_next, const AutoLocation &func_location);
+  FunctionPtr create_default_constructor (const ClassInfo &cur_class);
 
   VertexPtr get_func_param();
   VertexPtr get_foreach_param();
@@ -72,7 +75,8 @@ public:
   VertexPtr get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary);
   VertexPtr get_expression_impl (bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement(const string& php_doc = "");
+  VertexPtr get_statement(Token *phpdoc_token = NULL);
+  VertexPtr get_vars_list(Token *phpdoc_token, OperationExtra extra_type);
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
@@ -103,8 +107,8 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  VertexPtr get_function (bool anonimous_flag = false, string phpdoc = "", AccessType access_type = access_nonmember);
-  VertexPtr get_class();
+  VertexPtr get_function (bool anonimous_flag = false, Token *phpdoc_token = NULL, AccessType access_type = access_nonmember);
+  VertexPtr get_class(Token *phpdoc_token);
 private:
   const vector <Token *> *tokens;
   GenTreeCallbackBase *callback;

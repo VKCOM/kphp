@@ -22,7 +22,7 @@ namespace cfg {
   typedef vector <Node> NodesList;
   typedef Range <vector <Node>::iterator> NodesRange;
 
-  typedef enum {usage_write_t, usage_read_t} UsageType;
+  enum UsageType {usage_write_t, usage_read_t};
   struct UsageData {
     int id;
     int part_id;

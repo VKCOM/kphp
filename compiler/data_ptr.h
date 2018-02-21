@@ -3,8 +3,6 @@
 #include "compiler/operation.h"
 
 /** used pointers to **/
-class TypeInf;
-
 class VarData;
 class ClassData;
 class DefineData;
@@ -12,7 +10,6 @@ class FunctionData;
 class SrcFile;
 class Token;
 class FunctionSet;
-class FunctionMatcher;
 class Location;
 
 typedef Id <FunctionData> FunctionPtr;
@@ -21,7 +18,6 @@ typedef Id <ClassData> ClassPtr;
 typedef Id <DefineData> DefinePtr;
 typedef Id <SrcFile> SrcFilePtr;
 typedef Id <FunctionSet> FunctionSetPtr;
-typedef Id <TypeInf> TypeInfPtr;
 
 template <Operation Op>
 class vertex_inner;

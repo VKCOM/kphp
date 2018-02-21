@@ -11,15 +11,14 @@ void init_functions_tinf_nodes (FunctionPtr function) {
       function->tinf_nodes[i].var_ = function->param_ids[i - 1];
     }
   }
-
-  __sync_synchronize();
-  function->tinf_state = 2;
 }
 
 tinf::Node *get_tinf_node (FunctionPtr function, int id) {
   if (function->tinf_state == 0) {
     if (__sync_bool_compare_and_swap (&function->tinf_state, 0, 1)) {
       init_functions_tinf_nodes (function);
+      __sync_synchronize();
+      function->tinf_state = 2;
     }
   }
   while (function->tinf_state != 2) {
@@ -216,9 +215,10 @@ string tinf::VarNode::get_description() {
       function_ = var_->holder_func;
     }
   }
-  if (is_variable()) {
-    ss << "[$" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << "]";
-  } else if (is_return_value_from_function()) {
+  if (param_i == -2) {
+    ss << "[$" << (var_.is_null() ? "STRANGE_VAR" : var_->class_id.not_null() ? var_->class_id->name + "::" + var_->name
+                                                                              : var_->name) << "]";
+  } else if (param_i == -1) {
     ss << "[return .]";
   } else {
     ss << "[arg #" << int_to_str (param_i) << " ($" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << ")]";
@@ -240,6 +240,12 @@ static string get_expr_description (VertexPtr expr) {
     case op_func_call:
       return expr.as <op_func_call>()->get_func_id()->name + "(...)";
 
+    case op_constructor_call:
+      return "new " + expr->get_string() + "()";
+
+    case op_instance_prop:
+      return "->" + expr->get_string();
+
     case op_index: {
       string suff = "";
       while (expr->type() == op_index) {
@@ -256,6 +262,7 @@ static string get_expr_description (VertexPtr expr) {
       return OpInfo::str (expr->type());
   }
 }
+
 string tinf::ExprNode::get_description() {
   stringstream ss;
   ss << "expr[";
@@ -321,9 +328,24 @@ void NodeRecalc::set_lca_at (const MultiKey *key, const RValue &rvalue) {
   } else {
     types_stack.back()->set_lca_at (*key, type, !rvalue.drop_or_false);
   }
-  if (new_type_->error_flag()) {
-    kphp_error (0, dl_pstr ("Type Error [%s] updated by [%s]\n", node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
+
+  if (unlikely(new_type_->error_flag())) {
+    ClassData *mix_class = new_type_->get_class_type_inside();
+    ClassData *mix_class2 = type->get_class_type_inside();
+    if (mix_class == NULL && mix_class2 == NULL) {
+      kphp_error (0, dl_pstr("Type Error [%s] updated by [%s]\n",
+          node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
+    } else if (mix_class == mix_class2 || mix_class == NULL || mix_class2 == NULL) {
+      kphp_error (0, dl_pstr("Type Error: mix class %s with non-class: %s and %s\n",
+          mix_class != NULL ? mix_class->name.c_str() : mix_class2->name.c_str(),
+          node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
+    } else {
+      kphp_error (0, dl_pstr("Type Error: mix classes %s and %s: %s and %s\n",
+          mix_class->name.c_str(), mix_class2->name.c_str(),
+          node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
+    }
   }
+
 }
 void NodeRecalc::set_lca_at (const MultiKey *key, VertexPtr expr) {
   set_lca_at (key, as_rvalue (expr));
@@ -339,17 +361,25 @@ void NodeRecalc::set_lca (PrimitiveType ptype) {
   set_lca (as_rvalue (ptype));
 }
 void NodeRecalc::set_lca (FunctionPtr function, int id) {
-  return set_lca (as_rvalue (function, id));
+  set_lca(as_rvalue(function, id));
 }
 void NodeRecalc::set_lca (VertexPtr vertex, const MultiKey *key /* = NULL*/) {
-  return set_lca (as_rvalue (vertex, key));
+  set_lca(as_rvalue(vertex, key));
 }
 void NodeRecalc::set_lca (const TypeData *type, const MultiKey *key /* = NULL*/) {
-  return set_lca (as_rvalue (type, key));
+  set_lca(as_rvalue(type, key));
 }
 void NodeRecalc::set_lca (VarPtr var) {
-  return set_lca (as_rvalue (var));
+  set_lca(as_rvalue(var));
 }
+
+void NodeRecalc::set_lca(ClassPtr klass) {
+  TypeData *type = TypeData::get_type(tp_Class)->clone();
+  type->set_class_type(klass);
+  set_lca(type);
+  delete type;
+}
+
 
 NodeRecalc::NodeRecalc (tinf::Node *node, tinf::TypeInferer *inferer) :
   node_ (node),
@@ -383,8 +413,8 @@ void NodeRecalc::run() {
   do_recalc();
   new_type_->fix_inf_array();
 
-  //fprintf (stderr, "upd %d %p %s %s->%s %d\n", get_thread_id(), node_, node_->get_description().c_str(), type_out (node_->get_type()).c_str(), type_out (new_type_).c_str(), new_type_->generation() != old_generation);
   if (new_type_->generation() != old_generation) {
+    //fprintf(stderr, "%s %s->%s\n", node_->get_description().c_str(), type_out(node_->get_type()).c_str(), type_out(new_type_).c_str());
     on_changed();
   }
 
@@ -498,6 +528,9 @@ void ExprNodeRecalc::apply_type_rule (VertexPtr rule, VertexPtr expr) {
     case op_index:
       apply_index (rule, expr);
       break;
+    case op_class_type_rule:
+      set_lca(rule.as <op_class_type_rule>()->class_ptr);
+      break;
     default:
       kphp_error (0, "error in type rule");
       recalc_ptype <tp_Error>();
@@ -514,6 +547,19 @@ void ExprNodeRecalc::recalc_func_call (VertexAdaptor <op_func_call> call) {
   }
 }
 
+void ExprNodeRecalc::recalc_constructor_call (VertexAdaptor <op_constructor_call> call) {
+  FunctionPtr function = call->get_func_id();
+  if (likely(function->class_id.not_null())) {
+    set_lca(function->class_id);
+  } else {
+    if (call->type_help == tp_MC || call->type_help == tp_Exception) {
+      set_lca(call->type_help);
+    } else {
+      kphp_error (0, "op_constructor_call has class_id NULL");
+    }
+  }
+}
+
 void ExprNodeRecalc::recalc_var (VertexAdaptor <op_var> var) {
   set_lca (var->get_var_id());
 }
@@ -524,6 +570,10 @@ void ExprNodeRecalc::recalc_push_back_return (VertexAdaptor <op_push_back_return
 
 void ExprNodeRecalc::recalc_index (VertexAdaptor <op_index> index) {
   set_lca (index->array(), &MultiKey::any_key (1));
+}
+
+void ExprNodeRecalc::recalc_instance_prop(VertexAdaptor <op_instance_prop> index) {
+  set_lca(index->var);
 }
 
 void ExprNodeRecalc::recalc_set (VertexAdaptor <op_set> set) {
@@ -628,6 +678,9 @@ void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
     case op_func_call:
       recalc_func_call (expr);
       break;
+    case op_constructor_call:
+      recalc_constructor_call(expr);
+      break;
     case op_common_type_rule:
     case op_gt_type_rule:
     case op_lt_type_rule:
@@ -642,6 +695,9 @@ void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
       break;
     case op_index:
       recalc_index (expr);
+      break;
+    case op_instance_prop:
+      recalc_instance_prop(expr);
       break;
     case op_set:
       recalc_set (expr);
@@ -684,7 +740,6 @@ void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
     case op_not:
     case op_or:
     case op_and:
-    case op_xor:
     case op_fork:
       recalc_ptype <tp_int>();
       break;

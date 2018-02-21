@@ -10,11 +10,6 @@ size_t vertex_total_mem_used __attribute__ ((weak));
 #define FOREACH_VERTEX(v, i) for (__typeof (all (v)) i = all (v); !i.empty(); i.next())
 
 
-inline VertexPtr &get_empy_vertex() {
-  static VertexPtr res;
-  res = VertexPtr();
-  return res;
-}
 VertexPtr clone_vertex (VertexPtr from);
 
 template <Operation Op>
@@ -347,11 +342,11 @@ VertexPtr create_vertex (Operation op, VertexPtr first);
 VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
 
 #define CLONE_VERTEX(name, op, from)\
-  VertexAdaptor <op> name = reg_vertex (VertexPtr (clone_vertex_inner <op> (*from)))
+  VertexAdaptor <op> name = VertexPtr (clone_vertex_inner <op> (*from))
 #define CREATE_VERTEX(name, op, args...)\
-  VertexAdaptor <op> name = reg_vertex (VertexPtr (create_vertex_inner <op> (args)))
+  VertexAdaptor <op> name = VertexPtr (create_vertex_inner <op> (args))
 #define COPY_CREATE_VERTEX(name, from, op, args...)\
-  VertexAdaptor <op> name = reg_vertex (VertexPtr (create_vertex_inner <op> (args, &*from)))
+  VertexAdaptor <op> name = VertexPtr (create_vertex_inner <op> (args, &*from))
 
 #define CREATE_META_VERTEX_1(name, meta_op, op, first)\
   VertexAdaptor <meta_op> name = create_vertex (op, first)
@@ -678,14 +673,17 @@ VA_BINARY_BEGIN (op_mod)
 VA_BINARY_END
 
 
-VA_BINARY_BEGIN (op_set)
+VA_BEGIN (op_set, meta_op_binary_op)
+PROPERTIES_BEGIN
   OPP (type, binary_op);
   OPP (rl, rl_set);
   OPP (cnst, cnst_nonconst_func);
   OPP (str, "=");
 
   OPP (fixity, right_opp); //redefined
-VA_BINARY_END
+PROPERTIES_END
+  Token* phpdoc_token;
+VA_END
 
 VA_BINARY_BEGIN (op_set_and)
   OPP (type, binary_op);
@@ -1220,6 +1218,39 @@ VA_BEGIN_2 (op_func_ptr, meta_op_base, function, string)
     OPP (str, "<TODO: op_func_ptr>");
   PROPERTIES_END
 VA_END
+VA_BEGIN (op_constructor_call, op_func_call)
+VA_END
+VA_BEGIN (op_instance_prop, meta_op_base)
+  VarPtr var;       // см. register_class(); у var внутри существует class_id
+  string str_val;   // название свойства ->{str_val}
+
+  virtual const string &get_string() const {return str_val;}
+  virtual void set_string (const string &s) {str_val = s;}
+
+  inline VertexPtr &lhs () { return ith(0); }
+
+  RAW_COPY_BEGIN
+    str_val = from.str_val;
+    var = from.var;
+  RAW_COPY_END
+  PROPERTIES_BEGIN
+    OPP (type, common_op);
+    OPP (rl, rl_instance_prop);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "op_instance_prop");
+  PROPERTIES_END
+VA_END
+VA_BEGIN (op_class_var, meta_op_base)
+  FIELD_BODY_string()
+  VertexPtr def_val;
+  Token* phpdoc_token;
+  PROPERTIES_BEGIN
+    OPP (type, common_op);
+    OPP (rl, rl_error);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "op_class_var");
+  PROPERTIES_END
+VA_END
 VA_BEGIN_1 (op_define_val, meta_op_base, define)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1387,6 +1418,8 @@ VA_BEGIN (op_list, meta_op_base)
     OPP (cnst, cnst_const_func);
     OPP (str, "<TODO: list>");
   PROPERTIES_END
+  Token* phpdoc_token;
+
   VertexPtr &array() {
     return ith (size() - 1);
   }
@@ -1506,6 +1539,7 @@ VA_END
 VA_BEGIN_1 (op_func_param_callback, meta_op_func_param, int)
 VA_END
 VA_BEGIN (op_func_param, meta_op_func_param)
+  std::string type_declaration;
 VA_END
 
 VA_BEGIN (op_class, meta_op_base)
@@ -1642,6 +1676,9 @@ VA_END
 VA_BEGIN (meta_op_type_rule, meta_op_unary_)
 VA_END
 VA_BEGIN (op_common_type_rule, meta_op_type_rule)
+VA_END
+VA_BEGIN (op_class_type_rule, meta_op_type_rule)
+  ClassPtr class_ptr;
 VA_END
 VA_BEGIN (op_lt_type_rule, meta_op_type_rule)
 VA_END

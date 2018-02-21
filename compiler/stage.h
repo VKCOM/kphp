@@ -29,7 +29,7 @@
 #define kphp_assert_msg(x, y) compiler_assert (x, y, FATAL_ASSERT_LEVEL)
 #define kphp_fail() kphp_assert (0); _exit(1);
 
-typedef enum {WRN_ASSERT_LEVEL, CE_ASSERT_LEVEL, FATAL_ASSERT_LEVEL} AssertLevelT;
+enum AssertLevelT {WRN_ASSERT_LEVEL, CE_ASSERT_LEVEL, FATAL_ASSERT_LEVEL};
 
 void on_compilation_error (const char *description, const char *file_name, int line_number,
   const char *full_description, AssertLevelT assert_level);

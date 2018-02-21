@@ -1,4 +1,4 @@
-@ok
+@ok_old_php
 <?php
   var_dump (dirname ('..'));
   var_dump (dirname ('phpt/'));
