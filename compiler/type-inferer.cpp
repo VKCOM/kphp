@@ -216,9 +216,9 @@ string tinf::VarNode::get_description() {
       function_ = var_->holder_func;
     }
   }
-  if (param_i == -2) {
+  if (is_variable()) {
     ss << "[$" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << "]";
-  } else if (param_i == -1) {
+  } else if (is_return_value_from_function()) {
     ss << "[return .]";
   } else {
     ss << "[arg #" << int_to_str (param_i) << " ($" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << ")]";
