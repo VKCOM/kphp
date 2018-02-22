@@ -28,7 +28,7 @@ template <class T>
 array <T> f$array_filter (const array <T> &a);
 
 template <class T, class T1>
-array <T> f$array_filter (const array <T> &a, const T1 callback);
+array <T> f$array_filter (const array <T> &a, const T1 callback, int flags = 0);
 
 template <class T, class T1>
 array <var> f$array_map (const T1 callback, const array <T> &a);
@@ -395,6 +395,8 @@ array <T> f$array_splice (array <T> &a, int offset, int length, const array <T1>
   return result;
 }
 
+const int ARRAY_FILTER_USE_KEY = 1;
+
 template <class T>
 array <T> f$array_filter (const array <T> &a) {
   array <T> result (a.size());
@@ -408,10 +410,18 @@ array <T> f$array_filter (const array <T> &a) {
 }
 
 template <class T, class T1>
-array <T> f$array_filter (const array <T> &a, const T1 callback) {
+array <T> f$array_filter (const array <T> &a, const T1 callback, int flags) {
   array <T> result (a.size());
   for (typename array <T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    if (f$boolval (callback (it.get_value()))) {
+    bool need_set_value;
+
+    if (flags == ARRAY_FILTER_USE_KEY) {
+      need_set_value = f$boolval(callback(it.get_key()));
+    } else {
+      need_set_value = f$boolval(callback(it.get_value()));
+    }
+
+    if (need_set_value) {
       result.set_value (it);
     }
   }

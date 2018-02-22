@@ -160,7 +160,10 @@ function array_push (&$a ::: array, $val2 ::: Any, $val3 ::: Any = TODO, $val4 :
 function array_pop (&$a ::: array) ::: ^1[];
 function array_sum ($a ::: array) ::: float;//TODO 
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
-function array_filter ($a ::: array, callback ($x) = TODO) ::: ^1;
+
+define_raw ('ARRAY_FILTER_USE_KEY', 1);
+
+function array_filter ($a ::: array, callback ($x) = TODO, $flags ::: int = 0) ::: ^1;
 function array_map (callback ($x), $a ::: array) ::: array <var>;
 function array_reduce ($a ::: array, callback ($carry, $item), $initial ::: var = null) ::: var;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
