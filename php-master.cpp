@@ -1835,7 +1835,7 @@ void run_master() {
   err = epoll_insert (signal_fd, EVT_READ);
   dl_assert (err >= 0, "epoll_insert failed");
 
-  init_msg_buffers (0);
+  init_msg_buffers();
 
   //it is C++, not C :(
   init_php_master_methods();
