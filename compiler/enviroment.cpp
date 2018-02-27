@@ -19,9 +19,12 @@ static void as_file (string *s __attribute__((unused))) {
   return;
 }
 
-KphpEnviroment::KphpEnviroment() :
-  verbosity_int_ (0), warnings_level (0) {
-};
+KphpEnviroment::KphpEnviroment()
+  : verbosity_int_(0)
+  , print_resumable_graph_(0)
+  , enable_profiler_(0)
+  , warnings_level(0)
+{}
 
 static void init_env_var (string *str, const string &var_name, const string &default_value) {
   if (!str->empty()) {

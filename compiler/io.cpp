@@ -11,16 +11,18 @@
 
 #include "compiler/stage.h"
 
-SrcFile::SrcFile() {
-}
+SrcFile::SrcFile()
+  : id(0)
+{}
 
-SrcFile::SrcFile (const string &file_name, const string &short_file_name, const string &class_context) :
-  file_name (file_name),
-  short_file_name (short_file_name),
-  loaded (false),
-  is_required (false),
-  class_context (class_context) {
-}
+SrcFile::SrcFile (const string &file_name, const string &short_file_name, const string &class_context)
+  : id(0)
+  , file_name(file_name)
+  , short_file_name(short_file_name)
+  , loaded(false)
+  , is_required(false)
+  , class_context(class_context)
+{}
 
 void SrcFile::add_prefix (const string &new_prefix) {
   prefix = new_prefix;
