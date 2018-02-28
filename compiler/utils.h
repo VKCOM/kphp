@@ -74,9 +74,9 @@ public:
   int length() const;
   const char *begin() const;
   const char *end() const;
-  bool eq (const char *q) const ;
   string str() const;
   const char *c_str() const;
+  bool starts_with(const char *rhs) const;
   inline operator string(){
     return string (s, t);
   }
@@ -96,13 +96,10 @@ inline const char *string_ref::begin() const {
 inline const char *string_ref::end() const {
   return t;
 }
-inline bool string_ref::eq (const char *q) const {
-  int qn = (int)strlen (q);
-  return qn == length() && !strncmp (q, begin(), qn);
-}
 
 inline bool operator == (const string_ref &lhs, const char *rhs) {
-  return lhs.eq(rhs);
+  int len = (int) strlen(rhs);
+  return len == lhs.length() && strncmp(rhs, lhs.begin(), len) == 0;
 }
 
 inline string_ref string_ref_dup (const string &s) {
@@ -115,6 +112,11 @@ inline string string_ref::str() const {
 }
 inline const char *string_ref::c_str() const {
   return str().c_str();
+}
+
+inline bool string_ref::starts_with(const char *str) const {
+  int len = (int) strlen(str);
+  return len <= length() && strncmp(str, begin(), len) == 0;
 }
 
 inline string int_to_str (int x) {

@@ -1037,12 +1037,12 @@ VertexPtr GenTree::get_type_rule_ (void) {
     set_location (arr, arr_location);
     res = arr;
   } else if (tok == tok_func_name) {
-    if ((*cur)->str_val.eq ("lca") || (*cur)->str_val.eq ("OrFalse")) {
+    if ((*cur)->str_val == "lca" || (*cur)->str_val == "OrFalse") {
       res = get_type_rule_func ();
-    } else if ((*cur)->str_val.eq ("self")) {
+    } else if ((*cur)->str_val == "self") {
       CREATE_VERTEX (self, op_self);
       res = self;
-    } else if ((*cur)->str_val.eq ("CONST")) {
+    } else if ((*cur)->str_val == "CONST") {
       next_cur();
       res = get_type_rule_();
       if (res.not_null()) {
