@@ -74,7 +74,7 @@ public:
   int length() const;
   const char *begin() const;
   const char *end() const;
-  bool eq (const char *q);
+  bool eq (const char *q) const ;
   string str() const;
   const char *c_str() const;
   inline operator string(){
@@ -96,10 +96,15 @@ inline const char *string_ref::begin() const {
 inline const char *string_ref::end() const {
   return t;
 }
-inline bool string_ref::eq (const char *q) {
+inline bool string_ref::eq (const char *q) const {
   int qn = (int)strlen (q);
   return qn == length() && !strncmp (q, begin(), qn);
 }
+
+inline bool operator == (const string_ref &lhs, const char *rhs) {
+  return lhs.eq(rhs);
+}
+
 inline string_ref string_ref_dup (const string &s) {
   char *buf = new char[s.length()];
   memcpy (buf, &s[0], s.size());
