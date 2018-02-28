@@ -3,6 +3,7 @@
 #include "PHP/common-net-functions.h"
 #include "common/crc32.h"
 #include "common/rpc-const.h"
+#include "auto/TL/constants.h"
 
 #include "runtime/drivers.h"
 #include "runtime/exception.h"
@@ -14,8 +15,6 @@
 #include "runtime/zlib.h"
 
 static const int GZIP_PACKED = 0x3072cfa1;
-static const int TL_RPC_DEST_ACTOR = 0x7568aabd;
-static const int TL_RPC_DEST_ACTOR_FLAGS = 0xf0a5acf7;
 
 static const string UNDERSCORE ("_", 1);
 

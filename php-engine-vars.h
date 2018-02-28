@@ -107,13 +107,6 @@ extern int disable_access_log;
 extern int force_clear_sql_connection;
 extern long long static_buffer_length_limit;
 
-#define RPC_INVOKE_KPHP_REQ 0x99a37fda
-#define RPC_INVOKE_REQ 0x2374df3d
-#define RPC_REQ_RUNNING 0x346d5efa
-#define RPC_REQ_ERROR 0x7ae432f5
-#define RPC_REQ_RESULT 0x63aeda4e
-#define RPC_READY 0x6a34cac7
-#define RPC_STOP_READY 0x59d86654
 #define RPC_PHP_IMMEDIATE_STATS 0x3d27a21b
 #define RPC_PHP_FULL_STATS 0x1f8ae120
 
