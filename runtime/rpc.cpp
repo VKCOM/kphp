@@ -1842,6 +1842,14 @@ int f$rpc_tl_query_one (const rpc_connection &c, const var &tl_object, double ti
   return query_id;
 }
 
+int f$rpc_tl_queries_count () {
+  if (dl::query_num != rpc_tl_results_last_query_num) {
+    return 0;
+  }
+
+  return rpc_tl_results->count();
+}
+
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout, bool ignore_answer) {
   array <var> result (tl_objects.size());
   int bytes_sent = 0;

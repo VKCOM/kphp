@@ -172,6 +172,8 @@ bool f$store_unsigned_long (const var &v);
 
 int f$rpc_tl_query_one (const rpc_connection &c, const var &arr, double timeout = -1.0);
 
+int f$rpc_tl_queries_count ();
+
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &arr, double timeout = -1.0, bool ignore_answer = false);
 
 array <var> f$rpc_tl_query_result_one (int query_id);

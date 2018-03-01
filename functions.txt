@@ -684,6 +684,7 @@ function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -
 function rpc_tl_query_result_one ($query_id ::: int) resumable ::: array <var>;
 function rpc_tl_query_result ($query_ids ::: array) resumable ::: array <array <var> >;
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: array <array <var> >;
+function rpc_tl_queries_count () ::: int;
 
 function wait ($id ::: int, $timeout ::: float = -1.0) resumable ::: bool;
 function wait_result ($id ::: int, $timeout ::: float = -1.0) throws resumable ::: var;
