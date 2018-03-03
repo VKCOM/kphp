@@ -1665,11 +1665,9 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
         vector <VertexPtr> new_params_call;
         FOREACH(params_next, parameter) {
           if ((*parameter)->type() == op_func_param) {
-            CLONE_VERTEX(new_var_param, op_var, (*parameter).as<op_func_param>()->var().as<op_var>());
-            CLONE_VERTEX(new_var, op_var, new_var_param);
-            CREATE_VERTEX(new_parameter, op_func_param, new_var_param);
+            CLONE_VERTEX(new_var, op_var, (*parameter).as<op_func_param>()->var().as<op_var>());
             new_params_call.push_back(new_var);
-            new_params_next.push_back(new_parameter);
+            new_params_next.push_back(clone_vertex(*parameter));
           } else if ((*parameter)->type() == op_func_param_callback) {
             CE (kphp_error(false, "Callbacks are not supported in class static methods"));
 //            CLONE_VERTEX(new_parameter, op_func_param_callback, (*parameter).as<op_func_param_callback>());
