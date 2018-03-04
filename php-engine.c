@@ -3092,13 +3092,6 @@ void start_server (void) {
     vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), port, http_sfd);
   }
 
-  if (change_user (username) < 0) {
-    vkprintf (-1, "fatal: cannot change user to %s\n", username ? username : "(none)");
-    exit (1);
-  }
-
-  prctl (PR_SET_DUMPABLE, 1);
-
   if (http_sfd >= 0) {
     init_listening_tcpv6_connection (http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
   }
@@ -3537,11 +3530,8 @@ void init_default (void) {
 
   aes_load_default_pwd_file();
 
-  if (change_user (username) < 0) {
-    vkprintf (-1, "fatal: cannot change user to %s\n", username ? username : "(none)");
-    exit (1);
-  }
-
+  do_relogin();
+  prctl (PR_SET_DUMPABLE, 1);
 }
 
 int main (int argc, char *argv[]) {
