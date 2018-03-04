@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
@@ -16,7 +17,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include "common/crc32c.h"
 #include "common/kdb-data-common.h"
@@ -25,7 +25,7 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 #include "common/rpc-const.h"
-#include "common/server-functions.h"
+#include "common/server/server-functions.h"
 #include "db-proxy/passwd.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
@@ -3202,8 +3202,6 @@ void start_server (void) {
     if (epoll_pre_event) {
       epoll_pre_event();
     }
-
-    if (quit_steps && !--quit_steps) break;
 
     if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag &&
         pending_http_queue.first_query == (struct conn_query *)&pending_http_queue) {

@@ -26,7 +26,7 @@ extern "C" {
 #include "common/kdb-data-common.h"
 #include "common/kprintf.h"
 #include "common/precise-time.h"
-#include "common/server-functions.h"
+#include "common/server/server-functions.h"
 #include "drinkless/dl-utils-lite.h"
 #include "net/net-connections.h"
 #include "net/net-events.h"

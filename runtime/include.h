@@ -17,7 +17,7 @@
 
 #include "common-php-functions.h"
 #include "common/fast-backtrace.h"
-#include "common/likely.h"
+#include "common/wrappers/likely.h"
 
 #include "runtime/allocator.h"
 

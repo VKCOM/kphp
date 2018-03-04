@@ -12,7 +12,7 @@
 
 extern "C" {
 #include "common/kprintf.h"
-#include "common/server-functions.h"
+#include "common/server/server-functions.h"
 #include "php-engine-vars.h"
 
 query_stats_t query_stats;
