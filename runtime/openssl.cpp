@@ -15,8 +15,8 @@
 #include <unistd.h>
 
 #include "common/crc32.h"
-#include "common/openssl.h"
 #include "common/resolver.h"
+#include "common/wrappers/openssl.h"
 
 #include "runtime/datetime.h"
 #include "runtime/files.h"
