@@ -258,8 +258,7 @@ void LexerData::post_process (const string &main_func_name) {
             i++;
             break;
           } else if (i == 0 || (oldtokens[i - 1] != NULL && oldtokens[i - 1]->type() != tok_function)) {
-            if ((str_val.starts_with("fetch_") || str_val == "err") &&
-                are_next_tokens(oldtokens, i, tok_oppar)) {
+            if (str_val == "err" && are_next_tokens(oldtokens, i, tok_oppar)) {
               tokens.push_back(oldtokens[i]);
               tokens.push_back(oldtokens[i + 1]);
               tokens.push_back(new Token(tok_file_c));

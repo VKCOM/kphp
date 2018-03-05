@@ -619,23 +619,23 @@ function exception_getTraceAsString ($e ::: Exception) ::: string;
 function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
 
 /** rpc fetch **/
-function fetch_int ($file ::: string, $line ::: int) throws ::: int;
-function fetch_UInt ($file ::: string, $line ::: int) throws ::: UInt;
-function fetch_Long ($file ::: string, $line ::: int) throws ::: Long;
-function fetch_ULong ($file ::: string, $line ::: int) throws ::: ULong;
-function fetch_unsigned_int ($file ::: string, $line ::: int) throws ::: var;
-function fetch_long ($file ::: string, $line ::: int) throws ::: var;
-function fetch_unsigned_long ($file ::: string, $line ::: int) throws ::: var;
-function fetch_unsigned_int_hex ($file ::: string, $line ::: int) throws ::: string;
-function fetch_unsigned_long_hex ($file ::: string, $line ::: int) throws ::: string;
-function fetch_unsigned_int_str ($file ::: string, $line ::: int) throws ::: string;
-function fetch_unsigned_long_str ($file ::: string, $line ::: int) throws ::: string;
-function fetch_double ($file ::: string, $line ::: int) throws ::: float;
-function fetch_string ($file ::: string, $line ::: int) throws ::: string;
-function fetch_string_as_int ($file ::: string, $line ::: int) throws ::: int;
-function fetch_memcache_value ($file ::: string, $line ::: int) throws ::: var;
-function fetch_eof ($file ::: string, $line ::: int) ::: bool;
-function fetch_end ($file ::: string, $line ::: int) throws ::: bool;
+function fetch_int () throws ::: int;
+function fetch_UInt () throws ::: UInt;
+function fetch_Long () throws ::: Long;
+function fetch_ULong () throws ::: ULong;
+function fetch_unsigned_int () throws ::: var;
+function fetch_long () throws ::: var;
+function fetch_unsigned_long () throws ::: var;
+function fetch_unsigned_int_hex () throws ::: string;
+function fetch_unsigned_long_hex () throws ::: string;
+function fetch_unsigned_int_str () throws ::: string;
+function fetch_unsigned_long_str () throws ::: string;
+function fetch_double () throws ::: float;
+function fetch_string () throws ::: string;
+function fetch_string_as_int () throws ::: int;
+function fetch_memcache_value () throws ::: var;
+function fetch_eof () ::: bool;
+function fetch_end () throws ::: bool;
 function rpc_parse ($data) ::: bool;
 
 /** rpc store **/

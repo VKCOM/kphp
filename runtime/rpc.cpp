@@ -177,48 +177,48 @@ bool rpc_set_pos (int pos) {
 }
 
 
-static inline void check_rpc_data_len (const string &file, int line, int len) {
+static inline void check_rpc_data_len(int len) {
   if (rpc_data_len < len) {
-    THROW_EXCEPTION(Exception (file, line, string ("Not enough data to fetch", 24), -1));
+    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Not enough data to fetch", 24), -1));
     return;
   }
   rpc_data_len -= len;
 }
 
-int rpc_lookup_int (const string &file, int line) {
-  TRY_CALL_VOID(int, (check_rpc_data_len (file, line, 1)));
+int rpc_lookup_int() {
+  TRY_CALL_VOID(int, (check_rpc_data_len(1)));
   rpc_data_len++;
   return *rpc_data;
 }
 
-int f$fetch_int (const string &file, int line) {
-  TRY_CALL_VOID(int, (check_rpc_data_len (file, line, 1)));
+int f$fetch_int() {
+  TRY_CALL_VOID(int, (check_rpc_data_len(1)));
   return *rpc_data++;
 }
 
-UInt f$fetch_UInt (const string &file, int line) {
-  TRY_CALL_VOID(UInt, (check_rpc_data_len (file, line, 1)));
+UInt f$fetch_UInt() {
+  TRY_CALL_VOID(UInt, (check_rpc_data_len(1)));
   return UInt ((unsigned int)(*rpc_data++));
 }
 
-Long f$fetch_Long (const string &file, int line) {
-  TRY_CALL_VOID(Long, (check_rpc_data_len (file, line, 2)));
+Long f$fetch_Long() {
+  TRY_CALL_VOID(Long, (check_rpc_data_len(2)));
   long long result = *(long long *)rpc_data;
   rpc_data += 2;
 
   return Long (result);
 }
 
-ULong f$fetch_ULong (const string &file, int line) {
-  TRY_CALL_VOID(ULong, (check_rpc_data_len (file, line, 2)));
+ULong f$fetch_ULong() {
+  TRY_CALL_VOID(ULong, (check_rpc_data_len(2)));
   unsigned long long result = *(unsigned long long *)rpc_data;
   rpc_data += 2;
 
   return ULong (result);
 }
 
-var f$fetch_unsigned_int (const string &file, int line) {
-  TRY_CALL_VOID(var, (check_rpc_data_len (file, line, 1)));
+var f$fetch_unsigned_int() {
+  TRY_CALL_VOID(var, (check_rpc_data_len(1)));
   unsigned int result = *rpc_data++;
 
   if (result <= (unsigned int)INT_MAX) {
@@ -228,8 +228,8 @@ var f$fetch_unsigned_int (const string &file, int line) {
   return f$strval (UInt (result));
 }
 
-var f$fetch_long (const string &file, int line) {
-  TRY_CALL_VOID(var, (check_rpc_data_len (file, line, 2)));
+var f$fetch_long() {
+  TRY_CALL_VOID(var, (check_rpc_data_len(2)));
   long long result = *(long long *)rpc_data;
   rpc_data += 2;
 
@@ -240,8 +240,8 @@ var f$fetch_long (const string &file, int line) {
   return f$strval (Long (result));
 }
 
-var f$fetch_unsigned_long (const string &file, int line) {
-  TRY_CALL_VOID(var, (check_rpc_data_len (file, line, 2)));
+var f$fetch_unsigned_long() {
+  TRY_CALL_VOID(var, (check_rpc_data_len(2)));
   unsigned long long result = *(unsigned long long *)rpc_data;
   rpc_data += 2;
 
@@ -252,8 +252,8 @@ var f$fetch_unsigned_long (const string &file, int line) {
   return f$strval (ULong (result));
 }
 
-string f$fetch_unsigned_int_hex (const string &file, int line) {
-  TRY_CALL_VOID(string, (check_rpc_data_len (file, line, 1)));
+string f$fetch_unsigned_int_hex() {
+  TRY_CALL_VOID(string, (check_rpc_data_len(1)));
   unsigned int result = *rpc_data++;
 
   char buf[8], *end_buf = buf + 8;
@@ -265,8 +265,8 @@ string f$fetch_unsigned_int_hex (const string &file, int line) {
   return string (end_buf, 8);
 }
 
-string f$fetch_unsigned_long_hex (const string &file, int line) {
-  TRY_CALL_VOID(string, (check_rpc_data_len (file, line, 2)));
+string f$fetch_unsigned_long_hex() {
+  TRY_CALL_VOID(string, (check_rpc_data_len(2)));
   unsigned long long result = *(unsigned long long *)rpc_data;
   rpc_data += 2;
 
@@ -279,36 +279,36 @@ string f$fetch_unsigned_long_hex (const string &file, int line) {
   return string (end_buf, 16);
 }
 
-string f$fetch_unsigned_int_str (const string &file, int line) {
-  return f$strval (TRY_CALL (UInt, string, (f$fetch_UInt (file, line))));
+string f$fetch_unsigned_int_str() {
+  return f$strval (TRY_CALL (UInt, string, (f$fetch_UInt())));
 }
 
-string f$fetch_unsigned_long_str (const string &file, int line) {
-  return f$strval (TRY_CALL (ULong, string, (f$fetch_ULong (file, line))));
+string f$fetch_unsigned_long_str() {
+  return f$strval (TRY_CALL (ULong, string, (f$fetch_ULong())));
 }
 
-double f$fetch_double (const string &file, int line) {
-  TRY_CALL_VOID(double, (check_rpc_data_len (file, line, 2)));
+double f$fetch_double() {
+  TRY_CALL_VOID(double, (check_rpc_data_len(2)));
   double result = *(double *)rpc_data;
   rpc_data += 2;
 
   return result;
 }
 
-static inline const char* f$fetch_string_raw (const string &file, int line, int *string_len) {
-  TRY_CALL_VOID_(check_rpc_data_len (file, line, 1), return NULL);
+static inline const char *f$fetch_string_raw(int *string_len) {
+  TRY_CALL_VOID_(check_rpc_data_len(1), return NULL);
   const char *str = reinterpret_cast <const char *> (rpc_data);
   int result_len = (unsigned char)*str++;
   if (result_len < 254) {
-    TRY_CALL_VOID_(check_rpc_data_len (file, line, result_len >> 2), return NULL);
+    TRY_CALL_VOID_(check_rpc_data_len(result_len >> 2), return NULL);
     rpc_data += (result_len >> 2) + 1;
   } else if (result_len == 254) {
     result_len = (unsigned char)str[0] + ((unsigned char)str[1] << 8) + ((unsigned char)str[2] << 16);
     str += 3;
-    TRY_CALL_VOID_(check_rpc_data_len (file, line, (result_len + 3) >> 2), return NULL);
+    TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return NULL);
     rpc_data += ((result_len + 7) >> 2);
   } else {
-    THROW_EXCEPTION(Exception (file, line, string ("Can't fetch string, 255 found", 29), -3));
+    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Can't fetch string, 255 found", 29), -3));
     return NULL;
   }
 
@@ -316,31 +316,30 @@ static inline const char* f$fetch_string_raw (const string &file, int line, int 
   return str;
 }
 
-string f$fetch_string (const string &file, int line) {
+string f$fetch_string() {
   int result_len = 0;
-  const char *str = TRY_CALL(const char*, string, f$fetch_string_raw(file, line, &result_len));
+  const char *str = TRY_CALL(const char*, string, f$fetch_string_raw(&result_len));
   return string (str, result_len);
 }
 
-int f$fetch_string_as_int (const string &file, int line) {
+int f$fetch_string_as_int() {
   int result_len = 0;
-  const char *str = TRY_CALL(const char*, int, f$fetch_string_raw(file, line, &result_len));
+  const char *str = TRY_CALL(const char*, int, f$fetch_string_raw(&result_len));
   return string::to_int (str, result_len);
 }
 
-
-var f$fetch_memcache_value(const string& file, int line) {
-  int res = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
+var f$fetch_memcache_value() {
+  int res = TRY_CALL(int, bool, f$fetch_int());
   switch (res) {
     case MEMCACHE_VALUE_STRING: {
       int value_len;
-      const char* value = TRY_CALL(const char*, bool, f$fetch_string_raw(rpc_filename, __LINE__, &value_len));
-      int flags = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
+      const char* value = TRY_CALL(const char*, bool, f$fetch_string_raw(&value_len));
+      int flags = TRY_CALL(int, bool, f$fetch_int());
       return mc_get_value(value, value_len, flags);
     }
     case MEMCACHE_VALUE_LONG: {
-      var value = TRY_CALL(var, bool, f$fetch_long(rpc_filename, __LINE__));
-      int flags = TRY_CALL(int, bool, f$fetch_int(rpc_filename, __LINE__));
+      var value = TRY_CALL(var, bool, f$fetch_long());
+      int flags = TRY_CALL(int, bool, f$fetch_int());
 
       if (flags != 0) {
         php_warning("Wrong parameter flags = %d returned in Memcache::get", flags);
@@ -353,19 +352,19 @@ var f$fetch_memcache_value(const string& file, int line) {
     }
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
-      THROW_EXCEPTION(Exception (file, line, string ("Wrong memcache.Value constructor", 24), -1));
+      THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Wrong memcache.Value constructor", 24), -1));
       return var();
     }
   }
 }
 
-bool f$fetch_eof (const string &file __attribute__((unused)), int line __attribute__((unused))) {
+bool f$fetch_eof() {
   return rpc_data_len == 0;
 }
 
-bool f$fetch_end (const string &file, int line) {
+bool f$fetch_end() {
   if (rpc_data_len) {
-    THROW_EXCEPTION(Exception (file, line, string ("Too much data to fetch", 22), -2));
+    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Too much data to fetch", 22), -2));
     return false;
   }
   return true;
@@ -1113,23 +1112,23 @@ bool f$store_unsigned_long (const var &v) {
 
 
 int tl_parse_int (void) {
-  return TRY_CALL(int, int, (f$fetch_int (rpc_filename, __LINE__)));
+  return TRY_CALL(int, int, (f$fetch_int()));
 }
 
 long long tl_parse_long (void) {
-  return TRY_CALL(long long, int, (f$fetch_Long (rpc_filename, __LINE__).l));
+  return TRY_CALL(long long, int, (f$fetch_Long().l));
 }
 
 double tl_parse_double (void) {
-  return TRY_CALL(double, double, (f$fetch_double (rpc_filename, __LINE__)));
+  return TRY_CALL(double, double, (f$fetch_double()));
 }
 
 string tl_parse_string (void) {
-  return TRY_CALL(string, string, (f$fetch_string (rpc_filename, __LINE__)));
+  return TRY_CALL(string, string, (f$fetch_string()));
 }
 
 void tl_parse_end (void) {
-  TRY_CALL_VOID(void, (f$fetch_end (rpc_filename, __LINE__)));
+  TRY_CALL_VOID(void, (f$fetch_end()));
 }
 
 int tl_parse_save_pos (void) {
@@ -1712,7 +1711,7 @@ array <var> fetch_function (tl_tree *T) {
   int x = 0;
 
 #ifdef FAST_EXCEPTIONS
-  x = rpc_lookup_int (rpc_filename, __LINE__);
+  x = rpc_lookup_int();
   if (x == RPC_REQ_ERROR && !CurException) {
     php_assert (tl_parse_int() == RPC_REQ_ERROR);
     if (!CurException) {
@@ -1788,7 +1787,7 @@ array <var> fetch_function (tl_tree *T) {
 
   if (res == TLUNI_OK) {
     dbg_T->destroy ();
-    if (!f$fetch_eof (rpc_filename, __LINE__)) {
+    if (!f$fetch_eof()) {
       php_warning ("Not all data fetched during fetch type %s", fetched_type.c_str());
       var_stack[0] = var();
       return tl_fetch_error ("Not all data fetched", TL_ERROR_EXTRA_DATA);
@@ -2376,25 +2375,25 @@ void *tlcomb_fetch_array (void **IP, void **Data, var *arr, tl_tree **vars) {
 
 void *tlcomb_fetch_int (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(int, void_ptr, (f$fetch_int (rpc_filename, __LINE__)));
+  *arr = TRY_CALL(int, void_ptr, (f$fetch_int()));
   TLUNI_NEXT;
 }
 
 void *tlcomb_fetch_long (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(var, void_ptr, (f$fetch_long (rpc_filename, __LINE__)));
+  *arr = TRY_CALL(var, void_ptr, (f$fetch_long()));
   TLUNI_NEXT;
 }
 
 void *tlcomb_fetch_double (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(double, void_ptr, (f$fetch_double (rpc_filename, __LINE__)));
+  *arr = TRY_CALL(double, void_ptr, (f$fetch_double()));
   TLUNI_NEXT;
 }
 
 void *tlcomb_fetch_string (void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug (__FUNCTION__, -1);
-  *arr = TRY_CALL(string, void_ptr, (f$fetch_string (rpc_filename, __LINE__)));
+  *arr = TRY_CALL(string, void_ptr, (f$fetch_string()));
   TLUNI_NEXT;
 }
 

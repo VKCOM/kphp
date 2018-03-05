@@ -19,41 +19,41 @@ int rpc_get_pos (void);
 
 bool rpc_set_pos (int pos);
 
-int rpc_lookup_int (const string &file, int line);
+int rpc_lookup_int();
 
-int f$fetch_int (const string &file, int line);
+int f$fetch_int();
 
-UInt f$fetch_UInt (const string &file, int line);
+UInt f$fetch_UInt();
 
-Long f$fetch_Long (const string &file, int line);
+Long f$fetch_Long();
 
-ULong f$fetch_ULong (const string &file, int line);
+ULong f$fetch_ULong();
 
-var f$fetch_unsigned_int (const string &file, int line);
+var f$fetch_unsigned_int();
 
-var f$fetch_long (const string &file, int line);
+var f$fetch_long();
 
-var f$fetch_unsigned_long (const string &file, int line);
+var f$fetch_unsigned_long();
 
-string f$fetch_unsigned_int_hex (const string &file, int line);
+string f$fetch_unsigned_int_hex();
 
-string f$fetch_unsigned_long_hex (const string &file, int line);
+string f$fetch_unsigned_long_hex();
 
-string f$fetch_unsigned_int_str (const string &file, int line);
+string f$fetch_unsigned_int_str();
 
-string f$fetch_unsigned_long_str (const string &file, int line);
+string f$fetch_unsigned_long_str();
 
-double f$fetch_double (const string &file, int line);
+double f$fetch_double();
 
-string f$fetch_string (const string &file, int line);
+string f$fetch_string();
 
-int f$fetch_string_as_int (const string &file, int line);
+int f$fetch_string_as_int();
 
-var f$fetch_memcache_value(const string& file, int line);
+var f$fetch_memcache_value();
 
-bool f$fetch_eof (const string &file, int line);//TODO remove parameters
+bool f$fetch_eof();//TODO remove parameters
 
-bool f$fetch_end (const string &file, int line);
+bool f$fetch_end();
 
 
 struct rpc_connection {

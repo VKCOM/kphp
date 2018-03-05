@@ -1568,16 +1568,16 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
     return false;
   }
 
-  int op = TRY_CALL(int, var, rpc_lookup_int(drivers_cpp_filename, __LINE__));
+  int op = TRY_CALL(int, var, rpc_lookup_int());
   if (op == MEMCACHE_ERROR) {
-    TRY_CALL_VOID(var, f$fetch_int (drivers_cpp_filename, __LINE__));//op
-    TRY_CALL_VOID(var, f$fetch_long (drivers_cpp_filename, __LINE__));//query_id
-    int error_code = TRY_CALL(int, bool, f$fetch_int (drivers_cpp_filename, __LINE__));
-    string error = TRY_CALL(string, bool, f$fetch_string (drivers_cpp_filename, __LINE__));
+    TRY_CALL_VOID(var, f$fetch_int());//op
+    TRY_CALL_VOID(var, f$fetch_long());//query_id
+    int error_code = TRY_CALL(int, bool, f$fetch_int());
+    string error = TRY_CALL(string, bool, f$fetch_string());
     (void)error_code;
     return false;
   }
-  var result = TRY_CALL(var, var, f$fetch_memcache_value(drivers_cpp_filename, __LINE__));
+  var result = TRY_CALL(var, var, f$fetch_memcache_value());
   return result;
 }
 
@@ -1634,7 +1634,7 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
     return false;
   }
 
-  int res = TRY_CALL(int, bool, (f$fetch_int (drivers_cpp_filename, __LINE__)));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, bool, (f$fetch_int()));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
 
@@ -1677,9 +1677,9 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
     return false;
   }
 
-  int res = TRY_CALL(int, var, (f$fetch_int (drivers_cpp_filename, __LINE__)));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, var, (f$fetch_int()));//TODO __FILE__ and __LINE__
   if (res == MEMCACHE_VALUE_LONG) {
-    return TRY_CALL(var, var, (f$fetch_long (drivers_cpp_filename, __LINE__)));
+    return TRY_CALL(var, var, (f$fetch_long()));
   }
 
   return false;
@@ -1719,7 +1719,7 @@ bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double time
     return false;
   }
 
-  int res = TRY_CALL(int, bool, (f$fetch_int (drivers_cpp_filename, __LINE__)));//TODO __FILE__ and __LINE__
+  int res = TRY_CALL(int, bool, (f$fetch_int()));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
 
