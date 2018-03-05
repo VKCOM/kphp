@@ -1849,6 +1849,42 @@ int f$rpc_tl_queries_count () {
   return rpc_tl_results->count();
 }
 
+bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array< var > &result) {
+  if (raw_result.empty() || !f$rpc_parse(raw_result)) {
+    return false;
+  };
+
+  int magic = TRY_CALL_ (int, f$fetch_int(), return false);
+  if (magic != TL_DICTIONARY) {
+    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Strange dictionary magic", 24), -1));
+    return false;
+  };
+
+  int cnt = TRY_CALL_ (int, f$fetch_int(), return false);
+  if (cnt == 0) {
+    return true;
+  };
+  result.reserve(0, cnt + f$count(result), false);
+
+  for (int j = 0; j < cnt; ++j) {
+    string key = f$fetch_string();
+
+    if (CurException) {
+      return false;
+    }
+
+    var value = f$fetch_memcache_value();
+
+    if (CurException) {
+      return false;
+    }
+
+    result.set_value (key, value);
+  };
+
+  return true;
+}
+
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout, bool ignore_answer) {
   array <var> result (tl_objects.size());
   int bytes_sent = 0;

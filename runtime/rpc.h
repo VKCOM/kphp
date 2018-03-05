@@ -173,6 +173,7 @@ bool f$store_unsigned_long (const var &v);
 int f$rpc_tl_query_one (const rpc_connection &c, const var &arr, double timeout = -1.0);
 
 int f$rpc_tl_queries_count ();
+bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array< var > &result);
 
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &arr, double timeout = -1.0, bool ignore_answer = false);
 
