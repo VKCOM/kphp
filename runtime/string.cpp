@@ -16,16 +16,11 @@ bool string::string_inner::is_shared (void) const {
   return ref_count > 0;
 }
 
-void string::string_inner::set_length_and_sharable (size_type n) {
-  ref_count = 0;
-  size = n;
-  ref_data()[n] = '\0';
-}
-
-void string::string_inner::set_length_and_sharable_force (size_type n) {
+void string::string_inner::set_length_and_sharable(size_type n) {
 //  fprintf (stderr, "inc ref cnt %d %s\n", 0, ref_data());
   ref_count = 0;
   size = n;
+  ref_data()[n] = '\0';
 }
 
 char *string::string_inner::ref_data (void) const {
@@ -105,7 +100,7 @@ char *string::string_inner::clone (size_type requested_cap) {
     memcpy (r->ref_data(), ref_data(), size);
   }
 
-  r->set_length_and_sharable (size);
+  r->set_length_and_sharable(size);
   return r->ref_data();
 }
 
@@ -129,7 +124,7 @@ void string::set_size (size_type new_size) {
   } else if (new_size > capacity()) {
     p = inner()->reserve (new_size);
   }
-  inner()->set_length_and_sharable (new_size);
+  inner()->set_length_and_sharable(new_size);
 }
 
 string::string_inner& string::empty_string (void) {
@@ -167,9 +162,7 @@ char* string::create (size_type n, char c) {
     memset (s, c, n);
   }
 
-  r->ref_count = 0;
-  r->size = n;
-  s[n] = '\0';
+  r->set_length_and_sharable(n);
   return s;
 }
 
@@ -181,10 +174,10 @@ char* string::create (size_type n, bool b) {
   string_inner *r = string_inner::create (n, 0);
 
   if (b) {
-    r->set_length_and_sharable_force (0);
+    r->ref_count = 0;
+    r->size = 0;
   } else {
-    r->set_length_and_sharable_force (n);
-    r->ref_data()[n] = '\0';
+    r->set_length_and_sharable(n);
   }
   return r->ref_data();
 }
@@ -316,7 +309,7 @@ void string::shrink (size_type n) {
       inner()->dispose();
       p = r->ref_data();
     }
-    inner()->set_length_and_sharable (n);
+    inner()->set_length_and_sharable(n);
   }
 }
 
@@ -365,8 +358,7 @@ string& string::append (const string &str) {
     reserve_at_least(len);
 
     memcpy (p + size(), str.p, n2);
-    inner()->set_length_and_sharable_force (len);
-    p[len] = '\0';
+    inner()->set_length_and_sharable(len);
   }
   return *this;
 }
@@ -383,8 +375,7 @@ string& string::append (const string& str, size_type pos2, size_type n2) {
     reserve_at_least(len);
 
     memcpy (p + size(), str.p + pos2, n2);
-    inner()->set_length_and_sharable_force (len);
-    p[len] = '\0';
+    inner()->set_length_and_sharable(len);
   }
   return *this;
 }
@@ -405,8 +396,7 @@ string& string::append (const char *s, size_type n) {
       }
     }
     memcpy (p + size(), s, n);
-    inner()->set_length_and_sharable_force (len);
-    p[len] = '\0';
+    inner()->set_length_and_sharable(len);
   }
 
   return *this;
@@ -420,8 +410,7 @@ string& string::append (size_type n, char c) {
     const size_type len = n + size();
     reserve_at_least(len);
     memset (p + size(), c, n);
-    inner()->set_length_and_sharable_force (len);
-    p[len] = '\0';
+    inner()->set_length_and_sharable(len);
   }
 
   return *this;
@@ -453,7 +442,6 @@ string& string::append (int i) {
     p[cur_pos++] = (char)(i % 10 + '0');
     i /= 10;
   } while (i > 0);
-  p[cur_pos] = '\0';
 
   dl::size_type right = cur_pos - 1;
   while (left < right) {
@@ -462,7 +450,7 @@ string& string::append (int i) {
     p[right--] = t;
   }
 
-  inner()->set_length_and_sharable_force (cur_pos);
+  inner()->set_length_and_sharable(cur_pos);
   return *this;
 }
 
@@ -500,8 +488,7 @@ void string::push_back (char c) {
   const size_type len = 1 + size();
   reserve_at_least(len);
   p[len - 1] = c;
-  inner()->set_length_and_sharable_force (len);
-  p[len] = '\0';
+  inner()->set_length_and_sharable(len);
 }
 
 
@@ -633,7 +620,7 @@ string& string::assign (const char *s, size_type n) {
     } else if (pos) {
       memmove (p, s, n);
     }
-    inner()->set_length_and_sharable (n);
+    inner()->set_length_and_sharable(n);
   }
   return *this;
 }

@@ -35,8 +35,7 @@ private:
     inline static string_inner& empty_string (void);
 
     inline bool is_shared (void) const;
-    inline void set_length_and_sharable (size_type n);
-    inline void set_length_and_sharable_force (size_type n);
+    inline void set_length_and_sharable(size_type n);
 
     inline char *ref_data (void) const;
 
