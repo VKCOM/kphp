@@ -2869,7 +2869,7 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
 
   W << "(" << BEGIN;
 
-  string arr_name = gen_unique_name ("tmp_array");
+  string arr_name = "tmp_array";
   W << TypeName (type) << " " << arr_name << " = ";
 
   //TODO: check
