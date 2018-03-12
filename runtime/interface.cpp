@@ -1569,15 +1569,14 @@ OrFalse <string> f$ini_get (const string &s) {
 
   if (!strcmp (s.c_str(), "sendmail_path")) {
     return string ("/usr/sbin/sendmail -ti", 22);
-  }
-  if (!strcmp (s.c_str(), "max_execution_time")) {
+  } else if (!strcmp (s.c_str(), "max_execution_time")) {
     return string (script_timeout);
-  }
-  if (!strcmp (s.c_str(), "memory_limit")) {
+  } else if (!strcmp (s.c_str(), "memory_limit")) {
     return f$strval ((int)dl::memory_limit);//TODO
-  }
-  if (!strcmp (s.c_str(), "include_path")) {
+  } else if (!strcmp (s.c_str(), "include_path")) {
     return string();//TODO
+  } else if (!strcmp (s.c_str(), "static-buffers-size")) {
+    return f$strval(Long(static_buffer_length_limit));
   }
 
   php_warning ("Unrecognized option %s in ini_get", s.c_str());
