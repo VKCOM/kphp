@@ -1571,7 +1571,7 @@ OrFalse <string> f$ini_get (const string &s) {
     return string ("/usr/sbin/sendmail -ti", 22);
   }
   if (!strcmp (s.c_str(), "max_execution_time")) {
-    return string ("30.0", 4);//TODO
+    return string (script_timeout);
   }
   if (!strcmp (s.c_str(), "memory_limit")) {
     return f$strval ((int)dl::memory_limit);//TODO
