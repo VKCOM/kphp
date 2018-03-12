@@ -126,7 +126,7 @@ struct rpc_client_functions rpc_client_outbound = {
   OUTBOUND CONNECTIONS
  ***/
 
-struct conn_target default_ct = {
+conn_target_t default_ct = {
   .min_connections = 2,
   .max_connections = 3,
   .type = &ct_memcache_client,
@@ -134,7 +134,7 @@ struct conn_target default_ct = {
   .reconnect_timeout = 1
 };
 
-struct conn_target db_ct = {
+conn_target_t db_ct = {
   .min_connections = 2,
   .max_connections = 3,
   .type = &ct_mysql_client,
@@ -143,7 +143,7 @@ struct conn_target db_ct = {
 };
 static int db_port = 3306;
 
-struct conn_target rpc_ct = {
+conn_target_t rpc_ct = {
   .min_connections = 2,
   .max_connections = 3,
   .type = &ct_rpc_client,
@@ -152,7 +152,7 @@ struct conn_target rpc_ct = {
 };
 
 
-struct connection *get_target_connection (struct conn_target *S, int force_flag) {
+struct connection *get_target_connection (conn_target_t *S, int force_flag) {
   struct connection *c, *d = NULL;
   int u = 10000;
   if (!S) {
@@ -170,7 +170,7 @@ struct connection *get_target_connection (struct conn_target *S, int force_flag)
   return d;
 }
 
-struct connection *get_target_connection_force (struct conn_target *S) {
+struct connection *get_target_connection_force (conn_target_t *S) {
   struct connection *res = get_target_connection (S, 0);
 
   if (res == NULL) {
@@ -181,14 +181,14 @@ struct connection *get_target_connection_force (struct conn_target *S) {
   return res;
 }
 
-int get_target_impl (struct conn_target *ct) {
+int get_target_impl (conn_target_t *ct) {
   //TODO: fix ref_cnt overflow
-  struct conn_target *res = create_target (ct, NULL);
+  conn_target_t *res = create_target (ct, NULL);
   int res_id = (int)(res - Targets);
   return res_id;
 }
 
-int get_target_by_pid (int ip, int port, struct conn_target *ct) {
+int get_target_by_pid (int ip, int port, conn_target_t *ct) {
   ct->endpoint = make_inet_sockaddr_storage(ip, port);
 
   return get_target_impl (ct);
@@ -196,15 +196,15 @@ int get_target_by_pid (int ip, int port, struct conn_target *ct) {
 
 int cur_lease_target_ip = -1;
 int cur_lease_target_port = -1;
-struct conn_target *cur_lease_target_ct = NULL;
+conn_target_t *cur_lease_target_ct = NULL;
 int cur_lease_target = -1;
 
-int get_lease_target_by_pid (int ip, int port, struct conn_target *ct) {
+int get_lease_target_by_pid (int ip, int port, conn_target_t *ct) {
   if (ip == cur_lease_target_ip && port == cur_lease_target_port && ct == cur_lease_target_ct) {
     return cur_lease_target;
   }
   if (cur_lease_target != -1) {
-    struct conn_target *old_target = &Targets[cur_lease_target];
+    conn_target_t *old_target = &Targets[cur_lease_target];
     destroy_target (old_target);
   }
   cur_lease_target_ip = ip;
@@ -215,7 +215,7 @@ int get_lease_target_by_pid (int ip, int port, struct conn_target *ct) {
   return cur_lease_target;
 }
 
-int get_target (const char *host, int port, struct conn_target *ct) {
+int get_target (const char *host, int port, conn_target_t *ct) {
   if (!(0 <= port && port < 0x10000)) {
     vkprintf (0, "bad port %d\n", port);
     return -1;
@@ -602,9 +602,9 @@ void php_worker_run_query_connect (php_worker *worker __attribute__((unused)), p
 }
 
 struct conn_query *create_pnet_query (struct connection *http_conn, struct connection *mc_conn, net_ansgen_t *gen, double finish_time);
-void create_pnet_delayed_query (struct connection *http_conn, struct conn_target *t, net_ansgen_t *gen, double finish_time);
+void create_pnet_delayed_query (struct connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time);
 int pnet_query_timeout (struct conn_query *q);
-void create_delayed_send_query (struct conn_target *t, command_t *command, 
+void create_delayed_send_query (conn_target_t *t, command_t *command, 
     double finish_time);
 
 void net_error (net_ansgen_t *ansgen, php_query_base_t *query, const char *err) {
@@ -630,7 +630,7 @@ void php_worker_run_mc_query_packet (php_worker *worker, php_net_query_packet_t 
     return;
   }
 
-  struct conn_target *target = &Targets[connection_id];
+  conn_target_t *target = &Targets[connection_id];
 
   if (target == NULL) {
     net_error (net_ansgen, (php_query_base_t *)query, "Invalid connection_id (2)");
@@ -687,7 +687,7 @@ void php_worker_run_sql_query_packet (php_worker *worker, php_net_query_packet_t
     return;
   }
 
-  struct conn_target *target = &Targets[connection_id];
+  conn_target_t *target = &Targets[connection_id];
 
   if (target == NULL) {
     net_error (net_ansgen, (php_query_base_t *)query, "Invalid connection_id (2)");
@@ -735,7 +735,7 @@ void php_worker_run_rpc_send_query (net_query_t *query) {
     on_net_event (create_rpc_error_event (slot_id, TL_ERROR_INVALID_CONNECTION_ID, "Invalid connection_id (1)", NULL));
     return;
   }
-  struct conn_target *target = &Targets[connection_id];
+  conn_target_t *target = &Targets[connection_id];
   if (target == NULL) {
     on_net_event (create_rpc_error_event (slot_id, TL_ERROR_INVALID_CONNECTION_ID, "Invalid connection_id (2)", NULL));
     return;
@@ -1664,7 +1664,7 @@ struct rpc_client_functions rpc_client_methods = {
   .rpc_close = rpcx_func_close, //replaced
 };
 
-struct conn_target rpc_client_ct = {
+conn_target_t rpc_client_ct = {
   .min_connections = 1,
   .max_connections = 1,
   //.type = &ct_rpc_client,
@@ -1725,7 +1725,7 @@ int rpct_ready (int target_fd) {
   if (target_fd == -1) {
     return -1;
   }
-  struct conn_target *target = &Targets[target_fd];
+  conn_target_t *target = &Targets[target_fd];
   struct connection *conn = get_target_connection (target, 0);
   if (conn == NULL) {
     return -2;
@@ -1738,7 +1738,7 @@ void rpct_stop_ready (int target_fd) {
   if (target_fd == -1) {
     return;
   }
-  struct conn_target *target = &Targets[target_fd];
+  conn_target_t *target = &Targets[target_fd];
   struct connection *conn = get_target_connection (target, 0);
   if (conn != NULL) {
     rpc_send_stopped (conn);
@@ -1748,7 +1748,7 @@ void rpct_lease_stats (int target_fd) {
   if (target_fd == -1) {
     return;
   }
-  struct conn_target *target = &Targets[target_fd];
+  conn_target_t *target = &Targets[target_fd];
   struct connection *conn = get_target_connection (target, 0);
   if (conn != NULL) {
     rpc_send_lease_stats (conn);
@@ -1916,7 +1916,7 @@ int rpcc_func_ready (struct connection *c) {
 
 void rpcc_stop (void) {
   if (rpc_client_target != -1) {
-    struct conn_target *target = &Targets[rpc_client_target];
+    conn_target_t *target = &Targets[rpc_client_target];
     struct connection *conn = get_target_connection (target, 0);
     if (conn != NULL) {
       rpc_send_stopped (conn);
@@ -2422,7 +2422,7 @@ int sql_query_done (struct conn_query *q) {
   return pnet_query_check (q);
 }
 
-void create_pnet_delayed_query (struct connection *http_conn, struct conn_target *t, net_ansgen_t *gen, double finish_time) {
+void create_pnet_delayed_query (struct connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
   struct conn_query *q = zmalloc (sizeof (struct conn_query));
 
   q->custom_type = 0;
@@ -2438,7 +2438,7 @@ void create_pnet_delayed_query (struct connection *http_conn, struct conn_target
   insert_conn_query_into_list (q, (struct conn_query *)t);
 }
 
-void create_delayed_send_query (struct conn_target *t, command_t *command, 
+void create_delayed_send_query (conn_target_t *t, command_t *command, 
     double finish_time) {
   struct conn_query *q = zmalloc (sizeof (struct conn_query));
 
