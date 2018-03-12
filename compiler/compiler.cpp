@@ -27,6 +27,7 @@
 #include "compiler/pass-ub.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer.h"
+#include "common/version-string.h"
 
 bool is_const (VertexPtr root) {
   if (is_const_int(root)) {
@@ -622,6 +623,14 @@ class PreprocessDefinesConcatenationF {
     PreprocessDefinesConcatenationF() {
       defines_stream.set_sink(true);
       all_fun.set_sink(true);
+
+      CREATE_VERTEX(val, op_string);
+      val->set_string(get_version_string());
+      DefineData *data = new DefineData(val, DefineData::def_php);
+      data->name = "KPHP_COMPILER_VERSION";
+      DefinePtr def_id(data);
+
+      G->register_define(def_id);
     }
 
     string get_description() {
@@ -872,6 +881,7 @@ class CollectDefinesPass : public FunctionPassBase {
     string get_description() {
       return "Collect defines";
     }
+
     VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_define || root->type() == op_define_raw) {
         VertexAdaptor <meta_op_define> define = root;
