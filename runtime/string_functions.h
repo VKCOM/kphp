@@ -202,6 +202,8 @@ int f$substr_count (const string &haystack, const string &needle, int offset = 0
 
 OrFalse<string> f$substr_replace (const string &str, const string &replacement, int start, int length = INT_MAX);
 
+OrFalse<int> f$substr_compare (const string &main_str, const string &str, int offset, int length = INT_MAX, bool case_insensitivity = false);
+
 string f$trim (const string &s, const string &what = WHAT);
 
 string f$ucfirst (const string &str);

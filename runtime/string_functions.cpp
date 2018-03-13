@@ -2185,6 +2185,34 @@ OrFalse<string> f$substr_replace (const string &str, const string &replacement, 
   return str.substr (0, start).append (replacement).append (str.substr (start + length, str.size() - (start + length)));
 }
 
+OrFalse<int> f$substr_compare (const string &main_str, const string &str, int offset, int length /* = INT_MAX */, bool case_insensitivity /* = false */) {
+  int str_len = main_str.size();
+
+  if (length < 0) {
+    php_warning("The length must be greater than or equal to zero in substr_compare function call");
+    return false;
+  }
+
+  if (offset >= str_len) {
+    php_warning("The start position cannot exceed initial string length in substr_compare function call");
+    return false;
+  }
+
+  if (offset < 0) {
+    offset += str_len;
+    if (offset < 0) {
+      php_warning("offset is too low in substr_compare function call");
+      offset = 0;
+    }
+  }
+
+  if (case_insensitivity) {
+    return strncasecmp(main_str.c_str() + offset, str.c_str(), length);
+  } else {
+    return strncmp(main_str.c_str() + offset, str.c_str(), length);
+  }
+}
+
 string f$trim (const string &s, const string &what) {
   const char *mask = get_mask (what);
 
