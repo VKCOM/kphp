@@ -529,6 +529,8 @@ void php_worker_init_script (php_worker *worker) {
       fail_connection (c, -17); // -17 for no error
       c = tmp;
     }
+    Targets[sql_target_id].next_reconnect = 0;
+    Targets[sql_target_id].next_reconnect_timeout = 0;
     create_new_connections (&Targets[sql_target_id]);
   }
 

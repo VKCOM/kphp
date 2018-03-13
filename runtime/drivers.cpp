@@ -25,8 +25,6 @@ const int MAX_INPUT_VALUE_LEN = (1 << 24);
 const string UNDERSCORE ("_", 1);
 
 
-extern var v$tg__;
-
 extern MyMemcache v$MC;
 extern MyMemcache v$MC_True;
 extern var v$config;
@@ -1937,55 +1935,23 @@ void mysql_query_callback (const char *result_, int result_len) {
 }
 
 
-extern var v$id;
-extern var v$GlobalDBQueryTime;
-extern var v$GlobalDBFetchTime;
-extern var v$InSyscheck;
-extern var v$DebugLastQuery;
-extern var v$input;
-extern var v$DisableSQLSyntaxErrorLogging;
-extern MyDB v$DB_Proxy;
-extern MyDB v$DB6666;
-extern MyDB v$DB7778;
+static MyDB DB_Proxy;
 
+db_driver::db_driver() : connection_id (-1),
+                         connected (0),
 
-static const char sql6666_host[] = "10.4.0.0";
-static const char sql7778_host[] = "127.0.0.1:3306";
-
-bool DBNoDie = false;
-
-db_driver::db_driver (int db_id): db_id (db_id),
-                                  old_failed (0),
-                                  failed (0),
-                                  return_die (false),
-
-                                  sql_host (db_id == 7778 ? sql7778_host : sql6666_host),
-
-                                  connection_id (-1),
-                                  connected (0),
-                                  is_proxy (db_id == 7778),
-                                  next_timeout_ms (0),
-
-                                  last_query_id (0),
-                                  biggest_query_id (0),
-                                  error(),
-                                  errno_ (0),
-                                  affected_rows (0),
-                                  insert_id (0),
-                                  query_results(),
-                                  cur_pos(),
-                                  field_cnt (0),
-                                  field_names() {
+                         last_query_id (0),
+                         biggest_query_id (0),
+                         error(),
+                         errno_ (0),
+                         affected_rows (0),
+                         insert_id (0),
+                         query_results(),
+                         cur_pos(),
+                         field_cnt (0),
+                         field_names() {
   cur_pos.push_back (0);
   query_results.push_back (array <array <var> > ());
-}
-
-bool db_driver::is_down (bool check_failed) {
-  if (check_failed) {
-    TRY_CALL_VOID(bool, do_connect());
-    return (connected == -1);
-  }
-  return false;
 }
 
 void db_driver::do_connect_no_log (void) {
@@ -2003,176 +1969,6 @@ void db_driver::do_connect_no_log (void) {
   connected = 1;
 }
 
-void db_driver::do_connect (void) {
-  double pconn_start = 0.0;
-
-  if (connection_id >= 0 || connected) {
-    return;
-  }
-
-  if (v$Durov.to_bool()) {
-    pconn_start = microtime_monotonic();
-  }
-  connection_id = db_proxy_connect();
-  if (v$Durov.to_bool()) {
-    drivers_SB.clean();
-    double pconn_time = microtime_monotonic() - pconn_start;
-    bool is_slow = (pconn_time > 0.01);
-
-    if (is_slow) {
-      drivers_SB += "<span class=\"_slow_\" style=\"color: #F00;\">(!)</span> ";
-    }
-    drivers_SB + "<span style=\"color: #C40\">connected to " + db_id + " in ";
-
-    char buf[100];
-    snprintf (buf, 100, "%.2fms", pconn_time * 1000);
-
-    if (is_slow) {
-      drivers_SB + "<span style=\"font-weight:bold;\">" + buf + "</span>";
-    } else {
-      drivers_SB += buf;
-    }
-
-    drivers_SB += "</span>";
-
-    string text = drivers_SB.str();
-    TRY_CALL(var, void, debugLogPlain_pointer (string ("DB", 2), text));
-  }
-
-  if (connection_id < 0) {
-    TRY_CALL(var, void, debugLog_pointer (array <var> (string ("{DB}", 4), string ("[#CC3333]", 9), string ("ERROR: Connection to db_proxy failed", 36), f$mysql_error())));
-    connected = -1;
-    return;
-  }
-  connected = 1;
-}
-
-void db_driver::set_timeout (double new_timeout) {
-  next_timeout_ms = timeout_convert_to_ms (new_timeout);
-  if (next_timeout_ms == 30001) {
-    next_timeout_ms = 30000;
-  }
-  if (next_timeout_ms < 100 || next_timeout_ms > 30000) {
-    php_warning ("Wrong timeout %.6lf specified in dbSetTimeout", new_timeout);
-  }
-}
-
-const char *db_regexp1_c = "/(select|delete|insert).*(?: from| into)\\s+([^\\s\\(]+)(?:\\s|\\(|$)/i";
-const string db_regexp1 (db_regexp1_c, (dl::size_type)strlen (db_regexp1_c));
-const char *db_regexp2_c = "/(update)(?:low_priority|ignore|\\s)+([^\\s]+)\\s+(?:set\\s.+=.+)/i";
-const string db_regexp2 (db_regexp2_c, (dl::size_type)strlen (db_regexp2_c));
-const char *db_regexp7_c = "/^\\d+\\.\\d+\\.\\d+\\.\\d+$/";
-const string db_regexp7 (db_regexp7_c, (dl::size_type)strlen (db_regexp7_c));
-
-var db_driver::query (const string &query_str) {
-  bool is_select = !strncasecmp (query_str.c_str(), "select", 6);
-
-  TRY_CALL_VOID(var, do_connect());
-  if (connected < 0) {
-    failed++;
-    return false;
-  }
-
-  int cur_timeout_ms = 3000;
-  drivers_SB.clean();
-  if (next_timeout_ms > 0) {
-    cur_timeout_ms = next_timeout_ms;
-
-    char buf[100];
-    snprintf (buf, 100, "/*? TIMEOUT %.1lf */ ", cur_timeout_ms * 0.001);
-    drivers_SB += buf;
-    next_timeout_ms = 0;
-  }
-
-  drivers_SB += query_str;
-
-  if (!is_select && !v$InSyscheck) {
-    int user_id = f$intval (v$id);
-    drivers_SB += " /* ";
-    drivers_SB += user_id;
-    drivers_SB += ' ';
-    drivers_SB += v$_SERVER.get_value (string ("HTTP_X_REAL_IP", 14));
-    drivers_SB += ' ';
-    drivers_SB += v$config.get_value (string ("this_server", 11));
-    drivers_SB += " */";
-  }
-  string query_string = drivers_SB.str();
-
-  double query_start = microtime_monotonic();
-
-  v$DebugLastQuery = query_string;
-  bool query_id = mysql_query (query_string);
-  int real_query_id = biggest_query_id;
-
-  double query_time = microtime_monotonic() - query_start;
-  char buf[100];
-  int len = snprintf (buf, 100, "%.2fms", query_time * 1000);
-  php_assert (len < 100);
-  string query_time_str (buf, len);
-  string query_time_plain = query_time_str;
-
-  drivers_SB.clean();
-  string text_plain;
-  if (v$Durov.to_bool()) {
-    v$GlobalDBQueryTime += query_time;
-
-    var table;
-    if (f$preg_match (db_regexp1, query_string, table).val() ||
-        f$preg_match (db_regexp2, query_string, table).val()) {
-      drivers_SB += table[1];
-      drivers_SB += " query to &quot;";
-      drivers_SB += table[2];
-      drivers_SB += "&quot; (";
-      drivers_SB += db_id;
-      drivers_SB += ") in ";
-    } else {
-      drivers_SB += "query to ";
-      drivers_SB += db_id;
-      drivers_SB += " in ";
-    }
-    drivers_SB += query_time_str;
-    text_plain = drivers_SB.str();
-
-    string text;
-    if (query_time > 0.01) {
-      const char *text_c_str = "<span class=\"_slow_\" style=\"color: #F00\">(!)</span> ";
-      text.assign (text_c_str, (dl::size_type)strlen (text_c_str));
-      query_time_str = (drivers_SB.clean() + "<span style=\"font-weight:bold;\">" + query_time_str + "</span>").str();
-    }
-    text.append ("<span style=\"color: #C40\">", 26);
-    text.append (text_plain);
-    text.append (query_time_str);
-    text.append ("</span>", 7);
-
-    TRY_CALL(var, var, debugLogPlain_pointer (string ("DB", 2), text));
-    TRY_CALL(var, var, dLog_pointer (f$arrayval (f$str_replace (string ("&quot;", 6), string ("\"", 1), text_plain))));
-
-    if (v$config.get_value (string ("debug_server_log_queries", 24)).to_bool()) {
-      TRY_CALL(var, var, debugServerLog_pointer (f$arrayval (f$str_replace (string ("&quot;", 6), string ("\"", 1), text_plain))));
-    }
-  }
-
-  bool fail_logged = false;
-  // Log queries that fails by db_proxy timeout
-  if (query_time >= cur_timeout_ms * 0.001 - 0.01) {
-    string mc_key_db_timeout_fail = (drivers_SB.clean() + "^db_timeout_fail_" + f$rand (0, 5000 - 1)).str();
-    string additional_log_info = (drivers_SB.clean() + "[" + f$date (string ("Y-m-d H:i:s", 11)) + "] ").str();
-    f$memcached_set (v$MC, mc_key_db_timeout_fail, (drivers_SB.clean() + additional_log_info + query_string).str(), 0, 86400);
-
-    TRY_CALL (var, var, dbParseQueryOnFatal_pointer (query_string, query_time, (drivers_SB.clean () + text_plain + '|' + additional_log_info).str (), 1));
-    fail_logged = true;
-  }
-  if (query_time >= cur_timeout_ms * 0.000333 || query_time > 1.0) {
-    fprintf (stderr, "%35sLONG query to MySQL (len = %d, time = %.3lf): %.*s\n", "", (int)query_string.size(), query_time, 1000, query_string.c_str());
-  }
-
-  if (!query_id) {
-    TRY_CALL_VOID(var, fatal_error (string ("mySQL query error", 17), query_string, false, query_time, fail_logged));
-  }
-
-  return last_query_id = real_query_id;
-}
-
 var db_driver::mysql_query_update_last (const string &query_string) {
   bool query_id = mysql_query (query_string);
   if (!query_id) {
@@ -2181,47 +1977,6 @@ var db_driver::mysql_query_update_last (const string &query_string) {
   return last_query_id = biggest_query_id;
 }
 
-
-OrFalse <array <var> > db_driver::fetch_row (const var &query_id_var) {
-  if (connected < 0) {
-    return false;
-  }
-
-  int query_id;
-  if (!query_id_var.is_bool() && !query_id_var.is_int()) {
-    php_warning ("Query_id has type %s, replacing with last_query_id", query_id_var.get_type_c_str());
-    query_id = -1;
-  } else {
-    query_id = query_id_var.to_int();
-  }
-
-  if (!query_id) {
-    return false;
-  }
-
-  if (query_id == -1) {
-    query_id = last_query_id;
-  }
-
-  double query_start = 0.0;
-  if (v$Durov.to_bool()) {
-    query_start = microtime_monotonic();
-  }
-
-  OrFalse <array <var> > res = mysql_fetch_array (query_id);
-
-  if (v$Durov.to_bool()) {
-    double query_time = microtime_monotonic() - query_start;
-    v$GlobalDBFetchTime += query_time;
-    if (query_time > 0.01) {
-      char buf[100];
-      snprintf (buf, 100, "%.2fms", query_time * 1000);
-      TRY_CALL(var, bool, debugLogPlain_pointer (string ("DB", 2), (drivers_SB.clean() + "<span class='_slow_' style='color: #F00'>(!)</span> <span style='color: #C40'>slow fetch_row to " + db_id + " in <span style=\"font-weight:bold;\">" + buf + "</span></span>").str()));
-    }
-  }
-
-  return res;
-}
 
 int db_driver::get_affected_rows (void) {
   if (connected < 0) {
@@ -2242,124 +1997,6 @@ int db_driver::get_insert_id (void) {
     return -1;
   }
   return insert_id;
-}
-
-void db_driver::fatal_error (const string &the_error, const string &query, bool quiet, double query_time, bool fail_logged) {
-  string error = f$mysql_error();
-  int error_no = f$mysql_errno();
-
-  int this_server = v$config[string ("this_server", 11)].to_int();
-  string console_colors ("console_colors", 14);
-  string w ("w", 1);
-  string r ("r", 1);
-  string c ("c", 1);
-  string x ("x", 1);
-  if (this_server == 7777) {
-    TRY_CALL(var, void, debugServerLogS_pointer (f$arrayval ((drivers_SB.clean() + v$config[console_colors][w] + query + ' ' + v$config[console_colors][r] + '[' + string (query_time) + "ms] " + v$config[console_colors][c] + ')' + error + v$config[console_colors][x]).str())));
-  }
-  TRY_CALL(var, void, dLog_pointer (f$arrayval ((drivers_SB.clean() + v$config[console_colors][w] + query + ' ' + v$config[console_colors][r] + '[' + string (query_time) + "ms] " + v$config[console_colors][c] + error + v$config[console_colors][x]).str())));
-
-  if (v$InSyscheck.to_bool()) {
-    failed++;
-    return;
-  }
-
-  const array <var> not_parsed_backtrace = f$debug_backtrace();
-  string outF = (drivers_SB.clean() + the_error + ": " + query + "\nmySQL error: " + error + "\n" + "mySQL error code: " + error_no +
-      "\n" + "Date: " + f$date (string ("l dS \\of F Y h:i:s A", 20)) + "\n" + "IP: " + v$_SERVER[string ("HTTP_X_REAL_IP", 14)] + "\n" + "Server: " +
-      sql_host + "\n" + "Backtrace: " + TRY_CALL(string, void, parse_backtrace_pointer (not_parsed_backtrace, true)) + "\n\n").str();
-  outF = f$htmlspecialchars (outF);
-
-  if (!f$boolval (v$tg__)) {
-    if (!v$DisableSQLSyntaxErrorLogging) {
-// 1045 - our timeout errors
-// 1053 - server shutdown in progress
-// 1213 - deadlock found when trying to get lock; try restarting transaction
-// input_ip for jabber, for example
-      if (error_no != 1045 && error_no != 1053 && error_no != 1213) {
-        string mc_key = (this_server == 7777) ? string ("mysql_error_flood_dev", 21) : string ("mysql_error_flood", 17);
-        if (f$memcached_add (v$MC, (drivers_SB.clean() + mc_key + f$rand (100, 999)).str(), 1, 0, 1)) {
-          if (f$memcached_add (v$MC, (drivers_SB.clean() + mc_key + f$rand (10, 99)).str(), 1, 0, 2)) {
-            if (f$memcached_add (v$MC, (drivers_SB.clean() + mc_key + f$rand (0, 9)).str(), 1, 0, 3)) {
-              int dev_server = (this_server == 7777) ? 1 : 0;
-              if (error_no == 1062) { // Duplicate entry .. for key ..
-                dev_server += 10;
-              }
-
-              v$DisableSQLSyntaxErrorLogging = true;
-
-              //TODO rewrite this ugly code
-              var matches;
-              array <var> dba = array <var> (array_size (0, 13, false));
-              dba.set_value (string ("php_server", 10), this_server);
-              dba.set_value (string ("dev_server", 10), dev_server);
-              dba.set_value (string ("date"      ,  4), (int)time (NULL));
-              dba.set_value (string ("code"      ,  4), error_no);
-              dba.set_value (string ("sql_server", 10), string (sql_host, (dl::size_type)strlen (sql_host)));
-              dba.set_value (string ("query_str" ,  9), f$substr (query, 0, 4096));
-              dba.set_value (string ("msg_str"   ,  7), f$substr (error, 0, 4096));
-              dba.set_value (string ("backtrace" ,  9), TRY_CALL(string, void, parse_backtrace_pointer (not_parsed_backtrace, false)));
-              dba.set_value (string ("ip"        ,  2), f$ip2ulong (v$_SERVER[string ("HTTP_X_REAL_IP", 14)].to_string()));
-              dba.set_value (string ("input_ip"  ,  8), f$preg_match (db_regexp7, v$input[string ("ip", 2)].to_bool() ? f$strval (val (f$ip2ulong (v$input[string ("ip", 2)].to_string()))) : string ("0", 1), matches));
-              dba.set_value (string ("front"     ,  5), f$ip2ulong (v$_SERVER[string ("REMOTE_ADDR", 11)].to_string()));
-              dba.set_value (string ("port"      ,  4), f$intval (v$_SERVER[string ("HTTP_X_REAL_PORT", 16)]));
-              dba.set_value (string ("ua_hash"   ,  7), TRY_CALL(var, void, uaHash_pointer (v$_SERVER[string ("HTTP_USER_AGENT", 15)].to_string())));
-
-              array <string> field_names, field_values;
-              for (array <var>::iterator it = dba.begin(); it != dba.end(); ++it) {
-                field_names.push_back ((drivers_SB.clean() + '`' + it.get_key() + '`').str());
-                field_values.push_back ((drivers_SB.clean() + '\'' + f$addslashes (it.get_value().to_string()) + '\'').str());
-              }
-              TRY_CALL(var, void, db_query (v$DB_Proxy, (drivers_SB.clean() + "INSERT INTO sql_syntax_errors (" + f$implode (COLON, field_names) + ") VALUES (" + f$implode (COLON, field_values) + ")").str()));
-            }
-          }
-        }
-      }
-    }
-
-    FILE *fp = NULL;
-    if (this_server == 7777) {
-      if (!f$in_array (f$strstr (v$_SERVER[string ("HTTP_HOST", 9)].to_string(), DOT, true), v$config[string ("debug_server_log_domains", 24)].as_array ("in_array", 2), true)) {
-        fp = fopen ("../../tmp/xz3456.php", "a");
-      }
-    } else {
-      fp = fopen ("/var/www/vkontakte/data/www/xz3456.php", "a");
-    }
-    if (fp) {
-      fprintf (fp, "%s", outF.c_str());
-      fclose (fp);
-    }
-
-    if (!f$boolval (v$tg__)) {
-      if (strstr (outF.c_str(), "SQL syntax") != NULL || strstr (outF.c_str(), "Unknown column") != NULL) {
-        string msg_text = error;
-        php_warning ("%s", msg_text.c_str());
-        array <var> options;
-        options.set_value (string ("flood_key", 9), (drivers_SB.clean() + "sql_error" + f$md5 (msg_text)).str());
-        options.set_value (string ("flood", 5), string ("1/10", 4));
-        TRY_CALL(bool, void, adminNotifyPM_pointer (msg_text, string ("_developer", 10), options));
-      }
-    }
-  }
-
-  if (!fail_logged) {
-    TRY_CALL (var, void, dbParseQueryOnFatal_pointer (query, query_time, outF, 2));
-  }
-
-  if (DBNoDie || return_die || quiet) {
-    failed++;
-    return;
-  }
-
-  f$setDbNoDie();
-
-  if (f$boolval (v$tg__)) {
-    TRY_CALL(var, void, apiWrapError_pointer (500, string ("DATABASE_QUERY_FAILED", 21), false));//TODO ERROR_INTERNAL === 500
-    f$exit (0);
-  }
-
-  TRY_CALL(var, void, adminFatalErrorExit_pointer());
-  f$exit (0);
 }
 
 bool db_driver::mysql_query (const string &query) {
@@ -2427,22 +2064,6 @@ OrFalse <array <var> > db_driver::mysql_fetch_array (int query_id) {
 }
 
 
-bool db_is_down (const MyDB &db, bool check_failed) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->is_down");
-    return false;
-  }
-  return db.db->is_down (check_failed);
-}
-
-void db_do_connect (const MyDB &db) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->do_connect");
-    return;
-  }
-  return db.db->do_connect();
-}
-
 void db_do_connect_no_log (const MyDB &db) {
   if (db.db == NULL) {
     php_warning ("DB object is NULL in DB->do_connect");
@@ -2451,39 +2072,12 @@ void db_do_connect_no_log (const MyDB &db) {
   return db.db->do_connect_no_log();
 }
 
-
-void db_set_timeout (const MyDB &db, double new_timeout) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->set_timeout");
-    return;
-  }
-  return db.db->set_timeout (new_timeout);
-}
-
-var db_query (const MyDB &db, const string &query) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->query");
-    return false;
-  }
-  return db.db->query (query);
-}
-
 var db_mysql_query (const MyDB &db, const string &query) {
   if (db.db == NULL) {
     php_warning ("DB object is NULL in DB->mysql_query");
     return false;
   }
   return db.db->mysql_query_update_last (query);
-}
-
-
-
-OrFalse <array <var> > db_fetch_row (const MyDB &db, const var &query_id_var) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->fetch_row");
-    return false;
-  }
-  return db.db->fetch_row (query_id_var);
 }
 
 int db_get_affected_rows (const MyDB &db) {
@@ -2514,12 +2108,12 @@ int db_get_insert_id (const MyDB &db) {
   return db.db->get_insert_id();
 }
 
-OrFalse< array< var > > db_fetch_array(const MyDB& db, const var &query_id_var) {
+OrFalse< array< var > > db_fetch_array(const MyDB &db, int query_id) {
   if (db.db == NULL) {
     php_warning ("DB object is NULL in DB->get_insert_id");
     return false;
   }
-  return db.db->mysql_fetch_array(f$intval(query_id_var));
+  return db.db->mysql_fetch_array(query_id);
 }
 
 
@@ -2572,227 +2166,65 @@ MyDB::MyDB (void): bool_value(),
                    db (NULL) {
 }
 
-
-bool f$dbIsDown (bool check_failed) {
-  return db_is_down (v$DB_Proxy, check_failed);
-}
-
-bool f$dbUseMaster (const string &table_name) {
-  static char GlobalDbTablesMaster_storage[sizeof (array <bool>)];
-  static array <bool> *GlobalDbTablesMaster = reinterpret_cast <array <bool> *> (GlobalDbTablesMaster_storage);
-
-  static long long last_query_num = -1;
-  if (dl::query_num != last_query_num) {
-    new (GlobalDbTablesMaster_storage) array <bool>();
-    last_query_num = dl::query_num;
+string f$mysqli_error(const MyDB &db) {
+  if (db.db == NULL) {
+    php_warning ("DB object is NULL in f$mysqli_error");
+    return string();
   }
+  return db.db->error;
+}
 
-  if (table_name.empty()) {
-    return false;
+int f$mysqli_errno(const MyDB &db) {
+  if (db.db == NULL) {
+    php_warning ("DB object is NULL in f$mysqli_errno");
+    return 0;
   }
-  if (GlobalDbTablesMaster->isset (table_name)) {
-    return GlobalDbTablesMaster->get_value (table_name);
-  }
-  if (TRY_CALL(bool, bool, db_is_down (v$DB_Proxy))) {
-    return false;
-  }
-  bool old_return_die = v$DB_Proxy.db->return_die;
-  int old_failed = v$DB_Proxy.db->failed;
-  v$DB_Proxy.db->return_die = true;
-  TRY_CALL(var, bool, db_query (v$DB_Proxy, (drivers_SB.clean() + "/*? UPDATE " + table_name + " */ SELECT 1 FROM " + table_name + " LIMIT 0").str()));
-  bool is_ok = !(v$DB_Proxy.db->failed > old_failed);
-  v$DB_Proxy.db->return_die = old_return_die;
-  GlobalDbTablesMaster->set_value (table_name, is_ok);
-  return is_ok;
+  return db.db->errno_;
 }
 
-bool f$dbIsTableDown (const string &table_name) {
-  static char GlobalDbTablesDown_storage[sizeof (array <bool>)];
-  static array <bool> *GlobalDbTablesDown = reinterpret_cast <array <bool> *> (GlobalDbTablesDown_storage);
-
-  static long long last_query_num = -1;
-  if (dl::query_num != last_query_num) {
-    new (GlobalDbTablesDown_storage) array <bool>();
-    last_query_num = dl::query_num;
-  }
-
-  if (table_name.empty()) {
-    return false;
-  }
-  if (GlobalDbTablesDown->isset (table_name)) {
-    return GlobalDbTablesDown->get_value (table_name);
-  }
-  if (TRY_CALL(bool, bool, db_is_down (v$DB_Proxy))) {
-    return true;
-  }
-  bool old_return_die = v$DB_Proxy.db->return_die;
-  int old_failed = v$DB_Proxy.db->failed;
-  v$DB_Proxy.db->return_die = true;
-  TRY_CALL(var, bool, db_query (v$DB_Proxy, (drivers_SB.clean() + "/*? UPDATE " + table_name + " */ SELECT 1 FROM " + table_name + " LIMIT 0").str()));
-  bool is_down = (v$DB_Proxy.db->failed > old_failed);
-  v$DB_Proxy.db->return_die = old_return_die;
-  GlobalDbTablesDown->set_value (table_name, is_down);
-  return is_down;
-}
-
-void f$dbSetTimeout (double new_timeout) {
-  db_set_timeout (v$DB_Proxy, new_timeout);
-}
-
-bool f$dbGetReturnDie (void) {
-  return v$DB_Proxy.db->return_die;
-}
-
-void f$dbSetReturnDie (bool return_die) {
-  v$DB_Proxy.db->return_die = return_die;
-}
-
-bool f$dbFailed (void) {
-  return v$DB_Proxy.db->failed;
-}
-
-var f$dbQuery_internal (const string &the_query) {
-  return db_query (v$DB_Proxy, the_query);
-}
-
-var f$dbQueryTry (const string &the_query, int tries_count) {
-  var result = false;
-  for (int i_try = 0; i_try < tries_count; i_try++) {
-    if (i_try != 0) {
-      int sleep_time = (i_try - 1) * 20 + 30;
-      f$sleep (sleep_time);
-    }
-    bool db_old_failed = f$dbFailed();
-    f$dbSetTimeout (30);
-    var query_result = TRY_CALL(var, var, f$dbQuery_internal (the_query));
-    if (neq2 (query_result, false) && f$dbFailed() == db_old_failed) {
-      result = query_result;
-      break;
-    }
-  }
-  return result;
-}
-
-OrFalse <array <var> > f$dbFetchRow (const var &query_id_var) {
-  return db_fetch_row (v$DB_Proxy, query_id_var);
-}
-
-int f$dbAffectedRows (void) {
-  return db_get_affected_rows (v$DB_Proxy);
-}
-
-int f$dbNumRows (void) {
-  return db_get_num_rows (v$DB_Proxy);
-}
-
-void f$dbSaveFailed (void) {
-  v$DB_Proxy.db->old_failed = v$DB_Proxy.db->failed;
-}
-
-bool f$dbHasFailed (void) {
-  return (v$DB_Proxy.db->failed > v$DB_Proxy.db->old_failed);
-}
-
-int f$dbInsertedId (void) {
-  return db_get_insert_id (v$DB_Proxy);
-}
-
-int f$dbId (void) {
-  return v$DB_Proxy.db->db_id;
-}
-
-
-string f$mysql_error (void) {
-  return v$DB_Proxy.db->error;
-}
-
-int f$mysql_errno (void) {
-  return v$DB_Proxy.db->errno_;
-}
-
-
-void f$setDbNoDie (bool no_die) {
-  DBNoDie = no_die;
-}
-
-
-void f$dbDeclare (int dn) {
-  if (dn == 6666) {
-    void *buf = dl::allocate (sizeof (db_driver));
-    v$DB6666 = MyDB (new (buf) db_driver (6666));
-  } else if (dn == 7778) {
-    void *buf = dl::allocate (sizeof (db_driver));
-    v$DB7778 = MyDB (new (buf) db_driver (7778));
-  } else {
-    php_warning ("Wrong DB number %d specified to dbDeclare", dn);
-  }
-}
-
-MyDB f$new_db_decl (int dn) {
-  if (dn == 6666) {
-    void *buf = dl::allocate (sizeof (db_driver));
-    return MyDB (new (buf) db_driver (6666));
-  } else if (dn == 7778) {
-    void *buf = dl::allocate (sizeof (db_driver));
-    return MyDB (new (buf) db_driver (7778));
-  } else {
-    php_warning ("Wrong DB number %d specified to new db_decl", dn);
-    return v$DB_Proxy;
-  }
-}
-
-
-int f$mysql_affected_rows(const MyDB& dn){
+int f$mysqli_affected_rows(const MyDB &dn){
   return db_get_affected_rows(dn);
 }
 
-OrFalse <array <var> > f$mysql_fetch_array(const var& query_id_var){
-  return db_fetch_array(v$DB_Proxy, query_id_var);
+OrFalse< array <var> > f$mysqli_fetch_array(int query_id_var, int result_type) {
+  if (result_type != 1) {
+    php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
+  }
+  return db_fetch_array(DB_Proxy, query_id_var);
 }
 
-int f$mysql_insert_id(const MyDB& dn){
+int f$mysqli_insert_id(const MyDB &dn){
   return db_get_insert_id(dn);
 }
 
-int f$mysql_num_rows(const var& query_id_var){
-  return db_get_num_rows(v$DB_Proxy, f$intval(query_id_var));
+int f$mysqli_num_rows(int query_id){
+  return db_get_num_rows(DB_Proxy, query_id);
 }
 
-var f$mysql_query(string query, const MyDB& dn){
+var f$mysqli_query(const MyDB &dn, const string &query) {
   return db_mysql_query(dn, query);
 }
 
-bool f$mysql_pconnect_db_proxy(const MyDB& dn){
-  db_do_connect_no_log(dn);
-  return !db_is_down(dn, 0);
+MyDB f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __attribute__((unused))) {
+  if (!f$boolval(DB_Proxy)) {
+    void *buf = dl::allocate (sizeof (db_driver));
+    DB_Proxy = MyDB (new(buf) db_driver());
+  }
+  db_do_connect_no_log(DB_Proxy);
+  if (DB_Proxy.db->connection_id >= 0 || DB_Proxy.db->connected) {
+    return DB_Proxy;
+  } else {
+    return MyDB(false);
+  }
+}
+
+bool f$mysqli_select_db(const MyDB &dn __attribute__((unused)), const string& name __attribute__((unused))) {
+  return true;
 }
 
 
-var adminFatalErrorExit_pointer_dummy (void) {
-  return var();
-}
 
 var base128DecodeMixed_pointer_dummy (var str __attribute__((unused))) {
-  return var();
-}
-
-string parse_backtrace_pointer_dummy (array <var> raw __attribute__((unused)), bool fun_args __attribute__((unused)) = true) {
-  return string();
-}
-
-var apiWrapError_pointer_dummy (var error_code __attribute__((unused)), var error_description __attribute__((unused)), Exception exception __attribute__((unused))) {
-  return var();
-}
-
-bool adminNotifyPM_pointer_dummy (string message __attribute__((unused)), var chat_name __attribute__((unused)), var options __attribute__((unused))) {
-  return false;
-}
-
-var dbParseQueryOnFatal_pointer_dummy (string query __attribute__((unused)), double query_time __attribute__((unused)), string message __attribute__((unused)), int place __attribute__((unused))) {
-  return var();
-}
-
-var uaHash_pointer_dummy (string user_agent __attribute__((unused))) {
   return var();
 }
 
@@ -2805,33 +2237,14 @@ var debugLogPlain_pointer_dummy (string section __attribute__((unused)), string 
 }
 
 
-var (*adminFatalErrorExit_pointer) (void) = adminFatalErrorExit_pointer_dummy;
-
 var (*base128DecodeMixed_pointer) (var str) = base128DecodeMixed_pointer_dummy;
 
-string (*parse_backtrace_pointer) (array <var> raw, bool fun_args) = parse_backtrace_pointer_dummy;
-
-var (*apiWrapError_pointer) (var error_code, var error_description, Exception exception) = apiWrapError_pointer_dummy;
-
-bool (*adminNotifyPM_pointer) (string message, var chat_name, var options) = adminNotifyPM_pointer_dummy;
-
-var (*dbParseQueryOnFatal_pointer) (string query, double query_time, string message, int place) = dbParseQueryOnFatal_pointer_dummy;
-
-var (*uaHash_pointer) (string user_agent) = uaHash_pointer_dummy;
-
-var (*dLog_pointer) (array <var>) = dLog_pointer_dummy;
-
-var (*debugLog_pointer) (array <var>) = dLog_pointer_dummy;
-
 var (*debugServerLog_pointer) (array <var>) = dLog_pointer_dummy;
-
-var (*debugServerLogS_pointer) (array <var>) = dLog_pointer_dummy;
 
 var (*debugLogPlain_pointer) (string section, string text) = debugLogPlain_pointer_dummy;
 
 
 //temporary
-var v$tg__ __attribute__ ((weak));
 
 MyMemcache v$MC __attribute__ ((weak));
 MyMemcache v$MC_True __attribute__ ((weak));
@@ -2840,20 +2253,7 @@ var v$Durov __attribute__ ((weak));
 var v$FullMCTime __attribute__ ((weak));
 var v$KPHP_MC_WRITE_STAT_PROBABILITY __attribute__ ((weak));
 
-var v$id __attribute__ ((weak));
-var v$GlobalDBQueryTime __attribute__ ((weak));
-var v$GlobalDBFetchTime __attribute__ ((weak));
-var v$InSyscheck __attribute__ ((weak));
-var v$DebugLastQuery __attribute__ ((weak));
-var v$input __attribute__ ((weak));
-var v$DisableSQLSyntaxErrorLogging __attribute__ ((weak));
-MyDB v$DB_Proxy __attribute__ ((weak));
-MyDB v$DB6666 __attribute__ ((weak));
-MyDB v$DB7778 __attribute__ ((weak));
-
 void drivers_init_static (void) {
-  INIT_VAR(var, v$tg__);
-
   INIT_VAR(MyMemcache, v$MC);
   INIT_VAR(MyMemcache, v$MC_True);
   INIT_VAR(var, v$config);
@@ -2861,16 +2261,7 @@ void drivers_init_static (void) {
   INIT_VAR(var, v$FullMCTime);
   INIT_VAR(var, v$KPHP_MC_WRITE_STAT_PROBABILITY);
 
-  INIT_VAR(var, v$id);
-  INIT_VAR(var, v$GlobalDBQueryTime);
-  INIT_VAR(var, v$GlobalDBFetchTime);
-  INIT_VAR(var, v$InSyscheck);
-  INIT_VAR(var, v$DebugLastQuery);
-  INIT_VAR(var, v$input);
-  INIT_VAR(var, v$DisableSQLSyntaxErrorLogging);
-  INIT_VAR(MyDB, v$DB_Proxy);
-  INIT_VAR(MyDB, v$DB6666);
-  INIT_VAR(MyDB, v$DB7778);
+  INIT_VAR(MyDB, DB_Proxy);
 
   INIT_VAR(const char *, mc_method);
   INIT_VAR(bool, mc_bool_res);
@@ -2882,14 +2273,9 @@ void drivers_init_static (void) {
 
   drivers_cpp_filename = string("drivers.cpp", 11);
   drivers_h_filename = string("drivers.h", 9);
-
-
-  DBNoDie = false;
 }
 
 void drivers_free_static (void) {
-  CLEAR_VAR(var, v$tg__);
-
   CLEAR_VAR(MyMemcache, v$MC);
   CLEAR_VAR(MyMemcache, v$MC_True);
   CLEAR_VAR(var, v$config);
@@ -2897,16 +2283,7 @@ void drivers_free_static (void) {
   CLEAR_VAR(var, v$FullMCTime);
   CLEAR_VAR(car, v$KPHP_MC_WRITE_STAT_PROBABILITY);
 
-  CLEAR_VAR(var, v$id);
-  CLEAR_VAR(var, v$GlobalDBQueryTime);
-  CLEAR_VAR(var, v$GlobalDBFetchTime);
-  CLEAR_VAR(var, v$InSyscheck);
-  CLEAR_VAR(var, v$DebugLastQuery);
-  CLEAR_VAR(var, v$input);
-  CLEAR_VAR(var, v$DisableSQLSyntaxErrorLogging);
-  CLEAR_VAR(MyDB, v$DB_Proxy);
-  CLEAR_VAR(MyDB, v$DB6666);
-  CLEAR_VAR(MyDB, v$DB7778);
+  CLEAR_VAR(MyDB, DB_Proxy);
 
   CLEAR_VAR(string, drivers_cpp_filename);
   CLEAR_VAR(string, drivers_h_filename);

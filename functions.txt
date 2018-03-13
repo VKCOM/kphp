@@ -28,8 +28,6 @@ $_ENV ::: var;
 $argc ::: var;
 $argv ::: var;
 
-$tg__ ::: var;
-
 $MC ::: MC;
 $MC_True ::: MC;
 $config ::: var;
@@ -37,31 +35,11 @@ $Durov ::: var;
 $FullMCTime ::: var;
 $KPHP_MC_WRITE_STAT_PROBABILITY ::: var;
 
-$id ::: var;
-$GlobalDBQueryTime ::: var;
-$GlobalDBFetchTime ::: var;
-$InSyscheck ::: var;
-$DebugLastQuery ::: var;
-$input ::: var;
-$DisableSQLSyntaxErrorLogging ::: var;
-$DB_Proxy ::: DB;
-$DB6666 ::: DB;
-$DB7778 ::: DB;
 
 
-
-extern_function adminFatalErrorExit() ::: var;
 extern_function base128DecodeMixed ($str ::: var) ::: var;
-extern_function parse_backtrace ($raw ::: array, $fun_args ::: bool = true) ::: string;
-extern_function apiWrapError ($error_code ::: var = false, $error_description ::: var = '', $exception ::: Exception = false) ::: var;
-extern_function adminNotifyPM ($message ::: string, $chat_name ::: var = 'code_errors', $options ::: var = array('flood' => '1/60')) ::: bool;
-extern_function dbParseQueryOnFatal ($query ::: string, $query_time ::: float, $message ::: string, $place ::: int) ::: var;
-extern_function uaHash ($user_agent ::: string) ::: var;
 extern_function debugLogPlain ($section ::: string, $text ::: string) ::: var;
-extern_function dLog (...);
-extern_function debugLog (...);
 extern_function debugServerLog (...);
-extern_function debugServerLogS (...);
 
 
 function ob_clean() ::: void;
@@ -465,20 +443,23 @@ function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: 
 function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
 function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: int;
 
-function mysql_errno() ::: int;
-function mysql_error() ::: string;
+function mysqli_errno($dn ::: DB) ::: int;
+function mysqli_error($dn ::: DB) ::: string;
 
-function mysql_affected_rows($dn ::: DB) ::: int;
-function mysql_fetch_array($qid ::: var) ::: OrFalse <array <var> >; // should be used for DbProxy only
-function mysql_insert_id($dn ::: DB) ::: int;
-function mysql_num_rows($query_id ::: var) ::: int; // should be used for DbProxy only
-function mysql_query($query ::: string, $dn ::: DB) ::: var;
-function mysql_pconnect_db_proxy($dn ::: DB) ::: bool;
+define('MYSQLI_ASSOC', 1);
+
+function mysqli_affected_rows($dn ::: DB) ::: int;
+function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: OrFalse <array <var> >;
+function mysqli_insert_id($dn ::: DB) ::: int;
+function mysqli_num_rows($query_id ::: int) ::: int;
+function mysqli_query($dn ::: DB, $query ::: string) ::: var;
+function vk_mysqli_connect($host ::: string, $port ::: int) ::: DB;
+function mysqli_select_db($dn ::: DB, $name ::: string) ::: bool;
 
 
 function function_exists ($func_name ::: Any) ::: bool;
 
-define(FILE_APPEND, 1);
+define('FILE_APPEND', 1);
 
 function basename ($name ::: string, $suffix ::: string = '') ::: string;
 function chmod ($name ::: string, $mode ::: int) ::: bool;
@@ -548,32 +529,6 @@ function memcached_pconnect ($MC ::: MC, $host ::: string, $port ::: int = 11211
 function memcached_rpc_connect ($MC ::: MC, $host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 function mcGetStats ($MC ::: MC) ::: array <int>;
 function mcGetClusterSize ($MC ::: MC) ::: int;
-
-/** SQL **/
-function dbIsDown ($check_failed ::: bool = true) throws ::: bool;
-function dbUseMaster ($table_name ::: string) throws ::: bool;
-function dbIsTableDown ($table_name ::: string) throws ::: bool;
-function dbUseMasterAll ($tables_names ::: array) throws ::: bool;
-function dbIsTableDownAll ($tables_names ::: array) throws ::: bool;
-function dbSetTimeout ($new_timeout ::: float) ::: void;
-function dbGetReturnDie() ::: bool;
-function dbSetReturnDie ($return_die ::: bool = true) ::: void;
-function dbFailed() ::: bool;
-function dbQuery_internal ($the_query ::: string) throws ::: var;
-function dbQueryTry ($the_query ::: string, $tries_count ::: int = 3) throws ::: var;
-function dbFetchRow ($query_id ::: var = -1) throws ::: OrFalse <array <var> >;
-function dbAffectedRows() ::: int;
-function dbNumRows() ::: int;
-function dbSaveFailed() ::: void;
-function dbHasFailed() ::: bool;
-function dbInsertedId() ::: int;
-function dbInsertString ($data ::: array, $no_escape ::: bool = false) ::: array <string>;
-function dbUpdateString ($data ::: array) ::: string;
-function dbId() ::: int;
-
-function setDbNoDie ($no_die ::: bool = true) ::: void;
-function dbDeclare ($dn ::: int) ::: void;
-function new_db_decl ($dn ::: int) ::: DB;
 
 /** vkext **/
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;

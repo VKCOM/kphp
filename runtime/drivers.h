@@ -9,17 +9,8 @@
 void drivers_init_static (void);
 void drivers_free_static (void);
 
-extern var (*adminFatalErrorExit_pointer) (void);
 extern var (*base128DecodeMixed_pointer) (var str);
-extern string (*parse_backtrace_pointer) (array <var> raw, bool fun_args);
-extern var (*apiWrapError_pointer) (var error_code, var error_description, Exception exception);
-extern bool (*adminNotifyPM_pointer) (string message, var chat_name, var options);
-extern var (*dbParseQueryOnFatal_pointer) (string query, double query_time, string message, int place);
-extern var (*uaHash_pointer) (string user_agent);
-extern var (*dLog_pointer) (array <var>);
-extern var (*debugLog_pointer) (array <var>);
 extern var (*debugServerLog_pointer) (array <var>);
-extern var (*debugServerLogS_pointer) (array <var>);
 extern var (*debugLogPlain_pointer) (string section, string text);
 
 extern string drivers_h_filename;
@@ -333,66 +324,12 @@ var f$rpc_mc_decrement (const rpc_connection &conn, const string &key, const var
 bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double timeout = -1.0);
 
 
-bool f$dbIsDown (bool check_failed = true);
-
-bool f$dbUseMaster (const string &table_name);
-
-bool f$dbIsTableDown (const string &table_name);
-
-template <class T>
-bool f$dbUseMasterAll (const array <T> &tables_names);
-
-template <class T>
-bool f$dbIsTableDownAll (const array <T> &tables_names);
-
-void f$dbSetTimeout (double new_timeout);
-
-bool f$dbGetReturnDie (void);
-
-void f$dbSetReturnDie (bool return_die = true);
-
-bool f$dbFailed (void);
-
-var f$dbQuery_internal (const string &the_query);
-
-var f$dbQueryTry (const string &the_query, int tries_count = 3);
-
-OrFalse <array <var> > f$dbFetchRow (const var &query_id = -1);
-
-int f$dbAffectedRows (void);
-
-int f$dbNumRows (void);
-
-void f$dbSaveFailed (void);
-
-bool f$dbHasFailed (void);
-
-int f$dbInsertedId (void);
-
-template <class T>
-array <string> f$dbInsertString (const array <T> &data, bool no_escape = false);
-
-template <class T>
-string f$dbUpdateString (const array <T> &data);
-
-int f$dbId (void);
-
-
 class MyDB;
 
 class db_driver {
 private:
-  int db_id;
-  int old_failed;
-  int failed;
-  bool return_die;
-
-  const char *sql_host;
-
   int connection_id;
   int connected; // K.O.T.: 1 = connected, -1 = error, -2 = down
-  bool is_proxy;
-  int next_timeout_ms;
 
   int last_query_id;
   int biggest_query_id;
@@ -406,35 +343,16 @@ private:
   int field_cnt;
   array <string> field_names;
 
-  void fatal_error (const string &the_error, const string &query, bool quiet = false, double query_time = 0.0, bool fail_logged = false);
-
 public:
-  db_driver (int db_id);
-
-  bool is_down (bool check_failed = true);
-
-  void do_connect (void);
+  explicit db_driver();
 
   void do_connect_no_log (void);
-
-  void set_timeout (double new_timeout = 0);
-
-  var query (const string &query_str);
-
-  OrFalse <array <var> > fetch_row (const var &query_id_var);
 
   int get_affected_rows (void);
 
   int get_num_rows (void);
 
   int get_insert_id (void);
-
-  template <class T>
-  array <string> compile_db_insert_string (const array <T> &data, bool no_escape = false);
-
-  template <class T>
-  string compile_db_update_string (const array <T> &data);
-
 
   bool mysql_query (const string &query);
 
@@ -443,90 +361,33 @@ public:
   OrFalse <array <var> > mysql_fetch_array (int query_id);
 
 
-  friend bool f$dbIsDown (bool check_failed);
+  friend string f$mysqli_error(const MyDB &db);
 
-  friend bool f$dbUseMaster (const string &table_name);
-
-  friend bool f$dbIsTableDown (const string &table_name);
-
-  template <class T>
-  friend bool f$dbUseMasterAll (const array <T> &tables_names);
-
-  template <class T>
-  friend bool f$dbIsTableDownAll (const array <T> &tables_names);
-
-  friend void f$dbSetTimeout (double new_timeout);
-
-  friend bool f$dbGetReturnDie (void);
-
-  friend void f$dbSetReturnDie (bool return_die);
-
-  friend bool f$dbFailed (void);
-
-  friend var f$dbQuery (const string &the_query);
-
-  friend OrFalse <array <var> > f$dbFetchRow (const var &query_id_var);
-
-  friend int f$dbAffectedRows (void);
-
-  friend int f$dbNumRows (void);
-
-  friend void f$dbSaveFailed (void);
-
-  friend bool f$dbHasFailed (void);
-
-  friend int f$dbInsertedId (void);
-
-  friend int f$dbId (void);
-
-
-  friend string f$mysql_error (void);
-
-  friend int f$mysql_errno (void);
+  friend int f$mysqli_errno(const MyDB &db);
 
   friend int db_get_num_rows (const MyDB &db, int id);
-};
 
-template <class T>
-array <string> db_compile_db_insert_string (const MyDB &db, const array <T> &data, bool no_escape = false);
+  friend MyDB f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __attribute__((unused)));
+};
 
 class MyDB {
 private:
   bool bool_value;
   db_driver *db;
 
-  MyDB (db_driver *db);
+  explicit MyDB (db_driver *db);
 public:
   MyDB (void);
 
-  friend bool db_is_down (const MyDB &db, bool check_failed);
-
-  friend void db_do_connect (const MyDB &db);
-
   friend void db_do_connect_no_log (const MyDB &db);
-
-  friend void db_set_timeout (const MyDB &db, double new_timeout);
-
-  friend var db_query (const MyDB &db, const string &query);
 
   friend var db_mysql_query (const MyDB &db, const string &query);
 
-  friend OrFalse <array <var> > db_fetch_row (const MyDB &db, const var &query_id_var);
-
   friend int db_get_affected_rows (const MyDB &db);
-
-  friend int db_get_num_rows (const MyDB &db, int id);
 
   friend int db_get_insert_id (const MyDB &db);
 
-  friend OrFalse <array <var> > db_fetch_array (const MyDB& db, const var& query_id_var);
-
-  template <class T>
-  friend array <string> db_compile_db_insert_string (const MyDB &db, const array <T> &data, bool no_escape);
-
-  template <class T>
-  friend string db_compile_db_update_string (const MyDB &db, const array <T> &data);
-
+  friend OrFalse <array <var> > db_fetch_array(const MyDB &db, int query_id);
 
   friend bool f$boolval (const MyDB &my_db);
   friend bool eq2 (const MyDB &my_db, bool value);
@@ -537,73 +398,22 @@ public:
   friend bool not_equals (const MyDB &my_db, bool value);
 
   MyDB& operator = (bool value);
-  MyDB (bool value);
+  explicit MyDB (bool value);
 
-  friend void f$dbDeclare (int dn);
+  friend MyDB f$vk_mysqli_connect(const string &host, int port);
 
-  friend MyDB f$new_db_decl (int dn);
+  friend int db_get_num_rows (const MyDB &db, int id);
 
+  friend string f$mysqli_error(const MyDB &db);
 
-  friend bool f$dbIsDown (bool check_failed);
-
-  friend bool f$dbUseMaster (const string &table_name);
-
-  friend bool f$dbIsTableDown (const string &table_name);
-
-  template <class T>
-  friend bool f$dbUseMasterAll (const array <T> &tables_names);
-
-  template <class T>
-  friend bool f$dbIsTableDownAll (const array <T> &tables_names);
-
-  friend void f$dbSetTimeout (double new_timeout);
-
-  friend bool f$dbGetReturnDie (void);
-
-  friend void f$dbSetReturnDie (bool return_die);
-
-  friend bool f$dbFailed (void);
-
-  friend var f$dbQuery (const string &the_query);
-
-  friend OrFalse <array <var> > f$dbFetchRow (const var &query_id_var);
-
-  friend int f$dbAffectedRows (void);
-
-  friend int f$dbNumRows (void);
-
-  friend void f$dbSaveFailed (void);
-
-  friend bool f$dbHasFailed (void);
-
-  friend int f$dbInsertedId (void);
-
-  friend int f$dbId (void);
-
-
-  friend string f$mysql_error (void);
-
-  friend int f$mysql_errno (void);
+  friend int f$mysqli_errno(const MyDB &db);
 };
-
-bool db_is_down (const MyDB &db, bool check_failed = true);
-
-void db_do_connect (const MyDB &db);
-
-void db_set_timeout (const MyDB &db, double new_timeout = 0);
-
-var db_query (const MyDB &db, const string &query);
-
-OrFalse <array <var> > db_fetch_row (const MyDB &db, const var &query_id_var);
 
 int db_get_affected_rows (const MyDB &db);
 
 int db_get_num_rows (const MyDB &db, int id = -1);
 
 int db_get_insert_id (const MyDB &db);
-
-template <class T>
-string db_compile_db_update_string (const MyDB &db, const array <T> &data);
 
 bool f$boolval (const MyDB &my_db);
 bool eq2 (const MyDB &my_db, bool value);
@@ -614,29 +424,24 @@ bool not_equals (bool value, const MyDB &my_db);
 bool not_equals (const MyDB &my_db, bool value);
 
 
-string f$mysql_error (void);
+string f$mysqli_error(const MyDB &db);
 
-int f$mysql_errno (void);
-
-
-int f$mysql_affected_rows(const MyDB& dn);
-
-OrFalse <array <var> > f$mysql_fetch_array(const var &query_id);
-
-int f$mysql_insert_id(const MyDB& dn);
-
-int f$mysql_num_rows(const var& query_id_var);
-
-var f$mysql_query(string query, const MyDB& dn);
-
-bool f$mysql_pconnect_db_proxy(const MyDB& dn);
+int f$mysqli_errno(const MyDB &db);
 
 
-void f$setDbNoDie (bool no_die = true);
+int f$mysqli_affected_rows(const MyDB &dn);
 
-void f$dbDeclare (int dn);
+OrFalse< array <var> > f$mysqli_fetch_array(int query_id_var, int result_type);
 
-MyDB f$new_db_decl (int dn);
+int f$mysqli_insert_id(const MyDB &dn);
+
+int f$mysqli_num_rows(int query_id);
+
+var f$mysqli_query(const MyDB &dn, const string &query);
+
+MyDB f$vk_mysqli_connect(const string &host, int port);
+
+bool f$mysqli_select_db(const MyDB &dn, const string& name);
 
 
 /*
@@ -821,121 +626,4 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
   }
 
   return start_resumable <OrFalse <array <var> > > (new rpc_mc_multiget_resumable (queue_id, first_request_id, keys_n, query_names, return_false_if_not_found));
-}
-
-
-extern MyDB v$DB_Proxy;
-
-template <class T>
-array <string> db_driver::compile_db_insert_string (const array <T> &data, bool no_escape) {
-  static_SB.clean();
-  for (typename array <T>::const_iterator p = data.begin(); p != data.end(); ++p) {
-    if (p != data.begin()) {
-      static_SB += ',';
-    }
-
-    static_SB += p.get_key();
-  }
-  string field_names = static_SB.str();
-
-  static_SB.clean();
-  for (typename array <T>::const_iterator p = data.begin(); p != data.end(); ++p) {
-    if (p != data.begin()) {
-      static_SB += ',';
-    }
-
-    static_SB += '\'';
-    const T &value = p.get_value();
-    if (!no_escape) {
-      const string v = f$strval (value);
-      for (int i = 0; i < (int)v.size(); i++) {
-        if (v[i] == '\'') {
-          static_SB += '\\';
-        }
-        static_SB += v[i];
-      }
-    } else {
-      static_SB += value;
-    }
-    static_SB += '\'';
-  }
-  string field_values = static_SB.str();
-
-  array <string> result (array_size (2, 2, false));
-  result.set_value (string ("FIELD_NAMES", 11), field_names);
-  result.set_value (string ("FIELD_VALUES", 12), field_values);
-  result.set_value (0, field_names);
-  result.set_value (1, field_values);
-  return result;
-}
-
-template <class T>
-string db_driver::compile_db_update_string (const array <T> &data) {
-  static_SB.clean();
-  for (typename array <T>::const_iterator p = data.begin(); p != data.end(); ++p) {
-    if (p != data.begin()) {
-      static_SB += ',';
-    }
-
-    static_SB += p.get_key();
-    static_SB += "='";
-    const string v = f$strval (p.get_value());
-    for (int i = 0; i < (int)v.size(); i++) {
-      if (v[i] == '\'') {
-        static_SB += '\\';
-      }
-      static_SB += v[i];
-    }
-    static_SB += '\'';
-  }
-
-  return static_SB.str();
-}
-
-template <class T>
-array <string> db_compile_db_insert_string (const MyDB &db, const array <T> &data, bool no_escape) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->compile_db_insert_string");
-    return array <var> ();
-  }
-  return db.db->compile_db_insert_string (data, no_escape);
-}
-
-template <class T>
-string db_compile_db_update_string (const MyDB &db, const array <T> &data) {
-  if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->compile_db_update_string");
-    return string();
-  }
-  return db.db->compile_db_update_string (data);
-}
-
-
-template <class T>
-bool f$dbUseMasterAll (const array <T> &tables_names) {
-  bool is_ok = true;
-  for (typename array <T>::const_iterator p = tables_names.begin(); p != tables_names.end(); ++p) {
-    is_ok = TRY_CALL(bool, bool, f$dbUseMaster (f$strval (p.get_value()))) && is_ok;
-  }
-  return is_ok;
-}
-
-template <class T>
-bool f$dbIsTableDownAll (const array <T> &tables_names) {
-  bool is_down = false;
-  for (typename array <T>::const_iterator p = tables_names.begin(); p != tables_names.end(); ++p) {
-    is_down = TRY_CALL(bool, bool, f$dbIsTableDown (f$strval (p.get_value()))) || is_down;
-  }
-  return is_down;
-}
-
-
-template <class T>
-array <string> f$dbInsertString (const array <T> &data, bool no_escape) {
-  return db_compile_db_insert_string (v$DB_Proxy, data, no_escape);
-}
-
-template <class T>
-string f$dbUpdateString (const array <T> &data) {
-  return db_compile_db_update_string (v$DB_Proxy, data);
 }
