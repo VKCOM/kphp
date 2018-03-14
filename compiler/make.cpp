@@ -424,7 +424,7 @@ string Objs2BinTarget::get_cmd() {
   std::stringstream ss;
   ss << env->get_cxx() << 
     " -o " << target() <<
-    " " << dep_list() << 
+    " -Wl,--whole-archive " << dep_list() << " -Wl,--no-whole-archive "
     " " << env->get_ld_flags();
   return ss.str();
 }
