@@ -179,7 +179,14 @@ class RestrictionLess : public Restriction {
 
       static bool is_same_vars(const tinf::Node * node, VertexPtr vertex) {
         if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
-          return vertex->type() == op_var && vertex->get_var_id()->name == var_node->var_->name;
+          if (vertex->type() == op_var) {
+            if (vertex->get_var_id().is_null() && var_node->var_.is_null()) {
+              return true;
+            }
+
+            return vertex->get_var_id().not_null() && var_node->var_.not_null() &&
+                   vertex->get_var_id()->name == var_node->var_->name;
+          }
         }
 
         return false;
