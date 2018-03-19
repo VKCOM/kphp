@@ -19,32 +19,31 @@ string register_unique_name (const string &prefix) {
   return prefix;
 }
 
-string gen_shorthand_ternary_name () {
+static inline string gen_unique_name_inside_file(const std::string &prefix, volatile int &x, map<unsigned long long, int> &name_map) {
   AUTO_PROF (next_name);
-  static volatile int x = 0;
-  AutoLocker <volatile int *> locker (&x);
+  AutoLocker<volatile int *> locker (&x);
   SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll (file->unified_file_name + file->main_func_name);
-  static map<unsigned long long, int> name_map;
+  unsigned long long h = hash_ll (file->unified_file_name + file->class_context);
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
   char tmp[50];
   sprintf (tmp, "%llx_%d", h, cur_i);
-  return string("shorthand_ternary_cond$ut") + tmp;
+
+  return prefix + "$ut" + tmp;
+}
+
+string gen_shorthand_ternary_name () {
+  static volatile int x = 0;
+  static map<unsigned long long, int> name_map;
+
+  return gen_unique_name_inside_file("shorthand_ternary_cond", x, name_map);
 }
 
 string gen_anonymous_function_name () {
-  AUTO_PROF (next_name);
   static volatile int x = 0;
-  AutoLocker <volatile int *> locker (&x);
-  SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll (file->unified_file_name);
   static map<unsigned long long, int> name_map;
-  int *i = &(name_map[h]);
-  int cur_i = (*i)++;
-  char tmp[50];
-  sprintf (tmp, "%llx_%d", h, cur_i);
-  return string("anonymous_function$ut") + tmp;
+
+  return gen_unique_name_inside_file("anonymous_function", x, name_map);
 }
 
 
