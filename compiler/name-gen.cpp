@@ -24,7 +24,7 @@ string gen_shorthand_ternary_name () {
   static volatile int x = 0;
   AutoLocker <volatile int *> locker (&x);
   SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll (file->unified_file_name);
+  unsigned long long h = hash_ll (file->unified_file_name + file->main_func_name);
   static map<unsigned long long, int> name_map;
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
