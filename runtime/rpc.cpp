@@ -3745,8 +3745,8 @@ void renew_tl_config (void) {
   tl_schema_version = get_schema_version (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
   php_assert (tl_schema_version != -1);
 
-  TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());//date
-  TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());//version
+  TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()); // version
+  TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()); // date
 
   int types_n = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   tl_config.types = array <tl_type *> (array_size (types_n, 0, true));
