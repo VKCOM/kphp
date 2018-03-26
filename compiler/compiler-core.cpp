@@ -447,10 +447,11 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
   for (size_t i = 0; i < files.size(); i++) {
     header_mtime[i] = files[i]->mtime;
   }
-  FOREACH (files, h_file_i) {
-    File *h_file = *h_file_i;
+
+  for (size_t i = 0; i < files.size(); ++i) {
+    File *h_file = files[i];
     if (h_file->ext == ".h") {
-      long long &h_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), h_file, compare_mtime) - files.begin()];
+      long long &h_mtime = header_mtime[i];
       FOREACH (h_file->includes, it) {
         File *header = cpp_dir->get_file (*it, false);
         kphp_assert (header != NULL);
