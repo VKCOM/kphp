@@ -146,6 +146,22 @@ inline string int_to_str(int x) {
   return tmp;
 }
 
+inline vector<string> split(const string &s, char delimiter = ' ') {
+  vector <string> res;
+
+  int prev = 0;
+  for (int i = 0; i <= (int)s.size(); i++) {
+    if (s[i] == delimiter || s[i] == 0) {
+      if (prev != i) {
+        res.push_back (s.substr (prev, i - prev));
+      }
+      prev = i + 1;
+    }
+  }
+
+  return res;
+}
+
 #define FOREACH(v, i_) for (__typeof (all (v)) i_ = all(v); !i_.empty(); i_.next())
 
 template<class T>

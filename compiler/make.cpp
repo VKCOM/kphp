@@ -136,17 +136,7 @@ void Make::require_target (Target *target) {
 
 static int run_cmd (const string &cmd) {
   //fprintf (stdout, "%s\n", cmd.c_str());
-  vector <string> args;
-  int prev = 0;
-  for (int i = 0; i <= (int)cmd.size(); i++) {
-    if (cmd[i] == ' ' || cmd[i] == 0) {
-      if (prev != i) {
-        args.push_back (cmd.substr (prev, i - prev));
-      }
-      prev = i + 1;
-    }
-  }
-
+  vector <string> args = split(cmd);
   vector <char *> argv (args.size() + 1);
   for (int i = 0; i < (int)args.size(); i++) {
     argv[i] = (char *)args[i].c_str();
