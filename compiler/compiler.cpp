@@ -2727,6 +2727,13 @@ class CodeGenF {
       int parts_cnt = calc_count_of_parts(vars.size());
       W << Async (VarsCpp (vars, parts_cnt));
 
+      write_hashes_of_subdirs_to_dep_files(W);
+
+      write_tl_schema(W);
+    }
+
+  private:
+    static void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
       FOREACH (subdir_hash, i) {
         string dir = i->first;
         long long hash = i->second;
@@ -2736,7 +2743,9 @@ class CodeGenF {
         W << "//" << (const char *)tmp << NL;
         W << CloseFile();
       }
+    }
 
+    static void write_tl_schema(CodeGenerator &W) {
       string schema;
       int schema_length = -1;
       if (G->env().get_tl_schema_file() != "") {
@@ -2842,14 +2851,13 @@ class WriteFilesF {
           if (!need_save_time && G->env().get_verbosity() > 0) {
             fprintf (stderr, "File [%s] changed\n", full_file_name.c_str());
           }
-          string dest_file_name = full_file_name;
           if (need_del) {
-            int err = unlink (dest_file_name.c_str());
-            dl_passert (err == 0, dl_pstr ("Failed to unlink [%s]", dest_file_name.c_str()));
+            int err = unlink (full_file_name.c_str());
+            dl_passert (err == 0, dl_pstr ("Failed to unlink [%s]", full_file_name.c_str()));
           }
-          FILE *dest_file = fopen (dest_file_name.c_str(), "w");
+          FILE *dest_file = fopen (full_file_name.c_str(), "w");
           dl_passert (dest_file != NULL, 
-              dl_pstr ("Failed to open [%s] for write\n", dest_file_name.c_str()));
+              dl_pstr ("Failed to open [%s] for write\n", full_file_name.c_str()));
 
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", ~crc));
           dl_pcheck (fprintf (dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
