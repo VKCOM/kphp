@@ -216,26 +216,20 @@ File *Index::get_file (string path, bool force/* = false*/) {
       kphp_assert (f->path.size() > get_dir().size());
       kphp_assert (strncmp (f->path.c_str(), get_dir().c_str(), get_dir().size()) == 0);
       string name = f->path.substr (get_dir().size());
-      int dot_i = (int)name.size() - 1;
-      while (dot_i >= 0 && name[dot_i] != '.') {
-        dot_i--;
-      }
-      if (dot_i < 0) {
+      string::size_type dot_i = name.find_last_of('.');
+      if (dot_i == string::npos) {
         dot_i = name.size();
       }
-      int slash_i = dot_i - 1;
-      while (slash_i >= 0 && name[slash_i] != '/') {
-        slash_i--;
-      }
-      if (slash_i < 0) {
-        f->subdir = "";
+      string::size_type slash_i = name.find_last_of('/', dot_i - 1);
+      if (slash_i != string::npos) {
+        f->subdir = name.substr(0, slash_i + 1);
+        create_subdir(f->subdir);
       } else {
-        f->subdir = name.substr (0, slash_i + 1);
-        create_subdir (f->subdir);
+        f->subdir = "";
       }
       f->ext = name.substr (dot_i);
-      f->name = name;
       f->name_without_ext = name.substr (0, dot_i);
+      f->name.swap(name);
     }
     return f;
   } else {
