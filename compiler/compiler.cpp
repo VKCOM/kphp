@@ -2605,11 +2605,7 @@ string get_subdir (const string &file, const string &base) {
 
 void prepare_generate_function (FunctionPtr func) {
   string file_name = func->name;
-  for (int i = 0; i < (int)file_name.size(); i++) {
-    if (file_name[i] == '$') {
-      file_name[i] = '@';
-    }
-  }
+  std::replace(file_name.begin(), file_name.end(), '$', '@');
 
   string file_subdir = func->file_id->short_file_name;
 
