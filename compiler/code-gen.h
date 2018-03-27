@@ -1287,7 +1287,9 @@ inline StaticInit::StaticInit (const vector <FunctionPtr> &all_functions) :
 inline void StaticInit::compile (CodeGenerator &W) const {
   FOREACH (all_functions, i) {
     FunctionPtr to = *i;
-    W << Include (to->header_full_name);
+    if (!to->is_static_init_empty_body()) {
+      W << Include(to->header_full_name);
+    }
   }
   W << "void const_vars_init();" << NL;
 
@@ -1297,10 +1299,9 @@ inline void StaticInit::compile (CodeGenerator &W) const {
   W << "const_vars_init();" << NL;
   FOREACH (all_functions, i) {
     FunctionPtr to = *i;
-    if (to->is_static_init_empty_body()) {
-      continue;
+    if (!to->is_static_init_empty_body()) {
+      W << FunctionName(to) << "$static_init();" << NL;
     }
-    W << FunctionName (to) << "$static_init();" << NL;
   }
   W << "dl::allocator_init (NULL, 0);" << NL;
   W << END << NL;
