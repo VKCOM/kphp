@@ -705,28 +705,24 @@ VertexPtr try_set_func_id (VertexPtr call) {
 
   const string &name = call->get_string();
   FunctionSetPtr function_set = G->get_function_set (fs_function, name, true);
-  FunctionPtr function;
-  int functions_cnt = (int)function_set->size();
 
-  kphp_error_act (
-    functions_cnt != 0,
-    dl_pstr ("Unknown function [%s]\n%s\n", name.c_str(), 
-      stage::get_function_history().c_str()),
-    return call
-  );
+  switch (function_set->size()) {
+    case 1: {
+      kphp_assert(function_set->is_required);
+      call = set_func_id(call, function_set[0]);
+      break;
+    }
 
-  kphp_assert (function_set->is_required);
+    case 0: {
+      kphp_error(false, dl_pstr("Unknown function [%s]\n%s\n", name.c_str(), stage::get_function_history().c_str()));
+      break;
+    }
 
-  if (functions_cnt == 1) {
-    function = function_set[0];
+    default: {
+      kphp_error(false, dl_pstr("Function overloading is not supported properly [%s]", name.c_str()));
+      break;
+    }
   }
 
-  kphp_error_act (
-    function.not_null(),
-    dl_pstr ("Function overloading is not supported properly [%s]", name.c_str()),
-    return call
-  );
-
-  call = set_func_id (call, function);
   return call;
 }
