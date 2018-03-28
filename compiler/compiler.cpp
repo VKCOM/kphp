@@ -2584,55 +2584,6 @@ class FinalCheckPass : public FunctionPassBase {
     }
 };
 
-/*** CODE GENERATION ***/
-//FIXME
-map <string, long long> subdir_hash;
-string get_subdir (const string &file, const string &base) {
-  kphp_assert (G->env().get_use_subdirs());
-
-  int func_hash = hash (base);
-  int bucket = func_hash % 100;
-
-  string subdir = string ("o_") + int_to_str (bucket);
-
-  {
-    long long &cur_hash = subdir_hash[subdir];
-    cur_hash = cur_hash * 987654321 + hash (file);
-  }
-
-  return subdir;
-}
-
-void prepare_generate_function (FunctionPtr func) {
-  string file_name = func->name;
-  std::replace(file_name.begin(), file_name.end(), '$', '@');
-
-  string file_subdir = func->file_id->short_file_name;
-
-  if (G->env().get_use_subdirs()) {
-    func->src_name = file_name + ".cpp";
-    func->header_name = file_name + ".h";
-
-    func->subdir = get_subdir (file_name, file_subdir);
-
-    func->src_full_name = func->subdir + "/" + func->src_name;
-    func->header_full_name = func->subdir + "/" + func->header_name;
-  } else {
-    string full_name = file_subdir + "." + file_name;
-    func->src_name = full_name + ".cpp";
-    func->header_name = full_name + ".h";
-    func->subdir = "";
-    func->src_full_name = func->src_name;
-    func->header_full_name = func->header_name;
-  }
-
-  my_unique (&func->static_var_ids);
-  my_unique (&func->global_var_ids);
-  my_unique (&func->header_global_var_ids);
-  my_unique (&func->local_var_ids);
-}
-
-set <string> new_subdirs;
 template <class OutputStream>
 class WriterCallback : public WriterCallbackBase {
   private:
@@ -2658,6 +2609,8 @@ class CodeGenF {
   //TODO: extract pattern
   private:
     DataStreamRaw <FunctionPtr> tmp_stream;
+    map <string, long long> subdir_hash;
+
   public:
     CodeGenF() {
       tmp_stream.set_sink (true);
@@ -2695,9 +2648,9 @@ class CodeGenF {
 
       W.init (new WriterCallback <OutputStreamT> (os));
 
-      for (int i = 0; i < (int)xall.size(); i++) {
-        //TODO: parallelize;
-        prepare_generate_function (xall[i]);
+      //TODO: parallelize;
+      FOREACH(xall, fun) {
+        prepare_generate_function(*fun);
       }
 
       vector <SrcFilePtr> main_files = G->get_main_files();
@@ -2733,7 +2686,56 @@ class CodeGenF {
     }
 
   private:
-    static void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
+    void prepare_generate_function (FunctionPtr func) {
+      string file_name = func->name;
+      std::replace(file_name.begin(), file_name.end(), '$', '@');
+
+      string file_subdir = func->file_id->short_file_name;
+
+      if (G->env().get_use_subdirs()) {
+        func->header_name = file_name + ".h";
+        func->subdir = get_subdir(file_subdir);
+
+        recalc_hash_of_subdirectory(func->subdir, func->header_name);
+
+        if (!func->root->inline_flag) {
+          func->src_name = file_name + ".cpp";
+          func->src_full_name = func->subdir + "/" + func->src_name;
+
+          recalc_hash_of_subdirectory(func->subdir, func->src_name);
+        }
+
+        func->header_full_name = func->subdir + "/" + func->header_name;
+      } else {
+        string full_name = file_subdir + "." + file_name;
+        func->src_name = full_name + ".cpp";
+        func->header_name = full_name + ".h";
+        func->subdir = "";
+        func->src_full_name = func->src_name;
+        func->header_full_name = func->header_name;
+      }
+
+      my_unique (&func->static_var_ids);
+      my_unique (&func->global_var_ids);
+      my_unique (&func->header_global_var_ids);
+      my_unique (&func->local_var_ids);
+    }
+
+    string get_subdir (const string &base) {
+      kphp_assert (G->env().get_use_subdirs());
+
+      int func_hash = hash(base);
+      int bucket = func_hash % 100;
+
+      return string("o_") + int_to_str(bucket);
+    }
+
+    void recalc_hash_of_subdirectory(const string &subdir, const string &file_name) {
+      long long &cur_hash = subdir_hash[subdir];
+      cur_hash = cur_hash * 987654321 + hash(file_name);
+    }
+
+    void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
       FOREACH (subdir_hash, i) {
         string dir = i->first;
         long long hash = i->second;
@@ -2745,7 +2747,7 @@ class CodeGenF {
       }
     }
 
-    static void write_tl_schema(CodeGenerator &W) {
+    void write_tl_schema(CodeGenerator &W) {
       string schema;
       int schema_length = -1;
       if (G->env().get_tl_schema_file() != "") {
