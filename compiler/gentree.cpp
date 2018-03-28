@@ -1730,7 +1730,7 @@ bool GenTree::check_statement_end() {
     //return true;
   //}
   if (!test_expect (tok_semicolon)) {
-    kphp_error (0, "Failed to parse statement");
+    kphp_error (0, "Failed to parse statement. Expected `;`");
     while (cur != end && !test_expect (tok_clbrc) && !test_expect (tok_semicolon)) {
       next_cur();
     }
