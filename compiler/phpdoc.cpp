@@ -9,6 +9,8 @@
 using std::vector;
 using std::string;
 
+const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = php_doc_tag::init_str2doc_type();
+
 vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
   vector<string> lines(1);
   int have_star = false;
@@ -43,6 +45,7 @@ vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
       result.push_back(php_doc_tag());
       size_t pos = lines[i].find(' ');
       result.back().name = lines[i].substr(0, pos);
+      result.back().type = php_doc_tag::get_doc_type(result.back().name);
       if (pos != string::npos) {
         result.back().value = lines[i].substr(pos + 1);
       }
