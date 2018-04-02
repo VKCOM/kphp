@@ -192,11 +192,8 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
   if (class_name[0] == '\\') {
     class_name = class_name.substr(1);
   }
-  for (size_t i = 0; i < class_name.size(); i++) {
-    if (class_name[i] == '\\') {
-      class_name[i] = delim;
-    }
-  }
+  std::replace(class_name.begin(), class_name.end(), '\\', delim);
+
   return class_name;
 }
 
