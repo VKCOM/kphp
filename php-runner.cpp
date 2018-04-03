@@ -1,6 +1,7 @@
 #include "PHP/php-runner.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,7 @@
 extern "C" {
 #include "common/kprintf.h"
 #include "common/server/server-functions.h"
+#include "common/wrappers/madvise.h"
 #include "php-engine-vars.h"
 
 query_stats_t query_stats;
@@ -64,14 +66,14 @@ PHPScriptBase::PHPScriptBase (size_t mem_size, size_t stack_size)
   protected_end = run_stack + getpagesize();
   run_stack_end = run_stack + stack_size;
 
-  run_mem = (char *) malloc (mem_size);
+  run_mem = static_cast<char *>(mmap(NULL, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
   //fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
 
 PHPScriptBase::~PHPScriptBase (void) {
   mprotect (run_stack, getpagesize(), PROT_READ | PROT_WRITE);
   free (run_stack);
-  free (run_mem);
+  munmap(run_mem, mem_size);
 }
 
 void PHPScriptBase::init (script_t *script, php_query_data *data_to_set) {
@@ -238,10 +240,18 @@ void PHPScriptBase::finish() {
 }
 
 void PHPScriptBase::clear() {
-  assert (state == rst_uncleared);
+  assert(state == rst_uncleared);
   run_main->clear();
   free_static();
   state = rst_empty;
+  if (use_madvise_dontneed) {
+    if (dl::memory_get_total_usage() > memory_used_to_recreate_script) {
+      const int ret = our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, MADV_FREE);
+      if (ret == -1 && errno == EINVAL) {
+        our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, MADV_DONTNEED);
+      }
+    }
+  }
 }
 
 void PHPScriptBase::ask_query (void *q) {
@@ -689,4 +699,3 @@ void running_server_status (void) {
 void PHPScriptBase::cur_run (void) {
   current_script->run();
 }
-

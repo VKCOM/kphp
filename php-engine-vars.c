@@ -1,5 +1,6 @@
 #include "PHP/php-engine-vars.h"
 
+#include <limits.h>
 #include <stdlib.h>
 
 /***
@@ -64,6 +65,8 @@ int script_timeout = 0;
 int disable_access_log = 0;
 int force_clear_sql_connection = 0;
 long long static_buffer_length_limit = -1;
+int use_madvise_dontneed = 0;
+long long memory_used_to_recreate_script = LLONG_MAX;
 
 /***
   save of stdout/stderr fd

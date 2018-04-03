@@ -106,6 +106,8 @@ extern int script_timeout;
 extern int disable_access_log;
 extern int force_clear_sql_connection;
 extern long long static_buffer_length_limit;
+extern int use_madvise_dontneed;
+extern long long memory_used_to_recreate_script;
 
 #define RPC_PHP_IMMEDIATE_STATS 0x3d27a21b
 #define RPC_PHP_FULL_STATS 0x1f8ae120

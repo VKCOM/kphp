@@ -403,7 +403,6 @@ void lease_change_state (lease_state_t new_state) {
 
 #define run_once_count 1
 int queries_to_recreate_script = 100;
-long long memory_used_to_recreate_script = LLONG_MAX;
 
 void *php_script;
 typedef enum {http_worker, rpc_worker, once_worker} php_worker_mode_t;
@@ -1225,8 +1224,9 @@ void php_worker_free_script (php_worker *worker) {
   php_script_clear (php_script);
 
   static int finished_queries = 0;
-  if ((++finished_queries) % queries_to_recreate_script == 0 || php_script_memory_get_total_usage(php_script) > memory_used_to_recreate_script) {
-    php_script_free (php_script);
+  if ((++finished_queries) % queries_to_recreate_script == 0
+      || (!use_madvise_dontneed && php_script_memory_get_total_usage(php_script) > memory_used_to_recreate_script)) {
+    php_script_free(php_script);
     php_script = NULL;
     finished_queries = 0;
   }
@@ -3457,6 +3457,10 @@ int main_args_handler (int i) {
       }
       return 0;
     }
+    case 2002: {
+      use_madvise_dontneed = 1;
+      return 0;
+    }
     default:
       return -1;
   }
@@ -3503,6 +3507,7 @@ void parse_main_args (int argc, char *argv[]) {
   parse_option("fatal-warnings", no_argument, 'K', "script is killed, when warning happened");
   parse_option("worker-queries-to-reload", required_argument, 2000, "worker script is reloaded, when <queries> queries processed (default: 100)");
   parse_option("worker-memory-to-reload", required_argument, 2001, "worker script is reloaded, when <memory> queries processed");
+  parse_option("use-madvise-dontneed", no_argument, 2002, "Use madvise MADV_DONTNEED for script memory above limit");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_end (argc, argv);
 }
