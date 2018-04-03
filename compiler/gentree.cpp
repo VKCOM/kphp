@@ -1534,6 +1534,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   }
 
   set<string> disabled_warnings;
+  bool kphp_required = false;
 
   if (cmd.not_null() && phpdoc != "") {
     Location location_backup = stage::get_location();
@@ -1543,73 +1544,91 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
     int param_ptr = 0;
     vector<VertexPtr> new_cmd_next;
     for (int i = 0; i < tags.size(); i++) {
-      if (tags[i].name == "@kphp-inline") {
-        inline_flag = true;
-        continue;
-      }
-      if (tags[i].name == "@kphp-infer") {
-        CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
-        stringstream stream;
-        stream << tags[i].value;
-        string token;
-        while (stream >> token) {
-          if (token == "check") {
-            infer_type |= 1;
-          } else if (token == "hint") {
-            infer_type |= 2;
-          } else if (token == "cast") {
-            infer_type |= 4;
-          } else {
-            CE(!kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str())));
+      switch (tags[i].type) {
+        case php_doc_tag::kphp_inline: {
+          inline_flag = true;
+          continue;
+        }
+
+        case php_doc_tag::kphp_infer: {
+          CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
+          stringstream stream;
+          stream << tags[i].value;
+          string token;
+          while (stream >> token) {
+            if (token == "check") {
+              infer_type |= 1;
+            } else if (token == "hint") {
+              infer_type |= 2;
+            } else if (token == "cast") {
+              infer_type |= 4;
+            } else {
+              CE(!kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str())));
+            }
           }
+          break;
         }
-      }
-      if (tags[i].name == "@kphp-disable-warnings") {
-        stringstream stream;
-        stream << tags[i].value;
-        string token;
-        while (stream >> token) {
-          if (!disabled_warnings.insert(token).second) {
-            kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
+
+        case php_doc_tag::kphp_disable_warnings: {
+          stringstream stream;
+          stream << tags[i].value;
+          string token;
+          while (stream >> token) {
+            if (!disabled_warnings.insert(token).second) {
+              kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
+            }
           }
+          break;
         }
-      }
-      if (infer_type && tags[i].name == "@param") {
-        CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
-        std::istringstream is(tags[i].value);
-        string type_help, var_name;
-        CE(!kphp_error(is >> type_help, "Failed to parse @param tag"));
-        CE(!kphp_error(is >> var_name, "Failed to parse @param tag"));
-        VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
-        CE(!kphp_error(var.not_null(), "Something strange happened during @param parsing"));
-        CE(!kphp_error(var_name == "$" + var->str_val,
-                       dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
-        ));
-        VertexPtr doc_type = phpdoc_parse_type(type_help);
-        CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
-        if (infer_type & 1) {
-          CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
-          CREATE_VERTEX(doc_rule_var, op_var);
-          doc_rule_var->str_val = var->str_val;
-          doc_rule_var->type_rule = doc_type_check;
-          set_location(doc_rule_var, params_location);
-          new_cmd_next.push_back(doc_rule_var);
+
+        case php_doc_tag::kphp_required: {
+          kphp_required = true;
+          break;
         }
-        if (infer_type & 2) {
-          CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
-          CREATE_VERTEX(doc_rule_var, op_var);
-          doc_rule_var->str_val = var->str_val;
-          doc_rule_var->type_rule = doc_type_check;
-          set_location(doc_rule_var, params_location);
-          new_cmd_next.push_back(doc_rule_var);
+
+        case php_doc_tag::param: {
+          if (infer_type) {
+            CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
+            std::istringstream is(tags[i].value);
+            string type_help, var_name;
+            CE(!kphp_error(is >> type_help, "Failed to parse @param tag"));
+            CE(!kphp_error(is >> var_name, "Failed to parse @param tag"));
+            VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
+            CE(!kphp_error(var.not_null(), "Something strange happened during @param parsing"));
+            CE(!kphp_error(var_name == "$" + var->str_val,
+                           dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
+            ));
+            VertexPtr doc_type = phpdoc_parse_type(type_help);
+            CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
+            if (infer_type & 1) {
+              CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+              CREATE_VERTEX(doc_rule_var, op_var);
+              doc_rule_var->str_val = var->str_val;
+              doc_rule_var->type_rule = doc_type_check;
+              set_location(doc_rule_var, params_location);
+              new_cmd_next.push_back(doc_rule_var);
+            }
+            if (infer_type & 2) {
+              CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
+              CREATE_VERTEX(doc_rule_var, op_var);
+              doc_rule_var->str_val = var->str_val;
+              doc_rule_var->type_rule = doc_type_check;
+              set_location(doc_rule_var, params_location);
+              new_cmd_next.push_back(doc_rule_var);
+            }
+            if (infer_type & 4) {
+              CE(!kphp_error(doc_type->type() == op_type_rule, dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
+              CE(!kphp_error(doc_type.as<op_type_rule>()->args().empty(), dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
+              CE(!kphp_error(params_next[param_ptr]->type_help == tp_Unknown, dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str())));
+              params_next[param_ptr]->type_help = doc_type.as<op_type_rule>()->type_help;
+            }
+            param_ptr++;
+          }
+          break;
         }
-        if (infer_type & 4) {
-          CE(!kphp_error(doc_type->type() == op_type_rule, dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
-          CE(!kphp_error(doc_type.as<op_type_rule>()->args().empty(), dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
-          CE(!kphp_error(params_next[param_ptr]->type_help == tp_Unknown, dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str())));
-          params_next[param_ptr]->type_help = doc_type.as<op_type_rule>()->type_help;
-        }
-        param_ptr++;
+
+        case php_doc_tag::unknown:
+          break;
       }
     }
     CE(!kphp_error(!infer_type || param_ptr == params_next.size(), "Not enough @param tags"));
@@ -1697,9 +1716,9 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
         func->get_func_id()->access_type = access_type;
       }
     }
-    register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends, disabled_warnings));
+    register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends, disabled_warnings, kphp_required));
   } else {
-    register_function(FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings));
+    register_function(FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings, kphp_required));
   }
 
   if (res->type() == op_function) {

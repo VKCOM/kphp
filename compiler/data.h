@@ -52,10 +52,14 @@ public:
 
 struct ClassInfo {
   string name;
+  string namespace_name;
   VertexPtr root;
+  string extends;
   vector <VertexPtr> members;
-  vector <VertexPtr> constants;
+  map <string, VertexPtr> constants;
   vector <VertexPtr> static_members;
+  set <string> static_fields;
+  map <string, FunctionPtr> static_methods;
 };
 
 class ClassData {
@@ -65,11 +69,15 @@ public:
   bool is_required;
   FunctionPtr req_func;
   string name;
+  string extends;
+  ClassPtr parent_class;
   VertexPtr root;
 
   FunctionPtr init_function;
   FunctionPtr new_function;
-  vector <FunctionPtr> member_functions;
+  map <string, FunctionPtr> static_methods;
+  set <string> static_fields;
+  set <string> constants;
 
   string header_name;
   string subdir;
@@ -127,17 +135,24 @@ public:
   VertexPtr root;
   string namespace_name;
   string class_name;
+  string class_context;
   map<string, string> namespace_uses;
+  string extends;
   set<string> disabled_warnings;
+  bool kphp_required;
 
-  FunctionInfo(VertexPtr root, const string &namespace_name,
-               const string &class_name, const map<string, string> namespace_uses,
-               const set<string> disabled_warnings)                                : root(root),
-                                                                                     namespace_name(namespace_name),
-                                                                                     class_name(class_name),
-                                                                                     namespace_uses(namespace_uses),
-                                                                                     disabled_warnings(disabled_warnings) {
-  }
+  FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
+               const string &class_context, const map<string, string> namespace_uses,
+               string extends, const set<string> disabled_warnings, bool kphp_required = false)
+    : root(root)
+    , namespace_name(namespace_name)
+    , class_name(class_name)
+    , class_context(class_context)
+    , namespace_uses(namespace_uses)
+    , extends(extends)
+    , disabled_warnings(disabled_warnings)
+    , kphp_required(kphp_required)
+  {}
 };
 
 class FunctionData {
@@ -183,6 +198,8 @@ public:
   bool is_callback;
   string namespace_name;
   string class_name;
+  string class_context_name;
+  string class_extends;
   AccessType access_type;
   map<string, string> namespace_uses;
   set<string> disabled_warnings;

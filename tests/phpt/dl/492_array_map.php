@@ -3,6 +3,9 @@
 
 #var_dump( array_map(NULL, array()) );
 
+/**
+ * @kphp-required
+ */
 function square ($n) {
   return $n * $n;
 }
@@ -21,6 +24,9 @@ var_dump( array_map( 'square',
 
 $a = array(1,2,3);
 
+/**
+ * @kphp-required
+ */
 function square_recur($var) {
    if (is_array($var))
      return array_map('square_recur', $var);

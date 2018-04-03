@@ -379,20 +379,6 @@ class CollectRequiredPass : public FunctionPassBase {
 
 
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
-      if ((root->type() == op_string || root->type() == op_array) && force_func_ptr) {
-        string name = conv_to_func_ptr_name(root);
-        if (name != "") {
-          string fun_name = get_full_static_member_name(current_function, name, true);
-          callback->require_function_set(fs_function, fun_name, current_function);
-          /* TODO fix it
-          string class_name = get_class_name_for(name, '/');
-          if (!class_name.empty()) {
-            require_class(class_name, "");
-          }
-          */
-        }
-      }
-
       bool new_force_func_ptr = false;
       if (root->type() == op_func_call || root->type() == op_func_name) {
         string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
@@ -2559,7 +2545,7 @@ class FinalCheckPass : public FunctionPassBase {
             while (v->type() == op_index) {
               v = v.as <op_index>()->array();
             }
-            string desc;
+            string desc = "Using Unknown type : ";
             if (v->type() == op_var) {
               desc = "variable [$" + v.as <op_var>()->get_var_id()->name + "]";
             } else if (v->type() == op_func_call) {
@@ -2567,7 +2553,18 @@ class FinalCheckPass : public FunctionPassBase {
             } else {
               desc = "...";
             }
-            kphp_error (0, dl_pstr ("Using Unknown type : %s", desc.c_str()));
+
+            if (v->type() == op_var) {
+              VarPtr var = v->get_var_id();
+              if (var.not_null()) {
+                FunctionPtr holder_func = var->holder_func;
+                if (holder_func.not_null() && holder_func->is_required) {
+                  desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
+                }
+              }
+            }
+
+            kphp_error (0, desc.c_str());
             return true;
           }
         }

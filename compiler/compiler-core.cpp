@@ -599,9 +599,6 @@ string conv_to_func_ptr_name(VertexPtr call) {
       }
     }
   }
-  if (name.find("::") != string::npos && name[0] != '\\') {
-    return "";
-  }
   return name;
 }
 
@@ -708,13 +705,16 @@ VertexPtr try_set_func_id (VertexPtr call) {
 
   switch (function_set->size()) {
     case 1: {
-      kphp_assert(function_set->is_required);
+      if (!function_set->is_required) {
+        kphp_error(false, dl_pstr("Function is not required. Maybe you want to use `@kphp-required` for this function [%s]\n%s\n", name.c_str(), stage::get_function_history().c_str()));
+        break;
+      }
       call = set_func_id(call, function_set[0]);
       break;
     }
 
     case 0: {
-      kphp_error(false, dl_pstr("Unknown function [%s]\n%s\n", name.c_str(), stage::get_function_history().c_str()));
+      kphp_error(false, dl_pstr("Unknown function [%s]; \n%s\n", name.c_str(), stage::get_function_history().c_str()));
       break;
     }
 

@@ -66,7 +66,7 @@ FunctionPtr CompilerCore::register_function (const FunctionInfo &info, DataStrea
   }
   FunctionSetPtr function_set = get_function_set (fs_function, function->name, true);
 
-  bool force_flag = function->type() == FunctionData::func_global;
+  bool force_flag = info.kphp_required || function->type() == FunctionData::func_global || function->type() == FunctionData::func_extern;
   if (add_to_function_set (
         function_set,
         function,

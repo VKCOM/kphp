@@ -39,6 +39,9 @@ define('RE_URL_PATTERN', '(?<![A-Za-z\$0-9А-Яа-яёЁ\-\_])(https?:\/\/)?((?:[A-Za-
 $text = 'Я слышал, что в iOS 7 появились локальные пуш-уведомления. Но тут http://blog.derand.net/2010/08/local-notifications-ios-40.html утверждается, что еще в четвертой.';
 $text = preg_replace_callback('/'.RE_URL_PATTERN.'/', 'prcConvertHyperref', $text);
 
+/**
+ * @kphp-required
+ */
 function prcConvertHyperref($matches) {
   return preg_match('/\.([a-zA-ZрфукРФУК\-0-9]+)$/', $matches[2], $match);
 }
@@ -279,6 +282,9 @@ var_dump(preg_match_all($gcc_regex, $sampledata, $m, PREG_SET_ORDER));
 print_r($m);
 
 
+/**
+ * @kphp-required
+ */
 function cb($param) {
   var_dump($param);
   return "yes!";
@@ -422,6 +428,9 @@ $output = parseTagsRecursive($input);
 echo $output, "\n";
 
 
+/**
+ * @kphp-required
+ */
 function g($x) {
 	return "'{$x[0]}'";
 }
@@ -430,6 +439,9 @@ var_dump(preg_replace_callback('@\b\w{1,2}\b@', 'g', array('a b3 bcd', 'v' => 'a
 
 @var_dump(preg_replace_callback('~\A.~', 'g', array(array('xyz'))));
 
+/**
+ * @kphp-required
+ */
 function tmp($m) {
   return strtolower($m[0]);
 }

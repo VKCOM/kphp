@@ -11,7 +11,8 @@ struct php_doc_tag {
     kphp_inline,
     kphp_infer,
     kphp_disable_warnings,
-    param
+    param,
+    kphp_required
   };
 
 public:
@@ -33,6 +34,7 @@ private:
     res["@kphp-inline"] = kphp_inline;
     res["@kphp-infer"] = kphp_infer;
     res["@kphp-disable-warnings"] = kphp_disable_warnings;
+    res["@kphp-required"] = kphp_required;
 
     return res;
   }

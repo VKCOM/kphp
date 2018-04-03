@@ -2,6 +2,9 @@
 <?php
 $t = array(1, 2, 3, 4, 5);
 
+/**
+ * @kphp-required
+ */
 function multiply($carry, $item) {
   if ($carry === NULL) {
     return $item;
@@ -10,6 +13,9 @@ function multiply($carry, $item) {
   return $carry;
 }
 
+/**
+ * @kphp-required
+ */
 function addall($carry, $item) {
   if ($carry === NULL) {
     $carry = array();
