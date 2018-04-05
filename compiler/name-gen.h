@@ -20,11 +20,7 @@ string get_full_static_member_name(FunctionPtr function, string const &name, boo
 string resolve_define_name(string name);
 
 static inline string replace_characters(string s, char from, char to) {
-  for (size_t i = 0; i < s.length(); i++) {
-    if (s[i] == from) {
-      s[i] = to;
-    }
-  }
+  std::replace(s.begin(), s.end(), from, to);
   return s;
 }
 

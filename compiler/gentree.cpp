@@ -42,13 +42,8 @@ void GenTree::init (const vector <Token *> *tokens_new, const string &context, G
   stage::set_line (line_num);
 }
 
-static string replace_backslashs(string s, char to) {
-  for (size_t i = 0; i < s.length(); i++) {
-    if (s[i] == '\\') {
-      s[i] = to;
-    }
-  }
-  return s;
+static string replace_backslashes(const string &s) {
+  return replace_characters(s, '\\', '$');
 }
 
 bool GenTree::in_class() {
@@ -1451,8 +1446,8 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   string real_name = name_str;
   if (in_class()) {
     if (in_namespace()) {
-      string full_class_name = replace_backslashs(namespace_name, '$') + "$" + cur_class().name;
-      string full_context_name = replace_backslashs(class_context, '$');
+      string full_class_name = replace_backslashes(namespace_name) + "$" + cur_class().name;
+      string full_context_name = replace_backslashes(class_context);
       name_str = full_class_name + "$$" + name_str;
       if (full_class_name != full_context_name) {
         name_str += "$$" + full_context_name;
@@ -1685,7 +1680,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
       map <string, FunctionPtr> &methods = context_class_ptr->static_methods;
       if (methods.find(real_name) == methods.end()) {
         CREATE_VERTEX(new_name, op_func_name);
-        new_name->set_string(replace_backslashs(class_context, '$') + "$$" + real_name);
+        new_name->set_string(replace_backslashes(class_context) + "$$" + real_name);
         vector <VertexPtr> new_params_next;
         vector <VertexPtr> new_params_call;
         FOREACH(params_next, parameter) {
@@ -2064,7 +2059,7 @@ VertexPtr GenTree::get_statement(const string& php_doc) {
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CREATE_VERTEX (name, op_func_name);
       string const_name = (*cur)->str_val;
-      name->str_val = "c#" + replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + const_name;
+      name->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$" + const_name;
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
