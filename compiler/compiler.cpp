@@ -595,8 +595,6 @@ class CollectDefinesToVectorPass : public FunctionPassBase {
 class PreprocessDefinesConcatenationF {
   private:
     AUTO_PROF (preprocess_defines);
-    map<string, string> str_defines;
-    map<string, VertexPtr> int_defines;
     set<string> in_progress;
     set<string> done;
     map<string, VertexPtr> define_vertex;
@@ -650,7 +648,10 @@ class PreprocessDefinesConcatenationF {
       }
       if (v->type() == op_func_name) {
         string name = v.as<op_func_name>()->str_val;
-        return str_defines.find(resolve_define_name(name)) != str_defines.end();
+        map<string, VertexPtr>::iterator it = define_vertex.find(resolve_define_name(name));
+        if (it != define_vertex.end()) {
+          return check_concat(it->second.as<op_define>()->value());
+        }
       }
       return false;
     }
@@ -658,6 +659,11 @@ class PreprocessDefinesConcatenationF {
     bool check_const(VertexPtr v) {
       switch (v->type()) {
         case op_int_const:
+        case op_float_const:
+        case op_string:
+        case op_false:
+        case op_true:
+        case op_null:
           return true;
         case op_conv_int:
         case op_minus:
@@ -675,13 +681,30 @@ class PreprocessDefinesConcatenationF {
         case op_shl:
         case op_shr:
           return check_const(v.as<meta_op_binary_op>()->rhs()) && check_const(v.as<meta_op_binary_op>()->lhs());
+
+        case op_func_name: {
+          string name = resolve_define_name(v.as<op_func_name>()->str_val);
+          map<string, VertexPtr>::iterator it = define_vertex.find(name);
+          if (it != define_vertex.end()) {
+            return check_const(it->second.as<op_define>()->value());
+          }
+          break;
+        }
+
+        case op_array: {
+          FOREACH(v, el_it) {
+            if (!check_const(*el_it)) {
+              return false;
+            }
+          }
+          return true;
+        }
+
         default:
           break;
       }
-      if (v->type() == op_func_name) {
-        string name = v.as<op_func_name>()->str_val;
-        return int_defines.find(resolve_define_name(name)) != int_defines.end();
-      }
+
+
       return false;
     }
 
@@ -690,6 +713,11 @@ class PreprocessDefinesConcatenationF {
         case op_conv_int:
           return make_const(v.as<meta_op_unary_op>()->expr());
         case op_int_const:
+        case op_float_const:
+        case op_string:
+        case op_false:
+        case op_true:
+        case op_null:
           return v;
         case op_minus:
         case op_plus:
@@ -711,16 +739,26 @@ class PreprocessDefinesConcatenationF {
           v.as<meta_op_binary_op>()->rhs() = make_const(v.as<meta_op_binary_op>()->rhs());
           return v;
         }
+
+        case op_func_name: {
+          string name = v.as<op_func_name>()->str_val;
+          map<string,VertexPtr>::iterator iter = define_vertex.find(resolve_define_name(name));
+          kphp_assert(iter != define_vertex.end());
+          return iter->second.as<op_define>()->value();
+        }
+
+        case op_array: {
+          FOREACH(v, el_it) {
+            *el_it = make_const(*el_it);
+          }
+          return v;
+        }
+
         default:
+          kphp_assert(false);
           break;
       }
-      if (v->type() == op_func_name) {
-        string name = v.as<op_func_name>()->str_val;
-        map<string,VertexPtr>::iterator iter = int_defines.find(resolve_define_name(name));
-        kphp_assert(iter != int_defines.end());
-        return iter->second;
-      }
-      kphp_assert(false);
+
       return VertexPtr();
     }
 
@@ -737,9 +775,13 @@ class PreprocessDefinesConcatenationF {
       }
       if (v->type() == op_func_name) {
         string name = v.as<op_func_name>()->str_val;
-        map<string,string>::iterator iter = str_defines.find(resolve_define_name(name));
-        kphp_assert(iter != str_defines.end());
-        return iter->second;
+        map<string, VertexPtr>::iterator iter = define_vertex.find(resolve_define_name(name));
+        kphp_assert(iter != define_vertex.end());
+
+        VertexAdaptor <meta_op_define> define = iter->second;
+        kphp_assert(resolve_define_name(name) == define->name()->get_string());
+
+        return define->value()->get_string();
       }
       kphp_fail();
     }
@@ -751,23 +793,25 @@ class PreprocessDefinesConcatenationF {
 
       stage::die_if_global_errors();
 
-      vector<VertexPtr> defines = defines_stream.get_as_vector();
-      for (size_t i = 0; i < defines.size(); i++) {
-        VertexPtr name_v = defines[i].as<op_define>()->name();
-        stage::set_location(defines[i].as<op_define>()->location);
+      vector<VertexPtr> all_defines = defines_stream.get_as_vector();
+      FOREACH(all_defines, define) {
+        VertexPtr name_v = define->as<op_define>()->name();
+        stage::set_location(define->as<op_define>()->location);
         kphp_error_return (
           name_v->type() == op_string,
           "Define: first parameter must be a string"
         );
 
         string name = name_v.as<op_string>()->str_val;
-        if (!define_vertex.insert(make_pair(name, defines[i])).second) {
-          kphp_error_return(0, "Duplicate define declaration");
+        if (!define_vertex.insert(make_pair(name, *define)).second) {
+          kphp_error_return(0, dl_pstr("Duplicate define declaration: %s", name.c_str()));
         }
       }
-      for (size_t i = 0; i < defines.size(); i++) {
-        process_define(defines[i]);
+
+      FOREACH(all_defines, define) {
+        process_define(*define);
       }
+
       vector<FunctionPtr> funs = all_fun.get_as_vector();
       for (size_t i = 0; i < funs.size(); i++) {
         os << funs[i];
@@ -781,8 +825,6 @@ class PreprocessDefinesConcatenationF {
         map<string, VertexPtr>::iterator it = define_vertex.find(name);
         if (it != define_vertex.end()) {
           process_define(it->second);
-        } else {
-          fprintf(stderr, "Unknown func_name %s in define\n", name.c_str());
         }
       }
       FOREACH(root, i) {
@@ -793,7 +835,8 @@ class PreprocessDefinesConcatenationF {
     void process_define(VertexPtr root) {
       stage::set_location(root->location);
       VertexAdaptor <meta_op_define> define = root;
-      VertexPtr name_v = define->name(), val = define->value();
+      VertexPtr name_v = define->name();
+      VertexPtr val = define->value();
 
       kphp_error_return (
         name_v->type() == op_string,
@@ -834,26 +877,15 @@ class PreprocessDefinesConcatenationF {
       done.insert(name);
 
       if (val->type() != op_string && check_concat(val)) {
-        string collected = collect_concat(val);
         CREATE_VERTEX(new_val, op_string);
-        new_val->str_val = collected;
+        new_val->str_val = collect_concat(val);
         new_val->location = val->get_location();
-        define->value() = val = new_val;
+
+        define->value() = new_val;
+      } else if (check_const(val)) {
+        define->value() = make_const(val);
       }
 
-      if (val->type() == op_int_const) {
-        int_defines[name] = val;
-      } else {
-        if (check_const(val)) {
-          VertexPtr new_val = make_const(val);
-          define->value() = val = new_val;
-          int_defines[name] = val;
-        }
-      }
-
-      if (val->type() == op_string) {
-        str_defines[name] = val.as<op_string>()->str_val;
-      }
     }
 
 };
@@ -871,7 +903,8 @@ class CollectDefinesPass : public FunctionPassBase {
     VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_define || root->type() == op_define_raw) {
         VertexAdaptor <meta_op_define> define = root;
-        VertexPtr name = define->name(), val = define->value();
+        VertexPtr name = define->name();
+        VertexPtr val = define->value();
 
         kphp_error_act (
           name->type() == op_string,
