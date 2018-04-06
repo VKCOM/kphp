@@ -65,7 +65,7 @@ FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__
     }
   }
   FunctionSetPtr function_set = node->data;
-  kphp_assert (function_set->name == name/*, "Bug in compiler: hash collision"*/);
+  kphp_assert_msg (function_set->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", function_set->name.c_str(), name.c_str()));
   return function_set;
 }
 FunctionPtr CompilerCore::get_function_unsafe (const string &name) {
