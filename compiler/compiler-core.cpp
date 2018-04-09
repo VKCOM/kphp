@@ -92,6 +92,7 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->disabled_warnings = info.disabled_warnings;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
+  function->should_be_sync = info.should_be_sync;
 
   if (function_root->type() == op_func_decl) {
     function->is_extern = true;

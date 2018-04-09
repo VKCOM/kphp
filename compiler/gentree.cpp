@@ -118,7 +118,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->extra_type = op_ex_func_global;
 
     const FunctionInfo &info = FunctionInfo(main, namespace_name, cur_class().name, class_context,
-                                            this->namespace_uses, class_extends, set<string>());
+                                            this->namespace_uses, class_extends, set<string>(), false, false);
     kphp_assert(register_function(info).not_null());
   }
   cur_class().root = root;
@@ -1527,14 +1527,15 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
     CE (expect (tok_semicolon, "';'"));
   }
 
-  int inline_flag = false;
 
   if (cmd.not_null()) {
     cmd = embrace (cmd);
   }
 
   set<string> disabled_warnings;
-  bool kphp_required = false;
+  int kphp_inline_flag = false;
+  bool kphp_required_flag = false;
+  bool kphp_sync_flag = false;
 
   if (cmd.not_null() && phpdoc != "") {
     Location location_backup = stage::get_location();
@@ -1546,7 +1547,12 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
     for (int i = 0; i < tags.size(); i++) {
       switch (tags[i].type) {
         case php_doc_tag::kphp_inline: {
-          inline_flag = true;
+          kphp_inline_flag = true;
+          continue;
+        }
+
+        case php_doc_tag::kphp_sync: {
+          kphp_sync_flag = true;
           continue;
         }
 
@@ -1582,7 +1588,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
         }
 
         case php_doc_tag::kphp_required: {
-          kphp_required = true;
+          kphp_required_flag = true;
           break;
         }
 
@@ -1664,7 +1670,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
   res->varg_flag = varg_flag;
   res->throws_flag = throws_flag;
   res->resumable_flag = resumable_flag;
-  res->inline_flag = inline_flag;
+  res->inline_flag = kphp_inline_flag;
 
   if (!in_namespace()) {
     if (in_class()) {
@@ -1712,13 +1718,13 @@ VertexPtr GenTree::get_function (bool anonimous_flag, string phpdoc, AccessType 
         string context_class_name = class_context.substr(pos + 1);
         methods[real_name] = register_function(FunctionInfo(func, context_namespace_name, context_class_name,
                                                             class_context, map<string, string>(), context_class_ptr->extends,
-                                                            set<string>()));
+                                                            set<string>(), kphp_required_flag, kphp_sync_flag));
         func->get_func_id()->access_type = access_type;
       }
     }
-    register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends, disabled_warnings, kphp_required));
+    register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends, disabled_warnings, kphp_required_flag, kphp_sync_flag));
   } else {
-    register_function(FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings, kphp_required));
+    register_function(FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings, kphp_required_flag, kphp_sync_flag));
   }
 
   if (res->type() == op_function) {

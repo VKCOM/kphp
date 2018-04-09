@@ -140,10 +140,11 @@ public:
   string extends;
   set<string> disabled_warnings;
   bool kphp_required;
+  bool should_be_sync;
 
   FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
                const string &class_context, const map<string, string> namespace_uses,
-               string extends, const set<string> disabled_warnings, bool kphp_required = false)
+               string extends, const set<string> disabled_warnings, bool kphp_required, bool should_be_sync)
     : root(root)
     , namespace_name(namespace_name)
     , class_name(class_name)
@@ -152,6 +153,7 @@ public:
     , extends(extends)
     , disabled_warnings(disabled_warnings)
     , kphp_required(kphp_required)
+    , should_be_sync(should_be_sync)
   {}
 };
 
@@ -196,6 +198,7 @@ public:
   bool is_extern;
   bool used_in_source;
   bool is_callback;
+  bool should_be_sync;
   string namespace_name;
   string class_name;
   string class_context_name;
