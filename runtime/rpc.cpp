@@ -1021,6 +1021,12 @@ OrFalse <string> f$rpc_get (int request_id, double timeout) {
   return start_resumable <OrFalse <string> > (new rpc_get_resumable (request_id, timeout));
 }
 
+OrFalse <string> f$rpc_get_synchronously (int request_id) {
+  wait_synchronously (request_id);
+  OrFalse <string> result = f$rpc_get (request_id);
+  php_assert (resumable_finished);
+  return result;
+}
 
 class rpc_get_and_parse_resumable: public Resumable {
   typedef bool ReturnT;

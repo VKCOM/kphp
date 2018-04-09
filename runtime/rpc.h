@@ -149,6 +149,8 @@ void f$rpc_flush (void);
 
 OrFalse <string> f$rpc_get (int request_id, double timeout = -1.0);
 
+OrFalse <string> f$rpc_get_synchronously (int request_id);
+
 bool f$rpc_get_and_parse (int request_id, double timeout = -1.0);
 
 
