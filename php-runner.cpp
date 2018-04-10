@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 extern "C" {
+#include "common/kernel-version.h"
 #include "common/kprintf.h"
 #include "common/server/server-functions.h"
 #include "common/wrappers/madvise.h"
@@ -246,10 +247,8 @@ void PHPScriptBase::clear() {
   state = rst_empty;
   if (use_madvise_dontneed) {
     if (dl::memory_get_total_usage() > memory_used_to_recreate_script) {
-      const int ret = our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, MADV_FREE);
-      if (ret == -1 && errno == EINVAL) {
-        our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, MADV_DONTNEED);
-      }
+      const int advice = madvise_madv_free_supported() ? MADV_FREE : MADV_DONTNEED;
+      our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, MADV_DONTNEED);
     }
   }
 }
