@@ -3453,6 +3453,9 @@ int main_args_handler (int i) {
     }
     case 2001: {
       memory_used_to_recreate_script = parse_memory_limit(optarg);
+      // Align to page boundary
+      const size_t page_size = 4096;
+      memory_used_to_recreate_script = ((memory_used_to_recreate_script + (page_size - 1)) / page_size) * page_size;
       if (memory_used_to_recreate_script <= 0) {
         kprintf("couldn't parse worker-memory-to-reload argument\n");
         return -1;
