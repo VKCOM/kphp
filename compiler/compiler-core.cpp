@@ -38,8 +38,7 @@ const KphpEnviroment &CompilerCore::env() {
 }
 
 
-bool CompilerCore::add_to_function_set (FunctionSetPtr function_set, FunctionPtr function,
-    bool req) {
+bool CompilerCore::add_to_function_set (FunctionSetPtr function_set, FunctionPtr function, bool req) {
   AutoLocker <FunctionSetPtr> locker (function_set);
   if (req) {
     kphp_assert (function_set->size() == 0);
@@ -66,7 +65,7 @@ FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__
     }
   }
   FunctionSetPtr function_set = node->data;
-  kphp_assert (function_set->name == name/*, "Bug in compiler: hash collision"*/);
+  kphp_assert_msg (function_set->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", function_set->name.c_str(), name.c_str()));
   return function_set;
 }
 FunctionPtr CompilerCore::get_function_unsafe (const string &name) {
@@ -94,6 +93,7 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->access_type = info.access_type;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
+  function->should_be_sync = info.should_be_sync;
 
   if (function_root->type() == op_func_decl) {
     function->is_extern = true;
@@ -493,10 +493,11 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
   for (size_t i = 0; i < files.size(); i++) {
     header_mtime[i] = files[i]->mtime;
   }
-  FOREACH (files, h_file_i) {
-    File *h_file = *h_file_i;
+
+  for (size_t i = 0; i < files.size(); ++i) {
+    File *h_file = files[i];
     if (h_file->ext == ".h") {
-      long long &h_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), h_file, compare_mtime) - files.begin()];
+      long long &h_mtime = header_mtime[i];
       FOREACH (h_file->includes, it) {
         File *header = cpp_dir->get_file (*it, false);
         kphp_assert (header != NULL);
@@ -627,27 +628,30 @@ bool try_optimize_var (VarPtr var) {
 }
 
 string conv_to_func_ptr_name(VertexPtr call) {
-  VertexPtr name_v = GenTree::get_actual_value (call);
-  string name;
-  if (name_v->type() == op_string) {
-    name = name_v.as <op_string>()->str_val;
-  } else if (name_v->type() == op_func_name) {
-    name = name_v.as <op_func_name>()->str_val;
-  } else if (name_v->type() == op_array) {
-    if (name_v->size() == 2) {
-      VertexPtr class_name = name_v->ith(0);
-      VertexPtr fun_name = name_v->ith(1);
-      class_name = GenTree::get_actual_value(class_name);
-      fun_name = GenTree::get_actual_value(fun_name);
-      if (class_name->type() == op_string && fun_name->type() == op_string) {
-        name = class_name.as<op_string>()->str_val + "::" + fun_name.as<op_string>()->str_val;
+  VertexPtr name_v = GenTree::get_actual_value(call);
+
+  switch (name_v->type()) {
+    case op_string:
+    case op_func_name:
+      return name_v->get_string();
+
+    case op_array: {
+      if (name_v->size() == 2) {
+        VertexPtr class_name = GenTree::get_actual_value(name_v->ith(0));
+        VertexPtr fun_name = GenTree::get_actual_value(name_v->ith(1));
+
+        if (class_name->type() == op_string && fun_name->type() == op_string) {
+          return class_name->get_string() + "::" + fun_name->get_string();
+        }
       }
+      break;
     }
+
+    default:
+      break;
   }
-  if (name.find("::") != string::npos && name[0] != '\\') {
-    return "";
-  }
-  return name;
+
+  return "";
 }
 
 VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function) {
@@ -759,32 +763,33 @@ VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function) {
         : call->get_string();
 
   FunctionSetPtr function_set = G->get_function_set (fs_function, name, true);
-  FunctionPtr function;
-  int functions_cnt = (int)function_set->size();
 
-  if (functions_cnt == 0) {
-    if (call->type() == op_constructor_call) {
-      kphp_error(0, dl_pstr("Calling 'new %s()', but this class does not have fields and constructor\n%s\n",
-          call->get_string().c_str(), stage::get_function_history().c_str()));
-    } else {
-      kphp_error(0, dl_pstr("Unknown function [%s]\n%s\n",
-          name.c_str(), stage::get_function_history().c_str()));
+  switch (function_set->size()) {
+    case 1: {
+      if (!function_set->is_required) {
+        kphp_error(false, dl_pstr("Function is not required. Maybe you want to use `@kphp-required` for this function [%s]\n%s\n", name.c_str(), stage::get_function_history().c_str()));
+        break;
+      }
+      call = set_func_id(call, function_set[0]);
+      break;
     }
-    return call;
+
+    case 0: {
+      if (call->type() == op_constructor_call) {
+        kphp_error(0, dl_pstr("Calling 'new %s()', but this class does not have fields and constructor\n%s\n",
+            call->get_string().c_str(), stage::get_function_history().c_str()));
+      } else {
+        kphp_error(0, dl_pstr("Unknown function [%s]\n%s\n",
+            name.c_str(), stage::get_function_history().c_str()));
+      }
+      break;
+    }
+
+    default: {
+      kphp_error(false, dl_pstr("Function overloading is not supported properly [%s]", name.c_str()));
+      break;
+    }
   }
 
-  kphp_assert (function_set->is_required);
-
-  if (functions_cnt == 1) {
-    function = function_set[0];
-  }
-
-  kphp_error_act (
-    function.not_null(),
-    dl_pstr ("Function overloading is not supported properly [%s]", name.c_str()),
-    return call
-  );
-
-  call = set_func_id (call, function);
   return call;
 }

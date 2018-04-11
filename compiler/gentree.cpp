@@ -1871,6 +1871,13 @@ bool GenTree::check_statement_end() {
   return expect (tok_semicolon, "';'");
 }
 
+static inline bool is_class_name_allowed(const string &name) {
+  static string a[] = {"Exception", "RpcMemcache", "Memcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc", "db_decl"};
+  static set<string> disallowed_names(a, a + sizeof(a) / sizeof(a[0]));
+
+  return disallowed_names.find(name) == disallowed_names.end();
+}
+
 VertexPtr GenTree::get_class (Token *phpdoc_token) {
   AutoLocation class_location (this);
   CE (expect (tok_class, "'class'"));
@@ -1881,9 +1888,7 @@ VertexPtr GenTree::get_class (Token *phpdoc_token) {
     string expected_name = stage::get_file()->short_file_name;
     kphp_error (name_str == expected_name,
                 dl_pstr("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
-    if (name_str == "Exception" || name_str == "RpcMemcache" || name_str == "Memcache" || name_str == "rpc_connection"
-        || name_str == "Long" || name_str == "ULong" || name_str == "UInt" || name_str == "true_mc" || name_str == "test_mc"
-        || name_str == "rich_mc" || name_str == "db_decl") {
+    if (!is_class_name_allowed(name_str)) {
       kphp_error (false, dl_pstr("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
     }
     if (class_context.empty()) {
@@ -1962,12 +1967,8 @@ VertexPtr GenTree::get_namespace_class() {
   kphp_error (test_expect (tok_func_name), "Namespace name expected");
   SrcFilePtr current_file = stage::get_file();
   string namespace_name = (*cur)->str_val;
-  string expected_namespace_name = current_file->unified_dir_name;
-  for (size_t i = 0; i < expected_namespace_name.length(); i++) {
-    if (expected_namespace_name[i] == '/') {
-      expected_namespace_name[i] = '\\';
-    }
-  }
+  string expected_namespace_name = replace_characters(current_file->unified_dir_name, '/', '\\');
+
   kphp_error (namespace_name == expected_namespace_name,
                   dl_pstr("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
   this->namespace_name = namespace_name;

@@ -1004,7 +1004,8 @@ void function_apply_header (FunctionPtr func, VertexAdaptor <meta_op_function> h
   func->varg_flag = header->varg_flag;
 
   if (!func->varg_flag) {
-    VertexAdaptor <op_func_param_list> root_params_vertex = root->params(), header_params_vertex = header->params();
+    VertexAdaptor <op_func_param_list> root_params_vertex = root->params();
+    VertexAdaptor <op_func_param_list> header_params_vertex = header->params();
     VertexRange root_params = root_params_vertex->params();
     VertexRange header_params = header_params_vertex->params();
 

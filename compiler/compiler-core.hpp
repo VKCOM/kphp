@@ -64,14 +64,10 @@ FunctionPtr CompilerCore::register_function (const FunctionInfo &info, DataStrea
   } else {
     kphp_fail();
   }
-//  if(function->name == "src_dev1261a345$u") debugPrintFunction(function);
   FunctionSetPtr function_set = get_function_set (fs_function, function->name, true);
 
-  bool auto_require = function->type() == FunctionData::func_global || function->type() == FunctionData::func_extern;
-  if (add_to_function_set (
-        function_set,
-        function,
-        auto_require)) {
+  bool auto_require = info.kphp_required || function->type() == FunctionData::func_global || function->type() == FunctionData::func_extern;
+  if (add_to_function_set(function_set, function, auto_require)) {
     function->is_required = true;
     if (auto_require) {
       function->req_id = stage::get_file()->req_id;
