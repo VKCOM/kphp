@@ -248,7 +248,7 @@ void PHPScriptBase::clear() {
   if (use_madvise_dontneed) {
     if (dl::memory_get_total_usage() > memory_used_to_recreate_script) {
       const int advice = madvise_madv_free_supported() ? MADV_FREE : MADV_DONTNEED;
-      our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, MADV_DONTNEED);
+      our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, advice);
     }
   }
 }
