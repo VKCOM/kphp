@@ -1,6 +1,7 @@
 #include <pwd.h>
 
-#include "common/server/server-functions.h"
+#include "common/options.h"
+#include "common/server/signals.h"
 #include "common/version-string.h"
 
 #include "compiler/compiler.h"

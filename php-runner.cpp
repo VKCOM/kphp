@@ -14,7 +14,8 @@
 extern "C" {
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
-#include "common/server/server-functions.h"
+
+#include "common/server/signals.h"
 #include "common/wrappers/madvise.h"
 #include "php-engine-vars.h"
 
