@@ -234,7 +234,7 @@ string f$hex2bin (const string &str) {
     return string();
   }
 
-  string result (len, false);
+  string result (len / 2, false);
   for (int i = 0; i < len; i += 2) {
     int num_high = hex_to_int (str[i]);
     int num_low = hex_to_int (str[i + 1]);
@@ -242,7 +242,7 @@ string f$hex2bin (const string &str) {
       php_warning ("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
       return string();
     }
-    result[i] = (char)((num_high << 4) + num_low);
+    result[i / 2] = (char)((num_high << 4) + num_low);
   }
 
   return result;
