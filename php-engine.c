@@ -3314,13 +3314,6 @@ void init_logname (const char *src) {
 const char* builtin_tl_schema __attribute__((weak));
 int builtin_tl_schema_length __attribute__((weak)) = -1;
 
-void usage (void) {
-  printf ("usage: %s\n", progname);
-  printf ("\t%s\n", get_version_string());
-  parse_usage();
-  exit (2);
-}
-
 int main_args_handler (int i) {
   switch (i) {
     case 'D': {
@@ -3478,7 +3471,7 @@ int main_args_handler (int i) {
 
 void parse_main_args_end (int argc, char *argv[]) {
   if (run_once) {
-    arg_add (progname);
+    arg_add (argv[0]);
     while (optind != argc) {
       arg_add (argv[optind++]);
     }
@@ -3488,7 +3481,7 @@ void parse_main_args_end (int argc, char *argv[]) {
 }
 
 void parse_main_args (int argc, char *argv[]) {
-  progname = argv[0];
+  usage_set_other_args_desc("");
   option_section_t sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOISTY, OPT_ARRAY_END};
   init_parse_options(sections);
 

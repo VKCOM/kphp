@@ -11,17 +11,6 @@
  * Kitten compiler for PHP interface
  **/
 
-extern "C" {
-
-void usage(void) {
-  printf("%s\nConvert php code into C++ code, and compile it into a binary\n",
-         get_version_string());
-  parse_usage();
-  exit(1);
-}
-
-}
-
 /*
    KPHP_PATH ?= "~/engine/src"
    KPHP_FUNCTIONS ?= "$KPHP_PATH/PHP/functions.txt"
@@ -133,6 +122,7 @@ int parse_args_f(int i) {
 
 int main (int argc, char *argv[]) {
   init_version_string("kphp2cpp");
+  usage_set_other_args_desc("<main-files-list>");
   set_debug_handlers();
 
   env = new KphpEnviroment();
