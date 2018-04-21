@@ -102,6 +102,22 @@ public:
   virtual ~vertex_inner() {
   }
 
+  void copy_location_and_flags(const vertex_inner <meta_op_base> &from) {
+    type_rule = from.type_rule;
+    location = from.location;
+    val_ref_flag = from.val_ref_flag;
+    const_type = from.const_type;
+    ref_flag = from.ref_flag;
+    auto_flag = from.auto_flag;
+    varg_flag = from.varg_flag;
+    throws_flag = from.throws_flag;
+    resumable_flag = from.resumable_flag;
+    parent_flag = from.parent_flag;
+    needs_const_iterator_flag= from.needs_const_iterator_flag;
+    inline_flag = from.inline_flag;
+    void_flag = from.void_flag;
+  }
+
 
   VertexPtr *arr() const {
     return (VertexPtr *)this - 1;

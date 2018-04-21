@@ -149,6 +149,9 @@ public:
   bool should_be_sync;
   AccessType access_type;
 
+  FunctionInfo() {
+  }
+
   FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
                const string &class_context, const map<string, string> namespace_uses,
                string extends, const set<string> disabled_warnings,

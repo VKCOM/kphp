@@ -34,7 +34,7 @@ public:
   void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new);
   FunctionPtr register_function (FunctionInfo info);
   bool in_class();
-  bool in_namespace();
+  bool in_namespace() const;
   void enter_class (const string &class_name, Token *phpdoc_token);
   ClassInfo &cur_class();
   void exit_and_register_class (VertexPtr root);
@@ -109,6 +109,15 @@ public:
   VertexPtr get_switch();
   VertexPtr get_function (bool anonimous_flag = false, Token *phpdoc_token = NULL, AccessType access_type = access_nonmember);
   VertexPtr get_class(Token *phpdoc_token);
+
+private:
+  VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
+  void set_extra_type(VertexPtr vertex, AccessType access_type) const;
+  void fill_info_about_class(FunctionInfo &info);
+  void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next);
+  VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next);
+  string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &real_name);
+
 private:
   const vector <Token *> *tokens;
   GenTreeCallbackBase *callback;

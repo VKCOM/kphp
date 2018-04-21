@@ -7,6 +7,7 @@
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
 #include "compiler/debug.h"
+#include "compiler/compiler-core.h"
 
 GenTree::GenTree () {
 }
@@ -43,19 +44,14 @@ void GenTree::init (const vector <Token *> *tokens_new, const string &context, G
   stage::set_line (line_num);
 }
 
-static string replace_backslashs(string s, char to) {
-  for (size_t i = 0; i < s.length(); i++) {
-    if (s[i] == '\\') {
-      s[i] = to;
-    }
-  }
-  return s;
+static string replace_backslashes(const string &s) {
+  return replace_characters(s, '\\', '$');
 }
 
 bool GenTree::in_class() {
   return !class_stack.empty();
 }
-bool GenTree::in_namespace() {
+bool GenTree::in_namespace() const {
   return !namespace_name.empty();
 }
 
@@ -136,7 +132,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->extra_type = op_ex_func_global;
 
     const FunctionInfo &info = FunctionInfo(main, namespace_name, cur_class().name, class_context,
-        this->namespace_uses, class_extends, set <string>(), access_nonmember);
+                                            this->namespace_uses, class_extends, set<string>(), false, false, access_nonmember);
     kphp_assert(register_function(info).not_null());
   }
   cur_class().root = root;
@@ -1260,7 +1256,7 @@ FunctionPtr GenTree::create_default_constructor (const ClassInfo &cur_class) {
   patch_func_constructor(func, cur_class);
 
   return register_function(FunctionInfo(
-      func, namespace_name, cur_class.name, class_context, this->namespace_uses, class_extends, set <string>(), access_public
+      func, namespace_name, cur_class.name, class_context, this->namespace_uses, class_extends, set <string>(), false, false, access_public
   ));
 }
 
@@ -1581,10 +1577,12 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     name_str = (*cur)->str_val;
     next_cur();
   }
-  string real_name = name_str;
+
+  bool is_constructor = false;
   if (in_class()) {
-    string full_class_name = replace_backslashs(namespace_name, '$') + "$" + cur_class().name;
-    string full_context_name = replace_backslashs(class_context, '$');
+    is_constructor = (name_str == "__construct");
+    string full_class_name = replace_backslashes(namespace_name) + "$" + cur_class().name;
+    string full_context_name = replace_backslashes(class_context);
     name_str = full_class_name + "$$" + name_str;
     if (full_class_name != full_context_name) {
       name_str += "$$" + full_context_name;
@@ -1594,26 +1592,26 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
   set_location (name, name_location);
   name->str_val = name_str;
 
-  bool auto_flag = false;
+  vertex_inner<meta_op_base> flags_inner;
+  VertexPtr flags(&flags_inner);
   if (test_expect (tok_auto)) {
     next_cur();
-    auto_flag = true;
+    flags->auto_flag = true;
   }
 
   CE (expect (tok_oppar, "'('"));
 
   AutoLocation params_location (this);
   vector <VertexPtr> params_next;
-  bool is_constructor = in_class() && real_name == "__construct";
 
   if (access_type == access_private || access_type == access_protected || access_type == access_public) {
     if (!is_constructor) {
       patch_func_add_this(params_next, func_location);
     }
   }
-  bool varg_flag = false;
+
   if (test_expect (tok_varg)) {
-    varg_flag = true;
+    flags->varg_flag = true;
     next_cur();
   } else {
     bool ok_params_next = gen_list<op_err> (&params_next, &GenTree::get_func_param, tok_comma);
@@ -1624,19 +1622,16 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
 
   CE (expect (tok_clpar, "')'"));
 
-  bool throws_flag = false;
-  bool resumable_flag = false;
-
   bool flag = true;
   while (flag) {
     flag = false;
     if (test_expect (tok_throws)) {
-      throws_flag = true;
+      flags->throws_flag = true;
       CE (expect (tok_throws, "'throws'"));
       flag = true;
     }
     if (test_expect (tok_resumable)) {
-      resumable_flag = true;
+      flags->resumable_flag = true;
       CE (expect (tok_resumable, "'resumable'"));
       flag = true;
     }
@@ -1655,13 +1650,14 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     CE (expect (tok_semicolon, "';'"));
   }
 
-  int inline_flag = false;
 
   if (cmd.not_null()) {
     cmd = embrace (cmd);
   }
 
   set<string> disabled_warnings;
+  bool kphp_required_flag = false;
+  bool kphp_sync_flag = false;
 
   // парсим только '@kphp-' phpdoc'и, не все (см. class-assumptions.cpp, где парсится всё по требованию)
   if (cmd.not_null() && phpdoc_token != NULL && phpdoc_token->type() == tok_phpdoc_kphp) {
@@ -1672,71 +1668,96 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     int param_ptr = 0;
     vector<VertexPtr> new_cmd_next;
     for (int i = 0; i < tags.size(); i++) {
-      if (tags[i].name == "@kphp-inline") {
-        inline_flag = true;
-        continue;
-      } else if (tags[i].name == "@kphp-infer") {
-        CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
-        stringstream stream;
-        stream << tags[i].value;
-        string token;
-        while (stream >> token) {
-          if (token == "check") {
-            infer_type |= 1;
-          } else if (token == "hint") {
-            infer_type |= 2;
-          } else if (token == "cast") {
-            infer_type |= 4;
-          } else {
-            CE(!kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str())));
+      switch (tags[i].type) {
+        case php_doc_tag::kphp_inline: {
+          flags->inline_flag = true;
+          continue;
+        }
+
+        case php_doc_tag::kphp_sync: {
+          kphp_sync_flag = true;
+          continue;
+        }
+
+        case php_doc_tag::kphp_infer: {
+          CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
+          stringstream stream;
+          stream << tags[i].value;
+          string token;
+          while (stream >> token) {
+            if (token == "check") {
+              infer_type |= 1;
+            } else if (token == "hint") {
+              infer_type |= 2;
+            } else if (token == "cast") {
+              infer_type |= 4;
+            } else {
+              CE(!kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str())));
+            }
           }
+          break;
         }
-      } else if (tags[i].name == "@kphp-disable-warnings") {
-        stringstream stream;
-        stream << tags[i].value;
-        string token;
-        while (stream >> token) {
-          if (!disabled_warnings.insert(token).second) {
-            kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
+
+        case php_doc_tag::kphp_disable_warnings: {
+          stringstream stream;
+          stream << tags[i].value;
+          string token;
+          while (stream >> token) {
+            if (!disabled_warnings.insert(token).second) {
+              kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
+            }
           }
+          break;
         }
-      } else if (infer_type && tags[i].name == "@param") {
-        CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
-        std::istringstream is(tags[i].value);
-        string type_help, var_name;
-        CE(!kphp_error(is >> type_help, "Failed to parse @param tag"));
-        CE(!kphp_error(is >> var_name, "Failed to parse @param tag"));
-        VertexAdaptor <op_var> var = params_next[param_ptr].as <op_func_param>()->var().as <op_var>();
-        CE(!kphp_error(var.not_null(), "Something strange happened during @param parsing"));
-        CE(!kphp_error(var_name == "$" + var->str_val,
-            dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
-        ));
-        VertexPtr doc_type = phpdoc_parse_type(type_help);
-        CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
-        if (infer_type & 1) {
-          CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
-          CREATE_VERTEX(doc_rule_var, op_var);
-          doc_rule_var->str_val = var->str_val;
-          doc_rule_var->type_rule = doc_type_check;
-          set_location(doc_rule_var, params_location);
-          new_cmd_next.push_back(doc_rule_var);
+
+        case php_doc_tag::kphp_required: {
+          kphp_required_flag = true;
+          break;
         }
-        if (infer_type & 2) {
-          CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
-          CREATE_VERTEX(doc_rule_var, op_var);
-          doc_rule_var->str_val = var->str_val;
-          doc_rule_var->type_rule = doc_type_check;
-          set_location(doc_rule_var, params_location);
-          new_cmd_next.push_back(doc_rule_var);
+
+        case php_doc_tag::param: {
+          if (infer_type) {
+            CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
+            std::istringstream is(tags[i].value);
+            string type_help, var_name;
+            CE(!kphp_error(is >> type_help, "Failed to parse @param tag"));
+            CE(!kphp_error(is >> var_name, "Failed to parse @param tag"));
+            VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
+            CE(!kphp_error(var.not_null(), "Something strange happened during @param parsing"));
+            CE(!kphp_error(var_name == "$" + var->str_val,
+                           dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
+            ));
+            VertexPtr doc_type = phpdoc_parse_type(type_help);
+            CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
+            if (infer_type & 1) {
+              CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+              CREATE_VERTEX(doc_rule_var, op_var);
+              doc_rule_var->str_val = var->str_val;
+              doc_rule_var->type_rule = doc_type_check;
+              set_location(doc_rule_var, params_location);
+              new_cmd_next.push_back(doc_rule_var);
+            }
+            if (infer_type & 2) {
+              CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
+              CREATE_VERTEX(doc_rule_var, op_var);
+              doc_rule_var->str_val = var->str_val;
+              doc_rule_var->type_rule = doc_type_check;
+              set_location(doc_rule_var, params_location);
+              new_cmd_next.push_back(doc_rule_var);
+            }
+            if (infer_type & 4) {
+              CE(!kphp_error(doc_type->type() == op_type_rule, dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
+              CE(!kphp_error(doc_type.as<op_type_rule>()->args().empty(), dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
+              CE(!kphp_error(params_next[param_ptr]->type_help == tp_Unknown, dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str())));
+              params_next[param_ptr]->type_help = doc_type.as<op_type_rule>()->type_help;
+            }
+            param_ptr++;
+          }
+          break;
         }
-        if (infer_type & 4) {
-          CE(!kphp_error(doc_type->type() == op_type_rule, dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
-          CE(!kphp_error(doc_type.as <op_type_rule>()->args().empty(), dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
-          CE(!kphp_error(params_next[param_ptr]->type_help ==
-                         tp_Unknown, dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str())));
-          params_next[param_ptr]->type_help = doc_type.as <op_type_rule>()->type_help;
-        }
-        param_ptr++;
+
+        case php_doc_tag::unknown:
+          break;
       }
     }
     CE(!kphp_error(!infer_type || param_ptr == params_next.size(), "Not enough @param tags"));
@@ -1751,92 +1772,34 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     stage::set_location(location_backup);
   }
 
-  VertexPtr res;
-  if (cmd.is_null()) {
-    if (type == tok_ex_function) {
-      CREATE_VERTEX (func, op_extern_func, name, params);
-      res = func;
-    } else if (type == tok_function) {
-      CREATE_VERTEX (func, op_func_decl, name, params);
-      res = func;
+  set_location(flags, func_location);
+  flags->type_rule = type_rule;
+
+  FunctionInfo info;
+  {
+    VertexPtr res = create_function_vertex_with_flags(name, params, flags, type, cmd, is_constructor);
+    set_extra_type(res, access_type);
+    info = FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings, kphp_required_flag, kphp_sync_flag, access_type);
+    fill_info_about_class(info);
+
+    register_function(info);
+
+    if (info.root->type() == op_function) {
+      info.root->get_func_id()->access_type = access_type;
+      info.root->get_func_id()->phpdoc_token = phpdoc_token;
     }
-  } else {
-    CREATE_VERTEX (func, op_function, name, params, cmd);
-    res = func;
+
     if (is_constructor) {
-      patch_func_constructor(res, cur_class());
-    } else {
-      func_force_return(res);
-    }
-  }
-  set_location (res, func_location);
-  res->type_rule = type_rule;
-
-  res->auto_flag = auto_flag;
-  res->varg_flag = varg_flag;
-  res->throws_flag = throws_flag;
-  res->resumable_flag = resumable_flag;
-  res->inline_flag = inline_flag || is_constructor;
-
-  if (!in_namespace()) {
-    if (access_type != access_nonmember) {
-      res->extra_type = op_ex_func_member;
-    } else if (in_func_cnt_ == 0) {
-      res->extra_type = op_ex_func_global;
+      cur_class().new_function = info.root->get_func_id();
     }
   }
 
-  if (in_class()) {
-    if (context_class_ptr.not_null()) {
-      map <string, FunctionPtr> &methods = context_class_ptr->static_methods;
-      if (methods.find(real_name) == methods.end()) {
-        CREATE_VERTEX(new_name, op_func_name);
-        new_name->set_string(replace_backslashs(class_context, '$') + "$$" + real_name);
-        vector <VertexPtr> new_params_next;
-        vector <VertexPtr> new_params_call;
-        FOREACH(params_next, parameter) {
-          if ((*parameter)->type() == op_func_param) {
-            CLONE_VERTEX(new_var, op_var, (*parameter).as <op_func_param>()->var().as <op_var>());
-            new_params_call.push_back(new_var);
-            new_params_next.push_back(clone_vertex(*parameter));
-          } else if ((*parameter)->type() == op_func_param_callback) {
-            CE (kphp_error(false, "Callbacks are not supported in class static methods"));
-//            CLONE_VERTEX(new_parameter, op_func_param_callback, (*parameter).as<op_func_param_callback>());
-//            new_params_next.push_back(new_parameter);
-          }
-        }
-        CREATE_VERTEX(new_func_call, op_func_call, new_params_call);
-        new_func_call->set_string("parent::" + real_name);
-        CREATE_VERTEX(new_return, op_return, new_func_call);
-        CREATE_VERTEX(new_cmd, op_seq, new_return);
-        CREATE_VERTEX(new_params, op_func_param_list, new_params_next);
-        CREATE_VERTEX(func, op_function, new_name, new_params, new_cmd);
-        func_force_return(func);
-        set_location(func, func_location);
-        func->type_rule = type_rule;
-        func->auto_flag = auto_flag;
-        func->varg_flag = varg_flag;
-        func->throws_flag = throws_flag;
-        func->resumable_flag = resumable_flag;
-        func->inline_flag = true;
-        size_t pos = class_context.rfind('\\');
-        string context_namespace_name = class_context.substr(0, pos);
-        string context_class_name = class_context.substr(pos + 1);
-        methods[real_name] = register_function(FunctionInfo(func, context_namespace_name, context_class_name,
-            class_context, map <string, string>(), context_class_ptr->extends,
-            set <string>(), access_type));
-      }
-    }
-    register_function(FunctionInfo(res, namespace_name, cur_class().name, class_context, this->namespace_uses, class_extends, disabled_warnings, access_type));
-  } else {
-    register_function(FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings, access_type));
+  if (in_class() && context_class_ptr.not_null()) {
+    add_parent_function_to_descendants_with_context(info, access_type, params_next);
   }
 
-  if (res->type() == op_function) {
-    res.as <op_function>()->get_func_id()->phpdoc_token = phpdoc_token;
-  }
-  if (is_constructor) {
-    cur_class().new_function = res.as <op_function>()->get_func_id();
+  if (stage::has_error()) {
+    CE(false);
   }
 
   if (anonimous_flag) {
@@ -1863,7 +1826,7 @@ bool GenTree::check_statement_end() {
     //return true;
   //}
   if (!test_expect (tok_semicolon)) {
-    kphp_error (0, "Failed to parse statement");
+    kphp_error (0, "Failed to parse statement. Expected `;`");
     while (cur != end && !test_expect (tok_clbrc) && !test_expect (tok_semicolon)) {
       next_cur();
     }
@@ -2200,7 +2163,7 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CREATE_VERTEX (name, op_func_name);
       string const_name = (*cur)->str_val;
-      name->str_val = "c#" + replace_backslashs(namespace_name, '$') + "$" + cur_class().name + "$$" + const_name;
+      name->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$" + const_name;
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
@@ -2477,6 +2440,167 @@ void GenTree::for_each (VertexPtr root, void (*callback) (VertexPtr )) {
 
   FOREACH_VERTEX (root, i) {
     for_each (*i, callback);
+  }
+}
+
+VertexPtr GenTree::create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor) {
+  VertexPtr res;
+  if (cmd.is_null()) {
+    if (type == tok_ex_function) {
+      CREATE_VERTEX (func, op_extern_func, name, params);
+      res = func;
+    } else if (type == tok_function) {
+      CREATE_VERTEX (func, op_func_decl, name, params);
+      res = func;
+    }
+  } else {
+    CREATE_VERTEX (func, op_function, name, params, cmd);
+    res = func;
+    if (is_constructor) {
+      patch_func_constructor(res, cur_class());
+    } else {
+      func_force_return(res);
+    }
+  }
+
+  res->copy_location_and_flags(*flags);
+
+  return res;
+}
+
+void GenTree::set_extra_type(VertexPtr vertex, AccessType access_type) const {
+  if (!in_namespace()) {
+    if (access_type != access_nonmember) {
+      vertex->extra_type = op_ex_func_member;
+    } else if (in_func_cnt_ == 0) {
+      vertex->extra_type = op_ex_func_global;
+    }
+  }
+}
+
+void GenTree::fill_info_about_class(FunctionInfo &info) {
+  if (in_class()) {
+    info.namespace_name = namespace_name;
+    info.class_name = cur_class().name;
+    info.class_context = class_context;
+    info.extends = class_extends;
+  }
+}
+
+static inline void fill_real_and_full_name(const FunctionInfo &info, string &full_name, string &real_name) {
+  kphp_assert(info.root->type() == op_function || info.root->type() == op_extern_func || info.root->type() == op_func_decl);
+
+  full_name = info.root.as<meta_op_function>()->name()->get_string();
+  size_t first_dollars_pos = full_name.find("$$") + 2;
+  kphp_assert(first_dollars_pos != string::npos);
+  size_t second_dollars_pos = full_name.find("$$", first_dollars_pos);
+  if (second_dollars_pos == string::npos) {
+    second_dollars_pos = full_name.size();
+  }
+
+  real_name = full_name.substr(first_dollars_pos, second_dollars_pos - first_dollars_pos);
+}
+
+void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next) {
+  string cur_class_name = class_context;
+  ClassPtr cur_class = G->get_class(cur_class_name);
+  info.fill_namespace_and_class_name(cur_class_name);
+
+  string real_function_name;
+  string full_base_class_name;
+  fill_real_and_full_name(info, full_base_class_name, real_function_name);
+
+  while (cur_class.not_null() && !cur_class->extends.empty()) {
+    kphp_assert(info.namespace_name + "\\" + info.class_name == cur_class_name);
+    map<string, FunctionPtr> &methods = cur_class->static_methods;
+
+    string new_function_name = get_name_for_new_function_with_parent_call(info, real_function_name);
+    FunctionSetPtr fs_new_function = G->get_function_set(fs_function, new_function_name, false);
+
+    if (fs_new_function.is_null() || fs_new_function->size() == 0) {
+      kphp_assert(!cur_class_name.empty() && cur_class_name[0] != '\\');
+
+      info.extends = cur_class->extends;
+
+      VertexPtr func = generate_function_with_parent_call(info, real_function_name, params_next);
+      if (stage::has_error()) {
+        return;
+      }
+
+      info.root = func;
+      FunctionPtr registered_function = register_function(info);
+      if (registered_function.not_null()) {
+        info.root->get_func_id()->access_type = access_type;
+
+        string function_name_with_context = real_function_name + "$$" + replace_backslashes(class_context);
+        if (cur_class_name == class_context) {
+          function_name_with_context = real_function_name;
+        }
+
+        methods[function_name_with_context] = registered_function;
+      }
+    }
+
+    cur_class_name = cur_class->extends;
+
+    if (cur_class_name.empty()) {
+      break;
+    }
+
+    if (cur_class_name[0] == '\\') {
+      cur_class_name.erase(0, 1);
+    }
+
+    if (replace_backslashes(cur_class_name) == full_base_class_name) {
+      break;
+    }
+
+    info.fill_namespace_and_class_name(cur_class_name);
+    cur_class = G->get_class(cur_class_name);
+  }
+}
+
+VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next) {
+  CREATE_VERTEX(new_name, op_func_name);
+  new_name->set_string(get_name_for_new_function_with_parent_call(info, real_name));
+  vector <VertexPtr> new_params_next;
+  vector <VertexPtr> new_params_call;
+  FOREACH(params_next, parameter) {
+    if ((*parameter)->type() == op_func_param) {
+      CLONE_VERTEX(new_var, op_var, (*parameter).as<op_func_param>()->var().as<op_var>());
+      new_params_call.push_back(new_var);
+      new_params_next.push_back(clone_vertex(*parameter));
+    } else if ((*parameter)->type() == op_func_param_callback) {
+      if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
+        return VertexPtr();
+      }
+    }
+  }
+
+  CREATE_VERTEX(new_func_call, op_func_call, new_params_call);
+
+  string parent_function_name = replace_backslashes(namespace_name) + "$" + replace_backslashes(cur_class().name) + "$$" + real_name + "$$" + replace_backslashes(class_context);
+  // it's equivalent to new_func_call->set_string("parent::" + real_name);
+  new_func_call->set_string(parent_function_name);
+
+  CREATE_VERTEX(new_return, op_return, new_func_call);
+  CREATE_VERTEX(new_cmd, op_seq, new_return);
+  CREATE_VERTEX(new_params, op_func_param_list, new_params_next);
+  CREATE_VERTEX(func, op_function, new_name, new_params, new_cmd);
+  func->copy_location_and_flags(*info.root);
+  func_force_return(func);
+  func->inline_flag = true;
+
+  return func;
+}
+
+
+string GenTree::get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &real_name) {
+  string target_class = replace_backslashes(info.namespace_name + "\\" + info.class_name);
+  if (target_class == replace_backslashes(info.class_context)) {
+    return target_class + "$$" + real_name;
+  } else {
+    return target_class + "$$" + real_name + "$$" + replace_backslashes(info.class_context);
   }
 }
 

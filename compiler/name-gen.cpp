@@ -175,16 +175,11 @@ inline string resolve_uses (FunctionPtr current_function, string class_name, cha
         slash_pos = class_name.length();
       }
       string class_name_start = class_name.substr(0, slash_pos);
-      map <string, string> const &uses = current_function->namespace_uses;
-      bool use_used = false;
-      for (map <string, string>::const_iterator it = uses.begin(); it != uses.end(); ++it) {
-        if (class_name_start == it->first) {
-          class_name = it->second + class_name.substr(class_name_start.length());
-          use_used = true;
-          break;
-        }
-      }
-      if (!use_used) {
+      map<string, string>::const_iterator uses_it = current_function->namespace_uses.find(class_name_start);
+
+      if (uses_it != current_function->namespace_uses.end()) {
+        class_name = uses_it->second + class_name.substr(class_name_start.length());
+      } else {
         class_name = current_function->namespace_name + "\\" + class_name;
       }
     }
