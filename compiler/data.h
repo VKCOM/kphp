@@ -145,19 +145,30 @@ public:
   map<string, string> namespace_uses;
   string extends;
   set<string> disabled_warnings;
+  bool kphp_required;
+  bool should_be_sync;
   AccessType access_type;
 
   FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
                const string &class_context, const map<string, string> namespace_uses,
-               string extends, const set <string> disabled_warnings, AccessType access_type)
-      : root(root),
-        namespace_name(namespace_name),
-        class_name(class_name),
-        class_context(class_context),
-        namespace_uses(namespace_uses),
-        extends(extends),
-        disabled_warnings(disabled_warnings),
-        access_type(access_type) {
+               string extends, const set<string> disabled_warnings,
+               bool kphp_required, bool should_be_sync, AccessType access_type)
+    : root(root)
+    , namespace_name(namespace_name)
+    , class_name(class_name)
+    , class_context(class_context)
+    , namespace_uses(namespace_uses)
+    , extends(extends)
+    , disabled_warnings(disabled_warnings)
+    , kphp_required(kphp_required)
+    , should_be_sync(should_be_sync)
+    , access_type(access_type)
+  {}
+
+  void fill_namespace_and_class_name(const string &full_name) {
+    size_t pos = full_name.rfind('\\');
+    namespace_name = full_name.substr(0, pos);
+    class_name = full_name.substr(pos + 1);
   }
 };
 
@@ -203,6 +214,7 @@ public:
   bool is_extern;
   bool used_in_source;
   bool is_callback;
+  bool should_be_sync;
   string namespace_name;
   string class_name;
   string class_context_name;
