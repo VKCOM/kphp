@@ -278,7 +278,30 @@ void write_char_utf8 (int c) {
   write_buff_char (';');
 }
 
-int win_to_utf8 (const char *s, int len) {
+void write_char_utf8_no_escape (int c) {
+  if (!c) {
+    return;
+  }
+  if (c < 128) {
+    write_buff_char ((char)c);
+    return;
+  }
+  if (c < 0x800) {
+    write_buff_char_2 ((char)(0xc0 + (c >> 6)), (char)(0x80 + (c & 63)));
+    return;
+  }
+  if (c < 0x10000) {
+    write_buff_char_3 ((char)(0xe0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+  if (c >= 0x10000 && c <= 0x10ffff) {
+    write_buff_char_4 ((char)(0xf0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+}
+
+
+static int win_to_utf8 (const char *s, int len, bool escape) {
   int i;
   int state = 0;
   int save_pos = -1;
@@ -302,10 +325,10 @@ int win_to_utf8 (const char *s, int len) {
     if (state == 3 && 0xd800 <= cur_num && cur_num <= 0xdfff){
       cur_num = 32;
     }
-    if (state == 3 && (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x20000)) {
+    if (state == 3 && (!escape || (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x20000))) {
       write_buff_set_pos (save_pos);
       php_assert (save_pos == cur_buff_len);
-      write_char_utf8 (cur_num);
+      (escape ? write_char_utf8 : write_char_utf8_no_escape) (cur_num);
     } else if (state == 3 && cur_num >= 0x10000) {
       write_char_utf8 (win_to_utf8_convert[(unsigned char)s[i]]);
       write_buff_char_pos ('$', save_pos);
@@ -363,9 +386,9 @@ string f$vk_utf8_to_win (const string &text, int max_len, bool exit_on_error) {
   }
 }
 
-string f$vk_win_to_utf8 (const string &text) {
+string f$vk_win_to_utf8(const string &text, bool escape) {
   init_buff();
-  win_to_utf8 (text.c_str(), text.size());
+  win_to_utf8 (text.c_str(), text.size(), escape);
   return finish_buff (0);
 }
 
