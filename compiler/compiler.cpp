@@ -2747,7 +2747,7 @@ class CodeGenF {
         prepare_generate_function (xall[i]);
       }
       for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-        if (!(*c)->is_fully_static())
+        if (c->not_null() && !(*c)->is_fully_static())
           prepare_generate_class(*c);
       }
 
@@ -2768,7 +2768,7 @@ class CodeGenF {
       }
 
       for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-        if (!(*c)->is_fully_static()) {
+        if (c->not_null() && !(*c)->is_fully_static()) {
           W << Async(ClassDeclaration(*c));
         }
       }

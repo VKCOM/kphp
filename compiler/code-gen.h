@@ -1545,7 +1545,9 @@ inline void DfsInit::compile (CodeGenerator &W) const {
   collect_used_funcs_and_vars (main_func, &used_functions, used_vars, parts_n);
   vector <ClassPtr> classes = G->get_classes();
   FOREACH(classes, ci) {
-    collect_used_funcs_and_vars ((*ci)->init_function, &used_functions, used_vars, parts_n);
+    if (ci->not_null()) {
+      collect_used_funcs_and_vars((*ci)->init_function, &used_functions, used_vars, parts_n);
+    }
   }
 
   vector <string> header_names (parts_n);
