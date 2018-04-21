@@ -74,6 +74,11 @@ public:
     return *this;
   }
 
+  template <Operation to>
+  const VertexAdaptor <to> as() const {
+    return *this;
+  }
+
   static void init_properties (OpProperties *x) {
     vertex_inner <Op>::init_properties (x);
   }

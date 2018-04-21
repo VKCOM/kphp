@@ -1508,6 +1508,7 @@ VA_BEGIN_2 (meta_op_function, meta_op_base, function, string)
     OPP (cnst, cnst_not_func);
   PROPERTIES_END
   VertexPtr &name() {return ith (0);}
+  const VertexPtr &name() const {return ith (0);}
   VertexPtr &params() {return ith (1);}
 VA_END
 VA_BEGIN (op_function, meta_op_function)
@@ -1533,6 +1534,7 @@ VA_BEGIN (op_func_param_list, meta_op_varg_)
 VA_END
 VA_BEGIN (meta_op_func_param, meta_op_base)
   VertexPtr &var() {return ith (0);}
+  const VertexPtr &var() const {return ith (0);}
   bool has_default() {return size() > 1;}
   VertexPtr &default_value() {return ith (1);}
 VA_END
