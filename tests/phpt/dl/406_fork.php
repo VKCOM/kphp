@@ -19,7 +19,7 @@ function my_pow ($x, $p = 5) {
   return $tmp * $x;
 }
 
-function processException ($e) {
+function processException (Exception $e) {
   echo 'message: ',  $e->getMessage(), "\n";
   echo "code = ", $e->getCode(), "\n";
   echo "file = ", $e->getFile(), "\n";

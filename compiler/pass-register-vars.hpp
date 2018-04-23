@@ -440,7 +440,9 @@ class RegisterVariables : public FunctionPassBase {
           while (klass.not_null() && klass->static_fields.find(var_name) == klass->static_fields.end()) {
             klass = klass->parent_class;
           }
-          kphp_error(klass.not_null(), dl_pstr("static field not found: %s", name.c_str()));
+          if (kphp_error(klass.not_null(), dl_pstr("static field not found: %s", name.c_str()))) {
+            return ;
+          }
           name = replace_characters(klass->name, '\\', '$') + "$$" + var_name;
         }
         var = get_global_var (name);

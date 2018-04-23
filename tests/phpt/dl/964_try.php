@@ -4,7 +4,7 @@ function getException($desc) {
   return new Exception ($desc);
 }
 
-function processException ($e) {
+function processException (Exception $e) {
   echo 'message: ',  $e->getMessage(), "\n";
   echo "code = ", $e->getCode(), "\n";
   echo "file = ", $e->getFile(), "\n";
@@ -61,7 +61,7 @@ try {
   apiWrapError(10, 'INPUT_FETCH_ERROR', $e);
 }
 
-function apiWrapError($error_code = false, $error_description = '', $exception = false) {
+function apiWrapError($error_code = false, $error_description = '', Exception $exception = false) {
   $error_type = "??";
   $error_data = array(
     'code' => $error_code,

@@ -2004,6 +2004,16 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
       CE (check_statement_end());
       return res;
     case tok_static:
+
+      if (cur != end) {
+        Token *next_token = *(cur + 1);
+        std::string error_msg = "Expected `function` or variable name after keyword `static`, but got: " + next_token->str_val.str();
+        if (kphp_error(next_token->type() == tok_function || next_token->type() == tok_var_name, error_msg.c_str())) {
+          next_cur();
+          CE(false);
+        }
+      }
+
       res = get_multi_call <op_static>(&GenTree::get_expression);
       CE (check_statement_end());
       return res;
@@ -2070,6 +2080,7 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
       }
       // статическое свойство (public static $staticVar)
       VertexPtr v = get_statement(phpdoc_token);
+      CE(v.not_null());
       FOREACH_VERTEX(v, e) {
         kphp_assert((*e)->type() == op_static);
         (*e)->extra_type = extra_type;
