@@ -86,6 +86,7 @@ class CodeGenerator {
 
 
     inline CodeGenerator &operator << (const char *s);
+    inline CodeGenerator &operator << (char c);
     inline CodeGenerator &operator << (const string &s);
     inline CodeGenerator &operator << (const string_ref &s);
 
@@ -481,6 +482,12 @@ inline void compile (VertexPtr root, CodeGenerator &W);
 inline CodeGenerator &CodeGenerator::operator << (const char *s) {
   return (*this) << PlainCode (s);
 }
+
+inline CodeGenerator &CodeGenerator::operator << (char c) {
+  string_ref s(&c, &c + 1);
+  return (*this) << PlainCode(s);
+}
+
 inline CodeGenerator &CodeGenerator::operator << (const string &s) {
   return (*this) << PlainCode (s);
 }
@@ -1064,6 +1071,10 @@ static inline bool can_generate_raw_representation(VertexAdaptor<op_array> verte
 }
 
 std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_array_vars, CodeGenerator &W) {
+  if (const_array_vars.empty()) {
+    return std::vector<int>();
+  }
+
   std::vector<int> shifts;
   shifts.reserve(const_array_vars.size());
 
@@ -1206,11 +1217,13 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
     ii++;
   }
 
-  W << "static const char *raw = ";
-  compile_string_raw (raw_data, W);
-  W << ";" << NL;
+  if (!raw_data.empty()) {
+    W << "static const char *raw = ";
+    compile_string_raw(raw_data, W);
+    W << ";" << NL;
+  }
 
-  vector<int> const_array_shifts = compile_arrays_raw_representation(const_array_vars, W);
+  const vector<int> const_array_shifts = compile_arrays_raw_representation(const_array_vars, W);
   assert(const_array_shifts.size() == const_array_vars.size());
 
   for (int pr = 0; pr <= max_dependency_level; ++pr) {
@@ -3229,8 +3242,7 @@ void compile_string_raw (const string &str, CodeGenerator &W) {
           tmp += (char)('0' + (str[i] % 8));
           W << tmp;
         } else {
-          //TODO:fixme
-          W << str.substr (i, 1);
+          W << str[i];
         }
         break;
     }
