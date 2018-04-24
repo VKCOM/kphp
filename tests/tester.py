@@ -1,436 +1,631 @@
-#!/usr/bin/python
-import sys, os, itertools
-sys.path.append (os.path.expanduser ("~/engine/src/drinkless/python"))
-from drinkless import *
+#!/usr/bin/python3
+import shutil
+import sys
+import os
+import itertools
+import argparse
+import subprocess
+import functools
+import signal
+import concurrent.futures
+import threading
+from subprocess import CalledProcessError
+from collections import namedtuple
+from pathlib import Path
 
-import stat
+PATH_TO_ENGINE = Path.cwd().parents[1]
+PATH_TO_PHP = PATH_TO_ENGINE / "PHP"
+DIRECTORY_WITH_TESTS = PATH_TO_PHP / "tests" / "phpt"
+SUPPORTED_MODES = ["php", "kphp", "hhvm", "none"]
+ANSWERS_PATH = Path("answers")
+TMP_PATH = Path("tmp")
+PERF_PATH = Path("perf")
+dead = False
 
-tests_common_dir = os.path.join (DL_PATH_SRC, "PHP/tests/phpt")
-class bcolors:
+
+def init_paths(path_to_engine):
+    global PATH_TO_ENGINE
+    global PATH_TO_PHP
+    global DIRECTORY_WITH_TESTS
+
+    PATH_TO_ENGINE = Path(path_to_engine).resolve()
+    PATH_TO_PHP = PATH_TO_ENGINE / "PHP"
+    DIRECTORY_WITH_TESTS = PATH_TO_PHP / "tests" / "phpt"
+
+
+class BashColors:
     HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
+    OK_BLUE = '\033[94m'
+    OK_GREEN = '\033[92m'
     WARNING = '\033[93m'
     FAIL = '\033[91m'
-    ENDC = '\033[0m'
+    END_COLOR = '\033[0m'
 
-    def disable(self):
-        self.HEADER = ''
-        self.OKBLUE = ''
-        self.OKGREEN = ''
-        self.WARNING = ''
-        self.FAIL = ''
-        self.ENDC = ''
-def prepare_test (src, dest, init_code = ""):
-  src_f = open (src, "r")
-  dest_f = open (dest, "w")
+    @staticmethod
+    def disable():
+        BashColors.HEADER = ''
+        BashColors.OK_BLUE = ''
+        BashColors.OK_GREEN = ''
+        BashColors.WARNING = ''
+        BashColors.FAIL = ''
+        BashColors.END_COLOR = ''
 
-  dest_f.write (init_code)
 
-  cur = src_f.readline()
-  if cur and cur[0] != '@':
-    dest_f.write (cur)
-  while True:
-    cur = src_f.readline()
-    if not cur:
-      break
-    dest_f.write (cur)
+def get_perf_from_path(path):
+    Perf = namedtuple('Perf', ['time', 'memory'])
 
-  os.fchmod (dest_f.fileno(), stat.S_IRUSR)
-  src_f.close()
-  dest_f.close()
-
-def in_tmp (path):
-  return os.path.join ("tmp/", os.path.basename (path))
-
-supported_modes = ["php", "kphp", "hhvm", "none"];
-def run_test_mode_cmd (mode, cmd):
-  ans_path = "tmp/ans"
-  perf_path = "tmp/perf"
-  err_path = "tmp/err";
-  full_cmd = " ".join ([
-    #"/usr/bin/time -o", perf_path, "-f \"%e %M\" ",
-    os.path.join (DL_PATH_SRC, "objs/bin/dltime"), "-o", perf_path,
-      cmd, 
-      ">", ans_path,
-      "2>", err_path
-      ])
-  check_call (full_cmd, shell = True)
-  return (ans_path, perf_path)
-
-def run_test_mode_php (path):
-  cmd = "php -n -d memory_limit=3072M -d include_path=tmp %s" % (path)
-  return run_test_mode_cmd ("php", cmd)
-def run_test_mode_hhvm (path):
-  cmd = "hhvm  -v\"Eval.Jit=true\" %s" % (path)
-  return run_test_mode_cmd ("hhvm", cmd)
-def run_test_mode_kphp (path):
-  make_cmd = '../kphp.sh -S -I tmp/ -M cli -o tmp/main %s 2> tmp/kphp_err > tmp/kphp_out' % (path)
-  check_call (make_cmd, shell = True)
-  cmd = "tmp/main"
-  return run_test_mode_cmd ("kphp", cmd)
-
-def get_ans_path (path):
-  path = os.path.relpath (path, tests_common_dir)
-  path = string.replace (path, "/", "@")
-  return os.path.join ("answers/", path + ".ans")
-def get_perf_path (path, mode):
-  path = os.path.relpath (path, tests_common_dir)
-  path = string.replace (path, "/", "@")
-  return os.path.join ("perf", mode, path + ".ans")
-
-def perf_cmp_time (baseline, current):
-  baseline = float (baseline)
-  current = float (current)
-  eps = 0.01
-  if baseline < eps:
-    baseline = eps
-  if current < eps:
-    current = eps
-  ratio = baseline / current
-  diff = abs (baseline - current)
-  res = "%.2lf" % ratio
-  if (ratio > 0.9 and ratio < 1.1 and diff < 0.1) or (current < 0.0101 and baseline < 0.0101) or (diff < 0.004):
-    res = bcolors.OKBLUE + res + bcolors.ENDC
-  elif current < baseline:
-    res = bcolors.OKGREEN + res + bcolors.ENDC
-  else:
-    res = bcolors.FAIL + res + bcolors.ENDC
-  return res
- 
-def perf_cmp_memory (baseline, current):
-  baseline = float (baseline)
-  current = float (current)
-  eps = 1000
-  if baseline < eps:
-    baseline = eps
-  if current < eps:
-    current = eps
-  ratio = baseline / current
-  diff = abs (baseline - current)
-  res = "%.2lf" % ratio
-  if (ratio > 0.98 and ratio < 1.02):
-    res = bcolors.OKBLUE + res + bcolors.ENDC
-  elif current < baseline:
-    res = bcolors.OKGREEN + res + bcolors.ENDC
-  else:
-    res = bcolors.FAIL + res + bcolors.ENDC
-  return res
-
-total_cnt = 0
-wa_cnt = 0
-wa_tests = []
-
-def run_test_mode (test, mode, perf_read_only = True, 
-    ans_read_only = True, compare_with_modes = [], keep_going = False):
-  global total_cnt
-  global ok_cnt
-  global wa_cnt
-  no_php = "no_php" in test.tags
-  if no_php and mode == "php":
-    return 1 #skip this test
-
-  perfs = []
-  was_run = False
-  was_kphp_fail = False
-  if mode != "none":
-    was_run = True
-    total_cnt += 1
-    perf_path = get_perf_path (test.path, mode)
-    test_path = in_tmp (test.path)
-    for x in itertools.chain ([test.path], test.to_copy):
-      prepare_test (x, in_tmp (x))
-    os.system("cp -r %s %s" % (os.path.join(tests_common_dir, "cl", "Classes"), in_tmp ("Classes")))
-    
-    try:
-      if mode == "php":
-        res = run_test_mode_php (test_path)
-      elif mode == "kphp":
-        res = run_test_mode_kphp (test_path)
-      elif mode == "hhvm":
-        res = run_test_mode_hhvm (test_path)
-    except:
-      if mode == "kphp" and "kphp_should_fail" in test.tags:
-        was_kphp_fail = True
-        res = ("", "")
-      else:
-        print "%sFailed to run [%s] [%s]%s" % (bcolors.FAIL, test.short_path,
-                                               mode, bcolors.ENDC)
-        sys.exit(1)
-
-    cur_ans_path, cur_perf_path = res
-
-    ok = True
-    if ans_read_only:
-      if not test.check_answer(cur_ans_path, mode, keep_going, was_kphp_fail):
-        wa_cnt += 1
-        wa_tests.append (test)
-        ok = False
-    else:
-      test.save_answer (cur_ans_path, mode)
-
-    if not was_kphp_fail:
-      if ok and not perf_read_only:
-        test.save_perf(cur_perf_path, mode)
-      perfs.append(("now." + mode, open(cur_perf_path, "r").read().split()))
-
-  for other_mode in compare_with_modes:
-    perf = test.get_perf (other_mode)
-    if perf:
-      perfs.insert (0, (other_mode, perf))
-
-  if perfs:
-    if not was_run:
-      print "Test [%s]" % test.short_path
-    base_mode, base_perf = perfs[0]
-    for mode, perf in perfs:
-      print "[%10s]\ttime %s(%s)\tmemory %s(%s)" % (
-          mode, 
-          perf[0], perf_cmp_time (base_perf[0], perf[0]), 
-          perf[1], perf_cmp_memory (base_perf[1], perf[1]))
-    print "----------------------------------------"
-
-all_tags = set()
-class Test:
-  def __init__ (self, path, tags = set()):
-    global all_tags
-
-    self.path = path
-    self.short_path = os.path.relpath (self.path, tests_common_dir)
-    f = open (path, "r")
-    header = f.readline()
-    f.close()
-    if header[0] == '@':
-      self.tags = set (header[1:].split())
-    else:
-      self.tags = set (["none"])
-    self.tags |= tags
-    all_tags |= self.tags
-
-    prefix = string.rsplit (path, '.', 1)[0]
-    self.to_copy = glob (prefix + "*.php")
-    self.to_copy.remove (path)
-
-    self.ans_path = get_ans_path (self.path)
-    if not os.path.isfile (self.ans_path):
-      self.tags |= set (["no_ans"])
-      all_tags |= set (["no_ans"])
-
-  def check_answer(self, ans_path, mode, keep_going=False, was_kphp_fail=False):
-    if not os.path.isfile (self.ans_path):
-      if was_kphp_fail and mode == "kphp":
-        print "Test [%s] [%s]: %sCompilation failed, OK%s" % (self.short_path, mode, bcolors.OKGREEN, bcolors.ENDC)
-        return True
-      else:
-        print "No answer for test [%s] found: %sNO ANSWER%s" % (self.short_path, bcolors.FAIL, bcolors.ENDC)
-        if not keep_going:
-          sys.exit(1)
-        return False
-    cmd = " ".join (["diff", self.ans_path, ans_path])
-    err = call (cmd, shell = True)
-    if err:
-      print "Test [%s] [%s]: %sWA%s" % (self.short_path, mode, bcolors.FAIL, bcolors.ENDC)
-      if not keep_going:
-        sys.exit (1)
-      return False
-    else:
-      print "Test [%s] [%s]: %sOK%s" % (self.short_path, mode, bcolors.OKGREEN, bcolors.ENDC)
-      open(test.path + ".ok", 'w').close()
-      return True
-
-  def save_answer (self, ans_path, mode):
-    if os.path.exists (self.ans_path):
-      print "Answer for [%s] already exists" % self.short_path
-    else:
-      cmd = " ".join (["cp", ans_path, self.ans_path])
-      check_call (cmd, shell = True)
-      print "Answer for [%s] is generated by [%s]" % (self.short_path, mode)
-
-  def save_perf (self, perf_path, mode):
-    target_perf_path = get_perf_path (self.path, mode)
-    perf = self.get_perf (mode)
-    if os.path.exists (perf_path):
-      f = open (perf_path, "r")
-      new_perf = f.read().split()
-      f.close()
-    else:
-      new_perf = None
-      print "Perf file [%s] not exists" % perf_path
-
-    if perf:
-      if new_perf:
-        perf[0] = min (perf[0], new_perf[0])
-        perf[1] = min (perf[1], new_perf[1])
-
-        f = open (target_perf_path, "w")
-        f.write(" ".join (perf))
-        f.close()
-    else:
-      cmd = " ".join (["cp", perf_path, target_perf_path])
-      check_call (cmd, shell = True)
-
-  def get_perf (self, mode):
-    perf_path = get_perf_path (self.path, mode)
-    if os.path.exists (perf_path):
-      f = open (perf_path, "r")
-      perf = f.read().split()
-      f.close()
-      return perf
+    if path.exists():
+        with path.open() as f:
+            perf = f.read().split()
+            return Perf(*perf)
     return None
 
-def get_tests (tests, tags = []):
-  tests = sorted (tests)
-  tests = [Test (x, set(tags)) for x in tests]
-  return tests
 
-def get_tests_by_mask (mask, tags = []):
-  return get_tests (glob (mask), tags);
+def my_check_call(cmd):
+    subprocess.check_call(cmd, shell=True)
 
-def remove_ok_tests (tests, force = False, save_files = False):
-  tmp_tests = []
-  for x in tests:
-    was = x.path + ".ok";
-    if os.path.exists (was):
-      if force:
-        if not save_files:
-          os.remove (was)
-        tmp_tests.append (x)
 
+def run_make_kphp():
+    cmd_make_php = "make -sj30 -C {} php".format(PATH_TO_ENGINE)
+    print("run command: '{}'".format(cmd_make_php))
+    my_check_call(cmd_make_php)
+
+
+def add_temp_prefix(name):
+    return TMP_PATH / "{thread_id}_{name}".format(thread_id=threading.get_ident(), name=name)
+
+
+def run_and_save_answer(cmd):
+    ans_path = add_temp_prefix("ans")
+    perf_path = add_temp_prefix("perf")
+    err_path = add_temp_prefix("err")
+    dl_time_path = PATH_TO_ENGINE / "objs" / "bin" / "dltime"
+    # /usr/bin/time
+    full_cmd = "{dl_time} -o {perf_path} {cmd} > {out} 2> {err}".format(
+        dl_time=dl_time_path, perf_path=perf_path,
+        out=ans_path, err=err_path, cmd=cmd)
+
+    my_check_call(full_cmd)
+    return ans_path, perf_path
+
+
+def run_test_mode_php(path):
+    extensions = [
+        ("display_errors", 0),
+        ("log_errors", 1),
+        ("error_log", "/proc/self/fd/2"),
+        ("memory_limit", "3072M"),
+        ("extension", "json.so"),
+        ("extension", "bcmath.so"),
+        ("extension", "iconv.so"),
+        ("include_path", path.parent)
+    ]
+    extensions_str = " ".join("-d {}='{}' ".format(k, v) for (k, v) in extensions)
+
+    cmd = "php -n {extensions} {test}".format(test=path, extensions=extensions_str)
+
+    return run_and_save_answer(cmd)
+
+
+def run_test_mode_hhvm(path):
+    cmd = "hhvm  -v\"Eval.Jit=true\" {}".format(path)
+    return run_and_save_answer(cmd)
+
+
+def get_kphp_out_path():
+    return add_temp_prefix("kphp_out")
+
+
+def run_test_mode_kphp(path):
+    path_to_main = add_temp_prefix("main")
+    out = get_kphp_out_path()
+    path_to_kphp = PATH_TO_PHP / "kphp.sh"
+
+    make_cmd = "{kphp} -S -I {path_to_dir} -M cli " \
+               "-o {main} {path} " \
+               "> {out} " \
+               "2>&1".format(kphp=path_to_kphp, path=path, path_to_dir=path.parent, out=out,
+                             main=path_to_main)
+    my_check_call(make_cmd)
+
+    return run_and_save_answer(path_to_main)
+
+
+def get_unique_name_of_test(path):
+    path = path.relative_to(DIRECTORY_WITH_TESTS)
+    return Path(str(path).replace("/", "@"))
+
+
+def get_ans_path(path):
+    path = get_unique_name_of_test(path).with_suffix(".ans")
+    return ANSWERS_PATH / path
+
+
+def get_perf_path(path, mode):
+    path = get_unique_name_of_test(path).with_suffix(".ans")
+    return PERF_PATH / mode / path
+
+
+def perf_cmp(baseline, current, mode):
+    baseline = float(baseline._asdict()[mode])
+    current = float(current._asdict()[mode])
+    eps = 0.01 if mode == "time" else 1000
+
+    baseline = max(baseline, eps)
+    current = max(current, eps)
+    ratio = baseline / current
+
+    res = "{:.2f}".format(ratio)
+
+    if mode == "time":
+        diff = abs(baseline - current)
+        ok = (0.9 < ratio < 1.1 and diff < 0.1) or (current < 0.0101 and baseline < 0.0101) or (diff < 0.004)
     else:
-      tmp_tests.append (x)
-  return tmp_tests
+        ok = 0.98 < ratio < 1.02
 
-def usage():
-  print "DL_PHP tester"
-  print "usage: python tester.py [-t <tag>] [-l]"
-  print "\t-A --- generate answer if none"
-  print "\t-P ---  rewrite perf files"
-  print "\t-a<tag> --- test must have given <tag>"
-  print "\t-d<tag> --- test mustn't have given <tag>"
-  print "\t-c<mode> --- compare with modes"
-  print "\t-k --- keep going"
-  print "\t-l --- just print test names"
-  print "\t-m<mode> --- run in mode (kphp, php, hhvm, none)"
-  print "\t-i --- test till infinity"
+    if ok:
+        res = BashColors.OK_BLUE + res + BashColors.END_COLOR
+    elif current < baseline:
+        res = BashColors.OK_GREEN + res + BashColors.END_COLOR
+    else:
+        res = BashColors.FAIL + res + BashColors.END_COLOR
 
-print_tests = False
-
-try:
-  opts, args = getopt(sys.argv[1:], "Aa:c:d:klm:PRhfi")
-except:
-  usage()
-  exit(0)
-
-need_tags = set()
-bad_tags = set()
-
-init_code = ""
-run_mode = "kphp"
-force = False
-inf_flag = False
-ans_read_only = True
-perf_read_only = True
-compare_with_modes = []
-keep_going = False
-for o, a in opts:
-  if o == "-A":
-    ans_read_only = False
-  elif o == "-P":
-    perf_read_only = False
-  elif o == "-a":
-    need_tags.add (a)
-  elif o == '-c':
-#    assert a in supported_modes
-    compare_with_modes.append (a)
-  elif o == "-d":
-    bad_tags.add (a)
-  elif o == "-l":
-    print_tests = True
-  elif o == "-k":
-    keep_going = True
-  elif o == "-m":
-    assert a in supported_modes
-    run_mode = a
-  elif o == "-R":
-    ans_rewrite = True
-  elif o == "-h":
-    usage()
-    exit(0)
-  elif o == "-f":
-    force = True;
-  elif o == "-i":
-    inf_flag = True;
-  else:
-    usage()
-    exit(0)
-
-manual_tests = []
-if args:
-  manual_tests = get_tests (args, ["manual"])
-  need_tags.add ("manual")
-
-dl_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/dl/*.php", ["dl"])
-dl_switch_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/dl/switch/*.php", ["dl", "switch"])
-#hiphop_basic_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/hiphop/tests/basic/*.phpt", ["hiphop", "hiphop_basic"]);
-phc_parsing_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/phc/parsing/*.php", ["phc", "parsing"]);
-phc_codegen_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/phc/codegen/*.php", ["phc", "codegen"]);
-#benchmark_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/benchmarks/*/*.php", ["benchmark", "bench"]);
-pk_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/pk/*.php", ["pk"])
-nn_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/nn/*.php", ["nn"])
-cl_tests = get_tests_by_mask (DL_PATH_SRC + "PHP/tests/phpt/cl/*.php", ["cl"])
+    return res
 
 
-tests = []
-tests.extend (dl_tests)
-tests.extend (dl_switch_tests)
-#tests.extend (hiphop_basic_tests)
-tests.extend (manual_tests)
-tests.extend (phc_parsing_tests)
-tests.extend (phc_codegen_tests)
-#tests.extend (benchmark_tests)
-tests.extend (pk_tests)
-tests.extend (nn_tests)
-tests.extend (cl_tests)
+def run_test_mode_helper(mode, test_path):
+    run_test_function = {
+        "php": run_test_mode_php,
+        "kphp": run_test_mode_kphp,
+        "hhvm": run_test_mode_hhvm
+    }[mode]
 
-print all_tags
-
-tests = filter (lambda x: need_tags <= x.tags and (not (bad_tags & x.tags)), tests)
-tests = remove_ok_tests (tests, force, print_tests)
-used_tags = reduce (lambda x, y: x | y.tags, tests, set())
-
-print used_tags
-
-if print_tests:
-  for x in tests:
-    print x.path
-  print len (tests)
-  exit(0)
-
-run_make(["php"])
-
-check_call ("rm -rf tmp", shell = True)
-check_call ("mkdir tmp", shell = True)
-if not os.path.exists("answers"):
-  check_call ("mkdir answers", shell = True)
-if not os.path.exists("perf"):
-  check_call ("mkdir perf", shell = True)
-for mode in supported_modes:
-  path = os.path.join ("perf", mode)
-  if not os.path.exists (path):
-    check_call (" ".join (["mkdir", path]), shell = True);
-
-if run_mode == "php":
-  tests = filter (lambda x: "no_php" not in x.tags, tests)
-
-for test in tests:
-  check_call ("rm -rf tmp/*", shell = True)
-  ok = run_test_mode (test, run_mode, ans_read_only = ans_read_only, 
-      perf_read_only = perf_read_only, compare_with_modes = compare_with_modes,
-      keep_going = keep_going)
+    return run_test_function(test_path)
 
 
-print "Total tests runned: %d" % total_cnt
-if wa_cnt:
-  print "%sFAILED: %d%s" % (bcolors.FAIL, wa_cnt, bcolors.ENDC)
-  for test in wa_tests:
-    print "\t%s[%s]%s" % (bcolors.FAIL, test.short_path, bcolors.ENDC)
+def die(keep_going=False):
+    global dead
+
+    if not keep_going:
+        dead = True
+
+
+def run_test_mode(test, args):
+    global dead
+
+    assert not (args.mode == "php" and "no_php" in test.tags)
+    if dead:
+        return None
+
+    mode = args.mode
+    ok = True
+    out_s = ""
+    try:
+        perfs = []
+        if mode != "none":
+            ok, s = test.run(args)
+            out_s += s
+
+            if not ok:
+                die(args.keep_going)
+                return ok
+
+            if test.cur_perf:
+                perfs.append(("now." + mode, test.cur_perf))
+
+        for other_mode in args.compare_modes:
+            perf = test.get_perf(other_mode)
+            if perf:
+                perfs.insert(0, (other_mode, perf))
+
+        if perfs:
+            if mode == "none":
+                out_s += "Test [{}]\n".format(test.short_path)
+            base_mode, base_perf = perfs[0]
+            for mode, perf in perfs:
+                time_status = "time {}({})".format(perf.time, perf_cmp(base_perf, perf, "time"))
+                memory_status = "memory {}({})".format(perf.memory, perf_cmp(base_perf, perf, "memory"))
+
+                out_s += "[{mode:>10s}]\t{time_status}\t{memory_status}\n".format(
+                    mode=mode, time_status=time_status, memory_status=memory_status)
+
+            out_s += "----------------------------------------\n"
+
+    finally:
+        print(out_s, end='')
+
+    return ok
+
+
+class Test:
+    def __init__(self, path, tags=set()):
+        self.path = Path(path).resolve()
+        self.short_path = self.path.relative_to(DIRECTORY_WITH_TESTS)
+
+        with self.path.open("rb") as f:
+            header = f.readline().decode('utf-8')
+
+        if header[0] == '@':
+            self.tags = set(header[1:].split())
+        else:
+            self.tags = {"none"}
+        self.tags |= tags
+
+        self.ans_path = get_ans_path(self.path)
+        if not self.ans_path.exists():
+            self.tags |= {"no_ans"}
+
+        self.cur_perf = None
+
+        self.ok_label_path = self.path.with_suffix(".ok")
+
+    def run(self, args):
+        global dead
+
+        mode = args.mode
+        out_s = ""
+
+        if args.gen_answers and self.ans_path.exists():
+            out_s = "Answer for [{}] already exists\n".format(self.short_path)
+            self.cur_perf = self.get_perf(mode)
+            return True, out_s
+
+        kphp_should_fail = mode == "kphp" and "kphp_should_fail" in self.tags
+
+        if not args.gen_answers and not self.ans_path.exists() and not kphp_should_fail:
+            out_s += "{}No answer{} for test [{path}]\n" \
+                .format(BashColors.FAIL, BashColors.END_COLOR, path=self.short_path)
+
+            die(args.keep_going)
+
+            return False, out_s
+
+        ok = True
+        try:
+            if dead:
+                return None, out_s
+
+            cur_ans_path, cur_perf_path = run_test_mode_helper(mode, self.path)
+
+            if args.gen_answers:
+                out_s += self.save_answer(cur_ans_path, mode)
+            else:
+                ok, s = self.check_answer(cur_ans_path, mode, args.keep_going)
+                out_s += s
+
+            if ok and args.rewrite_perf:
+                out_s += self.save_perf(cur_perf_path, mode)
+
+            self.cur_perf = get_perf_from_path(cur_perf_path)
+
+        except CalledProcessError as e:
+            print(e)
+
+            if dead:
+                return None, out_s
+
+            if kphp_should_fail:
+                out_s += "Test [{path}] [{mode}]: {0}Compilation failed, OK{1}\n".format(
+                    BashColors.OK_GREEN, BashColors.END_COLOR, path=self.short_path, mode=mode)
+
+                self.ok_label_path.touch()
+            else:
+                out_s += "\n{}Failed to run [{}] [{}]{}\n" \
+                    .format(BashColors.FAIL, self.short_path, mode, BashColors.END_COLOR)
+
+                path_to_info_about_fail = None
+                if args.mode == "kphp":
+                    path_to_info_about_fail = get_kphp_out_path()
+                elif args.mode == "php":
+                    path_to_info_about_fail = add_temp_prefix("err")
+
+                if path_to_info_about_fail.exists():
+                    if args.keep_going:
+                        new_out_path = TMP_PATH / get_unique_name_of_test(self.path.with_suffix(".err"))
+                        shutil.copyfile(str(path_to_info_about_fail), str(new_out_path))
+
+                        out_s += "see file: {0}{out}{1}\n\n".format(BashColors.FAIL, BashColors.END_COLOR,
+                                                                    out=new_out_path)
+                    else:
+                        with path_to_info_about_fail.open() as f:
+                            out_s += "{0}OUTPUT:{1}{out}\n\n".format(BashColors.FAIL, BashColors.END_COLOR,
+                                                                     out=f.read())
+
+                die(args.keep_going)
+
+                return False, out_s
+
+        return ok, out_s
+
+    def check_answer(self, ans_path, mode, keep_going=False):
+        assert self.ans_path.exists()
+        try:
+            diff_cmd = ["diff", str(self.ans_path), str(ans_path)]
+            subprocess.check_output(diff_cmd, stderr=subprocess.STDOUT)
+            self.ok_label_path.touch()
+
+            return True, "Test [{path}] [{mode}]: {0}OK{1}\n".format(BashColors.OK_GREEN, BashColors.END_COLOR,
+                                                                     path=self.short_path, mode=mode)
+        except CalledProcessError as e:
+            die(keep_going)
+            msg = "\nTest [{path}] [{mode}]: {0}WA{1}\n".format(BashColors.FAIL, BashColors.END_COLOR,
+                                                                path=self.short_path, mode=mode)
+            msg += e.output.decode("utf-8") + "\n"
+
+            return False, msg
+
+    def save_answer(self, ans_path, mode):
+        shutil.copyfile(str(ans_path), str(self.ans_path))
+        return "Answer for [{path}] is generated by [{mode}]\n".format(path=self.short_path, mode=mode)
+
+    def save_perf(self, perf_path, mode):
+        out_s = ""
+        target_perf_path = get_perf_path(self.path, mode)
+        perf = self.get_perf(mode)
+
+        new_perf = get_perf_from_path(perf_path)
+        if new_perf is None:
+            out_s = "Perf file [{}] not exists\n".format(perf_path)
+
+        if perf:
+            if new_perf:
+                time = min(perf.time, new_perf.time)
+                memory = min(perf.memory, new_perf.memory)
+
+                with target_perf_path.open("w") as f:
+                    f.write("{} {}".format(time, memory))
+        else:
+            shutil.copyfile(str(perf_path), str(target_perf_path))
+
+        return out_s
+
+    def get_perf(self, mode):
+        perf_path = get_perf_path(self.path, mode)
+        return get_perf_from_path(perf_path)
+
+
+def get_tests(tests, tags=None):
+    if tags is None:
+        return []
+
+    tests = sorted(tests)
+    tests = [Test(x, set(tags)) for x in tests]
+    return tests
+
+
+def remove_previous_ok_labels(tests):
+    ok_tests = filter(lambda test: test.ok_label_path.exists(), tests)
+
+    for test in ok_tests:
+        test.ok_label_path.unlink()
+
+
+def remove_ok_tests(tests_it, force=False):
+    if force:
+        tests_it, copy_tests_iterator = itertools.tee(tests_it)
+        remove_previous_ok_labels(copy_tests_iterator)
+
+        return tests_it
+    else:
+        return filter(lambda test: not test.ok_label_path.exists(), tests_it)
+
+
+def check_excluded_tags_exist_in_tests(tests, exclude_tags):
+    excluded_tags_in_tests = [exclude_tags & x.tags for x in tests]
+    excluded_tags_in_tests = functools.reduce(lambda x, y: x | y, excluded_tags_in_tests, set())
+
+    if excluded_tags_in_tests != exclude_tags:
+        print("\n{0}WARNING: there are no tests with these tags:{1} {tags}\n"
+              .format(BashColors.FAIL, BashColors.END_COLOR, tags=exclude_tags - excluded_tags_in_tests))
+
+        if input("continue? [Y/n]") == "n":
+            sys.exit(0)
+
+
+def get_all_tests(args):
+    tests = []
+    if args.manual_tests:
+        tests = get_tests(args.manual_tests, ["manual"])
+        return list(tests)
+
+    test_tags = [
+        ["dl"],
+        ["dl", "switch"],
+        ["phc", "parsing"],
+        ["phc", "codegen"],
+        ["pk"],
+        ["nn"],
+        ["cl"],
+    ]
+
+    for tags in test_tags:
+        path = DIRECTORY_WITH_TESTS / "/".join(tags)
+        tests.extend(get_tests(path.glob("*.php"), tags))
+
+    if args.mode == "php":
+        args.exclude_tags.add("no_php")
+
+    check_excluded_tags_exist_in_tests(tests, args.exclude_tags)
+
+    tests = list(filter(lambda x: args.need_tags <= x.tags and not (args.exclude_tags & x.tags), tests))
+    if not args.gen_answers:
+        new_tests = list(remove_ok_tests(tests, args.force))
+
+        if tests and not new_tests:
+            print("all tests were passed in previous run. {0}Run with --force{1}".format(BashColors.OK_GREEN, BashColors.END_COLOR))
+
+        tests = new_tests
+
+    return list(tests)
+
+
+def create_working_dirs():
+    shutil.rmtree(str(TMP_PATH), ignore_errors=True)
+    TMP_PATH.mkdir()
+
+    if not ANSWERS_PATH.exists():
+        ANSWERS_PATH.mkdir()
+
+    if not PERF_PATH.exists():
+        PERF_PATH.mkdir()
+
+    for mode in SUPPORTED_MODES:
+        tests_mask = PERF_PATH / mode
+        if not tests_mask.exists():
+            tests_mask.mkdir()
+
+
+def run_test_task(test, args):
+    res = run_test_mode(test, args)
+    Result = namedtuple("Result", ['res', 'test'])
+    return Result(res, test)
+
+
+def run_tests(args, tests):
+    global dead
+
+    if args.gen_answers and args.force:
+        shutil.rmtree(str(ANSWERS_PATH), ignore_errors=True)
+    create_working_dirs()
+
+    ok_cnt = 0
+    wa_tests = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.cnt_workers) as executor:
+        not_done = set(map(lambda test: executor.submit(run_test_task, test, args), tests))
+
+        while not dead and not_done:
+            done, not_done = concurrent.futures.wait(not_done, return_when=concurrent.futures.FIRST_COMPLETED)
+
+            done = list(map(lambda f: f.result(), done))
+            new_wa_tests = [f.test for f in done if f.res == False]
+            wa_tests.extend(new_wa_tests)
+
+            ok_cnt += sum([1 for f in done if f.res])
+
+    print("Total tests were run: {}".format(ok_cnt))
+    print("{0}OK: {ok_cnt} tests{1}".format(BashColors.OK_GREEN, BashColors.END_COLOR, ok_cnt=ok_cnt))
+    print("{0}FAILED: {wa_cnt} tests {1}".format(BashColors.FAIL, BashColors.END_COLOR, wa_cnt=len(wa_tests)))
+
+    if wa_tests:
+        for test in wa_tests:
+            print("\t{0}[{wa_path}]{1}".format(BashColors.FAIL, BashColors.END_COLOR, wa_path=test.short_path))
+
+
+def print_tests(tests):
+    for x in tests:
+        print(x.path)
+    print(len(tests))
+    sys.exit(0)
+
+
+def print_tags(tests):
+    used_tags = functools.reduce(lambda x, y: x | y.tags, tests, set())
+    print("existed tags in tests which will be run: ", used_tags)
+
+
+def signal_handler(_s, _frame):
+    die()
+
+
+def parse_command_line_arguments():
+    class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+        pass
+
+    parser = argparse.ArgumentParser(description="""There are two modes: generate answers and check results.
+    `./tester.py -A -a ok -m php` - generates answers, saves them to folder `answers`, 
+                                    by running `php` on the .php files
+    `./tester.py -a ok` - will check result of kphp program with answers generated by previous command
+    """, formatter_class=CustomFormatter)
+
+    parser.add_argument('--manual', dest='manual_tests', metavar='MANUAL_TEST', nargs='*',
+                        help='manual tests which will be checked')
+
+    parser.add_argument('-A', '--gen-answers', action='store_true',
+                        help='generate answers if none')
+
+    parser.add_argument('-P', '--rewrite-perf', action='store_true',
+                        help='rewrite perf files')
+
+    parser.add_argument('-a', '--need-tags', metavar='TAG',
+                        default=set(), nargs='+',
+                        help='test must have given <tags>')
+
+    parser.add_argument('-d', '--exclude-tags', metavar='TAG',
+                        default=set(), nargs='+',
+                        help="test mustn't have given <tags>")
+
+    parser.add_argument('-c', '--compare-modes', metavar='MODE', choices=SUPPORTED_MODES,
+                        default=[], nargs='+',
+                        help="compare with modes")
+
+    parser.add_argument('-l', '--print-tests', action='store_true',
+                        help="just print test names")
+
+    parser.add_argument('-k', '--keep-going', action='store_true',
+                        help="keep going")
+
+    parser.add_argument('-f', '--force', action='store_true',
+                        help="""with --gen-answers force to generate new answers
+                                without --gen-answers force to run all tests despite it can be passed before""")
+
+    parser.add_argument('-m', '--mode', default='kphp', choices=SUPPORTED_MODES,
+                        help="run in mode")
+
+    parser.add_argument('--disable-coloring', action='store_true', default=None,
+                        help="disable coloring (useful when stdout not in tty)")
+
+    parser.add_argument('-w', '--cnt-workers', default=16, type=int,
+                        help="count of workers for executing tests")
+
+    parser.add_argument('-e', '--engine-path', default="../../",
+                        help="path to engine directory")
+
+    res = parser.parse_args(sys.argv[1:])
+    res.need_tags = set(res.need_tags)
+    res.exclude_tags = set(res.exclude_tags)
+
+    if res.manual_tests:
+        res.need_tags.add("manual")
+
+    return res
+
+
+def main():
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    parsed_args = parse_command_line_arguments()
+
+    if parsed_args.disable_coloring:
+        BashColors.disable()
+
+    init_paths(parsed_args.engine_path)
+
+    tests = get_all_tests(parsed_args)
+
+    if not tests:
+        print("No tests to run")
+        print("need tags: ", parsed_args.need_tags)
+        print("exclude tags: ", parsed_args.exclude_tags)
+        return
+
+    if parsed_args.print_tests:
+        print_tests(tests)
+
+    print_tags(tests)
+
+    if parsed_args.mode == "kphp":
+        run_make_kphp()
+
+    run_tests(parsed_args, tests)
+
+
+def check_minimum_required_python_version():
+    min_python_version = (3, 4)
+    if sys.version_info < min_python_version:
+        sys.exit("Python {}.{} or later is required.\n".format(*min_python_version))
+
+
+if __name__ == "__main__":
+    check_minimum_required_python_version()
+    main()
