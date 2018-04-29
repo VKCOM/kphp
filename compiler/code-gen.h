@@ -651,7 +651,9 @@ inline IncludeClass::IncludeClass (const TypeData *type) :
 
 inline void IncludeClass::compile (CodeGenerator &W) const {
   if (klass != NULL) {
-    W << "#include \"cl/" << klass->header_name << "\"" << NL;
+    std::string class_h_filename = "cl/" + klass->header_name;
+    W.get_writer().add_include(class_h_filename);
+    W << "#include \"" << class_h_filename << "\"" << NL;
   }
 }
 
