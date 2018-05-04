@@ -44,7 +44,7 @@ class UnknownType {
 })
 
 #define INIT_VAR(type, x) new (&x) type()
-#define CLEAR_VAR(type, x) memset (&x, 0, sizeof (x))
+#define CLEAR_VAR(type, x) memset ((void*)&x, 0, sizeof (x))
 
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op b_tmp___;})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})

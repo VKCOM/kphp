@@ -390,7 +390,7 @@ string& string::append (const char *s, size_type n) {
       if (disjunct (s)) {
         force_reserve (len);
       } else {
-        const size_type off = (const size_type)(s - p);
+        const size_type off = ( size_type)(s - p);
         force_reserve (len);
         s = p + off;
       }

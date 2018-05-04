@@ -2539,7 +2539,7 @@ T array <T, TT>::shift (void) {
     T res = force_convert_to <T>::convert (*it);
 
     it->~TT();
-    memmove (it, it + 1, --p->int_size * sizeof (TT));
+    memmove ((void*)it, it + 1, --p->int_size * sizeof (TT));
     p->max_key--;
 
     return res;
@@ -2579,7 +2579,7 @@ int array <T, TT>::unshift (const T &val) {
     mutate_if_vector_needed_int();
 
     TT *it = (TT *)p->int_entries;
-    memmove (it + 1, it, p->int_size++ * sizeof (TT));
+    memmove ((void*)(it + 1), it, p->int_size++ * sizeof (TT));
     p->max_key++;
     new (it) TT (val);
   } else {
