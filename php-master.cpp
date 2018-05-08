@@ -21,7 +21,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-extern "C" {
 #include "common/crc32c.h"
 #include "common/kdb-data-common.h"
 #include "common/kprintf.h"
@@ -40,7 +39,6 @@ extern "C" {
 #include "php-engine-vars.h"
 
 extern const char *engine_tag;
-}
 
 //do not kill more then MAX_KILL at the same time
 #define MAX_KILL 5
