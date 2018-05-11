@@ -2598,13 +2598,13 @@ class FinalCheckPass : public FunctionPassBase {
             }
             string desc;
             if (v->type() == op_var) {
-              desc = "variable [$" + v.as <op_var>()->get_var_id()->name + "]";
+              desc += "variable [$" + v.as <op_var>()->get_var_id()->name + "]";
             } else if (v->type() == op_func_call) {
-              desc = "function [" + v.as <op_func_call>()->get_func_id()->name + "]";
+              desc += "function [" + v.as <op_func_call>()->get_func_id()->name + "]";
             } else if (v->type() == op_constructor_call) {
-              desc = "constructor [" + v.as <op_constructor_call>()->get_func_id()->name + "]";
+              desc += "constructor [" + v.as <op_constructor_call>()->get_func_id()->name + "]";
             } else {
-              desc = "...";
+              desc += "...";
             }
             kphp_error (0, dl_pstr("Using Unknown type : %s", desc.c_str()));
             return true;
