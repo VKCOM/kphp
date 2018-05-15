@@ -6,6 +6,7 @@
 #include "compiler/stage.h"
 #include "compiler/gentree.h"
 #include "compiler/pass-register-vars.hpp"
+#include "compiler/const-manipulations.h"
 
 string register_unique_name (const string &prefix) {
   //static set <string> v;
@@ -64,71 +65,13 @@ string gen_const_regexp_name (const string &str) {
   return tmp;
 }
 
-inline long long array_hash(VertexPtr vertex) {
-  long long HASH_MULT = 56235515617499LL;
-
-  VertexPtr actual_vertex = GenTree::get_actual_value(vertex);
-
-  switch (actual_vertex->type()) {
-    case op_int_const:
-    case op_float_const:
-    case op_string:
-    case op_var: {
-      string s = actual_vertex->get_string() + OpInfo::str(actual_vertex->type());
-      return string_hash(s.c_str(), static_cast<int>(s.size()));
-    }
-
-    case op_true:
-    case op_null:
-    case op_false: {
-      string s = OpInfo::str(actual_vertex->type());
-      return string_hash(s.c_str(), static_cast<int>(s.size()));
-    }
-
-    case op_double_arrow: {
-      VertexPtr key = actual_vertex.as<op_double_arrow>()->key();
-      VertexPtr value = actual_vertex.as<op_double_arrow>()->value();
-
-      return (array_hash(key) * HASH_MULT + '-') * HASH_MULT + array_hash(value);
-    }
-
-    case op_array: {
-      const static long long MAGIC1 = 536536536536960LL;
-      const static long long MAGIC2 = 288288288288069LL;
-
-      long long res_hash = actual_vertex.as<op_array>()->args().size();
-      res_hash = res_hash * HASH_MULT + MAGIC1;
-
-      FOREACH(actual_vertex.as<op_array>()->args(), it) {
-        res_hash = res_hash * HASH_MULT + array_hash(*it);
-      }
-
-      res_hash = res_hash * HASH_MULT + MAGIC2;
-
-      return res_hash;
-    }
-
-    default: {
-      string msg = "unsupported type for hashing: " + OpInfo::str(actual_vertex->type());
-      kphp_assert_msg(false, msg.c_str());
-    }
-  }
-
-  kphp_fail(/* unreachable state */);
-}
-
 bool is_array_suitable_for_hashing(VertexPtr vertex) {
-  if (vertex->type() != op_array) {
-    return false;
-  }
-
-  int unused = 0;
-  return CollectConstVarsPass::check_const(vertex, &unused);
+  return vertex->type() == op_array && CheckConst::is_const(vertex);
 }
 
 string gen_const_array_name(const VertexAdaptor<op_array> & array) {
   char tmp[50];
-  sprintf (tmp, "const_array$us%llx", array_hash(array));
+  sprintf (tmp, "const_array$us%llx", ArrayHash::calc_hash(array));
   return tmp;
 }
 

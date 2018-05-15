@@ -616,7 +616,7 @@ VertexPtr GenTree::get_expr_top() {
         next_cur();
         v->str_val = (*op)->str_val;
         res = v;
-        return_flag = true;
+        return_flag = was_arrow;
         break;
       }
       cur--;
@@ -979,7 +979,7 @@ VertexPtr GenTree::conv_to (VertexPtr x, PrimitiveType tp, int ref_flag) {
 }
 
 VertexPtr GenTree::get_actual_value (VertexPtr v) {
-  if (v->type() == op_var && v->extra_type == op_ex_var_const) {
+  if (v->type() == op_var && v->extra_type == op_ex_var_const && v->get_var_id().not_null()) {
     return v->get_var_id()->init_val;
   }
   if (v->type() == op_define_val) {
@@ -2170,21 +2170,37 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
     case tok_const: {
       AutoLocation const_location (this);
       next_cur();
-      CE (!kphp_error(in_class() && in_namespace() && in_func_cnt_ == 0, "const expressions supported only inside classes and namespaces"));
+
+      bool const_in_global_scope = in_func_cnt_ == 1 && !in_class() && !in_namespace();
+      bool const_in_class = in_func_cnt_ == 0 && in_class() && in_namespace();
+
+      CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
+
       CREATE_VERTEX (name, op_func_name);
       string const_name = (*cur)->str_val;
-      name->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$" + const_name;
+
+      if (const_in_class) {
+        name->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$" + const_name;
+      } else {
+        name->str_val = const_name;
+      }
+
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
       CREATE_VERTEX(def, op_define, name, v);
       set_location(def, const_location);
       CE (check_statement_end());
-      kphp_error(cur_class().constants.find(const_name) == cur_class().constants.end(), dl_pstr("Redeclaration of const %s", const_name.c_str()));
-      cur_class().constants[const_name] = def;
-      CREATE_VERTEX (empty, op_empty);
-      return empty;
+
+      if (const_in_class) {
+        kphp_error(cur_class().constants.find(const_name) == cur_class().constants.end(), dl_pstr("Redeclaration of const %s", const_name.c_str()));
+        cur_class().constants[const_name] = def;
+        CREATE_VERTEX (empty, op_empty);
+        return empty;
+      }
+
+      return def;
     }
     case tok_use: {
       AutoLocation const_location (this);

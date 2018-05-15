@@ -27,39 +27,8 @@
 #include "compiler/pass-ub.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer.h"
-
-bool is_const (VertexPtr root) {
-  if (is_const_int(root)) {
-    return true;
-  }
-  //TODO: make correct check
-  switch (root->type()) {
-    case op_array: {
-      VertexAdaptor <op_array> root_array = root;
-      FOREACH(root_array->args(), i) {
-        if (!is_const(*i)) {
-          return false;
-        }
-      }
-      return true;
-    }
-    case op_plus:
-      return is_const (root.as <op_plus>()->expr());
-    case op_minus:
-      return is_const (root.as <op_minus>()->expr());
-    case op_shl:
-      return is_const (root.as <op_shl>()->lhs()) && is_const (root.as <op_shl>()->rhs());
-    case op_int_const:
-    case op_float_const:
-    case op_string:
-    case op_false:
-    case op_true:
-    case op_null:
-      return true;
-    default:
-      return false;
-  }
-}
+#include "compiler/const-manipulations.h"
+#include "common/version-string.h"
 
 template <class T>
 class SyncPipeF {
@@ -273,7 +242,7 @@ class ApplyBreakFileF {
         G->register_function(FunctionInfo(
             splitted[i], function->namespace_name,
             function->class_name, function->class_context_name,
-            function->namespace_uses, function->class_extends, set <string>(), access_nonmember
+            function->namespace_uses, function->class_extends, set <string>(), false, false, access_nonmember
         ), os);
       }
 
@@ -293,7 +262,7 @@ class SplitSwitchF {
       for (int i = 0; i < (int)new_functions.size(); i++) {
         G->register_function (FunctionInfo(new_functions[i], function->namespace_name,
                                            function->class_name, function->class_context_name, function->namespace_uses,
-            function->class_extends, set <string>(), access_nonmember), os);
+                                           function->class_extends, set<string>(), false, false, access_nonmember), os);
       }
 
       if (stage::has_error()) {
@@ -384,20 +353,6 @@ class CollectRequiredPass : public FunctionPassBase {
 
 
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local) {
-      if ((root->type() == op_string || root->type() == op_array) && force_func_ptr) {
-        string name = conv_to_func_ptr_name(root);
-        if (name != "") {
-          string fun_name = get_full_static_member_name(current_function, name, true);
-          callback->require_function_set(fs_function, name, current_function);
-          /* TODO fix it
-          string class_name = get_class_name_for(name, '/');
-          if (!class_name.empty()) {
-            require_class(class_name, "");
-          }
-          */
-        }
-      }
-
       bool new_force_func_ptr = false;
       if (root->type() == op_func_call || root->type() == op_func_name) {
         string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
@@ -623,8 +578,6 @@ class CollectDefinesToVectorPass : public FunctionPassBase {
 class PreprocessDefinesConcatenationF {
   private:
     AUTO_PROF (preprocess_defines);
-    map<string, string> str_defines;
-    map<string, VertexPtr> int_defines;
     set<string> in_progress;
     set<string> done;
     map<string, VertexPtr> define_vertex;
@@ -632,11 +585,26 @@ class PreprocessDefinesConcatenationF {
 
     DataStreamRaw<VertexPtr> defines_stream;
     DataStreamRaw<FunctionPtr> all_fun;
+
+    CheckConstWithDefines check_const;
+    MakeConst make_const;
+
   public:
 
-    PreprocessDefinesConcatenationF() {
+    PreprocessDefinesConcatenationF()
+      : check_const(define_vertex)
+      , make_const(define_vertex)
+    {
       defines_stream.set_sink(true);
       all_fun.set_sink(true);
+
+      CREATE_VERTEX(val, op_string);
+      val->set_string(get_version_string());
+      DefineData *data = new DefineData(val, DefineData::def_php);
+      data->name = "KPHP_COMPILER_VERSION";
+      DefinePtr def_id(data);
+
+      G->register_define(def_id);
     }
 
     string get_description() {
@@ -655,115 +623,6 @@ class PreprocessDefinesConcatenationF {
       all_fun << function;
     }
 
-
-    bool check_concat(VertexPtr v) {
-      if (v->type() == op_string) {
-        return true;
-      }
-      if (v->type() == op_concat || v->type() == op_string_build) {
-        FOREACH(v, i) {
-          if (!check_concat(*i)) {
-            return false;
-          }
-        }
-        return true;
-      }
-      if (v->type() == op_func_name) {
-        string name = v.as<op_func_name>()->str_val;
-        return str_defines.find(resolve_define_name(name)) != str_defines.end();
-      }
-      return false;
-    }
-
-    bool check_const(VertexPtr v) {
-      switch (v->type()) {
-        case op_int_const:
-          return true;
-        case op_conv_int:
-        case op_minus:
-        case op_plus:
-        case op_not:
-          return check_const(v.as<meta_op_unary_op>()->expr());
-        case op_add:
-        case op_mul:
-        case op_sub:
-        case op_div:
-        case op_mod:
-        case op_and:
-        case op_or:
-        case op_xor:
-        case op_shl:
-        case op_shr:
-          return check_const(v.as<meta_op_binary_op>()->rhs()) && check_const(v.as<meta_op_binary_op>()->lhs());
-        default:
-          break;
-      }
-      if (v->type() == op_func_name) {
-        string name = v.as<op_func_name>()->str_val;
-        return int_defines.find(resolve_define_name(name)) != int_defines.end();
-      }
-      return false;
-    }
-
-    VertexPtr make_const(VertexPtr v) {
-      switch (v->type()) {
-        case op_conv_int:
-          return make_const(v.as<meta_op_unary_op>()->expr());
-        case op_int_const:
-          return v;
-        case op_minus:
-        case op_plus:
-        case op_not: {
-          v.as<meta_op_unary_op>()->expr() = make_const(v.as<meta_op_unary_op>()->expr());
-          return v;
-        }
-        case op_add:
-        case op_sub:
-        case op_mul:
-        case op_div:
-        case op_and:
-        case op_or:
-        case op_xor:
-        case op_shl:
-        case op_shr:
-        case op_mod: {
-          v.as<meta_op_binary_op>()->lhs() = make_const(v.as<meta_op_binary_op>()->lhs());
-          v.as<meta_op_binary_op>()->rhs() = make_const(v.as<meta_op_binary_op>()->rhs());
-          return v;
-        }
-        default:
-          break;
-      }
-      if (v->type() == op_func_name) {
-        string name = v.as<op_func_name>()->str_val;
-        map<string,VertexPtr>::iterator iter = int_defines.find(resolve_define_name(name));
-        kphp_assert(iter != int_defines.end());
-        return iter->second;
-      }
-      kphp_assert(false);
-      return VertexPtr();
-    }
-
-    string collect_concat(VertexPtr v) {
-      if (v->type() == op_string) {
-        return v.as<op_string>()->str_val;
-      }
-      if (v->type() == op_concat || v->type() == op_string_build) {
-        string res;
-        FOREACH(v, i) {
-          res += collect_concat(*i);
-        }
-        return res;
-      }
-      if (v->type() == op_func_name) {
-        string name = v.as<op_func_name>()->str_val;
-        map<string,string>::iterator iter = str_defines.find(resolve_define_name(name));
-        kphp_assert(iter != str_defines.end());
-        return iter->second;
-      }
-      kphp_fail();
-    }
-
     template <class OutputStreamT>
     void on_finish (OutputStreamT &os) {
       stage::set_name ("Preprocess defines");
@@ -771,23 +630,25 @@ class PreprocessDefinesConcatenationF {
 
       stage::die_if_global_errors();
 
-      vector<VertexPtr> defines = defines_stream.get_as_vector();
-      for (size_t i = 0; i < defines.size(); i++) {
-        VertexPtr name_v = defines[i].as<op_define>()->name();
-        stage::set_location(defines[i].as<op_define>()->location);
+      vector<VertexPtr> all_defines = defines_stream.get_as_vector();
+      FOREACH(all_defines, define) {
+        VertexPtr name_v = define->as<op_define>()->name();
+        stage::set_location(define->as<op_define>()->location);
         kphp_error_return (
           name_v->type() == op_string,
           "Define: first parameter must be a string"
         );
 
         string name = name_v.as<op_string>()->str_val;
-        if (!define_vertex.insert(make_pair(name, defines[i])).second) {
-          kphp_error_return(0, "Duplicate define declaration");
+        if (!define_vertex.insert(make_pair(name, *define)).second) {
+          kphp_error_return(0, dl_pstr("Duplicate define declaration: %s", name.c_str()));
         }
       }
-      for (size_t i = 0; i < defines.size(); i++) {
-        process_define(defines[i]);
+
+      FOREACH(all_defines, define) {
+        process_define(*define);
       }
+
       vector<FunctionPtr> funs = all_fun.get_as_vector();
       for (size_t i = 0; i < funs.size(); i++) {
         os << funs[i];
@@ -801,8 +662,6 @@ class PreprocessDefinesConcatenationF {
         map<string, VertexPtr>::iterator it = define_vertex.find(name);
         if (it != define_vertex.end()) {
           process_define(it->second);
-        } else {
-          fprintf(stderr, "Unknown func_name %s in define\n", name.c_str());
         }
       }
       FOREACH(root, i) {
@@ -813,7 +672,8 @@ class PreprocessDefinesConcatenationF {
     void process_define(VertexPtr root) {
       stage::set_location(root->location);
       VertexAdaptor <meta_op_define> define = root;
-      VertexPtr name_v = define->name(), val = define->value();
+      VertexPtr name_v = define->name();
+      VertexPtr val = define->value();
 
       kphp_error_return (
         name_v->type() == op_string,
@@ -853,29 +713,11 @@ class PreprocessDefinesConcatenationF {
       stack.pop_back();
       done.insert(name);
 
-      if (val->type() != op_string && check_concat(val)) {
-        string collected = collect_concat(val);
-        CREATE_VERTEX(new_val, op_string);
-        new_val->str_val = collected;
-        new_val->location = val->get_location();
-        define->value() = val = new_val;
-      }
-
-      if (val->type() == op_int_const) {
-        int_defines[name] = val;
-      } else {
-        if (check_const(val)) {
-          VertexPtr new_val = make_const(val);
-          define->value() = val = new_val;
-          int_defines[name] = val;
-        }
-      }
-
-      if (val->type() == op_string) {
-        str_defines[name] = val.as<op_string>()->str_val;
+      if (check_const.is_const(val)) {
+        define->value() = make_const.make_const(val);
+        kphp_assert(define->value().not_null());
       }
     }
-
 };
 
 
@@ -887,10 +729,12 @@ class CollectDefinesPass : public FunctionPassBase {
     string get_description() {
       return "Collect defines";
     }
+
     VertexPtr on_exit_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_define || root->type() == op_define_raw) {
         VertexAdaptor <meta_op_define> define = root;
-        VertexPtr name = define->name(), val = define->value();
+        VertexPtr name = define->name();
+        VertexPtr val = define->value();
 
         kphp_error_act (
           name->type() == op_string,
@@ -899,7 +743,7 @@ class CollectDefinesPass : public FunctionPassBase {
         );
 
         DefineData::DefineType def_type;
-        if (!is_const (val)) {
+        if (!CheckConst::is_const(val)) {
           kphp_error(name->get_string().length() <= 1 || name->get_string().substr(0, 2) != "c#",
                      dl_pstr("Couldn't calculate value of %s", name->get_string().substr(2).c_str()));
           def_type = DefineData::def_var;
@@ -2596,7 +2440,7 @@ class FinalCheckPass : public FunctionPassBase {
             while (v->type() == op_index) {
               v = v.as <op_index>()->array();
             }
-            string desc;
+            string desc = "Using Unknown type : ";
             if (v->type() == op_var) {
               desc += "variable [$" + v.as <op_var>()->get_var_id()->name + "]";
             } else if (v->type() == op_func_call) {
@@ -2606,7 +2450,18 @@ class FinalCheckPass : public FunctionPassBase {
             } else {
               desc += "...";
             }
-            kphp_error (0, dl_pstr("Using Unknown type : %s", desc.c_str()));
+
+            if (v->type() == op_var) {
+              VarPtr var = v->get_var_id();
+              if (var.not_null()) {
+                FunctionPtr holder_func = var->holder_func;
+                if (holder_func.not_null() && holder_func->is_required) {
+                  desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
+                }
+              }
+            }
+
+            kphp_error (0, desc.c_str());
             return true;
           }
         }
@@ -2623,62 +2478,10 @@ class FinalCheckPass : public FunctionPassBase {
     }
 };
 
-/*** CODE GENERATION ***/
-//FIXME
-map <string, long long> subdir_hash;
-string get_subdir (const string &file, const string &base) {
-  kphp_assert (G->env().get_use_subdirs());
-
-  int func_hash = hash (base);
-  int bucket = func_hash % 100;
-
-  string subdir = string ("o_") + int_to_str (bucket);
-
-  {
-    long long &cur_hash = subdir_hash[subdir];
-    cur_hash = cur_hash * 987654321 + hash (file);
-  }
-
-  return subdir;
-}
-
-void prepare_generate_function (FunctionPtr func) {
-  string file_name = func->name;
-  for (int i = 0; i < (int)file_name.size(); i++) {
-    if (file_name[i] == '$') {
-      file_name[i] = '@';
-    }
-  }
-
-  string file_subdir = func->file_id->short_file_name;
-
-  if (G->env().get_use_subdirs()) {
-    func->src_name = file_name + ".cpp";
-    func->header_name = file_name + ".h";
-
-    func->subdir = get_subdir (file_name, file_subdir);
-
-    func->src_full_name = func->subdir + "/" + func->src_name;
-    func->header_full_name = func->subdir + "/" + func->header_name;
-  } else {
-    string full_name = file_subdir + "." + file_name;
-    func->src_name = full_name + ".cpp";
-    func->header_name = full_name + ".h";
-    func->subdir = "";
-    func->src_full_name = func->src_name;
-    func->header_full_name = func->header_name;
-  }
-
-  my_unique (&func->static_var_ids);
-  my_unique (&func->global_var_ids);
-  my_unique (&func->header_global_var_ids);
-  my_unique (&func->local_var_ids);
-}
-
+// todo почему-то удалилось из server
 void prepare_generate_class (ClassPtr klass __attribute__((unused))) {
 }
 
-set <string> new_subdirs;
 template <class OutputStream>
 class WriterCallback : public WriterCallbackBase {
   private:
@@ -2704,6 +2507,8 @@ class CodeGenF {
   //TODO: extract pattern
   private:
     DataStreamRaw <FunctionPtr> tmp_stream;
+    map <string, long long> subdir_hash;
+
   public:
     CodeGenF() {
       tmp_stream.set_sink (true);
@@ -2742,9 +2547,9 @@ class CodeGenF {
 
       W.init (new WriterCallback <OutputStreamT> (os));
 
-      for (int i = 0; i < (int)xall.size(); i++) {
-        //TODO: parallelize;
-        prepare_generate_function (xall[i]);
+      //TODO: parallelize;
+      FOREACH(xall, fun) {
+        prepare_generate_function(*fun);
       }
       for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
         if (c->not_null() && !(*c)->is_fully_static())
@@ -2784,6 +2589,62 @@ class CodeGenF {
       int parts_cnt = calc_count_of_parts(vars.size());
       W << Async (VarsCpp (vars, parts_cnt));
 
+      write_hashes_of_subdirs_to_dep_files(W);
+
+      write_tl_schema(W);
+    }
+
+  private:
+    void prepare_generate_function (FunctionPtr func) {
+      string file_name = func->name;
+      std::replace(file_name.begin(), file_name.end(), '$', '@');
+
+      string file_subdir = func->file_id->short_file_name;
+
+      if (G->env().get_use_subdirs()) {
+        func->header_name = file_name + ".h";
+        func->subdir = get_subdir(file_subdir);
+
+        recalc_hash_of_subdirectory(func->subdir, func->header_name);
+
+        if (!func->root->inline_flag) {
+          func->src_name = file_name + ".cpp";
+          func->src_full_name = func->subdir + "/" + func->src_name;
+
+          recalc_hash_of_subdirectory(func->subdir, func->src_name);
+        }
+
+        func->header_full_name = func->subdir + "/" + func->header_name;
+      } else {
+        string full_name = file_subdir + "." + file_name;
+        func->src_name = full_name + ".cpp";
+        func->header_name = full_name + ".h";
+        func->subdir = "";
+        func->src_full_name = func->src_name;
+        func->header_full_name = func->header_name;
+      }
+
+      my_unique (&func->static_var_ids);
+      my_unique (&func->global_var_ids);
+      my_unique (&func->header_global_var_ids);
+      my_unique (&func->local_var_ids);
+    }
+
+    string get_subdir (const string &base) {
+      kphp_assert (G->env().get_use_subdirs());
+
+      int func_hash = hash(base);
+      int bucket = func_hash % 100;
+
+      return string("o_") + int_to_str(bucket);
+    }
+
+    void recalc_hash_of_subdirectory(const string &subdir, const string &file_name) {
+      long long &cur_hash = subdir_hash[subdir];
+      cur_hash = cur_hash * 987654321 + hash(file_name);
+    }
+
+    void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
       FOREACH (subdir_hash, i) {
         string dir = i->first;
         long long hash = i->second;
@@ -2793,7 +2654,9 @@ class CodeGenF {
         W << "//" << (const char *)tmp << NL;
         W << CloseFile();
       }
+    }
 
+    void write_tl_schema(CodeGenerator &W) {
       string schema;
       int schema_length = -1;
       if (G->env().get_tl_schema_file() != "") {
@@ -2899,14 +2762,13 @@ class WriteFilesF {
           if (!need_save_time && G->env().get_verbosity() > 0) {
             fprintf (stderr, "File [%s] changed\n", full_file_name.c_str());
           }
-          string dest_file_name = full_file_name;
           if (need_del) {
-            int err = unlink (dest_file_name.c_str());
-            dl_passert (err == 0, dl_pstr ("Failed to unlink [%s]", dest_file_name.c_str()));
+            int err = unlink (full_file_name.c_str());
+            dl_passert (err == 0, dl_pstr ("Failed to unlink [%s]", full_file_name.c_str()));
           }
-          FILE *dest_file = fopen (dest_file_name.c_str(), "w");
+          FILE *dest_file = fopen (full_file_name.c_str(), "w");
           dl_passert (dest_file != NULL, 
-              dl_pstr ("Failed to open [%s] for write\n", dest_file_name.c_str()));
+              dl_pstr ("Failed to open [%s] for write\n", full_file_name.c_str()));
 
           dl_pcheck (fprintf (dest_file, "//crc64:%016Lx\n", ~crc));
           dl_pcheck (fprintf (dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));

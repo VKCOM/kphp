@@ -36,56 +36,6 @@ class CollectConstVarsPass : public FunctionPassBase {
       return "Collect constants";
     }
 
-    /*** Serialize big consts if possible ***/
-    static bool check_const (VertexPtr v, int *nodes_cnt) {
-      (*nodes_cnt)++;
-
-      if (v->type() == op_var) {
-        if (v->get_var_id()->is_constant) {
-          return check_const(v->get_var_id()->init_val, nodes_cnt);
-        }
-
-        return false;
-      }
-
-      if (!(v->type() == op_string || v->type() == op_int_const || v->type() == op_array ||
-            v->type() == op_float_const || v->type() == op_true || v->type() == op_false || v->type() == op_null)) {
-        return false;
-      }
-      if (v->type() == op_array) {
-        int has_key = false, no_key = false;
-
-        for (VertexRange i = all (*v); !i.empty(); i.next()) {
-          VertexPtr cur = *i;
-          if (cur->type() == op_double_arrow) {
-            VertexAdaptor <op_double_arrow> arrow = cur;
-            VertexPtr key = arrow->key();
-            VertexPtr value = arrow->value();
-
-            has_key = true;
-
-            if (key->type() != op_int_const && key->type() != op_string && key->type() != op_var) {
-              return false;
-            }
-
-            if (!check_const (key, nodes_cnt) || !check_const (value, nodes_cnt)) {
-              return false;
-            }
-          } else {
-            no_key = true;
-            if (!check_const (cur, nodes_cnt)) {
-              return false;
-            }
-          }
-        }
-        if (has_key && no_key) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-
     static void serialize_int (string int_val, string *s) {
       int val;
       sscanf (int_val.c_str(), "%i", &val);
