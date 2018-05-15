@@ -874,7 +874,9 @@ VA_BEGIN (op_double_arrow, meta_op_binary_op)
     OPP (fixity, right_opp); //redefined
   PROPERTIES_END
   VertexPtr &key() {return lhs();}
+
   VertexPtr &value() {return rhs();}
+  const VertexPtr &value() const {return rhs();}
 
 VA_END
 
@@ -1193,7 +1195,9 @@ VA_BEGIN (meta_op_push_back, meta_op_base)
     OPP (cnst, cnst_error);
   PROPERTIES_END
   VertexPtr &array() {return ith (0);}
+
   VertexPtr &value() {return ith (1);}
+  const VertexPtr &value() const {return ith(1);}
 VA_END
 VA_BEGIN (op_push_back_return, meta_op_push_back)
   PROPERTIES_BEGIN
@@ -1215,7 +1219,9 @@ VA_BEGIN (op_set_value, meta_op_base)
   PROPERTIES_END
   VertexPtr &array() {return ith (0);}
   VertexPtr &key() {return ith (1);}
+
   VertexPtr &value() {return ith (2);}
+  const VertexPtr &value() const {return ith(2);}
 VA_END
 
 VA_BEGIN_2 (op_func_call, meta_op_varg_, function, string)
@@ -1277,7 +1283,9 @@ VA_BEGIN_1 (op_define_val, meta_op_base, define)
 VA_END
 VA_BEGIN (meta_op_define, meta_op_base)
   VertexPtr &name() {return ith(0);}
+
   VertexPtr &value() {return ith(1);}
+  const VertexPtr &value() const {return ith(1);}
 VA_END
 VA_BEGIN (op_define, meta_op_define)
 VA_END
