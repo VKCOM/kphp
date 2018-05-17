@@ -119,9 +119,7 @@ static int decode_sample (void *buff, int len, sample_t* sample) {
   if (!ptr) {
     return 0;
   }
-  if (max_size == sample->max_size) {
-    assert(0);
-  }
+  assert (max_size == sample->max_size);
   sample->dataset_size = int_byte_decode_safe(&ptr, &len);
   if (!ptr) {
     return 0;
