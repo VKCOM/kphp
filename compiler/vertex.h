@@ -208,6 +208,8 @@ public:
   virtual const string &get_string() const {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
   virtual void set_string (const string &) {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
 
+  virtual bool has_get_string() const { return false; }
+
   template <Operation Op> friend
     vertex_inner <Op> *raw_create_vertex_inner (int args_n, vertex_inner <Op> *from_ptr);
 };
@@ -445,6 +447,7 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
   string str_val;\
   virtual const string &get_string() const {return str_val;}\
   virtual void set_string (const string &s) {str_val = s;}\
+  virtual bool has_get_string() const { return true; }\
   RAW_COPY_BEGIN\
     str_val = from.str_val;\
   RAW_COPY_END
