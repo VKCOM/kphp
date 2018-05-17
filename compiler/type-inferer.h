@@ -501,7 +501,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
 
     LValue as_lvalue (VertexPtr v) {
       if (v->type() == op_instance_prop) {
-        return as_lvalue(v.as <op_instance_prop>()->var);
+        return as_lvalue(v->get_var_id());
       }
 
       int depth = 0;

@@ -229,7 +229,7 @@ void rl_calc (VertexPtr root, RLValueType expected_rl_type) {
       break;
     }
     case rl_instance_prop: {
-      VertexPtr lhs = root.as <op_instance_prop>()->lhs();   // lhs() это слева от ->, а str_val — название свойства
+      VertexPtr lhs = root.as <op_instance_prop>()->expr();   // expr() это слева от ->, а str_val — название свойства
       switch (expected_rl_type) {
         case val_l:
           break;

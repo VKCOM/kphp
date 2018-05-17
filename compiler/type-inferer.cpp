@@ -573,7 +573,7 @@ void ExprNodeRecalc::recalc_index (VertexAdaptor <op_index> index) {
 }
 
 void ExprNodeRecalc::recalc_instance_prop(VertexAdaptor <op_instance_prop> index) {
-  set_lca(index->var);
+  set_lca(index->get_var_id());
 }
 
 void ExprNodeRecalc::recalc_set (VertexAdaptor <op_set> set) {

@@ -1242,19 +1242,9 @@ VA_BEGIN_2 (op_func_ptr, meta_op_base, function, string)
 VA_END
 VA_BEGIN (op_constructor_call, op_func_call)
 VA_END
-VA_BEGIN (op_instance_prop, meta_op_base)
-  VarPtr var;       // см. register_class(); у var внутри существует class_id
-  string str_val;   // название свойства ->{str_val}
-
-  virtual const string &get_string() const {return str_val;}
-  virtual void set_string (const string &s) {str_val = s;}
-
-  inline VertexPtr &lhs () { return ith(0); }
-
-  RAW_COPY_BEGIN
-    str_val = from.str_val;
-    var = from.var;
-  RAW_COPY_END
+VA_BEGIN_2 (op_instance_prop, meta_op_unary_, string, variable)
+  // var_ - см. register_class(); у var внутри существует class_id
+  // str_val - название свойства
   PROPERTIES_BEGIN
     OPP (type, common_op);
     OPP (rl, rl_instance_prop);

@@ -1476,7 +1476,7 @@ public:
       kphp_assert(klass.not_null());  // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_expr_class()
 
       VarPtr var = klass->find_var(v->get_string());
-      v.as <op_instance_prop>()->var = var;
+      v->set_var_id(var);
 
       kphp_error(var.not_null(),
           dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()));

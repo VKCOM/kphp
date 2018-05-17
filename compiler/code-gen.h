@@ -2770,7 +2770,7 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
 }
 
 void compile_instance_prop (VertexAdaptor <op_instance_prop> root, CodeGenerator &W) {
-  W << root->lhs() << "->" << root->str_val;
+  W << root->expr() << "->" << root->get_string();
 }
 
 void compile_as_printable (VertexPtr root, CodeGenerator &W) {

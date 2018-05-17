@@ -2406,7 +2406,7 @@ VertexPtr GenTree::post_process (VertexPtr root) {
 
     if (rhs->type() == op_func_name) {
       CREATE_VERTEX(inst_prop, op_instance_prop, arrow->lhs());
-      inst_prop->str_val = rhs->get_string();
+      inst_prop->set_string(rhs->get_string());
 
       root = inst_prop;
     } else if (rhs->type() == op_func_call) {
