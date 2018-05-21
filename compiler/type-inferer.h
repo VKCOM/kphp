@@ -256,7 +256,12 @@ class RestrictionLess : public Restriction {
       }
     };
 
-    bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected) {
+    bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected, size_t cnt_calls = 0) {
+      static size_t limit_calls = 1000000;
+      if (cnt_calls > limit_calls) {
+          return true;
+      }
+
       ComparatorByEdgePriorityRelativeToExpectedType comparator(expected);
 
       typeof(cur_node->next_range()) node_range = cur_node->next_range();
@@ -296,7 +301,7 @@ class RestrictionLess : public Restriction {
           expected_type_in_level_of_multi_key = expected->const_read_at(*e->from_at);
         }
 
-        if (find_call_trace_with_error_impl(to, expected_type_in_level_of_multi_key)) {
+        if (find_call_trace_with_error_impl(to, expected_type_in_level_of_multi_key, cnt_calls + 1)) {
           node_path_.pop_back();
           descriptions_.push_back(to->get_description());
 
