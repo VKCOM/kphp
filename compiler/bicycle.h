@@ -850,6 +850,7 @@ class ProfilerRaw {
   F (collect_required)\
   F (calc_locations)\
   F (preprocess_defines)\
+  F (preprocess_defines_finish)\
   F (collect_defines)\
   F (check_returns)\
   F (register_defines)\

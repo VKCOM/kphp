@@ -577,7 +577,6 @@ class CollectDefinesToVectorPass : public FunctionPassBase {
 
 class PreprocessDefinesConcatenationF {
   private:
-    AUTO_PROF (preprocess_defines);
     set<string> in_progress;
     set<string> done;
     map<string, VertexPtr> define_vertex;
@@ -613,6 +612,7 @@ class PreprocessDefinesConcatenationF {
 
     template <class OutputStreamT>
     void execute (FunctionPtr function, OutputStreamT &os __attribute__((unused))) {
+      AUTO_PROF (preprocess_defines);
       CollectDefinesToVectorPass pass;
       run_function_pass (function, &pass);
 
@@ -625,6 +625,7 @@ class PreprocessDefinesConcatenationF {
 
     template <class OutputStreamT>
     void on_finish (OutputStreamT &os) {
+      AUTO_PROF (preprocess_defines_finish);
       stage::set_name ("Preprocess defines");
       stage::set_file (SrcFilePtr());
 
