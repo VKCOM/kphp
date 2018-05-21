@@ -1578,9 +1578,10 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     next_cur();
   }
 
-  bool is_constructor = false;
+  bool is_instance_method = access_type == access_private || access_type == access_protected || access_type == access_public;
+  bool is_constructor = is_instance_method && name_str == "__construct";
+
   if (in_class()) {
-    is_constructor = (name_str == "__construct");
     string full_class_name = replace_backslashes(namespace_name) + "$" + cur_class().name;
     string full_context_name = replace_backslashes(class_context);
     name_str = full_class_name + "$$" + name_str;
@@ -1604,10 +1605,8 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
   AutoLocation params_location (this);
   vector <VertexPtr> params_next;
 
-  if (access_type == access_private || access_type == access_protected || access_type == access_public) {
-    if (!is_constructor) {
-      patch_func_add_this(params_next, func_location);
-    }
+  if (is_instance_method && !is_constructor) {
+    patch_func_add_this(params_next, func_location);
   }
 
   if (test_expect (tok_varg)) {
@@ -1665,7 +1664,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     stage::set_line(name->location.line);
     vector <php_doc_tag> tags = parse_php_doc(phpdoc_token->str_val.str());
     int infer_type = 0;
-    int param_ptr = 0;
+    int param_ptr = is_instance_method && !is_constructor ? 1 : 0;
     vector<VertexPtr> new_cmd_next;
     for (int i = 0; i < tags.size(); i++) {
       switch (tags[i].type) {
