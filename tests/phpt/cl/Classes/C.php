@@ -11,6 +11,8 @@ class C
   /** @var B */
   private $bInst;
 
+  private static $instances = [];
+
   public function __construct($b1Val = 1, $b2Val = 2) {
     $this->aInst = new A();
     $this->bInst = new B();
@@ -34,5 +36,9 @@ class C
   /** @return B */
   public function getBInst() {
     return $this->bInst;
+  }
+
+  public function addThis() {
+    self::$instances[] = $this;
   }
 }

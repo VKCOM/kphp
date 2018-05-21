@@ -1605,6 +1605,11 @@ static inline void include_dependent_headers (FunctionPtr function, CodeGenerato
 
     W << Include (to_include->header_full_name);
   }
+  FOREACH (function->global_var_ids, global_var) {
+    if ((*global_var)->tinf_node.get_type()->get_class_type_inside()) {
+      W << IncludeClass((*global_var)->tinf_node.get_type());
+    }
+  }
 }
 
 static inline void declare_global_vars (FunctionPtr function, CodeGenerator &W) {
@@ -1616,6 +1621,12 @@ static inline void declare_global_vars (FunctionPtr function, CodeGenerator &W) 
 static inline void declare_const_vars (FunctionPtr function, CodeGenerator &W) {
   FOREACH (function->const_var_ids, const_var) {
     W << VarExternDeclaration (*const_var) << NL;
+  }
+}
+
+static inline void declare_static_vars (FunctionPtr function, CodeGenerator &W) {
+  FOREACH (function->static_var_ids, static_var) {
+    W << VarDeclaration(*static_var) << NL;
   }
 }
 
@@ -1678,11 +1689,9 @@ void FunctionCpp::compile (CodeGenerator &W) const {
 
   include_dependent_headers (function, W);
 
-  declare_global_vars (function, W);
-  declare_const_vars (function, W);
-  FOREACH (function->static_var_ids, static_var) {
-    W << VarDeclaration (*static_var) << NL;
-  }
+  declare_global_vars(function, W);
+  declare_const_vars(function, W);
+  declare_static_vars(function, W);
 
   W << "extern string_buffer SB;" << NL;
 

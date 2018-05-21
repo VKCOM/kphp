@@ -11,6 +11,7 @@ function modify(Classes\B $b) {
 
 $c = new C();
 $c->aInst->setA(2)->printA();
+$c->addThis();
 
 $a = $c->aInst;
 $a->setA(89)->printA();
