@@ -33,7 +33,9 @@ bool VarData::get_uninited_flag() {
 }
 
 /*** ClassData ***/
-ClassData::ClassData() {
+ClassData::ClassData () :
+    id(0),
+    assumptions_inited_vars(0) {      // иначе в нет гарантии, что в примитивных типах не окажется мусор
 }
 
 /*** FunctionSet ***/

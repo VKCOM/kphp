@@ -2538,7 +2538,6 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
 
   while (cur_class.not_null() && !cur_class->extends.empty()) {
     kphp_assert(info.namespace_name + "\\" + info.class_name == cur_class_name);
-    map<string, FunctionPtr> &methods = cur_class->static_methods;
 
     string new_function_name = get_name_for_new_function_with_parent_call(info, real_function_name);
     FunctionSetPtr fs_new_function = G->get_function_set(fs_function, new_function_name, false);
@@ -2557,13 +2556,6 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
       FunctionPtr registered_function = register_function(info);
       if (registered_function.not_null()) {
         info.root->get_func_id()->access_type = access_type;
-
-        string function_name_with_context = real_function_name + "$$" + replace_backslashes(class_context);
-        if (cur_class_name == class_context) {
-          function_name_with_context = real_function_name;
-        }
-
-        methods[function_name_with_context] = registered_function;
       }
     }
 

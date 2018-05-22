@@ -168,10 +168,6 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   }
   FOREACH(info.static_methods, method_ptr) {
     (*method_ptr).second->class_id = klass;
-    if ((*method_ptr).second == klass->init_function) {
-      continue;
-    }
-    klass->static_methods.insert(*method_ptr);
   }
   FOREACH(info.methods, method) {
     FunctionPtr f = ((VertexPtr) (*method)).as <op_function>()->get_func_id();

@@ -81,7 +81,6 @@ public:
 
   FunctionPtr init_function;
   FunctionPtr new_function;
-  map <string, FunctionPtr> static_methods;
   set <string> static_fields;
   set <string> constants;
   vector <VarPtr> vars;
