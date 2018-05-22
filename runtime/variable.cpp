@@ -1944,7 +1944,7 @@ bool var::isset (const string &string_key) const {
       int int_val;
       if (!string_key.try_to_int (&int_val)) {
         php_warning ("\"%s\" is illegal offset for string", string_key.c_str());
-        int_val = string_key.to_int();
+        return false;
       }
       return (dl::size_type)int_val < AS_CONST_STRING(s)->size();
     }
