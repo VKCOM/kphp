@@ -9,8 +9,12 @@
 #include "compiler/debug.h"
 #include "compiler/compiler-core.h"
 
-GenTree::GenTree () {
-}
+GenTree::GenTree ()
+  : line_num(-1)
+  , tokens(NULL)
+  , callback(NULL)
+  , in_func_cnt_(0)
+{}
 
 #define CE(x) if (!(x)) {return VertexPtr();}
 

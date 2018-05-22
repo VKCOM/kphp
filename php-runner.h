@@ -104,6 +104,10 @@ public:
   size_t mem_size, stack_size;
   ucontext_t run_context;
 
+  script_t *run_main;
+  php_query_data *data;
+  script_result *res;
+
   static void cur_run();
   static void error (const char *s);
 
@@ -139,10 +143,6 @@ public:
   double get_script_time (void);
   int get_net_queries_count (void) const;
   long long memory_get_total_usage(void) const;
-
-  script_t *run_main;
-  php_query_data *data;
-  script_result *res;
 };
 
 //TODO: sometimes I need to call old handlers

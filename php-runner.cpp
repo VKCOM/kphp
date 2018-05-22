@@ -58,7 +58,16 @@ bool PHPScriptBase::check_stack_overflow (char *x) {
 
 
 PHPScriptBase::PHPScriptBase (size_t mem_size, size_t stack_size)
-  : state (rst_empty), query (NULL), mem_size (mem_size), stack_size (stack_size) {
+  : cur_timestamp(0) , net_time(0) , script_time(0)
+  , queries_cnt(0)
+  , state (rst_empty)
+  , error_message(NULL)
+  , query(NULL)
+  , run_stack(NULL), protected_end(NULL), run_stack_end(NULL), run_mem(NULL)
+  , mem_size (mem_size) , stack_size (stack_size)
+  , run_context()
+  , run_main(NULL) , data(NULL) , res(NULL)
+{
   //fprintf (stderr, "PHPScriptBase: constructor\n");
   stack_size += 2 * getpagesize() - 1;
   stack_size /= getpagesize();

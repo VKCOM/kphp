@@ -25,6 +25,9 @@ public:
   static const size_type npos = (size_type) -1;
 
 private:
+  char *p;
+
+private:
   struct string_inner {
     size_type size;
     size_type capacity;
@@ -52,8 +55,6 @@ private:
 
     inline char *clone (size_type requested_cap);
   };
-
-  char *p;
 
   inline string_inner *inner (void) const;
 

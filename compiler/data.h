@@ -148,8 +148,11 @@ public:
   bool should_be_sync;
   AccessType access_type;
 
-  FunctionInfo() {
-  }
+  FunctionInfo()
+    : kphp_required(false)
+    , should_be_sync(false)
+    , access_type(access_nonmember)
+  {}
 
   FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
                const string &class_context, const map<string, string> namespace_uses,
@@ -290,7 +293,6 @@ public:
 
   VertexPtr val;
   string name;
-  int pos_begin, pos_end;
   SrcFilePtr file_id;
   enum DefineType {def_php, def_raw, def_var};
 

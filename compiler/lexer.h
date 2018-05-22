@@ -27,7 +27,6 @@ struct LexerData {
 private:
   DISALLOW_COPY_AND_ASSIGN (LexerData);
   int line_num;
-  SrcFilePtr file_id;
   char *code;
   char *code_end;
   char *start;

@@ -26,8 +26,15 @@ template <class T> T *Singleton<T>::val = (T *)NULL;
   LexerData
  ***/
 LexerData::LexerData ()
-  : code(NULL), tokens(), in_gen_str (false) {
-}
+  : line_num(-1)
+  , code(NULL)
+  , code_end(NULL)
+  , start(NULL)
+  , code_len(0)
+  , in_gen_str(false)
+  , str_begin(NULL)
+  , str_cur(NULL)
+{}
 
 LexerData::~LexerData () {
 }

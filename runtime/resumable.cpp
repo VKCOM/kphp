@@ -723,8 +723,10 @@ protected:
   }
 
 public:
-  wait_multiple_resumable (int child_id): child_id (child_id) {
-  }
+  wait_multiple_resumable (int child_id)
+    : child_id (child_id)
+    , info(NULL)
+  {}
 };
 
 

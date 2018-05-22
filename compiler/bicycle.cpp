@@ -200,7 +200,9 @@ void *thread_execute (void *arg) {
   return NULL;
 }
 
-Scheduler::Scheduler() {
+Scheduler::Scheduler()
+  : threads_count(-1)
+{
   task_pull = new TaskPull();
 }
 

@@ -27,7 +27,7 @@ const int MEMCACHE_COMPRESSED = 2;
 
 class MC_object {
 protected:
-  ~MC_object();
+  virtual ~MC_object();
 
 public:
   virtual bool addServer (const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1) = 0;

@@ -164,8 +164,12 @@ struct CpuStatTimestamp {
   unsigned long long stime;
   unsigned long long total_time;
 
-  CpuStatTimestamp(){
-  }
+  CpuStatTimestamp()
+    : timestamp(0)
+    , utime(0)
+    , stime(0)
+    , total_time(0)
+  {}
 
   CpuStatTimestamp (double timestamp, unsigned long long utime,
                     unsigned long long stime, unsigned long long total_time)
@@ -179,11 +183,16 @@ struct CpuStat {
   double cpu_s_usage;
 
   CpuStat()
-  : cpu_usage (0),
-    cpu_u_usage (0),
-    cpu_s_usage (0) {
-  }
-  CpuStat (const CpuStatTimestamp &from, const CpuStatTimestamp &to) {
+    : cpu_usage(0)
+    , cpu_u_usage(0)
+    , cpu_s_usage(0)
+  {}
+
+  CpuStat (const CpuStatTimestamp &from, const CpuStatTimestamp &to)
+    : cpu_usage(0)
+    , cpu_u_usage(0)
+    , cpu_s_usage(0)
+  {
     unsigned long long total_diff = to.total_time - from.total_time;
     cpu_u_usage = (double)(to.utime - from.utime) / (double)total_diff;
     cpu_s_usage = (double)(to.stime - from.stime) / (double)total_diff;
@@ -194,6 +203,7 @@ struct CpuStat {
 struct CpuStatSegment {
   typedef CpuStat Stat;
   CpuStatTimestamp first, last;
+
   void init (const CpuStatTimestamp &from) {
     first = from;
     last = from;
@@ -265,8 +275,9 @@ struct StatImpl {
   bool is_inited;
 
   StatImpl ()
-    : period ((double)60 * 60 * 24 * 100000), is_inited (false) {
-  }
+    : period ((double)60 * 60 * 24 * 100000)
+    , is_inited (false)
+  {}
 
   void set_period (double new_period) {
     period = new_period;
@@ -308,7 +319,11 @@ struct Stats {
   StatImpl <MiscStatSegment, MiscStatTimestamp> misc[periods_n];
   acc_stats_t acc_stats;
 
-  Stats() {
+  Stats()
+    : istats()
+    , mem_info()
+    , acc_stats()
+  {
     for (int i = 0; i < periods_n; i++) {
       cpu[i].set_period (periods_len[i]);
       misc[i].set_period (periods_len[i]);
@@ -326,8 +341,6 @@ struct Stats {
       }
       misc_desc += periods_desc[i];
     }
-    memset (&istats, 0, sizeof (istats));
-    memset (&acc_stats, 0, sizeof (acc_stats));
   }
   void update (const CpuStatTimestamp &cpu_timestamp) {
     for (int i = 0; i < periods_n; i++) {

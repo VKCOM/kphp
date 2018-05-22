@@ -310,8 +310,8 @@ bool Make::make_target (Target *target, int jobs_count) {
 Make::Make() :
   targets_waiting (0),
   targets_left (0),
-  all_targets() {
-}
+  fail_flag(false)
+{}
 Make::~Make() {
   //TODO: delte targets
   FOREACH (all_targets, target) {

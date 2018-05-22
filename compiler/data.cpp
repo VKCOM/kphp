@@ -11,6 +11,7 @@
 VarData::VarData (VarData::Type type_) :
   type_ (type_),
   id (-1),
+  param_i(),
   tinf_node (VarPtr (this)),
   init_val (NULL),
   static_id(),
@@ -22,8 +23,10 @@ VarData::VarData (VarData::Type type_) :
   tinf_flag (false),
   global_init_flag (false),
   needs_const_iterator_flag (false),
-  dependency_level(0) {
-}
+  access_type(access_nonmember),
+  dependency_level(0),
+  phpdoc_token()
+{}
 
 void VarData::set_uninited_flag (bool f) {
   uninited_flag = f;
@@ -49,8 +52,9 @@ FunctionPtr FunctionSet::operator[] (int i) {
 }
 
 FunctionSet::FunctionSet()
-  : is_required (false) {
-}
+  : id()
+  , is_required(false)
+{}
 
 bool FunctionSet::add_function (FunctionPtr new_function) {
   std::vector <FunctionPtr>::iterator match = std::find (functions.begin(), functions.end(), new_function);
@@ -63,45 +67,54 @@ bool FunctionSet::add_function (FunctionPtr new_function) {
 }
 
 
-
 /*** FunctionData ***/
-FunctionData::FunctionData () :
-  root (NULL),
-  is_required (false),
-  type_ (func_local),
-  bad_vars (NULL),
-  file_id (),
-  req_id(),
-  class_id(),
-  varg_flag (false),
-  tinf_state (0),
-  const_data (NULL),
-  min_argn (0),
-  is_extern (false),
-  used_in_source (false),
-  is_callback (false),
-  namespace_name (""),
-  class_name ("") {
-}
+FunctionData::FunctionData ()
+  : id (0)
+  , root (NULL)
+  , is_required (false)
+  , type_ (func_local)
+  , bad_vars (NULL)
+  , assumptions_inited_args()
+  , assumptions_inited_return()
+  , file_id ()
+  , req_id()
+  , class_id()
+  , varg_flag (false)
+  , tinf_state (0)
+  , const_data (NULL)
+  , phpdoc_token()
+  , min_argn (0)
+  , is_extern (false)
+  , used_in_source (false)
+  , is_callback (false)
+  , should_be_sync()
+  , namespace_name ("")
+  , class_name ("")
+{}
 
-FunctionData::FunctionData (VertexPtr root) :
-  root (root),
-  is_required (false),
-  type_ (func_local),
-  bad_vars (NULL),
-  file_id (),
-  req_id(),
-  class_id(),
-  varg_flag (false),
-  tinf_state (0),
-  const_data (NULL),
-  min_argn (0),
-  is_extern (false),
-  used_in_source (false),
-  is_callback (false),
-  namespace_name (""),
-  class_name ("") {
-}
+FunctionData::FunctionData (VertexPtr root)
+  : id (0)
+  , root (root)
+  , is_required (false)
+  , type_ (func_local)
+  , bad_vars (NULL)
+  , assumptions_inited_args()
+  , assumptions_inited_return()
+  , file_id ()
+  , req_id()
+  , class_id()
+  , varg_flag (false)
+  , tinf_state (0)
+  , const_data (NULL)
+  , phpdoc_token()
+  , min_argn (0)
+  , is_extern (false)
+  , used_in_source (false)
+  , is_callback (false)
+  , should_be_sync()
+  , namespace_name ("")
+  , class_name ("")
+{}
 
 bool FunctionData::is_static_init_empty_body() const {
   FOREACH (const_var_ids, i) {
@@ -141,12 +154,15 @@ string FunctionData::get_resumable_path() const {
   return res.str();
 }
 
-
 /*** DefineData ***/
 DefineData::DefineData ()
-  : val (NULL) {
-}
+  : id()
+  , val(NULL)
+  , type_(def_raw)
+{}
 
 DefineData::DefineData (VertexPtr val, DefineType type_)
-  : val (val), type_ (type_) {
-}
+  : id()
+  , val(val)
+  , type_(type_)
+{}

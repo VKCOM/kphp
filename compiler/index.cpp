@@ -26,13 +26,12 @@ bool is_dir (const string &path) {
 //  for a start, files will be indexed by their names
 //               hashes will be used in future
 File::File()
-  : path()
-  , mtime (0)
-  , crc64 (-1)
-  , crc64_with_comments (-1)
-  , on_disk (false)
-  , needed (false)
-  , target (NULL)
+  : mtime(0)
+  , crc64(-1)
+  , crc64_with_comments(-1)
+  , on_disk(false)
+  , needed(false)
+  , target(NULL)
   , compile_with_debug_info_flag(true)
 {}
 

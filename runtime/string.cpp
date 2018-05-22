@@ -197,7 +197,8 @@ string::string (size_type n, char c): p (create (n, c)) {
 string::string (size_type n, bool b): p (create (n, b)) {
 }
 
-string::string (int i) {
+string::string (int i)
+{
   static const unsigned int STRING_POOL_SIZE = 10000u;
   static void *str_pool[STRING_POOL_SIZE];
 
@@ -244,7 +245,8 @@ string::string (int i) {
   }
 }
 
-string::string (double f) {
+string::string (double f)
+{
 #define MAX_LEN 4096
   static char result[MAX_LEN + 2];
   char *begin = result + 2;

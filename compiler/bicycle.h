@@ -82,8 +82,9 @@ class Maybe {
       has_value (false) {
       }
 
-    Maybe (const ValueType &value) {
-      has_value = true;
+    Maybe (const ValueType &value)
+      : has_value(true)
+    {
       new (data) ValueType (value);
     }
 
@@ -967,9 +968,11 @@ class BikeIdGen {
     };
     TLS <IdRange> range;
   public:
-    BikeIdGen() :
-      used_n (0) {
-    }
+
+    BikeIdGen()
+      : used_n(0)
+    {}
+
     int next_id() {
       IdRange &cur = *range;
       if (unlikely (cur.l == cur.r)) {

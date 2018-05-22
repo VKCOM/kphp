@@ -89,13 +89,17 @@ Exception& Exception::operator = (bool value) {
   bool_value = value;
   return *this;
 }
-Exception::Exception():
-    bool_value (false) {
-}
+Exception::Exception()
+  : bool_value (false)
+  , code(-1)
+  , line(-1)
+{}
 
-Exception::Exception (bool value) {
-  bool_value = value;
-}
+Exception::Exception (bool value)
+  : bool_value(value)
+  , code(-1)
+  , line(-1)
+{}
 
 
 Exception::Exception (const string &file, int line, const string &message, int code):

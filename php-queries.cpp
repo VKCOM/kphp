@@ -93,7 +93,7 @@ namespace qmem {
     size_t alloc_size = n >= page_size ? n : page_size;
 
     if (pages_n == max_pages_n || alloc_size > max_mem || alloc_size + cur_mem > max_mem) {
-      assert ("NOT ENOUGH MEMORY\n");
+      assert ("NOT ENOUGH MEMORY\n" && false);
       return NULL;
     }
 
@@ -734,9 +734,13 @@ class StaticQueue  {
     bool empty() {
       return cnt == 0;
     }
-    StaticQueue() {
-      clear();
-    }
+
+    StaticQueue()
+      : begin(0)
+      , end(0)
+      , cnt(0)
+    {}
+
     DataT *create() {
       if (cnt == N) {
         return NULL;

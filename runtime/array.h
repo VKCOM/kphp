@@ -276,8 +276,6 @@ private:
     inline array_inner& operator = (const array_inner &other) __attribute__ ((always_inline)); // deleted
   };
 
-  array_inner *p;
-
   inline bool mutate_if_vector_shared (int mul = 1);
   inline bool mutate_to_size_if_vector_shared (int int_size);
   inline void mutate_to_size (int int_size);
@@ -480,6 +478,9 @@ public:
   const T *get_const_vector_pointer (void) const; // unsafe
 
   void reserve (int int_size, int string_size, bool make_vector_if_possible);
+
+private:
+  array_inner *p;
 
   template <class T1, class TT1>
   friend class array;

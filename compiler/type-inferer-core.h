@@ -142,12 +142,15 @@ namespace tinf {
   typedef queue <Node *> NodeQueue;
   class TypeInferer {
     private:
-      int do_run_queue();
       TLS <vector <RestrictionBase *> > restrictions;
       bool finish_flag;
+
+    public:
+      TLS <NodeQueue> Q;
+
     public:
       TypeInferer();
-      TLS <NodeQueue> Q;
+
       void add_edge (Edge *edge);
 
       void recalc_node (Node *node);
@@ -164,6 +167,9 @@ namespace tinf {
 
       void finish();
       bool is_finished();
+
+    private:
+      int do_run_queue();
   };
 
   void register_inferer (TypeInferer *inferer);

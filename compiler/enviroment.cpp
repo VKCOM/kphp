@@ -20,9 +20,19 @@ static void as_file (string *s __attribute__((unused))) {
 }
 
 KphpEnviroment::KphpEnviroment()
-  : verbosity_int_(0)
+  : use_safe_integer_arithmetic_bool_(false)
+  , jobs_count_int_(0)
+  , use_make_bool_(false)
+  , make_force_bool_(false)
+  , use_subdirs_bool_(false)
+  , threads_count_int_(0)
+  , verbosity_int_(0)
   , print_resumable_graph_(0)
   , enable_profiler_(0)
+  , use_auto_dest_bool_(false)
+  , error_on_warns(false)
+  , warnings_file(NULL)
+  , stats_file(NULL)
   , warnings_level(0)
 {}
 

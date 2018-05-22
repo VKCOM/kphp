@@ -1445,10 +1445,10 @@ MyMemcache& MyMemcache::operator = (bool value) {
   return *this;
 }
 
-MyMemcache::MyMemcache (bool value) {
-  bool_value = value;
-  mc = NULL;
-}
+MyMemcache::MyMemcache (bool value)
+  : bool_value(value)
+  , mc(NULL)
+{}
 
 MyMemcache::MyMemcache (MC_object *mc): bool_value (true),
                                         mc (mc) {
@@ -2152,10 +2152,10 @@ MyDB& MyDB::operator = (bool value) {
   return *this;
 }
 
-MyDB::MyDB (bool value) {
-  bool_value = value;
-  db = NULL;
-}
+MyDB::MyDB (bool value)
+  : bool_value(value)
+  , db(NULL)
+{}
 
 
 MyDB::MyDB (db_driver *db): bool_value (true),

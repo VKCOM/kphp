@@ -13,6 +13,8 @@
 
 SrcFile::SrcFile()
   : id(0)
+  , loaded(false)
+  , is_required(false)
 {}
 
 SrcFile::SrcFile (const string &file_name, const string &short_file_name, const string &class_context)

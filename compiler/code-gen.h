@@ -2213,11 +2213,17 @@ struct CaseInfo {
   VertexPtr expr;
   VertexPtr cmd;
 
-  inline CaseInfo() {
-  }
-  inline CaseInfo (VertexPtr root) {
-    next = NULL;
-    v = root;
+  inline CaseInfo()
+    : hash(0)
+    , is_default(false)
+    , next(NULL)
+  {}
+
+  inline CaseInfo (VertexPtr root)
+    : hash(0)
+    , next(NULL)
+    , v(root)
+  {
     if (v->type() == op_default) {
       is_default = true;
       cmd = VertexAdaptor <op_default> (v)->cmd();

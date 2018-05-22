@@ -27,8 +27,6 @@ public:
   };
   static inline void set_location (VertexPtr v, const AutoLocation &location);
 
-  int line_num;
-
   GenTree ();
 
   void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new);
@@ -117,6 +115,9 @@ private:
   void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next);
   VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next);
   string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &real_name);
+
+public:
+  int line_num;
 
 private:
   const vector <Token *> *tokens;

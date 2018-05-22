@@ -381,11 +381,11 @@ void NodeRecalc::set_lca(ClassPtr klass) {
 }
 
 
-NodeRecalc::NodeRecalc (tinf::Node *node, tinf::TypeInferer *inferer) :
-  node_ (node),
-  inferer_ (inferer)
-{
-}
+NodeRecalc::NodeRecalc (tinf::Node *node, tinf::TypeInferer *inferer)
+  : new_type_(NULL)
+  , node_ (node)
+  , inferer_ (inferer)
+{}
 
 void NodeRecalc::on_changed() {
   __sync_synchronize();
