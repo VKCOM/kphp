@@ -585,13 +585,14 @@ bool f$store_double (double v) {
 bool store_string (const char *v, int v_len) {
   int all_len = v_len;
   if (v_len < 254) {
-    data_buf += (char) (v_len);
+    data_buf << (char) (v_len);
     all_len += 1;
   } else if (v_len < (1 << 24)) {
-    data_buf += (char) (254);
-    data_buf += (char) (v_len & 255);
-    data_buf += (char) ((v_len >> 8) & 255);
-    data_buf += (char) ((v_len >> 16) & 255);
+    data_buf
+      << (char) (254)
+      << (char) (v_len & 255)
+      << (char) ((v_len >> 8) & 255)
+      << (char) ((v_len >> 16) & 255);
     all_len += 4;
   } else {
     php_critical_error ("trying to store too big string of length %d", v_len);
@@ -599,7 +600,7 @@ bool store_string (const char *v, int v_len) {
   data_buf.append (v, v_len);
 
   while (all_len % 4 != 0) {
-    data_buf += '\0';
+    data_buf << '\0';
     all_len++;
   }
   return true;
@@ -2028,9 +2029,9 @@ protected:
         int query_id = it.get_value();
         if (!tl_objects_unsorted.isset (query_id)) {
           if (query_id <= 0) {
-            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() + "Very wrong query_id " + query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           } else {
-            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() + "No answer received or duplicate/wrong query_id " + query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "No answer received or duplicate/wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           }
         } else {
           tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
@@ -2078,9 +2079,9 @@ array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &que
     int query_id = it.get_value();
     if (!tl_objects_unsorted.isset (query_id)) {
       if (query_id <= 0) {
-        tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() + "Very wrong query_id " + query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       } else {
-        tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() + "No answer received or duplicate/wrong query_id " + query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "No answer received or duplicate/wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       }
     } else {
       tl_objects[it.get_key()] = tl_objects_unsorted[query_id];

@@ -440,7 +440,7 @@ static OrFalse <string> full_realpath (const string &path) { // realpath resolvi
     const char *basename_c_str = __xpg_basename (basename_path_copy.buffer());
     dl::leave_critical_section();
 
-    return result_cache = (static_SB.clean() + file_wrapper_name + real_path + '/' + basename_c_str).str();
+    return result_cache = (static_SB.clean() << file_wrapper_name << real_path << '/' << basename_c_str).str();
   }
   result_cache = LETTER_a;
   return false;

@@ -454,19 +454,13 @@ bool Memcache::run_set (const string &key, const var &value, int flags, int expi
     return false;
   }
 
-  drivers_SB.clean();
-  drivers_SB += mc_method;
-  drivers_SB += ' ';
-  drivers_SB += real_key;
-  drivers_SB += ' ';
-  drivers_SB += flags;
-  drivers_SB += ' ';
-  drivers_SB += expire;
-  drivers_SB += ' ';
-  drivers_SB += (int)string_value.size();
-  drivers_SB += "\r\n";
-  drivers_SB += string_value;
-  drivers_SB += "\r\n";
+  drivers_SB.clean() << mc_method
+  << ' ' << real_key
+  << ' ' << flags
+  << ' ' << expire
+  << ' ' << (int)string_value.size()
+  << "\r\n" << string_value
+  << "\r\n";
 
   mc_bool_res = false;
   host cur_host = get_host (real_key);
@@ -490,13 +484,10 @@ var Memcache::run_increment (const string &key, const var &count) {
 
   const string real_key = mc_prepare_key (key);
 
-  drivers_SB.clean();
-  drivers_SB += mc_method;
-  drivers_SB += ' ';
-  drivers_SB += real_key;
-  drivers_SB += ' ';
+  drivers_SB.clean() << mc_method <<  ' ' << real_key << ' ';
+
   if (count.is_int()) {
-    drivers_SB += count;
+    drivers_SB << count;
   } else {
     string count_str = count.to_string();
 
@@ -506,12 +497,12 @@ var Memcache::run_increment (const string &key, const var &count) {
 
     if (i < len || len == negative || len > 19 + negative) {
       php_warning ("Wrong parameter count = \"%s\" in Memcache::%sement, key %semented by 1 instead", count_str.c_str(), mc_method, mc_method);
-      drivers_SB += '1';
+      drivers_SB << '1';
     } else {
-      drivers_SB += count_str;
+      drivers_SB << count_str;
     }
   }
-  drivers_SB += "\r\n";
+  drivers_SB << "\r\n";
 
   *mc_res = false;
   host cur_host = get_host (real_key);
@@ -591,16 +582,15 @@ var Memcache::get (const var &key_var) {
     }
 
     drivers_SB.clean();
-    drivers_SB += "get";
+    drivers_SB << "get";
     bool is_immediate_query = true;
     for (array <var>::const_iterator p = key_var.begin(); p != key_var.end(); ++p) {
       const string key = p.get_value().to_string();
       const string real_key = mc_prepare_key (key);
-      drivers_SB += ' ';
-      drivers_SB += real_key;
+      drivers_SB << ' ' << real_key;
       is_immediate_query = is_immediate_query && mc_is_immediate_query (real_key);
     }
-    drivers_SB += "\r\n";
+    drivers_SB << "\r\n";
 
     *mc_res = array <var> (array_size (0, key_var.count(), false));
     host cur_host = get_host (string());
@@ -621,10 +611,7 @@ var Memcache::get (const var &key_var) {
     const string key = key_var.to_string();
     const string real_key = mc_prepare_key (key);
 
-    drivers_SB.clean();
-    drivers_SB += "get ";
-    drivers_SB += real_key;
-    drivers_SB += "\r\n";
+    drivers_SB.clean() << "get " << real_key << "\r\n";
 
     host cur_host = get_host (real_key);
     if (mc_is_immediate_query (real_key)) {
@@ -650,10 +637,7 @@ bool Memcache::delete_ (const string &key) {
 
   const string real_key = mc_prepare_key (key);
 
-  drivers_SB.clean();
-  drivers_SB += "delete ";
-  drivers_SB += real_key;
-  drivers_SB += "\r\n";
+  drivers_SB.clean() << "delete " << real_key << "\r\n";
 
   mc_bool_res = false;
   host cur_host = get_host (real_key);
@@ -1103,7 +1087,7 @@ void true_mc::check_result (const char *operation, const var &key_var, double ti
     if (is_fail_time || is_debug) {
       is_fail_result = ((result.is_bool() && result.to_bool() == false) || (is_debug_empty && !result));
       if (is_fail_result || is_fail_time) {
-        string mc_key = (drivers_SB.clean() + "^engine_query_fail_" + f$rand (0, 9999)).str();
+        string mc_key = (drivers_SB.clean() << "^engine_query_fail_" << f$rand (0, 9999)).str();
 
         string script_filename = v$_SERVER[string ("SCRIPT_FILENAME", 15)].to_string();
         var entry_point_slash_position = f$strrpos (script_filename, string ("/", 1));
@@ -1154,9 +1138,9 @@ void true_mc::check_result (const char *operation, const var &key_var, double ti
       section.assign ("MC->get", 7);
       int keys_count = f$count (key_var);
       int count_res = key_var.is_array() ? f$count (result) : !equals (result, false);
-      string count_res_str = (count_res != keys_count) ? (drivers_SB.clean() + "<span style=\"color:#f00;\">" + count_res + "</span>").str() : string (count_res);
-      extra2 = (drivers_SB.clean() + ", <span class=\"_count_" + keys_count + "\">" + count_res_str + "/" + keys_count + " key" + (keys_count > 1 ? "s" : "") + "</span>").str();
-      extra2_plain = (drivers_SB.clean() + ", " + count_res + "/" + keys_count + " key" + (keys_count > 1 ? "s" : "")).str();
+      string count_res_str = (count_res != keys_count) ? (drivers_SB.clean() << "<span style=\"color:#f00;\">" << count_res << "</span>").str() : string (count_res);
+      extra2 = (drivers_SB.clean() << ", <span class=\"_count_" << keys_count << "\">" << count_res_str << "/" << keys_count << " key" << (keys_count > 1 ? "s" : "") << "</span>").str();
+      extra2_plain = (drivers_SB.clean() << ", " << count_res << "/" << keys_count << " key" << (keys_count > 1 ? "s" : "")).str();
     } else {
       section.assign ("MC", 2);
     }
@@ -1198,7 +1182,7 @@ void true_mc::check_result (const char *operation, const var &key_var, double ti
       }
       extra.append ("]", 1);
       if (debug_server_log_queries) {
-        extra_plain = (drivers_SB.clean() + "[" + f$implode (string (", ", 2), f$array_slice (keys, 0, 50)) + "]").str();
+        extra_plain = (drivers_SB.clean() << "[" << f$implode (string (", ", 2), f$array_slice (keys, 0, 50)) << "]").str();
       }
     } else {
       extra = f$str_replace (COLON, string (",<wbr>", 6), key_var.to_string());
@@ -1216,21 +1200,21 @@ void true_mc::check_result (const char *operation, const var &key_var, double ti
     string time_diff_str = time_diff_plain;
     bool is_slow = (time_diff > 0.01);
     if (is_slow) {
-      time_diff_str = (drivers_SB.clean() + "<span style=\"font-weight:bold;\">" + time_diff_str + "</span>").str();
+      time_diff_str = (drivers_SB.clean() << "<span style=\"font-weight:bold;\">" << time_diff_str << "</span>").str();
     }
     bool is_local = (f$empty (engine_tag) || engine_tag[0] == '_' || !strncmp (engine_tag.c_str(), "127.0.0.1", 9));
     string color (is_local ? "#080" : "#00f", 4);
 
     drivers_SB.clean();
     if (is_slow) {
-      drivers_SB += "<span class=\"_slow_\" style=\"color: #F00\">(!)</span> ";
+      drivers_SB << "<span class=\"_slow_\" style=\"color: #F00\">(!)</span> ";
     }
-    drivers_SB + "<span style='color: " + color + "'>" + "mc" + engine_tag + " query " + operation + " (" + extra + ")" + extra2 + ": " + time_diff_str + "</span>";
+    drivers_SB << "<span style='color: " << color << "'>" << "mc" << engine_tag << " query " << operation << " (" << extra << ")" << extra2 << ": " << time_diff_str << "</span>";
     string text_html = drivers_SB.str();
     TRY_CALL(var, void, debugLogPlain_pointer (section, text_html));
 
     if (debug_server_log_queries) {
-      string text_plain = (drivers_SB.clean() + "mc" + engine_tag + " query " + operation + " (" + extra_plain + ")" + extra2_plain + ": " + time_diff_plain).str();
+      string text_plain = (drivers_SB.clean() << "mc" << engine_tag << " query " << operation << " (" << extra_plain << ")" << extra2_plain << ": " << time_diff_plain).str();
       TRY_CALL(var, void, debugServerLog_pointer (f$arrayval (text_plain)));
       //dLog_pointer (f$arrayval (text_plain));
     }

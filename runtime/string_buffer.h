@@ -30,27 +30,21 @@ public:
 
   inline string_buffer &clean (void);
 
-  inline string_buffer &operator + (char c);
-  inline string_buffer &operator + (const char *s);
-  inline string_buffer &operator + (double f);
-  inline string_buffer &operator + (const string &s);
-  inline string_buffer &operator + (bool x);
-  inline string_buffer &operator + (int x);
-  inline string_buffer &operator + (unsigned int x);
-  inline string_buffer &operator + (long long x);
-  inline string_buffer &operator + (unsigned long long x);
-  inline string_buffer &operator + (const var &v);
+  friend inline string_buffer &operator << (string_buffer &sb, char c);
+  friend inline string_buffer &operator << (string_buffer &sb, const char *s);
+  friend inline string_buffer &operator << (string_buffer &sb, double f);
+  friend inline string_buffer &operator << (string_buffer &sb, const string &s);
+  friend inline string_buffer &operator << (string_buffer &sb, bool x);
+  friend inline string_buffer &operator << (string_buffer &sb, int x);
+  friend inline string_buffer &operator << (string_buffer &sb, unsigned int x);
+  friend inline string_buffer &operator << (string_buffer &sb, long long x);
+  friend inline string_buffer &operator << (string_buffer &sb, unsigned long long x);
 
   inline string_buffer &append (const char *str, int len);
 
   inline void append_unsafe (const char *str, int len);
 
   inline void append_char (char c) __attribute__ ((always_inline));//unsafe
-
-  template <class T>
-  inline string_buffer &operator += (const T &s) {
-    return *this + s;
-  }
 
   inline void reserve (int len);
 

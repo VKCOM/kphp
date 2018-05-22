@@ -75,7 +75,7 @@ inline double f$floatval (Long val);
 
 inline string f$strval (Long val);
 
-inline string_buffer &operator + (string_buffer &buf, Long x);
+inline string_buffer &operator << (string_buffer &buf, Long x);
 
 
 class ULong {
@@ -147,7 +147,7 @@ inline double f$floatval (ULong val);
 
 inline string f$strval (ULong val);
 
-inline string_buffer &operator + (string_buffer &buf, ULong x);
+inline string_buffer &operator << (string_buffer &buf, ULong x);
 
 
 class UInt {
@@ -219,7 +219,7 @@ inline double f$floatval (UInt val);
 
 inline string f$strval (UInt val);
 
-inline string_buffer &operator + (string_buffer &buf, UInt x);
+inline string_buffer &operator << (string_buffer &buf, UInt x);
 
 
 inline const Long &f$longval (const Long &val);
@@ -483,8 +483,8 @@ string f$strval (Long val) {
   return string (end_buf, (dl::size_type)(buf + 20 - end_buf));
 }
 
-string_buffer &operator + (string_buffer &buf, Long x) {
-  return buf + x.l;
+string_buffer &operator << (string_buffer &buf, Long x) {
+  return buf << x.l;
 }
 
 
@@ -710,8 +710,8 @@ string f$strval (ULong val) {
   return string (end_buf, (dl::size_type)(buf + 20 - end_buf));
 }
 
-string_buffer &operator + (string_buffer &buf, ULong x) {
-  return buf + x.l;
+string_buffer &operator << (string_buffer &buf, ULong x) {
+  return buf << x.l;
 }
 
 
@@ -937,8 +937,8 @@ string f$strval (UInt val) {
   return string (end_buf, (dl::size_type)(buf + 20 - end_buf));
 }
 
-string_buffer &operator + (string_buffer &buf, UInt x) {
-  return buf + x.l;
+string_buffer &operator << (string_buffer &buf, UInt x) {
+  return buf << x.l;
 }
 
 

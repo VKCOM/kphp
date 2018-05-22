@@ -827,7 +827,7 @@ string f$pack (const array <var> &a) {
         }
         static_SB.append (arg_str.c_str(), min (cnt, len));
         while (cnt > len) {
-          static_SB += filler;
+          static_SB << filler;
           cnt--;
         }
         break;
@@ -849,9 +849,9 @@ string f$pack (const array <var> &a) {
             return string();
           }
           if (format == 'H') {
-            static_SB += (char)((num_high << 4) + num_low);
+            static_SB << (char)((num_high << 4) + num_low);
           } else {
-            static_SB += (char)((num_low << 4) + num_high);
+            static_SB << (char)((num_low << 4) + num_high);
           }
         }
         if (cnt > 0) {
@@ -865,7 +865,7 @@ string f$pack (const array <var> &a) {
           switch (format) {
             case 'c':
             case 'C':
-              static_SB += (char)(arg.to_int());
+              static_SB << (char)(arg.to_int());
               break;
             case 's':
             case 'S':
@@ -876,8 +876,9 @@ string f$pack (const array <var> &a) {
             }
             case 'n': {
               unsigned short value = (short)arg.to_int();
-              static_SB += (char)(value >> 8);
-              static_SB += (char)(value & 255);
+              static_SB
+                << (char)(value >> 8)
+                << (char)(value & 255);
               break;
             }
             case 'i':
@@ -891,10 +892,11 @@ string f$pack (const array <var> &a) {
             }
             case 'N': {
               unsigned int value = arg.to_int();
-              static_SB += (char)(value >> 24);
-              static_SB += (char)((value >> 16) & 255);
-              static_SB += (char)((value >> 8) & 255);
-              static_SB += (char)(value & 255);
+              static_SB
+                << (char)(value >> 24)
+                << (char)((value >> 16) & 255)
+                << (char)((value >> 8) & 255)
+                << (char)(value & 255);
               break;
             }
             case 'f': {
@@ -1101,7 +1103,7 @@ string f$sprintf (const array <var> &a) {
           case 'd': {
             int arg_int = arg.to_int();
             if (sign == '+' && arg_int >= 0) {
-              piece = (static_SB.clean() + "+" + arg_int).str();
+              piece = (static_SB.clean() << "+" << arg_int).str();
             } else {
               piece = string (arg_int);
             }
@@ -1125,15 +1127,14 @@ string f$sprintf (const array <var> &a) {
           case 'G': {
             double arg_float = arg.to_float();
 
-            static_SB.clean() += '%';
+            static_SB.clean() << '%';
             if (sign) {
-              static_SB += sign;
+              static_SB << sign;
             }
             if (precision >= 0) {
-              static_SB += '.';
-              static_SB += precision;
+              static_SB << '.' << precision;
             }
-            static_SB += pattern[i];
+            static_SB << pattern[i];
 
             int len = snprintf (php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
             if (len >= PHP_BUF_LEN) {
@@ -1157,12 +1158,11 @@ string f$sprintf (const array <var> &a) {
           case 's': {
             string arg_string = arg.to_string();
 
-            static_SB.clean() += '%';
+            static_SB.clean() << '%';
             if (precision >= 0) {
-              static_SB += '.';
-              static_SB += precision;
+              static_SB << '.' << precision;
             }
-            static_SB += 's';
+            static_SB << 's';
 
             int len = snprintf (php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_string.c_str());
             if (len >= PHP_BUF_LEN) {
@@ -1317,14 +1317,14 @@ string f$strip_tags (const string &str, const string &allow) {
         if (!in_q) {
           if (isspace (str[i + 1])) {
             if (state == 0) {
-              static_SB += c;
+              static_SB << c;
             } else if (state == 1) {
-              static_SB_spare += c;
+              static_SB_spare << c;
             }
           } else if (state == 0) {
             lc = '<';
             state = 1;
-            static_SB_spare += '<';
+            static_SB_spare << '<';
           } else if (state == 1) {
             depth++;
           }
@@ -1337,9 +1337,9 @@ string f$strip_tags (const string &str, const string &allow) {
             br++;
           }
         } else if (state == 1) {
-          static_SB_spare += c;
+          static_SB_spare << c;
         } else if (state == 0) {
-          static_SB += c;
+          static_SB << c;
         }
         break;
       case ')':
@@ -1349,9 +1349,9 @@ string f$strip_tags (const string &str, const string &allow) {
             br--;
           }
         } else if (state == 1) {
-          static_SB_spare += c;
+          static_SB_spare << c;
         } else if (state == 0) {
-          static_SB += c;
+          static_SB << c;
         }
         break;
       case '>':
@@ -1368,9 +1368,9 @@ string f$strip_tags (const string &str, const string &allow) {
           case 1: /* HTML/XML */
             lc = '>';
             in_q = state = 0;
-            static_SB_spare += '>';
+            static_SB_spare << '>';
             if (php_tag_find (static_SB_spare.str(), allow_low)) {
-              static_SB += static_SB_spare.c_str();
+              static_SB << static_SB_spare.c_str();
             }
             static_SB_spare.clean();
             break;
@@ -1391,7 +1391,7 @@ string f$strip_tags (const string &str, const string &allow) {
             }
             break;
           default:
-            static_SB += c;
+            static_SB << c;
             break;
         }
         break;
@@ -1408,9 +1408,9 @@ string f$strip_tags (const string &str, const string &allow) {
             lc = c;
           }
         } else if (state == 0) {
-          static_SB += c;
+          static_SB << c;
         } else if (state == 1) {
-          static_SB_spare += c;
+          static_SB_spare << c;
         }
         if (state && i > 0 && (state == 1 || str[i - 1] != '\\') && (!in_q || c == in_q)) {
           if (in_q) {
@@ -1427,9 +1427,9 @@ string f$strip_tags (const string &str, const string &allow) {
           lc = c;
         } else {
           if (state == 0) {
-            static_SB += c;
+            static_SB << c;
           } else if (state == 1) {
-            static_SB_spare += c;
+            static_SB_spare << c;
           }
         }
         break;
@@ -1438,9 +1438,9 @@ string f$strip_tags (const string &str, const string &allow) {
           state = 4;
         } else {
           if (state == 0) {
-            static_SB += c;
+            static_SB << c;
           } else if (state == 1) {
-            static_SB_spare += c;
+            static_SB_spare << c;
           }
         }
         break;
@@ -1479,9 +1479,9 @@ string f$strip_tags (const string &str, const string &allow) {
         /* fall-through */
       default:
         if (state == 0) {
-          static_SB += c;
+          static_SB << c;
         } else if (state == 1) {
-          static_SB_spare += c;
+          static_SB_spare << c;
         }
         break;
     }

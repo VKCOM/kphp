@@ -7,6 +7,8 @@
  *
  */
 
+#include "runtime/string_buffer.h"
+
 class var {
   enum var_type {
     NULL_TYPE, BOOLEAN_TYPE, INTEGER_TYPE, FLOAT_TYPE, STRING_TYPE, ARRAY_TYPE
@@ -251,7 +253,7 @@ public:
 
   friend class string;
 
-  friend class string_buffer;
+  friend inline string_buffer &operator << (string_buffer &sb, const var &v);
 
   template <class T, class TT>
   friend class array;

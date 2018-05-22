@@ -218,7 +218,7 @@ inline string regexp::get_replacement (const string &replace_val, const string &
     }
 
     if (backref == -1) {
-      static_SB += replace_val[i];
+      static_SB << replace_val[i];
     } else {
       if (backref < count) {
         int index = backref + backref;

@@ -136,7 +136,7 @@ Exception f$new_Exception (const string &file, int line, const string &message, 
 }
 
 Exception f$err (const string &file, int line, const string &code, const string &desc) {
-  return Exception (file, line, (static_SB.clean() + "ERR_" + code + ": " + desc).str(), 0);
+  return Exception (file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
 
@@ -173,7 +173,7 @@ string f$exception_getTraceAsString (const Exception &e) {
   static_SB.clean();
   for (int i = 0; i < e.trace.count(); i++) {
     array <string> current = e.trace.get_value (i);
-    static_SB + '#' + i + ' ' + current.get_value (string ("file", 4)) + ": " + current.get_value (string ("function", 8)) + "\n";
+    static_SB << '#' << i << ' ' << current.get_value (string ("file", 4)) << ": " << current.get_value (string ("function", 8)) << "\n";
   }
   return static_SB.str();
 }

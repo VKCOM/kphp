@@ -45,165 +45,144 @@ string_buffer &string_buffer::clean (void) {
   return *this;
 }
 
-string_buffer &string_buffer::operator + (char c) {
-  reserve_at_least (1);
+string_buffer &operator<<(string_buffer &sb, char c) {
+  sb.reserve_at_least (1);
 
-  *buffer_end++ = c;
+  *sb.buffer_end++ = c;
 
-  return *this;
+  return sb;
 }
 
 
-string_buffer &string_buffer::operator + (const char *s) {
+string_buffer &operator<<(string_buffer &sb, const char *s) {
   while (*s != 0) {
-    reserve_at_least (1);
+    sb.reserve_at_least (1);
 
-    *buffer_end++ = *s++;
+    *sb.buffer_end++ = *s++;
   }
 
-  return *this;
+  return sb;
 }
 
-string_buffer &string_buffer::operator + (double f) {
-  return *this + string (f);
+string_buffer &operator<<(string_buffer &sb, double f) {
+  return sb << string(f);
 }
 
-string_buffer &string_buffer::operator + (const string &s) {
+string_buffer &operator<<(string_buffer &sb, const string &s) {
   dl::size_type l = s.size();
-  reserve_at_least (l);
+  sb.reserve_at_least (l);
 
-  if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
-    return *this;
+  if (unlikely (sb.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+    return sb;
   }
 
-  memcpy (buffer_end, s.c_str(), l);
-  buffer_end += l;
+  memcpy (sb.buffer_end, s.c_str(), l);
+  sb.buffer_end += l;
 
-  return *this;
+  return sb;
 }
 
-string_buffer &string_buffer::operator + (bool x) {
+string_buffer &operator<<(string_buffer &sb, bool x) {
   if (x) {
-    reserve_at_least (1);
-    *buffer_end++ = '1';
+    sb.reserve_at_least (1);
+    *sb.buffer_end++ = '1';
   }
 
-  return *this;
+  return sb;
 }
 
-string_buffer &string_buffer::operator + (int x) {
-  reserve_at_least (11);
+string_buffer &operator<<(string_buffer &sb, int x) {
+  sb.reserve_at_least (11);
 
   if (x < 0) {
     if (x == INT_MIN) {
-      append ("-2147483648", 11);
-      return *this;
+      sb.append ("-2147483648", 11);
+      return sb;
     }
     x = -x;
-    *buffer_end++ = '-';
+    *sb.buffer_end++ = '-';
   }
 
-  char *left = buffer_end;
+  char *left = sb.buffer_end;
   do {
-    *buffer_end++ = (char)(x % 10 + '0');
+    *sb.buffer_end++ = (char)(x % 10 + '0');
     x /= 10;
   } while (x > 0);
 
-  char *right = buffer_end - 1;
+  char *right = sb.buffer_end - 1;
   while (left < right) {
     char t = *left;
     *left++ = *right;
     *right-- = t;
   }
 
-  return *this;
+  return sb;
 }
 
-string_buffer &string_buffer::operator + (unsigned int x) {
-  reserve_at_least (10);
+string_buffer &operator<<(string_buffer &sb, unsigned int x) {
+  sb.reserve_at_least (10);
 
-  char *left = buffer_end;
+  char *left = sb.buffer_end;
   do {
-    *buffer_end++ = (char)(x % 10 + '0');
+    *sb.buffer_end++ = (char)(x % 10 + '0');
     x /= 10;
   } while (x > 0);
 
-  char *right = buffer_end - 1;
+  char *right = sb.buffer_end - 1;
   while (left < right) {
     char t = *left;
     *left++ = *right;
     *right-- = t;
   }
 
-  return *this;
+  return sb;
 }
 
-string_buffer &string_buffer::operator + (long long x) {
-  reserve_at_least (20);
+string_buffer &operator<<(string_buffer &sb, long long x) {
+  sb.reserve_at_least(20);
 
   if (x < 0) {
     if (x == (long long)9223372036854775808ull) {
-      append ("-9223372036854775808", 20);
-      return *this;
+      sb.append ("-9223372036854775808", 20);
+      return sb;
     }
     x = -x;
-    *buffer_end++ = '-';
+    *sb.buffer_end++ = '-';
   }
 
-  char *left = buffer_end;
+  char *left = sb.buffer_end;
   do {
-    *buffer_end++ = (char)(x % 10 + '0');
+    *sb.buffer_end++ = (char)(x % 10 + '0');
     x /= 10;
   } while (x > 0);
 
-  char *right = buffer_end - 1;
+  char *right = sb.buffer_end - 1;
   while (left < right) {
     char t = *left;
     *left++ = *right;
     *right-- = t;
   }
 
-  return *this;
+  return sb;
 }
 
-string_buffer &string_buffer::operator + (unsigned long long x) {
-  reserve_at_least (20);
+string_buffer &operator<<(string_buffer &sb, unsigned long long x) {
+  sb.reserve_at_least(20);
 
-  char *left = buffer_end;
+  char *left = sb.buffer_end;
   do {
-    *buffer_end++ = (char)(x % 10 + '0');
+    *sb.buffer_end++ = (char)(x % 10 + '0');
     x /= 10;
   } while (x > 0);
 
-  char *right = buffer_end - 1;
+  char *right = sb.buffer_end - 1;
   while (left < right) {
     char t = *left;
     *left++ = *right;
     *right-- = t;
   }
 
-  return *this;
-}
-
-string_buffer &string_buffer::operator + (const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
-      return *this;
-    case var::BOOLEAN_TYPE:
-      return (v.b ? *this + '1' : *this);
-    case var::INTEGER_TYPE:
-      return *this + v.i;
-    case var::FLOAT_TYPE:
-      return *this + string (v.f);
-    case var::STRING_TYPE:
-      return *this + *AS_CONST_STRING(v.s);
-    case var::ARRAY_TYPE:
-      php_warning ("Convertion from array to string");
-      return append ("Array", 5);
-    default:
-      php_assert (0);
-      exit (1);
-  }
+  return sb;
 }
 
 dl::size_type string_buffer::size (void) const {

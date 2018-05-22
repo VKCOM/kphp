@@ -244,12 +244,11 @@ string f$implode (const string &s, const array <T> &a) {
 
   typename array <T>::const_iterator it = a.begin(), it_end = a.end();
   if (it != it_end) {
-    SB += it.get_value();
+    SB << it.get_value();
     ++it;
   }
   while (it != it_end) {
-    SB += s;
-    SB += it.get_value();
+    SB << s << it.get_value();
     ++it;
   }
 

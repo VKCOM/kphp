@@ -3323,3 +3323,24 @@ template <class T>
 bool not_equals (const var &v, const OrFalse <T> &value) {
   return likely (value.bool_value) ? not_equals (value.value, v) : not_equals (false, v);
 }
+
+string_buffer &operator<<(string_buffer &sb, const var &v) {
+  switch (v.type) {
+    case var::NULL_TYPE:
+      return sb;
+    case var::BOOLEAN_TYPE:
+      return sb << v.b;
+    case var::INTEGER_TYPE:
+      return sb << v.i;
+    case var::FLOAT_TYPE:
+      return sb << string(v.f);
+    case var::STRING_TYPE:
+      return sb << *AS_CONST_STRING(v.s);
+    case var::ARRAY_TYPE:
+      php_warning("Convertion from array to string");
+      return sb.append("Array", 5);
+    default:
+      php_assert (0);
+      exit(1);
+  }
+}

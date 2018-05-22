@@ -274,28 +274,27 @@ void f$header (const string &str, bool replace, int http_response_code) {
 void f$setrawcookie (const string &name, const string &value, int expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate (HTTP_DATE, expire);
 
-  static_SB_spare.clean();
-  static_SB_spare + "Set-Cookie: " + name + '=';
+  static_SB_spare.clean() << "Set-Cookie: " << name << '=';
   if (value.empty()) {
-    static_SB_spare += "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
-    static_SB_spare += value;
+    static_SB_spare << value;
 
     if (expire != 0) {
-      static_SB_spare + "; expires=" + date;
+      static_SB_spare << "; expires=" << date;
     }
   }
   if (!path.empty()) {
-    static_SB_spare + "; path=" + path;
+    static_SB_spare << "; path=" << path;
   }
   if (!domain.empty()) {
-    static_SB_spare + "; domain=" + domain;
+    static_SB_spare << "; domain=" << domain;
   }
   if (secure) {
-    static_SB_spare + "; secure";
+    static_SB_spare << "; secure";
   }
   if (http_only) {
-    static_SB_spare + "; HttpOnly";
+    static_SB_spare << "; HttpOnly";
   }
   header (static_SB_spare.c_str(), (int)static_SB_spare.size(), false);
 }
@@ -343,27 +342,27 @@ static inline const char *http_get_error_msg_text (int *code) {
 
 static const string_buffer *get_headers (int content_length) {//can't use static_SB, returns pointer to static_SB_spare
   string date = f$gmdate (HTTP_DATE);
-  static_SB_spare.clean() + "Date: " + date;
+  static_SB_spare.clean() << "Date: " << date;
   header (static_SB_spare.c_str(), (int)static_SB_spare.size());
 
-  static_SB_spare.clean() + "Content-Length: " + content_length;
+  static_SB_spare.clean() << "Content-Length: " << content_length;
   header (static_SB_spare.c_str(), (int)static_SB_spare.size());
 
   php_assert (dl::query_num == header_last_query_num);
 
   static_SB_spare.clean();
   if (http_status_line.size()) {
-    static_SB_spare + http_status_line + "\r\n";
+    static_SB_spare << http_status_line << "\r\n";
   } else {
     const char *message = http_get_error_msg_text (&http_return_code);
-    static_SB_spare + "HTTP/1.1 " + http_return_code + " " + message + "\r\n";
+    static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
   }
 
   const array <string> *arr = headers;
   for (array <string>::const_iterator p = arr->begin(); p != arr->end(); ++p) {
-    static_SB_spare += p.get_value();
+    static_SB_spare << p.get_value();
   }
-  static_SB_spare += "\r\n";
+  static_SB_spare << "\r\n";
 
   return &static_SB_spare;
 }
@@ -474,7 +473,7 @@ void finish (int exit_code) {
 
 bool f$exit (const var &v) {
   if (v.is_string()) {
-    *coub += v;
+    *coub << v;
     finish (0);
   } else {
     finish (v.to_int());
@@ -509,7 +508,7 @@ OrFalse <string> f$ip2ulong (const string &ip) {
 string f$long2ip (int num) {
   static_SB.clean().reserve (100);
   for (int i = 3; i >= 0; i--) {
-    static_SB += (num >> (i * 8)) & 255;
+    static_SB << ((num >> (i * 8)) & 255);
     if (i) {
       static_SB.append_char ('.');
     }
@@ -571,7 +570,7 @@ int print (const char *s) {
     dl::leave_critical_section();
     return 1;    
   }
-  *coub += s;
+  *coub << s;
   return 1;
 }
 
@@ -593,7 +592,7 @@ int print (const string &s) {
     dl::leave_critical_section();
     return 1;
   }
-  *coub += s;
+  *coub << s;
   return 1;
 }
 
@@ -1266,7 +1265,7 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
 
   if (uri) {
     if (get_len) {
-      v$_SERVER.set_value (string ("REQUEST_URI", 11), (static_SB.clean() + uri_str + '?' + get_str).str());
+      v$_SERVER.set_value (string ("REQUEST_URI", 11), (static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
       v$_SERVER.set_value (string ("REQUEST_URI", 11), uri_str);
     }
@@ -1438,7 +1437,7 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
   v$_SERVER.set_value (string ("REQUEST_TIME_FLOAT", 18), cur_time);
   v$_SERVER.set_value (string ("SERVER_PORT", 11), string ("80", 2));
   v$_SERVER.set_value (string ("SERVER_PROTOCOL", 15), string ("HTTP/1.1", 8));
-  v$_SERVER.set_value (string ("SERVER_SIGNATURE", 16), (static_SB.clean() + "Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch Server at " + v$_SERVER[string ("SERVER_NAME", 11)] + " Port 80").str());
+  v$_SERVER.set_value (string ("SERVER_SIGNATURE", 16), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at " << v$_SERVER[string ("SERVER_NAME", 11)] << " Port 80").str());
   v$_SERVER.set_value (string ("SERVER_SOFTWARE", 15), string ("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch", 60));
 
   if (environ != NULL) {
@@ -1985,7 +1984,7 @@ void init_static (void) {
   php_assert (http_return_code == 200);
   header ("Server: nginx/0.3.33", 20);
   string date = f$gmdate (HTTP_DATE);
-  static_SB_spare.clean() + "Date: " + date;
+  static_SB_spare.clean() << "Date: " << date;
   header (static_SB_spare.c_str(), (int)static_SB_spare.size());
   header ("Content-Type: text/html; charset=windows-1251", 45);
 

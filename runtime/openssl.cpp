@@ -485,7 +485,7 @@ const int DEFAULT_SOCKET_TIMEOUT = 60;
 static const char *ssl_get_error_string (void) {
   static_SB.clean();
   while (unsigned long error_code = ERR_get_error()) {
-    static_SB + "Error " + (int)error_code + ": [" + ERR_error_string (error_code, NULL) + "]\n";
+    static_SB << "Error " << (int)error_code << ": [" << ERR_error_string (error_code, NULL) << "]\n";
   }
   return static_SB.c_str();
 }      

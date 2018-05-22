@@ -48,7 +48,7 @@ string http_build_query_get_param_array (const string &key, const array<T> &a) {
       result.push_back ('&');
     }
     first = 0;
-    result.append (http_build_query_get_param ((static_SB.clean() + key + '[' + p.get_key() + ']').str(), p.get_value()));
+    result.append (http_build_query_get_param ((static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value()));
   }
   return result;
 }
@@ -59,7 +59,7 @@ string http_build_query_get_param (const string &key, const T &a) {
   if (f$is_array (a)) {
     return http_build_query_get_param_array (key, f$arrayval (a));
   } else {
-    return (static_SB.clean() + f$urlencode (key) + '=' + f$urlencode (f$strval (a))).str();
+    return (static_SB.clean() << f$urlencode (key) << '=' << f$urlencode (f$strval (a))).str();
   }
 }
 

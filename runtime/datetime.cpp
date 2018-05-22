@@ -134,20 +134,20 @@ static string date (const string &format, const tm &t, int timestamp, bool local
   for (int i = 0; i < (int)format.size(); i++) {
     switch (format[i]) {
       case 'd':
-        SB += (char)(day / 10 + '0');
-        SB += (char)(day % 10 + '0');
+        SB << (char)(day / 10 + '0');
+        SB << (char)(day % 10 + '0');
         break;
       case 'D':
-        SB += day_of_week_names_short[day_of_week];
+        SB << day_of_week_names_short[day_of_week];
         break;
       case 'j':
-        SB += day;
+        SB << day;
         break;
       case 'l':
-        SB += day_of_week_names_full[day_of_week];
+        SB << day_of_week_names_full[day_of_week];
         break;
       case 'N':
-        SB += (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
+        SB << (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
         break;
       case 'S': {
         int c = INT_MAX;
@@ -168,174 +168,174 @@ static string date (const string &format, const tm &t, int timestamp, bool local
           default:
             c = 3;
         }
-        SB += suffix[c];
+        SB << suffix[c];
         break;
       }
       case 'w':
-        SB += (char)(day_of_week + '0');
+        SB << (char)(day_of_week + '0');
         break;
       case 'z':
-        SB += day_of_year;
+        SB << day_of_year;
         break;
       case 'W':
         iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB += (char)('0' + iso_week / 10);
-        SB += (char)('0' + iso_week % 10);
+        SB << (char)('0' + iso_week / 10);
+        SB << (char)('0' + iso_week % 10);
         break;
       case 'F':
-        SB += month_names_full[month - 1];
+        SB << month_names_full[month - 1];
         break;
       case 'm':
-        SB += (char)(month / 10 + '0');
-        SB += (char)(month % 10 + '0');
+        SB << (char)(month / 10 + '0');
+        SB << (char)(month % 10 + '0');
         break;
       case 'M':
-        SB += month_names_short[month - 1];
+        SB << month_names_short[month - 1];
         break;
       case 'n':
-        SB += month;
+        SB << month;
         break;
       case 't':
-        SB += days_in_month[month - 1] + (month == 2 && is_leap(year));
+        SB << days_in_month[month - 1] + (month == 2 && is_leap(year));
         break;
       case 'L':
-        SB += (int)is_leap(year);
+        SB << (int)is_leap(year);
         break;
       case 'o':
         iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB += iso_year;
+        SB << iso_year;
         break;
       case 'Y':
-        SB += year;
+        SB << year;
         break;
       case 'y':
-        SB += (char)(year / 10 % 10 + '0');
-        SB += (char)(year % 10 + '0');
+        SB << (char)(year / 10 % 10 + '0');
+        SB << (char)(year % 10 + '0');
         break;
       case 'a':
-        SB += hour < 12 ? "am" : "pm";
+        SB << (hour < 12 ? "am" : "pm");
         break;
       case 'A':
-        SB += hour < 12 ? "AM" : "PM";
+        SB << (hour < 12 ? "AM" : "PM");
         break;
       case 'B':
         internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
-        SB += (char)(internet_time / 100 + '0');
-        SB += (char)((internet_time / 10) % 10 + '0');
-        SB += (char)(internet_time % 10 + '0');
+        SB << (char)(internet_time / 100 + '0');
+        SB << (char)((internet_time / 10) % 10 + '0');
+        SB << (char)(internet_time % 10 + '0');
         break;
       case 'g':
-        SB += hour12;
+        SB << hour12;
         break;
       case 'G':
-        SB += hour;
+        SB << hour;
         break;
       case 'h':
-        SB += (char)(hour12 / 10 + '0');
-        SB += (char)(hour12 % 10 + '0');
+        SB << (char)(hour12 / 10 + '0');
+        SB << (char)(hour12 % 10 + '0');
         break;
       case 'H':
-        SB += (char)(hour / 10 + '0');
-        SB += (char)(hour % 10 + '0');
+        SB << (char)(hour / 10 + '0');
+        SB << (char)(hour % 10 + '0');
         break;
       case 'i':
-        SB += (char)(minute / 10 + '0');
-        SB += (char)(minute % 10 + '0');
+        SB << (char)(minute / 10 + '0');
+        SB << (char)(minute % 10 + '0');
         break;
       case 's':
-        SB += (char)(second / 10 + '0');
-        SB += (char)(second % 10 + '0');
+        SB << (char)(second / 10 + '0');
+        SB << (char)(second % 10 + '0');
         break;
       case 'u':
-        SB += "000000";
+        SB << "000000";
         break;
       case 'e':
         if (local) {
-          SB += "Europe/Moscow";
+          SB << "Europe/Moscow";
         } else {
-          SB += "UTC";
+          SB << "UTC";
         }
         break;
       case 'I':
-        SB += (int)(t.tm_isdst > 0);
+        SB << (int)(t.tm_isdst > 0);
         break;
       case 'O':
         if (local) {
-          SB += "+0300";
+          SB << "+0300";
         } else {
-          SB += "+0000";
+          SB << "+0000";
         }
         break;
       case 'P':
         if (local) {
-          SB += "+03:00";
+          SB << "+03:00";
         } else {
-          SB += "+00:00";
+          SB << "+00:00";
         }
         break;
       case 'T':
         if (local) {
-          SB += "MSK";
+          SB << "MSK";
         } else {
-          SB += "GMT";
+          SB << "GMT";
         }
         break;
       case 'Z':
         if (local) {
-          SB += 3 * 3600;
+          SB << 3 * 3600;
         } else {
-          SB += 0;
+          SB << 0;
         }
         break;
       case 'c':
-        SB += year;
-        SB += '-';
-        SB += (char)(month / 10 + '0');
-        SB += (char)(month % 10 + '0');
-        SB += '-';
-        SB += (char)(day / 10 + '0');
-        SB += (char)(day % 10 + '0');
-        SB += "T";
-        SB += (char)(hour / 10 + '0');
-        SB += (char)(hour % 10 + '0');
-        SB += ':';
-        SB += (char)(minute / 10 + '0');
-        SB += (char)(minute % 10 + '0');
-        SB += ':';
-        SB += (char)(second / 10 + '0');
-        SB += (char)(second % 10 + '0');
+        SB << year;
+        SB << '-';
+        SB << (char)(month / 10 + '0');
+        SB << (char)(month % 10 + '0');
+        SB << '-';
+        SB << (char)(day / 10 + '0');
+        SB << (char)(day % 10 + '0');
+        SB << "T";
+        SB << (char)(hour / 10 + '0');
+        SB << (char)(hour % 10 + '0');
+        SB << ':';
+        SB << (char)(minute / 10 + '0');
+        SB << (char)(minute % 10 + '0');
+        SB << ':';
+        SB << (char)(second / 10 + '0');
+        SB << (char)(second % 10 + '0');
         if (local) {
-          SB += "+03:00";
+          SB << "+03:00";
         } else {
-          SB += "+00:00";
+          SB << "+00:00";
         }
         break;
       case 'r':
-        SB += day_of_week_names_short[day_of_week];
-        SB += ", ";
-        SB += (char)(day / 10 + '0');
-        SB += (char)(day % 10 + '0');
-        SB += ' ';
-        SB += month_names_short[month - 1];
-        SB += ' ';
-        SB += year;
-        SB += ' ';
-        SB += (char)(hour / 10 + '0');
-        SB += (char)(hour % 10 + '0');
-        SB += ':';
-        SB += (char)(minute / 10 + '0');
-        SB += (char)(minute % 10 + '0');
-        SB += ':';
-        SB += (char)(second / 10 + '0');
-        SB += (char)(second % 10 + '0');
+        SB << day_of_week_names_short[day_of_week];
+        SB << ", ";
+        SB << (char)(day / 10 + '0');
+        SB << (char)(day % 10 + '0');
+        SB << ' ';
+        SB << month_names_short[month - 1];
+        SB << ' ';
+        SB << year;
+        SB << ' ';
+        SB << (char)(hour / 10 + '0');
+        SB << (char)(hour % 10 + '0');
+        SB << ':';
+        SB << (char)(minute / 10 + '0');
+        SB << (char)(minute % 10 + '0');
+        SB << ':';
+        SB << (char)(second / 10 + '0');
+        SB << (char)(second % 10 + '0');
         if (local) {
-          SB += " +0300";
+          SB << " +0300";
         } else {
-          SB += " +0000";
+          SB << " +0000";
         }
         break;
       case 'U':
-        SB += timestamp;
+        SB << timestamp;
         break;
       case '\\':
         if (format[i + 1]) {
@@ -343,7 +343,7 @@ static string date (const string &format, const tm &t, int timestamp, bool local
         }
         /* fallthrough */
       default:
-        SB += format[i];
+        SB << format[i];
     }
   }
   return SB.str();
