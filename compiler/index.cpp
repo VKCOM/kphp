@@ -5,30 +5,10 @@
 #include <linux/limits.h>
 #include <sys/stat.h>
 
-#include "PHP/common.h"
+#include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
-
-void mkpath (const string &s) {
-  string path = s;
-  int n = (int)s.size();
-  for (int i = 1; i <= n; i++) {
-    if (i == n || path[i] == '/') {
-      if (i != n) {
-        path[i] = 0;
-      }
-
-      int f = mkdir (path.c_str(), 0777);
-      dl_passert (f == 0 || errno == EEXIST, 
-          dl_pstr ("Failed to mkdir [%s]", path.c_str()));
-
-      if (i != n) {
-        path[i] = '/';
-      }
-    }
-  }
-}
 
 bool is_dir (const string &path) {
   struct stat s;
@@ -103,7 +83,9 @@ void File::unlink() {
 }
 
 void Index::set_dir (const string &new_dir) {
-  mkpath (new_dir);
+  bool res_mkdir = mkdir_recursive(new_dir.c_str(), 0777);
+  dl_assert(res_mkdir, dl_pstr("Failed to mkdir [%s] (%s)", new_dir.c_str(), strerror(errno)));
+
   dir = get_full_path (new_dir);
   kphp_assert (!dir.empty());
   if (!is_dir (dir)) {

@@ -8,6 +8,8 @@
 
 #undef basename
 
+#include "common/wrappers/mkdir_recursive.h"
+
 #include "interface.h"
 #include "streams.h"
 #include "string_functions.h"//php_buf, TODO
@@ -302,9 +304,20 @@ bool f$is_writeable (const string &name) {
   return result;
 }
 
-bool f$mkdir (const string &name, int mode) {
+bool f$mkdir (const string &name, int mode, bool recursive) {
   dl::enter_critical_section();//OK
-  bool result = (mkdir (name.c_str(), (mode_t)mode) >= 0);
+
+  bool result;
+  if (recursive) {
+    result = mkdir_recursive(name.c_str(), static_cast<mode_t>(mode));
+  } else {
+    result = (mkdir(name.c_str(), static_cast<mode_t>(mode)) == 0);
+  }
+
+  if (!result) {
+    php_warning("mkdir(%s): %s", name.c_str(), strerror(errno));
+  }
+
   dl::leave_critical_section();
   return result;
 }

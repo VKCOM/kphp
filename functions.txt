@@ -466,7 +466,7 @@ function is_dir ($name ::: string) ::: bool;
 function is_file ($name ::: string) ::: bool;
 function is_readable ($name ::: string) ::: bool;
 function is_writeable ($name ::: string) ::: bool;
-function mkdir ($name ::: string, $mode ::: int = 0777) ::: bool;
+function mkdir ($name ::: string, $mode ::: int = 0777, $recursive ::: bool = false) ::: bool;
 function php_uname ($mode ::: string = "a") ::: string;
 function rename ($oldname ::: string, $newname ::: string) ::: bool;
 function realpath ($path ::: string) ::: OrFalse <string>;

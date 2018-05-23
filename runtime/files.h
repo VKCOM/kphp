@@ -46,7 +46,7 @@ bool f$is_readable (const string &name);
 
 bool f$is_writeable (const string &name);
 
-bool f$mkdir (const string &name, int mode = 0777);
+bool f$mkdir (const string &name, int mode = 0777, bool recursive = false);
 
 string f$php_uname (const string &mode = LETTER_a);
 

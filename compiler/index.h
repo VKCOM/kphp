@@ -2,7 +2,6 @@
 #include "PHP/common.h"
 
 /*** Index ***/
-void mkpath (const string &s);
 class Target;
 
 class File {
