@@ -142,7 +142,7 @@ int f$rand (int l, int r) {
   unsigned int diff = (unsigned int)r - (unsigned int)l + 1u;
   unsigned int shift;
   if (RAND_MAX == 0x7fffffff && diff == 0) { // l == MIN_INT, r == MAX_INT, RAND_MAX == MAX_INT
-    shift = f$rand (0, (int)RAND_MAX) * 2u + (rand() & 1);
+    shift = f$rand (0, RAND_MAX) * 2u + (rand() & 1);
   } else if (diff <= RAND_MAX + 1u) {
     unsigned int upper_bound = ((RAND_MAX + 1u) / diff) * diff;
     unsigned int r;

@@ -252,7 +252,7 @@ GdbVertex *debugVertexToGdb (VertexPtr impl) {
   GdbVertex *g = new GdbVertex;
   int size = impl.is_null() ? 0 : impl->size();
 
-  g->type = (Operation) (impl.is_null() ? meta_op_base : impl->type());
+  g->type = (impl.is_null() ? meta_op_base : impl->type());
   g->str = impl.is_null() ? "" : debugVertexMore(impl);
   g->ith0 = size > 0 ? debugVertexToGdb(impl->ith(0)) : NULL;
   g->ith1 = size > 1 ? debugVertexToGdb(impl->ith(1)) : NULL;

@@ -2321,7 +2321,7 @@ bool GenTree::has_return (VertexPtr v) {
 }
 
 VertexPtr GenTree::post_process (VertexPtr root) {
-  if (root->type() == op_func_call && (int)root->size() == 1) {
+  if (root->type() == op_func_call && root->size() == 1) {
     VertexAdaptor <op_func_call> call = root;
     string str = call->get_string();
 

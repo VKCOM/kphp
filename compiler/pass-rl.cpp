@@ -56,10 +56,10 @@ void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
   kphp_error (expected_rl_type != val_l, "Function result cannot be used as lvalue");
   switch (root->type()) {
     case op_list:
-      rl_l_calc (root, (int)root->size() - 1);
+      rl_l_calc (root, root->size() - 1);
       return;
     case op_seq_comma:
-      rl_none_calc (root, (int)root->size() - 1);
+      rl_none_calc (root, root->size() - 1);
       return;
     case op_fork:
       rl_none_calc (root, -1);
