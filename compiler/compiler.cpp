@@ -343,13 +343,13 @@ class CollectRequiredPass : public FunctionPassBase {
 
     string get_class_name_for(string const &name, char delim = '$') {
       size_t pos$$ = name.find("::");
-      if (pos$$ != string::npos) {
-        string class_name = name.substr(0, pos$$);
-        kphp_assert(!class_name.empty());
-        return resolve_uses(current_function, class_name, delim);
-      } else {
+      if (pos$$ == string::npos) {
         return "";
       }
+
+      string class_name = name.substr(0, pos$$);
+      kphp_assert(!class_name.empty());
+      return resolve_uses(current_function, class_name, delim);
     }
 
 
@@ -1948,9 +1948,9 @@ class CollectMainEdgesCallback : public CollectMainEdgesCallbackBase {
       if (rvalue.node == NULL) {
         kphp_assert (rvalue.type != NULL);
         return new tinf::TypeNode (rvalue.type);
-      } else {
-        return rvalue.node;
       }
+
+      return rvalue.node;
     }
 
     virtual void require_node (const RValue &rvalue) {
@@ -2916,9 +2916,9 @@ bool compiler_execute (KphpEnviroment *env) {
     if (!f) {
       fprintf (stderr, "Can't open warnings-file %s\n", env->get_warnings_filename().c_str());
       return false;
-    } else {
-      env->set_warnings_file (f);
     }
+
+    env->set_warnings_file (f);
   } else {
     env->set_warnings_file (NULL);
   }

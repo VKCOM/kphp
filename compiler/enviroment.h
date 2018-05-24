@@ -64,7 +64,7 @@ class KphpEnviroment {
     const string &get_base_dir() const;
     void set_dest_dir (const string &dest_dir);
     const string &get_dest_dir() const;
-    void set_use_auto_dest (const string &dest_dir);
+    void set_use_auto_dest (const string &use_auto_dest);
     bool get_use_auto_dest() const;
     void set_functions (const string &functions);
     const string &get_functions() const;
@@ -101,7 +101,7 @@ class KphpEnviroment {
     void set_enable_profiler();
     int get_enable_profiler() const;
     void set_error_on_warns();
-    int get_error_on_warns() const;
+    bool get_error_on_warns() const;
     void set_tl_schema_file (const string &tl_schema_file);
     string get_tl_schema_file () const;
     void add_main_file (const string &main_file);

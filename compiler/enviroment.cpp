@@ -218,7 +218,7 @@ void KphpEnviroment::set_error_on_warns () {
   error_on_warns = true;
 }
 
-int KphpEnviroment::get_error_on_warns () const {
+bool KphpEnviroment::get_error_on_warns () const {
   return error_on_warns;
 }
 

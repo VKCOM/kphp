@@ -384,12 +384,12 @@ OrFalse <string> f$realpath (const string &path) {
   bool result = (realpath (path.c_str(), real_path) != NULL);
   dl::leave_critical_section();
 
-  if (result) {
-    return string (real_path, (dl::size_type)strlen (real_path));
-  } else {
-    php_warning ("Realpath is false on string \"%s\": %m", path.c_str());
+  if (!result) {
+    php_warning("Realpath is false on string \"%s\": %m", path.c_str());
+    return false;
   }
-  return false;
+
+  return string(real_path, (dl::size_type)strlen(real_path));
 }
 
 static OrFalse <string> full_realpath (const string &path) { // realpath resolving only dirname to work with unexisted files
@@ -579,37 +579,36 @@ static Stream file_fopen (const string &filename, const string &mode) {
 
   dl::enter_critical_section();//NOT OK: opened_files
   FILE *file = fopen (real_filename.c_str() + file_wrapper_name.size(), mode.c_str());
-  if (file != NULL) {
-    opened_files->set_value (real_filename, file);
+  if (file == NULL) {
     dl::leave_critical_section();
-
-    return real_filename;
-  } else {
-    dl::leave_critical_section();
-
     return false;
   }
+
+  opened_files->set_value(real_filename, file);
+  dl::leave_critical_section();
+
+  return real_filename;
 }
 
 static OrFalse <int> file_fwrite (const Stream &stream, const string &text) {
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    if (text.size() == 0) {
-      return 0;
-    }
-
-    dl::enter_critical_section();//OK
-    int res = (int)fwrite (text.c_str(), text.size(), 1, f);
-    dl::leave_critical_section();
-
-    if (res == 0) {
-      return false;
-    }
-    php_assert (res == 1);
-    return (int)text.size();
-  } else {
+  if (f == NULL) {
     return false;
   }
+
+  if (text.empty()) {
+    return 0;
+  }
+
+  dl::enter_critical_section();//OK
+  int res = (int)fwrite(text.c_str(), text.size(), 1, f);
+  dl::leave_critical_section();
+
+  if (res == 0) {
+    return false;
+  }
+  php_assert (res == 1);
+  return (int)text.size();
 }
 
 static int file_fseek (const Stream &stream, int offset, int whence) {
@@ -621,26 +620,26 @@ static int file_fseek (const Stream &stream, int offset, int whence) {
   whence = whences[whence];
 
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    dl::enter_critical_section();//OK
-    int res = fseek (f, (long)offset, whence);
-    dl::leave_critical_section();
-    return res;
-  } else {
+  if (f == NULL) {
     return -1;
   }
+
+  dl::enter_critical_section();//OK
+  int res = fseek (f, (long)offset, whence);
+  dl::leave_critical_section();
+  return res;
 }
 
 static OrFalse <int> file_ftell (const Stream &stream) {
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    dl::enter_critical_section();//OK
-    int result = (int)ftell (f);
-    dl::leave_critical_section();
-    return result;
-  } else {
+  if (f == NULL) {
     return false;
   }
+
+  dl::enter_critical_section();//OK
+  int result = (int)ftell (f);
+  dl::leave_critical_section();
+  return result;
 }
 
 static OrFalse <string> file_fread (const Stream &stream, int length) {
@@ -650,97 +649,97 @@ static OrFalse <string> file_fread (const Stream &stream, int length) {
   }
 
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    string res (length, false);
-    dl::enter_critical_section();//OK
-    clearerr (f);
-    size_t res_size = fread (&res[0], 1, length, f);
-    if (ferror (f)) {
-      dl::leave_critical_section();
-      php_warning ("Error happened during fread from file \"%s\"", stream.to_string().c_str());
-      return false;
-    }
-    dl::leave_critical_section();
-
-    res.shrink ((dl::size_type)res_size);
-    return res;
-  } else {
+  if (f == NULL) {
     return false;
   }
+
+  string res(length, false);
+  dl::enter_critical_section();//OK
+  clearerr(f);
+  size_t res_size = fread(&res[0], 1, length, f);
+  if (ferror(f)) {
+    dl::leave_critical_section();
+    php_warning("Error happened during fread from file \"%s\"", stream.to_string().c_str());
+    return false;
+  }
+  dl::leave_critical_section();
+
+  res.shrink((dl::size_type)res_size);
+  return res;
 }
 
 static OrFalse <string> file_fgetc (const Stream &stream) {
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    dl::enter_critical_section();//OK
-    clearerr (f);
-    int result = fgetc (f);
-    if (ferror (f)) {
-      dl::leave_critical_section();
-      php_warning ("Error happened during fgetc from file \"%s\"", stream.to_string().c_str());
-      return false;
-    }
-    dl::leave_critical_section();
-    if (result == EOF) {
-      return false;
-    }
-
-    return string (1, static_cast<char>(result));
-  } else {
+  if (f == NULL) {
     return false;
   }
+
+  dl::enter_critical_section();//OK
+  clearerr(f);
+  int result = fgetc(f);
+  if (ferror(f)) {
+    dl::leave_critical_section();
+    php_warning("Error happened during fgetc from file \"%s\"", stream.to_string().c_str());
+    return false;
+  }
+  dl::leave_critical_section();
+  if (result == EOF) {
+    return false;
+  }
+
+  return string(1, static_cast<char>(result));
 }
 
 static OrFalse <string> file_fgets (const Stream &stream, int length) {
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    if (length < 0) {
-      length = 1024; // TODO remove limit
-    }
-
-    string res (length, false);
-    dl::enter_critical_section();//OK
-    clearerr (f);
-    char *result = fgets (&res[0], length, f);
-    if (ferror (f)) {
-      dl::leave_critical_section();
-      php_warning ("Error happened during fgets from file \"%s\"", stream.to_string().c_str());
-      return false;
-    }
-    dl::leave_critical_section();
-    if (result == NULL) {
-      return false;
-    }
-
-    res.shrink ((dl::size_type)strlen(res.c_str()));
-    return res;
-  } else {
+  if (f == NULL) {
     return false;
   }
+
+  if (length < 0) {
+    length = 1024; // TODO remove limit
+  }
+
+  string res(length, false);
+  dl::enter_critical_section();//OK
+  clearerr(f);
+  char *result = fgets(&res[0], length, f);
+  if (ferror(f)) {
+    dl::leave_critical_section();
+    php_warning("Error happened during fgets from file \"%s\"", stream.to_string().c_str());
+    return false;
+  }
+  dl::leave_critical_section();
+  if (result == NULL) {
+    return false;
+  }
+
+  res.shrink((dl::size_type)strlen(res.c_str()));
+  return res;
 }
 
 static OrFalse <int> file_fpassthru (const Stream &stream) {
   FILE *f = get_file (stream);
-  if (f != NULL) {
-    int result = 0;
-
-    dl::enter_critical_section();//OK
-    while (!feof (f)) {
-      clearerr (f);
-      size_t res_size = fread (&php_buf[0], 1, PHP_BUF_LEN, f);
-      if (ferror (f)) {
-        dl::leave_critical_section();
-        php_warning ("Error happened during fpassthru from file \"%s\"", stream.to_string().c_str());
-        return false;
-      }
-      print (php_buf, (int)res_size);
-      result += (int)res_size;
-    }
-    dl::leave_critical_section();
-    return result;
-  } else {
+  if (f == NULL) {
     return false;
   }
+
+  int result = 0;
+
+  dl::enter_critical_section();//OK
+  while (!feof(f)) {
+    clearerr(f);
+    size_t res_size = fread(&php_buf[0], 1, PHP_BUF_LEN, f);
+    if (ferror(f)) {
+      dl::leave_critical_section();
+      php_warning("Error happened during fpassthru from file \"%s\"", stream.to_string().c_str());
+      return false;
+    }
+    print(php_buf, (int)res_size);
+    result += (int)res_size;
+  }
+  dl::leave_critical_section();
+  return result;
 }
 
 static bool file_fflush (const Stream &stream) {

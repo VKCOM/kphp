@@ -249,7 +249,7 @@ void analyzer_check_array (VertexPtr to_check) {
           str = dval->get_string();
         }
       }
-      if (str != "") {
+      if (!str.empty()) {
         if (used_keys.find(str) != used_keys.end()) {
           kphp_warning(dl_pstr("Duplicate key '%s' in array", str.c_str()));
         }

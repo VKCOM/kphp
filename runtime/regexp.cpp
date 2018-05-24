@@ -649,11 +649,11 @@ OrFalse <int> regexp::match (const string &subject, bool all_matches __attribute
     offset = submatch[1];
   }
 
-  if (pcre_last_error == 0) {
-    return result;
-  } else {
+  if (pcre_last_error != 0) {
     return false;
   }
+
+  return result;
 }
 
 OrFalse <int> regexp::match (const string &subject, var &matches, bool all_matches, int offset) const {
@@ -738,11 +738,11 @@ OrFalse <int> regexp::match (const string &subject, var &matches, bool all_match
     offset = submatch[1];
   }
 
-  if (pcre_last_error == 0) {
-    return result;
-  } else {
+  if (pcre_last_error != 0) {
     return false;
   }
+
+  return result;
 }
 
 OrFalse <int> regexp::match (const string &subject, var &matches, int flags, bool all_matches, int offset) const {
@@ -868,11 +868,11 @@ OrFalse <int> regexp::match (const string &subject, var &matches, int flags, boo
     offset = submatch[1];
   }
 
-  if (pcre_last_error == 0) {
-    return result;
-  } else {
+  if (pcre_last_error != 0) {
     return false;
   }
+
+  return result;
 }
 
 OrFalse <array <var> > regexp::split (const string &subject, int limit, int flags) const {
@@ -976,11 +976,11 @@ OrFalse <array <var> > regexp::split (const string &subject, int limit, int flag
     }
   }
 
-  if (pcre_last_error == 0) {
-    return result;
-  } else {
+  if (pcre_last_error != 0) {
     return false;
   }
+
+  return result;
 }
 
 int regexp::last_error (void) {

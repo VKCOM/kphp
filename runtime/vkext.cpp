@@ -86,9 +86,9 @@ inline string finish_buff (int max_len) {
     string res (result_buff, len);
     free_buff();
     return res;
-  } else {
-    return string (buff, len);
   }
+
+  return string (buff, len);
 }
 
 inline void write_buff (const char *s, int l) {
@@ -600,9 +600,9 @@ string f$vk_sp_simplify (const string& s) {
   char* t = sp_simplify (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_full_simplify (const string& s) {
@@ -610,9 +610,9 @@ string f$vk_sp_full_simplify (const string& s) {
   char* t = sp_full_simplify (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_deunicode (const string& s) {
@@ -620,9 +620,9 @@ string f$vk_sp_deunicode (const string& s) {
   char* t = sp_deunicode (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_to_upper (const string& s) {
@@ -630,9 +630,9 @@ string f$vk_sp_to_upper (const string& s) {
   char* t = sp_to_upper (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_to_lower (const string& s) {
@@ -640,9 +640,9 @@ string f$vk_sp_to_lower (const string& s) {
   char* t = sp_to_lower (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_to_sort (const string& s) {
@@ -650,9 +650,9 @@ string f$vk_sp_to_sort (const string& s) {
   char* t = sp_sort (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_remove_repeats (const string& s) {
@@ -660,9 +660,9 @@ string f$vk_sp_remove_repeats (const string& s) {
   char* t = sp_remove_repeats (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_to_cyrillic (const string& s) {
@@ -670,9 +670,9 @@ string f$vk_sp_to_cyrillic (const string& s) {
   char* t = sp_to_cyrillic (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }
 
 string f$vk_sp_words_only (const string& s) {
@@ -680,7 +680,7 @@ string f$vk_sp_words_only (const string& s) {
   char* t = sp_words_only (s.c_str());
   if (!t) {
     return string ();
-  } else {
-    return string (t, (string::size_type)strlen(t));
   }
+
+  return string (t, (string::size_type)strlen(t));
 }

@@ -39,7 +39,7 @@ const std::string php_doc_tag::get_value_token (unsigned long chars_offset) cons
 
 vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
   vector<string> lines(1);
-  int have_star = false;
+  bool have_star = false;
   for (int i = 0; i < phpdoc.size(); i++) {
     if (!have_star) {
       if (phpdoc[i] == ' ' || phpdoc[i] == '\t') {

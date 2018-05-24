@@ -56,7 +56,7 @@ void init_handlers (void);
 void php_script_finish (void *ptr);
 void php_script_free (void *ptr);
 void php_script_clear (void *ptr);
-void php_script_init (void *ptr, script_t *f_run, php_query_data *data);
+void php_script_init (void *ptr, script_t *f_run, php_query_data *data_to_set);
 run_state_t php_script_iterate (void *ptr);
 query_base *php_script_get_query (void *ptr);
 script_result *php_script_get_res (void *ptr);
@@ -119,7 +119,7 @@ public:
   PHPScriptBase (size_t mem_size, size_t stack_size);
   virtual ~PHPScriptBase();
 
-  void init (script_t *f_run, php_query_data *data_to_set);
+  void init (script_t *script, php_query_data *data_to_set);
 
   //in php script
   void pause();

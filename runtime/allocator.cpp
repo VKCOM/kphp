@@ -186,15 +186,15 @@ void allocator_init (void *buf, size_type n) {
 }
 
 static inline void *allocate_stack (size_type n) {
-  if ((char *)piece_end - (char *)piece >= n) {
-    void *result = piece;
-    piece = (void *)((char *)piece + n);
-    return result;
-  } else {
-    php_warning ("Can't allocate %d bytes", (int)n);
-    raise (SIGUSR2);
+  if ((char *)piece_end - (char *)piece < n) {
+    php_warning("Can't allocate %d bytes", (int)n);
+    raise(SIGUSR2);
     return NULL;
   }
+
+  void *result = piece;
+  piece = (void *)((char *)piece + n);
+  return result;
 }
 
 void *allocate (size_type n) {

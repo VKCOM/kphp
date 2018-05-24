@@ -882,9 +882,8 @@ int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
     return resumable_id;
   } else {
     rpc_request_need_timer.set_value(result, timeout);
+    return cur->resumable_id;
   }
-
-  return cur->resumable_id;
 }
 
 void f$rpc_flush (void) {
@@ -904,21 +903,21 @@ void f$rpc_flush (void) {
 
 int f$rpc_send (const rpc_connection &conn, double timeout) {
   int request_id = rpc_send (conn, timeout);
-  if (request_id > 0) {
-    f$rpc_flush();
-    return request_id;
-  } else {
+  if (request_id <= 0) {
     return 0;
   }
+
+  f$rpc_flush();
+  return request_id;
 }
 
 int f$rpc_send_noflush (const rpc_connection &conn, double timeout) {
   int request_id = rpc_send (conn, timeout);
-  if (request_id > 0) {
-    return request_id;
-  } else {
+  if (request_id <= 0) {
     return 0;
   }
+
+  return request_id;
 }
 
 

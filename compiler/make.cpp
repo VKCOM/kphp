@@ -460,14 +460,14 @@ KphpTarget *KphpMake::create_cpp2obj_target (File *cpp, File *obj) {
   make.register_target (res, to_targets (cpp));
   return res;
 }
-KphpTarget *KphpMake::create_objs2obj_target (const vector <File *> objs, File *obj) {
+KphpTarget *KphpMake::create_objs2obj_target (const vector <File *> &objs, File *obj) {
   KphpTarget *res = new Objs2ObjTarget();
   target_set_file (res, obj);
   target_set_env (res);
   make.register_target (res, to_targets (objs));
   return res;
 }
-KphpTarget *KphpMake::create_objs2bin_target (const vector <File *> objs, File *bin) {
+KphpTarget *KphpMake::create_objs2bin_target (const vector <File *> &objs, File *bin) {
   KphpTarget *res = new Objs2BinTarget();
   target_set_file (res, bin);
   target_set_env (res);

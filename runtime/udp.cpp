@@ -171,15 +171,16 @@ static OrFalse <int> udp_fwrite(const Stream &stream, const string &data) {
 
 static bool udp_fclose(const Stream &stream) {
   string stream_key = stream.to_string();
-  if (dl::query_num == opened_udp_sockets_last_query_num && opened_udp_sockets->has_key(stream_key)) {
-    dl::enter_critical_section();
-    int result = close(opened_udp_sockets->get_value(stream_key));
-    opened_udp_sockets->unset(stream_key);
-    dl::leave_critical_section();
-    return result == 0;
-  } else {
+  
+  if (dl::query_num != opened_udp_sockets_last_query_num || !opened_udp_sockets->has_key(stream_key)) {
     return false;
   }
+
+  dl::enter_critical_section();
+  int result = close(opened_udp_sockets->get_value(stream_key));
+  opened_udp_sockets->unset(stream_key);
+  dl::leave_critical_section();
+  return result == 0;
 }
 
 void udp_init_static_once(void) {

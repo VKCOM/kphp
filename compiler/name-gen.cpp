@@ -233,21 +233,22 @@ string get_context_by_prefix (FunctionPtr function, string const &class_name, ch
 
 string get_full_static_member_name (FunctionPtr function, string const &name, bool append_with_context) {
   size_t pos$$ = name.find("::");
-  if (pos$$ != string::npos) {
-    string prefix_name = name.substr(0, pos$$);
-    string class_name = resolve_uses(function, prefix_name, '$');
-    string fun_name = name.substr(pos$$ + 2);
-    string new_name = class_name + "$$" + fun_name;
-    if (append_with_context) {
-      string context_name = get_context_by_prefix(function, prefix_name);
-      if (context_name != class_name) {
-        new_name += "$$" + context_name;
-      }
-    }
-    return new_name;
-  } else {
+
+  if (pos$$ == string::npos) {
     return name;
   }
+
+  string prefix_name = name.substr(0, pos$$);
+  string class_name = resolve_uses(function, prefix_name, '$');
+  string fun_name = name.substr(pos$$ + 2);
+  string new_name = class_name + "$$" + fun_name;
+  if (append_with_context) {
+    string context_name = get_context_by_prefix(function, prefix_name);
+    if (context_name != class_name) {
+      new_name += "$$" + context_name;
+    }
+  }
+  return new_name;
 }
 
 string resolve_define_name (string name) {

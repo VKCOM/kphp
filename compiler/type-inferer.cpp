@@ -73,9 +73,9 @@ static string remove_after_tab(const string& s){
   for (size_t i = 0; i < s.size(); i++) {
     if (s[i] == '\t') {
       break;
-    } else {
-      ns += s[i];
     }
+
+    ns += s[i];
   }
   return ns;
 }

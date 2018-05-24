@@ -189,37 +189,37 @@ File *Index::get_file (string path, bool force/* = false*/) {
   }
   kphp_assert (path[0] == '/');
 
-  if (force) {
-    File * &f = files[path];
-    if (f == NULL) {
-      f = new File();
-      f->path = path;
-      kphp_assert (f->path.size() > get_dir().size());
-      kphp_assert (strncmp (f->path.c_str(), get_dir().c_str(), get_dir().size()) == 0);
-      string name = f->path.substr (get_dir().size());
-      string::size_type dot_i = name.find_last_of('.');
-      if (dot_i == string::npos) {
-        dot_i = name.size();
-      }
-      string::size_type slash_i = name.find_last_of('/', dot_i - 1);
-      if (slash_i != string::npos) {
-        f->subdir = name.substr(0, slash_i + 1);
-        create_subdir(f->subdir);
-      } else {
-        f->subdir = "";
-      }
-      f->ext = name.substr (dot_i);
-      f->name_without_ext = name.substr (0, dot_i);
-      f->name.swap(name);
-    }
-    return f;
-  } else {
-    map <string, File *>::iterator it = files.find (path);
+  if (!force) {
+    map<string, File *>::iterator it = files.find(path);
     if (it == files.end()) {
       return NULL;
     }
     return it->second;
   }
+
+  File *&f = files[path];
+  if (f == NULL) {
+    f = new File();
+    f->path = path;
+    kphp_assert (f->path.size() > get_dir().size());
+    kphp_assert (strncmp(f->path.c_str(), get_dir().c_str(), get_dir().size()) == 0);
+    string name = f->path.substr(get_dir().size());
+    string::size_type dot_i = name.find_last_of('.');
+    if (dot_i == string::npos) {
+      dot_i = name.size();
+    }
+    string::size_type slash_i = name.find_last_of('/', dot_i - 1);
+    if (slash_i != string::npos) {
+      f->subdir = name.substr(0, slash_i + 1);
+      create_subdir(f->subdir);
+    } else {
+      f->subdir = "";
+    }
+    f->ext = name.substr(dot_i);
+    f->name_without_ext = name.substr(0, dot_i);
+    f->name.swap(name);
+  }
+  return f;
 }
 vector <File *> Index::get_files() {
   vector <File *> res;

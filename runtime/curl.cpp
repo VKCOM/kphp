@@ -871,85 +871,87 @@ var f$curl_getinfo (curl id, int option) {
     result.set_value (string ("request_header", 14), ch->header);
 
     return result;
-  } else if (option == CURLOPT_INFO_HEADER_OUT) {
-    return ch->header;
-  } else {
-    const int CURLINFO_FIRST_OPTION_NUMBER = 100000;
-    const static CURLINFO curlinfo_options[] = {
-        CURLINFO_EFFECTIVE_URL,
-        CURLINFO_HTTP_CODE,
-        CURLINFO_FILETIME,
-        CURLINFO_TOTAL_TIME,
-        CURLINFO_NAMELOOKUP_TIME,
-        CURLINFO_CONNECT_TIME,
-        CURLINFO_PRETRANSFER_TIME,
-        CURLINFO_STARTTRANSFER_TIME,
-        CURLINFO_REDIRECT_COUNT,
-        CURLINFO_REDIRECT_TIME,
-        CURLINFO_SIZE_UPLOAD,
-        CURLINFO_SIZE_DOWNLOAD,
-        CURLINFO_SPEED_UPLOAD,
-        CURLINFO_HEADER_SIZE,
-        CURLINFO_REQUEST_SIZE,
-        CURLINFO_SSL_VERIFYRESULT,
-        CURLINFO_CONTENT_LENGTH_DOWNLOAD,
-        CURLINFO_CONTENT_LENGTH_UPLOAD,
-        CURLINFO_CONTENT_TYPE};
-    const int CURLINFO_OPTIONS_COUNT = sizeof (curlinfo_options) / sizeof (curlinfo_options[0]);
+  }
 
-    option -= CURLINFO_FIRST_OPTION_NUMBER;
-    if ((unsigned int)option > (unsigned int)CURLINFO_OPTIONS_COUNT) {
-      php_warning ("Wrong parameter option %d in function curl_getinfo", option + CURLINFO_FIRST_OPTION_NUMBER);
+  if (option == CURLOPT_INFO_HEADER_OUT) {
+    return ch->header;
+  }
+
+  const int CURLINFO_FIRST_OPTION_NUMBER = 100000;
+  const static CURLINFO curlinfo_options[] = {
+      CURLINFO_EFFECTIVE_URL,
+      CURLINFO_HTTP_CODE,
+      CURLINFO_FILETIME,
+      CURLINFO_TOTAL_TIME,
+      CURLINFO_NAMELOOKUP_TIME,
+      CURLINFO_CONNECT_TIME,
+      CURLINFO_PRETRANSFER_TIME,
+      CURLINFO_STARTTRANSFER_TIME,
+      CURLINFO_REDIRECT_COUNT,
+      CURLINFO_REDIRECT_TIME,
+      CURLINFO_SIZE_UPLOAD,
+      CURLINFO_SIZE_DOWNLOAD,
+      CURLINFO_SPEED_UPLOAD,
+      CURLINFO_HEADER_SIZE,
+      CURLINFO_REQUEST_SIZE,
+      CURLINFO_SSL_VERIFYRESULT,
+      CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+      CURLINFO_CONTENT_LENGTH_UPLOAD,
+      CURLINFO_CONTENT_TYPE};
+  const int CURLINFO_OPTIONS_COUNT = sizeof (curlinfo_options) / sizeof (curlinfo_options[0]);
+
+  option -= CURLINFO_FIRST_OPTION_NUMBER;
+  if ((unsigned int)option > (unsigned int)CURLINFO_OPTIONS_COUNT) {
+    php_warning ("Wrong parameter option %d in function curl_getinfo", option + CURLINFO_FIRST_OPTION_NUMBER);
+    return false;
+  }
+  CURLINFO curl_option = curlinfo_options[option];
+
+  int type = CURLINFO_TYPEMASK & curl_option;
+  switch (type) {
+    case CURLINFO_STRING: {
+      char *s_code = NULL;
+
+      dl::enter_critical_section();//OK
+      if (curl_easy_getinfo (cp, curl_option, &s_code) == CURLE_OK && s_code != NULL) {
+        dl::leave_critical_section();
+        return string (s_code, strlen (s_code));
+      }
+      dl::leave_critical_section();
+
       return false;
     }
-    CURLINFO curl_option = curlinfo_options[option];
+    case CURLINFO_LONG: {
+      long code = 0;
 
-    int type = CURLINFO_TYPEMASK & curl_option;
-    switch (type) {
-      case CURLINFO_STRING: {
-        char *s_code = NULL;
-
-        dl::enter_critical_section();//OK
-        if (curl_easy_getinfo (cp, curl_option, &s_code) == CURLE_OK && s_code != NULL) {
-          dl::leave_critical_section();
-          return string (s_code, strlen (s_code));
-        }
+      dl::enter_critical_section();//OK
+      if (curl_easy_getinfo (cp, curl_option, &code) == CURLE_OK) {
         dl::leave_critical_section();
-
-        return false;
-      }
-      case CURLINFO_LONG: {
-        long code = 0;
-
-        dl::enter_critical_section();//OK
-        if (curl_easy_getinfo (cp, curl_option, &code) == CURLE_OK) {
-          dl::leave_critical_section();
-          if ((long)INT_MIN <= code && code <= (long)INT_MAX) {
-            return (int)code;
-          }
-
-          return f$strval (Long ((long long)code));
+        if ((long)INT_MIN <= code && code <= (long)INT_MAX) {
+          return (int)code;
         }
-        dl::leave_critical_section();
 
-        return false;
+        return f$strval (Long ((long long)code));
       }
-      case CURLINFO_DOUBLE: {
-        double code = 0.0;
+      dl::leave_critical_section();
 
-        dl::enter_critical_section();//OK
-        if (curl_easy_getinfo (cp, curl_option, &code) == CURLE_OK) {
-          dl::leave_critical_section();
-          return code;
-        }
-        dl::leave_critical_section();
-
-        return false;
-      }
-      default:
-        php_assert (0);
-        exit (1);
+      return false;
     }
+    case CURLINFO_DOUBLE: {
+      double code = 0.0;
+
+      dl::enter_critical_section();//OK
+      if (curl_easy_getinfo (cp, curl_option, &code) == CURLE_OK) {
+        dl::leave_critical_section();
+        return code;
+      }
+      dl::leave_critical_section();
+
+      return false;
+    }
+    default:
+      php_assert (0);
+      exit (1);
   }
 
   php_assert (0);

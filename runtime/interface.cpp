@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <getopt.h>
 #include <netdb.h>
+#include <unistd.h>
 
 #include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
@@ -866,24 +867,23 @@ public:
         while (true) {
           php_assert (0 <= i && i <= buf_len);
 
-          s = static_cast <const char *>(memmem (buf + i, buf_len - i, boundary.c_str(), boundary.size()));
+          s = static_cast <const char *>(memmem(buf + i, buf_len - i, boundary.c_str(), boundary.size()));
           if (s == NULL) {
             break;
-          } else {
-            int r = s - buf;
-            if (r > i + 2 && buf[r - 1] == '-' && buf[r - 2] == '-' && buf[r - 3] == '\n') {
-              r -= 3;
-              if (r > i && buf[r - 1] == '\r') {
-                r--;
-              }
-
-              s = buf + r;
-              break;
-            } else {
-              i = r + 1;
-              continue;
-            }
           }
+
+          int r = s - buf;
+          if (r > i + 2 && buf[r - 1] == '-' && buf[r - 2] == '-' && buf[r - 3] == '\n') {
+            r -= 3;
+            if (r > i && buf[r - 1] == '\r') {
+              r--;
+            }
+
+            s = buf + r;
+            break;
+          }
+
+          i = r + 1;
         }
         if (s != NULL) {
           break;
@@ -898,14 +898,14 @@ public:
 
         if (left == 0) {
           dl::enter_critical_section();//OK
-          close_safe (file_fd);
+          close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_PARTIAL;
         }
         file_size += to_write;
         if (file_size > max_file_size) {
           dl::enter_critical_section();//OK
-          close_safe (file_fd);
+          close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_FORM_SIZE;
         }
@@ -913,32 +913,32 @@ public:
         php_assert (to_erase >= to_leave);
 
         dl::enter_critical_section();//OK
-        if (write_safe (file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
-          close_safe (file_fd);
+        if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
+          close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_CANT_WRITE;
         }
         dl::leave_critical_section();
 
-        memcpy (buf, buf + to_erase, to_leave);
+        memcpy(buf, buf + to_erase, to_leave);
         buf_pos += to_erase;
         pos += to_write;
 
-        buf_len = to_leave + http_load_long_query (buf + to_leave, min (PHP_BUF_LEN - to_leave, left), min (PHP_BUF_LEN - to_leave, left));
+        buf_len = to_leave + http_load_long_query(buf + to_leave, min(PHP_BUF_LEN - to_leave, left), min(PHP_BUF_LEN - to_leave, left));
       }
 
       php_assert (s != NULL);
 
       dl::enter_critical_section();//OK
       int to_write = (int)(s - (buf + pos - buf_pos));
-      if (write_safe (file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
-        close_safe (file_fd);
+      if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
+        close_safe(file_fd);
         dl::leave_critical_section();
         return -UPLOAD_ERR_CANT_WRITE;
       }
       pos += to_write;
 
-      close_safe (file_fd);
+      close_safe(file_fd);
       dl::leave_critical_section();
 
       return (int)(file_size + to_write);
@@ -1224,8 +1224,6 @@ void arg_add (const char *value) {
 }
 
 
-extern char **environ;
-
 static void init_superglobals (const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
                                const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
                                const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
@@ -1300,7 +1298,7 @@ static void init_superglobals (const char *uri, int uri_len, const char *get, in
         if (i == headers_len || (33 <= headers[i] && headers[i] <= 126)) {
           break;
         }
-      } while (1);
+      } while (true);
       header_value = f$trim (header_value);
 
       if (!strcmp (header_name.c_str(), "accept-encoding")) {

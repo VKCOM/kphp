@@ -748,12 +748,12 @@ string f$number_format (double number, int decimals, const string &dec_point, co
     *--result_begin = '-';
   }
 
-  if (result_begin > php_buf) {
-    return string (result_begin, (dl::size_type)(php_buf + PHP_BUF_LEN - result_begin));
-  } else {
+  if (result_begin <= php_buf) {
     php_critical_error ("maximum length of result (%d) exceeded", PHP_BUF_LEN);
     return string();
   }
+
+  return string(result_begin, (dl::size_type)(php_buf + PHP_BUF_LEN - result_begin));
 }
 
 int f$ord (const string &s) {
@@ -1634,7 +1634,8 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
 
       if (result != 0)
         return result;
-      else if (ap == aend && bp == bend)
+
+      if (ap == aend && bp == bend)
         /* End of the strings. Let caller sort them out. */
         return 0;
       else {
@@ -1674,9 +1675,9 @@ OrFalse <string> f$strpbrk (const string &haystack, const string &char_list) {
   const char *pos = strpbrk (haystack.c_str(), char_list.c_str());
   if (pos == NULL) {
     return false;
-  } else {
-    return string (pos, (dl::size_type)(haystack.size() - (pos - haystack.c_str())));
   }
+
+  return string (pos, (dl::size_type)(haystack.size() - (pos - haystack.c_str())));
 }
 
 OrFalse <int> f$strpos (const string &haystack, const string &needle, int offset) {

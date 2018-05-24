@@ -31,7 +31,7 @@ class Target {
     virtual bool after_run_success() __attribute__ ((warn_unused_result));
     virtual void after_run_fail() = 0;
 
-    void force_changed (long long mtime);
+    void force_changed (long long new_mtime);
     bool require();
     string target();
     string dep_list();
@@ -134,8 +134,8 @@ class KphpMake {
   public:
     KphpTarget *create_cpp_target (File *cpp);
     KphpTarget *create_cpp2obj_target (File *cpp, File *obj);
-    KphpTarget *create_objs2obj_target (const vector <File *> objs, File *obj);
-    KphpTarget *create_objs2bin_target (const vector <File *> objs, File *bin);
+    KphpTarget *create_objs2obj_target (const vector <File *> &objs, File *obj);
+    KphpTarget *create_objs2bin_target (const vector <File *> &objs, File *bin);
     void init_env (const KphpEnviroment &kphp_env);
     bool make_target (File *bin, int jobs_count = 32);
 };
