@@ -385,3 +385,70 @@ private:
   static const long long MAGIC1 = 536536536536960LL;
   static const long long MAGIC2 = 288288288288069LL;
 };
+
+struct VertexPtrFormatter
+  : ConstManipulations<std::string>
+{
+  static std::string to_string(VertexPtr v) {
+    static VertexPtrFormatter serializer;
+    return serializer.visit(GenTree::get_actual_value(v));
+  }
+
+protected:
+  std::string on_trivial(VertexPtr v) override {
+    string s;
+
+    if (v->has_get_string()) {
+      s += v->get_string() + ':';
+    }
+
+    return s + OpInfo::str(v->type());
+  }
+
+  std::string on_conv(VertexAdaptor<meta_op_unary_op> v) override {
+    return visit(v->expr());
+  }
+
+  std::string on_unary(VertexAdaptor<meta_op_unary_op> v) override {
+    return visit(v->expr()) + ':' + OpInfo::str(v->type());
+  }
+
+  std::string on_define_val(VertexAdaptor<op_define_val> v) override {
+    return visit(GenTree::get_actual_value(v));
+  }
+
+  std::string on_binary(VertexAdaptor<meta_op_binary_op> v) override {
+    VertexPtr key = v->lhs();
+    VertexPtr value = v->rhs();
+
+    return '(' + visit(key) + OpInfo::str(v->type()) + visit(value) + ')';
+  }
+
+  std::string on_double_arrow(VertexAdaptor<op_double_arrow> v) override {
+    VertexPtr key = GenTree::get_actual_value(v->key());
+    VertexPtr value = GenTree::get_actual_value(v->value());
+
+    return visit(key) + "=>" + visit(value);
+  }
+
+  std::string on_array(VertexAdaptor<op_array> v) override {
+    std::string res;
+
+    FOREACH(v, it) {
+      res += visit(GenTree::get_actual_value(*it)) + ", ";
+    }
+
+    return res;
+  }
+
+  std::string on_var(VertexPtr v) override {
+    return v->get_string() + OpInfo::str(v->type());
+  }
+
+  std::string on_non_const(VertexPtr v) override {
+    string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
+    kphp_assert_msg(false, msg.c_str());
+    return "ERROR: " + msg;
+  }
+};
+

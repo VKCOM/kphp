@@ -3,6 +3,7 @@
 #include "compiler/gentree.h"
 #include "compiler/make.h"
 #include "compiler/pass-register-vars.hpp"
+#include "compiler/const-manipulations.h"
 
 CompilerCore::CompilerCore() :
   env_ (NULL) {
@@ -348,9 +349,8 @@ VarPtr CompilerCore::get_global_var (const string &name, VarData::Type type,
           break;
         }
         case op_array: {
-          string new_array_repr, hashed_array_repr;
-          CollectConstVarsPass::serialize_array(init_val, &new_array_repr);
-          CollectConstVarsPass::serialize_array(var->init_val, &hashed_array_repr);
+          string new_array_repr = VertexPtrFormatter::to_string(init_val);
+          string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
 
           string msg = "hash collision: " + new_array_repr + "; " + hashed_array_repr;
 
