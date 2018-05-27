@@ -93,7 +93,7 @@ public:
 
   bool starts_with(const char *rhs) const;
 
-  inline operator string() {
+  inline operator string() const {
     return string(s, t);
   }
 };

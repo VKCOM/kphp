@@ -1726,7 +1726,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
             CE(!kphp_error(var_name == "$" + var->str_val,
                            dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
             ));
-            VertexPtr doc_type = phpdoc_parse_type(type_help);
+            VertexPtr doc_type = phpdoc_parse_type(type_help, FunctionPtr());
             CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
             if (infer_type & 1) {
               CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
@@ -1755,7 +1755,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
           break;
         }
 
-        case php_doc_tag::unknown:
+        default:
           break;
       }
     }

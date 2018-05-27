@@ -28,6 +28,7 @@
 #include "compiler/stage.h"
 #include "compiler/type-inferer.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/phpdoc.h"
 #include "common/version-string.h"
 
 template <class T>
@@ -1321,13 +1322,40 @@ public:
       kphp_assert(klass.not_null());  // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_expr_class()
 
       VarPtr var = klass->find_var(v->get_string());
-      v->set_var_id(var);
 
-      kphp_error(var.not_null(),
-          dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()));
+      if (!kphp_error(var.not_null(),
+          dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()))) {
+        v->set_var_id(var);
+        init_class_instance_var(v, var, klass);
+      }
+
     }
 
     return v;
+  }
+
+  /*
+   * Если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc.
+   * Это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка.
+   * С инстансами это тоже работает, т.е. / ** @var \AnotherClass * / будет тоже проверяться при выводе типов.
+   */
+  void init_class_instance_var (VertexPtr v, VarPtr var, ClassPtr klass) {
+    kphp_assert(var->class_id.ptr == klass.ptr);
+
+    // сейчас phpdoc у class var'а парсится каждый раз при ->обращении;
+    // это уйдёт, когда вместо phpdoc_token будем хранить что-то более умное (что парсится 1 раз и хранит type_rule)
+    if (var->phpdoc_token) {
+      std::string var_name, type_str;
+      if (PhpDocTypeRuleParser::find_tag_in_phpdoc(var->phpdoc_token->str_val, php_doc_tag::var, var_name, type_str)) {
+        VertexPtr doc_type = phpdoc_parse_type(type_str, klass->init_function);
+        if (!kphp_error(doc_type.not_null(),
+            dl_pstr("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), var->name.c_str()))) {
+          doc_type->location = klass->root->location;
+          CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+          v->type_rule = doc_type_check;
+        }
+      }
+    }
   }
 };
 
@@ -2097,6 +2125,8 @@ class CalcBadVarsF {
 
     template <class OutputStreamT>
     void on_finish (OutputStreamT &os) {
+      stage::die_if_global_errors();
+
       AUTO_PROF (calc_bad_vars);
       stage::set_name ("Calc bad vars (for UB check)");
       vector <pair <FunctionPtr, DepData *> > tmp_vec = tmp_stream.get_as_vector();
@@ -2824,64 +2854,6 @@ class CollectClassF {
 };
 
 /*
- * Для всех классов проверяем, что выведенный с помощью type inferring тип полей соответствует ожидаемым.
- * Так, если написано / ** @var B * / public $b;, но вывелось, что $b это A или вовсе не класс, будет ошибка компиляции.
- * todo потом сделать проверку и ошибки компиляции для типов-примитивов, т.е. парсить @var int и сравнивать с выведенным
- */
-class CheckClassInferredVars {
-public:
-  DUMMY_ON_FINISH
-
-  template <class OutputStream>
-  void execute (FunctionPtr function, OutputStream &os) {
-    stage::set_name("Check inferred class vars");
-    stage::set_function(function);
-
-    if (function->class_id.not_null() && function->class_id->init_function == function) {
-      analyze_class(function->class_id);
-    }
-
-    if (stage::has_error()) {
-      return;
-    }
-
-    os << function;
-  }
-
-  void analyze_class (ClassPtr klass) {
-    FOREACH(klass->vars, var) {
-      const TypeData *type = (*var)->tinf_node.get_type();
-
-      if (unlikely(type->ptype() == tp_Unknown && !type->use_or_false())) {
-        kphp_error(0, dl_pstr("Instance prop %s::$%s is never written", klass->name.c_str(), (*var)->name.c_str()));
-      } else if (unlikely(type->ptype() == tp_Error)) {
-        kphp_error(0, dl_pstr("Instance prop %s::$%s inferred as error", klass->name.c_str(), (*var)->name.c_str()));
-      } else {
-        analyze_class_var(*var, type);
-      }
-    }
-  }
-
-  void analyze_class_var (VarPtr var, const TypeData *type) {
-    //printf("%s::%s is %s\n", var->class_id->name.c_str(), var->name.c_str(), type_out(type).c_str());
-    if (var->phpdoc_token) {
-      ClassPtr klass;
-      AssumType assum = assumption_get(var->class_id, var->name, klass);
-
-      if (assum == assum_instance) {
-        const TypeData *t = type;
-        kphp_error(t->ptype() == tp_Class && klass.ptr == t->class_type().ptr,
-            dl_pstr("var %s::$%s assumed to be %s, but inferred %s", var->class_id->name.c_str(), var->name.c_str(), klass->name.c_str(), type_out(t).c_str()));
-      } else if (assum == assum_instance_array) {
-        const TypeData *t = type->lookup_at(Key::any_key());
-        kphp_error(t != NULL && (t->ptype() == tp_Class && klass.ptr == t->class_type().ptr),
-            dl_pstr("var %s::$%s assumed to be %s[], but inferred %s", var->class_id->name.c_str(), var->name.c_str(), klass->name.c_str(), type_out(var->tinf_node.get_type()).c_str()));
-      }
-    }
-  }
-};
-
-/*
  * Для всех функций, всех переменных проверяем, что если делались предположения насчёт классов, то они совпали с выведенными.
  */
 class CheckInferredInstances {
@@ -2967,6 +2939,7 @@ bool compiler_execute (KphpEnviroment *env) {
   OpInfo::init_static();
   MultiKey::init_static();
   TypeData::init_static();
+//  PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags(); return true;
 
   DataStreamRaw <SrcFilePtr> file_stream;
 
@@ -3064,9 +3037,6 @@ bool compiler_execute (KphpEnviroment *env) {
     Pipe <CFGEndF,
          DataStream <FunctionAndCFG>,
          DataStream <FunctionPtr> > cfg_end_pipe (true);
-    Pipe <CheckClassInferredVars,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > check_class_inferred_vars(true);
     Pipe <CheckInferredInstances,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > check_inferred_instances_pipe(true);
@@ -3135,7 +3105,6 @@ bool compiler_execute (KphpEnviroment *env) {
         type_inferer_pipe >> sync_node() >>
         type_inferer_end_pipe >> sync_node() >>
         cfg_end_pipe >>
-        check_class_inferred_vars >>
         check_inferred_instances_pipe >>
         optimization_pipe >>
         calc_val_ref_pipe >>
