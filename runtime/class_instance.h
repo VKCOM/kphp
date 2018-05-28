@@ -38,7 +38,7 @@ public:
   inline int get_reference_counter () const;
 
   T *operator-> ();
-  const T *operator-> () const;
+  T *operator-> () const;
 
   inline bool is_null () const;
   inline string to_string () const;

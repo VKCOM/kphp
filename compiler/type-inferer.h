@@ -529,6 +529,8 @@ class CollectMainEdgesPass : public FunctionPassBase {
         kphp_fail();
       } else if (v->type() == op_func_call) {
         value = get_tinf_node(v.as <op_func_call>()->get_func_id(), -1);
+      } else if (v->type() == op_instance_prop) {       // при $a->arr[] = 1; когда не работает верхнее условие
+        value = get_tinf_node(v->get_var_id());
       } else {
         kphp_error (0, dl_pstr("Bug in compiler: Trying to use [%s] as lvalue", OpInfo::str(v->type()).c_str()));
         kphp_fail();

@@ -95,7 +95,7 @@ T *class_instance <T>::operator-> () {
 };
 
 template <class T>
-const T *class_instance <T>::operator-> () const {
+T *class_instance <T>::operator-> () const {
   if (likely(o != NULL)) {
     return o;
   }

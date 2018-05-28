@@ -46,8 +46,8 @@ class CalcFuncDepPass : public FunctionPassBase {
               while (val->type() == op_index) {
                 val = val.as <op_index>()->array();
               }
-              kphp_assert (val->type() == op_var);
-              VarPtr from_var = val.as <op_var>()->get_var_id();
+              kphp_assert (val->type() == op_var || val->type() == op_instance_prop);
+              VarPtr from_var = val->get_var_id();
               if (from_var->type() == VarData::var_global_t) {
                 data.global_ref_edges.push_back (std::make_pair (from_var, to_var));
               } else if (from_var->is_reference) {
