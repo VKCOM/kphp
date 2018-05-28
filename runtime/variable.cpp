@@ -2400,23 +2400,7 @@ bool neq2 (const var &lhs, const var &rhs) {
 bool operator <= (const var &lhs, const var &rhs) {
   if (unlikely (lhs.type == var::STRING_TYPE)) {
     if (likely (rhs.type == var::STRING_TYPE)) {
-      if (AS_CONST_STRING(lhs.s)[0][0] <= '9' && AS_CONST_STRING(rhs.s)[0][0] <= '9') {
-        int lhs_int_val, rhs_int_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_int (&lhs_int_val) && AS_CONST_STRING(rhs.s)->try_to_int (&rhs_int_val)) {
-          return lhs_int_val <= rhs_int_val;
-        }
-
-        double lhs_float_val, rhs_float_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_float (&lhs_float_val) && AS_CONST_STRING(rhs.s)->try_to_float (&rhs_float_val)) {
-          AS_CONST_STRING(lhs.s)->warn_on_float_conversion();
-          AS_CONST_STRING(rhs.s)->warn_on_float_conversion();
-          if (is_ok_float (lhs_float_val) && is_ok_float (rhs_float_val)) {
-            return lhs_float_val <= rhs_float_val;
-          }
-        }
-      }
-
-      return AS_CONST_STRING(lhs.s)->compare (*AS_CONST_STRING(rhs.s)) <= 0;
+      return compare_strings_php_order(*AS_CONST_STRING(lhs.s), *AS_CONST_STRING(rhs.s)) <= 0;
     } else if (unlikely (rhs.type == var::NULL_TYPE)) {
       return AS_CONST_STRING(lhs.s)->size() == 0;
     }
@@ -2444,23 +2428,7 @@ bool operator <= (const var &lhs, const var &rhs) {
 bool operator >= (const var &lhs, const var &rhs) {
   if (unlikely (lhs.type == var::STRING_TYPE)) {
     if (likely (rhs.type == var::STRING_TYPE)) {
-      if (AS_CONST_STRING(lhs.s)[0][0] <= '9' && AS_CONST_STRING(rhs.s)[0][0] <= '9') {
-        int lhs_int_val, rhs_int_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_int (&lhs_int_val) && AS_CONST_STRING(rhs.s)->try_to_int (&rhs_int_val)) {
-          return lhs_int_val >= rhs_int_val;
-        }
-
-        double lhs_float_val, rhs_float_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_float (&lhs_float_val) && AS_CONST_STRING(rhs.s)->try_to_float (&rhs_float_val)) {
-          AS_CONST_STRING(lhs.s)->warn_on_float_conversion();
-          AS_CONST_STRING(rhs.s)->warn_on_float_conversion();
-          if (is_ok_float (lhs_float_val) && is_ok_float (rhs_float_val)) {
-            return lhs_float_val >= rhs_float_val;
-          }
-        }
-      }
-
-      return AS_CONST_STRING(lhs.s)->compare (*AS_CONST_STRING(rhs.s)) >= 0;
+      return compare_strings_php_order(*AS_CONST_STRING(lhs.s), *AS_CONST_STRING(rhs.s)) >= 0;
     } else if (unlikely (rhs.type == var::NULL_TYPE)) {
       return true;
     }
@@ -2488,23 +2456,7 @@ bool operator >= (const var &lhs, const var &rhs) {
 bool operator < (const var &lhs, const var &rhs) {
   if (unlikely (lhs.type == var::STRING_TYPE)) {
     if (likely (rhs.type == var::STRING_TYPE)) {
-      if (AS_CONST_STRING(lhs.s)[0][0] <= '9' && AS_CONST_STRING(rhs.s)[0][0] <= '9') {
-        int lhs_int_val, rhs_int_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_int (&lhs_int_val) && AS_CONST_STRING(rhs.s)->try_to_int (&rhs_int_val)) {
-          return lhs_int_val < rhs_int_val;
-        }
-
-        double lhs_float_val, rhs_float_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_float (&lhs_float_val) && AS_CONST_STRING(rhs.s)->try_to_float (&rhs_float_val)) {
-          AS_CONST_STRING(lhs.s)->warn_on_float_conversion();
-          AS_CONST_STRING(rhs.s)->warn_on_float_conversion();
-          if (is_ok_float (lhs_float_val) && is_ok_float (rhs_float_val)) {
-            return lhs_float_val < rhs_float_val;
-          }
-        }
-      }
-
-      return AS_CONST_STRING(lhs.s)->compare (*AS_CONST_STRING(rhs.s)) < 0;
+      return compare_strings_php_order(*AS_CONST_STRING(lhs.s), *AS_CONST_STRING(rhs.s)) < 0;
     } else if (unlikely (rhs.type == var::NULL_TYPE)) {
       return false;
     }
@@ -2532,23 +2484,7 @@ bool operator < (const var &lhs, const var &rhs) {
 bool operator > (const var &lhs, const var &rhs) {
   if (unlikely (lhs.type == var::STRING_TYPE)) {
     if (likely (rhs.type == var::STRING_TYPE)) {
-      if (AS_CONST_STRING(lhs.s)[0][0] <= '9' && AS_CONST_STRING(rhs.s)[0][0] <= '9') {
-        int lhs_int_val, rhs_int_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_int (&lhs_int_val) && AS_CONST_STRING(rhs.s)->try_to_int (&rhs_int_val)) {
-          return lhs_int_val > rhs_int_val;
-        }
-
-        double lhs_float_val, rhs_float_val;
-        if (AS_CONST_STRING(lhs.s)->try_to_float (&lhs_float_val) && AS_CONST_STRING(rhs.s)->try_to_float (&rhs_float_val)) {
-          AS_CONST_STRING(lhs.s)->warn_on_float_conversion();
-          AS_CONST_STRING(rhs.s)->warn_on_float_conversion();
-          if (is_ok_float (lhs_float_val) && is_ok_float (rhs_float_val)) {
-            return lhs_float_val > rhs_float_val;
-          }
-        }
-      }
-
-      return AS_CONST_STRING(lhs.s)->compare (*AS_CONST_STRING(rhs.s)) > 0;
+      return compare_strings_php_order(*AS_CONST_STRING(lhs.s), *AS_CONST_STRING(rhs.s)) > 0;
     } else if (unlikely (rhs.type == var::NULL_TYPE)) {
       return AS_CONST_STRING(lhs.s)->size() != 0;
     }

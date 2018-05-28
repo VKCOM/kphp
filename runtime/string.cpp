@@ -980,24 +980,46 @@ bool is_ok_float (double v) {
   return v == 0.0 || (__fpclassify (v) == FP_NORMAL && v < 1e100 && v > -1e100);
 }
 
-bool eq2 (const string &lhs, const string &rhs) {
-  if (lhs[0] <= '9' && rhs[0] <= '9') {
+inline bool is_all_digits(const string &s) {
+  for (size_t i = 0; i < s.size(); ++i) {
+    if (!('0' <= s[i] && s[i] <= '9')) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+int compare_strings_php_order(const string &lhs, const string &rhs) {
+  if (lhs.size() == rhs.size() && is_all_digits(lhs) && is_all_digits(rhs)) {
+    return lhs.compare(rhs);
+  }
+
+  // possible numbers: -.1e2; 0.12; 123; .12; +123; +.123
+  bool lhs_maybe_num = lhs[0] <= '9';
+  bool rhs_maybe_num = rhs[0] <= '9';
+
+  if (lhs_maybe_num && rhs_maybe_num) {
     int lhs_int_val, rhs_int_val;
-    if (lhs.try_to_int (&lhs_int_val) && rhs.try_to_int (&rhs_int_val)) {
-      return lhs_int_val == rhs_int_val;
+    if (lhs.try_to_int(&lhs_int_val) && rhs.try_to_int(&rhs_int_val)) {
+      return three_way_comparison(lhs_int_val, rhs_int_val);
     }
 
     double lhs_float_val, rhs_float_val;
-    if (lhs.try_to_float (&lhs_float_val) && rhs.try_to_float (&rhs_float_val)) {
+    if (lhs.try_to_float(&lhs_float_val) && rhs.try_to_float(&rhs_float_val)) {
       lhs.warn_on_float_conversion();
       rhs.warn_on_float_conversion();
-      if (is_ok_float (lhs_float_val) && is_ok_float (rhs_float_val)) {
-        return lhs_float_val == rhs_float_val;
+      if (is_ok_float(lhs_float_val) && is_ok_float(rhs_float_val)) {
+        return three_way_comparison(lhs_float_val, rhs_float_val);
       }
     }
   }
 
-  return lhs.compare (rhs) == 0;
+  return lhs.compare(rhs);
+}
+
+inline bool eq2 (const string &lhs, const string &rhs) {
+  return compare_strings_php_order(lhs, rhs) == 0;
 }
 
 bool neq2 (const string &lhs, const string &rhs) {

@@ -173,3 +173,9 @@ inline int string_raw (char *dest, int dest_len, const char *src, int src_len) {
 
   return raw_len;
 }
+
+template<typename T>
+inline int three_way_comparison(const T& lhs, const T& rhs) {
+  if (lhs < rhs) return -1;
+  return lhs > rhs ? 1 : 0;
+}
