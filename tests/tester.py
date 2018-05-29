@@ -98,9 +98,14 @@ def run_test_mode_php(path):
         ("extension", "json.so"),
         ("extension", "bcmath.so"),
         ("extension", "iconv.so"),
+        ("extension", "memcache.so"),
+        ("extension", "mbstring.so"),
+        ("xdebug.var_display_max_depth", -1),
+        ("xdebug.var_display_max_children", -1),
+        ("xdebug.var_display_max_data", -1),
         ("include_path", path.parent)
     ]
-    extensions_str = " ".join("-d {}='{}' ".format(k, v) for (k, v) in extensions)
+    extensions_str = " ".join("-d {}='{}'".format(k, v) for (k, v) in extensions)
 
     cmd = "php -n {extensions} {test}".format(test=path, extensions=extensions_str)
 
@@ -265,10 +270,7 @@ class Test:
         mode = args.mode
         out_s = ""
 
-        if args.gen_answers and self.ans_path.exists():
-            out_s = "Answer for [{}] already exists\n".format(self.short_path)
-            self.cur_perf = self.get_perf(mode)
-            return True, out_s
+        assert not (args.gen_answers and self.ans_path.exists())
 
         kphp_should_fail = mode == "kphp" and "kphp_should_fail" in self.tags
 
@@ -340,7 +342,7 @@ class Test:
     def check_answer(self, ans_path, mode, keep_going=False):
         assert self.ans_path.exists()
         try:
-            diff_cmd = ["diff", str(self.ans_path), str(ans_path)]
+            diff_cmd = ["diff", "--text", "-udBb", str(self.ans_path), str(ans_path)]
             subprocess.check_output(diff_cmd, stderr=subprocess.STDOUT)
             self.ok_label_path.touch()
 
@@ -350,7 +352,7 @@ class Test:
             die(keep_going)
             msg = "\nTest [{path}] [{mode}]: {0}WA{1}\n".format(BashColors.FAIL, BashColors.END_COLOR,
                                                                 path=self.short_path, mode=mode)
-            msg += e.output.decode("utf-8") + "\n"
+            msg += e.output.decode("utf-8", 'ignore') + "\n"
 
             return False, msg
 
@@ -488,6 +490,14 @@ def run_tests(args, tests):
         shutil.rmtree(str(ANSWERS_PATH), ignore_errors=True)
     create_working_dirs()
 
+    if args.gen_answers:
+        existed_tests = filter(lambda t: t.ans_path.exists(), tests)
+        for test in existed_tests:
+            print("Answer for [{}] already exists".format(test.short_path))
+        print()
+
+        tests = list(filter(lambda t: not t.ans_path.exists(), tests))
+
     ok_cnt = 0
     wa_tests = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.cnt_workers) as executor:
@@ -616,6 +626,7 @@ def main():
 
     if parsed_args.mode == "kphp":
         run_make_kphp()
+    print("start testing")
 
     run_tests(parsed_args, tests)
 

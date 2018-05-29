@@ -1,5 +1,5 @@
 @ok
-<?
+<?php
   var_dump (array ("result" => array ("result" => 1, "_" => "resultTrue"), "_" => "_") === array ("result" => array ("result" => 2, "_" => "resultTrue"), "_" => "_"));
 
   error_reporting (0);
