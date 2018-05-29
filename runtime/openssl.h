@@ -12,7 +12,7 @@ string f$sha1 (const string &s, bool raw_output = false);
 
 string f$md5 (const string &s, bool raw_output = false);
 
-string f$md5_file (const string &file_name, bool raw_output = false);
+OrFalse<string> f$md5_file (const string &file_name, bool raw_output = false);
 
 int f$crc32 (const string &s);
 

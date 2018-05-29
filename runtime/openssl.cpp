@@ -136,25 +136,25 @@ string f$md5 (const string &s, bool raw_output) {
   return res;
 }
 
-string f$md5_file (const string &file_name, bool raw_output) {
+OrFalse<string> f$md5_file (const string &file_name, bool raw_output) {
   dl::enter_critical_section();//OK
   struct stat stat_buf;
   int read_fd = open (file_name.c_str(), O_RDONLY);
   if (read_fd < 0) {
     dl::leave_critical_section();
-    return string();
+    return false;
   }
   if (fstat (read_fd, &stat_buf) < 0) {
     close (read_fd);
     dl::leave_critical_section();
-    return string();
+    return false;
   }
 
   if (!S_ISREG (stat_buf.st_mode)) {
     close (read_fd);
     dl::leave_critical_section();
     php_warning ("Regular file expected in function md5_file, \"%s\" is given", file_name.c_str());
-    return string();
+    return false;
   }
 
   MD5_CTX c;
@@ -175,7 +175,7 @@ string f$md5_file (const string &file_name, bool raw_output) {
 
   if (size > 0) {
     php_warning ("Error while reading file \"%s\"", file_name.c_str());
-    return string();
+    return false;
   }
 
   if (!raw_output) {
