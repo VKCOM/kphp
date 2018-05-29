@@ -125,6 +125,7 @@ const map <string, string> &config_func() {
     to["logout_hash"] = "logoutHash";
     to["videocall_hash"] = "videocallHash";
     to["to_json"] = "convertToJSON";
+    to["lang"] = "lang";
     inited = true;
   }
   return to;
