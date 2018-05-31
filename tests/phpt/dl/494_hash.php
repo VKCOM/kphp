@@ -37,8 +37,8 @@
   for ($i = 0; $i < 100; $i++)
     var_dump (md5 ($i));
 
-  var_dump (md5_file ("tmp/494_hash.php"));
-  var_dump (md5_file ("tmp/494_hash.php", true));
+  var_dump (md5_file ("/bin/ls"));
+  var_dump (md5_file ("/bin/ls", true));
 
-  var_dump (dechex (crc32_file ("tmp/494_hash.php")));
+  var_dump (dechex (crc32_file ("/bin/ls")));
 
