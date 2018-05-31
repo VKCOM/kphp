@@ -2,6 +2,11 @@
 <?php
 
 function test_json ($options) {
+  $php_ver = 7;
+#ifndef KittenPHP
+    $php_ver = (int)phpversion();
+#endif
+
   var_dump (json_encode (NULL, $options));
   var_dump (json_encode (true, $options));
   var_dump (json_encode (false, $options));
@@ -26,6 +31,7 @@ function test_json ($options) {
   var_dump (json_encode (-0.012357, $options));
   var_dump (json_encode (-0.012358, $options));
   var_dump (json_encode (-0.012359, $options));
+  var_dump (json_encode (1e800, $options));
   var_dump (json_encode (-0.2, $options));
   var_dump (json_encode (-0.5, $options));
   var_dump (json_encode (-0.123456789, $options));
@@ -49,15 +55,21 @@ function test_json ($options) {
              "\xE0\xAF\xB5", "\xED\x9F\xBF", "\xED\xA0\x80", "\xED\xBF\xBF", "\xEE\x80\x80", "\xF0\xA6\x88\x98", "\xF4\x8F\xBF\xBF",
              "\xF4\x90\x80\x80", "\xF8\xAA\xBC\xB7\xAF", "\xFD\xBF\xBF\xBF\xBF\xBF");
   $b = range ("\x00", "\x7f");
-  @var_dump (json_encode ($a, $options & ~JSON_UNESCAPED_UNICODE)); // can't use JSON_UNESCAPED_UNICODE due to bug in PHP, input isn't validated
+  @var_dump (json_encode ($a, $options)); // can't use JSON_UNESCAPED_UNICODE due to bug in PHP, input isn't validated
   var_dump (json_encode ($b, $options));
-  @var_dump (json_decode (json_encode ($a, $options & ~JSON_UNESCAPED_UNICODE)), true); // can't use JSON_UNESCAPED_UNICODE due to bug in PHP, input isn't validated
+  @var_dump (json_decode (json_encode ($a, $options)), true); // can't use JSON_UNESCAPED_UNICODE due to bug in PHP, input isn't validated
   var_dump (json_decode (json_encode ($b, $options)), true);
 
   var_dump (json_decode ('["<foo>","\'bar\'","\"baz\"","&blong&","\u00e9","\udbff\udfff",null]'));
-  var_dump (json_decode ('["<\xfoo>","\'bar\'","\"baz\"","&blong&","\u00e9","\udbff\udfff",null]'));
-  var_dump (json_decode ('["<foo>","\'bar\'","\"baz\"","&blong&","\udbff","\udbff\udfff",null]'));
-  var_dump (json_decode ('["<foo>","\'bar\'","\"baz\"","&blong&","\u00e9","\udbff\ud0ff",null]'));
+  if ($php_ver >= 7) {
+      var_dump (json_decode ('["<\xfoo>","\'bar\'","\"baz\"","&blong&","\u00e9","\udbff\udfff",null]'));
+      var_dump (json_decode ('["<foo>","\'bar\'","\"baz\"","&blong&","\udbff","\udbff\udfff",null]'));
+      var_dump (json_decode ('["<foo>","\'bar\'","\"baz\"","&blong&","\u00e9","\udbff\ud0ff",null]'));
+  } else {
+      var_dump(NULL);
+      var_dump(NULL);
+      var_dump(NULL);
+  }
 
   var_dump (json_decode (json_encode (NULL, $options), true));
   var_dump (json_decode (json_encode (true, $options), true));
@@ -119,3 +131,4 @@ function test_json ($options) {
 
 test_json (0);
 test_json (JSON_UNESCAPED_UNICODE);
+test_json (JSON_PARTIAL_OUTPUT_ON_ERROR);

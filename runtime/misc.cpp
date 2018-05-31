@@ -784,7 +784,7 @@ static bool json_append_char (unsigned int c) {
   }
 }
 
-static void do_json_encode_string_php (const char *s, int len, int options) {
+static bool do_json_encode_string_php (const char *s, int len, int options) {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
     static_SB.reserve (2 * len + 2);
@@ -793,9 +793,9 @@ static void do_json_encode_string_php (const char *s, int len, int options) {
   }
   static_SB.append_char ('"');
 
-#define ERROR {static_SB.set_pos (begin_pos); static_SB.append ("null", 4); return;}
+#define ERROR {static_SB.set_pos (begin_pos); static_SB.append ("null", 4); return false;}
 #define CHECK(x) if (!(x)) {php_warning ("Not a valid utf-8 character at pos %d in function json_encode", pos); ERROR}
-#define APPEND_CHAR(x) if (!json_append_char (x)) ERROR
+#define APPEND_CHAR(x) CHECK(json_append_char (x))
   
   int a, b, c, d;
   for (int pos = 0; pos < len; pos++) {
@@ -892,12 +892,13 @@ static void do_json_encode_string_php (const char *s, int len, int options) {
   }
 
   static_SB.append_char ('"');
+  return true;
 #undef ERROR
 #undef CHECK
 #undef APPEND_CHAR
 }
 
-static void do_json_encode_string_vkext (const char *s, int len) {
+static bool do_json_encode_string_vkext (const char *s, int len) {
   static_SB.reserve (2 * len + 2);
   static_SB.append_char ('"');
 
@@ -935,38 +936,43 @@ static void do_json_encode_string_vkext (const char *s, int len) {
   }
 
   static_SB.append_char ('"');
+
+  return true;
 }
 
-void do_json_encode (const var &v, int options, bool simple_encode) {
+bool do_json_encode (const var &v, int options, bool simple_encode) {
   switch (v.type) {
     case var::NULL_TYPE:
       static_SB.append ("null", 4);
-      return;
+      return true;
     case var::BOOLEAN_TYPE:
       if (v.b) {
         static_SB.append ("true", 4);
       } else {
         static_SB.append ("false", 5);
       }
-      return;
+      return true;
     case var::INTEGER_TYPE:
       static_SB << v.i;
-      return;
+      return true;
     case var::FLOAT_TYPE:
       if (is_ok_float (v.f)) {
         static_SB << (simple_encode ? f$number_format (v.f, 6, DOT, string()) : string (v.f));
       } else {
         php_warning ("strange double %lf in function json_encode", v.f);
-        static_SB.append ("null", 4);
+        if (options & JSON_PARTIAL_OUTPUT_ON_ERROR) {
+          static_SB.append("0", 1);
+        } else {
+          return false;
+        }
       }
-      return;
+      return true;
     case var::STRING_TYPE:
       if (simple_encode) {
-        do_json_encode_string_vkext (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
-      } else {
-        do_json_encode_string_php (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size(), options);
+        return do_json_encode_string_vkext (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
       }
-      return;
+
+      return do_json_encode_string_php (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size(), options);
     case var::ARRAY_TYPE: {
       const array <var> &a = *AS_CONST_ARRAY(v.a);
       bool is_vector = a.is_vector();
@@ -1001,16 +1007,24 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
           if (array <var>::is_int_key (key)) {
             static_SB << '"' << key.to_int() << '"';
           } else {
-            do_json_encode (key, options, simple_encode);
+            if (!do_json_encode (key, options, simple_encode)) {
+              if (!(options & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+                return false;
+              }
+            }
           }
           static_SB << ':';
         }
 
-        do_json_encode (p.get_value(), options, simple_encode);
+        if (!do_json_encode (p.get_value(), options, simple_encode)) {
+          if (!(options & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+            return false;
+          }
+        }
       }
 
       static_SB << "}]"[is_vector];
-      return;
+      return true;
     }
     default:
       php_assert (0);
@@ -1018,15 +1032,18 @@ void do_json_encode (const var &v, int options, bool simple_encode) {
   }
 }
 
-string f$json_encode (const var &v, int options, bool simple_encode) {
-  if (options & ~JSON_UNESCAPED_UNICODE & ~JSON_FORCE_OBJECT) {
+OrFalse<string> f$json_encode (const var &v, int options, bool simple_encode) {
+  bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
+  if (has_unsupported_option) {
     php_warning ("Wrong parameter options = %d in function json_encode", options);
-    return CONST_STRING("null");
+    return false;
   }
 
   static_SB.clean();
 
-  do_json_encode (v, options, simple_encode);
+  if (!do_json_encode (v, options, simple_encode)) {
+    return false;
+  }
 
   return static_SB.str();
 }
@@ -1165,10 +1182,10 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
                         num = (((num & 0x3FF) << 10) | (u & 0x3FF)) + 0x10000;
                       } else {
                         i -= 6;
-//                        return false;
+                        return false;
                       }
                     } else {
-//                      return false;
+                      return false;
                     }
                   }
 

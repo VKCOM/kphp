@@ -39,10 +39,12 @@ string f$serialize (const var &v);
 var f$unserialize (const string &v);
 var unserialize_raw (const char *v, int v_len);
 
-const int JSON_UNESCAPED_UNICODE = 1;
-const int JSON_FORCE_OBJECT = 16;
+const unsigned int JSON_UNESCAPED_UNICODE = 1;
+const unsigned int JSON_FORCE_OBJECT = 16;
+const unsigned int JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
+const unsigned int JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
-string f$json_encode (const var &v, int options = 0, bool simple_encode = false);
+OrFalse<string> f$json_encode (const var &v, int options = 0, bool simple_encode = false);
 
 string f$vk_json_encode_safe (const var &v, bool simple_encode = true);
 

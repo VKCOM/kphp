@@ -550,7 +550,10 @@ string f$vk_flex (const string &name, const string &case_name, int sex, const st
 }
 
 string f$vk_json_encode (const var &v) {
-  return f$json_encode (v, 0, true);
+  OrFalse<string> res = f$json_encode (v, 0, true);
+  php_assert(res.bool_value);
+
+  return res.value;
 }
 
 string f$vk_whitespace_pack (const string &str, bool html_opt) {
