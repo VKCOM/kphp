@@ -1,4 +1,4 @@
-@ok no_php
+@ok
 <?php
 function getException($desc) {
   return new Exception ($desc);
@@ -58,10 +58,10 @@ try {
 try {
   inverse(0);
 } catch (Exception $e) {
-  apiWrapError(10, 'INPUT_FETCH_ERROR', $e);
+  apiWrapError($e, 10, 'INPUT_FETCH_ERROR');
 }
 
-function apiWrapError($error_code = false, $error_description = '', Exception $exception = false) {
+function apiWrapError(Exception $exception, $error_code = false, $error_description = '') {
   $error_type = "??";
   $error_data = array(
     'code' => $error_code,
