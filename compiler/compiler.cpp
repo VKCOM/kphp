@@ -1112,7 +1112,9 @@ class PreprocessFunctionCPass : public FunctionPassBase {
     VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
       if (root->type() == op_function_c) {
         CREATE_VERTEX (new_root, op_string);
-        new_root->str_val = stage::get_function_name();
+        if (stage::get_function_name() != stage::get_file()->main_func_name) {
+          new_root->set_string(stage::get_function_name());
+        }
         set_location (new_root, root->get_location());
         root = new_root;
       }

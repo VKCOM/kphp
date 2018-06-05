@@ -1,4 +1,4 @@
-@ok no_php fixme
+@ok
 <?php
 
   function xxx () {
