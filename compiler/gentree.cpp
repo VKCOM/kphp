@@ -503,7 +503,7 @@ VertexPtr GenTree::get_expr_top() {
     case tok_file_c: {
       CREATE_VERTEX (v, op_string);
       set_location (v, AutoLocation(this));
-      v->str_val = stage::get_file()->unified_file_name;
+      v->str_val = stage::get_file()->file_name;
       next_cur();
       res = v;
       break;
