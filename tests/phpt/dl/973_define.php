@@ -1,4 +1,4 @@
-@ok no_php
+@ok
 <?php
 print "A\n";
 #break_file

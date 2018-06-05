@@ -1,4 +1,4 @@
-@ok no_php
+@ok
 <?php
 
 // Function parameters and the same variable were infered separately.

@@ -1,4 +1,4 @@
-@ok UB no_php
+@ok UB
 <?
   $a = array (0 => 1, 1 => 2);
 
