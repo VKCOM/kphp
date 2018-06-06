@@ -229,8 +229,8 @@ void fix_ub (VertexPtr v, vector <VarPtr> *foreach_vars) {
         while (xs->type() == op_index) {
           xs = xs.as <op_index>()->array();
         }
-        kphp_assert (xs->type() == op_var);
-        VarPtr var = xs.as <op_var>()->get_var_id();
+        kphp_assert (xs->type() == op_var || xs->type() == op_instance_prop);
+        VarPtr var = xs->get_var_id();
         foreach_vars->push_back (var);
         fix_ub (foreach_v->cmd(), foreach_vars);
         foreach_vars->pop_back();

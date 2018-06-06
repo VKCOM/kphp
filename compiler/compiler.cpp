@@ -1319,16 +1319,15 @@ public:
 
     if (v->type() == op_instance_prop) {
       ClassPtr klass = resolve_expr_class(current_function, v);
-      kphp_assert(klass.not_null());  // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_expr_class()
+      if (klass.not_null()) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_expr_class()
+        VarPtr var = klass->find_var(v->get_string());
 
-      VarPtr var = klass->find_var(v->get_string());
-
-      if (!kphp_error(var.not_null(),
-          dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()))) {
-        v->set_var_id(var);
-        init_class_instance_var(v, var, klass);
+        if (!kphp_error(var.not_null(),
+            dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()))) {
+          v->set_var_id(var);
+          init_class_instance_var(v, var, klass);
+        }
       }
-
     }
 
     return v;
