@@ -59,7 +59,9 @@ string http_build_query_get_param (const string &key, const T &a) {
   if (f$is_array (a)) {
     return http_build_query_get_param_array (key, f$arrayval (a));
   } else {
-    return (static_SB.clean() << f$urlencode (key) << '=' << f$urlencode (f$strval (a))).str();
+    string key_encoded = f$urlencode(key);
+    string value_encoded = f$urlencode(f$strval(a));
+    return (static_SB.clean() << key_encoded << '=' << value_encoded).str();
   }
 }
 
