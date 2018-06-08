@@ -1,15 +1,15 @@
 #include "PHP/php-master.h"
 
 #include <algorithm>
-#include <assert.h>
-#include <errno.h>
+#include <cassert>
+#include <cerrno>
 #include <fcntl.h>
-#include <limits.h>
+#include <climits>
 #include <poll.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -25,7 +25,6 @@
 #include "common/kdb-data-common.h"
 #include "common/kprintf.h"
 #include "common/precise-time.h"
-#include "common/server/global-vars.h"
 #include "common/server/signals.h"
 #include "drinkless/dl-utils-lite.h"
 #include "net/net-connections.h"
@@ -1458,7 +1457,7 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
     }
   }
 
-  sprintf (buf, "uptime\t%d\n", now - start_time);
+  sprintf (buf, "uptime\t%d\n", get_uptime());
   header += buf;
   if (engine_tag != NULL) {
     sprintf (buf + sprintf (buf, "kphp_version\t%s", engine_tag) - 2, "\n");

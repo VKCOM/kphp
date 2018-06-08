@@ -26,7 +26,6 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 #include "common/rpc-const.h"
-#include "common/server/global-vars.h"
 #include "common/server/limits.h"
 #include "common/server/relogin.h"
 #include "common/server/signals.h"
@@ -1690,7 +1689,7 @@ void rpc_send_ready (struct connection *c) {
   q[qn++] = (int) inet_sockaddr_address(&c->local_endpoint);
   q[qn++] = (int) inet_sockaddr_port(&c->local_endpoint);
   q[qn++] = pid; // pid
-  q[qn++] = start_time; // start_time
+  q[qn++] = now - get_uptime(); // start_time
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
@@ -1704,7 +1703,7 @@ void rpc_send_stopped (struct connection *c) {
   q[qn++] = (int) inet_sockaddr_address(&c->local_endpoint);
   q[qn++] = (int) inet_sockaddr_port(&c->local_endpoint);
   q[qn++] = pid; // pid
-  q[qn++] = start_time; // start_time
+  q[qn++] = now - get_uptime(); // start_time
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
@@ -2860,7 +2859,7 @@ void prepare_full_stats (void) {
   char *s = stats;
   int s_left = 65530;
 
-  int uptime = now - start_time;
+  int uptime = get_uptime();
   worker_acc_stats.tot_idle_time = tot_idle_time;
   worker_acc_stats.tot_idle_percent =
     uptime > 0 ? tot_idle_time / uptime * 100 : 0;
@@ -3563,7 +3562,7 @@ int main (int argc, char *argv[]) {
 
   load_time += dl_time();
 
-  start_time = (int)time (NULL);
+  init_uptime();
 
   start_server();
 

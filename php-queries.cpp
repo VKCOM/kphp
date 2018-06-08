@@ -9,6 +9,7 @@
 
 #include "PHP/php-runner.h"
 #include "PHP/php_script.h"
+#include "common/precise-time.h"
 
 extern long long cur_qres_id, first_qres_id;
 
@@ -1023,12 +1024,10 @@ int engine_get_net_queries_count (void) {
 
 extern "C" {
 #include "php-engine-vars.h"
-extern int now;
-extern int start_time;
 }
 
 int engine_get_uptime (void) {
-  return now - start_time;
+  return get_uptime();
 }
 
 const char *engine_get_version (void) {
