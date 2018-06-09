@@ -135,6 +135,7 @@ function array_filter ($a ::: array, callback ($x) = TODO, $flags ::: int = 0) :
 function array_map (callback ($x), $a ::: array) ::: array <var>;
 function array_reduce ($a ::: array, callback ($carry, $item), $initial ::: var = null) ::: var;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
+function array_is_vector ($a ::: array) ::: bool;
 
 function empty ($val ::: Any) ::: bool;
 function count ($val ::: Any) ::: int;

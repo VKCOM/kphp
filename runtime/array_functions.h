@@ -167,6 +167,9 @@ T f$array_pop (array <T> &a);
 template <class T>
 void f$array_reserve (array <T> &a, int int_size, int string_size, bool make_vector_if_possible = true);
 
+template <class T>
+bool f$array_is_vector (array <T> &a);
+
 
 array <var> f$range (const var &from, const var &to, int step = 1);
 
@@ -882,6 +885,11 @@ T f$array_pop (array <T> &a) {
 template <class T>
 void f$array_reserve (array <T> &a, int int_size, int string_size, bool make_vector_if_possible) {
   a.reserve(int_size, string_size, make_vector_if_possible);
+}
+
+template <class T>
+bool f$array_is_vector (array <T> &a) {
+  return a.is_vector();
 }
 
 
