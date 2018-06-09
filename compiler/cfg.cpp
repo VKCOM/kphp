@@ -77,7 +77,7 @@ namespace cfg {
 
   void CFG::add_edge (Node from, Node to) {
     if (from.not_null() && to.not_null()) {
-      //fprintf (stderr, "add_edge %d->%d\n", from->id, to->id);
+      // fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), from->id, to->id);
       node_next[from].push_back (to);
       node_prev[to].push_back (from);
     }
@@ -269,6 +269,9 @@ namespace cfg {
     stage::set_location (tree_node->location);
     bool recursive_flag = false;
     switch (tree_node->type()) {
+      case op_min:
+      case op_max:
+      case op_array:
       case op_seq_comma:
       case op_seq: {
         Node a, b, end;
@@ -716,9 +719,21 @@ namespace cfg {
         add_subtree (*res_start, new_subtree (try_op->catch_cmd(), true));
         break;
       }
+
+      case op_conv_int:
+      case op_conv_int_l:
+      case op_conv_float:
+      case op_conv_string:
+      case op_conv_array:
+      case op_conv_array_l:
+      case op_conv_object:
+      case op_conv_var:
+      case op_conv_uint:
+      case op_conv_long:
+      case op_conv_ulong:
+      case op_conv_regexp:
       case op_conv_bool: {
-        VertexAdaptor <op_conv_bool> conv_bool = tree_node;
-        create_cfg (conv_bool->expr(), res_start, res_finish);
+        create_cfg (tree_node.as<meta_op_unary_op>()->expr(), res_start, res_finish);
         break;
       }
       case op_function: {
