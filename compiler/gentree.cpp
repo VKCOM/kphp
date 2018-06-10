@@ -141,7 +141,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
   }
   cur_class().root = root;
   cur_class().extends = class_extends;
-  if (cur_class().has_vars() && cur_class().new_function.is_null()) {
+  if ((cur_class().has_instance_vars() || cur_class().has_instance_methods()) && cur_class().new_function.is_null()) {
     cur_class().new_function = create_default_constructor(cur_class());
   }
   if (namespace_name + "\\" + cur_class().name == class_context) {

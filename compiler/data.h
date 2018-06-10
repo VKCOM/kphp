@@ -66,8 +66,12 @@ struct ClassInfo {
   FunctionPtr new_function;
   Token *phpdoc_token;
 
-  inline bool has_vars() const {
+  inline bool has_instance_vars () const {
     return !vars.empty();
+  }
+
+  inline bool has_instance_methods () const {
+    return !methods.empty();
   }
 };
 
@@ -104,7 +108,7 @@ public:
   }
 
   inline bool is_fully_static () const {
-    return 0 == vars.size();
+    return 0 == vars.size() && 0 == methods.size();
   }
 };
 
