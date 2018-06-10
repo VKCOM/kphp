@@ -10,6 +10,8 @@ class C
   var $aInst;
   /** @var B */
   private $bInst;
+  /** @var C|false */
+  public $nextC = false;
 
   private static $instances = [];
 
@@ -40,5 +42,11 @@ class C
 
   public function addThis() {
     self::$instances[] = $this;
+  }
+
+  public function createNextC() {
+    $this->nextC = new self;
+    $this->nextC->setC1(4);
+    echo $this->nextC->c1, "\n";
   }
 }

@@ -17,6 +17,7 @@ $a = $c->aInst;
 $a->setA(89)->printA();
 $c->aInst->printA();
 $c->getAInst()->printA();
+$c->createNextC();
 
 $b = $c->getBInst();
 echo $b->b1, ' ', $b->b3, "\n ";

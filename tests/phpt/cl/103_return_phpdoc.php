@@ -79,3 +79,38 @@ $arrr = [
     /** @type int*/ 2,
     3,
 ];
+
+/**
+ * @return A|false
+ */
+function getAOrFalse($returnFalse) {
+    return $returnFalse ? false : new A();
+}
+
+/**
+ * @return A[]|false
+ */
+function getAArrOrFalse($returnFalse) {
+    return $returnFalse ? false : [new A()];
+}
+
+/**
+ * @param A|false $a
+ */
+function printAVal($a) {
+    if($a) {
+        echo "a val = ", $a->a, "\n";
+    }
+}
+
+printAVal(getAOrFalse(true));
+printAVal(getAOrFalse(false));
+
+if(0) getAOrFalse(true)->a = 1;
+else {
+    $aa2 = getAOrFalse(false);
+    $aa2->a = 3;
+    echo $aa2->a, "\n";
+}
+
+getAArrOrFalse(true);

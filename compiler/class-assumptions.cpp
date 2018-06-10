@@ -139,6 +139,10 @@ AssumType parse_phpdoc_classname (const std::string &type_str, ClassPtr &out_kla
 
   // phpdoc-тип в виде строки сейчас представлен в виде дерева vertex'ов; допускаем 'A', 'A[]', 'A|false'
   // другие, более сложные, по типу '(A|int)', не разбираем и считаем assum_not_instance
+  if (unlikely(type_rule->type() == op_type_rule_func && type_rule->ith(1)->type_help == tp_False)) {
+    type_rule = type_rule->ith(0);  // из 'A|false', 'A[]|false' достаём 'A' / 'A[]'
+  }
+
   if (type_rule->type_help == tp_Class) {
     out_klass = type_rule.as <op_class_type_rule>()->class_ptr;
     return assum_instance;
