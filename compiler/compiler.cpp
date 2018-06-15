@@ -1914,6 +1914,21 @@ struct FunctionAndCFG {
     callback (callback) {
   }
 };
+
+class CheckReturnsF {
+public:
+  DUMMY_ON_FINISH
+  template <class OutputStream>
+  void execute (FunctionAndCFG function_and_cfg, OutputStream &os) {
+    CheckReturnsPass pass;
+    run_function_pass (function_and_cfg.function, &pass);
+    if (stage::has_error()) {
+      return;
+    }
+    os << function_and_cfg;
+  }
+};
+
 class CFGBeginF {
   public:
     DUMMY_ON_FINISH
@@ -2986,7 +3001,11 @@ bool compiler_execute (KphpEnviroment *env) {
         DataStream<FunctionPtr>,
         DataStream<FunctionPtr> > process_defines_concat (true);
     FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
-    FunctionPassPipe <CheckReturnsPass>::Self check_returns_pipe (true);
+
+    Pipe <CheckReturnsF,
+      DataStream <FunctionAndCFG>,
+      DataStream <FunctionAndCFG> > check_returns_pipe (true);
+
     Pipe <SyncPipeF <FunctionPtr>,
          DataStream <FunctionPtr>,
          DataStream <FunctionPtr> > first_sync_pipe (true, true);
@@ -3102,6 +3121,7 @@ bool compiler_execute (KphpEnviroment *env) {
         check_func_calls_pipe >>
         calc_rl_pipe >>
         cfg_begin_pipe >>
+        check_returns_pipe >>
         tmp_sync_pipe >> sync_node() >>
         type_inferer_pipe >> sync_node() >>
         type_inferer_end_pipe >> sync_node() >>
@@ -3115,7 +3135,6 @@ bool compiler_execute (KphpEnviroment *env) {
         extract_async_pipe >>
         analyzer_pipe >>
         check_access_modifiers_pass >>
-        check_returns_pipe >>
         final_check_pass >>
         code_gen_pipe >> sync_node() >>
         write_files_pipe;

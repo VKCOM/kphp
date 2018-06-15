@@ -815,6 +815,12 @@ class CollectMainEdgesPass : public FunctionPassBase {
           }
 
         }
+
+        if (function->root->void_flag) {
+          const TypeData *tp = TypeData::get_type(tp_var);
+          create_less(as_rvalue(function, -1), tp);
+          create_set(as_lvalue(function, -1), tp);
+        }
       }
     }
 

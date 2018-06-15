@@ -689,8 +689,8 @@ namespace cfg {
         create_cfg_register_exception (throw_finish);
 
         *res_start = throw_start;
-        *res_finish = throw_finish;
-        //*res_finish = Node();
+        //*res_finish = throw_finish;
+        *res_finish = new_node();
         break;
       }
       case op_try: {
