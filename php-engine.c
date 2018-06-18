@@ -3535,7 +3535,7 @@ void init_default (void) {
     exit (1);
   }
 
-  aes_load_default_pwd_file();
+  aes_load_keys();
 
   do_relogin();
   prctl (PR_SET_DUMPABLE, 1);
