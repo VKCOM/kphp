@@ -9,19 +9,23 @@
 
 static std::map <std::string, script_t *> scripts;
 
-script_t *get_script (const char *name) {
-  std::map <std::string, script_t *>::iterator i = scripts.find (name);
+script_t *get_script(const char *name) {
+  auto i = scripts.find(name);
+
   if (i != scripts.end()) {
     return i->second;
   }
-  return NULL;
+
+  return nullptr;
 }
 
-void set_script (const char *name, void (*run)(php_query_data *, void *mem, size_t mem_size), void (*clear) (void)) {
+void set_script(const char *name, void (*run)(php_query_data *, void *mem, size_t mem_size), void (*clear) ()) {
   static int cnt = 0;
-  script_t *script = new script_t;
-  script->run = run;
-  script->clear = clear;
-  assert (scripts.insert (std::pair <std::string, script_t *> (name, script)).second);
-  assert (scripts.insert (std::pair <std::string, script_t *> (std::string ("#") + dl_int_to_str (cnt++), script)).second);
+
+  auto script = new script_t{run, clear};
+  bool inserted __attribute__ ((unused)) = scripts.insert({name, script}).second;
+  assert(inserted);
+
+  inserted = scripts.insert({std::string("#") + dl_int_to_str(cnt++), script}).second;
+  assert(inserted);
 }
