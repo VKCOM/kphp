@@ -5,13 +5,19 @@
 #include <map>
 #include <signal.h>
 #include <utility>
+#include <climits>
+#include <unistd.h>
 
-#include "runtime/include.h"
+#include "common/wrappers/likely.h"
+
+#include "runtime/allocator.h"
+#include "runtime/php_assert.h"
 
 //#define DEBUG_MEMORY
 
-void check_stack_overflow (void) __attribute__ ((weak));
-void check_stack_overflow (void) {
+void check_stack_overflow() __attribute__ ((weak));
+
+void check_stack_overflow() {
   //pass;
 }
 
@@ -25,84 +31,79 @@ volatile int in_critical_section;
 volatile long long pending_signals;
 
 
-void enter_critical_section (void) {
+void enter_critical_section() {
   check_stack_overflow();
   php_assert (in_critical_section >= 0);
   in_critical_section++;
 }
 
-void leave_critical_section (void) {
+void leave_critical_section() {
   in_critical_section--;
   php_assert (in_critical_section >= 0);
   if (pending_signals && in_critical_section <= 0) {
-    for (int i = 0; i < (int)sizeof (pending_signals) * 8; i++) {
+    for (int i = 0; i < (int)sizeof(pending_signals) * 8; i++) {
       if ((pending_signals >> i) & 1) {
-        raise (i);
+        raise(i);
       }
     }
   }
 }
 
 //custom allocator for multimap
-template <class T>
+template<class T>
 class script_allocator {
 public:
   typedef dl::size_type size_type;
   typedef ptrdiff_t difference_type;
-  typedef T* pointer;
-  typedef const T* const_pointer;
-  typedef T& reference;
-  typedef const T& const_reference;
+  typedef T *pointer;
+  typedef const T *const_pointer;
+  typedef T &reference;
+  typedef const T &const_reference;
   typedef T value_type;
-  
-  template <class U>
+
+  template<class U>
   struct rebind {
     typedef script_allocator<U> other;
   };
-   
-  script_allocator () throw() {
-  }
 
-  script_allocator (const script_allocator &) throw() {
-  }
+  script_allocator() noexcept = default;
 
-  template <class U>
-  script_allocator (const script_allocator <U> &) throw() {
-  }
+  script_allocator(const script_allocator &) noexcept = default;
 
-  ~script_allocator() throw() {
-  }
-   
-  pointer address (reference x) const {
+  template<class U>
+  explicit script_allocator(const script_allocator<U> &) noexcept {}
+
+  ~script_allocator() noexcept = default;
+
+  pointer address(reference x) const {
     return &x;
   }
 
-  const_pointer address (const_reference x) const {
+  const_pointer address(const_reference x) const {
     return &x;
   }
 
-  pointer allocate (size_type n, void const * = 0) {
-    php_assert (n == 1 && sizeof (T) < MAX_BLOCK_SIZE);
-    pointer result = static_cast <pointer> (dl::allocate (sizeof (T)));
-    if (unlikely(!result))
-      php_critical_error ("not enough memory to continue");
+  pointer allocate(size_type n, void const * = nullptr) {
+    php_assert (n == 1 && sizeof(T) < MAX_BLOCK_SIZE);
+    auto result = static_cast <pointer> (dl::allocate(sizeof(T)));
+    if (unlikely(!result)) php_critical_error ("not enough memory to continue");
     return result;
   }
 
-  void deallocate (pointer p, size_type n) {
-    php_assert (n == 1 && sizeof (T) < MAX_BLOCK_SIZE);
-    dl::deallocate (static_cast <void *> (p), sizeof (T));
+  void deallocate(pointer p, size_type n) {
+    php_assert (n == 1 && sizeof(T) < MAX_BLOCK_SIZE);
+    dl::deallocate(static_cast <void *> (p), sizeof(T));
   }
 
-  size_type max_size() const throw() { 
-    return INT_MAX / sizeof (T); 
+  size_type max_size() const noexcept {
+    return INT_MAX / sizeof(T);
   }
 
-  void construct (pointer p, const T& val) {
-    new (p) T (val);
+  void construct(pointer p, const T &val) {
+    new(p) T(val);
   }
 
-  void destroy (pointer p) {
+  void destroy(pointer p) {
     p->~T();
   }
 };
@@ -123,14 +124,14 @@ size_type max_real_memory_used;
 
 size_type static_memory_used;
 
-typedef std::multimap <size_type, void *, std::less <size_type>, script_allocator <std::pair <const size_type, void *> > > map_type;
-char left_pieces_storage[sizeof (map_type)];
+typedef std::multimap<size_type, void *, std::less<size_type>, script_allocator<std::pair<const size_type, void *>>> map_type;
+char left_pieces_storage[sizeof(map_type)];
 map_type *left_pieces = reinterpret_cast <map_type *> (left_pieces_storage);
 void *piece, *piece_end;
 void *free_blocks[MAX_BLOCK_SIZE >> 3];
 
 
-size_type memory_get_total_usage (void) {
+size_type memory_get_total_usage() {
   return (size_type)((size_t)piece - memory_begin);
 }
 
@@ -138,7 +139,7 @@ size_type memory_get_total_usage (void) {
 const bool stupid_allocator = false;
 
 
-inline void allocator_add (void *block, size_type size) {
+inline void allocator_add(void *block, size_type size) {
   if ((char *)block + size == (char *)piece) {
     piece = block;
     return;
@@ -149,11 +150,11 @@ inline void allocator_add (void *block, size_type size) {
     *(void **)block = free_blocks[size];
     free_blocks[size] = block;
   } else {
-    left_pieces->insert (std::make_pair (size, block));
+    left_pieces->insert(std::make_pair(size, block));
   }
 }
 
-void allocator_init (void *buf, size_type n) {
+void allocator_init(void *buf, size_type n) {
   in_critical_section = 0;
   pending_signals = 0;
 
@@ -176,8 +177,8 @@ void allocator_init (void *buf, size_type n) {
   piece = buf;
   piece_end = (void *)((char *)piece + n);
 
-  new (left_pieces_storage) map_type();
-  memset (free_blocks, 0, sizeof (free_blocks));
+  new(left_pieces_storage) map_type();
+  memset(free_blocks, 0, sizeof(free_blocks));
 
   query_num++;
   script_runned = true;
@@ -185,11 +186,11 @@ void allocator_init (void *buf, size_type n) {
   leave_critical_section();
 }
 
-static inline void *allocate_stack (size_type n) {
+static inline void *allocate_stack(size_type n) {
   if ((char *)piece_end - (char *)piece < n) {
     php_warning("Can't allocate %d bytes", (int)n);
     raise(SIGUSR2);
-    return NULL;
+    return nullptr;
   }
 
   void *result = piece;
@@ -197,13 +198,13 @@ static inline void *allocate_stack (size_type n) {
   return result;
 }
 
-void *allocate (size_type n) {
+void *allocate(size_type n) {
   if (!allocator_inited) {
-    return static_allocate (n);
+    return static_allocate(n);
   }
 
   if (!script_runned) {
-    return NULL;
+    return nullptr;
   }
   enter_critical_section();
 
@@ -211,14 +212,14 @@ void *allocate (size_type n) {
 
   void *result;
   if (stupid_allocator) {
-    result = allocate_stack (n);
+    result = allocate_stack(n);
   } else {
     n = (n + 7) & -8;
 
     if (n < MAX_BLOCK_SIZE) {
       size_type nn = n >> 3;
-      if (free_blocks[nn] == NULL) {
-        result = allocate_stack (n);
+      if (free_blocks[nn] == nullptr) {
+        result = allocate_stack(n);
 #ifdef DEBUG_MEMORY
         fprintf (stderr, "allocate %d, chunk not found, allocating from stack at %p\n", n, result);
 #endif
@@ -230,29 +231,29 @@ void *allocate (size_type n) {
         free_blocks[nn] = *(void **)result;
       }
     } else {
-      typeof (left_pieces->end()) p = left_pieces->lower_bound (n);
+      auto p = left_pieces->lower_bound(n);
 #ifdef DEBUG_MEMORY
       fprintf (stderr, "allocate %d from %d, map size = %d\n", n, p == left_pieces->end() ? -1 : (int)p->first, (int)left_pieces->size());
 #endif
       if (p == left_pieces->end()) {
-        result = allocate_stack (n);
+        result = allocate_stack(n);
       } else {
         size_type left = p->first - n;
         result = p->second;
-        left_pieces->erase (p);
+        left_pieces->erase(p);
         if (left) {
-          allocator_add ((char *)result + n, left);
+          allocator_add((char *)result + n, left);
         }
       }
     }
   }
 
-  if (result != NULL) {
+  if (result != nullptr) {
     memory_used += n;
     if (memory_used > max_memory_used) {
       max_memory_used = memory_used;
     }
-    size_type real_memory_used = (size_type)((size_t)piece - memory_begin);
+    auto real_memory_used = (size_type)((size_t)piece - memory_begin);
     if (real_memory_used > max_real_memory_used) {
       max_real_memory_used = real_memory_used;
     }
@@ -262,21 +263,21 @@ void *allocate (size_type n) {
   return result;
 }
 
-void *allocate0 (size_type n) {
+void *allocate0(size_type n) {
   if (!allocator_inited) {
-    return static_allocate0 (n);
+    return static_allocate0(n);
   }
 
   if (!script_runned) {
-    return NULL;
+    return nullptr;
   }
 
-  return memset (allocate (n), 0, n);
+  return memset(allocate(n), 0, n);
 }
 
-void *reallocate (void *p, size_type new_n, size_type old_n) {
+void *reallocate(void *p, size_type new_n, size_type old_n) {
   if (!allocator_inited) {
-    static_reallocate (&p, new_n, &old_n);
+    static_reallocate(&p, new_n, &old_n);
     return p;
   }
 
@@ -301,7 +302,7 @@ void *reallocate (void *p, size_type new_n, size_type old_n) {
       if (memory_used > max_memory_used) {
         max_memory_used = memory_used;
       }
-      size_type real_memory_used = (size_type)((size_t)piece - memory_begin);
+      auto real_memory_used = (size_type)((size_t)piece - memory_begin);
       if (real_memory_used > max_real_memory_used) {
         max_real_memory_used = real_memory_used;
       }
@@ -311,20 +312,20 @@ void *reallocate (void *p, size_type new_n, size_type old_n) {
     }
   }
 
-  void *result = allocate (new_n);
-  if (result != NULL) {
-    memcpy (result, p, old_n);
-    deallocate (p, old_n);
+  void *result = allocate(new_n);
+  if (result != nullptr) {
+    memcpy(result, p, old_n);
+    deallocate(p, old_n);
   }
 
   leave_critical_section();
   return result;
 }
 
-void deallocate (void *p, size_type n) {
+void deallocate(void *p, size_type n) {
 //  fprintf (stderr, "deallocate %d: allocator_inited = %d, script_runned = %d\n", n, allocator_inited, script_runned);
   if (!allocator_inited) {
-    return static_deallocate (&p, &n);
+    return static_deallocate(&p, &n);
   }
 
   if (stupid_allocator) {
@@ -343,27 +344,27 @@ void deallocate (void *p, size_type n) {
   fprintf (stderr, "deallocate %d at %p\n", n, p);
 #endif
   memory_used -= n;
-  allocator_add (p, n);
+  allocator_add(p, n);
 
   leave_critical_section();
 }
 
 
-void *static_allocate (size_type n) {
+void *static_allocate(size_type n) {
   php_assert (!query_num || !use_script_allocator);
   enter_critical_section();
 
   php_assert (n);
 
-  void *result = malloc (n);
+  void *result = malloc(n);
 #ifdef DEBUG_MEMORY
   fprintf (stderr, "static allocate %d at %p\n", n, result);
 #endif
-  if (result == NULL) {
-    php_warning ("Can't static_allocate %d bytes", (int)n);
-    raise (SIGUSR2);
+  if (result == nullptr) {
+    php_warning("Can't static_allocate %d bytes", (int)n);
+    raise(SIGUSR2);
     leave_critical_section();
-    return NULL;
+    return nullptr;
   }
 
   static_memory_used += n;
@@ -371,21 +372,21 @@ void *static_allocate (size_type n) {
   return result;
 }
 
-void *static_allocate0 (size_type n) {
+void *static_allocate0(size_type n) {
   php_assert (!query_num);
   enter_critical_section();
 
   php_assert (n);
 
-  void *result = calloc (1, n);
+  void *result = calloc(1, n);
 #ifdef DEBUG_MEMORY
   fprintf (stderr, "static allocate0 %d at %p\n", n, result);
 #endif
-  if (result == NULL) {
-    php_warning ("Can't static_allocate0 %d bytes", (int)n);
-    raise (SIGUSR2);
+  if (result == nullptr) {
+    php_warning("Can't static_allocate0 %d bytes", (int)n);
+    raise(SIGUSR2);
     leave_critical_section();
-    return NULL;
+    return nullptr;
   }
 
   static_memory_used += n;
@@ -393,7 +394,7 @@ void *static_allocate0 (size_type n) {
   return result;
 }
 
-void static_reallocate (void **p, size_type new_n, size_type *n) {
+void static_reallocate(void **p, size_type new_n, size_type *n) {
 #ifdef DEBUG_MEMORY
   fprintf (stderr, "static reallocate %d at %p\n", *n, *p);
 #endif
@@ -402,10 +403,10 @@ void static_reallocate (void **p, size_type new_n, size_type *n) {
   static_memory_used -= *n;
 
   void *old_p = *p;
-  *p = realloc (*p, new_n);
-  if (*p == NULL) {
-    php_warning ("Can't static_reallocate from %d to %d bytes", (int)*n, (int)new_n);
-    raise (SIGUSR2);
+  *p = realloc(*p, new_n);
+  if (*p == nullptr) {
+    php_warning("Can't static_reallocate from %d to %d bytes", (int)*n, (int)new_n);
+    raise(SIGUSR2);
     *p = old_p;
     leave_critical_section();
     return;
@@ -416,7 +417,7 @@ void static_reallocate (void **p, size_type new_n, size_type *n) {
   leave_critical_section();
 }
 
-void static_deallocate (void **p, size_type *n) {
+void static_deallocate(void **p, size_type *n) {
 #ifdef DEBUG_MEMORY
   fprintf (stderr, "static deallocate %d at %p\n", *n, *p);
 #endif
@@ -424,8 +425,8 @@ void static_deallocate (void **p, size_type *n) {
   enter_critical_section();
   static_memory_used -= *n;
 
-  free (*p);
-  *p = NULL;
+  free(*p);
+  *p = nullptr;
   *n = 0;
 
   leave_critical_section();
@@ -434,77 +435,69 @@ void static_deallocate (void **p, size_type *n) {
 // guaranteed alignment of dl::allocate
 const size_t MAX_ALIGNMENT = 8;
 
-void *malloc_replace (size_t x) {
+void *malloc_replace(size_t x) {
   php_assert (x <= MAX_ALLOC - MAX_ALIGNMENT);
-  php_assert (sizeof (size_t) <= MAX_ALIGNMENT);
+  php_assert (sizeof(size_t) <= MAX_ALIGNMENT);
   size_t real_allocate = x + MAX_ALIGNMENT;
   void *p;
   if (use_script_allocator) {
-    p = allocate (real_allocate);
+    p = allocate(real_allocate);
   } else {
-    p = static_allocate (real_allocate);
+    p = static_allocate(real_allocate);
   }
-  if (p == NULL) {
+  if (p == nullptr) {
     php_critical_error ("not enough memory to continue");
   }
   *(size_t *)p = real_allocate;
   return (void *)((char *)p + MAX_ALIGNMENT);
 }
 
-void free_replace (void *p) {
-  if (p == NULL) {
+void free_replace(void *p) {
+  if (p == nullptr) {
     return;
   }
 
   p = (void *)((char *)p - MAX_ALIGNMENT);
   if (use_script_allocator) {
     php_assert (memory_begin <= (size_t)p && (size_t)p < memory_end);
-    deallocate (p, *(size_t *)p);
+    deallocate(p, *(size_t *)p);
   } else {
     size_type n = *(size_t *)p;
-    static_deallocate (&p, &n);
+    static_deallocate(&p, &n);
   }
 }
 
 }
 
 //replace global operators new and delete for linked C++ code
-void *operator new (std::size_t n)
-#if __cplusplus < 201103L
-throw (std::bad_alloc)
-#endif
-{
-  return dl::malloc_replace (n);
+void *operator new(std::size_t n) {
+  return dl::malloc_replace(n);
 }
 
-void *operator new (std::size_t n, const std::nothrow_t &) throw() {
-  return dl::malloc_replace (n);
+void *operator new(std::size_t n, const std::nothrow_t &) noexcept {
+  return dl::malloc_replace(n);
 }
 
-void *operator new[] (std::size_t n)
-#if __cplusplus < 201103L
-throw (std::bad_alloc)
-#endif
-{
-  return dl::malloc_replace (n);
+void *operator new[](std::size_t n) {
+  return dl::malloc_replace(n);
 }
 
-void *operator new[] (std::size_t n, const std::nothrow_t &) throw() {
-  return dl::malloc_replace (n);
+void *operator new[](std::size_t n, const std::nothrow_t &) noexcept {
+  return dl::malloc_replace(n);
 }
 
-void operator delete (void *p) throw() {
-  return dl::free_replace (p);
+void operator delete(void *p) throw() {
+  return dl::free_replace(p);
 }
 
-void operator delete (void *p, const std::nothrow_t &) throw() {
-  return dl::free_replace (p);
+void operator delete(void *p, const std::nothrow_t &) noexcept {
+  return dl::free_replace(p);
 }
 
-void operator delete[] (void *p) throw() {
-  return dl::free_replace (p);
+void operator delete[](void *p) throw() {
+  return dl::free_replace(p);
 }
 
-void operator delete[] (void *p, const std::nothrow_t &) throw() {
-  return dl::free_replace (p);
+void operator delete[](void *p, const std::nothrow_t &) noexcept {
+  return dl::free_replace(p);
 }

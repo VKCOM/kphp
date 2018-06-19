@@ -1,14 +1,15 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstddef>
 
 namespace dl {
 
 extern volatile int in_critical_section;
 extern volatile long long pending_signals;
 
-void enter_critical_section (void);
-void leave_critical_section (void);
+void enter_critical_section();
+void leave_critical_section();
 
 
 extern long long query_num;//engine query number. query_num == 0 before first query
@@ -26,21 +27,21 @@ extern size_type max_real_memory_used;//maxumum of used and dirty script memory
 
 extern size_type static_memory_used;
 
-size_type memory_get_total_usage (void);//usage of script memory
+size_type memory_get_total_usage();//usage of script memory
 
-void allocator_init (void *buf, size_type n);//init script allocator with arena of n bytes at buf
+void allocator_init(void *buf, size_type n);//init script allocator with arena of n bytes at buf
 
-void *allocate (size_type n);//allocate script memory
-void *allocate0 (size_type n);//allocate zeroed script memory
-void *reallocate (void *p, size_type n, size_type old_n);//reallocate script memory
-void deallocate (void *p, size_type n);//deallocate script memory
+void *allocate(size_type n);//allocate script memory
+void *allocate0(size_type n);//allocate zeroed script memory
+void *reallocate(void *p, size_type n, size_type old_n);//reallocate script memory
+void deallocate(void *p, size_type n);//deallocate script memory
 
-void *static_allocate (size_type n);//allocate heap memory (persistent between script runs)
-void *static_allocate0 (size_type n);//allocate zeroed heap memory
-void static_reallocate (void **p, size_type new_n, size_type *n);//reallocate heap memory
-void static_deallocate (void **p, size_type *n);//deallocate heap memory
+void *static_allocate(size_type n);//allocate heap memory (persistent between script runs)
+void *static_allocate0(size_type n);//allocate zeroed heap memory
+void static_reallocate(void **p, size_type new_n, size_type *n);//reallocate heap memory
+void static_deallocate(void **p, size_type *n);//deallocate heap memory
 
-void *malloc_replace (size_t x);
-void free_replace (void *p);
+void *malloc_replace(size_t x);
+void free_replace(void *p);
 
 };
