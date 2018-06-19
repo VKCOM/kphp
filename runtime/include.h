@@ -4,9 +4,6 @@
 
 #include "runtime/php_assert.h"
 
-template <class T>
-inline void swap (T &lhs, T &rhs);
-
 
 template <class T, class TT>
 class array;
@@ -18,14 +15,6 @@ template <class T>
 class convert_to;
 
 class var;
-
-template <class T>
-inline void swap (T &lhs, T &rhs) {
-  const T copy_lhs (lhs);
-  lhs = rhs;
-  rhs = copy_lhs;
-}
-
 
 class Unknown {
 };
@@ -133,19 +122,6 @@ class OrFalse <var>;
 template <class T>
 class OrFalse <OrFalse <T> >;
 
-
-template <class T>
-inline T min (const T &lhs, const T &rhs) {
-  if (lhs < rhs) {
-    return lhs;
-  }
-  return rhs;
-}
-
-template <class T>
-inline T max (const T &lhs, const T &rhs) {
-  if (lhs > rhs) {
-    return lhs;
-  }
-  return rhs;
-}
+using std::swap;
+using std::min;
+using std::max;
