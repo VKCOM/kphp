@@ -526,16 +526,8 @@ inline bool equals (const var &lhs, const class_instance <T> &rhs);
 template <class T>
 inline bool equals (bool lhs, const class_instance <T> &rhs);
 
-template <class T>
-inline bool equals (const T &lhs, const T &rhs);
-
-template <class T1, class T2>
-inline bool equals (const T1 &lhs, const T2 &rhs);
-
-
 template <class T1, class T2>
 inline bool not_equals (const T1 &lhs, const T2 &rhs);
-
 
 template <class T>
 bool eq2 (const var &v, const OrFalse <T> &value);

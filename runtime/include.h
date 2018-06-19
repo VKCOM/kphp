@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <type_traits>
 
 #include "runtime/php_assert.h"
 
@@ -19,40 +20,37 @@ class var;
 class Unknown {
 };
 
-template <class T>
-bool eq2 (Unknown lhs __attribute__((unused)), const T &rhs __attribute__((unused))) {
+template<class T, class U>
+struct one_of_is_unknown
+  : std::integral_constant<bool, std::is_same<T, Unknown>::value || std::is_same<U, Unknown>::value> {
+};
+
+template<class T, class U>
+using enable_if_one_of_types_is_unknown = typename std::enable_if<one_of_is_unknown<T, U>::value, bool>::type;
+
+template<class T, class U>
+using disable_if_one_of_types_is_unknown = typename std::enable_if<!one_of_is_unknown<T, U>::value, bool>::type;
+
+template<class T, class U>
+enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {
   php_assert ("Comparison of Unknown" && 0);
   return false;
 }
 
-template <class T>
-bool eq2 (const T &lhs __attribute__((unused)), Unknown rhs __attribute__((unused))){
-  php_assert ("Comparison of Unknown" && 0);
+template<class T, class U>
+enable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
+  return eq2(lhs, rhs);
+}
+
+template<class T, class U>
+disable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
   return false;
 }
 
-inline bool eq2 (Unknown lhs __attribute__((unused)), Unknown rhs __attribute__((unused))) {
-  php_assert ("Comparison of Unknown" && 0);
-  return false;
+template<class T>
+disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
+  return lhs == rhs;
 }
-
-template <class T>
-bool equals (Unknown lhs __attribute__((unused)), const T &rhs __attribute__((unused))) {
-  php_assert ("Comparison of Unknown" && 0);
-  return false;
-}
-
-template <class T>
-bool equals (const T &lhs __attribute__((unused)), Unknown rhs __attribute__((unused))) {
-  php_assert ("Comparison of Unknown" && 0);
-  return false;
-}
-
-inline bool equals (Unknown lhs __attribute__((unused)), Unknown rhs __attribute__((unused))) {
-  php_assert ("Comparison of Unknown" && 0);
-  return true;
-}
-
 
 template <class T>
 class OrFalse {

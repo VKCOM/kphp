@@ -3216,17 +3216,6 @@ bool equals (bool lhs, const class_instance <T> &rhs) {
   return equals(rhs, lhs);
 }
 
-template <class T>
-bool equals (const T &lhs, const T &rhs) {
-  return lhs == rhs;
-}
-
-template <class T1, class T2>
-bool equals (const T1 &lhs, const T2 &rhs) {
-  return false;
-}
-
-
 template <class T1, class T2>
 bool not_equals (const T1 &lhs, const T2 &rhs) {
   return !equals (lhs, rhs);
