@@ -1,6 +1,7 @@
 #pragma once
 
 #include <climits>
+#include <cstring>
 
 #define FAST_EXCEPTIONS
 

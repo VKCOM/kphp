@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include "common-php-functions.h"
+
 #ifdef CLION
 #include "kphp_core.h"
 #endif

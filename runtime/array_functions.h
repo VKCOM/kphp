@@ -1,4 +1,6 @@
 #pragma once
+
+#include <climits>
 #include "common/vector-product.h"
 
 #include "runtime/kphp_core.h"
