@@ -722,8 +722,8 @@ inline int f$memory_get_usage (bool real_usage = false);
 inline int f$memory_get_total_usage (void);
 
 
-template <class T, class TT>
-inline int f$get_reference_counter (const array <T, TT> &v);
+template<class T>
+inline int f$get_reference_counter (const array<T> &v);
 
 template <class T>
 inline int f$get_reference_counter (const class_instance <T> &v);
@@ -752,53 +752,53 @@ template <class T>
 inline T& ref (OrFalse <T> &x);
 
 
-template <class T, class TT>
-inline typename array <T, TT>::iterator begin (array <T, TT> &x);
+template<class T>
+inline typename array<T>::iterator begin (array<T> &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator begin (const array <T, TT> &x);
+template<class T>
+inline typename array<T>::const_iterator begin (const array<T> &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator const_begin (const array <T, TT> &x);
+template<class T>
+inline typename array<T>::const_iterator const_begin (const array<T> &x);
 
-inline array <var, var>::iterator begin (var &x);
+inline array <var>::iterator begin (var &x);
 
-inline array <var, var>::const_iterator begin (const var &x);
+inline array <var>::const_iterator begin (const var &x);
 
-inline array <var, var>::const_iterator const_begin (const var &x);
+inline array <var>::const_iterator const_begin (const var &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::iterator begin (OrFalse < array <T, TT> > &x);
+template<class T>
+inline typename array<T>::iterator begin (OrFalse < array<T> > &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator begin (const OrFalse < array <T, TT> > &x);
+template<class T>
+inline typename array<T>::const_iterator begin (const OrFalse < array<T> > &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator const_begin (const OrFalse < array <T, TT> > &x);
+template<class T>
+inline typename array<T>::const_iterator const_begin (const OrFalse < array<T> > &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::iterator end (array <T, TT> &x);
+template<class T>
+inline typename array<T>::iterator end (array<T> &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator end (const array <T, TT> &x);
+template<class T>
+inline typename array<T>::const_iterator end (const array<T> &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator const_end (const array <T, TT> &x);
+template<class T>
+inline typename array<T>::const_iterator const_end (const array<T> &x);
 
-inline array <var, var>::iterator end (var &x);
+inline array <var>::iterator end (var &x);
 
-inline array <var, var>::const_iterator end (const var &x);
+inline array <var>::const_iterator end (const var &x);
 
-inline array <var, var>::const_iterator const_end (const var &x);
+inline array <var>::const_iterator const_end (const var &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::iterator end (OrFalse < array <T, TT> > &x);
+template<class T>
+inline typename array<T>::iterator end (OrFalse < array<T> > &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator end (const OrFalse < array <T, TT> > &x);
+template<class T>
+inline typename array<T>::const_iterator end (const OrFalse < array<T> > &x);
 
-template <class T, class TT>
-inline typename array <T, TT>::const_iterator const_end (const OrFalse < array <T, TT> > &x);
+template<class T>
+inline typename array<T>::const_iterator const_end (const OrFalse < array<T> > &x);
 
 
 inline void clear_array (var &v);
@@ -2309,8 +2309,8 @@ int f$memory_get_total_usage (void) {
 }
 
 
-template <class T, class TT>
-int f$get_reference_counter (const array <T, TT> &v) {
+template<class T>
+int f$get_reference_counter (const array<T> &v) {
   return v.get_reference_counter();
 }
 
@@ -2359,53 +2359,53 @@ T& ref (OrFalse <T> &x) {
 }
 
 
-template <class T, class TT>
-typename array <T, TT>::iterator begin (array <T, TT> &x) {
+template<class T>
+typename array<T>::iterator begin (array<T> &x) {
   return x.begin();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator begin (const array <T, TT> &x) {
+template<class T>
+typename array<T>::const_iterator begin (const array<T> &x) {
   return x.begin();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator const_begin (const array <T, TT> &x) {
-  return x.begin();
-}
-
-
-array <var, var>::iterator begin (var &x) {
-  return x.begin();
-}
-
-array <var, var>::const_iterator begin (const var &x) {
-  return x.begin();
-}
-
-array <var, var>::const_iterator const_begin (const var &x) {
+template<class T>
+typename array<T>::const_iterator const_begin (const array<T> &x) {
   return x.begin();
 }
 
 
-template <class T, class TT>
-typename array <T, TT>::iterator begin (OrFalse < array <T, TT> > &x) {
+array <var>::iterator begin (var &x) {
+  return x.begin();
+}
+
+array <var>::const_iterator begin (const var &x) {
+  return x.begin();
+}
+
+array <var>::const_iterator const_begin (const var &x) {
+  return x.begin();
+}
+
+
+template<class T>
+typename array<T>::iterator begin (OrFalse < array<T> > &x) {
   if (!x.bool_value) {
     php_warning ("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.begin();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator begin (const OrFalse < array <T, TT> > &x) {
+template<class T>
+typename array<T>::const_iterator begin (const OrFalse < array<T> > &x) {
   if (!x.bool_value) {
     php_warning ("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.begin();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator const_begin (const OrFalse < array <T, TT> > &x) {
+template<class T>
+typename array<T>::const_iterator const_begin (const OrFalse < array<T> > &x) {
   if (!x.bool_value) {
     php_warning ("Invalid argument supplied for foreach(), false is given");
   }
@@ -2413,52 +2413,52 @@ typename array <T, TT>::const_iterator const_begin (const OrFalse < array <T, TT
 }
 
 
-template <class T, class TT>
-typename array <T, TT>::iterator end (array <T, TT> &x) {
+template<class T>
+typename array<T>::iterator end (array<T> &x) {
   return x.end();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator end (const array <T, TT> &x) {
+template<class T>
+typename array<T>::const_iterator end (const array<T> &x) {
   return x.end();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator const_end (const array <T, TT> &x) {
+template<class T>
+typename array<T>::const_iterator const_end (const array<T> &x) {
   return x.end();
 }
 
-array <var, var>::iterator end (var &x) {
+array <var>::iterator end (var &x) {
   return x.end();
 }
 
-array <var, var>::const_iterator end (const var &x) {
+array <var>::const_iterator end (const var &x) {
   return x.end();
 }
 
-array <var, var>::const_iterator const_end (const var &x) {
+array <var>::const_iterator const_end (const var &x) {
   return x.end();
 }
 
 
-template <class T, class TT>
-typename array <T, TT>::iterator end (OrFalse < array <T, TT> > &x) {
+template<class T>
+typename array<T>::iterator end (OrFalse < array<T> > &x) {
   if (!x.bool_value) {
     php_warning ("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.end();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator end (const OrFalse < array <T, TT> > &x) {
+template<class T>
+typename array<T>::const_iterator end (const OrFalse < array<T> > &x) {
   if (!x.bool_value) {
     php_warning ("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.end();
 }
 
-template <class T, class TT>
-typename array <T, TT>::const_iterator const_end (const OrFalse < array <T, TT> > &x) {
+template<class T>
+typename array<T>::const_iterator const_end (const OrFalse < array<T> > &x) {
   if (!x.bool_value) {
     php_warning ("Invalid argument supplied for foreach(), false is given");
   }

@@ -255,7 +255,7 @@ public:
 
   friend inline string_buffer &operator << (string_buffer &sb, const var &v);
 
-  template <class T, class TT>
+  template <class T>
   friend class array;
 
   template <class T, class TT>

@@ -9,7 +9,7 @@
 #include "common/wrappers/likely.h"
 
 
-template <class T, class TT>
+template <class T>
 class array;
 
 template <class T>

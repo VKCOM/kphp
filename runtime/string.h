@@ -116,8 +116,8 @@ public:
   inline string& append_unsafe (const var &v) __attribute__((always_inline));
   inline string& finish_append (void) __attribute__((always_inline));
 
-  template <class T, class TT>
-  inline string& append_unsafe (const array <T, TT> &a) __attribute__((always_inline));
+  template <class T>
+  inline string& append_unsafe (const array <T> &a) __attribute__((always_inline));
 
   template <class T>
   inline string& append_unsafe (const OrFalse <T> &v) __attribute__((always_inline));
@@ -175,7 +175,7 @@ public:
 
   friend class var;
 
-  template <class T, class TT>
+  template <class T>
   friend class array;
 };
 
@@ -203,8 +203,8 @@ inline dl::size_type max_string_size (double) __attribute__((always_inline));
 inline dl::size_type max_string_size (const string &s) __attribute__((always_inline));
 inline dl::size_type max_string_size (const var &v) __attribute__((always_inline));
 
-template <class T, class TT>
-inline dl::size_type max_string_size (const array <T, TT> &) __attribute__((always_inline));
+template <class T>
+inline dl::size_type max_string_size (const array <T> &) __attribute__((always_inline));
 
 template <class T>
 inline dl::size_type max_string_size (const OrFalse <T> &v) __attribute__((always_inline));

@@ -542,8 +542,8 @@ string& string::append_unsafe (const char *s, size_type n) {
   return *this;
 }
 
-template <class T, class TT>
-string& string::append_unsafe (const array <T, TT> &a __attribute__((unused))) {
+template <class T>
+string& string::append_unsafe (const array <T> &a __attribute__((unused))) {
   php_warning ("Convertion from array to string");
   return append_unsafe ("Array", 5);
 }
@@ -1064,8 +1064,8 @@ dl::size_type max_string_size (const var &v) {
   }
 }
 
-template <class T, class TT>
-dl::size_type max_string_size (const array <T, TT> &) {
+template <class T>
+dl::size_type max_string_size (const array <T> &) {
   return STRLEN_ARRAY;
 }
 

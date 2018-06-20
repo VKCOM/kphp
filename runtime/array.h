@@ -71,7 +71,7 @@ public:
 };
 
 template <>
-class array_stored_type <array <var, var> > {
+class array_stored_type <array <var> > {
 public:
   typedef var type;
 };
@@ -137,7 +137,7 @@ namespace dl {
 }
 
 
-template <class T, class TT = typename array_stored_type <T>::type>
+template <class T>
 class array {
 
 public:
@@ -158,7 +158,7 @@ private:
   };
 
   struct int_hash_entry : list_hash_entry {
-    TT value;
+    T value;
 
     int int_key;
 
@@ -166,7 +166,7 @@ private:
   };
 
   struct string_hash_entry : list_hash_entry {
-    TT value;
+    T value;
 
     int int_key;
     string string_key;
@@ -197,7 +197,7 @@ private:
 
       inline compare_TT_by_T (const compare_TT_by_T &comp);
 
-      inline bool operator () (const TT &lhs, const TT &rhs) const;
+      inline bool operator () (const T &lhs, const T &rhs) const;
   };
 
 
@@ -254,9 +254,9 @@ private:
 
     inline const var get_var (int int_key) const;
     inline const T get_value (int int_key) const;
-    inline T& push_back_vector_value (const TT &v) /*__attribute__ ((always_inline))*/;//unsafe //TODO receive T
-    inline T& set_vector_value (int int_key, const TT &v) /*__attribute__ ((always_inline))*/;//unsafe
-    inline T& set_map_value (int int_key, const TT &v, bool save_value) /*__attribute__ ((always_inline))*/;
+    inline T& push_back_vector_value (const T &v) /*__attribute__ ((always_inline))*/;//unsafe //TODO receive T
+    inline T& set_vector_value (int int_key, const T &v) /*__attribute__ ((always_inline))*/;//unsafe
+    inline T& set_map_value (int int_key, const T &v, bool save_value) /*__attribute__ ((always_inline))*/;
     inline bool has_key (int int_key) const;
     inline bool isset_value (int int_key) const;
     inline void unset_vector_value (void);
@@ -266,7 +266,7 @@ private:
     inline const T get_value (int int_key, const string &string_key) const;
     inline const T& get_vector_value (int int_key) const;//unsafe
     inline T& get_vector_value (int int_key);//unsafe
-    inline T& set_map_value (int int_key, const string &string_key, const TT &v, bool save_value) /*__attribute__ ((always_inline))*/;
+    inline T& set_map_value (int int_key, const string &string_key, const T &v, bool save_value) /*__attribute__ ((always_inline))*/;
     inline bool has_key (int int_key, const string &string_key) const;
     inline bool isset_value (int int_key, const string &string_key) const;
     inline void unset_map_value (int int_key, const string &string_key);
@@ -286,8 +286,8 @@ private:
 
   inline void convert_to_map (void);
 
-  template <class T1, class TT1>
-  inline void copy_from (const array <T1, TT1> &other);
+  template <class T1>
+  inline void copy_from (const array <T1> &other);
 
   inline void destroy (void) __attribute__ ((always_inline));
 
@@ -308,9 +308,7 @@ public:
     inline bool operator == (const const_iterator &other) const __attribute__ ((always_inline));
     inline bool operator != (const const_iterator &other) const __attribute__ ((always_inline));
 
-    friend class array;
-
-    template <class T1, class TT1>
+    template <class T1>
     friend class array;
   };
 
@@ -329,9 +327,7 @@ public:
     inline bool operator == (const iterator &other) const __attribute__ ((always_inline));
     inline bool operator != (const iterator &other) const __attribute__ ((always_inline));
 
-    friend class array;
-
-    template <class T1, class TT1>
+    template <class T1>
     friend class array;
   };
 
@@ -344,19 +340,13 @@ public:
 
   inline array (const array &other) __attribute__ ((always_inline));
 
-  template <class T1, class TT1>
-  inline array (const array <T1, TT1> &other);
-
   template <class T1>
-  inline array (const array <T1, TT> &other) __attribute__ ((always_inline));
+  inline array (const array <T1> &other) __attribute__ ((always_inline));
 
   inline array& operator = (const array &other) __attribute__ ((always_inline));
 
-  template <class T1, class TT1>
-  inline array& operator = (const array <T1, TT1> &other);
-
   template <class T1>
-  inline array& operator = (const array <T1, TT> &other) __attribute__ ((always_inline));
+  inline array& operator = (const array <T1> &other) __attribute__ ((always_inline));
 
   inline ~array (void) /*__attribute__ ((always_inline))*/;
 
@@ -420,8 +410,8 @@ public:
 
   inline array_size size (void) const __attribute__ ((always_inline));
 
-  template <class T1, class TT1>
-  void merge_with (const array <T1, TT1> &other);
+  template <class T1>
+  void merge_with (const array <T1> &other);
 
   const array operator + (const array &other) const;
   array& operator += (const array &other);
@@ -471,26 +461,26 @@ private:
 private:
   array_inner *p;
 
-  template <class T1, class TT1>
+  template <class T1>
   friend class array;
 
   friend class var;
 };
 
-template <class T, class TT>
-inline void swap (array <T, TT> &lhs, array <T, TT> &rhs);
+template <class T>
+inline void swap (array <T> &lhs, array <T> &rhs);
 
 template <class T>
 inline const array <T> array_add (array <T> a1, const array <T> &a2);
 
+template <class T>
+inline bool eq2 (const array<T> &lhs, const array<T> &rhs);
+
+template <class T1, class T2>
+inline bool eq2 (const array<T1> &lhs, const array<T2> &rhs);
+
 template <class T, class TT>
-inline bool eq2 (const array <T, TT> &lhs, const array <T, TT> &rhs);
+inline bool equals (const array<T> &lhs, const array<T> &rhs);
 
-template <class T1, class TT1, class T2, class TT2>
-inline bool eq2 (const array <T1, TT1> &lhs, const array <T2, TT2> &rhs);
-
-template <class T, class TT>
-inline bool equals (const array <T, TT> &lhs, const array <T, TT> &rhs);
-
-template <class T1, class TT1, class T2, class TT2>
-inline bool equals (const array <T1, TT1> &lhs, const array <T2, TT2> &rhs);
+template <class T1, class T2>
+inline bool equals (const array<T1> &lhs, const array<T2> &rhs);
