@@ -23,7 +23,7 @@ void set_script(const char *name, void (*run)(php_query_data *, void *mem, size_
   static int cnt = 0;
 
   auto script = new script_t{run, clear};
-  bool inserted __attribute__ ((unused)) = scripts.insert({name, script}).second;
+  bool inserted __attribute__((unused)) = scripts.insert({name, script}).second;
   assert(inserted);
 
   inserted = scripts.insert({std::string("#") + dl_int_to_str(cnt++), script}).second;

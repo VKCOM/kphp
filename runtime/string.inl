@@ -1,12 +1,5 @@
 #pragma once
 
-#include <cmath>
-#include "common-php-functions.h"
-
-#ifdef CLION
-#include "kphp_core.h"
-#endif
-
 const string::size_type string::max_size __attribute__ ((weak));
 
 string::size_type string::string_inner::empty_string_storage[sizeof (string_inner) / sizeof (size_type) + 1] __attribute__ ((weak)) = {0 /* size */, 0 /* capacity */, REF_CNT_FOR_CONST};

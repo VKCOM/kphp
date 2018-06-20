@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef CLION
-#include "kphp_core.h"
-#endif
-
 inline void string_buffer::resize (dl::size_type new_buffer_len) {
   if (new_buffer_len < MIN_BUFFER_LEN) {
     new_buffer_len = MIN_BUFFER_LEN;

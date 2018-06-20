@@ -150,7 +150,7 @@ private:
 
 //  struct list_hash_entry;
 //  typedef list_hash_entry *entry_pointer_type;
-  typedef dl::size_type entry_pointer_type;
+  using entry_pointer_type = dl::size_type;
 
   struct list_hash_entry {
     entry_pointer_type next;

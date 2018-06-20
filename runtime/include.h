@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <type_traits>
+#include <cmath>
 
 #include "runtime/php_assert.h"
+#include "common-php-functions.h"
+#include "common/wrappers/likely.h"
 
 
 template <class T, class TT>
@@ -12,12 +15,20 @@ class array;
 template <class T>
 class class_instance;
 
-template <class T>
-class convert_to;
-
 class var;
 
 class Unknown {
+};
+
+template <class T>
+class convert_to {
+public:
+  static inline const T& convert (const T &val);
+
+  static inline T convert (const Unknown &val);
+
+  template <class T1>
+  static inline T convert (const T1 &val);
 };
 
 template<class T, class U>

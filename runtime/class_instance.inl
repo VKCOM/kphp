@@ -4,10 +4,6 @@
 
 #pragma once
 
-#ifdef CLION
-#include "kphp_core.h"
-#endif
-
 template <class T>
 class_instance <T>::class_instance () : o(NULL) {
 }

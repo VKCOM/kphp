@@ -20,14 +20,14 @@ class var {
     bool b;
     int i;
     double f;
-    void *s;//string
-    void *a;//array <var>
+    string s;
+    array<var> a;
   };
 
   inline void copy_from (const var &other);
 
 public:
-  var (const void *); // deprecate conversion from pointer to boolean
+  var (const void *) = delete; // deprecate conversion from pointer to boolean
   inline var (void);
   inline var (const Unknown &u);
   inline var (bool b);

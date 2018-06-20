@@ -14,13 +14,14 @@
 #define AS_ARRAY(a) (reinterpret_cast <array <var> *> (&a))
 #define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
 
-#include "string.cpp"
-#include "array.cpp"
-#include "class_instance.cpp"
-#include "variable.cpp"
-#include "string_buffer.cpp"
+#include "string.inl"
+#include "array.inl"
+#include "class_instance.inl"
+#include "variable.inl"
+#include "string_buffer.inl"
 
 #undef AS_STRING
+#undef AS_CONST_STRING
 #undef AS_ARRAY
 #undef AS_CONST_ARRAY
 
@@ -473,17 +474,6 @@ bool equals (const T1 &value, const OrFalse <T> &v);
 template <class T, class T1>
 bool equals (const OrFalse <T> &v, const T1 &value);
 
-
-template <class T>
-class convert_to {
-public:
-  static inline const T& convert (const T &val);
-
-  static inline T convert (const Unknown &val);
-
-  template <class T1>
-  static inline T convert (const T1 &val);
-};
 
 
 inline bool f$empty (const bool &v);
