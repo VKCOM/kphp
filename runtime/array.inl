@@ -806,6 +806,15 @@ void array <T, TT>::reserve (int int_size, int string_size, bool make_vector_if_
   }
 }
 
+template<class T, class TT>
+template<class Arg, class... Args>
+void array <T, TT>::push_back_values(Arg &&arg, Args &&... args) {
+  static_assert(std::is_convertible<typename std::decay<Arg>::type, T>::value, "Arg type must be convertible to T");
+
+  p->push_back_vector_value(std::forward<Arg>(arg));
+  push_back_values(std::forward<Args>(args)...);
+}
+
 template <class T, class TT>
 array <T, TT>::const_iterator::const_iterator (void): self (NULL), entry (NULL) {
 }
@@ -1120,108 +1129,11 @@ array <T, TT>::array (const array_size &s): p (array_inner::create (s.int_size, 
 
 
 template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1): p (array_inner::create (2, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2): p (array_inner::create (3, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3): p (array_inner::create (4, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4): p (array_inner::create (5, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5): p (array_inner::create (6, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-  p->push_back_vector_value (a5);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6): p (array_inner::create (7, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-  p->push_back_vector_value (a5);
-  p->push_back_vector_value (a6);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7): p (array_inner::create (8, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-  p->push_back_vector_value (a5);
-  p->push_back_vector_value (a6);
-  p->push_back_vector_value (a7);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8): p (array_inner::create (9, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-  p->push_back_vector_value (a5);
-  p->push_back_vector_value (a6);
-  p->push_back_vector_value (a7);
-  p->push_back_vector_value (a8);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8, const T &a9): p (array_inner::create (10, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-  p->push_back_vector_value (a5);
-  p->push_back_vector_value (a6);
-  p->push_back_vector_value (a7);
-  p->push_back_vector_value (a8);
-  p->push_back_vector_value (a9);
-}
-
-template <class T, class TT>
-array <T, TT>::array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8, const T &a9, const T &a10): p (array_inner::create (11, 0, true)) {
-  p->push_back_vector_value (a0);
-  p->push_back_vector_value (a1);
-  p->push_back_vector_value (a2);
-  p->push_back_vector_value (a3);
-  p->push_back_vector_value (a4);
-  p->push_back_vector_value (a5);
-  p->push_back_vector_value (a6);
-  p->push_back_vector_value (a7);
-  p->push_back_vector_value (a8);
-  p->push_back_vector_value (a9);
-  p->push_back_vector_value (a10);
+template<class... Args, typename std::enable_if<sizeof...(Args) >= 2>::type*>
+inline array<T, TT>::array(Args &&... args)
+  : p(array_inner::create(sizeof...(args), 0, true))
+{
+  push_back_values(std::forward<Args>(args)...);
 }
 
 template <class T, class TT>

@@ -339,25 +339,8 @@ public:
 
   inline explicit array (const array_size &s) __attribute__ ((always_inline));
 
-  inline array (const T &a0, const T &a1) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8, const T &a9) __attribute__ ((always_inline));
-
-  inline array (const T &a0, const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8, const T &a9, const T &a10) __attribute__ ((always_inline));
+  template<class... Args, typename std::enable_if<sizeof...(Args) >= 2>::type* = nullptr>
+  inline array (Args &&... args) __attribute__ ((always_inline));
 
   inline array (const array &other) __attribute__ ((always_inline));
 
@@ -478,6 +461,12 @@ public:
   const T *get_const_vector_pointer (void) const; // unsafe
 
   void reserve (int int_size, int string_size, bool make_vector_if_possible);
+
+private:
+  void push_back_values() {}
+
+  template<class Arg, class...Args>
+  void push_back_values(Arg &&arg, Args &&... args);
 
 private:
   array_inner *p;
