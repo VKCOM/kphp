@@ -1,6 +1,5 @@
 #pragma once
 
-/*
 template <class T>
 class force_convert_to <T, T> {
 public:
@@ -9,19 +8,6 @@ public:
   }
 
   inline static const T& convert (const T &x) {
-    return x;
-  }
-};
-*/
-
-template <class T>
-class force_convert_to <T, typename array_stored_type <T>::type> {
-public:
-  inline static T& convert (typename array_stored_type <T>::type &x) {
-    return x;
-  }
-
-  inline static const T& convert (const typename array_stored_type <T>::type &x) {
     return x;
   }
 };

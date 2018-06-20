@@ -40,44 +40,7 @@ struct array_size {
   }
 };
 
-template <class T>
-class array_stored_type {
-public:
-  typedef T type;
-};
-/*
-template <>
-class array_stored_type <bool> {
-public:
-  typedef var type;
-};
-
-template <>
-class array_stored_type <int> {
-public:
-  typedef var type;
-};
-
-template <>
-class array_stored_type <double> {
-public:
-  typedef var type;
-};
-
-template <>
-class array_stored_type <string> {
-public:
-  typedef var type;
-};
-
-template <>
-class array_stored_type <array <var> > {
-public:
-  typedef var type;
-};
-*/
-
-template <class T, class TT = typename array_stored_type <T>::type>
+template <class T, class TT = T>
 class force_convert_to;
 
 
