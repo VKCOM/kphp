@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "runtime/kphp_core.h"
 
 extern const string COLON;
@@ -191,6 +192,14 @@ string f$str_replace (const array<T1> &search, const array<T2> &replace, const s
 }
 
 string f$str_replace (const var &search, const var &replace, const string &subject, int &replace_count = str_replace_count_dummy);
+
+template<class T>
+using enable_if_t_is_or_false_string = typename std::enable_if<std::is_same<T, OrFalse<string>>::value>::type;
+
+template<class SubjectT, class = enable_if_t_is_or_false_string<SubjectT>>
+SubjectT f$str_replace(const var &search, const var &replace, const SubjectT &subject, int &replace_count = str_replace_count_dummy) {
+  return f$str_replace(search, replace, subject.value, replace_count);
+}
 
 var f$str_replace (const var &search, const var &replace, const var &subject, int &replace_count = str_replace_count_dummy);
 

@@ -3550,14 +3550,12 @@ void compile_vertex (VertexPtr root, CodeGenerator &W) {
 
   W << UpdateLocation (root->location);
 
-  bool close_par = false;
-  if (root->val_ref_flag != val_none) {
-    close_par = true;
-    if (root->val_ref_flag == val_r) {
-      W << "val (";
-    } else {
-      W << "ref(";
-    }
+  bool close_par = root->val_ref_flag == val_r || root->val_ref_flag == val_l;
+
+  if (root->val_ref_flag == val_r) {
+    W << "val (";
+  } else if (root->val_ref_flag == val_l) {
+    W << "ref(";
   }
 
   if (root->extra_type == op_ex_safe_version) {
