@@ -3,7 +3,7 @@
 #endif
 #include "compiler/pass-ub.h"
 
-#include "PHP/common.h"
+#include "compiler/common.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/gentree.h"

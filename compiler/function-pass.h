@@ -1,5 +1,5 @@
 #pragma once
-#include "PHP/common.h"
+#include "compiler/common.h"
 
 #include "compiler/bicycle.h"
 #include "compiler/stage.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PHP/common.h"
+#include "compiler/common.h"
 #include "compiler/bicycle.h"
 
 inline string get_full_path(const string &file_name) {

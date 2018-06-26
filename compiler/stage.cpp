@@ -1,6 +1,6 @@
 #include "compiler/stage.h"
 
-#include "PHP/common.h"
+#include "compiler/common.h"
 
 #include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
