@@ -9,6 +9,8 @@
 #include "common/wrappers/likely.h"
 
 
+struct array_size;
+
 template <class T>
 class array;
 
@@ -17,8 +19,14 @@ class class_instance;
 
 class var;
 
-class Unknown {
-};
+class Unknown {};
+
+template <class T, class TT = T>
+class force_convert_to;
+
+class string;
+
+class string_buffer;
 
 template <class T>
 class convert_to {
