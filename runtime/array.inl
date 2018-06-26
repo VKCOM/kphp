@@ -72,6 +72,95 @@ public:
   }
 };
 
+array_size::array_size(int int_size, int string_size, bool is_vector)
+  : int_size(int_size)
+  , string_size(string_size)
+  , is_vector(is_vector)
+{}
+
+array_size array_size::operator+(const array_size &other) const {
+  return array_size(int_size + other.int_size, string_size + other.string_size, is_vector && other.is_vector);
+}
+
+array_size &array_size::cut(int length) {
+  if (int_size > length) {
+    int_size = length;
+  }
+  if (string_size > length) {
+    string_size = length;
+  }
+  return *this;
+}
+
+array_size &array_size::min(const array_size &other) {
+  if (int_size > other.int_size) {
+    int_size = other.int_size;
+  }
+
+  if (string_size > other.string_size) {
+    string_size = other.string_size;
+  }
+
+  is_vector &= other.is_vector;
+  return *this;
+}
+
+namespace dl {
+
+template<class T, class TT, class T1>
+void sort(TT *begin_init, TT *end_init, const T1 &compare) {
+  TT *begin_stack[32];
+  TT *end_stack[32];
+
+  begin_stack[0] = begin_init;
+  end_stack[0] = end_init - 1;
+
+  for (int depth = 0; depth >= 0; --depth) {
+    TT *begin = begin_stack[depth];
+    TT *end = end_stack[depth];
+
+    while (begin < end) {
+      int offset = (end - begin) >> 1;
+      swap (force_convert_to <T>::convert (*begin), force_convert_to <T>::convert (begin[offset]));
+
+      TT *i = begin + 1, *j = end;
+
+      while (1) {
+        while (i < j && compare (*begin, *i) > 0) {
+          i++;
+        }
+
+        while (i <= j && compare (*j, *begin) > 0) {
+          j--;
+        }
+
+        if (i >= j) {
+          break;
+        }
+
+        swap (force_convert_to <T>::convert (*i++), force_convert_to <T>::convert (*j--));
+      }
+
+      swap (force_convert_to <T>::convert (*begin), force_convert_to <T>::convert (*j));
+
+      if (j - begin <= end - j) {
+        if (j + 1 < end) {
+          begin_stack[depth] = j + 1;
+          end_stack[depth++] = end;
+        }
+        end = j - 1;
+      } else {
+        if (begin < j - 1) {
+          begin_stack[depth] = begin;
+          end_stack[depth++] = j - 1;
+        }
+        begin = j + 1;
+      }
+    }
+  }
+}
+
+} // namespace dl
 
 template <class T>
 typename array<T>::key_type array<T>::int_hash_entry::get_key (void) const {
