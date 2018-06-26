@@ -3475,7 +3475,7 @@ void parse_main_args_end (int argc, char *argv[]) {
       arg_add (argv[optind++]);
     }
   } else if (argc != optind) {
-    usage();
+    usage_and_exit();
   }
 }
 

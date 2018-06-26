@@ -25,7 +25,7 @@ static KphpEnviroment *env;
 int parse_args_f(int i) {
   switch (i) {
   case 'h':
-    usage();
+    usage_and_exit();
     exit(2);
   case 'a':
     env->set_use_safe_integer_arithmetic ("1");
@@ -168,7 +168,7 @@ int main (int argc, char *argv[]) {
 
 
   if (optind >= argc) {
-    usage();
+    usage_and_exit();
     return 2;
   }
 
