@@ -2081,13 +2081,71 @@ class CalcValRefPass : public FunctionPassBase {
       return default_check_function (function) && function->type() != FunctionData::func_extern;
     }
 
+    bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last) {
+      switch (op) {
+        case op_push_back:
+        case op_push_back_return:
+        case op_set_value:
+          return !is_last;
+
+        case op_list:
+          return is_last;
+
+        case op_minus:
+        case op_plus:
+
+        case op_set_add:
+        case op_set_sub:
+        case op_set_mul:
+        case op_set_div:
+        case op_set_mod:
+        case op_set_and:
+        case op_set_or:
+        case op_set_xor:
+        case op_set_shr:
+        case op_set_shl:
+
+        case op_add:
+        case op_sub:
+        case op_mul:
+        case op_div:
+        case op_mod:
+        case op_not:
+        case op_log_not:
+
+        case op_prefix_inc:
+        case op_prefix_dec:
+        case op_postfix_inc:
+        case op_postfix_dec:
+
+        case op_exit:
+        case op_conv_int:
+        case op_conv_int_l:
+        case op_conv_float:
+        case op_conv_array: // ?
+        case op_conv_array_l: // ?
+        case op_conv_bool:
+        case op_conv_uint:
+        case op_conv_long:
+        case op_conv_ulong:
+
+        case op_isset:
+        case op_unset:
+        case op_index:
+        case op_switch:
+          return true;
+
+        default:
+          return false;
+      }
+    }
+
     struct LocalT : public FunctionPassBase::LocalT {
-      bool forbidden;
-      bool child_forbidden;
+      bool allowed;
     };
 
     void on_enter_edge (VertexPtr vertex __attribute__((unused)), LocalT *local, VertexPtr dest_vertex, LocalT *dest_local __attribute__((unused))) {
-      if (!local->child_forbidden && dest_vertex->rl_type != val_none && dest_vertex->rl_type != val_error) {
+      if (local->allowed && dest_vertex->rl_type != val_none && dest_vertex->rl_type != val_error) {
         const TypeData *tp = tinf::get_type (dest_vertex);
 
         if (tp->ptype() != tp_Unknown && tp->use_or_false()) {
@@ -2096,26 +2154,13 @@ class CalcValRefPass : public FunctionPassBase {
       }
     }
 
-    VertexPtr on_enter_vertex (VertexPtr v, LocalT *local) {
-      local->forbidden = v->type() == op_eq3 || v->type() == op_neq3 || v->type() == op_eq2 ||
-        v->type() == op_neq2 || v->type() == op_set || v->type() == op_return || v->type() == op_conv_bool ||
-        (v->type() == op_func_call && !v->get_func_id()->is_extern) || v->type() == op_array ||
-        v->type() == op_double_arrow || v->type() == op_var_dump || v->type() == op_ternary || v->type() == op_noerr;
-      return v;
-    }
-
     template <class VisitT>
     bool user_recursion (VertexPtr v, LocalT *local, VisitT &visit) {
-      int n = v->size();
-      int ii = 0;
-      FOREACH_VERTEX (v, i) {
-        bool forbidden_i =
-          ((v->type() == op_push_back || v->type() == op_push_back_return || v->type() == op_set_value)
-           && ii + 1 == n) ||
-          (v->type() == op_list && ii + 1 != n) || (v->type() == op_foreach_param /*&& ii != 0*/);
-        local->child_forbidden = local->forbidden || forbidden_i;
-        visit (*i);
-        ii++;
+      for (int i = 0; i < v->size(); ++i) {
+        bool is_last_elem = (i == v->size() - 1);
+
+        local->allowed = is_allowed_for_getting_val_or_ref(v->type(), is_last_elem);
+        visit (v->ith(i));
       }
       return true;
     }
