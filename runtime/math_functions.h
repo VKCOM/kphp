@@ -43,20 +43,14 @@ inline T f$max (const array <T> &a);
 template <class T>
 inline T f$min (const T &v1, const T &v2);
 
+template<class RetT, class T1, class T2, class T3, class... Args>
+inline RetT f$min(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args);
+
 template <class T>
 inline T f$max (const T &v1, const T &v2);
 
-template <class T>
-inline T f$min (const T &v1, const T &v2, const T &v3);
-
-template <class T>
-inline T f$max (const T &v1, const T &v2, const T &v3);
-
-template <class T>
-inline T f$min (const T &v1, const T &v2, const T &v3, const T &v4);
-
-template <class T>
-inline T f$max (const T &v1, const T &v2, const T &v3, const T &v4);
+template<class RetT, class T1, class T2, class T3, class... Args>
+inline RetT f$max(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args);
 
 
 const int PHP_ROUND_HALF_UP = 123423141;
@@ -158,6 +152,12 @@ T f$min (const T &v1, const T &v2) {
   return v2;
 }
 
+template<class RetT, class T1, class T2, class T3, class... Args>
+inline RetT f$min(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args) {
+  return f$min<RetT>(f$min<RetT>(std::forward<T1>(arg1), std::forward<T2>(arg2)),
+                     std::forward<T3>(arg3), std::forward<Args>(args)...);
+}
+
 template <class T>
 T f$max (const T &v1, const T &v2) {
   if (gt (v1, v2)) {
@@ -166,26 +166,11 @@ T f$max (const T &v1, const T &v2) {
   return v2;
 }
 
-template <class T>
-T f$min (const T &v1, const T &v2, const T &v3) {
-  return f$min (f$min (v1, v2), v3);
+template<class RetT, class T1, class T2, class T3, class... Args>
+inline RetT f$max(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args) {
+  return f$max<RetT>(f$max<RetT>(std::forward<T1>(arg1), std::forward<T2>(arg2)),
+                     std::forward<T3>(arg3), std::forward<Args>(args)...);
 }
-
-template <class T>
-T f$max (const T &v1, const T &v2, const T &v3) {
-  return f$max (f$max (v1, v2), v3);
-}
-
-template <class T>
-T f$min (const T &v1, const T &v2, const T &v3, const T &v4) {
-  return f$min (f$min (v1, v2), f$min (v3, v4));
-}
-
-template <class T>
-T f$max (const T &v1, const T &v2, const T &v3, const T &v4) {
-  return f$max (f$max (v1, v2), f$max (v3, v4));
-}
-
 
 double f$acos (double v) {
   return acos (v);
