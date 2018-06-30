@@ -24,6 +24,8 @@ template <class T>
 class class_instance {
   T *o;
 
+  void warn_on_access_null () const;
+
 public:
 
   inline class_instance ();
@@ -37,8 +39,8 @@ public:
   inline void destroy ();
   inline int get_reference_counter () const;
 
-  T *operator-> ();
-  T *operator-> () const;
+  inline T *operator-> () __attribute__ ((always_inline));
+  inline T *operator-> () const __attribute__ ((always_inline));
 
   inline bool is_null () const;
   inline string to_string () const;
