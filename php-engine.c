@@ -2005,7 +2005,6 @@ int rpcx_execute (struct connection *c, int op, int len) {
     do_rpc_stop_lease();
     break;
   case TL_KPHP_START_LEASE:
-  case RPC_INVOKE_KPHP_REQ:
   case RPC_INVOKE_REQ:
     if (len > MAX_RPC_QUERY_LEN) {
       return SKIP_ALL_BYTES;
@@ -2041,7 +2040,7 @@ int rpcx_execute (struct connection *c, int op, int len) {
     v += 2;
     len -= 2;
 
-    vkprintf (2, "got RPC_INVOKE_KPHP_REQ [req_id = %016llx]\n", req_id);
+    vkprintf (2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
     set_connection_timeout (c, script_timeout);
 
 
