@@ -121,7 +121,12 @@ private:
   TypeData *at_force (const Key &key);
 
   enum flag_id_t {write_flag_e = 1, read_flag_e = 2, or_false_flag_e = 4, error_flag_e = 8};
-  template <flag_id_t FLAG> bool get_flag() const;
+
+  template <TypeData::flag_id_t FLAG>
+  bool get_flag() const {
+    return flags_ & FLAG;
+  }
+
   template <flag_id_t FLAG> void set_flag (bool f);
 
   TypeData *write_at (const Key &key);
@@ -157,7 +162,9 @@ public:
   void set_write_flag (bool f);
   bool read_flag() const;
   void set_read_flag (bool f);
-  bool error_flag() const;
+  bool error_flag() const {
+    return get_flag <error_flag_e>();
+  }
   void set_error_flag (bool f);
   void set_flags (type_flags_t new_flags);
 
@@ -202,4 +209,28 @@ bool can_be_same_type (const TypeData *type1, const TypeData *type2);
 
 void test_TypeData();
 void test_PrimitiveType();
+
+template <TypeData::flag_id_t FLAG>
+void TypeData::set_flag (bool f) {
+  bool old_f = get_flag <FLAG> ();
+  if (old_f) {
+    dl_assert (f, dl_pstr ("It is forbidden to remove flag %d", FLAG));
+  } else if (f) {
+    flags_ |= FLAG;
+    on_changed();
+  }
+}
+
+template<>
+inline void TypeData::set_flag <TypeData::error_flag_e> (bool f) {
+  if (f) {
+    if (!get_flag <error_flag_e>()) {
+      flags_ |= error_flag_e;
+      if (parent_ != NULL) {
+        parent_->set_flag <error_flag_e> (true);
+      }
+    }
+  }
+}
+
 #include "types.hpp"

@@ -416,30 +416,6 @@ type_flags_t TypeData::flags() const {
   return flags_;
 }
 
-template <TypeData::flag_id_t FLAG> bool TypeData::get_flag() const {
-  return flags_ & FLAG;
-}
-template <TypeData::flag_id_t FLAG> void TypeData::set_flag (bool f) {
-  bool old_f = get_flag <FLAG> ();
-  if (old_f) {
-    dl_assert (f, dl_pstr ("It is forbidden to remove flag %d", FLAG));
-  } else if (f) {
-    flags_ |= FLAG;
-    on_changed();
-  }
-}
-
-template<> void TypeData::set_flag <TypeData::error_flag_e> (bool f) {
-  if (f) {
-    if (!get_flag <error_flag_e>()) {
-      flags_ |= error_flag_e;
-      if (parent_ != NULL) {
-        parent_->set_flag <error_flag_e> (true);
-      }
-    }
-  }
-}
-
 void TypeData::set_flags (type_flags_t new_flags) {
   dl_assert ((flags_ & new_flags) == flags_, "It is forbiddent to remove flag");
   if (flags_ != new_flags) {
@@ -467,9 +443,6 @@ bool TypeData::read_flag() const {
 }
 void TypeData::set_read_flag (bool f) {
   set_flag <read_flag_e> (f);
-}
-bool TypeData::error_flag() const {
-  return get_flag <error_flag_e>();
 }
 void TypeData::set_error_flag (bool f) {
   set_flag <error_flag_e> (f);
