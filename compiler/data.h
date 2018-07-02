@@ -267,8 +267,11 @@ inline bool operator == (const FunctionPtr &a, const FunctionPtr &b) {
 }
 
 inline bool operator < (const VarPtr &a, const VarPtr &b) {
-  if (a->name == b->name) {
-    bool af = a->static_id.not_null(), bf = b->static_id.not_null();
+  int cmp_res = a->name.compare(b->name);
+
+  if (cmp_res == 0) {
+    bool af = a->static_id.not_null();
+    bool bf = b->static_id.not_null();
     if (af || bf) {
       if (af && bf) {
         return a->static_id < b->static_id;
@@ -283,7 +286,7 @@ inline bool operator < (const VarPtr &a, const VarPtr &b) {
     return a->dependency_level < b->dependency_level;
   }
 
-  return a->name < b->name;
+  return cmp_res < 0;
 }
 
 inline bool operator == (const VarPtr &a, const VarPtr &b) {
