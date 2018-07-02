@@ -256,7 +256,6 @@ class ThreadLocalStorage {
     Scheduler *scheduler;
     Node *node;
     bool run_flag;
-    double worked;
     double started;
     double finished;
 };
@@ -280,7 +279,7 @@ class Scheduler : public SchedulerBase {
 
     void set_threads_count (int new_threads_count);
     void thread_execute (ThreadLocalStorage *tls);
-    bool thread_process_node (ThreadLocalStorage *tls, Node *node);
+    bool thread_process_node (Node *node);
 };
 template <class DataT>
 class DataStreamRaw : Lockable {

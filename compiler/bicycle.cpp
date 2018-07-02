@@ -261,30 +261,26 @@ void Scheduler::set_threads_count (int new_threads_count) {
   assert (1 <= new_threads_count && new_threads_count <= MAX_THREADS_COUNT);
   threads_count = new_threads_count;
 }
-bool Scheduler::thread_process_node (ThreadLocalStorage *tls, Node *node) {
+bool Scheduler::thread_process_node (Node *node) {
   Task *task = node->get_task();
   if (task == NULL) {
     return false;
   }
-  double st = dl_time();
   execute_task (task);
-  double en = dl_time();
-  tls->worked += en - st;
   return true;
 }
 void Scheduler::thread_execute (ThreadLocalStorage *tls) {
-  tls->worked = 0;
   tls->started = dl_time();
   set_thread_id (tls->thread_id);
 
   while (tls->run_flag) {
     if (tls->node != NULL) {
-      while (thread_process_node (tls, tls->node)) {
+      while (thread_process_node (tls->node)) {
       }
     } else {
       for (int i = 0; i < (int)nodes.size(); i++) {
         Node *node = nodes[i];
-        while (thread_process_node (tls, node)) {
+        while (thread_process_node (node)) {
         }
       }
     }
