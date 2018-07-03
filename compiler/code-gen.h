@@ -3128,9 +3128,26 @@ void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W) {
 void compile_define (VertexPtr root, CodeGenerator &W) {
   DefinePtr d = root->get_define_id();
 
-  W << LockComments() <<
-       "(" << d->val << ")" <<
-       UnlockComments();
+  W << LockComments() ;
+  switch (d->val->type()) {
+    case op_int_const:
+    case op_uint_const:
+    case op_long_const:
+    case op_ulong_const:
+    case op_float_const:
+    case op_string:
+    case op_false:
+    case op_true:
+    case op_null:
+    case op_array:
+      W << d->val;
+      break;
+
+    default:
+      W << "(" << d->val << ")";
+      break;
+  }
+  W << UnlockComments();
 }
 
 
