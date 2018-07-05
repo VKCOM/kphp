@@ -434,9 +434,7 @@ KphpTarget *KphpMake::to_target (File *file) {
   return create_cpp_target (file);
 }
 vector <Target *> KphpMake::to_targets (File *file) {
-  vector <Target *> res(1);
-  res[0] = to_target (file);
-  return res;
+  return {to_target(file)};
 }
 vector <Target *> KphpMake::to_targets (vector <File *> files) {
   vector <Target *> res (files.size());

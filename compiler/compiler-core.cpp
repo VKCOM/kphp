@@ -11,7 +11,6 @@ CompilerCore::CompilerCore() :
 void CompilerCore::start() {
   PROF (total).start();
   stage::die_if_global_errors();
-  load_index();
   create_builtin_classes();
 }
 
@@ -428,7 +427,6 @@ void CompilerCore::save_index() {
   fclose (f);
   int err = system (("mv " + tmp_index_path + " " + index_path).c_str());
   kphp_error (err == 0, "Failed to rewrite index");
-  kphp_fail();
 }
 
 File *CompilerCore::get_file_info (const string &file_name) {

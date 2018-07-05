@@ -2636,6 +2636,7 @@ class CodeGenF {
       }
 
       G->init_dest_dir();
+      G->load_index();
 
       W.init (new WriterCallback <OutputStreamT> (os));
 
