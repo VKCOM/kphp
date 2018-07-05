@@ -18,8 +18,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
-#include "common/kdb-data-common.h"
 #include "common/kprintf.h"
 #include "common/md5.h"
 #include "common/options.h"

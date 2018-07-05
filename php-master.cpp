@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
-#include <fcntl.h>
 #include <climits>
+#include <cstdio>
+#include <cstdlib>
+#include <fcntl.h>
 #include <poll.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <cstdio>
-#include <cstdlib>
 #include <string>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -21,8 +21,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
-#include "common/kdb-data-common.h"
 #include "common/kprintf.h"
 #include "common/precise-time.h"
 #include "common/server/signals.h"
@@ -31,11 +31,11 @@
 #include "net/net-events.h"
 #include "net/net-memcache-server.h"
 #include "net/net-rpc-client.h"
-#include "net/net-rpc-server.h"
 #include "net/net-rpc-common.h"
+#include "net/net-rpc-server.h"
 #include "vv/vv-tl-parse.h"
 
-#include "php-engine-vars.h"
+#include "PHP/php-engine-vars.h"
 
 extern const char *engine_tag;
 
