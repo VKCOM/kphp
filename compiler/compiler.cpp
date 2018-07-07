@@ -1783,7 +1783,7 @@ class CFGCallback : public cfg::CFGCallbackBase {
       return function;
     }
     void uninited (VertexPtr v) {
-      if (v.not_null() && v->type() == op_var) {
+      if (v.not_null() && v->type() == op_var && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
         uninited_vars.push_back (v);
         v->get_var_id()->set_uninited_flag (true);
       }
@@ -1793,7 +1793,7 @@ class CFGCallback : public cfg::CFGCallbackBase {
       for (int i = 0; i < (int)uninited_vars.size(); i++) {
         VertexPtr v = uninited_vars[i];
         VarPtr var = v->get_var_id();
-        if (tinf::get_type (v)->ptype() == tp_var || v->extra_type == op_ex_var_superlocal) {
+        if (tinf::get_type (v)->ptype() == tp_var) {
           continue;
         }
 
