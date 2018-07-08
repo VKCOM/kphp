@@ -27,6 +27,8 @@
 
 #include "common/containers/list_of_types.h"
 
+#include <utility>
+
 class UnknownType {
 };
 
@@ -49,7 +51,7 @@ class UnknownType {
 #define INIT_VAR(type, x) new (&x) type()
 #define CLEAR_VAR(type, x) memset ((void*)&x, 0, sizeof (x))
 
-#define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op b_tmp___;})
+#define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})
 #define SAFE_INDEX(a, b, b_type) a[({b_type b_tmp___ = b; b_tmp___;})]
 #define SAFE_SET_VALUE(a, b, b_type, c, c_type) ({b_type b_tmp___ = b; c_type c_tmp___ = c; (a).set_value (b_tmp___, c_tmp___);})

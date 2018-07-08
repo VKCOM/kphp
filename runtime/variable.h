@@ -25,6 +25,7 @@ class var {
   };
 
   inline void copy_from (const var &other);
+  inline void copy_from (var &&other);
 
 public:
   var (const void *) = delete; // deprecate conversion from pointer to boolean
@@ -38,6 +39,7 @@ public:
   template <class T>
   inline var (const array <T> &a);
   inline var (const var &v);
+  inline var (var &&v);
 
   inline var (const OrFalse <int> &v);
   inline var (const OrFalse <double> &v);
@@ -53,6 +55,7 @@ public:
   template <class T>
   inline var& operator = (const array <T> &other);
   inline var& operator = (const var &other);
+  inline var& operator = (var &&other);
 
   inline var& operator = (const OrFalse <int> &other);
   inline var& operator = (const OrFalse <double> &other);

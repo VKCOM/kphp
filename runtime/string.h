@@ -72,6 +72,7 @@ public:
 
   inline string (void);
   inline string (const string &str);
+  inline string (string &&str) noexcept;
   inline string (const char *s, size_type n);
   inline string (size_type n, char c);
   inline string (size_type n, bool b);
@@ -81,6 +82,7 @@ public:
   inline ~string (void);
 
   inline string& operator = (const string &str);
+  inline string& operator = (string &&str) noexcept;
 
   inline size_type size (void) const;
 
@@ -172,6 +174,8 @@ public:
 
   inline int get_reference_counter (void) const;
   inline void set_reference_counter_to_const();
+
+  inline void destroy() __attribute__((always_inline));
 
   friend class var;
 

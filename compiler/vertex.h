@@ -1663,6 +1663,12 @@ VA_UNARY_BEGIN (op_exit)
   OPP (cnst, cnst_nonconst_func);
   OPP (str, "f$exit");
 VA_UNARY_END
+VA_UNARY_BEGIN (op_move)
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "std::move");
+VA_UNARY_END
 VA_BEGIN (meta_op_xset, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);

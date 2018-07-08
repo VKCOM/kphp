@@ -1212,7 +1212,15 @@ inline array<T>::array(Args &&... args)
 }
 
 template <class T>
-array<T>::array (const array<T> &other): p (other.p->ref_copy()) {
+array<T>::array (const array<T> &other)
+  : p (other.p->ref_copy())
+{}
+
+template <class T>
+array<T>::array (array<T> &&other) noexcept
+  : p (other.p)
+{
+  other.p = nullptr;
 }
 
 template <class T>
@@ -1230,6 +1238,15 @@ array<T>& array<T>::operator = (const array &other) {
 }
 
 template <class T>
+array<T>& array<T>::operator = (array &&other) noexcept {
+  typename array::array_inner *other_copy = other.p;
+  other.p = nullptr;
+  destroy();
+  p = other_copy;
+  return *this;
+}
+
+template <class T>
 template <class T1>
 array<T>& array<T>::operator = (const array <T1> &other) {
   typename array <T1>::array_inner *other_copy = other.p->ref_copy();
@@ -1241,14 +1258,14 @@ array<T>& array<T>::operator = (const array <T1> &other) {
 
 template <class T>
 void array<T>::destroy (void) {
-  p->dispose();
+  if (p) {
+    p->dispose();
+  }
 }
 
 template <class T>
 array<T>::~array (void) {
-  if (p) {//for zeroed global variables
-    destroy();
-  }
+  destroy();
 }
 
 

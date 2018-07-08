@@ -790,11 +790,14 @@ VertexPtr GenTree::get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, 
         CREATE_VERTEX (left_set, op_set, left_var, left);
         left_set = conv_to<tp_bool>(left_set);
 
+
         CREATE_VERTEX (left_var_copy, op_var);
         left_var_copy->str_val = left_name;
         left_var_copy->extra_type = op_ex_var_superlocal;
 
-        CREATE_VERTEX (result, op_ternary, left_set, left_var_copy, third);
+        CREATE_VERTEX(left_var_move, op_move, left_var_copy);
+
+        CREATE_VERTEX (result, op_ternary, left_set, left_var_move, third);
 
         expr = result;
       }

@@ -230,10 +230,14 @@ public:
 
   inline array (const array &other) __attribute__ ((always_inline));
 
+  inline array(array &&other) noexcept __attribute__ ((always_inline));
+
   template <class T1>
   inline array (const array <T1> &other) __attribute__ ((always_inline));
 
   inline array& operator = (const array &other) __attribute__ ((always_inline));
+
+  inline array& operator = (array &&other) noexcept __attribute__ ((always_inline));
 
   template <class T1>
   inline array& operator = (const array <T1> &other) __attribute__ ((always_inline));

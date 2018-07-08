@@ -184,6 +184,12 @@ string::string(): p (empty_string().ref_data()) {
 string::string (const string &str): p (str.inner()->ref_copy()) {
 }
 
+string::string (string &&str) noexcept
+  : p(str.p)
+{
+  str.p = nullptr;
+}
+
 string::string (const char *s, size_type n): p (create (s, s + n)) {
 }
 
@@ -280,13 +286,20 @@ string::string (double f)
 
 
 string::~string (void) {
-  if (p) {//for zeroed global variables
-    inner()->dispose();
-  }
+  destroy();
 }
 
 string& string::operator = (const string &str) {
   return assign (str);
+}
+
+string& string::operator = (string &&str) noexcept {
+  char *str_copy = str.p;
+  destroy();
+  p = str_copy;
+  str.p = nullptr;
+
+  return *this;
 }
 
 string::size_type string::size (void) const {
@@ -585,7 +598,7 @@ string& string::append_unsafe (const OrFalse <T> &v) {
 
 string& string::assign (const string &str) {
   char *str_copy = str.inner()->ref_copy();
-  inner()->dispose();
+  destroy();
   p = str_copy;
   return *this;
 }
@@ -961,6 +974,12 @@ int string::get_reference_counter (void) const {
 
 inline void string::set_reference_counter_to_const() {
   inner()->ref_count = REF_CNT_FOR_CONST;
+}
+
+inline void string::destroy() {
+  if (p) {
+    inner()->dispose();
+  }
 }
 
 

@@ -669,6 +669,9 @@ void ExprNodeRecalc::recalc_define_val (VertexAdaptor <op_define_val> define_val
 
 void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
   switch (expr->type()) {
+    case op_move:
+      recalc_expr(expr->ith(0));
+      break;
     case op_require:
       recalc_require (expr);
       break;

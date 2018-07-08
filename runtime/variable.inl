@@ -24,13 +24,38 @@ void var::copy_from (const var &other) {
       f = other.f;
       break;
     case STRING_TYPE:
-      new (&s) string (*AS_CONST_STRING(other.s));
+      new (&s) string (other.s);
       break;
     case ARRAY_TYPE:
-      new (&a) array <var> (*AS_CONST_ARRAY(other.a));
+      new (&a) array <var> (other.a);
       break;
   }
   type = other.type;
+}
+
+void var::copy_from (var &&other) {
+  switch (other.type) {
+    case NULL_TYPE:
+      break;
+    case BOOLEAN_TYPE:
+      b = other.b;
+      break;
+    case INTEGER_TYPE:
+      i = other.i;
+      break;
+    case FLOAT_TYPE:
+      f = other.f;
+      break;
+    case STRING_TYPE:
+      new (&s) string(std::move(other.s));
+      break;
+    case ARRAY_TYPE:
+      new (&a) array<var>(std::move(other.a));
+      break;
+  }
+
+  type = other.type;
+  other.type = NULL_TYPE;
 }
 
 var::var (void): type (NULL_TYPE) {
@@ -108,6 +133,10 @@ var::var (const OrFalse <array <T> > &v) {
 
 var::var (const var &v) {
   copy_from (v);
+}
+
+var::var (var &&v) {
+  copy_from(std::move(v));
 }
 
 var& var::operator = (bool other) {
@@ -312,28 +341,14 @@ var& var::operator = (const var &other) {
     copy_from (other);
   }
   return *this;
-/*
-  switch (other.type) {
-    case NULL_TYPE:
-      destroy();
-      type = NULL_TYPE;
-      return *this;
-    case BOOLEAN_TYPE:
-      return *this = other.b;
-    case INTEGER_TYPE:
-      return *this = other.i;
-    case FLOAT_TYPE:
-      return *this = other.f;
-    case STRING_TYPE:
-      return *this = *AS_STRING(other.s);
-    case ARRAY_TYPE:
-      return *this = *AS_ARRAY(other.a);
-    case OBJECT_TYPE:
-      return *this = *AS_OBJECT(other.o);
-    default:
-      php_assert (0);
-      exit (1);
-  }*/
+}
+
+var& var::operator = (var &&other) {
+  if (this != &other) {
+    destroy();
+    copy_from (std::move(other));
+  }
+  return *this;
 }
 
 
@@ -980,8 +995,7 @@ void var::destroy (void) {
 }
 
 var::~var (void) {
-  destroy();
-  type = NULL_TYPE;
+  clear();
 }
 
 
