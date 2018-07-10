@@ -1323,9 +1323,10 @@ inline static void init_vars(const vector<VarPtr> & vars, CodeGenerator &W) {
   FOREACH (vars, i) {
     VarPtr var = *i;
 
-    if (var->global_init_flag) {
+    if (var->global_init_flag || !var->optimize_flag) {
       continue;
     }
+
     W << InitVar(var);
 
     PrimitiveType ptype = var->tinf_node.get_type()->ptype();
