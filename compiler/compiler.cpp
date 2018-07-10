@@ -2534,23 +2534,20 @@ class FinalCheckPass : public FunctionPassBase {
             }
             string desc = "Using Unknown type : ";
             if (v->type() == op_var) {
-              desc += "variable [$" + v.as <op_var>()->get_var_id()->name + "]";
+              VarPtr var = v->get_var_id();
+              desc += "variable [$" + var->name + "]";
+
+              FunctionPtr holder_func = var->holder_func;
+              if (holder_func.not_null() && holder_func->is_required && holder_func->kphp_required) {
+                desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
+              }
+
             } else if (v->type() == op_func_call) {
               desc += "function [" + v.as <op_func_call>()->get_func_id()->name + "]";
             } else if (v->type() == op_constructor_call) {
               desc += "constructor [" + v.as <op_constructor_call>()->get_func_id()->name + "]";
             } else {
               desc += "...";
-            }
-
-            if (v->type() == op_var) {
-              VarPtr var = v->get_var_id();
-              if (var.not_null()) {
-                FunctionPtr holder_func = var->holder_func;
-                if (holder_func.not_null() && holder_func->is_required) {
-                  desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
-                }
-              }
             }
 
             kphp_error (0, desc.c_str());

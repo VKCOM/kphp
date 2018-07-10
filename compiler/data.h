@@ -224,6 +224,7 @@ public:
   bool used_in_source;
   bool is_callback;
   bool should_be_sync;
+  bool kphp_required;
   string namespace_name;
   string class_name;
   string class_context_name;

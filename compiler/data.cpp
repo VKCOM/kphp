@@ -88,6 +88,7 @@ FunctionData::FunctionData ()
   , used_in_source (false)
   , is_callback (false)
   , should_be_sync()
+  , kphp_required(false)
   , namespace_name ("")
   , class_name ("")
 {}
