@@ -690,6 +690,9 @@ int f$sizeof (const T &v);
 inline string& append (string &dest, const string &from);
 
 template <class T>
+inline string& append(OrFalse<string> &dest, const T &from);
+
+template <class T>
 inline string& append (string &dest, const T &from);
 
 template <class T>
@@ -2258,6 +2261,11 @@ const var get_value (const T &v, const var &key) {
 
 string& append (string &dest, const string &from) {
   return dest.append (from);
+}
+
+template <class T>
+string& append(OrFalse<string> &dest, const T &from) {
+  return append(dest.ref(), from);
 }
 
 template <class T>
