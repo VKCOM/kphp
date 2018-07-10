@@ -674,6 +674,9 @@ inline const var get_value (const T &v, const var &key);
 inline int f$count (const var &v);
 
 template <class T>
+inline int f$count(const OrFalse<array<T>> &a);
+
+template <class T>
 inline int f$count (const array <T> &a);
 
 template <class T>
@@ -1701,6 +1704,11 @@ bool f$empty (const var &v) {
 
 int f$count (const var &v) {
   return v.count();
+}
+
+template <class T>
+int f$count(const OrFalse<array<T>> &a) {
+  return a.bool_value ? a.val().count() : 0;
 }
 
 template <class T>
