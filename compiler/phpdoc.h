@@ -21,39 +21,18 @@ struct php_doc_tag {
 
 public:
   static doc_type get_doc_type(const std::string &str) {
-    __typeof(str2doc_type.begin()) it = str2doc_type.find(str);
+    auto it = str2doc_type.find(str);
+    bool found = (it != str2doc_type.end());
 
-    if (it == str2doc_type.end()) {
-      return unknown;
-    }
-
-    return it->second;
+    return found ? it->second : unknown;
   }
 
-private:
-  static std::map<std::string, doc_type> init_str2doc_type() {
-    std::map<std::string, doc_type> res;
-
-    res["@param"] = param;
-    res["@kphp-inline"] = kphp_inline;
-    res["@kphp-infer"] = kphp_infer;
-    res["@kphp-disable-warnings"] = kphp_disable_warnings;
-    res["@kphp-required"] = kphp_required;
-    res["@kphp-sync"] = kphp_sync;
-    res["@type"] = var;
-    res["@var"] = var;
-    res["@return"] = returns;
-    res["@returns"] = returns;
-
-    return res;
-  }
+  const std::string get_value_token(unsigned long chars_offset = 0) const;
 
 public:
   std::string name;
   std::string value;
   doc_type type;
-
-  const std::string get_value_token(unsigned long chars_offset = 0) const;
 
 private:
   static const std::map<std::string, doc_type> str2doc_type;
