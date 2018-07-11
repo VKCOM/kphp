@@ -792,17 +792,17 @@ void ClassDeclaration::compile (CodeGenerator &W) const {
     }
   }
 
-  W << NL << "struct " << klass->src_name << " {" << NL << Indent(+2);
+  W << NL << "struct " << klass->src_name << " " << BEGIN;
   W << "int ref_cnt;" << NL << NL;
   FOREACH(klass->vars, var) {
-    W << type_out((*var)->tinf_node.get_type()) << " $" << (*var)->name << ";" << NL;
+    W << TypeName(tinf::get_type(*var)) << " $" << (*var)->name << ";" << NL;
   }
 
-  W << NL << "inline const char *get_class() const { return ";
+  W << NL << "inline const char *get_class() const " << BEGIN <<  "return ";
   compile_string_raw(klass->name, W);
-  W << "; }" << NL;
+  W << ";" << NL << END << NL;
 
-  W << Indent(-2) << "};" << NL;
+  W << END << ";" << NL;
   W << CloseFile();
 }
 
