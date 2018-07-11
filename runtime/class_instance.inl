@@ -11,7 +11,7 @@ class_instance <T>::class_instance () : o(NULL) {
 template <class T>
 class_instance <T>::class_instance (const class_instance <T> &other) : o(other.o) {
   if (o) {
-    o->$ref_cnt++;
+    o->ref_cnt++;
   }
 }
 
@@ -22,7 +22,7 @@ class_instance <T>::class_instance (bool value __attribute__((unused))) : o(NULL
 template <class T>
 class_instance <T> &class_instance <T>::operator= (const class_instance <T> &other) {
   if (other.o) {
-    other.o->$ref_cnt++;
+    other.o->ref_cnt++;
   }
   destroy();
   o = other.o;
@@ -44,7 +44,7 @@ void class_instance <T>::alloc () {
 
 template <class T>
 void class_instance <T>::destroy () {
-  if (o != NULL && o->$ref_cnt-- <= 0) {
+  if (o != NULL && o->ref_cnt-- <= 0) {
     o->~T();
     dl::deallocate(o, sizeof(T));
   }
@@ -58,7 +58,7 @@ class_instance <T>::~class_instance () {
 
 template <class T>
 int class_instance <T>::get_reference_counter () const {
-  return o->$ref_cnt + 1;
+  return o->ref_cnt + 1;
 }
 
 

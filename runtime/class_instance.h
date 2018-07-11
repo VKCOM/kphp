@@ -12,10 +12,10 @@
 // а для их инстанцирования — class_instance<T>
 
 //struct C$Classes$A {
-//  int $ref_cnt;
-//  int a;
-//  string str;
-//  array <int> intArr;
+//  int ref_cnt;
+//  int $a;
+//  string $str;
+//  array <int> $intArr;
 //
 //  inline const char *get_class() const { return "Classes\\A"; }
 //};

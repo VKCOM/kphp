@@ -138,7 +138,7 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   klass->name = (info.namespace_name.empty() ? "" : info.namespace_name + "\\") + info.name;
   klass->file_id = stage::get_file();
   klass->src_name = std::string("C$").append(replace_characters(klass->name, '\\', '$'));
-  klass->header_name = klass->src_name + ".h";
+  klass->header_name = replace_characters(klass->src_name + ".h", '$', '@');
   klass->root = info.root;
   klass->extends = info.extends;
 

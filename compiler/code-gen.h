@@ -792,17 +792,17 @@ void ClassDeclaration::compile (CodeGenerator &W) const {
     }
   }
 
-  W << NL << "struct " << klass->src_name << " {\n";
-  W << "int $ref_cnt;\n\n";
+  W << NL << "struct " << klass->src_name << " {" << NL << Indent(+2);
+  W << "int ref_cnt;" << NL << NL;
   FOREACH(klass->vars, var) {
-    W << type_out((*var)->tinf_node.get_type()) << " " << (*var)->name << ";\n";
+    W << type_out((*var)->tinf_node.get_type()) << " $" << (*var)->name << ";" << NL;
   }
 
-  W << "\ninline const char *get_class() const { return ";
+  W << NL << "inline const char *get_class() const { return ";
   compile_string_raw(klass->name, W);
-  W << "; }\n";
+  W << "; }" << NL;
 
-  W << "};";
+  W << Indent(-2) << "};" << NL;
   W << CloseFile();
 }
 
@@ -2785,7 +2785,7 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
 }
 
 void compile_instance_prop (VertexAdaptor <op_instance_prop> root, CodeGenerator &W) {
-  W << root->expr() << "->" << root->get_string();
+  W << root->expr() << "->$" << root->get_string();
 }
 
 void compile_as_printable (VertexPtr root, CodeGenerator &W) {
