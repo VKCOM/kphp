@@ -253,6 +253,10 @@ public:
   void set_value (int int_key, const T &v);
   void set_value (const string &s, const T &v);
   void set_value (const var &v, const T &value);
+
+  template<class OrFalseT>
+  void set_value (const OrFalse<OrFalseT> &key, const T &value);
+
   void set_value (const const_iterator &it);
   void set_value (const iterator &it);
 

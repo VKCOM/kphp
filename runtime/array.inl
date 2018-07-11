@@ -1488,6 +1488,16 @@ void array<T>::set_value (const var &v, const T &value) {
   }
 }
 
+template<class T>
+template<class OrFalseT>
+void array<T>::set_value (const OrFalse<OrFalseT> &key, const T &value) {
+  if (!key.bool_value) {
+    return set_value(false, value);
+  }
+
+  set_value(key.val(), value);
+}
+
 template <class T>
 void array<T>::set_value (const const_iterator &it) {
   if (it.self->is_vector()) {
