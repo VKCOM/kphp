@@ -3245,6 +3245,15 @@ bool not_equals (const var &v, const OrFalse <T> &value) {
   return likely (value.bool_value) ? not_equals (value.value, v) : not_equals (false, v);
 }
 
+template<class T>
+string_buffer &operator<<(string_buffer &sb, const OrFalse<T> &v) {
+  if (!v.bool_value) {
+    return sb << false;
+  }
+
+  return sb << v.val();
+}
+
 string_buffer &operator<<(string_buffer &sb, const var &v) {
   switch (v.type) {
     case var::NULL_TYPE:
