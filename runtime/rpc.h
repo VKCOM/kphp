@@ -15,6 +15,8 @@ bool f$rpc_parse (const string &new_rpc_data);
 
 bool f$rpc_parse (const var &new_rpc_data);
 
+bool f$rpc_parse (const OrFalse<string> &new_rpc_data);
+
 int rpc_get_pos (void);
 
 bool rpc_set_pos (int pos);

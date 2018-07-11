@@ -74,8 +74,8 @@ public:
   void init (const string &regexp_string);
   void init (const char *regexp_string, int regexp_len);
 
-  OrFalse <int> match (const string &subject, bool all_matches) const;
 
+  OrFalse <int> match (const string &subject, bool all_matches) const;
   OrFalse <int> match (const string &subject, var &matches, bool all_matches, int offset = 0) const;
 
   OrFalse <int> match (const string &subject, var &matches, int flags, bool all_matches, int offset = 0) const;
@@ -133,6 +133,9 @@ inline OrFalse <int> f$preg_match_all (const var &regex, const string &subject, 
 inline OrFalse <int> f$preg_match (const var &regex, const string &subject, var &matches, int flags);
 
 inline OrFalse <int> f$preg_match_all (const var &regex, const string &subject, var &matches, int flags);
+
+template<class T1, class T2, class T3, class = enable_if_t_is_or_false<T3>>
+inline var f$preg_replace (const T1 &regex, const T2 &replace_val, const T3 &subject, int limit = -1, int &replace_count = preg_replace_count_dummy);
 
 inline var f$preg_replace (const regexp &regex, const string &replace_val, const string &subject, int limit = -1, int &replace_count = preg_replace_count_dummy);
 
@@ -397,6 +400,11 @@ OrFalse <int> f$preg_match_all (const var &regex, const string &subject, var &ma
   return f$preg_match_all (regexp (regex.to_string()), subject, matches, flags);
 }
 
+
+template<class T1, class T2, class T3, class>
+inline var f$preg_replace (const T1 &regex, const T2 &replace_val, const T3 &subject, int limit, int &replace_count) {
+  return f$preg_replace (regex, replace_val, subject.val(), limit, replace_count);
+}
 
 var f$preg_replace (const regexp &regex, const string &replace_val, const string &subject, int limit, int &replace_count) {
   return regex.replace (replace_val, subject, limit, replace_count);

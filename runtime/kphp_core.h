@@ -391,6 +391,9 @@ template <class T>
 inline string f$strval (const array <T> &val);
 
 template <class T>
+inline string f$strval(const OrFalse<T> &val);
+
+template <class T>
 inline string f$strval (const class_instance <T> &val);
 
 inline string f$strval (const var &val);
@@ -1441,6 +1444,11 @@ template <class T>
 string f$strval (const array <T> &val) {
   php_warning ("Convertion from array to string");
   return string ("Array", 5);
+}
+
+template <class T>
+string f$strval(const OrFalse<T> &val) {
+  return val.bool_value ? f$strval(val.val()) : f$strval(false);
 }
 
 template <class T>

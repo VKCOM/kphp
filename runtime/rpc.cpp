@@ -162,6 +162,10 @@ bool f$rpc_parse (const var &new_rpc_data) {
   return f$rpc_parse (new_rpc_data.to_string());
 }
 
+bool f$rpc_parse (const OrFalse<string> &new_rpc_data) {
+  return new_rpc_data.bool_value ? f$rpc_parse(new_rpc_data.val()) : f$rpc_parse(var(false));
+}
+
 int rpc_get_pos (void) {
   return (int)(long)(rpc_data - rpc_data_begin);
 }

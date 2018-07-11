@@ -118,6 +118,9 @@ OrFalse <int> f$strpos (const string &haystack, const string &needle, int offset
 
 inline OrFalse <int> f$strpos (const string &haystack, const var &needle, int offset = 0);
 
+template<class T>
+inline OrFalse <int> f$strpos (const string &haystack, const OrFalse<T> &needle, int offset = 0);
+
 OrFalse <int> f$strrpos (const string &haystack, const string &needle, int offset = 0);
 
 inline OrFalse <int> f$strrpos (const string &haystack, const var &needle, int offset = 0);
@@ -193,11 +196,8 @@ string f$str_replace (const array<T1> &search, const array<T2> &replace, const s
 
 string f$str_replace (const var &search, const var &replace, const string &subject, int &replace_count = str_replace_count_dummy);
 
-template<class T>
-using enable_if_t_is_or_false_string = typename std::enable_if<std::is_same<T, OrFalse<string>>::value>::type;
-
-template<class SubjectT, class = enable_if_t_is_or_false_string<SubjectT>>
-SubjectT f$str_replace(const var &search, const var &replace, const SubjectT &subject, int &replace_count = str_replace_count_dummy) {
+template<class T1, class T2, class SubjectT, class = enable_if_t_is_or_false_string<SubjectT>>
+SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int &replace_count = str_replace_count_dummy) {
   return f$str_replace(search, replace, subject.value, replace_count);
 }
 
@@ -287,6 +287,11 @@ OrFalse <string> f$stristr (const string &haystack, const var &needle, bool befo
   } else {
     return f$stristr (haystack, string (1, (char)needle.to_int()), before_needle);
   }
+}
+
+template<class T>
+inline OrFalse <int> f$strpos (const string &haystack, const OrFalse<T> &needle, int offset) {
+  return f$strrpos(haystack, needle.val());
 }
 
 OrFalse <int> f$strpos (const string &haystack, const var &needle, int offset) {

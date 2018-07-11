@@ -73,8 +73,10 @@ disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
 }
 
+class OrFalseTag {};
+
 template <class T>
-class OrFalse {
+class OrFalse : public OrFalseTag {
 public:
   T value;
   bool bool_value;
@@ -131,6 +133,14 @@ public:
   }
 };
 
+template<class T>
+using enable_if_t_is_or_false = typename std::enable_if<std::is_base_of<OrFalseTag, T>::value>::type;
+
+template<class T, class T2>
+using enable_if_t_is_or_false_t2 = typename std::enable_if<std::is_same<T, OrFalse<T2>>::value>::type;
+
+template<class T>
+using enable_if_t_is_or_false_string = enable_if_t_is_or_false_t2<T, string>;
 
 template <>
 class OrFalse <bool>;
