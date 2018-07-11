@@ -311,11 +311,8 @@ template <class T0, class T>
 inline void assign (T0 &dest, const T &from);
 
 
-inline const bool &f$boolval (const bool &val);
-
-inline bool f$boolval (const int &val);
-
-inline bool f$boolval (const double &val);
+template<class T, class = enable_for_bool_int_double<T>>
+inline bool f$boolval (const T &val);
 
 inline bool f$boolval (const string &val);
 
@@ -325,14 +322,14 @@ inline bool f$boolval (const array <T> &val);
 template <class T>
 inline bool f$boolval (const class_instance <T> &val);
 
+template <class T>
+inline bool f$boolval (const OrFalse <T> &val);
+
 inline bool f$boolval (const var &val);
 
 
-inline int f$intval (const bool &val);
-
-inline const int &f$intval (const int &val);
-
-inline int f$intval (const double &val);
+template<class T, class = enable_for_bool_int_double<T>>
+inline int f$intval (const T &val);
 
 inline int f$intval (const string &val);
 
@@ -343,6 +340,9 @@ template <class T>
 inline int f$intval (const class_instance <T> &val);
 
 inline int f$intval (const var &val);
+
+template<class T>
+inline int f$intval (const OrFalse<T> &val);
 
 
 inline int f$safe_intval (const bool &val);
@@ -362,11 +362,8 @@ inline int f$safe_intval (const class_instance <T> &val);
 inline int f$safe_intval (const var &val);
 
 
-inline double f$floatval (const bool &val);
-
-inline double f$floatval (const int &val);
-
-inline const double &f$floatval (const double &val);
+template<class T, class = enable_for_bool_int_double<T>>
+double f$floatval(const T &val);
 
 inline double f$floatval (const string &val);
 
@@ -377,6 +374,9 @@ template <class T>
 inline double f$floatval (const class_instance <T> &val);
 
 inline double f$floatval (const var &val);
+
+template <class T>
+inline double f$floatval (const OrFalse <T> &val);
 
 
 inline string f$strval (const bool &val);
@@ -409,6 +409,9 @@ template <class T>
 inline array <var> f$arrayval (const class_instance <T> &val);
 
 inline array <var> f$arrayval (const var &val);
+
+template<class T>
+inline array<var> f$arrayval(const OrFalse<T> &val);
 
 
 inline bool& boolval_ref (bool &val);
@@ -459,9 +462,6 @@ inline const array <var>& arrayval_ref (const var &val, const char *function, in
 
 
 template <class T>
-bool f$boolval (const OrFalse <T> &v);
-
-template <class T>
 bool eq2 (const OrFalse <T> &v, bool value);
 
 template <class T>
@@ -492,113 +492,75 @@ template <class T, class T1>
 bool equals (const OrFalse <T> &v, const T1 &value);
 
 
-
-inline bool f$empty (const bool &v);
-inline bool f$empty (const int &v);
-inline bool f$empty (const double &v);
-inline bool f$empty (const string &v);
-inline bool f$empty (const var &v);
-template <class T>
-inline bool f$empty (const array <T> &v);
-template <class T>
-inline bool f$empty (const class_instance <T> &v);
-
-
-inline bool f$is_numeric (const bool &v);
-inline bool f$is_numeric (const int &v);
-inline bool f$is_numeric (const double &v);
-inline bool f$is_numeric (const string &v);
-inline bool f$is_numeric (const var &v);
-template <class T>
-inline bool f$is_numeric (const array <T> &v);
-template <class T>
-inline bool f$is_numeric (const class_instance <T> &v);
+template<class T, class = enable_for_bool_int_double<T>>
+inline bool f$empty(const T &v);
+inline bool f$empty(const string &v);
+inline bool f$empty(const var &v);
+template<class T>
+inline bool f$empty(const array<T> &);
+template<class T>
+inline bool f$empty(const class_instance<T> &);
+template<class T>
+inline bool f$empty(const OrFalse<T> &);
 
 
-inline bool f$is_null (const bool &v);
-inline bool f$is_null (const int &v);
-inline bool f$is_null (const double &v);
-inline bool f$is_null (const string &v);
-inline bool f$is_null (const var &v);
-template <class T>
-inline bool f$is_null (const array <T> &v);
-template <class T>
-inline bool f$is_null (const class_instance <T> &v);
+template<class T>
+bool f$is_numeric(const T &);
+template<class T>
+inline bool f$is_numeric(const OrFalse<T> &v);
+inline bool f$is_numeric(const string &v);
+inline bool f$is_numeric(const var &v);
+
+template<class T, class = enable_for_bool_int_double_array<T>>
+inline bool f$is_null(const T &v);
+template<class T>
+inline bool f$is_null(const class_instance<T> &v);
+template<class T>
+inline bool f$is_null(const OrFalse<T> &v);
+inline bool f$is_null(const var &v);
+
+template<class T>
+inline bool f$is_bool(const T &v);
+template<class T>
+inline bool f$is_bool(const OrFalse<T> &v);
+inline bool f$is_bool(const var &v);
+
+template<class T>
+inline bool f$is_int(const T &);
+template<class T>
+inline bool f$is_int(const OrFalse<T> &v);
+inline bool f$is_int(const var &v);
+
+template<class T>
+inline bool f$is_float(const T &v);
+template<class T>
+inline bool f$is_float(const OrFalse<T> &v);
+inline bool f$is_float(const var &v);
 
 
-inline bool f$is_bool (const bool &v);
-inline bool f$is_bool (const int &v);
-inline bool f$is_bool (const double &v);
-inline bool f$is_bool (const string &v);
-inline bool f$is_bool (const var &v);
-template <class T>
-inline bool f$is_bool (const array <T> &v);
-template <class T>
-inline bool f$is_bool (const class_instance <T> &v);
+template<class T>
+inline bool f$is_scalar(const T &v);
+template<class T>
+inline bool f$is_scalar(const OrFalse<T> &v);
+inline bool f$is_scalar(const var &v);
 
 
-inline bool f$is_int (const bool &v);
-inline bool f$is_int (const int &v);
-inline bool f$is_int (const double &v);
-inline bool f$is_int (const string &v);
-inline bool f$is_int (const var &v);
-template <class T>
-inline bool f$is_int (const array <T> &v);
-template <class T>
-inline bool f$is_int (const class_instance <T> &v);
+template<class T>
+inline bool f$is_string(const T &v);
+template<class T>
+inline bool f$is_string(const OrFalse<T> &v);
+inline bool f$is_string(const var &v);
 
 
-inline bool f$is_float (const bool &v);
-inline bool f$is_float (const int &v);
-inline bool f$is_float (const double &v);
-inline bool f$is_float (const string &v);
-inline bool f$is_float (const var &v);
-template <class T>
-inline bool f$is_float (const array <T> &v);
-template <class T>
-inline bool f$is_float (const class_instance <T> &v);
+template<class T>
+inline bool f$is_array(const T &v);
+template<class T>
+inline bool f$is_array(const OrFalse<T> &v);
+inline bool f$is_array(const var &v);
 
 
-inline bool f$is_scalar (const bool &v);
-inline bool f$is_scalar (const int &v);
-inline bool f$is_scalar (const double &v);
-inline bool f$is_scalar (const string &v);
-inline bool f$is_scalar (const var &v);
 template <class T>
-inline bool f$is_scalar (const array <T> &v);
-template <class T>
-inline bool f$is_scalar (const class_instance <T> &v);
-
-
-inline bool f$is_string (const bool &v);
-inline bool f$is_string (const int &v);
-inline bool f$is_string (const double &v);
-inline bool f$is_string (const string &v);
-inline bool f$is_string (const var &v);
-template <class T>
-inline bool f$is_string (const array <T> &v);
-template <class T>
-inline bool f$is_string (const class_instance <T> &v);
-
-
-inline bool f$is_array (const bool &v);
-inline bool f$is_array (const int &v);
-inline bool f$is_array (const double &v);
-inline bool f$is_array (const string &v);
-inline bool f$is_array (const var &v);
-template <class T>
-inline bool f$is_array (const array <T> &v);
-template <class T>
-inline bool f$is_array (const class_instance <T> &v);
-
-
-inline bool f$is_object (const bool &v);
-inline bool f$is_object (const int &v);
-inline bool f$is_object (const double &v);
-inline bool f$is_object (const string &v);
-inline bool f$is_object (const var &v);
-template <class T>
-inline bool f$is_object (const array <T> &v);
+bool f$is_object(const T &);
 template <class T>
 inline bool f$is_object (const class_instance <T> &v);
 
@@ -677,7 +639,7 @@ inline const var get_value (const T &v, const var &key);
 inline int f$count (const var &v);
 
 template <class T>
-inline int f$count(const OrFalse<array<T>> &a);
+inline int f$count(const OrFalse<T> &a);
 
 template <class T>
 inline int f$count (const array <T> &a);
@@ -1290,17 +1252,9 @@ void assign (T0 &dest, const T &from) {
   dest = from;
 }
 
-
-const bool &f$boolval (const bool &val) {
-  return val;
-}
-
-bool f$boolval (const int &val) {
-  return val;
-}
-
-bool f$boolval (const double &val) {
-  return val;
+template<class T, class>
+bool f$boolval (const T &val) {
+  return static_cast<bool>(val);
 }
 
 bool f$boolval (const string &val) {
@@ -1317,21 +1271,19 @@ bool f$boolval (const class_instance <T> &val) {
   return !val.is_null();
 }
 
+template <class T>
+bool f$boolval (const OrFalse <T> &val) {
+  return val.bool_value ? f$boolval(val.val()) : false;
+}
+
 bool f$boolval (const var &val) {
   return val.to_bool();
 }
 
 
-int f$intval (const bool &val) {
-  return val;
-}
-
-const int &f$intval (const int &val) {
-  return val;
-}
-
-int f$intval (const double &val) {
-  return (int)val;
+template<class T, class>
+int f$intval (const T &val) {
+  return static_cast<int>(val);
 }
 
 int f$intval (const string &val) {
@@ -1352,6 +1304,11 @@ int f$intval (const class_instance <T> &val) {
 
 int f$intval (const var &val) {
   return val.to_int();
+}
+
+template<class T>
+inline int f$intval (const OrFalse<T> &val) {
+  return val.bool_value ? f$intval(val.val()) : 0;
 }
 
 
@@ -1391,16 +1348,9 @@ int f$safe_intval (const var &val) {
 }
 
 
-double f$floatval (const bool &val) {
-  return val;
-}
-
-double f$floatval (const int &val) {
-  return val;
-}
-
-const double &f$floatval (const double &val) {
-  return val;
+template<class T, class>
+double f$floatval(const T &val) {
+  return static_cast<double>(val);
 }
 
 double f$floatval (const string &val) {
@@ -1421,6 +1371,11 @@ double f$floatval (const class_instance <T> &val) {
 
 double f$floatval (const var &val) {
   return val.to_float();
+}
+
+template<class T>
+inline double f$floatval(const OrFalse<T> &val) {
+  return val.bool_value ? f$floatval(val.val()) : 0;
 }
 
 
@@ -1483,7 +1438,10 @@ array <var> f$arrayval (const var &val) {
   return val.to_array();
 }
 
-
+template<class T>
+inline array<var> f$arrayval(const OrFalse<T> &val) {
+  return val.bool_value ? f$arrayval(val.val()) : f$arrayval(false);
+}
 
 bool& boolval_ref (bool &val) {
   return val;
@@ -1571,11 +1529,6 @@ const array <var>& arrayval_ref (const var &val, const char *function, int param
   return val.as_array (function, parameter_num);
 }
 
-
-template <class T>
-bool f$boolval (const OrFalse <T> &v) {
-  return likely (v.bool_value) ? f$boolval (v.value) : false;
-}
 
 template <class T>
 bool eq2 (const OrFalse <T> &v, bool value) {
@@ -1681,392 +1634,198 @@ var convert_to <var>::convert (const T1 &val) {
 }
 
 
-bool f$empty (const bool &v) {
-  return !v;
-}
-
-bool f$empty (const int &v) {
+template<class T, class>
+inline bool f$empty(const T &v) {
   return v == 0;
 }
 
-bool f$empty (const double &v) {
-  return v == 0.0;
-}
-
-bool f$empty (const string &v) {
+bool f$empty(const string &v) {
   int l = v.size();
   return l == 0 || (l == 1 && v[0] == '0');
 }
 
-template <class T>
-bool f$empty (const array <T> &a) {
+template<class T>
+bool f$empty(const array<T> &a) {
   return a.empty();
 }
 
-template <class T>
-bool f$empty (const class_instance <T> &a) {
+template<class T>
+bool f$empty(const class_instance<T> &a) {
   return false;
 }
 
-bool f$empty (const var &v) {
+bool f$empty(const var &v) {
   return v.empty();
 }
 
+template<class T>
+bool f$empty(const OrFalse<T> &a) {
+  return a.bool_value ? f$empty(a.val()) : true;
+}
 
-int f$count (const var &v) {
+
+int f$count(const var &v) {
   return v.count();
 }
 
-template <class T>
-int f$count(const OrFalse<array<T>> &a) {
-  return a.bool_value ? a.val().count() : 0;
+template<class T>
+int f$count(const OrFalse<T> &a) {
+  return a.bool_value ? f$count(a.val()) : f$count(false);
 }
 
-template <class T>
-int f$count (const array <T> &a) {
+template<class T>
+int f$count(const array<T> &a) {
   return a.count();
 }
 
-template <class T>
-int f$count (const T &v) {
-  php_warning ("Count on non-array");
+template<class T>
+int f$count(const T &v) {
+  php_warning("Count on non-array");
   return 1;
 }
 
-template <class T>
-int f$sizeof (const T &v) {
-  return f$count (v);
+
+template<class T>
+int f$sizeof(const T &v) {
+  return f$count(v);
 }
 
 
-bool f$is_numeric (const bool &v) {
-  (void)v;
-  return false;
+template<class T>
+bool f$is_numeric(const T &) {
+  return std::is_same<T, int>::value || std::is_same<T, double>::value;
 }
 
-bool f$is_numeric (const int &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_numeric (const double &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_numeric (const string &v) {
+bool f$is_numeric(const string &v) {
   return v.is_numeric();
 }
 
-bool f$is_numeric (const var &v) {
+bool f$is_numeric(const var &v) {
   return v.is_numeric();
 }
 
-template <class T>
-bool f$is_numeric (const array <T> &v) {
-  (void)v;
-  return false;
-}
-
-template <class T>
-bool f$is_numeric (const class_instance <T> &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_numeric(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_numeric(v.val()) : false;
 }
 
 
-bool f$is_null (const bool &v) {
-  (void)v;
+template<class T, class>
+bool f$is_null(const T &) {
   return false;
 }
 
-bool f$is_null (const int &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_null (const double &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_null (const string &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_null (const var &v) {
+template<class T>
+bool f$is_null(const class_instance<T> &v) {
   return v.is_null();
 }
 
-template <class T>
-bool f$is_null (const array <T> &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_null(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_null(v.val()) : false;
 }
 
-template <class T>
-bool f$is_null (const class_instance <T> &v) {
+bool f$is_null(const var &v) {
   return v.is_null();
 }
 
 
-bool f$is_bool (const bool &v) {
-  (void)v;
-  return true;
+template<class T>
+bool f$is_bool(const T &) {
+  return std::is_same<T, bool>::value;
 }
 
-bool f$is_bool (const int &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_bool(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_bool(v.val()) : true;
 }
 
-bool f$is_bool (const double &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_bool (const string &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_bool (const var &v) {
+bool f$is_bool(const var &v) {
   return v.is_bool();
 }
 
-template <class T>
-bool f$is_bool (const array <T> &v) {
-  (void)v;
-  return false;
+
+template<class T>
+bool f$is_int(const T &) {
+  return std::is_same<T, int>::value;
 }
 
-template <class T>
-bool f$is_bool (const class_instance <T> &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_int(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_int(v.val()) : false;
 }
 
-
-bool f$is_int (const bool &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_int (const int &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_int (const double &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_int (const string &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_int (const var &v) {
+bool f$is_int(const var &v) {
   return v.is_int();
 }
 
-template <class T>
-bool f$is_int (const array <T> &v) {
-  (void)v;
-  return false;
+
+template<class T>
+bool f$is_float(const T &) {
+  return std::is_same<T, double>::value;
 }
 
-template <class T>
-bool f$is_int (const class_instance <T> &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_float(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_float(v.val()) : false;
 }
 
-
-bool f$is_float (const bool &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_float (const int &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_float (const double &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_float (const string &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_float (const var &v) {
-  (void)v;
+bool f$is_float(const var &v) {
   return v.is_float();
 }
 
-template <class T>
-bool f$is_float (const array <T> &v) {
-  (void)v;
-  return false;
+
+template<class T>
+bool f$is_scalar(const T &) {
+  return std::is_arithmetic<T>::value || std::is_same<T, string>::value;
 }
 
-template <class T>
-bool f$is_float (const class_instance <T> &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_scalar(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_scalar(v.val()) : true;
 }
 
-
-bool f$is_scalar (const bool &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_scalar (const int &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_scalar (const double &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_scalar (const string &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_scalar (const var &v) {
+bool f$is_scalar(const var &v) {
   return v.is_scalar();
 }
 
-template <class T>
-bool f$is_scalar (const array <T> &v) {
-  (void)v;
-  return false;
+
+template<class T>
+bool f$is_string(const T &) {
+  return std::is_same<T, string>::value;
 }
 
-template <class T>
-bool f$is_scalar (const class_instance <T> &v) {
-  (void)v;
-  return false;
+template<class T>
+inline bool f$is_string(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_string(v.val()) : false;
 }
 
-
-bool f$is_string (const bool &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_string (const int &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_string (const double &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_string (const string &v) {
-  (void)v;
-  return true;
-}
-
-bool f$is_string (const var &v) {
+bool f$is_string(const var &v) {
   return v.is_string();
 }
 
-template <class T>
-bool f$is_string (const array <T> &v) {
-  (void)v;
-  return false;
+
+template<class T>
+inline bool f$is_array(const T &) {
+  return std::is_base_of<array_tag, T>::value;
 }
 
-template <class T>
-bool f$is_string (const class_instance <T> &v) {
-  (void)v;
-  return false;
-}
-
-
-bool f$is_array (const bool &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_array (const int &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_array (const double &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_array (const string &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_array (const var &v) {
+bool f$is_array(const var &v) {
   return v.is_array();
 }
 
-template <class T>
-bool f$is_array (const array <T> &v) {
-  (void)v;
-  return true;
+template<class T>
+inline bool f$is_array(const OrFalse<T> &v) {
+  return v.bool_value ? f$is_array(v.val()) : false;
 }
 
-template <class T>
-bool f$is_array (const class_instance <T> &v) {
-  (void)v;
+template<class T>
+bool f$is_object(const T &) {
   return false;
 }
 
-
-bool f$is_object (const bool &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_object (const int &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_object (const double &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_object (const string &v) {
-  (void)v;
-  return false;
-}
-
-bool f$is_object (const var &v) {
-  (void) v;
-  return false;
-}
-
-template <class T>
-bool f$is_object (const array <T> &v) {
-  (void)v;
-  return false;
-}
-
-template <class T>
-bool f$is_object (const class_instance <T> &v) {
+template<class T>
+bool f$is_object(const class_instance<T> &v) {
   return !v.is_null();
 }
 
