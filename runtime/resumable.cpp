@@ -799,6 +799,7 @@ bool f$wait (int resumable_id, double timeout) {
   }
 
   if (resumable->queue_id > 0) {
+    php_warning("Resumable is already waited by other thread");
     last_wait_error = "Someone already waits for this resumable";
     return false;
   }
