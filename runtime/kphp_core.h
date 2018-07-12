@@ -25,6 +25,8 @@
 #undef AS_ARRAY
 #undef AS_CONST_ARRAY
 
+#include "common/containers/list_of_types.h"
+
 class UnknownType {
 };
 
@@ -58,6 +60,18 @@ class UnknownType {
 
 #define f$likely likely
 #define f$unlikely unlikely
+
+
+using list_bool_int_double = vk::list_of_types<bool, int, double>;
+
+using list_bool_int_double_array = vk::list_of_types<bool, int, double, array_tag>;
+
+template<class T>
+using enable_for_bool_int_double = vk::enable_if_in_list<T, list_bool_int_double>;
+
+template<class T>
+using enable_for_bool_int_double_array = vk::enable_if_base_in_list<T, list_bool_int_double_array>;
+
 
 inline bool lt (const bool &lhs, const bool &rhs);
 
