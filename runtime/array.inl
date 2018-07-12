@@ -1467,6 +1467,17 @@ void array<T>::set_value (const string &string_key, const T &v) {
 }
 
 template <class T>
+void array<T>::set_value (const string &string_key, const T &v, int precomuted_hash) {
+  if (is_vector()) {
+    convert_to_map();
+  } else {
+    mutate_if_map_needed_string();
+  }
+
+  p->set_map_value (precomuted_hash, string_key, v, false);
+}
+
+template <class T>
 void array<T>::set_value (const var &v, const T &value) {
   switch (v.type) {
     case var::NULL_TYPE:
@@ -1610,6 +1621,7 @@ void array<T>::set_value (const iterator &it) {
   }
 }
 
+
 template <class T>
 void array<T>::assign_raw(const char * s) {
   php_assert(sizeof(array_inner) == 8 * sizeof(int));
@@ -1667,6 +1679,11 @@ const T array<T>::get_value (const string &string_key) const {
   }
 
   return p->get_value (string_key.hash(), string_key);
+}
+
+template <class T>
+const T array<T>::get_value (const string &string_key, int precomuted_hash) const {
+  return p->get_value (precomuted_hash, string_key);
 }
 
 template <class T>

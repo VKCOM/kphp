@@ -1788,6 +1788,10 @@ void var::set_value (const string &string_key, const var &v) {
   return AS_ARRAY(a)->set_value (string_key, v);
 }
 
+void var::set_value (const string &string_key, const var &v, int precomuted_hash) {
+  return type == ARRAY_TYPE ? a.set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
+}
+
 void var::set_value (const var &v, const var &value) {
   switch (v.type) {
     case NULL_TYPE:
@@ -1857,6 +1861,10 @@ const var var::get_value (const string &string_key) const {
   }
 
   return AS_CONST_ARRAY(a)->get_value (string_key);
+}
+
+const var var::get_value (const string &string_key, int precomuted_hash) const {
+  return type == ARRAY_TYPE ? a.get_value(string_key, precomuted_hash) : get_value(string_key);
 }
 
 const var var::get_value (const var &v) const {

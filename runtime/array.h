@@ -252,6 +252,7 @@ public:
 
   void set_value (int int_key, const T &v);
   void set_value (const string &s, const T &v);
+  void set_value (const string &s, const T &v, int precomuted_hash);
   void set_value (const var &v, const T &value);
 
   template<class OrFalseT>
@@ -270,6 +271,7 @@ public:
 
   const T get_value (int int_key) const;
   const T get_value (const string &s) const;
+  const T get_value (const string &s, int precomuted_hash) const;
   const T get_value (const var &v) const;
   const T get_value (const const_iterator &it) const;
   const T get_value (const iterator &it) const;

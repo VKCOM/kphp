@@ -2766,6 +2766,29 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
   }
 }
 
+/**
+ * Обращения к массиву по константной строке, типа $a['somekey'], хочется заменить не просто на get_value, но
+ * ещё и на этапе компиляции посчитать хеш строки, чтобы не делать этого в рантайме.
+ * Т.е. нужно проверить, что строка константная, а не $a[$var], не $a[3], не $a['a'.'b'] и т.п.
+ * @return int string_hash или 0 (если случайно хеш сам получился 0 — не страшно, просто не заинлайнится)
+ */
+inline int can_use_precomputed_hash_indexing_array (VertexPtr key) {
+  // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
+  if (key->type() == op_var && key->extra_type == op_ex_var_const && key->get_var_id()->init_val->type() == op_string) {
+    const std::string &string_key = key->get_var_id()->init_val->get_string();
+
+    // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
+    int int_val;
+    if (php_try_to_int(string_key.c_str(), (int)string_key.size(), &int_val)) {
+      return 0;
+    }
+
+    return string_hash(string_key.c_str(), (int)string_key.size());
+  }
+
+  return 0;
+}
+
 void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
   bool has_key = root->has_key();
   if (root->extra_type == op_ex_none) {
@@ -2775,9 +2798,12 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
       }
       W << "]";
   } else if (root->extra_type == op_ex_index_rval) {
-    W << root->array() << ".get_value (";
-    if (has_key) {
-      W << root->key();
+    W << root->array() << ".get_value (" << root->key();
+    // если это обращение по константной строке, типа $a['somekey'],
+    // вычисляем хеш строки 'somekey' на этапе компиляции, и вызовем array<T>::get_value(string, precomputed_hash)
+    int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
+    if (precomputed_hash) {
+      W << ", " << int_to_str(precomputed_hash);
     }
     W << ")";
   } else {
@@ -3001,7 +3027,12 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
     VertexPtr cur = *i;
     if (cur->type() == op_double_arrow) {
       VertexAdaptor <op_double_arrow> arrow = cur;
-      W << ".set_value (" << arrow->key() << ", " << arrow->value() << ")";
+      W << ".set_value (" << arrow->key() << ", " << arrow->value();
+      int precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key());
+      if (precomputed_hash) {
+        W << ", " << int_to_str(precomputed_hash);
+      }
+      W << ")";
     } else {
       W << ".push_back (" << cur << ")";
     }
@@ -3216,7 +3247,12 @@ void compile_safe_version (VertexPtr root, CodeGenerator &W) {
 
 
 void compile_set_value (VertexAdaptor <op_set_value> root, CodeGenerator &W) {
-  W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value() << ")";
+  W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value();
+  int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
+  if (precomputed_hash) {
+    W << ", " << int_to_str(precomputed_hash);
+  }
+  W << ")";
 }
 
 void compile_push_back (VertexAdaptor <op_push_back> root, CodeGenerator &W) {

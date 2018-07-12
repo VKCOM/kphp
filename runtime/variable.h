@@ -109,12 +109,14 @@ public:
 
   inline void set_value (const int int_key, const var &v);
   inline void set_value (const string &string_key, const var &v);
+  inline void set_value (const string &string_key, const var &v, int precomuted_hash);
   inline void set_value (const var &v, const var &value);
   inline void set_value (const array <var>::const_iterator &it);
   inline void set_value (const array <var>::iterator &it);
 
   inline const var get_value (const int int_key) const;
   inline const var get_value (const string &string_key) const;
+  inline const var get_value (const string &string_key, int precomuted_hash) const;
   inline const var get_value (const var &v) const;
   inline const var get_value (const array <var>::const_iterator &it) const;
   inline const var get_value (const array <var>::iterator &it) const;
