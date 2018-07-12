@@ -11,6 +11,8 @@
 
 struct array_size;
 
+class array_tag {};
+
 template <class T>
 class array;
 

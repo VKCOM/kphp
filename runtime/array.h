@@ -1,4 +1,5 @@
 #pragma once
+#include "runtime/include.h"
 
 /*
  *
@@ -26,9 +27,8 @@ namespace dl {
   void sort (TT *begin_init, TT *end_init, const T1 &compare);
 }
 
-
 template <class T>
-class array {
+class array : array_tag {
 
 public:
 //  typedef string key_type;
