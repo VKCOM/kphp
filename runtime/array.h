@@ -228,6 +228,9 @@ public:
   template<class... Args, typename std::enable_if<sizeof...(Args) >= 2>::type* = nullptr>
   inline array (Args &&... args) __attribute__ ((always_inline));
 
+  template<class KeyT>
+  inline array(const std::initializer_list<std::pair<KeyT, T>> &list) __attribute__ ((always_inline));
+
   inline array (const array &other) __attribute__ ((always_inline));
 
   inline array(array &&other) noexcept __attribute__ ((always_inline));

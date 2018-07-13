@@ -14,6 +14,7 @@ public:
   inline Long (long long l);
 
   inline Long (int i);
+  inline Long (long l);
   explicit inline Long (double f);
   explicit inline Long (const string &s);
   explicit inline Long (const var &v);
@@ -303,6 +304,9 @@ Long::Long (long long l): l (l) {
 }
 
 Long::Long (int i): l (i) {
+}
+
+Long::Long (long l): l (l) {
 }
 
 Long::Long (double f): l ((long long)f) {

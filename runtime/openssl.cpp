@@ -1,7 +1,9 @@
 #include "runtime/openssl.h"
 
-#include <errno.h>
+#include <cerrno>
+#include <memory>
 #include <netdb.h>
+#include <openssl/asn1.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -10,12 +12,14 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 #include <poll.h>
 #include <sys/time.h>
 #include <unistd.h>
 
 #include "common/crc32.h"
 #include "common/resolver.h"
+#include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "common/wrappers/openssl.h"
 
 #include "runtime/datetime.h"
@@ -417,12 +421,12 @@ OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &pa
   return result;
 }
 
-int f$openssl_verify(string const &data, string const &signature, string const &pub_key_id) {
+int f$openssl_verify(string const &data, string const &signature, string const &pub_key_id, string const &signature_alg) {
   int err = 0;
   EVP_PKEY *pkey;
   EVP_MD_CTX *md_ctx;
   dl::enter_critical_section();
-  const EVP_MD *mdtype = EVP_sha1();
+  const EVP_MD *mdtype = EVP_get_digestbyname(signature_alg.empty() ? "sha1" : signature_alg.c_str());
 
   if (signature.size() > UINT_MAX) {
     php_warning("signature is too long");
@@ -1061,3 +1065,208 @@ void openssl_free_static (void) {
   }
   dl::leave_critical_section();
 }
+
+
+class X509_parser {
+private:
+  using BIO_ptr = vk::unique_ptr_with_delete_function<BIO, BIO_vfree>;
+  using X509_ptr = vk::unique_ptr_with_delete_function<X509, X509_free>;
+  using ASN1_TIME_ptr = vk::unique_ptr_with_delete_function<ASN1_TIME, ASN1_TIME_free>;
+  using X509_STORE_ptr = vk::unique_ptr_with_delete_function<X509_STORE, X509_STORE_free>;
+  using X509_STORE_CTX_ptr = vk::unique_ptr_with_delete_function<X509_STORE_CTX, X509_STORE_CTX_free>;
+
+public:
+  explicit X509_parser(string const &data)
+    : x509_(get_x509_from_data(data)) {}
+
+  array<var> get_subject(bool shortnames = true) const {
+    php_assert(x509_.get());
+
+    X509_NAME *subj = X509_get_subject_name(x509_.get());
+
+    return get_entries_of(subj, shortnames);
+  }
+
+  string get_subject_name() const {
+    php_assert(x509_.get());
+
+    auto issuer_name = X509_get_subject_name(x509_.get());
+    auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
+
+    string res(issuer, strlen(issuer));
+    OPENSSL_free(issuer);
+
+    return res;
+  }
+
+  string get_hash() const {
+    php_assert(x509_.get());
+
+    static char buf[9];
+    snprintf(buf, sizeof(buf), "%08lx", X509_subject_name_hash(x509_.get()));
+
+    return string(buf, 8);
+  }
+
+  array<var> get_issuer(bool shortnames = true) const {
+    php_assert(x509_.get());
+
+    X509_NAME *issuer_name = X509_get_issuer_name(x509_.get());
+
+    return get_entries_of(issuer_name, shortnames);
+  }
+
+  int get_version() const {
+    php_assert(x509_.get());
+
+    auto version = static_cast<int>(X509_get_version(x509_.get()));
+    return version;
+  }
+
+  int get_time_not_before() const {
+    php_assert(x509_.get());
+
+    auto asn_time_not_before = X509_getm_notBefore(x509_.get());
+    return (int)convert_asn1_time(asn_time_not_before);
+  }
+
+  int get_time_not_after() const {
+    php_assert(x509_.get());
+
+    auto asn_time_not_after = X509_getm_notAfter(x509_.get());
+    return (int)convert_asn1_time(asn_time_not_after);
+  }
+
+  array<var> get_purposes(bool shortnames = true) const {
+    php_assert(x509_.get());
+
+    array<var> res;
+    for (int i = 0; i < X509_PURPOSE_get_count(); i++) {
+      array<var> purposes;
+
+      X509_PURPOSE *purp = X509_PURPOSE_get0(i);
+      int id = X509_PURPOSE_get_id(purp);
+
+      auto purpset = static_cast<bool>(X509_check_purpose(x509_.get(), id, 0));
+      purposes.push_back(purpset);
+
+      purpset = static_cast<bool>(X509_check_purpose(x509_.get(), id, 1));
+      purposes.push_back(purpset);
+
+      char *pname = shortnames ? X509_PURPOSE_get0_sname(purp) : X509_PURPOSE_get0_name(purp);
+      purposes.push_back(string(pname));
+
+      res.set_value(id, purposes);
+    }
+
+    return res;
+  }
+
+  OrFalse<array<var>> parse(bool shortnames = true) const {
+    if (!x509_) {
+      return false;
+    }
+
+    return std::initializer_list<std::pair<string, var>>
+      {{string("name"),             get_subject_name()},
+       {string("subject"),          get_subject(shortnames)},
+       {string("hash"),             get_hash()},
+       {string("issuer"),           get_issuer(shortnames)},
+       {string("version"),          get_version()},
+       {string("validFrom_time_t"), get_time_not_before()},
+       {string("validTo_time_t"),   get_time_not_after()},
+       {string("purposes"),         get_purposes(shortnames)}};
+  }
+
+  var check_purpose(int purpose) const {
+    if (!x509_) {
+      return -1;
+    }
+
+    X509_STORE_CTX_ptr csc{X509_STORE_CTX_new()};
+
+    if (csc == NULL) {
+      return -1;
+    }
+    X509_STORE_ptr store{X509_STORE_new()};
+    if (store == NULL) {
+      return -1;
+    }
+
+    X509_STORE_set_default_paths(store.get());
+
+    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_.get(), NULL)) {
+      return -1;
+    }
+    // return value is not checked, as in php
+    X509_STORE_CTX_set_purpose(csc.get(), purpose);
+    int ret = X509_verify_cert(csc.get());
+    if (ret != 0 && ret != 1) {
+      return ret;
+    }
+    return static_cast<bool>(ret);
+  }
+
+private:
+  X509_ptr get_x509_from_data(string const &data) {
+    BIO_ptr certBio{BIO_new(BIO_s_mem())};
+
+    if (!certBio) {
+      return nullptr;
+    }
+
+    bool write_success = BIO_write(certBio.get(), data.c_str(), static_cast<int>(data.size())) != 0;
+
+    if (!write_success) {
+      return nullptr;
+    }
+
+    return X509_ptr(PEM_read_bio_X509(certBio.get(), nullptr, nullptr, nullptr));
+  }
+
+  array<var> get_entries_of(X509_NAME *name, bool shortnames = true) const {
+    array<var> res;
+
+    int count_of_entries = X509_NAME_entry_count(name);
+
+    for (int i = 0; i < count_of_entries; i++) {
+      X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
+
+      ASN1_OBJECT *key = X509_NAME_ENTRY_get_object(entry);
+      ASN1_STRING *value = X509_NAME_ENTRY_get_data(entry);
+
+      int nid = OBJ_obj2nid(key);
+      const char *key_str = shortnames ? OBJ_nid2sn(nid) : OBJ_nid2ln(nid);
+
+      auto value_str = reinterpret_cast<const char *>(ASN1_STRING_get0_data(value));
+      int value_len = ASN1_STRING_length(value);
+
+      res.set_value(string(key_str, strlen(key_str)), string(value_str, value_len));
+    }
+
+    return res;
+  }
+
+  time_t convert_asn1_time(ASN1_TIME *expires) const {
+    ASN1_TIME_ptr epoch{ASN1_TIME_new()};
+    ASN1_TIME_set_string(epoch.get(), "700101000000");
+    int days, seconds;
+    ASN1_TIME_diff(&days, &seconds, epoch.get(), expires);
+
+    return (days * 24 * 60 * 60) + seconds;
+  }
+
+
+private:
+  X509_ptr x509_;
+};
+
+OrFalse<array<var>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
+  return X509_parser(data).parse(shortnames);
+}
+
+var f$openssl_x509_checkpurpose(const string &data, int purpose) {
+  return X509_parser(data).check_purpose(purpose);
+}
+
+

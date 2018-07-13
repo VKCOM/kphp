@@ -193,6 +193,10 @@ string::string (string &&str) noexcept
 string::string (const char *s, size_type n): p (create (s, s + n)) {
 }
 
+string::string (const char *s)
+  : string(s, strlen(s))
+{}
+
 string::string (size_type n, char c): p (create (n, c)) {
 }
 

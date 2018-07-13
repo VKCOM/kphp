@@ -29,9 +29,13 @@ bool f$openssl_private_decrypt (const string &data, var &result, const string &k
 
 OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &passphrase = string());
 
-int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id);
+int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, const string &signature_alg = string());
 
 OrFalse <string> f$openssl_random_pseudo_bytes (int length);
+
+OrFalse<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = true);
+
+var f$openssl_x509_checkpurpose(const string &data, int purpose);
 
 void openssl_init_static_once (void);
 

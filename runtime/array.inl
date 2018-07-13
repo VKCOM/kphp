@@ -1211,6 +1211,17 @@ inline array<T>::array(Args &&... args)
   push_back_values(std::forward<Args>(args)...);
 }
 
+template<class T>
+template<class KeyT>
+inline array<T>::array(const std::initializer_list<std::pair<KeyT, T>> &list)
+  : array()
+{
+    for (const auto &kv: list) {
+      set_value(kv.first, kv.second);
+    }
+}
+
+
 template <class T>
 array<T>::array (const array<T> &other)
   : p (other.p->ref_copy())

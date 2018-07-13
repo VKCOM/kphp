@@ -74,6 +74,7 @@ public:
   inline string (const string &str);
   inline string (string &&str) noexcept;
   inline string (const char *s, size_type n);
+  inline explicit string (const char *s);
   inline string (size_type n, char c);
   inline string (size_type n, bool b);
   inline explicit string (int i);

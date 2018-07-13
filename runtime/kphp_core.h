@@ -1398,7 +1398,7 @@ string f$strval (const string &val) {
 }
 
 template <class T>
-string f$strval (const array <T> &val) {
+string f$strval (const array <T> &) {
   php_warning ("Convertion from array to string");
   return string ("Array", 5);
 }
