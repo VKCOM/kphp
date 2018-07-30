@@ -421,12 +421,42 @@ OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &pa
   return result;
 }
 
-int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, const string &signature_alg) {
+static const EVP_MD * openssl_algo_to_evp_md(openssl_algo algo) {
+  switch (algo) {
+    case OPENSSL_ALGO_SHA1: return EVP_sha1();
+
+# ifndef OPENSSL_NO_MD5
+    case OPENSSL_ALGO_MD5:  return EVP_md5();
+# endif
+
+# ifndef OPENSSL_NO_MD4
+    case OPENSSL_ALGO_MD4:  return EVP_md4();
+#endif
+
+#ifndef OPENSSL_NO_MD2
+    case OPENSSL_ALGO_MD2:  return EVP_md2();
+#endif
+
+    case OPENSSL_ALGO_SHA224: return EVP_sha224();
+    case OPENSSL_ALGO_SHA256: return EVP_sha256();
+    case OPENSSL_ALGO_SHA384: return EVP_sha384();
+    case OPENSSL_ALGO_SHA512: return EVP_sha512();
+
+#ifndef OPENSSL_NO_RMD160
+    case OPENSSL_ALGO_RMD160: return EVP_ripemd160();
+#endif
+
+    default:
+      return nullptr;
+  }
+}
+
+int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int algo) {
   int err = 0;
   EVP_PKEY *pkey;
   EVP_MD_CTX *md_ctx;
   dl::enter_critical_section();
-  const EVP_MD *mdtype = EVP_get_digestbyname(signature_alg.empty() ? "sha1" : signature_alg.c_str());
+  const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
 
   if (signature.size() > UINT_MAX) {
     php_warning("signature is too long");

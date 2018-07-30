@@ -2,6 +2,19 @@
 
 #include "runtime/kphp_core.h"
 
+enum openssl_algo : int {
+  OPENSSL_ALGO_SHA1   =  1,
+  OPENSSL_ALGO_MD5    =  2,
+  OPENSSL_ALGO_MD4    =  3,
+  OPENSSL_ALGO_MD2    =  4,
+  OPENSSL_ALGO_DSS1   =  5,
+  OPENSSL_ALGO_SHA224 =  6,
+  OPENSSL_ALGO_SHA256 =  7,
+  OPENSSL_ALGO_SHA384 =  8,
+  OPENSSL_ALGO_SHA512 =  9,
+  OPENSSL_ALGO_RMD160 = 10,
+};
+
 array <string> f$hash_algos (void);
 
 string f$hash (const string &algo, const string &s, bool raw_output = false);
@@ -29,7 +42,7 @@ bool f$openssl_private_decrypt (const string &data, var &result, const string &k
 
 OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &passphrase = string());
 
-int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, const string &signature_alg = string());
+int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int algo = OPENSSL_ALGO_SHA1);
 
 OrFalse <string> f$openssl_random_pseudo_bytes (int length);
 
