@@ -2,12 +2,14 @@
 
 #include <sstream>
 
+#include "common/algorithms/find.h"
+
+#include "compiler/compiler-core.h"
+#include "compiler/debug.h"
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
-#include "compiler/debug.h"
-#include "compiler/compiler-core.h"
 
 GenTree::GenTree ()
   : line_num(-1)
@@ -1963,10 +1965,8 @@ VertexPtr GenTree::get_namespace_class() {
 }
 
 VertexPtr GenTree::get_statement (Token *phpdoc_token) {
-  vector <Token*>::const_iterator op = cur;
-
   VertexPtr res, first_node, second_node, third_node, forth_node, tmp_node;
-  TokenType type = (*op)->type();
+  TokenType type = (*cur)->type();
 
   VertexPtr type_rule;
   switch (type) {
@@ -2175,11 +2175,13 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
       AutoLocation const_location (this);
       next_cur();
 
+      bool has_access_modifier = std::distance(tokens->begin(), cur) > 1 && vk::any_of_equal((*std::prev(cur, 2))->type(), tok_public, tok_private, tok_protected);
       bool const_in_global_scope = in_func_cnt_ == 1 && !in_class() && !in_namespace();
       bool const_in_class = in_func_cnt_ == 0 && in_class() && in_namespace();
 
       CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
+      CE (!kphp_error(!has_access_modifier, "unexpected const after private/protected/public keyword"));
 
       CREATE_VERTEX (name, op_func_name);
       string const_name = (*cur)->str_val;
