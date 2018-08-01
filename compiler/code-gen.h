@@ -6,6 +6,8 @@
 #include "compiler/vertex.h"
 #include "compiler/pass-register-vars.hpp"
 
+#include "common/algorithms/find.h"
+
 struct CGContext {
   vector <string> catch_labels;
   vector <int> catch_label_used;
@@ -2156,7 +2158,16 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
     key = params->key();
   }
 
+  TypeData const *type_data = xs->tinf_node.type_;
+  if (xs->type() == op_var) {
+    type_data = xs->get_var_id()->tinf_node.type_;
+  }
 
+  PrimitiveType ptype = type_data->get_real_ptype();
+
+  if (vk::none_of_equal(ptype, tp_array, tp_var)) {
+    kphp_error_return(false, dl_pstr("%s (%s)", "Invalid argument supplied for foreach()", ptype_name(ptype)));
+  }
 
   W << BEGIN;
   //save array to 'xs_copy_str'
@@ -2185,6 +2196,10 @@ void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
     compile_foreach_ref_header(root, W);
   } else {
     compile_foreach_noref_header(root, W);
+  }
+
+  if (stage::has_error()) {
+    return;
   }
 
   W <<     AsSeq (cmd) << NL <<
