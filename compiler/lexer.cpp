@@ -284,9 +284,26 @@ void LexerData::post_process (const string &main_func_name) {
         }
           /* fallthrough */
         case tok_static: {
-          if (are_next_tokens(oldtokens, i, tok_double_colon, tok_func_name) ||
-              are_next_tokens(oldtokens, i, tok_double_colon, tok_var_name)) {
-            tokens.push_back(new Token(oldtokens[i + 2]->type()));
+          if (are_next_tokens(oldtokens, i, tok_double_colon)) {
+            /**
+             * Для случаев:
+             *   \VK\Foo::array
+             *   \VK\Foo::try
+             *   \VK\Foo::$static_field
+             * после tok_double_colon будет tok_array или tok_try, а мы хотим tok_func_name
+             * так как это корректные имена переменных
+             * поэтому проверяем является ли первый символ следующего токена is_alpha, чтобы не пропустить tok_opbrk и тому подобное
+             */
+            if (oldtokens[i + 2]->str_val.length() <= 0 || !is_alpha(oldtokens[i + 2]->str_val.begin()[0])) {
+              break;
+            }
+
+            if (oldtokens[i + 2]->type() == tok_var_name) {
+              tokens.push_back(new Token(tok_var_name));
+            } else {
+              tokens.push_back(new Token(tok_func_name));
+            }
+
             string pref_name = (oldtokens[i]->type() == tok_static ? "static" : string(oldtokens[i]->str_val));
             tokens.back()->str_val = string_ref_dup(pref_name + "::" + string(oldtokens[i + 2]->str_val));
             tokens.back()->line_num = oldtokens[i]->line_num;
@@ -306,6 +323,28 @@ void LexerData::post_process (const string &main_func_name) {
             tokens.push_back(new Token(tok_func_name));
             tokens.back()->str_val = string_ref_dup((config_func().find(string(oldtokens[i + 2]->str_val)))->second);
             i += 4;
+          }
+          break;
+        }
+
+        /**
+         * Для случаев, когда встречаются ключевые слова после ->, const, это должны быть tok_func_name,
+         * а не tok_array, tok_try и т.д.
+         * например:
+         *     $c->array, $c->try
+         *     class U { const array = [1, 2]; }
+         *     class U { const try = [1, 2]; }
+         */
+        case tok_arrow:
+        case tok_const: {
+          if (!are_next_tokens(oldtokens, i, tok_func_name)) {
+            if (oldtokens[i + 1]->str_val.length() <= 0 || !is_alpha(oldtokens[i + 1]->str_val.begin()[0])) {
+              break;
+            }
+            tokens.push_back(oldtokens[i]);
+            tokens.push_back(new Token(tok_func_name));
+            tokens.back()->str_val = string_ref_dup(oldtokens[i + 1]->str_val);
+            i += 2;
           }
           break;
         }

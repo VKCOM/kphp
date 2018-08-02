@@ -112,11 +112,33 @@ void GenTree::enter_class (const string &class_name, Token *phpdoc_token) {
   }
 }
 
+VertexPtr GenTree::generate_constant_field_class() {
+  CREATE_VERTEX (name_of_const_field_class, op_func_name);
+  name_of_const_field_class->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$class";
+
+  kphp_error_act(cur_class().constants.find("class") == cur_class().constants.end(),
+                    ("A class constant must not be called 'class'; it is reserved for class name fetching: " + name_of_const_field_class->str_val).c_str(), return VertexPtr{});
+
+  CREATE_VERTEX(value_of_const_field_class, op_string);
+  value_of_const_field_class->set_string(namespace_name + "\\" + cur_class().name);
+
+  CREATE_VERTEX(def, op_define, name_of_const_field_class, value_of_const_field_class);
+  def->location = cur_class().root->location;
+
+  return def;
+}
+
 void GenTree::exit_and_register_class (VertexPtr root) {
   kphp_assert (in_class());
   if (!in_namespace()) {
     kphp_error(false, "Only classes in namespaces are supported");
   } else {
+
+    VertexPtr constant_field_class = generate_constant_field_class();
+    if (constant_field_class.not_null()) {
+      cur_class().constants["class"] = constant_field_class;
+    }
+
     const string &name_str = stage::get_file()->main_func_name;
     vector<VertexPtr> empty;
     CREATE_VERTEX (name, op_func_name);
