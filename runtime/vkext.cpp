@@ -549,11 +549,8 @@ string f$vk_flex (const string &name, const string &case_name, int sex, const st
   return string (buff, (dl::size_type)strlen (buff));
 }
 
-string f$vk_json_encode (const var &v) {
-  OrFalse<string> res = f$json_encode (v, 0, true);
-  php_assert(res.bool_value);
-
-  return res.value;
+OrFalse<string> f$vk_json_encode (const var &v) {
+  return f$json_encode (v, 0, true);
 }
 
 string f$vk_whitespace_pack (const string &str, bool html_opt) {

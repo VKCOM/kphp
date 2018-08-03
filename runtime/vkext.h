@@ -8,7 +8,7 @@ string f$vk_win_to_utf8(const string &text, bool escape = true);
 
 string f$vk_flex (const string &name, const string &case_name, int sex, const string &type, int lang_id = 0);
 
-string f$vk_json_encode (const var &v);
+OrFalse<string> f$vk_json_encode (const var &v);
 
 string f$vk_whitespace_pack (const string &str, bool html_opt = false);
 
