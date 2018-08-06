@@ -164,14 +164,16 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
     klass->vars.push_back(var);
   }
 
-  FOREACH(info.constants, i) {
-    klass->constants.insert((*i).first);
+  for (auto const &name_and_constant : info.constants) {
+    klass->constants.insert(name_and_constant.first);
   }
-  FOREACH(info.static_methods, method_ptr) {
-    (*method_ptr).second->class_id = klass;
+
+  for (auto const &name_and_method : info.static_methods) {
+    name_and_method.second->class_id = klass;
   }
-  FOREACH(info.methods, method) {
-    FunctionPtr f = ((VertexPtr) (*method)).as <op_function>()->get_func_id();
+
+  for (auto const &method : info.methods) {
+    FunctionPtr f = method->get_func_id();
     f->class_id = klass;
     klass->methods.push_back(f);
   }
@@ -442,8 +444,8 @@ void CompilerCore::init_dest_dir() {
   if (env().get_use_auto_dest()) {
     string name = main_files[0]->short_file_name;
     string hash_string;
-    FOREACH (main_files, file) {
-      hash_string += (*file)->file_name;
+    for (auto main_file : main_files) {
+      hash_string += main_file->file_name;
       hash_string += ";";
     }
     long long h = hash (hash_string);
@@ -493,8 +495,8 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     File *h_file = files[i];
     if (h_file->ext == ".h") {
       long long &h_mtime = header_mtime[i];
-      FOREACH (h_file->includes, it) {
-        File *header = cpp_dir->get_file (*it, false);
+      for (auto const &include : h_file->includes) {
+        File *header = cpp_dir->get_file (include, false);
         kphp_assert (header != NULL);
         kphp_assert (header->on_disk);
         long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
@@ -503,15 +505,14 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     }
   }
   if (G->env().get_use_subdirs()) {
-    FOREACH (files, cpp_file_i) {
-      File *cpp_file = *cpp_file_i;
+    for (auto cpp_file : files) {
       if (cpp_file->ext == ".cpp") {
         File *obj_file = obj_dir->get_file (cpp_file->name_without_ext + ".o", true);
         obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
         make.create_cpp2obj_target (cpp_file, obj_file);
         Target *cpp_target = cpp_file->target;
-        FOREACH (cpp_file->includes, it) {
-          File *header = cpp_dir->get_file (*it, false);
+        for (auto include : cpp_file->includes) {
+          File *header = cpp_dir->get_file (include, false);
           kphp_assert (header != NULL);
           kphp_assert (header->on_disk);
           long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
@@ -525,8 +526,7 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
 
     map <string, vector <File *> > subdirs;
     vector <File *> tmp_objs;
-    FOREACH (objs, obj_i) {
-      File *obj_file = *obj_i;
+    for (auto obj_file : objs) {
       string name = obj_file->subdir;
       name = name.substr (0, (int)name.size() - 1);
       if (name.empty()) {
@@ -538,22 +538,21 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     }
 
     objs = tmp_objs;
-    FOREACH (subdirs, it) {
-      File *obj_file = obj_dir->get_file (it->first, true);
-      make.create_objs2obj_target (it->second, obj_file);
+    for (auto const &name_and_files : subdirs) {
+      File *obj_file = obj_dir->get_file (name_and_files.first, true);
+      make.create_objs2obj_target (name_and_files.second, obj_file);
       objs.push_back (obj_file);
     }
     fprintf (stderr, "objs cnt = %d\n", (int)objs.size());
     objs.push_back (link_file);
     make.create_objs2bin_target (objs, bin);
   } else {
-    FOREACH (files, cpp_file_i) {
-      File *cpp_file = *cpp_file_i;
+    for (auto cpp_file : files) {
       if (cpp_file->ext == ".cpp") {
         File *obj_file = obj_dir->get_file (cpp_file->name + ".o", true);
         Target *cpp_target = cpp_file->target;
-        FOREACH (cpp_file->includes, it) {
-          File *header = cpp_dir->get_file (*it, false);
+        for (auto include : cpp_file->includes) {
+          File *header = cpp_dir->get_file (include, false);
           kphp_assert (header != NULL);
           kphp_assert (header->on_disk);
           long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];

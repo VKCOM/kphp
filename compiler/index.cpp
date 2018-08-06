@@ -123,27 +123,27 @@ int Index::scan_dir_callback (const char *fpath, const struct stat *sb, int type
 
 void Index::sync_with_dir (const string &new_dir) {
   set_dir (new_dir);
-  FOREACH (files, it) {
-    it->second->on_disk = false;
+  for (auto const &path_and_file : files) {
+    path_and_file.second->on_disk = false;
   }
   current_index = this;
   int err = nftw (dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
   dl_passert (err == 0, dl_pstr ("ftw [%s] failed", dir.c_str()));
   vector <string> to_del;
-  FOREACH (files, it) {
-    if (!it->second->on_disk) {
-      to_del.push_back (it->first);
+  for (auto const &path_and_file : files) {
+    if (!path_and_file.second->on_disk) {
+      to_del.push_back (path_and_file.first);
     }
   }
-  FOREACH (to_del, it) {
-    remove_file (*it);
+  for (auto const &path : to_del) {
+    remove_file (path);
   }
 }
 
 void Index::del_extra_files() {
   vector <string> to_del;
-  FOREACH (files, it) {
-    File *file = it->second;
+  for (auto const &path_and_file : files) {
+    File *file = path_and_file.second;
     if (!file->needed) {
       kphp_assert (file->on_disk);
       if (G->env().get_verbosity() > 0) {
@@ -155,11 +155,11 @@ void Index::del_extra_files() {
         kphp_fail();
       }
       file->on_disk = false;
-      to_del.push_back (it->first);
+      to_del.push_back (path_and_file.first);
     }
   }
-  FOREACH (to_del, it) {
-    remove_file (*it);
+  for (auto const &path : to_del) {
+    remove_file (path);
   }
 }
 
@@ -222,18 +222,14 @@ File *Index::get_file (string path, bool force/* = false*/) {
   return f;
 }
 vector <File *> Index::get_files() {
-  vector <File *> res;
-  FOREACH (files, it) {
-    res.push_back (it->second);
-  }
-  return res;
+  return get_map_values(files);
 }
 
 //stupid text version. to be improved
 void Index::save (FILE *f) {
   dl_pcheck (fprintf (f, "%d\n", (int)files.size()));
-  FOREACH (files, it) {
-    File *file = it->second;
+  for (auto const &path_and_file : files) {
+    File *file = path_and_file.second;
     std::string path = file->path.substr(dir.length());
     dl_pcheck (fprintf (f, "%s %llu %llu\n", path.c_str(),
           file->crc64, file->crc64_with_comments));

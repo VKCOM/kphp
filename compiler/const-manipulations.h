@@ -216,7 +216,7 @@ protected:
     if (v->type() == op_concat || v->type() == op_string_build) {
       in_concat++;
 
-      FOREACH(v, i) {
+      FOREACH_VERTEX(v, i) {
         if (!visit(*i)) {
           in_concat--;
           return false;
@@ -293,7 +293,7 @@ protected:
       CREATE_VERTEX(new_val, op_string);
       new_val->location = v->get_location();
 
-      FOREACH(v, i) {
+      FOREACH_VERTEX(v, i) {
         VertexPtr res = visit(*i);
         kphp_error(res->has_get_string(), ("expected type convertible to string, but got: " + OpInfo::str(res->type())).c_str());
         new_val->str_val += res->get_string();
@@ -361,7 +361,7 @@ protected:
     long long res_hash = v->args().size();
     res_hash = res_hash * HASH_MULT + MAGIC1;
 
-    FOREACH(v, it) {
+    FOREACH_VERTEX(v, it) {
       res_hash = res_hash * HASH_MULT + visit(GenTree::get_actual_value(*it));
     }
 
@@ -434,7 +434,7 @@ protected:
   std::string on_array(VertexAdaptor<op_array> v) override {
     std::string res;
 
-    FOREACH(v, it) {
+    FOREACH_VERTEX(v, it) {
       res += visit(GenTree::get_actual_value(*it)) + ", ";
     }
 

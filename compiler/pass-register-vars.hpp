@@ -61,7 +61,7 @@ class CollectConstVarsPass : public FunctionPassBase {
         var_id->dependency_level = 0;
       } else {
         int max_dep_level = 1;
-        FOREACH(root.as<op_array>()->args(), it) {
+        FOREACH_VERTEX(root.as<op_array>()->args(), it) {
           max_dep_level = std::max(max_dep_level, get_dependency_level(*it) + 1);
         }
 

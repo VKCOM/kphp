@@ -745,7 +745,7 @@ inline void FunctionParams::compile (CodeGenerator &W) const {
   bool first = true;
   int ii = 0;
   VertexAdaptor <op_func_param_list> params = root->params();
-  FOREACH (params->params(), i) {
+  FOREACH_VERTEX (params->params(), i) {
     if ((*i)->type() == op_func_param) {
       assert ("functions with callback are not supported");
     }
@@ -785,17 +785,17 @@ void ClassDeclaration::compile (CodeGenerator &W) const {
   W << OpenFile(klass->header_name, "cl");
   W << "#pragma once" << NL;
 
-  FOREACH(klass->vars, var) {
-    ClassData *dep = (*var)->tinf_node.get_type()->get_class_type_inside();
+  for (auto var : klass->vars) {
+    ClassData *dep = var->tinf_node.get_type()->get_class_type_inside();
     if (dep != NULL && dep != klass.ptr) {
-      W << IncludeClass((*var)->tinf_node.get_type());
+      W << IncludeClass(var->tinf_node.get_type());
     }
   }
 
   W << NL << "struct " << klass->src_name << " " << BEGIN;
   W << "int ref_cnt;" << NL << NL;
-  FOREACH(klass->vars, var) {
-    W << TypeName(tinf::get_type(*var)) << " $" << (*var)->name << ";" << NL;
+  for (auto var : klass->vars) {
+    W << TypeName(tinf::get_type(var)) << " $" << var->name << ";" << NL;
   }
 
   W << NL << "inline const char *get_class() const " << BEGIN <<  "return ";
@@ -975,8 +975,8 @@ inline void InitScriptsCpp::compile (CodeGenerator &W) const {
     ExternInclude ("php_script.h") <<
     ExternInclude ("init_scripts.h");
 
-  FOREACH (main_file_ids, i) {
-    FunctionPtr main_function = (*i)->main_function;
+  for (auto i : main_file_ids) {
+    FunctionPtr main_function = i->main_function;
     W << Include (main_function->header_full_name) <<
          Include ("dfs." + main_function->header_name);
   }
@@ -986,19 +986,19 @@ inline void InitScriptsCpp::compile (CodeGenerator &W) const {
   W << InitFuncPtrs (source_functions);
   W << StaticInit (all_functions);
 
-  FOREACH (main_file_ids, i) {
-    W << RunFunction ((*i)->main_function);
+  for (auto i : main_file_ids) {
+    W << RunFunction (i->main_function);
   }
 
   W << "void init_scripts (void)" <<
        BEGIN <<
          "init_func_ptrs();" << NL;
 
-  FOREACH (main_file_ids, i) {
+  for (auto i : main_file_ids) {
     W << "set_script (" <<
-            "\"@" << (*i)->short_file_name << "\", " <<
-            FunctionName ((*i)->main_function) << "$run, " <<
-            FunctionName ((*i)->main_function) << "$dfs_clear);" << NL;
+            "\"@" << i->short_file_name << "\", " <<
+            FunctionName (i->main_function) << "$run, " <<
+            FunctionName (i->main_function) << "$dfs_clear);" << NL;
   }
 
   W << END;
@@ -1031,7 +1031,7 @@ inline static void add_dependent_declarations(VertexPtr vertex, std::map<std::st
     }
 
     case op_array:
-      FOREACH(vertex.as<op_array>(), array_el_it) {
+      FOREACH_VERTEX(vertex.as<op_array>(), array_el_it) {
         add_dependent_declarations(*array_el_it, dependent_vars);
       }
       break;
@@ -1064,7 +1064,7 @@ inline void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
 }
 
 static inline bool can_generate_raw_representation(VertexAdaptor<op_array> vertex) {
-  FOREACH(vertex->args(), it) {
+  FOREACH_VERTEX(vertex->args(), it) {
     switch (GenTree::get_actual_value(*it)->type()) {
       case op_int_const:
       case op_float_const:
@@ -1089,8 +1089,8 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
 
   W << "static const union { struct { int a; int b; } is; double d; } raw_arrays[] = { ";
 
-  FOREACH(const_array_vars, var_it) {
-    VertexAdaptor<op_array> vertex = (*var_it)->init_val.as<op_array>();
+  for (auto var_it : const_array_vars) {
+    VertexAdaptor<op_array> vertex = var_it->init_val.as<op_array>();
 
     TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at(Key::any_key());
 
@@ -1171,23 +1171,23 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   vector <VarPtr> const_regexp_vars;
   std::map<std::string, VertexPtr> dependent_vars;
 
-  FOREACH (vars, var) {
-    if ((*var)->tinf_node.get_type()->get_class_type_inside()) {
-      W << IncludeClass((*var)->tinf_node.get_type());
+  for (auto var : vars) {
+    if (var->tinf_node.get_type()->get_class_type_inside()) {
+      W << IncludeClass(var->tinf_node.get_type());
     }
 
-    W << VarDeclaration (*var);
-    if ((*var)->type ()== VarData::var_const_t && (*var)->global_init_flag) {
-      switch ((*var)->init_val->type()) {
+    W << VarDeclaration (var);
+    if (var->type ()== VarData::var_const_t && var->global_init_flag) {
+      switch (var->init_val->type()) {
         case op_string:
-          const_string_vars.push_back(*var);
+          const_string_vars.push_back(var);
           break;
         case op_conv_regexp:
-          const_regexp_vars.push_back(*var);
+          const_regexp_vars.push_back(var);
           break;
         case op_array: {
-          add_dependent_declarations((*var)->init_val, dependent_vars);
-          const_array_vars.push_back(*var);
+          add_dependent_declarations(var->init_val, dependent_vars);
+          const_array_vars.push_back(var);
           break;
         }
         default:
@@ -1196,8 +1196,8 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
     }
   }
 
-  FOREACH(dependent_vars, name_vertex_it) {
-    W << VarDeclaration(name_vertex_it->second->get_var_id(), true, true);
+  for (auto name_and_vertex : dependent_vars) {
+    W << VarDeclaration(name_and_vertex.second->get_var_id(), true, true);
   }
 
   if (file_num == 0) {
@@ -1208,12 +1208,12 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   vector <int> const_string_shifts (const_string_vars.size());
   vector <int> const_string_length (const_string_vars.size());
   int ii = 0;
-  FOREACH (const_string_vars, var) {
+  for (auto var : const_string_vars) {
     int shift_to_align = (((int)raw_data.size() + 7) & -8) - (int)raw_data.size();
     if (shift_to_align != 0) {
       raw_data.append (shift_to_align, 0);
     }
-    const string &s = (*var)->init_val.as <op_string>()->get_string();
+    const string &s = var->init_val.as <op_string>()->get_string();
     int raw_len = string_raw_len (static_cast<int>(s.size()));
     kphp_assert (raw_len != -1);
     const_string_shifts[ii] = (int)raw_data.size();
@@ -1244,9 +1244,9 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
       }
     }
 
-    FOREACH (const_regexp_vars, var) {
-      if ((*var)->dependency_level == pr) {
-        W << InitVar(*var);
+    for (auto var : const_regexp_vars) {
+      if (var->dependency_level == pr) {
+        W << InitVar(var);
       }
     }
 
@@ -1274,10 +1274,10 @@ inline void VarsCpp::compile (CodeGenerator &W) const {
   vector <vector <VarPtr> > vcpp (parts_cnt);
 
   int max_dependency_level = 0;
-  FOREACH (vars, i) {
-    int vi = (unsigned)hash ((*i)->name) % parts_cnt;
-    vcpp[vi].push_back (*i);
-    max_dependency_level = std::max(max_dependency_level, (*i)->dependency_level);
+  for (auto var : vars) {
+    int vi = (unsigned)hash (var->name) % parts_cnt;
+    vcpp[vi].push_back (var);
+    max_dependency_level = std::max(max_dependency_level, var->dependency_level);
   }
 
   for (int i = 0; i < parts_cnt; i++) {
@@ -1325,9 +1325,7 @@ inline FunctionStaticInit::FunctionStaticInit (FunctionPtr function, bool in_hea
 }
 
 inline static void init_vars(const vector<VarPtr> & vars, CodeGenerator &W) {
-  FOREACH (vars, i) {
-    VarPtr var = *i;
-
+  for (auto var : vars) {
     if (var->global_init_flag || !var->optimize_flag) {
       continue;
     }
@@ -1372,8 +1370,7 @@ inline StaticInit::StaticInit (const vector <FunctionPtr> &all_functions) :
   all_functions (all_functions) {
 }
 inline void StaticInit::compile (CodeGenerator &W) const {
-  FOREACH (all_functions, i) {
-    FunctionPtr to = *i;
+  for (auto to : all_functions) {
     if (!to->is_static_init_empty_body()) {
       W << Include(to->header_full_name);
     }
@@ -1384,8 +1381,7 @@ inline void StaticInit::compile (CodeGenerator &W) const {
   W << " " << BEGIN;
   W << "init_static_once();" << NL;
   W << "const_vars_init();" << NL;
-  FOREACH (all_functions, i) {
-    FunctionPtr to = *i;
+  for (auto to : all_functions) {
     if (!to->is_static_init_empty_body()) {
       W << FunctionName(to) << "$static_init();" << NL;
     }
@@ -1404,12 +1400,12 @@ void DfsInit::compile_dfs_init_part (
     int part_i, CodeGenerator &W) {
 
   if (full_flag) {
-    FOREACH (used_vars, var) {
-      if ((*var)->tinf_node.get_type()->get_class_type_inside()) {
-        W << IncludeClass((*var)->tinf_node.get_type());
+    for (auto var : used_vars) {
+      if (var->tinf_node.get_type()->get_class_type_inside()) {
+        W << IncludeClass(var->tinf_node.get_type());
       }
 
-      W << VarExternDeclaration (*var);
+      W << VarExternDeclaration (var);
     }
   }
   W << "void " << FunctionName (func) << "$dfs_init" << int_to_str (part_i) << " (void)";
@@ -1417,8 +1413,7 @@ void DfsInit::compile_dfs_init_part (
   if (full_flag) {
     W << " " << BEGIN;
 
-    FOREACH (used_vars, i) {
-      VarPtr var = *i;
+    for (auto var : used_vars) {
       if (var->is_constant) {
         continue;
       }
@@ -1445,8 +1440,7 @@ void DfsInit::compile_dfs_init_part (
   if (full_flag) {
     W << " " << BEGIN;
 
-    FOREACH (used_vars, i) {
-      VarPtr var = *i;
+    for (auto var : used_vars) {
       if (var->is_constant) {
         continue;
       }
@@ -1472,8 +1466,7 @@ void DfsInit::compile_dfs_init_func (
     for (int i = 0; i < parts_n; i++) {
       W << Include (header_names[i]);
     }
-    FOREACH (used_functions, i) {
-      FunctionPtr func = *i;
+    for (auto func : used_functions) {
       if (func->type() == FunctionData::func_global) {
         W << Include (func->header_full_name);
       }
@@ -1484,8 +1477,7 @@ void DfsInit::compile_dfs_init_func (
   if (full_flag) {
     W << " " << BEGIN;
 
-    FOREACH (used_functions, i) {
-      FunctionPtr func = *i;
+    for (auto func : used_functions) {
       if (func->type() == FunctionData::func_global) {
         W << FunctionCallFlag (func) << " = false;" << NL;
       }
@@ -1565,9 +1557,9 @@ inline void DfsInit::compile (CodeGenerator &W) const {
   set <VarPtr> used_vars[parts_n];
   collect_used_funcs_and_vars (main_func, &used_functions, used_vars, parts_n);
   vector <ClassPtr> classes = G->get_classes();
-  FOREACH(classes, ci) {
-    if (ci->not_null()) {
-      collect_used_funcs_and_vars((*ci)->init_function, &used_functions, used_vars, parts_n);
+  for (auto ci : classes) {
+    if (ci.not_null()) {
+      collect_used_funcs_and_vars(ci->init_function, &used_functions, used_vars, parts_n);
     }
   }
 
@@ -1602,8 +1594,7 @@ inline void DfsInit::compile (CodeGenerator &W) const {
 }
 
 static inline void include_dependent_headers (FunctionPtr function, CodeGenerator &W) {
-  FOREACH (function->dep, it) {
-    FunctionPtr to_include = *it;
+  for (auto to_include : function->dep) {
     if (to_include == function ||
         to_include->type() == FunctionData::func_extern) {
       continue;
@@ -1611,28 +1602,28 @@ static inline void include_dependent_headers (FunctionPtr function, CodeGenerato
 
     W << Include (to_include->header_full_name);
   }
-  FOREACH (function->global_var_ids, global_var) {
-    if ((*global_var)->tinf_node.get_type()->get_class_type_inside()) {
-      W << IncludeClass((*global_var)->tinf_node.get_type());
+  for (auto global_var : function->global_var_ids) {
+    if (global_var->tinf_node.get_type()->get_class_type_inside()) {
+      W << IncludeClass(global_var->tinf_node.get_type());
     }
   }
 }
 
 static inline void declare_global_vars (FunctionPtr function, CodeGenerator &W) {
-  FOREACH (function->global_var_ids, global_var) {
-    W << VarExternDeclaration (*global_var) << NL;
+  for (auto global_var : function->global_var_ids) {
+    W << VarExternDeclaration (global_var) << NL;
   }
 }
 
 static inline void declare_const_vars (FunctionPtr function, CodeGenerator &W) {
-  FOREACH (function->const_var_ids, const_var) {
-    W << VarExternDeclaration (*const_var) << NL;
+  for (auto const_var : function->const_var_ids) {
+    W << VarExternDeclaration (const_var) << NL;
   }
 }
 
 static inline void declare_static_vars (FunctionPtr function, CodeGenerator &W) {
-  FOREACH (function->static_var_ids, static_var) {
-    W << VarDeclaration(*static_var) << NL;
+  for (auto static_var : function->static_var_ids) {
+    W << VarDeclaration(static_var) << NL;
   }
 }
 
@@ -1644,18 +1635,18 @@ void FunctionH::compile (CodeGenerator &W) const {
   W << "#pragma once" << NL <<
        ExternInclude ("php_functions.h");
 
-  FOREACH(function->tinf_nodes, tinf_node) {
-    if (tinf_node->get_type()->get_class_type_inside()) {
-      W << IncludeClass(tinf_node->get_type());
+  for (auto const &tinf_node : function->tinf_nodes) {
+    if (tinf_node.get_type()->get_class_type_inside()) {
+      W << IncludeClass(tinf_node.get_type());
     }
   }
 
-  FOREACH (function->header_global_var_ids, global_var) {
-    W << VarExternDeclaration (*global_var) << NL;
+  for (auto global_var : function->header_global_var_ids) {
+    W << VarExternDeclaration (global_var) << NL;
   }
 
-  FOREACH (function->header_const_var_ids, const_var) {
-    W << VarExternDeclaration (*const_var) << NL;
+  for (auto const_var : function->header_const_var_ids) {
+    W << VarExternDeclaration (const_var) << NL;
   }
 
   if (function->type() == FunctionData::func_global) {
@@ -2481,12 +2472,12 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
  
 
   //MEMBER VARIABLES
-  FOREACH (func->param_ids, var) {
-    kphp_error(!(*var)->is_reference, "reference function parametrs are forbidden in resumable mode");
-    W << VarPlainDeclaration (*var);
+  for (auto var : func->param_ids) {
+    kphp_error(!var->is_reference, "reference function parametrs are forbidden in resumable mode");
+    W << VarPlainDeclaration (var);
   }
-  FOREACH (func->local_var_ids, var) {
-    W << VarPlainDeclaration (*var);
+  for (auto var : func->local_var_ids) {
+    W << VarPlainDeclaration (var);
   }
 
   W <<  Indent (-2) << "public:" << NL << Indent (+2);
@@ -2501,22 +2492,22 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
       Indent (+2);
     bool flag = false;
     int i = 0;
-    FOREACH (func->param_ids, var) {
+    for (auto var : func->param_ids) {
       if (flag) {
         W << "," << NL;
       } else {
         flag = true;
       }
-      W << VarName (*var) << "(" << VarName (*var) << ")";
+      W << VarName (var) << "(" << VarName (var) << ")";
       i++;
     }
-    FOREACH (func->local_var_ids, var) {
+    for (auto var : func->local_var_ids) {
       if (flag) {
         W << "," << NL;
       } else {
         flag = true;
       }
-      W << VarName (*var) << "()";
+      W << VarName (var) << "()";
     }
     W << Indent (-2);
   }
@@ -2546,13 +2537,13 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
   W << "return start_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
     "(new " << FunctionClassName (func) << "(";
   bool flag = false;
-  FOREACH (func->param_ids, var) {
+  for (auto var : func->param_ids) {
     if (flag) {
       W << ", ";
     } else {
       flag = true;
     }
-    W << VarName (*var);
+    W << VarName (var);
   }
   W << "));" << NL;
   W << END << NL;
@@ -2563,13 +2554,13 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
   W << "return fork_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
     "(new " << FunctionClassName (func) << "(";
   flag = false;
-  FOREACH (func->param_ids, var) {
+  for (auto var : func->param_ids) {
     if (flag) {
       W << ", ";
     } else {
       flag = true;
     }
-    W << VarName (*var);
+    W << VarName (var);
   }
   W << "));" << NL;
   W << END << NL;
@@ -2600,8 +2591,8 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
     W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
   }
 
-  FOREACH (func->local_var_ids, var) {
-    W << VarDeclaration (*var);
+  for (auto var : func->local_var_ids) {
+    W << VarDeclaration (var);
   }
 
   W <<  AsSeq (func_root->cmd()) << NL <<
@@ -2611,7 +2602,7 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
 
 void compile_string_build_raw (VertexAdaptor <op_string_build> root, CodeGenerator &W) {
   W << "(SB.clean()";
-  FOREACH (root->args(), i) {
+  FOREACH_VERTEX (root->args(), i) {
     VertexPtr v = *i;
 
     W << "+";
@@ -2665,7 +2656,7 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
   bool was_object = false;
   int static_length = 0;
   int ii = 0;
-  FOREACH (root->args(), i) {
+  FOREACH_VERTEX (root->args(), i) {
     info[ii].v = *i;
     VertexPtr value = GenTree::get_actual_value (*i);
     const TypeData *type = tinf::get_type (value);
@@ -3027,7 +3018,7 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
   sprintf (tmp, " (array_size (%d, %d, %s));", int_cnt + xx_cnt, string_cnt + xx_cnt, has_double_arrow ? "false" : "true");
   W << (const char *)tmp << NL;
 
-  FOREACH (root->args(), i) {
+  FOREACH_VERTEX (root->args(), i) {
     W << arr_name;
     VertexPtr cur = *i;
     if (cur->type() == op_double_arrow) {

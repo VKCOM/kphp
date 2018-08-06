@@ -120,11 +120,10 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     CREATE_VERTEX (name, op_func_name);
     name->str_val = name_str;
     CREATE_VERTEX (params, op_func_param_list, empty);
-    vector <VertexPtr> seq;
-    FOREACH(cur_class().constants, i) {
-      seq.push_back((*i).second);
-    }
+
+    vector <VertexPtr> seq = get_map_values(cur_class().constants);
     seq.insert(seq.end(), cur_class().static_members.begin(), cur_class().static_members.end());
+
     CREATE_VERTEX (func_root, op_seq, seq);
     CREATE_VERTEX (main, op_function, name, params, func_root);
     func_force_return(main);
@@ -2590,12 +2589,12 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
   new_name->set_string(get_name_for_new_function_with_parent_call(info, real_name));
   vector <VertexPtr> new_params_next;
   vector <VertexPtr> new_params_call;
-  FOREACH(params_next, parameter) {
-    if ((*parameter)->type() == op_func_param) {
-      CLONE_VERTEX(new_var, op_var, (*parameter).as<op_func_param>()->var().as<op_var>());
+  for (auto const &parameter : params_next) {
+    if (parameter->type() == op_func_param) {
+      CLONE_VERTEX(new_var, op_var, parameter.as<op_func_param>()->var().as<op_var>());
       new_params_call.push_back(new_var);
-      new_params_next.push_back(clone_vertex(*parameter));
-    } else if ((*parameter)->type() == op_func_param_callback) {
+      new_params_next.push_back(clone_vertex(parameter));
+    } else if (parameter->type() == op_func_param_callback) {
       if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
         return VertexPtr();
       }

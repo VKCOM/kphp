@@ -633,22 +633,22 @@ class PreprocessDefinesConcatenationF {
       stage::die_if_global_errors();
 
       vector<VertexPtr> all_defines = defines_stream.get_as_vector();
-      FOREACH(all_defines, define) {
-        VertexPtr name_v = define->as<op_define>()->name();
-        stage::set_location(define->as<op_define>()->location);
+      for (auto define : all_defines) {
+        VertexPtr name_v = define.as<op_define>()->name();
+        stage::set_location(define.as<op_define>()->location);
         kphp_error_return (
           name_v->type() == op_string,
           "Define: first parameter must be a string"
         );
 
         string name = name_v.as<op_string>()->str_val;
-        if (!define_vertex.insert(make_pair(name, *define)).second) {
+        if (!define_vertex.insert(make_pair(name, define)).second) {
           kphp_error_return(0, dl_pstr("Duplicate define declaration: %s", name.c_str()));
         }
       }
 
-      FOREACH(all_defines, define) {
-        process_define(*define);
+      for (auto define : all_defines) {
+        process_define(define);
       }
 
       vector<FunctionPtr> funs = all_fun.get_as_vector();
@@ -666,7 +666,7 @@ class PreprocessDefinesConcatenationF {
           process_define(it->second);
         }
       }
-      FOREACH(root, i) {
+      FOREACH_VERTEX(root, i) {
         process_define_recursive(*i);
       }
     }
@@ -1258,7 +1258,7 @@ class PreprocessVarargPass : public FunctionPassBase {
 
         vector<VertexPtr> params_init;
         int ii = 0;
-        FOREACH (old_params, i) {
+        FOREACH_VERTEX (old_params, i) {
           VertexAdaptor<op_func_param> arg = *i;
           kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
           VertexPtr var = arg->var();
@@ -1289,7 +1289,7 @@ class PreprocessVarargPass : public FunctionPassBase {
         if (!params_init.empty()) {
           VertexPtr seq = root.as<op_function>()->cmd();
           kphp_assert(seq->type() == op_seq);
-          FOREACH(seq, i) {
+          FOREACH_VERTEX(seq, i) {
             params_init.push_back(*i);
           }
           CREATE_VERTEX(new_seq, op_seq, params_init);
@@ -2193,9 +2193,9 @@ class CalcBadVarsF {
       vector <pair <FunctionPtr, DepData *> > tmp_vec = tmp_stream.get_as_vector();
       CalcBadVars calc_bad_vars;
       calc_bad_vars.run (tmp_vec);
-      FOREACH (tmp_vec, i) {
-        delete (*i).second;
-        os << (*i).first;
+      for (auto const &fun_dep : tmp_vec) {
+        delete fun_dep.second;
+        os << fun_dep.first;
       }
     }
 };
@@ -2638,8 +2638,8 @@ class CodeGenF {
       W.init (new WriterCallback <OutputStreamT> (os));
 
       //TODO: parallelize;
-      FOREACH(xall, fun) {
-        prepare_generate_function(*fun);
+      for (auto const &fun : xall) {
+        prepare_generate_function(fun);
       }
       for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
         if (c->not_null() && !(*c)->is_fully_static())
@@ -2670,8 +2670,8 @@ class CodeGenF {
 
       //W << Async (XmainCpp());
       W << Async (InitScriptsH());
-      FOREACH (main_files, j) {
-        W << Async (DfsInit (*j));
+      for (auto const &main_file : main_files) {
+        W << Async (DfsInit (main_file));
       }
       W << Async (InitScriptsCpp (/*std::move*/main_files, source_functions, all_functions));
 
@@ -2735,12 +2735,10 @@ class CodeGenF {
     }
 
     void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
-      FOREACH (subdir_hash, i) {
-        string dir = i->first;
-        long long hash = i->second;
-        W << OpenFile ("_dep.cpp", dir, false);
+      for (auto const &dir_and_hash : subdir_hash) {
+        W << OpenFile ("_dep.cpp", dir_and_hash.first, false);
         char tmp[100];
-        sprintf (tmp, "%llx", hash);
+        sprintf (tmp, "%llx", dir_and_hash.second);
         W << "//" << (const char *)tmp << NL;
         W << CloseFile();
       }
@@ -2936,15 +2934,15 @@ public:
   }
 
   void analyze_function_vars (FunctionPtr function) {
-    FOREACH(function->local_var_ids, var) {
-      analyze_function_var(function, *var);
-    }
-    FOREACH(function->global_var_ids, var) {
-      analyze_function_var(function, *var);
-    }
-    FOREACH(function->static_var_ids, var) {
-      analyze_function_var(function, *var);
-    }
+    auto analyze_vars = [this, function](std::vector<VarPtr> const &vars) {
+      for (auto const &var: vars) {
+        analyze_function_var(function, var);
+      }
+    };
+
+    analyze_vars(function->local_var_ids);
+    analyze_vars(function->global_var_ids);
+    analyze_vars(function->static_var_ids);
   }
 
   inline void analyze_function_var (FunctionPtr function, VarPtr var) {

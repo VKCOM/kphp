@@ -87,8 +87,8 @@ void RestrictionIsset::find_dangerous_isset_warning (const vector <tinf::Node *>
         type_out(node->get_type()) <<" can't be null in KPHP, while it can be in PHP\n" <<
         " Chain of assignments:\n";
 
-  FOREACH (bt, it) {
-    ss << "  " << (*it)->get_description() << "\n";
+  for (auto const n : bt) {
+    ss << "  " << n->get_description() << "\n";
   }
   ss << "  " << node->get_description() << "\n";
   desc = ss.str();

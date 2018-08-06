@@ -55,8 +55,8 @@ string Target::target() {
 }
 string Target::dep_list() {
   stringstream ss;
-  FOREACH (deps, it) {
-    ss << (*it)->get_name() << " ";
+  for (auto const dep : deps) {
+    ss << dep->get_name() << " ";
   }
   return ss.str();
 }
@@ -67,8 +67,8 @@ void Make::run_target (Target *target) {
   //fprintf (stderr, "run target %s\n", target->get_name().c_str());
   bool ready = target->mtime != 0;
   if (ready) {
-    FOREACH (target->deps, dep) {
-      if ((*dep)->mtime > target->mtime) {
+    for (auto const dep : target->deps) {
+      if (dep->mtime > target->mtime) {
         ready = false;
         break;
       }
@@ -88,8 +88,8 @@ void Make::ready_target (Target *target) {
 
   targets_left--;
   target->is_ready = true;
-  FOREACH (target->rdeps, rdep) {
-    one_dep_ready_target (*rdep);
+  for (auto const rdep : target->rdeps) {
+    one_dep_ready_target (rdep);
   }
 }
 void Make::one_dep_ready_target (Target *target) {
@@ -110,8 +110,8 @@ void Make::wait_target (Target *target) {
   targets_waiting++;
 }
 void Make::register_target (Target *target, const vector <Target *> &deps) {
-  FOREACH (deps, dep) {
-    (*dep)->rdeps.push_back (target);
+  for (auto const dep : deps) {
+    dep->rdeps.push_back (target);
     target->pending_deps++;
   }
   target->deps = deps;
@@ -128,8 +128,8 @@ void Make::require_target (Target *target) {
     run_target (target);
   } else {
     wait_target (target);
-    FOREACH (target->deps, dep) {
-      require_target (*dep);
+    for (auto const dep : target->deps) {
+      require_target (dep);
     }
   }
 }
@@ -208,8 +208,8 @@ void Make::on_fail() {
   }
   fprintf (stdout, "Make failed. Waiting for %d children\n", (int)jobs.size());
   fail_flag = true;
-  FOREACH (jobs, it) {
-    int err = kill (it->first, SIGINT);
+  for (auto const &pid_and_target : jobs) {
+    int err = kill (pid_and_target.first, SIGINT);
     if (err < 0) {
       perror ("kill failed: ");
     }
@@ -313,9 +313,9 @@ Make::Make() :
   fail_flag(false)
 {}
 Make::~Make() {
-  //TODO: delte targets
-  FOREACH (all_targets, target) {
-    delete *target;
+  //TODO: delete targets
+  for (auto target : all_targets) {
+    delete target;
   }
 }
 

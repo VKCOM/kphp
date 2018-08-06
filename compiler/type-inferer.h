@@ -143,9 +143,7 @@ class RestrictionLess : public Restriction {
         find_call_trace_with_error(a_);
         desc += "\n";
 
-        FOREACH(descriptions_, it) {
-          const string & description = *it;
-
+        for (auto const &description : descriptions_) {
           desc += description + " \n";
         }
 
@@ -160,13 +158,7 @@ class RestrictionLess : public Restriction {
 
   private:
     bool is_parent_node(tinf::Node const * node) {
-      FOREACH(node_path_, parent_node_iterator) {
-        if (node == *parent_node_iterator) {
-          return true;
-        }
-      }
-
-      return false;
+      return std::find(node_path_.begin(), node_path_.end(), node) != node_path_.end();
     }
 
     /* эвристика упорядочивания ребер для поиска наиболее подходящего, для вывода ошибки на экран, полученная эмпирическим путем */
@@ -273,8 +265,7 @@ class RestrictionLess : public Restriction {
       std::vector<tinf::Edge *> ordered_edges{node_next};
       std::sort(ordered_edges.begin(), ordered_edges.end(), comparator);
 
-      FOREACH (ordered_edges, next_edge_iterator) {
-        tinf::Edge *e = *next_edge_iterator;
+      for (auto e : ordered_edges) {
         tinf::Node *from = e->from;
         tinf::Node *to = e->to;
 
@@ -824,6 +815,13 @@ class CollectMainEdgesPass : public FunctionPassBase {
       }
     }
 
+    template<class CollectionT>
+    void call_on_var(CollectionT const &collection) {
+      for (auto const &el: collection) {
+        on_var(el);
+      }
+    }
+
   public:
     explicit CollectMainEdgesPass (CollectMainEdgesCallbackBase *callback) :
       callback_ (callback) {
@@ -910,30 +908,15 @@ class CollectMainEdgesPass : public FunctionPassBase {
     }
 
     void on_finish() {
-      FOREACH (current_function->local_var_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->global_var_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->static_var_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->header_global_var_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->const_var_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->header_const_var_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->param_ids, var) {
-        on_var (*var);
-      }
-      FOREACH (current_function->define_ids, def) {
-        on_define (*def);
-      }
+      call_on_var(current_function->local_var_ids);
+      call_on_var(current_function->global_var_ids);
+      call_on_var(current_function->static_var_ids);
+      call_on_var(current_function->header_global_var_ids);
+      call_on_var(current_function->const_var_ids);
+      call_on_var(current_function->header_const_var_ids);
+      call_on_var(current_function->param_ids);
+
+      for (auto def : current_function->define_ids) on_define (def);
     }
 };
 

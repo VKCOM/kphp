@@ -162,8 +162,6 @@ inline vector<string> split(const string &s, char delimiter = ' ') {
   return res;
 }
 
-#define FOREACH(v, i_) for (__typeof (all (v)) i_ = all(v); !i_.empty(); i_.next())
-
 template<class T>
 void my_unique(T *v);
 

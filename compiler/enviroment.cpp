@@ -335,11 +335,12 @@ bool KphpEnviroment::init() {
     return false;
   }
 
-  FOREACH (includes_, it) {
-    as_dir (&*it);
+  for (string &include : includes_) {
+    as_dir (&include);
   }
-  FOREACH (main_files_, it) {
-    as_file (&*it);
+
+  for (string &main_file : main_files_) {
+    as_file (&main_file);
   }
 
   string user_cxx_flags;
@@ -412,24 +413,24 @@ void KphpEnviroment::debug() const {
           "LD_FLAGS=[" << get_ld_flags() << "]\n";
   cerr << "KPHP_INCLUDES=[";
   bool is_first = true;
-  FOREACH (get_includes(), it) {
+  for (auto const &include : get_includes()) {
     if (is_first) {
       is_first = false;
     } else {
       cerr << ";";
     }
-    cerr << *it;
+    cerr << include;
   }
   cerr << "]\n";
   cerr << "KPHP_MAIN_FILES=[";
   is_first = true;
-  FOREACH (get_main_files(), it) {
+  for (auto const &main_file : get_main_files()) {
     if (is_first) {
       is_first = false;
     } else {
       cerr << ";";
     }
-    cerr << *it;
+    cerr << main_file;
   }
   cerr << "]\n";
 }

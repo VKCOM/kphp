@@ -25,8 +25,8 @@ bool vectors_intersect (const vector <T> *a, const vector <T> *b) {
   if (a == NULL || b == NULL) {
     return false;
   }
-  FOREACH (*a, ai) {
-    if (in_vector (b, *ai)) {
+  for (T const &ai : *a) {
+    if (in_vector (b, ai)) {
       return true;
     }
   }
@@ -63,13 +63,14 @@ bool is_ub_functions (const FunctionPtr &first, const FunctionPtr &second) {
   if (a->size() > b->size()) {
     swap (a, b);
   }
-  vector <VarPtr>::iterator begin = b->begin(), end = b->end();
-  FOREACH (*a, i) {
-    begin = lower_bound (begin, end, *i);
+  auto begin = b->begin();
+  auto end = b->end();
+  for (auto const &i : *a) {
+    begin = lower_bound (begin, end, i);
     if (begin == end) {
       break;
     }
-    if (*begin == *i) {
+    if (*begin == i) {
       return true;
     }
   }
@@ -92,9 +93,10 @@ class UBMergeData {
       if ((*res_error & error_mask) == error_mask) {
         return;
       }
-      FOREACH (first, a) {
-        FOREACH (second, b) {
-          if (f (*a, *b)) {
+
+      for (A const &a : first) {
+        for (B const &b : second) {
+          if (f(a, b)) {
             *res_error |= error_mask;
             return;
           }
