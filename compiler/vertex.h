@@ -7,7 +7,7 @@
 
 size_t vertex_total_mem_used __attribute__ ((weak));
 
-#define FOREACH_VERTEX(v, i) for (__typeof (all (v)) i = all (v); !i.empty(); i.next())
+#define FOREACH_VERTEX(v, i) for (auto i = all (v); !i.empty(); i.next())
 
 
 VertexPtr clone_vertex (VertexPtr from);

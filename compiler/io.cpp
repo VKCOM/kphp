@@ -162,8 +162,7 @@ template <class T> void WriterData::dump (string &dest_str, T begin, T end, SrcF
 
     T cur_line = begin;
     for (T i = begin; i != end; i++, pos++) {
-      for (__typeof (i->line_ids.begin()) line = i->line_ids.begin(); line != i->line_ids.end(); line++) {
-        int id = *line;
+      for (int id : i->line_ids) {
         if (t == 0) {
           if (id < l) {
             l = id;
@@ -241,14 +240,14 @@ template <class T> void WriterData::dump (string &dest_str, T begin, T end, SrcF
 }
 
 void WriterData::dump (string &dest_str) {
-  for (__typeof (lines.begin()) i = lines.begin(); i != lines.end();) {
+  for (auto i = lines.begin(); i != lines.end();) {
     if (i->file.is_null()) {
       dump (dest_str, i, i + 1, SrcFilePtr());
       i++;
       continue;
     }
 
-    __typeof (lines.begin()) j;
+    decltype(i) j;
     for (j = i + 1; j != lines.end() && (j->file.is_null() || i->file == j->file) && !j->brk; j++) {
     }
     dump (dest_str, i, j, i->file);

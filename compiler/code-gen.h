@@ -833,7 +833,7 @@ void VarDeclaration::compile (CodeGenerator &W) const {
   }
   if (var->needs_const_iterator_flag) {
     W << (extern_flag ? "extern " : "") <<
-       "typeof(const_begin(" << VarName (var) <<"))" << " " <<
+       "decltype(const_begin(" << VarName (var) <<"))" << " " <<
        VarName (var) << "$it;" << NL;
   }
 }
@@ -2131,8 +2131,7 @@ void compile_foreach_ref_header (VertexAdaptor<op_foreach> root, CodeGenerator &
   W << TypeName (xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
   string it = gen_unique_name ("it");
-  W << "for (" <<
-          "typeof (begin (" << xs_copy_str << ")) " << it << " = begin (" << xs_copy_str << "); " <<
+  W << "for (auto " << it << " = begin (" << xs_copy_str << "); " <<
           it << " != end (" << xs_copy_str << "); " <<
           "++" << it << ")" <<
         BEGIN;

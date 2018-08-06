@@ -12,10 +12,10 @@ __thread int bicycle_thread_id;
 #define BICYCLE_MALLOC
 #ifdef BICYCLE_MALLOC
 extern "C" {
-extern __typeof (malloc) __libc_malloc;
-extern __typeof (free) __libc_free;
-extern __typeof (calloc) __libc_calloc;
-extern __typeof (realloc) __libc_realloc;
+extern decltype(malloc) __libc_malloc;
+extern decltype(free) __libc_free;
+extern decltype(calloc) __libc_calloc;
+extern decltype(realloc) __libc_realloc;
 
 typedef struct block_t_tmp block_t;
 struct block_t_tmp {

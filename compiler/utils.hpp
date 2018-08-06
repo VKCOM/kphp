@@ -65,7 +65,7 @@ template <typename KeyT, typename EntryT> MapToId<KeyT, EntryT>::MapToId (Enumer
 }
 
 template <typename KeyT, typename EntryT> int MapToId<KeyT, EntryT>::get_id (const KeyT &name) {
-  __typeof (name_to_id.begin()) res = name_to_id.find(name);
+  auto res = name_to_id.find(name);
   if (res == name_to_id.end()) {
     return 0;
   }
@@ -86,8 +86,8 @@ template <typename KeyT, typename EntryT> EntryT &MapToId<KeyT, EntryT>::operato
 
 template <typename KeyT, typename EntryT> set <int> MapToId <KeyT, EntryT>::get_ids() {
   set <int> res;
-  for (__typeof (name_to_id.begin()) i = name_to_id.begin(); i != name_to_id.end(); i++) {
-    res.insert (i->second);
+  for (auto const &i : name_to_id) {
+    res.insert (i.second);
   }
   return res;
 }

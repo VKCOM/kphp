@@ -546,7 +546,7 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
   int keys_n = 0;
   int first_request_id = 0;
   int bytes_sent = 0;
-  for (typeof (keys.begin()) it = keys.begin(); it != keys.end(); ++it) {
+  for (auto it = keys.begin(); it != keys.end(); ++it) {
     const string key = f$strval (it.get_value());
     const string real_key = mc_prepare_key (key);
     int is_immediate = mc_is_immediate_query (real_key);

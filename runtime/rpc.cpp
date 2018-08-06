@@ -1898,7 +1898,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout, bool ignore_answer) {
   array <var> result (tl_objects.size());
   int bytes_sent = 0;
-  for (typeof (tl_objects.begin()) it = tl_objects.begin(); it != tl_objects.end(); ++it) {
+  for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
     f$rpc_clean();
 
     tl_tree *result_tree = store_function (it.get_value());

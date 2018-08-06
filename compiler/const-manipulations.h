@@ -205,7 +205,7 @@ protected:
 
   bool on_func_name(VertexAdaptor<op_func_name> v) override {
     std::string name = resolve_define_name(v->str_val);
-    __typeof(define_vertex.find(name)) it = define_vertex.find(name);
+    auto it = define_vertex.find(name);
     if (it != define_vertex.end()) {
       return visit(it->second.as<op_define>()->value());
     }
@@ -283,7 +283,7 @@ protected:
 
   VertexPtr on_func_name(VertexAdaptor<op_func_name> v) override {
     std::string name = resolve_define_name(v->str_val);
-    __typeof(define_vertex.find(name)) iter = define_vertex.find(name);
+    auto iter = define_vertex.find(name);
     kphp_assert(iter != define_vertex.end());
     return iter->second.as<op_define>()->value();
   }

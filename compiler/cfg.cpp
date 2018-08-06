@@ -99,14 +99,10 @@ namespace cfg {
   };
 
   void CFG::find_splittable_vars (FunctionPtr func, vector <VarPtr> *splittable_vars) {
-    for (__typeof (all (func->local_var_ids)) i = all (func->local_var_ids); !i.empty(); i.next()) {
-      splittable_vars->push_back (*i);
-    }
+    splittable_vars->insert(splittable_vars->end(), func->local_var_ids.begin(), func->local_var_ids.end());
     VertexAdaptor <meta_op_function> func_root = func->root;
     VertexAdaptor <op_func_param_list> params = func_root->params();
-    for (__typeof (all (func->param_ids)) i = all (func->param_ids); !i.empty(); i.next()) {
-      VarPtr var = *i;
-
+    for (VarPtr var : func->param_ids) {
       VertexAdaptor <op_func_param> param = params->params()[var->param_i];
       VertexPtr init = param->var();
       kphp_assert (init->type() == op_var);
@@ -899,8 +895,8 @@ namespace cfg {
     node_was[v] = cur_dfs_mark;
     //fprintf (stdout, "calc_used %d\n", get_index (v));
 
-    for (__typeof (all(node_subtrees[v])) i = all (node_subtrees[v]); !i.empty(); i.next()) {
-      confirm_usage ((*i)->v, (*i)->recursive_flag);
+    for (SubTreePtr node_subtree : node_subtrees[v]) {
+      confirm_usage (node_subtree->v, node_subtree->recursive_flag);
     }
     for (NodesRange i = all (node_next[v]); !i.empty(); i.next()) {
       if (node_was[*i] != cur_dfs_mark) {

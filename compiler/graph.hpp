@@ -234,7 +234,7 @@ template <typename T> void XNameToId<T>::init (IdGen <T> *new_id_gen) {
 }
 
 template <typename T> T XNameToId<T>::get_id (const string &name) {
-  __typeof (name_to_id.begin()) res = name_to_id.find(name);
+  auto res = name_to_id.find(name);
   if (res == name_to_id.end()) {
     return T();
   }
@@ -258,8 +258,8 @@ template <typename T> T *XNameToId<T>::operator[] (int id) {
 
 template <typename T> set <T> XNameToId <T>::get_ids() {
   set <T> res;
-  for (__typeof (name_to_id.begin()) i = name_to_id.begin(); i != name_to_id.end(); i++) {
-    res.insert (i->second);
+  for (auto const &i : name_to_id) {
+    res.insert (i.second);
   }
   return res;
 }

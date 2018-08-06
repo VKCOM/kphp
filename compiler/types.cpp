@@ -598,7 +598,7 @@ void TypeData::set_lca (const TypeData *rhs, bool save_or_false) {
 
   {
     TypeData::Writer writer (lhs);
-    for (__typeof (rhs->lookup_begin()) rhs_it = rhs->lookup_begin(); rhs_it != rhs->lookup_end(); rhs_it++) {
+    for (auto rhs_it = rhs->lookup_begin(); rhs_it != rhs->lookup_end(); rhs_it++) {
       Key rhs_key = rhs_it->first;
       TypeData *rhs_value = rhs_it->second;
       TypeData *lhs_value = writer.write_at (rhs_key);

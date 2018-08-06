@@ -1774,9 +1774,9 @@ class CFGCallback : public cfg::CFGCallbackBase {
       std::swap (todo_parts.back(), parts);
     }
     void unused_vertices (vector <VertexPtr *> &v) {
-      for (__typeof (all (v)) i = all (v); !i.empty(); i.next()) {
+      for (auto i: v) {
         CREATE_VERTEX (empty, op_empty);
-        **i = empty;
+        *i = empty;
       }
     }
     FunctionPtr get_function() {
@@ -1808,13 +1808,13 @@ class CFGCallback : public cfg::CFGCallbackBase {
       new_var->tinf_node.copy_type_from (tinf::get_type (vars[0]));
 
       int param_i = -1;
-      for (__typeof (all (vars)) i = all (vars); !i.empty(); i.next()) {
-        if ((*i)->type() == VarData::var_param_t) {
-          param_i = (*i)->param_i;
-        } else if ((*i)->type() == VarData::var_local_t) {
+      for (VarPtr var : vars) {
+        if (var->type() == VarData::var_param_t) {
+          param_i = var->param_i;
+        } else if (var->type() == VarData::var_local_t) {
           //FIXME: remember to remove all unused variables
           //func->local_var_ids.erase (*i);
-          vector <VarPtr>::iterator tmp = std::find (function->local_var_ids.begin(), function->local_var_ids.end(), *i);
+          vector <VarPtr>::iterator tmp = std::find (function->local_var_ids.begin(), function->local_var_ids.end(), var);
           if (function->local_var_ids.end() != tmp) {
             function->local_var_ids.erase (tmp);
           } else {
@@ -1872,8 +1872,8 @@ class CFGCallback : public cfg::CFGCallbackBase {
         for (int i = 0; i <= n; i++) {
           if (i == n || (i > 0 && !eq_merge_data (to_merge[i - 1], to_merge[i]))) {
             vector <VarPtr> vars;
-            for (int j = 0; j < (int)ids.size(); j++) {
-              vars.push_back (parts[ids[j]][0]->get_var_id());
+            for (int id : ids) {
+              vars.push_back (parts[id][0]->get_var_id());
             }
             string new_name = vars[0]->name;
             int name_i = (int)new_name.size() - 1;
@@ -1885,9 +1885,9 @@ class CFGCallback : public cfg::CFGCallbackBase {
             new_name += int_to_str (merge_id++);
 
             VarPtr new_var = merge_vars (vars, new_name);
-            for (int j = 0; j < (int)ids.size(); j++) {
-              for (__typeof (all (parts[ids[j]])) v = all (parts[ids[j]]); !v.empty(); v.next()) {
-                (*v)->set_var_id (new_var);
+            for (int id : ids) {
+              for (VertexPtr v : parts[id]) {
+                v->set_var_id (new_var);
               }
             }
 
