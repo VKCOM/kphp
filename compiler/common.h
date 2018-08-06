@@ -125,3 +125,15 @@ inline unsigned long long hash_ll (const string &s) {
   return res;
 }
 
+template<class K, class V>
+std::vector<V> get_map_values(std::map<K, V> const &m) {
+  std::vector<V> res;
+  res.reserve(m.size());
+
+  for (const auto &kv: m) {
+    res.emplace_back(kv.second);
+  }
+
+  return res;
+}
+
