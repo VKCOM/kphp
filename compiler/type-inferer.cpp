@@ -161,8 +161,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs (int isset_flags, tinf::Node *no
   tinf::VarNode *var_node = dynamic_cast <tinf::VarNode *> (node);
   if (var_node != NULL) {
     VarPtr from_var = var_node->get_var();
-    FOREACH (var_node->next_range(), it) {
-      tinf::Edge *e = *it;
+    for (auto e : var_node->get_next()) {
       if (all(*(e->from_at)).size() != 0) {
         continue;
       }
@@ -396,8 +395,7 @@ void NodeRecalc::on_changed() {
   __sync_synchronize();
 
   AutoLocker <Lockable *> locker (node_);
-  FOREACH (node_->rev_next_range(), it) {
-    tinf::Edge *e = *it;
+  for (auto e : node_->get_rev_next()) {
     inferer_->recalc_node (e->from);
   }
 }
@@ -441,12 +439,12 @@ void VarNodeRecalc::do_recalc() {
     kphp_error (0, dl_pstr ("%s: %d\n", node_->get_description().c_str(), node_->recalc_cnt_));
     kphp_fail();
   }
-  FOREACH (node_->next_range(), it) {
-    tinf::Edge *e = *it;
+  for (auto e : node_->get_next()) {
     set_lca_at (e->from_at, e->to);
     inferer_->add_node (e->to);
   }
 }
+
 template <PrimitiveType tp>
 void ExprNodeRecalc::recalc_ptype() {
 

@@ -264,13 +264,13 @@ class RestrictionLess : public Restriction {
 
       ComparatorByEdgePriorityRelativeToExpectedType comparator(expected);
 
-      typeof(cur_node->next_range()) node_range = cur_node->next_range();
+      auto &node_next = cur_node->get_next();
 
-      if (node_range.empty()) {
+      if (node_next.empty()) {
         return comparator.is_priority_less_than_default(cur_node);
       }
 
-      std::vector<tinf::Edge *> ordered_edges(node_range.begin, node_range.end);
+      std::vector<tinf::Edge *> ordered_edges{node_next};
       std::sort(ordered_edges.begin(), ordered_edges.end(), comparator);
 
       FOREACH (ordered_edges, next_edge_iterator) {

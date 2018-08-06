@@ -40,11 +40,12 @@ namespace tinf {
       void add_edge (Edge *edge);
       void add_rev_edge(Edge *edge);
 
-      inline Range <vector <Edge *>::iterator> next_range() {
-        return all (next_);
+      inline vector<Edge *>& get_next() {
+        return next_;
       }
-      inline Range <vector <Edge *>::iterator> rev_next_range() {
-        return all (rev_next_);
+
+      inline vector<Edge *>& get_rev_next() {
+        return rev_next_;
       }
 
       bool try_start_recalc();
