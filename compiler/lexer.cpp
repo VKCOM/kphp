@@ -118,16 +118,13 @@ void LexerData::flush_str() {
 }
 
 const map <string, string> &config_func() {
-  static bool inited = false;
-  static map <string, string> to;
-  if (!inited) {
-    to["attr_wrap"] = "attrWrap";
-    to["logout_hash"] = "logoutHash";
-    to["videocall_hash"] = "videocallHash";
-    to["to_json"] = "convertToJSON";
-    to["lang"] = "lang";
-    inited = true;
-  }
+  static map <string, string> to
+    {{"attr_wrap"     , "attrWrap"},
+     {"logout_hash"   , "logoutHash"},
+     {"videocall_hash", "videocallHash"},
+     {"to_json"       , "convertToJSON"},
+     {"lang"          , "lang"}};
+
   return to;
 }
 
