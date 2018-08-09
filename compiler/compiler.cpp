@@ -153,8 +153,8 @@ bool split_by_break_file (VertexAdaptor <op_function> root, vector <VertexPtr> *
   bool need_split = false;
 
   VertexAdaptor <op_seq> seq = root->cmd();
-  for (VertexRange i = seq->args(); !i.empty(); i.next()) {
-    if ((*i)->type() == op_break_file) {
+  for (auto i : seq->args()) {
+    if (i->type() == op_break_file) {
       need_split = true;
       break;
     }
@@ -167,19 +167,20 @@ bool split_by_break_file (VertexAdaptor <op_function> root, vector <VertexPtr> *
   vector <VertexPtr> splitted;
   {
     vector <VertexPtr> cur_next;
-    VertexRange i = seq->args();
+    VertexRange args = seq->args();
+    auto cur_arg = args.begin();
     while (true) {
-      if (i.empty() || (*i)->type() == op_break_file) {
+      if ((cur_arg == args.end()) || (*cur_arg)->type() == op_break_file) {
         CREATE_VERTEX (new_seq, op_seq, cur_next);
         splitted.push_back (new_seq);
         cur_next.clear();
       } else {
-        cur_next.push_back (*i);
+        cur_next.push_back (*cur_arg);
       }
-      if (i.empty()) {
+      if (cur_arg == args.end()) {
         break;
       }
-      i.next();
+      ++cur_arg;
     }
   }
 
@@ -397,10 +398,9 @@ class CollectRequiredPass : public FunctionPassBase {
 
       if (root->type() == op_require || root->type() == op_require_once) {
         VertexAdaptor <meta_op_require> require = root;
-        for (VertexRange i = require->args(); !i.empty(); i.next()) {
-          kphp_error_act ((*i)->type() == op_string, "Not a string in 'require' arguments", continue);
-          VertexAdaptor <op_string> cur = *i;
-          pair <SrcFilePtr, bool> tmp = callback->require_file (cur->str_val, "");
+        for (auto &cur : require->args()) {
+          kphp_error_act (cur->type() == op_string, "Not a string in 'require' arguments", continue);
+          pair <SrcFilePtr, bool> tmp = callback->require_file (cur->get_string(), "");
           SrcFilePtr file = tmp.first;
           bool required = tmp.second;
           if (required) {
@@ -410,9 +410,9 @@ class CollectRequiredPass : public FunctionPassBase {
           CREATE_VERTEX (call, op_func_call);
           if (file.not_null()) {
             call->str_val = file->main_func_name;
-            *i = call;
+            cur = call;
           } else {
-            kphp_error (0, dl_pstr ("Cannot require [%s]\n", cur->str_val.c_str()));
+            kphp_error (0, dl_pstr ("Cannot require [%s]\n", cur->get_string().c_str()));
           }
         }
       }
@@ -666,8 +666,8 @@ class PreprocessDefinesConcatenationF {
           process_define(it->second);
         }
       }
-      FOREACH_VERTEX(root, i) {
-        process_define_recursive(*i);
+      for(auto i : *root) {
+        process_define_recursive(i);
       }
     }
 
@@ -1258,8 +1258,8 @@ class PreprocessVarargPass : public FunctionPassBase {
 
         vector<VertexPtr> params_init;
         int ii = 0;
-        FOREACH_VERTEX (old_params, i) {
-          VertexAdaptor<op_func_param> arg = *i;
+        for (auto i : *old_params) {
+          VertexAdaptor<op_func_param> arg = i;
           kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
           VertexPtr var = arg->var();
           VertexPtr def;
@@ -1289,8 +1289,8 @@ class PreprocessVarargPass : public FunctionPassBase {
         if (!params_init.empty()) {
           VertexPtr seq = root.as<op_function>()->cmd();
           kphp_assert(seq->type() == op_seq);
-          FOREACH_VERTEX(seq, i) {
-            params_init.push_back(*i);
+          for(auto i : *seq) {
+            params_init.push_back(i);
           }
           CREATE_VERTEX(new_seq, op_seq, params_init);
           root.as<op_function>()->cmd() = new_seq;
@@ -1492,8 +1492,7 @@ void calc_throws_dfs (FunctionPtr from, IdMap <vector <FunctionPtr> > &graph, ve
     kphp_warning (ss.str().c_str());
   }
   bt->push_back (from);
-  for (FunctionRange i = all (graph[from]); !i.empty(); i.next()) {
-    FunctionPtr to = *i;
+  for (FunctionPtr to : graph[from]) {
     if (!to->root->throws_flag) {
       to->root->throws_flag = true;
       calc_throws_dfs (to, graph, bt);
@@ -1612,7 +1611,7 @@ class CheckFunctionCallsPass : public FunctionPassBase {
       );
 
       kphp_error (
-        call_params.empty() || call_params[0]->type() != op_varg,
+        call_params.begin() == call_params.end() || call_params[0]->type() != op_varg,
         dl_pstr (
           "call_user_func_array is used for function [%s:%s]",
           f->file_id->file_name.c_str(), f->name.c_str()
@@ -2485,8 +2484,7 @@ class FinalCheckPass : public FunctionPassBase {
         }
       }
       if (vertex->type() == op_unset || vertex->type() == op_isset) {
-        for (VertexRange i = vertex.as<meta_op_xset>()->args(); !i.empty(); i.next()) {
-          VertexPtr varVertex = *i;
+        for (auto varVertex : vertex.as<meta_op_xset>()->args()) {
           if (varVertex->type() != op_var) {
             continue;
           }

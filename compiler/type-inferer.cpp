@@ -162,7 +162,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs (int isset_flags, tinf::Node *no
   if (var_node != NULL) {
     VarPtr from_var = var_node->get_var();
     for (auto e : var_node->get_next()) {
-      if (all(*(e->from_at)).size() != 0) {
+      if (e->from_at->begin() != e->from_at->end()) {
         continue;
       }
 
@@ -463,9 +463,9 @@ void ExprNodeRecalc::recalc_ternary (VertexAdaptor <op_ternary> ternary) {
 
 void ExprNodeRecalc::apply_type_rule_func (VertexAdaptor <op_type_rule_func> func, VertexPtr expr) {
   if (func->str_val == "lca") {
-    FOREACH_VERTEX (func->args(), i) {
+    for (auto i : func->args()) {
       //TODO: is it hack?
-      apply_type_rule (*i, expr);
+      apply_type_rule (i, expr);
     }
     return;
   }
@@ -605,16 +605,16 @@ void ExprNodeRecalc::recalc_min_max (VertexAdaptor <meta_op_builtin_func> func) 
   if (args.size() == 1) {
     set_lca (args[0], &MultiKey::any_key (1));
   } else {
-    FOREACH_VERTEX (args, i) {
-      set_lca (*i);
+    for (auto i : args) {
+      set_lca (i);
     }
   }
 }
 
 void ExprNodeRecalc::recalc_array (VertexAdaptor <op_array> array) {
   recalc_ptype <tp_array>();
-  FOREACH_VERTEX (array->args(), i) {
-    set_lca_at (&MultiKey::any_key (1), *i);
+  for (auto i : array->args()) {
+    set_lca_at (&MultiKey::any_key (1), i);
   }
 }
 

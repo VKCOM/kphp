@@ -61,8 +61,8 @@ class CollectConstVarsPass : public FunctionPassBase {
         var_id->dependency_level = 0;
       } else {
         int max_dep_level = 1;
-        FOREACH_VERTEX(root.as<op_array>()->args(), it) {
-          max_dep_level = std::max(max_dep_level, get_dependency_level(*it) + 1);
+        for (auto it : root.as<op_array>()->args()) {
+          max_dep_level = std::max(max_dep_level, get_dependency_level(it) + 1);
         }
 
         var_id->dependency_level = max_dep_level;
@@ -310,8 +310,7 @@ class RegisterVariables : public FunctionPassBase {
     }
 
     void visit_global_vertex (VertexAdaptor <op_global> global) {
-      for (VertexRange i = global->args(); !i.empty(); i.next()) {
-        VertexPtr var = *i;
+      for (auto var : global->args()) {
         kphp_error_act (
           var->type() == op_var,
           "unexpected expression in 'global'",
@@ -322,11 +321,10 @@ class RegisterVariables : public FunctionPassBase {
     }
 
     void visit_static_vertex (VertexAdaptor <op_static> stat) {
-      for (VertexRange i = stat->args(); !i.empty(); i.next()) {
+      for (auto node : stat->args()) {
         VertexAdaptor <op_var> var;
         VertexPtr default_value;
 
-        VertexPtr node = *i;
         if (node->type() == op_var) {
           var = node;
         } else if (node->type() == op_set) {
@@ -347,10 +345,10 @@ class RegisterVariables : public FunctionPassBase {
     }
     template <class VisitT>
     void visit_func_param_list (VertexAdaptor <op_func_param_list> list, VisitT &visit) {
-      for (VertexRange i = list->params(); !i.empty(); i.next()) {
-        kphp_assert ((*i).not_null());
-        kphp_assert ((*i)->type() == op_func_param);
-        VertexAdaptor <op_func_param> param = *i;
+      for (auto i : list->params()) {
+        kphp_assert (i.not_null());
+        kphp_assert (i->type() == op_func_param);
+        VertexAdaptor <op_func_param> param = i;
         VertexAdaptor <op_var> var = param->var();
         VertexPtr default_value;
         if (param->has_default()) {

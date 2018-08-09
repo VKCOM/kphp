@@ -225,8 +225,7 @@ void analyzer_check_array (VertexPtr to_check) {
   bool have_int_key = false;
   set<string> used_keys;
   int id = 0;
-  for (VertexRange i = all(to_check); !i.empty(); i.next()) {
-    VertexPtr v = (*i);
+  for (auto v : *to_check) {
     if (v->type() == op_double_arrow) {
       have_arrow = true;
       VertexPtr key = v.as<op_double_arrow>()->key();

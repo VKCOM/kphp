@@ -119,7 +119,7 @@ private:
 /*** Range ***/
 template <class Iterator>
 struct Range {
-  Iterator begin, end;
+  Iterator begin_, end_;
   typedef typename std::iterator_traits <Iterator>::value_type value_type;
   typedef typename std::iterator_traits <Iterator>::reference reference_type;
   bool empty();
@@ -127,16 +127,16 @@ struct Range {
   value_type &operator[] (size_t i);
   reference_type operator * ();
   value_type *operator -> ();
-  void next();
+
   Range();
   Range (Iterator begin, Iterator end);
+
+  Iterator begin() const;
+  Iterator end() const;
+
+  Range<std::reverse_iterator<Iterator>> get_reversed_range() const {
+    return {end_, begin_};
+  }
 };
-
-template <class A> Range<typename A::iterator> all (A &v);
-template <class A> Range<typename A::const_iterator> all (const A &v);
-template <class A> Range<typename A::reverse_iterator> reversed_all (A &v);
-template <class A> Range<typename A::const_reverse_iterator> reversed_all (const A &v);
-
-template <class T> Range <T> all (const Range <T> &range);
 
 #include "graph.hpp"

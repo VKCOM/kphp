@@ -315,5 +315,3 @@ private:
   DISALLOW_COPY_AND_ASSIGN (DefineData);
 };
 
-typedef Range <vector <FunctionPtr>::iterator > FunctionRange;
-typedef Range <vector <SrcFilePtr>::iterator> SrcFileRange;

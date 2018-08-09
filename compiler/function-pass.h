@@ -94,8 +94,8 @@ VertexPtr run_function_pass (VertexPtr vertex, FunctionPassT *pass, typename Fun
 
   VisitVertex <FunctionPassT> visit (vertex, pass, local);
   if (!pass->user_recursion(vertex, local, visit) && pass->need_recursion (vertex, local)) {
-    FOREACH_VERTEX (vertex, i) {
-      visit (*i);
+    for (auto &i : *vertex) {
+      visit (i);
     }
   }
 

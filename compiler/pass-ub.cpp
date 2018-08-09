@@ -185,10 +185,10 @@ void fix_ub_dfs (VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr())
       v->type() == op_log_or_let || v->type() == op_log_and_let || v->type() == op_require ||
       v->type() == op_require_once || v->type() == op_unset;
 
-    for (VertexRange i = all (*v); !i.empty(); i.next()) {
+    for (auto i : *v) {
       UBMergeData node_data;
       VarPtr last_ub_error_save = *last_ub_error;
-      fix_ub_dfs (*i, &node_data, v);
+      fix_ub_dfs (i, &node_data, v);
       *last_ub_error = last_ub_error_save;
       res |= data->merge_with (node_data, do_not_check);
     }
@@ -239,8 +239,8 @@ void fix_ub (VertexPtr v, vector <VarPtr> *foreach_vars) {
         return;
       }
     }
-    for (VertexRange i = all (*v); !i.empty(); i.next()) {
-      fix_ub (*i, foreach_vars);
+    for (auto i : *v) {
+      fix_ub (i, foreach_vars);
     }
     return;
   }

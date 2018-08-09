@@ -87,8 +87,8 @@ namespace cfg {
     if (v->type() == op_var && v->ref_flag) {
       ref->insert (v->get_var_id());
     }
-    for (VertexRange i = all (*v); !i.empty(); i.next()) {
-      collect_ref_vars (*i, ref);
+    for (auto i : *v) {
+      collect_ref_vars (i, ref);
     }
   }
 
@@ -141,8 +141,8 @@ namespace cfg {
     if (tree_node->type() == op_var) {
       add_usage (reads, new_usage (usage_read_t, tree_node));
     }
-    for (VertexRange i = all(*tree_node); !i.empty(); i.next()) {
-      collect_vars_usage (*i, writes, reads, throws_flag);
+    for (auto i : *tree_node) {
+      collect_vars_usage (i, writes, reads, throws_flag);
     }
   }
 
@@ -152,11 +152,11 @@ namespace cfg {
   }
 
   void CFG::create_cfg_exit_cycle (Node continue_dest, Node break_dest) {
-    for (NodesRange i = all (continue_nodes.back()); !i.empty(); i.next()) {
-      add_edge (*i, continue_dest);
+    for (Node i : continue_nodes.back()) {
+      add_edge (i, continue_dest);
     }
-    for (NodesRange i = all (break_nodes.back()); !i.empty(); i.next()) {
-      add_edge (*i, break_dest);
+    for (Node i : break_nodes.back()) {
+      add_edge (i, break_dest);
     }
     continue_nodes.pop_back();
     break_nodes.pop_back();
@@ -180,8 +180,8 @@ namespace cfg {
     exception_nodes.resize (exception_nodes.size() + 1);
   }
   void CFG::create_cfg_end_try (Node to) {
-    for (NodesRange i = all (exception_nodes.back()); !i.empty(); i.next()) {
-      add_edge (*i, to);
+    for (Node i : exception_nodes.back()) {
+      add_edge (i, to);
     }
     exception_nodes.pop_back();
   }
@@ -352,9 +352,8 @@ namespace cfg {
         start = new_node();
         *res_start = start;
 
-        VertexRange cur_params = tree_node.as<op_func_call>()->args();
         int ii = 0;
-        FOREACH_VERTEX (cur_params, i) {
+        for (auto cur : tree_node.as<op_func_call>()->args()) {
           bool weak_write_flag = false;
 
           if (params_inited && params[ii]->type() == op_func_param &&
@@ -362,7 +361,6 @@ namespace cfg {
             weak_write_flag = true;
           }
 
-          VertexPtr cur = *i;
           kphp_assert (cur.not_null());
           create_cfg (cur, &a, &b, false, weak_write_flag);
           add_edge (start, a);
@@ -398,10 +396,9 @@ namespace cfg {
         VertexAdaptor <op_list> list = tree_node;
         Node prev;
         create_cfg (list->array(), res_start, &prev);
-        VertexRange list_params = list->list();
-        for (int i = (int)list_params.size() - 1; i >= 0; i--) {
+        for (auto param : list->list().get_reversed_range()) {
           Node a, b;
-          create_cfg (list_params[i], &a, &b, true);
+          create_cfg (param, &a, &b, true);
           add_edge (prev, a);
           prev = b;
         }
@@ -617,26 +614,26 @@ namespace cfg {
         Node vars_read = new_node();
         {
           add_edge (vars_init, vars_read);
-          for (VertexRange i = switch_op->variables(); !i.empty(); i.next()) {
-            add_usage (vars_init, new_usage (usage_write_t, *i));
-            add_usage (vars_read, new_usage (usage_read_t, *i));
-            add_subtree (vars_init, new_subtree (*i, false));
-            add_subtree (vars_read, new_subtree (*i, false));
+          for (auto i : switch_op->variables()) {
+            add_usage (vars_init, new_usage (usage_write_t, i));
+            add_usage (vars_read, new_usage (usage_read_t, i));
+            add_subtree (vars_init, new_subtree (i, false));
+            add_subtree (vars_read, new_subtree (i, false));
           }
         }
 
         bool was_default = false;
         Node default_start;
-        FOREACH_VERTEX (switch_op->cases(), i) {
+        for (auto i : switch_op->cases()) {
           VertexPtr expr, cmd;
           bool is_default = false;
-          if ((*i)->type() == op_case) {
-            VertexAdaptor <op_case> cs = *i;
+          if (i->type() == op_case) {
+            VertexAdaptor <op_case> cs = i;
             expr = cs->expr();
             cmd = cs->cmd();
-          } else if ((*i)->type() == op_default) {
+          } else if (i->type() == op_default) {
             is_default = true;
-            VertexAdaptor <op_default> def = *i;
+            VertexAdaptor <op_default> def = i;
             cmd = def->cmd();
           } else {
             kphp_fail();
@@ -671,8 +668,8 @@ namespace cfg {
         *res_start = vars_init;
         *res_finish = finish;
 
-        FOREACH_VERTEX (switch_op->cases(), i) {
-          add_subtree (cond_start, new_subtree (*i, false));
+        for (auto i : switch_op->cases()) {
+          add_subtree (cond_start, new_subtree (i, false));
         }
 
         create_cfg_exit_cycle (finish, finish);
@@ -787,8 +784,7 @@ namespace cfg {
     node_mark[v] = usage;
 
     bool return_flag = false;
-    for (UsagesRange i = all (node_usages[v]); !i.empty(); i.next()) {
-      UsagePtr another_usage = *i;
+    for (UsagePtr another_usage : node_usages[v]) {
       if (try_uni_usages (usage, another_usage) && another_usage->type == usage_write_t) {
         return_flag = true;
       }
@@ -796,8 +792,8 @@ namespace cfg {
     if (return_flag) {
       return;
     }
-    for (NodesRange i = all (node_prev[v]); !i.empty(); i.next()) {
-      dfs (*i, usage);
+    for (Node i : node_prev[v]) {
+      dfs (i, usage);
     }
   }
 
@@ -805,8 +801,7 @@ namespace cfg {
     node_was[v] = cur_dfs_mark;
 
     bool return_flag = false;
-    for (UsagesRange i = all (node_usages[v]); !i.empty(); i.next()) {
-      UsagePtr another_usage = *i;
+    for (UsagePtr another_usage : node_usages[v]) {
       if (another_usage->v->get_var_id() == var) {
         if (another_usage->type == usage_write_t || another_usage->weak_write_flag) {
           return_flag = true;
@@ -819,9 +814,9 @@ namespace cfg {
       return UsagePtr();
     }
 
-    for (NodesRange i = all (node_next[v]); !i.empty(); i.next()) {
-      if (node_was[*i] != cur_dfs_mark) {
-        UsagePtr res = search_uninited (*i, var);
+    for (Node i : node_next[v]) {
+      if (node_was[i] != cur_dfs_mark) {
+        UsagePtr res = search_uninited (i, var);
         if (res.not_null()) {
           return res;
         }
@@ -845,17 +840,16 @@ namespace cfg {
 
     std::fill (node_mark.begin(), node_mark.end(), UsagePtr());
 
-    for (UsagesRange i = all (var_split->usage_gen); !i.empty(); i.next()) {
-      UsagePtr u = *i;
+    for (UsagePtr u : var_split->usage_gen) {
       dfs (u->node, u);
     }
 
     //fprintf (stdout, "PROCESS:[%s][%d]\n", var->name.c_str(), var->id);
 
     int parts_cnt = 0;
-    for (UsagesRange i = all (var_split->usage_gen); !i.empty(); i.next()) {
-      if (node_was [(*i)->node]) {
-        UsagePtr u = dsu_get (&var_split->parent, *i);
+    for (UsagePtr i : var_split->usage_gen) {
+      if (node_was [i->node]) {
+        UsagePtr u = dsu_get (&var_split->parent, i);
         if (u->part_id == -1) {
           u->part_id = parts_cnt++;
         }
@@ -868,10 +862,10 @@ namespace cfg {
     }
 
     vector < vector <VertexPtr> > parts(parts_cnt);
-    for (UsagesRange i = all (var_split->usage_gen); !i.empty(); i.next()) {
-      if (node_was[(*i)->node]) {
-        UsagePtr u = dsu_get (&var_split->parent, *i);
-        parts[u->part_id].push_back ((*i)->v);
+    for (UsagePtr i : var_split->usage_gen) {
+      if (node_was[i->node]) {
+        UsagePtr u = dsu_get (&var_split->parent, i);
+        parts[u->part_id].push_back (i->v);
       }
     }
 
@@ -884,8 +878,8 @@ namespace cfg {
       vertex_usage[v].used = true;
       if (recursive_flag) {
         vertex_usage[v].used_rec = true;
-        for (VertexRange i = all (*v); !i.empty(); i.next()) {
-          confirm_usage (*i, true);
+        for (auto i : *v) {
+          confirm_usage (i, true);
         }
       }
     }
@@ -898,9 +892,9 @@ namespace cfg {
     for (SubTreePtr node_subtree : node_subtrees[v]) {
       confirm_usage (node_subtree->v, node_subtree->recursive_flag);
     }
-    for (NodesRange i = all (node_next[v]); !i.empty(); i.next()) {
-      if (node_was[*i] != cur_dfs_mark) {
-        calc_used (*i);
+    for (Node i : node_next[v]) {
+      if (node_was[i] != cur_dfs_mark) {
+        calc_used (i);
       }
     }
   }
@@ -910,15 +904,15 @@ namespace cfg {
       unused_vertices->push_back (v);
       return;
     }
-    for (VertexRange i = all (**v); !i.empty(); i.next()) {
-      collect_unused (&*i, unused_vertices);
+    for (auto &i : **v) {
+      collect_unused (&i, unused_vertices);
     }
   }
 
   int CFG::register_vertices (VertexPtr v, int N) {
     set_index (&v, N++);
-    FOREACH_VERTEX (v, i) {
-      N = register_vertices (*i, N);
+    for (auto i : *v) {
+      N = register_vertices (i, N);
     }
     return N;
   }

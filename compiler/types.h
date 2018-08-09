@@ -72,7 +72,6 @@ private:
 public:
   typedef vector<Key>::const_iterator iterator;
   typedef vector<Key>::const_reverse_iterator reverse_iterator;
-  typedef Range <iterator> range;
   MultiKey();
   MultiKey (const MultiKey &multi_key);
   MultiKey &operator = (const MultiKey &multi_key);

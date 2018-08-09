@@ -615,24 +615,23 @@ class CollectMainEdgesPass : public FunctionPassBase {
         key->push_back (Key::any_key());
         val.key = key;
 
-        args.next();
-        FOREACH_VERTEX (args, i) {
-          create_set (val, *i);
+        ++args.begin_;
+        for (auto i : args) {
+          create_set (val, i);
         }
       }
 
 
       if (!function->varg_flag || !function->is_extern) {
         int ii = 0;
-        FOREACH_VERTEX (call->args(), arg) {
-
+        for (auto arg : call->args()) {
           if (!function->is_extern) {
-            create_set (as_lvalue (function, ii), *arg);
+            create_set (as_lvalue (function, ii), arg);
           }
 
           VertexAdaptor <meta_op_func_param> param = function_params[ii];
           if (param->var()->ref_flag) {
-            create_set(*arg, as_rvalue(function, ii));
+            create_set(arg, as_rvalue(function, ii));
           }
 
           ii++;
@@ -645,13 +644,13 @@ class CollectMainEdgesPass : public FunctionPassBase {
       VertexRange function_params = get_function_params(function->root);
 
       int ii = 0;
-      FOREACH_VERTEX (call->args(), arg) {
+      for (auto arg : call->args()) {
 
-        create_set(as_lvalue(function, ii), *arg);
+        create_set(as_lvalue(function, ii), arg);
 
         VertexAdaptor <meta_op_func_param> param = function_params[ii];
         if (param->var()->ref_flag) {
-          create_set(*arg, as_rvalue(function, ii));
+          create_set(arg, as_rvalue(function, ii));
         }
 
         ii++;
@@ -694,8 +693,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
       //Improve it!
       RValue val = as_set_value (list);
 
-      FOREACH_VERTEX (list->list(), i) {
-        VertexPtr cur = *i;
+      for (auto cur : list->list()) {
         if (cur->type() != op_lvalue_null) {
           create_set (cur, val);
         }
@@ -725,8 +723,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
       if (ifi_tp == ifi_error) {
         return;
       }
-      FOREACH_VERTEX (v, i) {
-        VertexPtr cur = *i;
+      for (auto cur : *v) {
         if (cur->type() == op_var && cur->get_var_id()->type() == VarData::var_const_t) {
           continue;
         }
@@ -916,7 +913,9 @@ class CollectMainEdgesPass : public FunctionPassBase {
       call_on_var(current_function->header_const_var_ids);
       call_on_var(current_function->param_ids);
 
-      for (auto def : current_function->define_ids) on_define (def);
+      for (auto def : current_function->define_ids) {
+        on_define (def);
+      }
     }
 };
 

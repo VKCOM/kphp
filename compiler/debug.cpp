@@ -228,8 +228,8 @@ void debugPrintVertexTree (VertexPtr root, int level) {
   }
   printf("%s %s\n", debugOperationName(root->type()).c_str(), debugVertexMore(root).c_str());
 
-  FOREACH_VERTEX (root, i) {
-    debugPrintVertexTree(*i, level + 1);
+  for (auto i : *root) {
+    debugPrintVertexTree(i, level + 1);
   }
 }
 

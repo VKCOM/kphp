@@ -268,49 +268,42 @@ template <typename T> set <T> XNameToId <T>::get_ids() {
 /*** Range ***/
 template <class Iterator>
 bool Range<Iterator>::empty() {
-  return begin == end;
+  return size() == 0;
 }
 template <class Iterator>
 size_t Range<Iterator>::size() {
-  return end - begin;
+  return static_cast<size_t>(std::distance(begin(), end()));
 }
+
 template <class Iterator>
 typename Range<Iterator>::value_type &Range<Iterator>::operator[] (size_t i) {
-  return begin[i];
+  return begin()[i];
 }
+
 template <class Iterator>
 typename Range<Iterator>::reference_type Range<Iterator>::operator * () {
-  return *begin;
+  return *begin();
 }
 template <class Iterator>
 typename Range<Iterator>::value_type *Range<Iterator>::operator -> () {
-  return &*begin;
-}
-template <class Iterator>
-void Range<Iterator>::next() {
-  begin++;
-}
-template <class Iterator>
-Range<Iterator>::Range() {
-}
-template <class Iterator>
-Range<Iterator>::Range (Iterator begin, Iterator end)
-  : begin (begin), end (end) {
+  return &*begin();
 }
 
-template <class A> Range<typename A::iterator> all (A &v) {
-  return Range <typename A::iterator> (v.begin(), v.end());
+template <class Iterator>
+Range<Iterator>::Range() {}
+
+template <class Iterator>
+Range<Iterator>::Range (Iterator begin, Iterator end)
+  : begin_ (begin), end_ (end) {
 }
-template <class A> Range<typename A::const_iterator> all (const A &v) {
-  return Range <typename A::const_iterator> (v.begin(), v.end());
+
+template <class Iterator>
+Iterator Range<Iterator>::begin() const {
+  return begin_;
 }
-template <class A> Range<typename A::reverse_iterator> reversed_all (A &v) {
-  return Range <typename A::reverse_iterator> (v.rbegin(), v.rend());
-}
-template <class A> Range<typename A::const_reverse_iterator> reversed_all (const A &v) {
-  return Range <typename A::const_reverse_iterator> (v.rbegin(), v.rend());
-}
-template <class T> Range <T> all (const Range <T> &range) {
-  return range;
+
+template <class Iterator>
+Iterator Range<Iterator>::end() const {
+  return end_;
 }
 

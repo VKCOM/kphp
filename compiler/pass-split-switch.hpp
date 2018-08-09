@@ -52,10 +52,10 @@ class SplitSwitchPass : public FunctionPassBase {
         return fix_break_continue (root, state_name, cycle_depth);
       }
 
-      for (VertexRange i = all (*root); !i.empty(); i.next()) {
+      for (auto &i : *root) {
         //TODO: hack... write proper Range
-        bool is_cycle = OpInfo::type ((*i)->type()) == cycle_op;
-        i[0] = prepare_switch_func (*i, state_name, cycle_depth + is_cycle);
+        bool is_cycle = OpInfo::type (i->type()) == cycle_op;
+        i = prepare_switch_func (i, state_name, cycle_depth + is_cycle);
       }
 
       return root;
@@ -79,8 +79,7 @@ class SplitSwitchPass : public FunctionPassBase {
 
       VertexAdaptor <op_switch> switch_v = root;
 
-      for (VertexRange i = switch_v->cases(); !i.empty(); i.next()) {
-        VertexPtr cs = *i;
+      for (auto cs : switch_v->cases()) {
         VertexAdaptor <op_seq> seq;
         if (cs->type() == op_case) {
           seq = cs.as <op_case>()->cmd();

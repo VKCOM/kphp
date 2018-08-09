@@ -279,8 +279,8 @@ void calc_assumptions_for_var_internal (FunctionPtr f, const std::string &var_na
       break;
   }
 
-  FOREACH_VERTEX(root, i) {
-    calc_assumptions_for_var_internal(f, var_name, *i);
+  for(auto i : *root) {
+    calc_assumptions_for_var_internal(f, var_name, i);
   }
 }
 
@@ -304,8 +304,8 @@ void init_assumptions_for_arguments (FunctionPtr f, VertexAdaptor <op_function> 
   }
 
   VertexRange params = root->params().as <op_func_param_list>()->args();
-  for (int i = (int) params.size(); i--;) {
-    VertexAdaptor <op_func_param> param = params[i];
+  for (auto i : params.get_reversed_range()) {
+    VertexAdaptor <op_func_param> param = i;
     if (!param->type_declaration.empty()) {
       assumption_add(f, assum_instance, param->var()->get_string(), param->type_declaration);
     }
@@ -331,9 +331,9 @@ void init_assumptions_for_return (FunctionPtr f, VertexAdaptor <op_function> roo
     }
   }
 
-  FOREACH_VERTEX(root->cmd(), i) {
-    if ((*i)->type() == op_return) {
-      VertexPtr expr = (*i).as <op_return>()->expr();
+  for (auto i : *root->cmd()) {
+    if (i->type() == op_return) {
+      VertexPtr expr = i.as <op_return>()->expr();
 
       if (expr->type() == op_constructor_call) {
         assumption_add(f, assum_instance, VAR_NAME_RETURN, expr->get_string());   // return A

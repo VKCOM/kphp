@@ -745,12 +745,12 @@ inline void FunctionParams::compile (CodeGenerator &W) const {
   bool first = true;
   int ii = 0;
   VertexAdaptor <op_func_param_list> params = root->params();
-  FOREACH_VERTEX (params->params(), i) {
-    if ((*i)->type() == op_func_param) {
+  for (auto i : params->params()) {
+    if (i->type() == op_func_param) {
       assert ("functions with callback are not supported");
     }
 
-    VertexAdaptor <op_func_param> param = *i;
+    VertexAdaptor <op_func_param> param = i;
     VertexPtr var = param->var();
     VertexPtr def_val;
     if (param->has_default()) {
@@ -1031,8 +1031,8 @@ inline static void add_dependent_declarations(VertexPtr vertex, std::map<std::st
     }
 
     case op_array:
-      FOREACH_VERTEX(vertex.as<op_array>(), array_el_it) {
-        add_dependent_declarations(*array_el_it, dependent_vars);
+      for (auto array_el_it : *vertex) {
+        add_dependent_declarations(array_el_it, dependent_vars);
       }
       break;
 
@@ -1064,8 +1064,8 @@ inline void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
 }
 
 static inline bool can_generate_raw_representation(VertexAdaptor<op_array> vertex) {
-  FOREACH_VERTEX(vertex->args(), it) {
-    switch (GenTree::get_actual_value(*it)->type()) {
+  for (auto it : vertex->args()) {
+    switch (GenTree::get_actual_value(it)->type()) {
       case op_int_const:
       case op_float_const:
         continue;
@@ -1130,15 +1130,16 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     // string_size, string_buf_size
     W << "{ .is = { .a = 0 , .b = -1 }}";
 
-    for (VertexRange it = vertex->args(); !it.empty();) {
+    auto args_end = vertex->args().end();
+    for (auto it = vertex->args().begin(); it != args_end; ++it) {
       VertexPtr actual_vertex = GenTree::get_actual_value(*it);
       kphp_assert(vertex_inner_type->ptype() == tp_int || vertex_inner_type->ptype() == tp_float);
 
       if (vertex_inner_type->ptype() == tp_int) {
         W << ",{ .is = { .a = " << actual_vertex << ", .b = ";
-        it.next();
+        ++it;
 
-        if (!it.empty()) {
+        if (it != args_end) {
           actual_vertex = GenTree::get_actual_value(*it);
           W << actual_vertex << "}}";
         } else {
@@ -1150,8 +1151,6 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
 
         W << ", { .d =" << actual_vertex << " }";
       }
-
-      it.next();
     }
   }
 
@@ -1753,13 +1752,13 @@ inline AsList::AsList (VertexPtr root, string delim) :
 }
 inline void AsList::compile (CodeGenerator &W) const {
   bool first = true;
-  FOREACH_VERTEX (root, i) {
+  for (auto i : *root) {
     if (first) {
       first = false;
     } else {
       W << delim;
     }
-    W << *i;
+    W << i;
   }
 }
 inline AsSeq::AsSeq (VertexPtr root) :
@@ -1771,9 +1770,9 @@ inline void AsSeq::compile (CodeGenerator &W) const {
     return;
   }
 
-  FOREACH_VERTEX (root, i) {
-    if ((*i)->type() != op_var) {
-      W << *i << ";" << NL;
+  for (auto i : *root) {
+    if (i->type() != op_var) {
+      W << i << ";" << NL;
     }
   }
 }
@@ -1958,7 +1957,7 @@ void compile_do (VertexAdaptor <op_do> root, CodeGenerator &W) {
 
 void compile_require (VertexPtr root, CodeGenerator &W) {
   bool first = true;
-  for (VertexRange i = all (*root); !i.empty(); i.next()) {
+  for (auto i : *root) {
     if (first) {
       first = false;
     } else {
@@ -1973,7 +1972,7 @@ void compile_require (VertexPtr root, CodeGenerator &W) {
       kphp_fail();
     }
 
-    VertexAdaptor <op_func_call> func = *i;
+    VertexAdaptor <op_func_call> func = i;
     W << FunctionCallFlag (func->get_func_id()) <<
          ", " <<
          func <<
@@ -2242,8 +2241,8 @@ struct CaseInfo {
 void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   vector <CaseInfo> cases;
 
-  for (VertexRange i = root->cases(); !i.empty(); i.next()) {
-    cases.push_back (CaseInfo (*i));
+  for (auto i : root->cases()) {
+    cases.push_back (CaseInfo (i));
   }
   int n = (int)cases.size();
 
@@ -2336,11 +2335,11 @@ void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   W << "(void)" << root->switch_flag() << ";" << NL;
 
   set <string> used;
-  for (VertexRange i = root->cases(); !i.empty(); i.next()) {
-    Operation tp = (*i)->type();
+  for (auto i : root->cases()) {
+    Operation tp = i->type();
     VertexPtr cmd;
     if (tp == op_case) {
-      VertexAdaptor <op_case> cs = *i;
+      VertexAdaptor <op_case> cs = i;
       cmd = cs->cmd();
 
       VertexPtr val = GenTree::get_actual_value (cs->expr());
@@ -2357,7 +2356,7 @@ void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W) {
       }
     } else if (tp == op_default) {
       W << "default";
-      cmd = VertexAdaptor <op_default> (*i)->cmd();
+      cmd = VertexAdaptor <op_default> (i)->cmd();
     } else {
       kphp_fail();
     }
@@ -2378,16 +2377,16 @@ void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   W << root->switch_var() << " = " << root->expr() << ";" << NL <<
         root->switch_flag() << " = false;" << NL;
 
-  FOREACH_VERTEX (root->cases(), i) {
-    Operation tp = (*i)->type();
+  for (auto i : root->cases()) {
+    Operation tp = i->type();
     VertexPtr expr;
     VertexPtr cmd;
     if (tp == op_case) {
-      VertexAdaptor <op_case> cs (*i);
+      VertexAdaptor <op_case> cs (i);
       expr = cs->expr();
       cmd = cs->cmd();
     } else if (tp == op_default) {
-      cmd = VertexAdaptor <op_default> (*i)->cmd();
+      cmd = VertexAdaptor <op_default> (i)->cmd();
     } else {
       kphp_fail();
     }
@@ -2434,11 +2433,11 @@ void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   kphp_assert(root->switch_flag()->type() == op_var);
   int cnt_int = 0, cnt_str = 0, cnt_default = 0;
 
-  FOREACH_VERTEX (root->cases(), i) {
-    if ((*i)->type() == op_default) {
+  for (auto i : root->cases()) {
+    if (i->type() == op_default) {
       cnt_default++;
     } else {
-      VertexAdaptor <op_case> cs = *i;
+      VertexAdaptor <op_case> cs = i;
       VertexPtr val = GenTree::get_actual_value (cs->expr());
       if (val->type() == op_int_const || is_const_int(val)) {
         cnt_int++;
@@ -2601,9 +2600,7 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
 
 void compile_string_build_raw (VertexAdaptor <op_string_build> root, CodeGenerator &W) {
   W << "(SB.clean()";
-  FOREACH_VERTEX (root->args(), i) {
-    VertexPtr v = *i;
-
+  for (auto v : root->args()) {
     W << "+";
 
     if (v->type() != op_string) {
@@ -2655,9 +2652,9 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
   bool was_object = false;
   int static_length = 0;
   int ii = 0;
-  FOREACH_VERTEX (root->args(), i) {
-    info[ii].v = *i;
-    VertexPtr value = GenTree::get_actual_value (*i);
+  for (auto i : root->args()) {
+    info[ii].v = i;
+    VertexPtr value = GenTree::get_actual_value (i);
     const TypeData *type = tinf::get_type (value);
 
     int value_length = type_strlen (type);
@@ -2850,7 +2847,7 @@ void compile_as_printable (VertexPtr root, CodeGenerator &W) {
 void compile_echo (VertexPtr root, CodeGenerator &W) {
   bool first = true;
 
-  for (VertexRange i = all (*root); !i.empty(); i.next()) {
+  for (auto i : *root) {
     if (first) {
       first = false;
     } else {
@@ -2862,7 +2859,7 @@ void compile_echo (VertexPtr root, CodeGenerator &W) {
     } else {
       W << "print (";
     }
-    compile_as_printable (*i, W);
+    compile_as_printable (i, W);
     W << ")";
   }
 }
@@ -2870,14 +2867,14 @@ void compile_echo (VertexPtr root, CodeGenerator &W) {
 
 void compile_var_dump (VertexPtr root, CodeGenerator &W) {
   bool first = true;
-  FOREACH_VERTEX (root, i) {
+  for (auto i : *root) {
     if (first) {
       first = false;
     } else {
       W << ";" << NL;
     }
 
-    W << "f$var_dump (" << *i << ")";
+    W << "f$var_dump (" << i << ")";
   }
 }
 
@@ -2892,14 +2889,13 @@ void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W) {
   assert ((int)root->size() == 1 || root->type() == op_unset);
 
   bool first = true;
-  for (VertexRange i = root->args(); !i.empty(); i.next()) {
+  for (auto arg : root->args()) {
     if (first) {
       first = false;
     } else {
       W << ";" << NL;
     }
 
-    VertexPtr arg = *i;
     if (root->type() == op_unset && arg->type() == op_var) {
       W << "unset (" << arg << ")";
       continue;
@@ -2972,9 +2968,9 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
 
   bool has_double_arrow = false;
   int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
-  for (VertexRange i = root->args(); !i.empty(); i.next()) {
-    if ((*i)->type() == op_double_arrow) {
-      VertexAdaptor <op_double_arrow> arrow = *i;
+  for (auto i : root->args()) {
+    if (i->type() == op_double_arrow) {
+      VertexAdaptor <op_double_arrow> arrow = i;
       has_double_arrow = true;
       VertexPtr key = arrow->key();
       PrimitiveType tp = tinf::get_type (key)->ptype();
@@ -3017,9 +3013,8 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
   sprintf (tmp, " (array_size (%d, %d, %s));", int_cnt + xx_cnt, string_cnt + xx_cnt, has_double_arrow ? "false" : "true");
   W << (const char *)tmp << NL;
 
-  FOREACH_VERTEX (root->args(), i) {
+  for (auto cur : root->args()) {
     W << arr_name;
-    VertexPtr cur = *i;
     if (cur->type() == op_double_arrow) {
       VertexAdaptor <op_double_arrow> arrow = cur;
       W << ".set_value (" << arrow->key() << ", " << arrow->value();
@@ -3102,12 +3097,13 @@ void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int
     W << "< " << TypeName (tp) << " >";
   }
   W << "(";
-  VertexRange i = root->args();
-  if (fix && !i.empty()) {
-    i.next();
+  auto i = root->args().begin();
+  auto i_end = root->args().end();
+  if (fix && i != i_end) {
+    ++i;
   }
   bool first = true;
-  for (;!i.empty(); i.next()) {
+  for (; i != i_end; ++i) {
     if (first) {
       first = false;
     } else {

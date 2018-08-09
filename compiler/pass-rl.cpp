@@ -5,11 +5,11 @@
 
 void rl_none_calc (VertexPtr root, int except) {
   int ii = 0;
-  FOREACH_VERTEX (root, i) {
+  for (auto i : *root) {
     if (ii != except) {
-      rl_calc (*i, val_none);
+      rl_calc (i, val_none);
     } else {
-      rl_calc (*i, val_r);
+      rl_calc (i, val_r);
     }
     ii++;
   }
@@ -17,11 +17,11 @@ void rl_none_calc (VertexPtr root, int except) {
 
 void rl_r_calc (VertexPtr root, int except) {
   int ii = 0;
-  FOREACH_VERTEX (root, i) {
+  for (auto i : *root) {
     if (ii != except) {
-      rl_calc (*i, val_r);
+      rl_calc (i, val_r);
     } else {
-      rl_calc (*i, val_l);
+      rl_calc (i, val_l);
     }
     ii++;
   }
@@ -29,11 +29,11 @@ void rl_r_calc (VertexPtr root, int except) {
 
 void rl_l_calc (VertexPtr root, int except) {
   int ii = 0;
-  FOREACH_VERTEX (root, i) {
+  for (auto i : *root) {
     if (ii != except) {
-      rl_calc (*i, val_l);
+      rl_calc (i, val_l);
     } else {
-      rl_calc (*i, val_r);
+      rl_calc (i, val_r);
     }
     ii++;
   }
@@ -41,11 +41,11 @@ void rl_l_calc (VertexPtr root, int except) {
 
 void rl_l_none_calc (VertexPtr root, int except) {
   int ii = 0;
-  FOREACH_VERTEX (root, i) {
+  for (auto i : *root) {
     if (ii != except) {
-      rl_calc (*i, val_l);
+      rl_calc (i, val_l);
     } else {
-      rl_calc (*i, val_none);
+      rl_calc (i, val_none);
     }
     ii++;
   }
@@ -86,17 +86,19 @@ void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
   }
   VertexRange params = f->root.as <meta_op_function>()->params().
                                as <op_func_param_list>()->params();
+  auto params_it = params.begin();
+
   assert (root->size() <= (int)params.size());
 
-  FOREACH_VERTEX (root, i) {
-    if ((*params)->type() == op_func_param_callback) {
+  for (auto i : *root) {
+    if ((*params_it)->type() == op_func_param_callback) {
     } else {
-      VertexAdaptor <op_func_param> param = *params;
+      VertexAdaptor <op_func_param> param = *params_it;
       RLValueType tp = param->var()->ref_flag ? val_l : val_r;
-      rl_calc (*i, tp);
+      rl_calc (i, tp);
     }
 
-    params.next();
+    ++params_it;
   }
 }
 

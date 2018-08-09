@@ -7,9 +7,6 @@
 
 size_t vertex_total_mem_used __attribute__ ((weak));
 
-#define FOREACH_VERTEX(v, i) for (auto i = all (v); !i.empty(); i.next())
-
-
 VertexPtr clone_vertex (VertexPtr from);
 
 template <Operation Op>
@@ -241,17 +238,6 @@ inline void set_location (VertexPtr v, const Location &location) {
 }
 typedef vertex_inner <meta_op_base> Vertex;
 typedef Range <Vertex::iterator> VertexRange;
-typedef Range <Vertex::const_iterator> ConstVertexRange;
-
-inline VertexRange all (VertexPtr &v) {
-  return all (*v);
-}
-inline ConstVertexRange all (const VertexPtr &v) {
-  return all (const_cast <const Vertex &> (*v));
-}
-inline VertexRange all (VertexRange range) {
-  return range;
-}
 
 template <Operation Op> size_t vertex_inner_size (int args_n) {
   return sizeof (vertex_inner <Op>) + sizeof (VertexPtr) * args_n;
@@ -510,7 +496,7 @@ VA_BEGIN (meta_op_binary_op, meta_op_binary_)
 VA_END
 
 VA_BEGIN (meta_op_varg_, meta_op_base)
-  VertexRange args() {return all (*this);}
+  VertexRange args() {return VertexRange(begin(), end());}
 VA_END
 
 //VA_BEGIN (op_func_call, meta_op_base)

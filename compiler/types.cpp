@@ -188,9 +188,8 @@ void MultiKey::push_back (const Key &key) {
 }
 string MultiKey::to_string() const {
   string res;
-  for (MultiKey::range i = all (*this); !i.empty(); i.next()) {
+  for (Key key : *this) {
     res += "[";
-    const Key &key = *i;
     res += key.to_string();
     res += "]";
   }
@@ -507,8 +506,8 @@ const TypeData *TypeData::const_read_at (const Key &key) const {
 
 const TypeData *TypeData::const_read_at (const MultiKey &multi_key) const {
   const TypeData *res = this;
-  for (MultiKey::range i = all (multi_key); !i.empty(); i.next()) {
-    res = res->const_read_at (*i);
+  for (Key i : multi_key) {
+    res = res->const_read_at (i);
   }
   return res;
 }

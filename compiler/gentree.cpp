@@ -1767,8 +1767,8 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     }
     CE(!kphp_error(!infer_type || param_ptr == params_next.size(), "Not enough @param tags"));
     if (!new_cmd_next.empty()) {
-      for (VertexRange i = cmd.as<op_seq>()->args(); !i.empty(); i.next()) {
-        new_cmd_next.push_back(*i);
+      for (auto i : cmd.as<op_seq>()->args()) {
+        new_cmd_next.push_back(i);
       }
       CREATE_VERTEX(new_cmd, op_seq, new_cmd_next);
       ::set_location(new_cmd, cmd->get_location());
@@ -2086,12 +2086,11 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
       // статическое свойство (public static $staticVar)
       VertexPtr v = get_statement(phpdoc_token);
       CE(v.not_null());
-      FOREACH_VERTEX(v, e) {
-        kphp_assert((*e)->type() == op_static);
-        (*e)->extra_type = extra_type;
-        VertexAdaptor <op_static> seq = *e;
-        for (VertexRange i = seq->args(); !i.empty(); i.next()) {
-          VertexPtr node = *i;
+      for(auto e : *v) {
+        kphp_assert(e->type() == op_static);
+        e->extra_type = extra_type;
+        VertexAdaptor <op_static> seq = e;
+        for (auto node : seq->args()) {
           VertexAdaptor <op_var> var;
           if (node->type() == op_var) {
             var = node;
@@ -2309,17 +2308,7 @@ bool GenTree::is_superglobal (const string &s) {
 }
 
 bool GenTree::has_return (VertexPtr v) {
-  if (v->type() == op_return) {
-    return true;
-  }
-
-  for (VertexRange i = all (*v); !i.empty(); i.next()) {
-    if (has_return (*i)) {
-      return true;
-    }
-  }
-
-  return false;
+  return v->type() == op_return || std::any_of(v->begin(), v->end(), has_return);
 }
 
 VertexPtr GenTree::post_process (VertexPtr root) {
@@ -2411,8 +2400,8 @@ VertexPtr GenTree::post_process (VertexPtr root) {
     return post_process (new_root);
   }
 
-  FOREACH_VERTEX (root, i) {
-    *i = post_process (*i);
+  for (auto &i : *root) {
+    i = post_process (i);
   }
 
   if (root->type() == op_var) {
@@ -2470,8 +2459,8 @@ VertexPtr GenTree::run() {
 void GenTree::for_each (VertexPtr root, void (*callback) (VertexPtr )) {
   callback (root);
 
-  FOREACH_VERTEX (root, i) {
-    for_each (*i, callback);
+  for (auto i : *root) {
+    for_each (i, callback);
   }
 }
 

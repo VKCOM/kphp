@@ -20,7 +20,6 @@ namespace cfg {
 
   typedef Id <IdBase> Node;
   typedef vector <Node> NodesList;
-  typedef Range <vector <Node>::iterator> NodesRange;
 
   enum UsageType {usage_write_t, usage_read_t};
   struct UsageData {
@@ -33,7 +32,6 @@ namespace cfg {
     explicit UsageData (UsageType type, VertexPtr v);
   };
   typedef Id <UsageData> UsagePtr;
-  typedef Range <vector <UsagePtr>::iterator> UsagesRange;
 
   struct SubTreeData {
     VertexPtr v;

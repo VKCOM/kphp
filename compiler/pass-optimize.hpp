@@ -51,8 +51,8 @@ class OptimizationPass : public FunctionPassBase {
 
     void collect_concat (VertexPtr root, vector <VertexPtr> *collected) {
       if (root->type() == op_string_build || root->type() == op_concat) {
-        FOREACH_VERTEX (root, i) {
-          collect_concat (*i, collected);
+        for (auto i : *root) {
+          collect_concat (i, collected);
         }
       } else {
         collected->push_back (root);

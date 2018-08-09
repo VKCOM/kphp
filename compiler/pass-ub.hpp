@@ -39,10 +39,9 @@ class CalcFuncDepPass : public FunctionPassBase {
         data.dep.push_back (other_function);
         if (other_function->type() != FunctionData::func_extern && !other_function->varg_flag) {
           int ii = 0;
-          FOREACH_VERTEX (call->args(), arg) {
+          for (auto val : call->args()) {
             VarPtr to_var = other_function->param_ids[ii];
             if (to_var->is_reference) { //passed as reference
-              VertexPtr val = *arg;
               while (val->type() == op_index) {
                 val = val.as <op_index>()->array();
               }
