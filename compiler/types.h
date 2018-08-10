@@ -147,6 +147,7 @@ public:
   ~TypeData();
 
   PrimitiveType ptype() const;
+  PrimitiveType get_real_ptype() const;
   type_flags_t flags() const;
   void set_ptype (PrimitiveType new_ptype);
 

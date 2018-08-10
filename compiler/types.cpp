@@ -377,6 +377,10 @@ PrimitiveType TypeData::ptype() const {
   return ptype_;
 }
 
+PrimitiveType TypeData::get_real_ptype() const {
+  return ptype() == tp_Unknown && or_false_flag() ? tp_bool : ptype();
+}
+
 void TypeData::set_ptype (PrimitiveType new_ptype) {
   if (new_ptype != ptype_) {
     ptype_ = new_ptype;
@@ -724,13 +728,8 @@ bool operator == (const TypeData &a, const TypeData &b) {
 }
 
 void type_out_impl (const TypeData *type, string *res) {
-  bool or_false = type->use_or_false();
-  PrimitiveType tp = type->ptype();
-
-  if (or_false && tp == tp_Unknown) {
-    or_false = false;
-    tp = tp_bool;
-  }
+  PrimitiveType tp = type->get_real_ptype();
+  bool or_false = type->use_or_false() && tp != tp_bool;
 
   if (or_false) {
     *res += "OrFalse < ";

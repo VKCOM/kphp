@@ -822,8 +822,7 @@ void VarDeclaration::compile (CodeGenerator &W) const {
   if (defval_flag) {
     if (type->ptype() == tp_float || type->ptype() == tp_int) {
       W << " = 0";
-    } else if (type->ptype() == tp_bool ||
-               (type->ptype() == tp_Unknown && type->use_or_false())) {
+    } else if (type->get_real_ptype() == tp_bool) {
       W << " = false";
     }
   }
@@ -1841,8 +1840,8 @@ void compile_binary_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W
       root->type() == op_eq2 || root->type() == op_neq2) {
     const TypeData *lhs_tp = tinf::get_type (lhs);
     const TypeData *rhs_tp = tinf::get_type (rhs);
-    bool lhs_is_bool = lhs_tp->ptype() == tp_bool || (lhs_tp->ptype() == tp_Unknown && lhs_tp->use_or_false());
-    bool rhs_is_bool = rhs_tp->ptype() == tp_bool || (rhs_tp->ptype() == tp_Unknown && rhs_tp->use_or_false());
+    bool lhs_is_bool = lhs_tp->get_real_ptype() == tp_bool;
+    bool rhs_is_bool = rhs_tp->get_real_ptype() == tp_bool;
 
     if (rhs_is_bool ^ lhs_is_bool) {
       if (root->type() == op_lt) {

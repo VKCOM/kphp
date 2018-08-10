@@ -2468,7 +2468,7 @@ class FinalCheckPass : public FunctionPassBase {
         const TypeData* arrayType = tinf::get_type (arr);
         if (arrayType->ptype() == tp_array) {
           const TypeData* valueType = arrayType->lookup_at (Key::any_key ());
-          if (valueType->ptype() == tp_Unknown && !valueType->or_false_flag ()) {
+          if (valueType->get_real_ptype() == tp_Unknown) {
             kphp_error (0, "Can not compile foreach on array of Unknown type");
           }
         }
@@ -2478,7 +2478,7 @@ class FinalCheckPass : public FunctionPassBase {
         const TypeData* arrayType = tinf::get_type (arr);
         if (arrayType->ptype() == tp_array) {
           const TypeData* valueType = arrayType->lookup_at (Key::any_key ());
-          if (valueType->ptype() == tp_Unknown && !valueType->or_false_flag ()) {
+          if (valueType->get_real_ptype() == tp_Unknown) {
             kphp_error (0, "Can not compile list with array of Unknown type");
           }
         }
@@ -2526,7 +2526,7 @@ class FinalCheckPass : public FunctionPassBase {
           const TypeData *type = tinf::get_type (v);
           // пока что, т.к. все методы всех классов считаются required, в реально неиспользуемых будет Unknown
           // (потом когда-нибудь можно убирать реально неиспользуемые из required-списка, и убрать дополнительное условие)
-          if (type->ptype() == tp_Unknown && !type->use_or_false() && !current_function->is_instance_function()) {
+          if (type->get_real_ptype() == tp_Unknown && !current_function->is_instance_function()) {
             while (v->type() == op_index) {
               v = v.as <op_index>()->array();
             }
