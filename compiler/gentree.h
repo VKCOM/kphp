@@ -35,7 +35,7 @@ public:
   bool in_namespace() const;
   void enter_class (const string &class_name, Token *phpdoc_token);
   ClassInfo &cur_class();
-  VertexPtr generate_constant_field_class();
+  VertexPtr generate_constant_field_class(VertexPtr root);
   void exit_and_register_class (VertexPtr root);
   void enter_function();
   void exit_function();

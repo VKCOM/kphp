@@ -112,7 +112,7 @@ void GenTree::enter_class (const string &class_name, Token *phpdoc_token) {
   }
 }
 
-VertexPtr GenTree::generate_constant_field_class() {
+VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
   CREATE_VERTEX (name_of_const_field_class, op_func_name);
   name_of_const_field_class->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$class";
 
@@ -123,7 +123,7 @@ VertexPtr GenTree::generate_constant_field_class() {
   value_of_const_field_class->set_string(namespace_name + "\\" + cur_class().name);
 
   CREATE_VERTEX(def, op_define, name_of_const_field_class, value_of_const_field_class);
-  def->location = cur_class().root->location;
+  def->location = root->location;
 
   return def;
 }
@@ -134,7 +134,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     kphp_error(false, "Only classes in namespaces are supported");
   } else {
 
-    VertexPtr constant_field_class = generate_constant_field_class();
+    VertexPtr constant_field_class = generate_constant_field_class(root);
     if (constant_field_class.not_null()) {
       cur_class().constants["class"] = constant_field_class;
     }
