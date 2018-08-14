@@ -437,7 +437,7 @@ OrFalse <int> f$fputcsv(const Stream &stream, const array<var> &fields, string d
     if (it != fields.begin()) {
       csvline.append_char(delimiter_char);
     }
-    string const &value = it.get_value().to_string();
+    const string &value = it.get_value().to_string();
     if (value.find_first_of (to_enclose) != string::npos) {
       bool escaped = false;
       csvline.append_char(enclosure_char);

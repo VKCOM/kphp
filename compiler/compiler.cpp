@@ -129,7 +129,7 @@ class GenTreeCallback : public GenTreeCallbackBase {
       return G->register_class(info, os);
     }
 
-    ClassPtr get_class_by_name (string const &class_name) {
+    ClassPtr get_class_by_name (const string &class_name) {
       return G->get_class(class_name);
     }
 };
@@ -316,7 +316,7 @@ class CollectRequiredPass : public FunctionPassBase {
       return "Collect required";
     }
 
-    void require_class(string const &class_name, string const &context_name) {
+    void require_class(const string &class_name, const string &context_name) {
       pair<SrcFilePtr, bool> res = callback->require_file(class_name + ".php", context_name);
       kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
       if (res.second) {
@@ -342,7 +342,7 @@ class CollectRequiredPass : public FunctionPassBase {
       return false;
     }
 
-    string get_class_name_for(string const &name, char delim = '$') {
+    string get_class_name_for(const string &name, char delim = '$') {
       size_t pos$$ = name.find("::");
       if (pos$$ == string::npos) {
         return "";
@@ -2192,7 +2192,7 @@ class CalcBadVarsF {
       vector <pair <FunctionPtr, DepData *> > tmp_vec = tmp_stream.get_as_vector();
       CalcBadVars calc_bad_vars;
       calc_bad_vars.run (tmp_vec);
-      for (auto const &fun_dep : tmp_vec) {
+      for (const auto &fun_dep : tmp_vec) {
         delete fun_dep.second;
         os << fun_dep.first;
       }
@@ -2636,7 +2636,7 @@ class CodeGenF {
       W.init (new WriterCallback <OutputStreamT> (os));
 
       //TODO: parallelize;
-      for (auto const &fun : xall) {
+      for (const auto &fun : xall) {
         prepare_generate_function(fun);
       }
       for (vector <ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
@@ -2668,7 +2668,7 @@ class CodeGenF {
 
       //W << Async (XmainCpp());
       W << Async (InitScriptsH());
-      for (auto const &main_file : main_files) {
+      for (const auto &main_file : main_files) {
         W << Async (DfsInit (main_file));
       }
       W << Async (InitScriptsCpp (/*std::move*/main_files, source_functions, all_functions));
@@ -2733,7 +2733,7 @@ class CodeGenF {
     }
 
     void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
-      for (auto const &dir_and_hash : subdir_hash) {
+      for (const auto &dir_and_hash : subdir_hash) {
         W << OpenFile ("_dep.cpp", dir_and_hash.first, false);
         char tmp[100];
         sprintf (tmp, "%llx", dir_and_hash.second);
@@ -2932,8 +2932,8 @@ public:
   }
 
   void analyze_function_vars (FunctionPtr function) {
-    auto analyze_vars = [this, function](std::vector<VarPtr> const &vars) {
-      for (auto const &var: vars) {
+    auto analyze_vars = [this, function](const std::vector<VarPtr> &vars) {
+      for (const auto &var: vars) {
         analyze_function_var(function, var);
       }
     };

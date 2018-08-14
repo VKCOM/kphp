@@ -25,7 +25,7 @@ bool vectors_intersect (const vector <T> *a, const vector <T> *b) {
   if (a == NULL || b == NULL) {
     return false;
   }
-  for (T const &ai : *a) {
+  for (const T &ai : *a) {
     if (in_vector (b, ai)) {
       return true;
     }
@@ -65,7 +65,7 @@ bool is_ub_functions (const FunctionPtr &first, const FunctionPtr &second) {
   }
   auto begin = b->begin();
   auto end = b->end();
-  for (auto const &i : *a) {
+  for (const auto &i : *a) {
     begin = lower_bound (begin, end, i);
     if (begin == end) {
       break;
@@ -94,8 +94,8 @@ class UBMergeData {
         return;
       }
 
-      for (A const &a : first) {
-        for (B const &b : second) {
+      for (const A &a : first) {
+        for (const B &b : second) {
           if (f(a, b)) {
             *res_error |= error_mask;
             return;

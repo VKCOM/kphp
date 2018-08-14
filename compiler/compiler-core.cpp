@@ -164,15 +164,15 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
     klass->vars.push_back(var);
   }
 
-  for (auto const &name_and_constant : info.constants) {
+  for (const auto &name_and_constant : info.constants) {
     klass->constants.insert(name_and_constant.first);
   }
 
-  for (auto const &name_and_method : info.static_methods) {
+  for (const auto &name_and_method : info.static_methods) {
     name_and_method.second->class_id = klass;
   }
 
-  for (auto const &method : info.methods) {
+  for (const auto &method : info.methods) {
     FunctionPtr f = method->get_func_id();
     f->class_id = klass;
     klass->methods.push_back(f);
@@ -495,7 +495,7 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     File *h_file = files[i];
     if (h_file->ext == ".h") {
       long long &h_mtime = header_mtime[i];
-      for (auto const &include : h_file->includes) {
+      for (const auto &include : h_file->includes) {
         File *header = cpp_dir->get_file (include, false);
         kphp_assert (header != NULL);
         kphp_assert (header->on_disk);
@@ -538,7 +538,7 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     }
 
     objs = tmp_objs;
-    for (auto const &name_and_files : subdirs) {
+    for (const auto &name_and_files : subdirs) {
       File *obj_file = obj_dir->get_file (name_and_files.first, true);
       make.create_objs2obj_target (name_and_files.second, obj_file);
       objs.push_back (obj_file);

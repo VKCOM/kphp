@@ -79,7 +79,7 @@ FunctionPtr GenTree::register_function (FunctionInfo info) {
   }
 
   if (function_ptr->type() != FunctionData::func_global) {
-    string const &name = function_ptr->name;
+    const string &name = function_ptr->name;
     size_t first = name.find("$$") + 2;
     kphp_assert(first != string::npos);
     size_t second = name.find("$$", first);
@@ -2578,7 +2578,7 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
   new_name->set_string(get_name_for_new_function_with_parent_call(info, real_name));
   vector <VertexPtr> new_params_next;
   vector <VertexPtr> new_params_call;
-  for (auto const &parameter : params_next) {
+  for (const auto &parameter : params_next) {
     if (parameter->type() == op_func_param) {
       CLONE_VERTEX(new_var, op_var, parameter.as<op_func_param>()->var().as<op_var>());
       new_params_call.push_back(new_var);

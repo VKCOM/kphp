@@ -421,7 +421,7 @@ OrFalse <string> f$openssl_pkey_get_private (const string &key, const string &pa
   return result;
 }
 
-int f$openssl_verify(string const &data, string const &signature, string const &pub_key_id, string const &signature_alg) {
+int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, const string &signature_alg) {
   int err = 0;
   EVP_PKEY *pkey;
   EVP_MD_CTX *md_ctx;
@@ -1076,7 +1076,7 @@ private:
   using X509_STORE_CTX_ptr = vk::unique_ptr_with_delete_function<X509_STORE_CTX, X509_STORE_CTX_free>;
 
 public:
-  explicit X509_parser(string const &data)
+  explicit X509_parser(const string &data)
     : x509_(get_x509_from_data(data)) {}
 
   array<var> get_subject(bool shortnames = true) const {
@@ -1208,7 +1208,7 @@ public:
   }
 
 private:
-  X509_ptr get_x509_from_data(string const &data) {
+  X509_ptr get_x509_from_data(const string &data) {
     BIO_ptr certBio{BIO_new(BIO_s_mem())};
 
     if (!certBio) {

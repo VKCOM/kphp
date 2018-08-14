@@ -214,11 +214,11 @@ OrFalse< array<int> > f$vk_stats_parse_sample(const string &str) {
   return result;
 }
 
-static bool is_hll_unpacked(string const &hll) {
+static bool is_hll_unpacked(const string &hll) {
   return hll.size() == 0 || (hll[0] != HLL_PACK_CHAR && hll[0] != HLL_PACK_CHAR_V2);
 }
 
-static int get_hll_size(string const &hll) {
+static int get_hll_size(const string &hll) {
   if (is_hll_unpacked(hll)) {
     return hll.size();
   }
@@ -270,7 +270,7 @@ OrFalse< string > f$vk_stats_hll_merge(const array<var>& a) {
   return result;
 }
 
-static int unpack_hll(string const &hll, char *res) {
+static int unpack_hll(const string &hll, char *res) {
   assert(!is_hll_unpacked(hll));
   int m = get_hll_size(hll);
   int pos = 1 + (hll[0] == HLL_PACK_CHAR_V2);
@@ -297,7 +297,7 @@ static int unpack_hll(string const &hll, char *res) {
 }
 
 
-OrFalse<double> hll_count (string const &hll, int m) {
+OrFalse<double> hll_count (const string &hll, int m) {
   double pow_2_32 = (1LL << 32);
   double alpha_m = 0.7213 / (1.0 + 1.079 / m);
   char const *s;

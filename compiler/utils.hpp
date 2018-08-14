@@ -86,7 +86,7 @@ template <typename KeyT, typename EntryT> EntryT &MapToId<KeyT, EntryT>::operato
 
 template <typename KeyT, typename EntryT> set <int> MapToId <KeyT, EntryT>::get_ids() {
   set <int> res;
-  for (auto const &i : name_to_id) {
+  for (const auto &i : name_to_id) {
     res.insert (i.second);
   }
   return res;

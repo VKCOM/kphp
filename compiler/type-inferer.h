@@ -143,7 +143,7 @@ class RestrictionLess : public Restriction {
         find_call_trace_with_error(a_);
         desc += "\n";
 
-        for (auto const &description : descriptions_) {
+        for (const auto &description : descriptions_) {
           desc += description + " \n";
         }
 
@@ -813,8 +813,8 @@ class CollectMainEdgesPass : public FunctionPassBase {
     }
 
     template<class CollectionT>
-    void call_on_var(CollectionT const &collection) {
-      for (auto const &el: collection) {
+    void call_on_var(const CollectionT &collection) {
+      for (const auto &el: collection) {
         on_var(el);
       }
     }

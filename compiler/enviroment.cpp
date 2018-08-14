@@ -413,7 +413,7 @@ void KphpEnviroment::debug() const {
           "LD_FLAGS=[" << get_ld_flags() << "]\n";
   cerr << "KPHP_INCLUDES=[";
   bool is_first = true;
-  for (auto const &include : get_includes()) {
+  for (const auto &include : get_includes()) {
     if (is_first) {
       is_first = false;
     } else {
@@ -424,7 +424,7 @@ void KphpEnviroment::debug() const {
   cerr << "]\n";
   cerr << "KPHP_MAIN_FILES=[";
   is_first = true;
-  for (auto const &main_file : get_main_files()) {
+  for (const auto &main_file : get_main_files()) {
     if (is_first) {
       is_first = false;
     } else {

@@ -123,26 +123,26 @@ int Index::scan_dir_callback (const char *fpath, const struct stat *sb, int type
 
 void Index::sync_with_dir (const string &new_dir) {
   set_dir (new_dir);
-  for (auto const &path_and_file : files) {
+  for (const auto &path_and_file : files) {
     path_and_file.second->on_disk = false;
   }
   current_index = this;
   int err = nftw (dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
   dl_passert (err == 0, dl_pstr ("ftw [%s] failed", dir.c_str()));
   vector <string> to_del;
-  for (auto const &path_and_file : files) {
+  for (const auto &path_and_file : files) {
     if (!path_and_file.second->on_disk) {
       to_del.push_back (path_and_file.first);
     }
   }
-  for (auto const &path : to_del) {
+  for (const auto &path : to_del) {
     remove_file (path);
   }
 }
 
 void Index::del_extra_files() {
   vector <string> to_del;
-  for (auto const &path_and_file : files) {
+  for (const auto &path_and_file : files) {
     File *file = path_and_file.second;
     if (!file->needed) {
       kphp_assert (file->on_disk);
@@ -158,7 +158,7 @@ void Index::del_extra_files() {
       to_del.push_back (path_and_file.first);
     }
   }
-  for (auto const &path : to_del) {
+  for (const auto &path : to_del) {
     remove_file (path);
   }
 }
@@ -228,7 +228,7 @@ vector <File *> Index::get_files() {
 //stupid text version. to be improved
 void Index::save (FILE *f) {
   dl_pcheck (fprintf (f, "%d\n", (int)files.size()));
-  for (auto const &path_and_file : files) {
+  for (const auto &path_and_file : files) {
     File *file = path_and_file.second;
     std::string path = file->path.substr(dir.length());
     dl_pcheck (fprintf (f, "%s %llu %llu\n", path.c_str(),

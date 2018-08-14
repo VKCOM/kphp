@@ -120,7 +120,7 @@ namespace tinf {
       }
 
       string get_description();
-      Location const & get_location();
+      const Location & get_location();
   };
   class TypeNode : public Node {
     public:

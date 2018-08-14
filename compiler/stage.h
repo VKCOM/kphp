@@ -12,7 +12,7 @@
 #define kphp_typed_warning(x, y) do {                                      \
   FunctionPtr kphp_warning_fun__ = stage::get_function();                  \
   if (kphp_warning_fun__.not_null()) {                                     \
-    set<string> const &disabled__ = kphp_warning_fun__->disabled_warnings; \
+    const set<string> &disabled__ = kphp_warning_fun__->disabled_warnings; \
     string s = x;                                                          \
     if (disabled__.find(s) == disabled__.end()) {                          \
       string message = y;                                                  \

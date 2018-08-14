@@ -224,14 +224,14 @@ ClassPtr resolve_expr_class (FunctionPtr function, VertexPtr v) {
 }
 
 
-string get_context_by_prefix (FunctionPtr function, string const &class_name, char delim) {
+string get_context_by_prefix (FunctionPtr function, const string &class_name, char delim) {
   if (class_name == "static" || class_name == "self" || class_name == "parent") {
     return resolve_uses(function, "\\" + function->class_context_name, delim);
   }
   return resolve_uses(function, class_name, delim);
 }
 
-string get_full_static_member_name (FunctionPtr function, string const &name, bool append_with_context) {
+string get_full_static_member_name (FunctionPtr function, const string &name, bool append_with_context) {
   size_t pos$$ = name.find("::");
 
   if (pos$$ == string::npos) {

@@ -108,7 +108,7 @@ class MergeReachalbe {
         return;
       }
       (*was)[vertex] = 1;
-      for (auto const &next_vertex : graph[vertex]) {
+      for (const auto &next_vertex : graph[vertex]) {
         dfs (next_vertex, graph, was, topsorted);
       }
       topsorted->push_back (vertex);
@@ -129,7 +129,7 @@ class MergeReachalbe {
       }
       (*was)[vertex] = color;
       component->push_back (vertex);
-      for (auto const &next_vertex : graph[vertex]) {
+      for (const auto &next_vertex : graph[vertex]) {
         dfs_component (next_vertex, graph, color, was, was_color, component, edges);
       }
     }
@@ -140,7 +140,7 @@ class MergeReachalbe {
       int vertex_n = (int)vertices.size();
       IdMap <int> was (vertex_n, 0);
       vector <VertexT> topsorted;
-      for (auto const &vertex : vertices) {
+      for (const auto &vertex : vertices) {
         dfs (vertex, rev_graph, &was, &topsorted);
       }
 
@@ -184,7 +184,7 @@ struct FuncCallGraph {
         FunctionPtr to = functions[i];
         DepData *data = dep_datas[i];
 
-        for (auto const &from : data->dep) {
+        for (const auto &from : data->dep) {
           rev_graph[from].push_back (to);
         }
         std::swap (graph[to], data->dep);
@@ -260,7 +260,7 @@ class CalcBadVars {
         return;
       }
       was[vertex] = 1;
-      for (auto const &next : graph[vertex]) {
+      for (const auto &next : graph[vertex]) {
         if (!was[next]) {
           parents[next] = vertex;
           mark (graph, was, next, parents);
@@ -271,7 +271,7 @@ class CalcBadVars {
 
     void calc_resumable (FuncCallGraph &call_graph, vector <DepData *> &dep_data) {
       for (int i = 0; i < call_graph.n; i++) {
-        for (auto const &fork : dep_data[i]->forks) {
+        for (const auto &fork : dep_data[i]->forks) {
           fork->root->resumable_flag = true;
         }
       }
@@ -279,29 +279,29 @@ class CalcBadVars {
       IdMap <char> into_resumable (call_graph.n);
       IdMap <FunctionPtr> from_parents (call_graph.n);
       IdMap <FunctionPtr> to_parents (call_graph.n);
-      for (auto const &func : call_graph.functions) {
+      for (const auto &func : call_graph.functions) {
         if (func->root->resumable_flag) {
           mark (call_graph.graph, from_resumable, func, from_parents);
           mark (call_graph.rev_graph, into_resumable, func, to_parents);
         }
       }
-      for (auto const &func : call_graph.functions) {
+      for (const auto &func : call_graph.functions) {
         if (from_resumable[func] && into_resumable[func]) {
           func->root->resumable_flag = true;
           func->fork_prev = from_parents[func];
           func->wait_prev = to_parents[func];
         }
       }
-      for (auto const &func : call_graph.functions) {
+      for (const auto &func : call_graph.functions) {
         if (func->root->resumable_flag && func->should_be_sync) {
           kphp_error (0, dl_pstr ("Function [%s] marked with @kphp-sync, but turn up to be resumable\n"
             "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
         }
       }
       if (G->env().get_print_resumable_graph()) {
-        for (auto const &func : call_graph.functions) {
+        for (const auto &func : call_graph.functions) {
           if (!func->root->resumable_flag) continue;
-          for (auto const &next : call_graph.graph[func]) {
+          for (const auto &next : call_graph.graph[func]) {
             if (!next->root->resumable_flag) continue;
             fprintf(stderr, "%s -> %s\n", func->name.c_str(), next->name.c_str());
           }
@@ -325,10 +325,10 @@ class CalcBadVars {
         }
         void for_component (const vector <VarPtr> &component, const vector <VarPtr> &edges) {
           vector <VarPtr> *res = new vector <VarPtr>();
-          for (auto const &var : component) {
+          for (const auto &var : component) {
             res->insert (res->end(), to_merge_[var].begin(), to_merge_[var].end());
           }
-          for (auto const &var : edges) {
+          for (const auto &var : edges) {
             if (var->bad_vars != NULL) {
               res->insert (res->end(), var->bad_vars->begin(), var->bad_vars->end());
             }
@@ -338,7 +338,7 @@ class CalcBadVars {
             delete res;
             return;
           }
-          for (auto const &var : component) {
+          for (const auto &var : component) {
             var->bad_vars = res;
           }
         }
@@ -357,11 +357,11 @@ class CalcBadVars {
       }
 
       IdMap < vector <VarPtr> > rev_graph (vars_n), graph (vars_n), ref_vars (vars_n);
-      for (auto const &data : dep_datas) {
-        for (auto const &edge : data->global_ref_edges) {
+      for (const auto &data : dep_datas) {
+        for (const auto &edge : data->global_ref_edges) {
           ref_vars[edge.second].push_back (edge.first);
         }
-        for (auto const &edge : data->ref_ref_edges) {
+        for (const auto &edge : data->ref_ref_edges) {
           graph[edge.second].push_back (edge.first);
           rev_graph[edge.first].push_back (edge.second);
         }

@@ -208,7 +208,7 @@ void Make::on_fail() {
   }
   fprintf (stdout, "Make failed. Waiting for %d children\n", (int)jobs.size());
   fail_flag = true;
-  for (auto const &pid_and_target : jobs) {
+  for (const auto &pid_and_target : jobs) {
     int err = kill (pid_and_target.first, SIGINT);
     if (err < 0) {
       perror ("kill failed: ");

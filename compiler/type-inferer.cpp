@@ -271,7 +271,7 @@ string tinf::ExprNode::get_description() {
   return ss.str();
 }
 
-Location const & tinf::ExprNode::get_location() {
+const Location &tinf::ExprNode::get_location() {
   return expr_->get_location();
 }
 

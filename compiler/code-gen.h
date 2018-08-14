@@ -1634,7 +1634,7 @@ void FunctionH::compile (CodeGenerator &W) const {
   W << "#pragma once" << NL <<
        ExternInclude ("php_functions.h");
 
-  for (auto const &tinf_node : function->tinf_nodes) {
+  for (const auto &tinf_node : function->tinf_nodes) {
     if (tinf_node.get_type()->get_class_type_inside()) {
       W << IncludeClass(tinf_node.get_type());
     }

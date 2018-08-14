@@ -13,7 +13,7 @@ struct GenTreeCallbackBase {
   virtual FunctionPtr register_function (const FunctionInfo &func) = 0;
   virtual void require_function_set (FunctionPtr function) = 0;
   virtual ClassPtr register_class (const ClassInfo &info) = 0;
-  virtual ClassPtr get_class_by_name (string const &class_name) = 0;
+  virtual ClassPtr get_class_by_name (const string &class_name) = 0;
   virtual ~GenTreeCallbackBase(){}
 };
 

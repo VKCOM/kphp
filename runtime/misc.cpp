@@ -1521,7 +1521,7 @@ string f$print_r (const var &v, bool buffered) {
 void f$var_dump (const var &v) {
   do_var_dump (v, 0);
   if (run_once && f$ob_get_level() == 0) {
-    string const &to_print = f$ob_get_contents();
+    const string &to_print = f$ob_get_contents();
     if (to_print.size() != write(kstdout, to_print.c_str(), to_print.size())) {
       php_warning("Couldn't write %u bytes to stdout in var_dump", to_print.size());
     }

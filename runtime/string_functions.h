@@ -110,7 +110,7 @@ inline int f$strlen (const string &s);
 
 int f$strncmp (const string &lhs, const string &rhs, int len);
 
-int f$strnatcmp(string const &lhs, string const &rhs);
+int f$strnatcmp(const string &lhs, const string &rhs);
 
 OrFalse <string> f$strpbrk (const string &haystack, const string &char_list);
 

@@ -895,7 +895,7 @@ string string::substr (size_type pos, size_type n) const {
   return string (p + pos, n);
 }
 
-string::size_type string::find (string const &s, size_type pos) const {
+string::size_type string::find (const string &s, size_type pos) const {
   for (size_type i = pos; i + s.size() <= size(); i++) {
     bool equal = true;
     for (size_type j = 0; j < s.size(); j++) {
@@ -911,7 +911,7 @@ string::size_type string::find (string const &s, size_type pos) const {
   return string::npos;
 }
 
-string::size_type string::find_first_of (string const &s, size_type pos) const {
+string::size_type string::find_first_of (const string &s, size_type pos) const {
   for (size_type i = pos; i < size(); i++) {
     for (size_type j = 0; j < s.size(); j++) {
       if (p[i] == s.p[j]) {

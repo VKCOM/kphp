@@ -145,8 +145,8 @@ public:
 
   inline string substr (size_type pos, size_type n) const;
 
-  inline size_type find_first_of (string const &s, size_type pos = 0) const;
-  inline size_type find (string const &s, size_type pos = 0) const;
+  inline size_type find_first_of (const string &s, size_type pos = 0) const;
+  inline size_type find (const string &s, size_type pos = 0) const;
 
   inline void warn_on_float_conversion (void) const;
 

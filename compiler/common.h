@@ -126,7 +126,7 @@ inline unsigned long long hash_ll (const string &s) {
 }
 
 template<class K, class V>
-std::vector<V> get_map_values(std::map<K, V> const &m) {
+std::vector<V> get_map_values(const std::map<K, V> &m) {
   std::vector<V> res;
   res.reserve(m.size());
 

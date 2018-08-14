@@ -258,7 +258,7 @@ template <typename T> T *XNameToId<T>::operator[] (int id) {
 
 template <typename T> set <T> XNameToId <T>::get_ids() {
   set <T> res;
-  for (auto const &i : name_to_id) {
+  for (const auto &i : name_to_id) {
     res.insert (i.second);
   }
   return res;

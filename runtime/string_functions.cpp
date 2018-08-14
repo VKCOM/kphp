@@ -1667,7 +1667,7 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
 }
 
 
-int f$strnatcmp(string const &lhs, string const &rhs) {
+int f$strnatcmp(const string &lhs, const string &rhs) {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
 
