@@ -47,7 +47,7 @@ class CompilerCore {
     void make();
     void finish();
     void register_env (KphpEnviroment *env);
-    const KphpEnviroment &env();
+    const KphpEnviroment &env() const;
     string unify_file_name (const string &file_name);
     SrcFilePtr register_file (const string &file_name, const string &context);
 
@@ -89,6 +89,7 @@ class CompilerCore {
     File *get_file_info (const string &file_name);
     void del_extra_files();
     void init_dest_dir();
+    std::string get_subdir_name() const;
 };
 
 extern CompilerCore *G;

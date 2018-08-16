@@ -1,9 +1,11 @@
 #include "compiler/compiler-core.h"
 
+#include <numeric>
+
+#include "compiler/const-manipulations.h"
 #include "compiler/gentree.h"
 #include "compiler/make.h"
 #include "compiler/pass-register-vars.hpp"
-#include "compiler/const-manipulations.h"
 
 CompilerCore::CompilerCore() :
   env_ (NULL) {
@@ -32,7 +34,7 @@ void CompilerCore::register_env (KphpEnviroment *env) {
   kphp_assert (env_ == NULL);
   env_ = env;
 }
-const KphpEnviroment &CompilerCore::env() {
+const KphpEnviroment &CompilerCore::env() const {
   kphp_assert (env_ != NULL);
   return *env_;
 }
@@ -442,21 +444,27 @@ void CompilerCore::del_extra_files() {
 
 void CompilerCore::init_dest_dir() {
   if (env().get_use_auto_dest()) {
-    string name = main_files[0]->short_file_name;
-    string hash_string;
-    for (auto main_file : main_files) {
-      hash_string += main_file->file_name;
-      hash_string += ";";
-    }
-    long long h = hash (hash_string);
-    stringstream ss;
-    ss << "auto." << name << "-" << std::hex << h;
-    env_->set_dest_dir_subdir (ss.str());
+    env_->set_dest_dir_subdir(get_subdir_name());
   }
   env_->init_dest_dirs();
   cpp_dir = env().get_dest_cpp_dir();
   cpp_index.sync_with_dir (cpp_dir);
   cpp_dir = cpp_index.get_dir();
+}
+
+std::string CompilerCore::get_subdir_name() const {
+  assert (env().get_use_auto_dest());
+
+  const string &name = main_files[0]->short_file_name;
+  string hash_string;
+  for (auto main_file : main_files) {
+    hash_string += main_file->file_name;
+    hash_string += ";";
+  }
+  stringstream ss;
+  ss << "auto." << name << "-" << std::hex << hash(hash_string);
+
+  return ss.str();
 }
 
 bool compare_mtime(File *f, File *g) {
