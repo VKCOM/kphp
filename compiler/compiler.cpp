@@ -2961,6 +2961,61 @@ public:
   }
 };
 
+class lockf_wrapper {
+  std::string locked_filename_;
+  int fd_ = -1;
+  bool locked_ = false;
+
+  void close_and_unlink() {
+    if (close(fd_) == -1) {
+      perror(("Can't close file: " + locked_filename_).c_str());
+      return;
+    }
+
+    if (unlink(locked_filename_.c_str()) == -1) {
+      perror(("Can't unlink file: " + locked_filename_).c_str());
+      return;
+    }
+  }
+
+public:
+  bool lock() {
+    std::string dest_path = G->env().get_dest_dir();
+    if (G->env().get_use_auto_dest()) {
+      dest_path += G->get_subdir_name();
+    }
+
+    std::stringstream ss;
+    ss << std::hex << hash(dest_path) << "_kphp_temp_lock";
+    locked_filename_ = ss.str();
+
+    fd_ = open(locked_filename_.c_str(), O_RDWR | O_CREAT, 0666);
+    assert(fd_ != -1);
+
+    locked_ = true;
+    if (lockf(fd_, F_TLOCK, 0) == -1) {
+      perror("\nCan't lock file, maybe you have already run kphp2cpp");
+      fprintf (stderr, "\n");
+
+      close(fd_);
+      locked_ = false;
+    }
+
+    return locked_;
+  }
+
+  ~lockf_wrapper() {
+    if (locked_) {
+      if (lockf(fd_, F_ULOCK, 0) == -1) {
+        perror(("Can't unlock file: " + locked_filename_).c_str());
+      }
+
+      close_and_unlink();
+      locked_ = false;
+    }
+  }
+};
+
 bool compiler_execute (KphpEnviroment *env) {
   double st = dl_time();
   G = new CompilerCore();
@@ -3000,6 +3055,11 @@ bool compiler_execute (KphpEnviroment *env) {
 
   for (int i = 0; i < (int)env->get_main_files().size(); i++) {
     G->register_main_file (env->get_main_files()[i], file_stream);
+  }
+
+  static lockf_wrapper unique_file_lock;
+  if (!unique_file_lock.lock()) {
+    return false;
   }
 
   {
