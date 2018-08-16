@@ -16,6 +16,7 @@ GenTree::GenTree ()
   , tokens(NULL)
   , callback(NULL)
   , in_func_cnt_(0)
+  , is_top_of_the_function_(false)
 {}
 
 #define CE(x) if (!(x)) {return VertexPtr();}
@@ -1671,6 +1672,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
   VertexPtr cmd;
   if ((*cur)->type() == tok_opbrc) {
     enter_function();
+    is_top_of_the_function_ = in_func_cnt_ > 1;
     cmd = get_statement();
     exit_function();
     kphp_error (type != tok_ex_function, "Extern function header should not have a body");
@@ -1991,6 +1993,8 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
   TokenType type = (*cur)->type();
 
   VertexPtr type_rule;
+  is_top_of_the_function_ &= vk::any_of_equal(type, tok_global, tok_opbrc);
+
   switch (type) {
     case tok_class:
       res = get_class(phpdoc_token);
@@ -2027,6 +2031,9 @@ VertexPtr GenTree::get_statement (Token *phpdoc_token) {
       CE (check_statement_end());
       return res;
     case tok_global:
+      if (G->env().get_warnings_level() >= 1 && in_func_cnt_ > 1 && !is_top_of_the_function_) {
+        kphp_warning("`global` keyword is allowed only at the top of the function");
+      }
       res = get_multi_call <op_global>(&GenTree::get_var_name);
       CE (check_statement_end());
       return res;

@@ -124,6 +124,7 @@ private:
   const vector <Token *> *tokens;
   GenTreeCallbackBase *callback;
   int in_func_cnt_;
+  bool is_top_of_the_function_;
   vector <Token *>::const_iterator cur, end;
   vector <ClassInfo> class_stack;
   string namespace_name;
