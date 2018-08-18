@@ -1,4 +1,6 @@
 #pragma once
+#include "compiler/location.h"
+
 #define compiler_assert(x, y, level)  ({\
   int kphp_error_res__ = 0;\
   if (!(x)) {\
@@ -33,8 +35,6 @@ enum AssertLevelT {WRN_ASSERT_LEVEL, CE_ASSERT_LEVEL, FATAL_ASSERT_LEVEL};
 
 void on_compilation_error (const char *description, const char *file_name, int line_number,
   const char *full_description, AssertLevelT assert_level);
-
-#include "compiler/location.h"
 
 namespace stage {
   struct StageInfo {

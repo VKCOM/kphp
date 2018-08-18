@@ -130,8 +130,3 @@ class FunctionPassF {
     }
 };
 
-template <class Pass>
-class FunctionPassPipe {
-  public:
-    typedef Pipe <FunctionPassF <Pass>, DataStream <FunctionPtr>, DataStream <FunctionPtr> > Self;
-};

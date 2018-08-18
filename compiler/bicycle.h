@@ -1,832 +1,631 @@
 #pragma once
+
 #include "compiler/common.h"
+#include "compiler/stage.h"
+#include "common/algorithms/find.h"
 
 extern volatile int bicycle_counter;
 
 const int MAX_THREADS_COUNT = 101;
 int get_thread_id();
-void set_thread_id (int new_thread_id);
+void set_thread_id(int new_thread_id);
 
-template <class T> bool try_lock (T);
+template<class T>
+bool try_lock(T);
 
-template <class T> void lock (T x) {
-  x->lock();
-}
-template <class T> void unlock (T x) {
-  x->unlock();
-}
-
-template <>
-inline bool try_lock <volatile int *> (volatile int *locker) {
-  return __sync_lock_test_and_set (locker, 1) == 0;
+template<class T>
+void lock(T locker) {
+  locker->lock();
 }
 
-template <>
-inline void lock<volatile int *> (volatile int *locker) {
-  while (!try_lock (locker)) {
-    usleep (250);
+template<class T>
+void unlock(T locker) {
+  locker->unlock();
+}
+
+inline bool try_lock(volatile int *locker) {
+  return __sync_lock_test_and_set(locker, 1) == 0;
+}
+
+inline void lock(volatile int *locker) {
+  while (!try_lock(locker)) {
+    usleep(250);
   }
 }
 
-template <>
-inline void unlock<volatile int *> (volatile int *locker) {
+inline void unlock(volatile int *locker) {
   assert (*locker == 1);
-  __sync_lock_release (locker);
+  __sync_lock_release(locker);
 }
 
 class Lockable {
-  private:
-    volatile int x;
-  public:
-    Lockable() : x(0) {}
-    virtual ~Lockable(){}
-    void lock() {
-      ::lock (&x);
-    }
-    void unlock() {
-      ::unlock (&x);
-    }
+private:
+  volatile int x;
+public:
+  Lockable() : x(0) {}
+
+  virtual ~Lockable() = default;
+
+  void lock() {
+    ::lock(&x);
+  }
+
+  void unlock() {
+    ::unlock(&x);
+  }
 };
 
-template <class DataT>
+template<class DataT>
 class AutoLocker {
-  private:
-    DataT ptr;
-  public:
-    inline AutoLocker (DataT ptr) :
-      ptr (ptr) {
-        lock (ptr);
-      }
+private:
+  DataT ptr;
+public:
+  explicit AutoLocker(DataT ptr)
+    : ptr(ptr)
+  {
+    lock(ptr);
+  }
 
-    inline ~AutoLocker() {
-      unlock (ptr);
-    }
+  ~AutoLocker() {
+    unlock(ptr);
+  }
 };
 
-template <int x = 0>
-class Nothing_ {
-};
-typedef Nothing_<> Nothing;
-
-template <class ValueType>
+template<class ValueType>
 class Maybe {
-  public:
-    bool has_value;
-    char data[sizeof (ValueType)];
+public:
+  bool has_value = false;
+  char data[sizeof(ValueType)];
 
-    Maybe() :
-      has_value (false) {
-      }
+  Maybe() = default;
 
-    Maybe (Nothing x __attribute__((unused))) :
-      has_value (false) {
-      }
+  Maybe(const ValueType &value)
+    : has_value(true)
+  {
+    new(data) ValueType(value);
+  }
 
-    Maybe (const ValueType &value)
-      : has_value(true)
-    {
-      new (data) ValueType (value);
-    }
+  operator const ValueType &() const {
+    assert (has_value);
+    return *(ValueType *)data;
+  }
 
-    operator const ValueType &() const {
-      assert (has_value);
-      return *(ValueType *)data;
-    }
-
-    bool empty() {
-      return !has_value;
-    }
+  bool empty() {
+    return !has_value;
+  }
 };
 
-inline int atomic_int_inc (volatile int *x) {
+inline int atomic_int_inc(volatile int *x) {
   int old_x;
   do {
     old_x = *x;
-  } while (!__sync_bool_compare_and_swap (x, old_x, old_x + 1));
+  } while (!__sync_bool_compare_and_swap(x, old_x, old_x + 1));
   return old_x;
 }
 
-inline void atomic_int_dec (volatile int *x) {
+inline void atomic_int_dec(volatile int *x) {
   int old_x;
   do {
     old_x = *x;
-  } while (!__sync_bool_compare_and_swap (x, old_x, old_x - 1));
+  } while (!__sync_bool_compare_and_swap(x, old_x, old_x - 1));
 }
 
-template <class T>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+template<class T>
 struct TLS {
-  private:
-    struct TLSRaw {
-      T data;
-      volatile int locker;
-      char dummy[4096];
-      TLSRaw() :
-        data(),
-        locker (0) {
-      }
-    };
-    TLSRaw arr[MAX_THREADS_COUNT + 1];
-  public:
-    TLS() :
-      arr() {
-    }
-    TLSRaw *get_raw (int id) {
-      assert (0 <= id && id <= MAX_THREADS_COUNT);
-      return &arr[id];
-    }
-    TLSRaw *get_raw() {
-      return get_raw (get_thread_id());
-    }
+private:
+  struct TLSRaw {
+    T data{};
+    volatile int locker = 0;
+    char dummy[4096];
+  };
 
-    T *get() {
-      return &get_raw()->data;
-    }
-    T *get (int i) {
-      return &get_raw (i)->data;
-    }
+  TLSRaw arr[MAX_THREADS_COUNT + 1];
+public:
+  TLS() :
+    arr() {
+  }
 
-    T *operator -> () {
-      return get();
-    }
-    T &operator * () {
-      return *get();
-    }
+  TLSRaw *get_raw(int id) {
+    assert (0 <= id && id <= MAX_THREADS_COUNT);
+    return &arr[id];
+  }
 
-    int size() {
-      return MAX_THREADS_COUNT + 1;
-    }
+  TLSRaw *get_raw() {
+    return get_raw(get_thread_id());
+  }
 
-    T *lock_get() {
-      TLSRaw *raw = get_raw();
-      bool ok = try_lock (&raw->locker);
-      assert (ok);
-      return &raw->data;
-    }
+  T *get() {
+    return &get_raw()->data;
+  }
 
-    void unlock_get (T *ptr) {
-      TLSRaw *raw = get_raw();
-      assert (&raw->data == ptr);
-      unlock (&raw->locker);
-    }
+  T *get(int i) {
+    return &get_raw(i)->data;
+  }
+
+  T *operator->() {
+    return get();
+  }
+
+  T &operator*() {
+    return *get();
+  }
+
+  int size() {
+    return MAX_THREADS_COUNT + 1;
+  }
+
+  T *lock_get() {
+    TLSRaw *raw = get_raw();
+    bool ok = try_lock(&raw->locker);
+    assert (ok);
+    return &raw->data;
+  }
+
+  void unlock_get(T *ptr) {
+    TLSRaw *raw = get_raw();
+    assert (&raw->data == ptr);
+    unlock(&raw->locker);
+  }
 };
+#pragma GCC diagnostic pop
 
 class Task {
-  public:
-    virtual void execute() = 0;
-    virtual ~Task(){}
+public:
+  virtual void execute() = 0;
+
+  virtual ~Task() = default;
 };
 
-inline void execute_task (Task *task) {
+inline void execute_task(Task *task) {
   task->execute();
   delete task;
-  atomic_int_dec (&bicycle_counter);
+  atomic_int_dec(&bicycle_counter);
 }
 
 class Node;
+
 class SchedulerBase {
-  public:
-    SchedulerBase();
-    virtual ~SchedulerBase();
-    virtual void add_node (Node *node) = 0;
-    virtual void add_sync_node (Node *node) = 0;
-    virtual void add_task (Task *task) = 0;
-    virtual void execute() = 0;
+public:
+  SchedulerBase();
+  virtual ~SchedulerBase();
+  virtual void add_node(Node *node) = 0;
+  virtual void add_task(Task *task) = 0;
+  virtual void execute() = 0;
 };
 
 SchedulerBase *get_scheduler();
-void set_scheduler (SchedulerBase *new_scheduler);
-void unset_scheduler (SchedulerBase *old_scheduler);
+void set_scheduler(SchedulerBase *new_scheduler);
+void unset_scheduler(SchedulerBase *old_scheduler);
 
 
-inline void register_async_task (Task *task) {
-  get_scheduler()->add_task (task);
+inline void register_async_task(Task *task) {
+  get_scheduler()->add_task(task);
 }
 
 class Node {
-  public:
-    SchedulerBase *in_scheduler;
-    bool parallel;
-    bool sync_node;
-    Node (bool parallel = true, bool sync_node = false) :
-     in_scheduler (NULL),
-     parallel (parallel),
-     sync_node (sync_node) {
+public:
+  SchedulerBase *in_scheduler;
+  bool parallel;
+  bool sync_node;
+
+  explicit Node(bool parallel = true, bool sync_node = false)
+    : in_scheduler(nullptr)
+    , parallel(parallel)
+    , sync_node(sync_node)
+  {}
+
+  virtual ~Node() = default;
+
+  void add_to_scheduler(SchedulerBase *scheduler) {
+    if (in_scheduler == scheduler) {
+      return;
     }
-    virtual ~Node(){}
-    void add_to_scheduler (SchedulerBase *scheduler) {
-      if (in_scheduler == scheduler) {
-        return;
-      }
-      assert (in_scheduler == NULL);
-      in_scheduler = scheduler;
-      in_scheduler->add_node (this);
-    }
-    virtual bool is_parallel() {
-      return parallel;
-    }
-    virtual bool is_sync_node() {
-      return sync_node;
-    }
-    virtual Task *get_task() = 0;
-    virtual void on_finish() = 0;
+    assert (in_scheduler == nullptr);
+    in_scheduler = scheduler;
+    in_scheduler->add_node(this);
+  }
+
+  virtual bool is_parallel() {
+    return parallel;
+  }
+
+  virtual bool is_sync_node() {
+    return sync_node;
+  }
+
+  virtual Task *get_task() = 0;
+  virtual void on_finish() = 0;
 };
+
 #define DUMMY_ON_FINISH template <class OutputStreamT> void on_finish (OutputStreamT &os __attribute__((unused))) {}
 
 class TaskPull;
+
 class OneThreadScheduler : public SchedulerBase {
-  private:
-    vector <Node *> nodes;
-    queue <Node *> sync_nodes;
-    TaskPull *task_pull;
-  public:
-    OneThreadScheduler();
+private:
+  vector<Node *> nodes;
+  queue<Node *> sync_nodes;
+  TaskPull *task_pull;
+public:
+  OneThreadScheduler();
 
-    void add_node (Node *node);
-    void add_task (Task *task);
-    void add_sync_node (Node *node);
-    void execute();
-    void set_threads_count (int threads_count);
+  void add_node(Node *node) override;
+  void add_task(Task *task) override;
+  void execute() override;
+  void set_threads_count(int threads_count);
 };
 
-class Scheduler;
 class ThreadLocalStorage {
-  public:
-    pthread_t pthread_id;
-    int thread_id;
-    Scheduler *scheduler;
-    Node *node;
-    bool run_flag;
-    double started;
-    double finished;
+public:
+  pthread_t pthread_id;
+  int thread_id;
+
+  class Scheduler *scheduler;
+
+  Node *node;
+  bool run_flag;
+  double started;
+  double finished;
 };
 
-void *thread_execute (void *arg);
+void *thread_execute(void *arg);
+
 class Scheduler : public SchedulerBase {
-  private:
-    vector <Node *> nodes;
-    vector <Node *> one_thread_nodes;
-    queue <Node *> sync_nodes;
-    int threads_count;
-    TaskPull *task_pull;
+private:
+  vector<Node *> nodes;
+  vector<Node *> one_thread_nodes;
+  queue<Node *> sync_nodes;
+  int threads_count;
+  TaskPull *task_pull;
 
-  public:
-    Scheduler();
+public:
+  Scheduler();
 
-    void add_node (Node *node);
-    void add_task (Task *task);
-    void add_sync_node (Node *node);
-    void execute();
+  void add_node(Node *node) override;
+  void add_task(Task *task) override;
+  void execute() override;
 
-    void set_threads_count (int new_threads_count);
-    void thread_execute (ThreadLocalStorage *tls);
-    bool thread_process_node (Node *node);
+  void set_threads_count(int new_threads_count);
+  void thread_execute(ThreadLocalStorage *tls);
+  bool thread_process_node(Node *node);
 };
-template <class DataT>
-class DataStreamRaw : Lockable {
-  private:
-    static const int MAX_STREAM_ELEMENTS = 200000;
-    DataT *data;
-    volatile int *ready;
-    volatile int write_i, read_i;
-    bool sink;
-  public:
-    typedef DataT DataType;
-    DataStreamRaw() :
-      write_i (0),
-      read_i (0),
-      sink (false) {
-      //FIXME
-      data =  new DataT[MAX_STREAM_ELEMENTS]();
-      ready = new int[MAX_STREAM_ELEMENTS]();
-    }
-    bool empty() {
-      return read_i == write_i;
-    }
-    Maybe <DataT> get() {
-      //AutoLocker <Lockable *> (this);
-      while (true) {
-        int old_read_i = read_i;
-        if (old_read_i < write_i) {
-          if (__sync_bool_compare_and_swap (&read_i, old_read_i, old_read_i + 1)) {
-            while (!ready[old_read_i]) {
-              usleep (250);
-            }
-            DataT result;
-            std::swap (result, data[old_read_i]);
-            return result;
+
+template<class DataT>
+class DataStream : Lockable {
+private:
+  static const int MAX_STREAM_ELEMENTS = 200000;
+  DataT *data;
+  volatile int *ready;
+  volatile int write_i, read_i;
+  bool sink;
+public:
+  using DataType = DataT;
+  using StreamType = DataStream<DataT>;
+
+  template<size_t data_id>
+  using NthDataType = DataType;
+
+  DataStream() :
+    write_i(0),
+    read_i(0),
+    sink(false) {
+    //FIXME
+    data = new DataT[MAX_STREAM_ELEMENTS]();
+    ready = new int[MAX_STREAM_ELEMENTS]();
+  }
+
+  bool empty() {
+    return read_i == write_i;
+  }
+
+  Maybe<DataT> get() {
+    //AutoLocker <Lockable *> (this);
+    while (true) {
+      int old_read_i = read_i;
+      if (old_read_i < write_i) {
+        if (__sync_bool_compare_and_swap(&read_i, old_read_i, old_read_i + 1)) {
+          while (!ready[old_read_i]) {
+            usleep(250);
           }
-          usleep (250);
-        } else {
-          return Nothing();
+          DataT result;
+          std::swap(result, data[old_read_i]);
+          return result;
         }
-      }
-      return Nothing();
-    }
-    void operator << (const DataType &input) {
-      //AutoLocker <Lockable *> (this);
-      if (!sink) {
-        atomic_int_inc (&bicycle_counter);
-      }
-      while (true) {
-        int old_write_i = write_i;
-        assert (old_write_i < MAX_STREAM_ELEMENTS);
-        if (__sync_bool_compare_and_swap (&write_i, old_write_i, old_write_i + 1)) {
-          data[old_write_i] = input;
-          __sync_synchronize();
-          ready[old_write_i] = 1;
-          return;
-        }
-        usleep (250);
+        usleep(250);
+      } else {
+        return {};
       }
     }
-    int size() {
-      return write_i - read_i;
+  }
+
+  void operator<<(const DataType &input) {
+    //AutoLocker <Lockable *> (this);
+    if (!sink) {
+      atomic_int_inc(&bicycle_counter);
     }
-    vector <DataT> get_as_vector() {
-      return vector <DataT> (data + read_i, data + write_i);
-    }
-    void set_sink (bool new_sink) {
-      if (new_sink == sink) {
+    while (true) {
+      int old_write_i = write_i;
+      assert (old_write_i < MAX_STREAM_ELEMENTS);
+      if (__sync_bool_compare_and_swap(&write_i, old_write_i, old_write_i + 1)) {
+        data[old_write_i] = input;
+        __sync_synchronize();
+        ready[old_write_i] = 1;
         return;
       }
-      sink = new_sink;
-      if (sink) {
-        bicycle_counter -= size();
-      } else {
-        bicycle_counter += size();
-      }
+      usleep(250);
     }
+  }
+
+  int size() {
+    return write_i - read_i;
+  }
+
+  vector<DataT> get_as_vector() {
+    return vector<DataT>(data + read_i, data + write_i);
+  }
+
+  void set_sink(bool new_sink) {
+    if (new_sink == sink) {
+      return;
+    }
+    sink = new_sink;
+    if (sink) {
+      bicycle_counter -= size();
+    } else {
+      bicycle_counter += size();
+    }
+  }
 };
 
 class TaskPull : public Node {
-  private:
-    DataStreamRaw <Task*> stream;
-  public:
-    inline void add_task (Task *task) {
-      stream << task;
-    }
-    inline Task *get_task() {
-      Maybe <Task *> x = stream.get();
-      if (x.empty()) {
-        return NULL;
-      }
-      return x;
-    }
+private:
+  DataStream<Task *> stream;
+public:
+  inline void add_task(Task *task) {
+    stream << task;
+  }
 
-    inline void on_finish (void) {
+  inline Task *get_task() override {
+    Maybe<Task *> x = stream.get();
+    if (x.empty()) {
+      return nullptr;
     }
+    return x;
+  }
+
+  inline void on_finish() override{}
 };
 
-class EmptyStream {
-  public:
-    typedef EmptyStream FirstStreamType;
-};
-
-template <class FirstDataT>
-class DataStream {
-  private:
-    DataStreamRaw <FirstDataT> *first_stream;
-  public:
-    typedef FirstDataT FirstDataType;
-    typedef FirstDataT DataType;
-    typedef DataStreamRaw <FirstDataT> FirstStreamType;
-    typedef FirstStreamType StreamType;
-
-    DataStream() : first_stream (NULL) {
-    }
-    virtual ~DataStream(){
-    }
-
-    DataStreamRaw <FirstDataT> *get_first_stream() {
-      return first_stream;
-    }
-    void set_first_stream (DataStreamRaw <FirstDataT> *new_first_stream) {
-      assert (first_stream == NULL);
-      first_stream = new_first_stream;
-    }
-    DataStreamRaw <FirstDataT> *get_stream() {
-      return get_first_stream();
-    }
-    void set_stream (DataStreamRaw <FirstDataT> *new_first_stream) {
-      set_first_stream (new_first_stream);
-    }
-
-    void operator << (const FirstDataT &first) {
-      *first_stream << first;
-    }
-};
-template <class FirstDataT, class SecondDataT>
-class DataStreamPair : public DataStream <FirstDataT> {
-  private:
-    typedef DataStream <FirstDataT> Base;
-    DataStreamRaw <SecondDataT> *second_stream;
-  public:
-    typedef SecondDataT SecondDataType;
-    typedef DataStreamRaw <SecondDataT> SecondStreamType;
-
-    DataStreamPair() : second_stream (NULL) {
-    }
-    virtual ~DataStreamPair() {
-    }
-
-    DataStreamRaw <SecondDataT> *get_second_stream() {
-      return second_stream;
-    }
-    void set_second_stream (DataStreamRaw <SecondDataT> *new_second_stream) {
-      assert (second_stream == NULL);
-      second_stream = new_second_stream;
-    }
-
-    using Base::operator <<;
-    void operator << (const SecondDataT &second) {
-      *second_stream << second;
-    }
-};
-
-template <class FirstDataT, class SecondDataT, class ThirdDataT>
-class DataStreamTriple : public DataStreamPair <FirstDataT, SecondDataT> {
-  private:
-    typedef DataStreamPair <FirstDataT, SecondDataT> Base;
-    DataStreamRaw <ThirdDataT> *third_stream;
-  public:
-    typedef ThirdDataT ThirdDataType;
-    typedef DataStreamRaw <ThirdDataT> ThirdStreamType;
-
-    DataStreamTriple() : third_stream (NULL) {
-    }
-    virtual ~DataStreamTriple() {
-    }
-
-    DataStreamRaw <ThirdDataT> *get_third_stream() {
-      return third_stream;
-    }
-    void set_third_stream (DataStreamRaw <ThirdDataT> *new_third_stream) {
-      assert (third_stream == NULL);
-      third_stream = new_third_stream;
-    }
-
-    using Base::operator <<;
-    void operator << (const ThirdDataT &third) {
-      *third_stream << third;
-    }
-};
-
-template <class FirstDataT, class SecondDataT, class ThirdDataT, class FourthDataT>
-class DataStreamQuadruple : public DataStreamTriple <FirstDataT, SecondDataT, ThirdDataT> {
-  private:
-    typedef DataStreamTriple <FirstDataT, SecondDataT, ThirdDataT> Base;
-    DataStreamRaw <FourthDataT> *fourth_stream;
-  public:
-    typedef FourthDataT FourthDataType;
-    typedef DataStreamRaw <FourthDataT> FourthStreamType;
-
-    DataStreamQuadruple() : fourth_stream (NULL) {
-    }
-    virtual ~DataStreamQuadruple() {
-    }
-
-    DataStreamRaw <FourthDataT> *get_fourth_stream() {
-      return fourth_stream;
-    }
-    void set_fourth_stream (DataStreamRaw <FourthDataT> *new_fourth_stream) {
-      assert (fourth_stream == NULL);
-      fourth_stream = new_fourth_stream;
-    }
-
-    using Base::operator <<;
-    void operator << (const FourthDataT &fourth) {
-      *fourth_stream << fourth;
-    }
-};
-
-template <class PipeType>
+template<class PipeType>
 class PipeTask : public Task {
-  private:
-    typedef typename PipeType::InputType InputType;
-    InputType input;
-    PipeType *pipe_ptr;
-  public:
-    PipeTask (InputType input, PipeType *pipe_ptr) :
-      input (input),
-      pipe_ptr (pipe_ptr) {
-      }
-    void execute (void) {
-      pipe_ptr->process_input (input);
-    }
+private:
+  typedef typename PipeType::InputType InputType;
+  InputType input;
+  PipeType *pipe_ptr;
+public:
+  PipeTask(InputType input, PipeType *pipe_ptr) :
+    input(input),
+    pipe_ptr(pipe_ptr) {
+  }
+
+  void execute() override {
+    pipe_ptr->process_input(input);
+  }
 };
 
-template <class PipeF, class InputStreamT, class OutputStreamT>
+template<class PipeF, class InputStreamT, class OutputStreamT>
 class Pipe : public Node {
-  private:
-    InputStreamT input_stream;
-    OutputStreamT output_stream;
-    PipeF function;
-  public:
-    typedef InputStreamT InputStreamType;
-    typedef OutputStreamT OutputStreamType;
+public:
+  using PipeFunctionType = PipeF;
+  using InputStreamType = InputStreamT;
+  using OutputStreamType = OutputStreamT;
 
-    typedef typename InputStreamT::DataType InputType;
-    typedef Pipe <PipeF, InputStreamT, OutputStreamT> SelfType;
-    typedef PipeTask <SelfType> TaskType;
+  using InputType = typename InputStreamT::DataType;
+  using SelfType = Pipe<PipeF, InputStreamT, OutputStreamT>;
+  using TaskType = PipeTask<SelfType>;
 
-    Pipe (bool parallel = true, bool sync_node = false) :
-      Node (parallel, sync_node),
-      input_stream(),
-      output_stream() {
+private:
+  InputStreamType *input_stream = nullptr;
+  OutputStreamType *output_stream = nullptr;
+  PipeF function;
+
+public:
+  explicit Pipe(bool sync_node = false, bool parallel = true)
+    : Node(parallel, sync_node)
+  {}
+
+  InputStreamType *&get_input_stream() { return input_stream; }
+
+  OutputStreamType *&get_output_stream() { return output_stream; }
+
+  void init_output_stream_if_not_inited() {
+    if (!output_stream) {
+      output_stream = new OutputStreamType();
     }
-
-    InputStreamT *get_input_stream() {
-      return &input_stream;
-    }
-    OutputStreamT *get_output_stream() {
-      return &output_stream;
-    }
-
-    void process_input (const InputType &input) {
-      function.execute (input, *this);
-    }
-
-    Task *get_task() {
-      Maybe <InputType> x = input_stream.get_stream()->get();
-      if (x.empty()) {
-        return NULL;
-      }
-      return new TaskType (x, this);
-    }
-
-    void on_finish() {
-      function.on_finish (*this);
-    }
-
-    template <class ResultT>
-      void operator << (const ResultT &result) {
-        *get_output_stream() << result;
-      }
-};
-
-template <class PipeT>
-typename PipeT::InputStreamType &pipe_input (PipeT &pipe) {
-  return *pipe.get_input_stream();
-}
-
-template <class PipeT>
-typename PipeT::OutputStreamType &pipe_output (PipeT &pipe) {
-  return *pipe.get_output_stream();
-}
-
-template <class StreamT>
-class FirstStream {
-  private:
-    StreamT *ptr;
-  public:
-    typedef typename StreamT::FirstStreamType StreamType;
-    FirstStream (StreamT &ptr) :
-      ptr (&ptr) {
-      }
-    StreamType *get_stream() const {
-      return ptr->get_first_stream();
-    }
-    void set_stream (StreamType *stream) const {
-      ptr->set_first_stream (stream);
-    }
-};
-
-template <class StreamT>
-class SecondStream {
-  private:
-    StreamT *ptr;
-  public:
-    typedef typename StreamT::SecondStreamType StreamType;
-    SecondStream (StreamT &ptr) :
-      ptr (&ptr) {
-      }
-    StreamType *get_stream() const {
-      return ptr->get_second_stream();
-    }
-    void set_stream (StreamType *stream) const {
-      ptr->set_second_stream (stream);
-    }
-};
-
-template <class StreamT>
-class ThirdStream {
-  private:
-    StreamT *ptr;
-  public:
-    typedef typename StreamT::ThirdStreamType StreamType;
-    ThirdStream (StreamT &ptr) :
-      ptr (&ptr) {
-      }
-    StreamType *get_stream() const {
-      return ptr->get_third_stream();
-    }
-    void set_stream (StreamType *stream) const {
-      ptr->set_third_stream (stream);
-    }
-};
-
-template <class StreamT>
-class FourthStream {
-  private:
-    StreamT *ptr;
-  public:
-    typedef typename StreamT::FourthStreamType StreamType;
-    FourthStream (StreamT &ptr) :
-      ptr (&ptr) {
-    }
-    StreamType *get_stream() const {
-      return ptr->get_fourth_stream();
-    }
-    void set_stream (StreamType *stream) const {
-      ptr->set_fourth_stream (stream);
-    }
-};
-
-template <class StreamT>
-FirstStream <StreamT> first_stream (StreamT &stream) {
-  return FirstStream <StreamT> (stream);
-}
-
-template <class StreamT>
-SecondStream <StreamT> second_stream (StreamT &stream) {
-  return SecondStream <StreamT> (stream);
-}
-
-template <class StreamT>
-ThirdStream <StreamT> third_stream (StreamT &stream) {
-  return ThirdStream <StreamT> (stream);
-}
-
-template <class StreamT>
-FourthStream <StreamT> fourth_stream (StreamT &stream) {
-  return FourthStream <StreamT> (stream);
-}
-
-template <class FirstT, class SecondT>
-void connect (FirstT &first, SecondT &second) {
-  typedef typename FirstT::StreamType StreamType;
-  StreamType *first_stream = first.get_stream();
-  StreamType *second_stream = second.get_stream();
-
-  if (first_stream != NULL && second_stream != NULL) {
-    assert (first_stream == second_stream);
-    return;
-  }
-  if (first_stream != NULL) {
-    second.set_stream (first_stream);
-    return;
-  }
-  if (second_stream != NULL) {
-    first.set_stream (second_stream);
-    return;
   }
 
-  StreamType *stream = new StreamType();
-  first.set_stream (stream);
-  second.set_stream (stream);
-}
-//TODO: it is horrible hack
-template <class FirstT, class SecondT>
-void connect (const FirstT &first, const SecondT &second) {
-  FirstT new_first (first);
-  SecondT new_second (second);
-  connect (new_first, new_second);
-}
-template <class FirstT, class SecondT>
-void connect (FirstT &first, const SecondT &second) {
-  SecondT new_second (second);
-  connect (first, new_second);
-}
+  void set_input_stream(InputStreamType *is) { input_stream = is; }
 
-template <class FirstT, class SecondT>
-void connect (const FirstT &first, SecondT &second) {
-  FirstT new_first (first);
-  connect (new_first, second);
-}
+  void process_input(const InputType &input) { function.execute(input, *output_stream); }
 
-enum SCCEnum {
-  scc_sync_node,
-  scc_use_first_output,
-  scc_use_second_output,
-  scc_use_third_output,
-  scc_use_fourth_output
+  Task *get_task() override {
+    Maybe<InputType> x = input_stream->get();
+    if (x.empty()) {
+      return nullptr;
+    }
+    return new TaskType(x, this);
+  }
+
+  void on_finish() override { function.on_finish(*output_stream); }
 };
 
-template <SCCEnum Cmd> struct SCC {
+struct EmptyStream {
+  template<size_t stream_id>
+  using NthDataType = EmptyStream;
 };
 
-inline SCC <scc_sync_node> sync_node() {
-  return SCC <scc_sync_node>();
-}
-inline SCC <scc_use_first_output> use_first_output() {
-  return SCC <scc_use_first_output>();
-}
-inline SCC <scc_use_second_output> use_second_output() {
-  return SCC <scc_use_second_output>();
-}
-inline SCC <scc_use_third_output> use_third_output() {
-  return SCC <scc_use_third_output>();
-}
-inline SCC <scc_use_fourth_output> use_fourth_output() {
-  return SCC <scc_use_fourth_output>();
-}
+template<class ...DataTypes>
+class MultipleDataStreams {
+private:
+  std::tuple<DataStream<DataTypes>*...> streams_;
 
-template <class SchedulerT, class PipeT, class PipeHolderT>
+public:
+  template<size_t data_id>
+  using NthDataType = typename std::tuple_element<data_id, std::tuple<DataTypes...>>::type;
+
+  template<class DataType>
+  DataStream<DataType> *&project_to_single_data_stream() {
+    constexpr size_t data_id = vk::index_of_type<DataType, DataTypes...>::value;
+    return std::get<data_id>(streams_);
+  }
+
+  template<class DataType>
+  void operator<<(const DataType &data) {
+    *project_to_single_data_stream<DataType>() << data;
+  }
+};
+
+template<size_t id, class StreamT>
+using ConcreteIndexedStream = DataStream<typename StreamT::template NthDataType<id>>;
+
+struct sync_node_tag{};
+
+template<size_t id>
+struct use_nth_output_tag {};
+
+template<class StreamT>
 class SC_Pipe {
-  private:
-    typedef typename PipeT::OutputStreamType PtrType;
-    typedef SC_Pipe <SchedulerT, PipeT, PipeHolderT> Self;
+private:
+  SchedulerBase *scheduler;
+  StreamT *&previous_output_stream;
 
+private:
+  class SyncPipeF {
+    StreamT tmp_stream;
   public:
-    SchedulerT *scheduler;
-    PipeT *pipe;
-    PipeHolderT pipe_holder;
+    SyncPipeF() { tmp_stream.set_sink (true); }
 
-    template <class OtherPipeHolderT>
-      SC_Pipe (const SC_Pipe <SchedulerT, PipeT, OtherPipeHolderT> &other) :
-        scheduler (other.scheduler),
-        pipe (other.pipe),
-        pipe_holder (pipe_output (*other.pipe)) {
-        }
+    void execute (typename StreamT::DataType input, StreamT&) { tmp_stream << input; }
 
-    SC_Pipe (SchedulerT *scheduler, PipeT *pipe, PipeHolderT pipe_holder) :
-      scheduler (scheduler),
-      pipe (pipe),
-      pipe_holder (pipe_holder) {
-        pipe->add_to_scheduler (scheduler);
+    void on_finish (StreamT &os) {
+      mem_info_t mem_info;
+      get_mem_stats (getpid(), &mem_info);
+
+      stage::die_if_global_errors();
+      for (auto& el : tmp_stream.get_as_vector()) {
+        os << el;
       }
+    }
+  };
 
-    Self &operator >> (SCC <scc_sync_node>) {
-      scheduler->add_sync_node (pipe);
-      return *this;
-    }
-
-    SC_Pipe <SchedulerT, PipeT, FirstStream <PtrType> > operator >> (SCC <scc_use_first_output>) {
-      return *this;
-    }
-    SC_Pipe <SchedulerT, PipeT, SecondStream <PtrType> > operator >> (SCC <scc_use_second_output>) {
-      return *this;
-    }
-    SC_Pipe <SchedulerT, PipeT, ThirdStream <PtrType> > operator >> (SCC <scc_use_third_output>) {
-      return *this;
-    }
-    SC_Pipe <SchedulerT, PipeT, FourthStream <PtrType> > operator >> (SCC <scc_use_fourth_output>) {
-      return *this;
+  static void connect(StreamT *&first_stream, StreamT *&second_stream) {
+    if (first_stream != nullptr && second_stream != nullptr) {
+      assert(first_stream == second_stream);
+      return;
     }
 
-    template <class NextPipeT>
-    SC_Pipe <SchedulerT, NextPipeT, FirstStream <typename NextPipeT::OutputStreamType> > operator >> (NextPipeT &next_pipe) {
-        connect (pipe_holder, pipe_input (next_pipe));
-      return scheduler_constructor (*scheduler, next_pipe);
+    if (first_stream != nullptr) {
+      second_stream = first_stream;
+    } else if (second_stream != nullptr) {
+      first_stream = second_stream;
+    } else {
+      first_stream = new StreamT();
+      second_stream = first_stream;
     }
+  }
+
+  template<class T>
+  static StreamT *&project_to_single_data_stream(T streams) {
+    return streams->template project_to_single_data_stream<typename StreamT::DataType>();
+  }
+
+public:
+  template<class... DataTypes>
+  SC_Pipe(SchedulerBase *scheduler, MultipleDataStreams<DataTypes...> *streams)
+    : scheduler(scheduler)
+    , previous_output_stream(project_to_single_data_stream(streams))
+  {}
+
+  template<class PipeT>
+  SC_Pipe(SchedulerBase *scheduler, PipeT *pipe)
+    : scheduler(scheduler)
+    , previous_output_stream(pipe->get_output_stream())
+  {
+    pipe->add_to_scheduler(scheduler);
+  }
+
+  SC_Pipe operator>>(sync_node_tag) {
+    auto *sync_pipe = new Pipe<SyncPipeF, StreamT, StreamT>(true, true);
+    return *this >> *sync_pipe;
+  }
+
+  template<size_t id>
+  SC_Pipe<ConcreteIndexedStream<id, StreamT>> operator>>(use_nth_output_tag<id>) {
+    return {scheduler, previous_output_stream};
+  }
+
+  template<class NextPipeT>
+  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(NextPipeT &next_pipe) {
+    connect(previous_output_stream, next_pipe.get_input_stream());
+    next_pipe.init_output_stream_if_not_inited();
+    return {scheduler, &next_pipe};
+  }
 };
 
-template <class A, class B>
-SC_Pipe <A, B, FirstStream <typename B::OutputStreamType> > scheduler_constructor (A &a, B &b) {
-  return SC_Pipe <A, B, FirstStream <typename B::OutputStreamType> > (&a, &b, pipe_output (b));
+template<class PipeT>
+SC_Pipe<typename PipeT::OutputStreamType> scheduler_constructor(SchedulerBase *scheduler, PipeT &pipe) {
+  return {scheduler, &pipe};
 }
-
 
 /*** Multithreaded profiler ***/
 #define TACT_SPEED (1e-6 / 2266.0)
-class ProfilerRaw {
-  private:
-    long long count;
-    long long ticks;
-    size_t memory;
-    int flag;
-  public:
-    void alloc_memory (size_t size) {
-      count++;
-      memory += size;
-    }
-    size_t get_memory() {
-      return memory;
-    }
 
-    void start() {
-      if (flag == 0) {
-        ticks -= dl_rdtsc();
-        count++;
-      }
-      flag++;
+class ProfilerRaw {
+private:
+  long long count;
+  long long ticks;
+  size_t memory;
+  int flag;
+public:
+  void alloc_memory(size_t size) {
+    count++;
+    memory += size;
+  }
+
+  size_t get_memory() {
+    return memory;
+  }
+
+  void start() {
+    if (flag == 0) {
+      ticks -= dl_rdtsc();
+      count++;
     }
-    void finish() {
-      //assert (flag == 1);
-      flag--;
-      if (flag == 0) {
-        ticks += dl_rdtsc();
-      }
+    flag++;
+  }
+
+  void finish() {
+    //assert (flag == 1);
+    flag--;
+    if (flag == 0) {
+      ticks += dl_rdtsc();
     }
-    long long get_ticks() {
-      return ticks;
-    }
-    long long get_count() {
-      return count;
-    }
-    double get_time() {
-      return get_ticks() * TACT_SPEED;
-    }
+  }
+
+  long long get_ticks() {
+    return ticks;
+  }
+
+  long long get_count() {
+    return count;
+  }
+
+  double get_time() {
+    return get_ticks() * TACT_SPEED;
+  }
 };
 
 
@@ -899,39 +698,41 @@ enum ProfilerId {
 };
 
 class Profiler {
-  public:
-    ProfilerRaw raw[ProfilerId_size];
-    char dummy[4096];
+public:
+  ProfilerRaw raw[ProfilerId_size];
+  char dummy[4096];
 };
 
-extern TLS <Profiler> profiler;
-inline ProfilerRaw &get_profiler (ProfilerId id) {
+extern TLS<Profiler> profiler;
+
+inline ProfilerRaw &get_profiler(ProfilerId id) {
   return profiler->raw[id];
 }
 
 #define PROF(x) get_profiler (PROF_E (x))
-inline void profiler_print (ProfilerId id, const char *desc) {
+
+inline void profiler_print(ProfilerId id, const char *desc) {
   double total_time = 0;
   long long total_ticks = 0;
   long long total_count = 0;
   size_t total_memory = 0;
   for (int i = 0; i <= MAX_THREADS_COUNT; i++) {
-    total_time += profiler.get (i)->raw[id].get_time();
-    total_count += profiler.get (i)->raw[id].get_count();
-    total_ticks += profiler.get (i)->raw[id].get_ticks();
-    total_memory += profiler.get (i)->raw[id].get_memory();
+    total_time += profiler.get(i)->raw[id].get_time();
+    total_count += profiler.get(i)->raw[id].get_count();
+    total_ticks += profiler.get(i)->raw[id].get_ticks();
+    total_memory += profiler.get(i)->raw[id].get_memory();
   }
   if (total_count > 0) {
     if (total_ticks > 0) {
-      fprintf (
-          stderr, "%40s:\t\%lf %lld %lld\n",
-          desc, total_time, total_count, total_ticks / max (1ll, total_count)
+      fprintf(
+        stderr, "%40s:\t\%lf %lld %lld\n",
+        desc, total_time, total_count, total_ticks / max(1ll, total_count)
       );
     }
     if (total_memory > 0) {
-      fprintf (
-          stderr, "%40s:\t\%.5lfMb %lld %.5lf\n",
-          desc, (double)total_memory / (1 << 20), total_count, (double)total_memory / total_count
+      fprintf(
+        stderr, "%40s:\t\%.5lfMb %lld %.5lf\n",
+        desc, (double)total_memory / (1 << 20), total_count, (double)total_memory / total_count
       );
     }
   }
@@ -942,111 +743,117 @@ inline void profiler_print_all() {
   FOREACH_PROF (PRINT_PROF);
 }
 
-template <ProfilerId Id>
-class  AutoProfiler {
-  private:
-    ProfilerRaw &prof;
-  public:
-    AutoProfiler() :
-      prof (get_profiler (Id)) {
-      prof.start();
-    }
-    ~AutoProfiler() {
-      prof.finish();
-    }
+template<ProfilerId Id>
+class AutoProfiler {
+private:
+  ProfilerRaw &prof;
+public:
+  AutoProfiler() :
+    prof(get_profiler(Id)) {
+    prof.start();
+  }
+
+  ~AutoProfiler() {
+    prof.finish();
+  }
 };
+
 #define AUTO_PROF(x) AutoProfiler <PROF_E (x)> x ## _auto_prof
 
 /*** Multithreaded version of IdGen ***/
 class BikeIdGen {
-  private:
-    int used_n;
+private:
+  int used_n;
 
-    struct IdRange {
-      int l, r;
-    };
-    TLS <IdRange> range;
-  public:
+  struct IdRange {
+    int l = 0;
+    int r = 0;
+  };
+  TLS<IdRange> range;
+public:
 
-    BikeIdGen()
-      : used_n(0)
-    {}
+  BikeIdGen()
+    : used_n(0) {}
 
-    int next_id() {
-      IdRange &cur = *range;
-      if (unlikely (cur.l == cur.r)) {
-        int old_used_n;
-        while (true) {
-          old_used_n = used_n;
-          if (__sync_bool_compare_and_swap (&used_n, old_used_n, old_used_n + 4096)) {
-            break;
-          }
-          usleep (250);
+  int next_id() {
+    IdRange &cur = *range;
+    if (unlikely (cur.l == cur.r)) {
+      int old_used_n;
+      while (true) {
+        old_used_n = used_n;
+        if (__sync_bool_compare_and_swap(&used_n, old_used_n, old_used_n + 4096)) {
+          break;
         }
-        cur.l = old_used_n;
-        cur.r = old_used_n + 4096;
+        usleep(250);
       }
-      int index = cur.l++;
-      return index;
+      cur.l = old_used_n;
+      cur.r = old_used_n + 4096;
     }
+    int index = cur.l++;
+    return index;
+  }
 };
 
 /*** Multithreaded hash table ***/
 //long long -> T
 //Too much memory, not resizable, do not support collisions. Yep.
 static const int N = 1000000;
-template <class T>
-class HT {
-  public:
-    struct HTNode : Lockable {
-      unsigned long long hash;
-      T data;
-      HTNode() :
-        hash(0),
-        data() {
-      }
-    };
-  private:
-    BikeIdGen id_gen;
-    HTNode *nodes;
-    int nodes_size;
-  public:
-    HT() :
-      nodes (new HTNode[N]),
-      nodes_size (N) {
-    }
-    HTNode *at (unsigned long long hash) {
-      int i = (unsigned)hash % (unsigned)nodes_size;
-      while (true) {
-        while (nodes[i].hash != 0 && nodes[i].hash != hash) {
-          i++;
-          if (i == nodes_size) {
-            i = 0;
-          }
-        }
-        if (nodes[i].hash == 0 && !__sync_bool_compare_and_swap (&nodes[i].hash, 0, hash)) {
-          int id = id_gen.next_id();
-          assert (id * 2 < N);
-          continue;
-        }
-        break;
-      }
-      return &nodes[i];
-    }
 
-    vector <T> get_all() {
-      vector <T> res;
-      for (int i = 0; i < N; i++) {
-        if (nodes[i].hash != 0) {
-          res.push_back (nodes[i].data);
+template<class T>
+class HT {
+public:
+  struct HTNode : Lockable {
+    unsigned long long hash;
+    T data;
+
+    HTNode() :
+      hash(0),
+      data() {
+    }
+  };
+
+private:
+  BikeIdGen id_gen;
+  HTNode *nodes;
+  int nodes_size;
+public:
+  HT() :
+    nodes(new HTNode[N]),
+    nodes_size(N) {
+  }
+
+  HTNode *at(unsigned long long hash) {
+    int i = (unsigned)hash % (unsigned)nodes_size;
+    while (true) {
+      while (nodes[i].hash != 0 && nodes[i].hash != hash) {
+        i++;
+        if (i == nodes_size) {
+          i = 0;
         }
       }
-      return res;
+      if (nodes[i].hash == 0 && !__sync_bool_compare_and_swap(&nodes[i].hash, 0, hash)) {
+        int id = id_gen.next_id();
+        assert (id * 2 < N);
+        continue;
+      }
+      break;
     }
+    return &nodes[i];
+  }
+
+  vector<T> get_all() {
+    vector<T> res;
+    for (int i = 0; i < N; i++) {
+      if (nodes[i].hash != 0) {
+        res.push_back(nodes[i].data);
+      }
+    }
+    return res;
+  }
 };
 
 
 #define BICYCLE_DL_PSTR
 #define dl_pstr bicycle_dl_pstr
-char* bicycle_dl_pstr (char const *message, ...) __attribute__ ((format (printf, 1, 2)));
+char *bicycle_dl_pstr(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 

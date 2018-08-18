@@ -31,29 +31,6 @@
 #include "compiler/phpdoc.h"
 #include "common/version-string.h"
 
-template <class T>
-class SyncPipeF {
-  public:
-    DataStreamRaw <T> tmp_stream;
-    SyncPipeF() {
-      tmp_stream.set_sink (true);
-    }
-    template <class OutputStreamT>
-    void execute (T input, OutputStreamT &os __attribute__((unused))) {
-      tmp_stream << input;
-    }
-    template <class OutputStreamT>
-    void on_finish (OutputStreamT &os) {
-      mem_info_t mem_info;
-      get_mem_stats (getpid(), &mem_info);
-
-      stage::die_if_global_errors();
-      while (!tmp_stream.empty()) {
-        os << tmp_stream.get();
-      }
-    }
-};
-
 /*** Load file ***/
 class LoadFileF {
   public:
@@ -280,7 +257,7 @@ class SplitSwitchF {
 struct ReadyFunctionPtr {
   FunctionPtr function;
   ReadyFunctionPtr(){}
-  ReadyFunctionPtr (FunctionPtr function) :
+  explicit ReadyFunctionPtr (FunctionPtr function) :
     function (function) {
   }
   operator FunctionPtr() const {
@@ -583,8 +560,8 @@ class PreprocessDefinesConcatenationF {
     map<string, VertexPtr> define_vertex;
     vector<string> stack;
 
-    DataStreamRaw<VertexPtr> defines_stream;
-    DataStreamRaw<FunctionPtr> all_fun;
+    DataStream<VertexPtr> defines_stream;
+    DataStream<FunctionPtr> all_fun;
 
     CheckConstWithDefines check_const;
     MakeConst make_const;
@@ -651,9 +628,8 @@ class PreprocessDefinesConcatenationF {
         process_define(define);
       }
 
-      vector<FunctionPtr> funs = all_fun.get_as_vector();
-      for (size_t i = 0; i < funs.size(); i++) {
-        os << funs[i];
+      for (auto fun : all_fun.get_as_vector()) {
+        os << fun;
       }
     }
 
@@ -1504,7 +1480,7 @@ void calc_throws_dfs (FunctionPtr from, IdMap <vector <FunctionPtr> > &graph, ve
 
 class CalcThrowsF {
   private:
-    DataStreamRaw <FunctionAndEdges> tmp_stream;
+    DataStream <FunctionAndEdges> tmp_stream;
   public:
     CalcThrowsF() {
       tmp_stream.set_sink (true);
@@ -2024,7 +2000,7 @@ class TypeInfererF {
 
 class TypeInfererEndF {
   private:
-    DataStreamRaw <FunctionAndCFG> tmp_stream;
+    DataStream <FunctionAndCFG> tmp_stream;
   public:
     TypeInfererEndF() {
       tmp_stream.set_sink (true);
@@ -2039,9 +2015,8 @@ class TypeInfererEndF {
       tinf::get_inferer()->check_restrictions();
       tinf::get_inferer()->finish();
 
-      vector <FunctionAndCFG> all = tmp_stream.get_as_vector();
-      for (int i = 0; i < (int)all.size(); i++) {
-        os << all[i];
+      for (auto &f_and_cfg : tmp_stream.get_as_vector()) {
+        os << f_and_cfg;
       }
     }
 };
@@ -2167,7 +2142,7 @@ class CalcValRefPass : public FunctionPassBase {
 
 class CalcBadVarsF {
   private:
-    DataStreamRaw <pair <FunctionPtr, DepData *> > tmp_stream;
+    DataStream <pair <FunctionPtr, DepData *> > tmp_stream;
   public:
     CalcBadVarsF() {
       tmp_stream.set_sink (true);
@@ -2593,7 +2568,7 @@ class WriterCallback : public WriterCallbackBase {
 class CodeGenF {
   //TODO: extract pattern
   private:
-    DataStreamRaw <FunctionPtr> tmp_stream;
+    DataStream <FunctionPtr> tmp_stream;
     map <string, long long> subdir_hash;
 
   public:
@@ -3016,7 +2991,18 @@ public:
   }
 };
 
+template<class PipeFunctionT, class InputStreamT, class OutputStreamT>
+using PipeDataStream = Pipe<PipeFunctionT, DataStream<InputStreamT>, DataStream<OutputStreamT>>;
+
+template <class Pass>
+using FunctionPassPipe = PipeDataStream<FunctionPassF<Pass>, FunctionPtr, FunctionPtr>;
+
 bool compiler_execute (KphpEnviroment *env) {
+  sync_node_tag sync_node;
+  use_nth_output_tag<0> use_first_output;
+  use_nth_output_tag<1> use_second_output;
+  use_nth_output_tag<2> use_third_output;
+
   double st = dl_time();
   G = new CompilerCore();
   G->register_env (env);
@@ -3051,7 +3037,7 @@ bool compiler_execute (KphpEnviroment *env) {
   TypeData::init_static();
 //  PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags(); return true;
 
-  DataStreamRaw <SrcFilePtr> file_stream;
+  DataStream <SrcFilePtr> file_stream;
 
   for (int i = 0; i < (int)env->get_main_files().size(); i++) {
     G->register_main_file (env->get_main_files()[i], file_stream);
@@ -3072,140 +3058,73 @@ bool compiler_execute (KphpEnviroment *env) {
       scheduler = s;
     }
 
-    Pipe <LoadFileF,
-         DataStream <SrcFilePtr>,
-         DataStream <SrcFilePtr> > load_file_pipe (true);
-    Pipe <FileToTokensF,
-         DataStream <SrcFilePtr>,
-         DataStream <FileAndTokens> > file_to_tokens_pipe (true);
-    Pipe <ParseF,
-         DataStream <FileAndTokens>,
-         DataStream <FunctionPtr> > parse_pipe (true);
-    Pipe <ApplyBreakFileF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > apply_break_file_pipe (true);
-    Pipe <SplitSwitchF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > split_switch_pipe (true);
-    Pipe <FunctionPassF<CreateSwitchForeachVarsF>,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > create_switch_foreach_vars_pipe (true);
+
+    PipeDataStream<LoadFileF, SrcFilePtr, SrcFilePtr> load_file_pipe;
+    PipeDataStream<FileToTokensF, SrcFilePtr, FileAndTokens> file_to_tokens_pipe;
+    PipeDataStream<ParseF, FileAndTokens, FunctionPtr> parse_pipe;
+    PipeDataStream<ApplyBreakFileF, FunctionPtr, FunctionPtr> apply_break_file_pipe;
+    PipeDataStream<SplitSwitchF, FunctionPtr, FunctionPtr> split_switch_pipe;
+    FunctionPassPipe<CreateSwitchForeachVarsF> create_switch_foreach_vars_pipe;
+
     Pipe <CollectRequiredF,
          DataStream <FunctionPtr>,
-         DataStreamTriple <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe (true);
-    Pipe <FunctionPassF <CalcLocationsPass>,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > calc_locations_pipe (true);
-    Pipe <PreprocessDefinesConcatenationF,
-        DataStream<FunctionPtr>,
-        DataStream<FunctionPtr> > process_defines_concat (true);
-    FunctionPassPipe <CollectDefinesPass>::Self collect_defines_pipe (true);
+         MultipleDataStreams <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe;
 
-    Pipe <CheckReturnsF,
-      DataStream <FunctionAndCFG>,
-      DataStream <FunctionAndCFG> > check_returns_pipe (true);
+    FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
+    PipeDataStream <PreprocessDefinesConcatenationF, FunctionPtr, FunctionPtr> process_defines_concat(true);
+    FunctionPassPipe<CollectDefinesPass> collect_defines_pipe;
+    PipeDataStream<CheckReturnsF, FunctionAndCFG, FunctionAndCFG> check_returns_pipe;
+    PipeDataStream<PrepareFunctionF, FunctionPtr, FunctionPtr> prepare_function_pipe;
+    PipeDataStream<CollectClassF, ReadyFunctionPtr, FunctionPtr> collect_classes_pipe;
 
-    Pipe <SyncPipeF <FunctionPtr>,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > first_sync_pipe (true, true);
-    Pipe <PrepareFunctionF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > prepare_function_pipe (true);
-    Pipe <SyncPipeF <FunctionPtr>,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > second_sync_pipe (true, true);
-    Pipe <SyncPipeF <ReadyFunctionPtr>,
-         DataStream <ReadyFunctionPtr>,
-         DataStream <ReadyFunctionPtr> > first_class_sync_pipe (true, true);
-    Pipe <CollectClassF,
-         DataStream <ReadyFunctionPtr>,
-         DataStream <FunctionPtr> > collect_classes_pipe (true);
-    FunctionPassPipe <RegisterDefinesPass>::Self register_defines_pipe (true);
-    FunctionPassPipe <PreprocessVarargPass>::Self preprocess_vararg_pipe (true);
-    FunctionPassPipe <PreprocessEq3Pass>::Self preprocess_eq3_pipe (true);
-    FunctionPassPipe <PreprocessFunctionCPass>::Self preprocess_function_c_pipe (true);
-    FunctionPassPipe <PreprocessBreakPass>::Self preprocess_break_pipe (true);
-    FunctionPassPipe <RegisterVariables>::Self register_variables_pipe (true);
-    FunctionPassPipe <CheckInstanceProps>::Self check_instance_props_pipe (true);
-    FunctionPassPipe <CalcConstTypePass>::Self calc_const_type_pipe (true);
-    FunctionPassPipe <CollectConstVarsPass>::Self collect_const_vars_pipe (true);
-    Pipe <CalcThrowEdgesF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionAndEdges> > calc_throw_edges_pipe (true);
-    Pipe <CalcThrowsF,
-         DataStream <FunctionAndEdges>,
-         DataStream <FunctionPtr> > calc_throws_pipe (true, true);
-    FunctionPassPipe <CheckFunctionCallsPass>::Self check_func_calls_pipe (true);
-    Pipe <CalcRLF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > calc_rl_pipe (true);
-    Pipe <CFGBeginF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionAndCFG> > cfg_begin_pipe (true);
-    //tmp
-    Pipe <SyncPipeF <FunctionAndCFG>,
-         DataStream <FunctionAndCFG>,
-         DataStream <FunctionAndCFG> > tmp_sync_pipe (true, true);
+    FunctionPassPipe<RegisterDefinesPass> register_defines_pipe;
+    FunctionPassPipe<PreprocessVarargPass> preprocess_vararg_pipe;
+    FunctionPassPipe<PreprocessEq3Pass> preprocess_eq3_pipe;
+    FunctionPassPipe<PreprocessFunctionCPass> preprocess_function_c_pipe;
+    FunctionPassPipe<PreprocessBreakPass> preprocess_break_pipe;
+    FunctionPassPipe<RegisterVariables> register_variables_pipe;
+    FunctionPassPipe<CheckInstanceProps> check_instance_props_pipe;
+    FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
+    FunctionPassPipe<CollectConstVarsPass> collect_const_vars_pipe;
 
-    Pipe <TypeInfererF,
-         DataStream <FunctionAndCFG>,
-         DataStream <FunctionAndCFG> > type_inferer_pipe (true);
-    Pipe <TypeInfererEndF,
-         DataStream <FunctionAndCFG>,
-         DataStream <FunctionAndCFG> > type_inferer_end_pipe (true);
-    Pipe <CFGEndF,
-         DataStream <FunctionAndCFG>,
-         DataStream <FunctionPtr> > cfg_end_pipe (true);
-    Pipe <CheckInferredInstances,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > check_inferred_instances_pipe(true);
-    FunctionPassPipe <OptimizationPass>::Self optimization_pipe (true);
-    FunctionPassPipe <CalcValRefPass>::Self calc_val_ref_pipe (true);
-    Pipe <CalcBadVarsF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > calc_bad_vars_pipe (true);
-    Pipe <CheckUBF,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > check_ub_pipe (true);
-    FunctionPassPipe <ExtractAsyncPass>::Self extract_async_pipe (true);
-    FunctionPassPipe <ExtractResumableCallsPass>::Self extract_resumable_calls_pipe (true);
-    Pipe <SyncPipeF <FunctionPtr>,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > third_sync_pipe (true, true);
-    Pipe <SyncPipeF <FunctionPtr>,
-         DataStream <FunctionPtr>,
-         DataStream <FunctionPtr> > forth_sync_pipe (true, true);
-    Pipe <AnalyzerF,
-      DataStream <FunctionPtr>,
-      DataStream <FunctionPtr> > analyzer_pipe (true);
-    FunctionPassPipe <CheckAccessModifiers>::Self check_access_modifiers_pass(true);
-    FunctionPassPipe <FinalCheckPass>::Self final_check_pass (true);
-    Pipe <CodeGenF,
-         DataStream <FunctionPtr>,
-         DataStream <WriterData *> > code_gen_pipe;
-    Pipe <WriteFilesF,
-         DataStream <WriterData *>,
-         EmptyStream> write_files_pipe (false);
+    PipeDataStream<CalcThrowEdgesF, FunctionPtr, FunctionAndEdges> calc_throw_edges_pipe;
+    PipeDataStream<CalcThrowsF, FunctionAndEdges, FunctionPtr> calc_throws_pipe(true);
+    FunctionPassPipe<CheckFunctionCallsPass> check_func_calls_pipe;
+    PipeDataStream<CalcRLF, FunctionPtr, FunctionPtr> calc_rl_pipe;
+    PipeDataStream<CFGBeginF, FunctionPtr, FunctionAndCFG> cfg_begin_pipe;
+    PipeDataStream<TypeInfererF, FunctionAndCFG, FunctionAndCFG> type_inferer_pipe(true);
+    PipeDataStream<TypeInfererEndF, FunctionAndCFG, FunctionAndCFG> type_inferer_end_pipe (true);
+    PipeDataStream<CFGEndF, FunctionAndCFG, FunctionPtr> cfg_end_pipe;
+    PipeDataStream<CheckInferredInstances, FunctionPtr, FunctionPtr> check_inferred_instances_pipe;
+    FunctionPassPipe<OptimizationPass> optimization_pipe;
+    FunctionPassPipe<CalcValRefPass> calc_val_ref_pipe;
+
+    PipeDataStream<CalcBadVarsF, FunctionPtr, FunctionPtr> calc_bad_vars_pipe(true);
+    PipeDataStream<CheckUBF, FunctionPtr, FunctionPtr> check_ub_pipe;
+    FunctionPassPipe<ExtractAsyncPass> extract_async_pipe;
+    FunctionPassPipe<ExtractResumableCallsPass> extract_resumable_calls_pipe;
+    PipeDataStream<AnalyzerF, FunctionPtr, FunctionPtr> analyzer_pipe;
+    FunctionPassPipe<CheckAccessModifiers> check_access_modifiers_pass;
+    FunctionPassPipe<FinalCheckPass> final_check_pass;
+    PipeDataStream<CodeGenF, FunctionPtr, WriterData *> code_gen_pipe(true);
+    Pipe<WriteFilesF, DataStream <WriterData *>, EmptyStream> write_files_pipe(false, false);
 
 
-    pipe_input (load_file_pipe).set_stream (&file_stream);
+    load_file_pipe.set_input_stream(&file_stream);
 
-    scheduler_constructor(*scheduler, load_file_pipe)
+    scheduler_constructor(scheduler, load_file_pipe)
         >>
         file_to_tokens_pipe >>
         parse_pipe >>
         apply_break_file_pipe >>
         split_switch_pipe >>
         create_switch_foreach_vars_pipe >>
-        collect_required_pipe >> use_first_output() >>
-        first_class_sync_pipe >> sync_node() >>
+        collect_required_pipe >> use_first_output >> sync_node >>
         collect_classes_pipe >>
         calc_locations_pipe >>
-        process_defines_concat >> sync_node() >>
-        collect_defines_pipe >>
-        first_sync_pipe >> sync_node() >>
-        prepare_function_pipe >>
-        second_sync_pipe >> sync_node() >>
+        process_defines_concat >>
+        collect_defines_pipe >> sync_node >>
+        prepare_function_pipe >> sync_node >>
         register_defines_pipe >>
         preprocess_vararg_pipe >>
         preprocess_eq3_pipe >>
@@ -3216,32 +3135,29 @@ bool compiler_execute (KphpEnviroment *env) {
         check_instance_props_pipe >>
         register_variables_pipe >>
         calc_throw_edges_pipe >>
-        calc_throws_pipe >> sync_node() >>
+        calc_throws_pipe >>
         check_func_calls_pipe >>
         calc_rl_pipe >>
         cfg_begin_pipe >>
-        check_returns_pipe >>
-        tmp_sync_pipe >> sync_node() >>
-        type_inferer_pipe >> sync_node() >>
-        type_inferer_end_pipe >> sync_node() >>
+        check_returns_pipe >> sync_node >>
+        type_inferer_pipe  >>
+        type_inferer_end_pipe >>
         cfg_end_pipe >>
         check_inferred_instances_pipe >>
         optimization_pipe >>
         calc_val_ref_pipe >>
-        calc_bad_vars_pipe >> sync_node() >>
+        calc_bad_vars_pipe >>
         check_ub_pipe >>
         extract_resumable_calls_pipe >>
         extract_async_pipe >>
         analyzer_pipe >>
         check_access_modifiers_pass >>
         final_check_pass >>
-        code_gen_pipe >> sync_node() >>
+        code_gen_pipe >>
         write_files_pipe;
 
-    scheduler_constructor (*scheduler, collect_required_pipe) >> use_second_output() >>
-      load_file_pipe;
-    scheduler_constructor (*scheduler, collect_required_pipe) >> use_third_output() >>
-      apply_break_file_pipe;
+    scheduler_constructor(scheduler, collect_required_pipe) >> use_second_output >> load_file_pipe;
+    scheduler_constructor(scheduler, collect_required_pipe) >> use_third_output >> apply_break_file_pipe;
 
     get_scheduler()->execute();
   }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compiler/common.h"
-#include "compiler/bicycle.h"
 
 inline string get_full_path(const string &file_name) {
   char name[PATH_MAX + 1];

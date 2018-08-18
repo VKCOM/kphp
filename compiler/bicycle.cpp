@@ -157,16 +157,16 @@ OneThreadScheduler::OneThreadScheduler() {
 }
 
 void OneThreadScheduler::add_node (Node *node) {
-  nodes.push_back (node);
+  nodes.push_back(node);
+
+  if (node->is_sync_node()) {
+    sync_nodes.push (node);
+  }
 }
 
 void OneThreadScheduler::add_task (Task *task) {
   assert (task_pull != NULL);
   task_pull->add_task (task);
-}
-
-void OneThreadScheduler::add_sync_node (Node *node) {
-  sync_nodes.push (node);
 }
 
 void OneThreadScheduler::set_threads_count (int new_threads_count __attribute__((unused))) {
@@ -208,8 +208,13 @@ Scheduler::Scheduler()
 
 void Scheduler::add_node (Node *node) {
   if (node->is_parallel()) {
-    nodes.push_back (node);
+    nodes.push_back(node);
+
+    if (node->is_sync_node()) {
+      sync_nodes.push (node);
+    }
   } else {
+    kphp_assert(!node->is_sync_node());
     one_thread_nodes.push_back (node);
   }
 }
@@ -217,10 +222,6 @@ void Scheduler::add_node (Node *node) {
 void Scheduler::add_task (Task *task) {
   assert (task_pull != NULL);
   task_pull->add_task (task);
-}
-
-void Scheduler::add_sync_node (Node *node) {
-  sync_nodes.push (node);
 }
 
 void Scheduler::execute() {
