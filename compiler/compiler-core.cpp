@@ -243,31 +243,16 @@ SrcFilePtr CompilerCore::register_file (const string &file_name, const string &c
     return SrcFilePtr()
   );
 
+  size_t last_pos_of_slash = full_file_name.find_last_of('/');
+  last_pos_of_slash = last_pos_of_slash != std::string::npos ? last_pos_of_slash + 1 : 0;
 
-  //find short_file_name
-  int st = -1;
-  int en = (int)full_file_name.size();
-  for (int i = en - 1; i > st; i--) {
-    if (full_file_name[i] == '/') {
-      st = i;
-      break;
-    }
+  size_t last_pos_of_dot = full_file_name.find_last_of('.');
+  if (last_pos_of_dot == std::string::npos || last_pos_of_dot < last_pos_of_slash) {
+    last_pos_of_dot = full_file_name.length();
   }
-  st++;
 
-  int dot_pos = en;
-  for (int i = st; i < en; i++) {
-    if (full_file_name[i] == '.') {
-      dot_pos = i;
-    }
-  }
-  //TODO: en == full_file_name.size()
-  string short_file_name = full_file_name.substr (st, dot_pos - st);
-  for (int i = 0; i < (int)short_file_name.size(); i++) {
-    if (short_file_name[i] == '.') {
-    }
-  }
-  string extension = full_file_name.substr (min (en, dot_pos + 1));
+  string short_file_name = full_file_name.substr(last_pos_of_slash, last_pos_of_dot - last_pos_of_slash);
+  string extension = full_file_name.substr(std::min(full_file_name.length(), last_pos_of_dot + 1));
   if (extension != "php") {
     short_file_name += "_";
     short_file_name += extension;
@@ -284,7 +269,7 @@ SrcFilePtr CompilerCore::register_file (const string &file_name, const string &c
       string func_name = gen_unique_name ("src$" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name (new_file->file_name);
-      size_t last_slash = new_file->unified_file_name.rfind("/");
+      size_t last_slash = new_file->unified_file_name.rfind('/');
       new_file->unified_dir_name = last_slash == string::npos ? "" : new_file->unified_file_name.substr(0, last_slash);
       node->data = new_file;
     }
