@@ -222,6 +222,11 @@ class RegisterVariables : public FunctionPassBase {
     void register_global_var (VertexAdaptor <op_var> var_vertex) {
       string name = var_vertex->str_val;
       var_vertex->set_var_id (create_global_var (name));
+
+      FunctionPtr function_where_global_keyword_occured = var_vertex->location.get_function();
+      if (function_where_global_keyword_occured.not_null() && function_where_global_keyword_occured->type() == FunctionData::func_global) {
+        var_vertex->get_var_id()->marked_as_global = true;
+      }
     }
 
     bool is_const (VertexPtr v) {
@@ -307,6 +312,7 @@ class RegisterVariables : public FunctionPassBase {
         var->needs_const_iterator_flag = true;
       }
       var_vertex->set_var_id (var);
+      var->marked_as_global |= var_vertex->extra_type == op_ex_var_superglobal;
     }
 
     void visit_global_vertex (VertexAdaptor <op_global> global) {

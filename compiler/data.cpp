@@ -23,6 +23,7 @@ VarData::VarData (VarData::Type type_) :
   tinf_flag (false),
   global_init_flag (false),
   needs_const_iterator_flag (false),
+  marked_as_global(false),
   access_type(access_nonmember),
   dependency_level(0),
   phpdoc_token()

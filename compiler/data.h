@@ -37,6 +37,7 @@ public:
   bool tinf_flag;
   bool global_init_flag;
   bool needs_const_iterator_flag;
+  bool marked_as_global;
   AccessType access_type;
   int dependency_level;
   Token *phpdoc_token;

@@ -1,5 +1,7 @@
 #pragma once
 #include "compiler/compiler-core.h"
+#include "compiler/gentree.h"
+
 /*** Replace cases in big global functions with functions call ***/
 class SplitSwitchPass : public FunctionPassBase {
   private:

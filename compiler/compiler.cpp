@@ -237,9 +237,8 @@ class SplitSwitchF {
       SplitSwitchPass split_switch;
       run_function_pass (function, &split_switch);
 
-      const vector <VertexPtr> &new_functions = split_switch.get_new_functions();
-      for (int i = 0; i < (int)new_functions.size(); i++) {
-        G->register_function (FunctionInfo(new_functions[i], function->namespace_name,
+      for (VertexPtr new_function : split_switch.get_new_functions()) {
+        G->register_function (FunctionInfo(new_function, function->namespace_name,
                                            function->class_name, function->class_context_name, function->namespace_uses,
                                            function->class_extends, set<string>(), false, false, access_nonmember), os);
       }
@@ -2482,6 +2481,25 @@ class FinalCheckPass : public FunctionPassBase {
         if (fun->root->void_flag && vertex->rl_type == val_r && from_return == 0) {
           if (fun->type() != FunctionData::func_switch && fun->file_id->main_func_name != fun->name) {
             kphp_warning(dl_pstr("Using result of void function %s\n", fun->name.c_str()));
+          }
+        }
+      }
+
+      if (G->env().get_warnings_level() >= 1 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
+        FunctionPtr function_where_require = stage::get_function();
+
+        if (function_where_require.not_null() && function_where_require->type() == FunctionData::func_local) {
+          for (auto v : *vertex) {
+            FunctionPtr function_which_required = v->get_func_id();
+
+            kphp_assert(function_which_required.not_null());
+            kphp_assert(function_which_required->type() == FunctionData::func_global);
+
+            for (VarPtr global_var : function_which_required->global_var_ids) {
+              if (!global_var->marked_as_global) {
+                kphp_warning(("require file with global variable not marked as global: " + global_var->name).c_str());
+              }
+            }
           }
         }
       }
