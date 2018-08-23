@@ -145,15 +145,17 @@ void Index::del_extra_files() {
   for (const auto &path_and_file : files) {
     File *file = path_and_file.second;
     if (!file->needed) {
-      kphp_assert (file->on_disk);
-      if (G->env().get_verbosity() > 0) {
-        fprintf(stderr, "unlink %s\n", file->path.c_str());
+      if (file->on_disk) {
+        if (G->env().get_verbosity() > 0) {
+          fprintf(stderr, "unlink %s\n", file->path.c_str());
+        }
+        int err = unlink(file->path.c_str());
+        if (err != 0) {
+          kphp_error (0, dl_pstr("Failed to unlink file %s: %m", file->path.c_str()));
+          kphp_fail();
+        }
       }
-      int err = unlink (file->path.c_str());
-      if (err != 0) {
-        kphp_error (0, dl_pstr("Failed to unlink file %s: %m", file->path.c_str()));
-        kphp_fail();
-      }
+
       file->on_disk = false;
       to_del.push_back (path_and_file.first);
     }
