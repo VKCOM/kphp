@@ -369,7 +369,7 @@ void regexp::init (const char *regexp_string, int regexp_len) {
   }
 
   if (regexp_end == 0) {
-    php_warning ("No ending matching delimiter '%c' found", end_delimiter);
+    php_warning ("No ending matching delimiter '%c' found in regexp: %s", end_delimiter, regexp_string);
     return;
   }
 
