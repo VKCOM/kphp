@@ -1254,12 +1254,24 @@ void true_mc::flushLogBuffer() {
 
 
 
-bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
+bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
   if (mc.mc == NULL) {
     php_warning ("Memcache object is NULL in Memcache->addServer");
     return false;
   }
-  return mc.mc->addServer (host_name, port, persistent, weight, timeout, retry_interval, status, failure_callback, timeoutms);
+
+  int timeout_s = static_cast<int>(timeout);
+  int timeout_ms_from_timeout = static_cast<int>((timeout - timeout_s) * 1000);
+  if (timeout_ms_from_timeout > 0 && timeoutms > 0) {
+    php_warning("Memcache::addServer doesn't support timeoutms parameter with float timeout = %lf", timeout);
+    return false;
+  } else if (timeout_ms_from_timeout == 0) {
+    timeout_ms_from_timeout = timeoutms;
+  } else {
+    timeout_ms_from_timeout += timeout_s * 1000;
+  }
+
+  return mc.mc->addServer (host_name, port, persistent, weight, timeout_s, retry_interval, status, failure_callback, timeout_ms_from_timeout);
 }
 
 bool f$memcached_connect (const MyMemcache &mc, const string &host_name, int port, int timeout) {

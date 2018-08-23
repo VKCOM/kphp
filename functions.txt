@@ -540,7 +540,7 @@ function memcached_bufferNextLog ($MC ::: MC) ::: void;
 function memcached_flushLogBuffer ($MC ::: MC) ::: void;
 function memcached_clearLogBuffer ($MC ::: MC) ::: void;
 
-function memcached_addServer ($MC ::: MC, $host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: int = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = -1) ::: bool;
+function memcached_addServer ($MC ::: MC, $host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = -1) ::: bool;
 function memcached_connect ($MC ::: MC, $host ::: string, $port ::: int = 11211) ::: bool;
 function memcached_pconnect ($MC ::: MC, $host ::: string, $port ::: int = 11211) ::: bool;
 function memcached_rpc_connect ($MC ::: MC, $host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;

@@ -214,7 +214,7 @@ private:
 public:
   MyMemcache (void);
 
-  friend bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms);
+  friend bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms);
   friend bool f$memcached_connect (const MyMemcache &mc, const string &host_name, int port, int timeout);
   friend bool f$memcached_pconnect (const MyMemcache &mc, const string &host_name, int port, int timeout);
   friend bool f$memcached_rpc_connect (const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout);
@@ -262,7 +262,7 @@ public:
   friend MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag);
 };
 
-bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
+bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
 bool f$memcached_connect (const MyMemcache &mc, const string &host_name, int port = 11211, int timeout = 1);
 bool f$memcached_pconnect (const MyMemcache &mc, const string &host_name, int port = 11211, int timeout = 1);
 bool f$memcached_rpc_connect (const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
