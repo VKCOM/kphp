@@ -12,10 +12,12 @@ namespace tinf {
   class TypeInferer;
 
   struct RestrictionBase {
-    virtual ~RestrictionBase() {}
+    virtual ~RestrictionBase() = default;
     virtual const char *get_description() = 0;
-    virtual int check_impl() = 0;
-    virtual void check() = 0;
+    virtual bool check_broken_restriction() = 0;
+
+  protected:
+    virtual bool check_broken_restriction_impl() = 0;
   };
 
   class Node : public Lockable {

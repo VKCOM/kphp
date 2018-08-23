@@ -192,7 +192,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs (int isset_flags, tinf::Node *no
   return false;
 }
 
-int RestrictionIsset::check_impl() {
+bool RestrictionIsset::check_broken_restriction_impl() {
   vector <tinf::Node *> bt;
   return find_dangerous_isset_dfs (a_->isset_flags, a_, &bt);
 }

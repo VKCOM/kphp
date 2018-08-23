@@ -97,20 +97,17 @@ class Restriction : public tinf::RestrictionBase {
   public:
     Location location;
     Restriction ()
-      : location (stage::get_location()) {
-      }
-    virtual ~Restriction() {
-    }
-    void check() {
-      int err = check_impl();
-      if (err > 0) {
+      : location (stage::get_location())
+    {}
+
+    bool check_broken_restriction() override {
+      bool err = check_broken_restriction_impl();
+      if (err) {
         stage::set_location (location);
-        if (err == 1) {
-          kphp_warning (get_description());
-        } else {
-          kphp_error (0, get_description());
-        }
+        kphp_error (0, get_description());
       }
+
+      return err;
     }
 };
 
@@ -133,7 +130,9 @@ class RestrictionLess : public Restriction {
       return dl_pstr ("%s <%s <= %s>", desc.c_str(),
           a_->get_description().c_str(), b_->get_description().c_str());
     }
-    int check_impl() {
+
+  protected:
+    bool check_broken_restriction_impl() override {
       const TypeData *a_type = a_->get_type();
       const TypeData *b_type = b_->get_type();
 
@@ -149,11 +148,10 @@ class RestrictionLess : public Restriction {
 
         desc += "[" + type_out (a_type) + " <= " + type_out (b_type) + "]";
 
-        return 2;
-      } else {
-        return 0;
+        return true;
       }
 
+      return false;
     }
 
   private:
@@ -249,9 +247,9 @@ class RestrictionLess : public Restriction {
     };
 
     bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected) {
-      static size_t limit_calls = 1000000;
+      static int limit_calls = 1000000;
       limit_calls--;
-      if (limit_calls == 0) {
+      if (limit_calls <= 0) {
           return true;
       }
 
@@ -345,7 +343,9 @@ class RestrictionIsset : public Restriction {
     bool isset_is_dangerous (int isset_flags, const TypeData *tp);
     bool find_dangerous_isset_dfs (int isset_flags, tinf::Node *node,
         vector <tinf::Node *> *bt);
-    int check_impl();
+
+  protected:
+    bool check_broken_restriction_impl() override;
 };
 
 struct LValue {

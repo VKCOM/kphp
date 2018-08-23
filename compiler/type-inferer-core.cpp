@@ -120,9 +120,10 @@ namespace tinf {
   void TypeInferer::check_restrictions() {
     AUTO_PROF (tinf_check);
     for (int i = 0; i < restrictions.size(); i++) {
-      const vector <RestrictionBase *> &r = *restrictions.get (i);
-      for (int j = 0; j < (int)r.size(); j++) {
-        r[j]->check();
+      for (RestrictionBase *r : *restrictions.get(i)) {
+        if (r->check_broken_restriction()) {
+          return;
+        }
       }
     }
   }
