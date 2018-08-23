@@ -3180,6 +3180,10 @@ bool compiler_execute (KphpEnviroment *env) {
     get_scheduler()->execute();
   }
 
+  if (G->env().get_error_on_warns() && stage::warnings_count > 0) {
+    stage::error();
+  }
+
   stage::die_if_global_errors();
   int verbosity = G->env().get_verbosity();
   if (G->env().get_use_make()) {

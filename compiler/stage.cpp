@@ -39,7 +39,7 @@ void on_compilation_error (const char *description __attribute__((unused)), cons
             "But it is still bug in compiler.\n");
     abort();
   }
-  if (assert_level == CE_ASSERT_LEVEL || G->env().get_error_on_warns()) {
+  if (assert_level == CE_ASSERT_LEVEL) {
     stage::error();
   }
   stage::warnings_count++;
