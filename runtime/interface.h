@@ -123,6 +123,7 @@ int f$get_engine_uptime (void);
 
 string f$get_engine_version (void);
 
+int f$get_engine_workers_number();
 
 extern "C" {
 void arg_add (const char *value);

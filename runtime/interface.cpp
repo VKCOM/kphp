@@ -1544,6 +1544,9 @@ string f$get_engine_version (void) {
   return string (full_version_str, strlen (full_version_str));
 }
 
+int f$get_engine_workers_number() {
+  return workers_n;
+}
 
 static char ini_vars_storage[sizeof (array <string>)];
 static array <string> *ini_vars = NULL;
