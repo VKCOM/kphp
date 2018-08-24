@@ -2465,6 +2465,11 @@ void *tlcomb_fetch_vector (void **IP, void **Data, var *arr, tl_tree **vars) {
   int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
   void **newIP = (void **)*(IP++);
 
+  if (multiplicity < 0 || multiplicity > rpc_data_len / 4) {
+    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, f$sprintf(array<var>(string("vector size is %d, when %d bytes remaining in answer"), multiplicity, rpc_data_len)), -1));
+    return NULL;
+  }
+
   *arr = array <var> (array_size (multiplicity, 0, true));
   for (int i = 0; i < multiplicity; i++) {
     new (++arr) var();
@@ -2490,6 +2495,11 @@ void *tlcomb_fetch_dictionary (void **IP, void **Data, var *arr, tl_tree **vars)
   tl_debug (__FUNCTION__, -1);
   int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
   void **newIP = (void **)*(IP++);
+
+  if (multiplicity < 0 || multiplicity > rpc_data_len / 4) {
+    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, f$sprintf(array<var>(string("dictionary size is %d, when %d bytes remaining in answer"), multiplicity, rpc_data_len)), -1));
+    return NULL;
+  }
 
   *arr = array <var> (array_size (0, multiplicity, false));
   for (int i = 0; i < multiplicity; i++) {
