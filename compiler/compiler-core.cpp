@@ -91,11 +91,9 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->class_context_name = info.class_context;
   function->class_extends = info.extends;
   function->namespace_uses = info.namespace_uses;
-  function->disabled_warnings = info.disabled_warnings;
   function->access_type = info.access_type;
   function_root->set_func_id (function);
   function->file_id = stage::get_file();
-  function->should_be_sync = info.should_be_sync;
   function->kphp_required = info.kphp_required;
 
   if (function_root->type() == op_func_decl) {

@@ -148,30 +148,24 @@ public:
   string class_context;
   map<string, string> namespace_uses;
   string extends;
-  set<string> disabled_warnings;
   bool kphp_required;
-  bool should_be_sync;
   AccessType access_type;
 
   FunctionInfo()
     : kphp_required(false)
-    , should_be_sync(false)
     , access_type(access_nonmember)
   {}
 
   FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
                const string &class_context, const map<string, string> namespace_uses,
-               string extends, const set<string> disabled_warnings,
-               bool kphp_required, bool should_be_sync, AccessType access_type)
+               string extends, bool kphp_required, AccessType access_type)
     : root(root)
     , namespace_name(namespace_name)
     , class_name(class_name)
     , class_context(class_context)
     , namespace_uses(namespace_uses)
     , extends(extends)
-    , disabled_warnings(disabled_warnings)
     , kphp_required(kphp_required)
-    , should_be_sync(should_be_sync)
     , access_type(access_type)
   {}
 

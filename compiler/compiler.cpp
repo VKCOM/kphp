@@ -221,7 +221,7 @@ class ApplyBreakFileF {
         G->register_function(FunctionInfo(
             splitted[i], function->namespace_name,
             function->class_name, function->class_context_name,
-            function->namespace_uses, function->class_extends, set <string>(), false, false, access_nonmember
+            function->namespace_uses, function->class_extends, false, access_nonmember
         ), os);
       }
 
@@ -240,7 +240,7 @@ class SplitSwitchF {
       for (VertexPtr new_function : split_switch.get_new_functions()) {
         G->register_function (FunctionInfo(new_function, function->namespace_name,
                                            function->class_name, function->class_context_name, function->namespace_uses,
-                                           function->class_extends, set<string>(), false, false, access_nonmember), os);
+                                           function->class_extends, false, access_nonmember), os);
       }
 
       if (stage::has_error()) {
@@ -882,8 +882,133 @@ void prepare_function_misc (FunctionPtr func) {
   }
 }
 
+/*
+ * Анализ @kphp-infer, @kphp-inline и других @kphp-* внутри phpdoc над функцией f
+ * Сейчас пока что есть костыль: @kphp-required анализируется всё равно в gentree
+ */
+void parse_and_apply_function_kphp_phpdoc (FunctionPtr f) {
+  if (f->phpdoc_token == NULL || f->phpdoc_token->type() != tok_phpdoc_kphp) {
+    return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
+  }
+
+  int infer_type = 0;
+  int param_idx = f->is_instance_function() && !f->is_constructor() ? 1 : 0;  // пропускаем неявный this
+  vector <VertexPtr> prepend_cmd;
+  VertexPtr func_params = f->root.as <op_function>()->params();
+
+  for (auto &tag: parse_php_doc(f->phpdoc_token->str_val.str())) {
+    switch (tag.type) {
+      case php_doc_tag::kphp_inline: {
+        f->root->inline_flag = true;
+        continue;
+      }
+
+      case php_doc_tag::kphp_sync: {
+        f->should_be_sync = true;
+        continue;
+      }
+
+      case php_doc_tag::kphp_infer: {
+        kphp_error(infer_type == 0, "Double kphp-infer tag found");
+        std::istringstream is(tag.value);
+        string token;
+        while (is >> token) {
+          if (token == "check") {
+            infer_type |= 1;
+          } else if (token == "hint") {
+            infer_type |= 2;
+          } else if (token == "cast") {
+            infer_type |= 4;
+          } else {
+            kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str()));
+          }
+        }
+        break;
+      }
+
+      case php_doc_tag::kphp_disable_warnings: {
+        std::istringstream is(tag.value);
+        string token;
+        while (is >> token) {
+          if (!f->disabled_warnings.insert(token).second) {
+            kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
+          }
+        }
+        break;
+      }
+
+      case php_doc_tag::kphp_required: {
+        f->kphp_required = true;
+        break;
+      }
+
+      case php_doc_tag::param: {
+        if (infer_type) {
+          if (kphp_error(param_idx != func_params->size(), "Too many @param tags")) {
+            break;
+          }
+          std::istringstream is(tag.value);
+          string type_help, var_name;
+          kphp_error(is >> type_help, "Failed to parse @param tag");
+          kphp_error(is >> var_name, "Failed to parse @param tag");
+          VertexAdaptor <op_var> var = func_params->ith(param_idx).as <op_func_param>()->var().as <op_var>();
+          kphp_error(var.not_null(), "Something strange happened during @param parsing");
+          kphp_error(var_name == "$" + var->str_val,
+                     dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
+          );
+          VertexPtr doc_type = phpdoc_parse_type(type_help, f);
+          kphp_error(doc_type.not_null(),
+                     dl_pstr("Failed to parse type '%s'", type_help.c_str()));
+          if (infer_type & 1) {
+            CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+            CREATE_VERTEX(doc_rule_var, op_var);
+            doc_rule_var->str_val = var->str_val;
+            doc_rule_var->type_rule = doc_type_check;
+            set_location(doc_rule_var, f->root->location);
+            prepend_cmd.push_back(doc_rule_var);
+          }
+          if (infer_type & 2) {
+            CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
+            CREATE_VERTEX(doc_rule_var, op_var);
+            doc_rule_var->str_val = var->str_val;
+            doc_rule_var->type_rule = doc_type_check;
+            set_location(doc_rule_var, f->root->location);
+            prepend_cmd.push_back(doc_rule_var);
+          }
+          if (infer_type & 4) {
+            kphp_error(doc_type->type() == op_type_rule,
+                       dl_pstr("Too hard rule '%s' for cast", type_help.c_str()));
+            kphp_error(doc_type.as <op_type_rule>()->args().empty(),
+                       dl_pstr("Too hard rule '%s' for cast", type_help.c_str()));
+            kphp_error(func_params->ith(param_idx)->type_help == tp_Unknown,
+                       dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str()));
+            func_params->ith(param_idx)->type_help = doc_type.as <op_type_rule>()->type_help;
+          }
+          param_idx++;
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+  }
+  kphp_error(!infer_type || param_idx == func_params->size(), "Not enough @param tags");
+
+  // из { cmd } делаем { prepend_cmd; cmd }
+  if (!prepend_cmd.empty()) {
+    for (auto i : *f->root.as <op_function>()->cmd()) {
+      prepend_cmd.push_back(i);
+    }
+    CREATE_VERTEX(new_cmd, op_seq, prepend_cmd);
+    ::set_location(new_cmd, f->root->location);
+    f->root.as <op_function>()->cmd() = new_cmd;
+  }
+}
+
 void prepare_function (FunctionPtr function) {
-  prepare_function_misc (function);
+  parse_and_apply_function_kphp_phpdoc(function);
+  prepare_function_misc(function);
 
   FunctionSetPtr function_set = function->function_set;
   VertexPtr header = function_set->header;

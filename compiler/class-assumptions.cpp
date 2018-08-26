@@ -290,7 +290,7 @@ void calc_assumptions_for_var_internal (FunctionPtr f, const std::string &var_na
  * Вызывается единожды на функцию.
  */
 void init_assumptions_for_arguments (FunctionPtr f, VertexAdaptor <op_function> root) {
-  if (f->phpdoc_token != NULL && f->phpdoc_token->type() == tok_phpdoc) {
+  if (f->phpdoc_token != NULL) {
     int param_i = 0;
     std::string param_var_name, type_str;
     ClassPtr klass;

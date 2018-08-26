@@ -160,7 +160,7 @@ void GenTree::exit_and_register_class (VertexPtr root) {
     main->extra_type = op_ex_func_global;
 
     const FunctionInfo &info = FunctionInfo(main, namespace_name, cur_class().name, class_context,
-                                            this->namespace_uses, class_extends, set<string>(), false, false, access_nonmember);
+                                            this->namespace_uses, class_extends, false, access_nonmember);
     kphp_assert(register_function(info).not_null());
   }
   cur_class().root = root;
@@ -1287,7 +1287,7 @@ FunctionPtr GenTree::create_default_constructor (const ClassInfo &cur_class) {
   patch_func_constructor(func, cur_class);
 
   return register_function(FunctionInfo(
-      func, namespace_name, cur_class.name, class_context, this->namespace_uses, class_extends, set <string>(), false, false, access_public
+      func, namespace_name, cur_class.name, class_context, this->namespace_uses, class_extends, false, access_public
   ));
 }
 
@@ -1686,121 +1686,12 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
     cmd = embrace (cmd);
   }
 
-  set<string> disabled_warnings;
   bool kphp_required_flag = false;
-  bool kphp_sync_flag = false;
 
-  // парсим только '@kphp-' phpdoc'и, не все (см. class-assumptions.cpp, где парсится всё по требованию)
-  if (cmd.not_null() && phpdoc_token != NULL && phpdoc_token->type() == tok_phpdoc_kphp) {
-    Location location_backup = stage::get_location();
-    stage::set_line(name->location.line);
-    vector <php_doc_tag> tags = parse_php_doc(phpdoc_token->str_val.str());
-    int infer_type = 0;
-    int param_ptr = is_instance_method && !is_constructor ? 1 : 0;
-    vector<VertexPtr> new_cmd_next;
-    for (int i = 0; i < tags.size(); i++) {
-      switch (tags[i].type) {
-        case php_doc_tag::kphp_inline: {
-          flags->inline_flag = true;
-          continue;
-        }
-
-        case php_doc_tag::kphp_sync: {
-          kphp_sync_flag = true;
-          continue;
-        }
-
-        case php_doc_tag::kphp_infer: {
-          CE(!kphp_error(infer_type == 0, "Double kphp-infer tag found"));
-          stringstream stream;
-          stream << tags[i].value;
-          string token;
-          while (stream >> token) {
-            if (token == "check") {
-              infer_type |= 1;
-            } else if (token == "hint") {
-              infer_type |= 2;
-            } else if (token == "cast") {
-              infer_type |= 4;
-            } else {
-              CE(!kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str())));
-            }
-          }
-          break;
-        }
-
-        case php_doc_tag::kphp_disable_warnings: {
-          stringstream stream;
-          stream << tags[i].value;
-          string token;
-          while (stream >> token) {
-            if (!disabled_warnings.insert(token).second) {
-              kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
-            }
-          }
-          break;
-        }
-
-        case php_doc_tag::kphp_required: {
-          kphp_required_flag = true;
-          break;
-        }
-
-        case php_doc_tag::param: {
-          if (infer_type) {
-            CE(!kphp_error(param_ptr != params_next.size(), "Too many @param tags"));
-            std::istringstream is(tags[i].value);
-            string type_help, var_name;
-            CE(!kphp_error(is >> type_help, "Failed to parse @param tag"));
-            CE(!kphp_error(is >> var_name, "Failed to parse @param tag"));
-            VertexAdaptor<op_var> var = params_next[param_ptr].as<op_func_param>()->var().as<op_var>();
-            CE(!kphp_error(var.not_null(), "Something strange happened during @param parsing"));
-            CE(!kphp_error(var_name == "$" + var->str_val,
-                           dl_pstr("@param tag var name mismatch. Expected $%s, found %s.", var->str_val.c_str(), var_name.c_str())
-            ));
-            VertexPtr doc_type = phpdoc_parse_type(type_help, FunctionPtr());
-            CE(!kphp_error(doc_type.not_null(), dl_pstr("Failed to parse type '%s'", type_help.c_str())));
-            if (infer_type & 1) {
-              CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
-              CREATE_VERTEX(doc_rule_var, op_var);
-              doc_rule_var->str_val = var->str_val;
-              doc_rule_var->type_rule = doc_type_check;
-              set_location(doc_rule_var, params_location);
-              new_cmd_next.push_back(doc_rule_var);
-            }
-            if (infer_type & 2) {
-              CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
-              CREATE_VERTEX(doc_rule_var, op_var);
-              doc_rule_var->str_val = var->str_val;
-              doc_rule_var->type_rule = doc_type_check;
-              set_location(doc_rule_var, params_location);
-              new_cmd_next.push_back(doc_rule_var);
-            }
-            if (infer_type & 4) {
-              CE(!kphp_error(doc_type->type() == op_type_rule, dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
-              CE(!kphp_error(doc_type.as<op_type_rule>()->args().empty(), dl_pstr("Too hard rule '%s' for cast", type_help.c_str())));
-              CE(!kphp_error(params_next[param_ptr]->type_help == tp_Unknown, dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str())));
-              params_next[param_ptr]->type_help = doc_type.as<op_type_rule>()->type_help;
-            }
-            param_ptr++;
-          }
-          break;
-        }
-
-        default:
-          break;
-      }
-    }
-    CE(!kphp_error(!infer_type || param_ptr == params_next.size(), "Not enough @param tags"));
-    if (!new_cmd_next.empty()) {
-      for (auto i : cmd.as<op_seq>()->args()) {
-        new_cmd_next.push_back(i);
-      }
-      CREATE_VERTEX(new_cmd, op_seq, new_cmd_next);
-      ::set_location(new_cmd, cmd->get_location());
-      cmd = new_cmd;
-    }
-    stage::set_location(location_backup);
+  // тут раньше был парсинг '@kphp-' тегов в phpdoc, но ему не место в gentree, он переехал в PrepareFunctionF
+  // но! костыль: @kphp-required нам всё равно нужно именно тут, чтобы функция пошла дальше по пайплайну
+  if (phpdoc_token != NULL && phpdoc_token->type() == tok_phpdoc_kphp) {
+    kphp_required_flag = phpdoc_token->str_val.str().find("@kphp-required") != string::npos;
   }
 
   set_location(flags, func_location);
@@ -1810,7 +1701,7 @@ VertexPtr GenTree::get_function (bool anonimous_flag, Token *phpdoc_token, Acces
   {
     VertexPtr res = create_function_vertex_with_flags(name, params, flags, type, cmd, is_constructor);
     set_extra_type(res, access_type);
-    info = FunctionInfo(res, "", "", "", this->namespace_uses, "", disabled_warnings, kphp_required_flag, kphp_sync_flag, access_type);
+    info = FunctionInfo(res, "", "", "", this->namespace_uses, "", kphp_required_flag, access_type);
     fill_info_about_class(info);
 
     register_function(info);
