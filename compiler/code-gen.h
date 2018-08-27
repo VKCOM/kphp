@@ -451,6 +451,8 @@ inline void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W);
 inline void compile_function (VertexPtr root, CodeGenerator &W);
 inline void compile_string_build_raw (VertexAdaptor <op_string_build> root, CodeGenerator &W);
 inline void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W);
+inline void compile_index_of_array (VertexAdaptor <op_index> root, CodeGenerator &W);
+inline void compile_index_of_string (VertexAdaptor <op_index> root, CodeGenerator &W);
 inline void compile_as_printable (VertexPtr root, CodeGenerator &W);
 inline void compile_echo (VertexPtr root, CodeGenerator &W);
 inline void compile_var_dump (VertexPtr root, CodeGenerator &W);
@@ -2796,13 +2798,24 @@ inline int can_use_precomputed_hash_indexing_array (VertexPtr key) {
 }
 
 void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
-  bool has_key = root->has_key();
+  PrimitiveType array_ptype = root->array()->tinf_node.get_type()->ptype();
+
+  switch (array_ptype) {
+    case tp_string:
+      compile_index_of_string(root, W);
+      break;
+    default:
+      compile_index_of_array(root, W);
+  }
+}
+
+void compile_index_of_array (VertexAdaptor <op_index> root, CodeGenerator &W) {
   if (root->extra_type == op_ex_none) {
-      W << root->array() << "[";
-      if (has_key) {
-        W << root->key();
-      }
-      W << "]";
+    W << root->array() << "[";
+    if (root->has_key()) {
+      W << root->key();
+    }
+    W << "]";
   } else if (root->extra_type == op_ex_index_rval) {
     W << root->array() << ".get_value (" << root->key();
     // если это обращение по константной строке, типа $a['somekey'],
@@ -2815,6 +2828,12 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
   } else {
     kphp_fail();
   }
+}
+
+void compile_index_of_string (VertexAdaptor <op_index> root, CodeGenerator &W) {
+  kphp_assert(root->has_key());
+
+  W << root->array() << ".get_value(" << root->key() << ")";
 }
 
 void compile_instance_prop (VertexAdaptor <op_instance_prop> root, CodeGenerator &W) {
@@ -3371,7 +3390,7 @@ void compile_break_continue (VertexAdaptor <meta_op_goto> root, CodeGenerator &W
 
 void compile_conv_array_l (VertexAdaptor <op_conv_array_l> root, CodeGenerator &W) {
   VertexPtr val = root->expr();
-  PrimitiveType tp = tinf::get_type (val)->ptype();
+  PrimitiveType tp = tinf::get_type (val)->get_real_ptype();
   if (tp == tp_array || tp == tp_var) {
     W << "arrayval_ref (" << val << ", \"unknown\", -1)";
   } else {
@@ -3382,7 +3401,7 @@ void compile_conv_array_l (VertexAdaptor <op_conv_array_l> root, CodeGenerator &
 
 void compile_conv_int_l (VertexAdaptor <op_conv_int_l> root, CodeGenerator &W) {
   VertexPtr val = root->expr();
-  PrimitiveType tp = tinf::get_type (val)->ptype();
+  PrimitiveType tp = tinf::get_type (val)->get_real_ptype();
   if (tp == tp_int || tp == tp_var) {
     W << "intval_ref (" << val << ")";
   } else {

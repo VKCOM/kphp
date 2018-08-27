@@ -2645,13 +2645,15 @@ class FinalCheckPass : public FunctionPassBase {
           // пока что, т.к. все методы всех классов считаются required, в реально неиспользуемых будет Unknown
           // (потом когда-нибудь можно убирать реально неиспользуемые из required-списка, и убрать дополнительное условие)
           if (type->get_real_ptype() == tp_Unknown && !current_function->is_instance_function()) {
+            string index_depth = "";
             while (v->type() == op_index) {
               v = v.as <op_index>()->array();
+              index_depth += "[.]";
             }
             string desc = "Using Unknown type : ";
             if (v->type() == op_var) {
               VarPtr var = v->get_var_id();
-              desc += "variable [$" + var->name + "]";
+              desc += "variable [$" + var->name + "]" + index_depth;
 
               FunctionPtr holder_func = var->holder_func;
               if (holder_func.not_null() && holder_func->is_required && holder_func->kphp_required) {
@@ -2659,9 +2661,9 @@ class FinalCheckPass : public FunctionPassBase {
               }
 
             } else if (v->type() == op_func_call) {
-              desc += "function [" + v.as <op_func_call>()->get_func_id()->name + "]";
+              desc += "function [" + v.as <op_func_call>()->get_func_id()->name + "]" + index_depth;
             } else if (v->type() == op_constructor_call) {
-              desc += "constructor [" + v.as <op_constructor_call>()->get_func_id()->name + "]";
+              desc += "constructor [" + v.as <op_constructor_call>()->get_func_id()->name + "]" + index_depth;
             } else {
               desc += "...";
             }

@@ -32,6 +32,11 @@ class OptimizationPass : public FunctionPassBase {
 
       VertexPtr save_root = set_op;
       if (b.is_null()) {
+        // запрещаем '$s[] = ...' для не-массивов; для массивов превращаем в push_back
+        PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
+        kphp_error (a_ptype == tp_array || a_ptype == tp_var,
+            dl_pstr("Can not use [] for %s", type_out(tinf::get_type(a)).c_str()));
+
         if (set_op->rl_type == val_none) {
           CREATE_VERTEX (push_back, op_push_back, a, c);
           set_op = push_back;

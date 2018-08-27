@@ -81,6 +81,10 @@ PrimitiveType type_lca (PrimitiveType a, PrimitiveType b) {
     return tp_float;
   }
 
+  if (a == tp_Indexable) {
+    return (b == tp_array) ? b : tp_var;
+  }
+
   if (tp_bool <= a && a <= tp_var && tp_bool <= b && b <= tp_var) {
     return tp_var;
   }
@@ -378,7 +382,14 @@ PrimitiveType TypeData::ptype() const {
 }
 
 PrimitiveType TypeData::get_real_ptype() const {
-  return ptype() == tp_Unknown && or_false_flag() ? tp_bool : ptype();
+  PrimitiveType p = ptype();
+  if (p == tp_Unknown && or_false_flag()) {
+    return tp_bool;
+  }
+  if (p == tp_Indexable) {
+    return tp_array;
+  }
+  return p;
 }
 
 void TypeData::set_ptype (PrimitiveType new_ptype) {
@@ -409,7 +420,7 @@ ClassData *TypeData::get_class_type_inside () const {
   if (class_type().not_null()) {
     return class_type().ptr;
   }
-  if (ptype() == tp_array && any_next_ != NULL) {
+  if (any_next_ != NULL && get_real_ptype() == tp_array) {
     return any_next_->get_class_type_inside();
   }
   return NULL;
@@ -456,8 +467,7 @@ bool TypeData::use_or_false() const {
 }
 
 bool TypeData::structured() const {
-  //Will be changed
-  return ptype() == tp_array;
+  return ptype() == tp_Indexable || ptype() == tp_array;
 }
 TypeData::generation_t TypeData::generation() const {
   return generation_;
@@ -494,16 +504,20 @@ const TypeData *TypeData::read_at (const Key &key) {
 
   return res;
 }
+
 const TypeData *TypeData::const_read_at (const Key &key) const {
   if (ptype() == tp_var) {
-    return get_type (tp_var);
+    return get_type(tp_var);
+  }
+  if (ptype() == tp_string) {
+    return get_type(tp_string);
   }
   if (!structured()) {
-    return get_type (tp_Unknown);
+    return get_type(tp_Unknown);
   }
-  TypeData *res = at (key);
+  TypeData *res = at(key);
   if (res == NULL) {
-    return get_type (tp_Unknown);
+    return get_type(tp_Unknown);
   }
   return res;
 }
@@ -539,8 +553,8 @@ const TypeData *TypeData::read_at (const MultiKey &multi_key) {
 }
 
 void TypeData::make_structured() {
-  if (ptype() <= tp_array) {
-    PrimitiveType new_type = type_lca (ptype(), tp_array);
+  if (ptype() < tp_array) {
+    PrimitiveType new_type = type_lca(ptype(), tp_Indexable);
     set_ptype (new_type);
   }
 }
@@ -779,6 +793,8 @@ int type_strlen (const TypeData *type) {
       return STRLEN_UNKNOWN;
     case tp_False:
       return STRLEN_FALSE_;
+    case tp_Indexable:
+      return STRLEN_ARRAY_;
     case tp_bool:
       return STRLEN_BOOL_;
     case tp_int:

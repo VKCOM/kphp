@@ -590,7 +590,7 @@ void ExprNodeRecalc::recalc_conv_array (VertexAdaptor <meta_op_unary_op> conv) {
   VertexPtr arg = conv->expr();
   //FIXME: (extra dependenty)
   add_dependency (as_rvalue (arg));
-  if (fast_get_type (arg)->ptype() == tp_array) {
+  if (fast_get_type (arg)->get_real_ptype() == tp_array) {
     set_lca (drop_or_false (as_rvalue (arg)));
   } else {
     recalc_ptype <tp_array>();
