@@ -899,7 +899,7 @@ array<T>::const_iterator::const_iterator (const typename array<T>::array_inner *
 }
 
 template <class T>
-const T array<T>::const_iterator::get_value (void) const {
+const T& array<T>::const_iterator::get_value (void) const {
   if (self->is_vector()) {
     return force_convert_to <T>::convert (*(const T *)entry);
   }

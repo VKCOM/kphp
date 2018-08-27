@@ -26,6 +26,12 @@ array <T> f$array_splice (array <T> &a, int offset, int length = INT_MAX);
 template <class T, class T1>
 array <T> f$array_splice (array <T> &a, int offset, int length = INT_MAX, const array <T1> &replacement = array <var> ());
 
+template<class ReturnT, class InputArrayT, class DefaultValueT>
+ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &default_value);
+
+template<class ReturnT, class DefaultValueT>
+ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value);
+
 template <class T>
 array <T> f$array_filter (const array <T> &a);
 
@@ -400,6 +406,64 @@ array <T> f$array_splice (array <T> &a, int offset, int length, const array <T1>
   a = new_a;
 
   return result;
+}
+
+template<class ReturnT, class InputArrayT, class DefaultValueT>
+ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &default_value) {
+  auto mod_size = static_cast<size_t>(std::abs(size));
+
+  if (mod_size <= static_cast<size_t>(a.count())) {
+    return a;
+  }
+
+  constexpr static size_t max_size = 1 << 20;
+  if (mod_size >= 1 << 20) {
+    php_warning("You may only pad up to 1048576 elements at a time: %zu", max_size);
+    return {};
+  }
+
+  int new_index = 0;
+  ReturnT result_array;
+
+  auto copy_input_to_result = [&] {
+    for (auto it = a.begin(); it != a.end(); ++it) {
+      var key = it.get_key();
+      auto &value = it.get_value();
+
+      if (key.is_int()) {
+        result_array.set_value(new_index, value);
+        new_index++;
+      } else {
+        result_array.set_value(key, value);
+      }
+    }
+  };
+
+  auto fill_with_default_value = [&] {
+    for (size_t i = 0; i < mod_size - a.count(); ++i) {
+      result_array.set_value(new_index, default_value);
+      new_index++;
+    }
+  };
+
+  if (size > 0) {
+    copy_input_to_result();
+    fill_with_default_value();
+  } else {
+    fill_with_default_value();
+    copy_input_to_result();
+  }
+
+  return result_array;
+}
+
+template<class ReturnT, class DefaultValueT>
+ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value) {
+  if (size == 0) {
+    return {};
+  }
+
+  return f$array_fill(0, std::abs(size), default_value);
 }
 
 const int ARRAY_FILTER_USE_KEY = 1;

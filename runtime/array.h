@@ -191,7 +191,7 @@ public:
     inline const_iterator (void) __attribute__ ((always_inline));
     inline const_iterator (const array_inner *self, const list_hash_entry *entry) __attribute__ ((always_inline));
 
-    inline const T get_value (void) const __attribute__ ((always_inline));
+    inline const T& get_value (void) const __attribute__ ((always_inline));
     inline key_type get_key (void) const __attribute__ ((always_inline));
     inline const_iterator& operator ++ (void) __attribute__ ((always_inline));
     inline const_iterator& operator -- (void) __attribute__ ((always_inline));

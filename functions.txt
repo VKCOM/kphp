@@ -129,6 +129,7 @@ function array_push (&$a ::: array, $val2 ::: Any, $val3 ::: Any = TODO, $val4 :
 function array_pop (&$a ::: array) ::: ^1[];
 function array_sum ($a ::: array) ::: float;//TODO 
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
+function array_pad auto ($a ::: array, $size ::: int, $value ::: Any) ::: array< lca< ^1[], ^3 > >;
 
 define_raw ('ARRAY_FILTER_USE_KEY', 1);
 
