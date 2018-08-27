@@ -3028,6 +3028,7 @@ class CollectClassF {
 
 /*
  * Для всех функций, всех переменных проверяем, что если делались предположения насчёт классов, то они совпали с выведенными.
+ * Также анализируем переменные-члены инстансов, как они вывелись.
  */
 class CheckInferredInstances {
 public:
@@ -3040,6 +3041,9 @@ public:
 
     if (function->type() != FunctionData::func_extern && !function->assumptions.empty()) {
       analyze_function_vars(function);
+    }
+    if (function->class_id.not_null() && function->class_id->init_function.ptr == function.ptr) {
+      analyze_class(function->class_id);
     }
 
     if (stage::has_error()) {
@@ -3075,6 +3079,16 @@ public:
       kphp_error(t != NULL && ((t->ptype() == tp_Class && klass.ptr == t->class_type().ptr)
                                || (t->ptype() == tp_Exception || t->ptype() == tp_MC)),
           dl_pstr("var $%s assumed to be %s[], but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(var->tinf_node.get_type()).c_str()));
+    }
+  }
+
+  void analyze_class (ClassPtr klass) {
+    // при несовпадении phpdoc и выведенного типов — ошибка уже кинулась раньше, на этапе type inferring
+    // а здесь мы проверим переменные классов, которые объявлены, но никогда не записывались и не имеют дефолтного значения
+    for (auto var : klass->vars) {
+      PrimitiveType ptype = var->tinf_node.get_type()->get_real_ptype();
+      kphp_error(ptype != tp_Unknown,
+                 dl_pstr("var %s::$%s is declared but never written", klass->name.c_str(), var->name.c_str()));
     }
   }
 };
