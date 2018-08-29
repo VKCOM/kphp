@@ -17,6 +17,7 @@ namespace tinf {
     virtual bool check_broken_restriction() = 0;
 
   protected:
+    virtual bool is_broken_restriction_an_error() { return false; }
     virtual bool check_broken_restriction_impl() = 0;
   };
 

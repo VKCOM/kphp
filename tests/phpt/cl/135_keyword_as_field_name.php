@@ -9,5 +9,5 @@ var_dump($kafn->int);
 var_dump($kafn->string);
 var_dump($kafn->array);
 
-var_dump(Classes\KeywordAsFieldName::try);
-var_dump(Classes\KeywordAsFieldName::switch);
+var_dump(Classes\KeywordAsFieldName::try_);
+var_dump(Classes\KeywordAsFieldName::switch_);

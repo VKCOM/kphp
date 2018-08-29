@@ -7,6 +7,7 @@ class KeywordAsFieldName {
     public $string = "asdf";
     public $array = [1, 2, 3];
 
-    const try = true;
-    const switch = "switch";
+    # try and switch allowed only from php7
+    const try_ = true;
+    const switch_ = "switch";
 }

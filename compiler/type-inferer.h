@@ -1,12 +1,11 @@
 #pragma once
 #include "compiler/common.h"
-
 #include "compiler/data.h"
 #include "compiler/function-pass.h"
-#include "compiler/stage.h"
-#include "compiler/type-inferer-core.h"
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
+#include "compiler/stage.h"
+#include "compiler/type-inferer-core.h"
 
 tinf::Node *get_tinf_node (VertexPtr vertex);
 tinf::Node *get_tinf_node (VarPtr var);
@@ -104,7 +103,11 @@ class Restriction : public tinf::RestrictionBase {
       bool err = check_broken_restriction_impl();
       if (err) {
         stage::set_location (location);
-        kphp_error (0, get_description());
+        if (is_broken_restriction_an_error()) {
+          kphp_error (0, get_description());
+        } else {
+          kphp_warning (get_description());
+        }
       }
 
       return err;
@@ -152,6 +155,10 @@ class RestrictionLess : public Restriction {
       }
 
       return false;
+    }
+
+    bool is_broken_restriction_an_error() override {
+      return true;
     }
 
   private:
