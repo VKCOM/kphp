@@ -122,10 +122,12 @@ private:
 
   array <host> hosts;
 
+  bool fake;
+
   inline host get_host (const string &key);
 
 public:
-  RpcMemcache (void);
+  RpcMemcache (bool fake);
 
   bool addServer (const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
   bool connect (const string &host_name, int port = 11211, int timeout = 1);
@@ -256,7 +258,7 @@ public:
 
 
   friend MyMemcache f$new_Memcache (void);
-  friend MyMemcache f$new_RpcMemcache (void);
+  friend MyMemcache f$new_RpcMemcache (bool fake);
   friend MyMemcache f$new_true_mc (const MyMemcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold);
   friend MyMemcache f$new_test_mc (const MyMemcache &mc, const string &engine_tag);
   friend MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag);
@@ -300,28 +302,28 @@ array <string> f$mcGetStats (const MyMemcache &MC);
 int f$mcGetClusterSize (const MyMemcache &MC);
 
 MyMemcache f$new_Memcache (void);
-MyMemcache f$new_RpcMemcache (void);
+MyMemcache f$new_RpcMemcache (bool fake = false);
 MyMemcache f$new_true_mc (const MyMemcache &mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
 MyMemcache f$new_test_mc (const MyMemcache &mc, const string &engine_tag = string());
 MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag = string());
 
 
-var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout = -1.0);
+var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);
 
 template <class T>
 OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
 
-bool f$rpc_mc_set (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0);
+bool f$rpc_mc_set (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_add (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0);
+bool f$rpc_mc_add (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_replace (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0);
+bool f$rpc_mc_replace (const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
-var f$rpc_mc_increment (const rpc_connection &conn, const string &key, const var &v = 1, double timeout = -1.0);
+var f$rpc_mc_increment (const rpc_connection &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
 
-var f$rpc_mc_decrement (const rpc_connection &conn, const string &key, const var &v = 1, double timeout = -1.0);
+var f$rpc_mc_decrement (const rpc_connection &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double timeout = -1.0);
+bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);
 
 
 class MyDB;
@@ -465,6 +467,9 @@ const int MEMCACHE_DECR = 0x6467e0d9;
 const int MEMCACHE_DELETE = 0xab505c0a;
 const int MEMCACHE_GET = 0xd33b13ae;
 
+// this is here to avoid full kphp recompilation on any tl scheme change
+const int ENGINE_MC_GET_QUERY = 0x62408e9e;
+
 extern const char *mc_method;
 
 class rpc_mc_multiget_resumable: public Resumable {
@@ -537,7 +542,7 @@ public:
 
 
 template <class T>
-OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously) {
+OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const array <T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
   mc_method = "multiget";
   resumable_finished = true;
 
@@ -552,7 +557,7 @@ OrFalse <array <var> > f$rpc_mc_multiget (const rpc_connection &conn, const arra
     int is_immediate = mc_is_immediate_query (real_key);
 
     f$rpc_clean();
-    f$store_int (MEMCACHE_GET);
+    f$store_int (fake ? ENGINE_MC_GET_QUERY : MEMCACHE_GET);
     store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
     int current_sent_size = real_key.size() + 32;//estimate

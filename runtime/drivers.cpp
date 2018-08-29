@@ -3,6 +3,10 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "auto/TL/constants.h"
+
+static_assert(TL_ENGINE_MC_GET_QUERY == ENGINE_MC_GET_QUERY, "bad ENGINE_MC_GET_QUERY constant");
+
 #include "PHP/common-net-functions.h"
 
 #include "runtime/array_functions.h"
@@ -723,7 +727,7 @@ RpcMemcache::host RpcMemcache::get_host (const string &key __attribute__((unused
   return hosts.get_value (f$array_rand (hosts));
 }
 
-RpcMemcache::RpcMemcache (void): hosts (array_size (1, 0, true)) {
+RpcMemcache::RpcMemcache (bool fake): hosts (array_size (1, 0, true)), fake(fake) {
 }
 
 bool RpcMemcache::addServer (const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval, bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
@@ -778,7 +782,7 @@ bool RpcMemcache::add (const string &key, const var &value, int flags, int expir
   const string real_key = mc_prepare_key (key);
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_add (cur_host.conn, real_key, value, flags, expire);
+  bool res = f$rpc_mc_add (cur_host.conn, real_key, value, flags, expire, -1.0, fake);
   mc_stats_do (res);
   return res;
 }
@@ -792,7 +796,7 @@ bool RpcMemcache::set (const string &key, const var &value, int flags, int expir
   const string real_key = mc_prepare_key (key);
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_set (cur_host.conn, real_key, value, flags, expire);
+  bool res = f$rpc_mc_set (cur_host.conn, real_key, value, flags, expire, -1.0, fake);
   mc_stats_do (res);
   return res;
 }
@@ -806,7 +810,7 @@ bool RpcMemcache::replace (const string &key, const var &value, int flags, int e
   const string real_key = mc_prepare_key (key);
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_replace (cur_host.conn, real_key, value, flags, expire);
+  bool res = f$rpc_mc_replace (cur_host.conn, real_key, value, flags, expire, -1.0, fake);
   mc_stats_do (res);
   return res;
 }
@@ -820,7 +824,7 @@ var RpcMemcache::get (const var &key_var) {
 
     host cur_host = get_host (string());
     mc_stats_init_multiget (cur_host.actor_id, key_var);
-    var res = f$rpc_mc_multiget (cur_host.conn, key_var.to_array(), -1.0, false, true);
+    var res = f$rpc_mc_multiget (cur_host.conn, key_var.to_array(), -1.0, false, true, fake);
     php_assert(resumable_finished);
     mc_stats_do (res);
     return res;
@@ -835,7 +839,7 @@ var RpcMemcache::get (const var &key_var) {
 
     host cur_host = get_host (real_key);
     mc_stats_init (cur_host.actor_id, real_key.c_str());
-    var res = f$rpc_mc_get (cur_host.conn, real_key);
+    var res = f$rpc_mc_get (cur_host.conn, real_key, -1.0, fake);
     mc_stats_do (res);
     return res;
   }
@@ -850,7 +854,7 @@ bool RpcMemcache::delete_ (const string &key) {
   const string real_key = mc_prepare_key (key);
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_delete (cur_host.conn, real_key);
+  bool res = f$rpc_mc_delete (cur_host.conn, real_key, -1.0, fake);
   mc_stats_do (res);
   return res;
 }
@@ -864,7 +868,7 @@ var RpcMemcache::decrement (const string &key, const var &count) {
   const string real_key = mc_prepare_key (key);
   host cur_host = get_host (real_key);
   mc_stats_init(cur_host.actor_id, real_key.c_str());
-  var res = f$rpc_mc_decrement (cur_host.conn, real_key, count);
+  var res = f$rpc_mc_decrement (cur_host.conn, real_key, count, -1.0, fake);
   mc_stats_do (res);
   return res;
 }
@@ -878,7 +882,7 @@ var RpcMemcache::increment (const string &key, const var &count) {
   const string real_key = mc_prepare_key (key);
   host cur_host = get_host (real_key);
   mc_stats_init (cur_host.actor_id, real_key.c_str());
-  var res = f$rpc_mc_increment (cur_host.conn, real_key, count);
+  var res = f$rpc_mc_increment (cur_host.conn, real_key, count, -1.0, fake);
   mc_stats_do (res);
   return res;
 }
@@ -1505,9 +1509,9 @@ MyMemcache f$new_Memcache (void) {
   return MyMemcache (new (buf) Memcache());
 }
 
-MyMemcache f$new_RpcMemcache (void) {
-  void *buf = dl::allocate (sizeof (Memcache));
-  return MyMemcache (new (buf) RpcMemcache());
+MyMemcache f$new_RpcMemcache (bool fake) {
+  void *buf = dl::allocate (sizeof (RpcMemcache));
+  return MyMemcache (new (buf) RpcMemcache(fake));
 }
 
 MyMemcache f$new_true_mc (const MyMemcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold) {
@@ -1538,13 +1542,13 @@ MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag __attri
  *
  */
 
-var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout) {
+var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout, bool fake) {
   mc_method = "get";
   const string real_key = mc_prepare_key (key);
   int is_immediate = mc_is_immediate_query (real_key);
 
   f$rpc_clean();
-  f$store_int (MEMCACHE_GET);
+  f$store_int (fake ? TL_ENGINE_MC_GET_QUERY : MEMCACHE_GET);
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   int request_id = rpc_send (conn, timeout, (bool) is_immediate);
@@ -1576,6 +1580,7 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout)
 }
 
 bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
+  fprintf(stderr, "op = %08x\n", op);
   if (flags & ~MEMCACHE_COMPRESSED) {
     php_warning ("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
@@ -1632,19 +1637,19 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
   return res == MEMCACHE_TRUE;
 }
 
-bool f$rpc_mc_set (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
+bool f$rpc_mc_set (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
   mc_method = "set";
-  return rpc_mc_run_set (MEMCACHE_SET, conn, key, value, flags, expire, timeout);
+  return rpc_mc_run_set (fake ? TL_ENGINE_MC_SET_QUERY : MEMCACHE_SET, conn, key, value, flags, expire, timeout);
 }
 
-bool f$rpc_mc_add (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
+bool f$rpc_mc_add (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
   mc_method = "add";
-  return rpc_mc_run_set (MEMCACHE_ADD, conn, key, value, flags, expire, timeout);
+  return rpc_mc_run_set (fake ? TL_ENGINE_MC_ADD_QUERY : MEMCACHE_ADD, conn, key, value, flags, expire, timeout);
 }
 
-bool f$rpc_mc_replace (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
+bool f$rpc_mc_replace (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
   mc_method = "replace";
-  return rpc_mc_run_set (MEMCACHE_REPLACE, conn, key, value, flags, expire, timeout);
+  return rpc_mc_run_set (fake ? TL_ENGINE_MC_REPLACE_QUERY : MEMCACHE_REPLACE, conn, key, value, flags, expire, timeout);
 }
 
 var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key, const var &v, double timeout) {
@@ -1679,23 +1684,23 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
   return false;
 }
 
-var f$rpc_mc_increment (const rpc_connection &conn, const string &key, const var &v, double timeout) {
+var f$rpc_mc_increment (const rpc_connection &conn, const string &key, const var &v, double timeout, bool fake) {
   mc_method = "increment";
-  return rpc_mc_run_increment (MEMCACHE_INCR, conn, key, v, timeout);
+  return rpc_mc_run_increment (fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, conn, key, v, timeout);
 }
 
-var f$rpc_mc_decrement (const rpc_connection &conn, const string &key, const var &v, double timeout) {
+var f$rpc_mc_decrement (const rpc_connection &conn, const string &key, const var &v, double timeout, bool fake) {
   mc_method = "decrement";
-  return rpc_mc_run_increment (MEMCACHE_DECR, conn, key, v, timeout);
+  return rpc_mc_run_increment (fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, conn, key, v, timeout);
 }
 
-bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double timeout) {
+bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double timeout, bool fake) {
   mc_method = "delete";
   const string real_key = mc_prepare_key (key);
   int is_immediate = mc_is_immediate_query (real_key);
 
   f$rpc_clean();
-  f$store_int (MEMCACHE_DELETE);
+  f$store_int (fake ? TL_ENGINE_MC_DELETE_QUERY : MEMCACHE_DELETE);
   store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   int request_id = rpc_send (conn, timeout, (bool) is_immediate);
