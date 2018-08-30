@@ -1557,6 +1557,7 @@ VA_BEGIN_1 (op_func_param_callback, meta_op_func_param, int)
 VA_END
 VA_BEGIN (op_func_param, meta_op_func_param)
   std::string type_declaration;
+  int template_type_id = -1;
 VA_END
 
 VA_BEGIN (op_class, meta_op_base)

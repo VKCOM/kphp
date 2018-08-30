@@ -92,6 +92,7 @@ FunctionData::FunctionData ()
   , kphp_required(false)
   , namespace_name ("")
   , class_name ("")
+  , is_template(false)
 {}
 
 FunctionData::FunctionData (VertexPtr root)
@@ -116,6 +117,7 @@ FunctionData::FunctionData (VertexPtr root)
   , should_be_sync()
   , namespace_name ("")
   , class_name ("")
+  , is_template(false)
 {}
 
 bool FunctionData::is_static_init_empty_body() const {

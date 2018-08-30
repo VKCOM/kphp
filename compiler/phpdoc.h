@@ -16,7 +16,8 @@ struct php_doc_tag {
     returns,
     var,
     kphp_required,
-    kphp_sync
+    kphp_sync,
+    kphp_template
   };
 
 public:
@@ -33,6 +34,7 @@ public:
   std::string name;
   std::string value;
   doc_type type;
+  int line_num = -1;
 
 private:
   static const std::map<std::string, doc_type> str2doc_type;

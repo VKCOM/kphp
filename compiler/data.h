@@ -229,6 +229,7 @@ public:
   set<string> disabled_warnings;
 
   FunctionSetPtr function_set;
+  bool is_template;
 
   FunctionData();
   explicit FunctionData (VertexPtr root);

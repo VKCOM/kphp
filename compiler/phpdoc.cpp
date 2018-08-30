@@ -20,7 +20,8 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@var"          , var},
   {"@return"       , returns},
   {"@returns"      , returns},
-  {"@kphp-disable-warnings", kphp_disable_warnings}
+  {"@kphp-disable-warnings", kphp_disable_warnings},
+  {"@kphp-template", kphp_template}
 };
 
 /*
@@ -51,6 +52,8 @@ const std::string php_doc_tag::get_value_token (unsigned long chars_offset) cons
 }
 
 vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
+  int line_num_of_function_declaration = stage::get_line();
+
   vector<string> lines(1);
   bool have_star = false;
   for (int i = 0; i < phpdoc.size(); i++) {
@@ -88,6 +91,16 @@ vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
       if (pos != string::npos) {
         result.back().value = lines[i].substr(pos + 1);
       }
+    }
+
+    if (line_num_of_function_declaration > 0) {
+      int new_line_num = line_num_of_function_declaration - (static_cast<int>(lines.size()) - i);
+      // We have one line with closing php-doc before function declaration
+      // e.g. ....
+      //      * @param int $a
+      //      */
+      //      function f() {}
+      result.back().line_num = std::min(new_line_num, line_num_of_function_declaration - 2);
     }
   }
 //  for (int i = 0; i < result.size(); i++) {
