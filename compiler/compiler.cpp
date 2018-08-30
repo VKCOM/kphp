@@ -3157,11 +3157,6 @@ template <class Pass>
 using FunctionPassPipe = PipeDataStream<FunctionPassF<Pass>, FunctionPtr, FunctionPtr>;
 
 bool compiler_execute (KphpEnviroment *env) {
-  sync_node_tag sync_node;
-  use_nth_output_tag<0> use_first_output;
-  use_nth_output_tag<1> use_second_output;
-  use_nth_output_tag<2> use_third_output;
-
   double st = dl_time();
   G = new CompilerCore();
   G->register_env (env);
@@ -3175,7 +3170,7 @@ bool compiler_execute (KphpEnviroment *env) {
 
     env->set_warnings_file (f);
   } else {
-    env->set_warnings_file (NULL);
+    env->set_warnings_file (nullptr);
   }
   if (!env->get_stats_filename().empty()) {
     FILE *f = fopen (env->get_stats_filename().c_str(), "w");
@@ -3185,7 +3180,7 @@ bool compiler_execute (KphpEnviroment *env) {
     }
     env->set_stats_file (f);
   } else {
-    env->set_stats_file (NULL);
+    env->set_stats_file (nullptr);
   }
 
   //TODO: call it with pthread_once on need
@@ -3198,8 +3193,8 @@ bool compiler_execute (KphpEnviroment *env) {
 
   DataStream <SrcFilePtr> file_stream;
 
-  for (int i = 0; i < (int)env->get_main_files().size(); i++) {
-    G->register_main_file (env->get_main_files()[i], file_stream);
+  for (const auto &main_file : env->get_main_files()) {
+    G->register_main_file (main_file, file_stream);
   }
 
   static lockf_wrapper unique_file_lock;
@@ -3212,7 +3207,7 @@ bool compiler_execute (KphpEnviroment *env) {
     if (G->env().get_threads_count() == 1) {
       scheduler = new OneThreadScheduler();
     } else {
-      Scheduler *s = new Scheduler();
+      auto s = new Scheduler();
       s->set_threads_count (G->env().get_threads_count());
       scheduler = s;
     }
@@ -3229,44 +3224,44 @@ bool compiler_execute (KphpEnviroment *env) {
          DataStream <FunctionPtr>,
          MultipleDataStreams <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe;
 
-    FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
-    PipeDataStream <PreprocessDefinesConcatenationF, FunctionPtr, FunctionPtr> process_defines_concat(true);
-    FunctionPassPipe<CollectDefinesPass> collect_defines_pipe;
-    PipeDataStream<CheckReturnsF, FunctionAndCFG, FunctionAndCFG> check_returns_pipe;
-    PipeDataStream<PrepareFunctionF, FunctionPtr, FunctionPtr> prepare_function_pipe;
     PipeDataStream<CollectClassF, ReadyFunctionPtr, FunctionPtr> collect_classes_pipe;
-
+    FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
+    PipeDataStream <PreprocessDefinesConcatenationF, FunctionPtr, FunctionPtr> process_defines_concat;
+    FunctionPassPipe<CollectDefinesPass> collect_defines_pipe;
+    PipeDataStream<PrepareFunctionF, FunctionPtr, FunctionPtr> prepare_function_pipe;
     FunctionPassPipe<RegisterDefinesPass> register_defines_pipe;
+
     FunctionPassPipe<PreprocessVarargPass> preprocess_vararg_pipe;
     FunctionPassPipe<PreprocessEq3Pass> preprocess_eq3_pipe;
     FunctionPassPipe<PreprocessFunctionCPass> preprocess_function_c_pipe;
     FunctionPassPipe<PreprocessBreakPass> preprocess_break_pipe;
-    FunctionPassPipe<RegisterVariables> register_variables_pipe;
-    FunctionPassPipe<CheckInstanceProps> check_instance_props_pipe;
     FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
     FunctionPassPipe<CollectConstVarsPass> collect_const_vars_pipe;
+    FunctionPassPipe<CheckInstanceProps> check_instance_props_pipe;
+    FunctionPassPipe<RegisterVariables> register_variables_pipe;
 
     PipeDataStream<CalcThrowEdgesF, FunctionPtr, FunctionAndEdges> calc_throw_edges_pipe;
-    PipeDataStream<CalcThrowsF, FunctionAndEdges, FunctionPtr> calc_throws_pipe(true);
+    PipeDataStream<CalcThrowsF, FunctionAndEdges, FunctionPtr> calc_throws_pipe;
     FunctionPassPipe<CheckFunctionCallsPass> check_func_calls_pipe;
     PipeDataStream<CalcRLF, FunctionPtr, FunctionPtr> calc_rl_pipe;
     PipeDataStream<CFGBeginF, FunctionPtr, FunctionAndCFG> cfg_begin_pipe;
-    PipeDataStream<TypeInfererF, FunctionAndCFG, FunctionAndCFG> type_inferer_pipe(true);
-    PipeDataStream<TypeInfererEndF, FunctionAndCFG, FunctionAndCFG> type_inferer_end_pipe (true);
+    PipeDataStream<CheckReturnsF, FunctionAndCFG, FunctionAndCFG> check_returns_pipe;
+    PipeDataStream<TypeInfererF, FunctionAndCFG, FunctionAndCFG> type_inferer_pipe;
+    PipeDataStream<TypeInfererEndF, FunctionAndCFG, FunctionAndCFG> type_inferer_end_pipe;
     PipeDataStream<CFGEndF, FunctionAndCFG, FunctionPtr> cfg_end_pipe;
     PipeDataStream<CheckInferredInstances, FunctionPtr, FunctionPtr> check_inferred_instances_pipe;
     FunctionPassPipe<OptimizationPass> optimization_pipe;
     FunctionPassPipe<CalcValRefPass> calc_val_ref_pipe;
 
-    PipeDataStream<CalcBadVarsF, FunctionPtr, FunctionPtr> calc_bad_vars_pipe(true);
+    PipeDataStream<CalcBadVarsF, FunctionPtr, FunctionPtr> calc_bad_vars_pipe;
     PipeDataStream<CheckUBF, FunctionPtr, FunctionPtr> check_ub_pipe;
-    FunctionPassPipe<ExtractAsyncPass> extract_async_pipe;
     FunctionPassPipe<ExtractResumableCallsPass> extract_resumable_calls_pipe;
+    FunctionPassPipe<ExtractAsyncPass> extract_async_pipe;
     PipeDataStream<AnalyzerF, FunctionPtr, FunctionPtr> analyzer_pipe;
     FunctionPassPipe<CheckAccessModifiers> check_access_modifiers_pass;
     FunctionPassPipe<FinalCheckPass> final_check_pass;
-    PipeDataStream<CodeGenF, FunctionPtr, WriterData *> code_gen_pipe(true);
-    Pipe<WriteFilesF, DataStream <WriterData *>, EmptyStream> write_files_pipe(false, false);
+    PipeDataStream<CodeGenF, FunctionPtr, WriterData *> code_gen_pipe;
+    Pipe<WriteFilesF, DataStream <WriterData *>, EmptyStream> write_files_pipe(false);
 
 
     load_file_pipe.set_input_stream(&file_stream);
@@ -3278,12 +3273,12 @@ bool compiler_execute (KphpEnviroment *env) {
         apply_break_file_pipe >>
         split_switch_pipe >>
         create_switch_foreach_vars_pipe >>
-        collect_required_pipe >> use_first_output >> sync_node >>
+        collect_required_pipe >> use_nth_output_tag<0>{} >> sync_node_tag{} >>
         collect_classes_pipe >>
         calc_locations_pipe >>
-        process_defines_concat >>
-        collect_defines_pipe >> sync_node >>
-        prepare_function_pipe >> sync_node >>
+        process_defines_concat >> use_previous_pipe_as_sync_node_tag{} >>
+        collect_defines_pipe >> sync_node_tag{} >>
+        prepare_function_pipe >> sync_node_tag{} >>
         register_defines_pipe >>
         preprocess_vararg_pipe >>
         preprocess_eq3_pipe >>
@@ -3294,29 +3289,29 @@ bool compiler_execute (KphpEnviroment *env) {
         check_instance_props_pipe >>
         register_variables_pipe >>
         calc_throw_edges_pipe >>
-        calc_throws_pipe >>
+        calc_throws_pipe >> use_previous_pipe_as_sync_node_tag{} >>
         check_func_calls_pipe >>
         calc_rl_pipe >>
         cfg_begin_pipe >>
-        check_returns_pipe >> sync_node >>
-        type_inferer_pipe  >>
-        type_inferer_end_pipe >>
+        check_returns_pipe >> sync_node_tag{} >>
+        type_inferer_pipe  >> use_previous_pipe_as_sync_node_tag{} >>
+        type_inferer_end_pipe >> use_previous_pipe_as_sync_node_tag{} >>
         cfg_end_pipe >>
         check_inferred_instances_pipe >>
         optimization_pipe >>
         calc_val_ref_pipe >>
-        calc_bad_vars_pipe >>
+        calc_bad_vars_pipe >> use_previous_pipe_as_sync_node_tag{} >>
         check_ub_pipe >>
         extract_resumable_calls_pipe >>
         extract_async_pipe >>
         analyzer_pipe >>
         check_access_modifiers_pass >>
         final_check_pass >>
-        code_gen_pipe >>
+        code_gen_pipe >> use_previous_pipe_as_sync_node_tag{} >>
         write_files_pipe;
 
-    scheduler_constructor(scheduler, collect_required_pipe) >> use_second_output >> load_file_pipe;
-    scheduler_constructor(scheduler, collect_required_pipe) >> use_third_output >> apply_break_file_pipe;
+    scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<1>{} >> load_file_pipe;
+    scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<2>{} >> apply_break_file_pipe;
 
     get_scheduler()->execute();
   }

@@ -158,10 +158,10 @@ OneThreadScheduler::OneThreadScheduler() {
 
 void OneThreadScheduler::add_node (Node *node) {
   nodes.push_back(node);
+}
 
-  if (node->is_sync_node()) {
-    sync_nodes.push (node);
-  }
+void OneThreadScheduler::add_sync_node(Node *node) {
+  sync_nodes.push (node);
 }
 
 void OneThreadScheduler::add_task (Task *task) {
@@ -209,14 +209,13 @@ Scheduler::Scheduler()
 void Scheduler::add_node (Node *node) {
   if (node->is_parallel()) {
     nodes.push_back(node);
-
-    if (node->is_sync_node()) {
-      sync_nodes.push (node);
-    }
   } else {
-    kphp_assert(!node->is_sync_node());
     one_thread_nodes.push_back (node);
   }
+}
+
+void Scheduler::add_sync_node(Node *node) {
+  sync_nodes.push(node);
 }
 
 void Scheduler::add_task (Task *task) {

@@ -192,6 +192,7 @@ public:
   SchedulerBase();
   virtual ~SchedulerBase();
   virtual void add_node(Node *node) = 0;
+  virtual void add_sync_node(Node *node) = 0;
   virtual void add_task(Task *task) = 0;
   virtual void execute() = 0;
 };
@@ -206,15 +207,13 @@ inline void register_async_task(Task *task) {
 }
 
 class Node {
-public:
   SchedulerBase *in_scheduler;
   bool parallel;
-  bool sync_node;
 
-  explicit Node(bool parallel = true, bool sync_node = false)
+public:
+  explicit Node(bool parallel = true)
     : in_scheduler(nullptr)
     , parallel(parallel)
-    , sync_node(sync_node)
   {}
 
   virtual ~Node() = default;
@@ -228,12 +227,13 @@ public:
     in_scheduler->add_node(this);
   }
 
-  virtual bool is_parallel() {
-    return parallel;
+  void add_to_scheduler_as_sync_node() {
+    assert(in_scheduler);
+    in_scheduler->add_sync_node(this);
   }
 
-  virtual bool is_sync_node() {
-    return sync_node;
+  virtual bool is_parallel() {
+    return parallel;
   }
 
   virtual Task *get_task() = 0;
@@ -253,6 +253,7 @@ public:
   OneThreadScheduler();
 
   void add_node(Node *node) override;
+  void add_sync_node(Node *node) override;
   void add_task(Task *task) override;
   void execute() override;
   void set_threads_count(int threads_count);
@@ -285,6 +286,7 @@ public:
   Scheduler();
 
   void add_node(Node *node) override;
+  void add_sync_node(Node *node) override;
   void add_task(Task *task) override;
   void execute() override;
 
@@ -433,8 +435,8 @@ private:
   PipeF function;
 
 public:
-  explicit Pipe(bool sync_node = false, bool parallel = true)
-    : Node(parallel, sync_node)
+  explicit Pipe(bool parallel = true)
+    : Node(parallel)
   {}
 
   InputStreamType *&get_input_stream() { return input_stream; }
@@ -493,6 +495,8 @@ using ConcreteIndexedStream = DataStream<typename StreamT::template NthDataType<
 
 struct sync_node_tag{};
 
+struct use_previous_pipe_as_sync_node_tag{};
+
 template<size_t id>
 struct use_nth_output_tag {};
 
@@ -501,6 +505,7 @@ class SC_Pipe {
 private:
   SchedulerBase *scheduler;
   StreamT *&previous_output_stream;
+  Node *previous_node;
 
 private:
   class SyncPipeF {
@@ -544,27 +549,34 @@ private:
 
 public:
   template<class... DataTypes>
-  SC_Pipe(SchedulerBase *scheduler, MultipleDataStreams<DataTypes...> *streams)
+  SC_Pipe(SchedulerBase *scheduler, MultipleDataStreams<DataTypes...> *streams, Node *previous_node)
     : scheduler(scheduler)
     , previous_output_stream(project_to_single_data_stream(streams))
+    , previous_node(previous_node)
   {}
 
   template<class PipeT>
   SC_Pipe(SchedulerBase *scheduler, PipeT *pipe)
     : scheduler(scheduler)
     , previous_output_stream(pipe->get_output_stream())
+    , previous_node(pipe)
   {
     pipe->add_to_scheduler(scheduler);
   }
 
   SC_Pipe operator>>(sync_node_tag) {
-    auto *sync_pipe = new Pipe<SyncPipeF, StreamT, StreamT>(true, true);
-    return *this >> *sync_pipe;
+    auto *sync_pipe = new Pipe<SyncPipeF, StreamT, StreamT>();
+    return *this >> *sync_pipe >> use_previous_pipe_as_sync_node_tag{};
   }
 
   template<size_t id>
   SC_Pipe<ConcreteIndexedStream<id, StreamT>> operator>>(use_nth_output_tag<id>) {
-    return {scheduler, previous_output_stream};
+    return {scheduler, previous_output_stream, previous_node};
+  }
+
+  SC_Pipe& operator>>(use_previous_pipe_as_sync_node_tag) {
+    previous_node->add_to_scheduler_as_sync_node();
+    return *this;
   }
 
   template<class NextPipeT>
