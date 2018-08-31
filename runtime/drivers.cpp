@@ -1580,7 +1580,6 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout,
 }
 
 bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
-  fprintf(stderr, "op = %08x\n", op);
   if (flags & ~MEMCACHE_COMPRESSED) {
     php_warning ("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
