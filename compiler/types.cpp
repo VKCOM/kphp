@@ -553,7 +553,7 @@ const TypeData *TypeData::read_at (const MultiKey &multi_key) {
 }
 
 void TypeData::make_structured() {
-  if (ptype() < tp_array) {
+  if (ptype() < tp_var) {
     PrimitiveType new_type = type_lca(ptype(), tp_Indexable);
     set_ptype (new_type);
   }
