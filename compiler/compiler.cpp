@@ -2583,21 +2583,24 @@ class FinalCheckPass : public FunctionPassBase {
         }
       }
       if (vertex->type() == op_unset || vertex->type() == op_isset) {
-        for (auto varVertex : vertex.as<meta_op_xset>()->args()) {
-          if (varVertex->type() != op_var) {
-            continue;
-          }
-          VarPtr var = varVertex.as<op_var>()->get_var_id();
-          if (vertex->type() == op_unset) {
-            kphp_error(!var->is_reference, "Unset of reference variables is not supported");
-            if (var->type() == VarData::var_global_t) {
-              FunctionPtr f = stage::get_function();
-              if (f->type() != FunctionData::func_global && f->type() != FunctionData::func_switch) {
-                kphp_error(0, "Unset of global variables in functions is not supported");
+        for (auto v : vertex.as <meta_op_xset>()->args()) {
+          if (v->type() == op_var) {    // isset($var), unset($var)
+            VarPtr var = v.as <op_var>()->get_var_id();
+            if (vertex->type() == op_unset) {
+              kphp_error(!var->is_reference, "Unset of reference variables is not supported");
+              if (var->type() == VarData::var_global_t) {
+                FunctionPtr f = stage::get_function();
+                if (f->type() != FunctionData::func_global && f->type() != FunctionData::func_switch) {
+                  kphp_error(0, "Unset of global variables in functions is not supported");
+                }
               }
+            } else {
+              kphp_error(var->type() != VarData::var_const_t, "Can't use isset on const variable");
             }
-          } else {
-            kphp_error(var->type() != VarData::var_const_t, "Can't use isset on const variable");
+          } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
+            const TypeData *arrayType = tinf::get_type(v.as <op_index>()->array());
+            PrimitiveType ptype = arrayType->get_real_ptype();
+            kphp_error(ptype == tp_array || ptype == tp_var, "Can't use isset/unset by[idx] for not an array");
           }
         }
       }
