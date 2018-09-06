@@ -1243,6 +1243,132 @@ class PreprocessFunctionCPass : public FunctionPassBase {
 
       return root;
     }
+
+private:
+  VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
+    kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
+    kphp_assert (func.not_null());
+    kphp_assert (call->get_func_id().is_null() || call->get_func_id() == func);
+    if (call->get_func_id() == func) {
+      return call;
+    }
+    //fprintf (stderr, "%s\n", func->name.c_str());
+
+    call->set_func_id (func);
+    if (call->type() == op_func_ptr) {
+      func->is_callback = true;
+      return call;
+    }
+
+    if (func->root.is_null()) {
+      kphp_fail();
+      return call;
+    }
+
+    VertexAdaptor <meta_op_function> func_root = func->root;
+    VertexAdaptor <op_func_param_list> param_list = func_root->params();
+    VertexRange call_args =
+      call->type() == op_constructor_call ? call.as <op_constructor_call>()->args() : call.as <op_func_call>()->args();
+    VertexRange func_args = param_list->params();
+    int call_args_n = (int)call_args.size();
+    int func_args_n = (int)func_args.size();
+
+    if (func->varg_flag) {
+      for (int i = 0; i < call_args_n; i++) {
+        kphp_error_act (
+          call_args[i]->type() != op_func_name,
+          "Unexpected function pointer",
+          return VertexPtr()
+        );
+      }
+      VertexPtr args;
+      if (call_args_n == 1 && call_args[0]->type() == op_varg) {
+        args = VertexAdaptor <op_varg> (call_args[0])->expr();
+      } else {
+        CREATE_VERTEX (new_args, op_array, call->get_next());
+        new_args->location = call->get_location();
+        args = new_args;
+      }
+      vector <VertexPtr> tmp (1, GenTree::conv_to <tp_array> (args));
+      COPY_CREATE_VERTEX (new_call, call, op_func_call, tmp);
+      return new_call;
+    }
+
+    for (int i = 0; i < call_args_n; i++) {
+      if (i < func_args_n) {
+        if (func_args[i]->type() == op_func_param) {
+          if (call_args[i]->type() == op_func_name) {
+            string msg = "Unexpected function pointer: " + call_args[i]->get_string();
+            kphp_error(false, msg.c_str());
+            continue;
+          } else if (call_args[i]->type() == op_varg) {
+            string msg = "function: `" + func->name +"` must takes variable-length argument list";
+            kphp_error_act(false, msg.c_str(), break);
+          }
+          VertexAdaptor <op_func_param> param = func_args[i];
+          if (param->type_help != tp_Unknown) {
+            call_args[i] = GenTree::conv_to (call_args[i], param->type_help, param->var()->ref_flag);
+          }
+        } else if (func_args[i]->type() == op_func_param_callback) {
+          call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
+          kphp_error (call_args[i]->type() == op_func_ptr, "Function pointer expected");
+        } else {
+          kphp_fail();
+        }
+      }
+    }
+    return call;
+  }
+
+/*
+ * Имея vertex вида 'fn(...)' или 'new A(...)', сопоставить этому vertex реальную FunctionPtr
+ *  (он будет доступен через vertex->get_func_id()).
+ * Вызовы instance-методов вида $a->fn(...) были на уровне gentree преобразованы в op_func_call fn($a, ...),
+ * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
+ */
+  VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function) {
+    if (call->get_func_id().not_null()) {
+      return call;
+    }
+
+    const string &name =
+      call->type() == op_constructor_call
+      ? resolve_constructor_func_name(current_function, call)
+      : call->type() == op_func_call && call->extra_type == op_ex_func_member
+        ? resolve_instance_func_name(current_function, call)
+        : call->get_string();
+
+    FunctionSetPtr function_set = G->get_function_set (fs_function, name, true);
+
+    switch (function_set->size()) {
+      case 1: {
+        if (!function_set->is_required) {
+          kphp_error(false, dl_pstr("Function is not required. Maybe you want to use `@kphp-required` for this function [%s]\n%s\n", name.c_str(), stage::get_function_history().c_str()));
+          break;
+        }
+        call = set_func_id(call, function_set[0]);
+        break;
+      }
+
+      case 0: {
+        if (call->type() == op_constructor_call) {
+          kphp_error(0, dl_pstr("Calling 'new %s()', but this class does not have fields and constructor\n%s\n",
+                                call->get_string().c_str(), stage::get_function_history().c_str()));
+        } else {
+          kphp_error(0, dl_pstr("Unknown function [%s]\n%s\n",
+                                name.c_str(), stage::get_function_history().c_str()));
+        }
+        break;
+      }
+
+      default: {
+        kphp_error(false, dl_pstr("Function overloading is not supported properly [%s]", name.c_str()));
+        break;
+      }
+    }
+
+    return call;
+  }
 };
 
 /*** Preprocess 'break 5' and similar nodes. The will be replaced with goto ***/

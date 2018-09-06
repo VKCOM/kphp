@@ -30,8 +30,6 @@ class CompilerCore {
     KphpEnviroment *env_;
     HT <ClassPtr> classes_ht;
 
-    bool add_to_function_set (FunctionSetPtr function_set, FunctionPtr function,
-                              bool req = false);
     FunctionPtr create_function (const FunctionInfo &info);
     ClassPtr create_class (const ClassInfo &info);
     void create_builtin_classes();
@@ -50,6 +48,7 @@ class CompilerCore {
     const KphpEnviroment &env() const;
     string unify_file_name (const string &file_name);
     SrcFilePtr register_file (const string &file_name, const string &context);
+    static bool add_to_function_set (FunctionSetPtr function_set, FunctionPtr function, bool req = false);
 
     template <class DataStream>
     void register_main_file (const string &file_name, DataStream &os);
@@ -98,7 +97,5 @@ extern CompilerCore *G;
 bool try_optimize_var (VarPtr var);
 string conv_to_func_ptr_name (VertexPtr call);
 VertexPtr conv_to_func_ptr (VertexPtr call, FunctionPtr current_function);
-VertexPtr set_func_id (VertexPtr call, FunctionPtr func);
-VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function);
 
 #include "compiler-core.hpp"
