@@ -21,11 +21,11 @@ GenTree::GenTree ()
 
 #define CE(x) if (!(x)) {return VertexPtr();}
 
-void GenTree::init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new) {
+void GenTree::init (const vector <Token *> *tokens_new, const string &context, GenTreeCallback &callback_new) {
   line_num = 0;
   in_func_cnt_ = 0;
   tokens = tokens_new;
-  callback = callback_new;
+  callback = &callback_new;
   class_stack = vector <ClassInfo>();
 
   cur = tokens->begin();
@@ -34,7 +34,7 @@ void GenTree::init (const vector <Token *> *tokens_new, const string &context, G
   namespace_name = "";
   class_context = context;
   if (!class_context.empty()) {
-    context_class_ptr = callback_new->get_class_by_name(class_context);
+    context_class_ptr = callback_new.get_class_by_name(class_context);
     if (context_class_ptr.is_null()) { // Sometimes fails, debug output
       fprintf(stderr, "context class = %s\n", class_context.c_str());
     }
@@ -49,10 +49,6 @@ void GenTree::init (const vector <Token *> *tokens_new, const string &context, G
 
   line_num = (*cur)->line_num;
   stage::set_line (line_num);
-}
-
-static string replace_backslashes(const string &s) {
-  return replace_characters(s, '\\', '$');
 }
 
 bool GenTree::in_class() {
@@ -2547,7 +2543,7 @@ void gen_tree_init() {
   GenTree::is_superglobal("");
 }
 
-void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name __attribute__((unused)), GenTreeCallbackBase *callback) {
+void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name __attribute__((unused)), GenTreeCallback &callback) {
   GenTree gen;
   gen.init (tokens, context, callback);
   gen.run();

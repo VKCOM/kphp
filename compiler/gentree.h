@@ -1,6 +1,6 @@
 #pragma once
 #include "compiler/common.h"
-
+#include "compiler/compiler-core.h"
 #include "compiler/data.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
@@ -9,13 +9,30 @@ class GenTree;
 typedef VertexPtr (GenTree::*GetFunc) ();
 
 
-struct GenTreeCallbackBase {
-  virtual FunctionPtr register_function (const FunctionInfo &func) = 0;
-  virtual void require_function_set (FunctionPtr function) = 0;
-  virtual ClassPtr register_class (const ClassInfo &info) = 0;
-  virtual ClassPtr get_class_by_name (const string &class_name) = 0;
-  virtual ~GenTreeCallbackBase(){}
+class GenTreeCallback {
+  DataStream<FunctionPtr> &os;
+public:
+  explicit GenTreeCallback(DataStream<FunctionPtr> &os)
+    : os (os)
+  {}
+
+  FunctionPtr register_function (const FunctionInfo &info) {
+    return G->register_function (info, os);
+  }
+
+  void require_function_set (FunctionPtr function) {
+    G->require_function_set(fs_function, function->name, FunctionPtr(), os);
+  }
+
+  ClassPtr register_class (const ClassInfo &info) {
+    return G->register_class(info, os);
+  }
+
+  ClassPtr get_class_by_name (const string &class_name) {
+    return G->get_class(class_name);
+  }
 };
+
 
 class GenTree {
 public:
@@ -29,7 +46,7 @@ public:
 
   GenTree ();
 
-  void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallbackBase *callback_new);
+  void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallback &callback_new);
   FunctionPtr register_function (FunctionInfo info);
   bool in_class();
   bool in_namespace() const;
@@ -122,7 +139,7 @@ public:
 
 private:
   const vector <Token *> *tokens;
-  GenTreeCallbackBase *callback;
+  GenTreeCallback *callback;
   int in_func_cnt_;
   bool is_top_of_the_function_;
   vector <Token *>::const_iterator cur, end;
@@ -135,7 +152,7 @@ private:
 };
 void gen_tree_init();
 
-void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name, GenTreeCallbackBase *callback);
+void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name, GenTreeCallback &callback);
 
 template <PrimitiveType ToT>
 VertexPtr GenTree::conv_to_lval (VertexPtr x) {

@@ -27,3 +27,8 @@ static inline string replace_characters(string s, char from, char to) {
   return s;
 }
 
+static inline string replace_backslashes(const string &s) {
+  return replace_characters(s, '\\', '$');
+}
+
+

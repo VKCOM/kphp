@@ -86,31 +86,6 @@ class FileToTokensF {
     }
 };
 
-/*** Parse tokens into syntax tree ***/
-template <class DataStream>
-class GenTreeCallback : public GenTreeCallbackBase {
-    DataStream &os;
-  public:
-    GenTreeCallback (DataStream &os) :
-      os (os) {
-    }
-    FunctionPtr register_function (const FunctionInfo &info) {
-      return G->register_function (info, os);
-    }
-
-    void require_function_set (FunctionPtr function) {
-      G->require_function_set(fs_function, function->name, FunctionPtr(), os);
-    }
-
-    ClassPtr register_class (const ClassInfo &info) {
-      return G->register_class(info, os);
-    }
-
-    ClassPtr get_class_by_name (const string &class_name) {
-      return G->get_class(class_name);
-    }
-};
-
 class ParseF {
   public:
     DUMMY_ON_FINISH
@@ -120,8 +95,8 @@ class ParseF {
       stage::set_file (file_and_tokens.file);
       kphp_assert (file_and_tokens.file.not_null());
 
-      GenTreeCallback <OutputStream> callback (os);
-      php_gen_tree (file_and_tokens.tokens, file_and_tokens.file->class_context, file_and_tokens.file->main_func_name, &callback);
+      GenTreeCallback callback(os);
+      php_gen_tree (file_and_tokens.tokens, file_and_tokens.file->class_context, file_and_tokens.file->main_func_name, callback);
     }
 };
 
