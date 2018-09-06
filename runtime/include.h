@@ -7,6 +7,7 @@
 #include "runtime/php_assert.h"
 #include "common-php-functions.h"
 #include "common/wrappers/likely.h"
+#include "common/type_traits/is_constructible.h"
 
 #define COMMA ,
 
@@ -97,13 +98,13 @@ public:
     php_assert (x == false);
   }
 
-  template<class T1>
+  template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse(const T1 &x):
     value(x),
     bool_value(true) {
   }
 
-  template<class T1>
+  template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse(const OrFalse<T1> &other):
     value(other.value),
     bool_value(other.bool_value) {
@@ -117,14 +118,14 @@ public:
     return *this;
   }
 
-  template<class T1>
+  template<class T1, class = vk::enable_if_constructible<T, T1>>
   inline OrFalse &operator=(const OrFalse<T1> &other) {
     value = other.value;
     bool_value = other.bool_value;
     return *this;
   }
 
-  template<class T1>
+  template<class T1, class = vk::enable_if_constructible<T, T1>>
   inline OrFalse &operator=(const T1 &x) {
     value = x;
     bool_value = true;

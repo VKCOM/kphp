@@ -1471,9 +1471,9 @@ MyMemcache::MyMemcache() :
 array<string> f$mcGetStats(const MyMemcache &MC) {
   var stats_result = f$memcached_get(MC, string("#stats", 6));
   if (!stats_result) {
-    return array<var>();
+    return array<string>();
   }
-  array<string> stats = array<var>();
+  array<string> stats = array<string>();
   array<string> stats_array = explode('\n', stats_result.to_string());
   for (int i = 0; i < (int)stats_array.count(); i++) {
     string row = stats_array[i];

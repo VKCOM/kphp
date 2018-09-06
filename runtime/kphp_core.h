@@ -26,7 +26,7 @@
 #undef AS_ARRAY
 #undef AS_CONST_ARRAY
 
-#include "common/containers/list_of_types.h"
+#include "common/type_traits/list_of_types.h"
 
 #include <utility>
 

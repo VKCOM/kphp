@@ -9,6 +9,9 @@
  *
  */
 
+template <typename T, typename T1>
+using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
+
 struct array_size {
   int int_size;
   int string_size;
@@ -177,7 +180,7 @@ private:
 
   inline void convert_to_map();
 
-  template<class T1>
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline void copy_from(const array<T1> &other);
 
   inline void destroy() __attribute__ ((always_inline));
@@ -237,14 +240,14 @@ public:
 
   inline array(array &&other) noexcept __attribute__ ((always_inline));
 
-  template<class T1>
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array(const array<T1> &other) __attribute__ ((always_inline));
 
   inline array &operator=(const array &other) __attribute__ ((always_inline));
 
   inline array &operator=(array &&other) noexcept __attribute__ ((always_inline));
 
-  template<class T1>
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array &operator=(const array<T1> &other) __attribute__ ((always_inline));
 
   inline ~array() /*__attribute__ ((always_inline))*/;
@@ -317,7 +320,7 @@ public:
 
   inline array_size size() const __attribute__ ((always_inline));
 
-  template<class T1>
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   void merge_with(const array<T1> &other);
 
   const array operator+(const array &other) const;

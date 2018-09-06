@@ -1172,7 +1172,7 @@ void array<T>::convert_to_map() {
 }
 
 template<class T>
-template<class T1>
+template<class T1, class>
 void array<T>::copy_from(const array<T1> &other) {
   array_inner *new_array = array_inner::create(other.p->int_size, other.p->string_size, other.is_vector());
 
@@ -1240,7 +1240,7 @@ array<T>::array(array<T> &&other) noexcept :
 }
 
 template<class T>
-template<class T1>
+template<class T1, class>
 array<T>::array(const array<T1> &other) {
   copy_from(other);
 }
@@ -1263,7 +1263,7 @@ array<T> &array<T>::operator=(array &&other) noexcept {
 }
 
 template<class T>
-template<class T1>
+template<class T1, class>
 array<T> &array<T>::operator=(const array<T1> &other) {
   typename array<T1>::array_inner *other_copy = other.p->ref_copy();
   destroy();
@@ -2087,7 +2087,7 @@ array_size array<T>::size() const {
 }
 
 template<class T>
-template<class T1>
+template<class T1, class>
 void array<T>::merge_with(const array<T1> &other) {
   for (typename array<T1>::const_iterator it = other.begin(); it != other.end(); ++it) {
     if (it.self->is_vector()) {//TODO move if outside for
