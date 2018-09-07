@@ -438,6 +438,7 @@ def get_all_tests(args):
         ["pk"],
         ["nn"],
         ["cl"],
+        ["tup"],
     ]
 
     for tags in test_tags:

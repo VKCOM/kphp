@@ -41,11 +41,11 @@ class CollectConstVarsPass : public FunctionPassBase {
       bool global_init_flag = true;
 
       if (root->type() == op_string) {
-        name = gen_const_string_name(root.as<op_string>()->str_val);
-      } else if (root->type() == op_conv_regexp && root.as<op_conv_regexp>()->expr()->type() == op_string) {
-        name = gen_const_regexp_name(root.as<op_conv_regexp>()->expr().as<op_string>()->str_val);
+        name = gen_const_string_name(root.as <op_string>()->str_val);
+      } else if (root->type() == op_conv_regexp && root.as <op_conv_regexp>()->expr()->type() == op_string) {
+        name = gen_const_regexp_name(root.as <op_conv_regexp>()->expr().as <op_string>()->str_val);
       } else if (is_array_suitable_for_hashing(root)) {
-          name = gen_const_array_name(root.as<op_array>());
+        name = gen_const_array_name(root.as <op_array>());
       } else {
         global_init_flag = false;
         name = gen_unique_name("const_var");
@@ -215,8 +215,8 @@ class RegisterVariables : public FunctionPassBase {
       }
       return create_global_var (name);
     }
-    VarPtr get_var (const string &name) {
-      return create_local_var (name, VarData::var_local_t, false);
+    VarPtr get_local_var (const string &name, VarData::Type type = VarData::var_local_t) {
+      return create_local_var(name, type, false);
     }
 
     void register_global_var (VertexAdaptor <op_var> var_vertex) {
@@ -289,7 +289,9 @@ class RegisterVariables : public FunctionPassBase {
       VarPtr var;
       string name = var_vertex->str_val;
       size_t pos$$ = name.find("$$");
-      if (pos$$ != string::npos || (var_vertex->extra_type != op_ex_var_superlocal && global_function_flag) ||
+      if (pos$$ != string::npos ||
+          (vk::none_of_equal(var_vertex->extra_type, op_ex_var_superlocal, op_ex_var_superlocal_inplace) &&
+           global_function_flag) ||
           var_vertex->extra_type == op_ex_var_superglobal) {
         if (pos$$ != string::npos) {
           string class_name = name.substr(0, pos$$);
@@ -306,7 +308,10 @@ class RegisterVariables : public FunctionPassBase {
         }
         var = get_global_var (name);
       } else {
-        var = get_var (name);
+        VarData::Type var_type = var_vertex->extra_type == op_ex_var_superlocal_inplace
+                                 ? VarData::var_local_inplace_t
+                                 : VarData::var_local_t;
+        var = get_local_var(name, var_type);
       }
       if (var_vertex->needs_const_iterator_flag) {
         var->needs_const_iterator_flag = true;
@@ -366,7 +371,9 @@ class RegisterVariables : public FunctionPassBase {
     }
     void visit_var (VertexAdaptor <op_var> var) {
       if (var->get_var_id().not_null()) {
-        kphp_assert (var->get_var_id()->type() == VarData::var_const_t);
+        // автогенерённые через CREATE_VERTEX op_var типы, когда один VarData на несколько разных vertex'ов
+        kphp_assert (var->get_var_id()->type() == VarData::var_const_t ||
+                     var->get_var_id()->type() == VarData::var_local_inplace_t);
         return;
       }
       register_var (var);
@@ -488,4 +495,64 @@ class CheckAccessModifiers : public FunctionPassBase {
       }
       return root;
     }
+};
+
+/**
+ * 1. Паттерн list(...) = [...] или list(...) = f() : правую часть — во временную переменную $tmp_var
+ * При этом $tmp_var это op_ex_var_superlocal_inplace: её нужно объявить по месту, а не выносить в начало функции в c++
+ * Соответственно, по смыслу сущность $tmp_var это array или tuple
+ * 2. list(...) = $var оборачиваем в op_seq_rval { list; $var }, для поддержки while(list()=f()) / if(... && list()=f())
+ */
+class ConvertListAssignmentsPass : public FunctionPassBase {
+public:
+  struct LocalT : public FunctionPassBase::LocalT {
+    bool need_recursion_flag = true;
+  };
+
+  string get_description () {
+    return "Process assignments to list";
+  }
+
+  bool check_function (FunctionPtr function) {
+    return default_check_function(function) && function->type() != FunctionData::func_extern;
+  }
+
+  VertexPtr on_exit_vertex (VertexPtr root, LocalT *local) {
+    if (root->type() == op_list) {
+      local->need_recursion_flag = false;
+      return process_list_assignment(root);
+    }
+
+    return root;
+  }
+
+  bool need_recursion (VertexPtr root __attribute__ ((unused)), LocalT *local) {
+    return local->need_recursion_flag;
+  }
+
+  VertexPtr process_list_assignment (VertexAdaptor <op_list> list) {
+    VertexPtr op_set_to_tmp_var;
+    if (list->array()->type() != op_var) {        // list(...) = $var не трогаем, только list(...) = f()
+      CREATE_VERTEX(tmp_var, op_var);
+      tmp_var->set_string(gen_unique_name("tmp_var"));
+      tmp_var->extra_type = op_ex_var_superlocal_inplace;        // отвечает требованиям: инициализируется 1 раз и внутри set
+      CREATE_VERTEX(set_var, op_set, tmp_var, list->array());
+      CLONE_VERTEX(tmp_var_rval, op_var, tmp_var);
+      list->array() = tmp_var_rval;
+      op_set_to_tmp_var = set_var;
+    }
+
+    CLONE_VERTEX(tmp_var_rval, op_var, list->array().as <op_var>());
+
+    VertexPtr result_seq;
+    if (op_set_to_tmp_var.is_null()) {
+      CREATE_VERTEX(seq, op_seq_rval, list, tmp_var_rval);
+      result_seq = seq;
+    } else {
+      CREATE_VERTEX(seq, op_seq_rval, op_set_to_tmp_var, list, tmp_var_rval);
+      result_seq = seq;
+    }
+    set_location(result_seq, list->location);
+    return result_seq;
+  }
 };

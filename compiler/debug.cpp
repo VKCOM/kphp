@@ -41,6 +41,7 @@ void fillTokenTypeNames () {
   TOKEN_TYPE_NAMES[tok_max] = "tok_max";
   TOKEN_TYPE_NAMES[tok_varg] = "tok_varg";
   TOKEN_TYPE_NAMES[tok_array] = "tok_array";
+  TOKEN_TYPE_NAMES[tok_tuple] = "tok_tuple";
   TOKEN_TYPE_NAMES[tok_as] = "tok_as";
   TOKEN_TYPE_NAMES[tok_case] = "tok_case";
   TOKEN_TYPE_NAMES[tok_switch] = "tok_switch";

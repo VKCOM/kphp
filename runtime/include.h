@@ -8,6 +8,8 @@
 #include "common-php-functions.h"
 #include "common/wrappers/likely.h"
 
+#define COMMA ,
+
 
 struct array_size;
 

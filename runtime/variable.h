@@ -408,6 +408,9 @@ inline bool eq2 (const string &lhs, double rhs);
 template <class T>
 inline bool eq2 (bool lhs, const array <T> &rhs);
 
+template <class ...Args>
+inline bool eq2 (bool lhs, const tuple <Args...> &rhs);
+
 template <class T>
 inline bool eq2 (int lhs, const array <T> &rhs);
 
@@ -419,6 +422,9 @@ inline bool eq2 (const string &lhs, const array <T> &rhs);
 
 template <class T>
 inline bool eq2 (const array <T> &lhs, bool rhs);
+
+template <class ...Args>
+inline bool eq2 (const tuple <Args...> &lhs, bool rhs);
 
 template <class T>
 inline bool eq2 (const array <T> &lhs, int rhs);

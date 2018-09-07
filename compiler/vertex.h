@@ -1088,6 +1088,10 @@ VA_BEGIN (op_int_const, meta_op_num)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_int>");
   PROPERTIES_END
+  long parse_int_from_string() {    // op_int_const string representation can be "123", "0x123", "0002", "-123"
+    char *end;                      // but it is guaranteed to be a valid int
+    return std::strtol(get_string().c_str(), &end, 0);
+  }
 VA_END
 VA_BEGIN (op_uint_const, meta_op_num)
   PROPERTIES_BEGIN
@@ -1414,6 +1418,14 @@ VA_BEGIN (op_array, meta_op_varg_)
     OPP (str, "<TODO: array>");
   PROPERTIES_END
 VA_END
+VA_BEGIN (op_tuple, meta_op_varg_)
+  PROPERTIES_BEGIN
+    OPP (type, common_op);
+    OPP (rl, rl_func);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "tuple<>");
+  PROPERTIES_END
+VA_END
 VA_BEGIN (op_list, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1573,6 +1585,14 @@ VA_BEGIN (op_seq_comma, meta_op_varg_)
     OPP (str, "<TODO: seq_comma>");
   PROPERTIES_END
 VA_END
+VA_BEGIN (op_seq_rval, meta_op_varg_)
+  PROPERTIES_BEGIN
+    OPP (type, common_op);
+    OPP (rl, rl_func);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "<TODO: seq_inplace_var>");
+  PROPERTIES_END
+VA_END
 VA_BEGIN (op_case, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1702,9 +1722,6 @@ VA_END
 VA_BEGIN_1 (op_type_rule_func, meta_op_varg_, string)
 VA_END
 VA_BEGIN_1 (op_arg_ref, meta_op_base, int)
-VA_END
-
-VA_BEGIN (op_new, meta_op_unary_)
 VA_END
 
 

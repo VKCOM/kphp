@@ -93,23 +93,19 @@ PrimitiveType type_lca (PrimitiveType a, PrimitiveType b) {
 }
 
 /*** Key ***/
-Enumerator <string> Key::string_keys;
-Enumerator <int> Key::int_keys;
-MapToId <string, string> Key::string_key_map (&string_keys);
-MapToId <int, int> Key::int_key_map (&int_keys);
+
+namespace {
+    HT <Key *> int_keys_ht;
+    HT <Key *> string_keys_ht;
+    HT <string *> string_key_names_ht;
+    int n_string_keys_ht = 0;
+}
 
 Key::Key()
-  : id (-1) {
-}
-Key::Key (const Key &other)
-  : id (other.id) {
-}
-Key &Key::operator = (const Key &other) {
-  id = other.id;
-  return *this;
+    : id(-1) {
 }
 Key::Key (int id)
-  : id (id) {
+    : id(id) {
 }
 
 Key Key::any_key() {
@@ -117,68 +113,58 @@ Key Key::any_key() {
 }
 
 Key Key::string_key (const string &key) {
-  int id = string_key_map.add_name (key, key);
-  dl_assert (id != -1, "bug");
-  Key res = Key (id * 2 + 2);
-  return res;
+  HT <Key *>::HTNode *node = string_keys_ht.at(hash_ll(key));
+  if (node->data != nullptr) {
+    return *node->data;
+  }
+
+  AutoLocker <Lockable *> locker(node);
+  int old_n = atomic_int_inc(&n_string_keys_ht);
+  node->data = new Key(old_n * 2 + 2);
+
+  HT <string *>::HTNode *name_node = string_key_names_ht.at(node->data->id);
+  dl_assert(name_node->data == nullptr, "");
+  name_node->data = new string(key);
+
+  return *node->data;
 }
 
 Key Key::int_key (int key) {
-  int id = int_key_map.add_name (key, key);
-  dl_assert (id != -1, "bug");
-  Key res = Key (id * 2 + 1);
-  return res;
+  HT <Key *>::HTNode *node = int_keys_ht.at((unsigned int)key);
+  if (node->data != nullptr) {
+    return *node->data;
+  }
+
+  AutoLocker <Lockable *> locker(node);
+  node->data = new Key((unsigned int)key * 2 + 1);
+  return *node->data;
 }
 
-Key::KeyType Key::type() const {
-  if (id == 0) {
-    return any_key_e;
+string Key::to_string () const {
+  if (is_int_key()) {
+    return dl_pstr("%d", (id - 1) / 2);
   }
-  if (id > 0 && id % 2 == 1) {
-    return int_key_e;
+  if (is_string_key()) {
+    return dl_pstr("%s", string_key_names_ht.at(id)->data->c_str());
   }
-  if (id > 0 && id % 2 == 0) {
-    return string_key_e;
+  if (is_any_key()) {
+    return "Any";
   }
-  dl_unreachable ("invalid id in Key instance");
-  return any_key_e;
-}
-
-const string &Key::strval() const {
-  dl_assert (type() == string_key_e, "");
-  return string_keys[(id - 1) / 2];
-}
-
-int Key::intval() const {
-  dl_assert (type() == int_key_e, "");
-  return int_keys[id / 2];
-}
-
-string Key::to_string() const {
-  switch (type()) {
-    case int_key_e:
-      return dl_pstr ("%d", intval());
-    case string_key_e:
-      return dl_pstr ("%s", strval().c_str());
-    case any_key_e:
-      return "Any";
-    default:
-      dl_unreachable("...");
-  }
+  dl_unreachable("...");
   return "fail";
 }
 
 /*** MultiKey ***/
 MultiKey::MultiKey()
-  : keys_() {
+    : keys_() {
 }
 
 MultiKey::MultiKey (const vector <Key> &keys)
-  : keys_ (keys) {
+    : keys_(keys) {
 }
 
 MultiKey::MultiKey (const MultiKey &multi_key)
-  : keys_ (multi_key.keys_) {
+    : keys_(multi_key.keys_) {
 }
 MultiKey &MultiKey::operator = (const MultiKey &multi_key) {
   if (this == &multi_key) {
@@ -187,9 +173,15 @@ MultiKey &MultiKey::operator = (const MultiKey &multi_key) {
   keys_ = multi_key.keys_;
   return *this;
 }
+
 void MultiKey::push_back (const Key &key) {
-  keys_.push_back (key);
+  keys_.push_back(key);
 }
+
+void MultiKey::push_front (const Key &key) {
+  keys_.insert(keys_.begin(), key);
+}
+
 string MultiKey::to_string() const {
   string res;
   for (Key key : *this) {
@@ -229,47 +221,48 @@ const MultiKey &MultiKey::any_key (int depth) {
 }
 
 
-/*** TypeData::Writer ***/
-TypeData::Writer::Writer (TypeData *type_data)
-  : type_data_ (type_data), old_key_ (Key::any_key()), cur_ (type_data->next_.begin()), new_next_() {
-  dl_assert (type_data != NULL, "TypeData::Writer can't be initialized by NULL");
+/*** TypeData::SubkeysValues ***/
+
+void TypeData::SubkeysValues::add (const Key &key, TypeData *value) {
+  KeyValue to_add(key, value);
+  auto insert_pos = lower_bound(values_pairs.begin(), values_pairs.end(), KeyValue(key, nullptr));
+  values_pairs.insert(insert_pos, to_add);
 }
 
-TypeData::Writer::~Writer() {
-  dl_assert (type_data_ == NULL, "no flush was called for TypeData::Writer");
+TypeData *TypeData::SubkeysValues::create_if_empty (const Key &key, TypeData *parent) {
+  auto it = lower_bound(values_pairs.begin(), values_pairs.end(), KeyValue(key, nullptr));
+  if (it != values_pairs.end() && it->first == key) {
+    return it->second;
+  }
+
+  TypeData *value = get_type(tp_Unknown)->clone();
+  value->parent_ = parent;
+
+  KeyValue to_add(key, value);
+  values_pairs.insert(it, to_add);
+  return value;
 }
 
-TypeData * TypeData::Writer::write_at (const Key &key) {
-  dl_assert (old_key_ <= key, "keys must be asked in ascending order");
-  old_key_ = key;
-
-  for (iterator end = type_data_->next_.end(); cur_ != end && cur_->first <= key; cur_++) {
-    if (cur_->first == key) {
-      return cur_->second;
-    }
+TypeData *TypeData::SubkeysValues::find (const Key &key) const {
+  auto it = lower_bound(values_pairs.begin(), values_pairs.end(), KeyValue(key, nullptr));
+  if (it != values_pairs.end() && it->first == key) {
+    return it->second;
   }
-
-  if (new_next_.empty() || new_next_.back().first != key) {
-    new_next_.push_back (make_pair (key, TypeData::get_type (tp_Unknown)->clone()));
-  }
-  return new_next_.back().second;
+  return nullptr;
 }
 
-void TypeData::Writer::flush() {
-  if (!new_next_.empty()) {
-    NextT merged_next (new_next_.size() + type_data_->next_.size());
-    iterator end = merge (new_next_.begin(), new_next_.end(), type_data_->next_.begin(), type_data_->next_.end(), merged_next.begin());
-    dl_assert (end == merged_next.end(), "bug in TypeData::Writer");
-    swap (type_data_->next_, merged_next);
-    type_data_->on_changed();
+inline void TypeData::SubkeysValues::clear () {
+  if (!values_pairs.empty()) {
+    values_pairs.clear();
   }
-  type_data_ = NULL;
 }
 
 
 /*** TypeData ***/
-vector <TypeData*> TypeData::primitive_types;
-vector <TypeData*> TypeData::array_types;
+
+static vector <TypeData *> primitive_types;
+static vector <TypeData *> array_types;
+
 void TypeData::init_static() {
   if (!primitive_types.empty()) {
     return;
@@ -295,84 +288,74 @@ const TypeData *TypeData::get_type (PrimitiveType array, PrimitiveType type) {
 }
 
 TypeData::TypeData()
-  : ptype_ (tp_Unknown), flags_ (0), generation_ (current_generation()),
-    parent_ (NULL), any_next_ (NULL), next_() {
+    : ptype_(tp_Unknown), flags_(0), generation_(current_generation()),
+      parent_(nullptr), anykey_value(nullptr), subkeys_values() {
 }
 TypeData::TypeData (PrimitiveType ptype)
-  : ptype_ (ptype), flags_ (0), generation_ (current_generation()),
-    parent_ (NULL), any_next_ (NULL), next_() {
+    : ptype_(ptype), flags_(0), generation_(current_generation()),
+      parent_(nullptr), anykey_value(nullptr), subkeys_values() {
   if (ptype_ == tp_False) {
     set_or_false_flag (true);
     ptype_ = tp_Unknown;
   }
 }
 TypeData::TypeData (const TypeData &from) :
-  ptype_ (from.ptype_),
-  class_type_ (from.class_type_),
-  flags_ (from.flags_),
-  generation_ (from.generation_),
-  parent_ (NULL),
-  any_next_ (NULL),
-  next_ (from.next_) {
-  if (from.any_next_ != NULL) {
-    any_next_ = from.any_next_->clone();
-    any_next_->parent_ = this;
+    ptype_(from.ptype_),
+    class_type_(from.class_type_),
+    flags_(from.flags_),
+    generation_(from.generation_),
+    parent_(nullptr),
+    anykey_value(nullptr),
+    subkeys_values(from.subkeys_values) {
+  if (from.anykey_value != nullptr) {
+    anykey_value = from.anykey_value->clone();
+    anykey_value->parent_ = this;
   }
-  for (NextT::iterator it = next_.begin(); it != next_.end(); it++) {
-    TypeData *ptr = it->second;
-    assert (ptr != NULL);
-    ptr = ptr->clone();
-    ptr->parent_ = this;
-    it->second = ptr;
+  for (auto &subkey : subkeys_values) {
+    TypeData *ptr = subkey.second;
+    assert (ptr != nullptr);
+    subkey.second = ptr->clone();
+    subkey.second->parent_ = this;
   }
 }
 
 TypeData::~TypeData() {
-  assert (parent_ == NULL);
+  assert (parent_ == nullptr);
 
-  if (any_next_ != NULL) {
-    any_next_->parent_ = NULL;
-    delete any_next_;
+  if (anykey_value != nullptr) {
+    anykey_value->parent_ = nullptr;
+    delete anykey_value;
   }
-  for (NextT::iterator it = next_.begin(); it != next_.end(); it++) {
-    TypeData *ptr = it->second;
-    ptr->parent_ = NULL;
+  for (auto &subkey : subkeys_values) {
+    TypeData *ptr = subkey.second;
+    ptr->parent_ = nullptr;
     delete ptr;
   }
 }
 
 TypeData *TypeData::at (const Key &key) const {
   dl_assert (structured(), "bug in TypeData");
-  if (key == Key::any_key()) {
-    return any_next_;
-  }
-  lookup_iterator it = lower_bound (next_.begin(), next_.end(), KeyValue (key, NULL));
-  if (it != next_.end() && it->first == key) {
-    return it->second;
-  }
-  return NULL;
+
+  return key.is_any_key() ? anykey_value : subkeys_values.find(key);  // любое может быть nullptr
 }
 
 TypeData *TypeData::at_force (const Key &key) {
   dl_assert (structured(), "bug in TypeData");
 
-  TypeData *res = at (key);
-  if (res != NULL) {
+  TypeData *res = at(key);
+  if (res != nullptr) {
     return res;
   }
 
-  TypeData *value = get_type (tp_Unknown)->clone();
+  TypeData *value = get_type(tp_Unknown)->clone();
   value->parent_ = this;
   value->on_changed();
 
-  if (key == Key::any_key()) {
-    any_next_ = value;
-    return value;
+  if (key.is_any_key()) {
+    anykey_value = value;
+  } else {
+    subkeys_values.add(key, value);
   }
-
-  KeyValue to_add (key, value);
-  NextT::iterator insert_pos = lower_bound (next_.begin(), next_.end(), KeyValue (key, NULL));
-  next_.insert (insert_pos, to_add);
 
   return value;
 }
@@ -416,21 +399,40 @@ void TypeData::set_class_type (ClassPtr new_class_type) {
   }
 }
 
-ClassData *TypeData::get_class_type_inside () const {
+/**
+ * Быстрый аналог !get_all_class_types_inside().empty()
+ */
+bool TypeData::has_class_type_inside () const {
   if (class_type().not_null()) {
-    return class_type().ptr;
+    return true;
   }
-  if (any_next_ != NULL && get_real_ptype() == tp_array) {
-    return any_next_->get_class_type_inside();
+  if (anykey_value != nullptr && anykey_value->has_class_type_inside()) {
+    return true;
   }
-  return NULL;
+  if (!subkeys_values.empty()) {
+    return std::any_of(subkeys_values.begin(), subkeys_values.end(),
+                       [] (const std::pair <Key, TypeData *> &p) { return p.second->has_class_type_inside(); });
+  }
+  return false;
 }
 
-type_flags_t TypeData::flags() const {
+void TypeData::get_all_class_types_inside (vector <ClassPtr> &out) const {
+  if (class_type().not_null()) {
+    out.push_back(class_type());
+  }
+  if (anykey_value != nullptr) {
+    anykey_value->get_all_class_types_inside(out);
+  }
+  for (auto &subkey : subkeys_values) {
+    subkey.second->get_all_class_types_inside(out);
+  }
+}
+
+TypeData::flags_t TypeData::flags () const {
   return flags_;
 }
 
-void TypeData::set_flags (type_flags_t new_flags) {
+void TypeData::set_flags (TypeData::flags_t new_flags) {
   dl_assert ((flags_ & new_flags) == flags_, "It is forbiddent to remove flag");
   if (flags_ != new_flags) {
     if (new_flags & error_flag_e) {
@@ -458,6 +460,10 @@ bool TypeData::read_flag() const {
 void TypeData::set_read_flag (bool f) {
   set_flag <read_flag_e> (f);
 }
+
+bool TypeData::error_flag () const {
+  return get_flag <error_flag_e>();
+}
 void TypeData::set_error_flag (bool f) {
   set_flag <error_flag_e> (f);
 }
@@ -467,7 +473,7 @@ bool TypeData::use_or_false() const {
 }
 
 bool TypeData::structured() const {
-  return ptype() == tp_Indexable || ptype() == tp_array;
+  return ptype() == tp_Indexable || ptype() == tp_array || ptype() == tp_tuple;
 }
 TypeData::generation_t TypeData::generation() const {
   return generation_;
@@ -475,7 +481,7 @@ TypeData::generation_t TypeData::generation() const {
 
 void TypeData::on_changed() {
   generation_ = current_generation();
-  if (parent_ != NULL) {
+  if (parent_ != nullptr) {
     if (parent_->generation_ < current_generation()) {
       parent_->on_changed();
     }
@@ -483,26 +489,7 @@ void TypeData::on_changed() {
 }
 
 TypeData *TypeData::clone() const {
-  assert (this != NULL);
   return new TypeData (*this);
-}
-
-const TypeData *TypeData::read_at (const Key &key) {
-  if (ptype() == tp_var) {
-    return get_type (tp_var);
-  }
-  if (!structured()) {
-    return get_type (tp_Unknown);
-  }
-  TypeData *res = at_force (key);
-  res->set_read_flag (true);
-
-  if (key != Key::any_key()) {
-    TypeData *any_value = at_force (Key::any_key());
-    any_value->set_read_flag (true);
-  }
-
-  return res;
 }
 
 const TypeData *TypeData::const_read_at (const Key &key) const {
@@ -515,8 +502,14 @@ const TypeData *TypeData::const_read_at (const Key &key) const {
   if (!structured()) {
     return get_type(tp_Unknown);
   }
+  if (ptype() == tp_tuple && key.is_any_key()) {
+    return get_type(tp_Error);
+  }
   TypeData *res = at(key);
-  if (res == NULL) {
+  if (res == nullptr && !key.is_any_key()) {
+    res = anykey_value;
+  }
+  if (res == nullptr) {
     return get_type(tp_Unknown);
   }
   return res;
@@ -525,112 +518,94 @@ const TypeData *TypeData::const_read_at (const Key &key) const {
 const TypeData *TypeData::const_read_at (const MultiKey &multi_key) const {
   const TypeData *res = this;
   for (Key i : multi_key) {
-    res = res->const_read_at (i);
+    res = res->const_read_at(i);
   }
   return res;
 }
 
-const TypeData *TypeData::read_at_dfs (MultiKey::iterator begin, MultiKey::iterator end) {
-  if (begin == end) {
-    return this;
-  }
-
-  const Key &key = *begin;
-  TypeData *key_value = at_force (key);
-  key_value->set_read_flag (true);
-
-  if (key != Key::any_key()) {
-    TypeData *any_value = at_force (Key::any_key());
-    any_value->read_at_dfs (begin + 1, end);
-  }
-
-  return key_value->read_at_dfs (begin + 1, end);
-}
-
-const TypeData *TypeData::read_at (const MultiKey &multi_key) {
-  set_read_flag (true);
-  return read_at_dfs (multi_key.begin(), multi_key.end());
-}
-
 void TypeData::make_structured() {
   if (ptype() < tp_var) {
-    PrimitiveType new_type = type_lca(ptype(), tp_Indexable);
-    set_ptype (new_type);
+    PrimitiveType new_ptype = type_lca(ptype(), tp_Indexable);
+    set_ptype(new_ptype);
   }
 }
+
 TypeData *TypeData::write_at (const Key &key) {
   make_structured();
   if (!structured()) {
-    return NULL;
+    return nullptr;
   }
-  TypeData *res = at_force (key);
-  res->set_write_flag (true);
+  TypeData *res = at_force(key);
+  res->set_write_flag(true);
   return res;
 }
 
 TypeData *TypeData::lookup_at (const Key &key) const {
   if (!structured()) {
-    return NULL;
+    return nullptr;
   }
-  TypeData *res = at (key);
+  TypeData *res = at(key);
+  if (res == nullptr && !key.is_any_key()) {
+    res = anykey_value;
+  }
   return res;
 }
 
 TypeData::lookup_iterator TypeData::lookup_begin() const {
-  if (!structured()) {
-    return next_.end();
-  }
-  return next_.begin();
+  return structured() ? subkeys_values.begin() : subkeys_values.end();
 }
 TypeData::lookup_iterator TypeData::lookup_end() const {
-  return next_.end();
+  return subkeys_values.end();
 }
 
 void TypeData::set_lca (const TypeData *rhs, bool save_or_false) {
-  if (rhs == NULL) {
+  if (rhs == nullptr) {
     return;
   }
   TypeData *lhs = this;
 
-  PrimitiveType new_type = type_lca (lhs->ptype(), rhs->ptype());
-  lhs->set_ptype (new_type);
+  PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
+  lhs->set_ptype(new_ptype);
 
-  type_flags_t mask = save_or_false ? -1 : ~or_false_flag_e;
-  type_flags_t new_flags = lhs->flags_ | (rhs->flags_ & mask);
-  lhs->set_flags (new_flags);
+  TypeData::flags_t mask = save_or_false ? -1 : ~or_false_flag_e;
+  TypeData::flags_t new_flags = lhs->flags_ | (rhs->flags_ & mask);
+  lhs->set_flags(new_flags);
 
   if (rhs->ptype() == tp_Class) {
-    lhs->set_class_type (rhs->class_type());
+    lhs->set_class_type(rhs->class_type());
   }
 
   if (!lhs->structured()) {
     return;
   }
 
-  TypeData *lhs_any_key = lhs->at_force (Key::any_key());
-  TypeData *rhs_any_key = rhs->lookup_at (Key::any_key());
-  //if (lhs != rhs_any_key) {
-    lhs_any_key->set_lca (rhs_any_key, true);
-  //}
-
-  {
-    TypeData::Writer writer (lhs);
-    for (auto rhs_it = rhs->lookup_begin(); rhs_it != rhs->lookup_end(); rhs_it++) {
-      Key rhs_key = rhs_it->first;
-      TypeData *rhs_value = rhs_it->second;
-      TypeData *lhs_value = writer.write_at (rhs_key);
-
-      lhs_value->set_lca (rhs_value, true);
+  if (new_ptype == tp_tuple && rhs->ptype() == tp_tuple) {
+    unsigned int s1 = lhs->subkeys_values.size(), s2 = rhs->subkeys_values.size();
+    if (s1 && s2 && s1 != s2) {
+      lhs->set_ptype(tp_Error);   // совмещение tuple'ов разных размеров
+      return;
     }
-    writer.flush();
+  }
+
+  TypeData *lhs_any_key = lhs->at_force(Key::any_key());
+  TypeData *rhs_any_key = rhs->lookup_at(Key::any_key());
+  lhs_any_key->set_lca(rhs_any_key, true);
+
+  if (!rhs->subkeys_values.empty()) {
+    for (auto &rhs_subkey : rhs->subkeys_values) {
+      Key rhs_key = rhs_subkey.first;
+      TypeData *rhs_value = rhs_subkey.second;
+      TypeData *lhs_value = lhs->subkeys_values.create_if_empty(rhs_key, lhs);
+      lhs_value->set_lca(rhs_value, true);
+    }
   }
 }
 
 void TypeData::set_lca_at (const MultiKey &multi_key, const TypeData *rhs, bool save_or_false) {
   TypeData *cur = this;
-  for (MultiKey::iterator it = multi_key.begin(); it != multi_key.end(); it++) {
-    cur = cur->write_at (*it);
-    if (cur == NULL) {
+  for (auto key : multi_key) {
+    cur = cur->write_at(key);
+    if (cur == nullptr) {
       return;
     }
   }
@@ -638,9 +613,9 @@ void TypeData::set_lca_at (const MultiKey &multi_key, const TypeData *rhs, bool 
   for (MultiKey::reverse_iterator it = multi_key.rbegin(); it != multi_key.rend(); it++) {
     cur = cur->parent_;
     if (*it != Key::any_key()) {
-      TypeData *any_value = cur->at_force (Key::any_key());
-      TypeData *key_value = cur->write_at (*it);
-      any_value->set_lca (key_value, true);
+      TypeData *any_value = cur->at_force(Key::any_key());
+      TypeData *key_value = cur->write_at(*it);
+      any_value->set_lca(key_value, true);
     }
   }
 }
@@ -649,13 +624,20 @@ void TypeData::fix_inf_array() {
   //hack: used just to make current version stable
   int depth = 0;
   TypeData *cur = this;
-  while (cur != NULL) {
-    cur = cur->lookup_at (Key::any_key());
+  while (cur != nullptr) {
+    cur = cur->lookup_at(Key::any_key());
     depth++;
   }
   if (depth > 6) {
     set_lca_at (MultiKey::any_key (6), TypeData::get_type (tp_var));
   }
+}
+
+bool TypeData::should_proxy_error_flag_to_parent () const {
+  if (parent_->ptype() == tp_tuple && parent_->anykey_value == this) {
+    return false;   // tp_tuple any key может быть tp_Error (к примеру, tuple(1, new A)), сам tuple от этого не error
+  }
+  return true;
 }
 
 void TypeData::set_lca (PrimitiveType ptype) {
@@ -678,10 +660,10 @@ static inline int cmp (const TypeData *a, const TypeData *b) {
   if (a == b) {
     return 0;
   }
-  if (a == NULL) {
+  if (a == nullptr) {
     return -1;
   }
-  if (b == NULL) {
+  if (b == nullptr) {
     return 1;
   }
   if (a->ptype() < b->ptype()) {
@@ -765,10 +747,24 @@ void type_out_impl (const TypeData *type, string *res) {
     *res += ptype_name(tp);
   }
 
-  type = type->lookup_at(Key::any_key());
-  if (type != NULL) {
+  bool need_any_key = tp == tp_array;
+  const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
+  if (anykey_value) {
     *res += "< ";
-    type_out_impl(type, res);
+    type_out_impl(anykey_value, res);
+    *res += " >";
+  }
+
+  bool need_all_subkeys = tp == tp_tuple;
+  if (need_all_subkeys) {
+    *res += "< ";
+    for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
+      if (subkey != type->lookup_begin()) {
+        *res += ",";
+      }
+      kphp_assert(subkey->first.is_int_key());
+      type_out_impl(type->const_read_at(subkey->first), res);
+    }
     *res += " >";
   }
 
@@ -802,6 +798,8 @@ int type_strlen (const TypeData *type) {
     case tp_float:
       return STRLEN_FLOAT;
     case tp_array:
+      return STRLEN_ARRAY_;
+    case tp_tuple:
       return STRLEN_ARRAY_;
     case tp_string:
       return STRLEN_STRING;

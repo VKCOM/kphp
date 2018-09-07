@@ -362,6 +362,7 @@ VarPtr CompilerCore::create_local_var (FunctionPtr function, const string &name,
   var->holder_func = function;
   switch (type) {
     case VarData::var_local_t:
+    case VarData::var_local_inplace_t:
       function->local_var_ids.push_back (var);
       break;
     case VarData::var_static_t:

@@ -17,7 +17,7 @@ enum AccessType {
 class VarData {
 public:
   enum Type {
-    var_unknown_t = 0, var_local_t, var_global_t, var_param_t, var_const_t, var_static_t, var_instance_t
+    var_unknown_t = 0, var_local_t, var_local_inplace_t, var_global_t, var_param_t, var_const_t, var_static_t, var_instance_t
   };
 
   Type type_;

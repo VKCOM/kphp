@@ -33,35 +33,34 @@ bool can_store_bool (PrimitiveType tp);
 class Key {
 private:
   int id;
-  static Enumerator <string> string_keys;
-  static Enumerator <int> int_keys;
-  static MapToId <string, string> string_key_map;
-  static MapToId <int, int> int_key_map;
 
   explicit Key (int id);
 
 public:
   Key();
-  Key (const Key &other);
-  Key &operator = (const Key &other);
-  enum KeyType {string_key_e, int_key_e, any_key_e};
+  Key (const Key &other) = default;
+  Key &operator = (const Key &other) = default;
+
   static Key any_key ();
   static Key string_key (const string &key);
   static Key int_key (int key);
+
   string to_string() const;
 
-  KeyType type() const;
-  const string &strval() const;
-  int intval() const;
+  inline bool is_any_key() const { return id == 0; }
+  inline bool is_int_key() const { return id > 0 && id % 2 == 1; }
+  inline bool is_string_key() const { return id > 0 && id % 2 == 0; }
+
   friend inline bool operator < (const Key &a, const Key &b);
   friend inline bool operator > (const Key &a, const Key &b);
   friend inline bool operator <= (const Key &a, const Key &b);
   friend inline bool operator != (const Key &a, const Key &b);
   friend inline bool operator == (const Key &a, const Key &b);
 };
+
+inline bool operator< (const Key &a, const Key &b);
+inline bool operator> (const Key &a, const Key &b);
 inline bool operator <= (const Key &a, const Key &b);
-inline bool operator < (const Key &a, const Key &b);
-inline bool operator > (const Key &a, const Key &b);
 inline bool operator != (const Key &a, const Key &b);
 inline bool operator == (const Key &a, const Key &b);
 
@@ -75,9 +74,12 @@ public:
   MultiKey();
   MultiKey (const MultiKey &multi_key);
   MultiKey &operator = (const MultiKey &multi_key);
-  MultiKey (const vector <Key> &keys);
+  explicit MultiKey (const vector <Key> &keys);
   void push_back (const Key &key);
+  void push_front (const Key &key);
   string to_string() const;
+
+  inline unsigned int depth () const { return (unsigned int)keys_.size(); }
 
   iterator begin() const;
   iterator end() const;
@@ -92,110 +94,112 @@ public:
 /*** TypeData ***/
 // read/write/lookup at
 // check if something changed since last
-typedef unsigned long type_flags_t;
 
 class TypeData {
 public:
   typedef pair <Key, TypeData *> KeyValue;
-  typedef vector <KeyValue> NextT;
-  typedef NextT::const_iterator lookup_iterator;
-  typedef NextT::iterator iterator;
+  typedef vector <KeyValue>::const_iterator lookup_iterator;
   typedef long generation_t;
+  typedef unsigned long flags_t;
 private:
+
+  class SubkeysValues {
+  private:
+    vector <KeyValue> values_pairs;
+
+  public:
+    void add (const Key &key, TypeData *value);
+    TypeData *create_if_empty (const Key &key, TypeData *parent);
+    TypeData *find (const Key &key) const;
+    void clear ();
+
+    inline vector <KeyValue>::iterator begin () { return values_pairs.begin(); }
+    inline vector <KeyValue>::iterator end () { return values_pairs.end(); }
+    inline vector <KeyValue>::const_iterator begin () const { return values_pairs.begin(); }
+    inline vector <KeyValue>::const_iterator end () const { return values_pairs.end(); }
+    inline bool empty () const { return values_pairs.empty(); }
+    inline unsigned int size () const { return (unsigned int)values_pairs.size(); }
+  };
+
   PrimitiveType ptype_;
   ClassPtr class_type_;
-  type_flags_t flags_;
+  flags_t flags_;
   generation_t generation_;
 
   TypeData *parent_;
-  TypeData *any_next_;
-  NextT next_;
+  TypeData *anykey_value;
+  SubkeysValues subkeys_values;
 
   static TLS <generation_t> current_generation_;
-  TypeData();
+  TypeData ();
   explicit TypeData (PrimitiveType ptype);
-  TypeData &operator = (const TypeData &from);
 
   TypeData *at (const Key &key) const;
   TypeData *at_force (const Key &key);
 
-  enum flag_id_t {write_flag_e = 1, read_flag_e = 2, or_false_flag_e = 4, error_flag_e = 8};
+  enum flag_id_t {
+    write_flag_e = 1, read_flag_e = 2, or_false_flag_e = 4, error_flag_e = 8
+  };
 
   template <TypeData::flag_id_t FLAG>
-  bool get_flag() const {
+  inline bool get_flag () const {
     return flags_ & FLAG;
   }
 
-  template <flag_id_t FLAG> void set_flag (bool f);
+  template <flag_id_t FLAG>
+  void set_flag (bool f);
 
   TypeData *write_at (const Key &key);
+
 public:
-  class Writer {
-  private:
-    TypeData *type_data_;
-    Key old_key_;
-    iterator cur_;
-    vector <pair <Key, TypeData *> > new_next_;
-  public:
-    explicit Writer (TypeData *type_data);
-    ~Writer();
-    TypeData *write_at (const Key &key);
-    void flush();
-  };
-
   TypeData (const TypeData &from);
-  ~TypeData();
+  ~TypeData ();
 
-  PrimitiveType ptype() const;
-  PrimitiveType get_real_ptype() const;
-  type_flags_t flags() const;
+  PrimitiveType ptype () const;
+  PrimitiveType get_real_ptype () const;
+  flags_t flags () const;
   void set_ptype (PrimitiveType new_ptype);
 
-  ClassPtr class_type() const;
+  ClassPtr class_type () const;
   void set_class_type (ClassPtr new_class_type);
-  ClassData *get_class_type_inside() const;
+  bool has_class_type_inside () const;
+  void get_all_class_types_inside (vector <ClassPtr> &out) const;
 
-  bool or_false_flag() const;
+  bool or_false_flag () const;
   void set_or_false_flag (bool f);
-  bool use_or_false() const;
-  bool write_flag() const;
+  bool use_or_false () const;
+  bool write_flag () const;
   void set_write_flag (bool f);
-  bool read_flag() const;
+  bool read_flag () const;
   void set_read_flag (bool f);
-  bool error_flag() const {
-    return get_flag <error_flag_e>();
-  }
+  bool error_flag () const;
   void set_error_flag (bool f);
-  void set_flags (type_flags_t new_flags);
+  void set_flags (flags_t new_flags);
 
-  bool structured() const;
-  void make_structured();
-  generation_t generation() const;
-  void on_changed();
-  TypeData *clone() const;
+  bool structured () const;
+  void make_structured ();
+  generation_t generation () const;
+  void on_changed ();
+  TypeData *clone () const;
 
   TypeData *lookup_at (const Key &key) const;
-  lookup_iterator lookup_begin() const;
-  lookup_iterator lookup_end() const;
+  lookup_iterator lookup_begin () const;
+  lookup_iterator lookup_end () const;
 
-  const TypeData *read_at (const Key &key);
   const TypeData *const_read_at (const Key &key) const;
   const TypeData *const_read_at (const MultiKey &multi_key) const;
-  const TypeData *read_at_dfs (MultiKey::iterator begin, MultiKey::iterator end);
-  const TypeData *read_at (const MultiKey &multi_key);
   void set_lca (const TypeData *rhs, bool save_or_false = true);
   void set_lca_at (const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true);
   void set_lca (PrimitiveType ptype);
-  void fix_inf_array();
+  void fix_inf_array ();
+  bool should_proxy_error_flag_to_parent () const;
 
-  static vector <TypeData*> primitive_types;
-  static vector <TypeData*> array_types;
-  static void init_static();
+  static void init_static ();
   static const TypeData *get_type (PrimitiveType type);
   static const TypeData *get_type (PrimitiveType array, PrimitiveType type);
   //FIXME:??
-  static void inc_generation();
-  static generation_t current_generation();
+  static void inc_generation ();
+  static generation_t current_generation ();
   static void upd_generation (TypeData::generation_t other_generation);
 };
 
@@ -226,7 +230,7 @@ inline void TypeData::set_flag <TypeData::error_flag_e> (bool f) {
   if (f) {
     if (!get_flag <error_flag_e>()) {
       flags_ |= error_flag_e;
-      if (parent_ != NULL) {
+      if (parent_ != nullptr && should_proxy_error_flag_to_parent()) {
         parent_->set_flag <error_flag_e> (true);
       }
     }

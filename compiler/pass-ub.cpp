@@ -218,7 +218,7 @@ void fix_ub (VertexPtr v, vector <VarPtr> *foreach_vars) {
     return;
   }
   if (OpInfo::type (v->type()) == cycle_op ||
-      v->type() == op_list || v->type() == op_seq_comma ||
+      v->type() == op_list || v->type() == op_seq_comma || v->type() == op_seq_rval ||
       v->type() == op_if || v->type() == op_else || v->type() == op_try ||
       v->type() == op_seq || v->type() == op_case || v->type() == op_default ||
       v->type() == op_noerr) {

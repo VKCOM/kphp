@@ -1,4 +1,5 @@
 #include "compiler/type-inferer.h"
+#include "compiler/gentree.h"
 
 void init_functions_tinf_nodes (FunctionPtr function) {
   assert (function->tinf_state == 1);
@@ -56,6 +57,44 @@ const TypeData *fast_get_type (VarPtr var) {
 }
 const TypeData *fast_get_type (FunctionPtr function, int id) {
   return get_tinf_node (function, id)->get_type();
+}
+
+void print_why_tinf_occured_error (
+    const TypeData *errored_type,
+    const TypeData *because_of_type,
+    PrimitiveType ptype_before_error,
+    tinf::Node *node1,
+    tinf::Node *node2
+) {
+  vector <ClassPtr> classes1, classes2;
+  errored_type->get_all_class_types_inside(classes1);
+  because_of_type->get_all_class_types_inside(classes2);
+  ClassData *mix_class = classes1.empty() ? nullptr : classes1[0].ptr;
+  ClassData *mix_class2 = classes2.empty() ? nullptr : classes2[0].ptr;
+  std::string desc1 = node1->get_description();
+  std::string desc2 = node2 ? node2->get_description() : "unknown";
+
+  if (mix_class && mix_class2 && mix_class != mix_class2) {
+    kphp_error(0, dl_pstr("Type Error: mix classes %s and %s: %s and %s\n",
+                          mix_class->name.c_str(), mix_class2->name.c_str(),
+                          desc1.c_str(), desc2.c_str()));
+
+  } else if (mix_class || mix_class2) {
+    kphp_error(0, dl_pstr("Type Error: mix class %s with non-class: %s and %s\n",
+                          mix_class ? mix_class->name.c_str() : mix_class2->name.c_str(),
+                          desc1.c_str(), desc2.c_str()));
+
+  } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
+    kphp_error(0, dl_pstr("Type Error: inconsistent tuples %s and %s\n",
+                          desc1.c_str(), desc2.c_str()));
+
+  } else if (ptype_before_error != tp_tuple && because_of_type->ptype() == tp_tuple) {
+    kphp_error(0, dl_pstr("Type Error: tuples are read-only (tuple %s)\n",
+                          desc1.c_str()));
+
+  } else {
+    kphp_error (0, dl_pstr("Type Error [%s] updated by [%s]\n", desc1.c_str(), desc2.c_str()));
+  }
 }
 
 /*** Restrictions ***/
@@ -300,6 +339,7 @@ void NodeRecalc::set_lca_at (const MultiKey *key, const RValue &rvalue) {
     return;
   }
   const TypeData *type = NULL;
+  PrimitiveType ptype = new_type_->ptype();
   if (rvalue.node != NULL) {
     if (auto_edge_flag()) {
       add_dependency_impl (node_, rvalue.node);
@@ -329,23 +369,10 @@ void NodeRecalc::set_lca_at (const MultiKey *key, const RValue &rvalue) {
   }
 
   if (unlikely(new_type_->error_flag())) {
-    ClassData *mix_class = new_type_->get_class_type_inside();
-    ClassData *mix_class2 = type->get_class_type_inside();
-    if (mix_class == NULL && mix_class2 == NULL) {
-      kphp_error (0, dl_pstr("Type Error [%s] updated by [%s]\n",
-          node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
-    } else if (mix_class == mix_class2 || mix_class == NULL || mix_class2 == NULL) {
-      kphp_error (0, dl_pstr("Type Error: mix class %s with non-class: %s and %s\n",
-          mix_class != NULL ? mix_class->name.c_str() : mix_class2->name.c_str(),
-          node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
-    } else {
-      kphp_error (0, dl_pstr("Type Error: mix classes %s and %s: %s and %s\n",
-          mix_class->name.c_str(), mix_class2->name.c_str(),
-          node_->get_description().c_str(), rvalue.node ? rvalue.node->get_description().c_str() : "unknown"));
-    }
+    print_why_tinf_occured_error(new_type_, type, ptype, node_, rvalue.node);
   }
-
 }
+
 void NodeRecalc::set_lca_at (const MultiKey *key, VertexPtr expr) {
   set_lca_at (key, as_rvalue (expr));
 }
@@ -567,7 +594,15 @@ void ExprNodeRecalc::recalc_push_back_return (VertexAdaptor <op_push_back_return
 }
 
 void ExprNodeRecalc::recalc_index (VertexAdaptor <op_index> index) {
-  set_lca (index->array(), &MultiKey::any_key (1));
+  bool is_const_int_index = index->has_key() && GenTree::get_actual_value(index->key())->type() == op_int_const;
+  if (!is_const_int_index) {
+    set_lca(index->array(), &MultiKey::any_key(1));
+    return;
+  }
+
+  long int_index = GenTree::get_actual_value(index->key()).as<op_int_const>()->parse_int_from_string();
+  MultiKey key({ Key::int_key((int)int_index) });
+  set_lca(index->array(), &key);
 }
 
 void ExprNodeRecalc::recalc_instance_prop(VertexAdaptor <op_instance_prop> index) {
@@ -589,13 +624,15 @@ void ExprNodeRecalc::recalc_foreach_param (VertexAdaptor <op_foreach_param> para
 void ExprNodeRecalc::recalc_conv_array (VertexAdaptor <meta_op_unary_op> conv) {
   VertexPtr arg = conv->expr();
   //FIXME: (extra dependenty)
-  add_dependency (as_rvalue (arg));
-  if (fast_get_type (arg)->get_real_ptype() == tp_array) {
-    set_lca (drop_or_false (as_rvalue (arg)));
+  add_dependency(as_rvalue(arg));
+  if (fast_get_type(arg)->get_real_ptype() == tp_array) {
+    set_lca(drop_or_false(as_rvalue(arg)));
+  } else if (fast_get_type(arg)->ptype() == tp_tuple) {   // foreach/array_map/(array) на tuple'ах — ошибка
+    set_lca(TypeData::get_type(tp_Error));
   } else {
     recalc_ptype <tp_array>();
-    if (fast_get_type (arg)->ptype() != tp_Unknown) { //hack
-      set_lca_at (&MultiKey::any_key (1), tp_var);
+    if (fast_get_type(arg)->ptype() != tp_Unknown) { //hack
+      set_lca_at(&MultiKey::any_key(1), tp_var);
     }
   }
 }
@@ -615,6 +652,16 @@ void ExprNodeRecalc::recalc_array (VertexAdaptor <op_array> array) {
   recalc_ptype <tp_array>();
   for (auto i : array->args()) {
     set_lca_at (&MultiKey::any_key (1), i);
+  }
+}
+
+void ExprNodeRecalc::recalc_tuple (VertexAdaptor <op_tuple> tuple) {
+  recalc_ptype <tp_tuple>();
+  int index = 0;
+  for (auto i: tuple->args()) {
+    vector <Key> i_key_index{ Key::int_key(index++) };
+    MultiKey key(i_key_index);
+    set_lca_at(&key, i);
   }
 }
 
@@ -787,6 +834,9 @@ void ExprNodeRecalc::recalc_expr (VertexPtr expr) {
 
     case op_array:
       recalc_array (expr);
+      break;
+    case op_tuple:
+      recalc_tuple(expr);
       break;
 
     case op_conv_var:

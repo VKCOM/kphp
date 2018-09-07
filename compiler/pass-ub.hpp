@@ -231,7 +231,11 @@ class CalcBadVars {
     }
 
     void generate_bad_vars (FuncCallGraph &call_graph, vector <DepData *> &dep_datas) {
-      FunctionPtr wait_func = G->get_function_unsafe ("unserialize");
+      FunctionSetPtr wait_func_set = G->get_function_set(fs_function, "unserialize", true);
+      if (!wait_func_set->size()) {     // когда functions.txt пустой или отключенный для dev
+        return;
+      }
+      FunctionPtr wait_func = wait_func_set[0];
 
       for (int i = 0; i < call_graph.n; i++) {
         FunctionPtr func = call_graph.functions[i];

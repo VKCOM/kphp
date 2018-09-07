@@ -5,6 +5,7 @@
 #include "string.h"
 #include "array.h"
 #include "class_instance.h"
+#include "tuple.h"
 #include "variable.h"
 #include "string_buffer.h"
 #include "profiler.h"
@@ -324,6 +325,9 @@ inline bool f$boolval (const array <T> &val);
 template <class T>
 inline bool f$boolval (const class_instance <T> &val);
 
+template <class ...Args>
+bool f$boolval (const tuple<Args...> &val);
+
 template <class T>
 inline bool f$boolval (const OrFalse <T> &val);
 
@@ -391,6 +395,9 @@ inline string f$strval (const string &val);
 
 template <class T>
 inline string f$strval (const array <T> &val);
+
+template <class ...Args>
+inline string f$strval (const tuple <Args...> &val);
 
 template <class T>
 inline string f$strval(const OrFalse<T> &val);
@@ -602,40 +609,6 @@ template <class T>
 inline string f$get_class (const array <T> &v);
 template <class T>
 inline string f$get_class (const class_instance <T> &v);
-
-
-inline const string get_value (const string &v, int int_key);
-inline const string get_value (const string &v, const string &string_key);
-inline const string get_value (const string &v, const var &key);
-
-inline const var get_value (const var &v, int int_key);
-inline const var get_value (const var &v, const string &string_key);
-inline const var get_value (const var &v, const var &key);
-
-template <class T>
-inline const T get_value (const array <T> &v, int int_key);
-template <class T>
-inline const T get_value (const array <T> &v, const string &string_key);
-template <class T>
-inline const T get_value (const array <T> &v, const var &key);
-
-inline const string get_value (const OrFalse <string> &v, int int_key);
-inline const string get_value (const OrFalse <string> &v, const string &string_key);
-inline const string get_value (const OrFalse <string> &v, const var &key);
-
-template <class T>
-inline const T get_value (const OrFalse <array <T> > &v, int int_key);
-template <class T>
-inline const T get_value (const OrFalse <array <T> > &v, const string &string_key);
-template <class T>
-inline const T get_value (const OrFalse <array <T> > &v, const var &key);
-
-template <class T>
-inline const var get_value (const T &v, int int_key);
-template <class T>
-inline const var get_value (const T &v, const string &string_key);
-template <class T>
-inline const var get_value (const T &v, const var &key);
 
 
 inline int f$count (const var &v);
@@ -1273,6 +1246,11 @@ bool f$boolval (const class_instance <T> &val) {
   return !val.is_null();
 }
 
+template <class ...Args>
+bool f$boolval (const tuple<Args...> &val) {
+  return true;
+}
+
 template <class T>
 bool f$boolval (const OrFalse <T> &val) {
   return val.bool_value ? f$boolval(val.val()) : false;
@@ -1400,6 +1378,12 @@ string f$strval (const string &val) {
 template <class T>
 string f$strval (const array <T> &) {
   php_warning ("Convertion from array to string");
+  return string ("Array", 5);
+}
+
+template <class ...Args>
+string f$strval (const tuple <Args...> &) {
+  php_warning ("Convertion from tuple to string");
   return string ("Array", 5);
 }
 
@@ -1937,94 +1921,6 @@ template <class T>
 string f$get_class (const class_instance <T> &v) {
   const char *result = v.get_class();
   return string (result, (dl::size_type)strlen (result));
-}
-
-
-const string get_value (const string &v, int int_key) {
-  return v.get_value (int_key);
-}
-
-const string get_value (const string &v, const string &string_key) {
-  return v.get_value (string_key);
-}
-
-const string get_value (const string &v, const var &key) {
-  return v.get_value (key);
-}
-
-const var get_value (const var &v, int int_key) {
-  return v.get_value (int_key);
-}
-
-const var get_value (const var &v, const string &string_key) {
-  return v.get_value (string_key);
-}
-
-const var get_value (const var &v, const var &key) {
-  return v.get_value (key);
-}
-
-template <class T>
-const T get_value (const array <T> &v, int int_key) {
-  return v.get_value (int_key);
-}
-
-template <class T>
-const T get_value (const array <T> &v, const string &string_key) {
-  return v.get_value (string_key);
-}
-
-template <class T>
-const T get_value (const array <T> &v, const var &key) {
-  return v.get_value (key);
-}
-
-const string get_value (const OrFalse <string> &v, int int_key) {
-  return v.val().get_value (int_key);
-}
-
-const string get_value (const OrFalse <string> &v, const string &string_key) {
-  return v.val().get_value (string_key);
-}
-
-const string get_value (const OrFalse <string> &v, const var &key) {
-  return v.val().get_value (key);
-}
-
-template <class T>
-const T get_value (const OrFalse <array <T> > &v, int int_key) {
-  return v.val().get_value (int_key);
-}
-
-template <class T>
-const T get_value (const OrFalse <array <T> > &v, const string &string_key) {
-  return v.val().get_value (string_key);
-}
-
-template <class T>
-const T get_value (const OrFalse <array <T> > &v, const var &key) {
-  return v.val().get_value (key);
-}
-
-template <class T>
-const var get_value (const T &v, int int_key) {
-  (void)int_key;
-  php_warning ("Cannot use a value of type %s as an array", get_type_c_str (v));
-  return var();
-}
-
-template <class T>
-const var get_value (const T &v, const string &string_key) {
-  (void)string_key;
-  php_warning ("Cannot use a value of type %s as an array", get_type_c_str (v));
-  return var();
-}
-
-template <class T>
-const var get_value (const T &v, const var &key) {
-  (void)key;
-  php_warning ("Cannot use a value of type %s as an array", get_type_c_str (v));
-  return var();
 }
 
 

@@ -661,6 +661,10 @@ VertexPtr GenTree::get_expr_top() {
     case tok_array:
       res = get_func_call <op_array, op_none>();
       break;
+    case tok_tuple:
+      res = get_func_call <op_tuple, op_err>();
+      CE (!kphp_error(res.as <op_tuple>()->size(), "tuple() must have at least one argument"));
+      break;
     case tok_opbrk:
       res = get_short_array();
       break;

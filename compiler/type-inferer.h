@@ -311,8 +311,8 @@ class RestrictionLess : public Restriction {
       return false;
     }
 
-    static bool is_less(const TypeData *given, const TypeData *expected, const MultiKey *from_at = NULL) {
-      std::auto_ptr<TypeData> type_of_to_node(expected->clone());
+    static bool is_less (const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr) {
+      std::unique_ptr<TypeData> type_of_to_node(expected->clone());
 
       if (from_at) {
         type_of_to_node->set_lca_at(*from_at, given);
@@ -469,13 +469,6 @@ class CollectMainEdgesPass : public FunctionPassBase {
         return as_rvalue (v.as <op_set>()->rhs());
       }
 
-      if (v->type() == op_list) {
-        VertexAdaptor <op_list> list = v;
-        CREATE_VERTEX (new_v, op_index, list->array());
-        set_location (new_v, stage::get_location());
-        return as_rvalue (new_v);
-      }
-
       if (v->type() == op_prefix_inc ||
           v->type() == op_prefix_dec ||
           v->type() == op_postfix_dec ||
@@ -538,6 +531,32 @@ class CollectMainEdgesPass : public FunctionPassBase {
       kphp_assert (value != 0);
       return LValue(value, &MultiKey::any_key(depth));
     }
+
+    // хотелось сделать, чтобы при записи $a[6][$idx] = ... делался честный multikey (int 6, any), а не AnyKey(2)
+    // но у нас в реальном коде очень много числовых индексов на массивах, которые тогда хранятся отдельно,
+    // и потом вывод типов отжирает слишком много памяти, т.к. хранит кучу индексов, а не просто any key
+    // так что затея провалилась, и, как и раньше, при $a[...] делается AnyKey; поэтому же tuple'ы только read-only
+    // но это только запись приводит в any key! с чтением всё в порядке, см. recalc_index() в выводе типов
+    /*
+    MultiKey *build_real_multikey (VertexPtr v) {
+      MultiKey *key = new MultiKey();
+
+      if (v->type() == op_foreach_param) {
+        key->push_front(Key::any_key());
+        v = v.as <op_foreach_param>()->xs();
+      }
+      while (v->type() == op_index) {
+        if (v.as <op_index>()->has_key() && v.as <op_index>()->key()->type() == op_int_const) {
+          key->push_front(Key::int_key(std::atoi(v.as <op_index>()->key()->get_string().c_str())));
+        } else {
+          key->push_front(Key::any_key());
+        }
+        v = v.as <op_index>()->array();
+      }
+
+      return key;
+    }
+    */
 
     LValue as_lvalue (FunctionPtr function, int id) {
       return LValue (get_tinf_node (function, id), &MultiKey::any_key (0));
@@ -683,7 +702,7 @@ class CollectMainEdgesPass : public FunctionPassBase {
         create_set (xs_tinf, tp_array);
         create_set (params, x->get_var_id());
       } else {
-        create_set (temp_var->get_var_id(), xs);        
+        create_set (temp_var->get_var_id(), xs);
       }
       create_set (x->get_var_id(), params);
       if (key.not_null()) {
@@ -701,15 +720,18 @@ class CollectMainEdgesPass : public FunctionPassBase {
     }
 
     void on_list (VertexAdaptor <op_list> list) {
-      create_less (tp_array, list->array());
-
-      //Improve it!
-      RValue val = as_set_value (list);
-
+      int i = 0;
       for (auto cur : list->list()) {
         if (cur->type() != op_lvalue_null) {
-          create_set (cur, val);
+          // делаем $cur = $list_array[$i]; хотелось бы array[i] выразить через rvalue multikey int_key, но
+          // при составлении edges (from_node[from_at] = to_node) этот key теряется, поэтому через op_index
+          CREATE_VERTEX(ith_index, op_int_const);
+          ith_index->set_string(int_to_str(i));
+          CREATE_VERTEX(new_v, op_index, list->array(), ith_index);
+          set_location(new_v, stage::get_location());
+          create_set(cur, new_v);
         }
+        i++;
       }
     }
 
@@ -948,8 +970,8 @@ class NodeRecalc {
     void set_lca (const RValue &rvalue);
     void set_lca (PrimitiveType ptype);
     void set_lca (FunctionPtr function, int id);
-    void set_lca (VertexPtr vertex, const MultiKey *key = NULL);
-    void set_lca (const TypeData *type, const MultiKey *key  = NULL);
+    void set_lca (VertexPtr vertex, const MultiKey *key = nullptr);
+    void set_lca (const TypeData *type, const MultiKey *key = nullptr);
     void set_lca (VarPtr var);
     void set_lca (ClassPtr klass);
     NodeRecalc (tinf::Node *node, tinf::TypeInferer *inferer);
@@ -994,6 +1016,7 @@ class ExprNodeRecalc : public NodeRecalc {
     void recalc_conv_array (VertexAdaptor <meta_op_unary_op> conv);
     void recalc_min_max (VertexAdaptor <meta_op_builtin_func> func);
     void recalc_array (VertexAdaptor <op_array> array);
+    void recalc_tuple (VertexAdaptor <op_tuple> tuple);
     void recalc_plus_minus (VertexAdaptor <meta_op_unary_op> expr);
     void recalc_inc_dec (VertexAdaptor <meta_op_unary_op> expr);
     void recalc_noerr (VertexAdaptor <op_noerr> expr);

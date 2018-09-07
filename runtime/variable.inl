@@ -2889,6 +2889,11 @@ bool eq2 (bool lhs, const array <T> &rhs) {
   return lhs == !rhs.empty();
 }
 
+template <class ...Args>
+bool eq2 (bool lhs, const tuple <Args...> &rhs) {
+  return lhs;
+}
+
 template <class T>
 bool eq2 (int lhs, const array <T> &rhs) {
   php_warning ("Unsupported operand types for operator == (int and array)");
@@ -2910,6 +2915,11 @@ bool eq2 (const string &lhs, const array <T> &rhs) {
 template <class T>
 bool eq2 (const array <T> &lhs, bool rhs) {
   return rhs == !lhs.empty();
+}
+
+template <class ...Args>
+bool eq2 (const tuple <Args...> &lhs, bool rhs) {
+  return rhs;
 }
 
 template <class T>

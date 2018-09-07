@@ -59,12 +59,14 @@ void rl_func_call_calc (VertexPtr root, RLValueType expected_rl_type) {
       rl_l_calc (root, root->size() - 1);
       return;
     case op_seq_comma:
+    case op_seq_rval:
       rl_none_calc (root, root->size() - 1);
       return;
     case op_fork:
       rl_none_calc (root, -1);
       return;
     case op_array: //TODO: in fact it is wrong
+    case op_tuple:
     case op_print:
     case op_min:
     case op_max:
@@ -106,7 +108,6 @@ void rl_other_calc (VertexPtr root, RLValueType expected_rl_type) {
   switch (root->type()) {
     case op_conv_array_l:
     case op_conv_int_l:
-    case op_new:
       rl_l_calc (root, -1);
       break;
     case op_noerr:
@@ -191,8 +192,10 @@ void rl_calc (VertexPtr root, RLValueType expected_rl_type) {
         case val_r:
         case val_none: {
           VertexAdaptor <meta_op_binary_op> set_op = root;
-          rl_calc (set_op->lhs(), val_l);
-          rl_calc (set_op->rhs(), val_r);
+          if (set_op->lhs()->extra_type != op_ex_var_superlocal_inplace) {
+            rl_calc(set_op->lhs(), val_l);
+          }
+          rl_calc(set_op->rhs(), val_r);
           break;
         }
         case val_l:

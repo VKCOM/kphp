@@ -35,6 +35,7 @@ enum TokenType {
   tok_max,
   tok_varg,
   tok_array,
+  tok_tuple,
   tok_as,
   tok_case,
   tok_switch,

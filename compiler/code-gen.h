@@ -194,7 +194,7 @@ struct Include {
 Include ExternInclude (const PlainCode &plain_code);
 
 struct IncludeClass {
-  ClassData *klass;
+  vector <ClassPtr> klasses;
   IncludeClass (const TypeData *type);
   inline void compile (CodeGenerator &W) const;
 };
@@ -228,6 +228,12 @@ struct VarName {
 struct TypeName {
   const TypeData *type;
   inline TypeName (const TypeData *type);
+  inline void compile (CodeGenerator &W) const;
+};
+
+struct TypeNameInsideMacro {
+  const TypeData *type;
+  inline TypeNameInsideMacro (const TypeData *type);
   inline void compile (CodeGenerator &W) const;
 };
 
@@ -311,6 +317,14 @@ struct AsList {
 struct AsSeq {
   VertexPtr root;
   inline AsSeq (VertexPtr root);
+  inline void compile (CodeGenerator &W) const;
+};
+
+struct TupleGetIndex {
+  VertexPtr tuple;
+  std::string int_index;
+  inline TupleGetIndex (VertexPtr tuple, const std::string &int_index);
+  inline TupleGetIndex (VertexPtr tuple, VertexPtr key);
   inline void compile (CodeGenerator &W) const;
 };
 
@@ -453,6 +467,7 @@ inline void compile_string_build_raw (VertexAdaptor <op_string_build> root, Code
 inline void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W);
 inline void compile_index_of_array (VertexAdaptor <op_index> root, CodeGenerator &W);
 inline void compile_index_of_string (VertexAdaptor <op_index> root, CodeGenerator &W);
+inline void compile_seq_rval (VertexPtr root, CodeGenerator &W);
 inline void compile_as_printable (VertexPtr root, CodeGenerator &W);
 inline void compile_echo (VertexPtr root, CodeGenerator &W);
 inline void compile_var_dump (VertexPtr root, CodeGenerator &W);
@@ -460,6 +475,7 @@ inline void compile_print (VertexAdaptor <op_print> root, CodeGenerator &W);
 inline void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W);
 inline void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W);
 inline void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W);
+inline void compile_tuple (VertexAdaptor <op_tuple> root, CodeGenerator &W);
 inline void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W);
 inline void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix = 0, int state = 0);
 inline void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W);
@@ -473,7 +489,6 @@ void compile_string_raw (const string &str, CodeGenerator &W);
 inline void compile_string_raw (VertexAdaptor <op_string> root, CodeGenerator &W);
 inline void compile_string (VertexAdaptor <op_string> root, CodeGenerator &W);
 inline void compile_string_build (VertexPtr root, CodeGenerator &W);
-inline void compile_new (VertexPtr root, CodeGenerator &W);
 inline void compile_break_continue (VertexAdaptor <meta_op_goto> root, CodeGenerator &W);
 inline void compile_conv_array_l (VertexAdaptor <op_conv_array_l> root, CodeGenerator &W);
 inline void compile_conv_int_l (VertexAdaptor <op_conv_int_l> root, CodeGenerator &W);
@@ -649,12 +664,12 @@ Include ExternInclude (const PlainCode &plain_code) {
   return Include (plain_code, true);
 }
 
-inline IncludeClass::IncludeClass (const TypeData *type) :
-    klass(type->get_class_type_inside()) {
+inline IncludeClass::IncludeClass (const TypeData *type) {
+  type->get_all_class_types_inside(klasses);
 }
 
 inline void IncludeClass::compile (CodeGenerator &W) const {
-  if (klass != NULL) {
+  for (auto klass: klasses) {
     std::string class_h_filename = "cl/" + klass->header_name;
     W.get_writer().add_include(class_h_filename);
     W << "#include \"" << class_h_filename << "\"" << NL;
@@ -704,6 +719,18 @@ inline TypeName::TypeName (const TypeData *type) :
 }
 inline void TypeName::compile (CodeGenerator &W) const {
   W << type_out (type);
+}
+
+inline TypeNameInsideMacro::TypeNameInsideMacro (const TypeData *type) :
+    type(type) {
+}
+
+inline void TypeNameInsideMacro::compile (CodeGenerator &W) const {
+  string s = type_out(type);
+  while (s.find(',') != string::npos) {
+    s = s.replace(s.find(','), 1, " COMMA ");   // такое есть у tuple'ов
+  }
+  W << s;
 }
 
 
@@ -790,8 +817,7 @@ void ClassDeclaration::compile (CodeGenerator &W) const {
   W << "#pragma once" << NL;
 
   for (auto var : klass->vars) {
-    ClassData *dep = var->tinf_node.get_type()->get_class_type_inside();
-    if (dep != NULL && dep != klass.ptr) {
+    if (var->tinf_node.get_type()->has_class_type_inside()) {
       W << IncludeClass(var->tinf_node.get_type());
     }
   }
@@ -1174,7 +1200,7 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   std::map<std::string, VertexPtr> dependent_vars;
 
   for (auto var : vars) {
-    if (var->tinf_node.get_type()->get_class_type_inside()) {
+    if (var->tinf_node.get_type()->has_class_type_inside()) {
       W << IncludeClass(var->tinf_node.get_type());
     }
 
@@ -1403,7 +1429,7 @@ void DfsInit::compile_dfs_init_part (
 
   if (full_flag) {
     for (auto var : used_vars) {
-      if (var->tinf_node.get_type()->get_class_type_inside()) {
+      if (var->tinf_node.get_type()->has_class_type_inside()) {
         W << IncludeClass(var->tinf_node.get_type());
       }
 
@@ -1422,7 +1448,7 @@ void DfsInit::compile_dfs_init_part (
 
       const TypeData *tp = tinf::get_type (var);
 
-      W << "INIT_VAR (" << TypeName (tp) << ", " << VarName (var) << ");" << NL;
+      W << "INIT_VAR (" << TypeNameInsideMacro(tp) << ", " << VarName(var) << ");" << NL;
       //FIXME: brk and comments
       if (var->init_val.not_null()) {
         W << UnlockComments();
@@ -1449,7 +1475,7 @@ void DfsInit::compile_dfs_init_part (
 
       const TypeData *type = tinf::get_type (var);
 
-      W << "CLEAR_VAR (" << TypeName (type) << ", " << VarName (var) << ");" << NL;
+      W << "CLEAR_VAR (" << TypeNameInsideMacro(type) << ", " << VarName(var) << ");" << NL;
     }
 
     W << END;
@@ -1605,7 +1631,7 @@ static inline void include_dependent_headers (FunctionPtr function, CodeGenerato
     W << Include (to_include->header_full_name);
   }
   for (auto global_var : function->global_var_ids) {
-    if (global_var->tinf_node.get_type()->get_class_type_inside()) {
+    if (global_var->tinf_node.get_type()->has_class_type_inside()) {
       W << IncludeClass(global_var->tinf_node.get_type());
     }
   }
@@ -1638,7 +1664,7 @@ void FunctionH::compile (CodeGenerator &W) const {
        ExternInclude ("php_functions.h");
 
   for (const auto &tinf_node : function->tinf_nodes) {
-    if (tinf_node.get_type()->get_class_type_inside()) {
+    if (tinf_node.get_type()->has_class_type_inside()) {
       W << IncludeClass(tinf_node.get_type());
     }
   }
@@ -1780,6 +1806,20 @@ inline void AsSeq::compile (CodeGenerator &W) const {
   }
 }
 
+inline TupleGetIndex::TupleGetIndex (VertexPtr tuple, const std::string &int_index) :
+    tuple(tuple),
+    int_index(int_index) {
+}
+
+inline TupleGetIndex::TupleGetIndex (VertexPtr tuple, VertexPtr key) :
+    tuple(tuple),
+    int_index(GenTree::get_actual_value(key)->get_string()) {
+}
+
+inline void TupleGetIndex::compile (CodeGenerator &W) const {
+  W << "std::get<" << int_index << ">(" << tuple << ")";
+}
+
 void compile_prefix_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W) {
   W << OpInfo::str (root->type()) << Operand (root->expr(), root->type(), true);
 }
@@ -1799,10 +1839,10 @@ void compile_conv_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W) {
 
 void compile_noerr (VertexAdaptor <op_noerr> root, CodeGenerator &W) {
   if (root->rl_type == val_none) {
-    W << "NOERR_VOID (" << Operand (root->expr(), root->type(), true) <<  ")";
+    W << "NOERR_VOID (" << Operand(root->expr(), root->type(), true) << ")";
   } else {
     const TypeData *res_tp = tinf::get_type (root);
-    W << "NOERR (" << Operand (root->expr(), root->type(), true) << ", " << TypeName (res_tp) << ")";
+    W << "NOERR (" << Operand(root->expr(), root->type(), true) << ", " << TypeNameInsideMacro(res_tp) << ")";
   }
 }
 
@@ -1832,6 +1872,10 @@ void compile_binary_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W
       W << "array_add < " << TypeName (res_tp) << " > (" << lhs << ", " << rhs << ")";
       return;
     }
+  }
+  // специальные inplace переменные, которые объявляются в момент присваивания, а не в начале функции
+  if (root->type() == op_set && lhs->type() == op_var && lhs->extra_type == op_ex_var_superlocal_inplace) {
+    W << TypeName(tinf::get_type(lhs)) << " ";    // получится не "$tmp = v", а "array<T> $tmp = v" к примеру
   }
 
   OperationType tp = OpInfo::type (root->type());
@@ -2097,9 +2141,11 @@ void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
   FunctionPtr func = func_call->get_func_id();
   W << ";" << NL;
   if (lhs->type() != op_empty) {
-    W << "TRY_WAIT(" << gen_unique_name ("resumable_label") << ", " << lhs << ", " << TypeName (tinf::get_type (func_call)) << ");";
+    W << "TRY_WAIT(" << gen_unique_name("resumable_label") << ", " << lhs << ", "
+      << TypeNameInsideMacro(tinf::get_type(func_call)) << ");";
   } else {
-    W << "TRY_WAIT_DROP_RESULT(" << gen_unique_name ("resumable_label") << ", " << TypeName (tinf::get_type (func_call)) << ");";
+    W << "TRY_WAIT_DROP_RESULT(" << gen_unique_name("resumable_label") << ", "
+      << TypeNameInsideMacro(tinf::get_type(func_call)) << ");";
   }
 
 #ifdef FAST_EXCEPTIONS
@@ -2491,7 +2537,7 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
     W << VarPlainDeclaration (var);
   }
   for (auto var : func->local_var_ids) {
-    W << VarPlainDeclaration (var);
+    W << VarPlainDeclaration (var);         // inplace-переменные тоже, идут как члены Resumable класса, а не по месту
   }
 
   W <<  Indent (-2) << "public:" << NL << Indent (+2);
@@ -2606,7 +2652,9 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
   }
 
   for (auto var : func->local_var_ids) {
-    W << VarDeclaration (var);
+    if (var->type() != VarData::var_local_inplace_t) {
+      W << VarDeclaration(var);
+    }
   }
 
   W <<  AsSeq (func_root->cmd()) << NL <<
@@ -2804,6 +2852,9 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
     case tp_string:
       compile_index_of_string(root, W);
       break;
+    case tp_tuple:
+      W << TupleGetIndex(root->array(), root->key());
+      break;
     default:
       compile_index_of_array(root, W);
   }
@@ -2838,6 +2889,16 @@ void compile_index_of_string (VertexAdaptor <op_index> root, CodeGenerator &W) {
 
 void compile_instance_prop (VertexAdaptor <op_instance_prop> root, CodeGenerator &W) {
   W << root->expr() << "->$" << root->get_string();
+}
+
+void compile_seq_rval (VertexPtr root, CodeGenerator &W) {
+  kphp_assert(root->size());
+
+  W << "(" << BEGIN;        // gcc конструкция: ({ ...; v$result_var; })
+  for (auto i : *root) {
+    W << i << ";" << NL;    // последнее выражение тут — результат
+  }
+  W << END << ")";
 }
 
 void compile_as_printable (VertexPtr root, CodeGenerator &W) {
@@ -2958,35 +3019,22 @@ void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W) {
 
 
 void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W) {
-  W << "(" << BEGIN;
-
   VertexPtr arr = root->array();
   VertexRange list = root->list();
+  PrimitiveType ptype = tinf::get_type(arr)->get_real_ptype();
+  kphp_assert(vk::any_of_equal(ptype, tp_array, tp_var, tp_tuple));
 
-  string arr_name;
-  if (arr->type() == op_var) {
-  } else {
-    arr_name = gen_unique_name ("tmp_arr");
-    W << "const " << TypeName (tinf::get_type (arr)) << " " << arr_name << " = " << arr << ";" << NL;
-  }
-
-
-  int n = (int)list.size();
-  for (int i = n - 1; i >= 0; i--) {
+  for (int i = list.size() - 1; i >= 0; --i) {    // именно в обратную сторону, поведение как в php
     VertexPtr cur = list[i];
     if (cur->type() != op_lvalue_null) {
-      W << "assign (" << cur << ", get_value (";
-      if (arr_name.empty()) {
-        W << VarName (arr->get_var_id());
+
+      if (ptype != tp_tuple) {
+        W << "assign (" << cur << ", " << arr << ".get_value (" << int_to_str(i) << "));" << NL;
       } else {
-        W << arr_name;
+        W << "assign (" << cur << ", " << TupleGetIndex(arr, int_to_str(i)) << ");" << NL;
       }
-      W << ", " << int_to_str (i) << "));" << NL;
     }
   }
-
-  W << arr_name << ";" << NL <<
-       END << ")";
 }
 
 
@@ -3067,6 +3115,17 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
        END << ")";
 }
 
+void compile_tuple (VertexAdaptor <op_tuple> root, CodeGenerator &W) {
+  W << "make_tuple(";
+  VertexRange args = root->args();
+  for (int i = 0; i < args.size(); ++i) {
+    if (i) {
+      W << ", ";
+    }
+    W << args[i];
+  }
+  W << ")";
+}
 
 void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W) {
   if (!root->get_func_id()->root->throws_flag) {
@@ -3079,7 +3138,7 @@ void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W
     W << "TRY_CALL_VOID_ (";
   } else {
     const TypeData *type = tinf::get_type (root);
-    W << "TRY_CALL_ (" << TypeName (type) << ", ";
+    W << "TRY_CALL_ (" << TypeNameInsideMacro(type) << ", ";
   }
 
   W.get_context().catch_labels.push_back ("");
@@ -3277,6 +3336,8 @@ void compile_set_value (VertexAdaptor <op_set_value> root, CodeGenerator &W) {
     W << ", " << int_to_str(precomputed_hash);
   }
   W << ")";
+  // set_value для string/tuple нет отдельных (в отличие от compile_index()), т.к. при использовании их как lvalue
+  // строка обобщается до var, а кортеж ругается, и тут остаётся только array/var
 }
 
 void compile_push_back (VertexAdaptor <op_push_back> root, CodeGenerator &W) {
@@ -3366,13 +3427,6 @@ void compile_string_build (VertexPtr root, CodeGenerator &W) {
 
 
 
-void compile_new (VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
-  //compile_type_name (tinf::get_type (root), w);
-  //(*w) ("()");
-}
-
-
-
 void compile_break_continue (VertexAdaptor <meta_op_goto> root, CodeGenerator &W) {
   if (root->int_val != 0) {
     W << "goto " << LabelName (root->int_val);
@@ -3449,6 +3503,9 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
     case op_seq:
       W << BEGIN << AsSeq (root) << END;
       break;
+    case op_seq_rval:
+      compile_seq_rval(root, W);
+      break;
 
     case op_int_const:
       str = root.as <op_int_const>()->str_val;
@@ -3496,9 +3553,6 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       break;
     case op_string:
       compile_string (root, W);
-      break;
-    case op_new:
-      compile_new (root, W);
       break;
 
     case op_if:
@@ -3585,6 +3639,9 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
     case op_array:
       compile_array (root, W);
       break;
+    case op_tuple:
+      compile_tuple(root, W);
+      break;
     case op_unset:
       compile_xset (root, W);
       break;
@@ -3631,7 +3688,7 @@ void compile_vertex (VertexPtr root, CodeGenerator &W) {
   bool close_par = root->val_ref_flag == val_r || root->val_ref_flag == val_l;
 
   if (root->val_ref_flag == val_r) {
-    W << "val (";
+    W << "val(";
   } else if (root->val_ref_flag == val_l) {
     W << "ref(";
   }

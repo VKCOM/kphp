@@ -268,7 +268,9 @@ namespace cfg {
       case op_min:
       case op_max:
       case op_array:
+      case op_tuple:     
       case op_seq_comma:
+      case op_seq_rval:
       case op_seq: {
         Node a, b, end;
         if (tree_node->empty()) {
@@ -830,6 +832,9 @@ namespace cfg {
     VarSplitPtr var_split = get_var_split (var, false);
     kphp_assert (var_split.not_null());
 
+    if (var->type() == VarData::var_local_inplace_t) {
+      return;
+    }
     if (var->type() != VarData::var_param_t) {
       cur_dfs_mark++;
       UsagePtr uninited = search_uninited (current_start, var);

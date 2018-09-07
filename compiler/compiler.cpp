@@ -2222,10 +2222,10 @@ class CalcValRefPass : public FunctionPassBase {
         case op_conv_float:
         case op_conv_array: // ?
         case op_conv_array_l: // ?
-        case op_conv_bool:
         case op_conv_uint:
         case op_conv_long:
         case op_conv_ulong:
+          // case op_conv_bool нет намеренно, чтобы f$boolval(OrFalse<T>) не превращался в дефолтный T
 
         case op_isset:
         case op_unset:
@@ -2383,7 +2383,7 @@ class ExtractResumableCallsPass : public FunctionPassBase {
     };
 
     void on_enter_edge (VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex __attribute__((unused)), LocalT *dest_local) {
-      dest_local->from_seq = vertex->type() == op_seq;
+      dest_local->from_seq = vertex->type() == op_seq || vertex->type() == op_seq_rval;
     }
 
     VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
@@ -2460,7 +2460,7 @@ class ExtractAsyncPass : public FunctionPassBase {
     };
 
     void on_enter_edge (VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex __attribute__((unused)), LocalT *dest_local) {
-      dest_local->from_seq = vertex->type() == op_seq;
+      dest_local->from_seq = vertex->type() == op_seq || vertex->type() == op_seq_rval;
     }
 
     VertexPtr on_enter_vertex (VertexPtr vertex, LocalT *local) {
@@ -3241,6 +3241,7 @@ bool compiler_execute (KphpEnviroment *env) {
     FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
     FunctionPassPipe<CollectConstVarsPass> collect_const_vars_pipe;
     FunctionPassPipe<CheckInstanceProps> check_instance_props_pipe;
+    FunctionPassPipe<ConvertListAssignmentsPass> convert_list_assignments_pipe;
     FunctionPassPipe<RegisterVariables> register_variables_pipe;
 
     PipeDataStream<CalcThrowEdgesF, FunctionPtr, FunctionAndEdges> calc_throw_edges_pipe;
@@ -3290,6 +3291,7 @@ bool compiler_execute (KphpEnviroment *env) {
         calc_const_type_pipe >>
         collect_const_vars_pipe >>
         check_instance_props_pipe >>
+        convert_list_assignments_pipe >>
         register_variables_pipe >>
         calc_throw_edges_pipe >>
         calc_throws_pipe >> use_previous_pipe_as_sync_node_tag{} >>
