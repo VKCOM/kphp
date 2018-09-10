@@ -1896,7 +1896,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
 }
 
 array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout, bool ignore_answer) {
-  array <var> result (tl_objects.size());
+  array <int> result (tl_objects.size());
   int bytes_sent = 0;
   for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
     f$rpc_clean();
@@ -1914,12 +1914,13 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
     }
     int request_id = rpc_send (c, timeout, ignore_answer);
     if (request_id <= 0) {
-      if (request_id == -3) { // answer is ignored
-        php_assert (ignore_answer);
-        result.set_value (it.get_key(), -1);
-      } else {
-        result.set_value(it.get_key(), 0);
-      }
+      result.set_value(it.get_key(), 0);
+      result_tree->destroy();
+      continue;
+    }
+
+    if (ignore_answer) {
+      result.set_value(it.get_key(), -1);
       result_tree->destroy();
       continue;
     }
