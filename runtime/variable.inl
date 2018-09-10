@@ -995,7 +995,10 @@ void var::destroy (void) {
 }
 
 var::~var (void) {
-  clear();
+  // do not remove copy-paste from clear.
+  // It makes stacktraces unreadable
+  destroy();
+  type = NULL_TYPE;
 }
 
 
