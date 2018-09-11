@@ -743,9 +743,9 @@ VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function) {
 
   const string &name =
       call->type() == op_constructor_call
-      ? resolve_constructor_fname(current_function, call)
+      ? resolve_constructor_func_name(current_function, call)
       : call->type() == op_func_call && call->extra_type == op_ex_func_member
-        ? resolve_instance_fname(current_function, call)
+        ? resolve_instance_func_name(current_function, call)
         : call->get_string();
 
   FunctionSetPtr function_set = G->get_function_set (fs_function, name, true);

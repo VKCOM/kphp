@@ -146,12 +146,12 @@ static string _err_instance_access (VertexPtr v, const char *desc) {
 /*
  * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
  */
-string resolve_constructor_fname (FunctionPtr current_function, VertexAdaptor <op_constructor_call> call) {
-  if (likely(!call->type_help)) {
-    return resolve_uses(current_function, call->get_string()) + "$$" + "__construct";
+string resolve_constructor_func_name (FunctionPtr function, VertexAdaptor <op_constructor_call> ctor_call) {
+  if (likely(!ctor_call->type_help)) {
+    return resolve_uses(function, ctor_call->get_string()) + "$$" + "__construct";
   }
 
-  return "new_" + call->get_string();   // Memcache, RpcMemcache, Exception, true_mc, test_mc, rich_mc
+  return "new_" + ctor_call->get_string();   // Memcache, RpcMemcache, Exception, true_mc, test_mc, rich_mc
 }
 
 /*
@@ -159,68 +159,97 @@ string resolve_constructor_fname (FunctionPtr current_function, VertexAdaptor <o
  * Вот тут определяем, что за SOMEMETHOD — это из какого-то класса — именно того, что в левой части (= первый параметр).
  * Например, $a->method(), если $a имеет тип Classes\A, то на самом деле это Classes$A$$method
  */
-string resolve_instance_fname (FunctionPtr function, VertexAdaptor <op_func_call> call) {
-  ClassPtr klass = resolve_expr_class(function, call);
+string resolve_instance_func_name (FunctionPtr function, VertexAdaptor <op_func_call> arrow_call) {
+  ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
 
   if (likely(klass.not_null() && klass->new_function.not_null())) {
-    return replace_characters(klass->name, '\\', '$').append("$$").append(call->get_string());
+    return replace_characters(klass->name, '\\', '$').append("$$").append(arrow_call->get_string());
   }
 
   // особый кейс зарезервированных классов: $mc->get() это memcached_get($mc) и пр.
   if (klass.not_null() && klass->name == "Exception") {
-    return "exception_" + call->get_string();
+    return "exception_" + arrow_call->get_string();
   }
   if (klass.not_null() && klass->name == "Memcache") {
-    return "memcached_" + call->get_string();
+    return "memcached_" + arrow_call->get_string();
   }
 
   return std::string();
 }
 
 /*
- * Когда есть любое выражение expr перед стрелочкой ('$a->...', '(new A())->...', 'get()->nestedArr[0]->...'),
+ * Когда есть любое выражение lhs перед стрелочкой ('$a->...', '(new A())->...', 'get()->nestedArr[0]->...'),
  * то слева ожидается инстанс какого-то класса.
  * Определяем, что это за класс, и кидаем осмысленную ошибку, если там оказалось что-то не то.
  * Например, '$a = 42; $a->...' скажет, что '$a is not an instance'
  */
-ClassPtr resolve_expr_class (FunctionPtr function, VertexPtr v) {
-  VertexPtr arg = v->ith(0);
-  Operation type = arg->type();
+ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
+  // тут всего 2 варианта типа v:
+  // 1) lhs->f(...args), что заменилось на f(lhs,...args)
+  // 2) lhs->propname
+  kphp_assert((v->type() == op_func_call && v->extra_type == op_ex_func_member) || v->type() == op_instance_prop);
+
+  VertexPtr lhs = v->ith(0);      // в обоих случаях lhs вычисляется так
   ClassPtr klass;
-  AssumType assum = assum_unknown;
+  AssumType assum;
 
-  if (type == op_constructor_call) {
-    assum = infer_class_of_expr(function, arg, klass);
-    kphp_assert(assum == assum_instance && klass.not_null());
-  } else if (type == op_var) {
-    assum = infer_class_of_expr(function, arg, klass);
-    kphp_error(assum == assum_instance,
-        _err_instance_access(v, dl_pstr("$%s is not an instance", arg->get_string().c_str())).c_str());
-  } else if (type == op_func_call) {
-    assum = infer_class_of_expr(function, arg, klass);
-    kphp_error(assum == assum_instance,
-        _err_instance_access(v, dl_pstr("%s() does not return instance", arg->get_string().c_str())).c_str());
-  } else if (type == op_instance_prop) {
-    assum = infer_class_of_expr(function, arg, klass);
-    kphp_error(assum == assum_instance,
-        _err_instance_access(v, dl_pstr("$%s->%s is not an instance", arg->ith(0)->get_string().c_str(), arg->get_string().c_str())).c_str());
-  } else if (type == op_index && arg->size() == 2 && arg->ith(0)->type() == op_var) {
-    assum = infer_class_of_expr(function, arg->ith(0), klass);
-    kphp_error(assum == assum_instance_array,
-        _err_instance_access(v, dl_pstr("$%s is not an array of instances", arg->ith(0)->get_string().c_str())).c_str());
-  } else if (type == op_index && arg->size() == 2 && arg->ith(0)->type() == op_func_call) {
-    assum = infer_class_of_expr(function, arg->ith(0), klass);
-    kphp_error(assum == assum_instance_array,
-        _err_instance_access(v, dl_pstr("%s() does not return array of instances", arg->ith(0)->get_string().c_str())).c_str());
-  } else if (type == op_index && arg->size() == 2 && arg->ith(0)->type() == op_instance_prop) {
-    assum = infer_class_of_expr(function, arg->ith(0), klass);
-    kphp_error(assum == assum_instance_array,
-        _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", arg->ith(0)->ith(0)->get_string().c_str(), arg->ith(0)->get_string().c_str())).c_str());
-  } else {
-    kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting").c_str());
+  switch (lhs->type()) {
+    // (new A)->...
+    case op_constructor_call:
+      assum = infer_class_of_expr(function, lhs, klass);
+      kphp_assert(assum == assum_instance && klass.not_null());
+      return klass;
+
+      // $var->...
+    case op_var:
+      assum = infer_class_of_expr(function, lhs, klass);
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, dl_pstr("$%s is not an instance", lhs->get_string().c_str())).c_str());
+      return klass;
+
+      // getInstance()->...
+    case op_func_call:
+      assum = infer_class_of_expr(function, lhs, klass);
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, dl_pstr("%s() does not return instance", lhs->get_string().c_str())).c_str());
+      return klass;
+
+      // ...->anotherInstance->...
+    case op_instance_prop:
+      assum = infer_class_of_expr(function, lhs, klass);
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, dl_pstr("$%s->%s is not an instance", lhs->ith(0)->get_string().c_str(), lhs->get_string().c_str())).c_str());
+      return klass;
+
+      // ...[$idx]->...
+    case op_index:
+      // $var[$idx]->...
+      if (lhs->size() == 2 && lhs->ith(0)->type() == op_var) {
+        assum = infer_class_of_expr(function, lhs->ith(0), klass);
+        kphp_error(assum == assum_instance_array,
+                   _err_instance_access(v, dl_pstr("$%s is not an array of instances", lhs->ith(0)->get_string().c_str())).c_str());
+        return klass;
+      }
+      // getArr()[$idx]->...
+      if (lhs->size() == 2 && lhs->ith(0)->type() == op_func_call) {
+        assum = infer_class_of_expr(function, lhs->ith(0), klass);
+        kphp_error(assum == assum_instance_array,
+                   _err_instance_access(v, dl_pstr("%s() does not return array of instances", lhs->ith(0)->get_string().c_str())).c_str());
+        return klass;
+      }
+      // ...->arrOfInstances[$idx]->...
+      if (lhs->size() == 2 && lhs->ith(0)->type() == op_instance_prop) {
+        assum = infer_class_of_expr(function, lhs->ith(0), klass);
+        kphp_error(assum == assum_instance_array,
+                   _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", lhs->ith(0)->ith(0)->get_string().c_str(), lhs->ith(0)->get_string().c_str())).c_str());
+        return klass;
+      }
+      // fall back to default
+
+    default:
+      kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting").c_str());
+      return klass;
   }
-
-  return klass;
 }
 
 

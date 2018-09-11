@@ -351,7 +351,7 @@ class CollectRequiredPass : public FunctionPassBase {
           const string &class_name = resolve_uses(current_function, root->get_string(), '/');
           require_class(class_name, "");
         } else {
-          callback->require_function_set(fs_function, resolve_constructor_fname(current_function, root), current_function);
+          callback->require_function_set(fs_function, resolve_constructor_func_name(current_function, root), current_function);
         }
       }
 
@@ -1420,8 +1420,8 @@ public:
   VertexPtr on_enter_vertex (VertexPtr v, LocalT *local __attribute__((unused))) {
 
     if (v->type() == op_instance_prop) {
-      ClassPtr klass = resolve_expr_class(current_function, v);
-      if (klass.not_null()) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_expr_class()
+      ClassPtr klass = resolve_class_of_arrow_access(current_function, v);
+      if (klass.not_null()) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
         VarPtr var = klass->find_var(v->get_string());
 
         if (!kphp_error(var.not_null(),
