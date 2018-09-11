@@ -487,6 +487,27 @@ inline AssumType infer_from_call (FunctionPtr f,
   return calc_assumption_for_return(ptr[0], out_class);
 }
 
+inline AssumType infer_from_array(FunctionPtr f,
+                                  VertexAdaptor<op_array> array,
+                                  ClassPtr &out_class) {
+  kphp_assert(array.not_null());
+  for (auto v : *array) {
+    ClassPtr inferred_class;
+    AssumType assum = infer_class_of_expr(f, v, inferred_class);
+    if (assum != assum_instance) {
+      return assum_not_instance;
+    }
+
+    if (out_class.is_null()) {
+      out_class = inferred_class;
+    } else if (out_class->name != inferred_class->name) {
+      return assum_not_instance;
+    }
+  }
+
+  return assum_instance_array;
+}
+
 AssumType infer_from_instance_prop (FunctionPtr f,
                                     VertexAdaptor <op_instance_prop> prop,
                                     ClassPtr &out_class) {
@@ -518,6 +539,8 @@ AssumType infer_class_of_expr (FunctionPtr f, VertexPtr root, ClassPtr &out_clas
       return root->size() == 2 && assum_instance_array == infer_class_of_expr(f, root->ith(0), out_class)
              ? assum_instance
              : assum_not_instance;
+   case op_array:
+     return infer_from_array(f, root, out_class);
 
     default:
       return assum_not_instance;
