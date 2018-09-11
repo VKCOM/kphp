@@ -199,7 +199,8 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
       kphp_assert(assum == assum_instance && klass.not_null());
       return klass;
     }
-    // $var->...
+
+      // $var->...
     case op_var: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
@@ -225,10 +226,10 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
 
       // ...[$idx]->...
     case op_index: {
-      // $var[$idx]->...
-      VertexAdaptor<op_index> index = lhs.as<op_index>();
+      VertexAdaptor <op_index> index = lhs.as <op_index>();
       VertexPtr array = index->array();
       if (index->has_key()) {
+        // $var[$idx]->...
         if (array->type() == op_var) {
           AssumType assum = infer_class_of_expr(function, array, klass);
           kphp_error(assum == assum_instance_array,
@@ -251,7 +252,8 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
         }
       }
     }
-    /* fallthrough */
+
+      /* fallthrough */
     default:
       kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting").c_str());
       return klass;
