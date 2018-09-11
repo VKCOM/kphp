@@ -388,19 +388,25 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
 #define TMP_OP(Op, i) DL_ADD_SUFF (DL_ADD_SUFF (Op, tmp), i)
 #define VA_BEGIN_1(Op, BaseOp, arg1)\
   VA_BEGIN (TMP_OP (Op, 0), BaseOp)\
-    FIELD_BODY (arg1, Op)\
+    FIELD_BODY (arg1)\
   VA_END\
   VA_BEGIN (Op, TMP_OP (Op, 0))\
 
 #define VA_BEGIN_2(Op, BaseOp, arg1, arg2)\
   VA_BEGIN (TMP_OP (Op, 1), BaseOp)\
-    FIELD_BODY (arg1, Op)\
+    FIELD_BODY (arg1)\
   VA_END\
   VA_BEGIN_1 (Op, TMP_OP (Op, 1), arg2)\
 
-#define FIELD_BODY(field_name, Op) DL_ADD_SUFF (FIELD_BODY, field_name) (Op)
+#define VA_BEGIN_3(Op, BaseOp, arg1, arg2, arg3)\
+  VA_BEGIN (TMP_OP (Op, 2), BaseOp)\
+    FIELD_BODY (arg1)\
+  VA_END\
+  VA_BEGIN_2 (Op, TMP_OP (Op, 2), arg2, arg3)\
 
-#define FIELD_BODY_function(Op)\
+#define FIELD_BODY(field_name) DL_ADD_SUFF (FIELD_BODY, field_name)
+
+#define FIELD_BODY_function\
   private:\
   FunctionPtr func_;\
   public:\
@@ -408,7 +414,7 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
   void set_func_id (FunctionPtr func_ptr) {func_ = func_ptr;}
 
 
-#define FIELD_BODY_variable(Op)\
+#define FIELD_BODY_variable\
   private:\
   VarPtr var_;\
   public:\
@@ -418,7 +424,7 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
     var_ = from.var_;\
   RAW_COPY_END
 
-#define FIELD_BODY_define(Op)\
+#define FIELD_BODY_define\
   private:\
   DefinePtr define_;\
   public:\
@@ -428,7 +434,7 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
     define_ = from.define_;\
   RAW_COPY_END
 
-#define FIELD_BODY_string(Op)\
+#define FIELD_BODY_string\
   public:\
   string str_val;\
   virtual const string &get_string() const {return str_val;}\
@@ -439,7 +445,7 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
   RAW_COPY_END
 
 
-#define FIELD_BODY_labels(Op)\
+#define FIELD_BODY_labels\
   public:\
   int break_label_id;\
   int continue_label_id;\
@@ -452,7 +458,7 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
     continue_label_id = from.continue_label_id;\
   RAW_COPY_END
 
-#define FIELD_BODY_int(Op)\
+#define FIELD_BODY_int\
   public:\
   union {\
     int int_val;\
@@ -462,7 +468,21 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
    int_val = 0;\
   RAW_INIT_END\
   RAW_COPY_BEGIN\
-    int_val = 0;\
+    int_val = from.int_val;\
+  RAW_COPY_END
+
+#define FIELD_BODY_phpdoc_token\
+  public:\
+  Token* phpdoc_token = nullptr;\
+  RAW_COPY_BEGIN\
+    phpdoc_token = from.phpdoc_token;\
+  RAW_COPY_END
+
+#define FIELD_BODY_def_val\
+  public:\
+  VertexPtr def_val;\
+  RAW_COPY_BEGIN\
+    def_val = from.def_val;\
   RAW_COPY_END
 
 VA_BEGIN (meta_op_unary_, meta_op_base)
@@ -678,16 +698,14 @@ VA_BINARY_BEGIN (op_mod)
 VA_BINARY_END
 
 
-VA_BEGIN (op_set, meta_op_binary_op)
+VA_BEGIN_1 (op_set, meta_op_binary_op, phpdoc_token)
 PROPERTIES_BEGIN
   OPP (type, binary_op);
   OPP (rl, rl_set);
   OPP (cnst, cnst_nonconst_func);
   OPP (str, "=");
-
   OPP (fixity, right_opp); //redefined
 PROPERTIES_END
-  Token* phpdoc_token;
 VA_END
 
 VA_BINARY_BEGIN (op_set_and)
@@ -1245,10 +1263,7 @@ VA_BEGIN_2 (op_instance_prop, meta_op_unary_, string, variable)
     OPP (str, "op_instance_prop");
   PROPERTIES_END
 VA_END
-VA_BEGIN (op_class_var, meta_op_base)
-  FIELD_BODY_string()
-  VertexPtr def_val;
-  Token* phpdoc_token;
+VA_BEGIN_3 (op_class_var, meta_op_base, string, def_val, phpdoc_token)
   PROPERTIES_BEGIN
     OPP (type, common_op);
     OPP (rl, rl_error);
@@ -1426,14 +1441,13 @@ VA_BEGIN (op_tuple, meta_op_varg_)
     OPP (str, "tuple<>");
   PROPERTIES_END
 VA_END
-VA_BEGIN (op_list, meta_op_base)
+VA_BEGIN_1 (op_list, meta_op_base, phpdoc_token)
   PROPERTIES_BEGIN
     OPP (type, common_op);
     OPP (rl, rl_func);
     OPP (cnst, cnst_const_func);
     OPP (str, "<TODO: list>");
   PROPERTIES_END
-  Token* phpdoc_token;
 
   VertexPtr &array() {
     return ith (size() - 1);
@@ -1558,6 +1572,11 @@ VA_END
 VA_BEGIN (op_func_param, meta_op_func_param)
   std::string type_declaration;
   int template_type_id = -1;
+
+  RAW_COPY_BEGIN
+    type_declaration = from.type_declaration;
+    template_type_id = from.template_type_id;
+  RAW_COPY_END
 VA_END
 
 VA_BEGIN (op_class, meta_op_base)
@@ -1711,6 +1730,9 @@ VA_BEGIN (op_common_type_rule, meta_op_type_rule)
 VA_END
 VA_BEGIN (op_class_type_rule, meta_op_type_rule)
   ClassPtr class_ptr;
+  RAW_COPY_BEGIN
+  class_ptr = from.class_ptr;
+  RAW_COPY_END
 VA_END
 VA_BEGIN (op_lt_type_rule, meta_op_type_rule)
 VA_END

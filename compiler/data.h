@@ -220,6 +220,7 @@ public:
   bool is_callback;
   bool should_be_sync;
   bool kphp_required;
+  bool is_template;
   string namespace_name;
   string class_name;
   string class_context_name;
@@ -229,7 +230,6 @@ public:
   set<string> disabled_warnings;
 
   FunctionSetPtr function_set;
-  bool is_template;
 
   FunctionData();
   explicit FunctionData (VertexPtr root);

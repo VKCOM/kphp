@@ -90,9 +90,9 @@ FunctionData::FunctionData ()
   , is_callback (false)
   , should_be_sync()
   , kphp_required(false)
+  , is_template(false)
   , namespace_name ("")
   , class_name ("")
-  , is_template(false)
 {}
 
 FunctionData::FunctionData (VertexPtr root)
@@ -115,9 +115,10 @@ FunctionData::FunctionData (VertexPtr root)
   , used_in_source (false)
   , is_callback (false)
   , should_be_sync()
+  , kphp_required(false)
+  , is_template(false)
   , namespace_name ("")
   , class_name ("")
-  , is_template(false)
 {}
 
 bool FunctionData::is_static_init_empty_body() const {

@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <functional>
+#include <mutex>
 
 #include "compiler/analyzer.h"
 #include "compiler/bicycle.h"
@@ -977,16 +979,13 @@ void parse_and_apply_function_kphp_phpdoc (FunctionPtr f) {
 
       case php_doc_tag::kphp_template: {
         f->is_template = true;
-        for (std::string var_name : split(tag.value, ',')) {
-          trim(var_name);
-
-          std::string::size_type n = var_name.find(' ');
-          if (n != std::string::npos) {
-            var_name.erase(n);
+        for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
+          if (var_name[0] != '$') {
+            break;
           }
 
           auto func_param_it = name_to_function_param.find(var_name);
-          kphp_error_act(func_param_it != name_to_function_param.end(), dl_pstr("@kphp-template tag var name mismatch. found %s.", var_name.c_str()), return);
+          kphp_error_return(func_param_it != name_to_function_param.end(), dl_pstr("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
 
           VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
           name_to_function_param.erase(func_param_it);
@@ -1041,7 +1040,8 @@ void prepare_function (FunctionPtr function) {
 class PrepareFunctionF  {
   public:
     DUMMY_ON_FINISH
-    template <class OutputStream> void execute (FunctionPtr function, OutputStream &os) {
+    template<class OutputStream>
+    void execute (FunctionPtr function, OutputStream &os) {
       stage::set_name ("Prepare function");
       stage::set_function (function);
       kphp_assert (function.not_null());
@@ -1217,35 +1217,45 @@ class PreprocessEq3Pass : public FunctionPassBase {
 /*** Replace __FUNCTION__ ***/
 /*** Set function_id for all function calls ***/
 class PreprocessFunctionCPass : public FunctionPassBase {
-  private:
-    AUTO_PROF (preprocess_function_c);
-  public:
-    string get_description() {
-      return "Preprocess function C";
-    }
-    bool check_function (FunctionPtr function) {
-      return default_check_function (function) && function->type() != FunctionData::func_extern;
-    }
+private:
+  AUTO_PROF (preprocess_function_c);
+public:
+  using InstanceOfFunctionTemplatePtr = FunctionPtr;
+  using OStreamT = MultipleDataStreams<FunctionPtr, InstanceOfFunctionTemplatePtr>;
+  OStreamT &os;
 
-    VertexPtr on_enter_vertex (VertexPtr root, LocalT *local __attribute__((unused))) {
-      if (root->type() == op_function_c) {
-        CREATE_VERTEX (new_root, op_string);
-        if (stage::get_function_name() != stage::get_file()->main_func_name) {
-          new_root->set_string(stage::get_function_name());
-        }
-        set_location (new_root, root->get_location());
-        root = new_root;
+  explicit PreprocessFunctionCPass(OStreamT &os)
+    : os(os)
+  {}
+
+  std::string get_description() override {
+    return "Preprocess function C";
+  }
+
+  bool check_function(FunctionPtr function) override {
+    return default_check_function(function) && function->type() != FunctionData::func_extern && !function->is_template;
+  }
+
+  VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
+    if (root->type() == op_function_c) {
+      CREATE_VERTEX (new_root, op_string);
+      if (stage::get_function_name() != stage::get_file()->main_func_name) {
+        new_root->set_string(stage::get_function_name());
       }
-
-      if (root->type() == op_func_call || root->type() == op_func_ptr || root->type() == op_constructor_call) {
-        root = try_set_func_id(root, current_function);
-      }
-
-      return root;
+      set_location(new_root, root->get_location());
+      root = new_root;
     }
+
+    if (root->type() == op_func_call || root->type() == op_func_ptr || root->type() == op_constructor_call) {
+      root = try_set_func_id(root);
+    }
+
+    return root;
+  }
 
 private:
-  VertexPtr set_func_id (VertexPtr call, FunctionPtr func) {
+
+  VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
     kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
     kphp_assert (func.not_null());
     kphp_assert (call->get_func_id().is_null() || call->get_func_id() == func);
@@ -1254,7 +1264,7 @@ private:
     }
     //fprintf (stderr, "%s\n", func->name.c_str());
 
-    call->set_func_id (func);
+    call->set_func_id(func);
     if (call->type() == op_func_ptr) {
       func->is_callback = true;
       return call;
@@ -1265,10 +1275,9 @@ private:
       return call;
     }
 
-    VertexAdaptor <meta_op_function> func_root = func->root;
-    VertexAdaptor <op_func_param_list> param_list = func_root->params();
-    VertexRange call_args =
-      call->type() == op_constructor_call ? call.as <op_constructor_call>()->args() : call.as <op_func_call>()->args();
+    VertexAdaptor<meta_op_function> func_root = func->root;
+    VertexAdaptor<op_func_param_list> param_list = func_root->params();
+    VertexRange call_args = call.as<op_func_call>()->args();
     VertexRange func_args = param_list->params();
     int call_args_n = (int)call_args.size();
     int func_args_n = (int)func_args.size();
@@ -1283,17 +1292,19 @@ private:
       }
       VertexPtr args;
       if (call_args_n == 1 && call_args[0]->type() == op_varg) {
-        args = VertexAdaptor <op_varg> (call_args[0])->expr();
+        args = call_args[0].as<op_varg>()->expr();
       } else {
         CREATE_VERTEX (new_args, op_array, call->get_next());
         new_args->location = call->get_location();
         args = new_args;
       }
-      vector <VertexPtr> tmp (1, GenTree::conv_to <tp_array> (args));
+      vector<VertexPtr> tmp(1, GenTree::conv_to<tp_array>(args));
       COPY_CREATE_VERTEX (new_call, call, op_func_call, tmp);
       return new_call;
     }
 
+    std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
+    std::string name_of_function_instance = func->name + "$instance";
     for (int i = 0; i < call_args_n; i++) {
       if (i < func_args_n) {
         if (func_args[i]->type() == op_func_param) {
@@ -1302,12 +1313,45 @@ private:
             kphp_error(false, msg.c_str());
             continue;
           } else if (call_args[i]->type() == op_varg) {
-            string msg = "function: `" + func->name +"` must takes variable-length argument list";
+            string msg = "function: `" + func->name + "` must takes variable-length argument list";
             kphp_error_act(false, msg.c_str(), break);
           }
-          VertexAdaptor <op_func_param> param = func_args[i];
+          VertexAdaptor<op_func_param> param = func_args[i];
           if (param->type_help != tp_Unknown) {
-            call_args[i] = GenTree::conv_to (call_args[i], param->type_help, param->var()->ref_flag);
+            call_args[i] = GenTree::conv_to(call_args[i], param->type_help, param->var()->ref_flag);
+          }
+
+          if (param->template_type_id >= 0) {
+            kphp_assert(func->is_template);
+            ClassPtr class_corresponding_to_parameter;
+            AssumType assum = infer_class_of_expr(stage::get_function(), call_args[i], class_corresponding_to_parameter);
+
+            {
+              std::string error_msg = "function templates support only instances as argument value; " + func->name + "; " + param->var()->get_string() + " argument";
+              kphp_error_act(vk::any_of_equal(assum, assum_instance, assum_instance_array), error_msg.c_str(), return {});
+            }
+
+            auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
+            if (!insertion_result.second) {
+              const std::pair<AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
+              auto wrap_if_array = [](const std::string &s, AssumType assum) {
+                return assum == assum_instance_array ? s + "[]" : s;
+              };
+
+              std::string error_msg =
+                "argument $" + param->var()->get_string() + " of " + func->name +
+                " has a type: `" + wrap_if_array(class_corresponding_to_parameter->name, assum) +
+                "` but expected type: `" + wrap_if_array(previous_assum_and_class.second->name, previous_assum_and_class.first) + "`";
+
+              kphp_error_act(previous_assum_and_class.second->name == class_corresponding_to_parameter->name, error_msg.c_str(), return {});
+              kphp_error_act(previous_assum_and_class.first == assum, error_msg.c_str(), return {});
+            }
+
+            if (assum == assum_instance_array) {
+              name_of_function_instance += "$arr";
+            }
+
+            name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
           }
         } else if (func_args[i]->type() == op_func_param_callback) {
           call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
@@ -1317,16 +1361,104 @@ private:
         }
       }
     }
+
+    if (func->is_template) {
+      FunctionSetPtr function_set = G->get_function_set(fs_function, name_of_function_instance, true);
+      call->set_string(name_of_function_instance);
+      call->set_func_id({});
+
+      FunctionPtr new_function;
+      {
+        std::lock_guard<Lockable> guard{*function_set};
+
+        if (function_set->size() == 0) {
+          new_function = generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
+          bool added = function_set->add_function(new_function);
+          kphp_assert(added);
+
+          function_set->is_required = true;
+          new_function->function_set = function_set;
+        }
+      }
+
+      kphp_assert(function_set->size() == 1);
+      set_func_id(call, function_set[0]);
+
+      if (new_function.not_null()) {
+        (*os.project_to_nth_data_stream<1>()) << new_function;
+      }
+    }
+
     return call;
   }
 
-/*
- * Имея vertex вида 'fn(...)' или 'new A(...)', сопоставить этому vertex реальную FunctionPtr
- *  (он будет доступен через vertex->get_func_id()).
- * Вызовы instance-методов вида $a->fn(...) были на уровне gentree преобразованы в op_func_call fn($a, ...),
- * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
- */
-  VertexPtr try_set_func_id (VertexPtr call, FunctionPtr current_function) {
+  FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
+                                                     FunctionPtr func,
+                                                     const std::string &name_of_function_instance) {
+    VertexAdaptor<op_func_param_list> param_list = func->root.as<meta_op_function>()->params();
+    VertexRange func_args = param_list->params();
+    size_t func_args_n = func_args.size();
+
+    FunctionPtr new_function(new FunctionData());
+    CLONE_VERTEX(new_func_root, op_function, func->root.as<op_function>());
+
+    for (auto id_classPtr_it : template_type_id_to_ClassPtr) {
+      const std::pair<AssumType, ClassPtr> &assum_and_class = id_classPtr_it.second;
+      for (size_t i = 0; i < func_args_n; ++i) {
+        VertexAdaptor<op_func_param> param = func_args[i];
+        if (param->template_type_id == id_classPtr_it.first) {
+          new_function->assumptions.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
+          new_function->assumptions_inited_args = 2;
+
+          new_func_root->params()->ith(i).as<op_func_param>()->template_type_id = -1;
+        }
+      }
+    }
+
+    new_func_root->name()->set_string(name_of_function_instance);
+
+    new_function->root = new_func_root;
+    new_function->root->set_func_id(new_function);
+    new_function->is_required = true;
+    new_function->type() = func->type();
+    new_function->file_id = func->file_id;
+    new_function->req_id = func->req_id;
+    new_function->class_id = func->class_id;
+    new_function->varg_flag = func->varg_flag;
+    new_function->tinf_state = func->tinf_state;
+    new_function->const_data = func->const_data;
+    new_function->phpdoc_token = func->phpdoc_token;
+    new_function->min_argn = func->min_argn;
+    new_function->is_extern = func->is_extern;
+    new_function->used_in_source = func->used_in_source;
+    new_function->kphp_required = true;
+    new_function->namespace_name = func->namespace_name;
+    new_function->class_name = func->class_name;
+    new_function->class_context_name = func->class_context_name;
+    new_function->class_extends = func->class_extends;
+    new_function->access_type = func->access_type;
+    new_function->namespace_uses = func->namespace_uses;
+    new_function->is_template = false;
+    new_function->name = name_of_function_instance;
+
+    std::function<void(VertexPtr, FunctionPtr)> set_location_for_all = [&set_location_for_all](VertexPtr root, FunctionPtr function_location) {
+      root->location.function = function_location;
+      for (VertexPtr &v : *root) {
+        set_location_for_all(v, function_location);
+      }
+    };
+    set_location_for_all(new_func_root, new_function);
+
+    return new_function;
+  }
+
+  /**
+   * Имея vertex вида 'fn(...)' или 'new A(...)', сопоставить этому vertex реальную FunctionPtr
+   *  (он будет доступен через vertex->get_func_id()).
+   * Вызовы instance-методов вида $a->fn(...) были на уровне gentree преобразованы в op_func_call fn($a, ...),
+   * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
+   */
+  VertexPtr try_set_func_id(VertexPtr call) {
     if (call->get_func_id().not_null()) {
       return call;
     }
@@ -1338,7 +1470,7 @@ private:
         ? resolve_instance_func_name(current_function, call)
         : call->get_string();
 
-    FunctionSetPtr function_set = G->get_function_set (fs_function, name, true);
+    FunctionSetPtr function_set = G->get_function_set(fs_function, name, true);
 
     switch (function_set->size()) {
       case 1: {
@@ -1368,6 +1500,25 @@ private:
     }
 
     return call;
+  }
+};
+
+class PreprocessFunctionF {
+public:
+  DUMMY_ON_FINISH
+  void execute (FunctionPtr function, PreprocessFunctionCPass::OStreamT &os) {
+    PreprocessFunctionCPass pass(os);
+
+    pass.init();
+    if (pass.on_start(function)) {
+      PreprocessFunctionCPass::LocalT local;
+      function->root = run_function_pass(function->root, &pass, &local);
+      pass.on_finish();
+    }
+
+    if (!stage::has_error() && !function->is_template) {
+      (*os.project_to_nth_data_stream<0>()) << function;
+    }
   }
 };
 
@@ -2433,8 +2584,7 @@ class CalcBadVarsF {
       AUTO_PROF (calc_bad_vars);
       stage::set_name ("Calc bad vars (for UB check)");
       vector <pair <FunctionPtr, DepData *> > tmp_vec = tmp_stream.get_as_vector();
-      CalcBadVars calc_bad_vars;
-      calc_bad_vars.run (tmp_vec);
+      CalcBadVars{}.run(tmp_vec);
       for (const auto &fun_dep : tmp_vec) {
         delete fun_dep.second;
         os << fun_dep.first;
@@ -3369,7 +3519,7 @@ bool compiler_execute (KphpEnviroment *env) {
 
     Pipe <CollectRequiredF,
          DataStream <FunctionPtr>,
-         MultipleDataStreams <ReadyFunctionPtr, SrcFilePtr, FunctionPtr> > collect_required_pipe;
+         MultipleDataStreams<ReadyFunctionPtr, SrcFilePtr, FunctionPtr>> collect_required_pipe;
 
     PipeDataStream<CollectClassF, ReadyFunctionPtr, FunctionPtr> collect_classes_pipe;
     FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
@@ -3380,7 +3530,11 @@ bool compiler_execute (KphpEnviroment *env) {
 
     FunctionPassPipe<PreprocessVarargPass> preprocess_vararg_pipe;
     FunctionPassPipe<PreprocessEq3Pass> preprocess_eq3_pipe;
-    FunctionPassPipe<PreprocessFunctionCPass> preprocess_function_c_pipe;
+
+    Pipe<PreprocessFunctionF,
+         DataStream<FunctionPtr>,
+         PreprocessFunctionCPass::OStreamT> preprocess_function_c_pipe;
+
     FunctionPassPipe<PreprocessBreakPass> preprocess_break_pipe;
     FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
     FunctionPassPipe<CollectConstVarsPass> collect_const_vars_pipe;
@@ -3430,7 +3584,10 @@ bool compiler_execute (KphpEnviroment *env) {
         register_defines_pipe >>
         preprocess_vararg_pipe >>
         preprocess_eq3_pipe >>
-        preprocess_function_c_pipe >>
+        // functions which were generated from templates
+        // need to be preprocessed therefore we tie second output and input of Pipe
+        preprocess_function_c_pipe >> use_nth_output_tag<1>{} >>
+        preprocess_function_c_pipe >> use_nth_output_tag<0>{} >>
         preprocess_break_pipe >>
         calc_const_type_pipe >>
         collect_const_vars_pipe >>

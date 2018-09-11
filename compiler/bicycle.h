@@ -478,6 +478,11 @@ public:
   template<size_t data_id>
   using NthDataType = typename std::tuple_element<data_id, std::tuple<DataTypes...>>::type;
 
+  template<size_t stream_id>
+  decltype(std::get<stream_id>(streams_)) &project_to_nth_data_stream() {
+    return std::get<stream_id>(streams_);
+  }
+
   template<class DataType>
   DataStream<DataType> *&project_to_single_data_stream() {
     constexpr size_t data_id = vk::index_of_type<DataType, DataTypes...>::value;
@@ -542,16 +547,10 @@ private:
     }
   }
 
-  template<class T>
-  static StreamT *&project_to_single_data_stream(T streams) {
-    return streams->template project_to_single_data_stream<typename StreamT::DataType>();
-  }
-
 public:
-  template<class... DataTypes>
-  SC_Pipe(SchedulerBase *scheduler, MultipleDataStreams<DataTypes...> *streams, Node *previous_node)
+  SC_Pipe(SchedulerBase *scheduler, StreamT *&stream, Node *previous_node)
     : scheduler(scheduler)
-    , previous_output_stream(project_to_single_data_stream(streams))
+    , previous_output_stream(stream)
     , previous_node(previous_node)
   {}
 
@@ -571,7 +570,7 @@ public:
 
   template<size_t id>
   SC_Pipe<ConcreteIndexedStream<id, StreamT>> operator>>(use_nth_output_tag<id>) {
-    return {scheduler, previous_output_stream, previous_node};
+    return SC_Pipe<ConcreteIndexedStream<id, StreamT>>{scheduler, previous_output_stream->template project_to_nth_data_stream<id>(), previous_node};
   }
 
   SC_Pipe& operator>>(use_previous_pipe_as_sync_node_tag) {
