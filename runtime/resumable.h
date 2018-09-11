@@ -26,7 +26,9 @@ private:
   char storage_[sizeof (var)];
 
   template <class X, class Y>
-  static Y load_implementation (char *storage);
+  struct load_implementation_helper {
+    static Y load (char *storage);
+  };
 
   static var load_void (char *storage);
 
@@ -151,12 +153,36 @@ int f$get_running_fork_id();
 
 
 template <class X, class Y>
-Y Storage::load_implementation (char *storage) {
+Y Storage::load_implementation_helper <X, Y>::load (char *storage) {
   X *data = reinterpret_cast <X *> (storage);
   Y result = *data;
   data->~X();
   return result;
 }
+
+template <class T>
+struct Storage::load_implementation_helper <class_instance <T>, var> {
+  static var load (char *storage) {
+    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
+    return var();
+  }
+};
+
+template <class T>
+struct Storage::load_implementation_helper <array <class_instance <T>>, var> {
+  static var load (char *storage) {
+    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
+    return var();
+  }
+};
+
+template <class T>
+struct Storage::load_implementation_helper <OrFalse <array <class_instance <T>>>, var> {
+  static var load (char *storage) {
+    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
+    return var();
+  }
+};
 
 template <class T1, class T2>
 void Storage::save (const T2 &x, Getter getter) {
@@ -172,7 +198,7 @@ void Storage::save (const T2 &x, Getter getter) {
 
 template <class T1, class T2>
 void Storage::save (const T2 &x) {
-  save<T1, T2>(x, load_implementation <T1, var>);
+  save<T1, T2>(x, load_implementation_helper <T1, var>::load);
 }
 
 template <class X, class Y>
@@ -185,7 +211,7 @@ Y Storage::load() {
   }
 
   getter_ = NULL;
-  return load_implementation <X, Y> (storage_);
+  return load_implementation_helper <X, Y>::load (storage_);
 }
 
 template <>

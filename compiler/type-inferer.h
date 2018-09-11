@@ -735,9 +735,14 @@ class CollectMainEdgesPass : public FunctionPassBase {
       }
     }
 
+    void on_fork (VertexAdaptor <op_fork> fork) {
+      // fork(f()) — f() не должна возвращать instance/tuple, т.е. то, что не кастится к var (см. wait_result())
+      create_less(fork->func_call(), tp_var);
+    }
+
     void on_throw (VertexAdaptor <op_throw> throw_op) {
-      create_less (tp_Exception, throw_op->expr());
-      create_less (throw_op->expr(), tp_Exception);
+      create_less(tp_Exception, throw_op->expr());
+      create_less(throw_op->expr(), tp_Exception);
     }
 
     void on_set_op (VertexPtr v) {
@@ -885,25 +890,28 @@ class CollectMainEdgesPass : public FunctionPassBase {
       switch (v->type()) {
         //FIXME: varg_flag, is_callback
         case op_func_call:
-          on_func_call (v);
+          on_func_call(v);
           break;
         case op_constructor_call:
           on_constructor_call(v);
           break;
         case op_return:
-          on_return (v);
+          on_return(v);
           break;
         case op_foreach:
-          on_foreach (v);
+          on_foreach(v);
           break;
         case op_index:
-          on_index (v);
+          on_index(v);
           break;
         case op_list:
-          on_list (v);
+          on_list(v);
           break;
         case op_throw:
-          on_throw (v);
+          on_throw(v);
+          break;
+        case op_fork:
+          on_fork(v);
           break;
         default:
           break;
