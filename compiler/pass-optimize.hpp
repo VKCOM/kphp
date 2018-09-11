@@ -162,7 +162,7 @@ class OptimizationPass : public FunctionPassBase {
           res = expr;
         } else if (root->type() == op_conv_string && tp->ptype() == tp_string) {
           res = expr;
-        } else if ((root->type() == op_conv_array || root->type() == op_conv_array_l) && tp->ptype() == tp_array) {
+        } else if ((root->type() == op_conv_array || root->type() == op_conv_array_l) && tp->get_real_ptype() == tp_array) {
           res = expr;
         } else if (root->type() == op_conv_uint && tp->ptype() == tp_UInt) {
           res = expr;
