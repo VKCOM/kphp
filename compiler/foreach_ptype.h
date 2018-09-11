@@ -1,6 +1,5 @@
 FOREACH_PTYPE (tp_Unknown)
 FOREACH_PTYPE (tp_False)
-FOREACH_PTYPE (tp_Indexable)
 FOREACH_PTYPE (tp_bool)
 FOREACH_PTYPE (tp_int)
 FOREACH_PTYPE (tp_float)

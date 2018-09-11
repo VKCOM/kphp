@@ -712,11 +712,9 @@ class CollectMainEdgesPass : public FunctionPassBase {
 
     void on_index (VertexAdaptor <op_index> index __attribute__ ((unused))) {
       // здесь было безусловное { create_set (index->array(), tp_array) }, но это не верно:
-      // при наличии $s[индексации] переменная $s это не обязательно массив: это может быть строка или кортеж
-      // для этого был добавлен специальный промежуточный тип tp_Indexable
-
-      // тут нужно помнить: при использовании как rvalue ($c = $s[2]) никакой модификации типа не происходит
-      // а если lvalue ($s[2] = $c), то для типа вызовется make_structured(), и соответственно lca(type, tp_Indexable)
+      // при наличии $s[idx] переменная $s это не обязательно массив: это может быть строка или кортеж
+      // если rvalue $s[idx], то вызовется const_read_at()
+      // если lvalue $s[idx], то вызовется make_structured()
     }
 
     void on_list (VertexAdaptor <op_list> list) {
