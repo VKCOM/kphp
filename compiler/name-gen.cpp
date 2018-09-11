@@ -191,61 +191,67 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
 
   VertexPtr lhs = v->ith(0);      // в обоих случаях lhs вычисляется так
   ClassPtr klass;
-  AssumType assum;
 
   switch (lhs->type()) {
     // (new A)->...
-    case op_constructor_call:
-      assum = infer_class_of_expr(function, lhs, klass);
+    case op_constructor_call: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_assert(assum == assum_instance && klass.not_null());
       return klass;
-
-      // $var->...
-    case op_var:
-      assum = infer_class_of_expr(function, lhs, klass);
+    }
+    // $var->...
+    case op_var: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
                  _err_instance_access(v, dl_pstr("$%s is not an instance", lhs->get_string().c_str())).c_str());
       return klass;
+    }
 
       // getInstance()->...
-    case op_func_call:
-      assum = infer_class_of_expr(function, lhs, klass);
+    case op_func_call: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
                  _err_instance_access(v, dl_pstr("%s() does not return instance", lhs->get_string().c_str())).c_str());
       return klass;
+    }
 
       // ...->anotherInstance->...
-    case op_instance_prop:
-      assum = infer_class_of_expr(function, lhs, klass);
+    case op_instance_prop: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
                  _err_instance_access(v, dl_pstr("$%s->%s is not an instance", lhs->ith(0)->get_string().c_str(), lhs->get_string().c_str())).c_str());
       return klass;
+    }
 
       // ...[$idx]->...
-    case op_index:
+    case op_index: {
       // $var[$idx]->...
-      if (lhs->size() == 2 && lhs->ith(0)->type() == op_var) {
-        assum = infer_class_of_expr(function, lhs->ith(0), klass);
-        kphp_error(assum == assum_instance_array,
-                   _err_instance_access(v, dl_pstr("$%s is not an array of instances", lhs->ith(0)->get_string().c_str())).c_str());
-        return klass;
+      VertexAdaptor<op_index> index = lhs.as<op_index>();
+      VertexPtr array = index->array();
+      if (index->has_key()) {
+        if (array->type() == op_var) {
+          AssumType assum = infer_class_of_expr(function, array, klass);
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, dl_pstr("$%s is not an array of instances", array->get_string().c_str())).c_str());
+          return klass;
+        }
+        // getArr()[$idx]->...
+        if (array->type() == op_func_call) {
+          AssumType assum = infer_class_of_expr(function, array, klass);
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, dl_pstr("%s() does not return array of instances", array->get_string().c_str())).c_str());
+          return klass;
+        }
+        // ...->arrOfInstances[$idx]->...
+        if (array->type() == op_instance_prop) {
+          AssumType assum = infer_class_of_expr(function, array, klass);
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", array->ith(0)->get_string().c_str(), array->get_string().c_str())).c_str());
+          return klass;
+        }
       }
-      // getArr()[$idx]->...
-      if (lhs->size() == 2 && lhs->ith(0)->type() == op_func_call) {
-        assum = infer_class_of_expr(function, lhs->ith(0), klass);
-        kphp_error(assum == assum_instance_array,
-                   _err_instance_access(v, dl_pstr("%s() does not return array of instances", lhs->ith(0)->get_string().c_str())).c_str());
-        return klass;
-      }
-      // ...->arrOfInstances[$idx]->...
-      if (lhs->size() == 2 && lhs->ith(0)->type() == op_instance_prop) {
-        assum = infer_class_of_expr(function, lhs->ith(0), klass);
-        kphp_error(assum == assum_instance_array,
-                   _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", lhs->ith(0)->ith(0)->get_string().c_str(), lhs->ith(0)->get_string().c_str())).c_str());
-        return klass;
-      }
-      // fall back to default
-
+    }
+    /* fallthrough */
     default:
       kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting").c_str());
       return klass;
