@@ -16,8 +16,8 @@
   }
 
   function g () {
-    sched_yield();
     global $a;
+    sched_yield();
 
     $aa = $a;
     var_dump ($aa);
@@ -30,9 +30,9 @@
   }
 
   function h (&$x) {
-    sched_yield();
-    sched_yield();
     global $id3;
+    sched_yield();
+    sched_yield();
     wait ($id3, 0.001);
     $x = 6;
     sched_yield();
@@ -41,6 +41,6 @@
 
   $id3 = fork (i());
   $id = fork (g());
-  $id2 = fork (h($a[1]));
+  // $id2 = fork (h($a[1]));
 
   f ();

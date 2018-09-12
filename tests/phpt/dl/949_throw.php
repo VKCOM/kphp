@@ -1,3 +1,4 @@
+@kphp_should_fail
 <?
 var_dump ($x);
 if ($x == 0) {

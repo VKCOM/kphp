@@ -14,6 +14,9 @@ $data = array(
 	$tmp=>-0.333333333
 );
 
+/**
+ * @kphp-required
+ */
 function cmp ($a, $b) {
     is_array ($a)
         and $a = array_sum ($a);

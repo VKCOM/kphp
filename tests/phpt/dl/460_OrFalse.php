@@ -55,7 +55,7 @@ exit;
 
   $a = array(1);
 
-  var_dump (isset ($a[6][5]));
+  var_dump (isset ($a[6]));
   var_dump ($a);
 
   $result = array(1, "");

@@ -49,7 +49,8 @@
   $x = (true ? true : false);
   $x = (true ? true : false);
 
-  $y = 1; $x = &$y;
+  $y = 1; 
+  // $x = &$y;
 
 
   $z = null;
