@@ -802,14 +802,9 @@ array <T> f$array_fill (int start_index, int num, const T &value) {
     return array <T> ();
   }
   array <T> result (array_size (num, 0, start_index == 0));
-
-  if (result.is_vector()) {
-    result.fill_vector(num, value);
-  } else {
-    result.set_value(start_index, value);
-    while (--num > 0) {
-      result.push_back(value);
-    }
+  result.set_value (start_index, value);
+  while (--num > 0) {
+    result.push_back (value);
   }
 
   return result;

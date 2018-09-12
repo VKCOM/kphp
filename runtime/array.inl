@@ -2351,15 +2351,6 @@ const T array<T>::push_back_return (const T &v) {
   }
 }
 
-template <class T>
-void array <T>::fill_vector (int num, const T &value) {
-  php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
-
-  std::fill((T *) p->int_entries, (T *) p->int_entries + num, value);
-  p->max_key = num - 1;
-  p->int_size = num;
-}
-
 
 template <class T>
 int array<T>::get_next_key (void) const {
