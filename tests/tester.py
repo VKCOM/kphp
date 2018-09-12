@@ -585,7 +585,7 @@ def parse_command_line_arguments():
     parser.add_argument('--disable-coloring', action='store_true', default=None,
                         help="disable coloring (useful when stdout not in tty)")
 
-    parser.add_argument('-w', '--cnt-workers', default=16, type=int,
+    parser.add_argument('-w', '--cnt-workers', default=10, type=int,
                         help="count of workers for executing tests")
 
     parser.add_argument('-e', '--engine-path', default="../../",
