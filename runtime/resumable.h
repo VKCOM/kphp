@@ -23,35 +23,35 @@ extern const char *last_wait_error;
 
 class Storage {
 private:
-  char storage_[sizeof (var)];
+  char storage_[sizeof(var)];
 
-  template <class X, class Y>
+  template<class X, class Y>
   struct load_implementation_helper {
-    static Y load (char *storage);
+    static Y load(char *storage);
   };
 
-  static var load_void (char *storage);
+  static var load_void(char *storage);
 
-  static var load_exception (char *storage);
+  static var load_exception(char *storage);
 
-  void save_exception (void);
+  void save_exception(void);
 
 public:
-  typedef var (*Getter) (char *);
+  typedef var (*Getter)(char *);
 
   Getter getter_;
 
   Storage();
 
-  template <class T1, class T2>
-  void save (const T2 &x, Getter getter);
+  template<class T1, class T2>
+  void save(const T2 &x, Getter getter);
 
-  template <class T1, class T2>
-  void save (const T2 &x);
+  template<class T1, class T2>
+  void save(const T2 &x);
 
-  void save_void (void);
+  void save_void(void);
 
-  template <class X, class Y>
+  template<class X, class Y>
   Y load();
 
   var load_as_var();
@@ -61,87 +61,87 @@ class Resumable {
 protected:
   static Storage *input_;
   static Storage *output_;
-  void* pos__;
+  void *pos__;
 
   virtual bool run() = 0;
 
 public:
-  void *operator new (size_t size);
-  void operator delete (void *ptr, size_t size);
+  void *operator new(size_t size);
+  void operator delete(void *ptr, size_t size);
 
   Resumable();
 
   virtual ~Resumable();
 
-  bool resume (int resumable_id, Storage *input);
+  bool resume(int resumable_id, Storage *input);
 
-  static void update_output (void);
+  static void update_output(void);
 };
 
 
-template <class T>
-T start_resumable (Resumable *resumable);
+template<class T>
+T start_resumable(Resumable *resumable);
 
-template <class T>
-int fork_resumable (Resumable *resumable);
-
-
-void resumable_run_ready (int resumable_id);
+template<class T>
+int fork_resumable(Resumable *resumable);
 
 
-bool wait_started_resumable (int resumable_id);
-
-void wait_synchronously (int resumable_id);
-
-bool f$wait_synchronously (int resumable_id);
-
-bool f$wait (int resumable_id, double timeout = -1.0);
-
-bool f$wait_multiple (int resumable_id);
-
-var f$wait_result (int resumable_id, double timeout = -1.0);
-
-void f$sched_yield (void);
+void resumable_run_ready(int resumable_id);
 
 
-bool in_main_thread (void);
+bool wait_started_resumable(int resumable_id);
 
-int register_forked_resumable (Resumable *resumable);
+void wait_synchronously(int resumable_id);
 
-int register_started_resumable (Resumable *resumable);
+bool f$wait_synchronously(int resumable_id);
 
-void finish_forked_resumable (int resumable_id);
+bool f$wait(int resumable_id, double timeout = -1.0);
 
-void finish_started_resumable (int resumable_id);
+bool f$wait_multiple(int resumable_id);
 
-void unregister_started_resumable (int resumable_id);
+var f$wait_result(int resumable_id, double timeout = -1.0);
 
-Storage *get_started_storage (int resumable_id);
-
-Storage *get_forked_storage (int resumable_id);
-
-Resumable *get_forked_resumable (int resumable_id);
+void f$sched_yield(void);
 
 
-int f$wait_queue_create (void);
-int f$wait_queue_create (const var &request_ids);
-int wait_queue_create (const array <int> &resumable_ids);
+bool in_main_thread(void);
+
+int register_forked_resumable(Resumable *resumable);
+
+int register_started_resumable(Resumable *resumable);
+
+void finish_forked_resumable(int resumable_id);
+
+void finish_started_resumable(int resumable_id);
+
+void unregister_started_resumable(int resumable_id);
+
+Storage *get_started_storage(int resumable_id);
+
+Storage *get_forked_storage(int resumable_id);
+
+Resumable *get_forked_resumable(int resumable_id);
+
+
+int f$wait_queue_create(void);
+int f$wait_queue_create(const var &request_ids);
+int wait_queue_create(const array<int> &resumable_ids);
 void unregister_wait_queue(int queue_id);
 
-int f$wait_queue_push (int queue_id, const var &request_ids);
-int wait_queue_push (int queue_id, int request_id);
-int wait_queue_push_unsafe (int queue_id, int resumable_id);
+int f$wait_queue_push(int queue_id, const var &request_ids);
+int wait_queue_push(int queue_id, int request_id);
+int wait_queue_push_unsafe(int queue_id, int resumable_id);
 
-bool f$wait_queue_empty (int queue_id);
+bool f$wait_queue_empty(int queue_id);
 
-int f$wait_queue_next (int queue_id, double timeout = -1.0);
+int f$wait_queue_next(int queue_id, double timeout = -1.0);
 
-int wait_queue_next_synchronously (int queue_id);
-int f$wait_queue_next_synchronously (int queue_id);
+int wait_queue_next_synchronously(int queue_id);
+int f$wait_queue_next_synchronously(int queue_id);
 
-void resumable_init_static_once (void);
+void resumable_init_static_once(void);
 
-void resumable_init_static (void);
+void resumable_init_static(void);
 
 int f$get_running_fork_id();
 
@@ -152,74 +152,74 @@ int f$get_running_fork_id();
  */
 
 
-template <class X, class Y>
-Y Storage::load_implementation_helper <X, Y>::load (char *storage) {
+template<class X, class Y>
+Y Storage::load_implementation_helper<X, Y>::load(char *storage) {
   X *data = reinterpret_cast <X *> (storage);
   Y result = *data;
   data->~X();
   return result;
 }
 
-template <class T>
-struct Storage::load_implementation_helper <class_instance <T>, var> {
-  static var load (char *storage) {
+template<class T>
+struct Storage::load_implementation_helper<class_instance<T>, var> {
+  static var load(char *storage) {
     php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
     return var();
   }
 };
 
-template <class T>
-struct Storage::load_implementation_helper <array <class_instance <T>>, var> {
-  static var load (char *storage) {
+template<class T>
+struct Storage::load_implementation_helper<array<class_instance<T>>, var> {
+  static var load(char *storage) {
     php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
     return var();
   }
 };
 
-template <class T>
-struct Storage::load_implementation_helper <OrFalse <array <class_instance <T>>>, var> {
-  static var load (char *storage) {
+template<class T>
+struct Storage::load_implementation_helper<OrFalse<array<class_instance<T>>>, var> {
+  static var load(char *storage) {
     php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
     return var();
   }
 };
 
-template <class T1, class T2>
-void Storage::save (const T2 &x, Getter getter) {
+template<class T1, class T2>
+void Storage::save(const T2 &x, Getter getter) {
   if (CurException) {
     save_exception();
   } else {
-    php_assert (sizeof (T1) <= sizeof (var));
-    new (storage_) T1 (x);
+    php_assert (sizeof(T1) <= sizeof(var));
+    new(storage_) T1(x);
     getter_ = getter;
     php_assert (getter_ != NULL);
   }
 }
 
-template <class T1, class T2>
-void Storage::save (const T2 &x) {
-  save<T1, T2>(x, load_implementation_helper <T1, var>::load);
+template<class T1, class T2>
+void Storage::save(const T2 &x) {
+  save<T1, T2>(x, load_implementation_helper<T1, var>::load);
 }
 
-template <class X, class Y>
+template<class X, class Y>
 Y Storage::load() {
   php_assert (getter_ != NULL);
   if (getter_ == load_exception) {
     getter_ = NULL;
-    load_exception (storage_);
+    load_exception(storage_);
     return Y();
   }
 
   getter_ = NULL;
-  return load_implementation_helper <X, Y>::load (storage_);
+  return load_implementation_helper<X, Y>::load(storage_);
 }
 
-template <>
+template<>
 inline void Storage::load<void, void>() {
   php_assert (getter_ != NULL);
   if (getter_ == load_exception) {
     getter_ = NULL;
-    load_exception (storage_);
+    load_exception(storage_);
     return;
   }
 
@@ -227,36 +227,36 @@ inline void Storage::load<void, void>() {
 }
 
 
-template <class T>
-T start_resumable (Resumable *resumable) {
-  int id = register_started_resumable (resumable);
+template<class T>
+T start_resumable(Resumable *resumable) {
+  int id = register_started_resumable(resumable);
 
-  if (resumable->resume (id, NULL)) {
-    Storage *output = get_started_storage (id);
-    finish_started_resumable (id);
-    unregister_started_resumable (id);
+  if (resumable->resume(id, NULL)) {
+    Storage *output = get_started_storage(id);
+    finish_started_resumable(id);
+    unregister_started_resumable(id);
     resumable_finished = true;
-    return output->load <T, T>();
+    return output->load<T, T>();
   }
 
   if (in_main_thread()) {
-    php_assert (wait_started_resumable (id));
-    Storage *output = get_started_storage (id);
+    php_assert (wait_started_resumable(id));
+    Storage *output = get_started_storage(id);
     resumable_finished = true;
-    unregister_started_resumable (id);
-    return output->load <T, T>();
+    unregister_started_resumable(id);
+    return output->load<T, T>();
   }
 
   resumable_finished = false;
   return T();
 }
 
-template <class T>
-int fork_resumable (Resumable *resumable) {
-  int id = register_forked_resumable (resumable);
+template<class T>
+int fork_resumable(Resumable *resumable) {
+  int id = register_forked_resumable(resumable);
 
-  if (resumable->resume (id, NULL)) {
-    finish_forked_resumable (id);
+  if (resumable->resume(id, NULL)) {
+    finish_forked_resumable(id);
   }
 
   return id;

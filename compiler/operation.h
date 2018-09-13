@@ -1,11 +1,14 @@
 #pragma once
+
 #include "compiler/token.h"
 #include "compiler/utils.h"
 
-enum Operation {                        
+enum Operation {
   op_err = 0,
 #define FOREACH_OP(op) op,
+
 #include "foreach_op.h"
+
   Operation_size
 };
 
@@ -28,11 +31,50 @@ enum OperationExtra {
   op_ex_static_protected
 };
 
-enum OperationType {error_op = 0, common_op, cycle_op, binary_op, binary_func_op, prefix_op, postfix_op, ternary_op, conv_op};
-enum RLOperationType {rl_error = 0, rl_set, rl_index, rl_op, rl_common, rl_const, rl_var, rl_func, rl_mem_func, rl_op_l, rl_instance_prop, rl_other};
-enum RLValueType {val_error = 0, val_r, val_l, val_none};
-enum ConstOperationType {cnst_error = -1, cnst_not_func, cnst_nonconst_func, cnst_const_func, cnst_func};
-enum ConstValueType {cnst_error_ = 0, cnst_not_val, cnst_nonconst_val, cnst_const_val};
+enum OperationType {
+  error_op = 0,
+  common_op,
+  cycle_op,
+  binary_op,
+  binary_func_op,
+  prefix_op,
+  postfix_op,
+  ternary_op,
+  conv_op
+};
+enum RLOperationType {
+  rl_error = 0,
+  rl_set,
+  rl_index,
+  rl_op,
+  rl_common,
+  rl_const,
+  rl_var,
+  rl_func,
+  rl_mem_func,
+  rl_op_l,
+  rl_instance_prop,
+  rl_other
+};
+enum RLValueType {
+  val_error = 0,
+  val_r,
+  val_l,
+  val_none
+};
+enum ConstOperationType {
+  cnst_error = -1,
+  cnst_not_func,
+  cnst_nonconst_func,
+  cnst_const_func,
+  cnst_func
+};
+enum ConstValueType {
+  cnst_error_ = 0,
+  cnst_not_val,
+  cnst_nonconst_val,
+  cnst_const_val
+};
 
 const int no_property = 0;
 enum opp_main_t {
@@ -115,46 +157,55 @@ struct OpInfo {
   static int bin_op_begin, bin_op_end;
   static int ternaryP;
 
-  static inline void add_binary_op (int priority, TokenType tok, Operation op);
-  static inline void add_unary_op (int priority, TokenType tok, Operation op);
-  static inline void add_op (TokenType tok, Operation op);
+  static inline void add_binary_op(int priority, TokenType tok, Operation op);
+  static inline void add_unary_op(int priority, TokenType tok, Operation op);
+  static inline void add_op(TokenType tok, Operation op);
   static void init_static();
 
 private:
-  static inline OpProperties &get_properties (Operation op) {
+  static inline OpProperties &get_properties(Operation op) {
     return P[op];
   }
-  static inline void set_priority (Operation op, int priority) {
-    get_properties (op).priority = priority;
+
+  static inline void set_priority(Operation op, int priority) {
+    get_properties(op).priority = priority;
   }
 
 public:
-  static inline const OpProperties &properties (Operation op) {
-    return get_properties (op);
+  static inline const OpProperties &properties(Operation op) {
+    return get_properties(op);
   }
-  static inline RLOperationType rl (Operation op) {
-    return properties (op).rl;
+
+  static inline RLOperationType rl(Operation op) {
+    return properties(op).rl;
   }
-  static inline ConstOperationType cnst (Operation op) {
-    return properties (op).cnst;
+
+  static inline ConstOperationType cnst(Operation op) {
+    return properties(op).cnst;
   }
-  static inline OperationType type (Operation op) {
-    return properties (op).type;
+
+  static inline OperationType type(Operation op) {
+    return properties(op).type;
   }
-  static inline const string &str (Operation op) {
-    return properties (op).str;
+
+  static inline const string &str(Operation op) {
+    return properties(op).str;
   }
-  static inline Operation base_op (Operation op) {
-    return properties (op).base_op;
+
+  static inline Operation base_op(Operation op) {
+    return properties(op).base_op;
   }
-  static inline int priority (Operation op) {
-    return properties (op).priority;
+
+  static inline int priority(Operation op) {
+    return properties(op).priority;
   }
-  static inline opp_fixity_t fixity (Operation op) {
-    return properties (op).fixity;
+
+  static inline opp_fixity_t fixity(Operation op) {
+    return properties(op).fixity;
   }
-  static inline opp_arity_t arity (Operation op) {
-    return properties (op).arity;
+
+  static inline opp_arity_t arity(Operation op) {
+    return properties(op).arity;
   }
 };
 

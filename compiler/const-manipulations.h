@@ -22,17 +22,25 @@ public:
 
 protected:
   virtual T on_trivial(VertexPtr v) { return on_non_const(v); }
+
   virtual T on_conv(VertexAdaptor<meta_op_unary_op> v) { return on_non_const(v); }
+
   virtual T on_unary(VertexAdaptor<meta_op_unary_op> v) { return on_non_const(v); }
+
   virtual T on_binary(VertexAdaptor<meta_op_binary_op> v) { return on_non_const(v); }
+
   virtual T on_double_arrow(VertexAdaptor<op_double_arrow> v) { return on_non_const(v); }
 
   virtual bool on_array_double_arrow(VertexAdaptor<op_double_arrow>) { return false; }
+
   virtual bool on_array_value(VertexPtr array __attribute__((unused)), size_t ind __attribute__((unused))) { return false; }
+
   virtual T on_array_finish(VertexAdaptor<op_array> v) { return on_non_const(v); }
 
   virtual T on_func_name(VertexAdaptor<op_func_name> v) { return on_non_const(v); }
+
   virtual T on_var(VertexPtr v) { return on_non_const(v); }
+
   virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
 
   virtual T on_non_const(VertexPtr) { return T(); }
@@ -136,8 +144,7 @@ protected:
 };
 
 struct CheckConst
-  : ConstManipulations<bool>
-{
+  : ConstManipulations<bool> {
 public:
   static bool is_const(VertexPtr v) {
     static CheckConst check_const;
@@ -189,10 +196,9 @@ protected:
 struct CheckConstWithDefines
   : CheckConst {
 public:
-  explicit CheckConstWithDefines(const std::map<std::string, VertexPtr> &define_vertex)
-    : in_concat(0)
-    , define_vertex(define_vertex)
-  {}
+  explicit CheckConstWithDefines(const std::map<std::string, VertexPtr> &define_vertex) :
+    in_concat(0),
+    define_vertex(define_vertex) {}
 
   bool is_const(VertexPtr v) {
     return visit(v);
@@ -216,7 +222,7 @@ protected:
     if (v->type() == op_concat || v->type() == op_string_build) {
       in_concat++;
 
-      for(auto i : *v) {
+      for (auto i : *v) {
         if (!visit(i)) {
           in_concat--;
           return false;
@@ -238,9 +244,8 @@ private:
 struct MakeConst
   : ConstManipulations<VertexPtr> {
 public:
-  explicit MakeConst(const std::map<std::string, VertexPtr> &define_vertex)
-    : define_vertex(define_vertex)
-  {}
+  explicit MakeConst(const std::map<std::string, VertexPtr> &define_vertex) :
+    define_vertex(define_vertex) {}
 
   VertexPtr make_const(VertexPtr v) {
     return visit(v);
@@ -293,7 +298,7 @@ protected:
       CREATE_VERTEX(new_val, op_string);
       new_val->location = v->get_location();
 
-      for(auto i : *v) {
+      for (auto i : *v) {
         VertexPtr res = visit(i);
         kphp_error(res->has_get_string(), ("expected type convertible to string, but got: " + OpInfo::str(res->type())).c_str());
         new_val->str_val += res->get_string();
@@ -310,8 +315,7 @@ private:
 };
 
 struct ArrayHash
-  : ConstManipulations<long long>
-{
+  : ConstManipulations<long long> {
   static long long calc_hash(VertexPtr v) {
     static ArrayHash array_hash;
     return array_hash.visit(GenTree::get_actual_value(v));
@@ -361,7 +365,7 @@ protected:
     long long res_hash = v->args().size();
     res_hash = res_hash * HASH_MULT + MAGIC1;
 
-    for(auto it : *v) {
+    for (auto it : *v) {
       res_hash = res_hash * HASH_MULT + visit(GenTree::get_actual_value(it));
     }
 
@@ -387,8 +391,7 @@ private:
 };
 
 struct VertexPtrFormatter
-  : ConstManipulations<std::string>
-{
+  : ConstManipulations<std::string> {
   static std::string to_string(VertexPtr v) {
     static VertexPtrFormatter serializer;
     return serializer.visit(GenTree::get_actual_value(v));
@@ -434,7 +437,7 @@ protected:
   std::string on_array(VertexAdaptor<op_array> v) override {
     std::string res;
 
-    for(auto it : *v) {
+    for (auto it : *v) {
       res += visit(GenTree::get_actual_value(it)) + ", ";
     }
 

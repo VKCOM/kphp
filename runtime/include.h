@@ -13,34 +13,36 @@
 
 struct array_size;
 
-class array_tag {};
+class array_tag {
+};
 
-template <class T>
+template<class T>
 class array;
 
-template <class T>
+template<class T>
 class class_instance;
 
 class var;
 
-class Unknown {};
+class Unknown {
+};
 
-template <class T, class TT = T>
+template<class T, class TT = T>
 class force_convert_to;
 
 class string;
 
 class string_buffer;
 
-template <class T>
+template<class T>
 class convert_to {
 public:
-  static inline const T& convert (const T &val);
+  static inline const T &convert(const T &val);
 
-  static inline T convert (const Unknown &val);
+  static inline T convert(const Unknown &val);
 
-  template <class T1>
-  static inline T convert (const T1 &val);
+  template<class T1>
+  static inline T convert(const T1 &val);
 };
 
 template<class T, class U>
@@ -75,62 +77,71 @@ disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
 }
 
-class OrFalseTag {};
+class OrFalseTag {
+};
 
-template <class T>
+template<class T>
 class OrFalse : public OrFalseTag {
 public:
   T value;
   bool bool_value;
 
-  OrFalse (void): value(), bool_value() {
+  OrFalse(void) :
+    value(),
+    bool_value() {
   }
 
-  OrFalse (bool x): value(), bool_value (x) {
+  OrFalse(bool x) :
+    value(),
+    bool_value(x) {
     php_assert (x == false);
   }
 
-  template <class T1>
-  OrFalse (const T1 &x): value (x), bool_value (true) {
+  template<class T1>
+  OrFalse(const T1 &x):
+    value(x),
+    bool_value(true) {
   }
 
-  template <class T1>
-  OrFalse (const OrFalse <T1> &other): value (other.value), bool_value (other.bool_value) {
+  template<class T1>
+  OrFalse(const OrFalse<T1> &other):
+    value(other.value),
+    bool_value(other.bool_value) {
   }
 
 
-  OrFalse& operator = (bool x) {
+  OrFalse &operator=(bool x) {
     value = T();
     bool_value = x;
     php_assert (x == false);
     return *this;
   }
 
-  template <class T1>
-  inline OrFalse& operator = (const OrFalse <T1> &other) {
+  template<class T1>
+  inline OrFalse &operator=(const OrFalse<T1> &other) {
     value = other.value;
     bool_value = other.bool_value;
     return *this;
   }
 
-  template <class T1>
-  inline OrFalse& operator = (const T1 &x) {
+  template<class T1>
+  inline OrFalse &operator=(const T1 &x) {
     value = x;
     bool_value = true;
     return *this;
   }
 
 
-  T& ref (void) {
+  T &ref(void) {
     bool_value = true;
     return value;
   }
 
-  T& val (void) {
+  T &val(void) {
     return value;
   }
 
-  const T& val (void) const {
+  const T &val(void) const {
     return value;
   }
 };
@@ -144,14 +155,14 @@ using enable_if_t_is_or_false_t2 = typename std::enable_if<std::is_same<T, OrFal
 template<class T>
 using enable_if_t_is_or_false_string = enable_if_t_is_or_false_t2<T, string>;
 
-template <>
-class OrFalse <bool>;
+template<>
+class OrFalse<bool>;
 
-template <>
-class OrFalse <var>;
+template<>
+class OrFalse<var>;
 
-template <class T>
-class OrFalse <OrFalse <T> >;
+template<class T>
+class OrFalse<OrFalse<T>>;
 
 using std::swap;
 using std::min;

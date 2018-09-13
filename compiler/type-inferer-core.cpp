@@ -3,225 +3,230 @@
 #include "compiler/data.h"
 
 namespace tinf {
-  Node::Node() :
-    next_(),
-    rev_next_(),
-    recalc_state_ (empty_st),
-    holder_id_ (-1),
-    type_ (TypeData::get_type (tp_Unknown)),
-    recalc_cnt_ (-1),
-    isset_flags (0),
-    isset_was (0) {
-  }
+Node::Node() :
+  next_(),
+  rev_next_(),
+  recalc_state_(empty_st),
+  holder_id_(-1),
+  type_(TypeData::get_type(tp_Unknown)),
+  recalc_cnt_(-1),
+  isset_flags(0),
+  isset_was(0) {
+}
 
-  void Node::add_edge (Edge *edge) {
-    AutoLocker <Node *> locker (this);
-    next_.push_back (edge);
-  }
+void Node::add_edge(Edge *edge) {
+  AutoLocker<Node *> locker(this);
+  next_.push_back(edge);
+}
 
-  void Node::add_rev_edge (Edge *edge) {
-    AutoLocker <Node *> locker (this);
-    rev_next_.push_back (edge);
-  }
+void Node::add_rev_edge(Edge *edge) {
+  AutoLocker<Node *> locker(this);
+  rev_next_.push_back(edge);
+}
 
-  int Node::get_recalc_cnt() {
-    return recalc_cnt_;
-  }
-  int Node::get_holder_id() {
-    return holder_id_;
-  }
+int Node::get_recalc_cnt() {
+  return recalc_cnt_;
+}
 
-  bool Node::try_start_recalc() {
-    while (true) {
-      int recalc_state_copy = recalc_state_;
-      switch (recalc_state_copy) {
-        case empty_st:
-          if (__sync_bool_compare_and_swap (&recalc_state_, empty_st, own_recalc_st)) {
-            recalc_cnt_++;
-            holder_id_ = get_thread_id();
-            return true;
-          }
-          break;
-        case own_st:
-          if (__sync_bool_compare_and_swap (&recalc_state_, own_st, own_recalc_st)) {
-            return false;
-          }
-          break;
-        case own_recalc_st:
-          return false;
-        default:
-          assert (0);
-      }
-    }
-    return false;
-  }
+int Node::get_holder_id() {
+  return holder_id_;
+}
 
-  void Node::start_recalc() {
-    bool err = __sync_bool_compare_and_swap (&recalc_state_, own_recalc_st, own_st);
-    kphp_assert (err == true);
-  }
-
-  bool Node::try_finish_recalc() {
-    recalc_cnt_++;
-    while (true) {
-      int recalc_state_copy = recalc_state_;
-      switch (recalc_state_copy) {
-        case own_st:
-          if (__sync_bool_compare_and_swap (&recalc_state_, own_st, empty_st)) {
-            holder_id_ = -1;
-            return true;
-          }
-          break;
-        case own_recalc_st:
-          return false;
-        default:
-          assert (0);
-      }
-    }
-    return false;
-  }
-
-  TypeInferer::TypeInferer() :
-    finish_flag (false) {
-  }
-
-  void TypeInferer::recalc_node (Node *node) {
-    //fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
-    if (node->try_start_recalc()) {
-      Q->push (node);
-    } else if (is_finished()) {
-      if (node->get_holder_id() != get_thread_id()) {
-        fprintf(stderr, "node->get_holder_id() = %d, get_thread_id = %d\n", node->get_holder_id(), get_thread_id());
-        kphp_assert(node->get_holder_id() == get_thread_id());
-      }
-    }
-  }
-  bool TypeInferer::add_node (Node *node) {
-    //fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
-    if (node->get_recalc_cnt() < 0) {
-      recalc_node (node);
-      return true;
-    }
-    return false;
-  }
-  void TypeInferer::add_edge (Edge *edge) {
-    assert (edge != NULL);
-    assert (edge->from != NULL);
-    assert (edge->to != NULL);
-    //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
-    edge->from->add_edge (edge);
-    edge->to->add_rev_edge (edge);
-  }
-
-  void TypeInferer::add_restriction (RestrictionBase *restriction) {
-    restrictions->push_back (restriction);
-  }
-
-  void TypeInferer::check_restrictions() {
-    AUTO_PROF (tinf_check);
-    for (int i = 0; i < restrictions.size(); i++) {
-      for (RestrictionBase *r : *restrictions.get(i)) {
-        if (r->check_broken_restriction()) {
-          return;
+bool Node::try_start_recalc() {
+  while (true) {
+    int recalc_state_copy = recalc_state_;
+    switch (recalc_state_copy) {
+      case empty_st:
+        if (__sync_bool_compare_and_swap(&recalc_state_, empty_st, own_recalc_st)) {
+          recalc_cnt_++;
+          holder_id_ = get_thread_id();
+          return true;
         }
+        break;
+      case own_st:
+        if (__sync_bool_compare_and_swap(&recalc_state_, own_st, own_recalc_st)) {
+          return false;
+        }
+        break;
+      case own_recalc_st:
+        return false;
+      default:
+        assert (0);
+    }
+  }
+  return false;
+}
+
+void Node::start_recalc() {
+  bool err = __sync_bool_compare_and_swap(&recalc_state_, own_recalc_st, own_st);
+  kphp_assert (err == true);
+}
+
+bool Node::try_finish_recalc() {
+  recalc_cnt_++;
+  while (true) {
+    int recalc_state_copy = recalc_state_;
+    switch (recalc_state_copy) {
+      case own_st:
+        if (__sync_bool_compare_and_swap(&recalc_state_, own_st, empty_st)) {
+          holder_id_ = -1;
+          return true;
+        }
+        break;
+      case own_recalc_st:
+        return false;
+      default:
+        assert (0);
+    }
+  }
+  return false;
+}
+
+TypeInferer::TypeInferer() :
+  finish_flag(false) {
+}
+
+void TypeInferer::recalc_node(Node *node) {
+  //fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+  if (node->try_start_recalc()) {
+    Q->push(node);
+  } else if (is_finished()) {
+    if (node->get_holder_id() != get_thread_id()) {
+      fprintf(stderr, "node->get_holder_id() = %d, get_thread_id = %d\n", node->get_holder_id(), get_thread_id());
+      kphp_assert(node->get_holder_id() == get_thread_id());
+    }
+  }
+}
+
+bool TypeInferer::add_node(Node *node) {
+  //fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+  if (node->get_recalc_cnt() < 0) {
+    recalc_node(node);
+    return true;
+  }
+  return false;
+}
+
+void TypeInferer::add_edge(Edge *edge) {
+  assert (edge != NULL);
+  assert (edge->from != NULL);
+  assert (edge->to != NULL);
+  //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
+  edge->from->add_edge(edge);
+  edge->to->add_rev_edge(edge);
+}
+
+void TypeInferer::add_restriction(RestrictionBase *restriction) {
+  restrictions->push_back(restriction);
+}
+
+void TypeInferer::check_restrictions() {
+  AUTO_PROF (tinf_check);
+  for (int i = 0; i < restrictions.size(); i++) {
+    for (RestrictionBase *r : *restrictions.get(i)) {
+      if (r->check_broken_restriction()) {
+        return;
       }
     }
   }
+}
 
 
-  class TypeInfererTask : public Task {
-    private:
-      TypeInferer *inferer_;
-      NodeQueue *queue_;
-    public:
-      TypeInfererTask (TypeInferer *inferer, NodeQueue *queue) :
-        inferer_ (inferer),
-        queue_ (queue) {
-      }
-
-      void execute() {
-        AUTO_PROF (tinf_infer_infer);
-        stage::set_name ("Infer types");
-        stage::set_function (FunctionPtr());
-        //double st = dl_time();
-        //int cnt = (int)queue_->size();
-        //int cnt2 = 
-        inferer_->run_queue (queue_);
-        //fprintf (stdout, "A%d: %lf %d %d\n", get_thread_id(), dl_time() - st, cnt, cnt2);
-        delete queue_;
-      }
-  };
-
-  vector <Task *> TypeInferer::get_tasks() {
-    vector <Task *> res;
-    for (int i = 0; i < Q.size(); i++) {
-      NodeQueue *q = Q.get (i);
-      if (q->empty()) {
-        continue;
-      }
-      NodeQueue *new_q = new NodeQueue();
-      swap (*new_q, *q);
-
-      res.push_back (new TypeInfererTask (this, new_q));
-    }
-    return res;
+class TypeInfererTask : public Task {
+private:
+  TypeInferer *inferer_;
+  NodeQueue *queue_;
+public:
+  TypeInfererTask(TypeInferer *inferer, NodeQueue *queue) :
+    inferer_(inferer),
+    queue_(queue) {
   }
 
-  int TypeInferer::do_run_queue() {
-    NodeQueue &q = *Q;
-
-    int cnt = 0;
-    while (!q.empty()) {
-      cnt++;
-      Node *node = q.front();
-
-      node->start_recalc();
-      node->recalc (this);
-
-      if (node->try_finish_recalc()) {
-        q.pop();
-      }
-    }
-
-    return cnt;
+  void execute() {
+    AUTO_PROF (tinf_infer_infer);
+    stage::set_name("Infer types");
+    stage::set_function(FunctionPtr());
+    //double st = dl_time();
+    //int cnt = (int)queue_->size();
+    //int cnt2 =
+    inferer_->run_queue(queue_);
+    //fprintf (stdout, "A%d: %lf %d %d\n", get_thread_id(), dl_time() - st, cnt, cnt2);
+    delete queue_;
   }
+};
 
-  int TypeInferer::run_queue (NodeQueue *new_q) {
-    swap (*Q, *new_q);
-    return do_run_queue();
-  }
-
-  void TypeInferer::run_node (Node *node) {
-    if (add_node (node)) {
-      do_run_queue();
+vector<Task *> TypeInferer::get_tasks() {
+  vector<Task *> res;
+  for (int i = 0; i < Q.size(); i++) {
+    NodeQueue *q = Q.get(i);
+    if (q->empty()) {
+      continue;
     }
-    while (node->get_recalc_cnt() == 0) {
-      usleep (250);
+    NodeQueue *new_q = new NodeQueue();
+    swap(*new_q, *q);
+
+    res.push_back(new TypeInfererTask(this, new_q));
+  }
+  return res;
+}
+
+int TypeInferer::do_run_queue() {
+  NodeQueue &q = *Q;
+
+  int cnt = 0;
+  while (!q.empty()) {
+    cnt++;
+    Node *node = q.front();
+
+    node->start_recalc();
+    node->recalc(this);
+
+    if (node->try_finish_recalc()) {
+      q.pop();
     }
   }
 
-  const TypeData *TypeInferer::get_type (Node *node) {
-    run_node (node);
-    return node->type_;
-  }
+  return cnt;
+}
 
-  void TypeInferer::finish() {
-    finish_flag = true;
+int TypeInferer::run_queue(NodeQueue *new_q) {
+  swap(*Q, *new_q);
+  return do_run_queue();
+}
+
+void TypeInferer::run_node(Node *node) {
+  if (add_node(node)) {
+    do_run_queue();
   }
-  bool TypeInferer::is_finished() {
-    return finish_flag;
+  while (node->get_recalc_cnt() == 0) {
+    usleep(250);
   }
+}
+
+const TypeData *TypeInferer::get_type(Node *node) {
+  run_node(node);
+  return node->type_;
+}
+
+void TypeInferer::finish() {
+  finish_flag = true;
+}
+
+bool TypeInferer::is_finished() {
+  return finish_flag;
+}
 
 
-  static TypeInferer *CI = NULL;
+static TypeInferer *CI = NULL;
 
-  void register_inferer (TypeInferer *inferer) {
-    if (!__sync_bool_compare_and_swap (&CI, NULL, inferer)) {
-      kphp_fail();
-    }
+void register_inferer(TypeInferer *inferer) {
+  if (!__sync_bool_compare_and_swap(&CI, NULL, inferer)) {
+    kphp_fail();
   }
-  TypeInferer *get_inferer() {
-    return CI;
-  }
+}
+
+TypeInferer *get_inferer() {
+  return CI;
+}
 }
 

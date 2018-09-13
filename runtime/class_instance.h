@@ -20,35 +20,35 @@
 //  inline const char *get_class() const { return "Classes\\A"; }
 //};
 
-template <class T>
+template<class T>
 class class_instance {
   T *o;
 
-  void warn_on_access_null () const;
+  void warn_on_access_null() const;
 
 public:
 
-  inline class_instance ();
-  inline class_instance (const class_instance <T> &other);
-  inline class_instance (bool value);
-  inline class_instance &operator= (const class_instance <T> &other);
-  inline class_instance &operator= (bool value);
-  inline ~class_instance ();
+  inline class_instance();
+  inline class_instance(const class_instance<T> &other);
+  inline class_instance(bool value);
+  inline class_instance &operator=(const class_instance<T> &other);
+  inline class_instance &operator=(bool value);
+  inline ~class_instance();
 
-  inline void alloc ();
-  inline void destroy ();
-  inline int get_reference_counter () const;
+  inline void alloc();
+  inline void destroy();
+  inline int get_reference_counter() const;
 
-  inline T *operator-> () __attribute__ ((always_inline));
-  inline T *operator-> () const __attribute__ ((always_inline));
+  inline T *operator->() __attribute__ ((always_inline));
+  inline T *operator->() const __attribute__ ((always_inline));
 
-  inline bool is_null () const;
-  inline string to_string () const;
-  inline const char *get_class () const;
+  inline bool is_null() const;
+  inline string to_string() const;
+  inline const char *get_class() const;
 
-  template <class T1>
-  friend inline bool eq2 (const class_instance <T1> &lhs, const class_instance <T1> &rhs);
-  template <class T1>
-  friend inline bool equals (const class_instance <T1> &lhs, const class_instance <T1> &rhs);
+  template<class T1>
+  friend inline bool eq2(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
+  template<class T1>
+  friend inline bool equals(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
 
 };

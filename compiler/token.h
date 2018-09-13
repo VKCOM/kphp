@@ -1,4 +1,5 @@
 #pragma once
+
 #include "compiler/common.h"
 
 #include "compiler/utils.h"
@@ -195,11 +196,11 @@ public:
 
   int line_num;
 
-  explicit Token (TokenType type);
-  Token (TokenType type, const string_ref &s);
-  Token (TokenType type, const char *s, const char *t);
+  explicit Token(TokenType type);
+  Token(TokenType type, const string_ref &s);
+  Token(TokenType type, const char *s, const char *t);
 
-  inline TokenType &type() {return type_;}
+  inline TokenType &type() { return type_; }
 
   string to_str();
 };

@@ -1,57 +1,58 @@
 #pragma once
+
 #include "compiler/common.h"
 
 /*** Index ***/
 class Target;
 
 class File {
-  private:
-    File (const File &from);
-    File &operator = (const File &from);
-  public:
-    string path;
-    string name;
-    string ext;
-    string name_without_ext;
-    string subdir;
-    long long mtime;
-    unsigned long long crc64;
-    unsigned long long crc64_with_comments;
-    bool on_disk;
-    bool needed;
-    Target *target;
-    //Don't know where else I can save it
-    vector <string> includes;
-    bool compile_with_debug_info_flag;
+private:
+  File(const File &from);
+  File &operator=(const File &from);
+public:
+  string path;
+  string name;
+  string ext;
+  string name_without_ext;
+  string subdir;
+  long long mtime;
+  unsigned long long crc64;
+  unsigned long long crc64_with_comments;
+  bool on_disk;
+  bool needed;
+  Target *target;
+  //Don't know where else I can save it
+  vector<string> includes;
+  bool compile_with_debug_info_flag;
 
-    File();
-    explicit File (const string &path);
-    long long upd_mtime() __attribute__ ((warn_unused_result));
-    void set_mtime(long long mtime_value);
-    void unlink();
+  File();
+  explicit File(const string &path);
+  long long upd_mtime() __attribute__ ((warn_unused_result));
+  void set_mtime(long long mtime_value);
+  void unlink();
 };
 
 class Index {
-  private:
-    map <string, File *> files;
-    string dir;
-    set <string> subdirs;
-    void remove_file (const string &path);
-    void create_subdir (const string &subdir);
+private:
+  map<string, File *> files;
+  string dir;
+  set<string> subdirs;
+  void remove_file(const string &path);
+  void create_subdir(const string &subdir);
 
-    static Index *current_index;
-    static int scan_dir_callback (const char *fpath, const struct stat *sb, 
-        int typeflag, struct FTW *ftwbuf);
-  public:
+  static Index *current_index;
+  static int scan_dir_callback(const char *fpath, const struct stat *sb,
+                               int typeflag, struct FTW *ftwbuf);
+public:
 
-    void set_dir (const string &dir);
-    const string &get_dir() const;
-    void sync_with_dir (const string &dir);
-    void del_extra_files();
-    File *get_file (string path, bool force = false);
-    vector <File *> get_files();
+  void set_dir(const string &dir);
+  const string &get_dir() const;
+  void sync_with_dir(const string &dir);
+  void del_extra_files();
+  File *get_file(string path, bool force = false);
+  vector<File *> get_files();
 
-    //stupid text version. to be improved
-    void save (FILE *f);
-    void load (FILE *f);
+  //stupid text version. to be improved
+  void save(FILE *f);
+  void load(FILE *f);
 };

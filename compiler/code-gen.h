@@ -1,4 +1,5 @@
 #pragma once
+
 #include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data.h"
@@ -9,516 +10,532 @@
 #include "common/algorithms/find.h"
 
 struct CGContext {
-  vector <string> catch_labels;
-  vector <int> catch_label_used;
+  vector<string> catch_labels;
+  vector<int> catch_label_used;
   FunctionPtr parent_func;
   bool use_safe_integer_arithmetic;
   bool resumable_flag;
+
   CGContext() :
-    use_safe_integer_arithmetic (false),
-    resumable_flag (false) {
+    use_safe_integer_arithmetic(false),
+    resumable_flag(false) {
   }
 };
 
 struct PlainCode;
 
 class CodeGenerator {
-  private:
-    TLS <Writer> *master_writer;
-    Writer *writer;
-    WriterCallbackBase *callback_;
-    CGContext context;
-    bool own_flag;
-  public:
-    bool debug_flag;
-    CodeGenerator() :
-      master_writer (NULL),
-      writer (NULL),
-      callback_ (NULL),
-      context(),
-      own_flag (false),
-      debug_flag (false) {
-      }
-    explicit CodeGenerator (const CodeGenerator &from) :
-      master_writer (from.master_writer),
-      writer (NULL),
-      callback_ (from.callback_),
-      context (from.context),
-      own_flag (false),
-      debug_flag (false) {
-      }
+private:
+  TLS<Writer> *master_writer;
+  Writer *writer;
+  WriterCallbackBase *callback_;
+  CGContext context;
+  bool own_flag;
+public:
+  bool debug_flag;
 
-    void init (WriterCallbackBase *new_callback) {
-      master_writer = new TLS <Writer>();
-      callback_ = new_callback;
-      own_flag = true;
+  CodeGenerator() :
+    master_writer(NULL),
+    writer(NULL),
+    callback_(NULL),
+    context(),
+    own_flag(false),
+    debug_flag(false) {
+  }
+
+  explicit CodeGenerator(const CodeGenerator &from) :
+    master_writer(from.master_writer),
+    writer(NULL),
+    callback_(from.callback_),
+    context(from.context),
+    own_flag(false),
+    debug_flag(false) {
+  }
+
+  void init(WriterCallbackBase *new_callback) {
+    master_writer = new TLS<Writer>();
+    callback_ = new_callback;
+    own_flag = true;
+  }
+
+  void clear() {
+    if (own_flag) {
+      delete master_writer;
+      delete callback_;
+      own_flag = false;
     }
-    void clear() {
-      if (own_flag) {
-        delete master_writer;
-        delete callback_;
-        own_flag = false;
-      }
-      master_writer = NULL;
-      callback_ = NULL;
-    }
+    master_writer = NULL;
+    callback_ = NULL;
+  }
 
-    ~CodeGenerator() {
-      clear();
-    }
+  ~CodeGenerator() {
+    clear();
+  }
 
-    void use_safe_integer_arithmetic (bool flag = true) {
-      context.use_safe_integer_arithmetic = flag;
-    }
+  void use_safe_integer_arithmetic(bool flag = true) {
+    context.use_safe_integer_arithmetic = flag;
+  }
 
-    WriterCallbackBase *callback() {
-      return callback_;
-    }
+  WriterCallbackBase *callback() {
+    return callback_;
+  }
 
-    inline void lock_writer() {
-      assert (writer == NULL);
-      writer = master_writer->lock_get();
-    }
+  inline void lock_writer() {
+    assert (writer == NULL);
+    writer = master_writer->lock_get();
+  }
 
-    inline void unlock_writer() {
-      assert (writer != NULL);
-      master_writer->unlock_get (writer);
-      writer = NULL;
-    }
+  inline void unlock_writer() {
+    assert (writer != NULL);
+    master_writer->unlock_get(writer);
+    writer = NULL;
+  }
 
 
-    inline CodeGenerator &operator << (const char *s);
-    inline CodeGenerator &operator << (char c);
-    inline CodeGenerator &operator << (const string &s);
-    inline CodeGenerator &operator << (const string_ref &s);
+  inline CodeGenerator &operator<<(const char *s);
+  inline CodeGenerator &operator<<(char c);
+  inline CodeGenerator &operator<<(const string &s);
+  inline CodeGenerator &operator<<(const string_ref &s);
 
-    template <Operation Op>
-      inline CodeGenerator &operator << (VertexAdaptor <Op> vertex);
-    template <class T> CodeGenerator &operator << (const T &value);
+  template<Operation Op>
+  inline CodeGenerator &operator<<(VertexAdaptor<Op> vertex);
+  template<class T>
+  CodeGenerator &operator<<(const T &value);
 
-    inline Writer &get_writer();
-    inline CGContext &get_context();
+  inline Writer &get_writer();
+  inline CGContext &get_context();
 };
 
 class ScopedDebug {
-  private:
-    CodeGenerator *cg_;
-    ScopedDebug (const ScopedDebug &);
-    ScopedDebug &operator = (const ScopedDebug &);
-  public:
-    ScopedDebug (CodeGenerator &cg) :
-      cg_ (&cg) {
-      cg_->debug_flag = true;
-    }
-    ~ScopedDebug() {
-      cg_->debug_flag = false;
-    }
+private:
+  CodeGenerator *cg_;
+  ScopedDebug(const ScopedDebug &);
+  ScopedDebug &operator=(const ScopedDebug &);
+public:
+  ScopedDebug(CodeGenerator &cg) :
+    cg_(&cg) {
+    cg_->debug_flag = true;
+  }
+
+  ~ScopedDebug() {
+    cg_->debug_flag = false;
+  }
 };
 
-inline void compile_vertex (VertexPtr, CodeGenerator &W);
+inline void compile_vertex(VertexPtr, CodeGenerator &W);
 
 #define NL NewLine()
 #define BEGIN OpenBlock()
 #define END CloseBlock()
 
-template <class T>
+template<class T>
 struct AsyncImpl {
   const T &cmd;
-  AsyncImpl (const T &cmd);
-  void compile (CodeGenerator &W) const;
+  AsyncImpl(const T &cmd);
+  void compile(CodeGenerator &W) const;
 };
-template <class T>
-inline AsyncImpl <T> Async (const T &cmd);
+
+template<class T>
+inline AsyncImpl<T> Async(const T &cmd);
 
 struct LockComments {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
+
 struct UnlockComments {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct OpenFile {
   string file_name;
   string subdir;
   bool compile_with_debug_info_flag;
-  inline OpenFile (const string &file_name, const string &subdir = "", bool compile_with_debug_info_flag = true);
-  inline void compile (CodeGenerator &W) const;
+  inline OpenFile(const string &file_name, const string &subdir = "", bool compile_with_debug_info_flag = true);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct CloseFile {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct ClearLocation {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct UpdateLocation {
   const Location &location;
-  inline UpdateLocation (const Location &location);
-  inline void compile (CodeGenerator &W) const;
+  inline UpdateLocation(const Location &location);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct NewLine {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct Indent {
   int val;
-  Indent (int val);
-  inline void compile (CodeGenerator &W) const;
+  Indent(int val);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct PlainCode {
   string_ref str;
-  inline PlainCode (const char *s);
-  inline PlainCode (const string &s);
-  inline PlainCode (const string_ref &s);
-  inline void compile (CodeGenerator &W) const;
+  inline PlainCode(const char *s);
+  inline PlainCode(const string &s);
+  inline PlainCode(const string_ref &s);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct OpenBlock {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct CloseBlock {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct Include {
   const PlainCode &plain_code;
   bool is_extern;
-  Include (const PlainCode &plain_code, bool is_extern = false);
-  inline void compile (CodeGenerator &W) const;
+  Include(const PlainCode &plain_code, bool is_extern = false);
+  inline void compile(CodeGenerator &W) const;
 };
-Include ExternInclude (const PlainCode &plain_code);
+
+Include ExternInclude(const PlainCode &plain_code);
 
 struct IncludeClass {
-  vector <ClassPtr> klasses;
-  IncludeClass (const TypeData *type);
-  inline void compile (CodeGenerator &W) const;
+  vector<ClassPtr> klasses;
+  IncludeClass(const TypeData *type);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionName {
   FunctionPtr function;
-  inline FunctionName (FunctionPtr function);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionName(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionClassName {
   FunctionPtr function;
-  inline FunctionClassName (FunctionPtr function);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionClassName(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionForkName {
   FunctionPtr function;
-  inline FunctionForkName (FunctionPtr function);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionForkName(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
 };
-
 
 
 struct VarName {
   VarPtr var;
-  inline VarName (VarPtr var);
-  inline void compile (CodeGenerator &W) const;
+  inline VarName(VarPtr var);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct TypeName {
   const TypeData *type;
-  inline TypeName (const TypeData *type);
-  inline void compile (CodeGenerator &W) const;
+  inline TypeName(const TypeData *type);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct TypeNameInsideMacro {
   const TypeData *type;
-  inline TypeNameInsideMacro (const TypeData *type);
-  inline void compile (CodeGenerator &W) const;
+  inline TypeNameInsideMacro(const TypeData *type);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionCallFlag {
   FunctionPtr function;
-  inline FunctionCallFlag (FunctionPtr function);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionCallFlag(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionDeclaration {
   FunctionPtr function;
   bool in_header;
-  inline FunctionDeclaration (FunctionPtr function, bool in_header = false);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionDeclaration(FunctionPtr function, bool in_header = false);
+  inline void compile(CodeGenerator &W) const;
 };
+
 struct FunctionForkDeclaration {
   FunctionPtr function;
   bool in_header;
-  inline FunctionForkDeclaration (FunctionPtr function, bool in_header = false);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionForkDeclaration(FunctionPtr function, bool in_header = false);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionParams {
   FunctionPtr function;
   bool in_header;
-  inline FunctionParams (FunctionPtr function, bool in_header = false);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionParams(FunctionPtr function, bool in_header = false);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct ClassDeclaration {
   ClassPtr klass;
-  inline ClassDeclaration (ClassPtr klass);
-  inline void compile (CodeGenerator &W) const;
+  inline ClassDeclaration(ClassPtr klass);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct VarDeclaration {
   VarPtr var;
   bool extern_flag;
   bool defval_flag;
-  inline VarDeclaration (VarPtr var, bool extern_flag = false, bool defval_flag = true);
-  inline void compile (CodeGenerator &W) const;
+  inline VarDeclaration(VarPtr var, bool extern_flag = false, bool defval_flag = true);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct Function {
   FunctionPtr function;
   bool in_header;
-  inline Function (FunctionPtr function, bool in_header = false);
-  inline void compile (CodeGenerator &W) const;
+  inline Function(FunctionPtr function, bool in_header = false);
+  inline void compile(CodeGenerator &W) const;
 };
 
-VarDeclaration VarExternDeclaration (VarPtr var);
-VarDeclaration VarPlainDeclaration (VarPtr var);
+VarDeclaration VarExternDeclaration(VarPtr var);
+VarDeclaration VarPlainDeclaration(VarPtr var);
 
 struct Operand {
   VertexPtr root;
   Operation parent_type;
   bool is_left;
-  inline Operand (VertexPtr root, Operation parent_type, bool is_left);
-  inline void compile (CodeGenerator &W) const;
+  inline Operand(VertexPtr root, Operation parent_type, bool is_left);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct LabelName {
   int label_id;
-  inline LabelName (int label_id);
-  inline void compile (CodeGenerator &W) const;
+  inline LabelName(int label_id);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct Label {
   int label_id;
-  inline Label (int label_id);
-  inline void compile (CodeGenerator &W) const;
+  inline Label(int label_id);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct AsList {
   VertexPtr root;
   string delim;
-  inline AsList (VertexPtr root, string delim);
-  inline void compile (CodeGenerator &W) const;
+  inline AsList(VertexPtr root, string delim);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct AsSeq {
   VertexPtr root;
-  inline AsSeq (VertexPtr root);
-  inline void compile (CodeGenerator &W) const;
+  inline AsSeq(VertexPtr root);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct TupleGetIndex {
   VertexPtr tuple;
   std::string int_index;
-  inline TupleGetIndex (VertexPtr tuple, const std::string &int_index);
-  inline TupleGetIndex (VertexPtr tuple, VertexPtr key);
-  inline void compile (CodeGenerator &W) const;
+  inline TupleGetIndex(VertexPtr tuple, const std::string &int_index);
+  inline TupleGetIndex(VertexPtr tuple, VertexPtr key);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct CycleBody {
   VertexPtr body;
   int continue_label_id;
   int break_label_id;
-  inline CycleBody (VertexPtr body, int continue_label_id, int break_label_id);
-  inline void compile (CodeGenerator &W) const;
+  inline CycleBody(VertexPtr body, int continue_label_id, int break_label_id);
+  inline void compile(CodeGenerator &W) const;
 };
+
 struct VertexCompiler {
   VertexPtr vertex;
-  inline VertexCompiler (VertexPtr vertex);
-  inline void compile (CodeGenerator &W) const;
+  inline VertexCompiler(VertexPtr vertex);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct InitVar {
   VarPtr var;
-  inline InitVar (VarPtr var);
-  inline void compile (CodeGenerator &W) const;
+  inline InitVar(VarPtr var);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct FunctionStaticInit {
   FunctionPtr function;
   bool in_header;
-  inline FunctionStaticInit (FunctionPtr function, bool in_header = false);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionStaticInit(FunctionPtr function, bool in_header = false);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct StaticInit {
-  const vector <FunctionPtr> &all_functions;
-  inline StaticInit (const vector <FunctionPtr> &all_functions);
-  inline void compile (CodeGenerator &W) const;
+  const vector<FunctionPtr> &all_functions;
+  inline StaticInit(const vector<FunctionPtr> &all_functions);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct InitScriptsH {
-  inline void compile (CodeGenerator &W) const;
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct InitScriptsCpp {
-  vector <SrcFilePtr> main_file_ids;
-  vector <FunctionPtr> source_functions;
-  vector <FunctionPtr> all_functions;
-  inline InitScriptsCpp (
-    vector <SrcFilePtr> &main_file_ids,
-    vector <FunctionPtr> &source_functions,
-    vector <FunctionPtr> &all_functions);
-  inline void compile (CodeGenerator &W) const;
+  vector<SrcFilePtr> main_file_ids;
+  vector<FunctionPtr> source_functions;
+  vector<FunctionPtr> all_functions;
+  inline InitScriptsCpp(
+    vector<SrcFilePtr> &main_file_ids,
+    vector<FunctionPtr> &source_functions,
+    vector<FunctionPtr> &all_functions);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct InitFuncPtrs {
-  const vector <FunctionPtr> &ids;
-  inline InitFuncPtrs (const vector <FunctionPtr> &ids);
-  inline void compile (CodeGenerator &W) const;
+  const vector<FunctionPtr> &ids;
+  inline InitFuncPtrs(const vector<FunctionPtr> &ids);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct RunFunction {
   FunctionPtr function;
   bool in_header;
-  inline RunFunction (FunctionPtr function, bool in_header = false);
-  inline void compile (CodeGenerator &W) const;
+  inline RunFunction(FunctionPtr function, bool in_header = false);
+  inline void compile(CodeGenerator &W) const;
 };
 
 struct VarsCppPart {
   int file_num;
   int max_dependency_level;
-  const vector <VarPtr> &vars;
-  inline VarsCppPart (int file_num, const vector <VarPtr> &vars, int max_dependency_level);
-  inline void compile (CodeGenerator &W) const;
+  const vector<VarPtr> &vars;
+  inline VarsCppPart(int file_num, const vector<VarPtr> &vars, int max_dependency_level);
+  inline void compile(CodeGenerator &W) const;
 private:
   DISALLOW_COPY_AND_ASSIGN (VarsCppPart);
 };
 
 struct VarsCpp {
-  vector <VarPtr> vars;
+  vector<VarPtr> vars;
   int parts_cnt;
-  inline VarsCpp (vector <VarPtr> &vars, int parts_cnt);
-  inline void compile (CodeGenerator &W) const;
+  inline VarsCpp(vector<VarPtr> &vars, int parts_cnt);
+  inline void compile(CodeGenerator &W) const;
 //private:
   //DISALLOW_COPY_AND_ASSIGN (VarsCpp);
 };
+
 struct DfsInit {
   SrcFilePtr main_file;
-  inline DfsInit (SrcFilePtr main_file);
-  static inline void compile_dfs_init_part (
-      FunctionPtr func,
-      const set <VarPtr> &used_vars, bool full_flag,
-      int part_i, CodeGenerator &W);
-  static inline void compile_dfs_init_func (
-      FunctionPtr func, const set <FunctionPtr> &used_functions,
-      bool full_flag, const vector <string> &header_names, CodeGenerator &W);
-  static inline void collect_used_funcs_and_vars (
-      FunctionPtr func,
-      set <FunctionPtr> *visited_functions,
-      set <VarPtr> *used_vars,
-      int used_vars_cnt);
-  inline void compile (CodeGenerator &W) const;
+  inline DfsInit(SrcFilePtr main_file);
+  static inline void compile_dfs_init_part(
+    FunctionPtr func,
+    const set<VarPtr> &used_vars, bool full_flag,
+    int part_i, CodeGenerator &W);
+  static inline void compile_dfs_init_func(
+    FunctionPtr func, const set<FunctionPtr> &used_functions,
+    bool full_flag, const vector<string> &header_names, CodeGenerator &W);
+  static inline void collect_used_funcs_and_vars(
+    FunctionPtr func,
+    set<FunctionPtr> *visited_functions,
+    set<VarPtr> *used_vars,
+    int used_vars_cnt);
+  inline void compile(CodeGenerator &W) const;
 };
 
 
 struct FunctionH {
   FunctionPtr function;
-  inline FunctionH (FunctionPtr function);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionH(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
 };
+
 struct FunctionCpp {
   FunctionPtr function;
-  inline FunctionCpp (FunctionPtr function);
-  inline void compile (CodeGenerator &W) const;
+  inline FunctionCpp(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
 };
 
-inline void compile_prefix_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W);
-inline void compile_postfix_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W);
-inline void compile_conv_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W);
-inline void compile_noerr (VertexAdaptor <op_noerr> root, CodeGenerator &W);
-inline void compile_binary_func_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W);
-inline void compile_binary_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W);
-inline void compile_ternary_op (VertexAdaptor <op_ternary> root, CodeGenerator &W);
-inline void compile_if (VertexAdaptor <op_if> root, CodeGenerator &W);
-inline void compile_while (VertexAdaptor <op_while> root, CodeGenerator &W);
-inline void compile_do (VertexAdaptor <op_do> root, CodeGenerator &W);
-inline void compile_require (VertexPtr root, CodeGenerator &W);
-inline void compile_return (VertexAdaptor <op_return> root, CodeGenerator &W);
-inline void compile_for (VertexAdaptor <op_for> root, CodeGenerator &W);
-inline void compile_throw_fast_action (CodeGenerator &W);
-inline void compile_throw (VertexAdaptor <op_throw> root, CodeGenerator &W);
-inline void compile_throw_fast (VertexAdaptor <op_throw> root, CodeGenerator &W);
-inline void compile_try (VertexAdaptor <op_try> root, CodeGenerator &W);
-inline void compile_try_fast (VertexAdaptor <op_try> root, CodeGenerator &W);
-inline void compile_fork (VertexAdaptor <op_fork> root, CodeGenerator &W);
-inline void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W);
-inline void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W);
+inline void compile_prefix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W);
+inline void compile_postfix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W);
+inline void compile_conv_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W);
+inline void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W);
+inline void compile_binary_func_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W);
+inline void compile_binary_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W);
+inline void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W);
+inline void compile_if(VertexAdaptor<op_if> root, CodeGenerator &W);
+inline void compile_while(VertexAdaptor<op_while> root, CodeGenerator &W);
+inline void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W);
+inline void compile_require(VertexPtr root, CodeGenerator &W);
+inline void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W);
+inline void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W);
+inline void compile_throw_fast_action(CodeGenerator &W);
+inline void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W);
+inline void compile_throw_fast(VertexAdaptor<op_throw> root, CodeGenerator &W);
+inline void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W);
+inline void compile_try_fast(VertexAdaptor<op_try> root, CodeGenerator &W);
+inline void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W);
+inline void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W);
+inline void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W);
 struct CaseInfo;
-inline void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W);
-inline void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W);
-inline void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W);
-inline void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W);
-inline void compile_function (VertexPtr root, CodeGenerator &W);
-inline void compile_string_build_raw (VertexAdaptor <op_string_build> root, CodeGenerator &W);
-inline void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W);
-inline void compile_index_of_array (VertexAdaptor <op_index> root, CodeGenerator &W);
-inline void compile_index_of_string (VertexAdaptor <op_index> root, CodeGenerator &W);
-inline void compile_seq_rval (VertexPtr root, CodeGenerator &W);
-inline void compile_as_printable (VertexPtr root, CodeGenerator &W);
-inline void compile_echo (VertexPtr root, CodeGenerator &W);
-inline void compile_var_dump (VertexPtr root, CodeGenerator &W);
-inline void compile_print (VertexAdaptor <op_print> root, CodeGenerator &W);
-inline void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W);
-inline void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W);
-inline void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W);
-inline void compile_tuple (VertexAdaptor <op_tuple> root, CodeGenerator &W);
-inline void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W);
-inline void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix = 0, int state = 0);
-inline void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W);
-inline void compile_define (VertexPtr root, CodeGenerator &W);
-inline void compile_defined (VertexPtr root, CodeGenerator &W);
-inline void compile_safe_version (VertexPtr root, CodeGenerator &W);
-inline void compile_set_value (VertexAdaptor <op_set_value> root, CodeGenerator &W);
-inline void compile_push_back (VertexAdaptor <op_push_back> root, CodeGenerator &W);
-inline void compile_push_back_return (VertexAdaptor <op_push_back_return> root, CodeGenerator &W);
-void compile_string_raw (const string &str, CodeGenerator &W);
-inline void compile_string_raw (VertexAdaptor <op_string> root, CodeGenerator &W);
-inline void compile_string (VertexAdaptor <op_string> root, CodeGenerator &W);
-inline void compile_string_build (VertexPtr root, CodeGenerator &W);
-inline void compile_break_continue (VertexAdaptor <meta_op_goto> root, CodeGenerator &W);
-inline void compile_conv_array_l (VertexAdaptor <op_conv_array_l> root, CodeGenerator &W);
-inline void compile_conv_int_l (VertexAdaptor <op_conv_int_l> root, CodeGenerator &W);
-inline void compile_cycle_op (VertexPtr root, CodeGenerator &W);
-inline void compile_min_max (VertexPtr root, CodeGenerator &W);
-inline void compile_common_op (VertexPtr root, CodeGenerator &W);
-inline void compile (VertexPtr root, CodeGenerator &W);
+inline void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W);
+inline void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W);
+inline void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W);
+inline void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W);
+inline void compile_function(VertexPtr root, CodeGenerator &W);
+inline void compile_string_build_raw(VertexAdaptor<op_string_build> root, CodeGenerator &W);
+inline void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W);
+inline void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W);
+inline void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W);
+inline void compile_seq_rval(VertexPtr root, CodeGenerator &W);
+inline void compile_as_printable(VertexPtr root, CodeGenerator &W);
+inline void compile_echo(VertexPtr root, CodeGenerator &W);
+inline void compile_var_dump(VertexPtr root, CodeGenerator &W);
+inline void compile_print(VertexAdaptor<op_print> root, CodeGenerator &W);
+inline void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W);
+inline void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W);
+inline void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W);
+inline void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W);
+inline void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W);
+inline void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int fix = 0, int state = 0);
+inline void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W);
+inline void compile_define(VertexPtr root, CodeGenerator &W);
+inline void compile_defined(VertexPtr root, CodeGenerator &W);
+inline void compile_safe_version(VertexPtr root, CodeGenerator &W);
+inline void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W);
+inline void compile_push_back(VertexAdaptor<op_push_back> root, CodeGenerator &W);
+inline void compile_push_back_return(VertexAdaptor<op_push_back_return> root, CodeGenerator &W);
+void compile_string_raw(const string &str, CodeGenerator &W);
+inline void compile_string_raw(VertexAdaptor<op_string> root, CodeGenerator &W);
+inline void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W);
+inline void compile_string_build(VertexPtr root, CodeGenerator &W);
+inline void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W);
+inline void compile_conv_array_l(VertexAdaptor<op_conv_array_l> root, CodeGenerator &W);
+inline void compile_conv_int_l(VertexAdaptor<op_conv_int_l> root, CodeGenerator &W);
+inline void compile_cycle_op(VertexPtr root, CodeGenerator &W);
+inline void compile_min_max(VertexPtr root, CodeGenerator &W);
+inline void compile_common_op(VertexPtr root, CodeGenerator &W);
+inline void compile(VertexPtr root, CodeGenerator &W);
 
 /*** Implementation ***/
-inline CodeGenerator &CodeGenerator::operator << (const char *s) {
-  return (*this) << PlainCode (s);
+inline CodeGenerator &CodeGenerator::operator<<(const char *s) {
+  return (*this) << PlainCode(s);
 }
 
-inline CodeGenerator &CodeGenerator::operator << (char c) {
+inline CodeGenerator &CodeGenerator::operator<<(char c) {
   string_ref s(&c, &c + 1);
   return (*this) << PlainCode(s);
 }
 
-inline CodeGenerator &CodeGenerator::operator << (const string &s) {
-  return (*this) << PlainCode (s);
+inline CodeGenerator &CodeGenerator::operator<<(const string &s) {
+  return (*this) << PlainCode(s);
 }
-inline CodeGenerator &CodeGenerator::operator << (const string_ref &s) {
-  return (*this) << PlainCode (s);
+
+inline CodeGenerator &CodeGenerator::operator<<(const string_ref &s) {
+  return (*this) << PlainCode(s);
 }
-template <Operation Op>
-inline CodeGenerator &CodeGenerator::operator << (VertexAdaptor <Op> vertex) {
-  return (*this) << VertexCompiler (vertex);
+
+template<Operation Op>
+inline CodeGenerator &CodeGenerator::operator<<(VertexAdaptor<Op> vertex) {
+  return (*this) << VertexCompiler(vertex);
 }
-template <class T> CodeGenerator &CodeGenerator::operator << (const T &value) {
-  value.compile (*this);
+
+template<class T>
+CodeGenerator &CodeGenerator::operator<<(const T &value) {
+  value.compile(*this);
   return *this;
 }
 
@@ -526,149 +543,159 @@ inline Writer &CodeGenerator::get_writer() {
   assert (writer != NULL);
   return *writer;
 }
+
 inline CGContext &CodeGenerator::get_context() {
   return context;
 }
 
-template <class T>
-inline AsyncImpl <T>::AsyncImpl (const T &cmd) :
-  cmd (cmd) {
+template<class T>
+inline AsyncImpl<T>::AsyncImpl(const T &cmd) :
+  cmd(cmd) {
 }
 
-template <class T>
+template<class T>
 class CodeGenTask : public Task {
-  private:
-    CodeGenerator W;
-    T cmd;
-  public:
-    CodeGenTask (CodeGenerator &W, const T& cmd) :
-      W (W),
-      cmd (cmd) {
-    }
-    void execute() {
-      PROF(writer).start();
-      stage::set_name ("Async code generation");
-      W << cmd;
-      PROF(writer).finish();
-    }
+private:
+  CodeGenerator W;
+  T cmd;
+public:
+  CodeGenTask(CodeGenerator &W, const T &cmd) :
+    W(W),
+    cmd(cmd) {
+  }
+
+  void execute() {
+    PROF(writer).start();
+    stage::set_name("Async code generation");
+    W << cmd;
+    PROF(writer).finish();
+  }
 };
 
-template <class T>
-inline CodeGenTask <T> *create_async_task (CodeGenerator &W, const T &cmd) {
-  return new CodeGenTask <T> (W, cmd);
+template<class T>
+inline CodeGenTask<T> *create_async_task(CodeGenerator &W, const T &cmd) {
+  return new CodeGenTask<T>(W, cmd);
 }
 
-template <class T>
-inline void AsyncImpl <T>::compile (CodeGenerator &W) const {
-  Task *task = create_async_task (W, cmd);
-  register_async_task (task);
+template<class T>
+inline void AsyncImpl<T>::compile(CodeGenerator &W) const {
+  Task *task = create_async_task(W, cmd);
+  register_async_task(task);
 }
 
-template <class T>
-inline AsyncImpl <T> Async (const T &cmd) {
-  return AsyncImpl <T> (cmd);
+template<class T>
+inline AsyncImpl<T> Async(const T &cmd) {
+  return AsyncImpl<T>(cmd);
 }
 
-inline void LockComments::compile (CodeGenerator &W) const {
+inline void LockComments::compile(CodeGenerator &W) const {
   W.get_writer().lock_comments();
 }
-inline void UnlockComments::compile (CodeGenerator &W) const {
+
+inline void UnlockComments::compile(CodeGenerator &W) const {
   W.get_writer().unlock_comments();
 }
 
-inline OpenFile::OpenFile (const string &file_name, const string &subdir, bool compile_with_debug_info_flag) :
-  file_name (file_name),
-  subdir (subdir),
-  compile_with_debug_info_flag (compile_with_debug_info_flag) {
-}
-inline void OpenFile::compile (CodeGenerator &W) const {
-  W.lock_writer();
-  W.get_writer().set_callback (W.callback());
-  W.get_writer().begin_write(compile_with_debug_info_flag);
-  W.get_writer().set_file_name (file_name, subdir);
+inline OpenFile::OpenFile(const string &file_name, const string &subdir, bool compile_with_debug_info_flag) :
+  file_name(file_name),
+  subdir(subdir),
+  compile_with_debug_info_flag(compile_with_debug_info_flag) {
 }
 
-inline void CloseFile::compile (CodeGenerator &W) const {
+inline void OpenFile::compile(CodeGenerator &W) const {
+  W.lock_writer();
+  W.get_writer().set_callback(W.callback());
+  W.get_writer().begin_write(compile_with_debug_info_flag);
+  W.get_writer().set_file_name(file_name, subdir);
+}
+
+inline void CloseFile::compile(CodeGenerator &W) const {
   W.get_writer().end_write();
   W.unlock_writer();
 }
 
-inline void ClearLocation::compile (CodeGenerator &W) const {
-  stage::set_location (Location());
-  W << UpdateLocation (Location());
+inline void ClearLocation::compile(CodeGenerator &W) const {
+  stage::set_location(Location());
+  W << UpdateLocation(Location());
 }
 
-inline UpdateLocation::UpdateLocation (const Location &location) :
-  location (location) {
+inline UpdateLocation::UpdateLocation(const Location &location) :
+  location(location) {
 }
-inline void UpdateLocation::compile (CodeGenerator &W) const {
+
+inline void UpdateLocation::compile(CodeGenerator &W) const {
   if (!W.get_writer().is_comments_locked()) {
-    stage::set_location (location);
-    W.get_writer() (stage::get_file(), stage::get_line());
+    stage::set_location(location);
+    W.get_writer()(stage::get_file(), stage::get_line());
   }
 }
 
-inline void NewLine::compile (CodeGenerator &W) const {
+inline void NewLine::compile(CodeGenerator &W) const {
   if (W.debug_flag) {
-    fprintf (stderr, "\n");
+    fprintf(stderr, "\n");
     return;
   }
   W.get_writer().new_line();
 }
 
-inline Indent::Indent (int val) :
-  val (val) {
-}
-inline void Indent::compile (CodeGenerator &W) const {
-  W.get_writer().indent (val);
+inline Indent::Indent(int val) :
+  val(val) {
 }
 
-inline PlainCode::PlainCode (const char *s) :
-  str (s, s + strlen (s)) {
+inline void Indent::compile(CodeGenerator &W) const {
+  W.get_writer().indent(val);
 }
-inline PlainCode::PlainCode (const string &s) :
-  str (&s[0], &s[0] + s.size()) {
+
+inline PlainCode::PlainCode(const char *s) :
+  str(s, s + strlen(s)) {
 }
-inline PlainCode::PlainCode (const string_ref &s) :
-  str (s) {
+
+inline PlainCode::PlainCode(const string &s) :
+  str(&s[0], &s[0] + s.size()) {
 }
-inline void PlainCode::compile (CodeGenerator &W) const {
+
+inline PlainCode::PlainCode(const string_ref &s) :
+  str(s) {
+}
+
+inline void PlainCode::compile(CodeGenerator &W) const {
   if (W.debug_flag) {
-    fprintf (stderr, "%s", str.c_str());
+    fprintf(stderr, "%s", str.c_str());
     return;
   }
-  W.get_writer() (str);
+  W.get_writer()(str);
 }
 
 
-inline void OpenBlock::compile (CodeGenerator &W) const {
-  W << "{" << NL << Indent (+2);
+inline void OpenBlock::compile(CodeGenerator &W) const {
+  W << "{" << NL << Indent(+2);
 }
 
-inline void CloseBlock::compile (CodeGenerator &W) const {
-  W << Indent (-2) << "}";
+inline void CloseBlock::compile(CodeGenerator &W) const {
+  W << Indent(-2) << "}";
 }
 
-inline Include::Include (const PlainCode &plain_code, bool is_extern) :
-  plain_code (plain_code),
-  is_extern (is_extern) {
+inline Include::Include(const PlainCode &plain_code, bool is_extern) :
+  plain_code(plain_code),
+  is_extern(is_extern) {
 }
-inline void Include::compile (CodeGenerator &W) const {
+
+inline void Include::compile(CodeGenerator &W) const {
   if (!is_extern) {
-    W.get_writer().add_include (plain_code.str.str());
+    W.get_writer().add_include(plain_code.str.str());
   }
   W << "#include \"" << plain_code << "\"" << NL;
 }
 
-Include ExternInclude (const PlainCode &plain_code) {
-  return Include (plain_code, true);
+Include ExternInclude(const PlainCode &plain_code) {
+  return Include(plain_code, true);
 }
 
-inline IncludeClass::IncludeClass (const TypeData *type) {
+inline IncludeClass::IncludeClass(const TypeData *type) {
   type->get_all_class_types_inside(klasses);
 }
 
-inline void IncludeClass::compile (CodeGenerator &W) const {
+inline void IncludeClass::compile(CodeGenerator &W) const {
   for (auto klass: klasses) {
     std::string class_h_filename = "cl/" + klass->header_name;
     W.get_writer().add_include(class_h_filename);
@@ -677,10 +704,11 @@ inline void IncludeClass::compile (CodeGenerator &W) const {
 }
 
 
-inline FunctionName::FunctionName (FunctionPtr function) :
-  function (function) {
+inline FunctionName::FunctionName(FunctionPtr function) :
+  function(function) {
 }
-void FunctionName::compile (CodeGenerator &W) const {
+
+void FunctionName::compile(CodeGenerator &W) const {
   W << "f$";
   if (W.get_context().use_safe_integer_arithmetic && function->name == "intval") {
     W << "safe_intval";
@@ -689,43 +717,47 @@ void FunctionName::compile (CodeGenerator &W) const {
   }
 }
 
-inline FunctionClassName::FunctionClassName (FunctionPtr function) :
-  function (function) {
+inline FunctionClassName::FunctionClassName(FunctionPtr function) :
+  function(function) {
 }
-void FunctionClassName::compile (CodeGenerator &W) const {
+
+void FunctionClassName::compile(CodeGenerator &W) const {
   W << "c$" << function->name;
 }
 
-inline FunctionForkName::FunctionForkName (FunctionPtr function) :
-  function (function) {
+inline FunctionForkName::FunctionForkName(FunctionPtr function) :
+  function(function) {
 }
-void FunctionForkName::compile (CodeGenerator &W) const {
+
+void FunctionForkName::compile(CodeGenerator &W) const {
   W << "f$fork$" << function->name;
 }
 
-inline VarName::VarName (VarPtr var) :
-  var (var) {
+inline VarName::VarName(VarPtr var) :
+  var(var) {
 }
-void VarName::compile (CodeGenerator &W) const {
+
+void VarName::compile(CodeGenerator &W) const {
   if (var->static_id.not_null()) {
-    W << FunctionName (var->static_id) << "$";
+    W << FunctionName(var->static_id) << "$";
   }
 
   W << "v$" << var->name;
 }
 
-inline TypeName::TypeName (const TypeData *type) :
-  type (type) {
-}
-inline void TypeName::compile (CodeGenerator &W) const {
-  W << type_out (type);
+inline TypeName::TypeName(const TypeData *type) :
+  type(type) {
 }
 
-inline TypeNameInsideMacro::TypeNameInsideMacro (const TypeData *type) :
-    type(type) {
+inline void TypeName::compile(CodeGenerator &W) const {
+  W << type_out(type);
 }
 
-inline void TypeNameInsideMacro::compile (CodeGenerator &W) const {
+inline TypeNameInsideMacro::TypeNameInsideMacro(const TypeData *type) :
+  type(type) {
+}
+
+inline void TypeNameInsideMacro::compile(CodeGenerator &W) const {
   string s = type_out(type);
   while (s.find(',') != string::npos) {
     s = s.replace(s.find(','), 1, " COMMA ");   // такое есть у tuple'ов
@@ -734,54 +766,55 @@ inline void TypeNameInsideMacro::compile (CodeGenerator &W) const {
 }
 
 
-inline FunctionCallFlag::FunctionCallFlag (FunctionPtr function) :
-  function (function) {
-}
-inline void FunctionCallFlag::compile (CodeGenerator &W) const {
-  W << FunctionName (function) << "$called";
+inline FunctionCallFlag::FunctionCallFlag(FunctionPtr function) :
+  function(function) {
 }
 
-inline FunctionDeclaration::FunctionDeclaration (FunctionPtr function, bool in_header) :
-  function (function),
-  in_header (in_header) {
+inline void FunctionCallFlag::compile(CodeGenerator &W) const {
+  W << FunctionName(function) << "$called";
 }
 
-inline void FunctionDeclaration::compile (CodeGenerator &W) const {
-  W << TypeName (tinf::get_type (function, -1)) << " " << FunctionName (function) <<
-       "(" << FunctionParams (function, in_header) << ")";
+inline FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header) :
+  function(function),
+  in_header(in_header) {
 }
 
-inline FunctionForkDeclaration::FunctionForkDeclaration (FunctionPtr function, bool in_header) :
-  function (function),
-  in_header (in_header) {
+inline void FunctionDeclaration::compile(CodeGenerator &W) const {
+  W << TypeName(tinf::get_type(function, -1)) << " " << FunctionName(function) <<
+    "(" << FunctionParams(function, in_header) << ")";
 }
 
-inline void FunctionForkDeclaration::compile (CodeGenerator &W) const {
-  kphp_error(!function->root->inline_flag,  "you must not use @kphp-inline for functions which contain call of `fork`");
+inline FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bool in_header) :
+  function(function),
+  in_header(in_header) {
+}
 
-  W << "int " << FunctionForkName (function) <<
-       "(" << FunctionParams (function, in_header) << ")";
+inline void FunctionForkDeclaration::compile(CodeGenerator &W) const {
+  kphp_error(!function->root->inline_flag, "you must not use @kphp-inline for functions which contain call of `fork`");
+
+  W << "int " << FunctionForkName(function) <<
+    "(" << FunctionParams(function, in_header) << ")";
 }
 
 
-inline FunctionParams::FunctionParams (FunctionPtr function, bool in_header) :
-  function (function),
-  in_header (in_header) {
+inline FunctionParams::FunctionParams(FunctionPtr function, bool in_header) :
+  function(function),
+  in_header(in_header) {
 }
 
-inline void FunctionParams::compile (CodeGenerator &W) const {
-  VertexAdaptor <meta_op_function> root = function->root;
+inline void FunctionParams::compile(CodeGenerator &W) const {
+  VertexAdaptor<meta_op_function> root = function->root;
   assert (root->type() == op_function);
 
   bool first = true;
   int ii = 0;
-  VertexAdaptor <op_func_param_list> params = root->params();
+  VertexAdaptor<op_func_param_list> params = root->params();
   for (auto i : params->params()) {
     if (i->type() == op_func_param) {
       assert ("functions with callback are not supported");
     }
 
-    VertexAdaptor <op_func_param> param = i;
+    VertexAdaptor<op_func_param> param = i;
     VertexPtr var = param->var();
     VertexPtr def_val;
     if (param->has_default()) {
@@ -793,11 +826,11 @@ inline void FunctionParams::compile (CodeGenerator &W) const {
     } else {
       W << ", ";
     }
-    W << TypeName (tinf::get_type (function, ii)) << " ";
+    W << TypeName(tinf::get_type(function, ii)) << " ";
     if (var->ref_flag) {
       W << "&";
     }
-    W << VarName (var->get_var_id());
+    W << VarName(var->get_var_id());
 
     if (def_val.not_null() && in_header) {
       W << " = " << def_val;
@@ -808,10 +841,11 @@ inline void FunctionParams::compile (CodeGenerator &W) const {
 }
 
 
-ClassDeclaration::ClassDeclaration (ClassPtr klass) : klass(klass) {
+ClassDeclaration::ClassDeclaration(ClassPtr klass) :
+  klass(klass) {
 }
 
-void ClassDeclaration::compile (CodeGenerator &W) const {
+void ClassDeclaration::compile(CodeGenerator &W) const {
 //  VertexAdaptor <op_class> root = klass->root;
   W << OpenFile(klass->header_name, "cl");
   W << "#pragma once" << NL;
@@ -828,7 +862,7 @@ void ClassDeclaration::compile (CodeGenerator &W) const {
     W << TypeName(tinf::get_type(var)) << " $" << var->name << ";" << NL;
   }
 
-  W << NL << "inline const char *get_class() const " << BEGIN <<  "return ";
+  W << NL << "inline const char *get_class() const " << BEGIN << "return ";
   compile_string_raw(klass->name, W);
   W << ";" << NL << END << NL;
 
@@ -837,17 +871,18 @@ void ClassDeclaration::compile (CodeGenerator &W) const {
 }
 
 
-inline VarDeclaration::VarDeclaration (VarPtr var, bool extern_flag, bool defval_flag) :
-  var (var),
-  extern_flag (extern_flag),
-  defval_flag (defval_flag) {
+inline VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :
+  var(var),
+  extern_flag(extern_flag),
+  defval_flag(defval_flag) {
 }
-void VarDeclaration::compile (CodeGenerator &W) const {
-  const TypeData *type = tinf::get_type (var);
+
+void VarDeclaration::compile(CodeGenerator &W) const {
+  const TypeData *type = tinf::get_type(var);
 
   W << (extern_flag ? "extern " : "") <<
-       TypeName (type) << " " <<
-       VarName (var);
+    TypeName(type) << " " <<
+    VarName(var);
 
   if (defval_flag) {
     if (type->ptype() == tp_float || type->ptype() == tp_int) {
@@ -862,27 +897,29 @@ void VarDeclaration::compile (CodeGenerator &W) const {
   }
   if (var->needs_const_iterator_flag) {
     W << (extern_flag ? "extern " : "") <<
-       "decltype(const_begin(" << VarName (var) <<"))" << " " <<
-       VarName (var) << "$it;" << NL;
+      "decltype(const_begin(" << VarName(var) << "))" << " " <<
+      VarName(var) << "$it;" << NL;
   }
 }
-inline VarDeclaration VarExternDeclaration (VarPtr var) {
-  return VarDeclaration (var, true, false);
-}
-inline VarDeclaration VarPlainDeclaration (VarPtr var) {
-  return VarDeclaration (var, false, false);
+
+inline VarDeclaration VarExternDeclaration(VarPtr var) {
+  return VarDeclaration(var, true, false);
 }
 
-inline Function::Function (FunctionPtr function, bool in_header) :
-  function (function),
-  in_header (in_header) {
+inline VarDeclaration VarPlainDeclaration(VarPtr var) {
+  return VarDeclaration(var, false, false);
 }
 
-inline void Function::compile (CodeGenerator &W) const {
+inline Function::Function(FunctionPtr function, bool in_header) :
+  function(function),
+  in_header(in_header) {
+}
+
+inline void Function::compile(CodeGenerator &W) const {
   if (in_header) {
-    W << FunctionDeclaration (function, in_header) << ";";
+    W << FunctionDeclaration(function, in_header) << ";";
     if (function->root->resumable_flag) {
-      W << NL << FunctionForkDeclaration (function, in_header) << ";";
+      W << NL << FunctionForkDeclaration(function, in_header) << ";";
     }
   } else {
     // временно: пока все методы классов априори required и не исключаются из списка, то не выводим методы с Unknown-параметрами
@@ -902,20 +939,21 @@ inline void Function::compile (CodeGenerator &W) const {
   W << NL;
 }
 
-inline VertexCompiler::VertexCompiler (VertexPtr vertex) :
-  vertex (vertex) {
+inline VertexCompiler::VertexCompiler(VertexPtr vertex) :
+  vertex(vertex) {
 }
 
-inline void VertexCompiler::compile (CodeGenerator &W) const {
-  compile_vertex (vertex, W);
+inline void VertexCompiler::compile(CodeGenerator &W) const {
+  compile_vertex(vertex, W);
 }
 
 
-inline InitFuncPtrs::InitFuncPtrs (const vector <FunctionPtr> &ids) :
-  ids (ids) {
+inline InitFuncPtrs::InitFuncPtrs(const vector<FunctionPtr> &ids) :
+  ids(ids) {
 }
-inline void InitFuncPtrs::compile (CodeGenerator &W) const {
-  vector <string> names;
+
+inline void InitFuncPtrs::compile(CodeGenerator &W) const {
+  vector<string> names;
 
   int n = (int)ids.size();
 
@@ -925,12 +963,12 @@ inline void InitFuncPtrs::compile (CodeGenerator &W) const {
       //skip
     } else {
       kphp_assert (f->root->type() == op_function);
-      W << Include (f->header_full_name);
+      W << Include(f->header_full_name);
     }
   }
 
   W << "void init_func_ptrs ()" <<
-       BEGIN;
+    BEGIN;
 
   for (int i = 0; i < n; i++) {
     FunctionPtr f = ids[i];
@@ -938,96 +976,96 @@ inline void InitFuncPtrs::compile (CodeGenerator &W) const {
     if (ids[i].not_null() && (ids[i]->root.is_null() || !ids[i]->is_required)) {
       //skip
     } else {
-      W << f->name << "_pointer = " << FunctionName (f) << ";" << NL;
+      W << f->name << "_pointer = " << FunctionName(f) << ";" << NL;
     }
   }
   W << END << NL;
 }
 
-inline RunFunction::RunFunction (FunctionPtr function, bool in_header) :
-  function (function),
-  in_header (in_header) {
+inline RunFunction::RunFunction(FunctionPtr function, bool in_header) :
+  function(function),
+  in_header(in_header) {
 }
 
-inline void RunFunction::compile (CodeGenerator &W) const {
-  W << "void " << FunctionName (function) << "$run (php_query_data *data, void *mem, size_t mem_size)";
+inline void RunFunction::compile(CodeGenerator &W) const {
+  W << "void " << FunctionName(function) << "$run (php_query_data *data, void *mem, size_t mem_size)";
   if (!in_header) {
     W << " " <<
-         BEGIN <<
-           "dl::allocator_init (mem, mem_size);" << NL <<
-           "init_static();" << NL <<
-           "drivers_init_static();" << NL <<
-           FunctionName (function) << "$dfs_init();" << NL <<
-           "init_superglobals (data);" << NL <<
-           "TRY_CALL_VOID (void, " << FunctionName (function) << "());" << NL <<
-           "finish (0);" << NL <<
-         END;
+      BEGIN <<
+      "dl::allocator_init (mem, mem_size);" << NL <<
+      "init_static();" << NL <<
+      "drivers_init_static();" << NL <<
+      FunctionName(function) << "$dfs_init();" << NL <<
+      "init_superglobals (data);" << NL <<
+      "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL <<
+      "finish (0);" << NL <<
+      END;
   } else {
     W << ";";
   }
   W << NL;
 }
 
-inline void InitScriptsH::compile (CodeGenerator &W) const {
-  W << OpenFile ("init_scripts.h", "", false);
+inline void InitScriptsH::compile(CodeGenerator &W) const {
+  W << OpenFile("init_scripts.h", "", false);
 
   W << "#ifdef  __cplusplus" << NL <<
-       "  extern \"C\" {" << NL <<
-       "#endif" << NL;
+    "  extern \"C\" {" << NL <<
+    "#endif" << NL;
 
   W << "void static_init_scripts (void);" << NL;
   W << "void init_scripts (void);" << NL;
 
   W << "#ifdef  __cplusplus" << NL <<
-       "  }" << NL <<
-       "#endif" << NL;
+    "  }" << NL <<
+    "#endif" << NL;
 
   W << CloseFile();
 }
 
-inline InitScriptsCpp::InitScriptsCpp (
-    vector <SrcFilePtr> &new_main_file_ids,
-    vector <FunctionPtr> &new_source_functions,
-    vector <FunctionPtr> &new_all_functions) :
+inline InitScriptsCpp::InitScriptsCpp(
+  vector<SrcFilePtr> &new_main_file_ids,
+  vector<FunctionPtr> &new_source_functions,
+  vector<FunctionPtr> &new_all_functions) :
   main_file_ids(),
   source_functions(),
   all_functions() {
-  std::swap (main_file_ids, new_main_file_ids);
-  std::swap (source_functions, new_source_functions);
-  std::swap (all_functions, new_all_functions);
+  std::swap(main_file_ids, new_main_file_ids);
+  std::swap(source_functions, new_source_functions);
+  std::swap(all_functions, new_all_functions);
 }
 
-inline void InitScriptsCpp::compile (CodeGenerator &W) const {
-  W << OpenFile ("init_scripts.cpp", "", false);
+inline void InitScriptsCpp::compile(CodeGenerator &W) const {
+  W << OpenFile("init_scripts.cpp", "", false);
 
-  W << ExternInclude ("php_functions.h") <<
-    ExternInclude ("php_script.h") <<
-    ExternInclude ("init_scripts.h");
+  W << ExternInclude("php_functions.h") <<
+    ExternInclude("php_script.h") <<
+    ExternInclude("init_scripts.h");
 
   for (auto i : main_file_ids) {
     FunctionPtr main_function = i->main_function;
-    W << Include (main_function->header_full_name) <<
-         Include ("dfs." + main_function->header_name);
+    W << Include(main_function->header_full_name) <<
+      Include("dfs." + main_function->header_name);
   }
 
   W << "extern string_buffer SB;" << NL;
 
-  W << InitFuncPtrs (source_functions);
-  W << StaticInit (all_functions);
+  W << InitFuncPtrs(source_functions);
+  W << StaticInit(all_functions);
 
   for (auto i : main_file_ids) {
-    W << RunFunction (i->main_function);
+    W << RunFunction(i->main_function);
   }
 
   W << "void init_scripts (void)" <<
-       BEGIN <<
-         "init_func_ptrs();" << NL;
+    BEGIN <<
+    "init_func_ptrs();" << NL;
 
   for (auto i : main_file_ids) {
     W << "set_script (" <<
-            "\"@" << i->short_file_name << "\", " <<
-            FunctionName (i->main_function) << "$run, " <<
-            FunctionName (i->main_function) << "$dfs_clear);" << NL;
+      "\"@" << i->short_file_name << "\", " <<
+      FunctionName(i->main_function) << "$run, " <<
+      FunctionName(i->main_function) << "$dfs_clear);" << NL;
   }
 
   W << END;
@@ -1035,10 +1073,10 @@ inline void InitScriptsCpp::compile (CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline VarsCppPart::VarsCppPart (int file_num, const vector <VarPtr> &vars, int max_dependency_level):
-  file_num (file_num),
-  max_dependency_level (max_dependency_level),
-  vars (vars) {
+inline VarsCppPart::VarsCppPart(int file_num, const vector<VarPtr> &vars, int max_dependency_level) :
+  file_num(file_num),
+  max_dependency_level(max_dependency_level),
+  vars(vars) {
   kphp_assert(max_dependency_level >= 0);
 }
 
@@ -1050,7 +1088,7 @@ inline static void add_dependent_declarations(VertexPtr vertex, std::map<std::st
       break;
 
     case op_double_arrow: {
-      VertexAdaptor <op_double_arrow> arrow = vertex.as<op_double_arrow>();
+      VertexAdaptor<op_double_arrow> arrow = vertex.as<op_double_arrow>();
       VertexPtr key = arrow->key();
       VertexPtr value = arrow->value();
 
@@ -1084,9 +1122,9 @@ inline void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
 
   const Location &save_location = stage::get_location();
   W << UnlockComments();
-  W << UpdateLocation (var->init_val->location);
+  W << UpdateLocation(var->init_val->location);
 
-  W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << int_to_str(shift) <<"]);" << NL << NL;
+  W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << int_to_str(shift) << "]);" << NL << NL;
 
   W << LockComments();
   stage::set_location(save_location);
@@ -1188,15 +1226,15 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
   return shifts;
 }
 
-inline void VarsCppPart::compile (CodeGenerator &W) const {
-  string file_name = string ("vars") + int_to_str (file_num) + ".cpp";
-  W << OpenFile (file_name, "", false);
+inline void VarsCppPart::compile(CodeGenerator &W) const {
+  string file_name = string("vars") + int_to_str(file_num) + ".cpp";
+  W << OpenFile(file_name, "", false);
 
-  W << ExternInclude ("php_functions.h");
+  W << ExternInclude("php_functions.h");
 
-  vector <VarPtr> const_string_vars;
-  vector <VarPtr> const_array_vars;
-  vector <VarPtr> const_regexp_vars;
+  vector<VarPtr> const_string_vars;
+  vector<VarPtr> const_array_vars;
+  vector<VarPtr> const_regexp_vars;
   std::map<std::string, VertexPtr> dependent_vars;
 
   for (auto var : vars) {
@@ -1204,8 +1242,8 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
       W << IncludeClass(var->tinf_node.get_type());
     }
 
-    W << VarDeclaration (var);
-    if (var->type ()== VarData::var_const_t && var->global_init_flag) {
+    W << VarDeclaration(var);
+    if (var->type() == VarData::var_const_t && var->global_init_flag) {
       switch (var->init_val->type()) {
         case op_string:
           const_string_vars.push_back(var);
@@ -1219,7 +1257,7 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
           break;
         }
         default:
-          kphp_fail();
+        kphp_fail();
       }
     }
   }
@@ -1233,20 +1271,20 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   }
 
   string raw_data;
-  vector <int> const_string_shifts (const_string_vars.size());
-  vector <int> const_string_length (const_string_vars.size());
+  vector<int> const_string_shifts(const_string_vars.size());
+  vector<int> const_string_length(const_string_vars.size());
   int ii = 0;
   for (auto var : const_string_vars) {
     int shift_to_align = (((int)raw_data.size() + 7) & -8) - (int)raw_data.size();
     if (shift_to_align != 0) {
-      raw_data.append (shift_to_align, 0);
+      raw_data.append(shift_to_align, 0);
     }
-    const string &s = var->init_val.as <op_string>()->get_string();
-    int raw_len = string_raw_len (static_cast<int>(s.size()));
+    const string &s = var->init_val.as<op_string>()->get_string();
+    int raw_len = string_raw_len(static_cast<int>(s.size()));
     kphp_assert (raw_len != -1);
     const_string_shifts[ii] = (int)raw_data.size();
-    raw_data.append (raw_len, 0);
-    int err = string_raw (&raw_data[const_string_shifts[ii]], raw_len, s.c_str(), (int)s.size());
+    raw_data.append(raw_len, 0);
+    int err = string_raw(&raw_data[const_string_shifts[ii]], raw_len, s.c_str(), (int)s.size());
     kphp_assert (err == raw_len);
     const_string_length[ii] = raw_len;
     ii++;
@@ -1291,29 +1329,29 @@ inline void VarsCppPart::compile (CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline VarsCpp::VarsCpp (vector <VarPtr> &new_vars, int parts_cnt) :
+inline VarsCpp::VarsCpp(vector<VarPtr> &new_vars, int parts_cnt) :
   vars(),
-  parts_cnt (parts_cnt) {
-  std::swap (vars, new_vars);
+  parts_cnt(parts_cnt) {
+  std::swap(vars, new_vars);
 }
 
-inline void VarsCpp::compile (CodeGenerator &W) const {
+inline void VarsCpp::compile(CodeGenerator &W) const {
   kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
-  vector <vector <VarPtr> > vcpp (parts_cnt);
+  vector<vector<VarPtr>> vcpp(parts_cnt);
 
   int max_dependency_level = 0;
   for (auto var : vars) {
-    int vi = (unsigned)hash (var->name) % parts_cnt;
-    vcpp[vi].push_back (var);
+    int vi = (unsigned)hash(var->name) % parts_cnt;
+    vcpp[vi].push_back(var);
     max_dependency_level = std::max(max_dependency_level, var->dependency_level);
   }
 
   for (int i = 0; i < parts_cnt; i++) {
-    sort (vcpp[i].begin(), vcpp[i].end());
-    W << VarsCppPart (i, vcpp[i], max_dependency_level);
+    sort(vcpp[i].begin(), vcpp[i].end());
+    W << VarsCppPart(i, vcpp[i], max_dependency_level);
   }
 
-  W << OpenFile ("vars.cpp", "", false);
+  W << OpenFile("vars.cpp", "", false);
 
   W << "void const_vars_init()" << BEGIN;
   for (int pr = 0; pr <= max_dependency_level; ++pr) {
@@ -1326,33 +1364,34 @@ inline void VarsCpp::compile (CodeGenerator &W) const {
   }
   W << END;
   W << CloseFile();
-  
+
 }
 
-inline InitVar::InitVar (VarPtr var) :
-  var (var) {
+inline InitVar::InitVar(VarPtr var) :
+  var(var) {
 }
-inline void InitVar::compile (CodeGenerator &W) const {
+
+inline void InitVar::compile(CodeGenerator &W) const {
   Location save_location = stage::get_location();
   W << UnlockComments();
 
   VertexPtr init_val = var->init_val;
   if (init_val->type() == op_conv_regexp) {
-    W << VarName (var) << ".init (" << var->init_val << ");" << NL;
+    W << VarName(var) << ".init (" << var->init_val << ");" << NL;
   } else {
-    W << VarName (var) << " = " << var->init_val << ";" << NL;
+    W << VarName(var) << " = " << var->init_val << ";" << NL;
   }
 
   W << LockComments();
-  stage::set_location (save_location);
+  stage::set_location(save_location);
 }
 
-inline FunctionStaticInit::FunctionStaticInit (FunctionPtr function, bool in_header) :
-  function (function),
-  in_header (in_header) {
+inline FunctionStaticInit::FunctionStaticInit(FunctionPtr function, bool in_header) :
+  function(function),
+  in_header(in_header) {
 }
 
-inline static void init_vars(const vector<VarPtr> & vars, CodeGenerator &W) {
+inline static void init_vars(const vector<VarPtr> &vars, CodeGenerator &W) {
   for (auto var : vars) {
     if (var->global_init_flag || !var->optimize_flag) {
       continue;
@@ -1368,14 +1407,14 @@ inline static void init_vars(const vector<VarPtr> & vars, CodeGenerator &W) {
   }
 }
 
-void FunctionStaticInit::compile (CodeGenerator &W) const {
+void FunctionStaticInit::compile(CodeGenerator &W) const {
   if (function->is_static_init_empty_body()) {
     return;
   }
   if (function->root->inline_flag) {
     W << "static inline ";
   }
-  W << "void " << FunctionName (function) << "$static_init (void)";
+  W << "void " << FunctionName(function) << "$static_init (void)";
   if (in_header) {
     W << ";" << NL;
     return;
@@ -1394,10 +1433,11 @@ void FunctionStaticInit::compile (CodeGenerator &W) const {
   W << END << NL;
 }
 
-inline StaticInit::StaticInit (const vector <FunctionPtr> &all_functions) :
-  all_functions (all_functions) {
+inline StaticInit::StaticInit(const vector<FunctionPtr> &all_functions) :
+  all_functions(all_functions) {
 }
-inline void StaticInit::compile (CodeGenerator &W) const {
+
+inline void StaticInit::compile(CodeGenerator &W) const {
   for (auto to : all_functions) {
     if (!to->is_static_init_empty_body()) {
       W << Include(to->header_full_name);
@@ -1418,14 +1458,14 @@ inline void StaticInit::compile (CodeGenerator &W) const {
   W << END << NL;
 }
 
-DfsInit::DfsInit (SrcFilePtr main_file) :
-  main_file (main_file) {
+DfsInit::DfsInit(SrcFilePtr main_file) :
+  main_file(main_file) {
 }
 
-void DfsInit::compile_dfs_init_part (
-    FunctionPtr func,
-    const set <VarPtr> &used_vars, bool full_flag,
-    int part_i, CodeGenerator &W) {
+void DfsInit::compile_dfs_init_part(
+  FunctionPtr func,
+  const set<VarPtr> &used_vars, bool full_flag,
+  int part_i, CodeGenerator &W) {
 
   if (full_flag) {
     for (auto var : used_vars) {
@@ -1433,10 +1473,10 @@ void DfsInit::compile_dfs_init_part (
         W << IncludeClass(var->tinf_node.get_type());
       }
 
-      W << VarExternDeclaration (var);
+      W << VarExternDeclaration(var);
     }
   }
-  W << "void " << FunctionName (func) << "$dfs_init" << int_to_str (part_i) << " (void)";
+  W << "void " << FunctionName(func) << "$dfs_init" << int_to_str(part_i) << " (void)";
 
   if (full_flag) {
     W << " " << BEGIN;
@@ -1446,13 +1486,13 @@ void DfsInit::compile_dfs_init_part (
         continue;
       }
 
-      const TypeData *tp = tinf::get_type (var);
+      const TypeData *tp = tinf::get_type(var);
 
       W << "INIT_VAR (" << TypeNameInsideMacro(tp) << ", " << VarName(var) << ");" << NL;
       //FIXME: brk and comments
       if (var->init_val.not_null()) {
         W << UnlockComments();
-        W << VarName (var) << " = " << var->init_val << ";" << NL;
+        W << VarName(var) << " = " << var->init_val << ";" << NL;
         W << LockComments();
       }
     }
@@ -1464,7 +1504,7 @@ void DfsInit::compile_dfs_init_part (
   W << NL;
 
 
-  W << "void " << FunctionName (func) << "$dfs_clear" << int_to_str (part_i) << "(void)";
+  W << "void " << FunctionName(func) << "$dfs_clear" << int_to_str(part_i) << "(void)";
   if (full_flag) {
     W << " " << BEGIN;
 
@@ -1473,7 +1513,7 @@ void DfsInit::compile_dfs_init_part (
         continue;
       }
 
-      const TypeData *type = tinf::get_type (var);
+      const TypeData *type = tinf::get_type(var);
 
       W << "CLEAR_VAR (" << TypeNameInsideMacro(type) << ", " << VarName(var) << ");" << NL;
     }
@@ -1485,34 +1525,34 @@ void DfsInit::compile_dfs_init_part (
   W << NL;
 }
 
-void DfsInit::compile_dfs_init_func (
-    FunctionPtr func, const set <FunctionPtr> &used_functions,
-    bool full_flag, const vector <string> &header_names, CodeGenerator &W) {
+void DfsInit::compile_dfs_init_func(
+  FunctionPtr func, const set<FunctionPtr> &used_functions,
+  bool full_flag, const vector<string> &header_names, CodeGenerator &W) {
 
   int parts_n = (int)header_names.size();
   if (full_flag) {
     for (int i = 0; i < parts_n; i++) {
-      W << Include (header_names[i]);
+      W << Include(header_names[i]);
     }
     for (auto func : used_functions) {
       if (func->type() == FunctionData::func_global) {
-        W << Include (func->header_full_name);
+        W << Include(func->header_full_name);
       }
     }
   }
 
-  W << "void " << FunctionName (func) << "$dfs_init (void)";
+  W << "void " << FunctionName(func) << "$dfs_init (void)";
   if (full_flag) {
     W << " " << BEGIN;
 
     for (auto func : used_functions) {
       if (func->type() == FunctionData::func_global) {
-        W << FunctionCallFlag (func) << " = false;" << NL;
+        W << FunctionCallFlag(func) << " = false;" << NL;
       }
     }
 
     for (int i = 0; i < parts_n; i++) {
-      W << FunctionName (func) << "$dfs_init" << int_to_str (i) << "();" << NL;
+      W << FunctionName(func) << "$dfs_init" << int_to_str(i) << "();" << NL;
     }
 
     W << END;
@@ -1521,12 +1561,12 @@ void DfsInit::compile_dfs_init_func (
   }
   W << NL;
 
-  W << "void " << FunctionName (func) << "$dfs_clear (void)";
+  W << "void " << FunctionName(func) << "$dfs_clear (void)";
   if (full_flag) {
     W << " " << BEGIN;
 
     for (int i = 0; i < parts_n; i++) {
-      W << FunctionName (func) << "$dfs_clear" << int_to_str (i) << "();" << NL;
+      W << FunctionName(func) << "$dfs_clear" << int_to_str(i) << "();" << NL;
     }
 
     W << END;
@@ -1536,65 +1576,67 @@ void DfsInit::compile_dfs_init_func (
   W << NL;
 }
 
-template <class It> void collect_vars (set <VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
-  for (;begin != end; begin++) {
+template<class It>
+void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
+  for (; begin != end; begin++) {
     VarPtr var_id = *begin;
     int var_hash;
     if (var_id->class_id.not_null()) {
-      var_hash = hash (var_id->class_id->init_function->name);
+      var_hash = hash(var_id->class_id->init_function->name);
     } else {
-      var_hash = hash (var_id->name);
+      var_hash = hash(var_id->name);
     }
     int bucket = var_hash % used_vars_cnt;
-    used_vars[bucket].insert (var_id);
+    used_vars[bucket].insert(var_id);
   }
 }
-void DfsInit::collect_used_funcs_and_vars (
-    FunctionPtr func,
-    set <FunctionPtr> *visited_functions,
-    set <VarPtr> *used_vars,
-    int used_vars_cnt) {
+
+void DfsInit::collect_used_funcs_and_vars(
+  FunctionPtr func,
+  set<FunctionPtr> *visited_functions,
+  set<VarPtr> *used_vars,
+  int used_vars_cnt) {
   for (int i = 0, ni = (int)func->dep.size(); i < ni; i++) {
     FunctionPtr to = func->dep[i];
-    if (visited_functions->insert (to).second) {
-      collect_used_funcs_and_vars (to, visited_functions, used_vars, used_vars_cnt);
+    if (visited_functions->insert(to).second) {
+      collect_used_funcs_and_vars(to, visited_functions, used_vars, used_vars_cnt);
     }
   }
 
-  int func_hash = hash (func->name);
+  int func_hash = hash(func->name);
   int bucket = func_hash % used_vars_cnt;
 
   //used_vars[bucket].insert (func->global_var_ids.begin(), func->global_var_ids.end());
   //used_vars[bucket].insert (func->header_global_var_ids.begin(), func->header_global_var_ids.end());
-  used_vars[bucket].insert (func->static_var_ids.begin(), func->static_var_ids.end());
-  used_vars[bucket].insert (func->const_var_ids.begin(), func->const_var_ids.end());
+  used_vars[bucket].insert(func->static_var_ids.begin(), func->static_var_ids.end());
+  used_vars[bucket].insert(func->const_var_ids.begin(), func->const_var_ids.end());
   //used_vars[bucket].insert (func->header_const_var_ids.begin(), func->header_const_var_ids.end());
-  collect_vars (used_vars, used_vars_cnt, func->global_var_ids.begin(), func->global_var_ids.end());
-  collect_vars (used_vars, used_vars_cnt, func->header_global_var_ids.begin(), func->header_global_var_ids.end());
+  collect_vars(used_vars, used_vars_cnt, func->global_var_ids.begin(), func->global_var_ids.end());
+  collect_vars(used_vars, used_vars_cnt, func->header_global_var_ids.begin(), func->header_global_var_ids.end());
   //collect_vars (used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
   //collect_vars (used_vars, used_vars_cnt, func->const_var_ids.begin(), func->const_var_ids.end());
-  collect_vars (used_vars, used_vars_cnt, func->header_const_var_ids.begin(), func->header_const_var_ids.end());
+  collect_vars(used_vars, used_vars_cnt, func->header_const_var_ids.begin(), func->header_const_var_ids.end());
 }
 
-inline void DfsInit::compile (CodeGenerator &W) const {
+inline void DfsInit::compile(CodeGenerator &W) const {
   FunctionPtr main_func = main_file->main_function;
 
-  set <FunctionPtr> used_functions;
+  set<FunctionPtr> used_functions;
 
   const int parts_n = 32;
-  set <VarPtr> used_vars[parts_n];
-  collect_used_funcs_and_vars (main_func, &used_functions, used_vars, parts_n);
-  vector <ClassPtr> classes = G->get_classes();
+  set<VarPtr> used_vars[parts_n];
+  collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
+  vector<ClassPtr> classes = G->get_classes();
   for (auto ci : classes) {
     if (ci.not_null()) {
       collect_used_funcs_and_vars(ci->init_function, &used_functions, used_vars, parts_n);
     }
   }
 
-  vector <string> header_names (parts_n);
-  vector <string> src_names (parts_n);
+  vector<string> header_names(parts_n);
+  vector<string> src_names(parts_n);
   for (int i = 0; i < parts_n; i++) {
-    string prefix = string ("dfs") + int_to_str (i) + ".";
+    string prefix = string("dfs") + int_to_str(i) + ".";
     string header_name = prefix + main_func->header_name;
     string src_name = prefix + main_func->src_name;
     header_names[i] = header_name;
@@ -1602,33 +1644,33 @@ inline void DfsInit::compile (CodeGenerator &W) const {
   }
 
   for (int i = 0; i < parts_n; i++) {
-    W << OpenFile (header_names[i], "", false);
-    compile_dfs_init_part (main_func, used_vars[i], false, i, W);
+    W << OpenFile(header_names[i], "", false);
+    compile_dfs_init_part(main_func, used_vars[i], false, i, W);
     W << CloseFile();
 
-    W << OpenFile (src_names[i], "", false);
-    W << ExternInclude ("php_functions.h");
-    compile_dfs_init_part (main_func, used_vars[i], true, i, W);
+    W << OpenFile(src_names[i], "", false);
+    W << ExternInclude("php_functions.h");
+    compile_dfs_init_part(main_func, used_vars[i], true, i, W);
     W << CloseFile();
   }
 
-  W << OpenFile ("dfs." + main_func->header_name, "", false);
-  compile_dfs_init_func (main_func, used_functions, false, header_names, W);
+  W << OpenFile("dfs." + main_func->header_name, "", false);
+  compile_dfs_init_func(main_func, used_functions, false, header_names, W);
   W << CloseFile();
 
-  W << OpenFile ("dfs." + main_func->src_name, "", false);
-  compile_dfs_init_func (main_func, used_functions, true, header_names, W);
+  W << OpenFile("dfs." + main_func->src_name, "", false);
+  compile_dfs_init_func(main_func, used_functions, true, header_names, W);
   W << CloseFile();
 }
 
-static inline void include_dependent_headers (FunctionPtr function, CodeGenerator &W) {
+static inline void include_dependent_headers(FunctionPtr function, CodeGenerator &W) {
   for (auto to_include : function->dep) {
     if (to_include == function ||
         to_include->type() == FunctionData::func_extern) {
       continue;
     }
 
-    W << Include (to_include->header_full_name);
+    W << Include(to_include->header_full_name);
   }
   for (auto global_var : function->global_var_ids) {
     if (global_var->tinf_node.get_type()->has_class_type_inside()) {
@@ -1637,31 +1679,32 @@ static inline void include_dependent_headers (FunctionPtr function, CodeGenerato
   }
 }
 
-static inline void declare_global_vars (FunctionPtr function, CodeGenerator &W) {
+static inline void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto global_var : function->global_var_ids) {
-    W << VarExternDeclaration (global_var) << NL;
+    W << VarExternDeclaration(global_var) << NL;
   }
 }
 
-static inline void declare_const_vars (FunctionPtr function, CodeGenerator &W) {
+static inline void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto const_var : function->const_var_ids) {
-    W << VarExternDeclaration (const_var) << NL;
+    W << VarExternDeclaration(const_var) << NL;
   }
 }
 
-static inline void declare_static_vars (FunctionPtr function, CodeGenerator &W) {
+static inline void declare_static_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto static_var : function->static_var_ids) {
     W << VarDeclaration(static_var) << NL;
   }
 }
 
-inline FunctionH::FunctionH (FunctionPtr function) :
-  function (function) {
+inline FunctionH::FunctionH(FunctionPtr function) :
+  function(function) {
 }
-void FunctionH::compile (CodeGenerator &W) const {
-  W << OpenFile (function->header_name, function->subdir);
+
+void FunctionH::compile(CodeGenerator &W) const {
+  W << OpenFile(function->header_name, function->subdir);
   W << "#pragma once" << NL <<
-       ExternInclude ("php_functions.h");
+    ExternInclude("php_functions.h");
 
   for (const auto &tinf_node : function->tinf_nodes) {
     if (tinf_node.get_type()->has_class_type_inside()) {
@@ -1670,49 +1713,49 @@ void FunctionH::compile (CodeGenerator &W) const {
   }
 
   for (auto global_var : function->header_global_var_ids) {
-    W << VarExternDeclaration (global_var) << NL;
+    W << VarExternDeclaration(global_var) << NL;
   }
 
   for (auto const_var : function->header_const_var_ids) {
-    W << VarExternDeclaration (const_var) << NL;
+    W << VarExternDeclaration(const_var) << NL;
   }
 
   if (function->type() == FunctionData::func_global) {
-    W << "extern bool " << FunctionCallFlag (function) << ";" << NL;
+    W << "extern bool " << FunctionCallFlag(function) << ";" << NL;
   }
 
   if (function->root->inline_flag) {
-    W << "static inline " << Function (function, true);
-    stage::set_function (function);
-    declare_global_vars (function, W);
-    declare_const_vars (function, W);
-    include_dependent_headers (function, W);
+    W << "static inline " << Function(function, true);
+    stage::set_function(function);
+    declare_global_vars(function, W);
+    declare_const_vars(function, W);
+    include_dependent_headers(function, W);
     W << UnlockComments();
-    W << Function (function);
+    W << Function(function);
     W << LockComments();
-    W << FunctionStaticInit (function);
+    W << FunctionStaticInit(function);
   } else {
-    W << Function (function, true);
-    W << FunctionStaticInit (function, true);
+    W << Function(function, true);
+    W << FunctionStaticInit(function, true);
   }
 
   W << CloseFile();
 }
 
-inline FunctionCpp::FunctionCpp (FunctionPtr function) :
-  function (function) {
+inline FunctionCpp::FunctionCpp(FunctionPtr function) :
+  function(function) {
 }
 
-void FunctionCpp::compile (CodeGenerator &W) const {
+void FunctionCpp::compile(CodeGenerator &W) const {
   if (function->root->inline_flag) {
     return;
   }
-  W << OpenFile (function->src_name, function->subdir);
-  W << Include (function->header_full_name);
+  W << OpenFile(function->src_name, function->subdir);
+  W << Include(function->header_full_name);
 
-  stage::set_function (function);
+  stage::set_function(function);
 
-  include_dependent_headers (function, W);
+  include_dependent_headers(function, W);
 
   declare_global_vars(function, W);
   declare_const_vars(function, W);
@@ -1721,29 +1764,30 @@ void FunctionCpp::compile (CodeGenerator &W) const {
   W << "extern string_buffer SB;" << NL;
 
   if (function->type() == FunctionData::func_global) {
-    W << "bool " << FunctionCallFlag (function) << ";" << NL;
+    W << "bool " << FunctionCallFlag(function) << ";" << NL;
   }
 
   W << UnlockComments();
-  W << Function (function);
+  W << Function(function);
   W << LockComments();
 
-  W << FunctionStaticInit (function);
+  W << FunctionStaticInit(function);
 
   W << CloseFile();
 }
 
 
-Operand::Operand (VertexPtr root, Operation parent_type, bool is_left) :
-  root (root),
-  parent_type (parent_type),
-  is_left (is_left) {
+Operand::Operand(VertexPtr root, Operation parent_type, bool is_left) :
+  root(root),
+  parent_type(parent_type),
+  is_left(is_left) {
 }
-inline void Operand::compile (CodeGenerator &W) const {
-  int priority = OpInfo::priority (parent_type);
-  bool left_to_right = OpInfo::fixity (parent_type) == left_opp;
 
-  int root_priority = OpInfo::priority (root->type());
+inline void Operand::compile(CodeGenerator &W) const {
+  int priority = OpInfo::priority(parent_type);
+  bool left_to_right = OpInfo::fixity(parent_type) == left_opp;
+
+  int root_priority = OpInfo::priority(root->type());
 
   bool need_par = (root_priority < priority || (root_priority == priority && (left_to_right ^ is_left))) && root_priority > 0;
   need_par |= parent_type == op_log_and_let || parent_type == op_log_or_let || parent_type == op_log_xor_let;
@@ -1759,27 +1803,30 @@ inline void Operand::compile (CodeGenerator &W) const {
   }
 }
 
-inline LabelName::LabelName (int label_id) :
-  label_id (label_id) {
-}
-inline void LabelName::compile (CodeGenerator &W) const {
-  W << "label" << int_to_str (label_id);
+inline LabelName::LabelName(int label_id) :
+  label_id(label_id) {
 }
 
-inline Label::Label (int label_id) :
-  label_id (label_id) {
+inline void LabelName::compile(CodeGenerator &W) const {
+  W << "label" << int_to_str(label_id);
 }
-inline void Label::compile (CodeGenerator &W) const {
+
+inline Label::Label(int label_id) :
+  label_id(label_id) {
+}
+
+inline void Label::compile(CodeGenerator &W) const {
   if (label_id != 0) {
-    W << NL << LabelName (label_id) << ":;" << NL;
+    W << NL << LabelName(label_id) << ":;" << NL;
   }
 }
 
-inline AsList::AsList (VertexPtr root, string delim) :
-  root (root),
-  delim (delim) {
+inline AsList::AsList(VertexPtr root, string delim) :
+  root(root),
+  delim(delim) {
 }
-inline void AsList::compile (CodeGenerator &W) const {
+
+inline void AsList::compile(CodeGenerator &W) const {
   bool first = true;
   for (auto i : *root) {
     if (first) {
@@ -1790,10 +1837,12 @@ inline void AsList::compile (CodeGenerator &W) const {
     W << i;
   }
 }
-inline AsSeq::AsSeq (VertexPtr root) :
-  root (root) {
+
+inline AsSeq::AsSeq(VertexPtr root) :
+  root(root) {
 }
-inline void AsSeq::compile (CodeGenerator &W) const {
+
+inline void AsSeq::compile(CodeGenerator &W) const {
   if (root->type() != op_seq) {
     W << root << ";" << NL;
     return;
@@ -1806,70 +1855,70 @@ inline void AsSeq::compile (CodeGenerator &W) const {
   }
 }
 
-inline TupleGetIndex::TupleGetIndex (VertexPtr tuple, const std::string &int_index) :
-    tuple(tuple),
-    int_index(int_index) {
+inline TupleGetIndex::TupleGetIndex(VertexPtr tuple, const std::string &int_index) :
+  tuple(tuple),
+  int_index(int_index) {
 }
 
-inline TupleGetIndex::TupleGetIndex (VertexPtr tuple, VertexPtr key) :
-    tuple(tuple),
-    int_index(GenTree::get_actual_value(key)->get_string()) {
+inline TupleGetIndex::TupleGetIndex(VertexPtr tuple, VertexPtr key) :
+  tuple(tuple),
+  int_index(GenTree::get_actual_value(key)->get_string()) {
 }
 
-inline void TupleGetIndex::compile (CodeGenerator &W) const {
+inline void TupleGetIndex::compile(CodeGenerator &W) const {
   W << "std::get<" << int_index << ">(" << tuple << ")";
 }
 
-void compile_prefix_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W) {
-  W << OpInfo::str (root->type()) << Operand (root->expr(), root->type(), true);
+void compile_prefix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W) {
+  W << OpInfo::str(root->type()) << Operand(root->expr(), root->type(), true);
 }
 
-void compile_postfix_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W) {
-  W << Operand (root->expr(), root->type(), true) << OpInfo::str (root->type());
+void compile_postfix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W) {
+  W << Operand(root->expr(), root->type(), true) << OpInfo::str(root->type());
 }
 
 
-void compile_conv_op (VertexAdaptor <meta_op_unary_op> root, CodeGenerator &W) {
+void compile_conv_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W) {
   if (root->type() == op_conv_regexp) {
     W << root->expr();
   } else {
-    W << OpInfo::str (root->type()) << " (" << root->expr() << ")";
+    W << OpInfo::str(root->type()) << " (" << root->expr() << ")";
   }
 }
 
-void compile_noerr (VertexAdaptor <op_noerr> root, CodeGenerator &W) {
+void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
   if (root->rl_type == val_none) {
     W << "NOERR_VOID (" << Operand(root->expr(), root->type(), true) << ")";
   } else {
-    const TypeData *res_tp = tinf::get_type (root);
+    const TypeData *res_tp = tinf::get_type(root);
     W << "NOERR (" << Operand(root->expr(), root->type(), true) << ", " << TypeNameInsideMacro(res_tp) << ")";
   }
 }
 
 
-void compile_binary_func_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W) {
-  W << OpInfo::str (root->type()) << " (" <<
-       Operand (root->lhs(), root->type(), true) <<
-       ", " <<
-       Operand (root->rhs(), root->type(), false) <<
-       ")";
+void compile_binary_func_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W) {
+  W << OpInfo::str(root->type()) << " (" <<
+    Operand(root->lhs(), root->type(), true) <<
+    ", " <<
+    Operand(root->rhs(), root->type(), false) <<
+    ")";
 }
 
 
-void compile_binary_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W) {
-  kphp_error_return (OpInfo::str (root->type())[0] != '@', dl_pstr ("Unexpected %s\n", OpInfo::str (root->type()).c_str() + 1));
+void compile_binary_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W) {
+  kphp_error_return (OpInfo::str(root->type())[0] != '@', dl_pstr("Unexpected %s\n", OpInfo::str(root->type()).c_str() + 1));
 
   VertexPtr lhs = root->lhs();
   VertexPtr rhs = root->rhs();
 
   if (root->type() == op_add) {
     const TypeData *lhs_tp, *rhs_tp;
-    lhs_tp = tinf::get_type (lhs);
-    rhs_tp = tinf::get_type (rhs);
+    lhs_tp = tinf::get_type(lhs);
+    rhs_tp = tinf::get_type(rhs);
 
-    if (lhs_tp->ptype() == tp_array && rhs_tp->ptype() == tp_array && type_out (lhs_tp) != type_out (rhs_tp)) {
-      const TypeData *res_tp = tinf::get_type (root)->const_read_at (Key::any_key());
-      W << "array_add < " << TypeName (res_tp) << " > (" << lhs << ", " << rhs << ")";
+    if (lhs_tp->ptype() == tp_array && rhs_tp->ptype() == tp_array && type_out(lhs_tp) != type_out(rhs_tp)) {
+      const TypeData *res_tp = tinf::get_type(root)->const_read_at(Key::any_key());
+      W << "array_add < " << TypeName(res_tp) << " > (" << lhs << ", " << rhs << ")";
       return;
     }
   }
@@ -1878,16 +1927,16 @@ void compile_binary_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W
     W << TypeName(tinf::get_type(lhs)) << " ";    // получится не "$tmp = v", а "array<T> $tmp = v" к примеру
   }
 
-  OperationType tp = OpInfo::type (root->type());
+  OperationType tp = OpInfo::type(root->type());
   if (tp == binary_func_op) {
-    compile_binary_func_op (root, W);
+    compile_binary_func_op(root, W);
     return;
   }
 
   if (root->type() == op_lt || root->type() == op_gt || root->type() == op_le || root->type() == op_ge ||
       root->type() == op_eq2 || root->type() == op_neq2) {
-    const TypeData *lhs_tp = tinf::get_type (lhs);
-    const TypeData *rhs_tp = tinf::get_type (rhs);
+    const TypeData *lhs_tp = tinf::get_type(lhs);
+    const TypeData *rhs_tp = tinf::get_type(rhs);
     bool lhs_is_bool = lhs_tp->get_real_ptype() == tp_bool;
     bool rhs_is_bool = rhs_tp->get_real_ptype() == tp_bool;
 
@@ -1913,32 +1962,32 @@ void compile_binary_op (VertexAdaptor <meta_op_binary_op> root, CodeGenerator &W
   }
 
 
-  W << Operand (lhs, root->type(), true) <<
-       " " << OpInfo::str (root->type()) << " " <<
-       Operand (rhs, root->type(), false);
+  W << Operand(lhs, root->type(), true) <<
+    " " << OpInfo::str(root->type()) << " " <<
+    Operand(rhs, root->type(), false);
 }
 
 
-void compile_ternary_op (VertexAdaptor <op_ternary> root, CodeGenerator &W) {
+void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
   VertexPtr cond = root->cond();
   VertexPtr true_expr = root->true_expr();
   VertexPtr false_expr = root->false_expr();
 
   const TypeData *true_expr_tp, *false_expr_tp, *res_tp = NULL;
-  true_expr_tp = tinf::get_type (true_expr);
-  false_expr_tp = tinf::get_type (false_expr);
+  true_expr_tp = tinf::get_type(true_expr);
+  false_expr_tp = tinf::get_type(false_expr);
 
   //TODO: optimize type_out
-  if (type_out (true_expr_tp) != type_out (false_expr_tp)) {
-    res_tp = tinf::get_type (root);
+  if (type_out(true_expr_tp) != type_out(false_expr_tp)) {
+    res_tp = tinf::get_type(root);
   }
 
-  W << Operand (cond, root->type(), true) << " ? ";
+  W << Operand(cond, root->type(), true) << " ? ";
 
   if (res_tp != NULL) {
-    W << TypeName (res_tp) << "(";
+    W << TypeName(res_tp) << "(";
   }
-  W << Operand (true_expr, root->type(), true);
+  W << Operand(true_expr, root->type(), true);
   if (res_tp != NULL) {
     W << ")";
   }
@@ -1946,20 +1995,20 @@ void compile_ternary_op (VertexAdaptor <op_ternary> root, CodeGenerator &W) {
   W << " : ";
 
   if (res_tp != NULL) {
-    W << TypeName (res_tp) << "(";
+    W << TypeName(res_tp) << "(";
   }
-  W << Operand (false_expr, root->type(), true);
+  W << Operand(false_expr, root->type(), true);
   if (res_tp != NULL) {
     W << ")";
   }
 }
 
 
-void compile_if (VertexAdaptor <op_if> root, CodeGenerator &W) {
+void compile_if(VertexAdaptor<op_if> root, CodeGenerator &W) {
   W << "if (" << root->cond() << ") " <<
-      BEGIN <<
-        AsSeq (root->true_cmd()) <<
-      END;
+    BEGIN <<
+    AsSeq(root->true_cmd()) <<
+    END;
 
   if (root->has_false_cmd()) {
     W << " else " << root->false_cmd();
@@ -1967,42 +2016,43 @@ void compile_if (VertexAdaptor <op_if> root, CodeGenerator &W) {
 }
 
 
-inline CycleBody::CycleBody (VertexPtr body, int continue_label_id, int break_label_id) :
-  body (body),
-  continue_label_id (continue_label_id),
-  break_label_id (break_label_id) {
+inline CycleBody::CycleBody(VertexPtr body, int continue_label_id, int break_label_id) :
+  body(body),
+  continue_label_id(continue_label_id),
+  break_label_id(break_label_id) {
 }
-inline void CycleBody::compile (CodeGenerator &W) const {
+
+inline void CycleBody::compile(CodeGenerator &W) const {
   W << BEGIN <<
-         AsSeq (body) <<
-         Label (continue_label_id) <<
-       END <<
-       Label (break_label_id);
+    AsSeq(body) <<
+    Label(continue_label_id) <<
+    END <<
+    Label(break_label_id);
 }
 
 
-void compile_while (VertexAdaptor <op_while> root, CodeGenerator &W) {
+void compile_while(VertexAdaptor<op_while> root, CodeGenerator &W) {
   W << "while (" << root->cond() << ") " <<
-        CycleBody (root->cmd(), root->continue_label_id, root->break_label_id);
+    CycleBody(root->cmd(), root->continue_label_id, root->break_label_id);
 }
 
 
-void compile_do (VertexAdaptor <op_do> root, CodeGenerator &W) {
+void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
   W << "do " <<
-       BEGIN <<
-         AsSeq (root->cmd()) <<
-         Label (root->continue_label_id) <<
-       END << " while (";
+    BEGIN <<
+    AsSeq(root->cmd()) <<
+    Label(root->continue_label_id) <<
+    END << " while (";
   if (root->cond()->type() == op_empty) {
     W << "0";
   } else {
     W << root->cond();
   }
-  W << ");" << NL << Label (root->break_label_id);
+  W << ");" << NL << Label(root->break_label_id);
 }
 
 
-void compile_require (VertexPtr root, CodeGenerator &W) {
+void compile_require(VertexPtr root, CodeGenerator &W) {
   bool first = true;
   for (auto i : *root) {
     if (first) {
@@ -2019,16 +2069,16 @@ void compile_require (VertexPtr root, CodeGenerator &W) {
       kphp_fail();
     }
 
-    VertexAdaptor <op_func_call> func = i;
-    W << FunctionCallFlag (func->get_func_id()) <<
-         ", " <<
-         func <<
-         ")";
+    VertexAdaptor<op_func_call> func = i;
+    W << FunctionCallFlag(func->get_func_id()) <<
+      ", " <<
+      func <<
+      ")";
   }
 }
 
 
-void compile_return (VertexAdaptor <op_return> root, CodeGenerator &W) {
+void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
   if (resumable_flag) {
     W << "RETURN (";
@@ -2049,27 +2099,26 @@ void compile_return (VertexAdaptor <op_return> root, CodeGenerator &W) {
 }
 
 
-
-void compile_for (VertexAdaptor <op_for> root, CodeGenerator &W) {
+void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
   W << "for (" <<
-          AsList (root->pre_cond(), ", ") << "; " <<
-          AsList (root->cond(), ", ") << "; " <<
-          AsList (root->post_cond(), ", ") << ") " <<
-        CycleBody (root->cmd(), root->continue_label_id, root->break_label_id);
+    AsList(root->pre_cond(), ", ") << "; " <<
+    AsList(root->cond(), ", ") << "; " <<
+    AsList(root->post_cond(), ", ") << ") " <<
+    CycleBody(root->cmd(), root->continue_label_id, root->break_label_id);
 }
 
 //TODO: some interface for context?
-void compile_throw_fast_action (CodeGenerator &W) {
+void compile_throw_fast_action(CodeGenerator &W) {
   CGContext &context = W.get_context();
   if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
-    const TypeData *tp = tinf::get_type (context.parent_func, -1);
+    const TypeData *tp = tinf::get_type(context.parent_func, -1);
     if (context.resumable_flag) {
       W << "RETURN (";
     } else {
       W << "return ";
     }
     if (tp->ptype() != tp_void) {
-      W << "(" << TypeName (tp) << "())";
+      W << "(" << TypeName(tp) << "())";
     }
     if (context.resumable_flag) {
       W << ")";
@@ -2081,34 +2130,34 @@ void compile_throw_fast_action (CodeGenerator &W) {
 }
 
 
-void compile_throw (VertexAdaptor <op_throw> root, CodeGenerator &W) {
+void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << "throw (" << root->expr() << ")";
 }
 
 
-void compile_throw_fast (VertexAdaptor <op_throw> root, CodeGenerator &W) {
+void compile_throw_fast(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << BEGIN <<
-         "THROW_EXCEPTION (" << root->expr() << ");" << NL;
-         compile_throw_fast_action (W);
-  W <<   ";" << NL <<
-       END << NL;
+    "THROW_EXCEPTION (" << root->expr() << ");" << NL;
+  compile_throw_fast_action(W);
+  W << ";" << NL <<
+    END << NL;
 }
 
 
-void compile_try (VertexAdaptor <op_try> root, CodeGenerator &W) {
+void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   W << "try " << root->try_cmd() <<
-       " catch (Exception " << root->exception() << ")" <<
-       root->catch_cmd();
+    " catch (Exception " << root->exception() << ")" <<
+    root->catch_cmd();
 }
 
 
-void compile_try_fast (VertexAdaptor <op_try> root, CodeGenerator &W) {
+void compile_try_fast(VertexAdaptor<op_try> root, CodeGenerator &W) {
   CGContext &context = W.get_context();
 
-  string catch_label = gen_unique_name ("catch_label");
+  string catch_label = gen_unique_name("catch_label");
   W << "/""*** TRY ***""/" << NL;
-  context.catch_labels.push_back (catch_label);
-  context.catch_label_used.push_back (0);
+  context.catch_labels.push_back(catch_label);
+  context.catch_label_used.push_back(0);
   W << root->try_cmd() << NL;
   context.catch_labels.pop_back();
   bool used = context.catch_label_used.back();
@@ -2116,28 +2165,28 @@ void compile_try_fast (VertexAdaptor <op_try> root, CodeGenerator &W) {
 
   if (used) {
     W << "/""*** CATCH ***""/" << NL <<
-         "if (0) " <<
-         BEGIN <<
-           catch_label << ":;" << NL << //TODO: Label (lable_id) ?
-           root->exception() << " = *CurException;" << NL <<
-           "FREE_EXCEPTION;" << NL <<
-           root->catch_cmd() << NL <<
-         END << NL;
+      "if (0) " <<
+      BEGIN <<
+      catch_label << ":;" << NL << //TODO: Label (lable_id) ?
+      root->exception() << " = *CurException;" << NL <<
+      "FREE_EXCEPTION;" << NL <<
+      root->catch_cmd() << NL <<
+      END << NL;
   }
 }
 
-void compile_fork (VertexAdaptor <op_fork> root, CodeGenerator &W) {
-  compile_func_call (root->func_call(), W, 0, 2);
+void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
+  compile_func_call(root->func_call(), W, 0, 2);
 }
 
-void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
+void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
   VertexPtr lhs = root->lhs();
-  VertexAdaptor <op_func_call> func_call = root->func_call();
+  VertexAdaptor<op_func_call> func_call = root->func_call();
   if (lhs->type() != op_empty) {
     kphp_error (lhs->type() == op_var, "Can't save result of async call into non-var");
     W << lhs << " = ";
   }
-  compile_func_call (func_call, W, 0, 1);
+  compile_func_call(func_call, W, 0, 1);
   FunctionPtr func = func_call->get_func_id();
   W << ";" << NL;
   if (lhs->type() != op_empty) {
@@ -2152,15 +2201,15 @@ void compile_async (VertexAdaptor <op_async> root, CodeGenerator &W) {
   if (func->root->throws_flag) {
     W << NL;
     W << "CHECK_EXCEPTION(";
-    compile_throw_fast_action (W);
+    compile_throw_fast_action(W);
     W << ")";
   }
 #endif
 }
 
-void compile_foreach_ref_header (VertexAdaptor<op_foreach> root, CodeGenerator &W) {
+void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
   kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
-  VertexAdaptor <op_foreach_param> params = root->params();
+  VertexAdaptor<op_foreach_param> params = root->params();
 
   //foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
@@ -2171,22 +2220,22 @@ void compile_foreach_ref_header (VertexAdaptor<op_foreach> root, CodeGenerator &
   }
 
   string xs_copy_str;
-  xs_copy_str = gen_unique_name ("tmp_expr");
-  const TypeData *xs_type = tinf::get_type (xs);
+  xs_copy_str = gen_unique_name("tmp_expr");
+  const TypeData *xs_type = tinf::get_type(xs);
 
   W << BEGIN;
   //save array to 'xs_copy_str'
-  W << TypeName (xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
+  W << TypeName(xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
-  string it = gen_unique_name ("it");
+  string it = gen_unique_name("it");
   W << "for (auto " << it << " = begin (" << xs_copy_str << "); " <<
-          it << " != end (" << xs_copy_str << "); " <<
-          "++" << it << ")" <<
-        BEGIN;
+    it << " != end (" << xs_copy_str << "); " <<
+    "++" << it << ")" <<
+    BEGIN;
 
 
   //save value
-  W << TypeName (tinf::get_type (x)) << " &";
+  W << TypeName(tinf::get_type(x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
   //save key
@@ -2196,12 +2245,12 @@ void compile_foreach_ref_header (VertexAdaptor<op_foreach> root, CodeGenerator &
 }
 
 void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
-  VertexAdaptor <op_foreach_param> params = root->params();
+  VertexAdaptor<op_foreach_param> params = root->params();
   //foreach (xs as [key =>] x)
   VertexPtr x = params->x();
   VertexPtr xs = params->xs();
   VertexPtr key;
-  VertexAdaptor <op_var> temp_var = params->temp_var();
+  VertexAdaptor<op_var> temp_var = params->temp_var();
   if (params->has_key()) {
     key = params->key();
   }
@@ -2220,10 +2269,10 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   W << BEGIN;
   //save array to 'xs_copy_str'
   W << temp_var << " = " << xs << ";" << NL;
-  W << "for (" << temp_var <<"$it" << " = const_begin (" << temp_var << "); " <<
-          temp_var << "$it" << " != const_end (" << temp_var << "); " <<
-          "++" << temp_var <<"$it" << ")" <<
-        BEGIN;
+  W << "for (" << temp_var << "$it" << " = const_begin (" << temp_var << "); " <<
+    temp_var << "$it" << " != const_end (" << temp_var << "); " <<
+    "++" << temp_var << "$it" << ")" <<
+    BEGIN;
 
 
   //save value
@@ -2235,12 +2284,12 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   }
 }
 
-void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
-  VertexAdaptor <op_foreach_param> params = root->params();
+void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
+  VertexAdaptor<op_foreach_param> params = root->params();
   VertexPtr cmd = root->cmd();
 
   //foreach (xs as [key =>] x)
-  if (params->x()->ref_flag){
+  if (params->x()->ref_flag) {
     compile_foreach_ref_header(root, W);
   } else {
     compile_foreach_noref_header(root, W);
@@ -2250,13 +2299,13 @@ void compile_foreach (VertexAdaptor <op_foreach> root, CodeGenerator &W) {
     return;
   }
 
-  W <<     AsSeq (cmd) << NL <<
-           Label (root->continue_label_id) <<
-         END <<
-         Label (root->break_label_id) << NL;
+  W << AsSeq(cmd) << NL <<
+    Label(root->continue_label_id) <<
+    END <<
+    Label(root->break_label_id) << NL;
   if (!params->x()->ref_flag) {
     VertexPtr temp_var = params->temp_var();
-    W << "clear_array(" << temp_var <<");" << NL;
+    W << "clear_array(" << temp_var << ");" << NL;
   }
   W << END;
 }
@@ -2270,41 +2319,39 @@ struct CaseInfo {
   VertexPtr expr;
   VertexPtr cmd;
 
-  inline CaseInfo()
-    : hash(0)
-    , is_default(false)
-    , next(NULL)
-  {}
+  inline CaseInfo() :
+    hash(0),
+    is_default(false),
+    next(NULL) {}
 
-  inline CaseInfo (VertexPtr root)
-    : hash(0)
-    , next(NULL)
-    , v(root)
-  {
+  inline CaseInfo(VertexPtr root) :
+    hash(0),
+    next(NULL),
+    v(root) {
     if (v->type() == op_default) {
       is_default = true;
-      cmd = VertexAdaptor <op_default> (v)->cmd();
+      cmd = VertexAdaptor<op_default>(v)->cmd();
     } else {
       is_default = false;
-      VertexAdaptor <op_case> cs = v;
+      VertexAdaptor<op_case> cs = v;
 
       expr = cs->expr();
       cmd = cs->cmd();
 
-      VertexPtr val = GenTree::get_actual_value (expr);
+      VertexPtr val = GenTree::get_actual_value(expr);
       kphp_assert (val->type() == op_string);
-      const string &s = val.as <op_string>()->str_val;
-      hash = string_hash (s.c_str(), (int)s.size());
+      const string &s = val.as<op_string>()->str_val;
+      hash = string_hash(s.c_str(), (int)s.size());
     }
   }
 };
 
 
-void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
-  vector <CaseInfo> cases;
+void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
+  vector<CaseInfo> cases;
 
   for (auto i : root->cases()) {
-    cases.push_back (CaseInfo (i));
+    cases.push_back(CaseInfo(i));
   }
   int n = (int)cases.size();
 
@@ -2316,13 +2363,13 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
     }
   }
 
-  map <unsigned int, int> prev;
+  map<unsigned int, int> prev;
   for (int i = n - 1; i >= 0; i--) {
     if (cases[i].is_default) {
       continue;
     }
-    pair <unsigned int, int> new_val (cases[i].hash, i);
-    pair <map <unsigned int, int>::iterator, bool> insert_res = prev.insert (new_val);
+    pair<unsigned int, int> new_val(cases[i].hash, i);
+    pair<map<unsigned int, int>::iterator, bool> insert_res = prev.insert(new_val);
     if (insert_res.second == false) {
       int next_i = insert_res.first->second;
       insert_res.first->second = i;
@@ -2332,7 +2379,7 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
     }
     CaseInfo *next = cases[i].next;
     if (next != NULL && next->goto_name.empty()) {
-      next->goto_name = gen_unique_name ("switch_goto");
+      next->goto_name = gen_unique_name("switch_goto");
     }
   }
 
@@ -2340,17 +2387,17 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   W << "(void)" << root->switch_var() << ";" << NL;
   W << root->ss() << " = f$strval (" << root->expr() << ");" << NL;
   W << root->ss_hash() << " = " << root->ss() << ".hash();" << NL;
-  W << root->switch_flag()<< " = false;" << NL;
+  W << root->switch_flag() << " = false;" << NL;
 
   W << "switch (" << root->ss_hash() << ") " <<
-       BEGIN;
+    BEGIN;
   for (int i = 0; i < n; i++) {
     CaseInfo *cur = &cases[i];
     if (cur->is_default) {
       W << "default:" << NL;
     } else if (cur->goto_name.empty()) {
       char buf[100];
-      sprintf (buf, "0x%x", cur->hash);
+      sprintf(buf, "0x%x", cur->hash);
 
       W << "case " << (const char *)buf << ":" << NL;
     }
@@ -2360,22 +2407,22 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
 
     if (!cur->is_default) {
       W << "if (!" << root->switch_flag() << ") " <<
-           BEGIN <<
-             "if (!equals (" << root->ss() << ", " << cur->expr << ")) " <<
-             BEGIN;
+        BEGIN <<
+        "if (!equals (" << root->ss() << ", " << cur->expr << ")) " <<
+        BEGIN;
       string next_goto;
       if (cur->next != NULL) {
         next_goto = cur->next->goto_name;
-        W <<   "goto " << next_goto << ";" << NL;
+        W << "goto " << next_goto << ";" << NL;
       } else {
-        W <<   "break;" << NL;
+        W << "break;" << NL;
       }
-      W <<   END <<
-             " else " <<
-             BEGIN <<
-               root->switch_flag() << " = true;" << NL <<
-             END << NL <<
-           END << NL;
+      W << END <<
+        " else " <<
+        BEGIN <<
+        root->switch_flag() << " = true;" << NL <<
+        END << NL <<
+        END << NL;
     } else {
       W << root->switch_flag() << " = true;" << NL;
     }
@@ -2383,72 +2430,72 @@ void compile_switch_str (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   }
   W << END << NL;
 
-  W <<   Label (root->continue_label_id) <<
-       END <<
-       Label (root->break_label_id);
+  W << Label(root->continue_label_id) <<
+    END <<
+    Label(root->break_label_id);
 }
 
-void compile_switch_int (VertexAdaptor <op_switch> root, CodeGenerator &W) {
+void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << "switch (f$intval (" << root->expr() << "))" <<
-        BEGIN;
+    BEGIN;
   W << "(void)" << root->ss() << ";" << NL;
   W << "(void)" << root->ss_hash() << ";" << NL;
   W << "(void)" << root->switch_var() << ";" << NL;
   W << "(void)" << root->switch_flag() << ";" << NL;
 
-  set <string> used;
+  set<string> used;
   for (auto i : root->cases()) {
     Operation tp = i->type();
     VertexPtr cmd;
     if (tp == op_case) {
-      VertexAdaptor <op_case> cs = i;
+      VertexAdaptor<op_case> cs = i;
       cmd = cs->cmd();
 
-      VertexPtr val = GenTree::get_actual_value (cs->expr());
+      VertexPtr val = GenTree::get_actual_value(cs->expr());
       kphp_assert (val->type() == op_int_const || is_const_int(val));
       W << "case ";
       if (val->type() == op_int_const) {
-        string str = val.as <op_int_const>()->str_val;
+        string str = val.as<op_int_const>()->str_val;
         W << str;
-        kphp_error (!used.count (str),
-            dl_pstr ("Switch: repeated cases found [%s]", str.c_str()));
-        used.insert (str);
+        kphp_error (!used.count(str),
+                    dl_pstr("Switch: repeated cases found [%s]", str.c_str()));
+        used.insert(str);
       } else {
         compile_vertex(val, W);
       }
     } else if (tp == op_default) {
       W << "default";
-      cmd = VertexAdaptor <op_default> (i)->cmd();
+      cmd = VertexAdaptor<op_default>(i)->cmd();
     } else {
       kphp_fail();
     }
     W << ": " << cmd << NL;
   }
-  W <<   Label (root->continue_label_id) <<
-       END <<
-       Label (root->break_label_id);
+  W << Label(root->continue_label_id) <<
+    END <<
+    Label(root->break_label_id);
 }
 
 
-void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
+void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   string goto_name;
 
-  W << "do " << BEGIN ;
+  W << "do " << BEGIN;
   W << "(void)" << root->ss() << ";" << NL;
   W << "(void)" << root->ss_hash() << ";" << NL;
   W << root->switch_var() << " = " << root->expr() << ";" << NL <<
-        root->switch_flag() << " = false;" << NL;
+    root->switch_flag() << " = false;" << NL;
 
   for (auto i : root->cases()) {
     Operation tp = i->type();
     VertexPtr expr;
     VertexPtr cmd;
     if (tp == op_case) {
-      VertexAdaptor <op_case> cs (i);
+      VertexAdaptor<op_case> cs(i);
       expr = cs->expr();
       cmd = cs->cmd();
     } else if (tp == op_default) {
-      cmd = VertexAdaptor <op_default> (i)->cmd();
+      cmd = VertexAdaptor<op_default>(i)->cmd();
     } else {
       kphp_fail();
     }
@@ -2459,36 +2506,35 @@ void compile_switch_var (VertexAdaptor <op_switch> root, CodeGenerator &W) {
       W << " || eq2 (" << root->switch_var() << ", " << expr << ")";
     }
     W << ") " <<
-         BEGIN;
+      BEGIN;
     if (tp == op_default) {
-      goto_name = gen_unique_name ("switch_goto");
+      goto_name = gen_unique_name("switch_goto");
       W << goto_name + ": ";
     }
 
-    W <<   root->switch_flag() << " = true;" << NL <<
-           AsSeq (cmd) <<
-         END << NL;
+    W << root->switch_flag() << " = true;" << NL <<
+      AsSeq(cmd) <<
+      END << NL;
   }
 
 
   if (!goto_name.empty()) {
     W << "if (" << root->switch_flag() << ") " <<
-         BEGIN <<
-           "break;" << NL <<
-         END << NL <<
-         root->switch_flag() << " = true;" << NL <<
-         "goto " << goto_name << ";" << NL;
+      BEGIN <<
+      "break;" << NL <<
+      END << NL <<
+      root->switch_flag() << " = true;" << NL <<
+      "goto " << goto_name << ";" << NL;
   }
 
 
-  W <<   Label (root->continue_label_id) <<
-       END << " while (0)" <<
-       Label (root->break_label_id);
+  W << Label(root->continue_label_id) <<
+    END << " while (0)" <<
+    Label(root->break_label_id);
 }
 
 
-
-void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
+void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   kphp_assert(root->ss()->type() == op_var);
   kphp_assert(root->ss_hash()->type() == op_var);
   kphp_assert(root->switch_var()->type() == op_var);
@@ -2499,8 +2545,8 @@ void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
     if (i->type() == op_default) {
       cnt_default++;
     } else {
-      VertexAdaptor <op_case> cs = i;
-      VertexPtr val = GenTree::get_actual_value (cs->expr());
+      VertexAdaptor<op_case> cs = i;
+      VertexPtr val = GenTree::get_actual_value(cs->expr());
       if (val->type() == op_int_const || is_const_int(val)) {
         cnt_int++;
       } else if (val->type() == op_string) {
@@ -2514,42 +2560,42 @@ void compile_switch (VertexAdaptor <op_switch> root, CodeGenerator &W) {
   kphp_error_return (cnt_default <= 1, "Switch: several default cases found");
 
   if (!cnt_int) {
-    compile_switch_str (root, W);
+    compile_switch_str(root, W);
   } else if (!cnt_str) {
-    compile_switch_int (root, W);
+    compile_switch_int(root, W);
   } else {
-    compile_switch_var (root, W);
+    compile_switch_var(root, W);
   }
 }
 
-void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
-  VertexAdaptor <op_function> func_root = root;
+void compile_function_resumable(VertexPtr root, CodeGenerator &W) {
+  VertexAdaptor<op_function> func_root = root;
   FunctionPtr func = func_root->get_func_id();
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
-  W << "class " << FunctionClassName (func) << " : public Resumable " <<
-       BEGIN <<
-         "private:" << NL << Indent (+2);
- 
+  W << "class " << FunctionClassName(func) << " : public Resumable " <<
+    BEGIN <<
+    "private:" << NL << Indent(+2);
+
 
   //MEMBER VARIABLES
   for (auto var : func->param_ids) {
     kphp_error(!var->is_reference, "reference function parametrs are forbidden in resumable mode");
-    W << VarPlainDeclaration (var);
+    W << VarPlainDeclaration(var);
   }
   for (auto var : func->local_var_ids) {
-    W << VarPlainDeclaration (var);         // inplace-переменные тоже, идут как члены Resumable класса, а не по месту
+    W << VarPlainDeclaration(var);         // inplace-переменные тоже, идут как члены Resumable класса, а не по месту
   }
 
-  W <<  Indent (-2) << "public:" << NL << Indent (+2);
+  W << Indent(-2) << "public:" << NL << Indent(+2);
 
   //ReturnT
-  W << "typedef " << TypeName (tinf::get_type (func, -1)) << " ReturnT;" << NL;
+  W << "typedef " << TypeName(tinf::get_type(func, -1)) << " ReturnT;" << NL;
 
   //CONSTRUCTOR
-  W << FunctionClassName (func) << "(" << FunctionParams (func) << ")";
+  W << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
   if (!func->param_ids.empty()) {
-    W <<  " :" << NL <<
-      Indent (+2);
+    W << " :" << NL <<
+      Indent(+2);
     bool flag = false;
     int i = 0;
     for (auto var : func->param_ids) {
@@ -2558,7 +2604,7 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
       } else {
         flag = true;
       }
-      W << VarName (var) << "(" << VarName (var) << ")";
+      W << VarName(var) << "(" << VarName(var) << ")";
       i++;
     }
     for (auto var : func->local_var_ids) {
@@ -2567,35 +2613,35 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
       } else {
         flag = true;
       }
-      W << VarName (var) << "()";
+      W << VarName(var) << "()";
     }
-    W << Indent (-2);
+    W << Indent(-2);
   }
   W << " " << BEGIN << END << NL;
 
   //RUN FUNCTION
   W << "bool run() " <<
-       BEGIN ;
-  if (G->env().get_enable_profiler()){
+    BEGIN;
+  if (G->env().get_enable_profiler()) {
     W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
   }
-  W << "RESUMABLE_BEGIN" << NL << Indent (+2);
+  W << "RESUMABLE_BEGIN" << NL << Indent(+2);
 
-  W <<   AsSeq (func_root->cmd()) << NL;
+  W << AsSeq(func_root->cmd()) << NL;
 
-  W <<   Indent (-2) <<
-         "RESUMABLE_END" << NL <<
-       END << NL;
+  W << Indent(-2) <<
+    "RESUMABLE_END" << NL <<
+    END << NL;
 
 
-  W << Indent (-2);
+  W << Indent(-2);
   W << END << ";" << NL;
 
   //CALL FUNCTION
-  W << FunctionDeclaration (func, false) << " " <<
-       BEGIN;
-  W << "return start_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
-    "(new " << FunctionClassName (func) << "(";
+  W << FunctionDeclaration(func, false) << " " <<
+    BEGIN;
+  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
+    "(new " << FunctionClassName(func) << "(";
   bool flag = false;
   for (auto var : func->param_ids) {
     if (flag) {
@@ -2603,16 +2649,16 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
     } else {
       flag = true;
     }
-    W << VarName (var);
+    W << VarName(var);
   }
   W << "));" << NL;
   W << END << NL;
 
   //FORK FUNCTION
-  W << FunctionForkDeclaration (func, false) << " " <<
-       BEGIN;
-  W << "return fork_resumable < " <<  FunctionClassName (func) << "::ReturnT >" <<
-    "(new " << FunctionClassName (func) << "(";
+  W << FunctionForkDeclaration(func, false) << " " <<
+    BEGIN;
+  W << "return fork_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
+    "(new " << FunctionClassName(func) << "(";
   flag = false;
   for (auto var : func->param_ids) {
     if (flag) {
@@ -2620,23 +2666,23 @@ void compile_function_resumable (VertexPtr root, CodeGenerator &W) {
     } else {
       flag = true;
     }
-    W << VarName (var);
+    W << VarName(var);
   }
   W << "));" << NL;
   W << END << NL;
 
 }
 
-void compile_function (VertexPtr root, CodeGenerator &W) {
+void compile_function(VertexPtr root, CodeGenerator &W) {
 
-  VertexAdaptor <op_function> func_root = root;
+  VertexAdaptor<op_function> func_root = root;
   FunctionPtr func = func_root->get_func_id();
 
   W.get_context().parent_func = func;
   W.get_context().resumable_flag = root->resumable_flag;
 
   if (root->resumable_flag) {
-    compile_function_resumable (root, W);
+    compile_function_resumable(root, W);
     return;
   }
 
@@ -2644,10 +2690,10 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
     W << "static inline ";
   }
 
-  W << FunctionDeclaration (func, false) << " " <<
-       BEGIN;
+  W << FunctionDeclaration(func, false) << " " <<
+    BEGIN;
 
-  if (G->env().get_enable_profiler()){
+  if (G->env().get_enable_profiler()) {
     W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
   }
 
@@ -2657,12 +2703,12 @@ void compile_function (VertexPtr root, CodeGenerator &W) {
     }
   }
 
-  W <<  AsSeq (func_root->cmd()) << NL <<
-      END << NL;
+  W << AsSeq(func_root->cmd()) << NL <<
+    END << NL;
 }
 
 
-void compile_string_build_raw (VertexAdaptor <op_string_build> root, CodeGenerator &W) {
+void compile_string_build_raw(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
   W << "(SB.clean()";
   for (auto v : root->args()) {
     W << "+";
@@ -2688,19 +2734,19 @@ struct StrlenInfo {
   string str;
 
   StrlenInfo() :
-    len (0),
-    str_flag (false),
-    var_flag (false),
+    len(0),
+    str_flag(false),
+    var_flag(false),
     str() {
-    }
+  }
 };
 
-static bool can_save_ref (VertexPtr v) {
+static bool can_save_ref(VertexPtr v) {
   if (v->type() == op_var) {
     return true;
   }
   if (v->type() == op_func_call) {
-    FunctionPtr func = v.as <op_func_call>()->get_func_id();
+    FunctionPtr func = v.as<op_func_call>()->get_func_id();
     if (func->type() == FunctionData::func_extern) {
       //todo
       return false;
@@ -2709,8 +2755,9 @@ static bool can_save_ref (VertexPtr v) {
   }
   return false;
 }
-void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeGenerator &W) {
-  vector <StrlenInfo> info (root->size());
+
+void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
+  vector<StrlenInfo> info(root->size());
   bool ok = true;
   bool was_dynamic = false;
   bool was_object = false;
@@ -2718,12 +2765,12 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
   int ii = 0;
   for (auto i : root->args()) {
     info[ii].v = i;
-    VertexPtr value = GenTree::get_actual_value (i);
-    const TypeData *type = tinf::get_type (value);
+    VertexPtr value = GenTree::get_actual_value(i);
+    const TypeData *type = tinf::get_type(value);
 
-    int value_length = type_strlen (type);
+    int value_length = type_strlen(type);
     if (value_length == STRLEN_ERROR) {
-      kphp_error (0, dl_pstr ("Cannot convert type [%s] to string", type_out (type).c_str()));
+      kphp_error (0, dl_pstr("Cannot convert type [%s] to string", type_out(type).c_str()));
       ok = false;
       ii++;
       continue;
@@ -2742,7 +2789,7 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
       } else {
         if (value_length & STRLEN_WARNING_FLAG) {
           value_length &= ~STRLEN_WARNING_FLAG;
-          kphp_warning (dl_pstr ("Suspicious convertion of type [%s] to string", type_out (type).c_str()));
+          kphp_warning (dl_pstr("Suspicious convertion of type [%s] to string", type_out(type).c_str()));
         }
 
         kphp_assert (value_length >= 0);
@@ -2763,17 +2810,17 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
 
   if (complex_flag) {
     W << "(" << BEGIN;
-    vector <string> to_add;
+    vector<string> to_add;
     for (int i = 0; i < (int)info.size(); i++) {
       if (info[i].str_flag) {
         continue;
       }
       if (info[i].len == STRLEN_DYNAMIC || info[i].len == STRLEN_OBJECT) {
-        string var_name = gen_unique_name ("var");
+        string var_name = gen_unique_name("var");
 
         if (info[i].len == STRLEN_DYNAMIC) {
-          bool can_save_ref_flag = can_save_ref (info[i].v);
-          W << "const " << TypeName (tinf::get_type (info[i].v)) << " " <<
+          bool can_save_ref_flag = can_save_ref(info[i].v);
+          W << "const " << TypeName(tinf::get_type(info[i].v)) << " " <<
             (can_save_ref_flag ? "&" : "") <<
             var_name << "=" << info[i].v << ";" << NL;
         } else if (info[i].len == STRLEN_OBJECT) {
@@ -2781,14 +2828,14 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
             "(" << info[i].v << ");" << NL;
         }
 
-        to_add.push_back (var_name);
+        to_add.push_back(var_name);
         info[i].var_flag = true;
         info[i].str = var_name;
       }
     }
 
-    len_name = gen_unique_name ("strlen");
-    W << "dl::size_type " << len_name << " = " << int_to_str (static_length);
+    len_name = gen_unique_name("strlen");
+    W << "dl::size_type " << len_name << " = " << int_to_str(static_length);
     for (int i = 0; i < (int)to_add.size(); i++) {
       W << " + max_string_size (" << to_add[i] << ")";
     }
@@ -2799,14 +2846,14 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
   if (complex_flag) {
     W << len_name;
   } else {
-    W << int_to_str (static_length);
+    W << int_to_str(static_length);
   }
   W << ", true)";
   for (int i = 0; i < (int)info.size(); i++) {
     W << ".append_unsafe (";
     if (info[i].str_flag) {
-      compile_string_raw (info[i].str, W);
-      W << ", " << int_to_str ((int)info[i].len);
+      compile_string_raw(info[i].str, W);
+      W << ", " << int_to_str((int)info[i].len);
     } else if (info[i].var_flag) {
       W << info[i].str;
     } else {
@@ -2817,8 +2864,8 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
   W << ".finish_append()";
 
   if (complex_flag) {
-    W <<   ";" << NL <<
-         END << ")";
+    W << ";" << NL <<
+      END << ")";
   }
 }
 
@@ -2828,7 +2875,7 @@ void compile_string_build_as_string (VertexAdaptor <op_string_build> root, CodeG
  * Т.е. нужно проверить, что строка константная, а не $a[$var], не $a[3], не $a['a'.'b'] и т.п.
  * @return int string_hash или 0 (если случайно хеш сам получился 0 — не страшно, просто не заинлайнится)
  */
-inline int can_use_precomputed_hash_indexing_array (VertexPtr key) {
+inline int can_use_precomputed_hash_indexing_array(VertexPtr key) {
   // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
   if (key->type() == op_var && key->extra_type == op_ex_var_const && key->get_var_id()->init_val->type() == op_string) {
     const std::string &string_key = key->get_var_id()->init_val->get_string();
@@ -2845,7 +2892,7 @@ inline int can_use_precomputed_hash_indexing_array (VertexPtr key) {
   return 0;
 }
 
-void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
+void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
   PrimitiveType array_ptype = root->array()->tinf_node.get_type()->ptype();
 
   switch (array_ptype) {
@@ -2860,7 +2907,7 @@ void compile_index (VertexAdaptor <op_index> root, CodeGenerator &W) {
   }
 }
 
-void compile_index_of_array (VertexAdaptor <op_index> root, CodeGenerator &W) {
+void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
   if (root->extra_type == op_ex_none) {
     W << root->array() << "[";
     if (root->has_key()) {
@@ -2881,17 +2928,17 @@ void compile_index_of_array (VertexAdaptor <op_index> root, CodeGenerator &W) {
   }
 }
 
-void compile_index_of_string (VertexAdaptor <op_index> root, CodeGenerator &W) {
+void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W) {
   kphp_assert(root->has_key());
 
   W << root->array() << ".get_value(" << root->key() << ")";
 }
 
-void compile_instance_prop (VertexAdaptor <op_instance_prop> root, CodeGenerator &W) {
+void compile_instance_prop(VertexAdaptor<op_instance_prop> root, CodeGenerator &W) {
   W << root->expr() << "->$" << root->get_string();
 }
 
-void compile_seq_rval (VertexPtr root, CodeGenerator &W) {
+void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
   kphp_assert(root->size());
 
   W << "(" << BEGIN;        // gcc конструкция: ({ ...; v$result_var; })
@@ -2901,29 +2948,29 @@ void compile_seq_rval (VertexPtr root, CodeGenerator &W) {
   W << END << ")";
 }
 
-void compile_as_printable (VertexPtr root, CodeGenerator &W) {
+void compile_as_printable(VertexPtr root, CodeGenerator &W) {
   if (root->type() == op_conv_string) {
-    VertexAdaptor <op_conv_string> conv = root;
+    VertexAdaptor<op_conv_string> conv = root;
     if (conv->expr()->type() == op_string) {
       root = conv->expr();
     }
   }
 
   if (root->type() == op_string) {
-    compile_string (root, W);
+    compile_string(root, W);
     return;
   }
 
   if (root->type() == op_string_build) {
     //compile_string_build_raw (root, W);
-    compile_string_build_as_string (root, W);
+    compile_string_build_as_string(root, W);
     return;
   }
 
   if (root->type() == op_conv_string) {
-    VertexAdaptor <op_conv_string> conv = root;
+    VertexAdaptor<op_conv_string> conv = root;
     if (conv->expr()->type() == op_string_build) {
-      compile_as_printable (conv->expr(), W);
+      compile_as_printable(conv->expr(), W);
       return;
     }
   }
@@ -2938,7 +2985,7 @@ void compile_as_printable (VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_echo (VertexPtr root, CodeGenerator &W) {
+void compile_echo(VertexPtr root, CodeGenerator &W) {
   bool first = true;
 
   for (auto i : *root) {
@@ -2953,13 +3000,13 @@ void compile_echo (VertexPtr root, CodeGenerator &W) {
     } else {
       W << "print (";
     }
-    compile_as_printable (i, W);
+    compile_as_printable(i, W);
     W << ")";
   }
 }
 
 
-void compile_var_dump (VertexPtr root, CodeGenerator &W) {
+void compile_var_dump(VertexPtr root, CodeGenerator &W) {
   bool first = true;
   for (auto i : *root) {
     if (first) {
@@ -2973,13 +3020,13 @@ void compile_var_dump (VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_print (VertexAdaptor <op_print> root, CodeGenerator &W) {
+void compile_print(VertexAdaptor<op_print> root, CodeGenerator &W) {
   W << "print (";
-  compile_as_printable (root->expr(), W);
+  compile_as_printable(root->expr(), W);
   W << ")";
 }
 
-void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W) {
+void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   assert ((int)root->size() == 1 || root->type() == op_unset);
 
   bool first = true;
@@ -2999,7 +3046,7 @@ void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W) {
       continue;
     }
     if (arg->type() == op_index) {
-      VertexAdaptor <op_index> index = arg;
+      VertexAdaptor<op_index> index = arg;
       kphp_assert (index->has_key());
       VertexPtr arr = index->array(), id = index->key();
       W << "(" << arr;
@@ -3018,7 +3065,7 @@ void compile_xset (VertexAdaptor <meta_op_xset> root, CodeGenerator &W) {
 }
 
 
-void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W) {
+void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   VertexPtr arr = root->array();
   VertexRange list = root->list();
   PrimitiveType ptype = tinf::get_type(arr)->get_real_ptype();
@@ -3038,12 +3085,12 @@ void compile_list (VertexAdaptor <op_list> root, CodeGenerator &W) {
 }
 
 
-void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
+void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   int n = (int)root->args().size();
-  const TypeData *type = tinf::get_type (root);
+  const TypeData *type = tinf::get_type(root);
 
   if (n == 0) {
-    W << TypeName (type) << " ()";
+    W << TypeName(type) << " ()";
     return;
   }
 
@@ -3051,17 +3098,17 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
   int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
   for (auto i : root->args()) {
     if (i->type() == op_double_arrow) {
-      VertexAdaptor <op_double_arrow> arrow = i;
+      VertexAdaptor<op_double_arrow> arrow = i;
       has_double_arrow = true;
       VertexPtr key = arrow->key();
-      PrimitiveType tp = tinf::get_type (key)->ptype();
+      PrimitiveType tp = tinf::get_type(key)->ptype();
       if (tp == tp_int) {
         int_cnt++;
       } else {
-        VertexPtr key_val = GenTree::get_actual_value (key);
+        VertexPtr key_val = GenTree::get_actual_value(key);
         if (tp == tp_string && key_val->type() == op_string) {
-          string key = key_val.as <op_string>()->str_val;
-          if (php_is_int (key.c_str(), (int)key.size())) {
+          string key = key_val.as<op_string>()->str_val;
+          if (php_is_int(key.c_str(), (int)key.size())) {
             int_cnt++;
           } else {
             string_cnt++;
@@ -3075,29 +3122,29 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
     }
   }
   if (2 <= n && n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
-    W << TypeName (type) << " (" << AsList (root, ", ") << ")";
+    W << TypeName(type) << " (" << AsList(root, ", ") << ")";
     return;
   }
 
   W << "(" << BEGIN;
 
   string arr_name = "tmp_array";
-  W << TypeName (type) << " " << arr_name << " = ";
+  W << TypeName(type) << " " << arr_name << " = ";
 
   //TODO: check
   if (type->ptype() == tp_array) {
-    W << TypeName (type);
+    W << TypeName(type);
   } else {
     W << "array <var>";
   }
   char tmp[70];
-  sprintf (tmp, " (array_size (%d, %d, %s));", int_cnt + xx_cnt, string_cnt + xx_cnt, has_double_arrow ? "false" : "true");
+  sprintf(tmp, " (array_size (%d, %d, %s));", int_cnt + xx_cnt, string_cnt + xx_cnt, has_double_arrow ? "false" : "true");
   W << (const char *)tmp << NL;
 
   for (auto cur : root->args()) {
     W << arr_name;
     if (cur->type() == op_double_arrow) {
-      VertexAdaptor <op_double_arrow> arrow = cur;
+      VertexAdaptor<op_double_arrow> arrow = cur;
       W << ".set_value (" << arrow->key() << ", " << arrow->value();
       int precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key());
       if (precomputed_hash) {
@@ -3112,10 +3159,10 @@ void compile_array (VertexAdaptor <op_array> root, CodeGenerator &W) {
   }
 
   W << arr_name << ";" << NL <<
-       END << ")";
+    END << ")";
 }
 
-void compile_tuple (VertexAdaptor <op_tuple> root, CodeGenerator &W) {
+void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
   W << "make_tuple(";
   VertexRange args = root->args();
   for (int i = 0; i < args.size(); ++i) {
@@ -3127,66 +3174,67 @@ void compile_tuple (VertexAdaptor <op_tuple> root, CodeGenerator &W) {
   W << ")";
 }
 
-void compile_func_call_fast (VertexAdaptor <op_func_call> root, CodeGenerator &W) {
+void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
   if (!root->get_func_id()->root->throws_flag) {
-   compile_func_call (root, W);
-   return;
+    compile_func_call(root, W);
+    return;
   }
   bool is_void = root->rl_type == val_none;
 
   if (is_void) {
     W << "TRY_CALL_VOID_ (";
   } else {
-    const TypeData *type = tinf::get_type (root);
+    const TypeData *type = tinf::get_type(root);
     W << "TRY_CALL_ (" << TypeNameInsideMacro(type) << ", ";
   }
 
-  W.get_context().catch_labels.push_back ("");
-  compile_func_call (root, W);
+  W.get_context().catch_labels.push_back("");
+  compile_func_call(root, W);
   W.get_context().catch_labels.pop_back();
 
   W << ", ";
-  compile_throw_fast_action (W);
+  compile_throw_fast_action(W);
   W << ")";
 }
 
 //FIXME: remove int fix
-void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int fix, int state) {
+void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int fix, int state) {
   FunctionPtr func;
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
   } else {
     func = root->get_func_id();
     if (state != 1 && state != 2 && W.get_context().resumable_flag && func->root->resumable_flag) {
-      kphp_error (0, dl_pstr ("Can't compile resumable function [%s] without async\n"
-        "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
+      kphp_error (0, dl_pstr("Can't compile resumable function [%s] without async\n"
+                             "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
     }
     if (state == 2) {
-      W << FunctionForkName (func);
+      W << FunctionForkName(func);
     } else {
-      W << FunctionName (func);
+      W << FunctionName(func);
     }
-    if (0)
-    if (func->name == "preg_match" || func->name == "preg_match_all" || func->name == "preg_replace_callback" ||
-        func->name == "preg_split" || func->name == "preg_replace") {
-      VertexPtr first = root->args()[0];
-      VertexPtr val = GenTree::get_actual_value (first);
-      if (val->type() == op_string) {
-        ScopedDebug scoped_debug (W);
-        W << "const:";
-        compile_string (val, W);
-        W << NL;
-      } else {
-        ScopedDebug scoped_debug (W);
-        stage::print_file (stderr);
-        stage::print_comment (stderr);
-        W << "nonconst:" << first << NL;
+    if (0) {
+      if (func->name == "preg_match" || func->name == "preg_match_all" || func->name == "preg_replace_callback" ||
+          func->name == "preg_split" || func->name == "preg_replace") {
+        VertexPtr first = root->args()[0];
+        VertexPtr val = GenTree::get_actual_value(first);
+        if (val->type() == op_string) {
+          ScopedDebug scoped_debug(W);
+          W << "const:";
+          compile_string(val, W);
+          W << NL;
+        } else {
+          ScopedDebug scoped_debug(W);
+          stage::print_file(stderr);
+          stage::print_comment(stderr);
+          W << "nonconst:" << first << NL;
+        }
       }
     }
   }
   if (!func.is_null() && func->root->auto_flag) {
-    const TypeData *tp = tinf::get_type (root);
-    W << "< " << TypeName (tp) << " >";
+    const TypeData *tp = tinf::get_type(root);
+    W << "< " << TypeName(tp) << " >";
   }
   W << "(";
   auto i = root->args().begin();
@@ -3206,7 +3254,7 @@ void compile_func_call (VertexAdaptor <op_func_call> root, CodeGenerator &W, int
   W << ")";
 }
 
-void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W) {
+void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
   if (root->str_val == "boolval") {
     W << "(bool (*) (const var &))";
   }
@@ -3234,16 +3282,16 @@ void compile_func_ptr (VertexAdaptor <op_func_ptr> root, CodeGenerator &W) {
       root->str_val == "is_real") {
     W << "(bool (*) (const var &))";
   }
-  W << FunctionName (root->get_func_id());
+  W << FunctionName(root->get_func_id());
 }
 
 
 //TODO: write proper define_raw
 
-void compile_define (VertexPtr root, CodeGenerator &W) {
+void compile_define(VertexPtr root, CodeGenerator &W) {
   DefinePtr d = root->get_define_id();
 
-  W << LockComments() ;
+  W << LockComments();
   switch (d->val->type()) {
     case op_int_const:
     case op_uint_const:
@@ -3266,70 +3314,70 @@ void compile_define (VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_defined (VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
+void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
   W << "false";
   //TODO: it is not CodeGen part
 }
 
 
-void compile_safe_version (VertexPtr root, CodeGenerator &W) {
+void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   if (root->type() == op_set_value) {
-    VertexAdaptor <op_set_value> set_value = root;
-    W << "SAFE_SET_VALUE ("  <<
-            set_value->array() << ", " <<
-            set_value->key() << ", " <<
-            TypeName (tinf::get_type (set_value->key())) << ", " <<
-            set_value->value() << ", " <<
-            TypeName (tinf::get_type (set_value->value())) <<
-          ")";
-  } else if (OpInfo::rl (root->type()) == rl_set) {
-    VertexAdaptor <meta_op_binary_op> op = root;
-    if (OpInfo::type (root->type()) == binary_func_op) {
+    VertexAdaptor<op_set_value> set_value = root;
+    W << "SAFE_SET_VALUE (" <<
+      set_value->array() << ", " <<
+      set_value->key() << ", " <<
+      TypeName(tinf::get_type(set_value->key())) << ", " <<
+      set_value->value() << ", " <<
+      TypeName(tinf::get_type(set_value->value())) <<
+      ")";
+  } else if (OpInfo::rl(root->type()) == rl_set) {
+    VertexAdaptor<meta_op_binary_op> op = root;
+    if (OpInfo::type(root->type()) == binary_func_op) {
       W << "SAFE_SET_FUNC_OP (";
-    } else if (OpInfo::type (root->type()) == binary_op) {
+    } else if (OpInfo::type(root->type()) == binary_op) {
       W << "SAFE_SET_OP (";
     } else {
       kphp_fail();
     }
-    W <<     op->lhs() << ", " <<
-             OpInfo::str (root->type()) << ", " <<
-             op->rhs() << ", " <<
-             TypeName (tinf::get_type (op->rhs())) <<
-           ")";
+    W << op->lhs() << ", " <<
+      OpInfo::str(root->type()) << ", " <<
+      op->rhs() << ", " <<
+      TypeName(tinf::get_type(op->rhs())) <<
+      ")";
   } else if (root->type() == op_push_back) {
-    VertexAdaptor <op_push_back> pb = root;
+    VertexAdaptor<op_push_back> pb = root;
     W << "SAFE_PUSH_BACK (" <<
-            pb->array() << ", " <<
-            pb->value() << ", " <<
-            TypeName (tinf::get_type (pb->value())) <<
-          ")";
+      pb->array() << ", " <<
+      pb->value() << ", " <<
+      TypeName(tinf::get_type(pb->value())) <<
+      ")";
   } else if (root->type() == op_push_back_return) {
-    VertexAdaptor <op_push_back_return> pb = root;
+    VertexAdaptor<op_push_back_return> pb = root;
     W << "SAFE_PUSH_BACK_RETURN (" <<
-            pb->array() << ", " <<
-            pb->value() << ", " <<
-            TypeName (tinf::get_type (pb->value())) <<
-          ")";
+      pb->array() << ", " <<
+      pb->value() << ", " <<
+      TypeName(tinf::get_type(pb->value())) <<
+      ")";
   } else if (root->type() == op_array) {
-    compile_array (root, W);
+    compile_array(root, W);
     return;
   } else if (root->type() == op_index) {
-    VertexAdaptor <op_index> index = root;
+    VertexAdaptor<op_index> index = root;
     kphp_assert (index->has_key());
     W << "SAFE_INDEX (" <<
-           index->array() << ", " <<
-           index->key() << ", " <<
-           TypeName (tinf::get_type (index->key())) <<
-         ")";
+      index->array() << ", " <<
+      index->key() << ", " <<
+      TypeName(tinf::get_type(index->key())) <<
+      ")";
   } else {
-    kphp_error (0, dl_pstr ("Safe version of [%s] is not supported", OpInfo::str (root->type()).c_str()));
+    kphp_error (0, dl_pstr("Safe version of [%s] is not supported", OpInfo::str(root->type()).c_str()));
     kphp_fail();
   }
 
 }
 
 
-void compile_set_value (VertexAdaptor <op_set_value> root, CodeGenerator &W) {
+void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W) {
   W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value();
   int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
   if (precomputed_hash) {
@@ -3340,16 +3388,16 @@ void compile_set_value (VertexAdaptor <op_set_value> root, CodeGenerator &W) {
   // строка обобщается до var, а кортеж ругается, и тут остаётся только array/var
 }
 
-void compile_push_back (VertexAdaptor <op_push_back> root, CodeGenerator &W) {
+void compile_push_back(VertexAdaptor<op_push_back> root, CodeGenerator &W) {
   W << "(" << root->array() << ").push_back (" << root->value() << ")";
 }
 
-void compile_push_back_return (VertexAdaptor <op_push_back_return> root, CodeGenerator &W) {
+void compile_push_back_return(VertexAdaptor<op_push_back_return> root, CodeGenerator &W) {
   W << "(" << root->array() << ").push_back_return (" << root->value() << ")";
 }
 
 
-void compile_string_raw (const string &str, CodeGenerator &W) {
+void compile_string_raw(const string &str, CodeGenerator &W) {
   W << "\"";
   for (int i = 0; i < (int)str.size(); i++) {
     switch (str[i]) {
@@ -3405,31 +3453,31 @@ void compile_string_raw (const string &str, CodeGenerator &W) {
   }
   W << "\"";
 }
-void compile_string_raw (VertexAdaptor <op_string> root, CodeGenerator &W) {
+
+void compile_string_raw(VertexAdaptor<op_string> root, CodeGenerator &W) {
   const string &str = root->str_val;
-  compile_string_raw (str, W);
+  compile_string_raw(str, W);
 }
 
 
-void compile_string (VertexAdaptor <op_string> root, CodeGenerator &W) {
+void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W) {
   W << "string (";
-  compile_string_raw (root, W);
-  W << ", " << int_to_str ((int)root->str_val.size()) << ")";
+  compile_string_raw(root, W);
+  W << ", " << int_to_str((int)root->str_val.size()) << ")";
 }
 
 
-void compile_string_build (VertexPtr root, CodeGenerator &W) {
+void compile_string_build(VertexPtr root, CodeGenerator &W) {
   //W << "(";
   //compile_string_build_raw (root, W);
   //W << ".str())";
-  compile_string_build_as_string (root, W);
+  compile_string_build_as_string(root, W);
 }
 
 
-
-void compile_break_continue (VertexAdaptor <meta_op_goto> root, CodeGenerator &W) {
+void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W) {
   if (root->int_val != 0) {
-    W << "goto " << LabelName (root->int_val);
+    W << "goto " << LabelName(root->int_val);
   } else {
     if (root->type() == op_break) {
       W << "break";
@@ -3442,9 +3490,9 @@ void compile_break_continue (VertexAdaptor <meta_op_goto> root, CodeGenerator &W
 }
 
 
-void compile_conv_array_l (VertexAdaptor <op_conv_array_l> root, CodeGenerator &W) {
+void compile_conv_array_l(VertexAdaptor<op_conv_array_l> root, CodeGenerator &W) {
   VertexPtr val = root->expr();
-  PrimitiveType tp = tinf::get_type (val)->get_real_ptype();
+  PrimitiveType tp = tinf::get_type(val)->get_real_ptype();
   if (tp == tp_array || tp == tp_var) {
     W << "arrayval_ref (" << val << ", \"unknown\", -1)";
   } else {
@@ -3453,9 +3501,9 @@ void compile_conv_array_l (VertexAdaptor <op_conv_array_l> root, CodeGenerator &
 }
 
 
-void compile_conv_int_l (VertexAdaptor <op_conv_int_l> root, CodeGenerator &W) {
+void compile_conv_int_l(VertexAdaptor<op_conv_int_l> root, CodeGenerator &W) {
   VertexPtr val = root->expr();
-  PrimitiveType tp = tinf::get_type (val)->get_real_ptype();
+  PrimitiveType tp = tinf::get_type(val)->get_real_ptype();
   if (tp == tp_int || tp == tp_var) {
     W << "intval_ref (" << val << ")";
   } else {
@@ -3464,23 +3512,23 @@ void compile_conv_int_l (VertexAdaptor <op_conv_int_l> root, CodeGenerator &W) {
 }
 
 
-void compile_cycle_op (VertexPtr root, CodeGenerator &W) {
+void compile_cycle_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();
   switch (tp) {
     case op_while:
-      compile_while (root, W);
+      compile_while(root, W);
       break;
     case op_do:
-      compile_do (root, W);
+      compile_do(root, W);
       break;
     case op_for:
-      compile_for (root, W);
+      compile_for(root, W);
       break;
     case op_foreach:
-      compile_foreach (root, W);
+      compile_foreach(root, W);
       break;
     case op_switch:
-      compile_switch (root, W);
+      compile_switch(root, W);
       break;
     default:
       assert (0);
@@ -3489,54 +3537,54 @@ void compile_cycle_op (VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_min_max (VertexPtr root, CodeGenerator &W) {
-  W << OpInfo::str (root->type()) << "< " << TypeName (tinf::get_type (root)) << " > (" <<
-         AsList (root, ", ") <<
-       ")";
+void compile_min_max(VertexPtr root, CodeGenerator &W) {
+  W << OpInfo::str(root->type()) << "< " << TypeName(tinf::get_type(root)) << " > (" <<
+    AsList(root, ", ") <<
+    ")";
 }
 
 
-void compile_common_op (VertexPtr root, CodeGenerator &W) {
+void compile_common_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();
   string str;
   switch (tp) {
     case op_seq:
-      W << BEGIN << AsSeq (root) << END;
+      W << BEGIN << AsSeq(root) << END;
       break;
     case op_seq_rval:
       compile_seq_rval(root, W);
       break;
 
     case op_int_const:
-      str = root.as <op_int_const>()->str_val;
+      str = root.as<op_int_const>()->str_val;
       if (str.size() > 9) {
         W << "(int)";
       }
       W << str;
       break;
     case op_uint_const:
-      str = root.as <op_uint_const>()->str_val;
+      str = root.as<op_uint_const>()->str_val;
       if (str.size() > 9) {
         W << "(unsigned int)";
       }
       W << str << "u";
       break;
     case op_long_const:
-      str = root.as <op_long_const>()->str_val;
+      str = root.as<op_long_const>()->str_val;
       if (str.size() > 18) {
         W << "(long long)";
       }
       W << str << "ll";
       break;
     case op_ulong_const:
-      str = root.as <op_ulong_const>()->str_val;
+      str = root.as<op_ulong_const>()->str_val;
       if (str.size() > 18) {
         W << "(unsigned long long)";
       }
       W << str << "ull";
       break;
     case op_float_const:
-      str = root.as <op_float_const>()->str_val;
+      str = root.as<op_float_const>()->str_val;
       W << "(double)" << str;
       break;
     case op_false:
@@ -3549,21 +3597,21 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       W << "var()";
       break;
     case op_var:
-      W << VarName (root->get_var_id());
+      W << VarName(root->get_var_id());
       break;
     case op_string:
-      compile_string (root, W);
+      compile_string(root, W);
       break;
 
     case op_if:
-      compile_if (root, W);
+      compile_if(root, W);
       break;
     case op_require:
     case op_require_once:
-      compile_require (root, W);
+      compile_require(root, W);
       break;
     case op_return:
-      compile_return (root, W);
+      compile_return(root, W);
       break;
     case op_global:
     case op_static:
@@ -3571,58 +3619,58 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       break;
     case op_echo:
     case op_dbg_echo:
-      compile_echo (root, W);
+      compile_echo(root, W);
       break;
     case op_throw:
 #ifdef FAST_EXCEPTIONS
-      compile_throw_fast (root, W);
+      compile_throw_fast(root, W);
 #else
       compile_throw (root, W);
 #endif
       break;
     case op_var_dump:
-      compile_var_dump (root, W);
+      compile_var_dump(root, W);
       break;
     case op_print:
-      compile_print (root, W);
+      compile_print(root, W);
       break;
     case op_min:
     case op_max:
-      compile_min_max (root, W);
+      compile_min_max(root, W);
       break;
     case op_continue:
     case op_break:
-      compile_break_continue (root, W);
+      compile_break_continue(root, W);
       break;
     case op_try:
 #ifdef FAST_EXCEPTIONS
-      compile_try_fast (root, W);
+      compile_try_fast(root, W);
 #else
       compile_try (root, W);
 #endif
       break;
     case op_fork:
-      compile_fork (root, W);
+      compile_fork(root, W);
       break;
     case op_async:
-      compile_async (root, W);
+      compile_async(root, W);
       break;
     case op_function:
-      compile_function (root, W);
+      compile_function(root, W);
       break;
     case op_func_call:
     case op_constructor_call:
 #ifdef FAST_EXCEPTIONS
-      compile_func_call_fast (root, W);
+      compile_func_call_fast(root, W);
 #else
       compile_func_call (root, W);
 #endif
       break;
     case op_func_ptr:
-      compile_func_ptr (root, W);
+      compile_func_ptr(root, W);
       break;
     case op_string_build:
-      compile_string_build (root, W);
+      compile_string_build(root, W);
       break;
     case op_index:
       compile_index(root, W);
@@ -3631,59 +3679,59 @@ void compile_common_op (VertexPtr root, CodeGenerator &W) {
       compile_instance_prop(root, W);
       break;
     case op_isset:
-      compile_xset (root, W);
+      compile_xset(root, W);
       break;
     case op_list:
-      compile_list (root, W);
+      compile_list(root, W);
       break;
     case op_array:
-      compile_array (root, W);
+      compile_array(root, W);
       break;
     case op_tuple:
       compile_tuple(root, W);
       break;
     case op_unset:
-      compile_xset (root, W);
+      compile_xset(root, W);
       break;
     case op_empty:
       break;
     case op_define_val:
-      compile_define (root, W);
+      compile_define(root, W);
       break;
     case op_defined:
-      compile_defined (root, W);
+      compile_defined(root, W);
       break;
     case op_extern_func:
       break;
     case op_conv_array_l:
-      compile_conv_array_l (root, W);
+      compile_conv_array_l(root, W);
       break;
     case op_conv_int_l:
-      compile_conv_int_l (root, W);
+      compile_conv_int_l(root, W);
       break;
     case op_set_value:
-      compile_set_value (root, W);
+      compile_set_value(root, W);
       break;
     case op_push_back:
-      compile_push_back (root, W);
+      compile_push_back(root, W);
       break;
     case op_push_back_return:
-      compile_push_back_return (root, W);
+      compile_push_back_return(root, W);
       break;
     case op_noerr:
-      compile_noerr (root, W);
+      compile_noerr(root, W);
       break;
     default:
-      kphp_fail();
+    kphp_fail();
       break;
   }
 }
 
 
-void compile_vertex (VertexPtr root, CodeGenerator &W) {
-  OperationType tp = OpInfo::type (root->type());
+void compile_vertex(VertexPtr root, CodeGenerator &W) {
+  OperationType tp = OpInfo::type(root->type());
 
-  W << UpdateLocation (root->location);
+  W << UpdateLocation(root->location);
 
   bool close_par = root->val_ref_flag == val_r || root->val_ref_flag == val_l;
 
@@ -3694,33 +3742,33 @@ void compile_vertex (VertexPtr root, CodeGenerator &W) {
   }
 
   if (root->extra_type == op_ex_safe_version) {
-    compile_safe_version (root, W);
+    compile_safe_version(root, W);
   } else {
     switch (tp) {
       case prefix_op:
-        compile_prefix_op (root, W);
+        compile_prefix_op(root, W);
         break;
       case postfix_op:
-        compile_postfix_op (root, W);
+        compile_postfix_op(root, W);
         break;
       case binary_op:
       case binary_func_op:
-        compile_binary_op (root, W);
+        compile_binary_op(root, W);
         break;
       case ternary_op:
-        compile_ternary_op (root, W);
+        compile_ternary_op(root, W);
         break;
       case common_op:
-        compile_common_op (root, W);
+        compile_common_op(root, W);
         break;
       case cycle_op:
-        compile_cycle_op (root, W);
+        compile_cycle_op(root, W);
         break;
       case conv_op:
-        compile_conv_op (root, W);
+        compile_conv_op(root, W);
         break;
       default:
-        printf ("%d: %d\n", tp, root->type());
+        printf("%d: %d\n", tp, root->type());
         assert (0);
         break;
     }

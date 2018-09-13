@@ -1,4 +1,5 @@
 #pragma once
+
 #include "compiler/common.h"
 
 #include "compiler/bicycle.h"
@@ -7,179 +8,194 @@
 #include "compiler/location.h"
 
 namespace tinf {
-  class Edge;
-  class Node;
-  class TypeInferer;
+class Edge;
 
-  struct RestrictionBase {
-    virtual ~RestrictionBase() = default;
-    virtual const char *get_description() = 0;
-    virtual bool check_broken_restriction() = 0;
+class Node;
 
-  protected:
-    virtual bool is_broken_restriction_an_error() { return false; }
-    virtual bool check_broken_restriction_impl() = 0;
+class TypeInferer;
+
+struct RestrictionBase {
+  virtual ~RestrictionBase() = default;
+  virtual const char *get_description() = 0;
+  virtual bool check_broken_restriction() = 0;
+
+protected:
+  virtual bool is_broken_restriction_an_error() { return false; }
+
+  virtual bool check_broken_restriction_impl() = 0;
+};
+
+class Node : public Lockable {
+private:
+  vector<Edge *> next_;
+  vector<Edge *> rev_next_;
+  volatile int recalc_state_;
+  volatile int holder_id_;
+public:
+  const TypeData *type_;
+  volatile int recalc_cnt_;
+  int isset_flags;
+  int isset_was;
+
+  enum {
+    empty_st,
+    own_st,
+    own_recalc_st
   };
 
-  class Node : public Lockable {
-    private:
-      vector <Edge *> next_;
-      vector <Edge *> rev_next_;
-      volatile int recalc_state_;
-      volatile int holder_id_;
-    public:
-      const TypeData *type_;
-      volatile int recalc_cnt_;
-      int isset_flags;
-      int isset_was;
+  Node();
 
-      enum {empty_st, own_st, own_recalc_st};
+  int get_recalc_cnt();
+  int get_holder_id();
 
-      Node();
+  void add_edge(Edge *edge);
+  void add_rev_edge(Edge *edge);
 
-      int get_recalc_cnt();
-      int get_holder_id();
+  inline vector<Edge *> &get_next() {
+    return next_;
+  }
 
-      void add_edge (Edge *edge);
-      void add_rev_edge(Edge *edge);
+  inline vector<Edge *> &get_rev_next() {
+    return rev_next_;
+  }
 
-      inline vector<Edge *>& get_next() {
-        return next_;
-      }
+  bool try_start_recalc();
+  void start_recalc();
+  bool try_finish_recalc();
 
-      inline vector<Edge *>& get_rev_next() {
-        return rev_next_;
-      }
+  const TypeData *get_type() const {
+    return type_;
+  }
 
-      bool try_start_recalc();
-      void start_recalc();
-      bool try_finish_recalc();
+  void set_type(const TypeData *type) {
+    type_ = type;
+  }
 
-      const TypeData *get_type() const {
-        return type_;
-      }
-      void set_type (const TypeData *type) {
-        type_ = type;
-      }
-      virtual void recalc (TypeInferer *inferer) = 0;
-      virtual string get_description() = 0;
+  virtual void recalc(TypeInferer *inferer) = 0;
+  virtual string get_description() = 0;
+};
+
+class VarNode : public Node {
+public:
+  enum {
+    e_variable = -2,
+    e_return_value = -1
   };
 
-  class VarNode : public Node {
-    public:
-      enum {
-        e_variable = -2,
-        e_return_value = -1
-      };
+  VarPtr var_;
+  int param_i;
+  FunctionPtr function_;
 
-      VarPtr var_;
-      int param_i;
-      FunctionPtr function_;
+  VarNode(VarPtr var = VarPtr()) :
+    var_(var),
+    param_i(e_variable) {}
 
-      VarNode (VarPtr var = VarPtr())
-        : var_ (var)
-        , param_i (e_variable)
-      {}
+  void copy_type_from(const TypeData *from) {
+    type_ = from;
+    recalc_cnt_ = 1;
+  }
 
-      void copy_type_from (const TypeData *from) {
-        type_ = from;
-        recalc_cnt_ = 1;
-      }
+  void recalc(TypeInferer *inferer);
 
-      void recalc (TypeInferer *inferer);
+  VarPtr get_var() {
+    return var_;
+  }
 
-      VarPtr get_var() {
-        return var_;
-      }
+  string get_description();
 
-      string get_description();
+  bool is_variable() const {
+    return param_i == e_variable;
+  }
 
-      bool is_variable() const {
-        return param_i == e_variable;
-      }
+  bool is_return_value_from_function() const {
+    return param_i == e_return_value;
+  }
 
-      bool is_return_value_from_function() const {
-        return param_i == e_return_value;
-      }
+  bool is_argument_of_function() const {
+    return !is_variable() && !is_return_value_from_function();
+  }
+};
 
-      bool is_argument_of_function() const {
-        return !is_variable() && !is_return_value_from_function();
-      }
-  };
-  class ExprNode : public Node {
-    private:
-      VertexPtr expr_;
-    public:
-      ExprNode (VertexPtr expr = VertexPtr()) :
-        expr_ (expr) {
-      }
-      void recalc (TypeInferer *inferer);
-      VertexPtr get_expr() {
-        return expr_;
-      }
+class ExprNode : public Node {
+private:
+  VertexPtr expr_;
+public:
+  ExprNode(VertexPtr expr = VertexPtr()) :
+    expr_(expr) {
+  }
 
-      const VertexPtr get_expr() const {
-        return expr_;
-      }
+  void recalc(TypeInferer *inferer);
 
-      string get_description();
-      const Location & get_location();
-  };
-  class TypeNode : public Node {
-    public:
-      TypeNode (const TypeData *type) {
-        set_type (type);
-      }
-      void recalc (TypeInferer *inferer __attribute__((unused))) {
-      }
-      string get_description();
-  };
+  VertexPtr get_expr() {
+    return expr_;
+  }
 
-  class Edge {
-    public :
-      Node *from;
-      Node *to;
+  const VertexPtr get_expr() const {
+    return expr_;
+  }
 
-      const MultiKey *from_at;
-  };
+  string get_description();
+  const Location &get_location();
+};
 
-  typedef queue <Node *> NodeQueue;
-  class TypeInferer {
-    private:
-      TLS <vector <RestrictionBase *> > restrictions;
-      bool finish_flag;
+class TypeNode : public Node {
+public:
+  TypeNode(const TypeData *type) {
+    set_type(type);
+  }
 
-    public:
-      TLS <NodeQueue> Q;
+  void recalc(TypeInferer *inferer __attribute__((unused))) {
+  }
 
-    public:
-      TypeInferer();
+  string get_description();
+};
 
-      void add_edge (Edge *edge);
+class Edge {
+public :
+  Node *from;
+  Node *to;
 
-      void recalc_node (Node *node);
-      bool add_node (Node *node);
+  const MultiKey *from_at;
+};
 
-      void add_restriction (RestrictionBase *restriction);
-      void check_restrictions();
+typedef queue<Node *> NodeQueue;
 
-      int run_queue (NodeQueue *q);
-      vector <Task *> get_tasks();
+class TypeInferer {
+private:
+  TLS<vector<RestrictionBase *>> restrictions;
+  bool finish_flag;
 
-      void run_node (Node *node);
-      const TypeData *get_type (Node *node);
+public:
+  TLS<NodeQueue> Q;
 
-      void finish();
-      bool is_finished();
+public:
+  TypeInferer();
 
-    private:
-      int do_run_queue();
-  };
+  void add_edge(Edge *edge);
 
-  void register_inferer (TypeInferer *inferer);
-  TypeInferer *get_inferer();
-  const TypeData *get_type (VertexPtr vertex);
-  const TypeData *get_type (VarPtr var);
-  const TypeData *get_type (FunctionPtr function, int id);
+  void recalc_node(Node *node);
+  bool add_node(Node *node);
+
+  void add_restriction(RestrictionBase *restriction);
+  void check_restrictions();
+
+  int run_queue(NodeQueue *q);
+  vector<Task *> get_tasks();
+
+  void run_node(Node *node);
+  const TypeData *get_type(Node *node);
+
+  void finish();
+  bool is_finished();
+
+private:
+  int do_run_queue();
+};
+
+void register_inferer(TypeInferer *inferer);
+TypeInferer *get_inferer();
+const TypeData *get_type(VertexPtr vertex);
+const TypeData *get_type(VarPtr var);
+const TypeData *get_type(FunctionPtr function, int id);
 }
 

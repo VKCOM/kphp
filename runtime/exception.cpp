@@ -2,23 +2,23 @@
 
 #include "runtime/string_functions.h"
 
-array <array <string> > f$debug_backtrace (void) {
+array<array<string>> f$debug_backtrace(void) {
   dl::enter_critical_section();//OK
   void *buffer[64];
-  int nptrs = fast_backtrace (buffer, 64);
+  int nptrs = fast_backtrace(buffer, 64);
   dl::leave_critical_section();
 
-  const string function_key ("function", 8);
+  const string function_key("function", 8);
 
-  array <array <string> > res (array_size (nptrs - 4, 0, true));
+  array<array<string>> res(array_size(nptrs - 4, 0, true));
   char buf[20];
   for (int i = 1; i < nptrs; i++) {
-    array <string> current (array_size (0, 1, false));
+    array<string> current(array_size(0, 1, false));
     dl::enter_critical_section();//OK
-    snprintf (buf, 19, "%p", buffer[i]);
+    snprintf(buf, 19, "%p", buffer[i]);
     dl::leave_critical_section();
-    current.set_value (function_key, string (buf, (dl::size_type)strlen (buf)));
-    res.push_back (current);
+    current.set_value(function_key, string(buf, (dl::size_type)strlen(buf)));
+    res.push_back(current);
   }
 
   return res;
@@ -85,101 +85,100 @@ array <array <string> > f$debug_backtrace (void) {
 Exception *CurException;
 #endif
 
-Exception& Exception::operator = (bool value) {
+Exception &Exception::operator=(bool value) {
   bool_value = value;
   return *this;
 }
-Exception::Exception()
-  : bool_value (false)
-  , code(-1)
-  , line(-1)
-{}
 
-Exception::Exception (bool value)
-  : bool_value(value)
-  , code(-1)
-  , line(-1)
-{}
+Exception::Exception() :
+  bool_value(false),
+  code(-1),
+  line(-1) {}
+
+Exception::Exception(bool value) :
+  bool_value(value),
+  code(-1),
+  line(-1) {}
 
 
-Exception::Exception (const string &file, int line, const string &message, int code):
-    bool_value (true),
-    message (message),
-    code (code),
-    file (file),
-    line (line),
-    trace (f$debug_backtrace()) {
+Exception::Exception(const string &file, int line, const string &message, int code) :
+  bool_value(true),
+  message(message),
+  code(code),
+  file(file),
+  line(line),
+  trace(f$debug_backtrace()) {
 }
 
-string f$exception_getMessage (const Exception &e) {
+string f$exception_getMessage(const Exception &e) {
   return e.message;
 }
 
-int f$exception_getCode (const Exception &e) {
+int f$exception_getCode(const Exception &e) {
   return e.code;
 }
 
-string f$exception_getFile (const Exception &e) {
+string f$exception_getFile(const Exception &e) {
   return e.file;
 }
 
-int f$exception_getLine (const Exception &e) {
+int f$exception_getLine(const Exception &e) {
   return e.line;
 }
 
-array <array <string> > f$exception_getTrace (const Exception &e) {
+array<array<string>> f$exception_getTrace(const Exception &e) {
   return e.trace;
 }
 
-Exception f$new_Exception (const string &file, int line, const string &message, int code) {
-  return Exception (file, line, message, code);
+Exception f$new_Exception(const string &file, int line, const string &message, int code) {
+  return Exception(file, line, message, code);
 }
 
-Exception f$err (const string &file, int line, const string &code, const string &desc) {
-  return Exception (file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
+Exception f$err(const string &file, int line, const string &code, const string &desc) {
+  return Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
 
-bool f$boolval (const Exception &my_exception) {
-  return f$boolval (my_exception.bool_value);
+bool f$boolval(const Exception &my_exception) {
+  return f$boolval(my_exception.bool_value);
 }
 
-bool eq2 (const Exception &my_exception, bool value) {
+bool eq2(const Exception &my_exception, bool value) {
   return my_exception.bool_value == value;
 }
 
-bool eq2 (bool value, const Exception &my_exception) {
+bool eq2(bool value, const Exception &my_exception) {
   return value == my_exception.bool_value;
 }
 
-bool equals (bool value, const Exception &my_exception) {
-  return equals (value, my_exception.bool_value);
+bool equals(bool value, const Exception &my_exception) {
+  return equals(value, my_exception.bool_value);
 }
 
-bool equals (const Exception &my_exception, bool value) {
-  return equals (my_exception.bool_value, value);
+bool equals(const Exception &my_exception, bool value) {
+  return equals(my_exception.bool_value, value);
 }
 
-bool not_equals (bool value, const Exception &my_exception) {
-  return not_equals (value, my_exception.bool_value);
+bool not_equals(bool value, const Exception &my_exception) {
+  return not_equals(value, my_exception.bool_value);
 }
 
-bool not_equals (const Exception &my_exception, bool value) {
-  return not_equals (my_exception.bool_value, value);
+bool not_equals(const Exception &my_exception, bool value) {
+  return not_equals(my_exception.bool_value, value);
 }
 
 
-string f$exception_getTraceAsString (const Exception &e) {
+string f$exception_getTraceAsString(const Exception &e) {
   static_SB.clean();
   for (int i = 0; i < e.trace.count(); i++) {
-    array <string> current = e.trace.get_value (i);
-    static_SB << '#' << i << ' ' << current.get_value (string ("file", 4)) << ": " << current.get_value (string ("function", 8)) << "\n";
+    array<string> current = e.trace.get_value(i);
+    static_SB << '#' << i << ' ' << current.get_value(string("file", 4)) << ": " << current.get_value(string("function", 8)) << "\n";
   }
   return static_SB.str();
 }
 
 
-void exception_init_static (void) {
+void exception_init_static(void) {
 #ifdef FAST_EXCEPTIONS
   CurException = NULL;
 #endif

@@ -5,241 +5,241 @@
 //We want these types to be as fast as native types, no all definitions will be in header
 
 class Long {
-  inline void convert_from (const string &s);
+  inline void convert_from(const string &s);
 
 public:
   long long l;
 
-  explicit inline Long (void);
-  inline Long (long long l);
+  explicit inline Long(void);
+  inline Long(long long l);
 
-  inline Long (int i);
-  inline Long (long l);
-  explicit inline Long (double f);
-  explicit inline Long (const string &s);
-  explicit inline Long (const var &v);
+  inline Long(int i);
+  inline Long(long l);
+  explicit inline Long(double f);
+  explicit inline Long(const string &s);
+  explicit inline Long(const var &v);
 
-  inline Long (const Long &other);
-  inline Long& operator = (Long other);
+  inline Long(const Long &other);
+  inline Long &operator=(Long other);
 };
 
-inline Long f$labs (Long lhs);
+inline Long f$labs(Long lhs);
 
-inline Long f$ldiv (Long lhs, Long rhs);
+inline Long f$ldiv(Long lhs, Long rhs);
 
-inline Long f$lmod (Long lhs, Long rhs);
+inline Long f$lmod(Long lhs, Long rhs);
 
-inline Long f$lpow (Long lhs, int deg);
+inline Long f$lpow(Long lhs, int deg);
 
-inline Long f$ladd (Long lhs, Long rhs);
+inline Long f$ladd(Long lhs, Long rhs);
 
-inline Long f$lsub (Long lhs, Long rhs);
+inline Long f$lsub(Long lhs, Long rhs);
 
-inline Long f$lmul (Long lhs, Long rhs);
+inline Long f$lmul(Long lhs, Long rhs);
 
-inline Long f$lshl (Long lhs, int rhs);
+inline Long f$lshl(Long lhs, int rhs);
 
-inline Long f$lshr (Long lhs, int rhs);
+inline Long f$lshr(Long lhs, int rhs);
 
-inline Long f$lnot (Long lhs);
+inline Long f$lnot(Long lhs);
 
-inline Long f$lor (Long lhs, Long rhs);
+inline Long f$lor(Long lhs, Long rhs);
 
-inline Long f$land (Long lhs, Long rhs);
+inline Long f$land(Long lhs, Long rhs);
 
-inline Long f$lxor (Long lhs, Long rhs);
+inline Long f$lxor(Long lhs, Long rhs);
 
-inline int f$lcomp (Long lhs, Long rhs);
+inline int f$lcomp(Long lhs, Long rhs);
 
-inline Long f$longval (const long long &val);
+inline Long f$longval(const long long &val);
 
-inline Long f$longval (const bool &val);
+inline Long f$longval(const bool &val);
 
-inline Long f$longval (const int &val);
+inline Long f$longval(const int &val);
 
-inline Long f$longval (const double &val);
+inline Long f$longval(const double &val);
 
-inline Long f$longval (const string &val);
+inline Long f$longval(const string &val);
 
-inline Long f$longval (const var &val);
+inline Long f$longval(const var &val);
 
-template <class T>
-inline Long f$new_Long (const T &val);
+template<class T>
+inline Long f$new_Long(const T &val);
 
-inline bool f$boolval (Long val);
+inline bool f$boolval(Long val);
 
-inline int f$intval (Long val);
+inline int f$intval(Long val);
 
-inline int f$safe_intval (Long val);
+inline int f$safe_intval(Long val);
 
-inline double f$floatval (Long val);
+inline double f$floatval(Long val);
 
-inline string f$strval (Long val);
+inline string f$strval(Long val);
 
-inline string_buffer &operator << (string_buffer &buf, Long x);
+inline string_buffer &operator<<(string_buffer &buf, Long x);
 
 
 class ULong {
-  inline void convert_from (const string &s);
+  inline void convert_from(const string &s);
 
 public:
   unsigned long long l;
 
-  explicit inline ULong (void);
-  inline ULong (unsigned long long l);
+  explicit inline ULong(void);
+  inline ULong(unsigned long long l);
 
-  inline ULong (int i);
-  explicit inline ULong (double f);
-  explicit inline ULong (const string &s);
-  explicit inline ULong (const var &v);
+  inline ULong(int i);
+  explicit inline ULong(double f);
+  explicit inline ULong(const string &s);
+  explicit inline ULong(const var &v);
 
-  inline ULong (const ULong &other);
-  inline ULong& operator = (ULong other);
+  inline ULong(const ULong &other);
+  inline ULong &operator=(ULong other);
 };
 
-inline ULong f$uldiv (ULong lhs, ULong rhs);
+inline ULong f$uldiv(ULong lhs, ULong rhs);
 
-inline ULong f$ulmod (ULong lhs, ULong rhs);
+inline ULong f$ulmod(ULong lhs, ULong rhs);
 
-inline ULong f$ulpow (ULong lhs, int deg);
+inline ULong f$ulpow(ULong lhs, int deg);
 
-inline ULong f$uladd (ULong lhs, ULong rhs);
+inline ULong f$uladd(ULong lhs, ULong rhs);
 
-inline ULong f$ulsub (ULong lhs, ULong rhs);
+inline ULong f$ulsub(ULong lhs, ULong rhs);
 
-inline ULong f$ulmul (ULong lhs, ULong rhs);
+inline ULong f$ulmul(ULong lhs, ULong rhs);
 
-inline ULong f$ulshl (ULong lhs, int rhs);
+inline ULong f$ulshl(ULong lhs, int rhs);
 
-inline ULong f$ulshr (ULong lhs, int rhs);
+inline ULong f$ulshr(ULong lhs, int rhs);
 
-inline ULong f$ulnot (ULong lhs);
+inline ULong f$ulnot(ULong lhs);
 
-inline ULong f$ulor (ULong lhs, ULong rhs);
+inline ULong f$ulor(ULong lhs, ULong rhs);
 
-inline ULong f$uland (ULong lhs, ULong rhs);
+inline ULong f$uland(ULong lhs, ULong rhs);
 
-inline ULong f$ulxor (ULong lhs, ULong rhs);
+inline ULong f$ulxor(ULong lhs, ULong rhs);
 
-inline int f$ulcomp (ULong lhs, ULong rhs);
+inline int f$ulcomp(ULong lhs, ULong rhs);
 
-inline ULong f$ulongval (const unsigned long long &val);
+inline ULong f$ulongval(const unsigned long long &val);
 
-inline ULong f$ulongval (const bool &val);
+inline ULong f$ulongval(const bool &val);
 
-inline ULong f$ulongval (const int &val);
+inline ULong f$ulongval(const int &val);
 
-inline ULong f$ulongval (const double &val);
+inline ULong f$ulongval(const double &val);
 
-inline ULong f$ulongval (const string &val);
+inline ULong f$ulongval(const string &val);
 
-inline ULong f$ulongval (const var &val);
+inline ULong f$ulongval(const var &val);
 
-template <class T>
-inline ULong f$new_ULong (const T &val);
+template<class T>
+inline ULong f$new_ULong(const T &val);
 
-inline bool f$boolval (ULong val);
+inline bool f$boolval(ULong val);
 
-inline int f$intval (ULong val);
+inline int f$intval(ULong val);
 
-inline int f$safe_intval (ULong val);
+inline int f$safe_intval(ULong val);
 
-inline double f$floatval (ULong val);
+inline double f$floatval(ULong val);
 
-inline string f$strval (ULong val);
+inline string f$strval(ULong val);
 
-inline string_buffer &operator << (string_buffer &buf, ULong x);
+inline string_buffer &operator<<(string_buffer &buf, ULong x);
 
 
 class UInt {
-  inline void convert_from (const string &s);
+  inline void convert_from(const string &s);
 
 public:
   unsigned int l;
 
-  explicit inline UInt (void);
-  inline UInt (unsigned int l);
+  explicit inline UInt(void);
+  inline UInt(unsigned int l);
 
-  inline UInt (int i);
-  explicit inline UInt (double f);
-  explicit inline UInt (const string &s);
-  explicit inline UInt (const var &v);
+  inline UInt(int i);
+  explicit inline UInt(double f);
+  explicit inline UInt(const string &s);
+  explicit inline UInt(const var &v);
 
-  inline UInt (const UInt &other);
-  inline UInt& operator = (UInt other);
+  inline UInt(const UInt &other);
+  inline UInt &operator=(UInt other);
 };
 
-inline UInt f$uidiv (UInt lhs, UInt rhs);
+inline UInt f$uidiv(UInt lhs, UInt rhs);
 
-inline UInt f$uimod (UInt lhs, UInt rhs);
+inline UInt f$uimod(UInt lhs, UInt rhs);
 
-inline UInt f$uipow (UInt lhs, int deg);
+inline UInt f$uipow(UInt lhs, int deg);
 
-inline UInt f$uiadd (UInt lhs, UInt rhs);
+inline UInt f$uiadd(UInt lhs, UInt rhs);
 
-inline UInt f$uisub (UInt lhs, UInt rhs);
+inline UInt f$uisub(UInt lhs, UInt rhs);
 
-inline UInt f$uimul (UInt lhs, UInt rhs);
+inline UInt f$uimul(UInt lhs, UInt rhs);
 
-inline UInt f$uishl (UInt lhs, int rhs);
+inline UInt f$uishl(UInt lhs, int rhs);
 
-inline UInt f$uishr (UInt lhs, int rhs);
+inline UInt f$uishr(UInt lhs, int rhs);
 
-inline UInt f$uinot (UInt lhs);
+inline UInt f$uinot(UInt lhs);
 
-inline UInt f$uior (UInt lhs, UInt rhs);
+inline UInt f$uior(UInt lhs, UInt rhs);
 
-inline UInt f$uiand (UInt lhs, UInt rhs);
+inline UInt f$uiand(UInt lhs, UInt rhs);
 
-inline UInt f$uixor (UInt lhs, UInt rhs);
+inline UInt f$uixor(UInt lhs, UInt rhs);
 
-inline int f$uicomp (UInt lhs, UInt rhs);
+inline int f$uicomp(UInt lhs, UInt rhs);
 
-inline UInt f$uintval (const unsigned int &val);
+inline UInt f$uintval(const unsigned int &val);
 
-inline UInt f$uintval (const bool &val);
+inline UInt f$uintval(const bool &val);
 
-inline UInt f$uintval (const int &val);
+inline UInt f$uintval(const int &val);
 
-inline UInt f$uintval (const double &val);
+inline UInt f$uintval(const double &val);
 
-inline UInt f$uintval (const string &val);
+inline UInt f$uintval(const string &val);
 
-inline UInt f$uintval (const var &val);
+inline UInt f$uintval(const var &val);
 
-template <class T>
-inline UInt f$new_UInt (const T &val);
+template<class T>
+inline UInt f$new_UInt(const T &val);
 
-inline bool f$boolval (UInt val);
+inline bool f$boolval(UInt val);
 
-inline int f$intval (UInt val);
+inline int f$intval(UInt val);
 
-inline int f$safe_intval (UInt val);
+inline int f$safe_intval(UInt val);
 
-inline double f$floatval (UInt val);
+inline double f$floatval(UInt val);
 
-inline string f$strval (UInt val);
+inline string f$strval(UInt val);
 
-inline string_buffer &operator << (string_buffer &buf, UInt x);
+inline string_buffer &operator<<(string_buffer &buf, UInt x);
 
 
-inline const Long &f$longval (const Long &val);
+inline const Long &f$longval(const Long &val);
 
-inline Long f$longval (ULong val);
+inline Long f$longval(ULong val);
 
-inline Long f$longval (UInt val);
+inline Long f$longval(UInt val);
 
-inline ULong f$ulongval (Long val);
+inline ULong f$ulongval(Long val);
 
-inline const ULong &f$ulongval (const ULong &val);
+inline const ULong &f$ulongval(const ULong &val);
 
-inline ULong f$ulongval (UInt val);
+inline ULong f$ulongval(UInt val);
 
-inline const UInt &f$uintval (const UInt &val);
+inline const UInt &f$uintval(const UInt &val);
 
-inline UInt f$uintval (Long val);
+inline UInt f$uintval(Long val);
 
-inline UInt f$uintval (ULong val);
+inline UInt f$uintval(ULong val);
 
 
 /*
@@ -249,7 +249,7 @@ inline UInt f$uintval (ULong val);
  */
 
 
-void Long::convert_from (const string &s) {
+void Long::convert_from(const string &s) {
   if (s[0] == '0' && s[1] == 'x') {
     l = 0;
     int len = (int)s.size();
@@ -270,7 +270,7 @@ void Long::convert_from (const string &s) {
     }
 
     if (len == 2 || cur < len || 18 < len) {
-      php_warning ("Wrong conversion from hexadecimal string \"%s\" to Long", s.c_str());
+      php_warning("Wrong conversion from hexadecimal string \"%s\" to Long", s.c_str());
     }
     return;
   }
@@ -292,35 +292,40 @@ void Long::convert_from (const string &s) {
     l = l * 10 + (s[cur++] - '0');
   }
   if (need_warning || cur < len || l % 10 != s[len - 1] - '0') {
-    php_warning ("Wrong conversion from string \"%s\" to Long", s.c_str());
+    php_warning("Wrong conversion from string \"%s\" to Long", s.c_str());
   }
   l *= mul;
 }
 
-Long::Long (void): l (0) {
+Long::Long(void) :
+  l(0) {
 }
 
-Long::Long (long long l): l (l) {
+Long::Long(long long l) :
+  l(l) {
 }
 
-Long::Long (int i): l (i) {
+Long::Long(int i) :
+  l(i) {
 }
 
-Long::Long (long l): l (l) {
+Long::Long(long l) :
+  l(l) {
 }
 
-Long::Long (double f): l ((long long)f) {
+Long::Long(double f) :
+  l((long long)f) {
 }
 
-Long::Long (const string &s) {
-  convert_from (s);
+Long::Long(const string &s) {
+  convert_from(s);
 }
 
-Long::Long (const var &v) {
+Long::Long(const var &v) {
   if (likely (v.is_int())) {
     l = v.to_int();
   } else if (likely (v.is_string())) {
-    convert_from (v.to_string());
+    convert_from(v.to_string());
   } else if (likely (v.is_float())) {
     l = (long long)v.to_float();
   } else {
@@ -328,37 +333,38 @@ Long::Long (const var &v) {
   }
 }
 
-Long::Long (const Long &other): l (other.l) {
+Long::Long(const Long &other) :
+  l(other.l) {
 }
 
-Long& Long::operator = (Long other) {
+Long &Long::operator=(Long other) {
   l = other.l;
   return *this;
 }
 
-Long f$labs (Long lhs) {
-  return Long (lhs.l < 0 ? -lhs.l : lhs.l);
+Long f$labs(Long lhs) {
+  return Long(lhs.l < 0 ? -lhs.l : lhs.l);
 }
 
-Long f$ldiv (Long lhs, Long rhs) {
+Long f$ldiv(Long lhs, Long rhs) {
   if (rhs.l == 0) {
-    php_warning ("Long division by zero");
+    php_warning("Long division by zero");
     return 0;
   }
 
-  return Long (lhs.l / rhs.l);
+  return Long(lhs.l / rhs.l);
 }
 
-Long f$lmod (Long lhs, Long rhs) {
+Long f$lmod(Long lhs, Long rhs) {
   if (rhs.l == 0) {
-    php_warning ("Long modulo by zero");
+    php_warning("Long modulo by zero");
     return 0;
   }
 
-  return Long (lhs.l % rhs.l);
+  return Long(lhs.l % rhs.l);
 }
 
-Long f$lpow (Long lhs, int deg) {
+Long f$lpow(Long lhs, int deg) {
   long long result = 1;
   long long mul = lhs.l;
 
@@ -370,108 +376,108 @@ Long f$lpow (Long lhs, int deg) {
     deg >>= 1;
   }
 
-  return Long (result);
+  return Long(result);
 }
 
-Long f$ladd (Long lhs, Long rhs) {
-  return Long (lhs.l + rhs.l);
+Long f$ladd(Long lhs, Long rhs) {
+  return Long(lhs.l + rhs.l);
 }
 
-Long f$lsub (Long lhs, Long rhs) {
-  return Long (lhs.l - rhs.l);
+Long f$lsub(Long lhs, Long rhs) {
+  return Long(lhs.l - rhs.l);
 }
 
-Long f$lmul (Long lhs, Long rhs) {
-  return Long (lhs.l * rhs.l);
+Long f$lmul(Long lhs, Long rhs) {
+  return Long(lhs.l * rhs.l);
 }
 
-Long f$lshl (Long lhs, int rhs) {
-  return Long (lhs.l << rhs);
+Long f$lshl(Long lhs, int rhs) {
+  return Long(lhs.l << rhs);
 }
 
-Long f$lshr (Long lhs, int rhs) {
-  return Long (lhs.l >> rhs);
+Long f$lshr(Long lhs, int rhs) {
+  return Long(lhs.l >> rhs);
 }
 
-Long f$lnot (Long lhs) {
-  return Long (~lhs.l);
+Long f$lnot(Long lhs) {
+  return Long(~lhs.l);
 }
 
-Long f$lor (Long lhs, Long rhs) {
-  return Long (lhs.l | rhs.l);
+Long f$lor(Long lhs, Long rhs) {
+  return Long(lhs.l | rhs.l);
 }
 
-Long f$land (Long lhs, Long rhs) {
-  return Long (lhs.l & rhs.l);
+Long f$land(Long lhs, Long rhs) {
+  return Long(lhs.l & rhs.l);
 }
 
-Long f$lxor (Long lhs, Long rhs) {
-  return Long (lhs.l ^ rhs.l);
+Long f$lxor(Long lhs, Long rhs) {
+  return Long(lhs.l ^ rhs.l);
 }
 
-int f$lcomp (Long lhs, Long rhs) {
+int f$lcomp(Long lhs, Long rhs) {
   if (lhs.l < rhs.l) {
     return -1;
   }
   return lhs.l > rhs.l;
 }
 
-Long f$longval (const long long &val) {
-  return Long (val);
+Long f$longval(const long long &val) {
+  return Long(val);
 }
 
-Long f$longval (const bool &val) {
-  return Long (val);
+Long f$longval(const bool &val) {
+  return Long(val);
 }
 
-Long f$longval (const int &val) {
-  return Long (val);
+Long f$longval(const int &val) {
+  return Long(val);
 }
 
-Long f$longval (const double &val) {
-  return Long (val);
+Long f$longval(const double &val) {
+  return Long(val);
 }
 
-Long f$longval (const string &val) {
-  return Long (val);
+Long f$longval(const string &val) {
+  return Long(val);
 }
 
-Long f$longval (const var &val) {
-  return Long (val);
+Long f$longval(const var &val) {
+  return Long(val);
 }
 
-template <class T>
-Long f$new_Long (const T &val) {
-  return f$longval (val);
+template<class T>
+Long f$new_Long(const T &val) {
+  return f$longval(val);
 }
 
-bool f$boolval (Long val) {
+bool f$boolval(Long val) {
   return val.l;
 }
 
-int f$intval (Long val) {
+int f$intval(Long val) {
   return (int)val.l;
 }
 
-int f$safe_intval (Long val) {
+int f$safe_intval(Long val) {
   if ((int)val.l != val.l) {
-    php_warning ("Integer overflow on converting %lld to int", val.l);
+    php_warning("Integer overflow on converting %lld to int", val.l);
   }
   return (int)val.l;
 }
 
-double f$floatval (Long val) {
+double f$floatval(Long val) {
   return (double)val.l;
 }
 
-string f$strval (Long val) {
+string f$strval(Long val) {
   int negative = 0;
   long long result = val.l;
   if (result < 0) {
     negative = 1;
     result = -result;
     if (result < 0) {
-      return string ("-9223372036854775808", 20);
+      return string("-9223372036854775808", 20);
     }
   }
 
@@ -484,15 +490,15 @@ string f$strval (Long val) {
     *--end_buf = '-';
   }
 
-  return string (end_buf, (dl::size_type)(buf + 20 - end_buf));
+  return string(end_buf, (dl::size_type)(buf + 20 - end_buf));
 }
 
-string_buffer &operator << (string_buffer &buf, Long x) {
+string_buffer &operator<<(string_buffer &buf, Long x) {
   return buf << x.l;
 }
 
 
-void ULong::convert_from (const string &s) {
+void ULong::convert_from(const string &s) {
   if (s[0] == '0' && s[1] == 'x') {
     l = 0;
     int len = (int)s.size();
@@ -513,7 +519,7 @@ void ULong::convert_from (const string &s) {
     }
 
     if (len == 2 || cur < len || 18 < len) {
-      php_warning ("Wrong conversion from hexadecimal string \"%s\" to ULong", s.c_str());
+      php_warning("Wrong conversion from hexadecimal string \"%s\" to ULong", s.c_str());
     }
     return;
   }
@@ -537,32 +543,36 @@ void ULong::convert_from (const string &s) {
     l = l * 10 + (s[cur++] - '0');
   }
   if (need_warning || cur < len || l % 10 != (unsigned long long)(s[len - 1] - '0')) {
-    php_warning ("Wrong conversion from string \"%s\" to ULong", s.c_str());
+    php_warning("Wrong conversion from string \"%s\" to ULong", s.c_str());
   }
   l *= mul;
 }
 
-ULong::ULong (void): l (0) {
+ULong::ULong(void) :
+  l(0) {
 }
 
-ULong::ULong (unsigned long long l): l (l) {
+ULong::ULong(unsigned long long l) :
+  l(l) {
 }
 
-ULong::ULong (int i): l ((unsigned long long)i) {
+ULong::ULong(int i) :
+  l((unsigned long long)i) {
 }
 
-ULong::ULong (double f): l ((unsigned long long)f) {
+ULong::ULong(double f) :
+  l((unsigned long long)f) {
 }
 
-ULong::ULong (const string &s) {
-  convert_from (s);
+ULong::ULong(const string &s) {
+  convert_from(s);
 }
 
-ULong::ULong (const var &v) {
+ULong::ULong(const var &v) {
   if (likely (v.is_int())) {
     l = (unsigned int)v.to_int();
   } else if (likely (v.is_string())) {
-    convert_from (v.to_string());
+    convert_from(v.to_string());
   } else if (likely (v.is_float())) {
     l = (unsigned long long)v.to_float();
   } else {
@@ -570,33 +580,34 @@ ULong::ULong (const var &v) {
   }
 }
 
-ULong::ULong (const ULong &other): l (other.l) {
+ULong::ULong(const ULong &other) :
+  l(other.l) {
 }
 
-ULong& ULong::operator = (ULong other) {
+ULong &ULong::operator=(ULong other) {
   l = other.l;
   return *this;
 }
 
-ULong f$uldiv (ULong lhs, ULong rhs) {
+ULong f$uldiv(ULong lhs, ULong rhs) {
   if (rhs.l == 0) {
-    php_warning ("ULong division by zero");
+    php_warning("ULong division by zero");
     return 0;
   }
 
-  return ULong (lhs.l / rhs.l);
+  return ULong(lhs.l / rhs.l);
 }
 
-ULong f$ulmod (ULong lhs, ULong rhs) {
+ULong f$ulmod(ULong lhs, ULong rhs) {
   if (rhs.l == 0) {
-    php_warning ("ULong modulo by zero");
+    php_warning("ULong modulo by zero");
     return 0;
   }
 
-  return ULong (lhs.l % rhs.l);
+  return ULong(lhs.l % rhs.l);
 }
 
-ULong f$ulpow (ULong lhs, int deg) {
+ULong f$ulpow(ULong lhs, int deg) {
   unsigned long long result = 1;
   unsigned long long mul = lhs.l;
 
@@ -608,101 +619,101 @@ ULong f$ulpow (ULong lhs, int deg) {
     deg >>= 1;
   }
 
-  return ULong (result);
+  return ULong(result);
 }
 
-ULong f$uladd (ULong lhs, ULong rhs) {
-  return ULong (lhs.l + rhs.l);
+ULong f$uladd(ULong lhs, ULong rhs) {
+  return ULong(lhs.l + rhs.l);
 }
 
-ULong f$ulsub (ULong lhs, ULong rhs) {
-  return ULong (lhs.l - rhs.l);
+ULong f$ulsub(ULong lhs, ULong rhs) {
+  return ULong(lhs.l - rhs.l);
 }
 
-ULong f$ulmul (ULong lhs, ULong rhs) {
-  return ULong (lhs.l * rhs.l);
+ULong f$ulmul(ULong lhs, ULong rhs) {
+  return ULong(lhs.l * rhs.l);
 }
 
-ULong f$ulshl (ULong lhs, int rhs) {
-  return ULong (lhs.l << rhs);
+ULong f$ulshl(ULong lhs, int rhs) {
+  return ULong(lhs.l << rhs);
 }
 
-ULong f$ulshr (ULong lhs, int rhs) {
-  return ULong (lhs.l >> rhs);
+ULong f$ulshr(ULong lhs, int rhs) {
+  return ULong(lhs.l >> rhs);
 }
 
-ULong f$ulnot (ULong lhs) {
-  return ULong (~lhs.l);
+ULong f$ulnot(ULong lhs) {
+  return ULong(~lhs.l);
 }
 
-ULong f$ulor (ULong lhs, ULong rhs) {
-  return ULong (lhs.l | rhs.l);
+ULong f$ulor(ULong lhs, ULong rhs) {
+  return ULong(lhs.l | rhs.l);
 }
 
-ULong f$uland (ULong lhs, ULong rhs) {
-  return ULong (lhs.l & rhs.l);
+ULong f$uland(ULong lhs, ULong rhs) {
+  return ULong(lhs.l & rhs.l);
 }
 
-ULong f$ulxor (ULong lhs, ULong rhs) {
-  return ULong (lhs.l ^ rhs.l);
+ULong f$ulxor(ULong lhs, ULong rhs) {
+  return ULong(lhs.l ^ rhs.l);
 }
 
-int f$ulcomp (ULong lhs, ULong rhs) {
+int f$ulcomp(ULong lhs, ULong rhs) {
   if (lhs.l < rhs.l) {
     return -1;
   }
   return lhs.l > rhs.l;
 }
 
-ULong f$ulongval (const unsigned long long &val) {
-  return ULong (val);
+ULong f$ulongval(const unsigned long long &val) {
+  return ULong(val);
 }
 
-ULong f$ulongval (const bool &val) {
-  return ULong (val);
+ULong f$ulongval(const bool &val) {
+  return ULong(val);
 }
 
-ULong f$ulongval (const int &val) {
-  return ULong (val);
+ULong f$ulongval(const int &val) {
+  return ULong(val);
 }
 
-ULong f$ulongval (const double &val) {
-  return ULong (val);
+ULong f$ulongval(const double &val) {
+  return ULong(val);
 }
 
-ULong f$ulongval (const string &val) {
-  return ULong (val);
+ULong f$ulongval(const string &val) {
+  return ULong(val);
 }
 
-ULong f$ulongval (const var &val) {
-  return ULong (val);
+ULong f$ulongval(const var &val) {
+  return ULong(val);
 }
 
-template <class T>
-ULong f$new_ULong (const T &val) {
-  return f$ulongval (val);
+template<class T>
+ULong f$new_ULong(const T &val) {
+  return f$ulongval(val);
 }
 
-bool f$boolval (ULong val) {
+bool f$boolval(ULong val) {
   return (bool)val.l;
 }
 
-int f$intval (ULong val) {
+int f$intval(ULong val) {
   return (int)val.l;
 }
 
-int f$safe_intval (ULong val) {
+int f$safe_intval(ULong val) {
   if (val.l >= 2147483648llu) {
-    php_warning ("Integer overflow on converting %llu to int", val.l);
+    php_warning("Integer overflow on converting %llu to int", val.l);
   }
   return (int)val.l;
 }
 
-double f$floatval (ULong val) {
+double f$floatval(ULong val) {
   return (double)val.l;
 }
 
-string f$strval (ULong val) {
+string f$strval(ULong val) {
   unsigned long long result = val.l;
 
   char buf[20], *end_buf = buf + 20;
@@ -711,15 +722,15 @@ string f$strval (ULong val) {
     result /= 10;
   } while (result > 0);
 
-  return string (end_buf, (dl::size_type)(buf + 20 - end_buf));
+  return string(end_buf, (dl::size_type)(buf + 20 - end_buf));
 }
 
-string_buffer &operator << (string_buffer &buf, ULong x) {
+string_buffer &operator<<(string_buffer &buf, ULong x) {
   return buf << x.l;
 }
 
 
-void UInt::convert_from (const string &s) {
+void UInt::convert_from(const string &s) {
   if (s[0] == '0' && s[1] == 'x') {
     l = 0;
     int len = (int)s.size();
@@ -740,7 +751,7 @@ void UInt::convert_from (const string &s) {
     }
 
     if (len == 2 || cur < len || 10 < len) {
-      php_warning ("Wrong conversion from hexadecimal string \"%s\" to UInt", s.c_str());
+      php_warning("Wrong conversion from hexadecimal string \"%s\" to UInt", s.c_str());
     }
     return;
   }
@@ -764,32 +775,36 @@ void UInt::convert_from (const string &s) {
     l = l * 10 + (s[cur++] - '0');
   }
   if (need_warning || cur < len || l % 10 != (unsigned long long)(s[len - 1] - '0')) {
-    php_warning ("Wrong conversion from string \"%s\" to UInt", s.c_str());
+    php_warning("Wrong conversion from string \"%s\" to UInt", s.c_str());
   }
   l *= mul;
 }
 
-UInt::UInt (void): l (0) {
+UInt::UInt(void) :
+  l(0) {
 }
 
-UInt::UInt (unsigned int l): l (l) {
+UInt::UInt(unsigned int l) :
+  l(l) {
 }
 
-UInt::UInt (int i): l (i) {
+UInt::UInt(int i) :
+  l(i) {
 }
 
-UInt::UInt (double f): l ((unsigned int)f) {
+UInt::UInt(double f) :
+  l((unsigned int)f) {
 }
 
-UInt::UInt (const string &s) {
-  convert_from (s);
+UInt::UInt(const string &s) {
+  convert_from(s);
 }
 
-UInt::UInt (const var &v) {
+UInt::UInt(const var &v) {
   if (likely (v.is_int())) {
     l = (unsigned int)v.to_int();
   } else if (likely (v.is_string())) {
-    convert_from (v.to_string());
+    convert_from(v.to_string());
   } else if (likely (v.is_float())) {
     l = (unsigned int)v.to_float();
   } else {
@@ -797,33 +812,34 @@ UInt::UInt (const var &v) {
   }
 }
 
-UInt::UInt (const UInt &other): l (other.l) {
+UInt::UInt(const UInt &other) :
+  l(other.l) {
 }
 
-UInt& UInt::operator = (UInt other) {
+UInt &UInt::operator=(UInt other) {
   l = other.l;
   return *this;
 }
 
-UInt f$uidiv (UInt lhs, UInt rhs) {
+UInt f$uidiv(UInt lhs, UInt rhs) {
   if (rhs.l == 0) {
-    php_warning ("UInt division by zero");
+    php_warning("UInt division by zero");
     return 0;
   }
 
-  return UInt (lhs.l / rhs.l);
+  return UInt(lhs.l / rhs.l);
 }
 
-UInt f$uimod (UInt lhs, UInt rhs) {
+UInt f$uimod(UInt lhs, UInt rhs) {
   if (rhs.l == 0) {
-    php_warning ("UInt modulo by zero");
+    php_warning("UInt modulo by zero");
     return 0;
   }
 
-  return UInt (lhs.l % rhs.l);
+  return UInt(lhs.l % rhs.l);
 }
 
-UInt f$uipow (UInt lhs, int deg) {
+UInt f$uipow(UInt lhs, int deg) {
   unsigned int result = 1;
   unsigned int mul = lhs.l;
 
@@ -835,101 +851,101 @@ UInt f$uipow (UInt lhs, int deg) {
     deg >>= 1;
   }
 
-  return UInt (result);
+  return UInt(result);
 }
 
-UInt f$uiadd (UInt lhs, UInt rhs) {
-  return UInt (lhs.l + rhs.l);
+UInt f$uiadd(UInt lhs, UInt rhs) {
+  return UInt(lhs.l + rhs.l);
 }
 
-UInt f$uisub (UInt lhs, UInt rhs) {
-  return UInt (lhs.l - rhs.l);
+UInt f$uisub(UInt lhs, UInt rhs) {
+  return UInt(lhs.l - rhs.l);
 }
 
-UInt f$uimul (UInt lhs, UInt rhs) {
-  return UInt (lhs.l * rhs.l);
+UInt f$uimul(UInt lhs, UInt rhs) {
+  return UInt(lhs.l * rhs.l);
 }
 
-UInt f$uishl (UInt lhs, int rhs) {
-  return UInt (lhs.l << rhs);
+UInt f$uishl(UInt lhs, int rhs) {
+  return UInt(lhs.l << rhs);
 }
 
-UInt f$uishr (UInt lhs, int rhs) {
-  return UInt (lhs.l >> rhs);
+UInt f$uishr(UInt lhs, int rhs) {
+  return UInt(lhs.l >> rhs);
 }
 
-UInt f$uinot (UInt lhs) {
-  return UInt (~lhs.l);
+UInt f$uinot(UInt lhs) {
+  return UInt(~lhs.l);
 }
 
-UInt f$uior (UInt lhs, UInt rhs) {
-  return UInt (lhs.l | rhs.l);
+UInt f$uior(UInt lhs, UInt rhs) {
+  return UInt(lhs.l | rhs.l);
 }
 
-UInt f$uiand (UInt lhs, UInt rhs) {
-  return UInt (lhs.l & rhs.l);
+UInt f$uiand(UInt lhs, UInt rhs) {
+  return UInt(lhs.l & rhs.l);
 }
 
-UInt f$uixor (UInt lhs, UInt rhs) {
-  return UInt (lhs.l ^ rhs.l);
+UInt f$uixor(UInt lhs, UInt rhs) {
+  return UInt(lhs.l ^ rhs.l);
 }
 
-int f$uicomp (UInt lhs, UInt rhs) {
+int f$uicomp(UInt lhs, UInt rhs) {
   if (lhs.l < rhs.l) {
     return -1;
   }
   return lhs.l > rhs.l;
 }
 
-UInt f$uintval (const unsigned int &val) {
-  return UInt (val);
+UInt f$uintval(const unsigned int &val) {
+  return UInt(val);
 }
 
-UInt f$uintval (const bool &val) {
-  return UInt (val);
+UInt f$uintval(const bool &val) {
+  return UInt(val);
 }
 
-UInt f$uintval (const int &val) {
-  return UInt (val);
+UInt f$uintval(const int &val) {
+  return UInt(val);
 }
 
-UInt f$uintval (const double &val) {
-  return UInt (val);
+UInt f$uintval(const double &val) {
+  return UInt(val);
 }
 
-UInt f$uintval (const string &val) {
-  return UInt (val);
+UInt f$uintval(const string &val) {
+  return UInt(val);
 }
 
-UInt f$uintval (const var &val) {
-  return UInt (val);
+UInt f$uintval(const var &val) {
+  return UInt(val);
 }
 
-template <class T>
-UInt f$new_UInt (const T &val) {
-  return f$uintval (val);
+template<class T>
+UInt f$new_UInt(const T &val) {
+  return f$uintval(val);
 }
 
-bool f$boolval (UInt val) {
+bool f$boolval(UInt val) {
   return val.l;
 }
 
-int f$intval (UInt val) {
+int f$intval(UInt val) {
   return val.l;
 }
 
-int f$safe_intval (UInt val) {
+int f$safe_intval(UInt val) {
   if (val.l >= 2147483648u) {
-    php_warning ("Integer overflow on converting %u to int", val.l);
+    php_warning("Integer overflow on converting %u to int", val.l);
   }
   return val.l;
 }
 
-double f$floatval (UInt val) {
+double f$floatval(UInt val) {
   return val.l;
 }
 
-string f$strval (UInt val) {
+string f$strval(UInt val) {
   unsigned int result = val.l;
 
   char buf[20], *end_buf = buf + 20;
@@ -938,47 +954,47 @@ string f$strval (UInt val) {
     result /= 10;
   } while (result > 0);
 
-  return string (end_buf, (dl::size_type)(buf + 20 - end_buf));
+  return string(end_buf, (dl::size_type)(buf + 20 - end_buf));
 }
 
-string_buffer &operator << (string_buffer &buf, UInt x) {
+string_buffer &operator<<(string_buffer &buf, UInt x) {
   return buf << x.l;
 }
 
 
-const Long &f$longval (const Long &val) {
+const Long &f$longval(const Long &val) {
   return val;
 }
 
-Long f$longval (ULong val) {
+Long f$longval(ULong val) {
   return (long long)val.l;
 }
 
-Long f$longval (UInt val) {
+Long f$longval(UInt val) {
   return (long long)val.l;
 }
 
-ULong f$ulongval (Long val) {
+ULong f$ulongval(Long val) {
   return (unsigned long long)val.l;
 }
 
-const ULong &f$ulongval (const ULong &val) {
+const ULong &f$ulongval(const ULong &val) {
   return val;
 }
 
-ULong f$ulongval (UInt val) {
+ULong f$ulongval(UInt val) {
   return (unsigned long long)val.l;
 }
 
-const UInt &f$uintval (const UInt &val) {
+const UInt &f$uintval(const UInt &val) {
   return val;
 }
 
-UInt f$uintval (Long val) {
+UInt f$uintval(Long val) {
   return (unsigned int)val.l;
 }
 
-UInt f$uintval (ULong val) {
+UInt f$uintval(ULong val) {
   return (unsigned int)val.l;
 }
 

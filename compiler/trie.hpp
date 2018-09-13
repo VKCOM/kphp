@@ -1,9 +1,11 @@
-template <typename T> Trie<T>::Trie () {
-  memset (next, 0, sizeof (next));
+template<typename T>
+Trie<T>::Trie() {
+  memset(next, 0, sizeof(next));
   has_val = 0;
 }
 
-template <typename T> void Trie<T>::add (const string &s, const T &val) {
+template<typename T>
+void Trie<T>::add(const string &s, const T &val) {
   Trie *cur = this;
 
   for (int i = 0; i < (int)s.size(); i++) {
@@ -20,9 +22,10 @@ template <typename T> void Trie<T>::add (const string &s, const T &val) {
   cur->has_val = 1;
 }
 
-template <typename T> T *Trie<T>::get_deepest (const char *s) {
+template<typename T>
+T *Trie<T>::get_deepest(const char *s) {
   T *best = NULL;
-  Trie <T> *cur = this;
+  Trie<T> *cur = this;
 
   while (cur) {
     if (cur->has_val) {
@@ -38,12 +41,15 @@ template <typename T> T *Trie<T>::get_deepest (const char *s) {
 }
 
 
-template <typename T> void Trie<T>::clear() {
+template<typename T>
+void Trie<T>::clear() {
   for (int i = 0; i < 256; i++) {
     delete next[i];
   }
 }
 
-template <typename T> Trie<T>::~Trie() {
+template<typename T>
+Trie<T>::~Trie() {
   clear();
 }
+

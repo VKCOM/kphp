@@ -91,8 +91,8 @@ typedef struct php_immediate_stats {
   double custom_timestamp;
   char custom_desc[IMM_STATS_DESC_LEN];
 
-  int port; 
-  long long actor_id; 
+  int port;
+  long long actor_id;
   double rpc_timestamp;
 } php_immediate_stats_t;
 
@@ -138,7 +138,7 @@ extern "C" {
 #endif
 
 
-void reopen_logs (void);
+void reopen_logs(void);
 
 #ifdef __cplusplus
 }

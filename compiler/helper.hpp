@@ -1,5 +1,5 @@
-inline vector <string> expand_template_ (const string &s) {
-  vector <string> res (1, "");
+inline vector<string> expand_template_(const string &s) {
+  vector<string> res(1, "");
 
   int si = 0, sn = (int)s.size();
 
@@ -46,59 +46,66 @@ inline vector <string> expand_template_ (const string &s) {
 
   return res;
 }
-inline vector <string> expand_template (const string &s) {
-  vector <string> v;
+
+inline vector<string> expand_template(const string &s) {
+  vector<string> v;
 
   int sn = (int)s.size();
 
   string cur = "";
   for (int i = 0; i < sn; i++) {
     if (s[i] == '|') {
-      v.push_back (cur);
+      v.push_back(cur);
       cur = "";
     } else {
       cur += s[i];
     }
   }
-  v.push_back (cur);
+  v.push_back(cur);
 
-  vector <string> res;
+  vector<string> res;
   int vn = (int)v.size();
   for (int i = 0; i < vn; i++) {
-    vector <string> tmp = expand_template_ (v[i]);
+    vector<string> tmp = expand_template_(v[i]);
 
     int tmpn = (int)tmp.size();
     for (int i = 0; i < tmpn; i++) {
-      res.push_back (tmp[i]);
+      res.push_back(tmp[i]);
     }
   }
 
   return res;
 }
 
-template <typename T> Helper<T>::Helper (T* on_fail) : on_fail (on_fail) {
+template<typename T>
+Helper<T>::Helper(T *on_fail) :
+  on_fail(on_fail) {
   assert (on_fail != NULL);
 }
 
-template <typename T> void Helper<T>::add_rule (const string &rule_template, T *val, bool need_expand) {
-  vector <string> v = need_expand ? expand_template (rule_template) : vector <string> (1, rule_template);
+template<typename T>
+void Helper<T>::add_rule(const string &rule_template, T *val, bool need_expand) {
+  vector<string> v = need_expand ? expand_template(rule_template) : vector<string>(1, rule_template);
 
   for (int i = 0; i < (int)v.size(); i++) {
-    trie.add (v[i], val);
+    trie.add(v[i], val);
   }
 
 }
 
-template <typename T> void Helper<T>::add_simple_rule (const string &rule_template, T *val) {
-  add_rule (rule_template, val, false);
+template<typename T>
+void Helper<T>::add_simple_rule(const string &rule_template, T *val) {
+  add_rule(rule_template, val, false);
 }
 
-template <typename T> T *Helper<T>::get_default() {
+template<typename T>
+T *Helper<T>::get_default() {
   return on_fail;
 }
 
-template <typename T> T *Helper<T>::get_help (const char *s) {
-  T **best = trie.get_deepest (s);
+template<typename T>
+T *Helper<T>::get_help(const char *s) {
+  T **best = trie.get_deepest(s);
   if (best == NULL) {
     return NULL;
   } else {
@@ -106,3 +113,4 @@ template <typename T> T *Helper<T>::get_help (const char *s) {
   }
 
 }
+

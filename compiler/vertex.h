@@ -1,4 +1,5 @@
 #pragma once
+
 #include "compiler/data_ptr.h"
 #include "compiler/graph.h"
 #include "compiler/stage.h"
@@ -7,19 +8,19 @@
 
 size_t vertex_total_mem_used __attribute__ ((weak));
 
-VertexPtr clone_vertex (VertexPtr from);
+VertexPtr clone_vertex(VertexPtr from);
 
-template <Operation Op>
-vertex_inner <Op> *raw_create_vertex_inner (int args_n, vertex_inner <Op> *from_ptr = NULL);
+template<Operation Op>
+vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr = NULL);
 
-template <>
-class vertex_inner <meta_op_base> {
+template<>
+class vertex_inner<meta_op_base> {
 public:
   typedef VertexPtr value_type;
   typedef value_type *xiterator;
   typedef const value_type *const_xiterator;
-  typedef std::reverse_iterator <xiterator> iterator;
-  typedef std::reverse_iterator <const_xiterator> const_iterator;
+  typedef std::reverse_iterator<xiterator> iterator;
+  typedef std::reverse_iterator<const_xiterator> const_iterator;
   //typedef vector <VertexPtr>::iterator iterator;
 
   //Data
@@ -51,18 +52,18 @@ public:
 
   int n;
 
-  vertex_inner():
-    id (0),
-    type_ (op_none),
-    tinf_node (VertexPtr (this)),
+  vertex_inner() :
+    id(0),
+    type_(op_none),
+    tinf_node(VertexPtr(this)),
     type_rule(),
     location(),
-    extra_type (op_ex_none),
+    extra_type(op_ex_none),
     type_help(),
-    rl_type (val_error),
-    val_ref_flag (val_none),
-    const_type (cnst_error_),
-    ref_flag (0),
+    rl_type(val_error),
+    val_ref_flag(val_none),
+    const_type(cnst_error_),
+    ref_flag(0),
     auto_flag(),
     varg_flag(),
     throws_flag(),
@@ -71,35 +72,36 @@ public:
     needs_const_iterator_flag(),
     inline_flag(),
     void_flag(),
-    n (-1) {
+    n(-1) {
   }
 
-  vertex_inner (const vertex_inner <meta_op_base> &from) :
-    id (from.id),
-    type_ (from.type_),
-    tinf_node (VertexPtr (this)),
-    type_rule (from.type_rule),
-    location (from.location),
-    extra_type (from.extra_type),
-    type_help (from.type_help),
-    rl_type (from.rl_type),
-    val_ref_flag (from.val_ref_flag),
-    const_type (from.const_type),
-    ref_flag (from.ref_flag),
-    auto_flag (from.auto_flag),
-    varg_flag (from.varg_flag),
-    throws_flag (from.throws_flag),
-    resumable_flag (from.resumable_flag),
-    parent_flag (from.parent_flag),
+  vertex_inner(const vertex_inner<meta_op_base> &from) :
+    id(from.id),
+    type_(from.type_),
+    tinf_node(VertexPtr(this)),
+    type_rule(from.type_rule),
+    location(from.location),
+    extra_type(from.extra_type),
+    type_help(from.type_help),
+    rl_type(from.rl_type),
+    val_ref_flag(from.val_ref_flag),
+    const_type(from.const_type),
+    ref_flag(from.ref_flag),
+    auto_flag(from.auto_flag),
+    varg_flag(from.varg_flag),
+    throws_flag(from.throws_flag),
+    resumable_flag(from.resumable_flag),
+    parent_flag(from.parent_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
-    inline_flag (from.inline_flag),
-    void_flag (from.void_flag),
-    n (-1) {
+    inline_flag(from.inline_flag),
+    void_flag(from.void_flag),
+    n(-1) {
   }
+
   virtual ~vertex_inner() {
   }
 
-  void copy_location_and_flags(const vertex_inner <meta_op_base> &from) {
+  void copy_location_and_flags(const vertex_inner<meta_op_base> &from) {
     type_rule = from.type_rule;
     location = from.location;
     val_ref_flag = from.val_ref_flag;
@@ -110,7 +112,7 @@ public:
     throws_flag = from.throws_flag;
     resumable_flag = from.resumable_flag;
     parent_flag = from.parent_flag;
-    needs_const_iterator_flag= from.needs_const_iterator_flag;
+    needs_const_iterator_flag = from.needs_const_iterator_flag;
     inline_flag = from.inline_flag;
     void_flag = from.void_flag;
   }
@@ -119,65 +121,76 @@ public:
   VertexPtr *arr() const {
     return (VertexPtr *)this - 1;
   }
-  void raw_init (int real_n) {
+
+  void raw_init(int real_n) {
     assert (n == -1);
     n = real_n;
     for (int i = 0; i < n; i++) {
-      new (&arr()[-i]) VertexPtr();
-    }
-  }
-  void raw_copy (const vertex_inner <meta_op_base> &from) {
-    assert (n == -1);
-    n = from.size();
-    for (int i = 0; i < n; i++) {
-      new (&arr()[-i]) VertexPtr (clone_vertex (from.ith (i)));
+      new(&arr()[-i]) VertexPtr();
     }
   }
 
-  inline bool check_range (int i) const {
+  void raw_copy(const vertex_inner<meta_op_base> &from) {
+    assert (n == -1);
+    n = from.size();
+    for (int i = 0; i < n; i++) {
+      new(&arr()[-i]) VertexPtr(clone_vertex(from.ith(i)));
+    }
+  }
+
+  inline bool check_range(int i) const {
     return 0 <= i && i < size();
   }
-  inline VertexPtr &operator[] (int i) {
-    assert (check_range (i));
+
+  inline VertexPtr &operator[](int i) {
+    assert (check_range(i));
     return arr()[-i];
   }
-  inline const VertexPtr &operator[] (int i) const {
-    assert (check_range (i));
+
+  inline const VertexPtr &operator[](int i) const {
+    assert (check_range(i));
     return arr()[-i];
   }
+
   inline int size() const {
     return n;
   }
+
   VertexPtr &back() {
     return (*this)[size() - 1];
   }
 
-  vector <VertexPtr> get_next() {
-    vector <VertexPtr> res(begin(), end());
+  vector<VertexPtr> get_next() {
+    vector<VertexPtr> res(begin(), end());
     return res;
   }
 
   bool empty() {
     return size() == 0;
   }
-  inline VertexPtr &ith (int i) {
+
+  inline VertexPtr &ith(int i) {
     return (*this)[i];
   }
-  inline const VertexPtr &ith (int i) const {
+
+  inline const VertexPtr &ith(int i) const {
     return (*this)[i];
   }
 
   inline iterator begin() {
-    return iterator (arr() + 1);
+    return iterator(arr() + 1);
   }
+
   inline iterator end() {
-    return iterator (arr() - size() + 1);
+    return iterator(arr() - size() + 1);
   }
+
   inline const_iterator begin() const {
-    return const_iterator (arr() + 1);
+    return const_iterator(arr() + 1);
   }
+
   inline const_iterator end() const {
-    return const_iterator (arr() - size() + 1);
+    return const_iterator(arr() - size() + 1);
   }
 
   const Location &get_location() {
@@ -188,134 +201,142 @@ public:
   void init() {
   }
 
-  static void init_properties (OpProperties *p __attribute__((unused))) {
+  static void init_properties(OpProperties *p __attribute__((unused))) {
   }
 
-  const Operation &type() const {return type_;}
+  const Operation &type() const { return type_; }
 
-  virtual const FunctionPtr &get_func_id() const {dl_fail ("get_func_id is not supported");}
-  virtual void set_func_id (FunctionPtr func_ptr __attribute__((unused))) {dl_fail ("set_func_id is not supported");}
+  virtual const FunctionPtr &get_func_id() const { dl_fail ("get_func_id is not supported"); }
 
-  virtual const VarPtr &get_var_id() const {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
-  virtual void set_var_id (const VarPtr &) {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
+  virtual void set_func_id(FunctionPtr func_ptr __attribute__((unused))) { dl_fail ("set_func_id is not supported"); }
 
-  virtual const DefinePtr &get_define_id() const {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
-  virtual void set_define_id (const DefinePtr &) {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
+  virtual const VarPtr &get_var_id() const { dl_fail (dl_pstr("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual const string &get_string() const {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
-  virtual void set_string (const string &) {dl_fail (dl_pstr ("not supported [%d:%s]", type_, OpInfo::str (type_).c_str()));}
+  virtual void set_var_id(const VarPtr &) { dl_fail (dl_pstr("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+
+  virtual const DefinePtr &get_define_id() const { dl_fail (dl_pstr("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+
+  virtual void set_define_id(const DefinePtr &) { dl_fail (dl_pstr("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+
+  virtual const string &get_string() const { dl_fail (dl_pstr("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+
+  virtual void set_string(const string &) { dl_fail (dl_pstr("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
   virtual bool has_get_string() const { return false; }
 
-  template <Operation Op> friend
-    vertex_inner <Op> *raw_create_vertex_inner (int args_n, vertex_inner <Op> *from_ptr);
+  template<Operation Op>
+  friend vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr);
 };
 
-inline bool operator == (const VertexPtr &a, const VertexPtr &b) {
+inline bool operator==(const VertexPtr &a, const VertexPtr &b) {
   return a->id == b->id;
 }
 
-inline bool operator < (const VertexPtr &a, const VertexPtr &b) {
+inline bool operator<(const VertexPtr &a, const VertexPtr &b) {
   return a->id < b->id;
 }
 
-template <Operation Op>
-int get_index (const VertexAdaptor <Op> &v) {
+template<Operation Op>
+int get_index(const VertexAdaptor<Op> &v) {
   return v->id;
 }
 
-template <Operation Op>
-void set_index (VertexAdaptor <Op> *v, int id) {
+template<Operation Op>
+void set_index(VertexAdaptor<Op> *v, int id) {
   (*v)->id = id;
 }
 
-template <Operation Op>
-class vertex_inner : public vertex_inner <meta_op_base> {
+template<Operation Op>
+class vertex_inner : public vertex_inner<meta_op_base> {
 };
 
-inline void set_location (VertexPtr v, const Location &location) {
+inline void set_location(VertexPtr v, const Location &location) {
   v->location = location;
 }
-typedef vertex_inner <meta_op_base> Vertex;
-typedef Range <Vertex::iterator> VertexRange;
 
-template <Operation Op> size_t vertex_inner_size (int args_n) {
-  return sizeof (vertex_inner <Op>) + sizeof (VertexPtr) * args_n;
+typedef vertex_inner<meta_op_base> Vertex;
+typedef Range<Vertex::iterator> VertexRange;
+
+template<Operation Op>
+size_t vertex_inner_size(int args_n) {
+  return sizeof(vertex_inner<Op>) + sizeof(VertexPtr) * args_n;
 }
-template <Operation Op> size_t vertex_inner_shift (int args_n) {
-  return sizeof (VertexPtr) * args_n;
+
+template<Operation Op>
+size_t vertex_inner_shift(int args_n) {
+  return sizeof(VertexPtr) * args_n;
 }
 
-template <Operation Op>
-vertex_inner <Op> *raw_create_vertex_inner (int args_n, vertex_inner <Op> *from_ptr) {
-  size_t size = vertex_inner_size <Op> (args_n);
-  size_t shift = vertex_inner_shift <Op> (args_n);
-  PROF (vertex_inner).alloc_memory (size);
-  PROF (vertex_inner_data).alloc_memory (size - shift);
+template<Operation Op>
+vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr) {
+  size_t size = vertex_inner_size<Op>(args_n);
+  size_t shift = vertex_inner_shift<Op>(args_n);
+  PROF (vertex_inner).alloc_memory(size);
+  PROF (vertex_inner_data).alloc_memory(size - shift);
 
-  vertex_inner <Op> *ptr = (vertex_inner <Op> *) (
-      (char *)malloc (size) + shift
+  vertex_inner<Op> *ptr = (vertex_inner<Op> *)(
+    (char *)malloc(size) + shift
   );
   if (from_ptr == NULL) {
-    new (ptr) vertex_inner <Op>();
+    new(ptr) vertex_inner<Op>();
   } else {
-    new (ptr) vertex_inner <Op> (*from_ptr);
+    new(ptr) vertex_inner<Op>(*from_ptr);
   }
-  ptr->raw_init (args_n);
+  ptr->raw_init(args_n);
   ptr->type_ = Op;
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *raw_clone_vertex_inner (const vertex_inner <Op> &from) {
-  size_t size = vertex_inner_size <Op> ((int)from.size());
-  size_t shift = vertex_inner_shift <Op> ((int)from.size());
-  PROF (vertex_inner).alloc_memory (size);
-  PROF (vertex_inner_data).alloc_memory (size - shift);
+template<Operation Op>
+vertex_inner<Op> *raw_clone_vertex_inner(const vertex_inner<Op> &from) {
+  size_t size = vertex_inner_size<Op>((int)from.size());
+  size_t shift = vertex_inner_shift<Op>((int)from.size());
+  PROF (vertex_inner).alloc_memory(size);
+  PROF (vertex_inner_data).alloc_memory(size - shift);
 
-  vertex_inner <Op> *ptr = (vertex_inner <Op> *) (
-      (char *)malloc (size) + shift
+  vertex_inner<Op> *ptr = (vertex_inner<Op> *)(
+    (char *)malloc(size) + shift
   );
-  new (ptr) vertex_inner <Op> (from);
-  ptr->raw_copy (from);
+  new(ptr) vertex_inner<Op>(from);
+  ptr->raw_copy(from);
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *create_vertex_inner(vertex_inner <meta_op_base> *from_ptr = NULL) {
-  vertex_inner <Op> *ptr = raw_create_vertex_inner <Op> (0, (vertex_inner <Op> *)from_ptr);
+template<Operation Op>
+vertex_inner<Op> *create_vertex_inner(vertex_inner<meta_op_base> *from_ptr = NULL) {
+  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(0, (vertex_inner<Op> *)from_ptr);
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *create_vertex_inner (VertexPtr first, vertex_inner <meta_op_base> *from_ptr = NULL) {
-  vertex_inner <Op> *ptr = raw_create_vertex_inner <Op> (1, (vertex_inner <Op> *)from_ptr);
+template<Operation Op>
+vertex_inner<Op> *create_vertex_inner(VertexPtr first, vertex_inner<meta_op_base> *from_ptr = NULL) {
+  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(1, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *create_vertex_inner (VertexPtr first, VertexPtr second, vertex_inner <meta_op_base> *from_ptr = NULL) {
-  vertex_inner <Op> *ptr = raw_create_vertex_inner <Op> (2, (vertex_inner <Op> *)from_ptr);
+template<Operation Op>
+vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, vertex_inner<meta_op_base> *from_ptr = NULL) {
+  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(2, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   (*ptr)[1] = second;
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *create_vertex_inner (VertexPtr first, VertexPtr second,
-    VertexPtr third, vertex_inner <meta_op_base> *from_ptr = NULL) {
-  vertex_inner <Op> *ptr = raw_create_vertex_inner <Op> (3, (vertex_inner <Op> *)from_ptr);
+template<Operation Op>
+vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second,
+                                      VertexPtr third, vertex_inner<meta_op_base> *from_ptr = NULL) {
+  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(3, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   (*ptr)[1] = second;
   (*ptr)[2] = third;
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *create_vertex_inner (VertexPtr first, VertexPtr second, VertexPtr third,
-    VertexPtr forth, vertex_inner <meta_op_base> *from_ptr = NULL) {
-  vertex_inner <Op> *ptr = raw_create_vertex_inner <Op> (4, (vertex_inner <Op> *)from_ptr);
+template<Operation Op>
+vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, VertexPtr third,
+                                      VertexPtr forth, vertex_inner<meta_op_base> *from_ptr = NULL) {
+  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(4, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   (*ptr)[1] = second;
   (*ptr)[2] = third;
@@ -323,27 +344,27 @@ vertex_inner <Op> *create_vertex_inner (VertexPtr first, VertexPtr second, Verte
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *create_vertex_inner (const vector <VertexPtr> &next,
-    vertex_inner <meta_op_base> *from_ptr = NULL) {
-  vertex_inner <Op> *ptr = raw_create_vertex_inner <Op> (
-      (int)next.size(),
-      (vertex_inner <Op> *)from_ptr
+template<Operation Op>
+vertex_inner<Op> *create_vertex_inner(const vector<VertexPtr> &next,
+                                      vertex_inner<meta_op_base> *from_ptr = NULL) {
+  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(
+    (int)next.size(),
+    (vertex_inner<Op> *)from_ptr
   );
   for (int i = 0, ni = (int)next.size(); i < ni; i++) {
-    ptr->ith (i) = next[i];
+    ptr->ith(i) = next[i];
   }
   return ptr;
 }
 
-template <Operation Op>
-vertex_inner <Op> *clone_vertex_inner (const vertex_inner <Op> &from) {
-  vertex_inner <Op> *ptr = raw_clone_vertex_inner <Op> (from);
+template<Operation Op>
+vertex_inner<Op> *clone_vertex_inner(const vertex_inner<Op> &from) {
+  vertex_inner<Op> *ptr = raw_clone_vertex_inner<Op>(from);
   return ptr;
 }
 
-VertexPtr create_vertex (Operation op, VertexPtr first);
-VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
+VertexPtr create_vertex(Operation op, VertexPtr first);
+VertexPtr create_vertex(Operation op, VertexPtr first, VertexPtr second);
 
 #define CLONE_VERTEX(name, op, from)\
   VertexAdaptor <op> name = VertexPtr (clone_vertex_inner <op> (*from))
@@ -486,7 +507,8 @@ VertexPtr create_vertex (Operation op, VertexPtr first, VertexPtr second);
   RAW_COPY_END
 
 VA_BEGIN (meta_op_unary_, meta_op_base)
-  VertexPtr &expr() {return ith (0);}
+
+  VertexPtr &expr() { return ith(0); }
 VA_END
 
 VA_BEGIN (meta_op_unary_op, meta_op_unary_)
@@ -499,11 +521,14 @@ VA_BEGIN (meta_op_unary_op, meta_op_unary_)
 VA_END
 
 VA_BEGIN (meta_op_binary_, meta_op_base)
-  VertexPtr &lhs() {return ith (0);}
-  VertexPtr &rhs() {return ith (1);}
 
-  const VertexPtr &lhs() const {return ith (0);}
-  const VertexPtr &rhs() const {return ith (1);}
+  VertexPtr &lhs() { return ith(0); }
+
+  VertexPtr &rhs() { return ith(1); }
+
+  const VertexPtr &lhs() const { return ith(0); }
+
+  const VertexPtr &rhs() const { return ith(1); }
 VA_END
 
 VA_BEGIN (meta_op_binary_op, meta_op_binary_)
@@ -516,360 +541,361 @@ VA_BEGIN (meta_op_binary_op, meta_op_binary_)
 VA_END
 
 VA_BEGIN (meta_op_varg_, meta_op_base)
-  VertexRange args() {return VertexRange(begin(), end());}
+
+  VertexRange args() { return VertexRange(begin(), end()); }
 VA_END
 
 //VA_BEGIN (op_func_call, meta_op_base)
-  //void *func_;
-  //RAW_INIT_BEGIN
-    //func_ = NULL;
-  //RAW_INIT_END
-  //PROPERTIES_BEGIN
-    //OPP (main, statement_opp);
-  //PROPERTIES_END
-  //void* &func() {return func_;}
+//void *func_;
+//RAW_INIT_BEGIN
+//func_ = NULL;
+//RAW_INIT_END
+//PROPERTIES_BEGIN
+//OPP (main, statement_opp);
+//PROPERTIES_END
+//void* &func() {return func_;}
 //VA_END
 
 //VA_BEGIN (op_int_const, meta_op_base)
-  //string str_;
-  //RAW_INIT_BEGIN
-    //new (&str_) string();
-  //RAW_INIT_END
-  //PROPERTIES_BEGIN
-    //OPP (main, expression_opp);
-    //OPP (minor, term_opp);
-  //PROPERTIES_END
-  //string &value() {return str_;}
+//string str_;
+//RAW_INIT_BEGIN
+//new (&str_) string();
+//RAW_INIT_END
+//PROPERTIES_BEGIN
+//OPP (main, expression_opp);
+//OPP (minor, term_opp);
+//PROPERTIES_END
+//string &value() {return str_;}
 //VA_END
 
 //VA_BINARY_BEGIN (op_add)
-  //OPP (math, arithmetic_opp);
-  //OPP (fixity, left_opp);
-  //OPP (str, "+");
-  //OPP (rl, rl_op);
-  //OPP (cnst, cnst_const_func);
+//OPP (math, arithmetic_opp);
+//OPP (fixity, left_opp);
+//OPP (str, "+");
+//OPP (rl, rl_op);
+//OPP (cnst, cnst_const_func);
 //VA_BINARY_END
 
 
 VA_BINARY_BEGIN (op_set_shl)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "<<=");
-  OPP (base_op, op_shl);
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_set_shl");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "<<=");
+    OPP (base_op, op_shl);
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_set_shl");
+    }
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_add)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "+=");
-  OPP (base_op, op_add);
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_set_add");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "+=");
+    OPP (base_op, op_add);
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_set_add");
+    }
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_sub)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "-=");
-  OPP (base_op, op_sub);
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_set_sub");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "-=");
+    OPP (base_op, op_sub);
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_set_sub");
+    }
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_mul)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "*=");
-  OPP (base_op, op_mul);
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_set_mul");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "*=");
+    OPP (base_op, op_mul);
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_set_mul");
+    }
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_shl)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<<");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_shl");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<<");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_shl");
+    }
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_add)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "+");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_add");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "+");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_add");
+    }
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_sub)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "-");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_sub");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "-");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_sub");
+    }
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_mul)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "*");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, binary_func_op);
-    OPP (str, "safe_mul");
-  }
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "*");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, binary_func_op);
+      OPP (str, "safe_mul");
+    }
 VA_BINARY_END
 
 
 VA_UNARY_BEGIN (op_conv_int)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$intval");
-  if (use_safe_integer_arithmetic) {
-    OPP (str, "f$safe_intval");
-  }
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$intval");
+    if (use_safe_integer_arithmetic) {
+      OPP (str, "f$safe_intval");
+    }
 VA_UNARY_END
 
 
 VA_BINARY_BEGIN (op_set_div)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "divide_self");
-  OPP (base_op, op_div);
+    OPP (type, binary_func_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "divide_self");
+    OPP (base_op, op_div);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_mod)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "modulo_self");
-  OPP (base_op, op_mod);
+    OPP (type, binary_func_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "modulo_self");
+    OPP (base_op, op_mod);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_div)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "divide");
+    OPP (type, binary_func_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "divide");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_mod)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "modulo");
+    OPP (type, binary_func_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "modulo");
 VA_BINARY_END
 
 
 VA_BEGIN_1 (op_set, meta_op_binary_op, phpdoc_token)
-PROPERTIES_BEGIN
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "=");
-  OPP (fixity, right_opp); //redefined
-PROPERTIES_END
+  PROPERTIES_BEGIN
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "=");
+    OPP (fixity, right_opp); //redefined
+  PROPERTIES_END
 VA_END
 
 VA_BINARY_BEGIN (op_set_and)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "&=");
-  OPP (base_op, op_and);
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "&=");
+    OPP (base_op, op_and);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_or)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "|=");
-  OPP (base_op, op_or);
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "|=");
+    OPP (base_op, op_or);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_xor)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "^=");
-  OPP (base_op, op_xor);
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "^=");
+    OPP (base_op, op_xor);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_shr)
-  OPP (type, binary_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, ">>=");
-  OPP (base_op, op_shr);
+    OPP (type, binary_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, ">>=");
+    OPP (base_op, op_shr);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_set_dot)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_set);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "append");
-  OPP (base_op, op_concat);
+    OPP (type, binary_func_op);
+    OPP (rl, rl_set);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "append");
+    OPP (base_op, op_concat);
 
-  OPP (fixity, right_opp); //redefined
+    OPP (fixity, right_opp); //redefined
 VA_BINARY_END
 
 
 VA_BINARY_BEGIN (op_log_or_let)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "||");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "||");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_log_and_let)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "&&");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "&&");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_log_xor_let)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "^");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "^");
 VA_BINARY_END
 
 
 VA_BINARY_BEGIN (op_log_or)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "||");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "||");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_log_and)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "&&");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "&&");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_or)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "|");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "|");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_xor)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "^");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "^");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_and)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "&");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "&");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_eq2)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "eq2");
+    OPP (type, binary_func_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "eq2");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_neq2)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "neq2");
+    OPP (type, binary_func_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "neq2");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_lt)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_gt)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, ">");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, ">");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_le)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<=");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<=");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_ge)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, ">=");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, ">=");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_shr)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, ">>");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, ">>");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_arrow)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "@op_arrow");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "@op_arrow");
 VA_BINARY_END
 
 VA_BEGIN (op_double_arrow, meta_op_binary_op)
@@ -880,32 +906,34 @@ VA_BEGIN (op_double_arrow, meta_op_binary_op)
     OPP (str, "@op_double_arrow");
     OPP (fixity, right_opp); //redefined
   PROPERTIES_END
-  VertexPtr &key() {return lhs();}
 
-  VertexPtr &value() {return rhs();}
-  const VertexPtr &value() const {return rhs();}
+  VertexPtr &key() { return lhs(); }
+
+  VertexPtr &value() { return rhs(); }
+
+  const VertexPtr &value() const { return rhs(); }
 
 VA_END
 
 VA_BINARY_BEGIN (op_eq3)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "equals");
+    OPP (type, binary_func_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "equals");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_neq3)
-  OPP (type, binary_func_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "not_equals");
+    OPP (type, binary_func_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "not_equals");
 VA_BINARY_END
 
 VA_BINARY_BEGIN (op_concat)
-  OPP (type, binary_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<TODO: op_concat>");
+    OPP (type, binary_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<TODO: op_concat>");
 VA_BINARY_END
 
 VA_BEGIN (op_ternary, meta_op_base)
@@ -919,179 +947,182 @@ VA_BEGIN (op_ternary, meta_op_base)
 
     OPP (fixity, right_opp); //redefined
   PROPERTIES_END
-  VertexPtr &cond() {return ith (0);}
-  VertexPtr &true_expr() {return ith (1);}
-  VertexPtr &false_expr() {return ith (2);}
+
+  VertexPtr &cond() { return ith(0); }
+
+  VertexPtr &true_expr() { return ith(1); }
+
+  VertexPtr &false_expr() { return ith(2); }
 VA_END
 
 VA_UNARY_BEGIN (op_not)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "~");
+    OPP (type, prefix_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "~");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_log_not)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "!");
+    OPP (type, prefix_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "!");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_minus)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, " - ");
+    OPP (type, prefix_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, " - ");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_plus)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, " + ");
+    OPP (type, prefix_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, " + ");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_noerr)
-  OPP (type, common_op);
-  OPP (rl, rl_other);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "NOERR");
+    OPP (type, common_op);
+    OPP (rl, rl_other);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "NOERR");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_prefix_inc)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op_l);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "++");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, conv_op);
-    OPP (str, "safe_incr_pre");
-  }
+    OPP (type, prefix_op);
+    OPP (rl, rl_op_l);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "++");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, conv_op);
+      OPP (str, "safe_incr_pre");
+    }
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_prefix_dec)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op_l);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "--");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, conv_op);
-    OPP (str, "safe_decr_pre");
-  }
+    OPP (type, prefix_op);
+    OPP (rl, rl_op_l);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "--");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, conv_op);
+      OPP (str, "safe_decr_pre");
+    }
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_addr)
-  OPP (type, prefix_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<TODO: op_addr>");
+    OPP (type, prefix_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<TODO: op_addr>");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_float)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$floatval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$floatval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_string)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$strval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$strval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_array)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$arrayval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$arrayval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_array_l)
-  OPP (type, common_op);
-  OPP (rl, rl_other);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<TODO: op_conv_array_l>");
+    OPP (type, common_op);
+    OPP (rl, rl_other);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<TODO: op_conv_array_l>");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_int_l)
-  OPP (type, common_op);
-  OPP (rl, rl_other);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<TODO: op_conv_int_l>");
+    OPP (type, common_op);
+    OPP (rl, rl_other);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<TODO: op_conv_int_l>");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_object)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "<TODO: op_conv_object>");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "<TODO: op_conv_object>");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_bool)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$boolval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$boolval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_var)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "var");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "var");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_uint)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$uintval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$uintval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_long)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$longval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$longval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_ulong)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "f$ulongval");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "f$ulongval");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_conv_regexp)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_const_func);
-  OPP (str, "regexp");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_const_func);
+    OPP (str, "regexp");
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_postfix_inc)
-  OPP (type, postfix_op);
-  OPP (rl, rl_op_l);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "++");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, conv_op);
-    OPP (str, "safe_incr_post");
-  }
+    OPP (type, postfix_op);
+    OPP (rl, rl_op_l);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "++");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, conv_op);
+      OPP (str, "safe_incr_post");
+    }
 VA_UNARY_END
 
 VA_UNARY_BEGIN (op_postfix_dec)
-  OPP (type, postfix_op);
-  OPP (rl, rl_op_l);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "--");
-  if (use_safe_integer_arithmetic) {
-    OPP (type, conv_op);
-    OPP (str, "safe_decr_post");
-  }
+    OPP (type, postfix_op);
+    OPP (rl, rl_op_l);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "--");
+    if (use_safe_integer_arithmetic) {
+      OPP (type, conv_op);
+      OPP (str, "safe_decr_post");
+    }
 VA_UNARY_END
 
 
@@ -1102,35 +1133,42 @@ VA_BEGIN_1 (meta_op_num, meta_op_base, string)
     OPP (cnst, cnst_const_func);
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_int_const, meta_op_num)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_int>");
   PROPERTIES_END
+
   long parse_int_from_string() {    // op_int_const string representation can be "123", "0x123", "0002", "-123"
     char *end;                      // but it is guaranteed to be a valid int
     return std::strtol(get_string().c_str(), &end, 0);
   }
 VA_END
+
 VA_BEGIN (op_uint_const, meta_op_num)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_uint>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_long_const, meta_op_num)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_long>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_ulong_const, meta_op_num)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_ulong>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_float_const, meta_op_num)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_float>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_1 (op_string, meta_op_base, string)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1139,6 +1177,7 @@ VA_BEGIN_1 (op_string, meta_op_base, string)
     OPP (str, "<TODO: op_string>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_1 (op_func_name, meta_op_base, string)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1147,6 +1186,7 @@ VA_BEGIN_1 (op_func_name, meta_op_base, string)
     OPP (str, "<TODO: op_func_name>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_string_build, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1155,6 +1195,7 @@ VA_BEGIN (op_string_build, meta_op_varg_)
     OPP (str, "<TODO: op_string_build>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_false, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1163,6 +1204,7 @@ VA_BEGIN (op_false, meta_op_base)
     OPP (str, "false");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_true, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1171,6 +1213,7 @@ VA_BEGIN (op_true, meta_op_base)
     OPP (str, "true");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_null, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1179,6 +1222,7 @@ VA_BEGIN (op_null, meta_op_base)
     OPP (str, "null");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_2 (op_var, meta_op_base, variable, string)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1187,6 +1231,7 @@ VA_BEGIN_2 (op_var, meta_op_base, variable, string)
     OPP (str, "<TODO: op_var>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_index, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1194,9 +1239,12 @@ VA_BEGIN (op_index, meta_op_base)
     OPP (cnst, cnst_const_func);
     OPP (str, "<TODO: op_index>");
   PROPERTIES_END
-  VertexPtr &array() {return ith (0);}
-  bool has_key() {return check_range (1);}
-  VertexPtr &key() {return ith (1);}
+
+  VertexPtr &array() { return ith(0); }
+
+  bool has_key() { return check_range(1); }
+
+  VertexPtr &key() { return ith(1); }
 VA_END
 
 VA_BEGIN (meta_op_push_back, meta_op_base)
@@ -1205,16 +1253,20 @@ VA_BEGIN (meta_op_push_back, meta_op_base)
     OPP (rl, rl_error);
     OPP (cnst, cnst_error);
   PROPERTIES_END
-  VertexPtr &array() {return ith (0);}
 
-  VertexPtr &value() {return ith (1);}
-  const VertexPtr &value() const {return ith(1);}
+  VertexPtr &array() { return ith(0); }
+
+  VertexPtr &value() { return ith(1); }
+
+  const VertexPtr &value() const { return ith(1); }
 VA_END
+
 VA_BEGIN (op_push_back_return, meta_op_push_back)
   PROPERTIES_BEGIN
     OPP (str, "push_back_return");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_push_back, meta_op_push_back)
   PROPERTIES_BEGIN
     OPP (str, "push_back");
@@ -1228,11 +1280,14 @@ VA_BEGIN (op_set_value, meta_op_base)
     OPP (cnst, cnst_error);
     OPP (str, "set_value");
   PROPERTIES_END
-  VertexPtr &array() {return ith (0);}
-  VertexPtr &key() {return ith (1);}
 
-  VertexPtr &value() {return ith (2);}
-  const VertexPtr &value() const {return ith(2);}
+  VertexPtr &array() { return ith(0); }
+
+  VertexPtr &key() { return ith(1); }
+
+  VertexPtr &value() { return ith(2); }
+
+  const VertexPtr &value() const { return ith(2); }
 VA_END
 
 VA_BEGIN_2 (op_func_call, meta_op_varg_, function, string)
@@ -1243,6 +1298,7 @@ VA_BEGIN_2 (op_func_call, meta_op_varg_, function, string)
     OPP (str, "<TODO: op_func_call>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_2 (op_func_ptr, meta_op_base, function, string)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1251,8 +1307,10 @@ VA_BEGIN_2 (op_func_ptr, meta_op_base, function, string)
     OPP (str, "<TODO: op_func_ptr>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_constructor_call, op_func_call)
 VA_END
+
 VA_BEGIN_2 (op_instance_prop, meta_op_unary_, string, variable)
   // var_ - см. register_class(); у var внутри существует class_id
   // str_val - название свойства
@@ -1263,6 +1321,7 @@ VA_BEGIN_2 (op_instance_prop, meta_op_unary_, string, variable)
     OPP (str, "op_instance_prop");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_3 (op_class_var, meta_op_base, string, def_val, phpdoc_token)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1271,6 +1330,7 @@ VA_BEGIN_3 (op_class_var, meta_op_base, string, def_val, phpdoc_token)
     OPP (str, "op_class_var");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_1 (op_define_val, meta_op_base, define)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1279,14 +1339,19 @@ VA_BEGIN_1 (op_define_val, meta_op_base, define)
     OPP (str, "<TODO: op_define_val>");
   PROPERTIES_END
 VA_END
-VA_BEGIN (meta_op_define, meta_op_base)
-  VertexPtr &name() {return ith(0);}
 
-  VertexPtr &value() {return ith(1);}
-  const VertexPtr &value() const {return ith(1);}
+VA_BEGIN (meta_op_define, meta_op_base)
+
+  VertexPtr &name() { return ith(0); }
+
+  VertexPtr &value() { return ith(1); }
+
+  const VertexPtr &value() const { return ith(1); }
 VA_END
+
 VA_BEGIN (op_define, meta_op_define)
 VA_END
+
 VA_BEGIN (op_define_raw, meta_op_define)
 VA_END
 
@@ -1297,47 +1362,69 @@ VA_BEGIN_1 (meta_op_cycle, meta_op_base, labels)
     OPP (cnst, cnst_not_func);
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_while, meta_op_cycle)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: while>");
   PROPERTIES_END
-  VertexPtr &cond() {return ith (0);}
-  VertexPtr &cmd() {return ith (1);}
+
+  VertexPtr &cond() { return ith(0); }
+
+  VertexPtr &cmd() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_do, meta_op_cycle)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: do>");
   PROPERTIES_END
-  VertexPtr &cond() {return ith (0);}
-  VertexPtr &cmd() {return ith (1);}
+
+  VertexPtr &cond() { return ith(0); }
+
+  VertexPtr &cmd() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_for, meta_op_cycle)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: for>");
   PROPERTIES_END
-  VertexPtr &pre_cond() {return ith (0);}
-  VertexPtr &cond() {return ith (1);}
-  VertexPtr &post_cond() {return ith (2);}
-  VertexPtr &cmd() {return ith (3);}
+
+  VertexPtr &pre_cond() { return ith(0); }
+
+  VertexPtr &cond() { return ith(1); }
+
+  VertexPtr &post_cond() { return ith(2); }
+
+  VertexPtr &cmd() { return ith(3); }
 VA_END
+
 VA_BEGIN (op_foreach, meta_op_cycle)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: foreach>");
   PROPERTIES_END
-  VertexPtr &params() {return ith (0);}
-  VertexPtr &cmd() {return ith (1);}
+
+  VertexPtr &params() { return ith(0); }
+
+  VertexPtr &cmd() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_switch, meta_op_cycle)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: switch>");
   PROPERTIES_END
-  VertexPtr &expr() {return ith (0);}
-  VertexPtr &switch_var() {return ith(1);}
-  VertexPtr &switch_flag() {return ith(2);}
-  VertexPtr &ss() {return ith(3);}
-  VertexPtr &ss_hash() {return ith(4);}
-  VertexRange cases() {return VertexRange (begin() + 5, end());}
-  VertexRange variables() {return VertexRange (begin() + 1, begin() + 5);}
+
+  VertexPtr &expr() { return ith(0); }
+
+  VertexPtr &switch_var() { return ith(1); }
+
+  VertexPtr &switch_flag() { return ith(2); }
+
+  VertexPtr &ss() { return ith(3); }
+
+  VertexPtr &ss_hash() { return ith(4); }
+
+  VertexRange cases() { return VertexRange(begin() + 5, end()); }
+
+  VertexRange variables() { return VertexRange(begin() + 1, begin() + 5); }
 VA_END
 
 VA_BEGIN (meta_op_require, meta_op_varg_)
@@ -1346,12 +1433,14 @@ VA_BEGIN (meta_op_require, meta_op_varg_)
     OPP (cnst, cnst_not_func);
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_require, meta_op_require)
   PROPERTIES_BEGIN
     OPP (rl, rl_func);
     OPP (str, "<TODO: require>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_require_once, meta_op_require)
   PROPERTIES_BEGIN
     OPP (rl, rl_common);
@@ -1366,11 +1455,16 @@ VA_BEGIN (op_if, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: if>");
   PROPERTIES_END
-  VertexPtr &cond() {return ith (0);}
-  VertexPtr &true_cmd() {return ith (1);}
-  bool has_false_cmd() {return check_range (2);}
-  VertexPtr &false_cmd() {return ith (2);}
+
+  VertexPtr &cond() { return ith(0); }
+
+  VertexPtr &true_cmd() { return ith(1); }
+
+  bool has_false_cmd() { return check_range(2); }
+
+  VertexPtr &false_cmd() { return ith(2); }
 VA_END
+
 VA_BEGIN (op_else, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1379,6 +1473,7 @@ VA_BEGIN (op_else, meta_op_base)
     OPP (str, "<TODO: else>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_elseif, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1387,6 +1482,7 @@ VA_BEGIN (op_elseif, meta_op_base)
     OPP (str, "<TODO: elseif>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_return, meta_op_unary_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1395,6 +1491,7 @@ VA_BEGIN (op_return, meta_op_unary_)
     OPP (str, "<TODO: return>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_try, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1402,10 +1499,14 @@ VA_BEGIN (op_try, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: try>");
   PROPERTIES_END
-  VertexPtr &try_cmd() {return ith (0);}
-  VertexPtr &exception() {return ith (1);}
-  VertexPtr &catch_cmd() {return ith (2);}
+
+  VertexPtr &try_cmd() { return ith(0); }
+
+  VertexPtr &exception() { return ith(1); }
+
+  VertexPtr &catch_cmd() { return ith(2); }
 VA_END
+
 VA_BEGIN (op_fork, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1413,8 +1514,10 @@ VA_BEGIN (op_fork, meta_op_base)
     OPP (cnst, cnst_nonconst_func);
     OPP (str, "<TODO: fork>");
   PROPERTIES_END
-  VertexPtr &func_call() {return ith (0);}
+
+  VertexPtr &func_call() { return ith(0); }
 VA_END
+
 VA_BEGIN (op_async, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1422,9 +1525,12 @@ VA_BEGIN (op_async, meta_op_base)
     //OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: async>");
   PROPERTIES_END
-  VertexPtr &lhs() {return ith(0);}
-  VertexPtr &func_call() {return ith (1);}
+
+  VertexPtr &lhs() { return ith(0); }
+
+  VertexPtr &func_call() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_array, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1433,6 +1539,7 @@ VA_BEGIN (op_array, meta_op_varg_)
     OPP (str, "<TODO: array>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_tuple, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1441,6 +1548,7 @@ VA_BEGIN (op_tuple, meta_op_varg_)
     OPP (str, "tuple<>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_1 (op_list, meta_op_base, phpdoc_token)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1450,12 +1558,14 @@ VA_BEGIN_1 (op_list, meta_op_base, phpdoc_token)
   PROPERTIES_END
 
   VertexPtr &array() {
-    return ith (size() - 1);
+    return ith(size() - 1);
   }
+
   VertexRange list() {
-    return VertexRange (begin(), end() - 1);
+    return VertexRange(begin(), end() - 1);
   }
 VA_END
+
 VA_BEGIN (op_global, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1464,6 +1574,7 @@ VA_BEGIN (op_global, meta_op_varg_)
     OPP (str, "<TODO: global>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_static, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1472,8 +1583,10 @@ VA_BEGIN (op_static, meta_op_varg_)
     OPP (str, "<TODO: static>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_1 (meta_op_goto, meta_op_unary_, int)
 VA_END
+
 VA_BEGIN (op_break, meta_op_goto)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1482,6 +1595,7 @@ VA_BEGIN (op_break, meta_op_goto)
     OPP (str, "<TODO: break>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_continue, meta_op_goto)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1490,6 +1604,7 @@ VA_BEGIN (op_continue, meta_op_goto)
     OPP (str, "<TODO: continue>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_echo, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1498,6 +1613,7 @@ VA_BEGIN (op_echo, meta_op_base)
     OPP (str, "<TODO: echo>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_dbg_echo, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1506,6 +1622,7 @@ VA_BEGIN (op_dbg_echo, meta_op_base)
     OPP (str, "<TODO: dbg_echo>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_throw, meta_op_unary_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1514,6 +1631,7 @@ VA_BEGIN (op_throw, meta_op_unary_)
     OPP (str, "<TODO: throw>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_var_dump, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1522,6 +1640,7 @@ VA_BEGIN (op_var_dump, meta_op_base)
     OPP (str, "<TODO: var_dump>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_print, meta_op_unary_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1530,45 +1649,63 @@ VA_BEGIN (op_print, meta_op_unary_)
     OPP (str, "<TODO: print>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN_2 (meta_op_function, meta_op_base, function, string)
   PROPERTIES_BEGIN
     OPP (type, common_op);
     OPP (rl, rl_common);
     OPP (cnst, cnst_not_func);
   PROPERTIES_END
-  VertexPtr &name() {return ith (0);}
-  const VertexPtr &name() const {return ith (0);}
-  VertexPtr &params() {return ith (1);}
+
+  VertexPtr &name() { return ith(0); }
+
+  const VertexPtr &name() const { return ith(0); }
+
+  VertexPtr &params() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_function, meta_op_function)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: function>");
   PROPERTIES_END
+
   //virtual has_cmd() {return true;}
-  VertexPtr &cmd() {return ith (2);}
+  VertexPtr &cmd() { return ith(2); }
 VA_END
+
 VA_BEGIN (op_extern_func, meta_op_function)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_extern_func>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_func_decl, meta_op_function)
   PROPERTIES_BEGIN
     OPP (str, "<TODO: op_extern_func>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_func_param_list, meta_op_varg_)
-  VertexRange params() {return args();}
-  VertexPtr &ith_param (int i) {return ith (i);}
+
+  VertexRange params() { return args(); }
+
+  VertexPtr &ith_param(int i) { return ith(i); }
 VA_END
+
 VA_BEGIN (meta_op_func_param, meta_op_base)
-  VertexPtr &var() {return ith (0);}
-  const VertexPtr &var() const {return ith (0);}
-  bool has_default() {return size() > 1;}
-  VertexPtr &default_value() {return ith (1);}
+
+  VertexPtr &var() { return ith(0); }
+
+  const VertexPtr &var() const { return ith(0); }
+
+  bool has_default() { return size() > 1; }
+
+  VertexPtr &default_value() { return ith(1); }
 VA_END
+
 VA_BEGIN_1 (op_func_param_callback, meta_op_func_param, int)
 VA_END
+
 VA_BEGIN (op_func_param, meta_op_func_param)
   std::string type_declaration;
   int template_type_id = -1;
@@ -1586,9 +1723,12 @@ VA_BEGIN (op_class, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: class>");
   PROPERTIES_END
-  VertexPtr &name() {return ith (0);}
-  VertexPtr &parent() {return ith (1);}
+
+  VertexPtr &name() { return ith(0); }
+
+  VertexPtr &parent() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_seq, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1597,6 +1737,7 @@ VA_BEGIN (op_seq, meta_op_varg_)
     OPP (str, "<TODO: seq>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_seq_comma, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1605,6 +1746,7 @@ VA_BEGIN (op_seq_comma, meta_op_varg_)
     OPP (str, "<TODO: seq_comma>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_seq_rval, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1613,6 +1755,7 @@ VA_BEGIN (op_seq_rval, meta_op_varg_)
     OPP (str, "<TODO: seq_inplace_var>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_case, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1620,9 +1763,12 @@ VA_BEGIN (op_case, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: case>");
   PROPERTIES_END
-  VertexPtr &expr() {return ith (0);}
-  VertexPtr &cmd() {return ith (1);}
+
+  VertexPtr &expr() { return ith(0); }
+
+  VertexPtr &cmd() { return ith(1); }
 VA_END
+
 VA_BEGIN (op_default, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1630,7 +1776,8 @@ VA_BEGIN (op_default, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: op_default>");
   PROPERTIES_END
-  VertexPtr &cmd() {return ith (0);}
+
+  VertexPtr &cmd() { return ith(0); }
 VA_END
 
 VA_BEGIN (op_defined, meta_op_unary_)
@@ -1670,6 +1817,7 @@ VA_BEGIN (op_empty, meta_op_base)
     OPP (str, "<TODO: empty>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_foreach_param, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1677,42 +1825,53 @@ VA_BEGIN (op_foreach_param, meta_op_base)
     OPP (cnst, cnst_not_func);
     OPP (str, "<TODO: op_foreach_param>");
   PROPERTIES_END
-  VertexPtr &xs() {return ith (0);}
-  VertexPtr &x() {return ith (1);}
-  VertexPtr &temp_var() {return ith(2);}
-  bool has_key() {return check_range (3);}
-  VertexPtr &key() {return ith (3);}
+
+  VertexPtr &xs() { return ith(0); }
+
+  VertexPtr &x() { return ith(1); }
+
+  VertexPtr &temp_var() { return ith(2); }
+
+  bool has_key() { return check_range(3); }
+
+  VertexPtr &key() { return ith(3); }
 VA_END
+
 VA_UNARY_BEGIN (op_exit)
-  OPP (type, conv_op);
-  OPP (rl, rl_op);
-  OPP (cnst, cnst_nonconst_func);
-  OPP (str, "f$exit");
+    OPP (type, conv_op);
+    OPP (rl, rl_op);
+    OPP (cnst, cnst_nonconst_func);
+    OPP (str, "f$exit");
 VA_UNARY_END
+
 VA_UNARY_BEGIN (op_move)
     OPP (type, conv_op);
     OPP (rl, rl_op);
     OPP (cnst, cnst_nonconst_func);
     OPP (str, "std::move");
 VA_UNARY_END
+
 VA_BEGIN (meta_op_xset, meta_op_varg_)
   PROPERTIES_BEGIN
     OPP (type, common_op);
     OPP (cnst, cnst_nonconst_func);
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_isset, meta_op_xset)
   PROPERTIES_BEGIN
     OPP (rl, rl_op);
     OPP (str, "<TODO: isset>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_unset, meta_op_xset)
   PROPERTIES_BEGIN
     OPP (rl, rl_common);
     OPP (str, "<TODO: unset>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_lvalue_null, meta_op_base)
   PROPERTIES_BEGIN
     OPP (type, common_op);
@@ -1721,33 +1880,43 @@ VA_BEGIN (op_lvalue_null, meta_op_base)
     OPP (str, "<TODO: op_lvalue_null>");
   PROPERTIES_END
 VA_END
+
 VA_BEGIN (op_varg, meta_op_unary_)
 VA_END
 
 VA_BEGIN (meta_op_type_rule, meta_op_unary_)
 VA_END
+
 VA_BEGIN (op_common_type_rule, meta_op_type_rule)
 VA_END
+
 VA_BEGIN (op_class_type_rule, meta_op_type_rule)
   ClassPtr class_ptr;
+
   RAW_COPY_BEGIN
-  class_ptr = from.class_ptr;
+    class_ptr = from.class_ptr;
   RAW_COPY_END
 VA_END
+
 VA_BEGIN (op_lt_type_rule, meta_op_type_rule)
 VA_END
+
 VA_BEGIN (op_gt_type_rule, meta_op_type_rule)
 VA_END
+
 VA_BEGIN (op_eq_type_rule, meta_op_type_rule)
 VA_END
+
 VA_BEGIN (op_type_rule, meta_op_varg_)
 VA_END
+
 VA_BEGIN_1 (op_type_rule_func, meta_op_varg_, string)
 VA_END
+
 VA_BEGIN_1 (op_arg_ref, meta_op_base, int)
 VA_END
 
 
-inline VertexRange get_function_params (VertexAdaptor <meta_op_function> func) {
-  return func->params().as <op_func_param_list>()->params();
+inline VertexRange get_function_params(VertexAdaptor<meta_op_function> func) {
+  return func->params().as<op_func_param_list>()->params();
 }

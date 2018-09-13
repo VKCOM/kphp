@@ -3,17 +3,17 @@
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 
-static int mb_detect_encoding (const string &encoding) {
-  if (strstr (encoding.c_str(), "1251")) {
+static int mb_detect_encoding(const string &encoding) {
+  if (strstr(encoding.c_str(), "1251")) {
     return 1251;
   }
-  if (strstr (encoding.c_str(), "-8")) {
+  if (strstr(encoding.c_str(), "-8")) {
     return 8;
   }
   return -1;
 }
 
-static int mb_UTF8_strlen (const char *s) {
+static int mb_UTF8_strlen(const char *s) {
   int res = 0;
   for (int i = 0; s[i]; i++) {
     if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
@@ -23,7 +23,7 @@ static int mb_UTF8_strlen (const char *s) {
   return res;
 }
 
-static int mb_UTF8_advance (const char *s, int cnt) {
+static int mb_UTF8_advance(const char *s, int cnt) {
   php_assert (cnt >= 0);
   int i;
   for (i = 0; s[i] && cnt >= 0; i++) {
@@ -37,7 +37,7 @@ static int mb_UTF8_advance (const char *s, int cnt) {
   return i;
 }
 
-static int mb_UTF8_get_offset (const char *s, int pos) {
+static int mb_UTF8_get_offset(const char *s, int pos) {
   int res = 0;
   for (int i = 0; i < pos && s[i]; i++) {
     if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
@@ -47,7 +47,7 @@ static int mb_UTF8_get_offset (const char *s, int pos) {
   return res;
 }
 
-bool mb_UTF8_check (const char *s) {
+bool mb_UTF8_check(const char *s) {
   do {
 #define CHECK(condition) if (!(condition)) {return false;}
     unsigned int a = (unsigned char)(*s++);
@@ -88,10 +88,10 @@ bool mb_UTF8_check (const char *s) {
   } while (1);
 
   php_assert (0);
-} 
+}
 
-bool f$mb_check_encoding (const string &str, const string &encoding) {
-  int encoding_num = mb_detect_encoding (encoding);
+bool f$mb_check_encoding(const string &str, const string &encoding) {
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_check_encoding", encoding.c_str());
     return str.size();
@@ -101,12 +101,12 @@ bool f$mb_check_encoding (const string &str, const string &encoding) {
     return true;
   }
 
-  return mb_UTF8_check (str.c_str());
+  return mb_UTF8_check(str.c_str());
 }
 
 
-int f$mb_strlen (const string &str, const string &encoding) {
-  int encoding_num = mb_detect_encoding (encoding);
+int f$mb_strlen(const string &str, const string &encoding) {
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_strlen", encoding.c_str());
     return str.size();
@@ -116,12 +116,12 @@ int f$mb_strlen (const string &str, const string &encoding) {
     return str.size();
   }
 
-  return mb_UTF8_strlen (str.c_str());
+  return mb_UTF8_strlen(str.c_str());
 }
 
 
-string f$mb_strtolower (const string &str, const string &encoding) {
-  int encoding_num = mb_detect_encoding (encoding);
+string f$mb_strtolower(const string &str, const string &encoding) {
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_strtolower", encoding.c_str());
     return str;
@@ -129,7 +129,7 @@ string f$mb_strtolower (const string &str, const string &encoding) {
 
   int len = str.size();
   if (encoding_num == 1251) {
-    string res (len, false);
+    string res(len, false);
     for (int i = 0; i < len; i++) {
       switch ((unsigned char)str[i]) {
         case 'A' ... 'Z':
@@ -167,26 +167,26 @@ string f$mb_strtolower (const string &str, const string &encoding) {
 
     return res;
   } else {
-    string res (len * 3, false);
+    string res(len * 3, false);
     const char *s = str.c_str();
     int res_len = 0;
     int p;
     int ch;
-    while ((p = get_char_utf8 (&ch, s)) > 0) {
+    while ((p = get_char_utf8(&ch, s)) > 0) {
       s += p;
-      res_len += put_char_utf8 (unicode_tolower (ch), &res[res_len]);
+      res_len += put_char_utf8(unicode_tolower(ch), &res[res_len]);
     }
     if (p < 0) {
-      php_warning ("Incorrect UTF-8 string \"%s\" in function mb_strtolower", str.c_str());
+      php_warning("Incorrect UTF-8 string \"%s\" in function mb_strtolower", str.c_str());
     }
-    res.shrink (res_len);
+    res.shrink(res_len);
 
     return res;
   }
 }
 
-string f$mb_strtoupper (const string &str, const string &encoding) {
-  int encoding_num = mb_detect_encoding (encoding);
+string f$mb_strtoupper(const string &str, const string &encoding) {
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_strtoupper", encoding.c_str());
     return str;
@@ -194,7 +194,7 @@ string f$mb_strtoupper (const string &str, const string &encoding) {
 
   int len = str.size();
   if (encoding_num == 1251) {
-    string res (len, false);
+    string res(len, false);
     for (int i = 0; i < len; i++) {
       switch ((unsigned char)str[i]) {
         case 'a' ... 'z':
@@ -237,64 +237,64 @@ string f$mb_strtoupper (const string &str, const string &encoding) {
 
     return res;
   } else {
-    string res (len * 3, false);
+    string res(len * 3, false);
     const char *s = str.c_str();
     int res_len = 0;
     int p;
     int ch;
-    while ((p = get_char_utf8 (&ch, s)) > 0) {
+    while ((p = get_char_utf8(&ch, s)) > 0) {
       s += p;
-      res_len += put_char_utf8 (unicode_toupper (ch), &res[res_len]);
+      res_len += put_char_utf8(unicode_toupper(ch), &res[res_len]);
     }
     if (p < 0) {
-      php_warning ("Incorrect UTF-8 string \"%s\" in function mb_strtoupper", str.c_str());
+      php_warning("Incorrect UTF-8 string \"%s\" in function mb_strtoupper", str.c_str());
     }
-    res.shrink (res_len);
+    res.shrink(res_len);
 
     return res;
   }
 }
 
-OrFalse <int> f$mb_strpos (const string &haystack, const string &needle, int offset, const string &encoding) {
+OrFalse<int> f$mb_strpos(const string &haystack, const string &needle, int offset, const string &encoding) {
   if (offset < 0) {
-    php_warning ("Wrong offset = %d in function mb_strpos", offset);
+    php_warning("Wrong offset = %d in function mb_strpos", offset);
     return false;
   }
   if ((int)needle.size() == 0) {
-    php_warning ("Parameter needle is empty in function mb_strpos");
+    php_warning("Parameter needle is empty in function mb_strpos");
     return false;
   }
 
-  int encoding_num = mb_detect_encoding (encoding);
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_strpos", encoding.c_str());
     return false;
   }
 
   if (encoding_num == 1251) {
-    return f$strpos (haystack, needle, offset);
+    return f$strpos(haystack, needle, offset);
   }
 
-  int UTF8_offset = mb_UTF8_advance (haystack.c_str(), offset);
-  const char *s = (const char *)memmem (haystack.c_str() + UTF8_offset, haystack.size() - UTF8_offset, needle.c_str(), needle.size());
+  int UTF8_offset = mb_UTF8_advance(haystack.c_str(), offset);
+  const char *s = (const char *)memmem(haystack.c_str() + UTF8_offset, haystack.size() - UTF8_offset, needle.c_str(), needle.size());
   if (s == NULL) {
     return false;
   }
-  return mb_UTF8_get_offset (haystack.c_str() + UTF8_offset, (dl::size_type)(s - (haystack.c_str() + UTF8_offset))) + offset;
+  return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, (dl::size_type)(s - (haystack.c_str() + UTF8_offset))) + offset;
 }
 
-OrFalse <int> f$mb_stripos (const string &haystack, const string &needle, int offset, const string &encoding) {
-  int encoding_num = mb_detect_encoding (encoding);
+OrFalse<int> f$mb_stripos(const string &haystack, const string &needle, int offset, const string &encoding) {
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_stripos", encoding.c_str());
     return false;
   }
 
-  return f$mb_strpos (f$mb_strtolower (haystack, encoding), f$mb_strtolower (needle, encoding), offset, encoding);
+  return f$mb_strpos(f$mb_strtolower(haystack, encoding), f$mb_strtolower(needle, encoding), offset, encoding);
 }
 
-string f$mb_substr (const string &str, int start, const var &length_var, const string &encoding) {
-  int encoding_num = mb_detect_encoding (encoding);
+string f$mb_substr(const string &str, int start, const var &length_var, const string &encoding) {
+  int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_substr", encoding.c_str());
     return str;
@@ -308,12 +308,14 @@ string f$mb_substr (const string &str, int start, const var &length_var, const s
   }
 
   if (encoding_num == 1251) {
-    OrFalse<string> res = f$substr (str, start, length);
-    if (!res.bool_value) return string();
+    OrFalse<string> res = f$substr(str, start, length);
+    if (!res.bool_value) {
+      return string();
+    }
     return res.value;
   }
 
-  int len = mb_UTF8_strlen (str.c_str());
+  int len = mb_UTF8_strlen(str.c_str());
   if (start < 0) {
     start += len;
   }
@@ -330,8 +332,8 @@ string f$mb_substr (const string &str, int start, const var &length_var, const s
     length = len - start;
   }
 
-  int UTF8_start  = mb_UTF8_advance (str.c_str(), start);
-  int UTF8_length = mb_UTF8_advance (str.c_str() + UTF8_start, length);
+  int UTF8_start = mb_UTF8_advance(str.c_str(), start);
+  int UTF8_length = mb_UTF8_advance(str.c_str() + UTF8_start, length);
 
-  return string (str.c_str() + UTF8_start, UTF8_length);
+  return string(str.c_str() + UTF8_start, UTF8_length);
 }

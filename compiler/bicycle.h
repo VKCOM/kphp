@@ -42,7 +42,8 @@ class Lockable {
 private:
   volatile int x;
 public:
-  Lockable() : x(0) {}
+  Lockable() :
+    x(0) {}
 
   virtual ~Lockable() = default;
 
@@ -60,9 +61,8 @@ class AutoLocker {
 private:
   DataT ptr;
 public:
-  explicit AutoLocker(DataT ptr)
-    : ptr(ptr)
-  {
+  explicit AutoLocker(DataT ptr) :
+    ptr(ptr) {
     lock(ptr);
   }
 
@@ -79,9 +79,8 @@ public:
 
   Maybe() = default;
 
-  Maybe(const ValueType &value)
-    : has_value(true)
-  {
+  Maybe(const ValueType &value) :
+    has_value(true) {
     new(data) ValueType(value);
   }
 
@@ -113,6 +112,7 @@ inline void atomic_int_dec(volatile int *x) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
 template<class T>
 struct TLS {
 private:
@@ -170,6 +170,7 @@ public:
     unlock(&raw->locker);
   }
 };
+
 #pragma GCC diagnostic pop
 
 class Task {
@@ -211,10 +212,9 @@ class Node {
   bool parallel;
 
 public:
-  explicit Node(bool parallel = true)
-    : in_scheduler(nullptr)
-    , parallel(parallel)
-  {}
+  explicit Node(bool parallel = true) :
+    in_scheduler(nullptr),
+    parallel(parallel) {}
 
   virtual ~Node() = default;
 
@@ -398,7 +398,7 @@ public:
     return x;
   }
 
-  inline void on_finish() override{}
+  inline void on_finish() override {}
 };
 
 template<class PipeType>
@@ -435,9 +435,8 @@ private:
   PipeF function;
 
 public:
-  explicit Pipe(bool parallel = true)
-    : Node(parallel)
-  {}
+  explicit Pipe(bool parallel = true) :
+    Node(parallel) {}
 
   InputStreamType *&get_input_stream() { return input_stream; }
 
@@ -472,7 +471,7 @@ struct EmptyStream {
 template<class ...DataTypes>
 class MultipleDataStreams {
 private:
-  std::tuple<DataStream<DataTypes>*...> streams_;
+  std::tuple<DataStream<DataTypes> *...> streams_;
 
 public:
   template<size_t data_id>
@@ -498,12 +497,15 @@ public:
 template<size_t id, class StreamT>
 using ConcreteIndexedStream = DataStream<typename StreamT::template NthDataType<id>>;
 
-struct sync_node_tag{};
+struct sync_node_tag {
+};
 
-struct use_previous_pipe_as_sync_node_tag{};
+struct use_previous_pipe_as_sync_node_tag {
+};
 
 template<size_t id>
-struct use_nth_output_tag {};
+struct use_nth_output_tag {
+};
 
 template<class StreamT>
 class SC_Pipe {
@@ -516,16 +518,16 @@ private:
   class SyncPipeF {
     StreamT tmp_stream;
   public:
-    SyncPipeF() { tmp_stream.set_sink (true); }
+    SyncPipeF() { tmp_stream.set_sink(true); }
 
-    void execute (typename StreamT::DataType input, StreamT&) { tmp_stream << input; }
+    void execute(typename StreamT::DataType input, StreamT &) { tmp_stream << input; }
 
-    void on_finish (StreamT &os) {
+    void on_finish(StreamT &os) {
       mem_info_t mem_info;
-      get_mem_stats (getpid(), &mem_info);
+      get_mem_stats(getpid(), &mem_info);
 
       stage::die_if_global_errors();
-      for (auto& el : tmp_stream.get_as_vector()) {
+      for (auto &el : tmp_stream.get_as_vector()) {
         os << el;
       }
     }
@@ -548,18 +550,16 @@ private:
   }
 
 public:
-  SC_Pipe(SchedulerBase *scheduler, StreamT *&stream, Node *previous_node)
-    : scheduler(scheduler)
-    , previous_output_stream(stream)
-    , previous_node(previous_node)
-  {}
+  SC_Pipe(SchedulerBase *scheduler, StreamT *&stream, Node *previous_node) :
+    scheduler(scheduler),
+    previous_output_stream(stream),
+    previous_node(previous_node) {}
 
   template<class PipeT>
-  SC_Pipe(SchedulerBase *scheduler, PipeT *pipe)
-    : scheduler(scheduler)
-    , previous_output_stream(pipe->get_output_stream())
-    , previous_node(pipe)
-  {
+  SC_Pipe(SchedulerBase *scheduler, PipeT *pipe) :
+    scheduler(scheduler),
+    previous_output_stream(pipe->get_output_stream()),
+    previous_node(pipe) {
     pipe->add_to_scheduler(scheduler);
   }
 
@@ -573,7 +573,7 @@ public:
     return SC_Pipe<ConcreteIndexedStream<id, StreamT>>{scheduler, previous_output_stream->template project_to_nth_data_stream<id>(), previous_node};
   }
 
-  SC_Pipe& operator>>(use_previous_pipe_as_sync_node_tag) {
+  SC_Pipe &operator>>(use_previous_pipe_as_sync_node_tag) {
     previous_node->add_to_scheduler_as_sync_node();
     return *this;
   }
@@ -783,8 +783,8 @@ private:
   TLS<IdRange> range;
 public:
 
-  BikeIdGen()
-    : used_n(0) {}
+  BikeIdGen() :
+    used_n(0) {}
 
   int next_id() {
     IdRange &cur = *range;

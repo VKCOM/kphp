@@ -76,429 +76,428 @@ template<class T>
 using enable_for_bool_int_double_array = vk::enable_if_base_in_list<T, list_bool_int_double_array>;
 
 
-inline bool lt (const bool &lhs, const bool &rhs);
+inline bool lt(const bool &lhs, const bool &rhs);
 
-template <class T2>
-inline bool lt (const bool &lhs, const T2 &rhs);
+template<class T2>
+inline bool lt(const bool &lhs, const T2 &rhs);
 
-template <class T1>
-inline bool lt (const T1 &lhs, const bool &rhs);
+template<class T1>
+inline bool lt(const T1 &lhs, const bool &rhs);
 
-template <class T1, class T2>
-inline bool lt (const T1 &lhs, const T2 &rhs);
+template<class T1, class T2>
+inline bool lt(const T1 &lhs, const T2 &rhs);
 
-template <class T1, class T2>
-inline bool lt (const OrFalse <T1> &lhs, const T2 &rhs);
+template<class T1, class T2>
+inline bool lt(const OrFalse<T1> &lhs, const T2 &rhs);
 
-template <class T1, class T2>
-inline bool lt (const T1 &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool lt (const OrFalse <T> &lhs, const OrFalse <T> &rhs);
-
-template <class T1, class T2>
-inline bool lt (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool lt (const bool &lhs, const OrFalse <T> &rhs);
-
-template <class T>
-inline bool lt (const OrFalse <T> &lhs, const bool &rhs);
-
-
-
-inline bool gt (const bool &lhs, const bool &rhs);
-
-template <class T2>
-inline bool gt (const bool &lhs, const T2 &rhs);
-
-template <class T1>
-inline bool gt (const T1 &lhs, const bool &rhs);
-
-template <class T1, class T2>
-inline bool gt (const T1 &lhs, const T2 &rhs);
-
-template <class T1, class T2>
-inline bool gt (const OrFalse <T1> &lhs, const T2 &rhs);
-
-template <class T1, class T2>
-inline bool gt (const T1 &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool gt (const OrFalse <T> &lhs, const OrFalse <T> &rhs);
-
-template <class T1, class T2>
-inline bool gt (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool gt (const bool &lhs, const OrFalse <T> &rhs);
-
-template <class T>
-inline bool gt (const OrFalse <T> &lhs, const bool &rhs);
-
-
-inline bool leq (const bool &lhs, const bool &rhs);
-
-template <class T2>
-inline bool leq (const bool &lhs, const T2 &rhs);
-
-template <class T1>
-inline bool leq (const T1 &lhs, const bool &rhs);
-
-template <class T1, class T2>
-inline bool leq (const T1 &lhs, const T2 &rhs);
-
-template <class T1, class T2>
-inline bool leq (const OrFalse <T1> &lhs, const T2 &rhs);
-
-template <class T1, class T2>
-inline bool leq (const T1 &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool leq (const OrFalse <T> &lhs, const OrFalse <T> &rhs);
-
-template <class T1, class T2>
-inline bool leq (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool leq (const bool &lhs, const OrFalse <T> &rhs);
-
-template <class T>
-inline bool leq (const OrFalse <T> &lhs, const bool &rhs);
-
-
-inline bool geq (const bool &lhs, const bool &rhs);
-
-template <class T2>
-inline bool geq (const bool &lhs, const T2 &rhs);
-
-template <class T1>
-inline bool geq (const T1 &lhs, const bool &rhs);
-
-template <class T1, class T2>
-inline bool geq (const T1 &lhs, const T2 &rhs);
-
-template <class T1, class T2>
-inline bool geq (const OrFalse <T1> &lhs, const T2 &rhs);
-
-template <class T1, class T2>
-inline bool geq (const T1 &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool geq (const OrFalse <T> &lhs, const OrFalse <T> &rhs);
-
-template <class T1, class T2>
-inline bool geq (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs);
-
-template <class T>
-inline bool geq (const bool &lhs, const OrFalse <T> &rhs);
-
-template <class T>
-inline bool geq (const OrFalse <T> &lhs, const bool &rhs);
-
-
-inline double divide (int lhs, int rhs);
-
-inline double divide (double lhs, int rhs);
-
-inline double divide (const string &lhs, int rhs);
-
-inline double divide (const var &lhs, int rhs);
-
-
-inline double divide (int lhs, double rhs);
-
-inline double divide (double lhs, double rhs);
-
-inline double divide (const string &lhs, double rhs);
-
-inline double divide (const var &lhs, double rhs);
-
-
-inline double divide (int lhs, string rhs);
-
-inline double divide (double lhs, string rhs);
-
-inline double divide (const string &lhs, string rhs);
-
-inline double divide (const var &lhs, string rhs);
-
-
-inline double divide (int lhs, const var &rhs);
-
-inline double divide (double lhs, const var &rhs);
-
-inline double divide (const string &lhs, const var &rhs);
-
-inline double divide (const var &lhs, const var &rhs);
-
-
-inline double divide (bool lhs, bool rhs);
-
-template <class T>
-inline double divide (bool lhs, const T &rhs);
-
-template <class T>
-inline double divide (const T &lhs, bool rhs);
-
-template <class T>
-inline double divide (bool lhs, const array <T> &rhs);
-
-template <class T>
-inline double divide (const array <T> &lhs, bool rhs);
-
-template <class T>
-inline double divide (bool lhs, const class_instance <T> &rhs);
-
-template <class T>
-inline double divide (const class_instance <T> &lhs, bool rhs);
-
-
-template <class T, class T1>
-inline double divide (const array <T> &lhs, const T1 &rhs);
-
-template <class T, class T1>
-inline double divide (const T1 &lhs, const array <T> &rhs);
-
-
-template <class T, class T1>
-inline double divide (const class_instance <T> &lhs, const T1 &rhs);
-
-template <class T, class T1>
-inline double divide (const T1 &lhs, const class_instance <T> &rhs);
-
-
-template <class T>
-inline double divide (const array <T> &lhs, const array <T> &rhs);
-
-template <class T>
-inline double divide (const class_instance <T> &lhs, const class_instance <T> &rhs);
-
-template <class T, class T1>
-inline double divide (const array <T> &lhs, const array <T1> &rhs);
-
-template <class T, class T1>
-inline double divide (const class_instance <T> &lhs, const class_instance <T1> &rhs);
-
-template <class T, class T1>
-inline double divide (const array <T> &lhs, const class_instance <T1> &rhs);
-
-template <class T, class T1>
-inline double divide (const class_instance <T1> &lhs, const array <T> &rhs);
-
-
-template <class T1, class T2>
-inline double divide (const OrFalse <T1> &lhs, const T2 &rhs); //not defined
-
-template <class T1, class T2>
-inline double divide (const T1 &lhs, const OrFalse <T2> &rhs); //not defined
-
-
-inline int modulo (int lhs, int rhs);
-
-template <class T1, class T2>
-inline int modulo (const T1 &lhs, const T2 &rhs);
-
-
-template <class T1, class T2>
-inline T1 &divide_self (T1 &lhs, const T2 &rhs);
-
-
-inline int &modulo_self (int &lhs, int rhs);
-
-template <class T1, class T2>
-inline T1 &modulo_self (T1 &lhs, const T2 &rhs);
-
-
-template <class T0, class T>
-inline void assign (T0 &dest, const T &from);
-
-
-template<class T, class = enable_for_bool_int_double<T>>
-inline bool f$boolval (const T &val);
-
-inline bool f$boolval (const string &val);
-
-template <class T>
-inline bool f$boolval (const array <T> &val);
-
-template <class T>
-inline bool f$boolval (const class_instance <T> &val);
-
-template <class ...Args>
-bool f$boolval (const tuple<Args...> &val);
-
-template <class T>
-inline bool f$boolval (const OrFalse <T> &val);
-
-inline bool f$boolval (const var &val);
-
-
-template<class T, class = enable_for_bool_int_double<T>>
-inline int f$intval (const T &val);
-
-inline int f$intval (const string &val);
-
-template <class T>
-inline int f$intval (const array <T> &val);
-
-template <class T>
-inline int f$intval (const class_instance <T> &val);
-
-inline int f$intval (const var &val);
+template<class T1, class T2>
+inline bool lt(const T1 &lhs, const OrFalse<T2> &rhs);
 
 template<class T>
-inline int f$intval (const OrFalse<T> &val);
+inline bool lt(const OrFalse<T> &lhs, const OrFalse<T> &rhs);
+
+template<class T1, class T2>
+inline bool lt(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs);
+
+template<class T>
+inline bool lt(const bool &lhs, const OrFalse<T> &rhs);
+
+template<class T>
+inline bool lt(const OrFalse<T> &lhs, const bool &rhs);
 
 
-inline int f$safe_intval (const bool &val);
+inline bool gt(const bool &lhs, const bool &rhs);
 
-inline const int &f$safe_intval (const int &val);
+template<class T2>
+inline bool gt(const bool &lhs, const T2 &rhs);
 
-inline int f$safe_intval (const double &val);
+template<class T1>
+inline bool gt(const T1 &lhs, const bool &rhs);
 
-inline int f$safe_intval (const string &val);
+template<class T1, class T2>
+inline bool gt(const T1 &lhs, const T2 &rhs);
 
-template <class T>
-inline int f$safe_intval (const array <T> &val);
+template<class T1, class T2>
+inline bool gt(const OrFalse<T1> &lhs, const T2 &rhs);
 
-template <class T>
-inline int f$safe_intval (const class_instance <T> &val);
+template<class T1, class T2>
+inline bool gt(const T1 &lhs, const OrFalse<T2> &rhs);
 
-inline int f$safe_intval (const var &val);
+template<class T>
+inline bool gt(const OrFalse<T> &lhs, const OrFalse<T> &rhs);
+
+template<class T1, class T2>
+inline bool gt(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs);
+
+template<class T>
+inline bool gt(const bool &lhs, const OrFalse<T> &rhs);
+
+template<class T>
+inline bool gt(const OrFalse<T> &lhs, const bool &rhs);
+
+
+inline bool leq(const bool &lhs, const bool &rhs);
+
+template<class T2>
+inline bool leq(const bool &lhs, const T2 &rhs);
+
+template<class T1>
+inline bool leq(const T1 &lhs, const bool &rhs);
+
+template<class T1, class T2>
+inline bool leq(const T1 &lhs, const T2 &rhs);
+
+template<class T1, class T2>
+inline bool leq(const OrFalse<T1> &lhs, const T2 &rhs);
+
+template<class T1, class T2>
+inline bool leq(const T1 &lhs, const OrFalse<T2> &rhs);
+
+template<class T>
+inline bool leq(const OrFalse<T> &lhs, const OrFalse<T> &rhs);
+
+template<class T1, class T2>
+inline bool leq(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs);
+
+template<class T>
+inline bool leq(const bool &lhs, const OrFalse<T> &rhs);
+
+template<class T>
+inline bool leq(const OrFalse<T> &lhs, const bool &rhs);
+
+
+inline bool geq(const bool &lhs, const bool &rhs);
+
+template<class T2>
+inline bool geq(const bool &lhs, const T2 &rhs);
+
+template<class T1>
+inline bool geq(const T1 &lhs, const bool &rhs);
+
+template<class T1, class T2>
+inline bool geq(const T1 &lhs, const T2 &rhs);
+
+template<class T1, class T2>
+inline bool geq(const OrFalse<T1> &lhs, const T2 &rhs);
+
+template<class T1, class T2>
+inline bool geq(const T1 &lhs, const OrFalse<T2> &rhs);
+
+template<class T>
+inline bool geq(const OrFalse<T> &lhs, const OrFalse<T> &rhs);
+
+template<class T1, class T2>
+inline bool geq(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs);
+
+template<class T>
+inline bool geq(const bool &lhs, const OrFalse<T> &rhs);
+
+template<class T>
+inline bool geq(const OrFalse<T> &lhs, const bool &rhs);
+
+
+inline double divide(int lhs, int rhs);
+
+inline double divide(double lhs, int rhs);
+
+inline double divide(const string &lhs, int rhs);
+
+inline double divide(const var &lhs, int rhs);
+
+
+inline double divide(int lhs, double rhs);
+
+inline double divide(double lhs, double rhs);
+
+inline double divide(const string &lhs, double rhs);
+
+inline double divide(const var &lhs, double rhs);
+
+
+inline double divide(int lhs, string rhs);
+
+inline double divide(double lhs, string rhs);
+
+inline double divide(const string &lhs, string rhs);
+
+inline double divide(const var &lhs, string rhs);
+
+
+inline double divide(int lhs, const var &rhs);
+
+inline double divide(double lhs, const var &rhs);
+
+inline double divide(const string &lhs, const var &rhs);
+
+inline double divide(const var &lhs, const var &rhs);
+
+
+inline double divide(bool lhs, bool rhs);
+
+template<class T>
+inline double divide(bool lhs, const T &rhs);
+
+template<class T>
+inline double divide(const T &lhs, bool rhs);
+
+template<class T>
+inline double divide(bool lhs, const array<T> &rhs);
+
+template<class T>
+inline double divide(const array<T> &lhs, bool rhs);
+
+template<class T>
+inline double divide(bool lhs, const class_instance<T> &rhs);
+
+template<class T>
+inline double divide(const class_instance<T> &lhs, bool rhs);
+
+
+template<class T, class T1>
+inline double divide(const array<T> &lhs, const T1 &rhs);
+
+template<class T, class T1>
+inline double divide(const T1 &lhs, const array<T> &rhs);
+
+
+template<class T, class T1>
+inline double divide(const class_instance<T> &lhs, const T1 &rhs);
+
+template<class T, class T1>
+inline double divide(const T1 &lhs, const class_instance<T> &rhs);
+
+
+template<class T>
+inline double divide(const array<T> &lhs, const array<T> &rhs);
+
+template<class T>
+inline double divide(const class_instance<T> &lhs, const class_instance<T> &rhs);
+
+template<class T, class T1>
+inline double divide(const array<T> &lhs, const array<T1> &rhs);
+
+template<class T, class T1>
+inline double divide(const class_instance<T> &lhs, const class_instance<T1> &rhs);
+
+template<class T, class T1>
+inline double divide(const array<T> &lhs, const class_instance<T1> &rhs);
+
+template<class T, class T1>
+inline double divide(const class_instance<T1> &lhs, const array<T> &rhs);
+
+
+template<class T1, class T2>
+inline double divide(const OrFalse<T1> &lhs, const T2 &rhs); //not defined
+
+template<class T1, class T2>
+inline double divide(const T1 &lhs, const OrFalse<T2> &rhs); //not defined
+
+
+inline int modulo(int lhs, int rhs);
+
+template<class T1, class T2>
+inline int modulo(const T1 &lhs, const T2 &rhs);
+
+
+template<class T1, class T2>
+inline T1 &divide_self(T1 &lhs, const T2 &rhs);
+
+
+inline int &modulo_self(int &lhs, int rhs);
+
+template<class T1, class T2>
+inline T1 &modulo_self(T1 &lhs, const T2 &rhs);
+
+
+template<class T0, class T>
+inline void assign(T0 &dest, const T &from);
+
+
+template<class T, class = enable_for_bool_int_double<T>>
+inline bool f$boolval(const T &val);
+
+inline bool f$boolval(const string &val);
+
+template<class T>
+inline bool f$boolval(const array<T> &val);
+
+template<class T>
+inline bool f$boolval(const class_instance<T> &val);
+
+template<class ...Args>
+bool f$boolval(const tuple<Args...> &val);
+
+template<class T>
+inline bool f$boolval(const OrFalse<T> &val);
+
+inline bool f$boolval(const var &val);
+
+
+template<class T, class = enable_for_bool_int_double<T>>
+inline int f$intval(const T &val);
+
+inline int f$intval(const string &val);
+
+template<class T>
+inline int f$intval(const array<T> &val);
+
+template<class T>
+inline int f$intval(const class_instance<T> &val);
+
+inline int f$intval(const var &val);
+
+template<class T>
+inline int f$intval(const OrFalse<T> &val);
+
+
+inline int f$safe_intval(const bool &val);
+
+inline const int &f$safe_intval(const int &val);
+
+inline int f$safe_intval(const double &val);
+
+inline int f$safe_intval(const string &val);
+
+template<class T>
+inline int f$safe_intval(const array<T> &val);
+
+template<class T>
+inline int f$safe_intval(const class_instance<T> &val);
+
+inline int f$safe_intval(const var &val);
 
 
 template<class T, class = enable_for_bool_int_double<T>>
 double f$floatval(const T &val);
 
-inline double f$floatval (const string &val);
+inline double f$floatval(const string &val);
 
-template <class T>
-inline double f$floatval (const array <T> &val);
+template<class T>
+inline double f$floatval(const array<T> &val);
 
-template <class T>
-inline double f$floatval (const class_instance <T> &val);
+template<class T>
+inline double f$floatval(const class_instance<T> &val);
 
-inline double f$floatval (const var &val);
+inline double f$floatval(const var &val);
 
-template <class T>
-inline double f$floatval (const OrFalse <T> &val);
+template<class T>
+inline double f$floatval(const OrFalse<T> &val);
 
 
-inline string f$strval (const bool &val);
+inline string f$strval(const bool &val);
 
-inline string f$strval (const int &val);
+inline string f$strval(const int &val);
 
-inline string f$strval (const double &val);
+inline string f$strval(const double &val);
 
-inline string f$strval (const string &val);
+inline string f$strval(const string &val);
 
-template <class T>
-inline string f$strval (const array <T> &val);
+template<class T>
+inline string f$strval(const array<T> &val);
 
-template <class ...Args>
-inline string f$strval (const tuple <Args...> &val);
+template<class ...Args>
+inline string f$strval(const tuple<Args...> &val);
 
-template <class T>
+template<class T>
 inline string f$strval(const OrFalse<T> &val);
 
-template <class T>
-inline string f$strval (const class_instance <T> &val);
+template<class T>
+inline string f$strval(const class_instance<T> &val);
 
-inline string f$strval (const var &val);
+inline string f$strval(const var &val);
 
 
-template <class T>
-inline array <var> f$arrayval (const T &val);
+template<class T>
+inline array<var> f$arrayval(const T &val);
 
-template <class T>
-inline const array <T> &f$arrayval (const array <T> &val);
+template<class T>
+inline const array<T> &f$arrayval(const array<T> &val);
 
-template <class T>
-inline array <var> f$arrayval (const class_instance <T> &val);
+template<class T>
+inline array<var> f$arrayval(const class_instance<T> &val);
 
-inline array <var> f$arrayval (const var &val);
+inline array<var> f$arrayval(const var &val);
 
 template<class T>
 inline array<var> f$arrayval(const OrFalse<T> &val);
 
 
-inline bool& boolval_ref (bool &val);
+inline bool &boolval_ref(bool &val);
 
-inline bool& boolval_ref (var &val);
+inline bool &boolval_ref(var &val);
 
-inline const bool& boolval_ref (const bool &val);
+inline const bool &boolval_ref(const bool &val);
 
-inline const bool& boolval_ref (const var &val);
-
-
-inline int& intval_ref (int &val);
-
-inline int& intval_ref (var &val);
-
-inline const int& intval_ref (const int &val);
-
-inline const int& intval_ref (const var &val);
+inline const bool &boolval_ref(const var &val);
 
 
-inline double& floatval_ref (double &val);
+inline int &intval_ref(int &val);
 
-inline double& floatval_ref (var &val);
+inline int &intval_ref(var &val);
 
-inline const double& floatval_ref (const double &val);
+inline const int &intval_ref(const int &val);
 
-inline const double& floatval_ref (const var &val);
-
-
-inline string& strval_ref (string &val);
-
-inline string& strval_ref (var &val);
-
-inline const string& strval_ref (const string &val);
-
-inline const string& strval_ref (const var &val);
+inline const int &intval_ref(const var &val);
 
 
-template <class T>
-inline array <T>& arrayval_ref (array <T> &val, const char *function, int parameter_num);
+inline double &floatval_ref(double &val);
 
-inline array <var>& arrayval_ref (var &val, const char *function, int parameter_num);
+inline double &floatval_ref(var &val);
 
-template <class T>
-inline const array <T>& arrayval_ref (const array <T> &val, const char *function, int parameter_num);
+inline const double &floatval_ref(const double &val);
 
-inline const array <var>& arrayval_ref (const var &val, const char *function, int parameter_num);
+inline const double &floatval_ref(const var &val);
 
 
-template <class T>
-bool eq2 (const OrFalse <T> &v, bool value);
+inline string &strval_ref(string &val);
 
-template <class T>
-bool eq2 (bool value, const OrFalse <T> &v);
+inline string &strval_ref(var &val);
 
-template <class T>
-bool eq2 (const OrFalse <T> &v, const OrFalse <T> &value);
+inline const string &strval_ref(const string &val);
 
-template <class T, class T1>
-bool eq2 (const OrFalse <T> &v, const OrFalse <T1> &value);
+inline const string &strval_ref(const var &val);
 
-template <class T, class T1>
-bool eq2 (const OrFalse <T> &v, const T1 &value);
 
-template <class T, class T1>
-bool eq2 (const T1 &value, const OrFalse <T> &v);
+template<class T>
+inline array<T> &arrayval_ref(array<T> &val, const char *function, int parameter_num);
 
-template <class T>
-bool equals (const OrFalse <T> &value, const OrFalse <T> &v);
+inline array<var> &arrayval_ref(var &val, const char *function, int parameter_num);
 
-template <class T, class T1>
-bool equals (const OrFalse <T1> &value, const OrFalse <T> &v);
+template<class T>
+inline const array<T> &arrayval_ref(const array<T> &val, const char *function, int parameter_num);
 
-template <class T, class T1>
-bool equals (const T1 &value, const OrFalse <T> &v);
+inline const array<var> &arrayval_ref(const var &val, const char *function, int parameter_num);
 
-template <class T, class T1>
-bool equals (const OrFalse <T> &v, const T1 &value);
+
+template<class T>
+bool eq2(const OrFalse<T> &v, bool value);
+
+template<class T>
+bool eq2(bool value, const OrFalse<T> &v);
+
+template<class T>
+bool eq2(const OrFalse<T> &v, const OrFalse<T> &value);
+
+template<class T, class T1>
+bool eq2(const OrFalse<T> &v, const OrFalse<T1> &value);
+
+template<class T, class T1>
+bool eq2(const OrFalse<T> &v, const T1 &value);
+
+template<class T, class T1>
+bool eq2(const T1 &value, const OrFalse<T> &v);
+
+template<class T>
+bool equals(const OrFalse<T> &value, const OrFalse<T> &v);
+
+template<class T, class T1>
+bool equals(const OrFalse<T1> &value, const OrFalse<T> &v);
+
+template<class T, class T1>
+bool equals(const T1 &value, const OrFalse<T> &v);
+
+template<class T, class T1>
+bool equals(const OrFalse<T> &v, const T1 &value);
 
 
 template<class T, class = enable_for_bool_int_double<T>>
@@ -568,84 +567,84 @@ inline bool f$is_array(const OrFalse<T> &v);
 inline bool f$is_array(const var &v);
 
 
-template <class T>
+template<class T>
 bool f$is_object(const T &);
-template <class T>
-inline bool f$is_object (const class_instance <T> &v);
+template<class T>
+inline bool f$is_object(const class_instance<T> &v);
 
 
-template <class T>
-inline bool f$is_integer (const T &v);
+template<class T>
+inline bool f$is_integer(const T &v);
 
-template <class T>
-inline bool f$is_long (const T &v);
+template<class T>
+inline bool f$is_long(const T &v);
 
-template <class T>
-inline bool f$is_double (const T &v);
+template<class T>
+inline bool f$is_double(const T &v);
 
-template <class T>
-inline bool f$is_real (const T &v);
-
-
-inline const char *get_type_c_str (const bool &v);
-inline const char *get_type_c_str (const int &v);
-inline const char *get_type_c_str (const double &v);
-inline const char *get_type_c_str (const string &v);
-inline const char *get_type_c_str (const var &v);
-template <class T>
-inline const char *get_type_c_str (const array <T> &v);
-template <class T>
-inline const char *get_type_c_str (const class_instance <T> &v);
-
-template <class T>
-inline string f$get_type (const T &v);
-
-inline string f$get_class (const bool &v);
-inline string f$get_class (const int &v);
-inline string f$get_class (const double &v);
-inline string f$get_class (const string &v);
-inline string f$get_class (const var &v);
-template <class T>
-inline string f$get_class (const array <T> &v);
-template <class T>
-inline string f$get_class (const class_instance <T> &v);
+template<class T>
+inline bool f$is_real(const T &v);
 
 
-inline int f$count (const var &v);
+inline const char *get_type_c_str(const bool &v);
+inline const char *get_type_c_str(const int &v);
+inline const char *get_type_c_str(const double &v);
+inline const char *get_type_c_str(const string &v);
+inline const char *get_type_c_str(const var &v);
+template<class T>
+inline const char *get_type_c_str(const array<T> &v);
+template<class T>
+inline const char *get_type_c_str(const class_instance<T> &v);
 
-template <class T>
+template<class T>
+inline string f$get_type(const T &v);
+
+inline string f$get_class(const bool &v);
+inline string f$get_class(const int &v);
+inline string f$get_class(const double &v);
+inline string f$get_class(const string &v);
+inline string f$get_class(const var &v);
+template<class T>
+inline string f$get_class(const array<T> &v);
+template<class T>
+inline string f$get_class(const class_instance<T> &v);
+
+
+inline int f$count(const var &v);
+
+template<class T>
 inline int f$count(const OrFalse<T> &a);
 
-template <class T>
-inline int f$count (const array <T> &a);
+template<class T>
+inline int f$count(const array<T> &a);
 
-template <class T>
-inline int f$count (const T &v);
-
-
-template <class T>
-int f$sizeof (const T &v);
+template<class T>
+inline int f$count(const T &v);
 
 
-inline string& append (string &dest, const string &from);
-
-template <class T>
-inline string& append(OrFalse<string> &dest, const T &from);
-
-template <class T>
-inline string& append (string &dest, const T &from);
-
-template <class T>
-inline var& append (var &dest, const T &from);
-
-template <class T0, class T>
-inline T0& append (T0 &dest, const T &from);
+template<class T>
+int f$sizeof(const T &v);
 
 
-inline string f$gettype (const var &v);
+inline string &append(string &dest, const string &from);
 
-template <class T>
-inline bool f$function_exists (const T &a1);
+template<class T>
+inline string &append(OrFalse<string> &dest, const T &from);
+
+template<class T>
+inline string &append(string &dest, const T &from);
+
+template<class T>
+inline var &append(var &dest, const T &from);
+
+template<class T0, class T>
+inline T0 &append(T0 &dest, const T &from);
+
+
+inline string f$gettype(const var &v);
+
+template<class T>
+inline bool f$function_exists(const T &a1);
 
 
 const int E_ERROR = 1;
@@ -665,117 +664,117 @@ const int E_DEPRECATED = 8192;
 const int E_USER_DEPRECATED = 16384;
 const int E_ALL = 32767;
 
-inline var f$error_get_last (void);
+inline var f$error_get_last(void);
 
-inline int f$error_reporting (int level);
+inline int f$error_reporting(int level);
 
-inline int f$error_reporting (void);
+inline int f$error_reporting(void);
 
-inline void f$warning (const string &message);
+inline void f$warning(const string &message);
 
-inline int f$memory_get_static_usage (void);
+inline int f$memory_get_static_usage(void);
 
-inline int f$memory_get_peak_usage (bool real_usage = false);
+inline int f$memory_get_peak_usage(bool real_usage = false);
 
-inline int f$memory_get_usage (bool real_usage = false);
+inline int f$memory_get_usage(bool real_usage = false);
 
-inline int f$memory_get_total_usage (void);
-
-
-template<class T>
-inline int f$get_reference_counter (const array<T> &v);
-
-template <class T>
-inline int f$get_reference_counter (const class_instance <T> &v);
-
-inline int f$get_reference_counter (const string &v);
-
-inline int f$get_reference_counter (const var &v);
-
-
-template <class T>
-inline T& val (T &x);
-
-template <class T>
-inline const T& val (const T &x);
-
-template <class T>
-inline T& ref (T &x);
-
-template <class T>
-inline const T& val (const OrFalse <T> &x);
-
-template <class T>
-inline T& val (OrFalse <T> &x);
-
-template <class T>
-inline T& ref (OrFalse <T> &x);
+inline int f$memory_get_total_usage(void);
 
 
 template<class T>
-inline typename array<T>::iterator begin (array<T> &x);
+inline int f$get_reference_counter(const array<T> &v);
 
 template<class T>
-inline typename array<T>::const_iterator begin (const array<T> &x);
+inline int f$get_reference_counter(const class_instance<T> &v);
+
+inline int f$get_reference_counter(const string &v);
+
+inline int f$get_reference_counter(const var &v);
+
 
 template<class T>
-inline typename array<T>::const_iterator const_begin (const array<T> &x);
-
-inline array <var>::iterator begin (var &x);
-
-inline array <var>::const_iterator begin (const var &x);
-
-inline array <var>::const_iterator const_begin (const var &x);
+inline T &val(T &x);
 
 template<class T>
-inline typename array<T>::iterator begin (OrFalse < array<T> > &x);
+inline const T &val(const T &x);
 
 template<class T>
-inline typename array<T>::const_iterator begin (const OrFalse < array<T> > &x);
+inline T &ref(T &x);
 
 template<class T>
-inline typename array<T>::const_iterator const_begin (const OrFalse < array<T> > &x);
+inline const T &val(const OrFalse<T> &x);
 
 template<class T>
-inline typename array<T>::iterator end (array<T> &x);
+inline T &val(OrFalse<T> &x);
 
 template<class T>
-inline typename array<T>::const_iterator end (const array<T> &x);
+inline T &ref(OrFalse<T> &x);
+
 
 template<class T>
-inline typename array<T>::const_iterator const_end (const array<T> &x);
-
-inline array <var>::iterator end (var &x);
-
-inline array <var>::const_iterator end (const var &x);
-
-inline array <var>::const_iterator const_end (const var &x);
+inline typename array<T>::iterator begin(array<T> &x);
 
 template<class T>
-inline typename array<T>::iterator end (OrFalse < array<T> > &x);
+inline typename array<T>::const_iterator begin(const array<T> &x);
 
 template<class T>
-inline typename array<T>::const_iterator end (const OrFalse < array<T> > &x);
+inline typename array<T>::const_iterator const_begin(const array<T> &x);
+
+inline array<var>::iterator begin(var &x);
+
+inline array<var>::const_iterator begin(const var &x);
+
+inline array<var>::const_iterator const_begin(const var &x);
 
 template<class T>
-inline typename array<T>::const_iterator const_end (const OrFalse < array<T> > &x);
+inline typename array<T>::iterator begin(OrFalse<array<T>> &x);
+
+template<class T>
+inline typename array<T>::const_iterator begin(const OrFalse<array<T>> &x);
+
+template<class T>
+inline typename array<T>::const_iterator const_begin(const OrFalse<array<T>> &x);
+
+template<class T>
+inline typename array<T>::iterator end(array<T> &x);
+
+template<class T>
+inline typename array<T>::const_iterator end(const array<T> &x);
+
+template<class T>
+inline typename array<T>::const_iterator const_end(const array<T> &x);
+
+inline array<var>::iterator end(var &x);
+
+inline array<var>::const_iterator end(const var &x);
+
+inline array<var>::const_iterator const_end(const var &x);
+
+template<class T>
+inline typename array<T>::iterator end(OrFalse<array<T>> &x);
+
+template<class T>
+inline typename array<T>::const_iterator end(const OrFalse<array<T>> &x);
+
+template<class T>
+inline typename array<T>::const_iterator const_end(const OrFalse<array<T>> &x);
 
 
-inline void clear_array (var &v);
+inline void clear_array(var &v);
 
-template <class T>
-inline void clear_array (array <T> &a);
+template<class T>
+inline void clear_array(array<T> &a);
 
-template <class T>
-inline void clear_array (OrFalse <array <T> > &a);
+template<class T>
+inline void clear_array(OrFalse<array<T>> &a);
 
-template <class T>
-inline void unset (array <T> &x);
+template<class T>
+inline void unset(array<T> &x);
 
-template <class T>
-inline void unset (class_instance <T> &x);
+template<class T>
+inline void unset(class_instance<T> &x);
 
-inline void unset (var &x);
+inline void unset(var &x);
 
 
 /*
@@ -785,545 +784,545 @@ inline void unset (var &x);
  */
 
 
-bool lt (const bool &lhs, const bool &rhs) {
+bool lt(const bool &lhs, const bool &rhs) {
   return lhs < rhs;
 }
 
-template <class T2>
-bool lt (const bool &lhs, const T2 &rhs) {
-  return lhs < f$boolval (rhs);
+template<class T2>
+bool lt(const bool &lhs, const T2 &rhs) {
+  return lhs < f$boolval(rhs);
 }
 
-template <class T1>
-bool lt (const T1 &lhs, const bool &rhs) {
-  return f$boolval (lhs) < rhs;
+template<class T1>
+bool lt(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) < rhs;
 }
 
-template <class T1, class T2>
-bool lt (const T1 &lhs, const T2 &rhs) {
+template<class T1, class T2>
+bool lt(const T1 &lhs, const T2 &rhs) {
   return lhs < rhs;
 }
 
-template <class T1, class T2>
-bool lt (const OrFalse <T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? lt (lhs.value, rhs) : lt (false, rhs);
+template<class T1, class T2>
+bool lt(const OrFalse<T1> &lhs, const T2 &rhs) {
+  return lhs.bool_value ? lt(lhs.value, rhs) : lt(false, rhs);
 }
 
-template <class T1, class T2>
-bool lt (const T1 &lhs, const OrFalse <T2> &rhs) {
-  return rhs.bool_value ? lt (lhs, rhs.value) : lt (lhs, false);
+template<class T1, class T2>
+bool lt(const T1 &lhs, const OrFalse<T2> &rhs) {
+  return rhs.bool_value ? lt(lhs, rhs.value) : lt(lhs, false);
 }
 
-template <class T>
-bool lt (const OrFalse <T> &lhs, const OrFalse <T> &rhs) {
-  return lhs.bool_value ? lt (lhs.value, rhs) : lt (false, rhs);
+template<class T>
+bool lt(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
+  return lhs.bool_value ? lt(lhs.value, rhs) : lt(false, rhs);
 }
 
-template <class T1, class T2>
-bool lt (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs) {
-  return lhs.bool_value ? lt (lhs.value, rhs) : lt (false, rhs);
+template<class T1, class T2>
+bool lt(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
+  return lhs.bool_value ? lt(lhs.value, rhs) : lt(false, rhs);
 }
 
-template <class T>
-bool lt (const bool &lhs, const OrFalse <T> &rhs) {
-  return lt (lhs, f$boolval (rhs));
+template<class T>
+bool lt(const bool &lhs, const OrFalse<T> &rhs) {
+  return lt(lhs, f$boolval(rhs));
 }
 
-template <class T>
-bool lt (const OrFalse <T> &lhs, const bool &rhs) {
-  return lt (f$boolval (lhs), rhs);
+template<class T>
+bool lt(const OrFalse<T> &lhs, const bool &rhs) {
+  return lt(f$boolval(lhs), rhs);
 }
 
 
-bool gt (const bool &lhs, const bool &rhs) {
+bool gt(const bool &lhs, const bool &rhs) {
   return lhs > rhs;
 }
 
-template <class T2>
-bool gt (const bool &lhs, const T2 &rhs) {
-  return lhs > f$boolval (rhs);
+template<class T2>
+bool gt(const bool &lhs, const T2 &rhs) {
+  return lhs > f$boolval(rhs);
 }
 
-template <class T1>
-bool gt (const T1 &lhs, const bool &rhs) {
-  return f$boolval (lhs) > rhs;
+template<class T1>
+bool gt(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) > rhs;
 }
 
-template <class T1, class T2>
-bool gt (const T1 &lhs, const T2 &rhs) {
+template<class T1, class T2>
+bool gt(const T1 &lhs, const T2 &rhs) {
   return lhs > rhs;
 }
 
-template <class T1, class T2>
-bool gt (const OrFalse <T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? gt (lhs.value, rhs) : gt (false, rhs);
+template<class T1, class T2>
+bool gt(const OrFalse<T1> &lhs, const T2 &rhs) {
+  return lhs.bool_value ? gt(lhs.value, rhs) : gt(false, rhs);
 }
 
-template <class T1, class T2>
-bool gt (const T1 &lhs, const OrFalse <T2> &rhs) {
-  return rhs.bool_value ? gt (lhs, rhs.value) : gt (lhs, false);
+template<class T1, class T2>
+bool gt(const T1 &lhs, const OrFalse<T2> &rhs) {
+  return rhs.bool_value ? gt(lhs, rhs.value) : gt(lhs, false);
 }
 
-template <class T>
-bool gt (const OrFalse <T> &lhs, const OrFalse <T> &rhs) {
-  return lhs.bool_value ? gt (lhs.value, rhs) : gt (false, rhs);
+template<class T>
+bool gt(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
+  return lhs.bool_value ? gt(lhs.value, rhs) : gt(false, rhs);
 }
 
-template <class T1, class T2>
-bool gt (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs) {
-  return lhs.bool_value ? gt (lhs.value, rhs) : gt (false, rhs);
+template<class T1, class T2>
+bool gt(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
+  return lhs.bool_value ? gt(lhs.value, rhs) : gt(false, rhs);
 }
 
-template <class T>
-bool gt (const bool &lhs, const OrFalse <T> &rhs) {
-  return gt (lhs, f$boolval (rhs));
+template<class T>
+bool gt(const bool &lhs, const OrFalse<T> &rhs) {
+  return gt(lhs, f$boolval(rhs));
 }
 
-template <class T>
-bool gt (const OrFalse <T> &lhs, const bool &rhs) {
-  return gt (f$boolval (lhs), rhs);
+template<class T>
+bool gt(const OrFalse<T> &lhs, const bool &rhs) {
+  return gt(f$boolval(lhs), rhs);
 }
 
 
-bool leq (const bool &lhs, const bool &rhs) {
+bool leq(const bool &lhs, const bool &rhs) {
   return lhs <= rhs;
 }
 
-template <class T2>
-bool leq (const bool &lhs, const T2 &rhs) {
-  return lhs <= f$boolval (rhs);
+template<class T2>
+bool leq(const bool &lhs, const T2 &rhs) {
+  return lhs <= f$boolval(rhs);
 }
 
-template <class T1>
-bool leq (const T1 &lhs, const bool &rhs) {
-  return f$boolval (lhs) <= rhs;
+template<class T1>
+bool leq(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) <= rhs;
 }
 
-template <class T1, class T2>
-bool leq (const T1 &lhs, const T2 &rhs) {
+template<class T1, class T2>
+bool leq(const T1 &lhs, const T2 &rhs) {
   return lhs <= rhs;
 }
 
-template <class T1, class T2>
-bool leq (const OrFalse <T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? leq (lhs.value, rhs) : leq (false, rhs);
+template<class T1, class T2>
+bool leq(const OrFalse<T1> &lhs, const T2 &rhs) {
+  return lhs.bool_value ? leq(lhs.value, rhs) : leq(false, rhs);
 }
 
-template <class T1, class T2>
-bool leq (const T1 &lhs, const OrFalse <T2> &rhs) {
-  return rhs.bool_value ? leq (lhs, rhs.value) : leq (lhs, false);
+template<class T1, class T2>
+bool leq(const T1 &lhs, const OrFalse<T2> &rhs) {
+  return rhs.bool_value ? leq(lhs, rhs.value) : leq(lhs, false);
 }
 
-template <class T>
-bool leq (const OrFalse <T> &lhs, const OrFalse <T> &rhs) {
-  return lhs.bool_value ? leq (lhs.value, rhs) : leq (false, rhs);
+template<class T>
+bool leq(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
+  return lhs.bool_value ? leq(lhs.value, rhs) : leq(false, rhs);
 }
 
-template <class T1, class T2>
-bool leq (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs) {
-  return lhs.bool_value ? leq (lhs.value, rhs) : leq (false, rhs);
+template<class T1, class T2>
+bool leq(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
+  return lhs.bool_value ? leq(lhs.value, rhs) : leq(false, rhs);
 }
 
-template <class T>
-bool leq (const bool &lhs, const OrFalse <T> &rhs) {
-  return leq (lhs, f$boolval (rhs));
+template<class T>
+bool leq(const bool &lhs, const OrFalse<T> &rhs) {
+  return leq(lhs, f$boolval(rhs));
 }
 
-template <class T>
-bool leq (const OrFalse <T> &lhs, const bool &rhs) {
-  return leq (f$boolval (lhs), rhs);
+template<class T>
+bool leq(const OrFalse<T> &lhs, const bool &rhs) {
+  return leq(f$boolval(lhs), rhs);
 }
 
 
-bool geq (const bool &lhs, const bool &rhs) {
+bool geq(const bool &lhs, const bool &rhs) {
   return lhs >= rhs;
 }
 
-template <class T2>
-bool geq (const bool &lhs, const T2 &rhs) {
-  return lhs >= f$boolval (rhs);
+template<class T2>
+bool geq(const bool &lhs, const T2 &rhs) {
+  return lhs >= f$boolval(rhs);
 }
 
-template <class T1>
-bool geq (const T1 &lhs, const bool &rhs) {
-  return f$boolval (lhs) >= rhs;
+template<class T1>
+bool geq(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) >= rhs;
 }
 
-template <class T1, class T2>
-bool geq (const T1 &lhs, const T2 &rhs) {
+template<class T1, class T2>
+bool geq(const T1 &lhs, const T2 &rhs) {
   return lhs >= rhs;
 }
 
-template <class T1, class T2>
-bool geq (const OrFalse <T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? geq (lhs.value, rhs) : geq (false, rhs);
+template<class T1, class T2>
+bool geq(const OrFalse<T1> &lhs, const T2 &rhs) {
+  return lhs.bool_value ? geq(lhs.value, rhs) : geq(false, rhs);
 }
 
-template <class T1, class T2>
-bool geq (const T1 &lhs, const OrFalse <T2> &rhs) {
-  return rhs.bool_value ? geq (lhs, rhs.value) : geq (lhs, false);
+template<class T1, class T2>
+bool geq(const T1 &lhs, const OrFalse<T2> &rhs) {
+  return rhs.bool_value ? geq(lhs, rhs.value) : geq(lhs, false);
 }
 
-template <class T>
-bool geq (const OrFalse <T> &lhs, const OrFalse <T> &rhs) {
-  return lhs.bool_value ? geq (lhs.value, rhs) : geq (false, rhs);
+template<class T>
+bool geq(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
+  return lhs.bool_value ? geq(lhs.value, rhs) : geq(false, rhs);
 }
 
-template <class T1, class T2>
-bool geq (const OrFalse <T1> &lhs, const OrFalse <T2> &rhs) {
-  return lhs.bool_value ? geq (lhs.value, rhs) : geq (false, rhs);
+template<class T1, class T2>
+bool geq(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
+  return lhs.bool_value ? geq(lhs.value, rhs) : geq(false, rhs);
 }
 
-template <class T>
-bool geq (const bool &lhs, const OrFalse <T> &rhs) {
-  return geq (lhs, f$boolval (rhs));
+template<class T>
+bool geq(const bool &lhs, const OrFalse<T> &rhs) {
+  return geq(lhs, f$boolval(rhs));
 }
 
-template <class T>
-bool geq (const OrFalse <T> &lhs, const bool &rhs) {
-  return geq (f$boolval (lhs), rhs);
+template<class T>
+bool geq(const OrFalse<T> &lhs, const bool &rhs) {
+  return geq(f$boolval(lhs), rhs);
 }
 
 
-double divide (int lhs, int rhs) {
+double divide(int lhs, int rhs) {
   if (rhs == 0) {
-    php_warning ("Integer division by zero");
+    php_warning("Integer division by zero");
     return 0;
   }
 
-  return double (lhs) / rhs;
+  return double(lhs) / rhs;
 }
 
-double divide (double lhs, int rhs) {
+double divide(double lhs, int rhs) {
   if (rhs == 0) {
-    php_warning ("Integer division by zero");
-    return 0;
-  }
-
-  return lhs / rhs;
-}
-
-double divide (const string &lhs, int rhs) {
-  return divide (f$floatval (lhs), rhs);
-}
-
-double divide (const var &lhs, int rhs) {
-  return divide (f$floatval (lhs), rhs);
-}
-
-
-double divide (int lhs, double rhs) {
-  if (rhs == 0) {
-    php_warning ("Float division by zero");
+    php_warning("Integer division by zero");
     return 0;
   }
 
   return lhs / rhs;
 }
 
-double divide (double lhs, double rhs) {
+double divide(const string &lhs, int rhs) {
+  return divide(f$floatval(lhs), rhs);
+}
+
+double divide(const var &lhs, int rhs) {
+  return divide(f$floatval(lhs), rhs);
+}
+
+
+double divide(int lhs, double rhs) {
   if (rhs == 0) {
-    php_warning ("Float division by zero");
+    php_warning("Float division by zero");
     return 0;
   }
 
   return lhs / rhs;
 }
 
-double divide (const string &lhs, double rhs) {
-  return divide (f$floatval (lhs), rhs);
+double divide(double lhs, double rhs) {
+  if (rhs == 0) {
+    php_warning("Float division by zero");
+    return 0;
+  }
+
+  return lhs / rhs;
 }
 
-double divide (const var &lhs, double rhs) {
-  return divide (f$floatval (lhs), rhs);
+double divide(const string &lhs, double rhs) {
+  return divide(f$floatval(lhs), rhs);
 }
 
-
-double divide (int lhs, string rhs) {
-  return divide (lhs, f$floatval (rhs));
-}
-
-double divide (double lhs, string rhs) {
-  return divide (lhs, f$floatval (rhs));
-}
-
-double divide (const string &lhs, string rhs) {
-  return divide (f$floatval (lhs), f$floatval (rhs));
-}
-
-double divide (const var &lhs, string rhs) {
-  return divide (lhs, f$floatval (rhs));
+double divide(const var &lhs, double rhs) {
+  return divide(f$floatval(lhs), rhs);
 }
 
 
-double divide (int lhs, const var &rhs) {
-  return divide (lhs, f$floatval (rhs));
+double divide(int lhs, string rhs) {
+  return divide(lhs, f$floatval(rhs));
 }
 
-double divide (double lhs, const var &rhs) {
-  return divide (lhs, f$floatval (rhs));
+double divide(double lhs, string rhs) {
+  return divide(lhs, f$floatval(rhs));
 }
 
-double divide (const string &lhs, const var &rhs) {
-  return divide (f$floatval (lhs), rhs);
+double divide(const string &lhs, string rhs) {
+  return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
-double divide (const var &lhs, const var &rhs) {
-  return f$floatval (lhs / rhs);
+double divide(const var &lhs, string rhs) {
+  return divide(lhs, f$floatval(rhs));
 }
 
 
-double divide (bool lhs, bool rhs __attribute__((unused))) {
-  php_warning ("Both arguments of operator '/' are bool");
+double divide(int lhs, const var &rhs) {
+  return divide(lhs, f$floatval(rhs));
+}
+
+double divide(double lhs, const var &rhs) {
+  return divide(lhs, f$floatval(rhs));
+}
+
+double divide(const string &lhs, const var &rhs) {
+  return divide(f$floatval(lhs), rhs);
+}
+
+double divide(const var &lhs, const var &rhs) {
+  return f$floatval(lhs / rhs);
+}
+
+
+double divide(bool lhs, bool rhs __attribute__((unused))) {
+  php_warning("Both arguments of operator '/' are bool");
   return lhs;
 }
 
-template <class T>
-double divide (bool lhs, const T &rhs) {
-  php_warning ("First argument of operator '/' is bool");
-  return divide ((int)lhs, f$floatval (rhs));
+template<class T>
+double divide(bool lhs, const T &rhs) {
+  php_warning("First argument of operator '/' is bool");
+  return divide((int)lhs, f$floatval(rhs));
 }
 
-template <class T>
-double divide (const T &lhs, bool rhs) {
-  php_warning ("Second argument of operator '/' is bool");
-  return f$floatval (lhs);
+template<class T>
+double divide(const T &lhs, bool rhs) {
+  php_warning("Second argument of operator '/' is bool");
+  return f$floatval(lhs);
 }
 
-template <class T>
-double divide (bool lhs, const array <T> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' bool and array");
+template<class T>
+double divide(bool lhs, const array<T> &rhs) {
+  php_warning("Unsupported operand types for operator '/' bool and array");
   return 0.0;
 }
 
-template <class T>
-double divide (const array <T> &lhs, bool rhs) {
-  php_warning ("Unsupported operand types for operator '/' array and bool");
+template<class T>
+double divide(const array<T> &lhs, bool rhs) {
+  php_warning("Unsupported operand types for operator '/' array and bool");
   return 0.0;
 }
 
-template <class T>
-double divide (bool lhs, const class_instance <T> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' bool and object");
+template<class T>
+double divide(bool lhs, const class_instance<T> &rhs) {
+  php_warning("Unsupported operand types for operator '/' bool and object");
   return 0.0;
 }
 
-template <class T>
-double divide (const class_instance <T> &lhs, bool rhs) {
-  php_warning ("Unsupported operand types for operator '/' object and bool");
+template<class T>
+double divide(const class_instance<T> &lhs, bool rhs) {
+  php_warning("Unsupported operand types for operator '/' object and bool");
   return 0.0;
 }
 
 
-template <class T, class T1>
-double divide (const array <T> &lhs, const T1 &rhs) {
-  php_warning ("First argument of operator '/' is array");
-  return divide (f$count (lhs), rhs);
+template<class T, class T1>
+double divide(const array<T> &lhs, const T1 &rhs) {
+  php_warning("First argument of operator '/' is array");
+  return divide(f$count(lhs), rhs);
 }
 
-template <class T, class T1>
-double divide (const T1 &lhs, const array <T> &rhs) {
-  php_warning ("Second argument of operator '/' is array");
-  return divide (lhs, f$count (rhs));
+template<class T, class T1>
+double divide(const T1 &lhs, const array<T> &rhs) {
+  php_warning("Second argument of operator '/' is array");
+  return divide(lhs, f$count(rhs));
 }
 
 
-template <class T, class T1>
-double divide (const class_instance <T> &lhs, const T1 &rhs) {
-  php_warning ("First argument of operator '/' is object");
-  return divide (1.0, rhs);
+template<class T, class T1>
+double divide(const class_instance<T> &lhs, const T1 &rhs) {
+  php_warning("First argument of operator '/' is object");
+  return divide(1.0, rhs);
 }
 
-template <class T, class T1>
-double divide (const T1 &lhs, const class_instance <T> &rhs) {
-  php_warning ("Second argument of operator '/' is object");
+template<class T, class T1>
+double divide(const T1 &lhs, const class_instance<T> &rhs) {
+  php_warning("Second argument of operator '/' is object");
   return lhs;
 }
 
 
-template <class T>
-double divide (const array <T> &lhs, const array <T> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' array and array");
+template<class T>
+double divide(const array<T> &lhs, const array<T> &rhs) {
+  php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
-template <class T>
-double divide (const class_instance <T> &lhs, const class_instance <T> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' object and object");
+template<class T>
+double divide(const class_instance<T> &lhs, const class_instance<T> &rhs) {
+  php_warning("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
-template <class T, class T1>
-double divide (const array <T> &lhs, const array <T1> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' array and array");
+template<class T, class T1>
+double divide(const array<T> &lhs, const array<T1> &rhs) {
+  php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
-template <class T, class T1>
-double divide (const class_instance <T> &lhs, const class_instance <T1> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' object and object");
+template<class T, class T1>
+double divide(const class_instance<T> &lhs, const class_instance<T1> &rhs) {
+  php_warning("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
-template <class T, class T1>
-double divide (const array <T> &lhs, const class_instance <T1> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' array and object");
+template<class T, class T1>
+double divide(const array<T> &lhs, const class_instance<T1> &rhs) {
+  php_warning("Unsupported operand types for operator '/' array and object");
   return 0.0;
 }
 
-template <class T, class T1>
-double divide (const class_instance <T1> &lhs, const array <T> &rhs) {
-  php_warning ("Unsupported operand types for operator '/' object and array");
+template<class T, class T1>
+double divide(const class_instance<T1> &lhs, const array<T> &rhs) {
+  php_warning("Unsupported operand types for operator '/' object and array");
   return 0.0;
 }
 
 
-int modulo (int lhs, int rhs) {
+int modulo(int lhs, int rhs) {
   if (rhs == 0) {
-    php_warning ("Modulo by zero");
+    php_warning("Modulo by zero");
     return 0;
   }
   return lhs % rhs;
 }
 
-template <class T1, class T2>
-int modulo (const T1 &lhs, const T2 &rhs) {
-  int div = f$intval (lhs);
-  int mod = f$intval (rhs);
+template<class T1, class T2>
+int modulo(const T1 &lhs, const T2 &rhs) {
+  int div = f$intval(lhs);
+  int mod = f$intval(rhs);
 
-  if (neq2 (div, lhs)) {
-    php_warning ("First parameter of operator %% is not an integer");
+  if (neq2(div, lhs)) {
+    php_warning("First parameter of operator %% is not an integer");
   }
-  if (neq2 (mod, rhs)) {
-    php_warning ("Second parameter of operator %% is not an integer");
+  if (neq2(mod, rhs)) {
+    php_warning("Second parameter of operator %% is not an integer");
   }
 
   if (mod == 0) {
-    php_warning ("Modulo by zero");
+    php_warning("Modulo by zero");
     return 0;
   }
   return div % mod;
 }
 
 
-template <class T1, class T2>
-T1 &divide_self (T1 &lhs, const T2 &rhs) {
-  return lhs = divide (lhs, rhs);
+template<class T1, class T2>
+T1 &divide_self(T1 &lhs, const T2 &rhs) {
+  return lhs = divide(lhs, rhs);
 }
 
 
-int &modulo_self (int &lhs, int rhs) {
-  return lhs = modulo (lhs, rhs);
+int &modulo_self(int &lhs, int rhs) {
+  return lhs = modulo(lhs, rhs);
 }
 
-template <class T1, class T2>
-T1 &modulo_self (T1 &lhs, const T2 &rhs) {
-  return lhs = modulo (lhs, rhs);
+template<class T1, class T2>
+T1 &modulo_self(T1 &lhs, const T2 &rhs) {
+  return lhs = modulo(lhs, rhs);
 }
 
 
-template <class T0, class T>
-void assign (T0 &dest, const T &from) {
+template<class T0, class T>
+void assign(T0 &dest, const T &from) {
   dest = from;
 }
 
 template<class T, class>
-bool f$boolval (const T &val) {
+bool f$boolval(const T &val) {
   return static_cast<bool>(val);
 }
 
-bool f$boolval (const string &val) {
+bool f$boolval(const string &val) {
   return val.to_bool();
 }
 
-template <class T>
-bool f$boolval (const array <T> &val) {
+template<class T>
+bool f$boolval(const array<T> &val) {
   return !val.empty();
 }
 
-template <class T>
-bool f$boolval (const class_instance <T> &val) {
+template<class T>
+bool f$boolval(const class_instance<T> &val) {
   return !val.is_null();
 }
 
-template <class ...Args>
-bool f$boolval (const tuple<Args...> &val) {
+template<class ...Args>
+bool f$boolval(const tuple<Args...> &val) {
   return true;
 }
 
-template <class T>
-bool f$boolval (const OrFalse <T> &val) {
+template<class T>
+bool f$boolval(const OrFalse<T> &val) {
   return val.bool_value ? f$boolval(val.val()) : false;
 }
 
-bool f$boolval (const var &val) {
+bool f$boolval(const var &val) {
   return val.to_bool();
 }
 
 
 template<class T, class>
-int f$intval (const T &val) {
+int f$intval(const T &val) {
   return static_cast<int>(val);
 }
 
-int f$intval (const string &val) {
-  return val.to_int();
-}
-
-template <class T>
-int f$intval (const array <T> &val) {
-  php_warning ("Wrong convertion from array to int");
-  return val.to_int();
-}
-
-template <class T>
-int f$intval (const class_instance <T> &val) {
-  php_warning ("Wrong convertion from object to int");
-  return 1;
-}
-
-int f$intval (const var &val) {
+int f$intval(const string &val) {
   return val.to_int();
 }
 
 template<class T>
-inline int f$intval (const OrFalse<T> &val) {
+int f$intval(const array<T> &val) {
+  php_warning("Wrong convertion from array to int");
+  return val.to_int();
+}
+
+template<class T>
+int f$intval(const class_instance<T> &val) {
+  php_warning("Wrong convertion from object to int");
+  return 1;
+}
+
+int f$intval(const var &val) {
+  return val.to_int();
+}
+
+template<class T>
+inline int f$intval(const OrFalse<T> &val) {
   return val.bool_value ? f$intval(val.val()) : 0;
 }
 
 
-int f$safe_intval (const bool &val) {
+int f$safe_intval(const bool &val) {
   return val;
 }
 
-const int &f$safe_intval (const int &val) {
+const int &f$safe_intval(const int &val) {
   return val;
 }
 
-int f$safe_intval (const double &val) {
-  if (fabs (val) > 2147483648) {
-    php_warning ("Wrong convertion from double %.6lf to int", val);
+int f$safe_intval(const double &val) {
+  if (fabs(val) > 2147483648) {
+    php_warning("Wrong convertion from double %.6lf to int", val);
   }
   return (int)val;
 }
 
-int f$safe_intval (const string &val) {
+int f$safe_intval(const string &val) {
   return val.safe_to_int();
 }
 
-template <class T>
-int f$safe_intval (const array <T> &val) {
-  php_warning ("Wrong convertion from array to int");
+template<class T>
+int f$safe_intval(const array<T> &val) {
+  php_warning("Wrong convertion from array to int");
   return val.to_int();
 }
 
-template <class T>
-int f$safe_intval (const class_instance <T> &val) {
-  php_warning ("Wrong convertion from object to int");
+template<class T>
+int f$safe_intval(const class_instance<T> &val) {
+  php_warning("Wrong convertion from object to int");
   return 1;
 }
 
-int f$safe_intval (const var &val) {
+int f$safe_intval(const var &val) {
   return val.safe_to_int();
 }
 
@@ -1333,23 +1332,23 @@ double f$floatval(const T &val) {
   return static_cast<double>(val);
 }
 
-double f$floatval (const string &val) {
+double f$floatval(const string &val) {
   return val.to_float();
 }
 
-template <class T>
-double f$floatval (const array <T> &val) {
-  php_warning ("Wrong convertion from array to float");
+template<class T>
+double f$floatval(const array<T> &val) {
+  php_warning("Wrong convertion from array to float");
   return val.to_float();
 }
 
-template <class T>
-double f$floatval (const class_instance <T> &val) {
-  php_warning ("Wrong convertion from object to float");
+template<class T>
+double f$floatval(const class_instance<T> &val) {
+  php_warning("Wrong convertion from object to float");
   return 1.0;
 }
 
-double f$floatval (const var &val) {
+double f$floatval(const var &val) {
   return val.to_float();
 }
 
@@ -1359,68 +1358,68 @@ inline double f$floatval(const OrFalse<T> &val) {
 }
 
 
-string f$strval (const bool &val) {
-  return (val ? string ("1", 1) : string());
+string f$strval(const bool &val) {
+  return (val ? string("1", 1) : string());
 }
 
-string f$strval (const int &val) {
-  return string (val);
+string f$strval(const int &val) {
+  return string(val);
 }
 
-string f$strval (const double &val) {
-  return string (val);
+string f$strval(const double &val) {
+  return string(val);
 }
 
-string f$strval (const string &val) {
+string f$strval(const string &val) {
   return val;
 }
 
-template <class T>
-string f$strval (const array <T> &) {
-  php_warning ("Convertion from array to string");
-  return string ("Array", 5);
+template<class T>
+string f$strval(const array<T> &) {
+  php_warning("Convertion from array to string");
+  return string("Array", 5);
 }
 
-template <class ...Args>
-string f$strval (const tuple <Args...> &) {
-  php_warning ("Convertion from tuple to string");
-  return string ("Array", 5);
+template<class ...Args>
+string f$strval(const tuple<Args...> &) {
+  php_warning("Convertion from tuple to string");
+  return string("Array", 5);
 }
 
-template <class T>
+template<class T>
 string f$strval(const OrFalse<T> &val) {
   return val.bool_value ? f$strval(val.val()) : f$strval(false);
 }
 
-template <class T>
-string f$strval (const class_instance <T> &val) {
+template<class T>
+string f$strval(const class_instance<T> &val) {
   return val.to_string();
 }
 
-string f$strval (const var &val) {
+string f$strval(const var &val) {
   return val.to_string();
 }
 
 
-template <class T>
-array <var> f$arrayval (const T &val) {
-  array <var> res (array_size (1, 0, true));
-  res.push_back (val);
+template<class T>
+array<var> f$arrayval(const T &val) {
+  array<var> res(array_size(1, 0, true));
+  res.push_back(val);
   return res;
 }
 
-template <class T>
-const array <T> &f$arrayval (const array <T> &val) {
+template<class T>
+const array<T> &f$arrayval(const array<T> &val) {
   return val;
 }
 
-template <class T>
-array <var> f$arrayval (const class_instance <T> &val) {
+template<class T>
+array<var> f$arrayval(const class_instance<T> &val) {
   php_warning("Can not convert class instance to array");
-  return array <var>();
+  return array<var>();
 }
 
-array <var> f$arrayval (const var &val) {
+array<var> f$arrayval(const var &val) {
   return val.to_array();
 }
 
@@ -1429,194 +1428,194 @@ inline array<var> f$arrayval(const OrFalse<T> &val) {
   return val.bool_value ? f$arrayval(val.val()) : f$arrayval(false);
 }
 
-bool& boolval_ref (bool &val) {
+bool &boolval_ref(bool &val) {
   return val;
 }
 
-bool& boolval_ref (var &val) {
-  return val.as_bool ("unknown", -1);
+bool &boolval_ref(var &val) {
+  return val.as_bool("unknown", -1);
 }
 
-const bool& boolval_ref (const bool &val) {
+const bool &boolval_ref(const bool &val) {
   return val;
 }
 
-const bool& boolval_ref (const var &val) {
-  return val.as_bool ("unknown", -1);
+const bool &boolval_ref(const var &val) {
+  return val.as_bool("unknown", -1);
 }
 
 
-int& intval_ref (int &val) {
+int &intval_ref(int &val) {
   return val;
 }
 
-int& intval_ref (var &val) {
-  return val.as_int ("unknown", -1);
+int &intval_ref(var &val) {
+  return val.as_int("unknown", -1);
 }
 
-const int& intval_ref (const int &val) {
+const int &intval_ref(const int &val) {
   return val;
 }
 
-const int& intval_ref (const var &val) {
-  return val.as_int ("unknown", -1);
+const int &intval_ref(const var &val) {
+  return val.as_int("unknown", -1);
 }
 
 
-double& floatval_ref (double &val) {
+double &floatval_ref(double &val) {
   return val;
 }
 
-double& floatval_ref (var &val) {
-  return val.as_float ("unknown", -1);
+double &floatval_ref(var &val) {
+  return val.as_float("unknown", -1);
 }
 
-const double& floatval_ref (const double &val) {
+const double &floatval_ref(const double &val) {
   return val;
 }
 
-const double& floatval_ref (const var &val) {
-  return val.as_float ("unknown", -1);
+const double &floatval_ref(const var &val) {
+  return val.as_float("unknown", -1);
 }
 
 
-string& strval_ref (string &val) {
+string &strval_ref(string &val) {
   return val;
 }
 
-string& strval_ref (var &val) {
-  return val.as_string ("unknown", -1);
+string &strval_ref(var &val) {
+  return val.as_string("unknown", -1);
 }
 
-const string& strval_ref (const string &val) {
+const string &strval_ref(const string &val) {
   return val;
 }
 
-const string& strval_ref (const var &val) {
-  return val.as_string ("unknown", -1);
+const string &strval_ref(const var &val) {
+  return val.as_string("unknown", -1);
 }
 
 
-template <class T>
-array <T> &arrayval_ref (array <T> &val, const char *function, int parameter_num) {
+template<class T>
+array<T> &arrayval_ref(array<T> &val, const char *function, int parameter_num) {
   return val;
 }
 
-array <var>& arrayval_ref (var &val, const char *function, int parameter_num) {
-  return val.as_array (function, parameter_num);
+array<var> &arrayval_ref(var &val, const char *function, int parameter_num) {
+  return val.as_array(function, parameter_num);
 }
 
-template <class T>
-const array <T> &arrayval_ref (const array <T> &val, const char *function, int parameter_num) {
+template<class T>
+const array<T> &arrayval_ref(const array<T> &val, const char *function, int parameter_num) {
   return val;
 }
 
-const array <var>& arrayval_ref (const var &val, const char *function, int parameter_num) {
-  return val.as_array (function, parameter_num);
+const array<var> &arrayval_ref(const var &val, const char *function, int parameter_num) {
+  return val.as_array(function, parameter_num);
 }
 
 
-template <class T>
-bool eq2 (const OrFalse <T> &v, bool value) {
-  return likely (v.bool_value) ? eq2 (v.value, value) : eq2 (false, value);
+template<class T>
+bool eq2(const OrFalse<T> &v, bool value) {
+  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
 }
 
-template <class T>
-bool eq2 (bool value, const OrFalse <T> &v) {
-  return likely (v.bool_value) ? eq2 (v.value, value) : eq2 (false, value);
+template<class T>
+bool eq2(bool value, const OrFalse<T> &v) {
+  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
 }
 
-template <class T>
-bool eq2 (const OrFalse <T> &v, const OrFalse <T> &value) {
-  return likely (v.bool_value) ? eq2 (v.value, value) : eq2 (false, value);
+template<class T>
+bool eq2(const OrFalse<T> &v, const OrFalse<T> &value) {
+  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
 }
 
-template <class T, class T1>
-bool eq2 (const OrFalse <T> &v, const OrFalse <T1> &value) {
-  return likely (v.bool_value) ? eq2 (v.value, value) : eq2 (false, value);
+template<class T, class T1>
+bool eq2(const OrFalse<T> &v, const OrFalse<T1> &value) {
+  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
 }
 
-template <class T, class T1>
-bool eq2 (const OrFalse <T> &v, const T1 &value) {
-  return likely (v.bool_value) ? eq2 (v.value, value) : eq2 (false, value);
+template<class T, class T1>
+bool eq2(const OrFalse<T> &v, const T1 &value) {
+  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
 }
 
-template <class T, class T1>
-bool eq2 (const T1 &value, const OrFalse <T> &v) {
-  return likely (v.bool_value) ? eq2 (v.value, value) : eq2 (false, value);
+template<class T, class T1>
+bool eq2(const T1 &value, const OrFalse<T> &v) {
+  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
 }
 
-template <class T>
-bool equals (const OrFalse <T> &value, const OrFalse <T> &v) {
-  return likely (v.bool_value) ? equals (v.value, value) : equals (false, value);
+template<class T>
+bool equals(const OrFalse<T> &value, const OrFalse<T> &v) {
+  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
 }
 
-template <class T, class T1>
-bool equals (const OrFalse <T1> &value, const OrFalse <T> &v) {
-  return likely (v.bool_value) ? equals (v.value, value) : equals (false, value);
+template<class T, class T1>
+bool equals(const OrFalse<T1> &value, const OrFalse<T> &v) {
+  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
 }
 
-template <class T, class T1>
-bool equals (const T1 &value, const OrFalse <T> &v) {
-  return likely (v.bool_value) ? equals (v.value, value) : equals (false, value);
+template<class T, class T1>
+bool equals(const T1 &value, const OrFalse<T> &v) {
+  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
 }
 
-template <class T, class T1>
-bool equals (const OrFalse <T> &v, const T1 &value) {
-  return likely (v.bool_value) ? equals (v.value, value) : equals (false, value);
+template<class T, class T1>
+bool equals(const OrFalse<T> &v, const T1 &value) {
+  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
 }
 
 
-template <class T>
-const T& convert_to <T>::convert (const T &val) {
+template<class T>
+const T &convert_to<T>::convert(const T &val) {
   return val;
 }
 
-template <class T>
-T convert_to <T>::convert (const Unknown &val) {
+template<class T>
+T convert_to<T>::convert(const Unknown &val) {
   return T();
 }
 
-template <class T>
-template <class T1>
-T convert_to <T>::convert (const T1 &val) {
+template<class T>
+template<class T1>
+T convert_to<T>::convert(const T1 &val) {
   return val;
 }
 
-template <>
-template <class T1>
-bool convert_to <bool>::convert (const T1 &val) {
-  return f$boolval (val);
+template<>
+template<class T1>
+bool convert_to<bool>::convert(const T1 &val) {
+  return f$boolval(val);
 }
 
-template <>
-template <class T1>
-int convert_to <int>::convert (const T1 &val) {
-  return f$intval (val);
+template<>
+template<class T1>
+int convert_to<int>::convert(const T1 &val) {
+  return f$intval(val);
 }
 
-template <>
-template <class T1>
-double convert_to <double>::convert (const T1 &val) {
-  return f$floatval (val);
+template<>
+template<class T1>
+double convert_to<double>::convert(const T1 &val) {
+  return f$floatval(val);
 }
 
-template <>
-template <class T1>
-string convert_to <string>::convert (const T1 &val) {
-  return f$strval (val);
+template<>
+template<class T1>
+string convert_to<string>::convert(const T1 &val) {
+  return f$strval(val);
 }
 
-template <>
-template <class T1>
-array <var> convert_to <array <var> >::convert (const T1 &val) {
-  return f$arrayval (val);
+template<>
+template<class T1>
+array<var> convert_to<array<var>>::convert(const T1 &val) {
+  return f$arrayval(val);
 }
 
-template <>
-template <class T1>
-var convert_to <var>::convert (const T1 &val) {
-  return var (val);
+template<>
+template<class T1>
+var convert_to<var>::convert(const T1 &val) {
+  return var(val);
 }
 
 
@@ -1816,155 +1815,155 @@ bool f$is_object(const class_instance<T> &v) {
 }
 
 
-template <class T>
-bool f$is_integer (const T &v) {
-  return f$is_int (v);
+template<class T>
+bool f$is_integer(const T &v) {
+  return f$is_int(v);
 }
 
-template <class T>
-bool f$is_long (const T &v) {
-  return f$is_int (v);
+template<class T>
+bool f$is_long(const T &v) {
+  return f$is_int(v);
 }
 
-template <class T>
-bool f$is_double (const T &v) {
-  return f$is_float (v);
+template<class T>
+bool f$is_double(const T &v) {
+  return f$is_float(v);
 }
 
-template <class T>
-bool f$is_real (const T &v) {
-  return f$is_float (v);
+template<class T>
+bool f$is_real(const T &v) {
+  return f$is_float(v);
 }
 
 
-const char *get_type_c_str (const bool &v) {
+const char *get_type_c_str(const bool &v) {
   (void)v;
   return "boolean";
 }
 
-const char *get_type_c_str (const int &v) {
+const char *get_type_c_str(const int &v) {
   (void)v;
   return "integer";
 }
 
-const char *get_type_c_str (const double &v) {
+const char *get_type_c_str(const double &v) {
   (void)v;
   return "double";
 }
 
-const char *get_type_c_str (const string &v) {
+const char *get_type_c_str(const string &v) {
   (void)v;
   return "string";
 }
 
-const char *get_type_c_str (const var &v) {
+const char *get_type_c_str(const var &v) {
   return v.get_type_c_str();
 }
 
-template <class T>
-const char *get_type_c_str (const array <T> &v) {
+template<class T>
+const char *get_type_c_str(const array<T> &v) {
   (void)v;
   return "array";
 }
 
-template <class T>
-const char *get_type_c_str (const class_instance <T> &v) {
+template<class T>
+const char *get_type_c_str(const class_instance<T> &v) {
   (void)v;
   return "object";
 }
 
 
-template <class T>
-string f$get_type (const T &v) {
+template<class T>
+string f$get_type(const T &v) {
   const char *res = get_type_c_str(v);
-  return string (res, strlen (res));
+  return string(res, strlen(res));
 }
 
 
-string f$get_class (const bool &v) {
-  (void) v;
+string f$get_class(const bool &v) {
+  (void)v;
   php_warning("Called get_class() on boolean");
   return string();
 }
 
-string f$get_class (const int &v) {
-  (void) v;
+string f$get_class(const int &v) {
+  (void)v;
   php_warning("Called get_class() on integer");
   return string();
 }
 
-string f$get_class (const double &v) {
-  (void) v;
+string f$get_class(const double &v) {
+  (void)v;
   php_warning("Called get_class() on double");
   return string();
 }
 
-string f$get_class (const string &v) {
-  (void) v;
+string f$get_class(const string &v) {
+  (void)v;
   php_warning("Called get_class() on string");
   return string();
 }
 
-string f$get_class (const var &v) {
+string f$get_class(const var &v) {
   php_warning("Called get_class() on %s", v.get_type_c_str());
   return string();
 }
 
-template <class T>
-string f$get_class (const array <T> &v) {
-  (void) v;
+template<class T>
+string f$get_class(const array<T> &v) {
+  (void)v;
   php_warning("Called get_class() on array");
   return string();
 }
 
-template <class T>
-string f$get_class (const class_instance <T> &v) {
+template<class T>
+string f$get_class(const class_instance<T> &v) {
   const char *result = v.get_class();
-  return string (result, (dl::size_type)strlen (result));
+  return string(result, (dl::size_type)strlen(result));
 }
 
 
-string& append (string &dest, const string &from) {
-  return dest.append (from);
+string &append(string &dest, const string &from) {
+  return dest.append(from);
 }
 
-template <class T>
-string& append(OrFalse<string> &dest, const T &from) {
+template<class T>
+string &append(OrFalse<string> &dest, const T &from) {
   return append(dest.ref(), from);
 }
 
-template <class T>
-string& append (string &dest, const T &from) {
-  return dest.append (f$strval (from));
+template<class T>
+string &append(string &dest, const T &from) {
+  return dest.append(f$strval(from));
 }
 
-template <class T>
-var& append (var &dest, const T &from) {
-  return dest.append (f$strval (from));
+template<class T>
+var &append(var &dest, const T &from) {
+  return dest.append(f$strval(from));
 }
 
-template <class T0, class T>
-T0& append (T0 &dest, const T &from) {
-  php_warning ("Wrong arguments types %s and %s for operator .=", get_type_c_str (dest), get_type_c_str (from));
+template<class T0, class T>
+T0 &append(T0 &dest, const T &from) {
+  php_warning("Wrong arguments types %s and %s for operator .=", get_type_c_str(dest), get_type_c_str(from));
   return dest;
 }
 
 
-string f$gettype (const var &v) {
+string f$gettype(const var &v) {
   return v.get_type();
 }
 
-template <class T>
-bool f$function_exists (const T &a1) {
+template<class T>
+bool f$function_exists(const T &a1) {
   return true;
 }
 
 
-var f$error_get_last (void) {
+var f$error_get_last(void) {
   return var();
 }
 
-int f$error_reporting (int level) {
+int f$error_reporting(int level) {
   int prev = php_warning_level;
   if ((level & E_ALL) == E_ALL) {
     php_warning_level = 3;
@@ -1975,19 +1974,19 @@ int f$error_reporting (int level) {
   return prev;
 }
 
-int f$error_reporting (void) {
+int f$error_reporting(void) {
   return php_warning_level;
 }
 
-void f$warning (const string &message) {
-  php_warning ("%s", message.c_str());
+void f$warning(const string &message) {
+  php_warning("%s", message.c_str());
 }
 
-int f$memory_get_static_usage (void) {
+int f$memory_get_static_usage(void) {
   return (int)dl::static_memory_used;
 }
 
-int f$memory_get_peak_usage (bool real_usage) {
+int f$memory_get_peak_usage(bool real_usage) {
   if (real_usage) {
     return (int)dl::max_real_memory_used;
   } else {
@@ -1995,198 +1994,198 @@ int f$memory_get_peak_usage (bool real_usage) {
   }
 }
 
-int f$memory_get_usage (bool real_usage __attribute__((unused))) {
+int f$memory_get_usage(bool real_usage __attribute__((unused))) {
   return (int)dl::memory_used;
 }
 
-int f$memory_get_total_usage (void) {
+int f$memory_get_total_usage(void) {
   return (int)dl::memory_get_total_usage();
 }
 
 
 template<class T>
-int f$get_reference_counter (const array<T> &v) {
+int f$get_reference_counter(const array<T> &v) {
   return v.get_reference_counter();
 }
 
-template <class T>
-int f$get_reference_counter (const class_instance <T> &v) {
+template<class T>
+int f$get_reference_counter(const class_instance<T> &v) {
   return v.get_reference_counter();
 }
 
-int f$get_reference_counter (const string &v) {
+int f$get_reference_counter(const string &v) {
   return v.get_reference_counter();
 }
 
-int f$get_reference_counter (const var &v) {
+int f$get_reference_counter(const var &v) {
   return v.get_reference_counter();
 }
 
 
-template <class T>
-T& val (T &x) {
+template<class T>
+T &val(T &x) {
   return x;
 }
 
-template <class T>
-const T& val (const T &x) {
+template<class T>
+const T &val(const T &x) {
   return x;
 }
 
-template <class T>
-T& ref (T &x) {
+template<class T>
+T &ref(T &x) {
   return x;
 }
 
-template <class T>
-const T& val (const OrFalse <T> &x) {
+template<class T>
+const T &val(const OrFalse<T> &x) {
   return x.val();
 }
 
-template <class T>
-T& val (OrFalse <T> &x) {
+template<class T>
+T &val(OrFalse<T> &x) {
   return x.val();
 }
 
-template <class T>
-T& ref (OrFalse <T> &x) {
+template<class T>
+T &ref(OrFalse<T> &x) {
   return x.ref();
 }
 
 
 template<class T>
-typename array<T>::iterator begin (array<T> &x) {
+typename array<T>::iterator begin(array<T> &x) {
   return x.begin();
 }
 
 template<class T>
-typename array<T>::const_iterator begin (const array<T> &x) {
+typename array<T>::const_iterator begin(const array<T> &x) {
   return x.begin();
 }
 
 template<class T>
-typename array<T>::const_iterator const_begin (const array<T> &x) {
+typename array<T>::const_iterator const_begin(const array<T> &x) {
   return x.begin();
 }
 
 
-array <var>::iterator begin (var &x) {
+array<var>::iterator begin(var &x) {
   return x.begin();
 }
 
-array <var>::const_iterator begin (const var &x) {
+array<var>::const_iterator begin(const var &x) {
   return x.begin();
 }
 
-array <var>::const_iterator const_begin (const var &x) {
+array<var>::const_iterator const_begin(const var &x) {
   return x.begin();
 }
 
 
 template<class T>
-typename array<T>::iterator begin (OrFalse < array<T> > &x) {
+typename array<T>::iterator begin(OrFalse<array<T>> &x) {
   if (!x.bool_value) {
-    php_warning ("Invalid argument supplied for foreach(), false is given");
+    php_warning("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.begin();
 }
 
 template<class T>
-typename array<T>::const_iterator begin (const OrFalse < array<T> > &x) {
+typename array<T>::const_iterator begin(const OrFalse<array<T>> &x) {
   if (!x.bool_value) {
-    php_warning ("Invalid argument supplied for foreach(), false is given");
+    php_warning("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.begin();
 }
 
 template<class T>
-typename array<T>::const_iterator const_begin (const OrFalse < array<T> > &x) {
+typename array<T>::const_iterator const_begin(const OrFalse<array<T>> &x) {
   if (!x.bool_value) {
-    php_warning ("Invalid argument supplied for foreach(), false is given");
+    php_warning("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.begin();
 }
 
 
 template<class T>
-typename array<T>::iterator end (array<T> &x) {
+typename array<T>::iterator end(array<T> &x) {
   return x.end();
 }
 
 template<class T>
-typename array<T>::const_iterator end (const array<T> &x) {
+typename array<T>::const_iterator end(const array<T> &x) {
   return x.end();
 }
 
 template<class T>
-typename array<T>::const_iterator const_end (const array<T> &x) {
+typename array<T>::const_iterator const_end(const array<T> &x) {
   return x.end();
 }
 
-array <var>::iterator end (var &x) {
+array<var>::iterator end(var &x) {
   return x.end();
 }
 
-array <var>::const_iterator end (const var &x) {
+array<var>::const_iterator end(const var &x) {
   return x.end();
 }
 
-array <var>::const_iterator const_end (const var &x) {
+array<var>::const_iterator const_end(const var &x) {
   return x.end();
 }
 
 
 template<class T>
-typename array<T>::iterator end (OrFalse < array<T> > &x) {
+typename array<T>::iterator end(OrFalse<array<T>> &x) {
   if (!x.bool_value) {
-    php_warning ("Invalid argument supplied for foreach(), false is given");
+    php_warning("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.end();
 }
 
 template<class T>
-typename array<T>::const_iterator end (const OrFalse < array<T> > &x) {
+typename array<T>::const_iterator end(const OrFalse<array<T>> &x) {
   if (!x.bool_value) {
-    php_warning ("Invalid argument supplied for foreach(), false is given");
+    php_warning("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.end();
 }
 
 template<class T>
-typename array<T>::const_iterator const_end (const OrFalse < array<T> > &x) {
+typename array<T>::const_iterator const_end(const OrFalse<array<T>> &x) {
   if (!x.bool_value) {
-    php_warning ("Invalid argument supplied for foreach(), false is given");
+    php_warning("Invalid argument supplied for foreach(), false is given");
   }
   return x.value.end();
 }
 
 
-void clear_array (var &v) {
+void clear_array(var &v) {
   v.clear();
 }
 
-template <class T>
-void clear_array (array <T> &a) {
+template<class T>
+void clear_array(array<T> &a) {
   a.clear();
 }
 
-template <class T>
-void clear_array (OrFalse <array <T> > &a) {
+template<class T>
+void clear_array(OrFalse<array<T>> &a) {
   a.value.clear();
   a.bool_value = false;
 }
 
-template <class T>
-void unset (array <T> &x) {
-  clear_array (x);
+template<class T>
+void unset(array<T> &x) {
+  clear_array(x);
 }
 
-template <class T>
-void unset (class_instance <T> &x) {
+template<class T>
+void unset(class_instance<T> &x) {
   x.destroy();
 }
 
-void unset (var &x) {
+void unset(var &x) {
   x = var();
 }
 

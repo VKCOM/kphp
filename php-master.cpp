@@ -99,7 +99,7 @@ static double my_now;
 
 
 /*** Shared data functions ***/
-void mem_info_add (mem_info_t *dst, const mem_info_t &other) {
+void mem_info_add(mem_info_t *dst, const mem_info_t &other) {
   dst->vm_peak += other.vm_peak;
   dst->vm += other.vm;
   dst->rss_peak += other.rss_peak;
@@ -115,7 +115,8 @@ long workers_killed;
 long workers_hung;
 long workers_terminated;
 long workers_failed;
-void acc_stats_update (acc_stats_t *to, const acc_stats_t &from) {
+
+void acc_stats_update(acc_stats_t *to, const acc_stats_t &from) {
   to->tot_queries += from.tot_queries;
   to->worked_time += from.worked_time;
   to->net_time += from.net_time;
@@ -127,7 +128,7 @@ void acc_stats_update (acc_stats_t *to, const acc_stats_t &from) {
   to->cnt++;
 }
 
-std::string acc_stats_to_str (std::string pid_s, const acc_stats_t &acc) {
+std::string acc_stats_to_str(std::string pid_s, const acc_stats_t &acc) {
   char buf[1000];
   std::string res;
 
@@ -136,21 +137,21 @@ std::string acc_stats_to_str (std::string pid_s, const acc_stats_t &acc) {
     cnt = 1;
   }
 
-  sprintf (buf, "tot_queries%s\t%ld\n", pid_s.c_str(), acc.tot_queries);
+  sprintf(buf, "tot_queries%s\t%ld\n", pid_s.c_str(), acc.tot_queries);
   res += buf;
-  sprintf (buf, "worked_time%s\t%.3lf\n", pid_s.c_str(), acc.worked_time);
+  sprintf(buf, "worked_time%s\t%.3lf\n", pid_s.c_str(), acc.worked_time);
   res += buf;
-  sprintf (buf, "net_time%s\t%.3lf\n", pid_s.c_str(), acc.net_time);
+  sprintf(buf, "net_time%s\t%.3lf\n", pid_s.c_str(), acc.net_time);
   res += buf;
-  sprintf (buf, "script_time%s\t%.3lf\n", pid_s.c_str(), acc.script_time);
+  sprintf(buf, "script_time%s\t%.3lf\n", pid_s.c_str(), acc.script_time);
   res += buf;
-  sprintf (buf, "tot_script_queries%s\t%ld\n", pid_s.c_str(), acc.tot_script_queries);
+  sprintf(buf, "tot_script_queries%s\t%ld\n", pid_s.c_str(), acc.tot_script_queries);
   res += buf;
-  sprintf (buf, "tot_idle_time%s\t%.3lf\n", pid_s.c_str(), acc.tot_idle_time);
+  sprintf(buf, "tot_idle_time%s\t%.3lf\n", pid_s.c_str(), acc.tot_idle_time);
   res += buf;
-  sprintf (buf, "tot_idle_percent%s\t%.3lf%%\n", pid_s.c_str(), acc.tot_idle_percent / cnt);
+  sprintf(buf, "tot_idle_percent%s\t%.3lf%%\n", pid_s.c_str(), acc.tot_idle_percent / cnt);
   res += buf;
-  sprintf (buf, "recent_idle_percent%s\t%.3lf%%\n", pid_s.c_str(), acc.a_idle_percent / cnt);
+  sprintf(buf, "recent_idle_percent%s\t%.3lf%%\n", pid_s.c_str(), acc.a_idle_percent / cnt);
   res += buf;
 
   return res;
@@ -163,16 +164,18 @@ struct CpuStatTimestamp {
   unsigned long long stime;
   unsigned long long total_time;
 
-  CpuStatTimestamp()
-    : timestamp(0)
-    , utime(0)
-    , stime(0)
-    , total_time(0)
-  {}
+  CpuStatTimestamp() :
+    timestamp(0),
+    utime(0),
+    stime(0),
+    total_time(0) {}
 
-  CpuStatTimestamp (double timestamp, unsigned long long utime,
-                    unsigned long long stime, unsigned long long total_time)
-    : timestamp (timestamp), utime (utime), stime (stime), total_time (total_time) {
+  CpuStatTimestamp(double timestamp, unsigned long long utime,
+                   unsigned long long stime, unsigned long long total_time) :
+    timestamp(timestamp),
+    utime(utime),
+    stime(stime),
+    total_time(total_time) {
   }
 };
 
@@ -181,17 +184,15 @@ struct CpuStat {
   double cpu_u_usage;
   double cpu_s_usage;
 
-  CpuStat()
-    : cpu_usage(0)
-    , cpu_u_usage(0)
-    , cpu_s_usage(0)
-  {}
+  CpuStat() :
+    cpu_usage(0),
+    cpu_u_usage(0),
+    cpu_s_usage(0) {}
 
-  CpuStat (const CpuStatTimestamp &from, const CpuStatTimestamp &to)
-    : cpu_usage(0)
-    , cpu_u_usage(0)
-    , cpu_s_usage(0)
-  {
+  CpuStat(const CpuStatTimestamp &from, const CpuStatTimestamp &to) :
+    cpu_usage(0),
+    cpu_u_usage(0),
+    cpu_s_usage(0) {
     unsigned long long total_diff = to.total_time - from.total_time;
     cpu_u_usage = (double)(to.utime - from.utime) / (double)total_diff;
     cpu_s_usage = (double)(to.stime - from.stime) / (double)total_diff;
@@ -203,18 +204,21 @@ struct CpuStatSegment {
   typedef CpuStat Stat;
   CpuStatTimestamp first, last;
 
-  void init (const CpuStatTimestamp &from) {
+  void init(const CpuStatTimestamp &from) {
     first = from;
     last = from;
   }
-  void update (const CpuStatTimestamp &from) {
+
+  void update(const CpuStatTimestamp &from) {
     last = from;
   }
+
   double duration() {
     return last.timestamp - first.timestamp;
   }
+
   Stat get_stat() {
-    return Stat (first, last);
+    return Stat(first, last);
   }
 };
 
@@ -226,9 +230,11 @@ struct MiscStat {
 struct MiscStatTimestamp {
   double timestamp;
   int running_workers;
-  MiscStatTimestamp (double timestamp, int running_workers)
-    : timestamp (timestamp), running_workers (running_workers) {
-    }
+
+  MiscStatTimestamp(double timestamp, int running_workers) :
+    timestamp(timestamp),
+    running_workers(running_workers) {
+  }
 };
 
 struct MiscStatSegment {
@@ -239,7 +245,7 @@ struct MiscStatSegment {
   int running_workers_max;
   double first_timestamp, last_timestamp;
 
-  void update (const MiscStatTimestamp &from) {
+  void update(const MiscStatTimestamp &from) {
     last_timestamp = from.timestamp;
     stat_cnt++;
     running_workers_sum += from.running_workers;
@@ -247,58 +253,60 @@ struct MiscStatSegment {
       running_workers_max = from.running_workers;
     }
   }
-  void init (const MiscStatTimestamp &from) {
+
+  void init(const MiscStatTimestamp &from) {
     stat_cnt = 0;
     running_workers_max = 0;
     running_workers_sum = 0;
     first_timestamp = from.timestamp;
-    update (from);
+    update(from);
   }
+
   double duration() {
     return last_timestamp - first_timestamp;
   }
+
   MiscStat get_stat() {
     MiscStat res;
     res.running_workers_max = running_workers_max;
-    res.running_workers_avg = stat_cnt != 0 ? (double)running_workers_sum / (double)stat_cnt: -1.0;
+    res.running_workers_avg = stat_cnt != 0 ? (double)running_workers_sum / (double)stat_cnt : -1.0;
     return res;
   }
 };
 
 
-template <class StatSegment, class StatTimestamp>
+template<class StatSegment, class StatTimestamp>
 struct StatImpl {
 
   StatSegment first, second;
   double period;
   bool is_inited;
 
-  StatImpl ()
-    : period ((double)60 * 60 * 24 * 100000)
-    , is_inited (false)
-  {}
+  StatImpl() :
+    period((double)60 * 60 * 24 * 100000),
+    is_inited(false) {}
 
-  void set_period (double new_period) {
+  void set_period(double new_period) {
     period = new_period;
   }
 
-  void add_timestamp (const StatTimestamp &new_timestamp) {
+  void add_timestamp(const StatTimestamp &new_timestamp) {
     if (!is_inited) {
-      first.init (new_timestamp);
-      second.init (new_timestamp);
+      first.init(new_timestamp);
+      second.init(new_timestamp);
       is_inited = true;
       return;
     }
-    first.update (new_timestamp);
-    second.update (new_timestamp);
+    first.update(new_timestamp);
+    second.update(new_timestamp);
 
     if (second.duration() > period) {
       first = second;
-      second.init (new_timestamp);
+      second.init(new_timestamp);
     }
   }
 
-  typename StatSegment::Stat get_stat (void) {
+  typename StatSegment::Stat get_stat(void) {
     if (!is_inited) {
       return typename StatSegment::Stat();
     }
@@ -309,23 +317,23 @@ struct StatImpl {
 const int periods_n = 4;
 const double periods_len[] = {0, 60, 60 * 10, 60 * 60};
 const char *periods_desc[] = {"now", "1m", "10m", "1h"};
+
 struct Stats {
   std::string engine_stats;
   std::string cpu_desc, misc_desc;
   php_immediate_stats_t istats;
   mem_info_t mem_info;
-  StatImpl <CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
-  StatImpl <MiscStatSegment, MiscStatTimestamp> misc[periods_n];
+  StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
+  StatImpl<MiscStatSegment, MiscStatTimestamp> misc[periods_n];
   acc_stats_t acc_stats;
 
-  Stats()
-    : istats()
-    , mem_info()
-    , acc_stats()
-  {
+  Stats() :
+    istats(),
+    mem_info(),
+    acc_stats() {
     for (int i = 0; i < periods_n; i++) {
-      cpu[i].set_period (periods_len[i]);
-      misc[i].set_period (periods_len[i]);
+      cpu[i].set_period(periods_len[i]);
+      misc[i].set_period(periods_len[i]);
     }
 
     for (int i = 0; i < periods_n; i++) {
@@ -341,18 +349,20 @@ struct Stats {
       misc_desc += periods_desc[i];
     }
   }
-  void update (const CpuStatTimestamp &cpu_timestamp) {
+
+  void update(const CpuStatTimestamp &cpu_timestamp) {
     for (int i = 0; i < periods_n; i++) {
-      cpu[i].add_timestamp (cpu_timestamp);
-    }
-  }
-  void update (const MiscStatTimestamp &misc_timestamp) {
-    for (int i = 1; i < periods_n; i++) {
-      misc[i].add_timestamp (misc_timestamp);
+      cpu[i].add_timestamp(cpu_timestamp);
     }
   }
 
-  std::string to_string (int pid, bool full_flag = true, bool is_main = false) {
+  void update(const MiscStatTimestamp &misc_timestamp) {
+    for (int i = 1; i < periods_n; i++) {
+      misc[i].add_timestamp(misc_timestamp);
+    }
+  }
+
+  std::string to_string(int pid, bool full_flag = true, bool is_main = false) {
     std::string res;
 
     if (full_flag) {
@@ -363,7 +373,7 @@ struct Stats {
 
     std::string pid_s;
     if (!is_main) {
-      assert (snprintf (buffer, 1000, " %d", pid) < 1000);
+      assert (snprintf(buffer, 1000, " %d", pid) < 1000);
       pid_s = buffer;
     }
 
@@ -374,17 +384,17 @@ struct Stats {
     for (int i = 0; i < periods_n; i++) {
       CpuStat s = cpu[i].get_stat();
 
-      sprintf (buffer, " %6.2lf%%", cpu_cnt * (s.cpu_usage * 100));
+      sprintf(buffer, " %6.2lf%%", cpu_cnt * (s.cpu_usage * 100));
       cpu_vals += buffer;
     }
     res += "cpu_usage" + pid_s + "(" + cpu_desc + ")\t" + cpu_vals + "\n";
-    sprintf (buffer, "VM%s\t%lluKb\n", pid_s.c_str(), mem_info.vm);
+    sprintf(buffer, "VM%s\t%lluKb\n", pid_s.c_str(), mem_info.vm);
     res += buffer;
-    sprintf (buffer, "VM_max%s\t%lluKb\n", pid_s.c_str(), mem_info.vm_peak);
+    sprintf(buffer, "VM_max%s\t%lluKb\n", pid_s.c_str(), mem_info.vm_peak);
     res += buffer;
-    sprintf (buffer, "RSS%s\t%lluKb\n", pid_s.c_str(), mem_info.rss);
+    sprintf(buffer, "RSS%s\t%lluKb\n", pid_s.c_str(), mem_info.rss);
     res += buffer;
-    sprintf (buffer, "RSS_max%s\t%lluKb\n", pid_s.c_str(), mem_info.rss_peak);
+    sprintf(buffer, "RSS_max%s\t%lluKb\n", pid_s.c_str(), mem_info.rss_peak);
     res += buffer;
 
     if (is_main) {
@@ -392,9 +402,9 @@ struct Stats {
       std::string running_workers_avg_vals;
       for (int i = 1; i < periods_n; i++) {
         MiscStat s = misc[i].get_stat();
-        sprintf (buffer, " %7.3lf", s.running_workers_avg);
+        sprintf(buffer, " %7.3lf", s.running_workers_avg);
         running_workers_avg_vals += buffer;
-        sprintf (buffer, " %7d", s.running_workers_max);
+        sprintf(buffer, " %7d", s.running_workers_max);
         running_workers_max_vals += buffer;
       }
       res += "running_workers_avg" + pid_s + "(" + misc_desc + ")\t" + running_workers_avg_vals + "\n";
@@ -402,31 +412,31 @@ struct Stats {
     }
 
     if (full_flag) {
-      res += acc_stats_to_str (pid_s, acc_stats);
+      res += acc_stats_to_str(pid_s, acc_stats);
     }
 
     return res;
   }
 };
 
-void init_mutex (pthread_mutex_t *mutex) {
+void init_mutex(pthread_mutex_t *mutex) {
   pthread_mutexattr_t attr;
 
   int err;
-  err = pthread_mutexattr_init (&attr);
+  err = pthread_mutexattr_init(&attr);
   assert (err == 0 && "failed to init mutexattr");
-  err = pthread_mutexattr_setrobust_np (&attr, PTHREAD_MUTEX_ROBUST_NP);
+  err = pthread_mutexattr_setrobust_np(&attr, PTHREAD_MUTEX_ROBUST_NP);
   assert (err == 0 && "failed to setrobust_np for mutex");
-  err = pthread_mutexattr_setpshared (&attr, PTHREAD_PROCESS_SHARED);
+  err = pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
   assert (err == 0 && "failed to setpshared for mutex");
 
-  err = pthread_mutex_init (mutex, &attr);
+  err = pthread_mutex_init(mutex, &attr);
   assert (err == 0 && "failed to init mutex");
 }
 
-void shared_data_init (shared_data_t *data) {
+void shared_data_init(shared_data_t *data) {
   vkprintf (2, "Init shared data: begin\n");
-  init_mutex (&data->main_mutex);
+  init_mutex(&data->main_mutex);
 
   data->magic = SHARED_DATA_MAGIC;
   data->is_inited = 1;
@@ -434,21 +444,21 @@ void shared_data_init (shared_data_t *data) {
 }
 
 
-shared_data_t *get_shared_data (const char *name) {
+shared_data_t *get_shared_data(const char *name) {
   int ret;
   vkprintf (2, "Get shared data: begin\n");
-  int fid = shm_open (name, O_RDWR, 0777);
+  int fid = shm_open(name, O_RDWR, 0777);
   int init_flag = 0;
   if (fid == -1) {
     if (errno == ENOENT) {
       vkprintf (1, "shared memory entry is not exists\n");
       vkprintf (1, "create shared memory\n");
-      fid = shm_open (name, O_RDWR | O_CREAT | O_EXCL, 0777);
+      fid = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0777);
       if (fid == -1) {
         vkprintf (1, "failed to create shared memory\n");
         assert (errno == EEXIST && "failed to created shared memory for unknown reason");
         vkprintf (1, "somebody created it before us! so lets just open it\n");
-        fid = shm_open (name, O_RDWR, 0777);
+        fid = shm_open(name, O_RDWR, 0777);
         assert (fid != -1 && "failed to open shared memory");
       } else {
         init_flag = 1;
@@ -457,19 +467,19 @@ shared_data_t *get_shared_data (const char *name) {
   }
   assert (fid != -1);
 
-  size_t mem_len = sizeof (shared_data_t);
-  ret = ftruncate (fid, mem_len);
+  size_t mem_len = sizeof(shared_data_t);
+  ret = ftruncate(fid, mem_len);
   assert (ret == 0 && "failed to ftruncate shared memory");
 
-  shared_data_t *data = (shared_data_t *)mmap (0, mem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fid, 0);
+  shared_data_t *data = (shared_data_t *)mmap(0, mem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fid, 0);
   assert (data != MAP_FAILED && "failed to mmap shared memory");
 
   if (init_flag) {
-    shared_data_init (data);
+    shared_data_init(data);
   } else {
     if (data->is_inited == 0) {
       vkprintf (1, "somebody is trying to init shared data right now. lets wait for a second\n");
-      sleep (1);
+      sleep(1);
     }
     assert (data->is_inited == 1 && "shared data is not inited yet");
 
@@ -481,13 +491,13 @@ shared_data_t *get_shared_data (const char *name) {
   return data;
 }
 
-void shared_data_lock (shared_data_t *data) {
-  int err = pthread_mutex_lock (&data->main_mutex);
+void shared_data_lock(shared_data_t *data) {
+  int err = pthread_mutex_lock(&data->main_mutex);
   if (err != 0) {
     if (err == EOWNERDEAD) {
       vkprintf (1, "owner of shared memory mutex is dead. trying to make mutex and memory consitent\n");
 
-      err = pthread_mutex_consistent_np (&data->main_mutex);
+      err = pthread_mutex_consistent_np(&data->main_mutex);
       assert (err == 0 && "failed to make mutex constistent_np");
     } else {
       assert (0 && "unknown mutex lock error");
@@ -495,28 +505,28 @@ void shared_data_lock (shared_data_t *data) {
   }
 }
 
-void shared_data_unlock (shared_data_t *data) {
-  int err = pthread_mutex_unlock (&data->main_mutex);
+void shared_data_unlock(shared_data_t *data) {
+  int err = pthread_mutex_unlock(&data->main_mutex);
   assert (err == 0 && "unknown mutex unlock error");
 }
 
-void master_data_remove_if_dead (master_data_t *master) {
+void master_data_remove_if_dead(master_data_t *master) {
   if (master->valid_flag) {
-    unsigned long long start_time = get_pid_start_time (master->pid);
+    unsigned long long start_time = get_pid_start_time(master->pid);
     if (start_time != master->start_time) {
       master->valid_flag = 0;
-      dl_assert (me == NULL || master != me, dl_pstr ("[start_time = %llu] [master->start_time = %llu]",
-            start_time, master->start_time));
+      dl_assert (me == NULL || master != me, dl_pstr("[start_time = %llu] [master->start_time = %llu]",
+                                                     start_time, master->start_time));
     }
   }
 }
 
-void shared_data_update (shared_data_t *shared_data) {
-  master_data_remove_if_dead (&shared_data->masters[0]);
-  master_data_remove_if_dead (&shared_data->masters[1]);
+void shared_data_update(shared_data_t *shared_data) {
+  master_data_remove_if_dead(&shared_data->masters[0]);
+  master_data_remove_if_dead(&shared_data->masters[1]);
 }
 
-void shared_data_get_masters (shared_data_t *shared_data, master_data_t **me, master_data_t **other) {
+void shared_data_get_masters(shared_data_t *shared_data, master_data_t **me, master_data_t **other) {
   *me = NULL;
 
   if (shared_data->masters[0].valid_flag == 0) {
@@ -528,9 +538,9 @@ void shared_data_get_masters (shared_data_t *shared_data, master_data_t **me, ma
   }
 }
 
-void master_init (master_data_t *me, master_data_t *other) {
+void master_init(master_data_t *me, master_data_t *other) {
   assert (me != NULL);
-  memset (me, 0, sizeof (*me));
+  memset(me, 0, sizeof(*me));
 
   if (other->valid_flag) {
     me->rate = other->rate + 1;
@@ -539,7 +549,7 @@ void master_init (master_data_t *me, master_data_t *other) {
   }
 
   me->pid = getpid();
-  me->start_time = get_pid_start_time (me->pid);
+  me->start_time = get_pid_start_time(me->pid);
   assert (me->start_time != 0);
 
   if (other->valid_flag) {
@@ -565,9 +575,9 @@ void run_master();
 
 static volatile long long local_pending_signals = 0;
 
-static void sigusr1_handler (const int sig) {
+static void sigusr1_handler(const int sig) {
   const char message[] = "got SIGUSR1, rotate logs.\n";
-  kwrite (2, message, sizeof (message) - (size_t)1);
+  kwrite(2, message, sizeof(message) - (size_t)1);
 
   local_pending_signals |= (1ll << sig);
 }
@@ -579,7 +589,10 @@ struct worker_stats_t {
   long long total_time;
 };
 
-typedef enum {mst_on, mst_off} master_state_t;
+typedef enum {
+  mst_on,
+  mst_off
+} master_state_t;
 #define MAX_WORKER_STATS_LEN 10000
 //TODO: save it as pointer
 typedef struct {
@@ -639,12 +652,12 @@ static int receive_fd_attempts_cnt = 0;
 
 static worker_info_t *free_workers = NULL;
 
-void worker_init (worker_info_t *w) {
+void worker_init(worker_info_t *w) {
   w->stats = new Stats();
   w->valid_my_info = 0;
 }
 
-void worker_free (worker_info_t *w) {
+void worker_free(worker_info_t *w) {
   delete w->stats;
   w->stats = NULL;
 }
@@ -652,11 +665,11 @@ void worker_free (worker_info_t *w) {
 worker_info_t *new_worker() {
   worker_info_t *w = free_workers;
   if (w == NULL) {
-    w = (worker_info_t *)zmalloc0 (sizeof (worker_info_t));
+    w = (worker_info_t *)zmalloc0(sizeof(worker_info_t));
   } else {
     free_workers = free_workers->next_worker;
   }
-  worker_init (w);
+  worker_init(w);
   return w;
 }
 
@@ -664,29 +677,30 @@ int get_logname_id() {
   assert (worker_ids_n > 0);
   return worker_ids[--worker_ids_n];
 }
-void add_logname_id (int id) {
+
+void add_logname_id(int id) {
   assert (worker_ids_n < MAX_WORKERS);
   worker_ids[worker_ids_n++] = id;
 }
 
-void delete_worker (worker_info_t *w) {
-  add_logname_id (w->logname_id);
+void delete_worker(worker_info_t *w) {
+  add_logname_id(w->logname_id);
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
-  worker_free (w);
+  worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
 }
 
-void start_master (int *new_http_fd, int (*new_try_get_http_fd)(void), int new_http_fd_port) {
+void start_master(int *new_http_fd, int (*new_try_get_http_fd)(void), int new_http_fd_port) {
   save_verbosity = verbosity;
   if (verbosity < 1) {
     //verbosity = 1;
   }
   for (int i = MAX_WORKERS - 1; i >= 0; i--) {
-    add_logname_id (i);
+    add_logname_id(i);
   }
 
   std::string s = cluster_name;
@@ -709,50 +723,50 @@ void start_master (int *new_http_fd, int (*new_try_get_http_fd)(void), int new_h
 
   vkprintf (1, "start master: begin\n");
 
-  sigemptyset (&empty_mask);
+  sigemptyset(&empty_mask);
 
   //currently all signals are blocked
 
-  sigemptyset (&mask);
-  sigaddset (&mask, SIGCHLD);
-  sigaddset (&mask, SIGPOLL);
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGCHLD);
+  sigaddset(&mask, SIGPOLL);
 
-  signal_fd = signalfd (-1, &mask, SFD_NONBLOCK);
+  signal_fd = signalfd(-1, &mask, SFD_NONBLOCK);
   dl_passert (signal_fd >= 0, "failed to create signalfd");
 
-  ksignal (SIGUSR1, sigusr1_handler);
+  ksignal(SIGUSR1, sigusr1_handler);
 
   //allow all signals except SIGPOLL and SIGCHLD
-  if (sigprocmask (SIG_SETMASK, &mask, &orig_mask) < 0) {
-    perror ("sigprocmask");
-    _exit (1);
+  if (sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
+    perror("sigprocmask");
+    _exit(1);
   }
 
 
   //TODO: other signals, daemonize, change user...
   if (shared_data == NULL) {
-    shared_data = get_shared_data (shmem_name.c_str());
+    shared_data = get_shared_data(shmem_name.c_str());
   }
 
   int attempts_to_start = 2;
   int is_inited = 0;
   while (attempts_to_start-- > 0) {
     vkprintf (1, "attemt to init master. [left attempts = %d]\n", attempts_to_start);
-    shared_data_lock (shared_data);
+    shared_data_lock(shared_data);
 
-    shared_data_update (shared_data);
-    shared_data_get_masters (shared_data, &me, &other);
+    shared_data_update(shared_data);
+    shared_data_get_masters(shared_data, &me, &other);
 
     if (me != NULL) {
-      master_init (me, other);
+      master_init(me, other);
       is_inited = 1;
     }
 
-    shared_data_unlock (shared_data);
+    shared_data_unlock(shared_data);
 
     if (!is_inited) {
       vkprintf (1, "other restart is in progress. sleep 5 seconds. [left attempts = %d]\n", attempts_to_start);
-      sleep (5);
+      sleep(5);
     } else {
       break;
     }
@@ -760,7 +774,7 @@ void start_master (int *new_http_fd, int (*new_try_get_http_fd)(void), int new_h
 
   if (!is_inited) {
     vkprintf (0, "Failed to init master. It seems that two other masters are running\n");
-    _exit (1);
+    _exit(1);
   }
 
   vkprintf (1, "start master: end\n");
@@ -768,9 +782,9 @@ void start_master (int *new_http_fd, int (*new_try_get_http_fd)(void), int new_h
   run_master();
 }
 
-void terminate_worker (worker_info_t *w) {
+void terminate_worker(worker_info_t *w) {
   vkprintf (1, "kill_worker: send SIGTERM to [pid = %d]\n", (int)w->pid);
-  kill (w->pid, SIGTERM);
+  kill(w->pid, SIGTERM);
   w->is_dying = 1;
   w->kill_time = my_now + 35;
   w->kill_flag = 0;
@@ -782,11 +796,11 @@ void terminate_worker (worker_info_t *w) {
   changed = 1;
 }
 
-int kill_worker (void) {
+int kill_worker(void) {
   int i;
   for (i = 0; i < me_workers_n; i++) {
     if (!workers[i]->is_dying) {
-      terminate_worker (workers[i]);
+      terminate_worker(workers[i]);
       return 1;
     }
   }
@@ -796,7 +810,7 @@ int kill_worker (void) {
 
 #define MAX_HANGING_TIME 65.0
 
-void kill_hanging_workers (void) {
+void kill_hanging_workers(void) {
   int i;
 
   static double last_terminated = -1;
@@ -805,7 +819,7 @@ void kill_hanging_workers (void) {
       if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME <= my_now) {
         vkprintf (1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         workers_hung++;
-        terminate_worker (workers[i]);
+        terminate_worker(workers[i]);
         last_terminated = my_now;
         break;
       }
@@ -815,7 +829,7 @@ void kill_hanging_workers (void) {
   for (i = 0; i < me_workers_n; i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf (1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
-      kill (workers[i]->pid, SIGKILL);
+      kill(workers[i]->pid, SIGKILL);
       workers_killed++;
 
       workers[i]->kill_flag = 1;
@@ -825,16 +839,16 @@ void kill_hanging_workers (void) {
   }
 }
 
-void workers_send_signal (int sig) {
+void workers_send_signal(int sig) {
   int i;
   for (i = 0; i < me_workers_n; i++) {
     if (!workers[i]->is_dying) {
-      kill (workers[i]->pid, sig);
+      kill(workers[i]->pid, sig);
     }
   }
 }
 
-void pipe_on_get_packet (pipe_info_t *p, int packet_num) {
+void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
   assert (packet_num > p->pipe_in_packet_num);
   p->pipe_in_packet_num = packet_num;
   struct connection *c = &p->pending_stat_queue;
@@ -849,29 +863,29 @@ void pipe_on_get_packet (pipe_info_t *p, int packet_num) {
 
       //use sign of difference to handle int overflow
       int diff = packet_num - need_packet_num;
-      assert (abs (diff) < 1000000000);
+      assert (abs(diff) < 1000000000);
       if (diff >= 0) {
         assert (diff == 0);
         //TODO: use PMM_DATA (q->requester);
-        q->cq_type->close (q);
+        q->cq_type->close(q);
       } else {
         break;
       }
     } else {
-      q->cq_type->close (q);
+      q->cq_type->close(q);
     }
   }
 }
 
-void worker_set_stats (worker_info_t *w, const char *data) {
-  acc_stats_t *acc_stats = (acc_stats_t *) data;
+void worker_set_stats(worker_info_t *w, const char *data) {
+  acc_stats_t *acc_stats = (acc_stats_t *)data;
   w->stats->acc_stats = *acc_stats;
 
-  data += sizeof (acc_stats_t);
+  data += sizeof(acc_stats_t);
   w->stats->engine_stats = data;
 }
 
-void worker_set_immediate_stats (worker_info_t *w, php_immediate_stats_t *istats) {
+void worker_set_immediate_stats(worker_info_t *w, php_immediate_stats_t *istats) {
   w->stats->istats = *istats;
 }
 
@@ -884,7 +898,7 @@ struct pr_data {
 };
 #define PR_DATA(c) ((struct pr_data *)(RPCC_DATA (c) + 1))
 
-int pr_execute (struct connection *c, int op, int len) {
+int pr_execute(struct connection *c, int op, int len) {
   vkprintf (3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
 
   int head[5];
@@ -897,39 +911,39 @@ int pr_execute (struct connection *c, int op, int len) {
   switch (op) {
     case RPC_PHP_FULL_STATS:
     case RPC_PHP_IMMEDIATE_STATS:
-      assert (len % (int)sizeof (int) == 0);
-      len /= (int)sizeof (int);
+      assert (len % (int)sizeof(int) == 0);
+      len /= (int)sizeof(int);
       assert (len >= 3);
 
-      nbit_set (&Iter, &c->In);
-      assert (nbit_read_in (&Iter, head, sizeof (int) * 3) == sizeof (int) * 3);
+      nbit_set(&Iter, &c->In);
+      assert (nbit_read_in(&Iter, head, sizeof(int) * 3) == sizeof(int) * 3);
 
       int packet_num = head[1];
       //long long id = *(long long *)(&head[3]);
 
       data_len = len - 3 - 1;
-      data = (char *)malloc (sizeof (int) * data_len);
-      assert (nbit_read_in (&Iter, data, data_len * (int)sizeof (int)));
+      data = (char *)malloc(sizeof(int) * data_len);
+      assert (nbit_read_in(&Iter, data, data_len * (int)sizeof(int)));
 
-      nbit_clear (&Iter);
+      nbit_clear(&Iter);
 
       worker_info_t *w = PR_DATA (c)->worker;
       pipe_info_t *p = PR_DATA (c)->pipe_info;
       if (w->generation == PR_DATA (c)->worker_generation) {
         if (op == RPC_PHP_FULL_STATS) {
           w->last_activity_time = my_now;
-          worker_set_stats (w, data);
+          worker_set_stats(w, data);
         }
         if (op == RPC_PHP_IMMEDIATE_STATS) {
-          worker_set_immediate_stats (w, (php_immediate_stats_t *)data);
+          worker_set_immediate_stats(w, (php_immediate_stats_t *)data);
         }
 
-        pipe_on_get_packet (p, packet_num);
+        pipe_on_get_packet(p, packet_num);
       } else {
         vkprintf (1, "connection [%p:%d] will be closed soon\n", c, c->fd);
       }
 
-      free (data);
+      free(data);
 
       break;
   }
@@ -939,14 +953,15 @@ int pr_execute (struct connection *c, int op, int len) {
 }
 
 struct rpc_client_functions pipe_reader_methods;
-void init_pipe_reader_methods (void) {
+
+void init_pipe_reader_methods(void) {
   pipe_reader_methods.execute = pr_execute;
 }
 
-struct connection *create_pipe_reader (int pipe_fd, conn_type_t *type, void *extra) {
+struct connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extra) {
   //fprintf (stderr, "create_pipe_reader [%d]\n", pipe_fd);
 
-  if (check_conn_functions (type) < 0) {
+  if (check_conn_functions(type) < 0) {
     return NULL;
   }
   if (pipe_fd >= MAX_CONNECTIONS || pipe_fd < 0) {
@@ -957,39 +972,39 @@ struct connection *create_pipe_reader (int pipe_fd, conn_type_t *type, void *ext
 
   ev = Events + pipe_fd;
   c = Connections + pipe_fd;
-  memset (c, 0, sizeof (struct connection));
+  memset(c, 0, sizeof(struct connection));
   c->fd = pipe_fd;
   c->ev = ev;
   //c->target = NULL;
   c->generation = ++conn_generation;
   c->flags = C_WANTRD;
-  init_builtin_buffer (&c->In, c->in_buff, BUFF_SIZE);
-  init_builtin_buffer (&c->Out, c->out_buff, BUFF_SIZE);
+  init_builtin_buffer(&c->In, c->in_buff, BUFF_SIZE);
+  init_builtin_buffer(&c->Out, c->out_buff, BUFF_SIZE);
   c->timer.wakeup = conn_timer_wakeup_gateway;
   c->type = type;
   c->extra = extra;
   c->basic_type = ct_pipe; //why not?
   c->status = conn_wait_answer;
   active_connections++;
-  c->first_query = c->last_query = (struct conn_query *) c;
+  c->first_query = c->last_query = (struct conn_query *)c;
   RPCC_DATA(c)->custom_crc_partial = crc32c_partial;
 
   //assert (c->type->init_outbound (c) >= 0);
 
   //fprintf (stderr, "epoll_sethandler\n");
-  epoll_sethandler (pipe_fd, 0, server_read_write_gateway, c);
+  epoll_sethandler(pipe_fd, 0, server_read_write_gateway, c);
   //fprintf (stderr, "epoll_insert");
-  epoll_insert (pipe_fd, (c->flags & C_WANTRD ? EVT_READ : 0) | (c->flags & C_WANTWR ? EVT_WRITE : 0) | EVT_SPEC);
+  epoll_insert(pipe_fd, (c->flags & C_WANTRD ? EVT_READ : 0) | (c->flags & C_WANTWR ? EVT_WRITE : 0) | EVT_SPEC);
 
   //fprintf (stderr, "exit create_pipe_reader [c = %p]\n", c);
   return c;
 }
 
-void init_pipe_info (pipe_info_t *info, worker_info_t *worker, int pipe) {
+void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
   info->pipe_read = pipe;
   info->pipe_out_packet_num = -1;
   info->pipe_in_packet_num = -1;
-  struct connection *reader = create_pipe_reader (pipe, &ct_rpc_client, (void *)&pipe_reader_methods);
+  struct connection *reader = create_pipe_reader(pipe, &ct_rpc_client, (void *)&pipe_reader_methods);
   if (reader != NULL) {
     PR_DATA (reader)->worker = worker;
     PR_DATA (reader)->worker_generation = worker->generation;
@@ -1005,12 +1020,12 @@ void init_pipe_info (pipe_info_t *info, worker_info_t *worker, int pipe) {
   c->pending_queries = 0;
 }
 
-void clear_pipe_info (pipe_info_t *info) {
+void clear_pipe_info(pipe_info_t *info) {
   info->pipe_read = -1;
   info->reader = NULL;
 }
 
-int run_worker (void) {
+int run_worker(void) {
   dl_block_all_signals();
 
   int err;
@@ -1031,17 +1046,17 @@ int run_worker (void) {
 
   int logname_id = get_logname_id();
   if (new_pid == 0) {
-    prctl (PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
+    prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
       vkprintf (0, "parent is dead just after start\n");
-      exit (123);
+      exit(123);
     }
 
     //Epoll_close should clear internal structures but shouldn't change epoll_fd.
     //The same epoll_fd will be used by master
     //Solution: close epoll_fd first
     //Problems: "epoll_ctl(): Invalid argument" is printed to stderr
-    close (epoll_fd);
+    close(epoll_fd);
     epoll_fd = 0;
 
     init_epoll();
@@ -1076,7 +1091,7 @@ int run_worker (void) {
       if (conn->status == conn_none) {
         continue;
       }
-      force_clear_connection (conn);
+      force_clear_connection(conn);
     }
 
     active_outbound_connections = 0;
@@ -1091,8 +1106,8 @@ int run_worker (void) {
 
     if (logname_pattern) {
       char buf[100];
-      snprintf (buf, 100, logname_pattern, logname_id);
-      logname = strdup (buf);
+      snprintf(buf, 100, logname_pattern, logname_id);
+      logname = strdup(buf);
     }
 
     return 1;
@@ -1112,11 +1127,11 @@ int run_worker (void) {
   worker->last_activity_time = my_now;
 
 
-  init_pipe_info (&worker->pipes[0], worker, new_pipe[0]);
-  init_pipe_info (&worker->pipes[1], worker, new_fast_pipe[0]);
+  init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
+  init_pipe_info(&worker->pipes[1], worker, new_fast_pipe[0]);
 
-  close (new_pipe[1]);
-  close (new_fast_pipe[1]);
+  close(new_pipe[1]);
+  close(new_fast_pipe[1]);
 
   me_running_workers_n++;
 
@@ -1125,7 +1140,7 @@ int run_worker (void) {
   return 0;
 }
 
-void remove_worker (pid_t pid) {
+void remove_worker(pid_t pid) {
   int i;
 
   vkprintf (2, "remove workers [pid = %d]\n", (int)pid);
@@ -1140,9 +1155,9 @@ void remove_worker (pid_t pid) {
         workers_failed++;
       }
 
-      clear_pipe_info (&workers[i]->pipes[0]);
-      clear_pipe_info (&workers[i]->pipes[1]);
-      delete_worker (workers[i]);
+      clear_pipe_info(&workers[i]->pipes[0]);
+      clear_pipe_info(&workers[i]->pipes[1]);
+      delete_worker(workers[i]);
 
       me_workers_n--;
       workers[i] = workers[me_workers_n];
@@ -1155,16 +1170,16 @@ void remove_worker (pid_t pid) {
   assert (0 && "trying to remove unexisted worker");
 }
 
-void update_workers (void) {
+void update_workers(void) {
   while (1) {
     int status;
-    pid_t pid = waitpid (-1, &status, WNOHANG);
+    pid_t pid = waitpid(-1, &status, WNOHANG);
     if (pid > 0) {
       if (!WIFEXITED (status)) {
         tot_workers_strange_dead++;
       }
       tot_workers_dead++;
-      remove_worker (pid);
+      remove_worker(pid);
       changed = 1;
     } else {
       break;
@@ -1174,39 +1189,39 @@ void update_workers (void) {
 
 
 /*** send fd via unix socket ***/
-void init_sockaddr_un (struct sockaddr_un *unix_socket_addr, const char *name) {
-  memset (unix_socket_addr, 0, sizeof (*unix_socket_addr));
+void init_sockaddr_un(struct sockaddr_un *unix_socket_addr, const char *name) {
+  memset(unix_socket_addr, 0, sizeof(*unix_socket_addr));
   unix_socket_addr->sun_family = AF_LOCAL;
-  dl_assert (strlen (name) < sizeof (unix_socket_addr->sun_path), "too long socket name");
-  strcpy (unix_socket_addr->sun_path, name);
+  dl_assert (strlen(name) < sizeof(unix_socket_addr->sun_path), "too long socket name");
+  strcpy(unix_socket_addr->sun_path, name);
 }
 
-static const struct sockaddr_un *get_socket_addr () {
+static const struct sockaddr_un *get_socket_addr() {
 
   static struct sockaddr_un unix_socket_addr;
   static int inited = 0;
 
   if (!inited) {
-    init_sockaddr_un (&unix_socket_addr, socket_name.c_str());
+    init_sockaddr_un(&unix_socket_addr, socket_name.c_str());
     inited = 1;
   }
 
   return &unix_socket_addr;
 }
 
-static int send_fd_via_socket (int fd) {
-  int unix_socket_fd = socket (AF_LOCAL, SOCK_DGRAM, 0);
+static int send_fd_via_socket(int fd) {
+  int unix_socket_fd = socket(AF_LOCAL, SOCK_DGRAM, 0);
   dl_passert (fd >= 0, "failed to create socket");
 
   struct msghdr msg;
-  char ccmsg[CMSG_SPACE(sizeof (fd))];
+  char ccmsg[CMSG_SPACE(sizeof(fd))];
   struct cmsghdr *cmsg;
   struct iovec vec;  /* stupidity: must send/receive at least one byte */
   const char *str = "x";
   int rv;
 
-  msg.msg_name = (struct sockaddr*)get_socket_addr();
-  msg.msg_namelen = sizeof (*get_socket_addr());
+  msg.msg_name = (struct sockaddr *)get_socket_addr();
+  msg.msg_namelen = sizeof(*get_socket_addr());
 
   vec.iov_base = (void *)str;
   vec.iov_len = 1;
@@ -1216,46 +1231,46 @@ static int send_fd_via_socket (int fd) {
   /* old BSD implementations should use msg_accrights instead of
    * msg_control; the interface is different. */
   msg.msg_control = ccmsg;
-  msg.msg_controllen = sizeof (ccmsg);
+  msg.msg_controllen = sizeof(ccmsg);
   cmsg = CMSG_FIRSTHDR (&msg);
   cmsg->cmsg_level = SOL_SOCKET;
   cmsg->cmsg_type = SCM_RIGHTS;
-  cmsg->cmsg_len = CMSG_LEN (sizeof (fd));
-  *(int*)CMSG_DATA (cmsg) = fd;
+  cmsg->cmsg_len = CMSG_LEN (sizeof(fd));
+  *(int *)CMSG_DATA (cmsg) = fd;
   msg.msg_controllen = cmsg->cmsg_len;
 
   msg.msg_flags = 0;
 
-  rv = (sendmsg (unix_socket_fd, &msg, 0) != -1);
+  rv = (sendmsg(unix_socket_fd, &msg, 0) != -1);
   if (rv) {
     //why?
     //close (fd);
   } else {
-    perror ("failed to send http_fd (sendmsg)");
+    perror("failed to send http_fd (sendmsg)");
   }
   return rv;
 }
 
-static int sock_dgram (const char *path) {
-  int err = unlink (path);
-  dl_passert (err >= 0 || errno == ENOENT, dl_pstr ("failed to unlink %s", path));
+static int sock_dgram(const char *path) {
+  int err = unlink(path);
+  dl_passert (err >= 0 || errno == ENOENT, dl_pstr("failed to unlink %s", path));
 
-  int fd = socket (PF_UNIX, SOCK_DGRAM, 0);
-  fcntl (fd, F_SETFL, O_NONBLOCK);
+  int fd = socket(PF_UNIX, SOCK_DGRAM, 0);
+  fcntl(fd, F_SETFL, O_NONBLOCK);
   dl_passert (fd != -1, "failed to create a socket");
-  err = bind (fd, (struct sockaddr *)get_socket_addr(), sizeof (*get_socket_addr()));
+  err = bind(fd, (struct sockaddr *)get_socket_addr(), sizeof(*get_socket_addr()));
   dl_passert (err >= 0, "failed to bind socket");
   return fd;
 }
 
 /* receive a file descriptor over file descriptor fd */
-static int receive_fd (int fd) {
+static int receive_fd(int fd) {
   struct msghdr msg;
   struct iovec iov;
   char buf[1];
   int rv;
   int connfd = -1;
-  char ccmsg[CMSG_SPACE (sizeof (connfd))];
+  char ccmsg[CMSG_SPACE (sizeof(connfd))];
   struct cmsghdr *cmsg;
 
   iov.iov_base = buf;
@@ -1268,33 +1283,33 @@ static int receive_fd (int fd) {
   /* old BSD implementations should use msg_accrights instead of
    * msg_control; the interface is different. */
   msg.msg_control = ccmsg;
-  msg.msg_controllen = sizeof (ccmsg); /* ? seems to work... */
+  msg.msg_controllen = sizeof(ccmsg); /* ? seems to work... */
 
-  rv = (int)recvmsg (fd, &msg, 0);
+  rv = (int)recvmsg(fd, &msg, 0);
   if (rv == -1) {
-    perror ("recvmsg");
+    perror("recvmsg");
     return -1;
   }
 
   cmsg = CMSG_FIRSTHDR (&msg);
   if (cmsg->cmsg_type != SCM_RIGHTS) {
-    fprintf (stderr, "got control message of unknown type %d\n",
-      cmsg->cmsg_type);
+    fprintf(stderr, "got control message of unknown type %d\n",
+            cmsg->cmsg_type);
     return -1;
   }
-  return *(int*)CMSG_DATA (cmsg);
+  return *(int *)CMSG_DATA (cmsg);
 }
 
 
 /*** Memcached interface for stats ***/
-int php_master_get (struct connection *c, const char *key, int key_len);
-int php_master_version (struct connection *c);
-int php_master_wakeup (struct connection *c);
-int php_master_get_end (struct connection *c, int key_cnt);
+int php_master_get(struct connection *c, const char *key, int key_len);
+int php_master_version(struct connection *c);
+int php_master_wakeup(struct connection *c);
+int php_master_get_end(struct connection *c, int key_cnt);
 memcache_server_functions php_master_methods;
 rpc_server_functions php_rpc_master_methods;
 
-void init_php_master_methods (void) {
+void init_php_master_methods(void) {
   php_master_methods.execute = mcs_execute;
   php_master_methods.mc_store = mcs_store;
   php_master_methods.mc_get_start = mcs_get_start;
@@ -1318,17 +1333,17 @@ void init_php_master_methods (void) {
   php_rpc_master_methods.memcache_fallback_extra = &php_master_methods;
 }
 
-struct pmm_data{
+struct pmm_data {
   int full_flag;
   int worker_pid;
   int need_end;
 };
 
 #define PMM_DATA(c) ((struct pmm_data *) (MCS_DATA(c) + 1))
-int delete_stats_query (struct conn_query *q);
+int delete_stats_query(struct conn_query *q);
 struct conn_query_functions stats_cq_func;
 
-void stats_cq_func_init (void) {
+void stats_cq_func_init(void) {
   stats_cq_func.magic = CQUERY_FUNC_MAGIC;
   stats_cq_func.title = (char *)"stats-cq-query";
   stats_cq_func.wakeup = delete_stats_query;
@@ -1340,16 +1355,16 @@ struct stats_query_data {
   int pipe_out_packet_num;
 };
 
-int delete_stats_query (struct conn_query *q) {
+int delete_stats_query(struct conn_query *q) {
   vkprintf (2, "delete_stats_query(%p,%p)\n", q, q->requester);
 
-  delete_conn_query (q);
-  zfree (q, sizeof (*q));
+  delete_conn_query(q);
+  zfree(q, sizeof(*q));
   return 0;
 }
 
-struct conn_query *create_stats_query (struct connection *c, pipe_info_t *pipe_info) {
-  struct conn_query *q = (struct conn_query *)zmalloc (sizeof (struct conn_query));
+struct conn_query *create_stats_query(struct connection *c, pipe_info_t *pipe_info) {
+  struct conn_query *q = (struct conn_query *)zmalloc(sizeof(struct conn_query));
 
   q->custom_type = 0;
   q->outbound = &pipe_info->pending_stat_queue;
@@ -1362,12 +1377,12 @@ struct conn_query *create_stats_query (struct connection *c, pipe_info_t *pipe_i
   q->timer.wakeup_time = precise_now + 1;
   vkprintf (2, "create stats query [q = %p] [requester = %p]\n", q, q->requester);
 
-  insert_conn_query (q);
+  insert_conn_query(q);
 
   return q;
 }
 
-void create_stats_queries (struct connection *c, int op, int worker_pid) {
+void create_stats_queries(struct connection *c, int op, int worker_pid) {
   int i;
 
   sigval to_send;
@@ -1382,11 +1397,11 @@ void create_stats_queries (struct connection *c, int op, int worker_pid) {
         pipe_info = &workers[i]->pipes[0];
       }
       dl_assert (pipe_info != NULL, "bug in code");
-      sigqueue (workers[i]->pid, SIGSTAT, to_send);
+      sigqueue(workers[i]->pid, SIGSTAT, to_send);
       pipe_info->pipe_out_packet_num++;
       vkprintf (1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
       if (c != NULL) {
-        create_stats_query (c, pipe_info);
+        create_stats_query(c, pipe_info);
       }
     }
   }
@@ -1395,38 +1410,38 @@ void create_stats_queries (struct connection *c, int op, int worker_pid) {
   }
 }
 
-int return_one_key_key (struct connection *c, const char *key) {
+int return_one_key_key(struct connection *c, const char *key) {
   std::string tmp;
   tmp += "VALUE ";
   tmp += key;
-  write_out (&c->Out, tmp.c_str(), (int)tmp.size());
+  write_out(&c->Out, tmp.c_str(), (int)tmp.size());
   return 0;
 }
 
-int return_one_key_val (struct connection *c, const char *val, int vlen) {
+int return_one_key_val(struct connection *c, const char *val, int vlen) {
   char tmp[300];
-  int l = sprintf (tmp, " 0 %d\r\n", vlen);
+  int l = sprintf(tmp, " 0 %d\r\n", vlen);
   assert (l < 300);
-  write_out (&c->Out, tmp, l);
-  write_out (&c->Out, val, vlen);
-  write_out (&c->Out, "\r\n", 2);
+  write_out(&c->Out, tmp, l);
+  write_out(&c->Out, val, vlen);
+  write_out(&c->Out, "\r\n", 2);
   return 0;
 }
 
-int update_mem_stats (void);
+int update_mem_stats(void);
 
 extern unsigned tl_schema_crc32;
 
-std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
+std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   std::string res, header;
-  header = stats.to_string (me == NULL ? 0 : (int)me->pid, false, true);
+  header = stats.to_string(me == NULL ? 0 : (int)me->pid, false, true);
   int total_workers_n = 0;
   int running_workers_n = 0;
   int paused_workers_n = 0;
   static char buf[1000];
 
   acc_stats_t acc_stats;
-  memset (&acc_stats, 0, sizeof (acc_stats));
+  memset(&acc_stats, 0, sizeof(acc_stats));
 
   double min_uptime = 1e9;
   double max_uptime = -1;
@@ -1445,70 +1460,70 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
       }
 
       if (full_flag) {
-        acc_stats_update (&acc_stats, w->stats->acc_stats);
+        acc_stats_update(&acc_stats, w->stats->acc_stats);
       }
 
       if (worker_pid == -1 || w->pid == worker_pid) {
-        sprintf (buf, "worker_uptime %d\t%.0lf\n", (int)w->pid, worker_uptime);
+        sprintf(buf, "worker_uptime %d\t%.0lf\n", (int)w->pid, worker_uptime);
         res += buf;
-        res += w->stats->to_string (w->pid, full_flag);
+        res += w->stats->to_string(w->pid, full_flag);
         res += "\n";
       }
     }
   }
 
-  sprintf (buf, "uptime\t%d\n", get_uptime());
+  sprintf(buf, "uptime\t%d\n", get_uptime());
   header += buf;
   if (engine_tag != NULL) {
-    sprintf (buf + sprintf (buf, "kphp_version\t%s", engine_tag) - 2, "\n");
+    sprintf(buf + sprintf(buf, "kphp_version\t%s", engine_tag) - 2, "\n");
     header += buf;
   }
-  sprintf (buf, "cluster_name\t%s\n", cluster_name);
+  sprintf(buf, "cluster_name\t%s\n", cluster_name);
   header += buf;
-  sprintf (buf, "min_worker_uptime\t%.0lf\n", min_uptime);
+  sprintf(buf, "min_worker_uptime\t%.0lf\n", min_uptime);
   header += buf;
-  sprintf (buf, "max_worker_uptime\t%.0lf\n", max_uptime);
+  sprintf(buf, "max_worker_uptime\t%.0lf\n", max_uptime);
   header += buf;
-  sprintf (buf, "total_workers\t%d\n", total_workers_n);
+  sprintf(buf, "total_workers\t%d\n", total_workers_n);
   header += buf;
-  sprintf (buf, "running_workers\t%d\n", running_workers_n);
+  sprintf(buf, "running_workers\t%d\n", running_workers_n);
   header += buf;
-  sprintf (buf, "paused_workers\t%d\n", paused_workers_n);
+  sprintf(buf, "paused_workers\t%d\n", paused_workers_n);
   header += buf;
-  sprintf (buf, "dying_workers\t%d\n", me_dying_workers_n);
+  sprintf(buf, "dying_workers\t%d\n", me_dying_workers_n);
   header += buf;
-  sprintf (buf, "tot_workers_started\t%ld\n", tot_workers_started);
+  sprintf(buf, "tot_workers_started\t%ld\n", tot_workers_started);
   header += buf;
-  sprintf (buf, "tot_workers_dead\t%ld\n", tot_workers_dead);
+  sprintf(buf, "tot_workers_dead\t%ld\n", tot_workers_dead);
   header += buf;
-  sprintf (buf, "tot_workers_strange_dead\t%ld\n", tot_workers_strange_dead);
+  sprintf(buf, "tot_workers_strange_dead\t%ld\n", tot_workers_strange_dead);
   header += buf;
-  sprintf (buf, "workers_killed\t%ld\n", workers_killed);
+  sprintf(buf, "workers_killed\t%ld\n", workers_killed);
   header += buf;
-  sprintf (buf, "workers_hung\t%ld\n", workers_hung);
+  sprintf(buf, "workers_hung\t%ld\n", workers_hung);
   header += buf;
-  sprintf (buf, "workers_terminated\t%ld\n", workers_terminated);
+  sprintf(buf, "workers_terminated\t%ld\n", workers_terminated);
   header += buf;
-  sprintf (buf, "workers_failed\t%ld\n", workers_failed);
+  sprintf(buf, "workers_failed\t%ld\n", workers_failed);
   header += buf;
-  sprintf (buf, "tl_schema_crc32\t%08x\n", tl_schema_crc32);
+  sprintf(buf, "tl_schema_crc32\t%08x\n", tl_schema_crc32);
   header += buf;
 
   if (full_flag) {
-    header += acc_stats_to_str (std::string(), acc_stats);
+    header += acc_stats_to_str(std::string(), acc_stats);
   }
   if (!full_flag && worker_pid == -2) {
-    header +=" pid \t  state time\t  port  actor time\tcustom_server_status time\n";
+    header += " pid \t  state time\t  port  actor time\tcustom_server_status time\n";
     for (int i = 0; i < me_workers_n; i++) {
       worker_info_t *w = workers[i];
       if (!w->is_dying) {
         php_immediate_stats_t *imm = &w->stats->istats;
         imm->desc[IMM_STATS_DESC_LEN - 1] = 0;
         imm->custom_desc[IMM_STATS_DESC_LEN - 1] = 0;
-        sprintf (buf, "%5d\t%7s %.3lf\t%6d %6lld %.3lf\t%s %.3lf\n",
-            w->pid, imm->desc, precise_now - imm->timestamp,
-            imm->port, imm->actor_id, precise_now - imm->rpc_timestamp,
-            imm->custom_desc, precise_now - imm->custom_timestamp);
+        sprintf(buf, "%5d\t%7s %.3lf\t%6d %6lld %.3lf\t%s %.3lf\n",
+                w->pid, imm->desc, precise_now - imm->timestamp,
+                imm->port, imm->actor_id, precise_now - imm->rpc_timestamp,
+                imm->custom_desc, precise_now - imm->custom_timestamp);
         header += buf;
       }
     }
@@ -1517,7 +1532,7 @@ std::string php_master_prepare_stats (bool full_flag, int worker_pid) {
 }
 
 
-int php_master_wakeup (struct connection *c) {
+int php_master_wakeup(struct connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
   }
@@ -1529,19 +1544,19 @@ int php_master_wakeup (struct connection *c) {
   update_workers();
   update_mem_stats();
 
-  std::string res = php_master_prepare_stats (full_flag, worker_pid);
-  return_one_key_val (c, (char *)res.c_str(), (int)res.size());
+  std::string res = php_master_prepare_stats(full_flag, worker_pid);
+  return_one_key_val(c, (char *)res.c_str(), (int)res.size());
   if (D->need_end) {
-    write_out (&c->Out, "END\r\n", 5);
+    write_out(&c->Out, "END\r\n", 5);
   }
 
-  mcs_pad_response (c);
+  mcs_pad_response(c);
   c->flags |= C_WANTWR;
 
   return 0;
 }
 
-inline void eat_at (const char *key, int key_len, char **new_key, int *new_len) {
+inline void eat_at(const char *key, int key_len, char **new_key, int *new_len) {
   if (*key == '^' || *key == '!') {
     key++;
     key_len--;
@@ -1566,84 +1581,85 @@ inline void eat_at (const char *key, int key_len, char **new_key, int *new_len) 
     }
   }
 }
-int php_master_get (struct connection *c, const char *old_key, int old_key_len) {
+
+int php_master_get(struct connection *c, const char *old_key, int old_key_len) {
   char *key;
   int key_len;
-  eat_at (old_key, old_key_len, &key, &key_len);
+  eat_at(old_key, old_key_len, &key, &key_len);
   //stats
   //full_stats
   //workers_pids
-  if (key_len == 12 && strncmp (key, "workers_pids", 12) == 0) {
+  if (key_len == 12 && strncmp(key, "workers_pids", 12) == 0) {
     std::string res;
     for (int i = 0; i < workers_n; i++) {
       if (!workers[i]->is_dying) {
         char buf[30];
-        sprintf (buf, "%d", workers[i]->pid);
+        sprintf(buf, "%d", workers[i]->pid);
         if (!res.empty()) {
           res += ",";
         }
         res += buf;
       }
     }
-    return_one_key (c, old_key, (char *)res.c_str(), (int)res.size());
+    return_one_key(c, old_key, (char *)res.c_str(), (int)res.size());
     return 0;
   }
-  if (key_len >= 5 && strncmp (key, "stats", 5) == 0) {
+  if (key_len >= 5 && strncmp(key, "stats", 5) == 0) {
     key += 5;
     pmm_data *D = PMM_DATA (c);
     D->full_flag = 0;
-    if (strncmp (key, "_full", 5) == 0) {
+    if (strncmp(key, "_full", 5) == 0) {
       key += 5;
       D->full_flag = 1;
       D->worker_pid = -1;
-      sscanf (key, "%d", &D->worker_pid);
-    } else if (strncmp (key, "_fast", 5) == 0) {
+      sscanf(key, "%d", &D->worker_pid);
+    } else if (strncmp(key, "_fast", 5) == 0) {
       D->worker_pid = -2;
       key += 5;
-      sscanf (key, "%d", &D->worker_pid);
+      sscanf(key, "%d", &D->worker_pid);
     } else {
       D->full_flag = 1;
       D->worker_pid = -2;
     }
 
-    create_stats_queries (c, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
+    create_stats_queries(c, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
     if (D->full_flag) {
-      create_stats_queries (c, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, D->worker_pid);
+      create_stats_queries(c, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, D->worker_pid);
     }
 
     D->need_end = 1;
-    return_one_key_key (c, old_key);
+    return_one_key_key(c, old_key);
     if (c->pending_queries == 0) {
       D->need_end = 0;
-      php_master_wakeup (c);
+      php_master_wakeup(c);
     }
     return 0;
   }
   return SKIP_ALL_BYTES;
 }
 
-int php_master_get_end (struct connection *c, int key_cnt __attribute__((unused))) {
+int php_master_get_end(struct connection *c, int key_cnt __attribute__((unused))) {
   if (c->status != conn_wait_net) {
-    write_out (&c->Out, "END\r\n", 5);
+    write_out(&c->Out, "END\r\n", 5);
   }
   return 0;
 }
 
-int php_master_version (struct connection *c) {
-  write_out (&c->Out, "VERSION " PHP_MASTER_VERSION"\r\n", 9 + sizeof (PHP_MASTER_VERSION));
+int php_master_version(struct connection *c) {
+  write_out(&c->Out, "VERSION " PHP_MASTER_VERSION"\r\n", 9 + sizeof(PHP_MASTER_VERSION));
   return 0;
 }
 
-void php_master_rpc_stats (void) {
-  std::string res (1 << 12, 0);
+void php_master_rpc_stats(void) {
+  std::string res(1 << 12, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
   stats.statsd_prefix = NULL;
   sb_init(&stats.sb, &res[0], (1 << 12) - 2);
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
-  res += php_master_prepare_stats (true, -1);
-  tl_store_stats (res.c_str(), 0);
+  res += php_master_prepare_stats(true, -1);
+  tl_store_stats(res.c_str(), 0);
 }
 
 
@@ -1655,7 +1671,7 @@ void run_master_off() {
 
   if (other->valid_flag && other->ask_http_fd_generation > me->generation) {
     vkprintf (1, "send http fd\n");
-    send_fd_via_socket (*http_fd);
+    send_fd_via_socket(*http_fd);
     //TODO: process errors
     me->sent_http_fd_generation = generation;
     changed = 1;
@@ -1679,19 +1695,19 @@ void run_master_on() {
   if (!master_sfd_inited && !other->valid_flag && prev_attempt + 1 < my_now) {
     prev_attempt = my_now;
     if (master_port > 0 && master_sfd < 0) {
-      master_sfd = server_socket (master_port, settings_addr, backlog, 0);
+      master_sfd = server_socket(master_port, settings_addr, backlog, 0);
       if (master_sfd < 0) {
         static int failed_cnt = 0;
 
         failed_cnt++;
         if (failed_cnt > 2000) {
           vkprintf (-1, "cannot open master server socket at port %d: %m\n", master_port);
-          exit (1);
+          exit(1);
         }
       } else {
         PID.port = (short)master_port;
         tl_stat_function = php_master_rpc_stats;
-        init_listening_connection (master_sfd, &ct_rpc_server, &php_rpc_master_methods);
+        init_listening_connection(master_sfd, &ct_rpc_server, &php_rpc_master_methods);
         master_sfd_inited = 1;
       }
     }
@@ -1710,13 +1726,13 @@ void run_master_on() {
     } else {
       if (me->ask_http_fd_generation != 0 && other->sent_http_fd_generation > me->generation) {
         vkprintf (1, "read http fd\n");
-        *http_fd = receive_fd (socket_fd);
+        *http_fd = receive_fd(socket_fd);
         vkprintf (1, "http_fd = %d\n", *http_fd);
 
         if (*http_fd == -1) {
           vkprintf (1, "wait for a second...\n");
-          sleep (1);
-          *http_fd = receive_fd (socket_fd);
+          sleep(1);
+          *http_fd = receive_fd(socket_fd);
           vkprintf (1, "http_fd = %d\n", *http_fd);
         }
 
@@ -1729,14 +1745,14 @@ void run_master_on() {
           failed = 1;
         }
       } else {
-        dl_assert (receive_fd_attempts_cnt < 4, dl_pstr ("failed to receive http_fd: %d attempts are done\n", receive_fd_attempts_cnt));
+        dl_assert (receive_fd_attempts_cnt < 4, dl_pstr("failed to receive http_fd: %d attempts are done\n", receive_fd_attempts_cnt));
         receive_fd_attempts_cnt++;
 
         vkprintf (1, "ask for http_fd\n");
         if (socket_fd != -1) {
-          close (socket_fd);
+          close(socket_fd);
         }
-        socket_fd = sock_dgram (socket_name.c_str());
+        socket_fd = sock_dgram(socket_name.c_str());
         me->ask_http_fd_generation = generation;
         changed = 1;
       }
@@ -1744,11 +1760,11 @@ void run_master_on() {
   }
 
   if (!need_http_fd) {
-    int total_workers = me_running_workers_n + me_dying_workers_n + (other->valid_flag ? other->running_workers_n + other->dying_workers_n: 0);
-    to_run = std::max (0, workers_n - total_workers);
+    int total_workers = me_running_workers_n + me_dying_workers_n + (other->valid_flag ? other->running_workers_n + other->dying_workers_n : 0);
+    to_run = std::max(0, workers_n - total_workers);
 
     if (other->valid_flag) {
-      int set_to_kill = std::max (std::min (MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
+      int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
 
       if (set_to_kill > 0) {
         vkprintf (1, "[set_to_kill = %d]\n", set_to_kill);
@@ -1760,12 +1776,12 @@ void run_master_on() {
   }
 }
 
-int signal_epoll_handler (int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
+int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
   //empty
   vkprintf (2, "signal_epoll_handler\n");
   struct signalfd_siginfo fdsi;
   //fprintf (stderr, "A\n");
-  int s = (int)read (signal_fd, &fdsi, sizeof (struct signalfd_siginfo));
+  int s = (int)read(signal_fd, &fdsi, sizeof(struct signalfd_siginfo));
   //fprintf (stderr, "B\n");
   if (s == -1) {
     if (0 && errno == EAGAIN) {
@@ -1774,62 +1790,62 @@ int signal_epoll_handler (int fd __attribute__((unused)), void *data __attribute
     }
     dl_passert (0, "read signalfd_siginfo");
   }
-  dl_assert (s == sizeof (struct signalfd_siginfo), dl_pstr ("got %d bytes of %d expected", s, (int)sizeof (struct signalfd_siginfo)));
+  dl_assert (s == sizeof(struct signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(struct signalfd_siginfo)));
 
   vkprintf (2, "some signal received\n");
   return 0;
 }
 
-int update_mem_stats (void) {
-  get_mem_stats (me->pid, &stats.mem_info);
+int update_mem_stats(void) {
+  get_mem_stats(me->pid, &stats.mem_info);
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
 
-    if (get_mem_stats (w->pid, &w->stats->mem_info) != 1) {
+    if (get_mem_stats(w->pid, &w->stats->mem_info) != 1) {
       continue;
     }
-    mem_info_add (&stats.mem_info, w->stats->mem_info);
+    mem_info_add(&stats.mem_info, w->stats->mem_info);
   }
   return 0;
 }
 
-static void cron (void) {
+static void cron(void) {
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;
   unsigned long long stime = 0;
   bool err;
-  err = get_cpu_total (&cpu_total);
+  err = get_cpu_total(&cpu_total);
   dl_assert (err, "get_cpu_total failed");
 
   int running_workers = 0;
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
     bool err;
-    err = get_pid_info (w->pid, &w->my_info);
+    err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
     if (!err) {
       continue;
     }
 
-    CpuStatTimestamp cpu_timestamp (my_now, w->my_info.utime, w->my_info.stime, cpu_total);
+    CpuStatTimestamp cpu_timestamp(my_now, w->my_info.utime, w->my_info.stime, cpu_total);
     utime += w->my_info.utime;
     stime += w->my_info.stime;
-    w->stats->update (cpu_timestamp);
+    w->stats->update(cpu_timestamp);
     running_workers += w->stats->istats.is_running;
   }
-  MiscStatTimestamp misc_timestamp (my_now, running_workers);
-  stats.update (misc_timestamp);
+  MiscStatTimestamp misc_timestamp(my_now, running_workers);
+  stats.update(misc_timestamp);
 
   utime += dead_utime;
   stime += dead_stime;
-  CpuStatTimestamp cpu_timestamp (my_now, utime, stime, cpu_total);
-  stats.update (cpu_timestamp);
+  CpuStatTimestamp cpu_timestamp(my_now, utime, stime, cpu_total);
+  stats.update(cpu_timestamp);
 
-  create_stats_queries (NULL, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
+  create_stats_queries(NULL, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
   static double last_full_stats = -1;
   if (last_full_stats + MAX_HANGING_TIME * 0.25 < my_now) {
     last_full_stats = my_now;
-    create_stats_queries (NULL, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
+    create_stats_queries(NULL, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
   }
 }
 
@@ -1837,13 +1853,13 @@ void run_master() {
   int err;
   int prev_time = 0;
 
-  cpu_cnt = (int)sysconf (_SC_NPROCESSORS_ONLN);
+  cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
   me->http_fd_port = http_fd_port;
   me->own_http_fd = http_fd != NULL && *http_fd != -1;
 
-  err = epoll_sethandler (signal_fd, 0, signal_epoll_handler, NULL);
+  err = epoll_sethandler(signal_fd, 0, signal_epoll_handler, NULL);
   dl_assert (err >= 0, "epoll_sethalder failed");
-  err = epoll_insert (signal_fd, EVT_READ);
+  err = epoll_insert(signal_fd, EVT_READ);
   dl_assert (err >= 0, "epoll_insert failed");
 
   init_msg_buffers();
@@ -1865,12 +1881,12 @@ void run_master() {
 
     update_workers();
 
-    shared_data_lock (shared_data);
-    shared_data_update (shared_data);
+    shared_data_lock(shared_data);
+    shared_data_update(shared_data);
 
     //calc state
-    dl_assert (me->valid_flag && me->pid == getpid(), dl_pstr ("[me->valid_flag = %d] [me->pid = %d] [getpid() = %d]",
-          me->valid_flag, me->pid, getpid()));
+    dl_assert (me->valid_flag && me->pid == getpid(), dl_pstr("[me->valid_flag = %d] [me->pid = %d] [getpid() = %d]",
+                                                              me->valid_flag, me->pid, getpid()));
     if (other->valid_flag == 0 || me->rate > other->rate) {
       state = mst_on;
     } else {
@@ -1912,21 +1928,21 @@ void run_master() {
 
     if (changed && other->valid_flag) {
       vkprintf (1, "wakeup other master [pid = %d]\n", (int)other->pid);
-      kill (other->pid, SIGPOLL);
+      kill(other->pid, SIGPOLL);
     }
 
-    shared_data_unlock (shared_data);
+    shared_data_unlock(shared_data);
 
     if (to_exit) {
       vkprintf (1, "all workers killed. exit\n");
-      _exit (0);
+      _exit(0);
     }
 
     if (local_pending_signals & (1ll << SIGUSR1)) {
       local_pending_signals &= ~(1ll << SIGUSR1);
 
       reopen_logs();
-      workers_send_signal (SIGUSR1);
+      workers_send_signal(SIGUSR1);
     }
 
 
@@ -1945,7 +1961,7 @@ void run_master() {
 
     //int timeout = (failed ? 1 : 10) * 1000;
     int timeout = 1000;
-    epoll_work (timeout);
+    epoll_work(timeout);
 
     tl_restart_all_ready();
 

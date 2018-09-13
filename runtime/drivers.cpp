@@ -19,14 +19,14 @@ static_assert(TL_ENGINE_MC_GET_QUERY == ENGINE_MC_GET_QUERY, "bad ENGINE_MC_GET_
 #include "runtime/string_functions.h"
 #include "runtime/zlib.h"
 
-static string_buffer drivers_SB (1024);
+static string_buffer drivers_SB(1024);
 
 const int DB_TIMEOUT_MS = 120000;
 const int MAX_KEY_LEN = 1000;
 const int MAX_VALUE_LEN = (1 << 20);
 const int MAX_INPUT_VALUE_LEN = (1 << 24);
 
-const string UNDERSCORE ("_", 1);
+const string UNDERSCORE("_", 1);
 
 
 extern MyMemcache v$MC;
@@ -39,42 +39,43 @@ extern var v$KPHP_MC_WRITE_STAT_PROBABILITY;
 const char *mc_method;
 static const char *mc_last_key;
 static int mc_last_key_len;
-static char mc_res_storage[sizeof (var)];
+static char mc_res_storage[sizeof(var)];
 static var *mc_res;
 static bool mc_bool_res;
 
 static double mc_stats_time;
 static int mc_stats_port;
-static char* mc_stats_key;
+static char *mc_stats_key;
 
 string drivers_cpp_filename;
 string drivers_h_filename;
 
 
 var f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
+
 var f$kphp_mcStats(int, string, string, double, var) {
   return var();
 }
 
-static inline void mc_stats_do (const var& res) {
+static inline void mc_stats_do(const var &res) {
   if (mc_stats_port != -1) {
     if (!mc_stats_key || !mc_method) {
-      php_warning ("Debug: mc_stats_key %s, mc_method = %s\n", mc_stats_key, mc_method);
+      php_warning("Debug: mc_stats_key %s, mc_method = %s\n", mc_stats_key, mc_method);
       return;
     }
-    f$kphp_mcStats (mc_stats_port, string (mc_method, strlen (mc_method)),
-                    string (mc_stats_key, strlen (mc_stats_key)),
-                    microtime() - mc_stats_time,
-                    res
+    f$kphp_mcStats(mc_stats_port, string(mc_method, strlen(mc_method)),
+                   string(mc_stats_key, strlen(mc_stats_key)),
+                   microtime() - mc_stats_time,
+                   res
     );
     mc_stats_time = -1;
     mc_stats_port = -1;
   }
 }
 
-static inline void mc_stats_init(int port, const char* key){
+static inline void mc_stats_init(int port, const char *key) {
   if (!key) {
-    php_warning ("Debug: init stats with null key to port %d\n", port);
+    php_warning("Debug: init stats with null key to port %d\n", port);
     return;
   }
   int prob = v$KPHP_MC_WRITE_STAT_PROBABILITY.to_int();
@@ -90,21 +91,21 @@ static inline void mc_stats_init(int port, const char* key){
   }
 }
 
-static inline void mc_stats_init_multiget(int port, const var& key){
+static inline void mc_stats_init_multiget(int port, const var &key) {
   int prob = v$KPHP_MC_WRITE_STAT_PROBABILITY.to_int();
   if (prob > 0 && f$mt_rand(0, prob - 1) == 0) {
     mc_stats_time = microtime();
     mc_stats_port = port;
-    mc_stats_key = strdup(f$implode(string("\t",1), key.to_array()).c_str());
+    mc_stats_key = strdup(f$implode(string("\t", 1), key.to_array()).c_str());
   } else {
     mc_stats_port = -1;
   }
 }
 
 
-const string mc_prepare_key (const string &key) {
+const string mc_prepare_key(const string &key) {
   if (key.size() < 3) {
-    php_warning ("Very short key \"%s\" in Memcache::%s", key.c_str(), mc_method);
+    php_warning("Very short key \"%s\" in Memcache::%s", key.c_str(), mc_method);
   }
 
   bool bad_key = ((int)key.size() > MAX_KEY_LEN || key.empty());
@@ -117,28 +118,28 @@ const string mc_prepare_key (const string &key) {
     return key;
   }
 
-  string real_key = key.substr (0, min ((dl::size_type)MAX_KEY_LEN, key.size()));//need a copy
+  string real_key = key.substr(0, min((dl::size_type)MAX_KEY_LEN, key.size()));//need a copy
   for (int i = 0; i < (int)real_key.size(); i++) {
     if ((unsigned int)real_key[i] <= 32u) {
       real_key[i] = '_';
     }
   }
   if (real_key.empty()) {
-    php_warning ("Empty parameter key in Memcache::%s, key \"_\" used instead", mc_method);
+    php_warning("Empty parameter key in Memcache::%s, key \"_\" used instead", mc_method);
     real_key = UNDERSCORE;
   } else {
-    php_warning ("Wrong parameter key = \"%s\" in Memcache::%s, key \"%s\" used instead", key.c_str(), mc_method, real_key.c_str());
+    php_warning("Wrong parameter key = \"%s\" in Memcache::%s, key \"%s\" used instead", key.c_str(), mc_method, real_key.c_str());
   }
   return real_key;
 }
 
 
-bool mc_is_immediate_query (const string &key) {
+bool mc_is_immediate_query(const string &key) {
   return key[0] == '^' && (int)key.size() >= 2;
 }
 
-const char *mc_parse_value (const char *result, int result_len, const char **key, int *key_len, const char **value, int *value_len, int *flags, int *error_code) {
-  if (strncmp (result, "VALUE", 5)) {
+const char *mc_parse_value(const char *result, int result_len, const char **key, int *key_len, const char **value, int *value_len, int *flags, int *error_code) {
+  if (strncmp(result, "VALUE", 5)) {
     *error_code = 1;
     return NULL;
   }
@@ -176,7 +177,7 @@ const char *mc_parse_value (const char *result, int result_len, const char **key
     *error_code = 5;
     return NULL;
   }
-  if (!php_try_to_int (*value, (int)(result + i - *value), flags)) {
+  if (!php_try_to_int(*value, (int)(result + i - *value), flags)) {
     *error_code = 6;
     return NULL;
   }
@@ -196,7 +197,7 @@ const char *mc_parse_value (const char *result, int result_len, const char **key
     *error_code = 8;
     return NULL;
   }
-  if (!php_try_to_int (*value, (int)(result + i - *value), value_len) || (unsigned int)(*value_len) >= (unsigned int)MAX_INPUT_VALUE_LEN) {
+  if (!php_try_to_int(*value, (int)(result + i - *value), value_len) || (unsigned int)(*value_len) >= (unsigned int)MAX_INPUT_VALUE_LEN) {
     *error_code = 9;
     return NULL;
   }
@@ -217,18 +218,18 @@ const char *mc_parse_value (const char *result, int result_len, const char **key
   return result + i + 2;
 }
 
-var mc_get_value (const char *result_str, int result_str_len, int flags) {
+var mc_get_value(const char *result_str, int result_str_len, int flags) {
   var result;
   if (flags & MEMCACHE_COMPRESSED) {
     flags ^= MEMCACHE_COMPRESSED;
     string::size_type uncompressed_len;
-    result_str = gzuncompress_raw (result_str, result_str_len, &uncompressed_len);
+    result_str = gzuncompress_raw(result_str, result_str_len, &uncompressed_len);
     result_str_len = uncompressed_len;
   }
 
   if (flags & MEMCACHE_SERIALIZED) {
     flags ^= MEMCACHE_SERIALIZED;
-    result = unserialize_raw (result_str, result_str_len);
+    result = unserialize_raw(result_str, result_str_len);
   } else {
     result = string(result_str, result_str_len);
   }
@@ -240,30 +241,30 @@ var mc_get_value (const char *result_str, int result_str_len, int flags) {
   return result;
 }
 
-void mc_set_callback (const char *result, int result_len __attribute__((unused))) {
-  if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do (false);
+void mc_set_callback(const char *result, int result_len __attribute__((unused))) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    mc_stats_do(false);
     return;
   }
 
-  if (!strcmp (result, "STORED\r\n")) {
+  if (!strcmp(result, "STORED\r\n")) {
     mc_bool_res = true;
-    mc_stats_do (true);
+    mc_stats_do(true);
     return;
   }
-  if (!strcmp (result, "NOT_STORED\r\n")) {
+  if (!strcmp(result, "NOT_STORED\r\n")) {
     mc_bool_res = false;
-    mc_stats_do (false);
+    mc_stats_do(false);
     return;
   }
 
-  php_warning ("Strange result \"%s\" returned from memcached in Memcache::%s with key %s", result, mc_method, mc_last_key);
+  php_warning("Strange result \"%s\" returned from memcached in Memcache::%s with key %s", result, mc_method, mc_last_key);
   mc_bool_res = false;
 }
 
-void mc_multiget_callback (const char *result, int result_len) {
-  if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do (false);
+void mc_multiget_callback(const char *result, int result_len) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    mc_stats_do(false);
     return;
   }
   const char *full_result = result;
@@ -276,33 +277,33 @@ void mc_multiget_callback (const char *result, int result_len) {
         int flags;
         int error_code;
 
-        const char *new_result = mc_parse_value (result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
+        const char *new_result = mc_parse_value(result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
         if (!new_result) {
-          php_warning ("Wrong memcache response \"%s\" in Memcache::get with multikey %s and error code %d", result, mc_last_key, error_code);
+          php_warning("Wrong memcache response \"%s\" in Memcache::get with multikey %s and error code %d", result, mc_last_key, error_code);
           return;
         }
         php_assert (new_result > result);
         result_len -= (int)(new_result - result);
         php_assert (result_len >= 0);
         result = new_result;
-        mc_res->set_value (string (key, key_len), mc_get_value (value, value_len, flags));
+        mc_res->set_value(string(key, key_len), mc_get_value(value, value_len, flags));
         break;
       }
       case 'E':
-        if (result_len == 5 && !strncmp (result, "END\r\n", 5)) {
-          mc_stats_do (*mc_res);
+        if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
+          mc_stats_do(*mc_res);
           return;
         }
         /* fallthrough */
       default:
-        php_warning ("Wrong memcache response \"%s\" in Memcache::get with multikey %s", full_result, mc_last_key);
+        php_warning("Wrong memcache response \"%s\" in Memcache::get with multikey %s", full_result, mc_last_key);
     }
   }
 }
 
-void mc_get_callback (const char *result, int result_len) {
-  if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do (false);
+void mc_get_callback(const char *result, int result_len) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    mc_stats_do(false);
     return;
   }
   const char *full_result = result;
@@ -314,181 +315,182 @@ void mc_get_callback (const char *result, int result_len) {
       int flags;
       int error_code;
 
-      const char *new_result = mc_parse_value (result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
+      const char *new_result = mc_parse_value(result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
       if (!new_result) {
-        php_warning ("Wrong memcache response \"%s\" in Memcache::get with key %s and error code %d", result, mc_last_key, error_code);
+        php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s and error code %d", result, mc_last_key, error_code);
         return;
       }
-      if (mc_last_key_len != key_len || memcmp (mc_last_key, key, (size_t)key_len)) {
-        php_warning ("Wrong memcache response \"%s\" in Memcache::get with key %s", result, mc_last_key);
+      if (mc_last_key_len != key_len || memcmp(mc_last_key, key, (size_t)key_len)) {
+        php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s", result, mc_last_key);
         return;
       }
       php_assert (new_result > result);
       result_len -= (int)(new_result - result);
       php_assert (result_len >= 0);
       result = new_result;
-      *mc_res = mc_get_value (value, value_len, flags);
+      *mc_res = mc_get_value(value, value_len, flags);
     }
-    /* fallthrough */
+      /* fallthrough */
     case 'E':
-      if (result_len == 5 && !strncmp (result, "END\r\n", 5)) {
-        mc_stats_do (*mc_res);
+      if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
+        mc_stats_do(*mc_res);
         return;
       }
-    /* fallthrough */
+      /* fallthrough */
     default:
-      php_warning ("Wrong memcache response \"%s\" in Memcache::get with key %s", full_result, mc_last_key);
+      php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s", full_result, mc_last_key);
   }
 }
 
-void mc_delete_callback (const char *result, int result_len __attribute__((unused))) {
-  if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do (false);
+void mc_delete_callback(const char *result, int result_len __attribute__((unused))) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    mc_stats_do(false);
     return;
   }
 
-  if (!strcmp (result, "NOT_FOUND\r\n")) {
+  if (!strcmp(result, "NOT_FOUND\r\n")) {
     mc_bool_res = false;
-  } else if (!strcmp (result, "DELETED\r\n")) {
+  } else if (!strcmp(result, "DELETED\r\n")) {
     mc_bool_res = true;
   } else {
-    php_warning ("Strange result \"%s\" returned from memcached in Memcache::delete with key %s", result, mc_last_key);
+    php_warning("Strange result \"%s\" returned from memcached in Memcache::delete with key %s", result, mc_last_key);
     mc_bool_res = false;
   }
-  mc_stats_do (mc_bool_res);
+  mc_stats_do(mc_bool_res);
 }
 
-void mc_increment_callback (const char *result, int result_len) {
-  if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do (false);
+void mc_increment_callback(const char *result, int result_len) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    mc_stats_do(false);
     return;
   }
 
-  if (!strcmp (result, "NOT_FOUND\r\n")) {
+  if (!strcmp(result, "NOT_FOUND\r\n")) {
     *mc_res = false;
   } else {
     if (result_len >= 2 && result[result_len - 2] == '\r' && result[result_len - 1] == '\n') {
-      mc_res->assign (result, result_len - 2);
+      mc_res->assign(result, result_len - 2);
     } else {
-      php_warning ("Wrong memcache response \"%s\" in Memcache::%sement with key %s", result, mc_method, mc_last_key);
+      php_warning("Wrong memcache response \"%s\" in Memcache::%sement with key %s", result, mc_method, mc_last_key);
     }
   }
-  mc_stats_do (*mc_res);
+  mc_stats_do(*mc_res);
 }
 
-void mc_version_callback (const char *result, int result_len) {
-  if (!strcmp (result, "ERROR\r\n")) {
-    mc_stats_do (false);
+void mc_version_callback(const char *result, int result_len) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    mc_stats_do(false);
     return;
   }
 
   switch (*result) {
     case 'V': {
-      if (!strncmp (result, "VERSION ", 8)) {
+      if (!strncmp(result, "VERSION ", 8)) {
         if (result_len >= 10 && result[result_len - 2] == '\r' && result[result_len - 1] == '\n') {
-          mc_res->assign (result + 8, result_len - 10);
+          mc_res->assign(result + 8, result_len - 10);
           break;
         }
       }
     }
-    /* fallthrough */
+      /* fallthrough */
     default:
-      php_warning ("Wrong memcache response \"%s\" in Memcache::getVersion", result);
+      php_warning("Wrong memcache response \"%s\" in Memcache::getVersion", result);
   }
-  mc_stats_do (*mc_res);
+  mc_stats_do(*mc_res);
 }
 
 
 MC_object::~MC_object() {
 }
 
-Memcache::host::host (void): host_num (-1),
-                             host_port(-1),
-                             host_weight (0),
-                             timeout_ms (200) {
+Memcache::host::host(void) :
+  host_num(-1),
+  host_port(-1),
+  host_weight(0),
+  timeout_ms(200) {
 }
 
-Memcache::host::host (int host_num, int host_port, int host_weight, int timeout_ms):
-                                                                      host_num (host_num),
-                                                                      host_port(host_port),
-                                                                      host_weight (host_weight),
-                                                                      timeout_ms (timeout_ms) {
+Memcache::host::host(int host_num, int host_port, int host_weight, int timeout_ms) :
+  host_num(host_num),
+  host_port(host_port),
+  host_weight(host_weight),
+  timeout_ms(timeout_ms) {
 }
 
 
-Memcache::host Memcache::get_host (const string &key __attribute__((unused))) {
+Memcache::host Memcache::get_host(const string &key __attribute__((unused))) {
   php_assert (hosts.count() > 0);
 
-  return hosts.get_value (f$array_rand (hosts));
+  return hosts.get_value(f$array_rand(hosts));
 }
 
 
-bool Memcache::run_set (const string &key, const var &value, int flags, int expire) {
+bool Memcache::run_set(const string &key, const var &value, int flags, int expire) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
+    php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
+  const string real_key = mc_prepare_key(key);
 
   if (flags & ~MEMCACHE_COMPRESSED) {
-    php_warning ("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
+    php_warning("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
   }
 
   if ((unsigned int)expire > (unsigned int)(30 * 24 * 60 * 60)) {
-    php_warning ("Wrong parameter expire = %d in Memcache::%s", expire, mc_method);
+    php_warning("Wrong parameter expire = %d in Memcache::%s", expire, mc_method);
     expire = 0;
   }
 
   string string_value;
-  if (f$is_array (value)) {
-    string_value = f$serialize (value);
+  if (f$is_array(value)) {
+    string_value = f$serialize(value);
     flags |= MEMCACHE_SERIALIZED;
   } else {
     string_value = value.to_string();
   }
 
   if (flags & MEMCACHE_COMPRESSED) {
-    string_value = f$gzcompress (string_value);
+    string_value = f$gzcompress(string_value);
   }
 
   if (string_value.size() >= (dl::size_type)MAX_VALUE_LEN) {
-    php_warning ("Parameter value has length %d and too large for storing in Memcache", (int)string_value.size());
+    php_warning("Parameter value has length %d and too large for storing in Memcache", (int)string_value.size());
     return false;
   }
 
   drivers_SB.clean() << mc_method
-  << ' ' << real_key
-  << ' ' << flags
-  << ' ' << expire
-  << ' ' << (int)string_value.size()
-  << "\r\n" << string_value
-  << "\r\n";
+                     << ' ' << real_key
+                     << ' ' << flags
+                     << ' ' << expire
+                     << ' ' << (int)string_value.size()
+                     << "\r\n" << string_value
+                     << "\r\n";
 
   mc_bool_res = false;
-  host cur_host = get_host (real_key);
-  if (mc_is_immediate_query (real_key)) {
-    mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+  host cur_host = get_host(real_key);
+  if (mc_is_immediate_query(real_key)) {
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
     return true;
   } else {
     mc_last_key = real_key.c_str();
     mc_last_key_len = (int)real_key.size();
     mc_stats_init(cur_host.host_port, mc_last_key);
-    mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_set_callback);
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_set_callback);
     return mc_bool_res;
   }
 }
 
-var Memcache::run_increment (const string &key, const var &count) {
+var Memcache::run_increment(const string &key, const var &count) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
+    php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
+  const string real_key = mc_prepare_key(key);
 
-  drivers_SB.clean() << mc_method <<  ' ' << real_key << ' ';
+  drivers_SB.clean() << mc_method << ' ' << real_key << ' ';
 
   if (count.is_int()) {
     drivers_SB << count;
@@ -500,7 +502,7 @@ var Memcache::run_increment (const string &key, const var &count) {
     }
 
     if (i < len || len == negative || len > 19 + negative) {
-      php_warning ("Wrong parameter count = \"%s\" in Memcache::%sement, key %semented by 1 instead", count_str.c_str(), mc_method, mc_method);
+      php_warning("Wrong parameter count = \"%s\" in Memcache::%sement, key %semented by 1 instead", count_str.c_str(), mc_method, mc_method);
       drivers_SB << '1';
     } else {
       drivers_SB << count_str;
@@ -509,23 +511,24 @@ var Memcache::run_increment (const string &key, const var &count) {
   drivers_SB << "\r\n";
 
   *mc_res = false;
-  host cur_host = get_host (real_key);
-  if (mc_is_immediate_query (real_key)) {
-    mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+  host cur_host = get_host(real_key);
+  if (mc_is_immediate_query(real_key)) {
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
     return 0;
   } else {
     mc_last_key = real_key.c_str();
     mc_last_key_len = (int)real_key.size();
     mc_stats_init(cur_host.host_port, mc_last_key);
-    mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_increment_callback);
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_increment_callback);
     return *mc_res;
   }
 }
 
-Memcache::Memcache (void): hosts (array_size (1, 0, true)) {
+Memcache::Memcache(void) :
+  hosts(array_size(1, 0, true)) {
 }
 
-bool Memcache::addServer (const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval __attribute__((unused)), bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
+bool Memcache::addServer(const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval __attribute__((unused)), bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
   if (timeout <= 0) {
     timeout = 1;
   }
@@ -540,197 +543,201 @@ bool Memcache::addServer (const string &host_name, int port, bool persistent __a
     timeout *= 1000;
   }
 
-  int host_num = mc_connect_to (host_name.c_str(), port);
+  int host_num = mc_connect_to(host_name.c_str(), port);
   if (host_num >= 0) {
-    hosts.push_back (host (host_num, port, weight, timeout));
+    hosts.push_back(host(host_num, port, weight, timeout));
     return true;
   }
   return false;
 }
 
-bool Memcache::connect (const string &host_name, int port, int timeout) {
-  return addServer (host_name, port, false, 1, timeout);
+bool Memcache::connect(const string &host_name, int port, int timeout) {
+  return addServer(host_name, port, false, 1, timeout);
 }
 
-bool Memcache::pconnect (const string &host_name, int port, int timeout) {
-  return addServer (host_name, port, true, 1, timeout);
+bool Memcache::pconnect(const string &host_name, int port, int timeout) {
+  return addServer(host_name, port, true, 1, timeout);
 }
 
-bool Memcache::rpc_connect (const string &host_name __attribute__((unused)), int port __attribute__((unused)), const var &default_actor_id __attribute__((unused)), double timeout __attribute__((unused)), double connect_timeout __attribute__((unused)), double reconnect_timeout __attribute__((unused))) {
-  php_warning ("Method rpc_connect doesn't supported for object of class Memcache");
+bool Memcache::rpc_connect(const string &host_name __attribute__((unused)), int port __attribute__((unused)), const var &default_actor_id __attribute__((unused)), double timeout __attribute__((unused)), double connect_timeout __attribute__((unused)), double reconnect_timeout __attribute__((unused))) {
+  php_warning("Method rpc_connect doesn't supported for object of class Memcache");
   return false;
 }
 
 
-bool Memcache::add (const string &key, const var &value, int flags, int expire) {
+bool Memcache::add(const string &key, const var &value, int flags, int expire) {
   mc_method = "add";
-  return run_set (key, value, flags, expire);
+  return run_set(key, value, flags, expire);
 }
 
-bool Memcache::set (const string &key, const var &value, int flags, int expire) {
+bool Memcache::set(const string &key, const var &value, int flags, int expire) {
   mc_method = "set";
-  return run_set (key, value, flags, expire);
+  return run_set(key, value, flags, expire);
 }
 
-bool Memcache::replace (const string &key, const var &value, int flags, int expire) {
+bool Memcache::replace(const string &key, const var &value, int flags, int expire) {
   mc_method = "replace";
-  return run_set (key, value, flags, expire);
+  return run_set(key, value, flags, expire);
 }
 
-var Memcache::get (const var &key_var) {
+var Memcache::get(const var &key_var) {
   mc_method = "get";
-  if (f$is_array (key_var)) {
+  if (f$is_array(key_var)) {
     if (hosts.count() <= 0) {
-      php_warning ("There is no available server to run Memcache::get");
-      return array <var> ();
+      php_warning("There is no available server to run Memcache::get");
+      return array<var>();
     }
 
     drivers_SB.clean();
     drivers_SB << "get";
     bool is_immediate_query = true;
-    for (array <var>::const_iterator p = key_var.begin(); p != key_var.end(); ++p) {
+    for (array<var>::const_iterator p = key_var.begin(); p != key_var.end(); ++p) {
       const string key = p.get_value().to_string();
-      const string real_key = mc_prepare_key (key);
+      const string real_key = mc_prepare_key(key);
       drivers_SB << ' ' << real_key;
-      is_immediate_query = is_immediate_query && mc_is_immediate_query (real_key);
+      is_immediate_query = is_immediate_query && mc_is_immediate_query(real_key);
     }
     drivers_SB << "\r\n";
 
-    *mc_res = array <var> (array_size (0, key_var.count(), false));
-    host cur_host = get_host (string());
+    *mc_res = array<var>(array_size(0, key_var.count(), false));
+    host cur_host = get_host(string());
     if (is_immediate_query) {
-      mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL); //TODO wrong if we have no mc_proxy
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL); //TODO wrong if we have no mc_proxy
     } else {
       mc_last_key = drivers_SB.c_str();
       mc_last_key_len = (int)drivers_SB.size();
-      mc_stats_init (cur_host.host_port, mc_last_key);
-      mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_multiget_callback); //TODO wrong if we have no mc_proxy
+      mc_stats_init(cur_host.host_port, mc_last_key);
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_multiget_callback); //TODO wrong if we have no mc_proxy
     }
   } else {
     if (hosts.count() <= 0) {
-      php_warning ("There is no available server to run Memcache::get with key \"%s\"", key_var.to_string().c_str());
+      php_warning("There is no available server to run Memcache::get with key \"%s\"", key_var.to_string().c_str());
       return false;
     }
 
     const string key = key_var.to_string();
-    const string real_key = mc_prepare_key (key);
+    const string real_key = mc_prepare_key(key);
 
     drivers_SB.clean() << "get " << real_key << "\r\n";
 
-    host cur_host = get_host (real_key);
-    if (mc_is_immediate_query (real_key)) {
+    host cur_host = get_host(real_key);
+    if (mc_is_immediate_query(real_key)) {
       *mc_res = true;
-      mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
     } else {
       *mc_res = false;
       mc_last_key = real_key.c_str();
       mc_last_key_len = (int)real_key.size();
       mc_stats_init(cur_host.host_port, mc_last_key);
-      mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_get_callback);
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_get_callback);
     }
   }
   return *mc_res;
 }
 
-bool Memcache::delete_ (const string &key) {
+bool Memcache::delete_(const string &key) {
   mc_method = "delete";
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run Memcache::delete with key \"%s\"", key.c_str());
+    php_warning("There is no available server to run Memcache::delete with key \"%s\"", key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
+  const string real_key = mc_prepare_key(key);
 
   drivers_SB.clean() << "delete " << real_key << "\r\n";
 
   mc_bool_res = false;
-  host cur_host = get_host (real_key);
-  if (mc_is_immediate_query (real_key)) {
-    mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+  host cur_host = get_host(real_key);
+  if (mc_is_immediate_query(real_key)) {
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
     return true;
   } else {
     mc_last_key = real_key.c_str();
     mc_last_key_len = (int)real_key.size();
     mc_stats_init(cur_host.host_port, mc_last_key);
-    mc_run_query (cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_delete_callback);
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_delete_callback);
     return mc_bool_res;
   }
 }
 
-var Memcache::decrement (const string &key, const var &count) {
+var Memcache::decrement(const string &key, const var &count) {
   mc_method = "decr";
-  return run_increment (key, count);
+  return run_increment(key, count);
 }
 
-var Memcache::increment (const string &key, const var &count) {
+var Memcache::increment(const string &key, const var &count) {
   mc_method = "incr";
-  return run_increment (key, count);
+  return run_increment(key, count);
 }
 
-var Memcache::getVersion (void) {
+var Memcache::getVersion(void) {
   static const char *version_str = "version\r\n";
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run Memcache::getVersion");
+    php_warning("There is no available server to run Memcache::getVersion");
     return false;
   }
 
   *mc_res = false;
-  host cur_host = get_host (string());
-  mc_run_query (cur_host.host_num, version_str, (int)strlen (version_str), cur_host.timeout_ms, 1, mc_version_callback);
+  host cur_host = get_host(string());
+  mc_run_query(cur_host.host_num, version_str, (int)strlen(version_str), cur_host.timeout_ms, 1, mc_version_callback);
 
   return *mc_res;
 }
 
 
-var Memcache::getTag (void) const {
-  php_warning ("Method getTag doesn't supported for object of class Memcache");
+var Memcache::getTag(void) const {
+  php_warning("Method getTag doesn't supported for object of class Memcache");
   return var();
 }
 
-var Memcache::getLastQueryTime (void) const {
-  php_warning ("Method getLastQueryTime doesn't supported for object of class Memcache");
+var Memcache::getLastQueryTime(void) const {
+  php_warning("Method getLastQueryTime doesn't supported for object of class Memcache");
   return var();
 }
 
-void Memcache::bufferNextLog (void) {
-  php_warning ("Method bufferNextLog doesn't supported for object of class Memcache");
+void Memcache::bufferNextLog(void) {
+  php_warning("Method bufferNextLog doesn't supported for object of class Memcache");
 }
 
 void Memcache::clearLogBuffer() {
-  php_warning ("Method clearLogBuffer doesn't supported for object of class Memcache");
+  php_warning("Method clearLogBuffer doesn't supported for object of class Memcache");
 }
 
 void Memcache::flushLogBuffer() {
-  php_warning ("Method flushLogBuffer doesn't supported for object of class Memcache");
+  php_warning("Method flushLogBuffer doesn't supported for object of class Memcache");
 }
 
 
-
-RpcMemcache::host::host (void): conn(),
-                                host_weight (0),
-                                actor_id (-1) {
+RpcMemcache::host::host(void) :
+  conn(),
+  host_weight(0),
+  actor_id(-1) {
 }
 
-RpcMemcache::host::host (const string &host_name, int port, int actor_id, int host_weight, int timeout_ms): conn (f$new_rpc_connection (host_name, port, actor_id, timeout_ms * 0.001)),
-                                                                                                            host_weight (host_weight),
-                                                                                                            actor_id (actor_id) {
+RpcMemcache::host::host(const string &host_name, int port, int actor_id, int host_weight, int timeout_ms) :
+  conn(f$new_rpc_connection(host_name, port, actor_id, timeout_ms * 0.001)),
+  host_weight(host_weight),
+  actor_id(actor_id) {
 }
 
-RpcMemcache::host::host (const rpc_connection &c): conn (c),
-                                                   host_weight (1),
-                                                   actor_id(-1) {
+RpcMemcache::host::host(const rpc_connection &c) :
+  conn(c),
+  host_weight(1),
+  actor_id(-1) {
 }
 
-RpcMemcache::host RpcMemcache::get_host (const string &key __attribute__((unused))) {
+RpcMemcache::host RpcMemcache::get_host(const string &key __attribute__((unused))) {
   php_assert (hosts.count() > 0);
 
-  return hosts.get_value (f$array_rand (hosts));
+  return hosts.get_value(f$array_rand(hosts));
 }
 
-RpcMemcache::RpcMemcache (bool fake): hosts (array_size (1, 0, true)), fake(fake) {
+RpcMemcache::RpcMemcache(bool fake) :
+  hosts(array_size(1, 0, true)),
+  fake(fake) {
 }
 
-bool RpcMemcache::addServer (const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval, bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
+bool RpcMemcache::addServer(const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval, bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
   if (timeout <= 0) {
     timeout = 1;
   }
@@ -745,335 +752,334 @@ bool RpcMemcache::addServer (const string &host_name, int port, bool persistent 
     timeout *= 1000;
   }
 
-  host new_host = host (host_name, port, retry_interval >= 100 ? retry_interval : 0, weight, timeout);
+  host new_host = host(host_name, port, retry_interval >= 100 ? retry_interval : 0, weight, timeout);
   if (new_host.conn.host_num >= 0) {
-    hosts.push_back (new_host);
+    hosts.push_back(new_host);
     return true;
   }
   return false;
 }
 
-bool RpcMemcache::connect (const string &host_name, int port, int timeout) {
-  return addServer (host_name, port, false, 1, timeout);
+bool RpcMemcache::connect(const string &host_name, int port, int timeout) {
+  return addServer(host_name, port, false, 1, timeout);
 }
 
-bool RpcMemcache::pconnect (const string &host_name, int port, int timeout) {
-  return addServer (host_name, port, true, 1, timeout);
+bool RpcMemcache::pconnect(const string &host_name, int port, int timeout) {
+  return addServer(host_name, port, true, 1, timeout);
 }
 
-bool RpcMemcache::rpc_connect (const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
-  rpc_connection c = f$new_rpc_connection (host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
+bool RpcMemcache::rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+  rpc_connection c = f$new_rpc_connection(host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
   if (c.host_num >= 0) {
     host h = host(c);
     h.actor_id = default_actor_id.to_int();
-    hosts.push_back (h);
+    hosts.push_back(h);
     return true;
   }
   return false;
 }
 
 
-bool RpcMemcache::add (const string &key, const var &value, int flags, int expire) {
+bool RpcMemcache::add(const string &key, const var &value, int flags, int expire) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::add with key \"%s\"", key.c_str());
+    php_warning("There is no available server to run RpcMemcache::add with key \"%s\"", key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
-  host cur_host = get_host (real_key);
-  mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_add (cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  mc_stats_do (res);
+  const string real_key = mc_prepare_key(key);
+  host cur_host = get_host(real_key);
+  mc_stats_init(cur_host.actor_id, real_key.c_str());
+  bool res = f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
+  mc_stats_do(res);
   return res;
 }
 
-bool RpcMemcache::set (const string &key, const var &value, int flags, int expire) {
+bool RpcMemcache::set(const string &key, const var &value, int flags, int expire) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::set with key \"%s\"", key.c_str());
+    php_warning("There is no available server to run RpcMemcache::set with key \"%s\"", key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
-  host cur_host = get_host (real_key);
-  mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_set (cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  mc_stats_do (res);
+  const string real_key = mc_prepare_key(key);
+  host cur_host = get_host(real_key);
+  mc_stats_init(cur_host.actor_id, real_key.c_str());
+  bool res = f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
+  mc_stats_do(res);
   return res;
 }
 
-bool RpcMemcache::replace (const string &key, const var &value, int flags, int expire) {
+bool RpcMemcache::replace(const string &key, const var &value, int flags, int expire) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::replace with key \"%s\"", key.c_str());
+    php_warning("There is no available server to run RpcMemcache::replace with key \"%s\"", key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
-  host cur_host = get_host (real_key);
-  mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_replace (cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  mc_stats_do (res);
+  const string real_key = mc_prepare_key(key);
+  host cur_host = get_host(real_key);
+  mc_stats_init(cur_host.actor_id, real_key.c_str());
+  bool res = f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
+  mc_stats_do(res);
   return res;
 }
 
-var RpcMemcache::get (const var &key_var) {
-  if (f$is_array (key_var)) {
+var RpcMemcache::get(const var &key_var) {
+  if (f$is_array(key_var)) {
     if (hosts.count() <= 0) {
-      php_warning ("There is no available server to run RpcMemcache::get");
-      return array <var> ();
+      php_warning("There is no available server to run RpcMemcache::get");
+      return array<var>();
     }
 
-    host cur_host = get_host (string());
-    mc_stats_init_multiget (cur_host.actor_id, key_var);
-    var res = f$rpc_mc_multiget (cur_host.conn, key_var.to_array(), -1.0, false, true, fake);
+    host cur_host = get_host(string());
+    mc_stats_init_multiget(cur_host.actor_id, key_var);
+    var res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, false, true, fake);
     php_assert(resumable_finished);
-    mc_stats_do (res);
+    mc_stats_do(res);
     return res;
   } else {
     if (hosts.count() <= 0) {
-      php_warning ("There is no available server to run RpcMemcache::get with key \"%s\"", key_var.to_string().c_str());
+      php_warning("There is no available server to run RpcMemcache::get with key \"%s\"", key_var.to_string().c_str());
       return false;
     }
 
     const string key = key_var.to_string();
-    const string real_key = mc_prepare_key (key);
+    const string real_key = mc_prepare_key(key);
 
-    host cur_host = get_host (real_key);
-    mc_stats_init (cur_host.actor_id, real_key.c_str());
-    var res = f$rpc_mc_get (cur_host.conn, real_key, -1.0, fake);
-    mc_stats_do (res);
+    host cur_host = get_host(real_key);
+    mc_stats_init(cur_host.actor_id, real_key.c_str());
+    var res = f$rpc_mc_get(cur_host.conn, real_key, -1.0, fake);
+    mc_stats_do(res);
     return res;
   }
 }
 
-bool RpcMemcache::delete_ (const string &key) {
+bool RpcMemcache::delete_(const string &key) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::delete with key \"%s\"", key.c_str());
+    php_warning("There is no available server to run RpcMemcache::delete with key \"%s\"", key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
-  host cur_host = get_host (real_key);
-  mc_stats_init (cur_host.actor_id, real_key.c_str());
-  bool res = f$rpc_mc_delete (cur_host.conn, real_key, -1.0, fake);
-  mc_stats_do (res);
-  return res;
-}
-
-var RpcMemcache::decrement (const string &key, const var &count) {
-  if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::decrement with key \"%s\"", key.c_str());
-    return false;
-  }
-
-  const string real_key = mc_prepare_key (key);
-  host cur_host = get_host (real_key);
+  const string real_key = mc_prepare_key(key);
+  host cur_host = get_host(real_key);
   mc_stats_init(cur_host.actor_id, real_key.c_str());
-  var res = f$rpc_mc_decrement (cur_host.conn, real_key, count, -1.0, fake);
-  mc_stats_do (res);
+  bool res = f$rpc_mc_delete(cur_host.conn, real_key, -1.0, fake);
+  mc_stats_do(res);
   return res;
 }
 
-var RpcMemcache::increment (const string &key, const var &count) {
+var RpcMemcache::decrement(const string &key, const var &count) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::increment with key \"%s\"", key.c_str());
+    php_warning("There is no available server to run RpcMemcache::decrement with key \"%s\"", key.c_str());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
-  host cur_host = get_host (real_key);
-  mc_stats_init (cur_host.actor_id, real_key.c_str());
-  var res = f$rpc_mc_increment (cur_host.conn, real_key, count, -1.0, fake);
-  mc_stats_do (res);
+  const string real_key = mc_prepare_key(key);
+  host cur_host = get_host(real_key);
+  mc_stats_init(cur_host.actor_id, real_key.c_str());
+  var res = f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, fake);
+  mc_stats_do(res);
   return res;
 }
 
-var RpcMemcache::getVersion (void) {
+var RpcMemcache::increment(const string &key, const var &count) {
   if (hosts.count() <= 0) {
-    php_warning ("There is no available server to run RpcMemcache::getVersion");
+    php_warning("There is no available server to run RpcMemcache::increment with key \"%s\"", key.c_str());
     return false;
   }
 
-  php_warning ("Method getVersion doesn't supported for object of class RpcMemcache");
+  const string real_key = mc_prepare_key(key);
+  host cur_host = get_host(real_key);
+  mc_stats_init(cur_host.actor_id, real_key.c_str());
+  var res = f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, fake);
+  mc_stats_do(res);
+  return res;
+}
+
+var RpcMemcache::getVersion(void) {
+  if (hosts.count() <= 0) {
+    php_warning("There is no available server to run RpcMemcache::getVersion");
+    return false;
+  }
+
+  php_warning("Method getVersion doesn't supported for object of class RpcMemcache");
   return false;
 }
 
 
-var RpcMemcache::getTag (void) const {
-  php_warning ("Method getTag doesn't supported for object of class RpcMemcache");
+var RpcMemcache::getTag(void) const {
+  php_warning("Method getTag doesn't supported for object of class RpcMemcache");
   return var();
 }
 
-var RpcMemcache::getLastQueryTime (void) const {
-  php_warning ("Method getLastQueryTime doesn't supported for object of class RpcMemcache");
+var RpcMemcache::getLastQueryTime(void) const {
+  php_warning("Method getLastQueryTime doesn't supported for object of class RpcMemcache");
   return var();
 }
 
-void RpcMemcache::bufferNextLog (void) {
-  php_warning ("Method bufferNextLog doesn't supported for object of class RpcMemcache");
+void RpcMemcache::bufferNextLog(void) {
+  php_warning("Method bufferNextLog doesn't supported for object of class RpcMemcache");
 }
 
 void RpcMemcache::clearLogBuffer() {
-  php_warning ("Method clearLogBuffer doesn't supported for object of class RpcMemcache");
+  php_warning("Method clearLogBuffer doesn't supported for object of class RpcMemcache");
 }
 
 void RpcMemcache::flushLogBuffer() {
-  php_warning ("Method flushLogBuffer doesn't supported for object of class RpcMemcache");
+  php_warning("Method flushLogBuffer doesn't supported for object of class RpcMemcache");
 }
 
 
-
-true_mc::true_mc (MC_object *mc, bool is_true_mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold):
-         server_rand (f$rand (0, 999999)),
-         mc (mc),
-         engine_tag (engine_tag),
-         engine_name (engine_name),
-         is_debug (is_debug),
-         is_debug_empty (is_debug_empty),
-         query_time_threshold (query_time_threshold != 0.0 ? query_time_threshold : 1.0),
-         query_index (0),
-         last_query_time (0),
-         is_true_mc (is_true_mc),
-         use_log_buffer (false) {
+true_mc::true_mc(MC_object *mc, bool is_true_mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold) :
+  server_rand(f$rand(0, 999999)),
+  mc(mc),
+  engine_tag(engine_tag),
+  engine_name(engine_name),
+  is_debug(is_debug),
+  is_debug_empty(is_debug_empty),
+  query_time_threshold(query_time_threshold != 0.0 ? query_time_threshold : 1.0),
+  query_index(0),
+  last_query_time(0),
+  is_true_mc(is_true_mc),
+  use_log_buffer(false) {
 }
 
-bool true_mc::addServer (const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
+bool true_mc::addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->addServer");
+    php_warning("Memcache object is NULL in true_mc->mc->addServer");
     return false;
   }
-  return mc->addServer (host_name, port, persistent, weight, timeout, retry_interval, status, failure_callback, timeoutms);
+  return mc->addServer(host_name, port, persistent, weight, timeout, retry_interval, status, failure_callback, timeoutms);
 }
 
-bool true_mc::connect (const string &host_name, int port, int timeout) {
+bool true_mc::connect(const string &host_name, int port, int timeout) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->connect");
+    php_warning("Memcache object is NULL in true_mc->mc->connect");
     return false;
   }
-  return mc->connect (host_name, port, timeout);
+  return mc->connect(host_name, port, timeout);
 }
 
-bool true_mc::pconnect (const string &host_name, int port, int timeout) {
+bool true_mc::pconnect(const string &host_name, int port, int timeout) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->pconnect");
+    php_warning("Memcache object is NULL in true_mc->mc->pconnect");
     return false;
   }
-  return mc->pconnect (host_name, port, timeout);
+  return mc->pconnect(host_name, port, timeout);
 }
 
-bool true_mc::rpc_connect (const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+bool true_mc::rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->rpc_connect");
+    php_warning("Memcache object is NULL in true_mc->mc->rpc_connect");
     return false;
   }
-  return mc->rpc_connect (host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
+  return mc->rpc_connect(host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
 }
 
 
-bool true_mc::add (const string &key, const var &value, int flags, int expire) {
+bool true_mc::add(const string &key, const var &value, int flags, int expire) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->add");
-    return false;
-  }
-  query_index++;
-
-  double begin_time = microtime_monotonic();
-  bool result = mc->add (key, value, flags, expire);
-  TRY_CALL_VOID(bool, check_result ("add", key, microtime_monotonic() - begin_time, result));
-
-  return result;
-}
-
-bool true_mc::set (const string &key, const var &value, int flags, int expire) {
-  if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->set");
+    php_warning("Memcache object is NULL in true_mc->mc->add");
     return false;
   }
   query_index++;
 
   double begin_time = microtime_monotonic();
-  bool result = mc->set (key, value, flags, expire);
-  check_result ("set", key, microtime_monotonic() - begin_time, result);
+  bool result = mc->add(key, value, flags, expire);
+  TRY_CALL_VOID(bool, check_result("add", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
 
-bool true_mc::replace (const string &key, const var &value, int flags, int expire) {
+bool true_mc::set(const string &key, const var &value, int flags, int expire) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->replace");
+    php_warning("Memcache object is NULL in true_mc->mc->set");
     return false;
   }
   query_index++;
 
   double begin_time = microtime_monotonic();
-  bool result = mc->replace (key, value, flags, expire);
-  TRY_CALL_VOID(bool, check_result ("replace", key, microtime_monotonic() - begin_time, result));
+  bool result = mc->set(key, value, flags, expire);
+  check_result("set", key, microtime_monotonic() - begin_time, result);
+
+  return result;
+}
+
+bool true_mc::replace(const string &key, const var &value, int flags, int expire) {
+  if (mc == NULL) {
+    php_warning("Memcache object is NULL in true_mc->mc->replace");
+    return false;
+  }
+  query_index++;
+
+  double begin_time = microtime_monotonic();
+  bool result = mc->replace(key, value, flags, expire);
+  TRY_CALL_VOID(bool, check_result("replace", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
 
 
-var true_mc::get (const var &key_var) {
+var true_mc::get(const var &key_var) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->get");
+    php_warning("Memcache object is NULL in true_mc->mc->get");
     if (key_var.is_array()) {
-      return array <var> ();
+      return array<var>();
     }
     return false;
   }
   query_index++;
 
   double begin_time = microtime_monotonic();
-  var result = mc->get (key_var);
-  TRY_CALL_VOID(bool, check_result ("get", key_var, microtime_monotonic() - begin_time, result));
+  var result = mc->get(key_var);
+  TRY_CALL_VOID(bool, check_result("get", key_var, microtime_monotonic() - begin_time, result));
 
   return result;
 }
 
-bool true_mc::delete_ (const string &key) {
+bool true_mc::delete_(const string &key) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->delete");
+    php_warning("Memcache object is NULL in true_mc->mc->delete");
     return false;
   }
   query_index++;
 
   double begin_time = microtime_monotonic();
-  bool result = mc->delete_ (key);
-  TRY_CALL_VOID(bool, check_result ("delete", key, microtime_monotonic() - begin_time, result));
+  bool result = mc->delete_(key);
+  TRY_CALL_VOID(bool, check_result("delete", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
 
-var true_mc::decrement (const string &key, const var &v) {
+var true_mc::decrement(const string &key, const var &v) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->decrement");
+    php_warning("Memcache object is NULL in true_mc->mc->decrement");
     return false;
   }
   query_index++;
 
   double begin_time = microtime_monotonic();
-  var result = mc->decrement (key, v);
-  TRY_CALL_VOID(bool, check_result ("decrement", key, microtime_monotonic() - begin_time, result));
+  var result = mc->decrement(key, v);
+  TRY_CALL_VOID(bool, check_result("decrement", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
 
-var true_mc::increment (const string &key, const var &v) {
+var true_mc::increment(const string &key, const var &v) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->increment");
+    php_warning("Memcache object is NULL in true_mc->mc->increment");
     return false;
   }
   query_index++;
 
   double begin_time = microtime_monotonic();
-  var result = mc->increment (key, v);
-  TRY_CALL_VOID(bool, check_result ("increment", key, microtime_monotonic() - begin_time, result));
+  var result = mc->increment(key, v);
+  TRY_CALL_VOID(bool, check_result("increment", key, microtime_monotonic() - begin_time, result));
 
   return result;
 }
 
-var true_mc::getVersion (void) {
+var true_mc::getVersion(void) {
   if (mc == NULL) {
-    php_warning ("Memcache object is NULL in true_mc->mc->getVersion");
+    php_warning("Memcache object is NULL in true_mc->mc->getVersion");
     return false;
   }
   query_index++;
@@ -1081,7 +1087,7 @@ var true_mc::getVersion (void) {
   return mc->getVersion();
 }
 
-void true_mc::check_result (const char *operation, const var &key_var, double time_diff, const var &result) {
+void true_mc::check_result(const char *operation, const var &key_var, double time_diff, const var &result) {
   last_query_time = time_diff;
 
   if (is_true_mc) {
@@ -1091,39 +1097,39 @@ void true_mc::check_result (const char *operation, const var &key_var, double ti
     if (is_fail_time || is_debug) {
       is_fail_result = ((result.is_bool() && result.to_bool() == false) || (is_debug_empty && !result));
       if (is_fail_result || is_fail_time) {
-        string mc_key = (drivers_SB.clean() << "^engine_query_fail_" << f$rand (0, 9999)).str();
+        string mc_key = (drivers_SB.clean() << "^engine_query_fail_" << f$rand(0, 9999)).str();
 
-        string script_filename = v$_SERVER[string ("SCRIPT_FILENAME", 15)].to_string();
-        var entry_point_slash_position = f$strrpos (script_filename, string ("/", 1));
-        var entry_point = f$substr (script_filename, (entry_point_slash_position.is_bool() ? 0 : entry_point_slash_position.to_int() + 1));
-        var this_server = v$config[string ("this_server", 11)];
+        string script_filename = v$_SERVER[string("SCRIPT_FILENAME", 15)].to_string();
+        var entry_point_slash_position = f$strrpos(script_filename, string("/", 1));
+        var entry_point = f$substr(script_filename, (entry_point_slash_position.is_bool() ? 0 : entry_point_slash_position.to_int() + 1));
+        var this_server = v$config[string("this_server", 11)];
         if (this_server.is_null()) {
-          this_server = v$_SERVER[string ("SERVER_ADDR", 11)];
+          this_server = v$_SERVER[string("SERVER_ADDR", 11)];
         }
 
-        array <var> fail_info = array <var> (array_size (0, 13, false));
-        fail_info.set_value (string ("time"                ,  4), (int)time (NULL));
-        fail_info.set_value (string ("server"              ,  6), this_server);
-        fail_info.set_value (string ("server_rand"         , 11), server_rand);
-        fail_info.set_value (string ("software"            ,  8), v$_SERVER[string ("SERVER_SOFTWARE", 15)]);
-        fail_info.set_value (string ("entry_point"         , 11), entry_point);
-        fail_info.set_value (string ("engine_name"         , 11), engine_name);
-        fail_info.set_value (string ("engine_tag"          , 10), engine_tag);
-        fail_info.set_value (string ("query_time"          , 10), time_diff);
-        fail_info.set_value (string ("query_time_threshold", 20), query_time_threshold);
-        fail_info.set_value (string ("query_index"         , 11), query_index);
-        fail_info.set_value (string ("operation"           , 10), string (operation, (dl::size_type)strlen (operation)));
-        fail_info.set_value (string ("key"                 ,  3), key_var);
-        fail_info.set_value (string ("result"              ,  6), (is_fail_result ? result : true));
+        array<var> fail_info = array<var>(array_size(0, 13, false));
+        fail_info.set_value(string("time", 4), (int)time(NULL));
+        fail_info.set_value(string("server", 6), this_server);
+        fail_info.set_value(string("server_rand", 11), server_rand);
+        fail_info.set_value(string("software", 8), v$_SERVER[string("SERVER_SOFTWARE", 15)]);
+        fail_info.set_value(string("entry_point", 11), entry_point);
+        fail_info.set_value(string("engine_name", 11), engine_name);
+        fail_info.set_value(string("engine_tag", 10), engine_tag);
+        fail_info.set_value(string("query_time", 10), time_diff);
+        fail_info.set_value(string("query_time_threshold", 20), query_time_threshold);
+        fail_info.set_value(string("query_index", 11), query_index);
+        fail_info.set_value(string("operation", 10), string(operation, (dl::size_type)strlen(operation)));
+        fail_info.set_value(string("key", 3), key_var);
+        fail_info.set_value(string("result", 6), (is_fail_result ? result : true));
 
         if (use_log_buffer) {
           use_log_buffer = false;
-          log_buffer_key.push_back    (mc_key);
-          log_buffer_value.push_back  (fail_info);
-          log_buffer_expire.push_back (86400 * 2);
+          log_buffer_key.push_back(mc_key);
+          log_buffer_value.push_back(fail_info);
+          log_buffer_expire.push_back(86400 * 2);
         } else {
-          MyMemcache MC = equals (v$MC_True, true) ? v$MC_True : v$MC;
-          f$memcached_set (MC, mc_key, fail_info, 0, 86400 * 2);
+          MyMemcache MC = equals(v$MC_True, true) ? v$MC_True : v$MC;
+          f$memcached_set(MC, mc_key, fail_info, 0, 86400 * 2);
         }
       }
     }
@@ -1138,109 +1144,113 @@ void true_mc::check_result (const char *operation, const var &key_var, double ti
     string section;
     string extra2;
     string extra2_plain;
-    if (!strcmp (operation, "get")) {
-      section.assign ("MC->get", 7);
-      int keys_count = f$count (key_var);
-      int count_res = key_var.is_array() ? f$count (result) : !equals (result, false);
-      string count_res_str = (count_res != keys_count) ? (drivers_SB.clean() << "<span style=\"color:#f00;\">" << count_res << "</span>").str() : string (count_res);
-      extra2 = (drivers_SB.clean() << ", <span class=\"_count_" << keys_count << "\">" << count_res_str << "/" << keys_count << " key" << (keys_count > 1 ? "s" : "") << "</span>").str();
+    if (!strcmp(operation, "get")) {
+      section.assign("MC->get", 7);
+      int keys_count = f$count(key_var);
+      int count_res = key_var.is_array() ? f$count(result) : !equals(result, false);
+      string count_res_str = (count_res != keys_count) ? (drivers_SB.clean() << "<span style=\"color:#f00;\">" << count_res
+                                                                             << "</span>").str() : string(count_res);
+      extra2 = (drivers_SB.clean() << ", <span class=\"_count_" << keys_count << "\">" << count_res_str << "/" << keys_count << " key"
+                                   << (keys_count > 1 ? "s" : "") << "</span>").str();
       extra2_plain = (drivers_SB.clean() << ", " << count_res << "/" << keys_count << " key" << (keys_count > 1 ? "s" : "")).str();
     } else {
-      section.assign ("MC", 2);
+      section.assign("MC", 2);
     }
 
-    bool debug_server_log_queries = v$config.get_value (string ("debug_server_log_queries", 24)).to_bool();
+    bool debug_server_log_queries = v$config.get_value(string("debug_server_log_queries", 24)).to_bool();
     string extra;
     string extra_plain;
-    if (f$is_array (key_var)) {
-      extra.assign ("[", 1);
+    if (f$is_array(key_var)) {
+      extra.assign("[", 1);
       int index = 0;
       bool is_skipped = false;
-      array <var> keys = key_var.to_array();
-      for (array <var>::iterator it = keys.begin(); it != keys.end() && index < 100; ++it) {
+      array<var> keys = key_var.to_array();
+      for (array<var>::iterator it = keys.begin(); it != keys.end() && index < 100; ++it) {
         string key = it.get_value().to_string();
-        string key_str = f$str_replace (COLON, string (",<wbr>", 6), key);
+        string key_str = f$str_replace(COLON, string(",<wbr>", 6), key);
 
-        if (!result.get_value (key).is_null()) {
+        if (!result.get_value(key).is_null()) {
           if (index < 50) {
             if (index != 0) {
-              extra.append (", ", 2);
+              extra.append(", ", 2);
             }
-            extra.append (key_str);
+            extra.append(key_str);
             index++;
           } else {
             is_skipped = true;
           }
         } else {
           if (index != 0) {
-            extra.append (", ", 2);
+            extra.append(", ", 2);
           }
-          extra.append ("<span style=\"font-weight:bold;\">", 32);
-          extra.append (key_str);
-          extra.append ("</span>", 7);
+          extra.append("<span style=\"font-weight:bold;\">", 32);
+          extra.append(key_str);
+          extra.append("</span>", 7);
           index++;
         }
       }
-      if (is_skipped || f$count (key_var) > 100) {
-        extra.append (", ...", 5);
+      if (is_skipped || f$count(key_var) > 100) {
+        extra.append(", ...", 5);
       }
-      extra.append ("]", 1);
+      extra.append("]", 1);
       if (debug_server_log_queries) {
-        extra_plain = (drivers_SB.clean() << "[" << f$implode (string (", ", 2), f$array_slice (keys, 0, 50)) << "]").str();
+        extra_plain = (drivers_SB.clean() << "[" << f$implode(string(", ", 2), f$array_slice(keys, 0, 50)) << "]").str();
       }
     } else {
-      extra = f$str_replace (COLON, string (",<wbr>", 6), key_var.to_string());
+      extra = f$str_replace(COLON, string(",<wbr>", 6), key_var.to_string());
       extra_plain = key_var.to_string();
     }
-    if (!strcmp (engine_tag.c_str(), "_ads")) {
-      extra = TRY_CALL(string, void, base128DecodeMixed_pointer (extra).to_string());
+    if (!strcmp(engine_tag.c_str(), "_ads")) {
+      extra = TRY_CALL(string, void, base128DecodeMixed_pointer(extra).to_string());
     }
 
     char buf[100];
-    int len = snprintf (buf, 100, "%.2fms", time_diff * 1000);
+    int len = snprintf(buf, 100, "%.2fms", time_diff * 1000);
     php_assert (len < 100);
 
-    string time_diff_plain (buf, len);
+    string time_diff_plain(buf, len);
     string time_diff_str = time_diff_plain;
     bool is_slow = (time_diff > 0.01);
     if (is_slow) {
       time_diff_str = (drivers_SB.clean() << "<span style=\"font-weight:bold;\">" << time_diff_str << "</span>").str();
     }
-    bool is_local = (f$empty (engine_tag) || engine_tag[0] == '_' || !strncmp (engine_tag.c_str(), "127.0.0.1", 9));
-    string color (is_local ? "#080" : "#00f", 4);
+    bool is_local = (f$empty(engine_tag) || engine_tag[0] == '_' || !strncmp(engine_tag.c_str(), "127.0.0.1", 9));
+    string color(is_local ? "#080" : "#00f", 4);
 
     drivers_SB.clean();
     if (is_slow) {
       drivers_SB << "<span class=\"_slow_\" style=\"color: #F00\">(!)</span> ";
     }
-    drivers_SB << "<span style='color: " << color << "'>" << "mc" << engine_tag << " query " << operation << " (" << extra << ")" << extra2 << ": " << time_diff_str << "</span>";
+    drivers_SB << "<span style='color: " << color << "'>" << "mc" << engine_tag << " query " << operation << " (" << extra << ")" << extra2 << ": "
+               << time_diff_str << "</span>";
     string text_html = drivers_SB.str();
-    TRY_CALL(var, void, debugLogPlain_pointer (section, text_html));
+    TRY_CALL(var, void, debugLogPlain_pointer(section, text_html));
 
     if (debug_server_log_queries) {
-      string text_plain = (drivers_SB.clean() << "mc" << engine_tag << " query " << operation << " (" << extra_plain << ")" << extra2_plain << ": " << time_diff_plain).str();
-      TRY_CALL(var, void, debugServerLog_pointer (f$arrayval (text_plain)));
+      string text_plain = (drivers_SB.clean() << "mc" << engine_tag << " query " << operation << " (" << extra_plain << ")" << extra2_plain << ": "
+                                              << time_diff_plain).str();
+      TRY_CALL(var, void, debugServerLog_pointer(f$arrayval(text_plain)));
       //dLog_pointer (f$arrayval (text_plain));
     }
   }
 }
 
-var true_mc::getTag (void) const {
+var true_mc::getTag(void) const {
   return engine_tag;
 }
 
-var true_mc::getLastQueryTime (void) const {
+var true_mc::getLastQueryTime(void) const {
   return last_query_time;
 }
 
-void true_mc::bufferNextLog (void) {
+void true_mc::bufferNextLog(void) {
   use_log_buffer = true;
 }
 
 void true_mc::clearLogBuffer() {
-  log_buffer_key    = array <string> (array_size (1, 0, true));
-  log_buffer_value  = array <array <var> > (array_size (1, 0, true));
-  log_buffer_expire = array <int> (array_size (1, 0, true));
+  log_buffer_key = array<string>(array_size(1, 0, true));
+  log_buffer_value = array<array<var>>(array_size(1, 0, true));
+  log_buffer_expire = array<int>(array_size(1, 0, true));
 }
 
 void true_mc::flushLogBuffer() {
@@ -1248,19 +1258,18 @@ void true_mc::flushLogBuffer() {
     return;
   }
 
-  MyMemcache MC = equals (v$MC_True, true) ? v$MC_True : v$MC;
+  MyMemcache MC = equals(v$MC_True, true) ? v$MC_True : v$MC;
   for (int i = 0; i < log_buffer_key.count(); i++) {
-    f$memcached_set (MC, log_buffer_key[i], log_buffer_value[i], 0, log_buffer_expire[i]);
+    f$memcached_set(MC, log_buffer_key[i], log_buffer_value[i], 0, log_buffer_expire[i]);
   }
 
   clearLogBuffer();
 }
 
 
-
-bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
+bool f$memcached_addServer(const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->addServer");
+    php_warning("Memcache object is NULL in Memcache->addServer");
     return false;
   }
 
@@ -1275,202 +1284,201 @@ bool f$memcached_addServer (const MyMemcache &mc, const string &host_name, int p
     timeout_ms_from_timeout += timeout_s * 1000;
   }
 
-  return mc.mc->addServer (host_name, port, persistent, weight, timeout_s, retry_interval, status, failure_callback, timeout_ms_from_timeout);
+  return mc.mc->addServer(host_name, port, persistent, weight, timeout_s, retry_interval, status, failure_callback, timeout_ms_from_timeout);
 }
 
-bool f$memcached_connect (const MyMemcache &mc, const string &host_name, int port, int timeout) {
+bool f$memcached_connect(const MyMemcache &mc, const string &host_name, int port, int timeout) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->connect");
+    php_warning("Memcache object is NULL in Memcache->connect");
     return false;
   }
-  return mc.mc->connect (host_name, port, timeout);
+  return mc.mc->connect(host_name, port, timeout);
 }
 
-bool f$memcached_pconnect (const MyMemcache &mc, const string &host_name, int port, int timeout) {
+bool f$memcached_pconnect(const MyMemcache &mc, const string &host_name, int port, int timeout) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->pconnect");
+    php_warning("Memcache object is NULL in Memcache->pconnect");
     return false;
   }
-  return mc.mc->pconnect (host_name, port, timeout);
+  return mc.mc->pconnect(host_name, port, timeout);
 }
 
-bool f$memcached_rpc_connect (const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+bool f$memcached_rpc_connect(const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->rpc_connect");
+    php_warning("Memcache object is NULL in Memcache->rpc_connect");
     return false;
   }
-  return mc.mc->rpc_connect (host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
+  return mc.mc->rpc_connect(host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
 }
 
 
-
-bool f$memcached_add (const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
+bool f$memcached_add(const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->add");
+    php_warning("Memcache object is NULL in Memcache->add");
     return false;
   }
-  return mc.mc->add (key, value, flags, expire);
+  return mc.mc->add(key, value, flags, expire);
 }
 
-bool f$memcached_set (const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
+bool f$memcached_set(const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->set");
+    php_warning("Memcache object is NULL in Memcache->set");
     return false;
   }
-  return mc.mc->set (key, value, flags, expire);
+  return mc.mc->set(key, value, flags, expire);
 }
 
-bool f$memcached_replace (const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
+bool f$memcached_replace(const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->replace");
+    php_warning("Memcache object is NULL in Memcache->replace");
     return false;
   }
-  return mc.mc->replace (key, value, flags, expire);
+  return mc.mc->replace(key, value, flags, expire);
 }
 
-var f$memcached_get (const MyMemcache &mc, const var &key_var) {
+var f$memcached_get(const MyMemcache &mc, const var &key_var) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->get");
-    return key_var.is_array() ? var (array <var> ()) : var (false);
+    php_warning("Memcache object is NULL in Memcache->get");
+    return key_var.is_array() ? var(array<var>()) : var(false);
   }
-  return mc.mc->get (key_var);
+  return mc.mc->get(key_var);
 }
 
-bool f$memcached_delete (const MyMemcache &mc, const string &key) {
+bool f$memcached_delete(const MyMemcache &mc, const string &key) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->delete");
+    php_warning("Memcache object is NULL in Memcache->delete");
     return false;
   }
-  return mc.mc->delete_ (key);
+  return mc.mc->delete_(key);
 }
 
-var f$memcached_decrement (const MyMemcache &mc, const string &key, const var &v) {
+var f$memcached_decrement(const MyMemcache &mc, const string &key, const var &v) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->decrement");
+    php_warning("Memcache object is NULL in Memcache->decrement");
     return false;
   }
-  return mc.mc->decrement (key, v);
+  return mc.mc->decrement(key, v);
 }
 
-var f$memcached_increment (const MyMemcache &mc, const string &key, const var &v) {
+var f$memcached_increment(const MyMemcache &mc, const string &key, const var &v) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->increment");
+    php_warning("Memcache object is NULL in Memcache->increment");
     return false;
   }
-  return mc.mc->increment (key, v);
+  return mc.mc->increment(key, v);
 }
 
-var f$memcached_getVersion (const MyMemcache &mc) {
+var f$memcached_getVersion(const MyMemcache &mc) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->getVersion");
+    php_warning("Memcache object is NULL in Memcache->getVersion");
     return false;
   }
   return mc.mc->getVersion();
 }
 
 
-var f$memcached_getTag (const MyMemcache &mc) {
+var f$memcached_getTag(const MyMemcache &mc) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->getTag");
+    php_warning("Memcache object is NULL in Memcache->getTag");
     return false;
   }
   return mc.mc->getTag();
 }
 
-var f$memcached_getLastQueryTime (const MyMemcache &mc) {
+var f$memcached_getLastQueryTime(const MyMemcache &mc) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->getLastQueryTime");
+    php_warning("Memcache object is NULL in Memcache->getLastQueryTime");
     return false;
   }
   return mc.mc->getLastQueryTime();
 }
 
-void f$memcached_bufferNextLog (const MyMemcache &mc) {
+void f$memcached_bufferNextLog(const MyMemcache &mc) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->bufferNextLog");
+    php_warning("Memcache object is NULL in Memcache->bufferNextLog");
     return;
   }
   mc.mc->bufferNextLog();
 }
 
-void f$memcached_clearLogBuffer (const MyMemcache &mc) {
+void f$memcached_clearLogBuffer(const MyMemcache &mc) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->clearLogBuffer");
+    php_warning("Memcache object is NULL in Memcache->clearLogBuffer");
     return;
   }
   mc.mc->clearLogBuffer();
 }
 
-void f$memcached_flushLogBuffer (const MyMemcache &mc) {
+void f$memcached_flushLogBuffer(const MyMemcache &mc) {
   if (mc.mc == NULL) {
-    php_warning ("Memcache object is NULL in Memcache->flushLogBuffer");
+    php_warning("Memcache object is NULL in Memcache->flushLogBuffer");
     return;
   }
   mc.mc->flushLogBuffer();
 }
 
 
-bool f$boolval (const MyMemcache &my_mc) {
-  return f$boolval (my_mc.bool_value);
+bool f$boolval(const MyMemcache &my_mc) {
+  return f$boolval(my_mc.bool_value);
 }
 
-bool eq2 (const MyMemcache &my_mc, bool value) {
+bool eq2(const MyMemcache &my_mc, bool value) {
   return my_mc.bool_value == value;
 }
 
-bool eq2 (bool value, const MyMemcache &my_mc) {
+bool eq2(bool value, const MyMemcache &my_mc) {
   return value == my_mc.bool_value;
 }
 
-bool equals (bool value, const MyMemcache &my_mc) {
-  return equals (value, my_mc.bool_value);
+bool equals(bool value, const MyMemcache &my_mc) {
+  return equals(value, my_mc.bool_value);
 }
 
-bool equals (const MyMemcache &my_mc, bool value) {
-  return equals (my_mc.bool_value, value);
+bool equals(const MyMemcache &my_mc, bool value) {
+  return equals(my_mc.bool_value, value);
 }
 
-bool not_equals (bool value, const MyMemcache &my_mc) {
-  return not_equals (value, my_mc.bool_value);
+bool not_equals(bool value, const MyMemcache &my_mc) {
+  return not_equals(value, my_mc.bool_value);
 }
 
-bool not_equals (const MyMemcache &my_mc, bool value) {
-  return not_equals (my_mc.bool_value, value);
+bool not_equals(const MyMemcache &my_mc, bool value) {
+  return not_equals(my_mc.bool_value, value);
 }
 
 
-MyMemcache& MyMemcache::operator = (bool value) {
+MyMemcache &MyMemcache::operator=(bool value) {
   bool_value = value;
   mc = NULL;
   return *this;
 }
 
-MyMemcache::MyMemcache (bool value)
-  : bool_value(value)
-  , mc(NULL)
-{}
+MyMemcache::MyMemcache(bool value) :
+  bool_value(value),
+  mc(NULL) {}
 
-MyMemcache::MyMemcache (MC_object *mc): bool_value (true),
-                                        mc (mc) {
+MyMemcache::MyMemcache(MC_object *mc) :
+  bool_value(true),
+  mc(mc) {
 }
 
-MyMemcache::MyMemcache (void): bool_value(),
-                               mc (NULL) {
+MyMemcache::MyMemcache(void) :
+  bool_value(),
+  mc(NULL) {
 }
 
 
-
-array <string> f$mcGetStats (const MyMemcache &MC) {
-  var stats_result = f$memcached_get (MC, string ("#stats", 6));
+array<string> f$mcGetStats(const MyMemcache &MC) {
+  var stats_result = f$memcached_get(MC, string("#stats", 6));
   if (!stats_result) {
-    return array <var> ();
+    return array<var>();
   }
-  array <string> stats = array <var> ();
-  array <string> stats_array = explode ('\n', stats_result.to_string());
+  array<string> stats = array<var>();
+  array<string> stats_array = explode('\n', stats_result.to_string());
   for (int i = 0; i < (int)stats_array.count(); i++) {
     string row = stats_array[i];
     if (row.size()) {
-      array <string> row_array = explode ('\t', row, 2);
+      array<string> row_array = explode('\t', row, 2);
       if (row_array.count() == 2) {
         stats[row_array[0]] = row_array[1];
       }
@@ -1479,59 +1487,58 @@ array <string> f$mcGetStats (const MyMemcache &MC) {
   return stats;
 }
 
-int f$mcGetClusterSize (const MyMemcache &MC) {
-  static char cluster_size_cache_storage[sizeof (array <int>)];
-  static array <int> *cluster_size_cache = reinterpret_cast <array <int> *> (cluster_size_cache_storage);
+int f$mcGetClusterSize(const MyMemcache &MC) {
+  static char cluster_size_cache_storage[sizeof(array<int>)];
+  static array<int> *cluster_size_cache = reinterpret_cast <array<int> *> (cluster_size_cache_storage);
 
   static long long last_query_num = -1;
   if (dl::query_num != last_query_num) {
-    new (cluster_size_cache_storage) array <int>();
+    new(cluster_size_cache_storage) array<int>();
     last_query_num = dl::query_num;
   }
 
   char p[25];
-  string key (p, sprintf (p, "%p", MC.mc));
+  string key(p, sprintf(p, "%p", MC.mc));
 
-  if (cluster_size_cache->isset (key)) {
-    return cluster_size_cache->get_value (key);
+  if (cluster_size_cache->isset(key)) {
+    return cluster_size_cache->get_value(key);
   }
 
-  array <string> stats = f$mcGetStats (MC);
-  int cluster_size = f$intval (stats.get_value (string ("cluster_size", 12)));
-  cluster_size_cache->set_value (key, cluster_size);
+  array<string> stats = f$mcGetStats(MC);
+  int cluster_size = f$intval(stats.get_value(string("cluster_size", 12)));
+  cluster_size_cache->set_value(key, cluster_size);
   return cluster_size;
 }
 
 
-
-MyMemcache f$new_Memcache (void) {
-  void *buf = dl::allocate (sizeof (Memcache));
-  return MyMemcache (new (buf) Memcache());
+MyMemcache f$new_Memcache(void) {
+  void *buf = dl::allocate(sizeof(Memcache));
+  return MyMemcache(new(buf) Memcache());
 }
 
-MyMemcache f$new_RpcMemcache (bool fake) {
-  void *buf = dl::allocate (sizeof (RpcMemcache));
-  return MyMemcache (new (buf) RpcMemcache(fake));
+MyMemcache f$new_RpcMemcache(bool fake) {
+  void *buf = dl::allocate(sizeof(RpcMemcache));
+  return MyMemcache(new(buf) RpcMemcache(fake));
 }
 
-MyMemcache f$new_true_mc (const MyMemcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold) {
-  void *buf = dl::allocate (sizeof (true_mc));
-  return MyMemcache (new (buf) true_mc (mc.mc, true, engine_tag, engine_name, is_debug, is_debug_empty, query_time_threshold));
+MyMemcache f$new_true_mc(const MyMemcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold) {
+  void *buf = dl::allocate(sizeof(true_mc));
+  return MyMemcache(new(buf) true_mc(mc.mc, true, engine_tag, engine_name, is_debug, is_debug_empty, query_time_threshold));
 }
 
-MyMemcache f$new_test_mc (const MyMemcache &mc, const string &engine_tag) {
+MyMemcache f$new_test_mc(const MyMemcache &mc, const string &engine_tag) {
   if (!v$Durov) {
-    php_warning ("Can't create test_mc while $Durov == false");
+    php_warning("Can't create test_mc while $Durov == false");
   }
   if (dynamic_cast <true_mc *>(mc.mc) == NULL) {// No true_mc
-    void *buf = dl::allocate (sizeof (true_mc));
-    return MyMemcache (new (buf) true_mc (mc.mc, false, engine_tag));
+    void *buf = dl::allocate(sizeof(true_mc));
+    return MyMemcache(new(buf) true_mc(mc.mc, false, engine_tag));
   }
   return mc;
 }
 
-MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag __attribute__((unused))) {
-  php_warning ("rich_mc doesn't supported");
+MyMemcache f$new_rich_mc(const MyMemcache &mc, const string &engine_tag __attribute__((unused))) {
+  php_warning("rich_mc doesn't supported");
   return mc;
 }
 
@@ -1542,16 +1549,16 @@ MyMemcache f$new_rich_mc (const MyMemcache &mc, const string &engine_tag __attri
  *
  */
 
-var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout, bool fake) {
+var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout, bool fake) {
   mc_method = "get";
-  const string real_key = mc_prepare_key (key);
-  int is_immediate = mc_is_immediate_query (real_key);
+  const string real_key = mc_prepare_key(key);
+  int is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int (fake ? TL_ENGINE_MC_GET_QUERY : MEMCACHE_GET);
-  store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
+  f$store_int(fake ? TL_ENGINE_MC_GET_QUERY : MEMCACHE_GET);
+  store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
+  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1560,8 +1567,8 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout,
     return true;
   }
 
-  wait_synchronously (request_id);
-  if (!f$rpc_get_and_parse (request_id, timeout)) {
+  wait_synchronously(request_id);
+  if (!f$rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -1579,45 +1586,45 @@ var f$rpc_mc_get (const rpc_connection &conn, const string &key, double timeout,
   return result;
 }
 
-bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
+bool rpc_mc_run_set(int op, const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout) {
   if (flags & ~MEMCACHE_COMPRESSED) {
-    php_warning ("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
+    php_warning("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
   }
 
   if ((unsigned int)expire > (unsigned int)(30 * 24 * 60 * 60)) {
-    php_warning ("Wrong parameter expire = %d in Memcache::%s", expire, mc_method);
+    php_warning("Wrong parameter expire = %d in Memcache::%s", expire, mc_method);
     expire = 0;
   }
 
   string string_value;
-  if (f$is_array (value)) {
-    string_value = f$serialize (value);
+  if (f$is_array(value)) {
+    string_value = f$serialize(value);
     flags |= MEMCACHE_SERIALIZED;
   } else {
     string_value = value.to_string();
   }
 
   if (flags & MEMCACHE_COMPRESSED) {
-    string_value = f$gzcompress (string_value);
+    string_value = f$gzcompress(string_value);
   }
 
   if (string_value.size() >= (dl::size_type)MAX_VALUE_LEN) {
-    php_warning ("Parameter value has length %d and too large for storing in Memcache", (int)string_value.size());
+    php_warning("Parameter value has length %d and too large for storing in Memcache", (int)string_value.size());
     return false;
   }
 
-  const string real_key = mc_prepare_key (key);
-  int is_immediate = mc_is_immediate_query (real_key);
+  const string real_key = mc_prepare_key(key);
+  int is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int (op);
-  store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
-  f$store_int (flags);
-  f$store_int (expire);
-  store_string (string_value.c_str(), string_value.size());
+  f$store_int(op);
+  store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
+  f$store_int(flags);
+  f$store_int(expire);
+  store_string(string_value.c_str(), string_value.size());
 
-  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
+  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1626,8 +1633,8 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
     return true;
   }
 
-  wait_synchronously (request_id);
-  if (!f$rpc_get_and_parse (request_id, timeout)) {
+  wait_synchronously(request_id);
+  if (!f$rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -1636,31 +1643,31 @@ bool rpc_mc_run_set (int op, const rpc_connection &conn, const string &key, cons
   return res == MEMCACHE_TRUE;
 }
 
-bool f$rpc_mc_set (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
+bool f$rpc_mc_set(const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
   mc_method = "set";
-  return rpc_mc_run_set (fake ? TL_ENGINE_MC_SET_QUERY : MEMCACHE_SET, conn, key, value, flags, expire, timeout);
+  return rpc_mc_run_set(fake ? TL_ENGINE_MC_SET_QUERY : MEMCACHE_SET, conn, key, value, flags, expire, timeout);
 }
 
-bool f$rpc_mc_add (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
+bool f$rpc_mc_add(const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
   mc_method = "add";
-  return rpc_mc_run_set (fake ? TL_ENGINE_MC_ADD_QUERY : MEMCACHE_ADD, conn, key, value, flags, expire, timeout);
+  return rpc_mc_run_set(fake ? TL_ENGINE_MC_ADD_QUERY : MEMCACHE_ADD, conn, key, value, flags, expire, timeout);
 }
 
-bool f$rpc_mc_replace (const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
+bool f$rpc_mc_replace(const rpc_connection &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
   mc_method = "replace";
-  return rpc_mc_run_set (fake ? TL_ENGINE_MC_REPLACE_QUERY : MEMCACHE_REPLACE, conn, key, value, flags, expire, timeout);
+  return rpc_mc_run_set(fake ? TL_ENGINE_MC_REPLACE_QUERY : MEMCACHE_REPLACE, conn, key, value, flags, expire, timeout);
 }
 
-var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key, const var &v, double timeout) {
-  const string real_key = mc_prepare_key (key);
-  int is_immediate = mc_is_immediate_query (real_key);
+var rpc_mc_run_increment(int op, const rpc_connection &conn, const string &key, const var &v, double timeout) {
+  const string real_key = mc_prepare_key(key);
+  int is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int (op);
-  store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
-  f$store_long (v);
+  f$store_int(op);
+  store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
+  f$store_long(v);
 
-  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
+  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1669,8 +1676,8 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
     return 0;
   }
 
-  wait_synchronously (request_id);
-  if (!f$rpc_get_and_parse (request_id, timeout)) {
+  wait_synchronously(request_id);
+  if (!f$rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -1683,26 +1690,26 @@ var rpc_mc_run_increment (int op, const rpc_connection &conn, const string &key,
   return false;
 }
 
-var f$rpc_mc_increment (const rpc_connection &conn, const string &key, const var &v, double timeout, bool fake) {
+var f$rpc_mc_increment(const rpc_connection &conn, const string &key, const var &v, double timeout, bool fake) {
   mc_method = "increment";
-  return rpc_mc_run_increment (fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, conn, key, v, timeout);
+  return rpc_mc_run_increment(fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, conn, key, v, timeout);
 }
 
-var f$rpc_mc_decrement (const rpc_connection &conn, const string &key, const var &v, double timeout, bool fake) {
+var f$rpc_mc_decrement(const rpc_connection &conn, const string &key, const var &v, double timeout, bool fake) {
   mc_method = "decrement";
-  return rpc_mc_run_increment (fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, conn, key, v, timeout);
+  return rpc_mc_run_increment(fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, conn, key, v, timeout);
 }
 
-bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double timeout, bool fake) {
+bool f$rpc_mc_delete(const rpc_connection &conn, const string &key, double timeout, bool fake) {
   mc_method = "delete";
-  const string real_key = mc_prepare_key (key);
-  int is_immediate = mc_is_immediate_query (real_key);
+  const string real_key = mc_prepare_key(key);
+  int is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int (fake ? TL_ENGINE_MC_DELETE_QUERY : MEMCACHE_DELETE);
-  store_string (real_key.c_str() + is_immediate, real_key.size() - is_immediate);
+  f$store_int(fake ? TL_ENGINE_MC_DELETE_QUERY : MEMCACHE_DELETE);
+  store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-  int request_id = rpc_send (conn, timeout, (bool) is_immediate);
+  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -1711,8 +1718,8 @@ bool f$rpc_mc_delete (const rpc_connection &conn, const string &key, double time
     return true;
   }
 
-  wait_synchronously (request_id);
-  if (!f$rpc_get_and_parse (request_id, timeout)) {
+  wait_synchronously(request_id);
+  if (!f$rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -1728,13 +1735,13 @@ string *error_ptr;
 int *errno_ptr;
 int *affected_rows_ptr;
 int *insert_id_ptr;
-array <array <var> > *query_result_ptr;
+array<array<var>> *query_result_ptr;
 bool *query_id_ptr;
 
 int *field_cnt_ptr;
-array <string> *field_names_ptr;
+array<string> *field_names_ptr;
 
-unsigned long long mysql_read_long_long (const unsigned char *&result, int &result_len, bool &is_null) {
+unsigned long long mysql_read_long_long(const unsigned char *&result, int &result_len, bool &is_null) {
   result_len--;
   if (result_len < 0) {
     return 0;
@@ -1766,26 +1773,26 @@ unsigned long long mysql_read_long_long (const unsigned char *&result, int &resu
   return value;
 }
 
-string mysql_read_string (const unsigned char *&result, int &result_len, bool &is_null, bool need_value = false) {
+string mysql_read_string(const unsigned char *&result, int &result_len, bool &is_null, bool need_value = false) {
   if (result_len < 0) {
     return string();
   }
 
-  long long value_len = mysql_read_long_long (result, result_len, is_null);
+  long long value_len = mysql_read_long_long(result, result_len, is_null);
   if (is_null || result_len < value_len || !need_value) {
     result_len -= (int)value_len;
     result += value_len;
     return string();
   }
-  string value ((const char *)result, (int)value_len);
+  string value((const char *)result, (int)value_len);
   result_len -= (int)value_len;
   result += value_len;
   return value;
 }
 
-void mysql_query_callback (const char *result_, int result_len) {
+void mysql_query_callback(const char *result_, int result_len) {
 //  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
-  if (*query_id_ptr == false || !strcmp (result_, "ERROR\r\n")) {
+  if (*query_id_ptr == false || !strcmp(result_, "ERROR\r\n")) {
     *query_id_ptr = false;
     return;
   }
@@ -1814,8 +1821,8 @@ void mysql_query_callback (const char *result_, int result_len) {
 
         ++result;
         result_len--;
-        *affected_rows_ptr = (int)mysql_read_long_long (result, result_len, is_null);
-        *insert_id_ptr = (int)mysql_read_long_long (result, result_len, is_null);
+        *affected_rows_ptr = (int)mysql_read_long_long(result, result_len, is_null);
+        *insert_id_ptr = (int)mysql_read_long_long(result, result_len, is_null);
         if (result_len < 0 || is_null) {
           *query_id_ptr = false;
         }
@@ -1832,7 +1839,7 @@ void mysql_query_callback (const char *result_, int result_len) {
         *errno_ptr = result[0] + (result[1] << 8);
         result += 8;
         result_len -= 8;
-        error_ptr->assign ((const char *)result, message_len);
+        error_ptr->assign((const char *)result, message_len);
         return;
       }
       if (result[0] == 254) {
@@ -1842,15 +1849,15 @@ void mysql_query_callback (const char *result_, int result_len) {
         return;
       }
 
-      *field_cnt_ptr = (int)mysql_read_long_long (result, result_len, is_null);
+      *field_cnt_ptr = (int)mysql_read_long_long(result, result_len, is_null);
       if (result < result_end) {
-        mysql_read_long_long (result, result_len, is_null);
+        mysql_read_long_long(result, result_len, is_null);
       }
       if (result_len < 0 || is_null || result != result_end) {
         *query_id_ptr = false;
         return;
       }
-      *field_names_ptr = array <string> (array_size (*field_cnt_ptr, 0, true));
+      *field_names_ptr = array<string>(array_size(*field_cnt_ptr, 0, true));
 
       mysql_callback_state = 1;
       break;
@@ -1859,18 +1866,18 @@ void mysql_query_callback (const char *result_, int result_len) {
         *query_id_ptr = false;
         return;
       }
-      mysql_read_string (result, result_len, is_null);//catalog
-      mysql_read_string (result, result_len, is_null);//db
-      mysql_read_string (result, result_len, is_null);//table
-      mysql_read_string (result, result_len, is_null);//org_table
-      field_names_ptr->push_back (mysql_read_string (result, result_len, is_null, true));//name
-      mysql_read_string (result, result_len, is_null);//org_name
+      mysql_read_string(result, result_len, is_null);//catalog
+      mysql_read_string(result, result_len, is_null);//db
+      mysql_read_string(result, result_len, is_null);//table
+      mysql_read_string(result, result_len, is_null);//org_table
+      field_names_ptr->push_back(mysql_read_string(result, result_len, is_null, true));//name
+      mysql_read_string(result, result_len, is_null);//org_name
 
       result_len -= 13;
       result += 13;
 
       if (result < result_end) {
-        mysql_read_string (result, result_len, is_null);//default
+        mysql_read_string(result, result_len, is_null);//default
       }
 
       if (result_len < 0 || result != result_end) {
@@ -1893,10 +1900,12 @@ void mysql_query_callback (const char *result_, int result_len) {
       break;
     case 3:
       if (result[0] != 254) {
-        array <var> row (array_size (*field_cnt_ptr, *field_cnt_ptr, false));
+        array<var>
+        row(array_size(*field_cnt_ptr,
+                       *field_cnt_ptr, false));
         for (int i = 0; i < *field_cnt_ptr; i++) {
           is_null = false;
-          var value = mysql_read_string (result, result_len, is_null, true);
+          var value = mysql_read_string(result, result_len, is_null, true);
 //          fprintf (stderr, "%p %p \"%s\" %d\n", result, result_end, value.to_string().c_str(), (int)is_null);
           if (is_null) {
             value = var();
@@ -1906,13 +1915,13 @@ void mysql_query_callback (const char *result_, int result_len) {
             return;
           }
 //          row[i] = value;
-          row[field_names_ptr->get_value (i)] = value;
+          row[field_names_ptr->get_value(i)] = value;
         }
         if (result != result_end) {
           *query_id_ptr = false;
           return;
         }
-        query_result_ptr->push_back (row);
+        query_result_ptr->push_back(row);
 
         break;
       }
@@ -1937,24 +1946,25 @@ void mysql_query_callback (const char *result_, int result_len) {
 
 static MyDB DB_Proxy;
 
-db_driver::db_driver() : connection_id (-1),
-                         connected (0),
+db_driver::db_driver() :
+  connection_id(-1),
+  connected(0),
 
-                         last_query_id (0),
-                         biggest_query_id (0),
-                         error(),
-                         errno_ (0),
-                         affected_rows (0),
-                         insert_id (0),
-                         query_results(),
-                         cur_pos(),
-                         field_cnt (0),
-                         field_names() {
-  cur_pos.push_back (0);
-  query_results.push_back (array <array <var> > ());
+  last_query_id(0),
+  biggest_query_id(0),
+  error(),
+  errno_(0),
+  affected_rows(0),
+  insert_id(0),
+  query_results(),
+  cur_pos(),
+  field_cnt(0),
+  field_names() {
+  cur_pos.push_back(0);
+  query_results.push_back(array<array<var>>());
 }
 
-void db_driver::do_connect_no_log (void) {
+void db_driver::do_connect_no_log(void) {
   if (connection_id >= 0 || connected) {
     return;
   }
@@ -1969,8 +1979,8 @@ void db_driver::do_connect_no_log (void) {
   connected = 1;
 }
 
-var db_driver::mysql_query_update_last (const string &query_string) {
-  bool query_id = mysql_query (query_string);
+var db_driver::mysql_query_update_last(const string &query_string) {
+  bool query_id = mysql_query(query_string);
   if (!query_id) {
     return false;
   }
@@ -1978,28 +1988,28 @@ var db_driver::mysql_query_update_last (const string &query_string) {
 }
 
 
-int db_driver::get_affected_rows (void) {
+int db_driver::get_affected_rows(void) {
   if (connected < 0) {
     return 0;
   }
   return affected_rows;
 }
 
-int db_driver::get_num_rows (void) {
+int db_driver::get_num_rows(void) {
   if (connected < 0) {
     return 0;
   }
   return query_results[last_query_id].count();
 }
 
-int db_driver::get_insert_id (void) {
+int db_driver::get_insert_id(void) {
   if (connected < 0) {
     return -1;
   }
   return insert_id;
 }
 
-bool db_driver::mysql_query (const string &query) {
+bool db_driver::mysql_query(const string &query) {
   if (query.size() > (1 << 24) - 10) {
     return false;
   }
@@ -2009,19 +2019,19 @@ bool db_driver::mysql_query (const string &query) {
   affected_rows = 0;
 
   insert_id = 0;
-  array <array <var> > query_result;
+  array<array<var>> query_result;
   bool query_id = true;
 
   int packet_len = query.size() + 1;
   int len = query.size() + 5;
 
-  string real_query (len, false);
+  string real_query(len, false);
   real_query[0] = (char)(packet_len & 255);
   real_query[1] = (char)((packet_len >> 8) & 255);
   real_query[2] = (char)((packet_len >> 16) & 255);
   real_query[3] = 0;
   real_query[4] = 3;
-  memcpy (&real_query[5], query.c_str(), query.size());
+  memcpy(&real_query[5], query.c_str(), query.size());
 
   error_ptr = &error;
   errno_ptr = &errno_;
@@ -2034,7 +2044,7 @@ bool db_driver::mysql_query (const string &query) {
   field_names_ptr = &field_names;
 
   mysql_callback_state = 0;
-  db_run_query (connection_id, real_query.c_str(), len, DB_TIMEOUT_MS, mysql_query_callback);
+  db_run_query(connection_id, real_query.c_str(), len, DB_TIMEOUT_MS, mysql_query_callback);
   if (mysql_callback_state != 5 || !query_id) {
     return false;
   }
@@ -2046,17 +2056,17 @@ bool db_driver::mysql_query (const string &query) {
   return true;
 }
 
-OrFalse <array <var> > db_driver::mysql_fetch_array (int query_id) {
+OrFalse<array<var>> db_driver::mysql_fetch_array(int query_id) {
   if (query_id <= 0 || query_id > biggest_query_id) {
     return false;
   }
 
-  array <array <var> > &query_result = query_results[query_id];
+  array<array<var>> &query_result = query_results[query_id];
   int &cur = cur_pos[query_id];
   if (cur >= (int)query_result.count()) {
     return false;
   }
-  array <var> result = query_result[cur++];
+  array<var> result = query_result[cur++];
   if (cur >= (int)query_result.count()) {
     query_result = query_results[0];
   }
@@ -2064,111 +2074,112 @@ OrFalse <array <var> > db_driver::mysql_fetch_array (int query_id) {
 }
 
 
-void db_do_connect_no_log (const MyDB &db) {
+void db_do_connect_no_log(const MyDB &db) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->do_connect");
+    php_warning("DB object is NULL in DB->do_connect");
     return;
   }
   return db.db->do_connect_no_log();
 }
 
-var db_mysql_query (const MyDB &db, const string &query) {
+var db_mysql_query(const MyDB &db, const string &query) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->mysql_query");
+    php_warning("DB object is NULL in DB->mysql_query");
     return false;
   }
-  return db.db->mysql_query_update_last (query);
+  return db.db->mysql_query_update_last(query);
 }
 
-int db_get_affected_rows (const MyDB &db) {
+int db_get_affected_rows(const MyDB &db) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->get_affected_rows");
+    php_warning("DB object is NULL in DB->get_affected_rows");
     return 0;
   }
   return db.db->get_affected_rows();
 }
 
-int db_get_num_rows (const MyDB &db, int id) {
+int db_get_num_rows(const MyDB &db, int id) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->get_num_rows");
+    php_warning("DB object is NULL in DB->get_num_rows");
     return 0;
   }
   if (id != -1 && id != db.db->last_query_id) {
-    php_warning ("mysql_num_rows is supported only for last request");
+    php_warning("mysql_num_rows is supported only for last request");
     return 0;
   }
   return db.db->get_num_rows();
 }
 
-int db_get_insert_id (const MyDB &db) {
+int db_get_insert_id(const MyDB &db) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->get_insert_id");
+    php_warning("DB object is NULL in DB->get_insert_id");
     return -1;
   }
   return db.db->get_insert_id();
 }
 
-OrFalse< array< var > > db_fetch_array(const MyDB &db, int query_id) {
+OrFalse<array<var>> db_fetch_array(const MyDB &db, int query_id) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in DB->get_insert_id");
+    php_warning("DB object is NULL in DB->get_insert_id");
     return false;
   }
   return db.db->mysql_fetch_array(query_id);
 }
 
 
-bool f$boolval (const MyDB &my_db) {
-  return f$boolval (my_db.bool_value);
+bool f$boolval(const MyDB &my_db) {
+  return f$boolval(my_db.bool_value);
 }
 
-bool eq2 (const MyDB &my_db, bool value) {
+bool eq2(const MyDB &my_db, bool value) {
   return my_db.bool_value == value;
 }
 
-bool eq2 (bool value, const MyDB &my_db) {
+bool eq2(bool value, const MyDB &my_db) {
   return value == my_db.bool_value;
 }
 
-bool equals (bool value, const MyDB &my_db) {
-  return equals (value, my_db.bool_value);
+bool equals(bool value, const MyDB &my_db) {
+  return equals(value, my_db.bool_value);
 }
 
-bool equals (const MyDB &my_db, bool value) {
-  return equals (my_db.bool_value, value);
+bool equals(const MyDB &my_db, bool value) {
+  return equals(my_db.bool_value, value);
 }
 
-bool not_equals (bool value, const MyDB &my_db) {
-  return not_equals (value, my_db.bool_value);
+bool not_equals(bool value, const MyDB &my_db) {
+  return not_equals(value, my_db.bool_value);
 }
 
-bool not_equals (const MyDB &my_db, bool value) {
-  return not_equals (my_db.bool_value, value);
+bool not_equals(const MyDB &my_db, bool value) {
+  return not_equals(my_db.bool_value, value);
 }
 
 
-MyDB& MyDB::operator = (bool value) {
+MyDB &MyDB::operator=(bool value) {
   bool_value = value;
   db = NULL;
   return *this;
 }
 
-MyDB::MyDB (bool value)
-  : bool_value(value)
-  , db(NULL)
-{}
+MyDB::MyDB(bool value) :
+  bool_value(value),
+  db(NULL) {}
 
 
-MyDB::MyDB (db_driver *db): bool_value (true),
-                            db (db) {
+MyDB::MyDB(db_driver *db) :
+  bool_value(true),
+  db(db) {
 }
 
-MyDB::MyDB (void): bool_value(),
-                   db (NULL) {
+MyDB::MyDB(void) :
+  bool_value(),
+  db(NULL) {
 }
 
 string f$mysqli_error(const MyDB &db) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in f$mysqli_error");
+    php_warning("DB object is NULL in f$mysqli_error");
     return string();
   }
   return db.db->error;
@@ -2176,28 +2187,28 @@ string f$mysqli_error(const MyDB &db) {
 
 int f$mysqli_errno(const MyDB &db) {
   if (db.db == NULL) {
-    php_warning ("DB object is NULL in f$mysqli_errno");
+    php_warning("DB object is NULL in f$mysqli_errno");
     return 0;
   }
   return db.db->errno_;
 }
 
-int f$mysqli_affected_rows(const MyDB &dn){
+int f$mysqli_affected_rows(const MyDB &dn) {
   return db_get_affected_rows(dn);
 }
 
-OrFalse< array <var> > f$mysqli_fetch_array(int query_id_var, int result_type) {
+OrFalse<array<var>> f$mysqli_fetch_array(int query_id_var, int result_type) {
   if (result_type != 1) {
     php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
   }
   return db_fetch_array(DB_Proxy, query_id_var);
 }
 
-int f$mysqli_insert_id(const MyDB &dn){
+int f$mysqli_insert_id(const MyDB &dn) {
   return db_get_insert_id(dn);
 }
 
-int f$mysqli_num_rows(int query_id){
+int f$mysqli_num_rows(int query_id) {
   return db_get_num_rows(DB_Proxy, query_id);
 }
 
@@ -2207,8 +2218,8 @@ var f$mysqli_query(const MyDB &dn, const string &query) {
 
 MyDB f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __attribute__((unused))) {
   if (!f$boolval(DB_Proxy)) {
-    void *buf = dl::allocate (sizeof (db_driver));
-    DB_Proxy = MyDB (new(buf) db_driver());
+    void *buf = dl::allocate(sizeof(db_driver));
+    DB_Proxy = MyDB(new(buf) db_driver());
   }
   db_do_connect_no_log(DB_Proxy);
   if (DB_Proxy.db->connection_id >= 0 || DB_Proxy.db->connected) {
@@ -2218,30 +2229,29 @@ MyDB f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __
   }
 }
 
-bool f$mysqli_select_db(const MyDB &dn __attribute__((unused)), const string& name __attribute__((unused))) {
+bool f$mysqli_select_db(const MyDB &dn __attribute__((unused)), const string &name __attribute__((unused))) {
   return true;
 }
 
 
-
-var base128DecodeMixed_pointer_dummy (var str __attribute__((unused))) {
+var base128DecodeMixed_pointer_dummy(var str __attribute__((unused))) {
   return var();
 }
 
-var dLog_pointer_dummy (array <var>) {
+var dLog_pointer_dummy(array<var>) {
   return var();
 }
 
-var debugLogPlain_pointer_dummy (string section __attribute__((unused)), string text __attribute__((unused))) {
+var debugLogPlain_pointer_dummy(string section __attribute__((unused)), string text __attribute__((unused))) {
   return var();
 }
 
 
-var (*base128DecodeMixed_pointer) (var str) = base128DecodeMixed_pointer_dummy;
+var (*base128DecodeMixed_pointer)(var str) = base128DecodeMixed_pointer_dummy;
 
-var (*debugServerLog_pointer) (array <var>) = dLog_pointer_dummy;
+var (*debugServerLog_pointer)(array<var>) = dLog_pointer_dummy;
 
-var (*debugLogPlain_pointer) (string section, string text) = debugLogPlain_pointer_dummy;
+var (*debugLogPlain_pointer)(string section, string text) = debugLogPlain_pointer_dummy;
 
 
 //temporary
@@ -2253,7 +2263,7 @@ var v$Durov __attribute__ ((weak));
 var v$FullMCTime __attribute__ ((weak));
 var v$KPHP_MC_WRITE_STAT_PROBABILITY __attribute__ ((weak));
 
-void drivers_init_static (void) {
+void drivers_init_static(void) {
   INIT_VAR(MyMemcache, v$MC);
   INIT_VAR(MyMemcache, v$MC_True);
   INIT_VAR(var, v$config);
@@ -2275,7 +2285,7 @@ void drivers_init_static (void) {
   drivers_h_filename = string("drivers.h", 9);
 }
 
-void drivers_free_static (void) {
+void drivers_free_static(void) {
   CLEAR_VAR(MyMemcache, v$MC);
   CLEAR_VAR(MyMemcache, v$MC_True);
   CLEAR_VAR(var, v$config);

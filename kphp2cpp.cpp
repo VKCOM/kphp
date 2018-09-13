@@ -24,112 +24,112 @@ static KphpEnviroment *env;
 
 int parse_args_f(int i) {
   switch (i) {
-  case 'h':
-    usage_and_exit();
-    exit(2);
-  case 'a':
-    env->set_use_safe_integer_arithmetic ("1");
-    break;
-  case 'b':
-    env->set_base_dir (optarg);
-    break;
-  case 'd':
-    env->set_dest_dir (optarg);
-    break;
-  case 'F':
-    env->set_make_force ("1");
-    break;
-  case 'f':
-    env->set_functions (optarg);
-    break;
-  case 'g':
-    env->set_enable_profiler ();
-    break;
-  case 'i':
-    env->set_index (optarg);
-    break;
-  case 'I':
-    env->add_include (optarg);
-    break;
-  case 'j':
-    env->set_jobs_count (optarg);
-    break;
-  case 'M':
-    env->set_mode (optarg);
-    break;
-  case 'l':
-    env->set_link_file (optarg);
-    break;
-  case 'm':
-    env->set_use_make ("1");
-    break;
-  case 'r':
-    env->set_use_subdirs ("1");
-    break;
-  case 'o':
-    env->set_user_binary_path (optarg);
-    break;
-  case 'p':
-    env->set_print_resumable_graph ();
-    break;
-  case 't':
-    env->set_threads_count (optarg);
-    break;
-  case 'T':
-    env->set_tl_schema_file (optarg);
-    break;
-  case 's':
-    env->set_path (optarg);
-    break;
-  case 'S':
-    env->set_use_auto_dest ("1");
-    break;
-  case 'V':
-    env->set_lib_version (optarg);
-    break;
-  case 'v':
-    env->inc_verbosity();
-    break;
-  case 'W':
-    env->set_error_on_warns();
-    break;
-  case 2000:
-    env->set_warnings_filename (optarg);
-    break;
-  case 2001:
-    env->set_stats_filename (optarg);
-    break;
-  case 2002: {
-    int level = atoi (optarg);
-    if (level < 0) {
-      return -1;
+    case 'h':
+      usage_and_exit();
+      exit(2);
+    case 'a':
+      env->set_use_safe_integer_arithmetic("1");
+      break;
+    case 'b':
+      env->set_base_dir(optarg);
+      break;
+    case 'd':
+      env->set_dest_dir(optarg);
+      break;
+    case 'F':
+      env->set_make_force("1");
+      break;
+    case 'f':
+      env->set_functions(optarg);
+      break;
+    case 'g':
+      env->set_enable_profiler();
+      break;
+    case 'i':
+      env->set_index(optarg);
+      break;
+    case 'I':
+      env->add_include(optarg);
+      break;
+    case 'j':
+      env->set_jobs_count(optarg);
+      break;
+    case 'M':
+      env->set_mode(optarg);
+      break;
+    case 'l':
+      env->set_link_file(optarg);
+      break;
+    case 'm':
+      env->set_use_make("1");
+      break;
+    case 'r':
+      env->set_use_subdirs("1");
+      break;
+    case 'o':
+      env->set_user_binary_path(optarg);
+      break;
+    case 'p':
+      env->set_print_resumable_graph();
+      break;
+    case 't':
+      env->set_threads_count(optarg);
+      break;
+    case 'T':
+      env->set_tl_schema_file(optarg);
+      break;
+    case 's':
+      env->set_path(optarg);
+      break;
+    case 'S':
+      env->set_use_auto_dest("1");
+      break;
+    case 'V':
+      env->set_lib_version(optarg);
+      break;
+    case 'v':
+      env->inc_verbosity();
+      break;
+    case 'W':
+      env->set_error_on_warns();
+      break;
+    case 2000:
+      env->set_warnings_filename(optarg);
+      break;
+    case 2001:
+      env->set_stats_filename(optarg);
+      break;
+    case 2002: {
+      int level = atoi(optarg);
+      if (level < 0) {
+        return -1;
+      }
+      env->set_warnings_level(level);
+      break;
     }
-    env->set_warnings_level (level);
-    break;
-  }
-  case 2003:
-    printf("%s\n", get_version_string());
-    exit(0);
-    break;
-  case 2004:
-    env->set_debug_level(optarg);
-    break;
-  default:
-    return -1;
+    case 2003:
+      printf("%s\n", get_version_string());
+      exit(0);
+      break;
+    case 2004:
+      env->set_debug_level(optarg);
+      break;
+    default:
+      return -1;
   }
   return 0;
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   init_version_string("kphp2cpp");
   usage_set_other_args_desc("<main-files-list>");
   set_debug_handlers();
 
   env = new KphpEnviroment();
-  struct passwd *user_pwd = getpwuid (getuid());
+  struct passwd *user_pwd = getpwuid(getuid());
   dl_passert (user_pwd != NULL, "Failed to get user name");
   char *user = user_pwd->pw_name;
-  if (user != NULL && (!strcmp (user, "levlam") || !strcmp (user, "arseny30") || !strcmp (user, "pkunyavskiy"))) {
+  if (user != NULL && (!strcmp(user, "levlam") || !strcmp(user, "arseny30") || !strcmp(user, "pkunyavskiy"))) {
     env->inc_verbosity();
     env->inc_verbosity();
     env->inc_verbosity();
@@ -164,7 +164,7 @@ int main (int argc, char *argv[]) {
   parse_option("warnings-level", required_argument, 2002, "Sets warnings level to <level>: prints more warnings, according to level set (Default value: 0)");
   parse_option("version", no_argument, 2003, "prints version and exits");
   parse_option("debug-level", required_argument, 2004, "Sets debug level to <level> but excluding autogenerated, useless for debug, files");
-  parse_engine_options_long (argc, argv, parse_args_f);
+  parse_engine_options_long(argc, argv, parse_args_f);
 
 
   if (optind >= argc) {
@@ -173,7 +173,7 @@ int main (int argc, char *argv[]) {
   }
 
   while (optind < argc) {
-    env->add_main_file (argv[optind]);
+    env->add_main_file(argv[optind]);
     optind++;
   }
 
@@ -184,7 +184,7 @@ int main (int argc, char *argv[]) {
   if (!ok) {
     return 1;
   }
-  if (!compiler_execute (env)) {
+  if (!compiler_execute(env)) {
     return 1;
   }
 

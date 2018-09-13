@@ -14,8 +14,8 @@
 
 int DEFAULT_SOCKET_TIMEOUT = 60;
 
-static char opened_udp_sockets_storage[sizeof (array <int>)];
-static array <int> *opened_udp_sockets = reinterpret_cast <array <int> *> (opened_udp_sockets_storage);
+static char opened_udp_sockets_storage[sizeof(array<int>)];
+static array<int> *opened_udp_sockets = reinterpret_cast <array<int> *> (opened_udp_sockets_storage);
 static long long opened_udp_sockets_last_query_num = -1;
 
 static Stream udp_stream_socket_client(const string &url, int &error_number, string &error_description, double timeout, int flags __attribute__((unused)), const var &options __attribute__((unused))) {
@@ -42,7 +42,7 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
   double end_time = microtime_monotonic() + timeout;
   int sock_fd = -1;
   string url_to_parse = url;
-  
+
   if (url_to_parse.size() < 6 || url_to_parse.substr(0, 6) != string("udp://", 6)) {
     RETURN_ERROR_FORMAT(-7, "\"%s\" doesn't start with UDP", url);
   }
@@ -63,7 +63,7 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
   }
 
   struct hostent *h;
-  if (!(h = kdb_gethostbyname (host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
+  if (!(h = kdb_gethostbyname(host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
     RETURN_ERROR_FORMAT(-3, "Can't resolve host \"%s\"", host);
   }
 
@@ -73,15 +73,15 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
   switch (h->h_addrtype) {
     case AF_INET:
       php_assert (h->h_length == 4);
-      (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_port = htons (port);
+      (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_port = htons(port);
       (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_addr = *(struct in_addr *)h->h_addr;
-      addrlen = sizeof (struct sockaddr_in);
+      addrlen = sizeof(struct sockaddr_in);
       break;
     case AF_INET6:
       php_assert (h->h_length == 16);
-      (reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_port = htons (port);
-      memcpy (&(reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_addr, h->h_addr, h->h_length);
-      addrlen = sizeof (struct sockaddr_in6);
+      (reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_port = htons(port);
+      memcpy(&(reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_addr, h->h_addr, h->h_length);
+      addrlen = sizeof(struct sockaddr_in6);
       break;
     default:
       //there is no other known address types
@@ -93,25 +93,25 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
     dl::leave_critical_section();
     RETURN_ERROR(-4, "Can't create udp socket");
   }
-  if (connect (sock_fd, reinterpret_cast <const sockaddr *> (&addr), addrlen) == -1) {
+  if (connect(sock_fd, reinterpret_cast <const sockaddr *> (&addr), addrlen) == -1) {
     if (errno != EINPROGRESS) {
       dl::leave_critical_section();
       RETURN_ERROR(-5, "Can't connect to udp socket");
     }
-    
+
     pollfd poll_fds;
     poll_fds.fd = sock_fd;
     poll_fds.events = POLLIN | POLLERR | POLLHUP | POLLOUT | POLLPRI;
 
     double left_time = end_time - microtime_monotonic();
-    if (left_time <= 0 || poll (&poll_fds, 1, timeout_convert_to_ms (left_time)) <= 0) {
+    if (left_time <= 0 || poll(&poll_fds, 1, timeout_convert_to_ms(left_time)) <= 0) {
       dl::leave_critical_section();
       RETURN_ERROR(-6, "Can't connect to udp socket");
     }
   }
-  
+
   if (dl::query_num != opened_udp_sockets_last_query_num) {
-    new (opened_udp_sockets_storage) array <int>();
+    new(opened_udp_sockets_storage) array<int>();
     opened_udp_sockets_last_query_num = dl::query_num;
   }
   string stream_key = url;
@@ -143,13 +143,13 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
 static int udp_get_fd(const Stream &stream) {
   string stream_key = stream.to_string();
   if (dl::query_num != opened_udp_sockets_last_query_num || !opened_udp_sockets->has_key(stream_key)) {
-    php_warning ("UDP socket \"%s\" is not opened", stream_key.c_str());
+    php_warning("UDP socket \"%s\" is not opened", stream_key.c_str());
     return -1;
   }
   return opened_udp_sockets->get_value(stream_key);
 }
 
-static OrFalse <int> udp_fwrite(const Stream &stream, const string &data) {
+static OrFalse<int> udp_fwrite(const Stream &stream, const string &data) {
   int sock_fd = udp_get_fd(stream);
   if (sock_fd == -1) {
     return false;
@@ -171,7 +171,7 @@ static OrFalse <int> udp_fwrite(const Stream &stream, const string &data) {
 
 static bool udp_fclose(const Stream &stream) {
   string stream_key = stream.to_string();
-  
+
   if (dl::query_num != opened_udp_sockets_last_query_num || !opened_udp_sockets->has_key(stream_key)) {
     return false;
   }
@@ -186,7 +186,7 @@ static bool udp_fclose(const Stream &stream) {
 void udp_init_static_once(void) {
   static stream_functions udp_stream_functions;
 
-  udp_stream_functions.name = string ("udp", 3);
+  udp_stream_functions.name = string("udp", 3);
   udp_stream_functions.fopen = NULL;
   udp_stream_functions.fwrite = udp_fwrite;
   udp_stream_functions.fseek = NULL;
@@ -216,8 +216,8 @@ void udp_init_static(void) {
 void udp_free_static(void) {
   dl::enter_critical_section();//OK
   if (dl::query_num == opened_udp_sockets_last_query_num) {
-    const array <int> *const_opened_udp_sockets = opened_udp_sockets;
-    for (array <int>::const_iterator p = const_opened_udp_sockets->begin(); p != const_opened_udp_sockets->end(); ++p) {
+    const array<int> *const_opened_udp_sockets = opened_udp_sockets;
+    for (array<int>::const_iterator p = const_opened_udp_sockets->begin(); p != const_opened_udp_sockets->end(); ++p) {
       close(p.get_value());
     }
     opened_udp_sockets_last_query_num--;

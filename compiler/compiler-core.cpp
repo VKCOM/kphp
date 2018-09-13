@@ -8,8 +8,9 @@
 #include "compiler/pass-register-vars.hpp"
 
 CompilerCore::CompilerCore() :
-  env_ (NULL) {
+  env_(NULL) {
 }
+
 void CompilerCore::start() {
   PROF (total).start();
   stage::die_if_global_errors();
@@ -30,38 +31,40 @@ void CompilerCore::finish() {
 
   PROF (total).finish();
 }
-void CompilerCore::register_env (KphpEnviroment *env) {
+
+void CompilerCore::register_env(KphpEnviroment *env) {
   kphp_assert (env_ == NULL);
   env_ = env;
 }
+
 const KphpEnviroment &CompilerCore::env() const {
   kphp_assert (env_ != NULL);
   return *env_;
 }
 
 
-bool CompilerCore::add_to_function_set (FunctionSetPtr function_set, FunctionPtr function, bool req) {
-  AutoLocker <FunctionSetPtr> locker (function_set);
+bool CompilerCore::add_to_function_set(FunctionSetPtr function_set, FunctionPtr function, bool req) {
+  AutoLocker<FunctionSetPtr> locker(function_set);
   if (req) {
     kphp_assert (function_set->size() == 0);
     function_set->is_required = true;
   }
   function->function_set = function_set;
-  function_set->add_function (function);
+  function_set->add_function(function);
   return function_set->is_required;
 }
 
-FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__((unused)), const string &name, bool force) {
-  HT <FunctionSetPtr> *ht = &function_set_ht;
+FunctionSetPtr CompilerCore::get_function_set(function_set_t type __attribute__((unused)), const string &name, bool force) {
+  HT<FunctionSetPtr> *ht = &function_set_ht;
 
-  HT <FunctionSetPtr>::HTNode *node = ht->at (hash_ll (name));
+  HT<FunctionSetPtr>::HTNode *node = ht->at(hash_ll(name));
   if (node->data.is_null()) {
     if (!force) {
       return FunctionSetPtr();
     }
-    AutoLocker <Lockable *> locker (node);
+    AutoLocker<Lockable *> locker(node);
     if (node->data.is_null()) {
-      FunctionSetPtr new_func_set = FunctionSetPtr (new FunctionSet());
+      FunctionSetPtr new_func_set = FunctionSetPtr(new FunctionSet());
       new_func_set->name = name;
       node->data = new_func_set;
     }
@@ -70,19 +73,20 @@ FunctionSetPtr CompilerCore::get_function_set (function_set_t type __attribute__
   kphp_assert_msg (function_set->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", function_set->name.c_str(), name.c_str()));
   return function_set;
 }
-FunctionPtr CompilerCore::get_function_unsafe (const string &name) {
-  FunctionSetPtr func_set = get_function_set (fs_function, name, true);
+
+FunctionPtr CompilerCore::get_function_unsafe(const string &name) {
+  FunctionSetPtr func_set = get_function_set(fs_function, name, true);
   kphp_assert (func_set->size() == 1);
   FunctionPtr func = func_set[0];
   kphp_assert (func.not_null());
   return func;
 }
 
-FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
-  VertexAdaptor <meta_op_function>  function_root = info.root;
+FunctionPtr CompilerCore::create_function(const FunctionInfo &info) {
+  VertexAdaptor<meta_op_function> function_root = info.root;
   AUTO_PROF (create_function);
-  string function_name = function_root->name().as <op_func_name>()->str_val;
-  FunctionPtr function = FunctionPtr (new FunctionData());
+  string function_name = function_root->name().as<op_func_name>()->str_val;
+  FunctionPtr function = FunctionPtr(new FunctionData());
 
   function->name = function_name;
   function->root = function_root;
@@ -92,7 +96,7 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   function->class_extends = info.extends;
   function->namespace_uses = info.namespace_uses;
   function->access_type = info.access_type;
-  function_root->set_func_id (function);
+  function_root->set_func_id(function);
   function->file_id = stage::get_file();
   function->kphp_required = info.kphp_required;
 
@@ -122,7 +126,7 @@ FunctionPtr CompilerCore::create_function (const FunctionInfo &info) {
   return function;
 }
 
-void CompilerCore::create_builtin_classes () {
+void CompilerCore::create_builtin_classes() {
   ClassPtr exception = ClassPtr(new ClassData());
   exception->name = "Exception";
   exception->init_function = FunctionPtr(new FunctionData());
@@ -135,7 +139,7 @@ void CompilerCore::create_builtin_classes () {
 }
 
 ClassPtr CompilerCore::create_class(const ClassInfo &info) {
-  ClassPtr klass = ClassPtr (new ClassData());
+  ClassPtr klass = ClassPtr(new ClassData());
   klass->name = (info.namespace_name.empty() ? "" : info.namespace_name + "\\") + info.name;
   klass->file_id = stage::get_file();
   klass->src_name = std::string("C$").append(replace_characters(klass->name, '\\', '$'));
@@ -144,23 +148,23 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   klass->extends = info.extends;
 
   string init_function_name_str = stage::get_file()->main_func_name;
-  klass->init_function = get_function_unsafe (init_function_name_str);
+  klass->init_function = get_function_unsafe(init_function_name_str);
   klass->init_function->class_id = klass;
   klass->static_fields.insert(info.static_fields.begin(), info.static_fields.end());
 
-  for (std::vector <VertexPtr>::const_iterator v = info.vars.begin(); v != info.vars.end(); ++v) {
+  for (std::vector<VertexPtr>::const_iterator v = info.vars.begin(); v != info.vars.end(); ++v) {
     OperationExtra extra_type = (*v)->extra_type;
 
     VarPtr var = VarPtr(new VarData(VarData::var_instance_t));
     var->param_i = int(v - info.vars.begin());
     var->class_id = klass;
     var->name = (*v)->get_string();
-    var->phpdoc_token = ((VertexPtr) (*v)).as <op_class_var>()->phpdoc_token;
+    var->phpdoc_token = ((VertexPtr)(*v)).as<op_class_var>()->phpdoc_token;
     var->access_type =
-        extra_type == op_ex_static_public ? access_public :
-        extra_type == op_ex_static_private ? access_private :
-        extra_type == op_ex_static_protected ? access_protected :
-        access_public;
+      extra_type == op_ex_static_public ? access_public :
+      extra_type == op_ex_static_private ? access_private :
+      extra_type == op_ex_static_protected ? access_protected :
+      access_public;
     klass->vars.push_back(var);
   }
 
@@ -177,31 +181,31 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
     f->class_id = klass;
     klass->methods.push_back(f);
   }
-  for (vector <VertexPtr>::const_iterator i = info.this_type_rules.begin(); i != info.this_type_rules.end(); ++i) {
-    ((VertexPtr) (*i)).as <op_class_type_rule>()->class_ptr = klass;
+  for (vector<VertexPtr>::const_iterator i = info.this_type_rules.begin(); i != info.this_type_rules.end(); ++i) {
+    ((VertexPtr)(*i)).as<op_class_type_rule>()->class_ptr = klass;
   }
 
   kphp_error(info.new_function.is_null() || !klass->is_fully_static(),
-      dl_pstr("Class %s has __construct() but does not have any fields", klass->name.c_str()));
+             dl_pstr("Class %s has __construct() but does not have any fields", klass->name.c_str()));
   klass->new_function = info.new_function;
 
   return klass;
 }
 
-string CompilerCore::unify_file_name (const string &file_name) {
+string CompilerCore::unify_file_name(const string &file_name) {
   if (env().get_base_dir().empty()) { //hack: directory of first file will be used ad base_dir
-    size_t i = file_name.find_last_of ("/");
+    size_t i = file_name.find_last_of("/");
     kphp_assert (i != string::npos);
-    env_->set_base_dir (file_name.substr (0, i + 1));
+    env_->set_base_dir(file_name.substr(0, i + 1));
   }
   const string &base_dir = env().get_base_dir();
-  if (strncmp (file_name.c_str(), base_dir.c_str(), base_dir.size())) {
+  if (strncmp(file_name.c_str(), base_dir.c_str(), base_dir.size())) {
     return file_name;
   }
-  return file_name.substr (base_dir.size());
+  return file_name.substr(base_dir.size());
 }
 
-SrcFilePtr CompilerCore::register_file (const string &file_name, const string &context) {
+SrcFilePtr CompilerCore::register_file(const string &file_name, const string &context) {
   if (file_name.empty()) {
     return SrcFilePtr();
   }
@@ -211,33 +215,33 @@ SrcFilePtr CompilerCore::register_file (const string &file_name, const string &c
   if (file_name[0] != '/' && file_name[0] != '.') {
     int n = (int)env().get_includes().size();
     for (int i = 0; i < n && full_file_name.empty(); i++) {
-      full_file_name = get_full_path (env().get_includes()[i] + file_name);
+      full_file_name = get_full_path(env().get_includes()[i] + file_name);
     }
   }
   if (file_name[0] == '/') {
-    full_file_name = get_full_path (file_name);
+    full_file_name = get_full_path(file_name);
   } else if (full_file_name.empty()) {
-    vector <string> cur_include_dirs;
+    vector<string> cur_include_dirs;
     SrcFilePtr from_file = stage::get_file();
     if (from_file.not_null()) {
       string from_file_name = from_file->file_name;
-      size_t en = from_file_name.find_last_of ('/');
+      size_t en = from_file_name.find_last_of('/');
       assert (en != string::npos);
-      string cur_dir = from_file_name.substr (0, en + 1);
-      cur_include_dirs.push_back (cur_dir);
+      string cur_dir = from_file_name.substr(0, en + 1);
+      cur_include_dirs.push_back(cur_dir);
     }
     if (from_file.is_null() || file_name[0] != '.') {
-      cur_include_dirs.push_back ("");
+      cur_include_dirs.push_back("");
     }
     int n = (int)cur_include_dirs.size();
     for (int i = 0; i < n && full_file_name.empty(); i++) {
-      full_file_name = get_full_path (cur_include_dirs[i] + file_name);
+      full_file_name = get_full_path(cur_include_dirs[i] + file_name);
     }
   }
 
   kphp_error_act (
     !full_file_name.empty(),
-    dl_pstr ("Cannot load file [%s]", file_name.c_str()),
+    dl_pstr("Cannot load file [%s]", file_name.c_str()),
     return SrcFilePtr()
   );
 
@@ -257,16 +261,16 @@ SrcFilePtr CompilerCore::register_file (const string &file_name, const string &c
   }
 
   //register file if needed
-  HT <SrcFilePtr>::HTNode *node = file_ht.at (hash_ll (full_file_name + context));
+  HT<SrcFilePtr>::HTNode *node = file_ht.at(hash_ll(full_file_name + context));
   if (node->data.is_null()) {
-    AutoLocker <Lockable *> locker (node);
+    AutoLocker<Lockable *> locker(node);
     if (node->data.is_null()) {
-      SrcFilePtr new_file = SrcFilePtr (new SrcFile (full_file_name, short_file_name, context));
+      SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, context));
       char tmp[50];
-      sprintf (tmp, "%x", hash (full_file_name + context));
-      string func_name = gen_unique_name ("src$" + new_file->short_file_name + tmp, true);
+      sprintf(tmp, "%x", hash(full_file_name + context));
+      string func_name = gen_unique_name("src$" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
-      new_file->unified_file_name = unify_file_name (new_file->file_name);
+      new_file->unified_file_name = unify_file_name(new_file->file_name);
       size_t last_slash = new_file->unified_file_name.rfind('/');
       new_file->unified_dir_name = last_slash == string::npos ? "" : new_file->unified_file_name.substr(0, last_slash);
       node->data = new_file;
@@ -277,18 +281,18 @@ SrcFilePtr CompilerCore::register_file (const string &file_name, const string &c
 }
 
 ClassPtr CompilerCore::get_class(const string &name) {
-  return classes_ht.at (hash_ll (name))->data;
+  return classes_ht.at(hash_ll(name))->data;
 }
 
-bool CompilerCore::register_define (DefinePtr def_id) {
-  HT <DefinePtr>::HTNode *node = defines_ht.at (hash_ll (def_id->name));
-  AutoLocker <Lockable *> locker (node);
+bool CompilerCore::register_define(DefinePtr def_id) {
+  HT<DefinePtr>::HTNode *node = defines_ht.at(hash_ll(def_id->name));
+  AutoLocker<Lockable *> locker(node);
 
   kphp_error_act (
     node->data.is_null(),
-    dl_pstr ("Redeclaration of define [%s], the previous declaration was in [%s]",
-        def_id->name.c_str(),
-        node->data->file_id->file_name.c_str()),
+    dl_pstr("Redeclaration of define [%s], the previous declaration was in [%s]",
+            def_id->name.c_str(),
+            node->data->file_id->file_name.c_str()),
     return false
   );
 
@@ -296,23 +300,24 @@ bool CompilerCore::register_define (DefinePtr def_id) {
   return true;
 }
 
-DefinePtr CompilerCore::get_define (const string &name) {
-  return defines_ht.at (hash_ll (name))->data;
+DefinePtr CompilerCore::get_define(const string &name) {
+  return defines_ht.at(hash_ll(name))->data;
 }
-VarPtr CompilerCore::create_var (const string &name, VarData::Type type) {
-  VarPtr var = VarPtr (new VarData (type));
+
+VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
+  VarPtr var = VarPtr(new VarData(type));
   var->name = name;
   return var;
 }
 
-VarPtr CompilerCore::get_global_var (const string &name, VarData::Type type,
-    VertexPtr init_val) {
-  HT <VarPtr>::HTNode *node = global_vars_ht.at (hash_ll (name));
+VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
+                                    VertexPtr init_val) {
+  HT<VarPtr>::HTNode *node = global_vars_ht.at(hash_ll(name));
   VarPtr new_var;
   if (node->data.is_null()) {
-    AutoLocker <Lockable *> locker (node);
+    AutoLocker<Lockable *> locker(node);
     if (node->data.is_null()) {
-      new_var = create_var (name, type);
+      new_var = create_var(name, type);
       new_var->init_val = init_val;
       new_var->is_constant = type == VarData::var_const_t;
       node->data = new_var;
@@ -352,40 +357,41 @@ VarPtr CompilerCore::get_global_var (const string &name, VarData::Type type,
   return var;
 }
 
-VarPtr CompilerCore::create_local_var (FunctionPtr function, const string &name,
-    VarData::Type type) {
+VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name,
+                                      VarData::Type type) {
   VarData::Type real_type = type;
   if (type == VarData::var_static_t) {
     real_type = VarData::var_global_t;
   }
-  VarPtr var = create_var (name, real_type);
+  VarPtr var = create_var(name, real_type);
   var->holder_func = function;
   switch (type) {
     case VarData::var_local_t:
     case VarData::var_local_inplace_t:
-      function->local_var_ids.push_back (var);
+      function->local_var_ids.push_back(var);
       break;
     case VarData::var_static_t:
-      function->static_var_ids.push_back (var);
+      function->static_var_ids.push_back(var);
       break;
     case VarData::var_param_t:
       var->param_i = (int)function->param_ids.size();
-      function->param_ids.push_back (var);
+      function->param_ids.push_back(var);
       break;
     default:
-      kphp_fail();
+    kphp_fail();
   }
   return var;
 }
 
-const vector <SrcFilePtr> &CompilerCore::get_main_files() {
+const vector<SrcFilePtr> &CompilerCore::get_main_files() {
   return main_files;
 }
-vector <VarPtr> CompilerCore::get_global_vars() {
+
+vector<VarPtr> CompilerCore::get_global_vars() {
   return global_vars_ht.get_all();
 }
 
-vector <ClassPtr> CompilerCore::get_classes() {
+vector<ClassPtr> CompilerCore::get_classes() {
   return classes_ht.get_all();
 }
 
@@ -394,12 +400,12 @@ void CompilerCore::load_index() {
   if (index_path.empty()) {
     return;
   }
-  FILE *f = fopen (index_path.c_str(), "r");
+  FILE *f = fopen(index_path.c_str(), "r");
   if (f == NULL) {
     return;
   }
-  cpp_index.load (f);
-  fclose (f);
+  cpp_index.load(f);
+  fclose(f);
 }
 
 void CompilerCore::save_index() {
@@ -408,18 +414,18 @@ void CompilerCore::save_index() {
     return;
   }
   string tmp_index_path = index_path + ".tmp";
-  FILE *f = fopen (tmp_index_path.c_str(), "w");
+  FILE *f = fopen(tmp_index_path.c_str(), "w");
   if (f == NULL) {
     return;
   }
-  cpp_index.save (f);
-  fclose (f);
-  int err = system (("mv " + tmp_index_path + " " + index_path).c_str());
+  cpp_index.save(f);
+  fclose(f);
+  int err = system(("mv " + tmp_index_path + " " + index_path).c_str());
   kphp_error (err == 0, "Failed to rewrite index");
 }
 
-File *CompilerCore::get_file_info (const string &file_name) {
-  return cpp_index.get_file (file_name, true);
+File *CompilerCore::get_file_info(const string &file_name) {
+  return cpp_index.get_file(file_name, true);
 }
 
 void CompilerCore::del_extra_files() {
@@ -432,7 +438,7 @@ void CompilerCore::init_dest_dir() {
   }
   env_->init_dest_dirs();
   cpp_dir = env().get_dest_cpp_dir();
-  cpp_index.sync_with_dir (cpp_dir);
+  cpp_index.sync_with_dir(cpp_dir);
   cpp_dir = cpp_index.get_dir();
 }
 
@@ -458,26 +464,26 @@ bool compare_mtime(File *f, File *g) {
   return f->path < g->path;
 }
 
-bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
-    File *lib_version_file, File *link_file, const KphpEnviroment &kphp_env) {
+bool kphp_make(File *bin, Index *obj_dir, Index *cpp_dir,
+               File *lib_version_file, File *link_file, const KphpEnviroment &kphp_env) {
   KphpMake make;
   long long lib_mtime = lib_version_file->mtime;
   if (lib_mtime == 0) {
-    fprintf (stdout, "Can't read mtime of lib_version_file [%s]\n",
-        lib_version_file->path.c_str());
+    fprintf(stdout, "Can't read mtime of lib_version_file [%s]\n",
+            lib_version_file->path.c_str());
     return false;
   }
   long long link_mtime = link_file->mtime;
   if (link_mtime == 0) {
-    fprintf (stdout, "Can't read mtime of link_file [%s]\n",
-        link_file->path.c_str());
+    fprintf(stdout, "Can't read mtime of link_file [%s]\n",
+            link_file->path.c_str());
     return false;
   }
-  make.create_cpp_target (link_file);
+  make.create_cpp_target(link_file);
 
-  vector <File *> objs;
-  vector <File *> files = cpp_dir->get_files();
-  std::sort (files.begin(), files.end(), compare_mtime);
+  vector<File *> objs;
+  vector<File *> files = cpp_dir->get_files();
+  std::sort(files.begin(), files.end(), compare_mtime);
   vector<long long> header_mtime(files.size());
   for (size_t i = 0; i < files.size(); i++) {
     header_mtime[i] = files[i]->mtime;
@@ -488,10 +494,10 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
     if (h_file->ext == ".h") {
       long long &h_mtime = header_mtime[i];
       for (const auto &include : h_file->includes) {
-        File *header = cpp_dir->get_file (include, false);
+        File *header = cpp_dir->get_file(include, false);
         kphp_assert (header != NULL);
         kphp_assert (header->on_disk);
-        long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
+        long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
         h_mtime = std::max(h_mtime, dep_mtime);
       }
     }
@@ -499,82 +505,82 @@ bool kphp_make (File *bin, Index *obj_dir, Index *cpp_dir,
   if (G->env().get_use_subdirs()) {
     for (auto cpp_file : files) {
       if (cpp_file->ext == ".cpp") {
-        File *obj_file = obj_dir->get_file (cpp_file->name_without_ext + ".o", true);
+        File *obj_file = obj_dir->get_file(cpp_file->name_without_ext + ".o", true);
         obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
-        make.create_cpp2obj_target (cpp_file, obj_file);
+        make.create_cpp2obj_target(cpp_file, obj_file);
         Target *cpp_target = cpp_file->target;
         for (auto include : cpp_file->includes) {
-          File *header = cpp_dir->get_file (include, false);
+          File *header = cpp_dir->get_file(include, false);
           kphp_assert (header != NULL);
           kphp_assert (header->on_disk);
-          long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
-          cpp_target->force_changed (dep_mtime);
+          long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
+          cpp_target->force_changed(dep_mtime);
         }
-        cpp_target->force_changed (lib_mtime);
-        objs.push_back (obj_file);
+        cpp_target->force_changed(lib_mtime);
+        objs.push_back(obj_file);
       }
     }
-    fprintf (stderr, "objs cnt = %d\n", (int)objs.size());
+    fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
 
-    map <string, vector <File *> > subdirs;
-    vector <File *> tmp_objs;
+    map<string, vector<File *>> subdirs;
+    vector<File *> tmp_objs;
     for (auto obj_file : objs) {
       string name = obj_file->subdir;
-      name = name.substr (0, (int)name.size() - 1);
+      name = name.substr(0, (int)name.size() - 1);
       if (name.empty()) {
-        tmp_objs.push_back (obj_file);
+        tmp_objs.push_back(obj_file);
         continue;
       }
       name += ".o";
-      subdirs[name].push_back (obj_file);
+      subdirs[name].push_back(obj_file);
     }
 
     objs = tmp_objs;
     for (const auto &name_and_files : subdirs) {
-      File *obj_file = obj_dir->get_file (name_and_files.first, true);
-      make.create_objs2obj_target (name_and_files.second, obj_file);
-      objs.push_back (obj_file);
+      File *obj_file = obj_dir->get_file(name_and_files.first, true);
+      make.create_objs2obj_target(name_and_files.second, obj_file);
+      objs.push_back(obj_file);
     }
-    fprintf (stderr, "objs cnt = %d\n", (int)objs.size());
-    objs.push_back (link_file);
-    make.create_objs2bin_target (objs, bin);
+    fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
+    objs.push_back(link_file);
+    make.create_objs2bin_target(objs, bin);
   } else {
     for (auto cpp_file : files) {
       if (cpp_file->ext == ".cpp") {
-        File *obj_file = obj_dir->get_file (cpp_file->name + ".o", true);
+        File *obj_file = obj_dir->get_file(cpp_file->name + ".o", true);
         Target *cpp_target = cpp_file->target;
         for (auto include : cpp_file->includes) {
-          File *header = cpp_dir->get_file (include, false);
+          File *header = cpp_dir->get_file(include, false);
           kphp_assert (header != NULL);
           kphp_assert (header->on_disk);
-          long long dep_mtime = header_mtime[std::lower_bound (files.begin(), files.end(), header, compare_mtime) - files.begin()];
-          cpp_target->force_changed (dep_mtime);
+          long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
+          cpp_target->force_changed(dep_mtime);
         }
-        cpp_target->force_changed (lib_mtime);
-        objs.push_back (obj_file);
+        cpp_target->force_changed(lib_mtime);
+        objs.push_back(obj_file);
       }
     }
-    fprintf (stderr, "objs cnt = %d\n", (int)objs.size());
-    objs.push_back (link_file);
-    make.create_objs2bin_target (objs, bin);
+    fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
+    objs.push_back(link_file);
+    make.create_objs2bin_target(objs, bin);
   }
-  make.init_env (kphp_env);
-  return make.make_target (bin, kphp_env.get_jobs_count());
+  make.init_env(kphp_env);
+  return make.make_target(bin, kphp_env.get_jobs_count());
 }
 
 void CompilerCore::make() {
   AUTO_PROF (make);
-  stage::set_name ("Make");
+  stage::set_name("Make");
   cpp_index.del_extra_files();
 
   Index obj_index;
-  obj_index.sync_with_dir (env().get_dest_objs_dir());
+  obj_index.sync_with_dir(env().get_dest_objs_dir());
 
-  File bin_file (env().get_binary_path());
+  File bin_file(env().get_binary_path());
   kphp_assert (bin_file.upd_mtime() >= 0);
-  File lib_version_file (env().get_lib_version());
+  File lib_version_file(env().get_lib_version());
   kphp_assert (lib_version_file.upd_mtime() >= 0);
-  File link_file (env().get_link_file());
+  File link_file(env().get_link_file());
   kphp_assert (link_file.upd_mtime() >= 0);
 
   if (env().get_make_force()) {
@@ -582,26 +588,26 @@ void CompilerCore::make() {
     bin_file.unlink();
   }
 
-  bool ok = kphp_make (&bin_file, &obj_index, &cpp_index, 
-      &lib_version_file, &link_file, env());
+  bool ok = kphp_make(&bin_file, &obj_index, &cpp_index,
+                      &lib_version_file, &link_file, env());
   kphp_error (ok, "Make failed");
   stage::die_if_global_errors();
   obj_index.del_extra_files();
 
   if (!env().get_user_binary_path().empty()) {
-    File user_bin_file (env().get_user_binary_path());
+    File user_bin_file(env().get_user_binary_path());
     kphp_assert (user_bin_file.upd_mtime() >= 0);
     string cmd = "ln --force " + bin_file.path + " " + user_bin_file.path
-      + " 2> /dev/null || cp " + bin_file.path + " " + user_bin_file.path;
-    int err = system (cmd.c_str());
+                 + " 2> /dev/null || cp " + bin_file.path + " " + user_bin_file.path;
+    int err = system(cmd.c_str());
     if (env().get_verbosity() >= 3) {
-      fprintf (stderr, "[%s]: %d %d\n", cmd.c_str(), err, WEXITSTATUS (err));
+      fprintf(stderr, "[%s]: %d %d\n", cmd.c_str(), err, WEXITSTATUS (err));
     }
     if (err == -1 || !WIFEXITED (err) || WEXITSTATUS (err)) {
       if (err == -1) {
-        perror ("system failed");
+        perror("system failed");
       }
-      kphp_error (0, dl_pstr ("Failed [%s]", cmd.c_str()));
+      kphp_error (0, dl_pstr("Failed [%s]", cmd.c_str()));
       stage::die_if_global_errors();
     }
   }
@@ -609,8 +615,8 @@ void CompilerCore::make() {
 
 CompilerCore *G;
 
-bool try_optimize_var (VarPtr var) {
-  return __sync_bool_compare_and_swap (&var->optimize_flag, false, true);
+bool try_optimize_var(VarPtr var) {
+  return __sync_bool_compare_and_swap(&var->optimize_flag, false, true);
 }
 
 string conv_to_func_ptr_name(VertexPtr call) {
@@ -647,7 +653,7 @@ VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function) {
       name = get_full_static_member_name(current_function, name, true);
       CREATE_VERTEX (new_call, op_func_ptr);
       new_call->str_val = name;
-      set_location (new_call, call->get_location());
+      set_location(new_call, call->get_location());
       call = new_call;
     }
   }

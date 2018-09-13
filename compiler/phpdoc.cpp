@@ -11,24 +11,24 @@ using std::vector;
 using std::string;
 
 const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
-  {"@param"        , param},
-  {"@kphp-inline"  , kphp_inline},
-  {"@kphp-infer"   , kphp_infer},
-  {"@kphp-required", kphp_required},
-  {"@kphp-sync"    , kphp_sync},
-  {"@type"         , var},
-  {"@var"          , var},
-  {"@return"       , returns},
-  {"@returns"      , returns},
+  {"@param",                 param},
+  {"@kphp-inline",           kphp_inline},
+  {"@kphp-infer",            kphp_infer},
+  {"@kphp-required",         kphp_required},
+  {"@kphp-sync",             kphp_sync},
+  {"@type",                  var},
+  {"@var",                   var},
+  {"@return",                returns},
+  {"@returns",               returns},
   {"@kphp-disable-warnings", kphp_disable_warnings},
-  {"@kphp-template", kphp_template}
+  {"@kphp-template",         kphp_template}
 };
 
 /*
  * Имея '@param $a A[] some description' — где this->value = '$a A[] some description' —
  * уметь вычленить первый токен '$a', потом по offset'у следующий 'A[]' и т.п. — до ближайшего пробела
  */
-const std::string php_doc_tag::get_value_token (unsigned long chars_offset) const {
+const std::string php_doc_tag::get_value_token(unsigned long chars_offset) const {
   unsigned long pos = 0;
   unsigned long len = value.size();
   while (pos < len && value[pos] == ' ') {     // типа left trim: с самого начала пробелы не учитываем
@@ -120,10 +120,10 @@ vector<php_doc_tag> parse_php_doc(const string &phpdoc) {
  * Считается, что даже сложный тип '(string|(int|false))[]' написан без пробелов; он возвращается как строка.
  * Возвращает bool — нашёлся ли; если да, то out_type_str заполнен, а out_var_name либо заполен, либо пустая строка.
  */
-bool PhpDocTypeRuleParser::find_tag_in_phpdoc (const string &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset) {
-  const std::vector <php_doc_tag> &tags = parse_php_doc(phpdoc);
+bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const string &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset) {
+  const std::vector<php_doc_tag> &tags = parse_php_doc(phpdoc);
   int idx = 0;
-  for (std::vector <php_doc_tag>::const_iterator tag = tags.begin(); tag != tags.end(); ++tag) {
+  for (std::vector<php_doc_tag>::const_iterator tag = tags.begin(); tag != tags.end(); ++tag) {
 
     if (php_doc_tag::get_doc_type(tag->name) == doc_type && idx++ >= offset) {  // для @param имеет смысл offset
       const std::string &a1 = tag->get_value_token();
@@ -146,13 +146,13 @@ bool PhpDocTypeRuleParser::find_tag_in_phpdoc (const string &phpdoc, php_doc_tag
   return false;
 }
 
-VertexPtr PhpDocTypeRuleParser::create_type_help_vertex (PrimitiveType type) {
+VertexPtr PhpDocTypeRuleParser::create_type_help_vertex(PrimitiveType type) {
   CREATE_VERTEX(type_rule, op_type_rule);
   type_rule->type_help = type;
   return type_rule;
 }
 
-VertexPtr PhpDocTypeRuleParser::create_type_help_class_vertex (ClassPtr klass) {
+VertexPtr PhpDocTypeRuleParser::create_type_help_class_vertex(ClassPtr klass) {
   CREATE_VERTEX(type_rule, op_class_type_rule);
   type_rule->type_help = tp_Class;
   type_rule->class_ptr = klass;
@@ -162,14 +162,15 @@ VertexPtr PhpDocTypeRuleParser::create_type_help_class_vertex (ClassPtr klass) {
 /*
  * Имея строку '(\VK\A|false)[]' и pos=1 — найти, где заканчивается имя класса. ('\VK\A' оно в данном случае)
  */
-std::string PhpDocTypeRuleParser::extract_classname_from_pos (const std::string &str, size_t pos) {
+std::string PhpDocTypeRuleParser::extract_classname_from_pos(const std::string &str, size_t pos) {
   size_t pos_end = pos;
-  for (; isalnum(str[pos_end]) || str[pos_end] == '\\' || str[pos_end] == '_'; ++pos_end);
+  for (; isalnum(str[pos_end]) || str[pos_end] == '\\' || str[pos_end] == '_'; ++pos_end) {
+  }
 
   return std::string(str, pos, pos_end - pos);
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_simple_type (const string &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string &s, size_t &pos) {
   CHECK(pos < s.size(), "Failed to parse phpdoc type: unexpected end");
   switch (s[pos]) {
     case '(': {
@@ -269,7 +270,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type (const string &s, size_t &pos)
         pos += class_name.size();
         ClassPtr klass = G->get_class(resolve_uses(current_function, class_name, '\\'));
         kphp_error(klass.not_null(),
-            dl_pstr("Could not find class in phpdoc: %s", s.c_str()));
+                   dl_pstr("Could not find class in phpdoc: %s", s.c_str()));
         return create_type_help_class_vertex(klass);
       }
   }
@@ -277,7 +278,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type (const string &s, size_t &pos)
   return VertexPtr();
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_array (const string &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_type_array(const string &s, size_t &pos) {
   VertexPtr res = parse_simple_type(s, pos);
   if (res.is_null()) {
     return res;
@@ -292,7 +293,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array (const string &s, size_t &pos) 
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_expression (const string &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_type_expression(const string &s, size_t &pos) {
   VertexPtr res = parse_type_array(s, pos);
   if (res.is_null()) {
     return res;
@@ -310,7 +311,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression (const string &s, size_t &
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_from_type_string (const string &type_str) {
+VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const string &type_str) {
 //  fprintf(stderr, "Parsing s = |%s|\n", s.c_str());
   size_t pos = 0;
   VertexPtr res = parse_type_expression(type_str, pos);
@@ -321,13 +322,13 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string (const string &type_str) 
   return res;
 }
 
-VertexPtr phpdoc_parse_type (const std::string &type_str, FunctionPtr current_function) {
+VertexPtr phpdoc_parse_type(const std::string &type_str, FunctionPtr current_function) {
   PhpDocTypeRuleParser parser(current_function);
   return parser.parse_from_type_string(type_str);
 }
 
 
-void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags () {
+void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags() {
   struct ParsingTagsTest {
     std::string phpdoc;
     std::string var_name;
@@ -335,38 +336,38 @@ void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags () {
     int offset;
     bool is_valid;
 
-    ParsingTagsTest (std::string phpdoc, std::string var_name, std::string type_str, int offset, bool is_valid) :
-        phpdoc(phpdoc),
-        var_name(var_name),
-        type_str(type_str),
-        offset(offset),
-        is_valid(is_valid) {}
+    ParsingTagsTest(std::string phpdoc, std::string var_name, std::string type_str, int offset, bool is_valid) :
+      phpdoc(phpdoc),
+      var_name(var_name),
+      type_str(type_str),
+      offset(offset),
+      is_valid(is_valid) {}
 
-    static ParsingTagsTest test_pass (std::string phpdoc, std::string var_name, std::string type_str, int offset = 0) {
+    static ParsingTagsTest test_pass(std::string phpdoc, std::string var_name, std::string type_str, int offset = 0) {
       return ParsingTagsTest(phpdoc, var_name, type_str, offset, true);   // CLion тут показывает ошибку, но это его косяк
     }
 
-    static ParsingTagsTest test_fail (std::string phpdoc, std::string var_name, std::string type_str, int offset = 0) {
+    static ParsingTagsTest test_fail(std::string phpdoc, std::string var_name, std::string type_str, int offset = 0) {
       return ParsingTagsTest(phpdoc, var_name, type_str, offset, false);
     }
 
-    static void run_tests () {
+    static void run_tests() {
       ParsingTagsTest tests[] = {
-          test_pass("* @var $a bool ", "a", "bool"),
-          test_pass("* @var bool $a ", "a", "bool"),
-          test_pass(" *@var    bool    $a   ", "a", "bool"),
-          test_pass(" *@var    $a    bool   ", "a", "bool"),
-          test_pass("* @type $variable int|string comment ", "variable", "int|string"),
-          test_fail("* @nothing $variable int|string comment", "", ""),
-          test_fail("* only comment", "", ""),
-          test_pass("* @deprecated \n* @var $k Exception|false", "k", "Exception|false"),
-          test_pass("* @var mixed some comment", "", "mixed"),
-          test_pass("* @var string|(false|int)[]?", "", "string|(false|int)[]?"),
-          test_pass("* @var $a", "a", ""),
-          test_pass("* @type hello world", "", "hello"),
-          test_pass("*   @type   ", "", ""),
-          test_pass("* @param $aa A \n* @var $a A  \n* @param BB $b \n* @var $b B   ", "a", "A", 0),
-          test_pass("* @param $aa A \n* @var $a A  \n* @param BB $b \n* @var $b B   ", "b", "B", 1),
+        test_pass("* @var $a bool ", "a", "bool"),
+        test_pass("* @var bool $a ", "a", "bool"),
+        test_pass(" *@var    bool    $a   ", "a", "bool"),
+        test_pass(" *@var    $a    bool   ", "a", "bool"),
+        test_pass("* @type $variable int|string comment ", "variable", "int|string"),
+        test_fail("* @nothing $variable int|string comment", "", ""),
+        test_fail("* only comment", "", ""),
+        test_pass("* @deprecated \n* @var $k Exception|false", "k", "Exception|false"),
+        test_pass("* @var mixed some comment", "", "mixed"),
+        test_pass("* @var string|(false|int)[]?", "", "string|(false|int)[]?"),
+        test_pass("* @var $a", "a", ""),
+        test_pass("* @type hello world", "", "hello"),
+        test_pass("*   @type   ", "", ""),
+        test_pass("* @param $aa A \n* @var $a A  \n* @param BB $b \n* @var $b B   ", "a", "A", 0),
+        test_pass("* @param $aa A \n* @var $a A  \n* @param BB $b \n* @var $b B   ", "b", "B", 1),
       };
 
       int n_not_passed = 0;
@@ -380,8 +381,8 @@ void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags () {
         }
 
         std::string ok_str = correct
-            ? tests[i].is_valid ? "ok" : "ok (was not parsed)"
-            : "error";
+                             ? tests[i].is_valid ? "ok" : "ok (was not parsed)"
+                             : "error";
         printf("%-50s %s\n", tests[i].phpdoc.c_str(), ok_str.c_str());
       }
       printf("Not passed count: %d\n", n_not_passed);

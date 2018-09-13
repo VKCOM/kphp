@@ -7,7 +7,7 @@
 
 #include "drinkless/dl-utils-lite.h"
 
-static std::map <std::string, script_t *> scripts;
+static std::map<std::string, script_t *> scripts;
 
 script_t *get_script(const char *name) {
   auto i = scripts.find(name);
@@ -19,7 +19,7 @@ script_t *get_script(const char *name) {
   return nullptr;
 }
 
-void set_script(const char *name, void (*run)(php_query_data *, void *mem, size_t mem_size), void (*clear) ()) {
+void set_script(const char *name, void (*run)(php_query_data *, void *mem, size_t mem_size), void (*clear)()) {
   static int cnt = 0;
 
   auto script = new script_t{run, clear};

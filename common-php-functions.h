@@ -6,37 +6,37 @@
 #define FAST_EXCEPTIONS
 
 const int STRLEN_WARNING_FLAG = 1 << 30;
-const int STRLEN_OBJECT       = -3;
-const int STRLEN_ERROR        = -2;
-const int STRLEN_DYNAMIC      = -1;
-const int STRLEN_UNKNOWN      = STRLEN_ERROR;
-const int STRLEN_FALSE        = 0;
-const int STRLEN_FALSE_       = STRLEN_FALSE;
-const int STRLEN_BOOL         = 1;
-const int STRLEN_BOOL_        = STRLEN_BOOL;
-const int STRLEN_INT          = 11;
-const int STRLEN_FLOAT        = 21;
-const int STRLEN_ARRAY        = 5;
-const int STRLEN_ARRAY_       = STRLEN_ARRAY | STRLEN_WARNING_FLAG;
-const int STRLEN_STRING       = STRLEN_DYNAMIC;
-const int STRLEN_VAR          = STRLEN_DYNAMIC;
-const int STRLEN_UINT         = STRLEN_OBJECT;
-const int STRLEN_LONG         = STRLEN_OBJECT;
-const int STRLEN_ULONG        = STRLEN_OBJECT;
-const int STRLEN_MC           = STRLEN_ERROR;
-const int STRLEN_DB           = STRLEN_ERROR;
-const int STRLEN_RPC          = STRLEN_ERROR;
-const int STRLEN_EXCEPTION    = STRLEN_OBJECT;
-const int STRLEN_CLASS        = STRLEN_ERROR;
-const int STRLEN_VOID         = STRLEN_ERROR;
-const int STRLEN_ANY          = STRLEN_ERROR;
-const int STRLEN_CREATE_ANY   = STRLEN_ERROR;
+const int STRLEN_OBJECT = -3;
+const int STRLEN_ERROR = -2;
+const int STRLEN_DYNAMIC = -1;
+const int STRLEN_UNKNOWN = STRLEN_ERROR;
+const int STRLEN_FALSE = 0;
+const int STRLEN_FALSE_ = STRLEN_FALSE;
+const int STRLEN_BOOL = 1;
+const int STRLEN_BOOL_ = STRLEN_BOOL;
+const int STRLEN_INT = 11;
+const int STRLEN_FLOAT = 21;
+const int STRLEN_ARRAY = 5;
+const int STRLEN_ARRAY_ = STRLEN_ARRAY | STRLEN_WARNING_FLAG;
+const int STRLEN_STRING = STRLEN_DYNAMIC;
+const int STRLEN_VAR = STRLEN_DYNAMIC;
+const int STRLEN_UINT = STRLEN_OBJECT;
+const int STRLEN_LONG = STRLEN_OBJECT;
+const int STRLEN_ULONG = STRLEN_OBJECT;
+const int STRLEN_MC = STRLEN_ERROR;
+const int STRLEN_DB = STRLEN_ERROR;
+const int STRLEN_RPC = STRLEN_ERROR;
+const int STRLEN_EXCEPTION = STRLEN_OBJECT;
+const int STRLEN_CLASS = STRLEN_ERROR;
+const int STRLEN_VOID = STRLEN_ERROR;
+const int STRLEN_ANY = STRLEN_ERROR;
+const int STRLEN_CREATE_ANY = STRLEN_ERROR;
 
-const int REF_CNT_FOR_CONST   = 0x7ffffff0;
+const int REF_CNT_FOR_CONST = 0x7ffffff0;
 
-inline int string_hash (const char *p, int l) __attribute__ ((always_inline));
+inline int string_hash(const char *p, int l) __attribute__ ((always_inline));
 
-int string_hash (const char *p, int l) {
+int string_hash(const char *p, int l) {
   static const unsigned int HASH_MUL_ = 1915239017;
   unsigned int hash = 2147483648u;
 
@@ -53,9 +53,9 @@ int string_hash (const char *p, int l) {
   return (int)hash;
 }
 
-inline bool php_is_int (const char *s, int l) __attribute__ ((always_inline));
+inline bool php_is_int(const char *s, int l) __attribute__ ((always_inline));
 
-bool php_is_int (const char *s, int l) {
+bool php_is_int(const char *s, int l) {
   if ((s[0] - '-') * (s[0] - '+') == 0) { // no need to check l > 0
     s++;
     l--;
@@ -95,9 +95,9 @@ bool php_is_int (const char *s, int l) {
   return true;
 }
 
-inline bool php_try_to_int (const char *s, int l, int *val) __attribute__ ((always_inline));
+inline bool php_try_to_int(const char *s, int l, int *val) __attribute__ ((always_inline));
 
-bool php_try_to_int (const char *s, int l, int *val) {
+bool php_try_to_int(const char *s, int l, int *val) {
   int mul;
   if (s[0] == '-') { // no need to check l > 0
     mul = -1;
@@ -151,7 +151,7 @@ bool php_try_to_int (const char *s, int l, int *val) {
 }
 
 //returns len of raw string representation or -1 on error
-inline int string_raw_len (int src_len) {
+inline int string_raw_len(int src_len) {
   if (src_len < 0 || src_len >= (1 << 30) - 13) {
     return -1;
   }
@@ -160,8 +160,8 @@ inline int string_raw_len (int src_len) {
 }
 
 //returns len of raw string representation and writes it to dest or returns -1 on error
-inline int string_raw (char *dest, int dest_len, const char *src, int src_len) {
-  int raw_len = string_raw_len (src_len);
+inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
+  int raw_len = string_raw_len(src_len);
   if (raw_len == -1 || raw_len > dest_len) {
     return -1;
   }
@@ -169,14 +169,16 @@ inline int string_raw (char *dest, int dest_len, const char *src, int src_len) {
   dest_int[0] = src_len;
   dest_int[1] = src_len;
   dest_int[2] = REF_CNT_FOR_CONST;
-  memcpy (dest + 3 * sizeof (int), src, src_len);
-  dest[3 * sizeof (int) + src_len] = '\0';
+  memcpy(dest + 3 * sizeof(int), src, src_len);
+  dest[3 * sizeof(int) + src_len] = '\0';
 
   return raw_len;
 }
 
 template<typename T>
-inline int three_way_comparison(const T& lhs, const T& rhs) {
-  if (lhs < rhs) return -1;
+inline int three_way_comparison(const T &lhs, const T &rhs) {
+  if (lhs < rhs) {
+    return -1;
+  }
   return lhs > rhs ? 1 : 0;
 }

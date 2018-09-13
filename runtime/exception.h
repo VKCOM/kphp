@@ -2,7 +2,7 @@
 
 #include "runtime/kphp_core.h"
 
-array <array <string> > f$debug_backtrace (void);
+array<array<string>> f$debug_backtrace(void);
 
 
 class Exception {
@@ -13,13 +13,13 @@ public:
   int code;
   string file;
   int line;
-  array <array <string> > trace;
+  array<array<string>> trace;
 
   Exception();
-  Exception (const string &file, int line, const string &message = string(), int code = 0);
+  Exception(const string &file, int line, const string &message = string(), int code = 0);
 
-  Exception& operator = (bool value);
-  Exception (bool value);
+  Exception &operator=(bool value);
+  Exception(bool value);
 };
 
 #ifdef FAST_EXCEPTIONS
@@ -45,37 +45,37 @@ extern Exception *CurException;
 #endif
 
 
-Exception f$new_Exception (const string &file, int line, const string &message = string(), int code = 0);
+Exception f$new_Exception(const string &file, int line, const string &message = string(), int code = 0);
 
-Exception f$err (const string &file, int line, const string &code, const string &desc = string());
-
-
-string f$exception_getMessage (const Exception &e);
-
-int f$exception_getCode (const Exception &e);
-
-string f$exception_getFile (const Exception &e);
-
-int f$exception_getLine (const Exception &e);
-
-array <array <string> > f$exception_getTrace (const Exception &e);
-
-string f$exception_getTraceAsString (const Exception &e);
+Exception f$err(const string &file, int line, const string &code, const string &desc = string());
 
 
-bool f$boolval (const Exception &my_exception);
+string f$exception_getMessage(const Exception &e);
 
-bool eq2 (const Exception &my_exception, bool value);
+int f$exception_getCode(const Exception &e);
 
-bool eq2 (bool value, const Exception &my_exception);
+string f$exception_getFile(const Exception &e);
 
-bool equals (bool value, const Exception &my_exception);
+int f$exception_getLine(const Exception &e);
 
-bool equals (const Exception &my_exception, bool value);
+array<array<string>> f$exception_getTrace(const Exception &e);
 
-bool not_equals (bool value, const Exception &my_exception);
-
-bool not_equals (const Exception &my_exception, bool value);
+string f$exception_getTraceAsString(const Exception &e);
 
 
-void exception_init_static (void);
+bool f$boolval(const Exception &my_exception);
+
+bool eq2(const Exception &my_exception, bool value);
+
+bool eq2(bool value, const Exception &my_exception);
+
+bool equals(bool value, const Exception &my_exception);
+
+bool equals(const Exception &my_exception, bool value);
+
+bool not_equals(bool value, const Exception &my_exception);
+
+bool not_equals(const Exception &my_exception, bool value);
+
+
+void exception_init_static(void);

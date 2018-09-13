@@ -1,4 +1,5 @@
 #pragma once
+
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data.h"
@@ -6,29 +7,29 @@
 #include "compiler/token.h"
 
 class GenTree;
-typedef VertexPtr (GenTree::*GetFunc) ();
+
+typedef VertexPtr (GenTree::*GetFunc)();
 
 
 class GenTreeCallback {
   DataStream<FunctionPtr> &os;
 public:
-  explicit GenTreeCallback(DataStream<FunctionPtr> &os)
-    : os (os)
-  {}
+  explicit GenTreeCallback(DataStream<FunctionPtr> &os) :
+    os(os) {}
 
-  FunctionPtr register_function (const FunctionInfo &info) {
-    return G->register_function (info, os);
+  FunctionPtr register_function(const FunctionInfo &info) {
+    return G->register_function(info, os);
   }
 
-  void require_function_set (FunctionPtr function) {
+  void require_function_set(FunctionPtr function) {
     G->require_function_set(fs_function, function->name, FunctionPtr(), os);
   }
 
-  ClassPtr register_class (const ClassInfo &info) {
+  ClassPtr register_class(const ClassInfo &info) {
     return G->register_class(info, os);
   }
 
-  ClassPtr get_class_by_name (const string &class_name) {
+  ClassPtr get_class_by_name(const string &class_name) {
     return G->get_class(class_name);
   }
 };
@@ -38,92 +39,103 @@ class GenTree {
 public:
   struct AutoLocation {
     int line_num;
-    explicit AutoLocation (const GenTree *gen)
-      : line_num (gen->line_num) {
+
+    explicit AutoLocation(const GenTree *gen) :
+      line_num(gen->line_num) {
     }
   };
-  static inline void set_location (VertexPtr v, const AutoLocation &location);
 
-  GenTree ();
+  static inline void set_location(VertexPtr v, const AutoLocation &location);
 
-  void init (const vector <Token *> *tokens_new, const string &context, GenTreeCallback &callback_new);
-  FunctionPtr register_function (FunctionInfo info);
+  GenTree();
+
+  void init(const vector<Token *> *tokens_new, const string &context, GenTreeCallback &callback_new);
+  FunctionPtr register_function(FunctionInfo info);
   bool in_class();
   bool in_namespace() const;
-  void enter_class (const string &class_name, Token *phpdoc_token);
+  void enter_class(const string &class_name, Token *phpdoc_token);
   ClassInfo &cur_class();
   VertexPtr generate_constant_field_class(VertexPtr root);
-  void exit_and_register_class (VertexPtr root);
+  void exit_and_register_class(VertexPtr root);
   void enter_function();
   void exit_function();
 
-  bool test_expect (TokenType tp);
+  bool test_expect(TokenType tp);
 
   void next_cur();
   int open_parent();
   void skip_phpdoc_tokens();
 
-  static VertexPtr embrace (VertexPtr v);
+  static VertexPtr embrace(VertexPtr v);
   PrimitiveType get_ptype();
-  PrimitiveType get_type_help (void);
-  VertexPtr get_type_rule_func (void);
-  VertexPtr get_type_rule_ (void);
-  VertexPtr get_type_rule (void);
+  PrimitiveType get_type_help(void);
+  VertexPtr get_type_rule_func(void);
+  VertexPtr get_type_rule_(void);
+  VertexPtr get_type_rule(void);
 
-  static VertexPtr conv_to (VertexPtr x, PrimitiveType tp, int ref_flag = 0);
-  template <PrimitiveType ToT> static VertexPtr conv_to (VertexPtr x);
-  static VertexPtr get_actual_value (VertexPtr v);
-  static bool has_return (VertexPtr v);
-  static void func_force_return (VertexPtr root, VertexPtr val = VertexPtr());
-  static void for_each (VertexPtr root, void (*callback) (VertexPtr ));
+  static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, int ref_flag = 0);
+  template<PrimitiveType ToT>
+  static VertexPtr conv_to(VertexPtr x);
+  static VertexPtr get_actual_value(VertexPtr v);
+  static bool has_return(VertexPtr v);
+  static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
+  static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   VertexPtr create_vertex_this(const AutoLocation &location, bool with_type_rule = false);
-  void patch_func_constructor (VertexAdaptor <op_function> func, const ClassInfo &cur_class);
-  void patch_func_add_this (vector <VertexPtr> &params_next, const AutoLocation &func_location);
-  FunctionPtr create_default_constructor (const ClassInfo &cur_class);
+  void patch_func_constructor(VertexAdaptor<op_function> func, const ClassInfo &cur_class);
+  void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location);
+  FunctionPtr create_default_constructor(const ClassInfo &cur_class);
 
   VertexPtr get_func_param();
   VertexPtr get_foreach_param();
   VertexPtr get_var_name();
   VertexPtr get_var_name_ref();
   VertexPtr get_expr_top();
-  VertexPtr get_postfix_expression (VertexPtr res);
+  VertexPtr get_postfix_expression(VertexPtr res);
   VertexPtr get_unary_op();
-  VertexPtr get_binary_op (int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary);
-  VertexPtr get_expression_impl (bool till_ternary);
+  VertexPtr get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary);
+  VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(Token *phpdoc_token = NULL);
   VertexPtr get_vars_list(Token *phpdoc_token, OperationExtra extra_type);
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
-  VertexPtr post_process (VertexPtr root);
+  VertexPtr post_process(VertexPtr root);
   bool check_seq_end();
   bool check_statement_end();
   VertexPtr run();
 
-  static bool is_superglobal (const string &s);
+  static bool is_superglobal(const string &s);
 
-  template <Operation EmptyOp> bool gen_list (vector <VertexPtr> *res, GetFunc f, TokenType delim);
-  template <Operation Op> VertexPtr get_conv();
-  template <Operation Op> VertexPtr get_varg_call();
-  template <Operation Op> VertexPtr get_require();
-  template <Operation Op, Operation EmptyOp> VertexPtr get_func_call();
+  template<Operation EmptyOp>
+  bool gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim);
+  template<Operation Op>
+  VertexPtr get_conv();
+  template<Operation Op>
+  VertexPtr get_varg_call();
+  template<Operation Op>
+  VertexPtr get_require();
+  template<Operation Op, Operation EmptyOp>
+  VertexPtr get_func_call();
   VertexPtr get_short_array();
   VertexPtr get_string();
   VertexPtr get_string_build();
   VertexPtr get_def_value();
-  template <PrimitiveType ToT> static VertexPtr conv_to_lval (VertexPtr x);
-  template <Operation Op> VertexPtr get_multi_call (GetFunc f);
+  template<PrimitiveType ToT>
+  static VertexPtr conv_to_lval(VertexPtr x);
+  template<Operation Op>
+  VertexPtr get_multi_call(GetFunc f);
   VertexPtr get_return();
   VertexPtr get_exit();
-  template <Operation Op> VertexPtr get_break_continue();
+  template<Operation Op>
+  VertexPtr get_break_continue();
   VertexPtr get_foreach();
   VertexPtr get_while();
   VertexPtr get_if();
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  VertexPtr get_function (bool anonimous_flag = false, Token *phpdoc_token = NULL, AccessType access_type = access_nonmember);
+  VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = NULL, AccessType access_type = access_nonmember);
   VertexPtr get_class(Token *phpdoc_token);
 
 private:
@@ -138,24 +150,25 @@ public:
   int line_num;
 
 private:
-  const vector <Token *> *tokens;
+  const vector<Token *> *tokens;
   GenTreeCallback *callback;
   int in_func_cnt_;
   bool is_top_of_the_function_;
-  vector <Token *>::const_iterator cur, end;
-  vector <ClassInfo> class_stack;
+  vector<Token *>::const_iterator cur, end;
+  vector<ClassInfo> class_stack;
   string namespace_name;
   string class_context;
   ClassPtr context_class_ptr;
   string class_extends;
   map<string, string> namespace_uses;
 };
+
 void gen_tree_init();
 
-void php_gen_tree (vector <Token *> *tokens, const string &context, const string &main_func_name, GenTreeCallback &callback);
+void php_gen_tree(vector<Token *> *tokens, const string &context, const string &main_func_name, GenTreeCallback &callback);
 
-template <PrimitiveType ToT>
-VertexPtr GenTree::conv_to_lval (VertexPtr x) {
+template<PrimitiveType ToT>
+VertexPtr GenTree::conv_to_lval(VertexPtr x) {
   VertexPtr res;
   switch (ToT) {
     case tp_array: {
@@ -169,11 +182,12 @@ VertexPtr GenTree::conv_to_lval (VertexPtr x) {
       break;
     }
   }
-  ::set_location (res, x->get_location());
+  ::set_location(res, x->get_location());
   return res;
 }
-template <PrimitiveType ToT>
-VertexPtr GenTree::conv_to (VertexPtr x) {
+
+template<PrimitiveType ToT>
+VertexPtr GenTree::conv_to(VertexPtr x) {
   VertexPtr res;
   switch (ToT) {
     case tp_int: {
@@ -222,15 +236,15 @@ VertexPtr GenTree::conv_to (VertexPtr x) {
       break;
     }
   }
-  ::set_location (res, x->get_location());
+  ::set_location(res, x->get_location());
   return res;
 }
 
-inline void GenTree::set_location (VertexPtr v, const GenTree::AutoLocation &location) {
+inline void GenTree::set_location(VertexPtr v, const GenTree::AutoLocation &location) {
   v->location.line = location.line_num;
 }
 
-static inline bool is_const_int (VertexPtr root) {
+static inline bool is_const_int(VertexPtr root) {
   switch (root->type()) {
     case op_int_const:
       return true;

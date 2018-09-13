@@ -19,9 +19,9 @@ public:
   ClassPtr klass;
 
   Assumption(AssumType type, const std::string &var_name, ClassPtr klass) :
-      assum_type(type),
-      var_name(var_name),
-      klass(klass) {}
+    assum_type(type),
+    var_name(var_name),
+    klass(klass) {}
 };
 
 

@@ -7,15 +7,15 @@
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"
 
-const string COLON (",", 1);
-const string CP1251 ("1251", 4);
-const string DOT (".", 1);
-const string NEW_LINE ("\n", 1);
-const string SPACE (" ", 1);
-const string WHAT (" \n\r\t\v\0", 6);
+const string COLON(",", 1);
+const string CP1251("1251", 4);
+const string DOT(".", 1);
+const string NEW_LINE("\n", 1);
+const string SPACE(" ", 1);
+const string WHAT(" \n\r\t\v\0", 6);
 
-static const string ONE ("1", 1);
-static const string PERCENT ("%", 1);
+static const string ONE("1", 1);
+static const string PERCENT("%", 1);
 
 char php_buf[PHP_BUF_LEN + 1];
 
@@ -24,18 +24,18 @@ const char uhex_digits[17] = "0123456789ABCDEF";
 
 int str_replace_count_dummy;
 
-static inline const char *get_mask (const string &what) {
+static inline const char *get_mask(const string &what) {
   static char mask[256];
-  memset (mask, 0, 256);
+  memset(mask, 0, 256);
 
   int len = what.size();
   for (int i = 0; i < len; i++) {
     unsigned char c = what[i];
     if (what[i + 1] == '.' && what[i + 2] == '.' && (unsigned char)what[i + 3] >= c) {
-      memset (mask + c, 1, (unsigned char)what[i + 3] - c + 1);
+      memset(mask + c, 1, (unsigned char)what[i + 3] - c + 1);
       i += 3;
     } else if (c == '.' && what[i + 1] == '.') {
-      php_warning ("Invalid '..'-range in string \"%s\" at position %d.", what.c_str(), i);
+      php_warning("Invalid '..'-range in string \"%s\" at position %d.", what.c_str(), i);
     } else {
       mask[c] = 1;
     }
@@ -44,79 +44,79 @@ static inline const char *get_mask (const string &what) {
   return mask;
 }
 
-string f$addcslashes (const string &str, const string &what) {
-  const char *mask = get_mask (what);
+string f$addcslashes(const string &str, const string &what) {
+  const char *mask = get_mask(what);
 
   int len = str.size();
-  static_SB.clean().reserve (4 * len);
+  static_SB.clean().reserve(4 * len);
 
   for (int i = 0; i < len; i++) {
     unsigned char c = str[i];
     if (mask[c]) {
-      static_SB.append_char ('\\');
+      static_SB.append_char('\\');
       if (c < 32 || c > 126) {
         switch (c) {
           case '\n':
-            static_SB.append_char ('n');
+            static_SB.append_char('n');
             break;
           case '\t':
-            static_SB.append_char ('t');
+            static_SB.append_char('t');
             break;
           case '\r':
-            static_SB.append_char ('r');
+            static_SB.append_char('r');
             break;
           case '\a':
-            static_SB.append_char ('a');
+            static_SB.append_char('a');
             break;
           case '\v':
-            static_SB.append_char ('v');
+            static_SB.append_char('v');
             break;
           case '\b':
-            static_SB.append_char ('b');
+            static_SB.append_char('b');
             break;
           case '\f':
-            static_SB.append_char ('f');
+            static_SB.append_char('f');
             break;
           default:
-            static_SB.append_char (((c >> 6) + '0'));
-            static_SB.append_char ((((c >> 3) & 7) + '0'));
-            static_SB.append_char (((c & 7) + '0'));
+            static_SB.append_char(((c >> 6) + '0'));
+            static_SB.append_char((((c >> 3) & 7) + '0'));
+            static_SB.append_char(((c & 7) + '0'));
         }
       } else {
-        static_SB.append_char (c);
+        static_SB.append_char(c);
       }
     } else {
-      static_SB.append_char (c);
+      static_SB.append_char(c);
     }
   }
   return static_SB.str();
 }
 
-string f$addslashes (const string &str) {
+string f$addslashes(const string &str) {
   int len = str.size();
 
-  static_SB.clean().reserve (2 * len);
+  static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '\0':
-        static_SB.append_char ('\\');
-        static_SB.append_char ('0');
+        static_SB.append_char('\\');
+        static_SB.append_char('0');
         break;
       case '\'':
       case '\"':
       case '\\':
-        static_SB.append_char ('\\');
+        static_SB.append_char('\\');
         /* fallthrough */
       default:
-        static_SB.append_char (str[i]);
+        static_SB.append_char(str[i]);
     }
   }
   return static_SB.str();
 }
 
-string f$bin2hex (const string &str) {
+string f$bin2hex(const string &str) {
   int len = str.size();
-  string result (2 * len, false);
+  string result(2 * len, false);
 
   for (int i = 0; i < len; i++) {
     result[2 * i] = lhex_digits[(str[i] >> 4) & 15];
@@ -126,12 +126,12 @@ string f$bin2hex (const string &str) {
   return result;
 }
 
-string f$chop (const string &s, const string &what) {
-  return f$rtrim (s, what);
+string f$chop(const string &s, const string &what) {
+  return f$rtrim(s, what);
 }
 
-string f$chr (int v) {
-  return string (1, (char)v);
+string f$chr(int v) {
+  return string(1, (char)v);
 }
 
 static const unsigned char win_to_koi[] = {
@@ -170,9 +170,9 @@ static const unsigned char koi_to_win[] = {
   222, 192, 193, 214, 196, 197, 212, 195, 213, 200, 201, 202, 203, 204, 205, 206,
   207, 223, 208, 209, 210, 211, 198, 194, 220, 219, 199, 216, 221, 217, 215, 218};
 
-string f$convert_cyr_string (const string &str, const string &from_s, const string &to_s) {
-  char from = (char)toupper (from_s[0]);
-  char to = (char)toupper (to_s[0]);
+string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) {
+  char from = (char)toupper(from_s[0]);
+  char to = (char)toupper(to_s[0]);
 
   const unsigned char *table = NULL;
   if (from == 'W' && to == 'K') {
@@ -187,18 +187,18 @@ string f$convert_cyr_string (const string &str, const string &from_s, const stri
   }
 
   int len = str.size();
-  string result (len, false);
+  string result(len, false);
   for (int i = 0; i < len; i++) {
     result[i] = table[(unsigned char)str[i]];
   }
   return result;
 }
 
-var f$count_chars (const string &str, int mode) {
+var f$count_chars(const string &str, int mode) {
   int chars[256] = {0};
 
   if ((unsigned int)mode > 4u) {
-    php_warning ("Unknown mode %d", mode);
+    php_warning("Unknown mode %d", mode);
     return false;
   }
 
@@ -208,11 +208,11 @@ var f$count_chars (const string &str, int mode) {
   }
 
   if (mode <= 2) {
-    array <var> result;
+    array<var> result;
     for (int i = 0; i < 256; i++) {
       if ((mode != 2 && chars[i] != 0) ||
           (mode != 1 && chars[i] == 0)) {
-        result.set_value (i, chars[i]);
+        result.set_value(i, chars[i]);
       }
     }
     return result;
@@ -221,25 +221,25 @@ var f$count_chars (const string &str, int mode) {
   string result;
   for (int i = 0; i < 256; i++) {
     if ((mode == 3) == (chars[i] != 0)) {
-      result.push_back (char (i));
+      result.push_back(char(i));
     }
   }
   return result;
 }
 
-string f$hex2bin (const string &str) {
+string f$hex2bin(const string &str) {
   int len = str.size();
   if (len & 1) {
-    php_warning ("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
+    php_warning("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
     return string();
   }
 
-  string result (len / 2, false);
+  string result(len / 2, false);
   for (int i = 0; i < len; i += 2) {
-    int num_high = hex_to_int (str[i]);
-    int num_low = hex_to_int (str[i + 1]);
+    int num_high = hex_to_int(str[i]);
+    int num_low = hex_to_int(str[i + 1]);
     if (num_high == 16 || num_low == 16) {
-      php_warning ("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
+      php_warning("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
       return string();
     }
     result[i / 2] = (char)((num_high << 4) + num_low);
@@ -304,54 +304,62 @@ static int cp1251_to_utf8[128] = {
   0x440, 0x441,  0x442,  0x443,  0x444,  0x445,  0x446,  0x447,  0x448,  0x449,  0x44A,  0x44B,  0x44C, 0x44D, 0x44E, 0x44F};
 */
 static const char *cp1251_to_utf8_str[128] = {
-  "&#1026;", "&#1027;",  "&#8218;", "&#1107;", "&#8222;",  "&hellip;", "&dagger;", "&Dagger;", "&euro;",  "&permil;", "&#1033;", "&#8249;", "&#1034;", "&#1036;", "&#1035;", "&#1039;",
-  "&#1106;", "&#8216;",  "&#8217;", "&#8219;", "&#8220;",  "&bull;",   "&ndash;",  "&mdash;",  "",        "&trade;",  "&#1113;", "&#8250;", "&#1114;", "&#1116;", "&#1115;", "&#1119;",
-  "&nbsp;",  "&#1038;",  "&#1118;", "&#1032;", "&curren;", "&#1168;",  "&brvbar;", "&sect;",   "&#1025;", "&copy;",   "&#1028;", "&laquo;", "&not;",   "&shy;",   "&reg;",   "&#1031;",
-  "&deg;",   "&plusmn;", "&#1030;", "&#1110;", "&#1169;",  "&micro;",  "&para;",   "&middot;", "&#1105;", "&#8470;",  "&#1108;", "&raquo;", "&#1112;", "&#1029;", "&#1109;", "&#1111;",
-  "&#1040;", "&#1041;",  "&#1042;", "&#1043;", "&#1044;",  "&#1045;",  "&#1046;",  "&#1047;",  "&#1048;", "&#1049;",  "&#1050;", "&#1051;", "&#1052;", "&#1053;", "&#1054;", "&#1055;",
-  "&#1056;", "&#1057;",  "&#1058;", "&#1059;", "&#1060;",  "&#1061;",  "&#1062;",  "&#1063;",  "&#1064;", "&#1065;",  "&#1066;", "&#1067;", "&#1068;", "&#1069;", "&#1070;", "&#1071;",
-  "&#1072;", "&#1073;",  "&#1074;", "&#1075;", "&#1076;",  "&#1077;",  "&#1078;",  "&#1079;",  "&#1080;", "&#1081;",  "&#1082;", "&#1083;", "&#1084;", "&#1085;", "&#1086;", "&#1087;",
-  "&#1088;", "&#1089;",  "&#1090;", "&#1091;", "&#1092;",  "&#1093;",  "&#1094;",  "&#1095;",  "&#1096;", "&#1097;",  "&#1098;", "&#1099;", "&#1100;", "&#1101;", "&#1102;", "&#1103;"};
+  "&#1026;", "&#1027;", "&#8218;", "&#1107;", "&#8222;", "&hellip;", "&dagger;", "&Dagger;", "&euro;", "&permil;", "&#1033;", "&#8249;", "&#1034;", "&#1036;",
+  "&#1035;", "&#1039;",
+  "&#1106;", "&#8216;", "&#8217;", "&#8219;", "&#8220;", "&bull;", "&ndash;", "&mdash;", "", "&trade;", "&#1113;", "&#8250;", "&#1114;", "&#1116;", "&#1115;",
+  "&#1119;",
+  "&nbsp;", "&#1038;", "&#1118;", "&#1032;", "&curren;", "&#1168;", "&brvbar;", "&sect;", "&#1025;", "&copy;", "&#1028;", "&laquo;", "&not;", "&shy;", "&reg;",
+  "&#1031;",
+  "&deg;", "&plusmn;", "&#1030;", "&#1110;", "&#1169;", "&micro;", "&para;", "&middot;", "&#1105;", "&#8470;", "&#1108;", "&raquo;", "&#1112;", "&#1029;",
+  "&#1109;", "&#1111;",
+  "&#1040;", "&#1041;", "&#1042;", "&#1043;", "&#1044;", "&#1045;", "&#1046;", "&#1047;", "&#1048;", "&#1049;", "&#1050;", "&#1051;", "&#1052;", "&#1053;",
+  "&#1054;", "&#1055;",
+  "&#1056;", "&#1057;", "&#1058;", "&#1059;", "&#1060;", "&#1061;", "&#1062;", "&#1063;", "&#1064;", "&#1065;", "&#1066;", "&#1067;", "&#1068;", "&#1069;",
+  "&#1070;", "&#1071;",
+  "&#1072;", "&#1073;", "&#1074;", "&#1075;", "&#1076;", "&#1077;", "&#1078;", "&#1079;", "&#1080;", "&#1081;", "&#1082;", "&#1083;", "&#1084;", "&#1085;",
+  "&#1086;", "&#1087;",
+  "&#1088;", "&#1089;", "&#1090;", "&#1091;", "&#1092;", "&#1093;", "&#1094;", "&#1095;", "&#1096;", "&#1097;", "&#1098;", "&#1099;", "&#1100;", "&#1101;",
+  "&#1102;", "&#1103;"};
 
-string f$htmlentities (const string &str) {
+string f$htmlentities(const string &str) {
   int len = (int)str.size();
-  static_SB.clean().reserve (8 * len);
+  static_SB.clean().reserve(8 * len);
 
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '&':
-        static_SB.append_char ('&');
-        static_SB.append_char ('a');
-        static_SB.append_char ('m');
-        static_SB.append_char ('p');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('a');
+        static_SB.append_char('m');
+        static_SB.append_char('p');
+        static_SB.append_char(';');
         break;
       case '"':
-        static_SB.append_char ('&');
-        static_SB.append_char ('q');
-        static_SB.append_char ('u');
-        static_SB.append_char ('o');
-        static_SB.append_char ('t');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('q');
+        static_SB.append_char('u');
+        static_SB.append_char('o');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
         break;
       case '<':
-        static_SB.append_char ('&');
-        static_SB.append_char ('l');
-        static_SB.append_char ('t');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('l');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
         break;
       case '>':
-        static_SB.append_char ('&');
-        static_SB.append_char ('g');
-        static_SB.append_char ('t');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('g');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
         break;
       default:
         if (str[i] < 0) {
           const char *utf8_str = cp1251_to_utf8_str[128 + str[i]];
-          static_SB.append_unsafe (utf8_str, strlen (utf8_str));
+          static_SB.append_unsafe(utf8_str, strlen(utf8_str));
         } else {
-          static_SB.append_char (str[i]);
+          static_SB.append_char(str[i]);
         }
     }
   }
@@ -359,19 +367,19 @@ string f$htmlentities (const string &str) {
   return static_SB.str();
 }
 
-string f$html_entity_decode (const string &str, int flags, const string &encoding) {
+string f$html_entity_decode(const string &str, int flags, const string &encoding) {
   if (flags >= 3) {
     php_critical_error ("unsupported parameter flags = %d in function html_entity_decode", flags);
   }
 
-  bool utf8 = memchr (encoding.c_str(), '8', encoding.size()) != NULL;
-  if (!utf8 && strstr (encoding.c_str(), "1251") == NULL) {
+  bool utf8 = memchr(encoding.c_str(), '8', encoding.size()) != NULL;
+  if (!utf8 && strstr(encoding.c_str(), "1251") == NULL) {
     php_critical_error ("unsupported encoding \"%s\" in function html_entity_decode", encoding.c_str());
     return str;
   }
 
   int len = str.size();
-  string res (len * 7 / 4 + 4, false);
+  string res(len * 7 / 4 + 4, false);
   char *p = &res[0];
   for (int i = 0; i < len; i++) {
     if (str[i] == '&') {
@@ -398,13 +406,13 @@ string f$html_entity_decode (const string &str, int flags, const string &encodin
         int l = 0, r = entities_size;
         while (l + 1 < r) {
           int m = (l + r) >> 1;
-          if (strncmp (str.c_str() + i + 1, ent_to_num_s[m], j - i - 1) < 0) {
+          if (strncmp(str.c_str() + i + 1, ent_to_num_s[m], j - i - 1) < 0) {
             r = m;
           } else {
             l = m;
           }
         }
-        if (strncmp (str.c_str() + i + 1, ent_to_num_s[l], j - i - 1) == 0) {
+        if (strncmp(str.c_str() + i + 1, ent_to_num_s[l], j - i - 1) == 0) {
           int num = ent_to_num_i[l];
           i = j;
           if (utf8) {
@@ -444,81 +452,81 @@ string f$html_entity_decode (const string &str, int flags, const string &encodin
 
     *p++ = str[i];
   }
-  res.shrink ((dl::size_type)(p - res.c_str()));
+  res.shrink((dl::size_type)(p - res.c_str()));
 
   return res;
 }
 
-string f$htmlspecialchars (const string &str, int flags) {
+string f$htmlspecialchars(const string &str, int flags) {
   if (flags >= 3) {
     php_critical_error ("unsupported parameter flags = %d in function htmlspecialchars", flags);
   }
 
   int len = (int)str.size();
-  static_SB.clean().reserve (6 * len);
+  static_SB.clean().reserve(6 * len);
 
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '&':
-        static_SB.append_char ('&');
-        static_SB.append_char ('a');
-        static_SB.append_char ('m');
-        static_SB.append_char ('p');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('a');
+        static_SB.append_char('m');
+        static_SB.append_char('p');
+        static_SB.append_char(';');
         break;
       case '"':
         if (!(flags & ENT_NOQUOTES)) {
-          static_SB.append_char ('&');
-          static_SB.append_char ('q');
-          static_SB.append_char ('u');
-          static_SB.append_char ('o');
-          static_SB.append_char ('t');
-          static_SB.append_char (';');
+          static_SB.append_char('&');
+          static_SB.append_char('q');
+          static_SB.append_char('u');
+          static_SB.append_char('o');
+          static_SB.append_char('t');
+          static_SB.append_char(';');
         } else {
-          static_SB.append_char ('"');
+          static_SB.append_char('"');
         }
         break;
       case '\'':
         if (flags & ENT_QUOTES) {
-          static_SB.append_char ('&');
-          static_SB.append_char ('#');
-          static_SB.append_char ('0');
-          static_SB.append_char ('3');
-          static_SB.append_char ('9');
-          static_SB.append_char (';');
+          static_SB.append_char('&');
+          static_SB.append_char('#');
+          static_SB.append_char('0');
+          static_SB.append_char('3');
+          static_SB.append_char('9');
+          static_SB.append_char(';');
         } else {
-          static_SB.append_char ('\'');
+          static_SB.append_char('\'');
         }
         break;
       case '<':
-        static_SB.append_char ('&');
-        static_SB.append_char ('l');
-        static_SB.append_char ('t');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('l');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
         break;
       case '>':
-        static_SB.append_char ('&');
-        static_SB.append_char ('g');
-        static_SB.append_char ('t');
-        static_SB.append_char (';');
+        static_SB.append_char('&');
+        static_SB.append_char('g');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
         break;
       default:
-        static_SB.append_char (str[i]);
+        static_SB.append_char(str[i]);
     }
   }
 
   return static_SB.str();
 }
 
-string f$htmlspecialchars_decode (const string &str, int flags) {
+string f$htmlspecialchars_decode(const string &str, int flags) {
   if (flags >= 3) {
     php_critical_error ("unsupported parameter flags = %d in function htmlspecialchars_decode", flags);
   }
 
   int len = str.size();
-  string res (len, false);
+  string res(len, false);
   char *p = &res[0];
-  for (int i = 0; i < len; ) {
+  for (int i = 0; i < len;) {
     if (str[i] == '&') {
       if (str[i + 1] == 'a' && str[i + 2] == 'm' && str[i + 3] == 'p' && str[i + 4] == ';') {
         *p++ = '&';
@@ -544,29 +552,29 @@ string f$htmlspecialchars_decode (const string &str, int flags) {
       i++;
     }
   }
-  res.shrink ((dl::size_type)(p - res.c_str()));
+  res.shrink((dl::size_type)(p - res.c_str()));
 
   return res;
 }
 
-string f$lcfirst (const string &str) {
+string f$lcfirst(const string &str) {
   int n = str.size();
   if (n == 0) {
     return str;
   }
 
-  string res (n, false);
-  res[0] = (char)tolower (str[0]);
-  memcpy (&res[1], &str[1], n - 1);
+  string res(n, false);
+  res[0] = (char)tolower(str[0]);
+  memcpy(&res[1], &str[1], n - 1);
 
   return res;
 }
 
-string f$lcwords (const string &str) {
+string f$lcwords(const string &str) {
   int n = str.size();
 
   bool in_word = false;
-  string res (n, false);
+  string res(n, false);
   for (int i = 0; i < n; i++) {
     int cur = str[i] | 0x20;
     if ('a' <= cur && cur <= 'z') {
@@ -585,13 +593,13 @@ string f$lcwords (const string &str) {
   return res;
 }
 
-int f$levenshtein (const string &str1, const string &str2) {
+int f$levenshtein(const string &str1, const string &str2) {
   int len1 = str1.size();
   int len2 = str2.size();
 
   const int MAX_LEN = 16384;
   if (len1 > MAX_LEN || len2 > MAX_LEN) {
-    php_warning ("Too long strings of length %d and %d supplied for function levenshtein. Maximum allowed length is %d.", len1, len2, MAX_LEN);
+    php_warning("Too long strings of length %d and %d supplied for function levenshtein. Maximum allowed length is %d.", len1, len2, MAX_LEN);
     if (len1 > MAX_LEN) {
       len1 = MAX_LEN;
     }
@@ -626,8 +634,8 @@ int f$levenshtein (const string &str1, const string &str2) {
   return dp[len1 & 1][len2];
 }
 
-string f$ltrim (const string &s, const string &what) {
-  const char *mask = get_mask (what);
+string f$ltrim(const string &s, const string &what) {
+  const char *mask = get_mask(what);
 
   int len = (int)s.size();
   if (len == 0 || !mask[(unsigned char)s[0]]) {
@@ -638,12 +646,12 @@ string f$ltrim (const string &s, const string &what) {
   while (l < len && mask[(unsigned char)s[l]]) {
     l++;
   }
-  return string (s.c_str() + l, len - l);
+  return string(s.c_str() + l, len - l);
 }
 
-string f$mysql_escape_string (const string &str) {
+string f$mysql_escape_string(const string &str) {
   int len = str.size();
-  static_SB.clean().reserve (2 * len);
+  static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '\0':
@@ -653,41 +661,41 @@ string f$mysql_escape_string (const string &str) {
       case '\'':
       case '\"':
       case '\\':
-        static_SB.append_char ('\\');
+        static_SB.append_char('\\');
         /* fallthrough */
       default:
-        static_SB.append_char (str[i]);
+        static_SB.append_char(str[i]);
     }
   }
   return static_SB.str();
 }
 
-string f$nl2br (const string &str, bool is_xhtml) {
+string f$nl2br(const string &str, bool is_xhtml) {
   const char *br = is_xhtml ? "<br />" : "<br>";
-  int br_len = (int)strlen (br);
+  int br_len = (int)strlen(br);
 
   int len = str.size();
 
-  static_SB.clean().reserve ((br_len + 1) * len);
+  static_SB.clean().reserve((br_len + 1) * len);
 
-  for (int i = 0; i < len; ) {
+  for (int i = 0; i < len;) {
     if (str[i] == '\n' || str[i] == '\r') {
-      static_SB.append_unsafe (br, br_len);
+      static_SB.append_unsafe(br, br_len);
       if (str[i] + str[i + 1] == '\n' + '\r') {
-        static_SB.append_char (str[i++]);
+        static_SB.append_char(str[i++]);
       }
     }
-    static_SB.append_char (str[i++]);
+    static_SB.append_char(str[i++]);
   }
 
   return static_SB.str();
 }
 
-string f$number_format (double number, int decimals, const string &dec_point, const string &thousands_sep) {
+string f$number_format(double number, int decimals, const string &dec_point, const string &thousands_sep) {
   char *result_begin = php_buf + PHP_BUF_LEN;
 
   if ((unsigned int)decimals > 100u) {
-    php_warning ("Wrong parameter decimals (%d) in function number_format", decimals);
+    php_warning("Wrong parameter decimals (%d) in function number_format", decimals);
     return string();
   }
   bool negative = false;
@@ -696,15 +704,15 @@ string f$number_format (double number, int decimals, const string &dec_point, co
     number *= -1;
   }
 
-  double frac = number - floor (number);
+  double frac = number - floor(number);
   number -= frac;
 
-  double mul = pow (10.0, (double)decimals);
-  frac = round (frac * mul + 1e-9);
+  double mul = pow(10.0, (double)decimals);
+  frac = round(frac * mul + 1e-9);
 
   int old_decimals = decimals;
   while (result_begin > php_buf && decimals--) {
-    double x = floor (frac * 0.1 + 0.05);
+    double x = floor(frac * 0.1 + 0.05);
     int y = (int)(frac - x * 10 + 0.05);
     if ((unsigned int)y >= 10u) {
       y = 0;
@@ -716,7 +724,7 @@ string f$number_format (double number, int decimals, const string &dec_point, co
   number += frac;
 
   if (old_decimals > 0) {
-    int i = f$strlen (dec_point);
+    int i = f$strlen(dec_point);
     while (result_begin > php_buf && i > 0) {
       *--result_begin = dec_point[--i];
     }
@@ -725,7 +733,7 @@ string f$number_format (double number, int decimals, const string &dec_point, co
   int digits = 0;
   do {
     if (digits && digits % 3 == 0) {
-      int i = f$strlen (thousands_sep);
+      int i = f$strlen(thousands_sep);
       while (result_begin > php_buf && i > 0) {
         *--result_begin = thousands_sep[--i];
       }
@@ -733,7 +741,7 @@ string f$number_format (double number, int decimals, const string &dec_point, co
     digits++;
 
     if (result_begin > php_buf) {
-      double x = floor (number * 0.1 + 0.05);
+      double x = floor(number * 0.1 + 0.05);
       int y = (int)(number - x * 10 + 0.05);
       if ((unsigned int)y >= 10u) {
         y = 0;
@@ -756,21 +764,21 @@ string f$number_format (double number, int decimals, const string &dec_point, co
   return string(result_begin, (dl::size_type)(php_buf + PHP_BUF_LEN - result_begin));
 }
 
-int f$ord (const string &s) {
+int f$ord(const string &s) {
   return (unsigned char)s[0];
 }
 
-string f$pack (const array <var> &a) {
+string f$pack(const array<var> &a) {
   int n = a.count();
   if (n == 0) {
-    php_warning ("pack must take at least 1 argument");
+    php_warning("pack must take at least 1 argument");
     return string();
   }
 
   static_SB.clean();
-  const string pattern = a.get_value (0).to_string();
+  const string pattern = a.get_value(0).to_string();
   int cur_arg = 1;
-  for (int i = 0; i < (int)pattern.size(); ) {
+  for (int i = 0; i < (int)pattern.size();) {
     if (pattern[i] == '*') {
       if (i > 0) {
         --i;
@@ -785,7 +793,7 @@ string f$pack (const array <var> &a) {
       } while ('0' <= pattern[i] && pattern[i] <= '9');
 
       if (cnt <= 0) {
-        php_warning ("Wrong count specifier in pattern \"%s\"", pattern.c_str());
+        php_warning("Wrong count specifier in pattern \"%s\"", pattern.c_str());
         return string();
       }
     } else if (pattern[i] == '*') {
@@ -795,21 +803,21 @@ string f$pack (const array <var> &a) {
     int arg_num = cur_arg;
     if (arg_num >= a.count()) {
       if (format == 'A' || format == 'a' || format == 'H' || format == 'h' || cnt != 0) {
-        php_warning ("Not enough parameters to call function pack");
+        php_warning("Not enough parameters to call function pack");
         return string();
       }
       if (i + 1 != (int)pattern.size()) {
-        php_warning ("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
+        php_warning("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
         return string();
       }
       break;
     }
     cur_arg++;
 
-    var arg = a.get_value (arg_num);
+    var arg = a.get_value(arg_num);
 
     if (arg.is_array()) {
-      php_warning ("Argument %d of function pack is array", arg_num);
+      php_warning("Argument %d of function pack is array", arg_num);
       return string();
     }
 
@@ -817,7 +825,7 @@ string f$pack (const array <var> &a) {
     switch (format) {
       case 'A':
         filler = ' ';
-          /* fallthrough */
+        /* fallthrough */
       case 'a': {
         string arg_str = arg.to_string();
         int len = arg_str.size();
@@ -825,7 +833,7 @@ string f$pack (const array <var> &a) {
           cnt = len;
           i++;
         }
-        static_SB.append (arg_str.c_str(), min (cnt, len));
+        static_SB.append(arg_str.c_str(), min(cnt, len));
         while (cnt > len) {
           static_SB << filler;
           cnt--;
@@ -841,11 +849,11 @@ string f$pack (const array <var> &a) {
           i++;
         }
         for (int j = 0; cnt > 0 && j < len; j += 2) {
-          int num_high = hex_to_int (arg_str[j]);
-          int num_low = cnt > 1 ? hex_to_int (arg_str[j + 1]) : 0;
+          int num_high = hex_to_int(arg_str[j]);
+          int num_low = cnt > 1 ? hex_to_int(arg_str[j + 1]) : 0;
           cnt -= 2;
           if (num_high == 16 || num_low == 16) {
-            php_warning ("Wrong argument \"%s\" supplied for format '%c' in function pack", arg_str.c_str(), format);
+            php_warning("Wrong argument \"%s\" supplied for format '%c' in function pack", arg_str.c_str(), format);
             return string();
           }
           if (format == 'H') {
@@ -855,7 +863,7 @@ string f$pack (const array <var> &a) {
           }
         }
         if (cnt > 0) {
-          php_warning ("Type %c: not enough characters in string \"%s\" in function pack", format, arg_str.c_str());
+          php_warning("Type %c: not enough characters in string \"%s\" in function pack", format, arg_str.c_str());
         }
         break;
       }
@@ -871,7 +879,7 @@ string f$pack (const array <var> &a) {
             case 'S':
             case 'v': {
               unsigned short value = (short)arg.to_int();
-              static_SB.append ((const char *)&value, 2);
+              static_SB.append((const char *)&value, 2);
               break;
             }
             case 'n': {
@@ -887,7 +895,7 @@ string f$pack (const array <var> &a) {
             case 'L':
             case 'V': {
               int value = arg.to_int();
-              static_SB.append ((const char *)&value, 4);
+              static_SB.append((const char *)&value, 4);
               break;
             }
             case 'N': {
@@ -901,35 +909,35 @@ string f$pack (const array <var> &a) {
             }
             case 'f': {
               float value = (float)arg.to_float();
-              static_SB.append ((const char *)&value, sizeof (float));
+              static_SB.append((const char *)&value, sizeof(float));
               break;
             }
             case 'd': {
               double value = arg.to_float();
-              static_SB.append ((const char *)&value, sizeof (double));
+              static_SB.append((const char *)&value, sizeof(double));
               break;
             }
             case 'q': {
               long long value = Long(arg.to_string()).l;
-              static_SB.append ((const char *)&value, sizeof (long long));
+              static_SB.append((const char *)&value, sizeof(long long));
               break;
             }
             default:
-              php_warning ("Format code \"%c\" not supported", format);
+              php_warning("Format code \"%c\" not supported", format);
               return string();
           }
 
           if (cnt > 1) {
             arg_num = cur_arg++;
             if (arg_num >= a.count()) {
-              php_warning ("Not enough parameters to call function pack");
+              php_warning("Not enough parameters to call function pack");
               return string();
             }
 
-            arg = a.get_value (arg_num);
+            arg = a.get_value(arg_num);
 
             if (arg.is_array()) {
-              php_warning ("Argument %d of function pack is array", arg_num);
+              php_warning("Argument %d of function pack is array", arg_num);
               return string();
             }
           }
@@ -939,28 +947,28 @@ string f$pack (const array <var> &a) {
 
   php_assert (cur_arg <= a.count());
   if (cur_arg < a.count()) {
-    php_warning ("Too much arguments to call pack with format \"%s\"", pattern.c_str());
+    php_warning("Too much arguments to call pack with format \"%s\"", pattern.c_str());
   }
 
   return static_SB.str();
 }
 
-string f$prepare_search_query (const string &query) {
-  const char *s = clean_str (query.c_str());
+string f$prepare_search_query(const string &query) {
+  const char *s = clean_str(query.c_str());
   if (s == NULL) {
     s = "";
   }
-  return string (s, strlen (s));
+  return string(s, strlen(s));
 }
 
-int f$printf (const array <var> &a) {
-  string to_print = f$sprintf (a);
-  print (to_print);
+int f$printf(const array<var> &a) {
+  string to_print = f$sprintf(a);
+  print(to_print);
   return to_print.size();
 }
 
-string f$rtrim (const string &s, const string &what) {
-  const char *mask = get_mask (what);
+string f$rtrim(const string &s, const string &what) {
+  const char *mask = get_mask(what);
 
   int len = (int)s.size() - 1;
   if (len == -1 || !mask[(unsigned char)s[len]]) {
@@ -971,35 +979,35 @@ string f$rtrim (const string &s, const string &what) {
     len--;
   }
 
-  return string (s.c_str(), len);
+  return string(s.c_str(), len);
 }
 
-OrFalse <string> f$setlocale (int category, const string &locale) {
+OrFalse<string> f$setlocale(int category, const string &locale) {
   const char *loc = locale.c_str();
   if (locale[0] == '0' && locale.size() == 1) {
     loc = NULL;
   }
-  char *res = setlocale (category, loc);
+  char *res = setlocale(category, loc);
   if (res == NULL) {
     return false;
   }
-  return string (res, (dl::size_type)strlen (res));
+  return string(res, (dl::size_type)strlen(res));
 }
 
-string f$sprintf (const array <var> &a) {
+string f$sprintf(const array<var> &a) {
   int n = a.count();
   if (n == 0) {
-    php_warning ("sprintf must take at least 1 argument");
+    php_warning("sprintf must take at least 1 argument");
     return string();
   }
 
   string result;
-  string pattern = a.get_value (0).to_string();
+  string pattern = a.get_value(0).to_string();
   int cur_arg = 1;
   bool error_too_big = false;
   for (int i = 0; i < (int)pattern.size(); i++) {
     if (pattern[i] != '%') {
-      result.push_back (pattern[i]);
+      result.push_back(pattern[i]);
     } else {
       i++;
 
@@ -1065,19 +1073,19 @@ string f$sprintf (const array <var> &a) {
         }
 
         if (arg_num >= a.count()) {
-          php_warning ("Not enough parameters to call function sprintf with pattern \"%s\"", pattern.c_str());
+          php_warning("Not enough parameters to call function sprintf with pattern \"%s\"", pattern.c_str());
           return string();
         }
 
         if ((dl::size_type)arg_num == 0) {
-          php_warning ("Wrong parameter number 0 specified in function sprintf with pattern \"%s\"", pattern.c_str());
+          php_warning("Wrong parameter number 0 specified in function sprintf with pattern \"%s\"", pattern.c_str());
           return string();
         }
 
-        const var &arg = a.get_value (arg_num);
+        const var &arg = a.get_value(arg_num);
 
         if (arg.is_array()) {
-          php_warning ("Argument %d of function sprintf is array", arg_num);
+          php_warning("Argument %d of function sprintf is array", arg_num);
           return string();
         }
 
@@ -1089,15 +1097,15 @@ string f$sprintf (const array <var> &a) {
               php_buf[--cur_pos] = (char)((arg_int & 1) + '0');
               arg_int >>= 1;
             } while (arg_int > 0);
-            piece.assign (php_buf + cur_pos, 70 - cur_pos);
+            piece.assign(php_buf + cur_pos, 70 - cur_pos);
             break;
           }
           case 'c': {
             int arg_int = arg.to_int();
             if (arg_int <= -128 || arg_int > 255) {
-              php_warning ("Wrong parameter for specifier %%c in function sprintf with pattern \"%s\"", pattern.c_str());
+              php_warning("Wrong parameter for specifier %%c in function sprintf with pattern \"%s\"", pattern.c_str());
             }
-            piece.assign (1, (char)arg_int);
+            piece.assign(1, (char)arg_int);
             break;
           }
           case 'd': {
@@ -1105,7 +1113,7 @@ string f$sprintf (const array <var> &a) {
             if (sign == '+' && arg_int >= 0) {
               piece = (static_SB.clean() << "+" << arg_int).str();
             } else {
-              piece = string (arg_int);
+              piece = string(arg_int);
             }
             break;
           }
@@ -1116,7 +1124,7 @@ string f$sprintf (const array <var> &a) {
               php_buf[--cur_pos] = (char)(arg_int % 10 + '0');
               arg_int /= 10;
             } while (arg_int > 0);
-            piece.assign (php_buf + cur_pos, 70 - cur_pos);
+            piece.assign(php_buf + cur_pos, 70 - cur_pos);
             break;
           }
           case 'e':
@@ -1136,13 +1144,13 @@ string f$sprintf (const array <var> &a) {
             }
             static_SB << pattern[i];
 
-            int len = snprintf (php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
+            int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
             if (len >= PHP_BUF_LEN) {
               error_too_big = true;
               break;
             }
 
-            piece.assign (php_buf, len);
+            piece.assign(php_buf, len);
             break;
           }
           case 'o': {
@@ -1152,7 +1160,7 @@ string f$sprintf (const array <var> &a) {
               php_buf[--cur_pos] = (char)((arg_int & 7) + '0');
               arg_int >>= 3;
             } while (arg_int > 0);
-            piece.assign (php_buf + cur_pos, 70 - cur_pos);
+            piece.assign(php_buf + cur_pos, 70 - cur_pos);
             break;
           }
           case 's': {
@@ -1164,13 +1172,13 @@ string f$sprintf (const array <var> &a) {
             }
             static_SB << 's';
 
-            int len = snprintf (php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_string.c_str());
+            int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_string.c_str());
             if (len >= PHP_BUF_LEN) {
               error_too_big = true;
               break;
             }
 
-            piece.assign (php_buf, len);
+            piece.assign(php_buf, len);
             break;
           }
           case 'x':
@@ -1183,32 +1191,32 @@ string f$sprintf (const array <var> &a) {
               php_buf[--cur_pos] = hex_digits[arg_int & 15];
               arg_int >>= 4;
             } while (arg_int > 0);
-            piece.assign (php_buf + cur_pos, 70 - cur_pos);
+            piece.assign(php_buf + cur_pos, 70 - cur_pos);
             break;
           }
           default:
-            php_warning ("Unsupported specifier %%%c in sprintf with pattern \"%s\"", pattern[i], pattern.c_str());
+            php_warning("Unsupported specifier %%%c in sprintf with pattern \"%s\"", pattern[i], pattern.c_str());
             return string();
         }
       }
 
-      result.append (f$str_pad (piece, width, string (1, filler), pad_right));
+      result.append(f$str_pad(piece, width, string(1, filler), pad_right));
     }
   }
 
   if (error_too_big) {
-    php_warning ("Too big result in function sprintf");
+    php_warning("Too big result in function sprintf");
     return string();
   }
 
   return result;
 }
 
-string f$stripslashes (const string &str) {
+string f$stripslashes(const string &str) {
   int len = str.size();
   int i;
 
-  string result (len, false);
+  string result(len, false);
   char *result_c_str = &result[0];
   for (i = 0; i + 1 < len; i++) {
     if (str[i] == '\\') {
@@ -1224,45 +1232,45 @@ string f$stripslashes (const string &str) {
   if (i + 1 == len && str[i] != '\\') {
     *result_c_str++ = str[i];
   }
-  result.shrink (result_c_str - result.c_str());
+  result.shrink(result_c_str - result.c_str());
   return result;
 }
 
-int f$strcasecmp (const string &lhs, const string &rhs) {
-  int n = min (lhs.size(), rhs.size()) + 1;
+int f$strcasecmp(const string &lhs, const string &rhs) {
+  int n = min(lhs.size(), rhs.size()) + 1;
   for (int i = 0; i < n; i++) {
-    if (tolower (lhs[i]) != tolower (rhs[i])) {
-      return tolower (lhs[i]) - tolower (rhs[i]);
+    if (tolower(lhs[i]) != tolower(rhs[i])) {
+      return tolower(lhs[i]) - tolower(rhs[i]);
     }
   }
   return 0;
 }
 
-int f$strcmp (const string &lhs, const string &rhs) {
-  return lhs.compare (rhs);
+int f$strcmp(const string &lhs, const string &rhs) {
+  return lhs.compare(rhs);
 }
 
-OrFalse <int> f$stripos (const string &haystack, const string &needle, int offset) {
+OrFalse<int> f$stripos(const string &haystack, const string &needle, int offset) {
   if (offset < 0) {
-    php_warning ("Wrong offset = %d in function stripos", offset);
+    php_warning("Wrong offset = %d in function stripos", offset);
     return false;
   }
   if (offset >= (int)haystack.size()) {
     return false;
   }
   if ((int)needle.size() == 0) {
-    php_warning ("Parameter needle is empty in function stripos");
+    php_warning("Parameter needle is empty in function stripos");
     return false;
   }
 
-  const char *s = strcasestr (haystack.c_str() + offset, needle.c_str());
+  const char *s = strcasestr(haystack.c_str() + offset, needle.c_str());
   if (s == NULL) {
     return false;
   }
   return (int)(s - haystack.c_str());
 }
 
-static bool php_tag_find (const string &tag, const string &allow) {
+static bool php_tag_find(const string &tag, const string &allow) {
   if (tag.size() <= 0 || allow.size() <= 0) {
     return false;
   }
@@ -1270,18 +1278,18 @@ static bool php_tag_find (const string &tag, const string &allow) {
   string norm;
   int state = 0, done = 0;
   for (int i = 0; tag[i] && !done; i++) {
-    char c = (char)tolower (tag[i]);
+    char c = (char)tolower(tag[i]);
     switch (c) {
       case '<':
-        norm.push_back (c);
+        norm.push_back(c);
         break;
       case '>':
         done = 1;
         break;
       default:
-        if (!isspace (c)) {
+        if (!isspace(c)) {
           if (c != '/' || state == 1) {
-            norm.push_back (c);
+            norm.push_back(c);
           }
           if (state == 0) {
             state = 1;
@@ -1294,15 +1302,15 @@ static bool php_tag_find (const string &tag, const string &allow) {
         break;
     }
   }
-  norm.push_back ('>');
-  return memmem (allow.c_str(), allow.size(), norm.c_str(), norm.size()) != NULL;
+  norm.push_back('>');
+  return memmem(allow.c_str(), allow.size(), norm.c_str(), norm.size()) != NULL;
 }
 
-string f$strip_tags (const string &str, const string &allow) {
+string f$strip_tags(const string &str, const string &allow) {
   int br = 0, depth = 0, in_q = 0;
   int state = 0;
 
-  const string allow_low = f$strtolower (allow);
+  const string allow_low = f$strtolower(allow);
 
   static_SB.clean();
   static_SB_spare.clean();
@@ -1315,7 +1323,7 @@ string f$strip_tags (const string &str, const string &allow) {
         break;
       case '<':
         if (!in_q) {
-          if (isspace (str[i + 1])) {
+          if (isspace(str[i + 1])) {
             if (state == 0) {
               static_SB << c;
             } else if (state == 1) {
@@ -1369,7 +1377,7 @@ string f$strip_tags (const string &str, const string &allow) {
             lc = '>';
             in_q = state = 0;
             static_SB_spare << '>';
-            if (php_tag_find (static_SB_spare.str(), allow_low)) {
+            if (php_tag_find(static_SB_spare.str(), allow_low)) {
               static_SB << static_SB_spare.c_str();
             }
             static_SB_spare.clean();
@@ -1455,12 +1463,12 @@ string f$strip_tags (const string &str, const string &allow) {
       case 'e':
         /* !DOCTYPE exception */
         if (state == 3 && i > 6
-                       && tolower (str[i - 1]) == 'p'
-                       && tolower (str[i - 2]) == 'y'
-                       && tolower (str[i - 3]) == 't'
-                       && tolower (str[i - 4]) == 'c'
-                       && tolower (str[i - 5]) == 'o'
-                       && tolower (str[i - 6]) == 'd') {
+            && tolower(str[i - 1]) == 'p'
+            && tolower(str[i - 2]) == 'y'
+            && tolower(str[i - 3]) == 't'
+            && tolower(str[i - 4]) == 'c'
+            && tolower(str[i - 5]) == 'o'
+            && tolower(str[i - 6]) == 'd') {
           state = 1;
           break;
         }
@@ -1471,7 +1479,7 @@ string f$strip_tags (const string &str, const string &allow) {
          * state == 2 (PHP). Switch back to HTML.
          */
 
-        if (state == 2 && i > 2 && tolower (str[i - 1]) == 'm' && tolower (str[i - 2]) == 'x') {
+        if (state == 2 && i > 2 && tolower(str[i - 1]) == 'm' && tolower(str[i - 2]) == 'x') {
           state = 1;
           break;
         }
@@ -1490,29 +1498,29 @@ string f$strip_tags (const string &str, const string &allow) {
   return static_SB.str();
 }
 
-OrFalse <string> f$stristr (const string &haystack, const string &needle, bool before_needle) {
+OrFalse<string> f$stristr(const string &haystack, const string &needle, bool before_needle) {
   if ((int)needle.size() == 0) {
-    php_warning ("Parameter needle is empty in function stristr");
+    php_warning("Parameter needle is empty in function stristr");
     return false;
   }
 
-  const char *s = strcasestr (haystack.c_str(), needle.c_str());
+  const char *s = strcasestr(haystack.c_str(), needle.c_str());
   if (s == NULL) {
     return false;
   }
 
   dl::size_type pos = (dl::size_type)(s - haystack.c_str());
   if (before_needle) {
-    return haystack.substr (0, pos);
+    return haystack.substr(0, pos);
   }
-  return haystack.substr (pos, haystack.size() - pos);
+  return haystack.substr(pos, haystack.size() - pos);
 }
 
-int f$strncmp (const string &lhs, const string &rhs, int len) {
+int f$strncmp(const string &lhs, const string &rhs, int len) {
   if (len < 0) {
     return 0;
   }
-  return memcmp (lhs.c_str(), rhs.c_str(), min ((int)min (lhs.size(), rhs.size()) + 1, len));
+  return memcmp(lhs.c_str(), rhs.c_str(), min((int)min(lhs.size(), rhs.size()) + 1, len));
 }
 
 /*
@@ -1546,20 +1554,22 @@ static int compare_right(char const **a, char const *aend, char const **b, char 
      value wins, but we can't know that it will until we've scanned
      both numbers to know that they have the same magnitude, so we
      remember it in BIAS. */
-  for(;; (*a)++, (*b)++) {
+  for (;; (*a)++, (*b)++) {
     if ((*a == aend || !isdigit((int)(unsigned char)**a)) &&
-        (*b == bend || !isdigit((int)(unsigned char)**b)))
+        (*b == bend || !isdigit((int)(unsigned char)**b))) {
       return bias;
-    else if (*a == aend || !isdigit((int)(unsigned char)**a))
+    } else if (*a == aend || !isdigit((int)(unsigned char)**a)) {
       return -1;
-    else if (*b == bend || !isdigit((int)(unsigned char)**b))
+    } else if (*b == bend || !isdigit((int)(unsigned char)**b)) {
       return +1;
-    else if (**a < **b) {
-      if (!bias)
+    } else if (**a < **b) {
+      if (!bias) {
         bias = -1;
+      }
     } else if (**a > **b) {
-      if (!bias)
+      if (!bias) {
         bias = +1;
+      }
     }
   }
 
@@ -1569,18 +1579,19 @@ static int compare_right(char const **a, char const *aend, char const **b, char 
 static int compare_left(char const **a, char const *aend, char const **b, char const *bend) {
   /* Compare two left-aligned numbers: the first to have a
      different value wins. */
-  for(;; (*a)++, (*b)++) {
+  for (;; (*a)++, (*b)++) {
     if ((*a == aend || !isdigit((int)(unsigned char)**a)) &&
-        (*b == bend || !isdigit((int)(unsigned char)**b)))
+        (*b == bend || !isdigit((int)(unsigned char)**b))) {
       return 0;
-    else if (*a == aend || !isdigit((int)(unsigned char)**a))
+    } else if (*a == aend || !isdigit((int)(unsigned char)**a)) {
       return -1;
-    else if (*b == bend || !isdigit((int)(unsigned char)**b))
+    } else if (*b == bend || !isdigit((int)(unsigned char)**b)) {
       return +1;
-    else if (**a < **b)
+    } else if (**a < **b) {
       return -1;
-    else if (**a > **b)
+    } else if (**a > **b) {
       return +1;
+    }
   }
 
   return 0;
@@ -1601,14 +1612,15 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
   ap = a;
   bp = b;
   while (1) {
-    ca = *ap; cb = *bp;
+    ca = *ap;
+    cb = *bp;
 
     /* skip over leading zeros */
-    while (leading && ca == '0' && (ap+1 < aend) && isdigit((int)(unsigned char)*(ap+1))) {
+    while (leading && ca == '0' && (ap + 1 < aend) && isdigit((int)(unsigned char)*(ap + 1))) {
       ca = *++ap;
     }
 
-    while (leading && cb == '0' && (bp+1 < bend) && isdigit((int)(unsigned char)*(bp+1))) {
+    while (leading && cb == '0' && (bp + 1 < bend) && isdigit((int)(unsigned char)*(bp + 1))) {
       cb = *++bp;
     }
 
@@ -1624,23 +1636,26 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
     }
 
     /* process run of digits */
-    if (isdigit((int)(unsigned char)ca)  &&  isdigit((int)(unsigned char)cb)) {
+    if (isdigit((int)(unsigned char)ca) && isdigit((int)(unsigned char)cb)) {
       fractional = (ca == '0' || cb == '0');
 
-      if (fractional)
+      if (fractional) {
         result = compare_left(&ap, aend, &bp, bend);
-      else
+      } else {
         result = compare_right(&ap, aend, &bp, bend);
+      }
 
-      if (result != 0)
+      if (result != 0) {
         return result;
+      }
 
-      if (ap == aend && bp == bend)
+      if (ap == aend && bp == bend) {
         /* End of the strings. Let caller sort them out. */
         return 0;
-      else {
+      } else {
         /* Keep on comparing from the current point. */
-        ca = *ap; cb = *bp;
+        ca = *ap;
+        cb = *bp;
       }
     }
 
@@ -1649,20 +1664,23 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
       cb = toupper((int)(unsigned char)cb);
     }
 
-    if (ca < cb)
+    if (ca < cb) {
       return -1;
-    else if (ca > cb)
+    } else if (ca > cb) {
       return +1;
+    }
 
-    ++ap; ++bp;
-    if (ap >= aend && bp >= bend)
+    ++ap;
+    ++bp;
+    if (ap >= aend && bp >= bend) {
       /* The strings compare the same.  Perhaps the caller
          will want to call strcmp to break the tie. */
       return 0;
-    else if (ap >= aend)
+    } else if (ap >= aend) {
       return -1;
-    else if (bp >= bend)
+    } else if (bp >= bend) {
       return 1;
+    }
   }
 }
 
@@ -1671,18 +1689,18 @@ int f$strnatcmp(const string &lhs, const string &rhs) {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
 
-OrFalse <string> f$strpbrk (const string &haystack, const string &char_list) {
-  const char *pos = strpbrk (haystack.c_str(), char_list.c_str());
+OrFalse<string> f$strpbrk(const string &haystack, const string &char_list) {
+  const char *pos = strpbrk(haystack.c_str(), char_list.c_str());
   if (pos == NULL) {
     return false;
   }
 
-  return string (pos, (dl::size_type)(haystack.size() - (pos - haystack.c_str())));
+  return string(pos, (dl::size_type)(haystack.size() - (pos - haystack.c_str())));
 }
 
-OrFalse <int> f$strpos (const string &haystack, const string &needle, int offset) {
+OrFalse<int> f$strpos(const string &haystack, const string &needle, int offset) {
   if (offset < 0) {
-    php_warning ("Wrong offset = %d in function strpos", offset);
+    php_warning("Wrong offset = %d in function strpos", offset);
     return false;
   }
   if (offset > (int)haystack.size()) {
@@ -1690,25 +1708,25 @@ OrFalse <int> f$strpos (const string &haystack, const string &needle, int offset
   }
   if ((int)needle.size() <= 1) {
     if ((int)needle.size() == 0) {
-      php_warning ("Parameter needle is empty in function strpos");
+      php_warning("Parameter needle is empty in function strpos");
       return false;
     }
 
-    const char *s = static_cast <const char *> (memchr (haystack.c_str() + offset, needle[0], haystack.size() - offset));
+    const char *s = static_cast <const char *> (memchr(haystack.c_str() + offset, needle[0], haystack.size() - offset));
     if (s == NULL) {
       return false;
     }
     return (int)(s - haystack.c_str());
   }
 
-  const char *s = static_cast <const char *> (memmem (haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
+  const char *s = static_cast <const char *> (memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
   if (s == NULL) {
     return false;
   }
   return (int)(s - haystack.c_str());
 }
 
-OrFalse <int> f$strrpos (const string &haystack, const string &needle, int offset) {
+OrFalse<int> f$strrpos(const string &haystack, const string &needle, int offset) {
   const char *end = haystack.c_str() + haystack.size();
   if (offset < 0) {
     offset += (int)haystack.size() + 1;
@@ -1723,21 +1741,21 @@ OrFalse <int> f$strrpos (const string &haystack, const string &needle, int offse
     return false;
   }
   if ((int)needle.size() == 0) {
-    php_warning ("Parameter needle is empty in function strrpos");
+    php_warning("Parameter needle is empty in function strrpos");
     return false;
   }
 
-  const char *s = static_cast <const char *> (memmem (haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size())), *t;
+  const char *s = static_cast <const char *> (memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size())), *t;
   if (s == NULL || s >= end) {
     return false;
   }
-  while ((t = static_cast <const char *> (memmem (s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != NULL && t < end) {
+  while ((t = static_cast <const char *> (memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != NULL && t < end) {
     s = t;
   }
   return (int)(s - haystack.c_str());
 }
 
-OrFalse <int> f$strripos (const string &haystack, const string &needle, int offset) {
+OrFalse<int> f$strripos(const string &haystack, const string &needle, int offset) {
   const char *end = haystack.c_str() + haystack.size();
   if (offset < 0) {
     offset += (int)haystack.size() + 1;
@@ -1752,24 +1770,24 @@ OrFalse <int> f$strripos (const string &haystack, const string &needle, int offs
     return false;
   }
   if ((int)needle.size() == 0) {
-    php_warning ("Parameter needle is empty in function strripos");
+    php_warning("Parameter needle is empty in function strripos");
     return false;
   }
 
-  const char *s = strcasestr (haystack.c_str() + offset, needle.c_str()), *t;
+  const char *s = strcasestr(haystack.c_str() + offset, needle.c_str()), *t;
   if (s == NULL || s >= end) {
     return false;
   }
-  while ((t = strcasestr (s + 1, needle.c_str())) != NULL && t < end) {
+  while ((t = strcasestr(s + 1, needle.c_str())) != NULL && t < end) {
     s = t;
   }
   return (int)(s - haystack.c_str());
 }
 
-string f$strrev (const string &str) {
+string f$strrev(const string &str) {
   int n = str.size();
 
-  string res (n, false);
+  string res(n, false);
   for (int i = 0; i < n; i++) {
     res[n - i - 1] = str[i];
   }
@@ -1777,51 +1795,51 @@ string f$strrev (const string &str) {
   return res;
 }
 
-OrFalse <string> f$strstr (const string &haystack, const string &needle, bool before_needle) {
+OrFalse<string> f$strstr(const string &haystack, const string &needle, bool before_needle) {
   if ((int)needle.size() == 0) {
-    php_warning ("Parameter needle is empty in function strstr");
+    php_warning("Parameter needle is empty in function strstr");
     return false;
   }
 
-  const char *s = static_cast <const char *> (memmem (haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
+  const char *s = static_cast <const char *> (memmem(haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
   if (s == NULL) {
     return false;
   }
 
   dl::size_type pos = (dl::size_type)(s - haystack.c_str());
   if (before_needle) {
-    return haystack.substr (0, pos);
+    return haystack.substr(0, pos);
   }
-  return haystack.substr (pos, haystack.size() - pos);
+  return haystack.substr(pos, haystack.size() - pos);
 }
 
-string f$strtolower (const string &str) {
+string f$strtolower(const string &str) {
   int n = str.size();
 
-  string res (n, false);
+  string res(n, false);
   for (int i = 0; i < n; i++) {
-    res[i] = (char)tolower (str[i]);
+    res[i] = (char)tolower(str[i]);
   }
 
   return res;
 }
 
-string f$strtoupper (const string &str) {
+string f$strtoupper(const string &str) {
   int n = str.size();
 
-  string res (n, false);
+  string res(n, false);
   for (int i = 0; i < n; i++) {
-    res[i] = (char)toupper (str[i]);
+    res[i] = (char)toupper(str[i]);
   }
 
   return res;
 }
 
-string f$strtr (const string &subject, const string &from, const string &to) {
+string f$strtr(const string &subject, const string &from, const string &to) {
   int n = subject.size();
-  string result (n, false);
+  string result(n, false);
   for (int i = 0; i < n; i++) {
-    const char *p = static_cast <const char *> (memchr (static_cast <const void *> (from.c_str()), (int)(unsigned char)subject[i], (size_t)from.size()));
+    const char *p = static_cast <const char *> (memchr(static_cast <const void *> (from.c_str()), (int)(unsigned char)subject[i], (size_t)from.size()));
     if (p == NULL || (dl::size_type)(p - from.c_str()) >= to.size()) {
       result[i] = subject[i];
     } else {
@@ -1831,7 +1849,7 @@ string f$strtr (const string &subject, const string &from, const string &to) {
   return result;
 }
 
-string f$str_pad (const string &input, int len, const string &pad_str, int pad_type) {
+string f$str_pad(const string &input, int len, const string &pad_str, int pad_type) {
   int old_len = input.size();
   if (len <= old_len) {
     return input;
@@ -1846,21 +1864,21 @@ string f$str_pad (const string &input, int len, const string &pad_str, int pad_t
     pad_left = (len - old_len) / 2;
     pad_right = (len - old_len + 1) / 2;
   } else {
-    php_warning ("Wrong parameter pad_type in function str_pad");
+    php_warning("Wrong parameter pad_type in function str_pad");
     return input;
   }
 
   int pad_len = pad_str.size();
   if (pad_len == 0) {
-    php_warning ("Wrong parameter pad_str (empty string) in function str_pad");
+    php_warning("Wrong parameter pad_str (empty string) in function str_pad");
     return input;
   }
 
-  string res (len, false);
+  string res(len, false);
   for (int i = 0; i < pad_left; i++) {
     res[i] = pad_str[i % pad_len];
   }
-  memcpy (&res[pad_left], input.c_str(), old_len);
+  memcpy(&res[pad_left], input.c_str(), old_len);
   for (int i = 0; i < pad_right; i++) {
     res[i + pad_left + old_len] = pad_str[i % pad_len];
   }
@@ -1868,7 +1886,7 @@ string f$str_pad (const string &input, int len, const string &pad_str, int pad_t
   return res;
 }
 
-string f$str_repeat (const string &s, int multiplier) {
+string f$str_repeat(const string &s, int multiplier) {
   int len = (int)s.size();
   if (multiplier <= 0 || len == 0) {
     return string();
@@ -1879,13 +1897,13 @@ string f$str_repeat (const string &s, int multiplier) {
   }
 
   if (len == 1) {
-    return string (multiplier, s[0]);
+    return string(multiplier, s[0]);
   }
 
-  string result (multiplier * len, false);
+  string result(multiplier * len, false);
   if (len >= 5) {
     while (multiplier--) {
-      memcpy (&result[multiplier * len], s.c_str(), len);
+      memcpy(&result[multiplier * len], s.c_str(), len);
     }
   } else {
     for (int i = 0; i < multiplier; i++) {
@@ -1897,7 +1915,7 @@ string f$str_repeat (const string &s, int multiplier) {
   return result;
 }
 
-static string str_replace_char (char c, const string &replace, const string &subject, int &replace_count) {
+static string str_replace_char(char c, const string &replace, const string &subject, int &replace_count) {
   int count = 0;
   const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
   string result;
@@ -1905,20 +1923,20 @@ static string str_replace_char (char c, const string &replace, const string &sub
     result.reserve_at_least(subject.size());
   }
   while (1) {
-    const char *pos = (const char *)memchr (piece, c, piece_end - piece);
+    const char *pos = (const char *)memchr(piece, c, piece_end - piece);
     if (pos == NULL) {
       if (count == 0) {
         return subject;
       }
       replace_count += count;
-      result.append (piece, (dl::size_type)(piece_end - piece));
+      result.append(piece, (dl::size_type)(piece_end - piece));
       return result;
     }
 
     ++count;
 
-    result.append (piece, (dl::size_type)(pos - piece));
-    result.append (replace);
+    result.append(piece, (dl::size_type)(pos - piece));
+    result.append(replace);
 
     piece = pos + 1;
   }
@@ -1926,9 +1944,9 @@ static string str_replace_char (char c, const string &replace, const string &sub
   return string();
 }
 
-void str_replace_inplace (const string &search, const string &replace, string &subject, int &replace_count) {
+void str_replace_inplace(const string &search, const string &replace, string &subject, int &replace_count) {
   if ((int)search.size() == 0) {
-    php_warning ("Parameter search is empty in function str_replace");
+    php_warning("Parameter search is empty in function str_replace");
     return;
   }
 
@@ -1939,18 +1957,18 @@ void str_replace_inplace (const string &search, const string &replace, string &s
   char *output = subject.buffer();
   bool length_no_change = search.size() == replace.size();
   while (1) {
-    const char *pos = static_cast <const char *> (memmem (piece, piece_end - piece, search.c_str(), search.size()));
+    const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
     if (pos == NULL) {
       if (count == 0) {
         return;
       }
       replace_count += count;
       if (!length_no_change) {
-        memmove (output, piece, piece_end - piece);
+        memmove(output, piece, piece_end - piece);
       }
       output += piece_end - piece;
       if (!length_no_change) {
-        subject.shrink (static_cast <string::size_type> (output - subject.c_str()));
+        subject.shrink(static_cast <string::size_type> (output - subject.c_str()));
       }
       return;
     }
@@ -1958,10 +1976,10 @@ void str_replace_inplace (const string &search, const string &replace, string &s
     ++count;
 
     if (!length_no_change) {
-      memmove (output, piece, pos - piece);
+      memmove(output, piece, pos - piece);
     }
     output += pos - piece;
-    memcpy (output, replace.c_str(), replace.size());
+    memcpy(output, replace.c_str(), replace.size());
     output += replace.size();
 
     piece = pos + search.size();
@@ -1969,9 +1987,9 @@ void str_replace_inplace (const string &search, const string &replace, string &s
   php_assert (0); // unreachable
 }
 
-string str_replace (const string &search, const string &replace, const string &subject, int &replace_count) {
+string str_replace(const string &search, const string &replace, const string &subject, int &replace_count) {
   if ((int)search.size() == 0) {
-    php_warning ("Parameter search is empty in function str_replace");
+    php_warning("Parameter search is empty in function str_replace");
     return subject;
   }
 
@@ -1979,20 +1997,20 @@ string str_replace (const string &search, const string &replace, const string &s
   const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
   string result;
   while (1) {
-    const char *pos = static_cast <const char *> (memmem (piece, piece_end - piece, search.c_str(), search.size()));
+    const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
     if (pos == NULL) {
       if (count == 0) {
         return subject;
       }
       replace_count += count;
-      result.append (piece, (dl::size_type)(piece_end - piece));
+      result.append(piece, (dl::size_type)(piece_end - piece));
       return result;
     }
 
     ++count;
 
-    result.append (piece, (dl::size_type)(pos - piece));
-    result.append (replace);
+    result.append(piece, (dl::size_type)(pos - piece));
+    result.append(replace);
 
     piece = pos + search.size();
   }
@@ -2000,79 +2018,79 @@ string str_replace (const string &search, const string &replace, const string &s
   return string();
 }
 
-string str_replace_string (const var &search, const var &replace, const string &subject, int &replace_count) {
+string str_replace_string(const var &search, const var &replace, const string &subject, int &replace_count) {
   if (search.is_array() && replace.is_array()) {
     return str_replace_string_array(search.as_array("", -1), replace.as_array("", -1), subject, replace_count);
   } else if (search.is_array()) {
     string result = subject;
     const string &replace_value = replace.to_string();
 
-    for (array <var>::const_iterator it = search.begin(); it != search.end(); ++it) {
-      const string &search_string = f$strval (it.get_value());
+    for (array<var>::const_iterator it = search.begin(); it != search.end(); ++it) {
+      const string &search_string = f$strval(it.get_value());
       if (search_string.size() >= replace_value.size()) {
-        str_replace_inplace (search_string, replace_value, result, replace_count);
+        str_replace_inplace(search_string, replace_value, result, replace_count);
       } else {
-        result = str_replace (search_string, replace_value, result, replace_count);
+        result = str_replace(search_string, replace_value, result, replace_count);
       }
     }
     return result;
   } else {
     if (replace.is_array()) {
-      php_warning ("Parameter mismatch, search is a string while replace is an array");
+      php_warning("Parameter mismatch, search is a string while replace is an array");
       //return false;
     }
 
-    return f$str_replace (f$strval (search), f$strval (replace), subject, replace_count);
+    return f$str_replace(f$strval(search), f$strval(replace), subject, replace_count);
   }
 }
 
-string f$str_replace (const string &search, const string &replace, const string &subject, int &replace_count) {
+string f$str_replace(const string &search, const string &replace, const string &subject, int &replace_count) {
   replace_count = 0;
   if ((int)search.size() == 1) {
-    return str_replace_char (search[0], replace, subject, replace_count);
+    return str_replace_char(search[0], replace, subject, replace_count);
   } else {
-    return str_replace (search, replace, subject, replace_count);
+    return str_replace(search, replace, subject, replace_count);
   }
 }
 
-string f$str_replace (const var &search, const var &replace, const string &subject, int &replace_count) {
-  return str_replace_string (search, replace, subject, replace_count);
+string f$str_replace(const var &search, const var &replace, const string &subject, int &replace_count) {
+  return str_replace_string(search, replace, subject, replace_count);
 }
 
-var f$str_replace (const var &search, const var &replace, const var &subject, int &replace_count) {
+var f$str_replace(const var &search, const var &replace, const var &subject, int &replace_count) {
   replace_count = 0;
   if (subject.is_array()) {
-    array <var> result;
-    for (array <var>::const_iterator it = subject.begin(); it != subject.end(); ++it) {
-      var cur_result = str_replace_string (search, replace, it.get_value().to_string(), replace_count);
+    array<var> result;
+    for (array<var>::const_iterator it = subject.begin(); it != subject.end(); ++it) {
+      var cur_result = str_replace_string(search, replace, it.get_value().to_string(), replace_count);
       if (!cur_result.is_null()) {
-        result.set_value (it.get_key(), cur_result);
+        result.set_value(it.get_key(), cur_result);
       }
     }
     return result;
   } else {
-    return str_replace_string (search, replace, subject.to_string(), replace_count);
+    return str_replace_string(search, replace, subject.to_string(), replace_count);
   }
 }
 
-array <string> f$str_split (const string &str, int split_length) {
+array<string> f$str_split(const string &str, int split_length) {
   if (split_length <= 0) {
-    php_warning ("Wrong parameter split_length = %d in function str_split", split_length);
-    return f$arrayval (str);
+    php_warning("Wrong parameter split_length = %d in function str_split", split_length);
+    return f$arrayval(str);
   }
 
-  array <string> result (array_size ((str.size() + split_length - 1) / split_length, 0, true));
+  array<string> result(array_size((str.size() + split_length - 1) / split_length, 0, true));
   int i;
   for (i = 0; i + split_length <= (int)str.size(); i += split_length) {
-    result.push_back (str.substr (i, split_length));
+    result.push_back(str.substr(i, split_length));
   }
   if (i < (int)str.size()) {
-    result.push_back (str.substr (i, str.size() - i));
+    result.push_back(str.substr(i, str.size() - i));
   }
   return result;
 }
 
-OrFalse<string> f$substr (const string &str, int start, int length) {
+OrFalse<string> f$substr(const string &str, int start, int length) {
   int str_len = str.size();
 
   if (length < 0 && -length > str_len) {
@@ -2111,10 +2129,10 @@ OrFalse<string> f$substr (const string &str, int start, int length) {
     length = str_len - start;
   }
 
-  return str.substr (start, length);
+  return str.substr(start, length);
 }
 
-int f$substr_count (const string &haystack, const string &needle, int offset, int length) {
+int f$substr_count(const string &haystack, const string &needle, int offset, int length) {
   if (offset < 0) {
     offset = (int)haystack.size() + offset;
     if (offset < 0) {
@@ -2131,11 +2149,11 @@ int f$substr_count (const string &haystack, const string &needle, int offset, in
   int ans = 0;
   const char *s = haystack.c_str() + offset, *end = haystack.c_str() + offset + length;
   if (needle.size() == 0) {
-    php_warning ("Needle is empty in function substr_count");
+    php_warning("Needle is empty in function substr_count");
     return (int)(end - s);
   }
   do {
-    s = static_cast <const char *> (memmem (static_cast <const void *> (s), (size_t)(end - s), static_cast <const void *> (needle.c_str()), (size_t)needle.size()));
+    s = static_cast <const char *> (memmem(static_cast <const void *> (s), (size_t)(end - s), static_cast <const void *> (needle.c_str()), (size_t)needle.size()));
     if (s == NULL) {
       return ans;
     }
@@ -2144,7 +2162,7 @@ int f$substr_count (const string &haystack, const string &needle, int offset, in
   } while (true);
 }
 
-OrFalse<string> f$substr_replace (const string &str, const string &replacement, int start, int length) {
+OrFalse<string> f$substr_replace(const string &str, const string &replacement, int start, int length) {
   int str_len = str.size();
 
   if (length < 0 && -length > str_len) {
@@ -2183,10 +2201,10 @@ OrFalse<string> f$substr_replace (const string &str, const string &replacement, 
     length = str_len - start;
   }
 
-  return str.substr (0, start).append (replacement).append (str.substr (start + length, str.size() - (start + length)));
+  return str.substr(0, start).append(replacement).append(str.substr(start + length, str.size() - (start + length)));
 }
 
-OrFalse<int> f$substr_compare (const string &main_str, const string &str, int offset, int length /* = INT_MAX */, bool case_insensitivity /* = false */) {
+OrFalse<int> f$substr_compare(const string &main_str, const string &str, int offset, int length /* = INT_MAX */, bool case_insensitivity /* = false */) {
   int str_len = main_str.size();
 
   if (length < 0) {
@@ -2214,8 +2232,8 @@ OrFalse<int> f$substr_compare (const string &main_str, const string &str, int of
   }
 }
 
-string f$trim (const string &s, const string &what) {
-  const char *mask = get_mask (what);
+string f$trim(const string &s, const string &what) {
+  const char *mask = get_mask(what);
 
   int len = (int)s.size();
   if (len == 0 || (!mask[(unsigned char)s[len - 1]] && !mask[(unsigned char)s[0]])) {
@@ -2234,27 +2252,27 @@ string f$trim (const string &s, const string &what) {
   while (mask[(unsigned char)s[l]]) {
     l++;
   }
-  return string (s.c_str() + l, len - l);
+  return string(s.c_str() + l, len - l);
 }
 
-string f$ucfirst (const string &str) {
+string f$ucfirst(const string &str) {
   int n = str.size();
   if (n == 0) {
     return str;
   }
 
-  string res (n, false);
-  res[0] = (char)toupper (str[0]);
-  memcpy (&res[1], &str[1], n - 1);
+  string res(n, false);
+  res[0] = (char)toupper(str[0]);
+  memcpy(&res[1], &str[1], n - 1);
 
   return res;
 }
 
-string f$ucwords (const string &str) {
+string f$ucwords(const string &str) {
   int n = str.size();
 
   bool in_word = false;
-  string res (n, false);
+  string res(n, false);
   for (int i = 0; i < n; i++) {
     int cur = str[i] & 0xdf;
     if ('A' <= cur && cur <= 'Z') {
@@ -2273,11 +2291,11 @@ string f$ucwords (const string &str) {
   return res;
 }
 
-array <var> f$unpack (const string &pattern, const string &data) {
-  array <var> result;
+array<var> f$unpack(const string &pattern, const string &data) {
+  array<var> result;
 
   int data_len = data.size(), data_pos = 0;
-  for (int i = 0; i < (int)pattern.size(); ) {
+  for (int i = 0; i < (int)pattern.size();) {
     char format = pattern[i++];
     int cnt = -1;
     if ('0' <= pattern[i] && pattern[i] <= '9') {
@@ -2287,7 +2305,7 @@ array <var> f$unpack (const string &pattern, const string &data) {
       } while ('0' <= pattern[i] && pattern[i] <= '9');
 
       if (cnt <= 0) {
-        php_warning ("Wrong count specifier in pattern \"%s\"", pattern.c_str());
+        php_warning("Wrong count specifier in pattern \"%s\"", pattern.c_str());
         return result;
       }
     } else if (pattern[i] == '*') {
@@ -2296,21 +2314,21 @@ array <var> f$unpack (const string &pattern, const string &data) {
     }
     if (data_pos >= data_len) {
       if (format == 'A' || format == 'a' || format == 'H' || format == 'h' || cnt != 0) {
-        php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+        php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
         return result;
       }
       return result;
     }
 
-    const char *key_end = strchrnul (&pattern[i], '/');
-    string key_prefix (pattern.c_str() + i, (dl::size_type)(key_end - pattern.c_str() - i));
+    const char *key_end = strchrnul(&pattern[i], '/');
+    string key_prefix(pattern.c_str() + i, (dl::size_type)(key_end - pattern.c_str() - i));
     i = (int)(key_end - pattern.c_str());
     if (i < (int)pattern.size()) {
       i++;
     }
 
     if (cnt == 0 && i != (int)pattern.size()) {
-      php_warning ("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
+      php_warning("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
       return result;
     }
 
@@ -2327,7 +2345,7 @@ array <var> f$unpack (const string &pattern, const string &data) {
         }
         int read_len = cnt;
         if (read_len + data_pos > data_len) {
-          php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+          php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
           return result;
         }
         while (cnt > 0 && data[data_pos + cnt - 1] == filler) {
@@ -2338,7 +2356,7 @@ array <var> f$unpack (const string &pattern, const string &data) {
           key_prefix = ONE;
         }
 
-        result.set_value (key_prefix, string (data.c_str() + data_pos, cnt));
+        result.set_value(key_prefix, string(data.c_str() + data_pos, cnt));
 
         data_pos += read_len;
         break;
@@ -2353,17 +2371,17 @@ array <var> f$unpack (const string &pattern, const string &data) {
 
         int read_len = (cnt + 1) / 2;
         if (read_len + data_pos > data_len) {
-          php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+          php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
           return result;
         }
 
-        string value (cnt, false);
+        string value(cnt, false);
         for (int j = data_pos; cnt > 0; j++, cnt -= 2) {
           unsigned char ch = data[j];
           char num_high = lhex_digits[ch >> 4];
           char num_low = lhex_digits[ch & 15];
           if (format == 'h') {
-            swap (num_high, num_low);
+            swap(num_high, num_low);
           }
 
           value[(j - data_pos) * 2] = num_high;
@@ -2377,7 +2395,7 @@ array <var> f$unpack (const string &pattern, const string &data) {
           key_prefix = ONE;
         }
 
-        result.set_value (key_prefix, value);
+        result.set_value(key_prefix, value);
 
         data_pos += read_len;
         break;
@@ -2392,7 +2410,7 @@ array <var> f$unpack (const string &pattern, const string &data) {
           var value;
           int value_int;
           if (data_pos >= data_len) {
-            php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+            php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
             return result;
           }
 
@@ -2459,43 +2477,43 @@ array <var> f$unpack (const string &pattern, const string &data) {
               value = value_int;
               break;
             case 'f': {
-              if (data_pos + (int)sizeof (float) > data_len) {
-                php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+              if (data_pos + (int)sizeof(float) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
                 return result;
               }
               value = (double)*(float *)(data.c_str() + data_pos);
-              data_pos += (int)sizeof (float);
+              data_pos += (int)sizeof(float);
               break;
             }
             case 'd': {
-              if (data_pos + (int)sizeof (double) > data_len) {
-                php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+              if (data_pos + (int)sizeof(double) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
                 return result;
               }
               value = *(double *)(data.c_str() + data_pos);
-              data_pos += (int)sizeof (double);
+              data_pos += (int)sizeof(double);
               break;
             }
             case 'q': {
-              if (data_pos + (int)sizeof (long long) > data_len) {
-                php_warning ("Not enough data to unpack with format \"%s\"", pattern.c_str());
+              if (data_pos + (int)sizeof(long long) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
                 return result;
               }
-              value = f$strval (Long (*(long long *)(data.c_str() + data_pos)));
-              data_pos += (int)sizeof (long long);
+              value = f$strval(Long(*(long long *)(data.c_str() + data_pos)));
+              data_pos += (int)sizeof(long long);
               break;
             }
             default:
-              php_warning ("Format code \"%c\" not supported", format);
+              php_warning("Format code \"%c\" not supported", format);
               return result;
           }
 
           string key = key_prefix;
           if (cnt != -1) {
-            key.append (string (counter++));
+            key.append(string(counter++));
           }
 
-          result.set_value (key, value);
+          result.set_value(key, value);
 
           if (cnt == 0) {
             if (data_pos >= data_len) {
@@ -2509,19 +2527,19 @@ array <var> f$unpack (const string &pattern, const string &data) {
   return result;
 }
 
-int f$vprintf (const string &format, array <var> args) {
-  args.unshift (format);
-  return f$printf (args);
+int f$vprintf(const string &format, array<var> args) {
+  args.unshift(format);
+  return f$printf(args);
 }
 
-string f$vsprintf (const string &format, array <var> args) {
-  args.unshift (format);
-  return f$sprintf (args);
+string f$vsprintf(const string &format, array<var> args) {
+  args.unshift(format);
+  return f$sprintf(args);
 }
 
-string f$wordwrap (const string &str, int width, string brk, bool cut) {
+string f$wordwrap(const string &str, int width, string brk, bool cut) {
   if (width <= 0) {
-    php_warning ("Wrong parameter width = %d in function wordwrap", width);
+    php_warning("Wrong parameter width = %d in function wordwrap", width);
     return str;
   }
 
@@ -2533,20 +2551,20 @@ string f$wordwrap (const string &str, int width, string brk, bool cut) {
     }
     if (i >= first + width && (cut || last_space > first)) {
       if (last_space <= first) {
-        result.append (str, first, i - first);
+        result.append(str, first, i - first);
         first = i;
       } else {
-        result.append (str, first, last_space - first);
+        result.append(str, first, last_space - first);
         first = last_space + 1;
       }
-      result.append (brk);
+      result.append(brk);
     }
   }
-  result.append (str, first, str.size() - first);
+  result.append(str, first, str.size() - first);
   return result;
 }
 
-string f$xor_strings (const string &s, const string &t) {
+string f$xor_strings(const string &s, const string &t) {
   string::size_type length = min(s.size(), t.size());
   string result(length, ' ');
   const char *s_str = s.c_str();

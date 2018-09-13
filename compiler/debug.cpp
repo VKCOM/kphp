@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-static std::map <TokenType, std::string> TOKEN_TYPE_NAMES;
-static std::map <Operation, std::string> OPERATION_NAMES;
+static std::map<TokenType, std::string> TOKEN_TYPE_NAMES;
+static std::map<Operation, std::string> OPERATION_NAMES;
 
-void fillTokenTypeNames () {
+void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_empty] = "tok_empty";
   TOKEN_TYPE_NAMES[tok_int_const] = "tok_int_const";
   TOKEN_TYPE_NAMES[tok_float_const] = "tok_float_const";
@@ -176,14 +176,14 @@ void fillTokenTypeNames () {
   TOKEN_TYPE_NAMES[tok_end] = "tok_end";
 }
 
-void fillOperationNames () {
+void fillOperationNames() {
 #define FOREACH_OP(x) OPERATION_NAMES[x] = #x;
 
 #include "foreach_op.h"
 }
 
 
-std::string debugTokenName (TokenType t) {
+std::string debugTokenName(TokenType t) {
   if (TOKEN_TYPE_NAMES.empty()) {
     fillTokenTypeNames();
   }
@@ -191,7 +191,7 @@ std::string debugTokenName (TokenType t) {
   return TOKEN_TYPE_NAMES[t];
 }
 
-std::string debugOperationName (Operation o) {
+std::string debugOperationName(Operation o) {
   if (OPERATION_NAMES.empty()) {
     fillOperationNames();
   }
@@ -200,7 +200,7 @@ std::string debugOperationName (Operation o) {
 }
 
 
-std::string debugVertexMore (VertexPtr v) {
+std::string debugVertexMore(VertexPtr v) {
   switch (v->type()) {
     case op_constructor_call:
       return "new " + v->get_string();
@@ -216,14 +216,14 @@ std::string debugVertexMore (VertexPtr v) {
     case op_int_const:
       return v->get_string();
     case op_class_type_rule:
-      return v.as <op_class_type_rule>()->class_ptr.is_null()
-             ? "class_ptr = null" : v.as <op_class_type_rule>()->class_ptr->name;
+      return v.as<op_class_type_rule>()->class_ptr.is_null()
+             ? "class_ptr = null" : v.as<op_class_type_rule>()->class_ptr->name;
     default:
       return "";
   }
 }
 
-void debugPrintVertexTree (VertexPtr root, int level) {
+void debugPrintVertexTree(VertexPtr root, int level) {
   for (int i = 0; i < level; ++i) {
     printf("  ");
   }
@@ -234,7 +234,7 @@ void debugPrintVertexTree (VertexPtr root, int level) {
   }
 }
 
-void debugPrintFunction (FunctionPtr function) {
+void debugPrintFunction(FunctionPtr function) {
   printf("--- %s\n", function->name.c_str());
   debugPrintVertexTree(function->root, 0);
 }
@@ -249,7 +249,7 @@ struct GdbVertex {
   GdbVertex *ith2;
 };
 
-GdbVertex *debugVertexToGdb (VertexPtr impl) {
+GdbVertex *debugVertexToGdb(VertexPtr impl) {
   GdbVertex *g = new GdbVertex;
   int size = impl.is_null() ? 0 : impl->size();
 

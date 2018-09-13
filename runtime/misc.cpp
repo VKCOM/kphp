@@ -16,15 +16,15 @@
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 
-string f$uniqid (const string &prefix, bool more_entropy) {
+string f$uniqid(const string &prefix, bool more_entropy) {
   if (!more_entropy) {
-    f$usleep (1);
+    f$usleep(1);
   }
 
   dl::enter_critical_section();//OK
 
   struct timeval tv;
-  gettimeofday (&tv, NULL);
+  gettimeofday(&tv, NULL);
   int sec = (int)tv.tv_sec;
   int usec = (int)(tv.tv_usec & 0xFFFFF);
 
@@ -32,11 +32,11 @@ string f$uniqid (const string &prefix, bool more_entropy) {
   static_SB.clean() << prefix;
 
   if (more_entropy) {
-    sprintf (buf, "%08x%05x%.8f", sec, usec, f$lcg_value() * 10);
-    static_SB.append (buf, 23);
+    sprintf(buf, "%08x%05x%.8f", sec, usec, f$lcg_value() * 10);
+    static_SB.append(buf, 23);
   } else {
-    sprintf (buf, "%08x%05x", sec, usec);
-    static_SB.append (buf, 13);
+    sprintf(buf, "%08x%05x", sec, usec);
+    static_SB.append(buf, 13);
   }
 
   dl::leave_critical_section();
@@ -44,25 +44,25 @@ string f$uniqid (const string &prefix, bool more_entropy) {
 }
 
 
-OrFalse <string> f$iconv (const string &input_encoding, const string &output_encoding, const string &input_str) {
+OrFalse<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) {
   iconv_t cd;
-  if ((cd = iconv_open (output_encoding.c_str(), input_encoding.c_str())) == (iconv_t)-1) {
-    php_warning ("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());
+  if ((cd = iconv_open(output_encoding.c_str(), input_encoding.c_str())) == (iconv_t)-1) {
+    php_warning("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());
     return false;
   }
 
   for (int mul = 4; mul <= 16; mul *= 4) {
-    string output_str (mul * input_str.size(), false);
+    string output_str(mul * input_str.size(), false);
 
     size_t input_len = input_str.size();
     size_t output_len = output_str.size();
     char *input_buf = const_cast <char *> (input_str.c_str());
     char *output_buf = output_str.buffer();
 
-    size_t res = iconv (cd, &input_buf, &input_len, &output_buf, &output_len);
+    size_t res = iconv(cd, &input_buf, &input_len, &output_buf, &output_len);
     if (res != (size_t)-1 || errno != E2BIG) {
-      output_str.shrink ((dl::size_type)(output_buf - output_str.c_str()));
-      iconv_close (cd);
+      output_str.shrink((dl::size_type)(output_buf - output_str.c_str()));
+      iconv_close(cd);
       return output_str;
     }
 /*
@@ -71,41 +71,41 @@ OrFalse <string> f$iconv (const string &input_encoding, const string &output_enc
       break;
     }
 */
-    iconv (cd, NULL, NULL, NULL, NULL);
+    iconv(cd, NULL, NULL, NULL, NULL);
   }
 
-  iconv_close (cd);
+  iconv_close(cd);
   return false;
 }
 
 
-void f$sleep (const int &seconds) {
+void f$sleep(const int &seconds) {
   if (seconds <= 0 || seconds > 1800) {
-    php_warning ("Wrong parameter seconds (%d) specified in function sleep, must be in seconds", seconds);
+    php_warning("Wrong parameter seconds (%d) specified in function sleep, must be in seconds", seconds);
     return;
   }
 
-  f$usleep (seconds * 1000000);
+  f$usleep(seconds * 1000000);
 }
 
-void f$usleep (const int &micro_seconds) {
+void f$usleep(const int &micro_seconds) {
   int sleep_time = micro_seconds;
   if (sleep_time <= 0) {
-    php_warning ("Wrong parameter micro_seconds (%d) specified in function usleep", sleep_time);
+    php_warning("Wrong parameter micro_seconds (%d) specified in function usleep", sleep_time);
     return;
   }
 
   struct itimerval timer, old_timer;
-  memset (&timer, 0, sizeof (timer));
+  memset(&timer, 0, sizeof(timer));
   dl::enter_critical_section();//OK
-  setitimer (ITIMER_REAL, &timer, &old_timer);
+  setitimer(ITIMER_REAL, &timer, &old_timer);
   dl::leave_critical_section();
   long long time_left = old_timer.it_value.tv_sec * 1000000ll + old_timer.it_value.tv_usec;
 
 //  fprintf (stderr, "time_left = %lld, sleep_time = %d\n", time_left, sleep_time);
   if (time_left == 0) {
     dl::enter_critical_section();//OK
-    usleep (sleep_time);
+    usleep(sleep_time);
     dl::leave_critical_section();
     return;
   }
@@ -114,7 +114,7 @@ void f$usleep (const int &micro_seconds) {
     double start_time = microtime_monotonic();
 
     dl::enter_critical_section();//OK
-    usleep (sleep_time);
+    usleep(sleep_time);
     dl::leave_critical_section();
 
     time_left -= (long long)((microtime_monotonic() - start_time) * 1000000);
@@ -131,7 +131,7 @@ void f$usleep (const int &micro_seconds) {
   timer.it_value.tv_sec = time_left / 1000000;
   timer.it_value.tv_usec = time_left % 1000000;
   dl::enter_critical_section();//OK
-  setitimer (ITIMER_REAL, &timer, NULL);
+  setitimer(ITIMER_REAL, &timer, NULL);
   dl::leave_critical_section();
 }
 
@@ -157,43 +157,43 @@ static const char *mime_type_string[11] = {
 };
 
 
-static const int M_SOF0  = 0xC0;
-static const int M_SOF1  = 0xC1;
-static const int M_SOF2  = 0xC2;
-static const int M_SOF3  = 0xC3;
-static const int M_SOF5  = 0xC5;
-static const int M_SOF6  = 0xC6;
-static const int M_SOF7  = 0xC7;
-static const int M_SOF9  = 0xC9;
+static const int M_SOF0 = 0xC0;
+static const int M_SOF1 = 0xC1;
+static const int M_SOF2 = 0xC2;
+static const int M_SOF3 = 0xC3;
+static const int M_SOF5 = 0xC5;
+static const int M_SOF6 = 0xC6;
+static const int M_SOF7 = 0xC7;
+static const int M_SOF9 = 0xC9;
 static const int M_SOF10 = 0xCA;
 static const int M_SOF11 = 0xCB;
 static const int M_SOF13 = 0xCD;
 static const int M_SOF14 = 0xCE;
 static const int M_SOF15 = 0xCF;
-static const int M_EOI   = 0xD9;
-static const int M_SOS   = 0xDA;
-static const int M_COM   = 0xFE;
+static const int M_EOI = 0xD9;
+static const int M_SOS = 0xDA;
+static const int M_COM = 0xFE;
 
 static const int M_PSEUDO = 0xFFD8;
 
-var f$getimagesize (const string &name) {
+var f$getimagesize(const string &name) {
   dl::enter_critical_section();//OK
   struct stat stat_buf;
-  int read_fd = open (name.c_str(), O_RDONLY);
+  int read_fd = open(name.c_str(), O_RDONLY);
   if (read_fd < 0) {
     dl::leave_critical_section();
     return false;
   }
-  if (fstat (read_fd, &stat_buf) < 0) {
-    close (read_fd);
+  if (fstat(read_fd, &stat_buf) < 0) {
+    close(read_fd);
     dl::leave_critical_section();
     return false;
   }
 
   if (!S_ISREG (stat_buf.st_mode)) {
-    close (read_fd);
+    close(read_fd);
     dl::leave_critical_section();
-    php_warning ("Regular file expected as first argument in function getimagesize, \"%s\" is given", name.c_str());
+    php_warning("Regular file expected as first argument in function getimagesize, \"%s\" is given", name.c_str());
     return false;
   }
 
@@ -204,8 +204,8 @@ var f$getimagesize (const string &name) {
     read_size = size;
   }
 
-  if (read_size < 12 || read_safe (read_fd, buf, read_size) < (ssize_t)read_size) {
-    close (read_fd);
+  if (read_size < 12 || read_safe(read_fd, buf, read_size) < (ssize_t)read_size) {
+    close(read_fd);
     dl::leave_critical_section();
     return false;
   }
@@ -213,33 +213,33 @@ var f$getimagesize (const string &name) {
   int width = 0, height = 0, bits = 0, channels = 0, type = IMAGETYPE_UNKNOWN;
   switch (buf[0]) {
     case 'G': //gif
-      if (!strncmp ((const char *)buf, php_sig_gif, sizeof (php_sig_gif))) {
-        type     = IMAGETYPE_GIF;
-        width    = buf[6] | (buf[7] << 8);
-        height   = buf[8] | (buf[9] << 8);
-        bits     = buf[10] & 0x80 ? (buf[10] & 0x07) + 1 : 0;
+      if (!strncmp((const char *)buf, php_sig_gif, sizeof(php_sig_gif))) {
+        type = IMAGETYPE_GIF;
+        width = buf[6] | (buf[7] << 8);
+        height = buf[8] | (buf[9] << 8);
+        bits = buf[10] & 0x80 ? (buf[10] & 0x07) + 1 : 0;
         channels = 3;
       } else {
-        close (read_fd);
+        close(read_fd);
         dl::leave_critical_section();
         return false;
       }
       break;
     case 0xff: //jpg or jpc
-      if (!strncmp ((const char *)buf, php_sig_jpg, sizeof (php_sig_jpg))) {
+      if (!strncmp((const char *)buf, php_sig_jpg, sizeof(php_sig_jpg))) {
         type = IMAGETYPE_JPEG;
 
-        unsigned char *image = (unsigned char *)dl::allocate ((dl::size_type)size);
+        unsigned char *image = (unsigned char *)dl::allocate((dl::size_type)size);
         if (image == NULL) {
-          php_warning ("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
-          close (read_fd);
+          php_warning("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
+          close(read_fd);
           dl::leave_critical_section();
           return false;
         }
-        memcpy (image, buf, read_size);
-        if (read_safe (read_fd, image + read_size, size - read_size) < (ssize_t)(size - read_size)) {
-          dl::deallocate (image, (dl::size_type)size);
-          close (read_fd);
+        memcpy(image, buf, read_size);
+        if (read_safe(read_fd, image + read_size, size - read_size) < (ssize_t)(size - read_size)) {
+          dl::deallocate(image, (dl::size_type)size);
+          close(read_fd);
           dl::leave_critical_section();
           return false;
         }
@@ -288,14 +288,14 @@ var f$getimagesize (const string &name) {
             case M_SOF14:
             case M_SOF15:
               if (cur_pos + 8 > size) {
-                dl::deallocate (image, (dl::size_type)size);
-                close (read_fd);
+                dl::deallocate(image, (dl::size_type)size);
+                close(read_fd);
                 dl::leave_critical_section();
                 return false;
               }
-              bits     = image[cur_pos + 2];
-              height   = (image[cur_pos + 3] << 8) + image[cur_pos + 4];
-              width    = (image[cur_pos + 5] << 8) + image[cur_pos + 6];
+              bits = image[cur_pos + 2];
+              height = (image[cur_pos + 3] << 8) + image[cur_pos + 4];
+              width = (image[cur_pos + 5] << 8) + image[cur_pos + 6];
               channels = image[cur_pos + 7];
               cur_pos += 8;
 
@@ -307,8 +307,8 @@ var f$getimagesize (const string &name) {
               size_t length = (image[cur_pos] << 8) + image[cur_pos + 1];
 
               if (length < 2 || cur_pos + length > size) {
-                dl::deallocate (image, (dl::size_type)size);
-                close (read_fd);
+                dl::deallocate(image, (dl::size_type)size);
+                close(read_fd);
                 dl::leave_critical_section();
                 return false;
               }
@@ -317,16 +317,16 @@ var f$getimagesize (const string &name) {
             }
           }
         }
-        dl::deallocate (image, (dl::size_type)size);
-      } else if (!strncmp ((const char *)buf, php_sig_jpc, sizeof (php_sig_jpc)) && (int)read_size >= 42) {
+        dl::deallocate(image, (dl::size_type)size);
+      } else if (!strncmp((const char *)buf, php_sig_jpc, sizeof(php_sig_jpc)) && (int)read_size >= 42) {
         type = IMAGETYPE_JPEG;
 
-        width    = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
-        height   = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15];
+        width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
+        height = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15];
         channels = (buf[40] << 8) + buf[41];
 
         if (channels < 0 || channels > 256 || (int)read_size < 42 + 3 * channels || width <= 0 || height <= 0) {
-          close (read_fd);
+          close(read_fd);
           dl::leave_critical_section();
           return false;
         }
@@ -340,13 +340,13 @@ var f$getimagesize (const string &name) {
         }
         bits++;
       } else {
-        close (read_fd);
+        close(read_fd);
         dl::leave_critical_section();
         return false;
       }
       break;
     case 0x00: //jp2
-      if (read_size >= 54 && !strncmp ((const char *)buf, php_sig_jp2, sizeof (php_sig_jp2))) {
+      if (read_size >= 54 && !strncmp((const char *)buf, php_sig_jp2, sizeof(php_sig_jp2))) {
         type = IMAGETYPE_JP2;
 
         bool found = false;
@@ -362,8 +362,8 @@ var f$getimagesize (const string &name) {
           if (s[4] == 'j' && s[5] == 'p' && s[6] == '2' && s[7] == 'c') {
             s += 8;
 
-            width    = (s[8] << 24) + (s[9] << 16) + (s[10] << 8) + s[11];
-            height   = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
+            width = (s[8] << 24) + (s[9] << 16) + (s[10] << 8) + s[11];
+            height = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
             channels = (s[40] << 8) + s[41];
 
             if (channels < 0 || channels > 256 || (int)read_size < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
@@ -396,7 +396,7 @@ var f$getimagesize (const string &name) {
             read_size = size - file_pos;
           }
 
-          if (read_size < 50 || pread (read_fd, buf, read_size, (off_t)file_pos) < (ssize_t)read_size) {
+          if (read_size < 50 || pread(read_fd, buf, read_size, (off_t)file_pos) < (ssize_t)read_size) {
             break;
           }
 
@@ -404,76 +404,76 @@ var f$getimagesize (const string &name) {
         }
 
         if (!found) {
-          close (read_fd);
+          close(read_fd);
           dl::leave_critical_section();
           return false;
         }
       } else {
-        close (read_fd);
+        close(read_fd);
         dl::leave_critical_section();
         return false;
       }
       break;
     case 0x89: //png
-      if (read_size >= 25 && !strncmp ((const char *)buf, php_sig_png, sizeof (php_sig_png))) {
-        type   = IMAGETYPE_PNG;
-        width  = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
+      if (read_size >= 25 && !strncmp((const char *)buf, php_sig_png, sizeof(php_sig_png))) {
+        type = IMAGETYPE_PNG;
+        width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
         height = (buf[20] << 24) + (buf[21] << 16) + (buf[22] << 8) + buf[23];
-        bits   = buf[24];
+        bits = buf[24];
       } else {
-        close (read_fd);
+        close(read_fd);
         dl::leave_critical_section();
         return false;
       }
       break;
     default:
-      close (read_fd);
+      close(read_fd);
       dl::leave_critical_section();
       return false;
   }
-  close (read_fd);
+  close(read_fd);
   dl::leave_critical_section();
 
-  array <var> result (array_size (4, 3, false));
-  result.push_back (width);
-  result.push_back (height);
-  result.push_back (type);
-  int len = sprintf ((char *)buf, "width=\"%d\" height=\"%d\"", width, height);
-  result.push_back (string ((const char *)buf, len));
+  array<var> result(array_size(4, 3, false));
+  result.push_back(width);
+  result.push_back(height);
+  result.push_back(type);
+  int len = sprintf((char *)buf, "width=\"%d\" height=\"%d\"", width, height);
+  result.push_back(string((const char *)buf, len));
   if (bits != 0) {
-    result.set_value (string ("bits", 4), bits);
+    result.set_value(string("bits", 4), bits);
   }
   if (channels != 0) {
-    result.set_value (string ("channels", 8), channels);
+    result.set_value(string("channels", 8), channels);
   }
-  result.set_value (string ("mime", 4), string (mime_type_string[type], (dl::size_type)strlen (mime_type_string[type])));
+  result.set_value(string("mime", 4), string(mime_type_string[type], (dl::size_type)strlen(mime_type_string[type])));
 
   return result;
 }
 
 
-int f$posix_getpid (void) {
+int f$posix_getpid(void) {
   dl::enter_critical_section();//OK
   int result = (int)getpid();
   dl::leave_critical_section();
   return result;
 }
 
-int f$posix_getuid (void) {
+int f$posix_getuid(void) {
   dl::enter_critical_section();//OK
   int result = (int)getuid();
   dl::leave_critical_section();
   return result;
 }
 
-OrFalse <array <var> > f$posix_getpwuid (int uid) {
+OrFalse<array<var>> f$posix_getpwuid(int uid) {
   dl::enter_critical_section();//OK
   passwd *pwd = getpwuid(uid);
   dl::leave_critical_section();
   if (!pwd) {
     return false;
   }
-  array <var> result(array_size (0, 7, false));
+  array<var> result(array_size(0, 7, false));
   result.set_value(string("name", 4), string(pwd->pw_name, (dl::size_type)strlen(pwd->pw_name)));
   result.set_value(string("passwd", 6), string(pwd->pw_passwd, (dl::size_type)strlen(pwd->pw_passwd)));
   result.set_value(string("uid", 3), (int)pwd->pw_uid);
@@ -488,87 +488,87 @@ OrFalse <array <var> > f$posix_getpwuid (int uid) {
 #define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
 #define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
 
-static inline void do_serialize (bool b) {
-  static_SB.reserve (4);
-  static_SB.append_char ('b');
-  static_SB.append_char (':');
-  static_SB.append_char (b + '0');
-  static_SB.append_char (';');
+static inline void do_serialize(bool b) {
+  static_SB.reserve(4);
+  static_SB.append_char('b');
+  static_SB.append_char(':');
+  static_SB.append_char(b + '0');
+  static_SB.append_char(';');
 }
 
-static inline void do_serialize (int i) {
-  static_SB.reserve (15);
-  static_SB.append_char ('i');
-  static_SB.append_char (':');
+static inline void do_serialize(int i) {
+  static_SB.reserve(15);
+  static_SB.append_char('i');
+  static_SB.append_char(':');
   static_SB << i;
-  static_SB.append_char (';');
+  static_SB.append_char(';');
 }
 
-static inline void do_serialize (double f) {
-  static_SB.append ("d:", 2);
+static inline void do_serialize(double f) {
+  static_SB.append("d:", 2);
   static_SB << f << ';';
 }
 
-static inline void do_serialize (const string &s) {
+static inline void do_serialize(const string &s) {
   int len = (int)s.size();
-  static_SB.reserve (20 + len);
-  static_SB.append_char ('s');
-  static_SB.append_char (':');
+  static_SB.reserve(20 + len);
+  static_SB.append_char('s');
+  static_SB.append_char(':');
   static_SB << len;
-  static_SB.append_char (':');
-  static_SB.append_char ('"');
-  static_SB.append_unsafe (s.c_str(), len);
-  static_SB.append_char ('"');
-  static_SB.append_char (';');
+  static_SB.append_char(':');
+  static_SB.append_char('"');
+  static_SB.append_unsafe(s.c_str(), len);
+  static_SB.append_char('"');
+  static_SB.append_char(';');
 }
 
-void do_serialize (const var &v) {
+void do_serialize(const var &v) {
   switch (v.type) {
     case var::NULL_TYPE:
-      static_SB.reserve (2);
-      static_SB.append_char ('N');
-      static_SB.append_char (';');
+      static_SB.reserve(2);
+      static_SB.append_char('N');
+      static_SB.append_char(';');
       return;
     case var::BOOLEAN_TYPE:
-      return do_serialize (v.b);
+      return do_serialize(v.b);
     case var::INTEGER_TYPE:
-      return do_serialize (v.i);
+      return do_serialize(v.i);
     case var::FLOAT_TYPE:
-      return do_serialize (v.f);
+      return do_serialize(v.f);
     case var::STRING_TYPE:
-      return do_serialize (*AS_CONST_STRING(v.s));
+      return do_serialize(*AS_CONST_STRING(v.s));
     case var::ARRAY_TYPE: {
-      const array <var> &a = *AS_CONST_ARRAY(v.a);
-      static_SB.append ("a:", 2);
+      const array<var> &a = *AS_CONST_ARRAY(v.a);
+      static_SB.append("a:", 2);
       static_SB << a.count();
-      static_SB.append (":{", 2);
-      for (array <var>::const_iterator p = a.begin(); p != a.end(); ++p) {
-        const array <var>::key_type &key = p.get_key();
-        if (array <var>::is_int_key (key)) {
-          do_serialize (key.to_int());
+      static_SB.append(":{", 2);
+      for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+        const array<var>::key_type &key = p.get_key();
+        if (array<var>::is_int_key(key)) {
+          do_serialize(key.to_int());
         } else {
-          do_serialize (key.to_string());
+          do_serialize(key.to_string());
         }
-        do_serialize (p.get_value());
+        do_serialize(p.get_value());
       }
       static_SB << '}';
       return;
     }
     default:
       php_assert (0);
-      exit (1);
+      exit(1);
   }
 }
 
-string f$serialize (const var &v) {
+string f$serialize(const var &v) {
   static_SB.clean();
 
-  do_serialize (v);
+  do_serialize(v);
 
   return static_SB.str();
 }
 
-static int do_unserialize (const char *s, int s_len, var &v) {
+static int do_unserialize(const char *s, int s_len, var &v) {
   if (!v.is_null()) {
     v.destroy();
   }
@@ -580,7 +580,7 @@ static int do_unserialize (const char *s, int s_len, var &v) {
       break;
     case 'b':
       if (s[1] == ':' && ((unsigned int)(s[2] - '0') < 2u) && s[3] == ';') {
-        new (&v) var ((bool)(s[2] - '0'));
+        new(&v) var((bool)(s[2] - '0'));
         return 4;
       }
       break;
@@ -588,9 +588,9 @@ static int do_unserialize (const char *s, int s_len, var &v) {
       if (s[1] == ':') {
         s += 2;
         char *end_ptr;
-        double floatval = strtod (s, &end_ptr);
+        double floatval = strtod(s, &end_ptr);
         if (*end_ptr == ';' && end_ptr > s) {
-          new (&v) var (floatval);
+          new(&v) var(floatval);
           return (int)(end_ptr - s + 3);
         }
       }
@@ -602,9 +602,9 @@ static int do_unserialize (const char *s, int s_len, var &v) {
         while (s[j]) {
           if (s[j] == ';') {
             int intval;
-            if (php_try_to_int (s, j, &intval)) {
+            if (php_try_to_int(s, j, &intval)) {
               s += j + 1;
-              new (&v) var (intval);
+              new(&v) var(intval);
               return j + 3;
             }
 
@@ -616,7 +616,7 @@ static int do_unserialize (const char *s, int s_len, var &v) {
               k++;
             }
             if (k == j) {
-              new (&v) var (s, j);
+              new(&v) var(s, j);
               return j + 3;
             }
             return 0;
@@ -636,7 +636,7 @@ static int do_unserialize (const char *s, int s_len, var &v) {
           s += j + 2;
 
           if (s[len] == '"' && s[len + 1] == ';') {
-            new (&v) var (s, len);
+            new(&v) var(s, len);
             return len + 6 + j;
           }
         }
@@ -654,11 +654,11 @@ static int do_unserialize (const char *s, int s_len, var &v) {
           s += j + 2;
           s_len -= j + 4;
 
-          array_size size (0, len, false);
+          array_size size(0, len, false);
           if (s[0] == 'i') {//try to cheat
-            size = array_size (len, 0, s[1] == ':' && s[2] == '0' && s[3] == ';');
+            size = array_size(len, 0, s[1] == ':' && s[2] == '0' && s[3] == ';');
           }
-          array <var> res (size);
+          array<var> res(size);
 
           while (len-- > 0) {
             if (s[0] == 'i' && s[1] == ':') {
@@ -667,10 +667,10 @@ static int do_unserialize (const char *s, int s_len, var &v) {
               while (s[k]) {
                 if (s[k] == ';') {
                   int intval;
-                  if (php_try_to_int (s, k, &intval)) {
+                  if (php_try_to_int(s, k, &intval)) {
                     s += k + 1;
                     s_len -= k + 3;
-                    int length = do_unserialize (s, s_len, res[intval]);
+                    int length = do_unserialize(s, s_len, res[intval]);
                     if (!length) {
                       return 0;
                     }
@@ -690,7 +690,7 @@ static int do_unserialize (const char *s, int s_len, var &v) {
                     string key(s, k);
                     s += k + 1;
                     s_len -= k + 3;
-                    int length = do_unserialize (s, s_len, res[key]);
+                    int length = do_unserialize(s, s_len, res[key]);
                     if (!length) {
                       return 0;
                     }
@@ -712,10 +712,10 @@ static int do_unserialize (const char *s, int s_len, var &v) {
                 s += k + 2;
 
                 if (s[str_len] == '"' && s[str_len + 1] == ';') {
-                  string key (s, str_len);
+                  string key(s, str_len);
                   s += str_len + 2;
                   s_len -= str_len + 6 + k;
-                  int length = do_unserialize (s, s_len, res[key]);
+                  int length = do_unserialize(s, s_len, res[key]);
                   if (!length) {
                     return 0;
                   }
@@ -732,7 +732,7 @@ static int do_unserialize (const char *s, int s_len, var &v) {
           }
 
           if (s[0] == '}') {
-            new (&v) var (res);
+            new(&v) var(res);
             return (int)(s - s_begin + 1);
           }
         }
@@ -742,10 +742,10 @@ static int do_unserialize (const char *s, int s_len, var &v) {
   return 0;
 }
 
-var unserialize_raw (const char *v, int v_len) {
+var unserialize_raw(const char *v, int v_len) {
   var result;
 
-  if (do_unserialize (v, v_len, result) == v_len) {
+  if (do_unserialize(v, v_len, result) == v_len) {
     return result;
   }
 
@@ -753,213 +753,213 @@ var unserialize_raw (const char *v, int v_len) {
 }
 
 
-var f$unserialize (const string &v) {
+var f$unserialize(const string &v) {
   return unserialize_raw(v.c_str(), v.size());
 }
 
 
-static void json_append_one_char (unsigned int c) {
-  static_SB.append_char ('\\');
-  static_SB.append_char ('u');
-  static_SB.append_char ("0123456789abcdef"[c >> 12]);
-  static_SB.append_char ("0123456789abcdef"[(c >> 8) & 15]);
-  static_SB.append_char ("0123456789abcdef"[(c >> 4) & 15]);
-  static_SB.append_char ("0123456789abcdef"[c & 15]);
+static void json_append_one_char(unsigned int c) {
+  static_SB.append_char('\\');
+  static_SB.append_char('u');
+  static_SB.append_char("0123456789abcdef"[c >> 12]);
+  static_SB.append_char("0123456789abcdef"[(c >> 8) & 15]);
+  static_SB.append_char("0123456789abcdef"[(c >> 4) & 15]);
+  static_SB.append_char("0123456789abcdef"[c & 15]);
 }
 
-static bool json_append_char (unsigned int c) {
+static bool json_append_char(unsigned int c) {
   if (c < 0x10000) {
     if (0xD7FF < c && c < 0xE000) {
       return false;
     }
-    json_append_one_char (c);
+    json_append_one_char(c);
     return true;
-  } else if (c <= 0x10ffff){
+  } else if (c <= 0x10ffff) {
     c -= 0x10000;
-    json_append_one_char (0xD800 | (c >> 10));
-    json_append_one_char (0xDC00 | (c & 0x3FF));
+    json_append_one_char(0xD800 | (c >> 10));
+    json_append_one_char(0xDC00 | (c & 0x3FF));
     return true;
   } else {
     return false;
   }
 }
 
-static bool do_json_encode_string_php (const char *s, int len, int options) {
+static bool do_json_encode_string_php(const char *s, int len, int options) {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
-    static_SB.reserve (2 * len + 2);
+    static_SB.reserve(2 * len + 2);
   } else {
-    static_SB.reserve (6 * len + 2);
+    static_SB.reserve(6 * len + 2);
   }
-  static_SB.append_char ('"');
+  static_SB.append_char('"');
 
 #define ERROR {static_SB.set_pos (begin_pos); static_SB.append ("null", 4); return false;}
 #define CHECK(x) if (!(x)) {php_warning ("Not a valid utf-8 character at pos %d in function json_encode", pos); ERROR}
 #define APPEND_CHAR(x) CHECK(json_append_char (x))
-  
+
   int a, b, c, d;
   for (int pos = 0; pos < len; pos++) {
     switch (s[pos]) {
-    case '"':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('"');
-      break;
-    case '\\':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('\\');
-      break;
-    case '/':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('/');
-      break;
-    case '\b':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('b');
-      break;
-    case '\f':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('f');
-      break;
-    case '\n':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('n');
-      break;
-    case '\r':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('r');
-      break;
-    case '\t':
-      static_SB.append_char ('\\');
-      static_SB.append_char ('t');
-      break;
-    case 0 ... 7:
-    case 11:
-    case 14 ... 31:
-      json_append_one_char (s[pos]);
-      break;
-    case -128 ... -1:
-      a = s[pos];
-      CHECK ((a & 0x40) != 0);
-
-      b = s[++pos];
-      CHECK((b & 0xc0) == 0x80);
-      if ((a & 0x20) == 0) {
-        CHECK((a & 0x1e) > 0);
-        if (options & JSON_UNESCAPED_UNICODE) {
-          static_SB.append_char (a);
-          static_SB.append_char (b);
-        } else {
-          APPEND_CHAR(((a & 0x1f) << 6) | (b & 0x3f));
-        }
+      case '"':
+        static_SB.append_char('\\');
+        static_SB.append_char('"');
         break;
-      }
-
-      c = s[++pos];
-      CHECK((c & 0xc0) == 0x80);
-      if ((a & 0x10) == 0) {
-        CHECK(((a & 0x0f) | (b & 0x20)) > 0);
-        if (options & JSON_UNESCAPED_UNICODE) {
-          static_SB.append_char (a);
-          static_SB.append_char (b);
-          static_SB.append_char (c);
-        } else {
-          APPEND_CHAR(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f));
-        }
+      case '\\':
+        static_SB.append_char('\\');
+        static_SB.append_char('\\');
         break;
-      }
-
-      d = s[++pos];
-      CHECK((d & 0xc0) == 0x80);
-      if ((a & 0x08) == 0) {
-        CHECK(((a & 0x07) | (b & 0x30)) > 0);
-        if (options & JSON_UNESCAPED_UNICODE) {
-          static_SB.append_char (a);
-          static_SB.append_char (b);
-          static_SB.append_char (c);
-          static_SB.append_char (d);
-        } else {
-          APPEND_CHAR(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
-        }
+      case '/':
+        static_SB.append_char('\\');
+        static_SB.append_char('/');
         break;
-      }
+      case '\b':
+        static_SB.append_char('\\');
+        static_SB.append_char('b');
+        break;
+      case '\f':
+        static_SB.append_char('\\');
+        static_SB.append_char('f');
+        break;
+      case '\n':
+        static_SB.append_char('\\');
+        static_SB.append_char('n');
+        break;
+      case '\r':
+        static_SB.append_char('\\');
+        static_SB.append_char('r');
+        break;
+      case '\t':
+        static_SB.append_char('\\');
+        static_SB.append_char('t');
+        break;
+      case 0 ... 7:
+      case 11:
+      case 14 ... 31:
+        json_append_one_char(s[pos]);
+        break;
+      case -128 ... -1:
+        a = s[pos];
+        CHECK ((a & 0x40) != 0);
 
-      CHECK(0);
-      break;
-    default:
-      static_SB.append_char (s[pos]);
-      break;
+        b = s[++pos];
+        CHECK((b & 0xc0) == 0x80);
+        if ((a & 0x20) == 0) {
+          CHECK((a & 0x1e) > 0);
+          if (options & JSON_UNESCAPED_UNICODE) {
+            static_SB.append_char(a);
+            static_SB.append_char(b);
+          } else {
+            APPEND_CHAR(((a & 0x1f) << 6) | (b & 0x3f));
+          }
+          break;
+        }
+
+        c = s[++pos];
+        CHECK((c & 0xc0) == 0x80);
+        if ((a & 0x10) == 0) {
+          CHECK(((a & 0x0f) | (b & 0x20)) > 0);
+          if (options & JSON_UNESCAPED_UNICODE) {
+            static_SB.append_char(a);
+            static_SB.append_char(b);
+            static_SB.append_char(c);
+          } else {
+            APPEND_CHAR(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f));
+          }
+          break;
+        }
+
+        d = s[++pos];
+        CHECK((d & 0xc0) == 0x80);
+        if ((a & 0x08) == 0) {
+          CHECK(((a & 0x07) | (b & 0x30)) > 0);
+          if (options & JSON_UNESCAPED_UNICODE) {
+            static_SB.append_char(a);
+            static_SB.append_char(b);
+            static_SB.append_char(c);
+            static_SB.append_char(d);
+          } else {
+            APPEND_CHAR(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
+          }
+          break;
+        }
+
+        CHECK(0);
+        break;
+      default:
+        static_SB.append_char(s[pos]);
+        break;
     }
   }
 
-  static_SB.append_char ('"');
+  static_SB.append_char('"');
   return true;
 #undef ERROR
 #undef CHECK
 #undef APPEND_CHAR
 }
 
-static bool do_json_encode_string_vkext (const char *s, int len) {
-  static_SB.reserve (2 * len + 2);
-  static_SB.append_char ('"');
+static bool do_json_encode_string_vkext(const char *s, int len) {
+  static_SB.reserve(2 * len + 2);
+  static_SB.append_char('"');
 
   for (int pos = 0; pos < len; pos++) {
     char c = s[pos];
     if (unlikely ((unsigned int)c < 32u)) {
       switch (c) {
         case '\b':
-          static_SB.append_char ('\\');
-          static_SB.append_char ('b');
+          static_SB.append_char('\\');
+          static_SB.append_char('b');
           break;
         case '\f':
-          static_SB.append_char ('\\');
-          static_SB.append_char ('f');
+          static_SB.append_char('\\');
+          static_SB.append_char('f');
           break;
         case '\n':
-          static_SB.append_char ('\\');
-          static_SB.append_char ('n');
+          static_SB.append_char('\\');
+          static_SB.append_char('n');
           break;
         case '\r':
-          static_SB.append_char ('\\');
-          static_SB.append_char ('r');
+          static_SB.append_char('\\');
+          static_SB.append_char('r');
           break;
         case '\t':
-          static_SB.append_char ('\\');
-          static_SB.append_char ('t');
+          static_SB.append_char('\\');
+          static_SB.append_char('t');
           break;
       }
     } else {
       if (c == '"' || c == '\\' || c == '/') {
-        static_SB.append_char ('\\');
+        static_SB.append_char('\\');
       }
-      static_SB.append_char (c);
+      static_SB.append_char(c);
     }
   }
 
-  static_SB.append_char ('"');
+  static_SB.append_char('"');
 
   return true;
 }
 
-bool do_json_encode (const var &v, int options, bool simple_encode) {
+bool do_json_encode(const var &v, int options, bool simple_encode) {
   switch (v.type) {
     case var::NULL_TYPE:
-      static_SB.append ("null", 4);
+      static_SB.append("null", 4);
       return true;
     case var::BOOLEAN_TYPE:
       if (v.b) {
-        static_SB.append ("true", 4);
+        static_SB.append("true", 4);
       } else {
-        static_SB.append ("false", 5);
+        static_SB.append("false", 5);
       }
       return true;
     case var::INTEGER_TYPE:
       static_SB << v.i;
       return true;
     case var::FLOAT_TYPE:
-      if (is_ok_float (v.f)) {
-        static_SB << (simple_encode ? f$number_format (v.f, 6, DOT, string()) : string (v.f));
+      if (is_ok_float(v.f)) {
+        static_SB << (simple_encode ? f$number_format(v.f, 6, DOT, string()) : string(v.f));
       } else {
-        php_warning ("strange double %lf in function json_encode", v.f);
+        php_warning("strange double %lf in function json_encode", v.f);
         if (options & JSON_PARTIAL_OUTPUT_ON_ERROR) {
           static_SB.append("0", 1);
         } else {
@@ -969,17 +969,17 @@ bool do_json_encode (const var &v, int options, bool simple_encode) {
       return true;
     case var::STRING_TYPE:
       if (simple_encode) {
-        return do_json_encode_string_vkext (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
+        return do_json_encode_string_vkext(AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
       }
 
-      return do_json_encode_string_php (AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size(), options);
+      return do_json_encode_string_php(AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size(), options);
     case var::ARRAY_TYPE: {
-      const array <var> &a = *AS_CONST_ARRAY(v.a);
+      const array<var> &a = *AS_CONST_ARRAY(v.a);
       bool is_vector = a.is_vector();
-      bool force_object = (bool) (JSON_FORCE_OBJECT & options);
+      bool force_object = (bool)(JSON_FORCE_OBJECT & options);
       if (!force_object && !is_vector && a.size().string_size == 0) {
         int n = 0;
-        for (array <var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+        for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
           if (p.get_key().to_int() != n) {
             break;
           }
@@ -997,17 +997,17 @@ bool do_json_encode (const var &v, int options, bool simple_encode) {
 
       static_SB << "{["[is_vector];
 
-      for (array <var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+      for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
         if (p != a.begin()) {
           static_SB << ',';
         }
 
         if (!is_vector) {
-          const array <var>::key_type key = p.get_key();
-          if (array <var>::is_int_key (key)) {
+          const array<var>::key_type key = p.get_key();
+          if (array<var>::is_int_key(key)) {
             static_SB << '"' << key.to_int() << '"';
           } else {
-            if (!do_json_encode (key, options, simple_encode)) {
+            if (!do_json_encode(key, options, simple_encode)) {
               if (!(options & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
                 return false;
               }
@@ -1016,7 +1016,7 @@ bool do_json_encode (const var &v, int options, bool simple_encode) {
           static_SB << ':';
         }
 
-        if (!do_json_encode (p.get_value(), options, simple_encode)) {
+        if (!do_json_encode(p.get_value(), options, simple_encode)) {
           if (!(options & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
             return false;
           }
@@ -1028,20 +1028,20 @@ bool do_json_encode (const var &v, int options, bool simple_encode) {
     }
     default:
       php_assert (0);
-      exit (1);
+      exit(1);
   }
 }
 
-OrFalse<string> f$json_encode (const var &v, int options, bool simple_encode) {
+OrFalse<string> f$json_encode(const var &v, int options, bool simple_encode) {
   bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
   if (has_unsupported_option) {
-    php_warning ("Wrong parameter options = %d in function json_encode", options);
+    php_warning("Wrong parameter options = %d in function json_encode", options);
     return false;
   }
 
   static_SB.clean();
 
-  if (!do_json_encode (v, options, simple_encode)) {
+  if (!do_json_encode(v, options, simple_encode)) {
     return false;
   }
 
@@ -1050,14 +1050,14 @@ OrFalse<string> f$json_encode (const var &v, int options, bool simple_encode) {
 
 int string_buffer::string_buffer_error_flag = 0; // TODO: move in more logic place
 
-string f$vk_json_encode_safe (const var &v, bool simple_encode) {
+string f$vk_json_encode_safe(const var &v, bool simple_encode) {
   static_SB.clean();
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
-  do_json_encode (v, 0, simple_encode);
+  do_json_encode(v, 0, simple_encode);
   if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
-    static_SB.clean ();
+    static_SB.clean();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    THROW_EXCEPTION (f$new_Exception (string(__FILE__, (dl::size_type)strlen(__FILE__)), __LINE__, string("json_encode buffer overflow", 27)));
+    THROW_EXCEPTION (f$new_Exception(string(__FILE__, (dl::size_type)strlen(__FILE__)), __LINE__, string("json_encode buffer overflow", 27)));
     return string();
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
@@ -1065,13 +1065,13 @@ string f$vk_json_encode_safe (const var &v, bool simple_encode) {
 }
 
 
-static void json_skip_blanks(const char* s, int &i){
+static void json_skip_blanks(const char *s, int &i) {
   while (s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n') {
     i++;
   }
 }
 
-static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
+static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
   if (!v.is_null()) {
     v.destroy();
   }
@@ -1090,7 +1090,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
           s[i + 2] == 'u' &&
           s[i + 3] == 'e') {
         i += 4;
-        new (&v) var (true);
+        new(&v) var(true);
         return true;
       }
       break;
@@ -1100,7 +1100,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
           s[i + 3] == 's' &&
           s[i + 4] == 'e') {
         i += 5;
-        new (&v) var (false);
+        new(&v) var(false);
         return true;
       }
       break;
@@ -1117,7 +1117,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
       if (j < s_len) {
         int len = j - i - 1 - slashes;
 
-        string value (len, false);
+        string value(len, false);
 
         i++;
         int l;
@@ -1147,7 +1147,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
                 value[l] = '\t';
                 break;
               case 'u':
-                if (isxdigit (s[i + 1]) && isxdigit (s[i + 2]) && isxdigit (s[i + 3]) && isxdigit (s[i + 4])) {
+                if (isxdigit(s[i + 1]) && isxdigit(s[i + 2]) && isxdigit(s[i + 3]) && isxdigit(s[i + 4])) {
                   int num = 0;
                   for (int t = 0; t < 4; t++) {
                     char c = s[++i];
@@ -1163,7 +1163,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
 
                   if (0xD7FF < num && num < 0xE000) {
                     if (s[i + 1] == '\\' && s[i + 2] == 'u' &&
-                        isxdigit (s[i + 3]) && isxdigit (s[i + 4]) && isxdigit (s[i + 5]) && isxdigit (s[i + 6])) {
+                        isxdigit(s[i + 3]) && isxdigit(s[i + 4]) && isxdigit(s[i + 5]) && isxdigit(s[i + 6])) {
                       i += 2;
                       int u = 0;
                       for (int t = 0; t < 4; t++) {
@@ -1215,25 +1215,25 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
             value[l] = s[i++];
           }
         }
-        value.shrink (l);
+        value.shrink(l);
 
-        new (&v) var (value);
+        new(&v) var(value);
         i++;
         return true;
       }
       break;
     }
     case '[': {
-      array <var> res;
+      array<var> res;
       i++;
       json_skip_blanks(s, i);
       if (s[i] != ']') {
         do {
           var value;
-          if (!do_json_decode (s, s_len, i, value)) {
+          if (!do_json_decode(s, s_len, i, value)) {
             return false;
           }
-          res.push_back (value);
+          res.push_back(value);
           json_skip_blanks(s, i);
         } while (s[i++] == ',');
 
@@ -1244,17 +1244,17 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
         i++;
       }
 
-      new (&v) var (res);
+      new(&v) var(res);
       return true;
     }
     case '{': {
-      array <var> res;
+      array<var> res;
       i++;
       json_skip_blanks(s, i);
       if (s[i] != '}') {
         do {
           var key;
-          if (!do_json_decode (s, s_len, i, key) || !key.is_string()) {
+          if (!do_json_decode(s, s_len, i, key) || !key.is_string()) {
             return false;
           }
           json_skip_blanks(s, i);
@@ -1262,7 +1262,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
             return false;
           }
 
-          if (!do_json_decode (s, s_len, i, res[key])) {
+          if (!do_json_decode(s, s_len, i, res[key])) {
             return false;
           }
           json_skip_blanks(s, i);
@@ -1275,7 +1275,7 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
         i++;
       }
 
-      new (&v) var (res);
+      new(&v) var(res);
       return true;
     }
     default: {
@@ -1285,17 +1285,17 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
       }
       if (j > i) {
         int intval;
-        if (php_try_to_int (s + i, j - i, &intval)) {
+        if (php_try_to_int(s + i, j - i, &intval)) {
           i = j;
-          new (&v) var (intval);
+          new(&v) var(intval);
           return true;
         }
 
         char *end_ptr;
-        double floatval = strtod (s + i, &end_ptr);
+        double floatval = strtod(s + i, &end_ptr);
         if (end_ptr == s + j) {
           i = j;
-          new (&v) var (floatval);
+          new(&v) var(floatval);
           return true;
         }
       }
@@ -1306,15 +1306,15 @@ static bool do_json_decode (const char *s, int s_len, int &i, var &v) {
   return false;
 }
 
-var f$json_decode (const string &v, bool assoc) {
+var f$json_decode(const string &v, bool assoc) {
   if (!assoc) {
 //    php_warning ("json_decode doesn't support decoding to class, returning array");
   }
 
   var result;
   int i = 0;
-  if (do_json_decode (v.c_str(), v.size(), i, result)) {
-    json_skip_blanks (v.c_str(), i);
+  if (do_json_decode(v.c_str(), v.size(), i, result)) {
+    json_skip_blanks(v.c_str(), i);
     if (i == (int)v.size()) {
       return result;
     }
@@ -1323,9 +1323,9 @@ var f$json_decode (const string &v, bool assoc) {
   return var();
 }
 
-void do_print_r (const var &v, int depth) {
+void do_print_r(const var &v, int depth) {
   if (depth == 10) {
-    php_warning ("Depth %d reached. Recursion?", depth);
+    php_warning("Depth %d reached. Recursion?", depth);
     return;
   }
 
@@ -1347,15 +1347,15 @@ void do_print_r (const var &v, int depth) {
       *coub << *AS_CONST_STRING(v.s);
       break;
     case var::ARRAY_TYPE: {
-      const array <var> *a = AS_CONST_ARRAY(v.a);
+      const array<var> *a = AS_CONST_ARRAY(v.a);
       *coub << "Array\n";
 
-      string shift (depth << 3, ' ');
+      string shift(depth << 3, ' ');
       *coub << shift << "(\n";
 
-      for (array <var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+      for (array<var>::const_iterator it = a->begin(); it != a->end(); ++it) {
         *coub << shift << "    [" << it.get_key() << "] => ";
-        do_print_r (it.get_value(), depth + 1);
+        do_print_r(it.get_value(), depth + 1);
         *coub << '\n';
       }
 
@@ -1364,17 +1364,17 @@ void do_print_r (const var &v, int depth) {
     }
     default:
       php_assert (0);
-      exit (1);
+      exit(1);
   }
 }
 
-void do_var_dump (const var &v, int depth) {
+void do_var_dump(const var &v, int depth) {
   if (depth == 10) {
-    php_warning ("Depth %d reached. Recursion?", depth);
+    php_warning("Depth %d reached. Recursion?", depth);
     return;
   }
 
-  string shift (depth * 2, ' ');
+  string shift(depth * 2, ' ');
 
   switch (v.type) {
     case var::NULL_TYPE:
@@ -1393,19 +1393,19 @@ void do_var_dump (const var &v, int depth) {
       *coub << shift << "string(" << (int)AS_CONST_STRING(v.s)->size() << ") \"" << *AS_CONST_STRING(v.s) << '"';
       break;
     case var::ARRAY_TYPE: {
-      const array <var> *a = AS_CONST_ARRAY(v.a);
+      const array<var> *a = AS_CONST_ARRAY(v.a);
 
       *coub << shift << (0 && a->is_vector() ? "vector(" : "array(") << a->count() << ") {\n";
 
-      for (array <var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+      for (array<var>::const_iterator it = a->begin(); it != a->end(); ++it) {
         *coub << shift << "  [";
-        if (array <var>::is_int_key (it.get_key())) {
+        if (array<var>::is_int_key(it.get_key())) {
           *coub << it.get_key();
         } else {
           *coub << '"' << it.get_key() << '"';
         }
         *coub << "]=>\n";
-        do_var_dump (it.get_value(), depth + 1);
+        do_var_dump(it.get_value(), depth + 1);
       }
 
       *coub << shift << "}";
@@ -1413,7 +1413,7 @@ void do_var_dump (const var &v, int depth) {
     }
     default:
       php_assert (0);
-      exit (1);
+      exit(1);
   }
   *coub << '\n';
 }
@@ -1423,7 +1423,7 @@ void var_export_escaped_string(const string &s) {
     switch (s[i]) {
       case '\'':
       case '\\':
-        *coub << "\\" <<  s[i];
+        *coub << "\\" << s[i];
         break;
       case '\0':
         *coub << "\' . \"\\0\" . \'";
@@ -1434,13 +1434,13 @@ void var_export_escaped_string(const string &s) {
   }
 }
 
-void do_var_export (const var &v, int depth, char endc) {
+void do_var_export(const var &v, int depth, char endc) {
   if (depth == 10) {
-    php_warning ("Depth %d reached. Recursion?", depth);
+    php_warning("Depth %d reached. Recursion?", depth);
     return;
   }
 
-  string shift (depth * 2, ' ');
+  string shift(depth * 2, ' ');
 
   switch (v.type) {
     case var::NULL_TYPE:
@@ -1461,28 +1461,28 @@ void do_var_export (const var &v, int depth, char endc) {
       *coub << '\'';
       break;
     case var::ARRAY_TYPE: {
-      const array <var> *a = AS_CONST_ARRAY(v.a);
+      const array<var> *a = AS_CONST_ARRAY(v.a);
 
       bool is_vector = a->is_vector();
       *coub << shift << "array(\n";
 
-      for (array <var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+      for (array<var>::const_iterator it = a->begin(); it != a->end(); ++it) {
         if (!is_vector) {
           *coub << shift;
-          if (array <var>::is_int_key (it.get_key())) {
+          if (array<var>::is_int_key(it.get_key())) {
             *coub << it.get_key();
           } else {
             *coub << '\'' << it.get_key() << '\'';
           }
           *coub << " =>";
-          if (it.get_value().type == var::ARRAY_TYPE){
+          if (it.get_value().type == var::ARRAY_TYPE) {
             *coub << "\n";
-            do_var_export (it.get_value(), depth + 1, ',');
+            do_var_export(it.get_value(), depth + 1, ',');
           } else {
-            do_var_export (it.get_value(), 1, ',');
+            do_var_export(it.get_value(), 1, ',');
           }
         } else {
-          do_var_export (it.get_value(), depth + 1, ',');
+          do_var_export(it.get_value(), depth + 1, ',');
         }
       }
 
@@ -1491,7 +1491,7 @@ void do_var_export (const var &v, int depth, char endc) {
     }
     default:
       php_assert (0);
-      exit (1);
+      exit(1);
   }
   if (endc != 0) {
     *coub << endc;
@@ -1503,14 +1503,14 @@ void do_var_export (const var &v, int depth, char endc) {
 #undef AS_CONST_STRING
 #undef AS_CONST_ARRAY
 
-string f$print_r (const var &v, bool buffered) {
+string f$print_r(const var &v, bool buffered) {
   if (buffered) {
     f$ob_start();
-    do_print_r (v, 0);
+    do_print_r(v, 0);
     return f$ob_get_clean().val();
   }
 
-  do_print_r (v, 0);
+  do_print_r(v, 0);
   if (run_once && f$ob_get_level() == 0) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
@@ -1518,8 +1518,8 @@ string f$print_r (const var &v, bool buffered) {
   return string();
 }
 
-void f$var_dump (const var &v) {
-  do_var_dump (v, 0);
+void f$var_dump(const var &v) {
+  do_var_dump(v, 0);
   if (run_once && f$ob_get_level() == 0) {
     const string &to_print = f$ob_get_contents();
     if (to_print.size() != write(kstdout, to_print.c_str(), to_print.size())) {
@@ -1529,13 +1529,13 @@ void f$var_dump (const var &v) {
   }
 }
 
-string f$var_export (const var &v, bool buffered) {
+string f$var_export(const var &v, bool buffered) {
   if (buffered) {
     f$ob_start();
-    do_var_export (v, 0);
+    do_var_export(v, 0);
     return f$ob_get_clean().val();
   }
-  do_var_export (v, 0);
+  do_var_export(v, 0);
   if (run_once && f$ob_get_level() == 0) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
@@ -1544,7 +1544,6 @@ string f$var_export (const var &v, bool buffered) {
 }
 
 
-
-int f$system (const string &query) {
-  return system (query.c_str());
+int f$system(const string &query) {
+  return system(query.c_str());
 }

@@ -7,78 +7,78 @@
 extern string_buffer *coub;//TODO static
 
 
-void f$ob_clean (void);
+void f$ob_clean(void);
 
-bool f$ob_end_clean (void);
+bool f$ob_end_clean(void);
 
-OrFalse <string> f$ob_get_clean (void);
+OrFalse<string> f$ob_get_clean(void);
 
-string f$ob_get_contents (void);
+string f$ob_get_contents(void);
 
-void f$ob_start (const string &callback = string());
+void f$ob_start(const string &callback = string());
 
-void f$ob_flush (void);
+void f$ob_flush(void);
 
-bool f$ob_end_flush (void);
+bool f$ob_end_flush(void);
 
-OrFalse <string> f$ob_get_flush (void);
+OrFalse<string> f$ob_get_flush(void);
 
-OrFalse <int> f$ob_get_length (void);
+OrFalse<int> f$ob_get_length(void);
 
-int f$ob_get_level (void);
+int f$ob_get_level(void);
 
-void f$header (const string &str, bool replace = true, int http_response_code = 0);
+void f$header(const string &str, bool replace = true, int http_response_code = 0);
 
-void f$setcookie (const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+void f$setcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$setrawcookie (const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+void f$setrawcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$register_shutdown_function (var (*f) (void));
+void f$register_shutdown_function(var (*f)(void));
 
-void f$fastcgi_finish_request (int exit_code = 0);
+void f$fastcgi_finish_request(int exit_code = 0);
 
-void finish (int exit_code);
+void finish(int exit_code);
 
-bool f$exit (const var &v = 0);
+bool f$exit(const var &v = 0);
 
-bool f$die (const var &v = 0);
-
-
-OrFalse <int> f$ip2long (const string &ip);
-
-OrFalse <string> f$ip2ulong (const string &ip);
-
-string f$long2ip (int num);
-
-template <class T>
-inline string f$long2ip (const T &v);//shut up warning on converting to int
-
-OrFalse <array <string> > f$gethostbynamel (const string &name);
-
-OrFalse <string> f$inet_pton (const string &address);
+bool f$die(const var &v = 0);
 
 
-int print (const char *s);
+OrFalse<int> f$ip2long(const string &ip);
 
-int print (const char *s, int s_len);
+OrFalse<string> f$ip2ulong(const string &ip);
 
-int print (const string &s);
+string f$long2ip(int num);
 
-int print (const string_buffer &sb);
+template<class T>
+inline string f$long2ip(const T &v);//shut up warning on converting to int
 
-int dbg_echo (const char *s);
+OrFalse<array<string>> f$gethostbynamel(const string &name);
 
-int dbg_echo (const char *s, int s_len);
-
-int dbg_echo (const string &s);
-
-int dbg_echo (const string_buffer &sb);
+OrFalse<string> f$inet_pton(const string &address);
 
 
-bool f$get_magic_quotes_gpc (void);
+int print(const char *s);
+
+int print(const char *s, int s_len);
+
+int print(const string &s);
+
+int print(const string_buffer &sb);
+
+int dbg_echo(const char *s);
+
+int dbg_echo(const char *s, int s_len);
+
+int dbg_echo(const string &s);
+
+int dbg_echo(const string_buffer &sb);
 
 
-string f$php_sapi_name (void);
+bool f$get_magic_quotes_gpc(void);
+
+
+string f$php_sapi_name(void);
 
 
 extern var v$_SERVER;
@@ -99,51 +99,51 @@ const int UPLOAD_ERR_CANT_WRITE = 7;
 const int UPLOAD_ERR_EXTENSION = 8;
 
 
-bool f$is_uploaded_file (const string &filename);
+bool f$is_uploaded_file(const string &filename);
 
-bool f$move_uploaded_file (const string &oldname, const string &newname);
+bool f$move_uploaded_file(const string &oldname, const string &newname);
 
-void f$parse_multipart (const string &post, const string &boundary);
-
-
-void init_superglobals (php_query_data *data);
+void f$parse_multipart(const string &post, const string &boundary);
 
 
-bool f$set_server_status (const string &status);
+void init_superglobals(php_query_data *data);
 
 
-double f$get_net_time (void);
-
-double f$get_script_time (void);
-
-int f$get_net_queries_count (void);
+bool f$set_server_status(const string &status);
 
 
-int f$get_engine_uptime (void);
+double f$get_net_time(void);
 
-string f$get_engine_version (void);
+double f$get_script_time(void);
+
+int f$get_net_queries_count(void);
+
+
+int f$get_engine_uptime(void);
+
+string f$get_engine_version(void);
 
 int f$get_engine_workers_number();
 
 extern "C" {
-void arg_add (const char *value);
+void arg_add(const char *value);
 
-void ini_set (const char *key, const char *value);
+void ini_set(const char *key, const char *value);
 
-void read_engine_tag (const char *file_name);
+void read_engine_tag(const char *file_name);
 }
 
-bool f$ini_set (const string &s, const string &value);
+bool f$ini_set(const string &s, const string &value);
 
-OrFalse <string> f$ini_get (const string &s);
+OrFalse<string> f$ini_get(const string &s);
 
-OrFalse< array<var> > f$getopt(const string &options, array<string> longopts = array<string>());
+OrFalse<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
 
-void init_static_once (void);
+void init_static_once(void);
 
-void init_static (void);
+void init_static(void);
 
-void free_static (void);
+void free_static(void);
 
 /*
  *
@@ -151,9 +151,9 @@ void free_static (void);
  *
  */
 
-template <class T>
-string f$long2ip (const T &v) {
-  return f$long2ip (f$intval (v));
+template<class T>
+string f$long2ip(const T &v) {
+  return f$long2ip(f$intval(v));
 }
 
 // for degug use only

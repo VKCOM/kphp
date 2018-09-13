@@ -8,13 +8,13 @@
 #include "compiler/pass-register-vars.hpp"
 #include "compiler/const-manipulations.h"
 
-string register_unique_name (const string &prefix) {
+string register_unique_name(const string &prefix) {
   //static set <string> v;
   //static volatile int x = 0;
   //AutoLocker <volatile int *> locker (&x);
   //if (v.count (prefix)) {
-    //fprintf (stderr, "%s\n", prefix.c_str());
-    //assert (0);
+  //fprintf (stderr, "%s\n", prefix.c_str());
+  //assert (0);
   //}
   //v.insert (prefix);
   return prefix;
@@ -22,25 +22,25 @@ string register_unique_name (const string &prefix) {
 
 static inline string gen_unique_name_inside_file(const std::string &prefix, volatile int &x, map<unsigned long long, int> &name_map) {
   AUTO_PROF (next_name);
-  AutoLocker<volatile int *> locker (&x);
+  AutoLocker<volatile int *> locker(&x);
   SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll (file->unified_file_name + file->class_context);
+  unsigned long long h = hash_ll(file->unified_file_name + file->class_context);
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
   char tmp[50];
-  sprintf (tmp, "%llx_%d", h, cur_i);
+  sprintf(tmp, "%llx_%d", h, cur_i);
 
   return prefix + "$ut" + tmp;
 }
 
-string gen_shorthand_ternary_name () {
+string gen_shorthand_ternary_name() {
   static volatile int x = 0;
   static map<unsigned long long, int> name_map;
 
   return gen_unique_name_inside_file("shorthand_ternary_cond", x, name_map);
 }
 
-string gen_anonymous_function_name () {
+string gen_anonymous_function_name() {
   static volatile int x = 0;
   static map<unsigned long long, int> name_map;
 
@@ -48,20 +48,19 @@ string gen_anonymous_function_name () {
 }
 
 
-
-string gen_const_string_name (const string &str) {
+string gen_const_string_name(const string &str) {
   AUTO_PROF (next_const_string_name);
-  unsigned long long h = hash_ll (str);
+  unsigned long long h = hash_ll(str);
   char tmp[50];
-  sprintf (tmp, "const_string$us%llx", h);
+  sprintf(tmp, "const_string$us%llx", h);
   return tmp;
 }
 
-string gen_const_regexp_name (const string &str) {
+string gen_const_regexp_name(const string &str) {
   AUTO_PROF (next_const_string_name);
-  unsigned long long h = hash_ll (str);
+  unsigned long long h = hash_ll(str);
   char tmp[50];
-  sprintf (tmp, "const_regexp$us%llx", h);
+  sprintf(tmp, "const_regexp$us%llx", h);
   return tmp;
 }
 
@@ -69,13 +68,13 @@ bool is_array_suitable_for_hashing(VertexPtr vertex) {
   return vertex->type() == op_array && CheckConst::is_const(vertex);
 }
 
-string gen_const_array_name(const VertexAdaptor<op_array> & array) {
+string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   char tmp[50];
-  sprintf (tmp, "const_array$us%llx", ArrayHash::calc_hash(array));
+  sprintf(tmp, "const_array$us%llx", ArrayHash::calc_hash(array));
   return tmp;
 }
 
-string gen_unique_name (string prefix, bool flag) {
+string gen_unique_name(string prefix, bool flag) {
   for (int i = 0; i < (int)prefix.size(); i++) {
     int c = prefix[i];
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
@@ -87,23 +86,23 @@ string gen_unique_name (string prefix, bool flag) {
   AUTO_PROF (next_name);
   FunctionPtr function = stage::get_function();
   if (function.is_null() || flag) {
-    return register_unique_name (prefix);
+    return register_unique_name(prefix);
   }
-  map <long long, int> *name_gen_map = &function->name_gen_map;
-  int h = hash (function->name);
-  long long ph = hash_ll (prefix);
+  map<long long, int> *name_gen_map = &function->name_gen_map;
+  int h = hash(function->name);
+  long long ph = hash_ll(prefix);
   int *i = &(*name_gen_map)[ph];
   int cur_i = (*i)++;
   char tmp[50];
-  sprintf (tmp, "%x_%d", h, cur_i);
-  return register_unique_name (prefix + tmp);
+  sprintf(tmp, "%x_%d", h, cur_i);
+  return register_unique_name(prefix + tmp);
 }
 
-inline string resolve_uses (FunctionPtr current_function, string class_name, char delim) {
+inline string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       kphp_error(!current_function->namespace_name.empty(),
-          "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
+                 "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
       if (class_name == "parent") {
         kphp_assert(!current_function->class_extends.empty());
         class_name = resolve_uses(current_function, current_function->class_extends, delim);
@@ -135,7 +134,7 @@ inline string resolve_uses (FunctionPtr current_function, string class_name, cha
   return class_name;
 }
 
-static string _err_instance_access (VertexPtr v, const char *desc) {
+static string _err_instance_access(VertexPtr v, const char *desc) {
   if (v->type() == op_func_call) {
     return std::string("Invalid call ...->" + v->get_string() + "(): " + desc);
   }
@@ -146,7 +145,7 @@ static string _err_instance_access (VertexPtr v, const char *desc) {
 /*
  * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
  */
-string resolve_constructor_func_name (FunctionPtr function, VertexAdaptor <op_constructor_call> ctor_call) {
+string resolve_constructor_func_name(FunctionPtr function, VertexAdaptor<op_constructor_call> ctor_call) {
   if (likely(!ctor_call->type_help)) {
     return resolve_uses(function, ctor_call->get_string()) + "$$" + "__construct";
   }
@@ -159,7 +158,7 @@ string resolve_constructor_func_name (FunctionPtr function, VertexAdaptor <op_co
  * Вот тут определяем, что за SOMEMETHOD — это из какого-то класса — именно того, что в левой части (= первый параметр).
  * Например, $a->method(), если $a имеет тип Classes\A, то на самом деле это Classes$A$$method
  */
-string resolve_instance_func_name (FunctionPtr function, VertexAdaptor <op_func_call> arrow_call) {
+string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
 
   if (likely(klass.not_null() && klass->new_function.not_null())) {
@@ -183,7 +182,7 @@ string resolve_instance_func_name (FunctionPtr function, VertexAdaptor <op_func_
  * Определяем, что это за класс, и кидаем осмысленную ошибку, если там оказалось что-то не то.
  * Например, '$a = 42; $a->...' скажет, что '$a is not an instance'
  */
-ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
+ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
   // тут всего 2 варианта типа v:
   // 1) lhs->f(...args), что заменилось на f(lhs,...args)
   // 2) lhs->propname
@@ -226,7 +225,7 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
 
       // ...[$idx]->...
     case op_index: {
-      VertexAdaptor <op_index> index = lhs.as <op_index>();
+      VertexAdaptor<op_index> index = lhs.as<op_index>();
       VertexPtr array = index->array();
       if (index->has_key()) {
         // $var[$idx]->...
@@ -247,7 +246,8 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
         if (array->type() == op_instance_prop) {
           AssumType assum = infer_class_of_expr(function, array, klass);
           kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", array->ith(0)->get_string().c_str(), array->get_string().c_str())).c_str());
+                     _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", array->ith(0)->get_string().c_str(), array->get_string()
+                                                                                                                                    .c_str())).c_str());
           return klass;
         }
       }
@@ -261,14 +261,14 @@ ClassPtr resolve_class_of_arrow_access (FunctionPtr function, VertexPtr v) {
 }
 
 
-string get_context_by_prefix (FunctionPtr function, const string &class_name, char delim) {
+string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim) {
   if (class_name == "static" || class_name == "self" || class_name == "parent") {
     return resolve_uses(function, "\\" + function->class_context_name, delim);
   }
   return resolve_uses(function, class_name, delim);
 }
 
-string get_full_static_member_name (FunctionPtr function, const string &name, bool append_with_context) {
+string get_full_static_member_name(FunctionPtr function, const string &name, bool append_with_context) {
   size_t pos$$ = name.find("::");
 
   if (pos$$ == string::npos) {
@@ -288,7 +288,7 @@ string get_full_static_member_name (FunctionPtr function, const string &name, bo
   return new_name;
 }
 
-string resolve_define_name (string name) {
+string resolve_define_name(string name) {
   size_t pos$$ = name.find("$$");
   if (pos$$ != string::npos) {
     string class_name = name.substr(0, pos$$);

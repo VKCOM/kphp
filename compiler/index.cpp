@@ -10,10 +10,10 @@
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
 
-bool is_dir (const string &path) {
+bool is_dir(const string &path) {
   struct stat s;
-  int err = stat (path.c_str(), &s);
-  dl_passert (err == 0, dl_pstr ("Failed to stat [%s]", path.c_str()));
+  int err = stat(path.c_str(), &s);
+  dl_passert (err == 0, dl_pstr("Failed to stat [%s]", path.c_str()));
   return S_ISDIR (s.st_mode);
 }
 
@@ -25,25 +25,25 @@ bool is_dir (const string &path) {
 //
 //  for a start, files will be indexed by their names
 //               hashes will be used in future
-File::File()
-  : mtime(0)
-  , crc64(-1)
-  , crc64_with_comments(-1)
-  , on_disk(false)
-  , needed(false)
-  , target(NULL)
-  , compile_with_debug_info_flag(true)
-{}
+File::File() :
+  mtime(0),
+  crc64(-1),
+  crc64_with_comments(-1),
+  on_disk(false),
+  needed(false),
+  target(NULL),
+  compile_with_debug_info_flag(true) {}
 
 File::File(const string &path) :
-  path (path),
-  mtime (0),
-  crc64 (-1),
-  crc64_with_comments (-1),
-  on_disk (false),
-  needed (false),
-  target (NULL) {
+  path(path),
+  mtime(0),
+  crc64(-1),
+  crc64_with_comments(-1),
+  on_disk(false),
+  needed(false),
+  target(NULL) {
 }
+
 void File::set_mtime(long long mtime_value) {
   timespec times[2]; // {atime, mtime}
   times[0].tv_sec = times[0].tv_nsec = UTIME_NOW;
@@ -53,16 +53,17 @@ void File::set_mtime(long long mtime_value) {
     kphp_warning(dl_pstr("Can't set mtime for %s with error %m", path.c_str()));
   }
 }
+
 long long File::upd_mtime() {
   struct stat buf;
-  int err = stat (path.c_str(), &buf);
+  int err = stat(path.c_str(), &buf);
   if (err == -1) {
     if (errno == ENOENT) {
       mtime = 0;
       on_disk = false;
       return 0;
     }
-    perror ("stat failed: ");
+    perror("stat failed: ");
     return -1;
   }
   on_disk = true;
@@ -71,41 +72,44 @@ long long File::upd_mtime() {
   //fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
   return 1;
 }
+
 void File::unlink() {
-  int err = ::unlink (path.c_str());
+  int err = ::unlink(path.c_str());
   if (err == -1 && errno != ENOENT) {
-    perror ("unlink failed: ");
+    perror("unlink failed: ");
     return;
   }
   mtime = 0;
   on_disk = false;
 }
 
-void Index::set_dir (const string &new_dir) {
+void Index::set_dir(const string &new_dir) {
   bool res_mkdir = mkdir_recursive(new_dir.c_str(), 0777);
   dl_assert(res_mkdir, dl_pstr("Failed to mkdir [%s] (%s)", new_dir.c_str(), strerror(errno)));
 
-  dir = get_full_path (new_dir);
+  dir = get_full_path(new_dir);
   kphp_assert (!dir.empty());
-  if (!is_dir (dir)) {
-    kphp_error (0, dl_pstr ("[%s] is not a directory", dir.c_str()));
+  if (!is_dir(dir)) {
+    kphp_error (0, dl_pstr("[%s] is not a directory", dir.c_str()));
     kphp_fail();
   }
   if (dir[dir.size() - 1] != '/') {
     dir += "/";
   }
 }
+
 const string &Index::get_dir() const {
   return dir;
 }
 
 Index *Index::current_index = NULL;
-int Index::scan_dir_callback (const char *fpath, const struct stat *sb, int typeflag,
-    struct FTW *ftwbuf __attribute__((unused))) {
+
+int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typeflag,
+                             struct FTW *ftwbuf __attribute__((unused))) {
   if (typeflag == FTW_D) {
     //skip
   } else if (typeflag == FTW_F) {
-    File *f = current_index->get_file (fpath, true);
+    File *f = current_index->get_file(fpath, true);
     f->on_disk = true;
     long long new_mtime = sb->st_mtime * 1000000000ll + sb->st_mtim.tv_nsec;
     //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
@@ -115,33 +119,33 @@ int Index::scan_dir_callback (const char *fpath, const struct stat *sb, int type
     }
     f->mtime = new_mtime;
   } else {
-    kphp_error (0, dl_pstr ("Failed to scan directory [fpath=%s]\n", fpath));
+    kphp_error (0, dl_pstr("Failed to scan directory [fpath=%s]\n", fpath));
     kphp_fail();
   }
   return 0;
 }
 
-void Index::sync_with_dir (const string &new_dir) {
-  set_dir (new_dir);
+void Index::sync_with_dir(const string &new_dir) {
+  set_dir(new_dir);
   for (const auto &path_and_file : files) {
     path_and_file.second->on_disk = false;
   }
   current_index = this;
-  int err = nftw (dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
-  dl_passert (err == 0, dl_pstr ("ftw [%s] failed", dir.c_str()));
-  vector <string> to_del;
+  int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
+  dl_passert (err == 0, dl_pstr("ftw [%s] failed", dir.c_str()));
+  vector<string> to_del;
   for (const auto &path_and_file : files) {
     if (!path_and_file.second->on_disk) {
-      to_del.push_back (path_and_file.first);
+      to_del.push_back(path_and_file.first);
     }
   }
   for (const auto &path : to_del) {
-    remove_file (path);
+    remove_file(path);
   }
 }
 
 void Index::del_extra_files() {
-  vector <string> to_del;
+  vector<string> to_del;
   for (const auto &path_and_file : files) {
     File *file = path_and_file.second;
     if (!file->needed) {
@@ -157,35 +161,35 @@ void Index::del_extra_files() {
       }
 
       file->on_disk = false;
-      to_del.push_back (path_and_file.first);
+      to_del.push_back(path_and_file.first);
     }
   }
   for (const auto &path : to_del) {
-    remove_file (path);
+    remove_file(path);
   }
 }
 
-void Index::remove_file (const string &path) {
-  map <string, File *>::iterator it = files.find (path);
+void Index::remove_file(const string &path) {
+  map<string, File *>::iterator it = files.find(path);
   kphp_assert (it != files.end());
   delete it->second;
-  files.erase (it);
+  files.erase(it);
 }
 
-void Index::create_subdir (const string &subdir) {
-  if (!subdirs.insert (subdir).second) {
+void Index::create_subdir(const string &subdir) {
+  if (!subdirs.insert(subdir).second) {
     return;
   }
   string full_path = get_dir() + subdir;
-  int ret = mkdir (full_path.c_str(), 0777);
+  int ret = mkdir(full_path.c_str(), 0777);
   dl_passert (ret != -1 || errno == EEXIST, full_path.c_str());
-  if (errno == EEXIST && !is_dir (full_path)) {
-    kphp_error (0, dl_pstr ("[%s] is not a directory", full_path.c_str()));
+  if (errno == EEXIST && !is_dir(full_path)) {
+    kphp_error (0, dl_pstr("[%s] is not a directory", full_path.c_str()));
     kphp_fail();
   }
 }
 
-File *Index::get_file (string path, bool force/* = false*/) {
+File *Index::get_file(string path, bool force/* = false*/) {
   if (path[0] != '/') {
     path = get_dir() + path;
   }
@@ -223,31 +227,33 @@ File *Index::get_file (string path, bool force/* = false*/) {
   }
   return f;
 }
-vector <File *> Index::get_files() {
+
+vector<File *> Index::get_files() {
   return get_map_values(files);
 }
 
 //stupid text version. to be improved
-void Index::save (FILE *f) {
-  dl_pcheck (fprintf (f, "%d\n", (int)files.size()));
+void Index::save(FILE *f) {
+  dl_pcheck (fprintf(f, "%d\n", (int)files.size()));
   for (const auto &path_and_file : files) {
     File *file = path_and_file.second;
     std::string path = file->path.substr(dir.length());
-    dl_pcheck (fprintf (f, "%s %llu %llu\n", path.c_str(),
-          file->crc64, file->crc64_with_comments));
+    dl_pcheck (fprintf(f, "%s %llu %llu\n", path.c_str(),
+                       file->crc64, file->crc64_with_comments));
   }
 }
-void Index::load (FILE *f) {
+
+void Index::load(FILE *f) {
   int n;
-  int err = fscanf (f, "%d\n", &n);
+  int err = fscanf(f, "%d\n", &n);
   dl_passert (err == 1, "Failed to load index");
   for (int i = 0; i < n; i++) {
     char tmp[500];
     unsigned long long crc64;
     unsigned long long crc64_with_comments;
-    int err = fscanf (f, "%500s %llu %llu", tmp, &crc64, &crc64_with_comments);
+    int err = fscanf(f, "%500s %llu %llu", tmp, &crc64, &crc64_with_comments);
     dl_passert (err == 3, "Failed to load index");
-    File *file = get_file (tmp, true);
+    File *file = get_file(tmp, true);
     file->crc64 = crc64;
     file->crc64_with_comments = crc64_with_comments;
   }

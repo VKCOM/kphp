@@ -26,55 +26,56 @@
 
 size_t total_mem_used __attribute__ ((weak));
 
-template <class T, class TrackType, class BaseAllocator = std::allocator <T> >
+template<class T, class TrackType, class BaseAllocator = std::allocator<T>>
 class TrackerAllocator : public BaseAllocator {
 public:
   typedef typename BaseAllocator::pointer pointer;
   typedef typename BaseAllocator::size_type size_type;
 
-  TrackerAllocator() throw()
-    : BaseAllocator() {
+  TrackerAllocator() throw() :
+    BaseAllocator() {
   }
 
-  TrackerAllocator (const TrackerAllocator& b) throw()
-    : BaseAllocator (b) {
+  TrackerAllocator(const TrackerAllocator &b) throw() :
+    BaseAllocator(b) {
   }
 
-  template <class U>
-  TrackerAllocator (const typename TrackerAllocator::template rebind <U>::other& b) throw()
-    : BaseAllocator (b) {
+  template<class U>
+  TrackerAllocator(const typename TrackerAllocator::template rebind<U>::other &b) throw() :
+    BaseAllocator(b) {
   }
 
   ~TrackerAllocator() {
   }
 
-  template <class U> struct rebind {
-    typedef TrackerAllocator <U, TrackType, typename BaseAllocator::template rebind <U>::other> other;
+  template<class U>
+  struct rebind {
+    typedef TrackerAllocator<U, TrackType, typename BaseAllocator::template rebind<U>::other> other;
   };
 
-  pointer allocate (size_type n) {
-    pointer r = BaseAllocator::allocate (n);
+  pointer allocate(size_type n) {
+    pointer r = BaseAllocator::allocate(n);
     total_mem_used += n;
     return r;
   }
 
-  pointer allocate (size_type n, pointer h) {
-    pointer r = BaseAllocator::allocate (n, h);
+  pointer allocate(size_type n, pointer h) {
+    pointer r = BaseAllocator::allocate(n, h);
     total_mem_used += n;
     return r;
   }
 
-  void deallocate (pointer p, size_type n) throw() {
-    BaseAllocator::deallocate (p, n);
+  void deallocate(pointer p, size_type n) throw() {
+    BaseAllocator::deallocate(p, n);
     total_mem_used -= n;
   }
 };
 
 //typedef std::basic_string <char,
-                           //std::char_traits<char>,
-                           //TrackerAllocator<char, std::string> > string;
+//std::char_traits<char>,
+//TrackerAllocator<char, std::string> > string;
 //typedef std::vector<int,
-                    //TrackerAllocator<int, std::vector<int> > > trackvector;
+//TrackerAllocator<int, std::vector<int> > > trackvector;
 using std::vector;
 using std::cerr;
 using std::endl;
@@ -108,7 +109,7 @@ using std::priority_queue;
 
 bool use_safe_integer_arithmetic __attribute__ ((weak)) = false;
 
-inline int hash (const string &s) {
+inline int hash(const string &s) {
   int res = 31;
   for (int i = 0; i < (int)s.size(); i++) {
     res = res * 239 + s[i];
@@ -117,7 +118,7 @@ inline int hash (const string &s) {
   return res;
 }
 
-inline unsigned long long hash_ll (const string &s) {
+inline unsigned long long hash_ll(const string &s) {
   unsigned long long res = 31;
   for (int i = 0; i < (int)s.size(); i++) {
     res = res * 239 + s[i];

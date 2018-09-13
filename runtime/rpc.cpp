@@ -16,7 +16,7 @@
 
 static const int GZIP_PACKED = 0x3072cfa1;
 
-static const string UNDERSCORE ("_", 1);
+static const string UNDERSCORE("_", 1);
 
 static const char *last_rpc_error;
 
@@ -32,8 +32,8 @@ static int rpc_data_len_backup;
 static string rpc_data_copy_backup;
 
 
-template <class T>
-static inline T store_parse_number (const string &v) {
+template<class T>
+static inline T store_parse_number(const string &v) {
   T result = 0;
   const char *s = v.c_str();
   int sign = 1;
@@ -47,20 +47,20 @@ static inline T store_parse_number (const string &v) {
   return result * sign;
 }
 
-template <class T>
-static inline T store_parse_number (const var &v) {
+template<class T>
+static inline T store_parse_number(const var &v) {
   if (!v.is_string()) {
     if (v.is_float()) {
       return (T)v.to_float();
     }
     return (T)v.to_int();
   }
-  return store_parse_number <T> (v.to_string());
+  return store_parse_number<T>(v.to_string());
 }
 
 
-template <class T>
-static inline T store_parse_number_unsigned (const string &v) {
+template<class T>
+static inline T store_parse_number_unsigned(const string &v) {
   T result = 0;
   const char *s = v.c_str();
   while ('0' <= *s && *s <= '9') {
@@ -69,19 +69,19 @@ static inline T store_parse_number_unsigned (const string &v) {
   return result;
 }
 
-template <class T>
-static inline T store_parse_number_unsigned (const var &v) {
+template<class T>
+static inline T store_parse_number_unsigned(const var &v) {
   if (!v.is_string()) {
     if (v.is_float()) {
       return (T)v.to_float();
     }
     return (T)v.to_int();
   }
-  return store_parse_number_unsigned <T> (v.to_string());
+  return store_parse_number_unsigned<T>(v.to_string());
 }
 
-template <class T>
-static inline T store_parse_number_hex (const string &v) {
+template<class T>
+static inline T store_parse_number_hex(const string &v) {
   T result = 0;
   const char *s = v.c_str();
   while (1) {
@@ -104,7 +104,7 @@ static inline T store_parse_number_hex (const string &v) {
 }
 
 
-static void rpc_parse_save_backup (void) {
+static void rpc_parse_save_backup(void) {
   dl::enter_critical_section();//OK
   rpc_data_copy_backup = rpc_data_copy;
   dl::leave_critical_section();
@@ -114,7 +114,7 @@ static void rpc_parse_save_backup (void) {
   rpc_data_len_backup = rpc_data_len;
 }
 
-static void rpc_parse_restore_previous (void) {
+static void rpc_parse_restore_previous(void) {
   php_assert ((rpc_data_copy_backup.size() & 3) == 0);
 
   dl::enter_critical_section();//OK
@@ -127,7 +127,7 @@ static void rpc_parse_restore_previous (void) {
   rpc_data_len = rpc_data_len_backup;
 }
 
-void rpc_parse (const int *new_rpc_data, int new_rpc_data_len) {
+void rpc_parse(const int *new_rpc_data, int new_rpc_data_len) {
   rpc_parse_save_backup();
 
   rpc_data_begin = new_rpc_data;
@@ -135,9 +135,9 @@ void rpc_parse (const int *new_rpc_data, int new_rpc_data_len) {
   rpc_data_len = new_rpc_data_len;
 }
 
-bool f$rpc_parse (const string &new_rpc_data) {
-  if (new_rpc_data.size() % sizeof (int) != 0) {
-    php_warning ("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
+bool f$rpc_parse(const string &new_rpc_data) {
+  if (new_rpc_data.size() % sizeof(int) != 0) {
+    php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
     last_rpc_error = "Result's length is not divisible by 4";
     return false;
   }
@@ -149,28 +149,28 @@ bool f$rpc_parse (const string &new_rpc_data) {
   dl::leave_critical_section();
 
   rpc_data_begin = rpc_data = reinterpret_cast <const int *> (rpc_data_copy.c_str());
-  rpc_data_len = rpc_data_copy.size() / sizeof (int);
+  rpc_data_len = rpc_data_copy.size() / sizeof(int);
   return true;
 }
 
-bool f$rpc_parse (const var &new_rpc_data) {
+bool f$rpc_parse(const var &new_rpc_data) {
   if (!new_rpc_data.is_string()) {
-    php_warning ("Parameter 1 of function rpc_parse must be a string, %s is given", new_rpc_data.get_type_c_str());
+    php_warning("Parameter 1 of function rpc_parse must be a string, %s is given", new_rpc_data.get_type_c_str());
     return false;
   }
 
-  return f$rpc_parse (new_rpc_data.to_string());
+  return f$rpc_parse(new_rpc_data.to_string());
 }
 
-bool f$rpc_parse (const OrFalse<string> &new_rpc_data) {
+bool f$rpc_parse(const OrFalse<string> &new_rpc_data) {
   return new_rpc_data.bool_value ? f$rpc_parse(new_rpc_data.val()) : f$rpc_parse(var(false));
 }
 
-int rpc_get_pos (void) {
+int rpc_get_pos(void) {
   return (int)(long)(rpc_data - rpc_data_begin);
 }
 
-bool rpc_set_pos (int pos) {
+bool rpc_set_pos(int pos) {
   if (pos < 0 || rpc_data_begin + pos > rpc_data) {
     return false;
   }
@@ -183,7 +183,7 @@ bool rpc_set_pos (int pos) {
 
 static inline void check_rpc_data_len(int len) {
   if (rpc_data_len < len) {
-    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Not enough data to fetch", 24), -1));
+    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
     return;
   }
   rpc_data_len -= len;
@@ -202,7 +202,7 @@ int f$fetch_int() {
 
 UInt f$fetch_UInt() {
   TRY_CALL_VOID(UInt, (check_rpc_data_len(1)));
-  return UInt ((unsigned int)(*rpc_data++));
+  return UInt((unsigned int)(*rpc_data++));
 }
 
 Long f$fetch_Long() {
@@ -210,7 +210,7 @@ Long f$fetch_Long() {
   long long result = *(long long *)rpc_data;
   rpc_data += 2;
 
-  return Long (result);
+  return Long(result);
 }
 
 ULong f$fetch_ULong() {
@@ -218,7 +218,7 @@ ULong f$fetch_ULong() {
   unsigned long long result = *(unsigned long long *)rpc_data;
   rpc_data += 2;
 
-  return ULong (result);
+  return ULong(result);
 }
 
 var f$fetch_unsigned_int() {
@@ -229,7 +229,7 @@ var f$fetch_unsigned_int() {
     return (int)result;
   }
 
-  return f$strval (UInt (result));
+  return f$strval(UInt(result));
 }
 
 var f$fetch_long() {
@@ -241,7 +241,7 @@ var f$fetch_long() {
     return (int)result;
   }
 
-  return f$strval (Long (result));
+  return f$strval(Long(result));
 }
 
 var f$fetch_unsigned_long() {
@@ -253,7 +253,7 @@ var f$fetch_unsigned_long() {
     return (int)result;
   }
 
-  return f$strval (ULong (result));
+  return f$strval(ULong(result));
 }
 
 string f$fetch_unsigned_int_hex() {
@@ -266,7 +266,7 @@ string f$fetch_unsigned_int_hex() {
     result >>= 4;
   }
 
-  return string (end_buf, 8);
+  return string(end_buf, 8);
 }
 
 string f$fetch_unsigned_long_hex() {
@@ -280,15 +280,15 @@ string f$fetch_unsigned_long_hex() {
     result >>= 4;
   }
 
-  return string (end_buf, 16);
+  return string(end_buf, 16);
 }
 
 string f$fetch_unsigned_int_str() {
-  return f$strval (TRY_CALL (UInt, string, (f$fetch_UInt())));
+  return f$strval(TRY_CALL (UInt, string, (f$fetch_UInt())));
 }
 
 string f$fetch_unsigned_long_str() {
-  return f$strval (TRY_CALL (ULong, string, (f$fetch_ULong())));
+  return f$strval(TRY_CALL (ULong, string, (f$fetch_ULong())));
 }
 
 double f$fetch_double() {
@@ -312,7 +312,7 @@ static inline const char *f$fetch_string_raw(int *string_len) {
     TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return NULL);
     rpc_data += ((result_len + 7) >> 2);
   } else {
-    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Can't fetch string, 255 found", 29), -3));
+    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
     return NULL;
   }
 
@@ -323,13 +323,13 @@ static inline const char *f$fetch_string_raw(int *string_len) {
 string f$fetch_string() {
   int result_len = 0;
   const char *str = TRY_CALL(const char*, string, f$fetch_string_raw(&result_len));
-  return string (str, result_len);
+  return string(str, result_len);
 }
 
 int f$fetch_string_as_int() {
   int result_len = 0;
   const char *str = TRY_CALL(const char*, int, f$fetch_string_raw(&result_len));
-  return string::to_int (str, result_len);
+  return string::to_int(str, result_len);
 }
 
 var f$fetch_memcache_value() {
@@ -337,7 +337,7 @@ var f$fetch_memcache_value() {
   switch (res) {
     case MEMCACHE_VALUE_STRING: {
       int value_len;
-      const char* value = TRY_CALL(const char*, bool, f$fetch_string_raw(&value_len));
+      const char *value = TRY_CALL(const char*, bool, f$fetch_string_raw(&value_len));
       int flags = TRY_CALL(int, bool, f$fetch_int());
       return mc_get_value(value, value_len, flags);
     }
@@ -356,7 +356,7 @@ var f$fetch_memcache_value() {
     }
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
-      THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Wrong memcache.Value constructor", 24), -1));
+      THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Wrong memcache.Value constructor", 24), -1));
       return var();
     }
   }
@@ -368,117 +368,117 @@ bool f$fetch_eof() {
 
 bool f$fetch_end() {
   if (rpc_data_len) {
-    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Too much data to fetch", 22), -2));
+    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Too much data to fetch", 22), -2));
     return false;
   }
   return true;
 }
 
 
-rpc_connection::rpc_connection (void):
-    bool_value (false),
-    host_num (-1),
-    port (-1),
-    timeout_ms (-1),
-    default_actor_id (-1),
-    connect_timeout (-1),
-    reconnect_timeout (-1) {
+rpc_connection::rpc_connection(void) :
+  bool_value(false),
+  host_num(-1),
+  port(-1),
+  timeout_ms(-1),
+  default_actor_id(-1),
+  connect_timeout(-1),
+  reconnect_timeout(-1) {
 }
 
-rpc_connection::rpc_connection (bool value):
-    bool_value (value),
-    host_num (-1),
-    port (-1),
-    timeout_ms (-1),
-    default_actor_id (-1),
-    connect_timeout (-1),
-    reconnect_timeout (-1) {
+rpc_connection::rpc_connection(bool value) :
+  bool_value(value),
+  host_num(-1),
+  port(-1),
+  timeout_ms(-1),
+  default_actor_id(-1),
+  connect_timeout(-1),
+  reconnect_timeout(-1) {
 }
 
-rpc_connection::rpc_connection (bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout):
-    bool_value (value),
-    host_num (host_num),
-    port (port),
-    timeout_ms (timeout_ms),
-    default_actor_id (default_actor_id),
-    connect_timeout (connect_timeout),
-    reconnect_timeout (reconnect_timeout) {
+rpc_connection::rpc_connection(bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout) :
+  bool_value(value),
+  host_num(host_num),
+  port(port),
+  timeout_ms(timeout_ms),
+  default_actor_id(default_actor_id),
+  connect_timeout(connect_timeout),
+  reconnect_timeout(reconnect_timeout) {
 }
 
-rpc_connection& rpc_connection::operator = (bool value) {
+rpc_connection &rpc_connection::operator=(bool value) {
   bool_value = value;
   return *this;
 }
 
 
-rpc_connection f$new_rpc_connection (string host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
-  int host_num = rpc_connect_to (host_name.c_str(), port);
+rpc_connection f$new_rpc_connection(string host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+  int host_num = rpc_connect_to(host_name.c_str(), port);
   if (host_num < 0) {
     return rpc_connection();
   }
 
-  return rpc_connection (true, host_num, port, timeout_convert_to_ms (timeout),
-                         store_parse_number <long long> (default_actor_id),
-                         timeout_convert_to_ms (connect_timeout), timeout_convert_to_ms (reconnect_timeout));
+  return rpc_connection(true, host_num, port, timeout_convert_to_ms(timeout),
+                        store_parse_number<long long>(default_actor_id),
+                        timeout_convert_to_ms(connect_timeout), timeout_convert_to_ms(reconnect_timeout));
 }
 
-bool f$boolval (const rpc_connection &my_rpc) {
+bool f$boolval(const rpc_connection &my_rpc) {
   return my_rpc.bool_value;
 }
 
-bool eq2 (const rpc_connection &my_rpc, bool value) {
+bool eq2(const rpc_connection &my_rpc, bool value) {
   return my_rpc.bool_value == value;
 }
 
-bool eq2 (bool value, const rpc_connection &my_rpc) {
+bool eq2(bool value, const rpc_connection &my_rpc) {
   return value == my_rpc.bool_value;
 }
 
-bool equals (bool value, const rpc_connection &my_rpc) {
-  return equals (value, my_rpc.bool_value);
+bool equals(bool value, const rpc_connection &my_rpc) {
+  return equals(value, my_rpc.bool_value);
 }
 
-bool equals (const rpc_connection &my_rpc, bool value) {
-  return equals (my_rpc.bool_value, value);
+bool equals(const rpc_connection &my_rpc, bool value) {
+  return equals(my_rpc.bool_value, value);
 }
 
-bool not_equals (bool value, const rpc_connection &my_rpc) {
-  return not_equals (value, my_rpc.bool_value);
+bool not_equals(bool value, const rpc_connection &my_rpc) {
+  return not_equals(value, my_rpc.bool_value);
 }
 
-bool not_equals (const rpc_connection &my_rpc, bool value) {
-  return not_equals (my_rpc.bool_value, value);
+bool not_equals(const rpc_connection &my_rpc, bool value) {
+  return not_equals(my_rpc.bool_value, value);
 }
 
 
 static string_buffer data_buf;
-static const int data_buf_header_size = 2 * sizeof (long long) + 4 * sizeof (int);
-static const int data_buf_header_reserved_size = sizeof (long long) + sizeof (int);
+static const int data_buf_header_size = 2 * sizeof(long long) + 4 * sizeof(int);
+static const int data_buf_header_reserved_size = sizeof(long long) + sizeof(int);
 
 int rpc_stored;
 static int rpc_pack_threshold;
 static int rpc_pack_from;
 
-void f$store_gzip_pack_threshold (int pack_threshold_bytes) {
+void f$store_gzip_pack_threshold(int pack_threshold_bytes) {
   rpc_pack_threshold = pack_threshold_bytes;
 }
 
-void f$store_start_gzip_pack (void) {
+void f$store_start_gzip_pack(void) {
   rpc_pack_from = data_buf.size();
 }
 
-void f$store_finish_gzip_pack (int threshold) {
+void f$store_finish_gzip_pack(int threshold) {
   if (rpc_pack_from != -1 && threshold > 0) {
     int answer_size = data_buf.size() - rpc_pack_from;
-    php_assert (rpc_pack_from % sizeof (int) == 0 && 0 <= rpc_pack_from && 0 <= answer_size);
+    php_assert (rpc_pack_from % sizeof(int) == 0 && 0 <= rpc_pack_from && 0 <= answer_size);
     if (answer_size >= threshold) {
       const char *answer_begin = data_buf.c_str() + rpc_pack_from;
-      const string_buffer *compressed = zlib_encode (answer_begin, answer_size, 6, ZLIB_ENCODE);
+      const string_buffer *compressed = zlib_encode(answer_begin, answer_size, 6, ZLIB_ENCODE);
 
-      if ((int)(compressed->size() + 2 * sizeof (int)) < answer_size) {
-        data_buf.set_pos (rpc_pack_from);
-        f$store_int (GZIP_PACKED);
-        store_string (compressed->buffer(), compressed->size());
+      if ((int)(compressed->size() + 2 * sizeof(int)) < answer_size) {
+        data_buf.set_pos(rpc_pack_from);
+        f$store_int(GZIP_PACKED);
+        store_string(compressed->buffer(), compressed->size());
       }
     }
   }
@@ -486,122 +486,122 @@ void f$store_finish_gzip_pack (int threshold) {
 }
 
 
-template <class T>
-inline bool store_raw (T v) {
-  data_buf.append ((char *)&v, sizeof (v));
+template<class T>
+inline bool store_raw(T v) {
+  data_buf.append((char *)&v, sizeof(v));
   return true;
 }
 
-bool f$store_raw (const string &data) {
+bool f$store_raw(const string &data) {
   int data_len = (int)data.size();
   if (data_len & 3) {
     return false;
   }
-  data_buf.append (data.c_str(), data_len);
+  data_buf.append(data.c_str(), data_len);
   return true;
 }
 
-bool store_header (long long cluster_id, int flags) {
+bool store_header(long long cluster_id, int flags) {
   if (flags) {
-    f$store_int (TL_RPC_DEST_ACTOR_FLAGS);
-    store_long (cluster_id);
-    f$store_int (flags);
+    f$store_int(TL_RPC_DEST_ACTOR_FLAGS);
+    store_long(cluster_id);
+    f$store_int(flags);
   } else {
-    f$store_int (TL_RPC_DEST_ACTOR);
-    store_long (cluster_id);
+    f$store_int(TL_RPC_DEST_ACTOR);
+    store_long(cluster_id);
   }
   return true;
 }
 
-bool f$store_header (const var &cluster_id, int flags) {
-  return store_header (store_parse_number <long long> (cluster_id), flags);
+bool f$store_header(const var &cluster_id, int flags) {
+  return store_header(store_parse_number<long long>(cluster_id), flags);
 }
 
-bool store_error (int error_code, const char *error_text, int error_text_len) {
-  f$rpc_clean (true);
-  f$store_int (error_code);
-  store_string (error_text, error_text_len);
-  rpc_store (true);
+bool store_error(int error_code, const char *error_text, int error_text_len) {
+  f$rpc_clean(true);
+  f$store_int(error_code);
+  store_string(error_text, error_text_len);
+  rpc_store(true);
   script_error();
   return true;
 }
 
-bool store_error (int error_code, const char *error_text) {
-  return store_error (error_code, error_text, (int)strlen (error_text));
+bool store_error(int error_code, const char *error_text) {
+  return store_error(error_code, error_text, (int)strlen(error_text));
 }
 
-bool f$store_error (int error_code, const string &error_text) {
-  return store_error (error_code, error_text.c_str(), (int)error_text.size());
+bool f$store_error(int error_code, const string &error_text) {
+  return store_error(error_code, error_text.c_str(), (int)error_text.size());
 }
 
-bool f$store_int (int v) {
-  return store_raw (v);
+bool f$store_int(int v) {
+  return store_raw(v);
 }
 
-bool f$store_UInt (UInt v) {
-  return store_raw (v.l);
+bool f$store_UInt(UInt v) {
+  return store_raw(v.l);
 }
 
-bool f$store_Long (Long v) {
-  return store_raw (v.l);
+bool f$store_Long(Long v) {
+  return store_raw(v.l);
 }
 
-bool f$store_ULong (ULong v) {
-  return store_raw (v.l);
+bool f$store_ULong(ULong v) {
+  return store_raw(v.l);
 }
 
-bool store_unsigned_int (unsigned int v) {
-  return store_raw (v);
+bool store_unsigned_int(unsigned int v) {
+  return store_raw(v);
 }
 
-bool store_long (long long v) {
-  return store_raw (v);
+bool store_long(long long v) {
+  return store_raw(v);
 }
 
-bool store_unsigned_long (unsigned long long v) {
-  return store_raw (v);
+bool store_unsigned_long(unsigned long long v) {
+  return store_raw(v);
 }
 
-bool f$store_unsigned_int (const string &v) {
-  return store_raw (store_parse_number_unsigned <unsigned int> (v));
+bool f$store_unsigned_int(const string &v) {
+  return store_raw(store_parse_number_unsigned<unsigned int>(v));
 }
 
-bool f$store_long (const string &v) {
-  return store_raw (store_parse_number <long long> (v));
+bool f$store_long(const string &v) {
+  return store_raw(store_parse_number<long long>(v));
 }
 
-bool f$store_unsigned_long (const string &v) {
-  return store_raw (store_parse_number_unsigned <unsigned long long> (v));
+bool f$store_unsigned_long(const string &v) {
+  return store_raw(store_parse_number_unsigned<unsigned long long>(v));
 }
 
-bool f$store_unsigned_int_hex (const string &v) {
-  return store_raw (store_parse_number_hex <unsigned int> (v));
+bool f$store_unsigned_int_hex(const string &v) {
+  return store_raw(store_parse_number_hex<unsigned int>(v));
 }
 
-bool f$store_unsigned_long_hex (const string &v) {
-  return store_raw (store_parse_number_hex <unsigned long long> (v));
+bool f$store_unsigned_long_hex(const string &v) {
+  return store_raw(store_parse_number_hex<unsigned long long>(v));
 }
 
-bool f$store_double (double v) {
-  return store_raw (v);
+bool f$store_double(double v) {
+  return store_raw(v);
 }
 
-bool store_string (const char *v, int v_len) {
+bool store_string(const char *v, int v_len) {
   int all_len = v_len;
   if (v_len < 254) {
-    data_buf << (char) (v_len);
+    data_buf << (char)(v_len);
     all_len += 1;
   } else if (v_len < (1 << 24)) {
     data_buf
-      << (char) (254)
-      << (char) (v_len & 255)
-      << (char) ((v_len >> 8) & 255)
-      << (char) ((v_len >> 16) & 255);
+      << (char)(254)
+      << (char)(v_len & 255)
+      << (char)((v_len >> 8) & 255)
+      << (char)((v_len >> 16) & 255);
     all_len += 4;
   } else {
     php_critical_error ("trying to store too big string of length %d", v_len);
   }
-  data_buf.append (v, v_len);
+  data_buf.append(v, v_len);
 
   while (all_len % 4 != 0) {
     data_buf << '\0';
@@ -610,41 +610,41 @@ bool store_string (const char *v, int v_len) {
   return true;
 }
 
-bool f$store_string (const string &v) {
-  return store_string (v.c_str(), (int)v.size());
+bool f$store_string(const string &v) {
+  return store_string(v.c_str(), (int)v.size());
 }
 
-bool f$store_many (const array <var> &a) {
+bool f$store_many(const array<var> &a) {
   int n = a.count();
   if (n == 0) {
-    php_warning ("store_many must take at least 1 argument");
+    php_warning("store_many must take at least 1 argument");
     return false;
   }
 
-  string pattern = a.get_value (0).to_string();
+  string pattern = a.get_value(0).to_string();
   if (n != 1 + (int)pattern.size()) {
-    php_warning ("Wrong number of arguments in call to store_many");
+    php_warning("Wrong number of arguments in call to store_many");
     return false;
   }
 
   for (int i = 1; i < n; i++) {
     switch (pattern[i - 1]) {
-    case 's':
-      f$store_string (a.get_value (i).to_string());
-      break;
-    case 'l':
-      f$store_long (a.get_value (i));
-      break;
-    case 'd':
-    case 'i':
-      f$store_int (a.get_value (i).to_int());
-      break;
-    case 'f':
-      f$store_double (a.get_value (i).to_float());
-      break;
-    default:
-      php_warning ("Wrong symbol '%c' at position %d in first argument of store_many", pattern[i - 1], i - 1);
-      break;
+      case 's':
+        f$store_string(a.get_value(i).to_string());
+        break;
+      case 'l':
+        f$store_long(a.get_value(i));
+        break;
+      case 'd':
+      case 'i':
+        f$store_int(a.get_value(i).to_int());
+        break;
+      case 'f':
+        f$store_double(a.get_value(i).to_float());
+        break;
+      default:
+        php_warning("Wrong symbol '%c' at position %d in first argument of store_many", pattern[i - 1], i - 1);
+        break;
     }
   }
 
@@ -652,47 +652,47 @@ bool f$store_many (const array <var> &a) {
 }
 
 
-bool f$store_finish (void) {
-  return rpc_store (false);
+bool f$store_finish(void) {
+  return rpc_store(false);
 }
 
-bool f$rpc_clean (bool is_error) {
+bool f$rpc_clean(bool is_error) {
   data_buf.clean();
-  f$store_int (-1); //reserve for TL_RPC_DEST_ACTOR
-  store_long (-1); //reserve for actor_id
-  f$store_int (-1); //reserve for length
-  f$store_int (-1); //reserve for num
-  f$store_int (-is_error); //reserve for type
-  store_long (-1); //reserve for req_id
+  f$store_int(-1); //reserve for TL_RPC_DEST_ACTOR
+  store_long(-1); //reserve for actor_id
+  f$store_int(-1); //reserve for length
+  f$store_int(-1); //reserve for num
+  f$store_int(-is_error); //reserve for type
+  store_long(-1); //reserve for req_id
 
   rpc_pack_from = -1;
   return true;
 }
 
-string f$rpc_get_clean (void) {
-  string data = string (data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
+string f$rpc_get_clean(void) {
+  string data = string(data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
   f$rpc_clean();
   return data;
 }
 
-string f$rpc_get_contents (void) {
-  return string (data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
+string f$rpc_get_contents(void) {
+  return string(data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
 }
 
 
-bool rpc_store (bool is_error) {
+bool rpc_store(bool is_error) {
   if (rpc_stored) {
     return false;
   }
 
   if (!is_error) {
     rpc_pack_from = data_buf_header_size;
-    f$store_finish_gzip_pack (rpc_pack_threshold);
+    f$store_finish_gzip_pack(rpc_pack_threshold);
   }
 
-  f$store_int (-1); // reserve for crc32
+  f$store_int(-1); // reserve for crc32
   rpc_stored = 1;
-  rpc_answer (data_buf.c_str() + data_buf_header_reserved_size, (int)(data_buf.size() - data_buf_header_reserved_size));
+  rpc_answer(data_buf.c_str() + data_buf_header_reserved_size, (int)(data_buf.size() - data_buf_header_reserved_size));
   return true;
 }
 
@@ -719,13 +719,15 @@ static rpc_request gotten_rpc_request;
 
 static int timeout_wakeup_id = -1;
 
-static inline rpc_request* get_rpc_request(slot_id_t request_id) {
+static inline rpc_request *get_rpc_request(slot_id_t request_id) {
   php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
-  if (request_id < rpc_first_array_request_id) return &gotten_rpc_request;
+  if (request_id < rpc_first_array_request_id) {
+    return &gotten_rpc_request;
+  }
   return &rpc_requests[request_id - rpc_first_array_request_id];
 }
 
-var load_rpc_request_as_var (char *storage) {
+var load_rpc_request_as_var(char *storage) {
   rpc_request *data = reinterpret_cast <rpc_request *> (storage);
   var result;
   if (data->resumable_id == -2) {
@@ -734,7 +736,7 @@ var load_rpc_request_as_var (char *storage) {
     php_assert (data->resumable_id == -1);
 
     string result_str;
-    result_str.assign_raw (data->answer - 12);
+    result_str.assign_raw(data->answer - 12);
     result = result_str;
   }
 
@@ -742,7 +744,7 @@ var load_rpc_request_as_var (char *storage) {
   return result;
 }
 
-class rpc_resumable: public Resumable {
+class rpc_resumable : public Resumable {
 private:
   int request_id;
   int port;
@@ -750,7 +752,7 @@ private:
   double begin_time;
 
 protected:
-  bool run (void) {
+  bool run(void) {
     php_assert (dl::query_num == rpc_requests_last_query_num);
     rpc_request *request = get_rpc_request(request_id);
     php_assert (request->resumable_id < 0);
@@ -771,18 +773,18 @@ protected:
         rpc_first_unfinished_request_id++;
       }
       if (rpc_first_unfinished_request_id < rpc_next_request_id) {
-        int resumable_id = get_rpc_request (rpc_first_unfinished_request_id)->resumable_id;
+        int resumable_id = get_rpc_request(rpc_first_unfinished_request_id)->resumable_id;
         php_assert (resumable_id > 0);
-        const Resumable *resumable = get_forked_resumable (resumable_id);
+        const Resumable *resumable = get_forked_resumable(resumable_id);
         php_assert (resumable != NULL);
         static_cast <const rpc_resumable *>(resumable)->set_server_status_rpc();
       } else {
-        ::set_server_status_rpc (0, 0, get_precise_now());
+        ::set_server_status_rpc(0, 0, get_precise_now());
       }
     }
 
     request_id = -1;
-    output_->save <rpc_request> (*request, load_rpc_request_as_var);
+    output_->save<rpc_request>(*request, load_rpc_request_as_var);
     php_assert (request->resumable_id == -2 || request->resumable_id == -1);
     request->resumable_id = -3;
     request->answer = NULL;
@@ -791,30 +793,30 @@ protected:
   }
 
   void set_server_status_rpc() const {
-    ::set_server_status_rpc (port, actor_id, begin_time);
+    ::set_server_status_rpc(port, actor_id, begin_time);
   }
 
 public:
-  rpc_resumable (int request_id, int port, long long actor_id):
-      request_id (request_id),
-      port (port),
-      actor_id (actor_id),
-      begin_time (get_precise_now()) {
+  rpc_resumable(int request_id, int port, long long actor_id) :
+    request_id(request_id),
+    port(port),
+    actor_id(actor_id),
+    begin_time(get_precise_now()) {
     if (rpc_first_unfinished_request_id == request_id) {
       set_server_status_rpc();
     }
   }
 };
 
-static array <double> rpc_request_need_timer;
+static array<double> rpc_request_need_timer;
 
-static void process_rpc_timeout (int request_id) {
-  process_rpc_error (request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
+static void process_rpc_timeout(int request_id) {
+  process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
 }
 
-int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
+int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (unlikely (conn.host_num < 0)) {
-    php_warning ("Wrong rpc_connection specified");
+    php_warning("Wrong rpc_connection specified");
     return -1;
   }
 
@@ -822,26 +824,26 @@ int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
     timeout = conn.timeout_ms * 0.001;
   }
 
-  f$store_int (-1); // reserve for crc32
-  php_assert (data_buf.size() % sizeof (int) == 0);
+  f$store_int(-1); // reserve for crc32
+  php_assert (data_buf.size() % sizeof(int) == 0);
 
   int reserved = data_buf_header_reserved_size;
   if (conn.default_actor_id) {
     const char *answer_begin = data_buf.c_str() + data_buf_header_size;
     int x = *(int *)answer_begin;
     if (x != TL_RPC_DEST_ACTOR && x != TL_RPC_DEST_ACTOR_FLAGS) {
-      reserved -= (int)(sizeof (int) + sizeof (long long));
+      reserved -= (int)(sizeof(int) + sizeof(long long));
       php_assert (reserved >= 0);
-      *(int *)(answer_begin - sizeof (int) - sizeof (long long)) = TL_RPC_DEST_ACTOR;
-      *(long long *)(answer_begin - sizeof (long long)) = conn.default_actor_id;
+      *(int *)(answer_begin - sizeof(int) - sizeof(long long)) = TL_RPC_DEST_ACTOR;
+      *(long long *)(answer_begin - sizeof(long long)) = conn.default_actor_id;
     }
   }
 
   dl::size_type request_size = (dl::size_type)(data_buf.size() - reserved);
-  void *p = dl::allocate (request_size);
-  memcpy (p, data_buf.c_str() + reserved, request_size);
+  void *p = dl::allocate(request_size);
+  memcpy(p, data_buf.c_str() + reserved, request_size);
 
-  slot_id_t result = rpc_send_query (conn.host_num, (char *)p, (int)request_size, timeout_convert_to_ms (timeout));
+  slot_id_t result = rpc_send_query(conn.host_num, (char *)p, (int)request_size, timeout_convert_to_ms(timeout));
   if (result <= 0) {
     return -1;
   }
@@ -849,7 +851,7 @@ int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (dl::query_num != rpc_requests_last_query_num) {
     rpc_requests_last_query_num = dl::query_num;
     rpc_requests_size = 170;
-    rpc_requests = static_cast <rpc_request *> (dl::allocate (sizeof (rpc_request) * rpc_requests_size));
+    rpc_requests = static_cast <rpc_request *> (dl::allocate(sizeof(rpc_request) * rpc_requests_size));
 
     rpc_first_request_id = result;
     rpc_first_array_request_id = result;
@@ -865,24 +867,24 @@ int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (result - rpc_first_array_request_id >= rpc_requests_size) {
     php_assert (result - rpc_first_array_request_id == rpc_requests_size);
     if (rpc_first_unfinished_request_id > rpc_first_array_request_id + rpc_requests_size / 2) {
-      memcpy (rpc_requests,
-              rpc_requests + rpc_first_unfinished_request_id - rpc_first_array_request_id,
-              sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
+      memcpy(rpc_requests,
+             rpc_requests + rpc_first_unfinished_request_id - rpc_first_array_request_id,
+             sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
       rpc_first_array_request_id = rpc_first_unfinished_request_id;
     } else {
-      rpc_requests = static_cast <rpc_request *> (dl::reallocate (rpc_requests, sizeof (rpc_request) * 2 * rpc_requests_size, sizeof (rpc_request) * rpc_requests_size));
+      rpc_requests = static_cast <rpc_request *> (dl::reallocate(rpc_requests, sizeof(rpc_request) * 2 * rpc_requests_size, sizeof(rpc_request) * rpc_requests_size));
       rpc_requests_size *= 2;
     }
   }
 
-  rpc_request *cur = get_rpc_request (result);
+  rpc_request *cur = get_rpc_request(result);
 
-  cur->resumable_id = register_forked_resumable (new rpc_resumable (result, conn.port, conn.default_actor_id));
+  cur->resumable_id = register_forked_resumable(new rpc_resumable(result, conn.port, conn.default_actor_id));
   cur->timer = NULL;
   if (ignore_answer) {
     int resumable_id = cur->resumable_id;
-    process_rpc_timeout (result);
-    get_forked_storage (resumable_id)->load<rpc_request, rpc_request>();
+    process_rpc_timeout(result);
+    get_forked_storage(resumable_id)->load<rpc_request, rpc_request>();
     return resumable_id;
   } else {
     rpc_request_need_timer.set_value(result, timeout);
@@ -890,23 +892,23 @@ int rpc_send (const rpc_connection &conn, double timeout, bool ignore_answer) {
   }
 }
 
-void f$rpc_flush (void) {
+void f$rpc_flush(void) {
   update_precise_now();
-  wait_net (0);
+  wait_net(0);
   update_precise_now();
   for (array<double>::iterator iter = rpc_request_need_timer.begin(); iter != rpc_request_need_timer.end(); ++iter) {
     int id = iter.get_key().to_int();
-    rpc_request *cur = get_rpc_request (id);
+    rpc_request *cur = get_rpc_request(id);
     if (cur->resumable_id > 0) {
       php_assert (cur->timer == NULL);
-      cur->timer = allocate_event_timer (iter.get_value() + get_precise_now(), timeout_wakeup_id, id);
+      cur->timer = allocate_event_timer(iter.get_value() + get_precise_now(), timeout_wakeup_id, id);
     }
   }
   rpc_request_need_timer.clear();
 }
 
-int f$rpc_send (const rpc_connection &conn, double timeout) {
-  int request_id = rpc_send (conn, timeout);
+int f$rpc_send(const rpc_connection &conn, double timeout) {
+  int request_id = rpc_send(conn, timeout);
   if (request_id <= 0) {
     return 0;
   }
@@ -915,8 +917,8 @@ int f$rpc_send (const rpc_connection &conn, double timeout) {
   return request_id;
 }
 
-int f$rpc_send_noflush (const rpc_connection &conn, double timeout) {
-  int request_id = rpc_send (conn, timeout);
+int f$rpc_send_noflush(const rpc_connection &conn, double timeout) {
+  int request_id = rpc_send(conn, timeout);
   if (request_id <= 0) {
     return 0;
   }
@@ -925,13 +927,12 @@ int f$rpc_send_noflush (const rpc_connection &conn, double timeout) {
 }
 
 
-
-void process_rpc_answer (int request_id, char *result, int result_len __attribute__((unused))) {
+void process_rpc_answer(int request_id, char *result, int result_len __attribute__((unused))) {
   rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
     php_assert (result != NULL);
-    dl::deallocate (result - 12, result_len + 13);
+    dl::deallocate(result - 12, result_len + 13);
     php_assert (request->resumable_id != -1);
     return;
   }
@@ -939,7 +940,7 @@ void process_rpc_answer (int request_id, char *result, int result_len __attribut
   request->resumable_id = -1;
 
   if (request->timer) {
-    remove_event_timer (request->timer);
+    remove_event_timer(request->timer);
   }
 
   php_assert (result != NULL);
@@ -947,11 +948,11 @@ void process_rpc_answer (int request_id, char *result, int result_len __attribut
 //  fprintf (stderr, "answer_len = %d\n", result_len);
 
   php_assert (resumable_id > 0);
-  resumable_run_ready (resumable_id);
+  resumable_run_ready(resumable_id);
 }
 
-void process_rpc_error (int request_id, int error_code __attribute__((unused)), const char *error_message) {
-  rpc_request *request = get_rpc_request (request_id);
+void process_rpc_error(int request_id, int error_code __attribute__((unused)), const char *error_message) {
+  rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
     php_assert (request->resumable_id != -1);
@@ -961,33 +962,33 @@ void process_rpc_error (int request_id, int error_code __attribute__((unused)), 
   request->resumable_id = -2;
 
   if (request->timer) {
-    remove_event_timer (request->timer);
+    remove_event_timer(request->timer);
   }
 
   request->error = error_message;
 
   php_assert (resumable_id > 0);
-  resumable_run_ready (resumable_id);
+  resumable_run_ready(resumable_id);
 }
 
 
-class rpc_get_resumable: public Resumable {
-  typedef OrFalse <string> ReturnT;
+class rpc_get_resumable : public Resumable {
+  typedef OrFalse<string> ReturnT;
   int resumable_id;
   double timeout;
 
   bool ready;
 protected:
-  bool run (void) {
+  bool run(void) {
     RESUMABLE_BEGIN
-      ready = f$wait (resumable_id, timeout);
+      ready = f$wait(resumable_id, timeout);
       TRY_WAIT(rpc_get_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
         RETURN(false);
       }
 
-      Storage *input = get_forked_storage (resumable_id);
+      Storage *input = get_forked_storage(resumable_id);
       if (input->getter_ == NULL) {
         last_rpc_error = "Result already was gotten";
         RETURN(false);
@@ -997,7 +998,7 @@ protected:
         RETURN(false);
       }
 
-      rpc_request res = input->load <rpc_request, rpc_request> ();
+      rpc_request res = input->load<rpc_request, rpc_request>();
 #ifdef FAST_EXCEPTIONS
       php_assert (CurException == NULL);
 #endif
@@ -1010,45 +1011,47 @@ protected:
       php_assert (res.resumable_id == -1);
 
       string result;
-      result.assign_raw (res.answer - 12);
+      result.assign_raw(res.answer - 12);
       RETURN(result);
     RESUMABLE_END
   }
 
 public:
-  rpc_get_resumable (int resumable_id, double timeout): resumable_id (resumable_id), timeout (timeout) {
+  rpc_get_resumable(int resumable_id, double timeout) :
+    resumable_id(resumable_id),
+    timeout(timeout) {
   }
 };
 
 
-OrFalse <string> f$rpc_get (int request_id, double timeout) {
-  return start_resumable <OrFalse <string> > (new rpc_get_resumable (request_id, timeout));
+OrFalse<string> f$rpc_get(int request_id, double timeout) {
+  return start_resumable<OrFalse<string>>(new rpc_get_resumable(request_id, timeout));
 }
 
-OrFalse <string> f$rpc_get_synchronously (int request_id) {
-  wait_synchronously (request_id);
-  OrFalse <string> result = f$rpc_get (request_id);
+OrFalse<string> f$rpc_get_synchronously(int request_id) {
+  wait_synchronously(request_id);
+  OrFalse<string> result = f$rpc_get(request_id);
   php_assert (resumable_finished);
   return result;
 }
 
-class rpc_get_and_parse_resumable: public Resumable {
+class rpc_get_and_parse_resumable : public Resumable {
   typedef bool ReturnT;
   int resumable_id;
   double timeout;
 
   bool ready;
 protected:
-  bool run (void) {
+  bool run(void) {
     RESUMABLE_BEGIN
-      ready = f$wait (resumable_id, timeout);
+      ready = f$wait(resumable_id, timeout);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
         RETURN(false);
       }
 
-      Storage *input = get_forked_storage (resumable_id);
+      Storage *input = get_forked_storage(resumable_id);
       if (input->getter_ == NULL) {
         last_rpc_error = "Result already was gotten";
         RETURN(false);
@@ -1058,7 +1061,7 @@ protected:
         RETURN(false);
       }
 
-      rpc_request res = input->load <rpc_request, rpc_request> ();
+      rpc_request res = input->load<rpc_request, rpc_request>();
 #ifdef FAST_EXCEPTIONS
       php_assert (CurException == NULL);
 #endif
@@ -1071,8 +1074,8 @@ protected:
       php_assert (res.resumable_id == -1);
 
       string result;
-      result.assign_raw (res.answer - 12);
-      bool parse_result = f$rpc_parse (result);
+      result.assign_raw(res.answer - 12);
+      bool parse_result = f$rpc_parse(result);
       php_assert(parse_result);
 
       RETURN(true);
@@ -1080,17 +1083,19 @@ protected:
   }
 
 public:
-  rpc_get_and_parse_resumable (int resumable_id, double timeout): resumable_id (resumable_id), timeout (timeout) {
+  rpc_get_and_parse_resumable(int resumable_id, double timeout) :
+    resumable_id(resumable_id),
+    timeout(timeout) {
   }
 };
 
-bool f$rpc_get_and_parse (int request_id, double timeout) {
-  return start_resumable <bool> (new rpc_get_and_parse_resumable (request_id, timeout));
+bool f$rpc_get_and_parse(int request_id, double timeout) {
+  return start_resumable<bool>(new rpc_get_and_parse_resumable(request_id, timeout));
 }
 
 
-int f$query_x2 (int x) {
-  return query_x2 (x);
+int f$query_x2(int x) {
+  return query_x2(x);
 }
 
 
@@ -1101,16 +1106,16 @@ int f$query_x2 (int x) {
  */
 
 
-bool f$store_unsigned_int (const var &v) {
-  return store_unsigned_int (store_parse_number_unsigned <unsigned int> (v));
+bool f$store_unsigned_int(const var &v) {
+  return store_unsigned_int(store_parse_number_unsigned<unsigned int>(v));
 }
 
-bool f$store_long (const var &v) {
-  return store_long (store_parse_number <long long> (v));
+bool f$store_long(const var &v) {
+  return store_long(store_parse_number<long long>(v));
 }
 
-bool f$store_unsigned_long (const var &v) {
-  return store_unsigned_long (store_parse_number_unsigned <unsigned long long> (v));
+bool f$store_unsigned_long(const var &v) {
+  return store_unsigned_long(store_parse_number_unsigned<unsigned long long>(v));
 }
 
 
@@ -1121,32 +1126,32 @@ bool f$store_unsigned_long (const var &v) {
  */
 
 
-int tl_parse_int (void) {
+int tl_parse_int(void) {
   return TRY_CALL(int, int, (f$fetch_int()));
 }
 
-long long tl_parse_long (void) {
+long long tl_parse_long(void) {
   return TRY_CALL(long long, int, (f$fetch_Long().l));
 }
 
-double tl_parse_double (void) {
+double tl_parse_double(void) {
   return TRY_CALL(double, double, (f$fetch_double()));
 }
 
-string tl_parse_string (void) {
+string tl_parse_string(void) {
   return TRY_CALL(string, string, (f$fetch_string()));
 }
 
-void tl_parse_end (void) {
+void tl_parse_end(void) {
   TRY_CALL_VOID(void, (f$fetch_end()));
 }
 
-int tl_parse_save_pos (void) {
+int tl_parse_save_pos(void) {
   return rpc_get_pos();
 }
 
-bool tl_parse_restore_pos (int pos) {
-  return rpc_set_pos (pos);
+bool tl_parse_restore_pos(int pos) {
+  return rpc_set_pos(pos);
 }
 
 
@@ -1183,6 +1188,7 @@ const int FLAGS_MASK = ((1 << 16) - 1);
 
 
 class tl_combinator;
+
 class tl_tree;
 
 class tl_type {
@@ -1192,7 +1198,7 @@ public:
   int arity;
   int flags;
   int constructors_num;
-  array <tl_combinator *> constructors;
+  array<tl_combinator *> constructors;
 };
 
 class arg {
@@ -1211,7 +1217,7 @@ public:
   string name;
   int var_count;
   int type_id;
-  array <arg> args;
+  array<arg> args;
   tl_tree *result;
 
   void **IP;
@@ -1224,45 +1230,47 @@ class tl_tree {
 public:
   int flags;
 
-  tl_tree (int flags): flags (flags) {
+  tl_tree(int flags) :
+    flags(flags) {
   }
 
-  virtual void print (int shift = 0) const = 0;
+  virtual void print(int shift = 0) const = 0;
 
-  virtual int get_type (void) const = 0;
+  virtual int get_type(void) const = 0;
 
-  virtual bool equals (const tl_tree *other) const = 0;
+  virtual bool equals(const tl_tree *other) const = 0;
 
-  virtual tl_tree *dup (void) const = 0;
+  virtual tl_tree *dup(void) const = 0;
 
-  virtual void destroy (void) = 0;
+  virtual void destroy(void) = 0;
 
-  virtual ~tl_tree (void) {
+  virtual ~tl_tree(void) {
   }
 };
 
-class tl_tree_type: public tl_tree {
+class tl_tree_type : public tl_tree {
 public:
   tl_type *type;
-  array <tl_tree *> children;
+  array<tl_tree *> children;
 
-  tl_tree_type (int flags, tl_type *type, const array_size &s): tl_tree (flags),
-                                                                type (type),
-                                                                children (s) {
+  tl_tree_type(int flags, tl_type *type, const array_size &s) :
+    tl_tree(flags),
+    type(type),
+    children(s) {
   }
 
-  virtual void print (int shift = 0) const {
-    fprintf (stderr, "%*sType %s(%x) at (%p)\n", shift, "", type->name.c_str (), type->id, this);
-    for (array<tl_tree *>::const_iterator iter = children.begin (); iter != children.end (); ++iter) {
-      iter.get_value ()->print (shift + 4);
+  virtual void print(int shift = 0) const {
+    fprintf(stderr, "%*sType %s(%x) at (%p)\n", shift, "", type->name.c_str(), type->id, this);
+    for (array<tl_tree *>::const_iterator iter = children.begin(); iter != children.end(); ++iter) {
+      iter.get_value()->print(shift + 4);
     }
   }
 
-  virtual int get_type (void) const {
+  virtual int get_type(void) const {
     return NODE_TYPE_TYPE;
   }
 
-  virtual bool equals (const tl_tree *other_) const {
+  virtual bool equals(const tl_tree *other_) const {
     if (other_->get_type() != NODE_TYPE_TYPE) {
       return false;
     }
@@ -1271,173 +1279,178 @@ public:
       return false;
     }
     for (int i = 0; i < children.count(); i++) {
-      if (!children.get_value (i)->equals (other->children.get_value (i))) {
+      if (!children.get_value(i)->equals(other->children.get_value(i))) {
         return false;
       }
     }
     return true;
   }
 
-  virtual tl_tree *dup (void) const {
-    tl_tree_type *T = (tl_tree_type *)dl::allocate (sizeof (tl_tree_type));
+  virtual tl_tree *dup(void) const {
+    tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
     //fprintf (stderr, "dup type %s (%p), result = %p\n", type->name.c_str(), this, T);
-    new (T) tl_tree_type (flags, type, children.size());
+    new(T) tl_tree_type(flags, type, children.size());
 
     for (int i = 0; i < children.count(); i++) {
-      T->children.set_value (i, children.get_value (i)->dup());
+      T->children.set_value(i, children.get_value(i)->dup());
     }
     return T;
   }
 
-  virtual void destroy (void) {
+  virtual void destroy(void) {
     for (int i = 0; i < children.count(); i++) {
-      if (children.get_value (i) != NULL) {
-        children.get_value (i)->destroy();
+      if (children.get_value(i) != NULL) {
+        children.get_value(i)->destroy();
       }
     }
 
     this->~tl_tree_type();
-    dl::deallocate (this, sizeof (*this));
+    dl::deallocate(this, sizeof(*this));
   }
 };
 
-class tl_tree_nat_const: public tl_tree {
+class tl_tree_nat_const : public tl_tree {
 public:
   int num;
 
-  tl_tree_nat_const (int flags, int num): tl_tree (flags),
-                                          num (num) {
+  tl_tree_nat_const(int flags, int num) :
+    tl_tree(flags),
+    num(num) {
   }
 
-  virtual void print (int shift = 0) const {
-    fprintf (stderr, "%*sConst %d\n", shift, "", num);
+  virtual void print(int shift = 0) const {
+    fprintf(stderr, "%*sConst %d\n", shift, "", num);
   }
 
-  virtual int get_type (void) const {
+  virtual int get_type(void) const {
     return NODE_TYPE_NAT_CONST;
   }
 
-  virtual bool equals (const tl_tree *other) const {
+  virtual bool equals(const tl_tree *other) const {
     return other->get_type() == NODE_TYPE_NAT_CONST && num == static_cast <const tl_tree_nat_const *> (other)->num;
   }
 
-  virtual tl_tree *dup (void) const {
-    tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate (sizeof (tl_tree_nat_const));
+  virtual tl_tree *dup(void) const {
+    tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
     //fprintf (stderr, "dup nat const %d (%p), result = %p\n", num, this, T);
-    new (T) tl_tree_nat_const (flags, num);
+    new(T) tl_tree_nat_const(flags, num);
 
     return T;
   }
 
-  virtual void destroy (void) {
+  virtual void destroy(void) {
     this->~tl_tree_nat_const();
-    dl::deallocate (this, sizeof (*this));
+    dl::deallocate(this, sizeof(*this));
   }
 };
 
-class tl_tree_var_type: public tl_tree {
+class tl_tree_var_type : public tl_tree {
 public:
   int var_num;
 
-  tl_tree_var_type (int flags, int var_num): tl_tree (flags),
-                                             var_num (var_num) {
+  tl_tree_var_type(int flags, int var_num) :
+    tl_tree(flags),
+    var_num(var_num) {
   }
 
-  virtual void print (int shift = 0) const {
-    fprintf (stderr, "%*sVariable type, var_num = %d.\n", shift, "", var_num);
+  virtual void print(int shift = 0) const {
+    fprintf(stderr, "%*sVariable type, var_num = %d.\n", shift, "", var_num);
   }
 
-  virtual int get_type (void) const {
+  virtual int get_type(void) const {
     return NODE_TYPE_VAR_TYPE;
   }
 
-  virtual bool equals (const tl_tree *other __attribute__((unused))) const {
+  virtual bool equals(const tl_tree *other __attribute__((unused))) const {
     php_assert (false);
     return false;
   }
 
-  virtual tl_tree *dup (void) const {
-    tl_tree_var_type *T = (tl_tree_var_type *)dl::allocate (sizeof (tl_tree_var_type));
+  virtual tl_tree *dup(void) const {
+    tl_tree_var_type *T = (tl_tree_var_type *)dl::allocate(sizeof(tl_tree_var_type));
     //fprintf (stderr, "dup var type (%p), result = %p\n", this, T);
-    new (T) tl_tree_var_type (flags, var_num);
+    new(T) tl_tree_var_type(flags, var_num);
 
     return T;
   }
 
-  virtual void destroy (void) {
+  virtual void destroy(void) {
     this->~tl_tree_var_type();
-    dl::deallocate (this, sizeof (*this));
+    dl::deallocate(this, sizeof(*this));
   }
 };
 
-class tl_tree_var_num: public tl_tree {
+class tl_tree_var_num : public tl_tree {
 public:
   int var_num;
   int diff;
 
-  tl_tree_var_num (int flags, int var_num, int diff): tl_tree (flags),
-                                                      var_num (var_num),
-                                                      diff (diff) {
+  tl_tree_var_num(int flags, int var_num, int diff) :
+    tl_tree(flags),
+    var_num(var_num),
+    diff(diff) {
   }
 
-  virtual void print (int shift = 0) const {
-    fprintf (stderr, "%*sVariable number, var_num = %d, diff = %d.\n", shift, "", var_num, diff);
+  virtual void print(int shift = 0) const {
+    fprintf(stderr, "%*sVariable number, var_num = %d, diff = %d.\n", shift, "", var_num, diff);
   }
 
-  virtual int get_type (void) const {
+  virtual int get_type(void) const {
     return NODE_TYPE_VAR_NUM;
   }
 
-  virtual bool equals (const tl_tree *other __attribute__((unused))) const {
+  virtual bool equals(const tl_tree *other __attribute__((unused))) const {
     php_assert (false);
     return false;
   }
 
-  virtual tl_tree *dup (void) const {
-    tl_tree_var_num *T = (tl_tree_var_num *)dl::allocate (sizeof (tl_tree_var_num));
+  virtual tl_tree *dup(void) const {
+    tl_tree_var_num *T = (tl_tree_var_num *)dl::allocate(sizeof(tl_tree_var_num));
     //fprintf (stderr, "dup var num (%p), result = %p\n", this, T);
-    new (T) tl_tree_var_num (flags, var_num, diff);
+    new(T) tl_tree_var_num(flags, var_num, diff);
 
     return T;
   }
 
-  virtual void destroy (void) {
+  virtual void destroy(void) {
     this->~tl_tree_var_num();
-    dl::deallocate (this, sizeof (*this));
+    dl::deallocate(this, sizeof(*this));
   }
 };
 
-class tl_tree_array: public tl_tree {
+class tl_tree_array : public tl_tree {
 public:
   tl_tree *multiplicity;
-  array <arg> args;
+  array<arg> args;
 
-  tl_tree_array (int flags, tl_tree *multiplicity, const array_size &s): tl_tree (flags),
-                                                                         multiplicity (multiplicity),
-                                                                         args (s) {
+  tl_tree_array(int flags, tl_tree *multiplicity, const array_size &s) :
+    tl_tree(flags),
+    multiplicity(multiplicity),
+    args(s) {
   }
 
-  tl_tree_array (int flags, tl_tree *multiplicity, const array <arg> &a): tl_tree (flags),
-                                                                          multiplicity (multiplicity),
-                                                                          args (a) {
+  tl_tree_array(int flags, tl_tree *multiplicity, const array<arg> &a) :
+    tl_tree(flags),
+    multiplicity(multiplicity),
+    args(a) {
   }
 
-  virtual void print (int shift = 0) const {
-    fprintf (stderr, "%*sArray, number of elements = ", shift, "");
+  virtual void print(int shift = 0) const {
+    fprintf(stderr, "%*sArray, number of elements = ", shift, "");
     multiplicity->print();
 
-    fprintf (stderr, "%*s    elements:", shift, "");
+    fprintf(stderr, "%*s    elements:", shift, "");
     for (int i = 0; i < args.count(); i++) {
-      fprintf (stderr, "%*s    name = %s, var_num = %d\n", shift, "", args.get_value (i).name.c_str(), args.get_value (i).var_num);
-      args.get_value (i).type->print (shift + 4);
+      fprintf(stderr, "%*s    name = %s, var_num = %d\n", shift, "", args.get_value(i).name.c_str(), args.get_value(i).var_num);
+      args.get_value(i).type->print(shift + 4);
     }
   }
 
-  virtual int get_type (void) const {
+  virtual int get_type(void) const {
     return NODE_TYPE_ARRAY;
   }
 
-  virtual bool equals (const tl_tree *other_) const {
+  virtual bool equals(const tl_tree *other_) const {
     if (other_->get_type() != NODE_TYPE_ARRAY) {
       return false;
     }
@@ -1446,28 +1459,28 @@ public:
       return false;
     }
     for (int i = 0; i < args.count(); i++) {
-      if (args.get_value (i).name != other->args.get_value (i).name ||
-          !args.get_value (i).type->equals (other->args.get_value (i).type)) {
+      if (args.get_value(i).name != other->args.get_value(i).name ||
+          !args.get_value(i).type->equals(other->args.get_value(i).type)) {
         return false;
       }
     }
     return true;
   }
 
-  virtual tl_tree *dup (void) const {
-    tl_tree_array *T = (tl_tree_array *)dl::allocate (sizeof (tl_tree_array));
+  virtual tl_tree *dup(void) const {
+    tl_tree_array *T = (tl_tree_array *)dl::allocate(sizeof(tl_tree_array));
     //fprintf (stderr, "dup array (%p), result = %p\n", this, T);
-    new (T) tl_tree_array (flags, multiplicity->dup(), args.size());
+    new(T) tl_tree_array(flags, multiplicity->dup(), args.size());
 
     for (int i = 0; i < args.count(); i++) {
-      T->args[i] = args.get_value (i);
+      T->args[i] = args.get_value(i);
       T->args[i].type = T->args[i].type->dup();
     }
 
     return T;
   }
 
-  virtual void destroy (void) {
+  virtual void destroy(void) {
     multiplicity->destroy();
     for (int i = 0; i < args.count(); i++) {
       if (args[i].type != NULL) {
@@ -1476,7 +1489,7 @@ public:
     }
 
     this->~tl_tree_array();
-    dl::deallocate (this, sizeof (*this));
+    dl::deallocate(this, sizeof(*this));
   }
 };
 
@@ -1501,13 +1514,13 @@ const int TLS_TYPE_EXPR = 0xc1863d08;
 
 static class {
 public:
-  array <tl_type *> types;
-  array <tl_type *> id_to_type;
-  array <tl_type *> name_to_type;
+  array<tl_type *> types;
+  array<tl_type *> id_to_type;
+  array<tl_type *> name_to_type;
 
-  array <tl_combinator *> functions;
-  array <tl_combinator *> id_to_function;
-  array <tl_combinator *> name_to_function;
+  array<tl_combinator *> functions;
+  array<tl_combinator *> id_to_function;
+  array<tl_combinator *> name_to_function;
 
   tl_type *ReqResult;
 
@@ -1515,25 +1528,25 @@ public:
 } tl_config;
 
 
-int get_constructor_by_name (const tl_type *t, const string &name) {
+int get_constructor_by_name(const tl_type *t, const string &name) {
   for (int i = 0; i < t->constructors_num; i++) {
-    if (t->constructors.get_value (i)->name == name) {
+    if (t->constructors.get_value(i)->name == name) {
       return i;
     }
   }
   return -1;
 }
 
-int get_constructor_by_id (const tl_type *t, int id) {
+int get_constructor_by_id(const tl_type *t, int id) {
   for (int i = 0; i < t->constructors_num; i++) {
-    if (t->constructors.get_value (i)->id == id) {
+    if (t->constructors.get_value(i)->id == id) {
       return i;
     }
   }
   return -1;
 }
 
-inline void tl_debug (const char *s __attribute__((unused)), int n __attribute__((unused))) {
+inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__((unused))) {
 //  fprintf (stderr, "%s\n", s);
 }
 
@@ -1541,7 +1554,7 @@ const int MAX_VARS = 100000;
 static tl_tree *vars_buffer[MAX_VARS];
 static tl_tree **last_var_ptr;
 
-tl_tree **get_var_space (tl_tree **vars, int n) {
+tl_tree **get_var_space(tl_tree **vars, int n) {
   tl_tree **res = vars - n;
 
   php_assert (res >= vars_buffer);
@@ -1559,7 +1572,7 @@ tl_tree **get_var_space (tl_tree **vars, int n) {
   return res;
 }
 
-void free_var_space (tl_tree **vars, int n) {
+void free_var_space(tl_tree **vars, int n) {
   for (int i = 0; i < n; i++) {
     if (vars[i] != NULL) {
       vars[i]->destroy();
@@ -1577,13 +1590,13 @@ static var var_stack[MAX_DEPTH];
 
 var *last_arr_ptr;
 
-void free_arr_space (void) {
+void free_arr_space(void) {
   while (last_arr_ptr >= var_stack) {
     *last_arr_ptr-- = var();
   }
 }
 
-void clear_arr_space (void) {
+void clear_arr_space(void) {
   while (last_arr_ptr >= var_stack) {
     CLEAR_VAR(var, *last_arr_ptr);
     last_arr_ptr--;
@@ -1600,30 +1613,30 @@ typedef void *(*function_ptr)(void **IP, void **Data, var *arr, tl_tree **vars);
 
 static const char *tl_current_function_name;
 
-tl_tree *store_function (const var &tl_object) {
+tl_tree *store_function(const var &tl_object) {
   if (tl_config.fetchIP == NULL) {
-    php_warning ("rpc_tl_query not supported due to missing TL scheme");
+    php_warning("rpc_tl_query not supported due to missing TL scheme");
     return NULL;
   }
   if (!tl_object.is_array()) {
-    php_warning ("Not an array passed to function rpc_tl_query");
+    php_warning("Not an array passed to function rpc_tl_query");
     return NULL;
   }
 
   //fprintf (stderr, "Before STORE\n");
-  var f = tl_object.get_value (UNDERSCORE);
+  var f = tl_object.get_value(UNDERSCORE);
   if (f.is_null()) {
-    f = tl_object.get_value (0);
+    f = tl_object.get_value(0);
   }
 
   tl_combinator *c;
   if (unlikely (f.is_int())) {
-    c = tl_config.id_to_function.get_value (f.to_int());
+    c = tl_config.id_to_function.get_value(f.to_int());
   } else {
-    c = tl_config.name_to_function.get_value (f.to_string());
+    c = tl_config.name_to_function.get_value(f.to_string());
   }
   if (c == NULL) {
-    php_warning ("Function \"%s\" not found in rpc_tl_query", f.to_string().c_str());
+    php_warning("Function \"%s\" not found in rpc_tl_query", f.to_string().c_str());
     return NULL;
   }
 
@@ -1631,14 +1644,14 @@ tl_tree *store_function (const var &tl_object) {
 //  fprintf (stderr, "Storing type %s\n", c->name.c_str());
 
   //fprintf (stderr, "Before ALLOCATE in STORE\n");
-  new (var_stack) var (tl_object);
+  new(var_stack) var(tl_object);
 
-  tl_tree **vars = get_var_space (vars_buffer + MAX_VARS, c->var_count);
+  tl_tree **vars = get_var_space(vars_buffer + MAX_VARS, c->var_count);
   tl_tree *res;
   last_arr_ptr = var_stack;
   //fprintf (stderr, "Before TLUNI_START in STORE\n");
 #ifdef FAST_EXCEPTIONS
-  res = (tl_tree *)((*(function_ptr *) c->IP) (c->IP + 1, Data_stack, var_stack, vars));
+  res = (tl_tree *)((*(function_ptr *)c->IP)(c->IP + 1, Data_stack, var_stack, vars));
   if (CurException) {
     res = NULL;
     FREE_EXCEPTION;
@@ -1651,14 +1664,14 @@ tl_tree *store_function (const var &tl_object) {
   }
 #endif
   //fprintf (stderr, "Before FREE in STORE\n");
-  free_var_space (vars, c->var_count);
+  free_var_space(vars, c->var_count);
   free_arr_space();
   //fprintf (stderr, "After FREE in STORE\n");
 
   if (res != NULL) {
-    tl_tree_type *T = (tl_tree_type *)dl::allocate (sizeof (tl_tree_type));
-    new (T) tl_tree_type (0, tl_config.ReqResult, array_size (1, 0, true));
-    T->children.push_back (res);
+    tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
+    new(T) tl_tree_type(0, tl_config.ReqResult, array_size(1, 0, true));
+    T->children.push_back(res);
 
     res = T;
   }
@@ -1667,56 +1680,56 @@ tl_tree *store_function (const var &tl_object) {
   return res;
 }
 
-array <var> tl_fetch_error (const string &error, int error_code) {
-  array <var> result;
-  result.set_value (string ("__error", 7), error);
-  result.set_value (string ("__error_code", 12), error_code);
+array<var> tl_fetch_error(const string &error, int error_code) {
+  array<var> result;
+  result.set_value(string("__error", 7), error);
+  result.set_value(string("__error_code", 12), error_code);
   return result;
 }
 
-array <var> tl_fetch_error (const char *error, int error_code) {
-  return tl_fetch_error (string (error, strlen (error)), error_code);
+array<var> tl_fetch_error(const char *error, int error_code) {
+  return tl_fetch_error(string(error, strlen(error)), error_code);
 }
 
-void hexdump (const void *start, const void *end) {
+void hexdump(const void *start, const void *end) {
   const char *ptr = (const char *)start;
   char c;
-  while (ptr < (char *) end) {
-    int s = (const char *) end - ptr, i;
+  while (ptr < (char *)end) {
+    int s = (const char *)end - ptr, i;
     if (s > 16) {
       s = 16;
     }
-    fprintf (stderr, "%08x", (int) (ptr - (char *) start));
+    fprintf(stderr, "%08x", (int)(ptr - (char *)start));
     for (i = 0; i < 16; i++) {
       c = ' ';
       if (i == 8) {
-        fputc (' ', stderr);
+        fputc(' ', stderr);
       }
       if (i < s) {
-        fprintf (stderr, "%c%02x", c, (unsigned char) ptr[i]);
+        fprintf(stderr, "%c%02x", c, (unsigned char)ptr[i]);
       } else {
-        fprintf (stderr, "%c  ", c);
+        fprintf(stderr, "%c  ", c);
       }
     }
     c = ' ';
-    fprintf (stderr, "%c  ", c);
+    fprintf(stderr, "%c  ", c);
     for (i = 0; i < s; i++) {
-      putc ((unsigned char) ptr[i] < ' ' ? '.' : ptr[i], stderr);
+      putc((unsigned char)ptr[i] < ' ' ? '.' : ptr[i], stderr);
     }
-    putc ('\n', stderr);
+    putc('\n', stderr);
     ptr += 16;
   }
 }
 
-array <var> fetch_function (tl_tree *T) {
+array<var> fetch_function(tl_tree *T) {
   if (tl_config.fetchIP == NULL) {
-    php_warning ("rpc_tl_query_result not supported due to missing TL scheme");
+    php_warning("rpc_tl_query_result not supported due to missing TL scheme");
     php_critical_error ("unreachable");
-    return tl_fetch_error ("TL scheme was not loaded", TL_ERROR_UNKNOWN_FUNCTION_ID);
+    return tl_fetch_error("TL scheme was not loaded", TL_ERROR_UNKNOWN_FUNCTION_ID);
   }
   //fprintf (stderr, "Before FETCH\n");
   php_assert (T != NULL);
-  new (var_stack) var();
+  new(var_stack) var();
 
   int x = 0;
 
@@ -1733,7 +1746,7 @@ array <var> fetch_function (tl_tree *T) {
           if (!CurException) {
             T->destroy();
 
-            return tl_fetch_error (error, error_code);
+            return tl_fetch_error(error, error_code);
           }
         }
       }
@@ -1743,7 +1756,7 @@ array <var> fetch_function (tl_tree *T) {
   if (CurException) {
     T->destroy();
 
-    array <var> result = tl_fetch_error (CurException->message, TL_ERROR_SYNTAX);
+    array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
     FREE_EXCEPTION;
     return result;
   }
@@ -1766,7 +1779,7 @@ array <var> fetch_function (tl_tree *T) {
   }
 #endif
 
-  tl_debug (__FUNCTION__, -2);
+  tl_debug(__FUNCTION__, -2);
   Data_stack[0] = T;
   string fetched_type = ((tl_tree_type *)T)->type->name;
   void *res;
@@ -1776,10 +1789,10 @@ array <var> fetch_function (tl_tree *T) {
 
   //fprintf (stderr, "Before TLUNI_START in FETCH\n");
 #ifdef FAST_EXCEPTIONS
-  res = (tl_tree *)((*(function_ptr *) tl_config.fetchIP) (tl_config.fetchIP + 1, Data_stack + 1, var_stack, vars_buffer + MAX_VARS));
+  res = (tl_tree *)((*(function_ptr *)tl_config.fetchIP)(tl_config.fetchIP + 1, Data_stack + 1, var_stack, vars_buffer + MAX_VARS));
   if (CurException) {
     free_arr_space();
-    array <var> result = tl_fetch_error (CurException->message, TL_ERROR_SYNTAX);
+    array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
     var_stack[0] = var();
     FREE_EXCEPTION;
     return result;
@@ -1796,62 +1809,62 @@ array <var> fetch_function (tl_tree *T) {
   //fprintf (stderr, "After TLUNI_START in FETCH\n");
 
   if (res == TLUNI_OK) {
-    dbg_T->destroy ();
+    dbg_T->destroy();
     if (!f$fetch_eof()) {
-      php_warning ("Not all data fetched during fetch type %s", fetched_type.c_str());
+      php_warning("Not all data fetched during fetch type %s", fetched_type.c_str());
       var_stack[0] = var();
-      return tl_fetch_error ("Not all data fetched", TL_ERROR_EXTRA_DATA);
+      return tl_fetch_error("Not all data fetched", TL_ERROR_EXTRA_DATA);
     }
   } else {
     var_stack[0] = var();
-    php_warning ("incorrect result from engine during fetching type %s", fetched_type.c_str());
+    php_warning("incorrect result from engine during fetching type %s", fetched_type.c_str());
     fprintf(stderr, "================= Bad result from engine start ====================\n");
-    dbg_T->print ();
-    dbg_T->destroy ();
+    dbg_T->print();
+    dbg_T->destroy();
     hexdump(rpc_data_begin, rpc_data_begin + (rpc_data_copy.size() + 3) / 4);
     fprintf(stderr, "================= Bad result from engine end ====================\n");
 
-    return tl_fetch_error ("Incorrect result", TL_ERROR_SYNTAX);
+    return tl_fetch_error("Incorrect result", TL_ERROR_SYNTAX);
   }
 
   var result = var_stack[0];
   var_stack[0] = var();
 
   if (!result.is_array()) {
-    return tl_fetch_error ("Result is not an array. How???", TL_ERROR_INTERNAL);
+    return tl_fetch_error("Result is not an array. How???", TL_ERROR_INTERNAL);
   }
   //fprintf (stderr, "After FETCH\n");
   return result.to_array();
 }
 
-static char rpc_tl_results_storage[sizeof (array <tl_tree *>)];
-static array <tl_tree *> *rpc_tl_results = reinterpret_cast <array <tl_tree *> *> (rpc_tl_results_storage);
+static char rpc_tl_results_storage[sizeof(array<tl_tree *>)];
+static array<tl_tree *> *rpc_tl_results = reinterpret_cast <array<tl_tree *> *> (rpc_tl_results_storage);
 static long long rpc_tl_results_last_query_num = -1;
 
-int f$rpc_tl_query_one (const rpc_connection &c, const var &tl_object, double timeout) {
+int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double timeout) {
   f$rpc_clean();
 
-  tl_tree *result_tree = store_function (tl_object);
+  tl_tree *result_tree = store_function(tl_object);
   if (result_tree == NULL) {
     return 0;
   }
 
-  int query_id = f$rpc_send (c, timeout);
+  int query_id = f$rpc_send(c, timeout);
   if (query_id <= 0) {
     result_tree->destroy();
     return 0;
   }
 
   if (dl::query_num != rpc_tl_results_last_query_num) {
-    new (rpc_tl_results_storage) array <tl_tree *>();
+    new(rpc_tl_results_storage) array<tl_tree *>();
     rpc_tl_results_last_query_num = dl::query_num;
   }
-  rpc_tl_results->set_value (query_id, result_tree);
+  rpc_tl_results->set_value(query_id, result_tree);
 
   return query_id;
 }
 
-int f$rpc_tl_pending_queries_count () {
+int f$rpc_tl_pending_queries_count() {
   if (dl::query_num != rpc_tl_results_last_query_num) {
     return 0;
   }
@@ -1859,14 +1872,14 @@ int f$rpc_tl_pending_queries_count () {
   return rpc_tl_results->count();
 }
 
-bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array< var > &result) {
+bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<var> &result) {
   if (raw_result.empty() || !f$rpc_parse(raw_result)) {
     return false;
   };
 
   int magic = TRY_CALL_ (int, f$fetch_int(), return false);
   if (magic != TL_DICTIONARY) {
-    THROW_EXCEPTION(Exception (rpc_filename, __LINE__, string ("Strange dictionary magic", 24), -1));
+    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Strange dictionary magic", 24), -1));
     return false;
   };
 
@@ -1889,21 +1902,21 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
       return false;
     }
 
-    result.set_value (key, value);
+    result.set_value(key, value);
   };
 
   return true;
 }
 
-array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objects, double timeout, bool ignore_answer) {
-  array <int> result (tl_objects.size());
+array<int> f$rpc_tl_query(const rpc_connection &c, const array<var> &tl_objects, double timeout, bool ignore_answer) {
+  array<int> result(tl_objects.size());
   int bytes_sent = 0;
   for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
     f$rpc_clean();
 
-    tl_tree *result_tree = store_function (it.get_value());
+    tl_tree *result_tree = store_function(it.get_value());
     if (result_tree == NULL) {
-      result.set_value (it.get_key(), 0);
+      result.set_value(it.get_key(), 0);
       continue;
     }
 
@@ -1912,7 +1925,7 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
       f$rpc_flush();
       bytes_sent = data_buf.size();
     }
-    int request_id = rpc_send (c, timeout, ignore_answer);
+    int request_id = rpc_send(c, timeout, ignore_answer);
     if (request_id <= 0) {
       result.set_value(it.get_key(), 0);
       result_tree->destroy();
@@ -1926,12 +1939,12 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
     }
 
     if (dl::query_num != rpc_tl_results_last_query_num) {
-      new (rpc_tl_results_storage) array <tl_tree *>();
+      new(rpc_tl_results_storage) array<tl_tree *>();
       rpc_tl_results_last_query_num = dl::query_num;
     }
-    rpc_tl_results->set_value (request_id, result_tree);
+    rpc_tl_results->set_value(request_id, result_tree);
 
-    result.set_value (it.get_key(), request_id);
+    result.set_value(it.get_key(), request_id);
   }
   if (bytes_sent > 0) {
     f$rpc_flush();
@@ -1941,27 +1954,27 @@ array <int> f$rpc_tl_query (const rpc_connection &c, const array <var> &tl_objec
 }
 
 
-class rpc_tl_query_result_one_resumable: public Resumable {
-  typedef array <var> ReturnT;
+class rpc_tl_query_result_one_resumable : public Resumable {
+  typedef array<var> ReturnT;
 
   int query_id;
   tl_tree *T;
 
 protected:
-  bool run (void) {
+  bool run(void) {
     bool ready;
 
     RESUMABLE_BEGIN
       last_rpc_error = NULL;
-      ready = f$rpc_get_and_parse (query_id, -1);
+      ready = f$rpc_get_and_parse(query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         php_assert (last_rpc_error != NULL);
         T->destroy();
-        RETURN(tl_fetch_error (last_rpc_error, TL_ERROR_UNKNOWN));
+        RETURN(tl_fetch_error(last_rpc_error, TL_ERROR_UNKNOWN));
       }
 
-      array <var> tl_object = fetch_function (T);
+      array<var> tl_object = fetch_function(T);
 //      fprintf (stderr, "!!! %s\n", f$serialize (tl_object).c_str());
       rpc_parse_restore_previous();
       RETURN(tl_object);
@@ -1969,73 +1982,76 @@ protected:
   }
 
 public:
-  rpc_tl_query_result_one_resumable (int query_id, tl_tree *T): query_id (query_id), T (T) {
+  rpc_tl_query_result_one_resumable(int query_id, tl_tree *T) :
+    query_id(query_id),
+    T(T) {
   }
 };
 
 
-array <var> f$rpc_tl_query_result_one (int query_id) {
+array<var> f$rpc_tl_query_result_one(int query_id) {
   if (query_id <= 0) {
     resumable_finished = true;
-    return tl_fetch_error ("Wrong query_id", TL_ERROR_WRONG_QUERY_ID);
+    return tl_fetch_error("Wrong query_id", TL_ERROR_WRONG_QUERY_ID);
   }
 
   if (dl::query_num != rpc_tl_results_last_query_num) {
     resumable_finished = true;
-    return tl_fetch_error ("There was no TL queries in current script run", TL_ERROR_INTERNAL);
+    return tl_fetch_error("There was no TL queries in current script run", TL_ERROR_INTERNAL);
   }
 
-  tl_tree *T = rpc_tl_results->get_value (query_id);
+  tl_tree *T = rpc_tl_results->get_value(query_id);
   if (T == NULL) {
     resumable_finished = true;
-    return tl_fetch_error ("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
+    return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
   }
-  rpc_tl_results->unset (query_id);
+  rpc_tl_results->unset(query_id);
 
-  return start_resumable <array <var> > (new rpc_tl_query_result_one_resumable (query_id, T));
+  return start_resumable<array<var>>(new rpc_tl_query_result_one_resumable(query_id, T));
 }
 
 
-class rpc_tl_query_result_resumable: public Resumable {
-  typedef array <array <var> > ReturnT;
+class rpc_tl_query_result_resumable : public Resumable {
+  typedef array<array<var>> ReturnT;
 
-  const array <int> query_ids;
-  array <array <var> > tl_objects_unsorted;
+  const array<int> query_ids;
+  array<array<var>> tl_objects_unsorted;
   int queue_id;
   int query_id;
 
 protected:
-  bool run (void) {
+  bool run(void) {
     RESUMABLE_BEGIN
       if (query_ids.count() == 1) {
         query_id = query_ids.begin().get_value();
 
-        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
-        TRY_WAIT(rpc_tl_query_result_resumable_label_0, tl_objects_unsorted[query_id], array <var>);
+        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id);
+        TRY_WAIT(rpc_tl_query_result_resumable_label_0, tl_objects_unsorted[query_id], array<var>);
       } else {
-        queue_id = wait_queue_create (query_ids);
-        
+        queue_id = wait_queue_create(query_ids);
+
         while (true) {
-          query_id = f$wait_queue_next (queue_id, -1);
+          query_id = f$wait_queue_next(queue_id, -1);
           TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id, int);
           if (query_id <= 0) {
             break;
           }
-          tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+          tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id);
           php_assert (resumable_finished);
         }
 
         unregister_wait_queue(queue_id);
       }
 
-      array <array <var> > tl_objects (query_ids.size());
-      for (array <int>::const_iterator it = query_ids.begin(); it != query_ids.end(); ++it) {
+      array<array<var>> tl_objects(query_ids.size());
+      for (array<int>::const_iterator it = query_ids.begin(); it != query_ids.end(); ++it) {
         int query_id = it.get_value();
-        if (!tl_objects_unsorted.isset (query_id)) {
+        if (!tl_objects_unsorted.isset(query_id)) {
           if (query_id <= 0) {
-            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           } else {
-            tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "No answer received or duplicate/wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "No answer received or duplicate/wrong query_id "
+                                                                         << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           }
         } else {
           tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
@@ -2047,45 +2063,46 @@ protected:
   }
 
 public:
-  rpc_tl_query_result_resumable (const array <int> &query_ids):
-      query_ids (query_ids),
-      tl_objects_unsorted (array_size (query_ids.count(), 0, false)) {
+  rpc_tl_query_result_resumable(const array<int> &query_ids) :
+    query_ids(query_ids),
+    tl_objects_unsorted(array_size(query_ids.count(), 0, false)) {
   }
 };
 
-array <array <var> > f$rpc_tl_query_result (const array <int> &query_ids) {
-  return start_resumable <array <array <var> > > (new rpc_tl_query_result_resumable (query_ids));
+array<array<var>> f$rpc_tl_query_result(const array<int> &query_ids) {
+  return start_resumable<array<array<var>>>(new rpc_tl_query_result_resumable(query_ids));
 }
 
-array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &query_ids) {
-  array <array <var> > tl_objects_unsorted (array_size (query_ids.count(), 0, false));
+array<array<var>> f$rpc_tl_query_result_synchronously(const array<int> &query_ids) {
+  array<array<var>> tl_objects_unsorted(array_size(query_ids.count(), 0, false));
   if (query_ids.count() == 1) {
-      f$wait_synchronously(query_ids.begin().get_value());
-      tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one (query_ids.begin().get_value());
-      php_assert (resumable_finished);
+    f$wait_synchronously(query_ids.begin().get_value());
+    tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one(query_ids.begin().get_value());
+    php_assert (resumable_finished);
   } else {
-    int queue_id = wait_queue_create (query_ids);
+    int queue_id = wait_queue_create(query_ids);
 
     while (true) {
-      int query_id = f$wait_queue_next_synchronously (queue_id);
+      int query_id = f$wait_queue_next_synchronously(queue_id);
       if (query_id <= 0) {
         break;
       }
-      tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one (query_id);
+      tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id);
       php_assert (resumable_finished);
     }
 
-    unregister_wait_queue (queue_id);
+    unregister_wait_queue(queue_id);
   }
 
-  array <array <var> > tl_objects (query_ids.size());
-  for (array <int>::const_iterator it = query_ids.begin(); it != query_ids.end(); ++it) {
+  array<array<var>> tl_objects(query_ids.size());
+  for (array<int>::const_iterator it = query_ids.begin(); it != query_ids.end(); ++it) {
     int query_id = it.get_value();
-    if (!tl_objects_unsorted.isset (query_id)) {
+    if (!tl_objects_unsorted.isset(query_id)) {
       if (query_id <= 0) {
-        tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       } else {
-        tl_objects[it.get_key()] = tl_fetch_error ((static_SB.clean() << "No answer received or duplicate/wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "No answer received or duplicate/wrong query_id "
+                                                                     << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       }
     } else {
       tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
@@ -2095,34 +2112,34 @@ array <array <var> > f$rpc_tl_query_result_synchronously (const array <int> &que
   return tl_objects;
 }
 
-void *tls_push (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tls_push(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *(Data++) = (void *)((tl_tree *)(*(IP++)))->dup();
   TLUNI_NEXT;
 }
 
-void *tls_arr_pop (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tls_arr_pop(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr-- = var();
   last_arr_ptr = arr;
   TLUNI_NEXT;
 }
 
-void *tls_arr_push (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  new (++arr) var();
+void *tls_arr_push(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  new(++arr) var();
   last_arr_ptr = arr;
   TLUNI_NEXT;
 }
 
-void *tls_store_int (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  f$store_int ((int)(long)*(IP++));
+void *tls_store_int(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  f$store_int((int)(long)*(IP++));
   TLUNI_NEXT;
 }
 
-void *tlcomb_skip_const_int (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_skip_const_int(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int a = TRY_CALL(int, void_ptr, tl_parse_int());
   if (a != (int)(long)*(IP++)) {
     return NULL;
@@ -2139,27 +2156,27 @@ void *tlcomb_skip_const_int (void **IP, void **Data, var *arr, tl_tree **vars) {
  *
  ****/
 
-void *tlcomb_store_any_function (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  var v = arr->get_value (UNDERSCORE);
+void *tlcomb_store_any_function(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  var v = arr->get_value(UNDERSCORE);
   if (v.is_null()) {
-    v = arr->get_value (0);
+    v = arr->get_value(0);
     if (v.is_null()) {
-      php_warning ("Function name not found in unserialize(\"%s\") during store type %s", f$serialize (*arr).c_str(), tl_current_function_name);
+      php_warning("Function name not found in unserialize(\"%s\") during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
       return NULL;
     }
   }
 
   const string &name = v.to_string();
-  const tl_combinator *c = tl_config.name_to_function.get_value (name);
+  const tl_combinator *c = tl_config.name_to_function.get_value(name);
   if (c == NULL) {
-    php_warning ("Function %s not found during store type %s", name.c_str(), tl_current_function_name);
+    php_warning("Function %s not found during store type %s", name.c_str(), tl_current_function_name);
     return NULL;
   }
-  tl_tree **new_vars = get_var_space (vars, c->var_count);
+  tl_tree **new_vars = get_var_space(vars, c->var_count);
 
   void *res = TLUNI_START (c->IP, Data, arr, new_vars);
-  free_var_space (new_vars, c->var_count);
+  free_var_space(new_vars, c->var_count);
   if (res == NULL) {
     return NULL;
   }
@@ -2173,8 +2190,8 @@ void *tlcomb_store_any_function (void **IP, void **Data, var *arr, tl_tree **var
  *
  ****/
 
-void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_type(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   tl_tree_type *e = dynamic_cast <tl_tree_type *> ((tl_tree *)(*(--Data)));
   php_assert (e != NULL);
   tl_type *t = e->type;
@@ -2188,10 +2205,10 @@ void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
     }
   } else {
     int pos = tl_parse_save_pos();
-    l = get_constructor_by_id (t, TRY_CALL(int, void_ptr, tl_parse_int()));
+    l = get_constructor_by_id(t, TRY_CALL(int, void_ptr, tl_parse_int()));
     if (l < 0 && (t->flags & FLAG_DEFAULT_CONSTRUCTOR)) {
       l = t->constructors_num - 1;
-      tl_parse_restore_pos (pos);
+      tl_parse_restore_pos(pos);
     }
     if (l < 0) {
       e->destroy();
@@ -2212,20 +2229,20 @@ void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
       *Data = e->dup();
     }
 //    ((tl_tree *)Data[0])->print();
-    tl_combinator *constructor = t->constructors.get_value (n);
-    tl_tree **new_vars = get_var_space (vars, constructor->var_count);
+    tl_combinator *constructor = t->constructors.get_value(n);
+    tl_tree **new_vars = get_var_space(vars, constructor->var_count);
     void *res = TLUNI_START (constructor->fetchIP, Data + 1, arr, new_vars);
-    free_var_space (new_vars, constructor->var_count);
+    free_var_space(new_vars, constructor->var_count);
     if (res == TLUNI_OK) {
       if (!is_bare && (t->constructors_num > 1) && !(t->flags & FLAG_NOCONS)) {
-        arr->set_value (UNDERSCORE, constructor->name);
+        arr->set_value(UNDERSCORE, constructor->name);
       }
       if (r - l > 1) {
         e->destroy();
       }
       TLUNI_NEXT;
     }
-    php_assert (tl_parse_restore_pos (k));
+    php_assert (tl_parse_restore_pos(k));
   }
   if (r - l > 1) {
     e->destroy();
@@ -2239,32 +2256,32 @@ void *tlcomb_fetch_type (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP  :
  *
  ****/
-void *tlcomb_store_bool (void **IP, void **Data, var *arr, tl_tree **vars);
+void *tlcomb_store_bool(void **IP, void **Data, var *arr, tl_tree **vars);
 
-void *tlcomb_store_type (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_store_type(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   tl_tree_type *e = (tl_tree_type *)(*(--Data));
   php_assert (e != NULL && e->get_type() == NODE_TYPE_TYPE);
   tl_type *t = e->type;
   php_assert (t != NULL);
 //  fprintf (stderr, "%s\n", t->name.c_str());
   php_assert (t->constructors_num != 0);
-  if (t->id == TYPE_ID_BOOL){
-      e->destroy();
-      return tlcomb_store_bool(IP, Data, arr, vars);
+  if (t->id == TYPE_ID_BOOL) {
+    e->destroy();
+    return tlcomb_store_bool(IP, Data, arr, vars);
   }
 
   int l = -1;
   if (t->constructors_num > 1) {
-    var v = arr->get_value (UNDERSCORE);
+    var v = arr->get_value(UNDERSCORE);
     if (v.is_null()) {
-      v = arr->get_value (0);
+      v = arr->get_value(0);
     }
     if (!v.is_null()) {
       const string &s = v.to_string();
-      l = get_constructor_by_name (t, s);
+      l = get_constructor_by_name(t, s);
       if (l < 0) {
-        php_warning ("Constructor %s not found during store type %s", s.c_str(), tl_current_function_name);
+        php_warning("Constructor %s not found during store type %s", s.c_str(), tl_current_function_name);
         e->destroy();
         return NULL;
       }
@@ -2282,28 +2299,28 @@ void *tlcomb_store_type (void **IP, void **Data, var *arr, tl_tree **vars) {
 
   int k = tl_parse_save_pos();
   for (int n = l; n < r; n++) {
-    tl_combinator *constructor = t->constructors.get_value (n);
+    tl_combinator *constructor = t->constructors.get_value(n);
     if (!(e->flags & FLAG_BARE) && constructor->name != UNDERSCORE) {
-      f$store_int (constructor->id);
+      f$store_int(constructor->id);
     }
     if (r - l > 1) {
       *Data = e->dup();
     }
-    tl_tree **new_vars = get_var_space (vars, constructor->var_count);
+    tl_tree **new_vars = get_var_space(vars, constructor->var_count);
     void *res = TLUNI_START (constructor->IP, Data + 1, arr, new_vars);
-    free_var_space (new_vars, constructor->var_count);
+    free_var_space(new_vars, constructor->var_count);
     if (res == TLUNI_OK) {
       if (r - l > 1) {
         e->destroy();
       }
       TLUNI_NEXT;
     }
-    php_assert (tl_parse_restore_pos (k));
+    php_assert (tl_parse_restore_pos(k));
   }
   if (r - l > 1) {
     e->destroy();
   }
-  php_warning ("Apropriate constructor doesn't found in unserialize(%s) during store type %s", f$serialize (*arr).c_str(), tl_current_function_name);
+  php_warning("Apropriate constructor doesn't found in unserialize(%s) during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
   return NULL;
 }
 
@@ -2312,20 +2329,20 @@ void *tlcomb_store_type (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP  : id num
  *
  ***/
-void *tlcomb_store_field (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_store_field(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   const string *name = (const string *)(IP++);
   int num = (int)(long)*(IP++);
 
-  var v = arr->get_value (*name);
+  var v = arr->get_value(*name);
   if (v.is_null()) {
-    v = arr->get_value (num);
+    v = arr->get_value(num);
     if (v.is_null()) {
-      php_warning ("Field \"%s\"(%d) not found during store type %s", name->c_str(), num, tl_current_function_name);
+      php_warning("Field \"%s\"(%d) not found during store type %s", name->c_str(), num, tl_current_function_name);
       return NULL;
     }
   }
-  new (++arr) var (v);
+  new(++arr) var(v);
   last_arr_ptr = arr;
   TLUNI_NEXT;
 }
@@ -2337,18 +2354,18 @@ void *tlcomb_store_field (void **IP, void **Data, var *arr, tl_tree **vars) {
  *
  ***/
 
-void *tlcomb_fetch_field_end (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_field_end(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   const string *name = (const string *)(IP++);
   int num = (int)(long)*(IP++);
 
   if (arr->is_null()) {
-    *arr = array <var> ();
+    *arr = array<var>();
   }
   if (name->size() != 0) {
-    arr[-1].set_value (*name, *arr);
+    arr[-1].set_value(*name, *arr);
   } else {
-    arr[-1].set_value (num, *arr);
+    arr[-1].set_value(num, *arr);
   }
   *arr-- = var();
   last_arr_ptr = arr;
@@ -2361,11 +2378,11 @@ void *tlcomb_fetch_field_end (void **IP, void **Data, var *arr, tl_tree **vars) 
  * IP  : newIP
  *
  ***/
-void *tlcomb_store_array (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_store_array(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   void **newIP = (void **)*(IP++);
   if (!arr->is_array()) {
-    php_warning ("Array expected, unserialize (\"%s\") found during store type %s", f$serialize (*arr).c_str(), tl_current_function_name);
+    php_warning("Array expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
     return NULL;
   }
   tl_tree_nat_const *c = (tl_tree_nat_const *)(*(--Data));
@@ -2373,12 +2390,12 @@ void *tlcomb_store_array (void **IP, void **Data, var *arr, tl_tree **vars) {
   int multiplicity = c->num;
   c->destroy();
   for (int i = 0; i < multiplicity; i++) {
-    if (!arr->isset (i)) {
-      php_warning ("Field %d not found in array during store type %s", i, tl_current_function_name);
+    if (!arr->isset(i)) {
+      php_warning("Field %d not found in array during store type %s", i, tl_current_function_name);
       return NULL;
     }
-    var w = arr->get_value (i);
-    new (++arr) var (w);
+    var w = arr->get_value(i);
+    new(++arr) var(w);
     last_arr_ptr = arr;
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
@@ -2397,61 +2414,61 @@ void *tlcomb_store_array (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP  : newIP
  *
  ***/
-void *tlcomb_fetch_array (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_array(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   void **newIP = (void **)*(IP++);
   tl_tree_nat_const *c = (tl_tree_nat_const *)(*(--Data));
   php_assert (c != NULL && c->get_type() == NODE_TYPE_NAT_CONST);
   int multiplicity = c->num;
   c->destroy();
-  *arr = array <var>();
+  *arr = array<var>();
   for (int i = 0; i < multiplicity; i++) {
-    new (++arr) var();
+    new(++arr) var();
     last_arr_ptr = arr;
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
       return NULL;
     }
-    arr[-1].push_back (*arr);
+    arr[-1].push_back(*arr);
     *arr-- = var();
     last_arr_ptr = arr;
   }
   TLUNI_NEXT;
 }
 
-void *tlcomb_fetch_int (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_int(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr = TRY_CALL(int, void_ptr, (f$fetch_int()));
   TLUNI_NEXT;
 }
 
-void *tlcomb_fetch_long (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_long(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr = TRY_CALL(var, void_ptr, (f$fetch_long()));
   TLUNI_NEXT;
 }
 
-void *tlcomb_fetch_double (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_double(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr = TRY_CALL(double, void_ptr, (f$fetch_double()));
   TLUNI_NEXT;
 }
 
-void *tlcomb_fetch_string (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_string(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr = TRY_CALL(string, void_ptr, (f$fetch_string()));
   TLUNI_NEXT;
 }
 
-void *tlcomb_fetch_false (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_false(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr = false;
   TLUNI_NEXT;
 }
 
-void *tlcomb_fetch_true (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_true(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *arr = true;
   TLUNI_NEXT;
 }
@@ -2461,8 +2478,8 @@ void *tlcomb_fetch_true (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: newIP
  *
  *****/
-void *tlcomb_fetch_vector (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
   void **newIP = (void **)*(IP++);
 
@@ -2473,16 +2490,16 @@ void *tlcomb_fetch_vector (void **IP, void **Data, var *arr, tl_tree **vars) {
   }
   */
 
-  *arr = array <var> (array_size (multiplicity, 0, true));
+  *arr = array<var>(array_size(multiplicity, 0, true));
   for (int i = 0; i < multiplicity; i++) {
-    new (++arr) var();
+    new(++arr) var();
     last_arr_ptr = arr;
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
       return NULL;
     }
-    arr[-1].push_back (*arr);
+    arr[-1].push_back(*arr);
     *arr-- = var();
     last_arr_ptr = arr;
   }
@@ -2494,8 +2511,8 @@ void *tlcomb_fetch_vector (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: newIP
  *
  *****/
-void *tlcomb_fetch_dictionary (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
   void **newIP = (void **)*(IP++);
 
@@ -2506,9 +2523,9 @@ void *tlcomb_fetch_dictionary (void **IP, void **Data, var *arr, tl_tree **vars)
   }
   */
 
-  *arr = array <var> (array_size (0, multiplicity, false));
+  *arr = array<var>(array_size(0, multiplicity, false));
   for (int i = 0; i < multiplicity; i++) {
-    new (++arr) var();
+    new(++arr) var();
     last_arr_ptr = arr;
 
     string key = TRY_CALL(string, void_ptr, tl_parse_string());
@@ -2517,7 +2534,7 @@ void *tlcomb_fetch_dictionary (void **IP, void **Data, var *arr, tl_tree **vars)
       last_arr_ptr = arr;
       return NULL;
     }
-    arr[-1].set_value (key, *arr);
+    arr[-1].set_value(key, *arr);
     *arr-- = var();
     last_arr_ptr = arr;
   }
@@ -2530,8 +2547,8 @@ void *tlcomb_fetch_dictionary (void **IP, void **Data, var *arr, tl_tree **vars)
  * IP: newIP
  *
  *****/
-void *tlcomb_fetch_maybe (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_maybe(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   void **newIP = (void **)*(IP++);
   if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
     *arr-- = var();
@@ -2546,17 +2563,17 @@ void *tlcomb_fetch_maybe (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: var_num
  *
  *****/
-void *tlcomb_store_var_num (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_store_var_num(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
-  int num = f$intval (*arr);
+  int num = f$intval(*arr);
 
-  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate (sizeof (tl_tree_nat_const));
-  new (T) tl_tree_nat_const (0, num);
+  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
+  new(T) tl_tree_nat_const(0, num);
 
   php_assert (vars[var_num] == NULL);
   vars[var_num] = T;
-  f$store_int (num);
+  f$store_int(num);
   TLUNI_NEXT;
 }
 
@@ -2565,14 +2582,14 @@ void *tlcomb_store_var_num (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: var_num
  *
  *****/
-void *tlcomb_fetch_var_num (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_var_num(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int num = TRY_CALL(int, void_ptr, tl_parse_int());
   *arr = num;
   int var_num = (int)(long)*(IP++);
 
-  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate (sizeof (tl_tree_nat_const));
-  new (T) tl_tree_nat_const (0, num);
+  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
+  new(T) tl_tree_nat_const(0, num);
 
   php_assert (vars[var_num] == NULL);
   vars[var_num] = T;
@@ -2585,8 +2602,8 @@ void *tlcomb_fetch_var_num (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: var_num
  *
  *****/
-void *tlcomb_fetch_check_var_num (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_fetch_check_var_num(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int num = TRY_CALL(int, void_ptr, tl_parse_int());
   int var_num = (int)(long)*(IP++);
   php_assert (vars[var_num] != NULL && vars[var_num]->get_type() == NODE_TYPE_NAT_CONST);
@@ -2602,63 +2619,65 @@ void *tlcomb_fetch_check_var_num (void **IP, void **Data, var *arr, tl_tree **va
  * IP: var_num flags
  *
  *****/
-void *tlcomb_store_var_type (void **IP, void **Data, var *arr, tl_tree **vars) {
+void *tlcomb_store_var_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   php_assert ("Not supported" && 0);
-  tl_debug (__FUNCTION__, -1);
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
   int flags = (int)(long)*(IP++);
-  string s = f$strval (*arr);
-  tl_type *t = tl_config.name_to_type.get_value (s);
+  string s = f$strval(*arr);
+  tl_type *t = tl_config.name_to_type.get_value(s);
   if (t == NULL) {
     return NULL;
   }
 
-  tl_tree_type *T = (tl_tree_type *)dl::allocate (sizeof (tl_tree_type));
-  new (T) tl_tree_type (flags, t, array_size (0, 0, true));
+  tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
+  new(T) tl_tree_type(flags, t, array_size(0, 0, true));
 
   php_assert (vars[var_num] == NULL);
   vars[var_num] = T;
   TLUNI_NEXT;
 }
 
-void *tlcomb_store_int (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  f$store_int (f$intval (*arr));
+void *tlcomb_store_int(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  f$store_int(f$intval(*arr));
   TLUNI_NEXT;
 }
 
-void *tlcomb_store_long (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  f$store_long (*arr);
+void *tlcomb_store_long(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  f$store_long(*arr);
   TLUNI_NEXT;
 }
 
-void *tlcomb_store_double (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  f$store_double (f$floatval (*arr));
+void *tlcomb_store_double(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  f$store_double(f$floatval(*arr));
   TLUNI_NEXT;
 }
 
-void *tlcomb_store_string (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
-  f$store_string (f$strval (*arr));
+void *tlcomb_store_string(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  f$store_string(f$strval(*arr));
   TLUNI_NEXT;
 }
 
-void *tlcomb_store_bool (void **IP, void **Data, var *arr, tl_tree **vars) {
+void *tlcomb_store_bool(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   if (arr->is_array()) {
     var v = arr->get_value(UNDERSCORE);
-    if (v.is_null())
-        v = arr->get_value(0);    
+    if (v.is_null()) {
+      v = arr->get_value(0);
+    }
     if (!v.is_null()) {
-      const string& s = v.to_string();
-      if (s == string("boolFalse", 9))
+      const string &s = v.to_string();
+      if (s == string("boolFalse", 9)) {
         f$store_int(ID_BOOL_FALSE);
-      else if (s == string("boolTrue", 8))
+      } else if (s == string("boolTrue", 8)) {
         f$store_int(ID_BOOL_TRUE);
-      else
+      } else {
         return 0;
+      }
       TLUNI_NEXT;
     }
     return 0;
@@ -2674,25 +2693,25 @@ void *tlcomb_store_bool (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP  : newIP
  *
  ***/
-void *tlcomb_store_vector (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_store_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
 
   void **newIP = (void **)*(IP++);
 
   if (!arr->is_array()) {
-    php_warning ("Vector expected, unserialize (\"%s\") found during store type %s", f$serialize (*arr).c_str(), tl_current_function_name);
+    php_warning("Vector expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
     return NULL;
   }
   int multiplicity = arr->count();
-  f$store_int (multiplicity);
+  f$store_int(multiplicity);
 
   for (int i = 0; i < multiplicity; i++) {
-    if (!arr->isset (i)) {
-      php_warning ("Field %d not found in vector during store type %s", i, tl_current_function_name);
+    if (!arr->isset(i)) {
+      php_warning("Field %d not found in vector during store type %s", i, tl_current_function_name);
       return NULL;
     }
-    var w = arr->get_value (i);
-    new (++arr) var (w);
+    var w = arr->get_value(i);
+    new(++arr) var(w);
     last_arr_ptr = arr;
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
@@ -2710,23 +2729,23 @@ void *tlcomb_store_vector (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP  : newIP
  *
  ***/
-void *tlcomb_store_dictionary (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_store_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
 
   void **newIP = (void **)*(IP++);
 
   if (!arr->is_array()) {
-    php_warning ("Dictionary expected, unserialize (\"%s\") found during store type %s", f$serialize (*arr).c_str(), tl_current_function_name);
+    php_warning("Dictionary expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
     return NULL;
   }
   int multiplicity = arr->count();
-  f$store_int (multiplicity);
+  f$store_int(multiplicity);
 
-  const array <var> a = arr->to_array();
-  for (array <var>::const_iterator p = a.begin(); p != a.end(); ++p) {
-    f$store_string (f$strval (p.get_key()));
+  const array<var> a = arr->to_array();
+  for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+    f$store_string(f$strval(p.get_key()));
 
-    new (++arr) var (p.get_value());
+    new(++arr) var(p.get_value());
     last_arr_ptr = arr;
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
@@ -2744,8 +2763,8 @@ void *tlcomb_store_dictionary (void **IP, void **Data, var *arr, tl_tree **vars)
  * IP: var_num bit_num shift
  *
  *****/
-void *tlcomb_check_bit (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlcomb_check_bit(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
   int bit_num = (int)(long)*(IP++);
   int shift = (int)(long)*(IP++);
@@ -2772,8 +2791,8 @@ void *tlcomb_check_bit (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: type
  *
  *****/
-void *tluni_check_type (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_check_type(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   tl_tree_type *res = (tl_tree_type *)(*(--Data));
   php_assert (res->get_type() == NODE_TYPE_TYPE);
 
@@ -2787,7 +2806,7 @@ void *tluni_check_type (void **IP, void **Data, var *arr, tl_tree **vars) {
   }
 
   res->~tl_tree_type();
-  dl::deallocate (res, sizeof (tl_tree_type));
+  dl::deallocate(res, sizeof(tl_tree_type));
   TLUNI_NEXT;
 }
 
@@ -2797,8 +2816,8 @@ void *tluni_check_type (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: const
  *
  *****/
-void *tluni_check_nat_const (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_check_nat_const(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   tl_tree_nat_const *res = (tl_tree_nat_const *)(*(--Data));
   php_assert (res->get_type() == NODE_TYPE_NAT_CONST);
 
@@ -2817,12 +2836,12 @@ void *tluni_check_nat_const (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP: array
  *
  *****/
-void *tluni_check_array (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_check_array(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   tl_tree_array *res = (tl_tree_array *)(*(--Data));
   php_assert (res->get_type() == NODE_TYPE_ARRAY);
 
-  if (!res->equals (static_cast <const tl_tree *> (*(IP++)))) {
+  if (!res->equals(static_cast <const tl_tree *> (*(IP++)))) {
     res->destroy();
     return NULL;
   }
@@ -2833,7 +2852,7 @@ void *tluni_check_array (void **IP, void **Data, var *arr, tl_tree **vars) {
 
   void *result = TLUNI_START(IP, Data, arr, vars);
   res->~tl_tree_array();
-  dl::deallocate (res, sizeof (tl_tree_array));
+  dl::deallocate(res, sizeof(tl_tree_array));
   return result;
 }
 
@@ -2843,13 +2862,13 @@ void *tluni_check_array (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP arg_name
  *
  *****/
-void *tluni_check_arg (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_check_arg(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   arg *res = (arg *)(*(--Data));
   const string *name = (const string *)(IP++);
   php_assert (name != NULL);
 
-  if (strcmp (name->c_str(), res->name.c_str())) {
+  if (strcmp(name->c_str(), res->name.c_str())) {
     res->type->destroy();
     return NULL;
   }
@@ -2863,8 +2882,8 @@ void *tluni_check_arg (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP var_num add_value
  *
  *****/
-void *tluni_set_nat_var (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_set_nat_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
 
   tl_tree_nat_const *c = (tl_tree_nat_const *)(*(--Data));
@@ -2887,8 +2906,8 @@ void *tluni_set_nat_var (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP var_num
  *
  *****/
-void *tluni_set_type_var (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_set_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
 
   php_assert (vars[var_num] == NULL);
@@ -2903,8 +2922,8 @@ void *tluni_set_type_var (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP var_num add_value
  *
  *****/
-void *tluni_check_nat_var (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_check_nat_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
   php_assert (vars[var_num] != NULL);
   if (vars[var_num]->get_type() != NODE_TYPE_NAT_CONST) {
@@ -2928,12 +2947,12 @@ void *tluni_check_nat_var (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP var_num
  *
  *****/
-void *tluni_check_type_var (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tluni_check_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   tl_tree *x = (tl_tree *)(*(--Data));
   tl_tree *y = vars[(long)*(IP++)];
   php_assert (y != NULL);
-  if (!y->equals (x)) {
+  if (!y->equals(x)) {
     x->destroy();
     return NULL;
   }
@@ -2948,13 +2967,13 @@ void *tluni_check_type_var (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP flags args_num name_n ... name_1
  *
  *****/
-void *tlsub_create_array (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlsub_create_array(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int flags = (int)(long)*(IP++);
   int args_num = (int)(long)*(IP++);
 
-  tl_tree_array *T = (tl_tree_array *)dl::allocate (sizeof (tl_tree_array));
-  new (T) tl_tree_array (flags, NULL, array_size (args_num, 0, true));
+  tl_tree_array *T = (tl_tree_array *)dl::allocate(sizeof(tl_tree_array));
+  new(T) tl_tree_array(flags, NULL, array_size(args_num, 0, true));
 
   for (int i = 0; i < args_num; i++) {
     T->args[i];//allocate vector
@@ -2976,15 +2995,15 @@ void *tlsub_create_array (void **IP, void **Data, var *arr, tl_tree **vars) {
  * IP flags type_ptr
  *
  *****/
-void *tlsub_create_type (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlsub_create_type(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
 
   int flags = (int)(long)*(IP++);
   tl_type *type = (tl_type *)*(IP++);
   int children_num = type->arity;
 
-  tl_tree_type *T = (tl_tree_type *)dl::allocate (sizeof (tl_tree_type));
-  new (T) tl_tree_type (flags, type, array_size (children_num, 0, true));
+  tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
+  new(T) tl_tree_type(flags, type, array_size(children_num, 0, true));
 
   for (int i = 0; i < children_num; i++) {
     T->children[i] = NULL;//allocate vector
@@ -2996,30 +3015,30 @@ void *tlsub_create_type (void **IP, void **Data, var *arr, tl_tree **vars) {
   TLUNI_NEXT;
 }
 
-void *tlsub_ret_ok (void **IP __attribute__((unused)), void **Data __attribute__((unused)), var *arr __attribute__((unused)), tl_tree **vars __attribute__((unused))) {
-  tl_debug (__FUNCTION__, -1);
+void *tlsub_ret_ok(void **IP __attribute__((unused)), void **Data __attribute__((unused)), var *arr __attribute__((unused)), tl_tree **vars __attribute__((unused))) {
+  tl_debug(__FUNCTION__, -1);
   return TLUNI_OK;
 }
 
-void *tlsub_ret (void **IP __attribute__((unused)), void **Data, var *arr __attribute__((unused)), tl_tree **vars __attribute__((unused))) {
-  tl_debug (__FUNCTION__, -1);
+void *tlsub_ret(void **IP __attribute__((unused)), void **Data, var *arr __attribute__((unused)), tl_tree **vars __attribute__((unused))) {
+  tl_debug(__FUNCTION__, -1);
   return *(--Data);
 }
 
-void *tlsub_push_type_var (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlsub_push_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   *(Data++) = vars[(long)*(IP++)]->dup();
   TLUNI_NEXT;
 }
 
-void *tlsub_push_nat_var (void **IP, void **Data, var *arr, tl_tree **vars) {
-  tl_debug (__FUNCTION__, -1);
+void *tlsub_push_nat_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
   php_assert (vars[var_num] != NULL && vars[var_num]->get_type() == NODE_TYPE_NAT_CONST);
   int num = ((tl_tree_nat_const *)vars[var_num])->num + (int)(long)*(IP++);
 
-  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate (sizeof (tl_tree_nat_const));
-  new (T) tl_tree_nat_const (vars[var_num]->flags, num);
+  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
+  new(T) tl_tree_nat_const(vars[var_num]->flags, num);
 
   *(Data++) = T;
   TLUNI_NEXT;
@@ -3030,15 +3049,15 @@ void *tlsub_push_nat_var (void **IP, void **Data, var *arr, tl_tree **vars) {
 #undef TLUNI_OK
 
 
-void **IP_dup (void **IP, int len) {
+void **IP_dup(void **IP, int len) {
   php_assert (!dl::query_num && len > 0);
-  void **IP_res = (void **)dl::allocate ((dl::size_type)sizeof (void *) * len);
-  memcpy (IP_res, IP, sizeof (void *) * len);
+  void **IP_res = (void **)dl::allocate((dl::size_type)sizeof(void *) * len);
+  memcpy(IP_res, IP, sizeof(void *) * len);
   return IP_res;
 }
 
 
-int gen_uni (tl_tree *t, void **IP, int max_size, int *vars_int) {
+int gen_uni(tl_tree *t, void **IP, int max_size, int *vars_int) {
   php_assert (max_size > 10);
   php_assert (t != NULL);
   int l = 0;
@@ -3049,7 +3068,7 @@ int gen_uni (tl_tree *t, void **IP, int max_size, int *vars_int) {
       IP[l++] = (void *)tluni_check_type;
       IP[l++] = (void *)t1->type;
       for (int i = 0; i < t1->children.count(); i++) {
-        l += gen_uni (t1->children.get_value (i), IP + l, max_size - l, vars_int);
+        l += gen_uni(t1->children.get_value(i), IP + l, max_size - l, vars_int);
       }
       return l;
     }
@@ -3065,11 +3084,11 @@ int gen_uni (tl_tree *t, void **IP, int max_size, int *vars_int) {
       php_assert (t1 != NULL);
       IP[l++] = (void *)tluni_check_array;
       IP[l++] = (void *)t;
-      l += gen_uni (t1->multiplicity, IP + l, max_size - l, vars_int);
+      l += gen_uni(t1->multiplicity, IP + l, max_size - l, vars_int);
       for (int i = 0; i < t1->args.count(); i++) {
         IP[l++] = (void *)tluni_check_arg;
         IP[l++] = *(void **)&t1->args[i].name;
-        l += gen_uni (t1->args[i].type, IP + l, max_size - l, vars_int);
+        l += gen_uni(t1->args[i].type, IP + l, max_size - l, vars_int);
       }
       return l;
     }
@@ -3115,7 +3134,7 @@ int gen_uni (tl_tree *t, void **IP, int max_size, int *vars_int) {
   return -1;
 }
 
-int gen_create (tl_tree *t, void **IP, int max_size, int *vars_int) {
+int gen_create(tl_tree *t, void **IP, int max_size, int *vars_int) {
   php_assert (max_size > 10);
   int l = 0;
   if (t->flags & FLAG_NOVAR) {
@@ -3127,7 +3146,7 @@ int gen_create (tl_tree *t, void **IP, int max_size, int *vars_int) {
     case NODE_TYPE_TYPE: {
       tl_tree_type *t1 = (tl_tree_type *)t;
       for (int i = 0; i < t1->children.count(); i++) {
-        l += gen_create (t1->children[i], IP + l, max_size - l, vars_int);
+        l += gen_create(t1->children[i], IP + l, max_size - l, vars_int);
       }
       php_assert (max_size > l + 10);
       IP[l++] = (void *)tlsub_create_type;
@@ -3138,10 +3157,10 @@ int gen_create (tl_tree *t, void **IP, int max_size, int *vars_int) {
     case NODE_TYPE_ARRAY: {
       tl_tree_array *t1 = (tl_tree_array *)t;
       php_assert (t1->multiplicity != NULL);
-      l += gen_create (t1->multiplicity, IP + l, max_size - l, vars_int);
+      l += gen_create(t1->multiplicity, IP + l, max_size - l, vars_int);
 
       for (int i = 0; i < t1->args.count(); i++) {
-        l += gen_create (t1->args[i].type, IP + l, max_size - l, vars_int);
+        l += gen_create(t1->args[i].type, IP + l, max_size - l, vars_int);
       }
       php_assert (max_size > l + 10 + t1->args.count());
 
@@ -3172,35 +3191,37 @@ int gen_create (tl_tree *t, void **IP, int max_size, int *vars_int) {
   }
 }
 
-int gen_field (const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat);
-int gen_array_store (tl_tree_array *a, void **IP, int max_size, int *vars_int) {
+int gen_field(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat);
+
+int gen_array_store(tl_tree_array *a, void **IP, int max_size, int *vars_int) {
   php_assert (max_size > 10);
   int l = 0;
   for (int i = 0; i < a->args.count(); i++) {
-    l += gen_field (a->args[i], IP + l, max_size - l, vars_int, i, a->args.count() == 1);
+    l += gen_field(a->args[i], IP + l, max_size - l, vars_int, i, a->args.count() == 1);
   }
   php_assert (max_size > l + 1);
   IP[l++] = (void *)tlsub_ret_ok;
   return l;
 }
 
-int gen_field_fetch (const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat);
-int gen_array_fetch (tl_tree_array *a, void **IP, int max_size, int *vars_int) {
+int gen_field_fetch(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat);
+
+int gen_array_fetch(tl_tree_array *a, void **IP, int max_size, int *vars_int) {
   php_assert (max_size > 10);
   int l = 0;
   int args_num = a->args.count();
   for (int i = 0; i < args_num; i++) {
-    l += gen_field_fetch (a->args[i], IP + l, max_size - l, vars_int, i, args_num == 1);
+    l += gen_field_fetch(a->args[i], IP + l, max_size - l, vars_int, i, args_num == 1);
   }
   php_assert (max_size > l + 1);
   IP[l++] = (void *)tlsub_ret_ok;
   return l;
 }
 
-int gen_constructor_store (tl_combinator &c, void **IP, int max_size);
-int gen_constructor_fetch (tl_combinator &c, void **IP, int max_size);
+int gen_constructor_store(tl_combinator &c, void **IP, int max_size);
+int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size);
 
-int gen_field (const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat) {
+int gen_field(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat) {
   php_assert (max_size > 10);
   int l = 0;
   if (arg.exist_var_num >= 0) {
@@ -3240,30 +3261,30 @@ int gen_field (const arg &arg, void **IP, int max_size, int *vars_int, int num, 
           IP[l++] = (void *)(long)constructor->id;
         }
         if (!constructor->IP_len) {
-          php_assert (gen_constructor_store (*constructor, IP + l, max_size - l) > 0);
+          php_assert (gen_constructor_store(*constructor, IP + l, max_size - l) > 0);
         }
         void **IP_ = constructor->IP;
         php_assert (constructor->IP_len >= 2);
         php_assert (IP_[0] == (void *)tluni_check_type);
         php_assert (IP_[1] == (void *)t1->type);
         php_assert (max_size >= l + constructor->IP_len + 10);
-        memcpy (IP + l, IP_ + 2, sizeof (void *) * (constructor->IP_len - 2));
+        memcpy(IP + l, IP_ + 2, sizeof(void *) * (constructor->IP_len - 2));
 
         l += constructor->IP_len - 2;
         php_assert (IP[l - 1] == (void *)tlsub_ret_ok);
         l--;
       } else {
-        l += gen_create (arg.type, IP + l, max_size - l, vars_int);
+        l += gen_create(arg.type, IP + l, max_size - l, vars_int);
         php_assert (max_size > 10 + l);
         IP[l++] = (void *)tlcomb_store_type;
       }
     } else {
       php_assert (type == NODE_TYPE_ARRAY);
-      l += gen_create (((tl_tree_array *)arg.type)->multiplicity, IP + l, max_size - l, vars_int);
+      l += gen_create(((tl_tree_array *)arg.type)->multiplicity, IP + l, max_size - l, vars_int);
       php_assert (max_size > l + 10);
       IP[l++] = (void *)tlcomb_store_array;
       void *newIP[1000];
-      IP[l++] = (void *)IP_dup (newIP, gen_array_store (((tl_tree_array *)arg.type), newIP, 1000, vars_int));
+      IP[l++] = (void *)IP_dup(newIP, gen_array_store(((tl_tree_array *)arg.type), newIP, 1000, vars_int));
     }
   }
   php_assert (max_size > l + 10);
@@ -3276,7 +3297,7 @@ int gen_field (const arg &arg, void **IP, int max_size, int *vars_int, int num, 
   return l;
 }
 
-int gen_field_fetch (const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat) {
+int gen_field_fetch(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat) {
   php_assert (max_size > 30);
   int l = 0;
   if (arg.exist_var_num >= 0) {
@@ -3319,30 +3340,30 @@ int gen_field_fetch (const arg &arg, void **IP, int max_size, int *vars_int, int
           IP[l++] = (void *)(long)constructor->id;
         }
         if (!constructor->fetchIP_len) {
-          php_assert (gen_constructor_fetch (*constructor, IP + l, max_size - l) > 0);
+          php_assert (gen_constructor_fetch(*constructor, IP + l, max_size - l) > 0);
         }
         void **IP_ = constructor->fetchIP;
         php_assert (constructor->fetchIP_len >= 2);
         php_assert (IP_[0] == (void *)tluni_check_type);
         php_assert (IP_[1] == (void *)t1->type);
         php_assert (max_size >= l + constructor->fetchIP_len + 10);
-        memcpy (IP + l, IP_ + 2, sizeof (void *) * (constructor->fetchIP_len - 2));
+        memcpy(IP + l, IP_ + 2, sizeof(void *) * (constructor->fetchIP_len - 2));
 
         l += constructor->fetchIP_len - 2;
         php_assert (IP[l - 1] == (void *)tlsub_ret_ok);
         l--;
       } else {
-        l += gen_create (arg.type, IP + l, max_size - l, vars_int);
+        l += gen_create(arg.type, IP + l, max_size - l, vars_int);
         php_assert (max_size > l + 10);
         IP[l++] = (void *)tlcomb_fetch_type;
       }
     } else {
       php_assert (t == NODE_TYPE_ARRAY);
-      l += gen_create (((tl_tree_array *)arg.type)->multiplicity, IP + l, max_size - l, vars_int);
+      l += gen_create(((tl_tree_array *)arg.type)->multiplicity, IP + l, max_size - l, vars_int);
       php_assert (max_size > l + 10);
       IP[l++] = (void *)tlcomb_fetch_array;
       void *newIP[1000];
-      IP[l++] = IP_dup (newIP, gen_array_fetch (((tl_tree_array *)arg.type), newIP, 1000, vars_int));
+      IP[l++] = IP_dup(newIP, gen_array_fetch(((tl_tree_array *)arg.type), newIP, 1000, vars_int));
     }
   }
   php_assert (max_size > l + 10);
@@ -3357,7 +3378,7 @@ int gen_field_fetch (const arg &arg, void **IP, int max_size, int *vars_int, int
   return l;
 }
 
-int gen_field_excl (const arg &arg, void **IP, int max_size, int *vars_int, int num) {
+int gen_field_excl(const arg &arg, void **IP, int max_size, int *vars_int, int num) {
   php_assert (max_size > 10);
   int l = 0;
   IP[l++] = (void *)tlcomb_store_field;
@@ -3368,22 +3389,22 @@ int gen_field_excl (const arg &arg, void **IP, int max_size, int *vars_int, int 
   int t = arg.type->get_type();
   php_assert (t == NODE_TYPE_TYPE || t == NODE_TYPE_VAR_TYPE);
   IP[l++] = (void *)tlcomb_store_any_function;
-  l += gen_uni (arg.type, IP + l, max_size - l, vars_int);
+  l += gen_uni(arg.type, IP + l, max_size - l, vars_int);
   php_assert (max_size > 1 + l);
 
   IP[l++] = (void *)tls_arr_pop;
   return l;
 }
 
-int gen_constructor_store (tl_combinator &c, void **IP, int max_size) {
+int gen_constructor_store(tl_combinator &c, void **IP, int max_size) {
   if (c.IP != NULL) {
     return c.IP_len;
   }
   php_assert (max_size > 10);
 
   int vars_int[c.var_count];
-  memset (vars_int, 0, sizeof (int) * c.var_count);
-  int l = gen_uni (c.result, IP, max_size, vars_int);
+  memset(vars_int, 0, sizeof(int) * c.var_count);
+  int l = gen_uni(c.result, IP, max_size, vars_int);
 
   if (c.id == ID_INT) {
     IP[l++] = (void *)tlcomb_store_int;
@@ -3400,7 +3421,7 @@ int gen_constructor_store (tl_combinator &c, void **IP, int max_size) {
     tIP[1] = (void *)(long)0;
     tIP[2] = (void *)tlcomb_store_type;
     tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup (tIP, 4);
+    IP[l++] = (void *)IP_dup(tIP, 4);
   } else if (c.id == ID_DICTIONARY) {
     IP[l++] = (void *)tlcomb_store_dictionary;
     void *tIP[4];
@@ -3408,7 +3429,7 @@ int gen_constructor_store (tl_combinator &c, void **IP, int max_size) {
     tIP[1] = (void *)(long)0;
     tIP[2] = (void *)tlcomb_store_type;
     tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup (tIP, 4);
+    IP[l++] = (void *)IP_dup(tIP, 4);
   } else {
     int z = 0;
     if (c.result->get_type() == NODE_TYPE_TYPE) {
@@ -3423,19 +3444,19 @@ int gen_constructor_store (tl_combinator &c, void **IP, int max_size) {
     }
     for (int i = 0; i < c.args.count(); i++) {
       if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-        l += gen_field (c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+        l += gen_field(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
       }
     }
     php_assert (max_size > 10);
   }
 
   IP[l++] = (void *)tlsub_ret_ok;
-  c.IP = IP_dup (IP, l);
+  c.IP = IP_dup(IP, l);
   c.IP_len = l;
   return l;
 }
 
-int gen_function_store (tl_combinator &c, void **IP, int max_size) {
+int gen_function_store(tl_combinator &c, void **IP, int max_size) {
   php_assert (max_size > 10);
   php_assert (c.IP == NULL);
   int l = 0;
@@ -3443,33 +3464,33 @@ int gen_function_store (tl_combinator &c, void **IP, int max_size) {
   IP[l++] = (void *)(long)c.id;
 
   int vars_int[c.var_count];
-  memset (vars_int, 0, sizeof (int) * c.var_count);
+  memset(vars_int, 0, sizeof(int) * c.var_count);
   for (int i = 0; i < c.args.count(); i++) {
     if (!(c.args[i].flags & FLAG_OPT_VAR)) {
       if (c.args[i].flags & FLAG_EXCL) {
-        l += gen_field_excl (c.args[i], IP + l, max_size - l, vars_int, i + 1);
+        l += gen_field_excl(c.args[i], IP + l, max_size - l, vars_int, i + 1);
       } else {
-        l += gen_field (c.args[i], IP + l, max_size - l, vars_int, i + 1, false);
+        l += gen_field(c.args[i], IP + l, max_size - l, vars_int, i + 1, false);
       }
     }
   }
-  l += gen_create (c.result, IP + l, max_size - l, vars_int);
+  l += gen_create(c.result, IP + l, max_size - l, vars_int);
   php_assert (max_size > 1 + l);
   IP[l++] = (void *)tlsub_ret;
-  c.IP = IP_dup (IP, l);
+  c.IP = IP_dup(IP, l);
   c.IP_len = l;
   return l;
 }
 
-int gen_constructor_fetch (tl_combinator &c, void **IP, int max_size) {
+int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size) {
   if (c.fetchIP) {
     return c.fetchIP_len;
   }
   php_assert (max_size > 10);
 
   int vars_int[c.var_count];
-  memset (vars_int, 0, sizeof (int) * c.var_count);
-  int l = gen_uni (c.result, IP, max_size, vars_int);
+  memset(vars_int, 0, sizeof(int) * c.var_count);
+  int l = gen_uni(c.result, IP, max_size, vars_int);
 
   if (c.id == ID_INT) {
     IP[l++] = (void *)tlcomb_fetch_int;
@@ -3486,7 +3507,7 @@ int gen_constructor_fetch (tl_combinator &c, void **IP, int max_size) {
     tIP[1] = (void *)(long)0;
     tIP[2] = (void *)tlcomb_fetch_type;
     tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup (tIP, 4);
+    IP[l++] = (void *)IP_dup(tIP, 4);
   } else if (c.id == ID_DICTIONARY) {
     IP[l++] = (void *)tlcomb_fetch_dictionary;
     void *tIP[4];
@@ -3494,7 +3515,7 @@ int gen_constructor_fetch (tl_combinator &c, void **IP, int max_size) {
     tIP[1] = (void *)(long)0;
     tIP[2] = (void *)tlcomb_fetch_type;
     tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup (tIP, 4);
+    IP[l++] = (void *)IP_dup(tIP, 4);
   } else if (c.id == ID_MAYBE_TRUE) {
     IP[l++] = (void *)tlcomb_fetch_maybe;
     void *tIP[4];
@@ -3502,7 +3523,7 @@ int gen_constructor_fetch (tl_combinator &c, void **IP, int max_size) {
     tIP[1] = (void *)(long)0;
     tIP[2] = (void *)tlcomb_fetch_type;
     tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup (tIP, 4);
+    IP[l++] = (void *)IP_dup(tIP, 4);
   } else if (c.id == ID_MAYBE_FALSE || c.id == ID_BOOL_FALSE) {
     IP[l++] = (void *)tlcomb_fetch_false;
   } else if (c.id == ID_BOOL_TRUE) {
@@ -3521,40 +3542,40 @@ int gen_constructor_fetch (tl_combinator &c, void **IP, int max_size) {
     }
     for (int i = 0; i < c.args.count(); i++) {
       if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-        l += gen_field_fetch (c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+        l += gen_field_fetch(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
       }
     }
     php_assert (max_size > 10 + l);
   }
 
   IP[l++] = (void *)tlsub_ret_ok;
-  c.fetchIP = IP_dup (IP, l);
+  c.fetchIP = IP_dup(IP, l);
   c.fetchIP_len = l;
   return l;
 }
 
-void gen_function_fetch (void ** &IP_res, void **IP, int l) {
+void gen_function_fetch(void **&IP_res, void **IP, int l) {
   IP[0] = (void *)tlcomb_fetch_type;
   IP[1] = (void *)tlsub_ret_ok;
-  IP_res = IP_dup (IP, l);
+  IP_res = IP_dup(IP, l);
 }
 
 
 static int tl_schema_version = -1;
 
-tl_tree *read_expr (int *var_count);
-tl_tree *read_nat_expr (int *var_count);
-array <arg> read_args_list (int *var_count);
+tl_tree *read_expr(int *var_count);
+tl_tree *read_nat_expr(int *var_count);
+array<arg> read_args_list(int *var_count);
 
-tl_tree *read_num_const (int *var_count __attribute__((unused))) {
+tl_tree *read_num_const(int *var_count __attribute__((unused))) {
   int num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
 
-  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate (sizeof (tl_tree_nat_const));
-  new (T) tl_tree_nat_const (FLAG_NOVAR, num);
+  tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
+  new(T) tl_tree_nat_const(FLAG_NOVAR, num);
   return T;
 }
 
-tl_tree *read_num_var (int *var_count) {
+tl_tree *read_num_var(int *var_count) {
   int diff = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   int var_num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
 
@@ -3562,12 +3583,12 @@ tl_tree *read_num_var (int *var_count) {
     *var_count = var_num + 1;
   }
 
-  tl_tree_var_num *T = (tl_tree_var_num *)dl::allocate (sizeof (tl_tree_var_num));
-  new (T) tl_tree_var_num (0, var_num, diff);
+  tl_tree_var_num *T = (tl_tree_var_num *)dl::allocate(sizeof(tl_tree_var_num));
+  new(T) tl_tree_var_num(0, var_num, diff);
   return T;
 }
 
-tl_tree *read_type_var (int *var_count) {
+tl_tree *read_type_var(int *var_count) {
   int var_num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   int flags = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
 
@@ -3576,39 +3597,39 @@ tl_tree *read_type_var (int *var_count) {
   }
   php_assert (!(flags & (FLAG_NOVAR | FLAG_BARE)));
 
-  tl_tree_var_type *T = (tl_tree_var_type *)dl::allocate (sizeof (tl_tree_var_type));
-  new (T) tl_tree_var_type (flags, var_num);
+  tl_tree_var_type *T = (tl_tree_var_type *)dl::allocate(sizeof(tl_tree_var_type));
+  new(T) tl_tree_var_type(flags, var_num);
   return T;
 }
 
-tl_tree *read_array (int *var_count) {
+tl_tree *read_array(int *var_count) {
   int flags = FLAG_NOVAR;
-  tl_tree *multiplicity = read_nat_expr (var_count);
+  tl_tree *multiplicity = read_nat_expr(var_count);
 
-  tl_tree_array *T = (tl_tree_array *)dl::allocate (sizeof (tl_tree_array));
-  new (T) tl_tree_array (flags, multiplicity, read_args_list (var_count));
+  tl_tree_array *T = (tl_tree_array *)dl::allocate(sizeof(tl_tree_array));
+  new(T) tl_tree_array(flags, multiplicity, read_args_list(var_count));
 
   for (int i = 0; i < T->args.count(); i++) {
-    if (!(T->args.get_value (i).flags & FLAG_NOVAR)) {
+    if (!(T->args.get_value(i).flags & FLAG_NOVAR)) {
       T->flags &= ~FLAG_NOVAR;
     }
   }
   return T;
 }
 
-tl_tree *read_type (int *var_count) {
-  tl_type *type = tl_config.id_to_type.get_value (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
+tl_tree *read_type(int *var_count) {
+  tl_type *type = tl_config.id_to_type.get_value(TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
   php_assert (type != NULL);
   int flags = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) | FLAG_NOVAR;
   php_assert (type->arity == TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
 
-  tl_tree_type *T = (tl_tree_type *)dl::allocate (sizeof (tl_tree_type));
-  new (T) tl_tree_type (flags, type, array_size (type->arity, 0, true));
+  tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
+  new(T) tl_tree_type(flags, type, array_size(type->arity, 0, true));
 
   for (int i = 0; i < type->arity; i++) {
-    tl_tree *child = read_expr (var_count);
+    tl_tree *child = read_expr(var_count);
 
-    T->children.push_back (child);
+    T->children.push_back(child);
     if (!(child->flags & FLAG_NOVAR)) {
       T->flags &= ~FLAG_NOVAR;
     }
@@ -3616,56 +3637,56 @@ tl_tree *read_type (int *var_count) {
   return T;
 }
 
-tl_tree *read_type_expr (int *var_count) {
+tl_tree *read_type_expr(int *var_count) {
   int tree_type = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   switch (tree_type) {
     case TLS_TYPE_VAR:
-      return read_type_var (var_count);
+      return read_type_var(var_count);
     case TLS_TYPE_EXPR:
-      return read_type (var_count);
+      return read_type(var_count);
     case TLS_ARRAY:
-      return read_array (var_count);
+      return read_array(var_count);
     default:
-      fprintf (stderr, "tree_type = %d\n", tree_type);
+      fprintf(stderr, "tree_type = %d\n", tree_type);
       php_assert (0);
       return NULL;
   }
 }
 
-tl_tree *read_nat_expr (int *var_count) {
+tl_tree *read_nat_expr(int *var_count) {
   int tree_type = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   switch (tree_type) {
     case TLS_NAT_CONST:
-      return read_num_const (var_count);
+      return read_num_const(var_count);
     case TLS_NAT_VAR:
-      return read_num_var (var_count);
+      return read_num_var(var_count);
     default:
-      fprintf (stderr, "tree_type = %d\n", tree_type);
+      fprintf(stderr, "tree_type = %d\n", tree_type);
       php_assert (0);
       return NULL;
   }
 }
 
-tl_tree *read_expr (int *var_count) {
+tl_tree *read_expr(int *var_count) {
   int tree_type = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   switch (tree_type) {
     case TLS_NAT_CONST:
-      return read_nat_expr (var_count);
+      return read_nat_expr(var_count);
     case TLS_EXPR_TYPE:
-      return read_type_expr (var_count);
+      return read_type_expr(var_count);
     default:
-      fprintf (stderr, "tree_type = %d\n", tree_type);
+      fprintf(stderr, "tree_type = %d\n", tree_type);
       php_assert (0);
       return NULL;
   }
 }
 
-array <arg> read_args_list (int *var_count) {
+array<arg> read_args_list(int *var_count) {
   const int schema_flag_opt_field = 2 << (tl_schema_version >= 3);
-  const int schema_flag_has_vars = schema_flag_opt_field ^ 6;
+  const int schema_flag_has_vars = schema_flag_opt_field ^6;
 
   int args_num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  array <arg> args = array <arg> (array_size (args_num, 0, true));
+  array<arg> args = array<arg>(array_size(args_num, 0, true));
   for (int i = 0; i < args_num; i++) {
     arg cur_arg;
 
@@ -3695,36 +3716,36 @@ array <arg> read_args_list (int *var_count) {
       cur_arg.exist_var_num = -1;
       cur_arg.exist_var_bit = 0;
     }
-    cur_arg.type = read_type_expr (var_count);
+    cur_arg.type = read_type_expr(var_count);
     if (cur_arg.var_num < 0 && cur_arg.exist_var_num < 0 && (cur_arg.type->flags & FLAG_NOVAR)) {
       cur_arg.flags |= FLAG_NOVAR;
     }
 
-    args.push_back (cur_arg);
+    args.push_back(cur_arg);
   }
   return args;
 }
 
 
-tl_combinator *read_combinator (void) {
+tl_combinator *read_combinator(void) {
   php_assert (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) == TLS_COMBINATOR);
 
-  tl_combinator *combinator = (tl_combinator *)dl::allocate (sizeof (tl_combinator));
+  tl_combinator *combinator = (tl_combinator *)dl::allocate(sizeof(tl_combinator));
   combinator->id = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  new (&combinator->name) string (TRY_CALL_EXIT(string, "Wrong TL-scheme specified.", tl_parse_string()));
+  new(&combinator->name) string(TRY_CALL_EXIT(string, "Wrong TL-scheme specified.", tl_parse_string()));
   combinator->type_id = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   combinator->var_count = 0;
 
   int left_type = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
   if (left_type == TLS_COMBINATOR_LEFT) {
-    new (&combinator->args) array <arg> (read_args_list (&combinator->var_count));
+    new(&combinator->args) array<arg>(read_args_list(&combinator->var_count));
   } else {
-    new (&combinator->args) array <arg>();
+    new(&combinator->args) array<arg>();
     php_assert (left_type == TLS_COMBINATOR_LEFT_BUILTIN);
   }
 
   php_assert (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) == TLS_COMBINATOR_RIGHT_V2);
-  combinator->result = read_type_expr (&combinator->var_count);
+  combinator->result = read_type_expr(&combinator->var_count);
 
   combinator->IP = NULL;
   combinator->fetchIP = NULL;
@@ -3734,16 +3755,16 @@ tl_combinator *read_combinator (void) {
   return combinator;
 }
 
-tl_type *read_type (void) {
+tl_type *read_type(void) {
   php_assert (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) == TLS_TYPE);
 
-  tl_type *type = (tl_type *)dl::allocate (sizeof (tl_type));
+  tl_type *type = (tl_type *)dl::allocate(sizeof(tl_type));
   type->id = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  new (&type->name) string (TRY_CALL_EXIT(string, "Wrong TL-scheme specified.", tl_parse_string()));
+  new(&type->name) string(TRY_CALL_EXIT(string, "Wrong TL-scheme specified.", tl_parse_string()));
   type->constructors_num = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  new (&type->constructors) array <tl_combinator *> (array_size (type->constructors_num, 0, true));
+  new(&type->constructors) array<tl_combinator *>(array_size(type->constructors_num, 0, true));
   type->flags = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  if (!strcmp (type->name.c_str(), "Maybe") || !strcmp (type->name.c_str(), "Bool")) {
+  if (!strcmp(type->name.c_str(), "Maybe") || !strcmp(type->name.c_str(), "Bool")) {
     type->flags |= FLAG_NOCONS;
   }
   type->arity = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
@@ -3753,7 +3774,7 @@ tl_type *read_type (void) {
 }
 
 
-int get_schema_version (int a) {
+int get_schema_version(int a) {
   if (a == TLS_SCHEMA_V3) {
     return 3;
   }
@@ -3763,29 +3784,29 @@ int get_schema_version (int a) {
   return -1;
 }
 
-void renew_tl_config (void) {
+void renew_tl_config(void) {
   php_assert (!dl::query_num);
   php_assert (tl_config.fetchIP == NULL);
 
-  tl_schema_version = get_schema_version (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
+  tl_schema_version = get_schema_version(TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
   php_assert (tl_schema_version != -1);
 
   TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()); // version
   TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()); // date
 
   int types_n = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  tl_config.types = array <tl_type *> (array_size (types_n, 0, true));
-  tl_config.id_to_type = array <tl_type *> (array_size (types_n, 0, false));
-  tl_config.name_to_type = array <tl_type *> (array_size (0, types_n, false));
+  tl_config.types = array<tl_type *>(array_size(types_n, 0, true));
+  tl_config.id_to_type = array<tl_type *>(array_size(types_n, 0, false));
+  tl_config.name_to_type = array<tl_type *>(array_size(0, types_n, false));
 
   for (int i = 0; i < types_n; i++) {
     tl_type *type = read_type();
-    tl_config.types.push_back (type);
-    tl_config.id_to_type.set_value (type->id, type);
-    tl_config.name_to_type.set_value (type->name, type);
+    tl_config.types.push_back(type);
+    tl_config.id_to_type.set_value(type->id, type);
+    tl_config.name_to_type.set_value(type->name, type);
   }
 
-  tl_config.ReqResult = tl_config.name_to_type.get_value (string ("ReqResult", 9));
+  tl_config.ReqResult = tl_config.name_to_type.get_value(string("ReqResult", 9));
   php_assert (tl_config.ReqResult != NULL);
   php_assert (tl_config.ReqResult->arity == 1);
 
@@ -3793,19 +3814,19 @@ void renew_tl_config (void) {
 
   for (int i = 0; i < constructors_n; i++) {
     tl_combinator *constructor = read_combinator();
-    tl_config.id_to_type.get_value (constructor->type_id)->constructors.push_back (constructor);
+    tl_config.id_to_type.get_value(constructor->type_id)->constructors.push_back(constructor);
   }
 
   int functions_n = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  tl_config.functions = array <tl_combinator *> (array_size (functions_n, 0, true));
-  tl_config.id_to_function = array <tl_combinator *> (array_size (functions_n, 0, false));
-  tl_config.name_to_function = array <tl_combinator *> (array_size (0, functions_n, false));
+  tl_config.functions = array<tl_combinator *>(array_size(functions_n, 0, true));
+  tl_config.id_to_function = array<tl_combinator *>(array_size(functions_n, 0, false));
+  tl_config.name_to_function = array<tl_combinator *>(array_size(0, functions_n, false));
 
   for (int i = 0; i < functions_n; i++) {
     tl_combinator *function = read_combinator();
-    tl_config.functions.push_back (function);
-    tl_config.id_to_function.set_value (function->id, function);
-    tl_config.name_to_function.set_value (function->name, function);
+    tl_config.functions.push_back(function);
+    tl_config.id_to_function.set_value(function->id, function);
+    tl_config.name_to_function.set_value(function->name, function);
   }
   TRY_CALL_VOID_EXIT("Wrong TL-scheme specified.", tl_parse_end());
 
@@ -3815,69 +3836,69 @@ void renew_tl_config (void) {
 
   static void *IP[10000];
 
-  gen_function_fetch (tl_config.fetchIP, IP, 10000);
+  gen_function_fetch(tl_config.fetchIP, IP, 10000);
 
   for (int i = 0; i < tl_config.types.count(); i++) {
-    tl_type *cur_type = tl_config.types.get_value (i);
+    tl_type *cur_type = tl_config.types.get_value(i);
     for (int j = 0; j < cur_type->constructors_num; j++) {
-      php_assert (gen_constructor_store (*cur_type->constructors.get_value (j), IP, 10000) > 0);
-      php_assert (gen_constructor_fetch (*cur_type->constructors.get_value (j), IP, 10000) > 0);
+      php_assert (gen_constructor_store(*cur_type->constructors.get_value(j), IP, 10000) > 0);
+      php_assert (gen_constructor_fetch(*cur_type->constructors.get_value(j), IP, 10000) > 0);
     }
   }
   for (int i = 0; i < functions_n; i++) {
-    php_assert (gen_function_store (*tl_config.functions.get_value (i), IP, 10000) > 0);
+    php_assert (gen_function_store(*tl_config.functions.get_value(i), IP, 10000) > 0);
   }
 }
 
 extern "C" {
-void read_tl_config (const char *file_name);
-void update_tl_config (const char *data, dl::size_type data_len);
+void read_tl_config(const char *file_name);
+void update_tl_config(const char *data, dl::size_type data_len);
 }
 
 unsigned tl_schema_crc32 = 0;
 
-void update_tl_config (const char *data, dl::size_type data_len) {
+void update_tl_config(const char *data, dl::size_type data_len) {
   tl_schema_crc32 = compute_crc32(data, data_len);
-  php_assert (f$rpc_parse (string(data, data_len)));
+  php_assert (f$rpc_parse(string(data, data_len)));
   renew_tl_config();
 
-  rpc_parse (NULL, 0);//remove rpc_data_copy
-  rpc_parse (NULL, 0);//remove rpc_data_backup
+  rpc_parse(NULL, 0);//remove rpc_data_copy
+  rpc_parse(NULL, 0);//remove rpc_data_backup
   free_arr_space();
 }
 
 
-void read_tl_config (const char *file_name) {
-  OrFalse <string> config = file_file_get_contents (string (file_name, (dl::size_type)strlen (file_name)));
-  php_assert (f$boolval (config));
-  tl_schema_crc32 = compute_crc32 (config.value.c_str(), config.value.size());
-  php_assert (f$rpc_parse (config.val()));
+void read_tl_config(const char *file_name) {
+  OrFalse<string> config = file_file_get_contents(string(file_name, (dl::size_type)strlen(file_name)));
+  php_assert (f$boolval(config));
+  tl_schema_crc32 = compute_crc32(config.value.c_str(), config.value.size());
+  php_assert (f$rpc_parse(config.val()));
   renew_tl_config();
 
-  rpc_parse (NULL, 0);//remove rpc_data_copy
-  rpc_parse (NULL, 0);//remove rpc_data_backup
+  rpc_parse(NULL, 0);//remove rpc_data_copy
+  rpc_parse(NULL, 0);//remove rpc_data_backup
   free_arr_space();
 }
 
 
-void rpc_init_static_once (void) {
+void rpc_init_static_once(void) {
   php_assert (timeout_wakeup_id == -1);
 
-  timeout_wakeup_id = register_wakeup_callback (&process_rpc_timeout);
+  timeout_wakeup_id = register_wakeup_callback(&process_rpc_timeout);
 }
 
-void rpc_init_static (void) {
+void rpc_init_static(void) {
   php_assert (timeout_wakeup_id != -1);
 
   INIT_VAR(string, rpc_filename);
   INIT_VAR(string, rpc_data_copy);
   INIT_VAR(string, rpc_data_copy_backup);
-  INIT_VAR(array <double>, rpc_request_need_timer);
+  INIT_VAR(array<double>, rpc_request_need_timer);
 
-  rpc_parse (NULL, 0);
-  rpc_parse (NULL, 0);//init backup
+  rpc_parse(NULL, 0);
+  rpc_parse(NULL, 0);//init backup
 
-  f$rpc_clean (false);
+  f$rpc_clean(false);
   rpc_stored = 0;
   rpc_pack_threshold = -1;
   rpc_pack_from = -1;
@@ -3886,11 +3907,11 @@ void rpc_init_static (void) {
   last_var_ptr = vars_buffer + MAX_VARS;
 }
 
-void rpc_free_static (void) {
+void rpc_free_static(void) {
   CLEAR_VAR(string, rpc_filename);
   CLEAR_VAR(string, rpc_data_copy);
   CLEAR_VAR(string, rpc_data_copy_backup);
-  CLEAR_VAR(array <double>, rpc_request_need_timer);
+  CLEAR_VAR(array<double>, rpc_request_need_timer);
 
   clear_arr_space();
 }

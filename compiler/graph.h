@@ -1,135 +1,138 @@
 #pragma once
+
 #include "compiler/common.h"
 
 /**Data Traits**/
 struct UnexistingType;
-template <class T>
+template<class T>
 struct DataTraits {
   typedef UnexistingType value_type;
 };
 
 /*** Id ***/
-template <class IdData>
+template<class IdData>
 struct Id {
   IdData *ptr;
   Id();
-  explicit Id (IdData * ptr);
-  Id (const Id &id);
-  Id &operator = (const Id &id);
-  IdData &operator *() const;
+  explicit Id(IdData *ptr);
+  Id(const Id &id);
+  Id &operator=(const Id &id);
+  IdData &operator*() const;
   bool is_null() const;
   bool not_null() const;
   void clear();
 
-  IdData *operator ->() const;
+  IdData *operator->() const;
 
   //bool operator < (const Id <IdData>&);
   //bool operator == (const Id <IdData>&);
 
-  template <class IndexType>
-  typename DataTraits<IdData>::value_type operator[] (const IndexType &i) const;
+  template<class IndexType>
+  typename DataTraits<IdData>::value_type operator[](const IndexType &i) const;
   string &str();
 };
 
-template <class T>
-bool operator < (const Id <T> &a, const Id <T> &b);
-template <class T>
-bool operator == (const Id <T> &a, const Id <T> &b);
+template<class T>
+bool operator<(const Id<T> &a, const Id<T> &b);
+template<class T>
+bool operator==(const Id<T> &a, const Id<T> &b);
 
 /*** [get|set]_index ***/
-template <class T>
-int get_index (const T &i);
+template<class T>
+int get_index(const T &i);
 
-template <class T>
-void set_index (T &d, int index);
+template<class T>
+void set_index(T &d, int index);
 
 /*** IdMapBase ***/
 struct IdMapBase {
-  virtual void renumerate_ids (const vector <int> &new_ids) = 0;
-  virtual void update_size (int new_max_id) = 0;
+  virtual void renumerate_ids(const vector<int> &new_ids) = 0;
+  virtual void update_size(int new_max_id) = 0;
   virtual void clear() = 0;
-  virtual ~IdMapBase(){}
+
+  virtual ~IdMapBase() {}
 };
 
 /*** IdMap ***/
-template <class DataType>
+template<class DataType>
 struct IdMap : public IdMapBase {
   DataType def_val;
-  vector <DataType> data;
+  vector<DataType> data;
 
-  typedef typename vector <DataType>::iterator iterator;
+  typedef typename vector<DataType>::iterator iterator;
   IdMap();
-  IdMap (int size, DataType val = DataType());
-  template <class IndexType>
-  DataType &operator[] (const IndexType &i);
-  template <class IndexType>
-  const DataType &operator[] (const IndexType &i) const;
+  IdMap(int size, DataType val = DataType());
+  template<class IndexType>
+  DataType &operator[](const IndexType &i);
+  template<class IndexType>
+  const DataType &operator[](const IndexType &i) const;
 
   iterator begin();
   iterator end();
   void clear();
 
-  void renumerate_ids (const vector <int> &new_ids);
+  void renumerate_ids(const vector<int> &new_ids);
 
-  void update_size (int n);
+  void update_size(int n);
 };
 
 /*** IdGen ***/
-template <class IdType>
+template<class IdType>
 struct IdGen {
-  typedef typename IdMap <IdType>::iterator iterator;
+  typedef typename IdMap<IdType>::iterator iterator;
 
-  vector <IdMapBase *> id_maps;
-  IdMap <IdType> ids;
+  vector<IdMapBase *> id_maps;
+  IdMap<IdType> ids;
   int n;
 
   IdGen();
-  void add_id_map (IdMapBase *to_add);
-  void remove_id_map (IdMapBase *to_remove);
+  void add_id_map(IdMapBase *to_add);
+  void remove_id_map(IdMapBase *to_remove);
 
-  int init_id (IdType *id);
+  int init_id(IdType *id);
   int size();
   iterator begin();
   iterator end();
   void clear();
 
-  template <class IndexType>
-  void delete_ids (const vector <IndexType> &to_del);
+  template<class IndexType>
+  void delete_ids(const vector<IndexType> &to_del);
 };
 
 /*** XNameToId ***/
-template <typename T> class XNameToId {
+template<typename T>
+class XNameToId {
 public:
-  explicit XNameToId (IdGen <T> *id_gen);
+  explicit XNameToId(IdGen<T> *id_gen);
   void clear();
-  void init (IdGen <T> *id_gen);
+  void init(IdGen<T> *id_gen);
 
-  T get_id (const string &name);
-  bool add_name (const string &name, T *new_id);
-  T *operator[] (int id);
+  T get_id(const string &name);
+  bool add_name(const string &name, T *new_id);
+  T *operator[](int id);
 
-  set <T> get_ids();
+  set<T> get_ids();
 private:
-  map <string, T> name_to_id;
-  IdGen <T> *id_gen;
+  map<string, T> name_to_id;
+  IdGen<T> *id_gen;
   DISALLOW_COPY_AND_ASSIGN (XNameToId);
 };
 
 
 /*** Range ***/
-template <class Iterator>
+template<class Iterator>
 struct Range {
   Iterator begin_, end_;
-  typedef typename std::iterator_traits <Iterator>::value_type value_type;
-  typedef typename std::iterator_traits <Iterator>::reference reference_type;
+  typedef typename std::iterator_traits<Iterator>::value_type value_type;
+  typedef typename std::iterator_traits<Iterator>::reference reference_type;
   bool empty();
   size_t size();
-  value_type &operator[] (size_t i);
-  reference_type operator * ();
-  value_type *operator -> ();
+  value_type &operator[](size_t i);
+  reference_type operator*();
+  value_type *operator->();
 
   Range();
-  Range (Iterator begin, Iterator end);
+  Range(Iterator begin, Iterator end);
 
   Iterator begin() const;
   Iterator end() const;

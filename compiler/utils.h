@@ -97,11 +97,13 @@ public:
   }
 };
 
-inline string_ref::string_ref()
-  : s(NULL), t(NULL) {}
+inline string_ref::string_ref() :
+  s(NULL),
+  t(NULL) {}
 
-inline string_ref::string_ref(const char *s, const char *t)
-  : s(s), t(t) {}
+inline string_ref::string_ref(const char *s, const char *t) :
+  s(s),
+  t(t) {}
 
 inline int string_ref::length() const {
   return (int)(t - s);
@@ -146,13 +148,13 @@ inline string int_to_str(int x) {
 }
 
 inline vector<string> split(const string &s, char delimiter = ' ') {
-  vector <string> res;
+  vector<string> res;
 
   int prev = 0;
   for (int i = 0; i <= (int)s.size(); i++) {
     if (s[i] == delimiter || s[i] == 0) {
       if (prev != i) {
-        res.push_back (s.substr (prev, i - prev));
+        res.push_back(s.substr(prev, i - prev));
       }
       prev = i + 1;
     }
@@ -161,17 +163,15 @@ inline vector<string> split(const string &s, char delimiter = ' ') {
   return res;
 }
 
-inline std::vector<std::string> split_skipping_delimeters(const std::string& str, const std::string& delimiters = " ")
-{
+inline std::vector<std::string> split_skipping_delimeters(const std::string &str, const std::string &delimiters = " ") {
   using std::string;
 
   std::vector<string> tokens;
 
-  string::size_type pos            = str.find_first_not_of(delimiters, 0);
+  string::size_type pos = str.find_first_not_of(delimiters, 0);
   string::size_type next_delimiter = str.find_first_of(delimiters, pos);
 
-  while (string::npos != pos || string::npos != next_delimiter)
-  {
+  while (string::npos != pos || string::npos != next_delimiter) {
     tokens.push_back(str.substr(pos, next_delimiter - pos));
 
     pos = str.find_first_not_of(delimiters, next_delimiter);

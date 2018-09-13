@@ -1,4 +1,5 @@
 #pragma once
+
 #include "compiler/location.h"
 
 #define compiler_assert(x, y, level)  ({\
@@ -31,59 +32,64 @@
 #define kphp_assert_msg(x, y) compiler_assert (x, y, FATAL_ASSERT_LEVEL)
 #define kphp_fail() kphp_assert (0); _exit(1);
 
-enum AssertLevelT {WRN_ASSERT_LEVEL, CE_ASSERT_LEVEL, FATAL_ASSERT_LEVEL};
+enum AssertLevelT {
+  WRN_ASSERT_LEVEL,
+  CE_ASSERT_LEVEL,
+  FATAL_ASSERT_LEVEL
+};
 
-void on_compilation_error (const char *description, const char *file_name, int line_number,
-  const char *full_description, AssertLevelT assert_level);
+void on_compilation_error(const char *description, const char *file_name, int line_number,
+                          const char *full_description, AssertLevelT assert_level);
 
 namespace stage {
-  struct StageInfo {
-    string name;
-    Location location;
-    bool global_error_flag;
-    bool error_flag;
-    StageInfo() :
-      name(),
-      location(),
-      global_error_flag (false),
-      error_flag (false) {
-    }
-  };
+struct StageInfo {
+  string name;
+  Location location;
+  bool global_error_flag;
+  bool error_flag;
 
-  StageInfo *get_stage_info_ptr();
+  StageInfo() :
+    name(),
+    location(),
+    global_error_flag(false),
+    error_flag(false) {
+  }
+};
 
-  void error();
-  bool has_error();
-  bool has_global_error();
-  void die_if_global_errors();
+StageInfo *get_stage_info_ptr();
 
-  Location *get_location_ptr();
-  const Location &get_location();
-  void set_location (const Location &new_location);
+void error();
+bool has_error();
+bool has_global_error();
+void die_if_global_errors();
 
-  void print (FILE *f);
-  void print_file (FILE *f);
-  void print_function (FILE *f);
-  void print_line (FILE *f);
-  void print_comment (FILE *f);
-  void get_function_history (stringstream &ss, FunctionPtr function);
-  string get_function_history();
+Location *get_location_ptr();
+const Location &get_location();
+void set_location(const Location &new_location);
 
-  void set_name (const string &name);
-  const string &get_name();
+void print(FILE *f);
+void print_file(FILE *f);
+void print_function(FILE *f);
+void print_line(FILE *f);
+void print_comment(FILE *f);
+void get_function_history(stringstream &ss, FunctionPtr function);
+string get_function_history();
 
-  void set_file (SrcFilePtr file);
-  void set_function (FunctionPtr function);
-  void set_line (int line);
-  SrcFilePtr get_file (void);
-  FunctionPtr get_function (void);
-  int get_line (void);
+void set_name(const string &name);
+const string &get_name();
 
-  const string &get_file_name();
-  const string &get_function_name();
-  string to_str (const Location &new_location);
+void set_file(SrcFilePtr file);
+void set_function(FunctionPtr function);
+void set_line(int line);
+SrcFilePtr get_file(void);
+FunctionPtr get_function(void);
+int get_line(void);
 
-  extern int warnings_count;
+const string &get_file_name();
+const string &get_function_name();
+string to_str(const Location &new_location);
+
+extern int warnings_count;
 }
 
 
