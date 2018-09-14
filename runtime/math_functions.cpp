@@ -88,14 +88,14 @@ double f$lcg_value(void) {
   if (dl::query_num != lcg_value_last_query_num) {
     struct timeval tv;
 
-    if (gettimeofday(&tv, NULL) == 0) {
+    if (gettimeofday(&tv, nullptr) == 0) {
       s1 = (int)tv.tv_sec ^ ((int)tv.tv_usec << 11);
     } else {
       s1 = 1;
     }
     s2 = (int)getpid();
 
-    if (gettimeofday(&tv, NULL) == 0) {
+    if (gettimeofday(&tv, nullptr) == 0) {
       s2 ^= (int)(tv.tv_usec << 11);
     }
 
@@ -226,7 +226,7 @@ string f$base_convert(const string &number, int frombase, int tobase) {
   string n(l, false);
   for (int i = 0; i < l; i++) {
     const char *s = (const char *)memchr(digits, tolower(number[i + f]), 36);
-    if (s == NULL || (int)(s - digits) >= frombase) {
+    if (s == nullptr || (int)(s - digits) >= frombase) {
       php_warning("Wrong character '%c' at position %d in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
       return number;
     }

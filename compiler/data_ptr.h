@@ -38,7 +38,7 @@ public:
   vertex_inner<Op> *impl;
 
   VertexAdaptor() :
-    impl(NULL) {
+    impl(nullptr) {
   }
 
   explicit VertexAdaptor(vertex_inner<Op> *impl) :
@@ -49,7 +49,7 @@ public:
   template<Operation FromOp>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) :
     impl(dynamic_cast <vertex_inner<Op> *> (from.impl)) {
-    dl_assert (impl != NULL, "???");
+    dl_assert (impl != nullptr, "???");
   }
 
   template<Operation FromOp>
@@ -59,7 +59,7 @@ public:
   }
 
   inline bool is_null() const {
-    return impl == NULL;
+    return impl == nullptr;
   }
 
   inline bool not_null() const {
@@ -67,22 +67,22 @@ public:
   }
 
   vertex_inner<Op> *operator->() {
-    assert (impl != NULL);
+    assert (impl != nullptr);
     return impl;
   }
 
   const vertex_inner<Op> *operator->() const {
-    assert (impl != NULL);
+    assert (impl != nullptr);
     return impl;
   }
 
   vertex_inner<Op> &operator*() {
-    assert (impl != NULL);
+    assert (impl != nullptr);
     return *impl;
   }
 
   const vertex_inner<Op> &operator*() const {
-    assert (impl != NULL);
+    assert (impl != nullptr);
     return *impl;
   }
 

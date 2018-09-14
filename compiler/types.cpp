@@ -31,7 +31,7 @@ const char *ptype_name(PrimitiveType id) {
 #include "foreach_ptype.h"
 
     default:
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -888,17 +888,17 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
 void test_PrimitiveType() {
   const char *cur;
   cur = ptype_name<tp_Unknown>();
-  assert (cur != NULL);
+  assert (cur != nullptr);
   assert (!strcmp(cur, "Unknown"));
 
   cur = ptype_name<ptype_size>();
-  assert (cur == NULL);
+  assert (cur == nullptr);
 
   cur = ptype_name(ptype_size);
-  assert (cur == NULL);
+  assert (cur == nullptr);
 
   cur = ptype_name(tp_array);
-  assert (cur != NULL);
+  assert (cur != nullptr);
   assert (!strcmp(cur, "array"));
 
 

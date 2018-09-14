@@ -224,7 +224,7 @@ private:
         }
       }
 
-      if (to_type->ptype() == tp_array && to_type->lookup_at(Key::any_key()) == NULL) {
+      if (to_type->ptype() == tp_array && to_type->lookup_at(Key::any_key()) == nullptr) {
         return different_types ? 3 : (e_default_priority + 3);
       }
 
@@ -241,9 +241,9 @@ private:
 
     bool is_priority_less_than_default(tinf::Node *cur_node) const {
       tinf::Edge edge_with_cur_node = {
-        .from    = NULL,
+        .from    = nullptr,
         .to      = cur_node,
-        .from_at = NULL
+        .from_at = nullptr
       };
 
       return get_priority(&edge_with_cur_node) < ComparatorByEdgePriorityRelativeToExpectedType::e_default_priority;
@@ -325,7 +325,7 @@ private:
   }
 
   void find_call_trace_with_error(tinf::Node *cur_node) {
-    assert(cur_node != NULL);
+    assert(cur_node != nullptr);
 
     descriptions_.clear();
     node_path_.clear();
@@ -371,15 +371,15 @@ struct RValue {
   const MultiKey *key;
   bool drop_or_false;
   inline RValue();
-  inline RValue(const TypeData *type, const MultiKey *key = NULL);
-  inline RValue(tinf::Node *node, const MultiKey *key = NULL);
+  inline RValue(const TypeData *type, const MultiKey *key = nullptr);
+  inline RValue(tinf::Node *node, const MultiKey *key = nullptr);
   inline RValue(const RValue &from);
   inline RValue &operator=(const RValue &from);
 };
 
 LValue::LValue() :
-  value(NULL),
-  key(NULL) {
+  value(nullptr),
+  key(nullptr) {
 }
 
 LValue::LValue(tinf::Node *value, const MultiKey *key) :
@@ -399,21 +399,21 @@ LValue &LValue::operator=(const LValue &from) {
 }
 
 RValue::RValue() :
-  type(NULL),
-  node(NULL),
-  key(NULL),
+  type(nullptr),
+  node(nullptr),
+  key(nullptr),
   drop_or_false(false) {
 }
 
 RValue::RValue(const TypeData *type, const MultiKey *key) :
   type(type),
-  node(NULL),
+  node(nullptr),
   key(key),
   drop_or_false(false) {
 }
 
 RValue::RValue(tinf::Node *node, const MultiKey *key) :
-  type(NULL),
+  type(nullptr),
   node(node),
   key(key),
   drop_or_false(false) {
@@ -443,7 +443,7 @@ inline RValue as_rvalue(PrimitiveType primitive_type) {
   return RValue(TypeData::get_type(primitive_type));
 }
 
-inline RValue as_rvalue(VertexPtr v, const MultiKey *key = NULL) {
+inline RValue as_rvalue(VertexPtr v, const MultiKey *key = nullptr) {
   return RValue(get_tinf_node(v), key);
 }
 
@@ -455,7 +455,7 @@ inline RValue as_rvalue(VarPtr var) {
   return RValue(get_tinf_node(var));
 }
 
-inline RValue as_rvalue(const TypeData *type, const MultiKey *key = NULL) {
+inline RValue as_rvalue(const TypeData *type, const MultiKey *key = nullptr) {
   return RValue(type, key);
 }
 
@@ -525,7 +525,7 @@ private:
       v = v.as<op_index>()->array();
     }
 
-    tinf::Node *value = NULL;
+    tinf::Node *value = nullptr;
     if (v->type() == op_var) {
       value = get_tinf_node(v->get_var_id());
     } else if (v->type() == op_conv_array_l || v->type() == op_conv_int_l) {

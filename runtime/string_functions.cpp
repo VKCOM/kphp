@@ -174,14 +174,14 @@ string f$convert_cyr_string(const string &str, const string &from_s, const strin
   char from = (char)toupper(from_s[0]);
   char to = (char)toupper(to_s[0]);
 
-  const unsigned char *table = NULL;
+  const unsigned char *table = nullptr;
   if (from == 'W' && to == 'K') {
     table = win_to_koi;
   }
   if (from == 'K' && to == 'W') {
     table = koi_to_win;
   }
-  if (table == NULL) {
+  if (table == nullptr) {
     php_critical_error ("unsupported conversion from '%c' to '%c' in function convert_cyr_string", from, to);
     return str;
   }
@@ -372,8 +372,8 @@ string f$html_entity_decode(const string &str, int flags, const string &encoding
     php_critical_error ("unsupported parameter flags = %d in function html_entity_decode", flags);
   }
 
-  bool utf8 = memchr(encoding.c_str(), '8', encoding.size()) != NULL;
-  if (!utf8 && strstr(encoding.c_str(), "1251") == NULL) {
+  bool utf8 = memchr(encoding.c_str(), '8', encoding.size()) != nullptr;
+  if (!utf8 && strstr(encoding.c_str(), "1251") == nullptr) {
     php_critical_error ("unsupported encoding \"%s\" in function html_entity_decode", encoding.c_str());
     return str;
   }
@@ -955,7 +955,7 @@ string f$pack(const array<var> &a) {
 
 string f$prepare_search_query(const string &query) {
   const char *s = clean_str(query.c_str());
-  if (s == NULL) {
+  if (s == nullptr) {
     s = "";
   }
   return string(s, strlen(s));
@@ -985,10 +985,10 @@ string f$rtrim(const string &s, const string &what) {
 OrFalse<string> f$setlocale(int category, const string &locale) {
   const char *loc = locale.c_str();
   if (locale[0] == '0' && locale.size() == 1) {
-    loc = NULL;
+    loc = nullptr;
   }
   char *res = setlocale(category, loc);
-  if (res == NULL) {
+  if (res == nullptr) {
     return false;
   }
   return string(res, (dl::size_type)strlen(res));
@@ -1264,7 +1264,7 @@ OrFalse<int> f$stripos(const string &haystack, const string &needle, int offset)
   }
 
   const char *s = strcasestr(haystack.c_str() + offset, needle.c_str());
-  if (s == NULL) {
+  if (s == nullptr) {
     return false;
   }
   return (int)(s - haystack.c_str());
@@ -1303,7 +1303,7 @@ static bool php_tag_find(const string &tag, const string &allow) {
     }
   }
   norm.push_back('>');
-  return memmem(allow.c_str(), allow.size(), norm.c_str(), norm.size()) != NULL;
+  return memmem(allow.c_str(), allow.size(), norm.c_str(), norm.size()) != nullptr;
 }
 
 string f$strip_tags(const string &str, const string &allow) {
@@ -1505,7 +1505,7 @@ OrFalse<string> f$stristr(const string &haystack, const string &needle, bool bef
   }
 
   const char *s = strcasestr(haystack.c_str(), needle.c_str());
-  if (s == NULL) {
+  if (s == nullptr) {
     return false;
   }
 
@@ -1691,7 +1691,7 @@ int f$strnatcmp(const string &lhs, const string &rhs) {
 
 OrFalse<string> f$strpbrk(const string &haystack, const string &char_list) {
   const char *pos = strpbrk(haystack.c_str(), char_list.c_str());
-  if (pos == NULL) {
+  if (pos == nullptr) {
     return false;
   }
 
@@ -1713,14 +1713,14 @@ OrFalse<int> f$strpos(const string &haystack, const string &needle, int offset) 
     }
 
     const char *s = static_cast <const char *> (memchr(haystack.c_str() + offset, needle[0], haystack.size() - offset));
-    if (s == NULL) {
+    if (s == nullptr) {
       return false;
     }
     return (int)(s - haystack.c_str());
   }
 
   const char *s = static_cast <const char *> (memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
-  if (s == NULL) {
+  if (s == nullptr) {
     return false;
   }
   return (int)(s - haystack.c_str());
@@ -1746,10 +1746,10 @@ OrFalse<int> f$strrpos(const string &haystack, const string &needle, int offset)
   }
 
   const char *s = static_cast <const char *> (memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size())), *t;
-  if (s == NULL || s >= end) {
+  if (s == nullptr || s >= end) {
     return false;
   }
-  while ((t = static_cast <const char *> (memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != NULL && t < end) {
+  while ((t = static_cast <const char *> (memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != nullptr && t < end) {
     s = t;
   }
   return (int)(s - haystack.c_str());
@@ -1775,10 +1775,10 @@ OrFalse<int> f$strripos(const string &haystack, const string &needle, int offset
   }
 
   const char *s = strcasestr(haystack.c_str() + offset, needle.c_str()), *t;
-  if (s == NULL || s >= end) {
+  if (s == nullptr || s >= end) {
     return false;
   }
-  while ((t = strcasestr(s + 1, needle.c_str())) != NULL && t < end) {
+  while ((t = strcasestr(s + 1, needle.c_str())) != nullptr && t < end) {
     s = t;
   }
   return (int)(s - haystack.c_str());
@@ -1802,7 +1802,7 @@ OrFalse<string> f$strstr(const string &haystack, const string &needle, bool befo
   }
 
   const char *s = static_cast <const char *> (memmem(haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
-  if (s == NULL) {
+  if (s == nullptr) {
     return false;
   }
 
@@ -1840,7 +1840,7 @@ string f$strtr(const string &subject, const string &from, const string &to) {
   string result(n, false);
   for (int i = 0; i < n; i++) {
     const char *p = static_cast <const char *> (memchr(static_cast <const void *> (from.c_str()), (int)(unsigned char)subject[i], (size_t)from.size()));
-    if (p == NULL || (dl::size_type)(p - from.c_str()) >= to.size()) {
+    if (p == nullptr || (dl::size_type)(p - from.c_str()) >= to.size()) {
       result[i] = subject[i];
     } else {
       result[i] = to[(dl::size_type)(p - from.c_str())];
@@ -1924,7 +1924,7 @@ static string str_replace_char(char c, const string &replace, const string &subj
   }
   while (1) {
     const char *pos = (const char *)memchr(piece, c, piece_end - piece);
-    if (pos == NULL) {
+    if (pos == nullptr) {
       if (count == 0) {
         return subject;
       }
@@ -1958,7 +1958,7 @@ void str_replace_inplace(const string &search, const string &replace, string &su
   bool length_no_change = search.size() == replace.size();
   while (1) {
     const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
-    if (pos == NULL) {
+    if (pos == nullptr) {
       if (count == 0) {
         return;
       }
@@ -1998,7 +1998,7 @@ string str_replace(const string &search, const string &replace, const string &su
   string result;
   while (1) {
     const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
-    if (pos == NULL) {
+    if (pos == nullptr) {
       if (count == 0) {
         return subject;
       }
@@ -2154,7 +2154,7 @@ int f$substr_count(const string &haystack, const string &needle, int offset, int
   }
   do {
     s = static_cast <const char *> (memmem(static_cast <const void *> (s), (size_t)(end - s), static_cast <const void *> (needle.c_str()), (size_t)needle.size()));
-    if (s == NULL) {
+    if (s == nullptr) {
       return ans;
     }
     ans++;

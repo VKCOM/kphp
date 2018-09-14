@@ -13,9 +13,9 @@ VarData::VarData(VarData::Type type_) :
   id(-1),
   param_i(),
   tinf_node(VarPtr(this)),
-  init_val(NULL),
+  init_val(nullptr),
   static_id(),
-  bad_vars(NULL),
+  bad_vars(nullptr),
   is_constant(false),
   is_reference(false),
   uninited_flag(false),
@@ -70,10 +70,10 @@ bool FunctionSet::add_function(FunctionPtr new_function) {
 /*** FunctionData ***/
 FunctionData::FunctionData() :
   id(0),
-  root(NULL),
+  root(nullptr),
   is_required(false),
   type_(func_local),
-  bad_vars(NULL),
+  bad_vars(nullptr),
   assumptions_inited_args(),
   assumptions_inited_return(),
   file_id(),
@@ -81,7 +81,7 @@ FunctionData::FunctionData() :
   class_id(),
   varg_flag(false),
   tinf_state(0),
-  const_data(NULL),
+  const_data(nullptr),
   phpdoc_token(),
   min_argn(0),
   is_extern(false),
@@ -98,7 +98,7 @@ FunctionData::FunctionData(VertexPtr root) :
   root(root),
   is_required(false),
   type_(func_local),
-  bad_vars(NULL),
+  bad_vars(nullptr),
   assumptions_inited_args(),
   assumptions_inited_return(),
   file_id(),
@@ -106,7 +106,7 @@ FunctionData::FunctionData(VertexPtr root) :
   class_id(),
   varg_flag(false),
   tinf_state(0),
-  const_data(NULL),
+  const_data(nullptr),
   phpdoc_token(),
   min_argn(0),
   is_extern(false),
@@ -152,7 +152,7 @@ string FunctionData::get_resumable_path() const {
 /*** DefineData ***/
 DefineData::DefineData() :
   id(),
-  val(NULL),
+  val(nullptr),
   type_(def_raw) {}
 
 DefineData::DefineData(VertexPtr val, DefineType type_) :

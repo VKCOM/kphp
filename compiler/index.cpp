@@ -31,7 +31,7 @@ File::File() :
   crc64_with_comments(-1),
   on_disk(false),
   needed(false),
-  target(NULL),
+  target(nullptr),
   compile_with_debug_info_flag(true) {}
 
 File::File(const string &path) :
@@ -41,7 +41,7 @@ File::File(const string &path) :
   crc64_with_comments(-1),
   on_disk(false),
   needed(false),
-  target(NULL) {
+  target(nullptr) {
 }
 
 void File::set_mtime(long long mtime_value) {
@@ -102,7 +102,7 @@ const string &Index::get_dir() const {
   return dir;
 }
 
-Index *Index::current_index = NULL;
+Index *Index::current_index = nullptr;
 
 int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typeflag,
                              struct FTW *ftwbuf __attribute__((unused))) {
@@ -198,13 +198,13 @@ File *Index::get_file(string path, bool force/* = false*/) {
   if (!force) {
     map<string, File *>::iterator it = files.find(path);
     if (it == files.end()) {
-      return NULL;
+      return nullptr;
     }
     return it->second;
   }
 
   File *&f = files[path];
-  if (f == NULL) {
+  if (f == nullptr) {
     f = new File();
     f->path = path;
     kphp_assert (f->path.size() > get_dir().size());

@@ -19,10 +19,10 @@ http_query_data *http_query_data_create(
   d->uri = (char *)dl_memdup(qUri, qUriLen);
   d->get = (char *)dl_memdup(qGet, qGetLen);
   d->headers = (char *)dl_memdup(qHeaders, qHeadersLen);
-  if (qPost != NULL) {
+  if (qPost != nullptr) {
     d->post = (char *)dl_memdup(qPost, qPostLen);
   } else {
-    d->post = NULL;
+    d->post = nullptr;
   }
 
   d->uri_len = qUriLen;
@@ -42,7 +42,7 @@ http_query_data *http_query_data_create(
 }
 
 void http_query_data_free(http_query_data *d) {
-  if (d == NULL) {
+  if (d == nullptr) {
     return;
   }
 
@@ -73,7 +73,7 @@ rpc_query_data *rpc_query_data_create(int *data, int len, long long req_id, unsi
 }
 
 void rpc_query_data_free(rpc_query_data *d) {
-  if (d == NULL) {
+  if (d == nullptr) {
     return;
   }
 
@@ -191,7 +191,7 @@ static void wait_net_events_default(int timeout_ms __attribute__((unused))) {
 }
 
 static net_event_t *pop_net_event_default(void) {
-  return NULL;
+  return nullptr;
 }
 
 

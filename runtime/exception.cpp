@@ -27,7 +27,7 @@ array<array<string>> f$debug_backtrace(void) {
   void *buffer[64];
   int nptrs = fast_backtrace (buffer, 64);
   char **names = backtrace_symbols (buffer, nptrs);
-  php_assert (names != NULL);
+  php_assert (names != nullptr);
 
   const string file_key ("file", 4);
   const string function_key ("function", 8);
@@ -36,20 +36,20 @@ array<array<string>> f$debug_backtrace(void) {
   for (int i = 1; i < nptrs; i++) {
     array <string> current (array_size (0, 2, false));
     char *name_pos = strpbrk (names[i], "( ");
-    php_assert (name_pos != NULL);
+    php_assert (name_pos != nullptr);
 
     current.set_value (file_key, string (names[i], name_pos - names[i]));
 
     if (*name_pos == '(') {
       ++name_pos;
       char *end = strchr (name_pos, '+');
-      if (end == NULL) {
+      if (end == nullptr) {
         current.set_value (function_key, string());
       } else {
         string mangled_name (name_pos, (dl::size_type)(end - name_pos));
 
         int status;
-        char *real_name = abi::__cxa_demangle (mangled_name.c_str(), NULL, NULL, &status);
+        char *real_name = abi::__cxa_demangle (mangled_name.c_str(), nullptr, nullptr, &status);
         if (status < 0) {
           current.set_value (function_key, mangled_name);
         } else {
@@ -62,7 +62,7 @@ array<array<string>> f$debug_backtrace(void) {
     string &func = current[function_key];
     if (func[0] == 'f' && func[1] == '$') {
       const char *s = static_cast <const char *> (memchr (static_cast <const void *> (func.c_str() + 2), '(', func.size() - 2));
-      if (s != NULL) {
+      if (s != nullptr) {
         func = func.substr (2, s - func.c_str() - 2);
         if (func[0] == '_' && func[1] == 't' && func[2] == '_' && func[3] == 's' && func[4] == 'r' && func[5] == 'c' && func[6] == '_' && (int)func.size() > 18) {
           func = func.substr (7, func.size() - 18);
@@ -180,7 +180,7 @@ string f$exception_getTraceAsString(const Exception &e) {
 
 void exception_init_static(void) {
 #ifdef FAST_EXCEPTIONS
-  CurException = NULL;
+  CurException = nullptr;
 #endif
 }
 

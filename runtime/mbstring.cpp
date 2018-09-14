@@ -277,7 +277,7 @@ OrFalse<int> f$mb_strpos(const string &haystack, const string &needle, int offse
 
   int UTF8_offset = mb_UTF8_advance(haystack.c_str(), offset);
   const char *s = (const char *)memmem(haystack.c_str() + UTF8_offset, haystack.size() - UTF8_offset, needle.c_str(), needle.size());
-  if (s == NULL) {
+  if (s == nullptr) {
     return false;
   }
   return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, (dl::size_type)(s - (haystack.c_str() + UTF8_offset))) + offset;

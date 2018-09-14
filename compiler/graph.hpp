@@ -3,7 +3,7 @@
 /*** Id ***/
 template<class IdData>
 Id<IdData>::Id() :
-  ptr(NULL) {}
+  ptr(nullptr) {}
 
 template<class IdData>
 Id<IdData>::Id(IdData *ptr) :
@@ -21,23 +21,23 @@ Id<IdData> &Id<IdData>::operator=(const Id<IdData> &id) {
 
 template<class IdData>
 bool Id<IdData>::is_null() const {
-  return ptr == NULL;
+  return ptr == nullptr;
 }
 
 template<class IdData>
 bool Id<IdData>::not_null() const {
-  return ptr != NULL;
+  return ptr != nullptr;
 }
 
 template<class IdData>
 IdData &Id<IdData>::operator*() const {
-  assert (ptr != NULL);
+  assert (ptr != nullptr);
   return *ptr;
 }
 
 template<class IdData>
 IdData *Id<IdData>::operator->() const {
-  assert (ptr != NULL);
+  assert (ptr != nullptr);
   return ptr;
 }
 
@@ -75,7 +75,7 @@ bool operator==(const Id<IdData> &a, const Id<IdData> &b) {
 template<class IdData>
 void Id<IdData>::clear() {
   delete ptr; //TODO: be very-very carefull with it
-  ptr = NULL;
+  ptr = nullptr;
 }
 
 template<class IdData>
@@ -87,7 +87,7 @@ typename DataTraits<IdData>::value_type Id<IdData>::operator[](const IndexType &
 /*** [get|set]_index ***/
 template<class T>
 int get_index(const Id<T> &i) {
-  assert (i.ptr != NULL);
+  assert (i.ptr != nullptr);
   return i.ptr->id;
 }
 
@@ -258,7 +258,7 @@ XNameToId<T>::XNameToId(IdGen<T> *new_id_gen) {
 
 template<typename T>
 void XNameToId<T>::clear() {
-  id_gen = NULL;
+  id_gen = nullptr;
   name_to_id.clear();
 }
 

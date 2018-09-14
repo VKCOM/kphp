@@ -381,7 +381,7 @@ OrFalse<string> f$realpath(const string &path) {
   char real_path[PATH_MAX];
 
   dl::enter_critical_section();//OK
-  bool result = (realpath(path.c_str(), real_path) != NULL);
+  bool result = (realpath(path.c_str(), real_path) != nullptr);
   dl::leave_critical_section();
 
   if (!result) {
@@ -430,7 +430,7 @@ static OrFalse<string> full_realpath(const string &path) { // realpath resolving
 
   dl::enter_critical_section();//OK
   const char *dirname_c_str = dirname(dirname_path_copy.buffer());
-  bool result = (realpath(dirname_c_str, real_path) != NULL);
+  bool result = (realpath(dirname_c_str, real_path) != nullptr);
   dl::leave_critical_section();
 
   if (result) {
@@ -459,7 +459,7 @@ OrFalse<string> f$tempnam(const string &dir, const string &prefix) {
     dl::enter_critical_section();//OK
     const char *s = getenv("TMPDIR");
     dl::leave_critical_section();
-    if (s != NULL && s[0] != 0) {
+    if (s != nullptr && s[0] != 0) {
       int len = (int)strlen(s);
 
       if (s[len - 1] == '/') {
@@ -467,7 +467,7 @@ OrFalse<string> f$tempnam(const string &dir, const string &prefix) {
       }
 
       dir_new.assign(s, len);
-    } else if (P_tmpdir != NULL) {
+    } else if (P_tmpdir != nullptr) {
       dir_new.assign(P_tmpdir, (dl::size_type)strlen(P_tmpdir));
     } else {
       php_critical_error ("can't compute name of temporary directory in function tempnam");
@@ -517,7 +517,7 @@ bool f$unlink(const string &name) {
 
 OrFalse<array<string>> f$scandir(const string &directory) {
   dirent **namelist;
-  int namelist_size = scandir(directory.c_str(), &namelist, NULL, alphasort);
+  int namelist_size = scandir(directory.c_str(), &namelist, nullptr, alphasort);
   if (namelist_size < 0) {
     if (errno == ENOENT) {
       php_warning("failed to open dir: No such file or directory");
@@ -548,7 +548,7 @@ static FILE *get_file(const Stream &stream) {
   OrFalse<string> filename_or_false = full_realpath(stream.to_string());
   if (!f$boolval(filename_or_false)) {
     php_warning("Wrong file \"%s\" specified", stream.to_string().c_str());
-    return NULL;
+    return nullptr;
   }
 
   string filename = filename_or_false.val();
@@ -579,7 +579,7 @@ static Stream file_fopen(const string &filename, const string &mode) {
 
   dl::enter_critical_section();//NOT OK: opened_files
   FILE *file = fopen(real_filename.c_str() + file_wrapper_name.size(), mode.c_str());
-  if (file == NULL) {
+  if (file == nullptr) {
     dl::leave_critical_section();
     return false;
   }
@@ -592,7 +592,7 @@ static Stream file_fopen(const string &filename, const string &mode) {
 
 static OrFalse<int> file_fwrite(const Stream &stream, const string &text) {
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return false;
   }
 
@@ -620,7 +620,7 @@ static int file_fseek(const Stream &stream, int offset, int whence) {
   whence = whences[whence];
 
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return -1;
   }
 
@@ -632,7 +632,7 @@ static int file_fseek(const Stream &stream, int offset, int whence) {
 
 static OrFalse<int> file_ftell(const Stream &stream) {
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return false;
   }
 
@@ -649,7 +649,7 @@ static OrFalse<string> file_fread(const Stream &stream, int length) {
   }
 
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return false;
   }
 
@@ -670,7 +670,7 @@ static OrFalse<string> file_fread(const Stream &stream, int length) {
 
 static OrFalse<string> file_fgetc(const Stream &stream) {
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return false;
   }
 
@@ -692,7 +692,7 @@ static OrFalse<string> file_fgetc(const Stream &stream) {
 
 static OrFalse<string> file_fgets(const Stream &stream, int length) {
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return false;
   }
 
@@ -710,7 +710,7 @@ static OrFalse<string> file_fgets(const Stream &stream, int length) {
     return false;
   }
   dl::leave_critical_section();
-  if (result == NULL) {
+  if (result == nullptr) {
     return false;
   }
 
@@ -720,7 +720,7 @@ static OrFalse<string> file_fgets(const Stream &stream, int length) {
 
 static OrFalse<int> file_fpassthru(const Stream &stream) {
   FILE *f = get_file(stream);
-  if (f == NULL) {
+  if (f == nullptr) {
     return false;
   }
 
@@ -744,7 +744,7 @@ static OrFalse<int> file_fpassthru(const Stream &stream) {
 
 static bool file_fflush(const Stream &stream) {
   FILE *f = get_file(stream);
-  if (f != NULL) {
+  if (f != nullptr) {
     dl::enter_critical_section();//OK
     fflush(f);
     dl::leave_critical_section();
@@ -755,7 +755,7 @@ static bool file_fflush(const Stream &stream) {
 
 static bool file_feof(const Stream &stream) {
   FILE *f = get_file(stream);
-  if (f != NULL) {
+  if (f != nullptr) {
     dl::enter_critical_section();//OK
     bool eof = (feof(f) != 0);
     dl::leave_critical_section();
@@ -878,10 +878,10 @@ void files_init_static_once(void) {
   file_stream_functions.file_get_contents = file_file_get_contents;
   file_stream_functions.file_put_contents = file_file_put_contents;
 
-  file_stream_functions.stream_socket_client = NULL;
-  file_stream_functions.context_set_option = NULL;
-  file_stream_functions.stream_set_option = NULL;
-  file_stream_functions.get_fd = NULL;
+  file_stream_functions.stream_socket_client = nullptr;
+  file_stream_functions.context_set_option = nullptr;
+  file_stream_functions.stream_set_option = nullptr;
+  file_stream_functions.get_fd = nullptr;
 
   register_stream_functions(&file_stream_functions, true);
 }

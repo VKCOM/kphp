@@ -503,7 +503,7 @@ array<T> f$array_filter(const array<T> &a, const T1 callback, int flags) {
 
 template<class T, class T1>
 array<var> f$array_map(const T1 callback, const array<T> &a) {
-  php_assert (callback != NULL);
+  php_assert (callback != nullptr);
 
   array<var> result(a.size());
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
@@ -515,7 +515,7 @@ array<var> f$array_map(const T1 callback, const array<T> &a) {
 
 template<class T, class T1>
 var f$array_reduce(const array<T> &a, const T1 callback, const var initial) {
-  php_assert (callback != NULL);
+  php_assert (callback != nullptr);
 
   var result = initial;
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {

@@ -64,7 +64,7 @@ string f$hash(const string &algo, const string &s, bool raw_output) {
 }
 
 string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output) {
-  const EVP_MD *evp_md = NULL;
+  const EVP_MD *evp_md = nullptr;
   int hash_len = 0;
   if (!strcmp(algo.c_str(), "sha1")) {
     evp_md = EVP_sha1();
@@ -74,7 +74,7 @@ string f$hash_hmac(const string &algo, const string &data, const string &key, bo
     hash_len = 32;
   }
 
-  if (evp_md != NULL) {
+  if (evp_md != nullptr) {
     string res;
     if (raw_output) {
       res.assign((dl::size_type)hash_len, false);
@@ -254,20 +254,20 @@ static EVP_PKEY *openssl_get_evp(const string &key, const string &passphrase, bo
 
   dl::enter_critical_section();//OK
   BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
-  if (in == NULL) {
+  if (in == nullptr) {
     dl::leave_critical_section();
-    return NULL;
+    return nullptr;
   }
   EVP_PKEY *evp_pkey;
-  X509 *cert = (X509 *)PEM_ASN1_read_bio((d2i_of_void *)d2i_X509, PEM_STRING_X509, in, NULL, NULL, NULL);
+  X509 *cert = (X509 *)PEM_ASN1_read_bio((d2i_of_void *)d2i_X509, PEM_STRING_X509, in, nullptr, nullptr, nullptr);
   BIO_free(in);
-  if (cert == NULL) {
+  if (cert == nullptr) {
     in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
-    if (in == NULL) {
+    if (in == nullptr) {
       dl::leave_critical_section();
-      return NULL;
+      return nullptr;
     }
-    evp_pkey = is_public ? PEM_read_bio_PUBKEY(in, NULL, NULL, NULL) : PEM_read_bio_PrivateKey(in, NULL, NULL, static_cast <void *> (const_cast <char *> (passphrase
+    evp_pkey = is_public ? PEM_read_bio_PUBKEY(in, nullptr, nullptr, nullptr) : PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase
       .c_str())));
     BIO_free(in);
   } else {
@@ -276,10 +276,10 @@ static EVP_PKEY *openssl_get_evp(const string &key, const string &passphrase, bo
   }
 /*
   ERR_load_crypto_strings();
-  if (evp_pkey == NULL) {
+  if (evp_pkey == nullptr) {
     unsigned long val;
     while ((val = ERR_get_error())) {
-      fprintf (stderr, "%s\n", ERR_error_string (val, NULL));
+      fprintf (stderr, "%s\n", ERR_error_string (val, nullptr));
     }
   }
 */
@@ -293,7 +293,7 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   dl::enter_critical_section();//OK
   bool from_cache;
   EVP_PKEY *pkey = openssl_get_evp(key, string(), true, &from_cache);
-  if (pkey == NULL) {
+  if (pkey == nullptr) {
     dl::leave_critical_section();
 
     php_warning("Parameter key is not a valid public key");
@@ -349,7 +349,7 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   dl::enter_critical_section();//OK
   bool from_cache;
   EVP_PKEY *pkey = openssl_get_evp(key, string(), false, &from_cache);
-  if (pkey == NULL) {
+  if (pkey == nullptr) {
     dl::leave_critical_section();
     php_warning("Parameter key is not a valid private key");
     return false;
@@ -398,7 +398,7 @@ OrFalse<string> f$openssl_pkey_get_private(const string &key, const string &pass
   bool from_cache;
   EVP_PKEY *pkey = openssl_get_evp(key, passphrase, false, &from_cache);
 
-  if (pkey == NULL) {
+  if (pkey == nullptr) {
     dl::leave_critical_section();
 
     php_warning("Parameter key is not a valid key or passphrase is not a valid password");
@@ -476,14 +476,14 @@ int f$openssl_verify(const string &data, const string &signature, const string &
 
   bool from_cache;
   pkey = openssl_get_evp(pub_key_id, string("", 0), true, &from_cache);
-  if (pkey == NULL) {
+  if (pkey == nullptr) {
     php_warning("supplied key param cannot be converted into a public key");
     dl::leave_critical_section();
     return 0;
   }
 
   md_ctx = EVP_MD_CTX_create();
-  if (md_ctx == NULL ||
+  if (md_ctx == nullptr ||
       !EVP_VerifyInit (md_ctx, mdtype) ||
       !EVP_VerifyUpdate (md_ctx, data.c_str(), data.size()) ||
       (err = EVP_VerifyFinal(md_ctx, (unsigned char *)signature.c_str(), (unsigned int)signature.size(), pkey)) < 0) {
@@ -501,7 +501,7 @@ OrFalse<string> f$openssl_random_pseudo_bytes(int length) {
   string buffer(length, ' ');
   struct timeval tv;
 
-  gettimeofday(&tv, NULL);
+  gettimeofday(&tv, nullptr);
   RAND_add(&tv, sizeof(tv), 0.0);
 
   if (RAND_bytes((unsigned char *)buffer.buffer(), length) <= 0) {
@@ -529,7 +529,7 @@ const int DEFAULT_SOCKET_TIMEOUT = 60;
 static const char *ssl_get_error_string(void) {
   static_SB.clean();
   while (unsigned long error_code = ERR_get_error()) {
-    static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, NULL) << "]\n";
+    static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";
   }
   return static_SB.c_str();
 }
@@ -543,10 +543,10 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
   } else {                                              \
     php_warning ("%s", error_description.c_str());      \
   }                                                     \
-  if (ssl_handle != NULL) {                             \
+  if (ssl_handle != nullptr) {                             \
     SSL_free (ssl_handle);                              \
   }                                                     \
-  if (ssl_ctx != NULL) {                                \
+  if (ssl_ctx != nullptr) {                                \
     SSL_CTX_free (ssl_ctx);                             \
   }                                                     \
   if (sock != -1) {                                     \
@@ -573,8 +573,8 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
 
   int sock = -1;
 
-  SSL *ssl_handle = NULL;
-  SSL_CTX *ssl_ctx = NULL;
+  SSL *ssl_handle = nullptr;
+  SSL_CTX *ssl_ctx = nullptr;
 
   var parsed_url = f$parse_url(url);
   string host = f$strval(parsed_url.get_value(string("host", 4)));
@@ -656,14 +656,14 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
   ERR_clear_error();
 
   ssl_ctx = SSL_CTX_new(TLSv1_client_method());
-  if (ssl_ctx == NULL) {
+  if (ssl_ctx == nullptr) {
     RETURN_ERROR(true, -7, "Failed to create an SSL context");
   }
 //  SSL_CTX_set_options (ssl_ctx, SSL_OP_ALL); don't want others bugs workarounds
   SSL_CTX_set_mode (ssl_ctx, SSL_MODE_AUTO_RETRY | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_ENABLE_PARTIAL_WRITE);
 
   if (verify_peer) {
-    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, nullptr);
 
     if (verify_depth != -1) {
       SSL_CTX_set_verify_depth(ssl_ctx, verify_depth);
@@ -672,12 +672,12 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
     if (cafile.empty() && capath.empty()) {
       SSL_CTX_set_default_verify_paths(ssl_ctx);
     } else {
-      if (SSL_CTX_load_verify_locations(ssl_ctx, cafile.empty() ? NULL : cafile.c_str(), capath.empty() ? NULL : capath.c_str()) == 0) {
+      if (SSL_CTX_load_verify_locations(ssl_ctx, cafile.empty() ? nullptr : cafile.c_str(), capath.empty() ? nullptr : capath.c_str()) == 0) {
         RETURN_ERROR_FORMAT(true, -8, "Failed to load verify locations \"%s\" and \"%s\"", cafile, capath);
       }
     }
   } else {
-    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, NULL);
+    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, nullptr);
   }
 
   if (SSL_CTX_set_cipher_list(ssl_ctx, cipher_list.empty() ? "DEFAULT" : cipher_list.c_str()) == 0) {
@@ -699,7 +699,7 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
   }
 
   ssl_handle = SSL_new(ssl_ctx);
-  if (ssl_handle == NULL) {
+  if (ssl_handle == nullptr) {
     RETURN_ERROR(true, -13, "Failed to create an SSL handle");
   }
 
@@ -718,7 +718,7 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
     if (connect_result == 1) {
       if (verify_peer) {
         X509 *peer_cert = SSL_get_peer_certificate(ssl_handle);
-        if (peer_cert == NULL) {
+        if (peer_cert == nullptr) {
           SSL_shutdown(ssl_handle);
           RETURN_ERROR(false, -15, "Failed to get peer certificate");
         }
@@ -808,7 +808,7 @@ static bool ssl_context_set_option(var &context_ssl, const string &option, const
 ssl_connection *get_connection(const Stream &stream) {
   if (dl::query_num != ssl_connections_last_query_num || !ssl_connections->has_key(stream.to_string())) {
     php_warning("Connection to \"%s\" not found", stream.to_string().c_str());
-    return NULL;
+    return nullptr;
   }
 
   return &(*ssl_connections)[stream.to_string()];
@@ -825,8 +825,8 @@ static void ssl_do_shutdown(ssl_connection *c) {
     php_assert (fcntl(c->sock, F_SETFL, 0) == 0);
   }
 
-  php_assert (c->ssl_ctx != NULL);
-  php_assert (c->ssl_handle != NULL);
+  php_assert (c->ssl_ctx != nullptr);
+  php_assert (c->ssl_handle != nullptr);
 
   SSL_shutdown(c->ssl_handle);
   SSL_free(c->ssl_handle);
@@ -834,8 +834,8 @@ static void ssl_do_shutdown(ssl_connection *c) {
   close(c->sock);
 
   c->sock = -1;
-  c->ssl_ctx = NULL;
-  c->ssl_handle = NULL;
+  c->ssl_ctx = nullptr;
+  c->ssl_handle = nullptr;
 }
 
 static bool process_ssl_error(ssl_connection *c, int result) {
@@ -886,7 +886,7 @@ static bool process_ssl_error(ssl_connection *c, int result) {
 
 static OrFalse<int> ssl_fwrite(const Stream &stream, const string &data) {
   ssl_connection *c = get_connection(stream);
-  if (c == NULL || c->sock == -1) {
+  if (c == nullptr || c->sock == -1) {
     return false;
   }
 
@@ -927,7 +927,7 @@ static OrFalse<string> ssl_fread(const Stream &stream, int length) {
   }
 
   ssl_connection *c = get_connection(stream);
-  if (c == NULL || c->sock == -1) {
+  if (c == nullptr || c->sock == -1) {
     return false;
   }
 
@@ -955,7 +955,7 @@ static OrFalse<string> ssl_fread(const Stream &stream, int length) {
 
 static bool ssl_feof(const Stream &stream) {
   ssl_connection *c = get_connection(stream);
-  if (c == NULL || c->sock == -1) {
+  if (c == nullptr || c->sock == -1) {
     return true;
   }
 
@@ -1002,7 +1002,7 @@ static bool ssl_fclose(const Stream &stream) {
 
 bool ssl_stream_set_option(const Stream &stream, int option, int value) {
   ssl_connection *c = get_connection(stream);
-  if (c == NULL) {
+  if (c == nullptr) {
     return false;
   }
 
@@ -1041,7 +1041,7 @@ bool ssl_stream_set_option(const Stream &stream, int option, int value) {
 
 static int ssl_get_fd(const Stream &stream) {
   ssl_connection *c = get_connection(stream);
-  if (c == NULL) {
+  if (c == nullptr) {
     return -1;
   }
 
@@ -1055,20 +1055,20 @@ void openssl_init_static_once(void) {
   static stream_functions ssl_stream_functions;
 
   ssl_stream_functions.name = string("ssl", 3);
-  ssl_stream_functions.fopen = NULL;
+  ssl_stream_functions.fopen = nullptr;
   ssl_stream_functions.fwrite = ssl_fwrite;
-  ssl_stream_functions.fseek = NULL;
-  ssl_stream_functions.ftell = NULL;
+  ssl_stream_functions.fseek = nullptr;
+  ssl_stream_functions.ftell = nullptr;
   ssl_stream_functions.fread = ssl_fread;
-  ssl_stream_functions.fgetc = NULL;
-  ssl_stream_functions.fgets = NULL;
-  ssl_stream_functions.fpassthru = NULL;
-  ssl_stream_functions.fflush = NULL;
+  ssl_stream_functions.fgetc = nullptr;
+  ssl_stream_functions.fgets = nullptr;
+  ssl_stream_functions.fpassthru = nullptr;
+  ssl_stream_functions.fflush = nullptr;
   ssl_stream_functions.feof = ssl_feof;
   ssl_stream_functions.fclose = ssl_fclose;
 
-  ssl_stream_functions.file_get_contents = NULL;
-  ssl_stream_functions.file_put_contents = NULL;
+  ssl_stream_functions.file_get_contents = nullptr;
+  ssl_stream_functions.file_put_contents = nullptr;
 
   ssl_stream_functions.stream_socket_client = ssl_stream_socket_client;
   ssl_stream_functions.context_set_option = ssl_context_set_option;
@@ -1225,17 +1225,17 @@ public:
 
     X509_STORE_CTX_ptr csc{X509_STORE_CTX_new()};
 
-    if (csc == NULL) {
+    if (csc == nullptr) {
       return -1;
     }
     X509_STORE_ptr store{X509_STORE_new()};
-    if (store == NULL) {
+    if (store == nullptr) {
       return -1;
     }
 
     X509_STORE_set_default_paths(store.get());
 
-    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_.get(), NULL)) {
+    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_.get(), nullptr)) {
       return -1;
     }
     // return value is not checked, as in php

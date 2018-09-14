@@ -515,7 +515,7 @@ void master_data_remove_if_dead(master_data_t *master) {
     unsigned long long start_time = get_pid_start_time(master->pid);
     if (start_time != master->start_time) {
       master->valid_flag = 0;
-      dl_assert (me == NULL || master != me, dl_pstr("[start_time = %llu] [master->start_time = %llu]",
+      dl_assert (me == nullptr || master != me, dl_pstr("[start_time = %llu] [master->start_time = %llu]",
                                                      start_time, master->start_time));
     }
   }
@@ -527,7 +527,7 @@ void shared_data_update(shared_data_t *shared_data) {
 }
 
 void shared_data_get_masters(shared_data_t *shared_data, master_data_t **me, master_data_t **other) {
-  *me = NULL;
+  *me = nullptr;
 
   if (shared_data->masters[0].valid_flag == 0) {
     *me = &shared_data->masters[0];
@@ -539,7 +539,7 @@ void shared_data_get_masters(shared_data_t *shared_data, master_data_t **me, mas
 }
 
 void master_init(master_data_t *me, master_data_t *other) {
-  assert (me != NULL);
+  assert (me != nullptr);
   memset(me, 0, sizeof(*me));
 
   if (other->valid_flag) {
@@ -650,7 +650,7 @@ static int to_kill = 0, to_run = 0, to_exit = 0;
 static long long generation;
 static int receive_fd_attempts_cnt = 0;
 
-static worker_info_t *free_workers = NULL;
+static worker_info_t *free_workers = nullptr;
 
 void worker_init(worker_info_t *w) {
   w->stats = new Stats();
@@ -659,12 +659,12 @@ void worker_init(worker_info_t *w) {
 
 void worker_free(worker_info_t *w) {
   delete w->stats;
-  w->stats = NULL;
+  w->stats = nullptr;
 }
 
 worker_info_t *new_worker() {
   worker_info_t *w = free_workers;
-  if (w == NULL) {
+  if (w == nullptr) {
     w = (worker_info_t *)zmalloc0(sizeof(worker_info_t));
   } else {
     free_workers = free_workers->next_worker;
@@ -744,7 +744,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(void), int new_ht
 
 
   //TODO: other signals, daemonize, change user...
-  if (shared_data == NULL) {
+  if (shared_data == nullptr) {
     shared_data = get_shared_data(shmem_name.c_str());
   }
 
@@ -757,7 +757,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(void), int new_ht
     shared_data_update(shared_data);
     shared_data_get_masters(shared_data, &me, &other);
 
-    if (me != NULL) {
+    if (me != nullptr) {
       master_init(me, other);
       is_inited = 1;
     }
@@ -854,8 +854,8 @@ void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
   struct connection *c = &p->pending_stat_queue;
   while (c->first_query != (struct conn_query *)c) {
     struct conn_query *q = c->first_query;
-    dl_assert (q != NULL, "...");
-    dl_assert (q->requester != NULL, "...");
+    dl_assert (q != nullptr, "...");
+    dl_assert (q->requester != nullptr, "...");
     //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
     if (q->requester->generation == q->req_generation) {
       int need_packet_num = *(int *)&q->extra;
@@ -962,10 +962,10 @@ struct connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extr
   //fprintf (stderr, "create_pipe_reader [%d]\n", pipe_fd);
 
   if (check_conn_functions(type) < 0) {
-    return NULL;
+    return nullptr;
   }
   if (pipe_fd >= MAX_CONNECTIONS || pipe_fd < 0) {
-    return NULL;
+    return nullptr;
   }
   event_t *ev;
   struct connection *c;
@@ -975,7 +975,7 @@ struct connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extr
   memset(c, 0, sizeof(struct connection));
   c->fd = pipe_fd;
   c->ev = ev;
-  //c->target = NULL;
+  //c->target = nullptr;
   c->generation = ++conn_generation;
   c->flags = C_WANTRD;
   init_builtin_buffer(&c->In, c->in_buff, BUFF_SIZE);
@@ -1005,7 +1005,7 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
   info->pipe_out_packet_num = -1;
   info->pipe_in_packet_num = -1;
   struct connection *reader = create_pipe_reader(pipe, &ct_rpc_client, (void *)&pipe_reader_methods);
-  if (reader != NULL) {
+  if (reader != nullptr) {
     PR_DATA (reader)->worker = worker;
     PR_DATA (reader)->worker_generation = worker->generation;
     PR_DATA (reader)->pipe_info = info;
@@ -1022,7 +1022,7 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
 
 void clear_pipe_info(pipe_info_t *info) {
   info->pipe_read = -1;
-  info->reader = NULL;
+  info->reader = nullptr;
 }
 
 int run_worker(void) {
@@ -1390,22 +1390,22 @@ void create_stats_queries(struct connection *c, int op, int worker_pid) {
   for (i = 0; i < me_workers_n; i++) {
     workers[i]->stats_flag = 0;
     if (!workers[i]->is_dying && (worker_pid < 0 || workers[i]->pid == worker_pid)) {
-      pipe_info_t *pipe_info = NULL;
+      pipe_info_t *pipe_info = nullptr;
       if (op & SPOLL_SEND_IMMEDIATE_STATS) {
         pipe_info = &workers[i]->pipes[1];
       } else if (op & SPOLL_SEND_FULL_STATS) {
         pipe_info = &workers[i]->pipes[0];
       }
-      dl_assert (pipe_info != NULL, "bug in code");
+      dl_assert (pipe_info != nullptr, "bug in code");
       sigqueue(workers[i]->pid, SIGSTAT, to_send);
       pipe_info->pipe_out_packet_num++;
       vkprintf (1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
-      if (c != NULL) {
+      if (c != nullptr) {
         create_stats_query(c, pipe_info);
       }
     }
   }
-  if (c != NULL) {
+  if (c != nullptr) {
     c->status = conn_wait_net;
   }
 }
@@ -1434,7 +1434,7 @@ extern unsigned tl_schema_crc32;
 
 std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   std::string res, header;
-  header = stats.to_string(me == NULL ? 0 : (int)me->pid, false, true);
+  header = stats.to_string(me == nullptr ? 0 : (int)me->pid, false, true);
   int total_workers_n = 0;
   int running_workers_n = 0;
   int paused_workers_n = 0;
@@ -1474,7 +1474,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
 
   sprintf(buf, "uptime\t%d\n", get_uptime());
   header += buf;
-  if (engine_tag != NULL) {
+  if (engine_tag != nullptr) {
     sprintf(buf + sprintf(buf, "kphp_version\t%s", engine_tag) - 2, "\n");
     header += buf;
   }
@@ -1654,7 +1654,7 @@ void php_master_rpc_stats(void) {
   std::string res(1 << 12, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
-  stats.statsd_prefix = NULL;
+  stats.statsd_prefix = nullptr;
   sb_init(&stats.sb, &res[0], (1 << 12) - 2);
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
@@ -1713,12 +1713,12 @@ void run_master_on() {
     }
   }
 
-  int need_http_fd = http_fd != NULL && *http_fd == -1;
+  int need_http_fd = http_fd != nullptr && *http_fd == -1;
   if (need_http_fd) {
     int can_ask_http_fd = other->valid_flag && other->own_http_fd && other->http_fd_port == me->http_fd_port;
     if (!can_ask_http_fd) {
       vkprintf (1, "Get http_fd via try_get_http_fd()\n");
-      assert (try_get_http_fd != NULL && "no pointer for try_get_http_fd found");
+      assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
       *http_fd = try_get_http_fd();
       assert (*http_fd != -1 && "failed to get http_fd");
       me->own_http_fd = 1;
@@ -1841,11 +1841,11 @@ static void cron(void) {
   CpuStatTimestamp cpu_timestamp(my_now, utime, stime, cpu_total);
   stats.update(cpu_timestamp);
 
-  create_stats_queries(NULL, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
+  create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
   static double last_full_stats = -1;
   if (last_full_stats + MAX_HANGING_TIME * 0.25 < my_now) {
     last_full_stats = my_now;
-    create_stats_queries(NULL, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
+    create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
   }
 }
 
@@ -1855,9 +1855,9 @@ void run_master() {
 
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
   me->http_fd_port = http_fd_port;
-  me->own_http_fd = http_fd != NULL && *http_fd != -1;
+  me->own_http_fd = http_fd != nullptr && *http_fd != -1;
 
-  err = epoll_sethandler(signal_fd, 0, signal_epoll_handler, NULL);
+  err = epoll_sethandler(signal_fd, 0, signal_epoll_handler, nullptr);
   dl_assert (err >= 0, "epoll_sethalder failed");
   err = epoll_insert(signal_fd, EVT_READ);
   dl_assert (err >= 0, "epoll_insert failed");
@@ -1953,7 +1953,7 @@ void run_master() {
     //timeout.tv_nsec = 0;
 
     //old solution:
-    //sigtimedwait (&mask, NULL, &timeout);
+    //sigtimedwait (&mask, nullptr, &timeout);
     //new solution:
     //pselect. Has the opposite behavior, allows all signals in mask during its execution.
     //So we should use empty_mask instead of mask

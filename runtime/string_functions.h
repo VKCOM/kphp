@@ -331,7 +331,7 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) {
   const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
   string result;
   while (1) {
-    const char *best_pos = NULL;
+    const char *best_pos = nullptr;
     int best_len = -1;
     string replace;
     for (typename array<T>::const_iterator p = replace_pairs.begin(); p != replace_pairs.end(); ++p) {
@@ -341,13 +341,13 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) {
         return subject;
       }
       const char *pos = static_cast <const char *> (memmem(static_cast <const void *> (piece), (size_t)(piece_end - piece), static_cast <const void *> (search.c_str()), (size_t)search_len));
-      if (pos != NULL && (best_pos == NULL || best_pos > pos || (best_pos == pos && search_len > best_len))) {
+      if (pos != nullptr && (best_pos == nullptr || best_pos > pos || (best_pos == pos && search_len > best_len))) {
         best_pos = pos;
         best_len = search_len;
         replace = f$strval(p.get_value());
       }
     }
-    if (best_pos == NULL) {
+    if (best_pos == nullptr) {
       result.append(piece, (dl::size_type)(piece_end - piece));
       break;
     }

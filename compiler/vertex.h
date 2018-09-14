@@ -11,7 +11,7 @@ size_t vertex_total_mem_used __attribute__ ((weak));
 VertexPtr clone_vertex(VertexPtr from);
 
 template<Operation Op>
-vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr = NULL);
+vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr = nullptr);
 
 template<>
 class vertex_inner<meta_op_base> {
@@ -277,7 +277,7 @@ vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr
   vertex_inner<Op> *ptr = (vertex_inner<Op> *)(
     (char *)malloc(size) + shift
   );
-  if (from_ptr == NULL) {
+  if (from_ptr == nullptr) {
     new(ptr) vertex_inner<Op>();
   } else {
     new(ptr) vertex_inner<Op>(*from_ptr);
@@ -303,20 +303,20 @@ vertex_inner<Op> *raw_clone_vertex_inner(const vertex_inner<Op> &from) {
 }
 
 template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(vertex_inner<meta_op_base> *from_ptr = NULL) {
+vertex_inner<Op> *create_vertex_inner(vertex_inner<meta_op_base> *from_ptr = nullptr) {
   vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(0, (vertex_inner<Op> *)from_ptr);
   return ptr;
 }
 
 template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(VertexPtr first, vertex_inner<meta_op_base> *from_ptr = NULL) {
+vertex_inner<Op> *create_vertex_inner(VertexPtr first, vertex_inner<meta_op_base> *from_ptr = nullptr) {
   vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(1, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   return ptr;
 }
 
 template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, vertex_inner<meta_op_base> *from_ptr = NULL) {
+vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, vertex_inner<meta_op_base> *from_ptr = nullptr) {
   vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(2, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   (*ptr)[1] = second;
@@ -325,7 +325,7 @@ vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, vertex_
 
 template<Operation Op>
 vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second,
-                                      VertexPtr third, vertex_inner<meta_op_base> *from_ptr = NULL) {
+                                      VertexPtr third, vertex_inner<meta_op_base> *from_ptr = nullptr) {
   vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(3, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   (*ptr)[1] = second;
@@ -335,7 +335,7 @@ vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second,
 
 template<Operation Op>
 vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, VertexPtr third,
-                                      VertexPtr forth, vertex_inner<meta_op_base> *from_ptr = NULL) {
+                                      VertexPtr forth, vertex_inner<meta_op_base> *from_ptr = nullptr) {
   vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(4, (vertex_inner<Op> *)from_ptr);
   (*ptr)[0] = first;
   (*ptr)[1] = second;
@@ -346,7 +346,7 @@ vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, VertexP
 
 template<Operation Op>
 vertex_inner<Op> *create_vertex_inner(const vector<VertexPtr> &next,
-                                      vertex_inner<meta_op_base> *from_ptr = NULL) {
+                                      vertex_inner<meta_op_base> *from_ptr = nullptr) {
   vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(
     (int)next.size(),
     (vertex_inner<Op> *)from_ptr
@@ -548,7 +548,7 @@ VA_END
 //VA_BEGIN (op_func_call, meta_op_base)
 //void *func_;
 //RAW_INIT_BEGIN
-//func_ = NULL;
+//func_ = nullptr;
 //RAW_INIT_END
 //PROPERTIES_BEGIN
 //OPP (main, statement_opp);

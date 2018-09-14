@@ -32,8 +32,8 @@ KphpEnviroment::KphpEnviroment() :
   enable_profiler_(0),
   use_auto_dest_bool_(false),
   error_on_warns(false),
-  warnings_file(NULL),
-  stats_file(NULL),
+  warnings_file(nullptr),
+  stats_file(nullptr),
   warnings_level(0) {}
 
 static void init_env_var(string *str, const string &var_name, const string &default_value) {
@@ -42,7 +42,7 @@ static void init_env_var(string *str, const string &var_name, const string &defa
   }
   if (!var_name.empty()) {
     char *val = getenv(var_name.c_str());
-    if (val != NULL) {
+    if (val != nullptr) {
       *str = val;
       return;
     }
@@ -324,7 +324,7 @@ const string &KphpEnviroment::get_debug_level() const {
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd(tmp, PATH_MAX);
-  if (cur_dir == NULL) {
+  if (cur_dir == nullptr) {
     printf("Failed to get current directory");
     return false;
   }

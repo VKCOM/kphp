@@ -9,9 +9,9 @@ extern const char *last_wait_error;
 
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
-#define TRY_WAIT(labelName, a, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != NULL); a = input_->load <T, T> (); }
-#define TRY_WAIT_DROP_RESULT(labelName, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != NULL); input_->load <T, T> (); }
-#define RESUMABLE_BEGIN if (pos__ != NULL) goto *pos__; do {
+#define TRY_WAIT(labelName, a, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != nullptr); a = input_->load <T, T> (); }
+#define TRY_WAIT_DROP_RESULT(labelName, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != nullptr); input_->load <T, T> (); }
+#define RESUMABLE_BEGIN if (pos__ != nullptr) goto *pos__; do {
 #define RESUMABLE_END \
       } while (0); \
       php_assert (0);\
@@ -192,7 +192,7 @@ void Storage::save(const T2 &x, Getter getter) {
     php_assert (sizeof(T1) <= sizeof(var));
     new(storage_) T1(x);
     getter_ = getter;
-    php_assert (getter_ != NULL);
+    php_assert (getter_ != nullptr);
   }
 }
 
@@ -203,27 +203,27 @@ void Storage::save(const T2 &x) {
 
 template<class X, class Y>
 Y Storage::load() {
-  php_assert (getter_ != NULL);
+  php_assert (getter_ != nullptr);
   if (getter_ == load_exception) {
-    getter_ = NULL;
+    getter_ = nullptr;
     load_exception(storage_);
     return Y();
   }
 
-  getter_ = NULL;
+  getter_ = nullptr;
   return load_implementation_helper<X, Y>::load(storage_);
 }
 
 template<>
 inline void Storage::load<void, void>() {
-  php_assert (getter_ != NULL);
+  php_assert (getter_ != nullptr);
   if (getter_ == load_exception) {
-    getter_ = NULL;
+    getter_ = nullptr;
     load_exception(storage_);
     return;
   }
 
-  getter_ = NULL;
+  getter_ = nullptr;
 }
 
 
@@ -231,7 +231,7 @@ template<class T>
 T start_resumable(Resumable *resumable) {
   int id = register_started_resumable(resumable);
 
-  if (resumable->resume(id, NULL)) {
+  if (resumable->resume(id, nullptr)) {
     Storage *output = get_started_storage(id);
     finish_started_resumable(id);
     unregister_started_resumable(id);
@@ -255,7 +255,7 @@ template<class T>
 int fork_resumable(Resumable *resumable) {
   int id = register_forked_resumable(resumable);
 
-  if (resumable->resume(id, NULL)) {
+  if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);
   }
 

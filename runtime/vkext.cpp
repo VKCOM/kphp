@@ -103,7 +103,7 @@ int result_buff_pos;
 
 inline void init_buff(void) {
   wptr = buff;
-  result_buff = NULL;
+  result_buff = nullptr;
   result_buff_len = 0;
   result_buff_pos = 0;
 }

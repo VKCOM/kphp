@@ -141,7 +141,7 @@ bool mc_is_immediate_query(const string &key) {
 const char *mc_parse_value(const char *result, int result_len, const char **key, int *key_len, const char **value, int *value_len, int *flags, int *error_code) {
   if (strncmp(result, "VALUE", 5)) {
     *error_code = 1;
-    return NULL;
+    return nullptr;
   }
   int i = 5;
 
@@ -150,7 +150,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   }
   if (i == result_len) {
     *error_code = 2;
-    return NULL;
+    return nullptr;
   }
   *key = result + i;
   while (i < result_len && result[i] != ' ') {
@@ -158,7 +158,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   }
   if (i == result_len) {
     *error_code = 3;
-    return NULL;
+    return nullptr;
   }
   *key_len = (int)(result + i - *key);
 
@@ -167,7 +167,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   }
   if (i == result_len) {
     *error_code = 4;
-    return NULL;
+    return nullptr;
   }
   *value = result + i;
   while (i < result_len && result[i] != ' ') {
@@ -175,11 +175,11 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   }
   if (i == result_len) {
     *error_code = 5;
-    return NULL;
+    return nullptr;
   }
   if (!php_try_to_int(*value, (int)(result + i - *value), flags)) {
     *error_code = 6;
-    return NULL;
+    return nullptr;
   }
 
   while (result[i] == ' ') {
@@ -187,7 +187,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   }
   if (i == result_len) {
     *error_code = 7;
-    return NULL;
+    return nullptr;
   }
   *value = result + i;
   while (i < result_len && result[i] != ' ' && result[i] != '\r') {
@@ -195,24 +195,24 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   }
   if (result[i] != '\r' || result[i + 1] != '\n') {
     *error_code = 8;
-    return NULL;
+    return nullptr;
   }
   if (!php_try_to_int(*value, (int)(result + i - *value), value_len) || (unsigned int)(*value_len) >= (unsigned int)MAX_INPUT_VALUE_LEN) {
     *error_code = 9;
-    return NULL;
+    return nullptr;
   }
 
   i += 2;
   *value = result + i;
   if (i + *value_len + 2 > result_len) {
     *error_code = 10;
-    return NULL;
+    return nullptr;
   }
   i += *value_len;
 
   if (result[i] != '\r' || result[i + 1] != '\n') {
     *error_code = 11;
-    return NULL;
+    return nullptr;
   }
   *error_code = 0;
   return result + i + 2;
@@ -471,7 +471,7 @@ bool Memcache::run_set(const string &key, const var &value, int flags, int expir
   mc_bool_res = false;
   host cur_host = get_host(real_key);
   if (mc_is_immediate_query(real_key)) {
-    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     return true;
   } else {
     mc_last_key = real_key.c_str();
@@ -513,7 +513,7 @@ var Memcache::run_increment(const string &key, const var &count) {
   *mc_res = false;
   host cur_host = get_host(real_key);
   if (mc_is_immediate_query(real_key)) {
-    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     return 0;
   } else {
     mc_last_key = real_key.c_str();
@@ -602,7 +602,7 @@ var Memcache::get(const var &key_var) {
     *mc_res = array<var>(array_size(0, key_var.count(), false));
     host cur_host = get_host(string());
     if (is_immediate_query) {
-      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL); //TODO wrong if we have no mc_proxy
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr); //TODO wrong if we have no mc_proxy
     } else {
       mc_last_key = drivers_SB.c_str();
       mc_last_key_len = (int)drivers_SB.size();
@@ -623,7 +623,7 @@ var Memcache::get(const var &key_var) {
     host cur_host = get_host(real_key);
     if (mc_is_immediate_query(real_key)) {
       *mc_res = true;
-      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     } else {
       *mc_res = false;
       mc_last_key = real_key.c_str();
@@ -649,7 +649,7 @@ bool Memcache::delete_(const string &key) {
   mc_bool_res = false;
   host cur_host = get_host(real_key);
   if (mc_is_immediate_query(real_key)) {
-    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, NULL);
+    mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     return true;
   } else {
     mc_last_key = real_key.c_str();
@@ -943,7 +943,7 @@ true_mc::true_mc(MC_object *mc, bool is_true_mc, const string &engine_tag, const
 }
 
 bool true_mc::addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->addServer");
     return false;
   }
@@ -951,7 +951,7 @@ bool true_mc::addServer(const string &host_name, int port, bool persistent, int 
 }
 
 bool true_mc::connect(const string &host_name, int port, int timeout) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->connect");
     return false;
   }
@@ -959,7 +959,7 @@ bool true_mc::connect(const string &host_name, int port, int timeout) {
 }
 
 bool true_mc::pconnect(const string &host_name, int port, int timeout) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->pconnect");
     return false;
   }
@@ -967,7 +967,7 @@ bool true_mc::pconnect(const string &host_name, int port, int timeout) {
 }
 
 bool true_mc::rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->rpc_connect");
     return false;
   }
@@ -976,7 +976,7 @@ bool true_mc::rpc_connect(const string &host_name, int port, const var &default_
 
 
 bool true_mc::add(const string &key, const var &value, int flags, int expire) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->add");
     return false;
   }
@@ -990,7 +990,7 @@ bool true_mc::add(const string &key, const var &value, int flags, int expire) {
 }
 
 bool true_mc::set(const string &key, const var &value, int flags, int expire) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->set");
     return false;
   }
@@ -1004,7 +1004,7 @@ bool true_mc::set(const string &key, const var &value, int flags, int expire) {
 }
 
 bool true_mc::replace(const string &key, const var &value, int flags, int expire) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->replace");
     return false;
   }
@@ -1019,7 +1019,7 @@ bool true_mc::replace(const string &key, const var &value, int flags, int expire
 
 
 var true_mc::get(const var &key_var) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->get");
     if (key_var.is_array()) {
       return array<var>();
@@ -1036,7 +1036,7 @@ var true_mc::get(const var &key_var) {
 }
 
 bool true_mc::delete_(const string &key) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->delete");
     return false;
   }
@@ -1050,7 +1050,7 @@ bool true_mc::delete_(const string &key) {
 }
 
 var true_mc::decrement(const string &key, const var &v) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->decrement");
     return false;
   }
@@ -1064,7 +1064,7 @@ var true_mc::decrement(const string &key, const var &v) {
 }
 
 var true_mc::increment(const string &key, const var &v) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->increment");
     return false;
   }
@@ -1078,7 +1078,7 @@ var true_mc::increment(const string &key, const var &v) {
 }
 
 var true_mc::getVersion(void) {
-  if (mc == NULL) {
+  if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->getVersion");
     return false;
   }
@@ -1108,7 +1108,7 @@ void true_mc::check_result(const char *operation, const var &key_var, double tim
         }
 
         array<var> fail_info = array<var>(array_size(0, 13, false));
-        fail_info.set_value(string("time", 4), (int)time(NULL));
+        fail_info.set_value(string("time", 4), (int)time(nullptr));
         fail_info.set_value(string("server", 6), this_server);
         fail_info.set_value(string("server_rand", 11), server_rand);
         fail_info.set_value(string("software", 8), v$_SERVER[string("SERVER_SOFTWARE", 15)]);
@@ -1268,7 +1268,7 @@ void true_mc::flushLogBuffer() {
 
 
 bool f$memcached_addServer(const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->addServer");
     return false;
   }
@@ -1288,7 +1288,7 @@ bool f$memcached_addServer(const MyMemcache &mc, const string &host_name, int po
 }
 
 bool f$memcached_connect(const MyMemcache &mc, const string &host_name, int port, int timeout) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->connect");
     return false;
   }
@@ -1296,7 +1296,7 @@ bool f$memcached_connect(const MyMemcache &mc, const string &host_name, int port
 }
 
 bool f$memcached_pconnect(const MyMemcache &mc, const string &host_name, int port, int timeout) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->pconnect");
     return false;
   }
@@ -1304,7 +1304,7 @@ bool f$memcached_pconnect(const MyMemcache &mc, const string &host_name, int por
 }
 
 bool f$memcached_rpc_connect(const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->rpc_connect");
     return false;
   }
@@ -1313,7 +1313,7 @@ bool f$memcached_rpc_connect(const MyMemcache &mc, const string &host_name, int 
 
 
 bool f$memcached_add(const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->add");
     return false;
   }
@@ -1321,7 +1321,7 @@ bool f$memcached_add(const MyMemcache &mc, const string &key, const var &value, 
 }
 
 bool f$memcached_set(const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->set");
     return false;
   }
@@ -1329,7 +1329,7 @@ bool f$memcached_set(const MyMemcache &mc, const string &key, const var &value, 
 }
 
 bool f$memcached_replace(const MyMemcache &mc, const string &key, const var &value, int flags, int expire) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->replace");
     return false;
   }
@@ -1337,7 +1337,7 @@ bool f$memcached_replace(const MyMemcache &mc, const string &key, const var &val
 }
 
 var f$memcached_get(const MyMemcache &mc, const var &key_var) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->get");
     return key_var.is_array() ? var(array<var>()) : var(false);
   }
@@ -1345,7 +1345,7 @@ var f$memcached_get(const MyMemcache &mc, const var &key_var) {
 }
 
 bool f$memcached_delete(const MyMemcache &mc, const string &key) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->delete");
     return false;
   }
@@ -1353,7 +1353,7 @@ bool f$memcached_delete(const MyMemcache &mc, const string &key) {
 }
 
 var f$memcached_decrement(const MyMemcache &mc, const string &key, const var &v) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->decrement");
     return false;
   }
@@ -1361,7 +1361,7 @@ var f$memcached_decrement(const MyMemcache &mc, const string &key, const var &v)
 }
 
 var f$memcached_increment(const MyMemcache &mc, const string &key, const var &v) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->increment");
     return false;
   }
@@ -1369,7 +1369,7 @@ var f$memcached_increment(const MyMemcache &mc, const string &key, const var &v)
 }
 
 var f$memcached_getVersion(const MyMemcache &mc) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->getVersion");
     return false;
   }
@@ -1378,7 +1378,7 @@ var f$memcached_getVersion(const MyMemcache &mc) {
 
 
 var f$memcached_getTag(const MyMemcache &mc) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->getTag");
     return false;
   }
@@ -1386,7 +1386,7 @@ var f$memcached_getTag(const MyMemcache &mc) {
 }
 
 var f$memcached_getLastQueryTime(const MyMemcache &mc) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->getLastQueryTime");
     return false;
   }
@@ -1394,7 +1394,7 @@ var f$memcached_getLastQueryTime(const MyMemcache &mc) {
 }
 
 void f$memcached_bufferNextLog(const MyMemcache &mc) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->bufferNextLog");
     return;
   }
@@ -1402,7 +1402,7 @@ void f$memcached_bufferNextLog(const MyMemcache &mc) {
 }
 
 void f$memcached_clearLogBuffer(const MyMemcache &mc) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->clearLogBuffer");
     return;
   }
@@ -1410,7 +1410,7 @@ void f$memcached_clearLogBuffer(const MyMemcache &mc) {
 }
 
 void f$memcached_flushLogBuffer(const MyMemcache &mc) {
-  if (mc.mc == NULL) {
+  if (mc.mc == nullptr) {
     php_warning("Memcache object is NULL in Memcache->flushLogBuffer");
     return;
   }
@@ -1449,13 +1449,13 @@ bool not_equals(const MyMemcache &my_mc, bool value) {
 
 MyMemcache &MyMemcache::operator=(bool value) {
   bool_value = value;
-  mc = NULL;
+  mc = nullptr;
   return *this;
 }
 
 MyMemcache::MyMemcache(bool value) :
   bool_value(value),
-  mc(NULL) {}
+  mc(nullptr) {}
 
 MyMemcache::MyMemcache(MC_object *mc) :
   bool_value(true),
@@ -1464,7 +1464,7 @@ MyMemcache::MyMemcache(MC_object *mc) :
 
 MyMemcache::MyMemcache(void) :
   bool_value(),
-  mc(NULL) {
+  mc(nullptr) {
 }
 
 
@@ -1530,7 +1530,7 @@ MyMemcache f$new_test_mc(const MyMemcache &mc, const string &engine_tag) {
   if (!v$Durov) {
     php_warning("Can't create test_mc while $Durov == false");
   }
-  if (dynamic_cast <true_mc *>(mc.mc) == NULL) {// No true_mc
+  if (dynamic_cast <true_mc *>(mc.mc) == nullptr) {// No true_mc
     void *buf = dl::allocate(sizeof(true_mc));
     return MyMemcache(new(buf) true_mc(mc.mc, false, engine_tag));
   }
@@ -2075,7 +2075,7 @@ OrFalse<array<var>> db_driver::mysql_fetch_array(int query_id) {
 
 
 void db_do_connect_no_log(const MyDB &db) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->do_connect");
     return;
   }
@@ -2083,7 +2083,7 @@ void db_do_connect_no_log(const MyDB &db) {
 }
 
 var db_mysql_query(const MyDB &db, const string &query) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->mysql_query");
     return false;
   }
@@ -2091,7 +2091,7 @@ var db_mysql_query(const MyDB &db, const string &query) {
 }
 
 int db_get_affected_rows(const MyDB &db) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->get_affected_rows");
     return 0;
   }
@@ -2099,7 +2099,7 @@ int db_get_affected_rows(const MyDB &db) {
 }
 
 int db_get_num_rows(const MyDB &db, int id) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->get_num_rows");
     return 0;
   }
@@ -2111,7 +2111,7 @@ int db_get_num_rows(const MyDB &db, int id) {
 }
 
 int db_get_insert_id(const MyDB &db) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->get_insert_id");
     return -1;
   }
@@ -2119,7 +2119,7 @@ int db_get_insert_id(const MyDB &db) {
 }
 
 OrFalse<array<var>> db_fetch_array(const MyDB &db, int query_id) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->get_insert_id");
     return false;
   }
@@ -2158,13 +2158,13 @@ bool not_equals(const MyDB &my_db, bool value) {
 
 MyDB &MyDB::operator=(bool value) {
   bool_value = value;
-  db = NULL;
+  db = nullptr;
   return *this;
 }
 
 MyDB::MyDB(bool value) :
   bool_value(value),
-  db(NULL) {}
+  db(nullptr) {}
 
 
 MyDB::MyDB(db_driver *db) :
@@ -2174,11 +2174,11 @@ MyDB::MyDB(db_driver *db) :
 
 MyDB::MyDB(void) :
   bool_value(),
-  db(NULL) {
+  db(nullptr) {
 }
 
 string f$mysqli_error(const MyDB &db) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in f$mysqli_error");
     return string();
   }
@@ -2186,7 +2186,7 @@ string f$mysqli_error(const MyDB &db) {
 }
 
 int f$mysqli_errno(const MyDB &db) {
-  if (db.db == NULL) {
+  if (db.db == nullptr) {
     php_warning("DB object is NULL in f$mysqli_errno");
     return 0;
   }

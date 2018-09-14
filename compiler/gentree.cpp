@@ -13,8 +13,8 @@
 
 GenTree::GenTree() :
   line_num(-1),
-  tokens(NULL),
-  callback(NULL),
+  tokens(nullptr),
+  callback(nullptr),
   in_func_cnt_(0),
   is_top_of_the_function_(false) {}
 
@@ -912,7 +912,7 @@ VertexPtr GenTree::get_func_param() {
     v->param_cnt = param_cnt;
     res = v;
   } else {
-    Token *tok_type_declaration = NULL;
+    Token *tok_type_declaration = nullptr;
     if ((*cur)->type() == tok_func_name || (*cur)->type() == tok_Exception) {
       tok_type_declaration = *cur;
       next_cur();
@@ -934,7 +934,7 @@ VertexPtr GenTree::get_func_param() {
     }
     CREATE_VERTEX (v, op_func_param, next);
     set_location(v, st_location);
-    if (tok_type_declaration != NULL) {
+    if (tok_type_declaration != nullptr) {
       v->type_declaration = tok_type_declaration->str_val;
       v->type_help = tok_type_declaration->type() == tok_Exception ? tp_Exception : tp_Class;
     }
@@ -1106,7 +1106,7 @@ VertexPtr GenTree::get_type_rule_func(void) {
 VertexPtr GenTree::get_type_rule_(void) {
   PrimitiveType tp = get_ptype();
   TokenType tok = (*cur)->type();
-  VertexPtr res = VertexPtr(NULL);
+  VertexPtr res = VertexPtr(nullptr);
   if (tp != tp_Error) {
     AutoLocation arr_location(this);
 
@@ -1704,7 +1704,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
 
   // тут раньше был парсинг '@kphp-' тегов в phpdoc, но ему не место в gentree, он переехал в PrepareFunctionF
   // но! костыль: @kphp-required нам всё равно нужно именно тут, чтобы функция пошла дальше по пайплайну
-  if (phpdoc_token != NULL && phpdoc_token->type() == tok_phpdoc_kphp) {
+  if (phpdoc_token != nullptr && phpdoc_token->type() == tok_phpdoc_kphp) {
     kphp_required_flag = phpdoc_token->str_val.str().find("@kphp-required") != string::npos;
   }
 
@@ -1883,7 +1883,7 @@ VertexPtr GenTree::get_namespace_class() {
     get_use();
   }
 
-  Token *phpdoc_token = NULL;
+  Token *phpdoc_token = nullptr;
   if ((*cur)->type() == tok_phpdoc || (*cur)->type() == tok_phpdoc_kphp) {
     phpdoc_token = *cur;
     next_cur();

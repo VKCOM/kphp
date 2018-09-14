@@ -35,7 +35,7 @@ extern Exception *CurException;
 
 #  define TRY_CALL_EXIT(CallT, message, call) ({CallT x_tmp___ = (call); if (CurException) {php_critical_error (message);} x_tmp___;})
 #  define TRY_CALL_VOID_EXIT(message, call) ({(call); if (CurException) {php_critical_error (message);} void();})
-#  define FREE_EXCEPTION php_assert (CurException != NULL); CurException->~Exception(); dl::deallocate (CurException, sizeof (Exception)); CurException = NULL
+#  define FREE_EXCEPTION php_assert (CurException != nullptr); CurException->~Exception(); dl::deallocate (CurException, sizeof (Exception)); CurException = nullptr
 #else
 #  define THROW_EXCEPTION(e) throw (e)
 #  define TRY_CALL(CallT, ResT, call) (call)

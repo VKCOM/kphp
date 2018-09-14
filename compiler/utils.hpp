@@ -35,7 +35,7 @@ void clear(T &val) {
 
 template<class T>
 void save_to_ptr(T *ptr, const T &data) {
-  if (ptr != NULL) {
+  if (ptr != nullptr) {
     *ptr = data;
   }
 }

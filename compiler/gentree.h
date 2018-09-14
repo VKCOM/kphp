@@ -95,7 +95,7 @@ public:
   VertexPtr get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement(Token *phpdoc_token = NULL);
+  VertexPtr get_statement(Token *phpdoc_token = nullptr);
   VertexPtr get_vars_list(Token *phpdoc_token, OperationExtra extra_type);
   VertexPtr get_namespace_class();
   VertexPtr get_use();
@@ -135,7 +135,7 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = NULL, AccessType access_type = access_nonmember);
+  VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember);
   VertexPtr get_class(Token *phpdoc_token);
 
 private:

@@ -16,7 +16,7 @@ void register_stream_functions(const stream_functions *functions, bool is_defaul
   string wrapper_name = functions->name;
 
   php_assert (dl::query_num == 0);
-  php_assert (functions != NULL);
+  php_assert (functions != nullptr);
   php_assert (!wrappers.isset(wrapper_name));
   php_assert (strlen(wrapper_name.c_str()) == wrapper_name.size());
 
@@ -27,7 +27,7 @@ void register_stream_functions(const stream_functions *functions, bool is_defaul
   wrappers.set_value(wrapper_name, functions);
 
   if (is_default) {
-    php_assert (default_stream_functions == NULL);
+    php_assert (default_stream_functions == nullptr);
     default_stream_functions = functions;
   }
 }
@@ -38,12 +38,12 @@ static const stream_functions *get_stream_functions(const string &name) {
 
 static const stream_functions *get_stream_functions_from_url(const string &url) {
   if (url.size() == 0) {
-    return NULL;
+    return nullptr;
   }
 
   void *res = memmem(static_cast <const void *> (url.c_str()), url.size(),
                      static_cast <const void *> ("://"), 3);
-  if (res != NULL) {
+  if (res != nullptr) {
     const char *wrapper_end = static_cast <const char *> (res);
     return get_stream_functions(string(url.c_str(), wrapper_end - url.c_str()));
   }
@@ -71,11 +71,11 @@ bool f$stream_context_set_option(var &context, const var &wrapper, const string 
 
   string wrapper_string = wrapper.to_string();
   const stream_functions *functions = get_stream_functions(wrapper_string);
-  if (functions == NULL) {
+  if (functions == nullptr) {
     php_warning("Wrapper \"%s\" is not supported", wrapper_string.c_str());
     return false;
   }
-  if (functions->context_set_option == NULL) {
+  if (functions->context_set_option == nullptr) {
     php_warning("Wrapper \"%s\" doesn't support function stream_context_set_option", wrapper_string.c_str());
     return false;
   }
@@ -135,13 +135,13 @@ var f$stream_socket_client(const string &url, var &error_number, var &error_desc
   }
 
   const stream_functions *functions = get_stream_functions_from_url(url);
-  if (functions == NULL) {
+  if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     error_number = -1002;
     error_description = string("Wrong wrapper", 13);
     return false;
   }
-  if (functions->stream_socket_client == NULL) {
+  if (functions->stream_socket_client == nullptr) {
     php_warning("Wrapper \"%s\" doesn't support function stream_socket_client", functions->name.c_str());
     error_number = -1003;
     error_description = string("Wrong wrapper", 13);
@@ -160,11 +160,11 @@ bool f$stream_set_blocking(const Stream &stream, bool mode) {
   const string &url = stream.to_string();
 
   const stream_functions *functions = get_stream_functions_from_url(url);
-  if (functions == NULL) {
+  if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return false;
   }
-  if (functions->stream_set_option == NULL) {
+  if (functions->stream_set_option == nullptr) {
     php_warning("Wrapper \"%s\" doesn't support function stream_set_blocking", functions->name.c_str());
     return false;
   }
@@ -176,11 +176,11 @@ int f$stream_set_write_buffer(const Stream &stream, int size) {
   const string &url = stream.to_string();
 
   const stream_functions *functions = get_stream_functions_from_url(url);
-  if (functions == NULL) {
+  if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return -1;
   }
-  if (functions->stream_set_option == NULL) {
+  if (functions->stream_set_option == nullptr) {
     php_warning("Wrapper \"%s\" doesn't support function stream_set_write_buffer", functions->name.c_str());
     return -1;
   }
@@ -192,11 +192,11 @@ int f$stream_set_read_buffer(const Stream &stream, int size) {
   const string &url = stream.to_string();
 
   const stream_functions *functions = get_stream_functions_from_url(url);
-  if (functions == NULL) {
+  if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return -1;
   }
-  if (functions->stream_set_option == NULL) {
+  if (functions->stream_set_option == nullptr) {
     php_warning("Wrapper \"%s\" doesn't support function stream_set_read_buffer", functions->name.c_str());
     return -1;
   }
@@ -223,11 +223,11 @@ static void stream_array_to_fd_set(const var &streams_var, fd_set *fds, int *nfd
     const string &url = stream.to_string();
 
     const stream_functions *functions = get_stream_functions_from_url(url);
-    if (functions == NULL) {
+    if (functions == nullptr) {
       php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
       continue;
     }
-    if (functions->get_fd == NULL) {
+    if (functions->get_fd == nullptr) {
       php_warning("Wrapper \"%s\" doesn't support stream_select", functions->name.c_str());
       continue;
     }
@@ -261,10 +261,10 @@ static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
     const string &url = stream.to_string();
 
     const stream_functions *functions = get_stream_functions_from_url(url);
-    if (functions == NULL) {
+    if (functions == nullptr) {
       continue;
     }
-    if (functions->get_fd == NULL) {
+    if (functions->get_fd == nullptr) {
       continue;
     }
 
@@ -282,7 +282,7 @@ static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
 }
 
 OrFalse<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec_var, int tv_usec) {
-  struct timeval tv, *timeout = NULL;
+  struct timeval tv, *timeout = nullptr;
   if (!tv_sec_var.is_null()) {
     int tv_sec = tv_sec_var.to_int();
     if (tv_sec < 0) {
@@ -334,11 +334,11 @@ OrFalse<int> f$stream_select(var &read, var &write, var &except, const var &tv_s
   const string &url = stream.to_string();                                                             \
                                                                                                       \
   const stream_functions *functions = get_stream_functions_from_url (url);                            \
-  if (functions == NULL) {                                                                            \
+  if (functions == nullptr) {                                                                            \
     php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());                           \
     return error_result;                                                                              \
   }                                                                                                   \
-  if (functions->function_name == NULL) {                                                             \
+  if (functions->function_name == nullptr) {                                                             \
     php_warning ("Wrapper \"%s\" doesn't support function " #function_name, functions->name.c_str()); \
     return error_result;                                                                              \
   }                                                                                                   \

@@ -290,7 +290,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
  * Вызывается единожды на функцию.
  */
 void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> root) {
-  if (f->phpdoc_token != NULL) {
+  if (f->phpdoc_token != nullptr) {
     int param_i = 0;
     std::string param_var_name, type_str;
     ClassPtr klass;
@@ -321,7 +321,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
   assert (f->assumptions_inited_return == 1);
 //  printf("[%d] init_assumptions_for_return of %s\n", get_thread_id(), f->name.c_str());
 
-  if (f->phpdoc_token != NULL && f->phpdoc_token->type() == tok_phpdoc) {
+  if (f->phpdoc_token != nullptr && f->phpdoc_token->type() == tok_phpdoc) {
     std::string type_str, dummy;
     ClassPtr klass;
     if (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::returns, dummy, type_str)) {

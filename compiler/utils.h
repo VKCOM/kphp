@@ -6,7 +6,7 @@ inline string get_full_path(const string &file_name) {
   char name[PATH_MAX + 1];
   char *ptr = realpath(file_name.c_str(), name);
 
-  if (ptr == NULL) {
+  if (ptr == nullptr) {
     return "";
   } else {
     return name;
@@ -98,8 +98,8 @@ public:
 };
 
 inline string_ref::string_ref() :
-  s(NULL),
-  t(NULL) {}
+  s(nullptr),
+  t(nullptr) {}
 
 inline string_ref::string_ref(const char *s, const char *t) :
   s(s),

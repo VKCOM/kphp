@@ -80,7 +80,7 @@ inline vector<string> expand_template(const string &s) {
 template<typename T>
 Helper<T>::Helper(T *on_fail) :
   on_fail(on_fail) {
-  assert (on_fail != NULL);
+  assert (on_fail != nullptr);
 }
 
 template<typename T>
@@ -106,8 +106,8 @@ T *Helper<T>::get_default() {
 template<typename T>
 T *Helper<T>::get_help(const char *s) {
   T **best = trie.get_deepest(s);
-  if (best == NULL) {
-    return NULL;
+  if (best == nullptr) {
+    return nullptr;
   } else {
     return *best;
   }

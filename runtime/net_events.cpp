@@ -31,7 +31,7 @@ double get_precise_now() {
 }
 
 static bool process_net_event(net_event_t *e) {
-  if (e == NULL) {
+  if (e == nullptr) {
     return false;
   }
 
@@ -62,7 +62,7 @@ static int wakeup_callbacks_size;
 
 int register_wakeup_callback(void (*wakeup)(int wakeup_extra)) {
   php_assert (dl::query_num == 0);
-  php_assert (wakeup != NULL);
+  php_assert (wakeup != nullptr);
   php_assert (wakeup_callbacks_size < (1 << MAX_WAKEUP_CALLBACKS_EXP));
   wakeup_callbacks[wakeup_callbacks_size] = wakeup;
   return wakeup_callbacks_size++;

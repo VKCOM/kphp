@@ -14,9 +14,9 @@ regexp::regexp(void) :
   named_subpatterns_count(0),
   is_utf8(false),
   is_static(false),
-  subpattern_names(NULL),
-  pcre_regexp(NULL),
-  RE2_regexp(NULL) {
+  subpattern_names(nullptr),
+  pcre_regexp(nullptr),
+  RE2_regexp(nullptr) {
 }
 
 regexp::regexp(const string &regexp_string) :
@@ -24,9 +24,9 @@ regexp::regexp(const string &regexp_string) :
   named_subpatterns_count(0),
   is_utf8(false),
   is_static(false),
-  subpattern_names(NULL),
-  pcre_regexp(NULL),
-  RE2_regexp(NULL) {
+  subpattern_names(nullptr),
+  pcre_regexp(nullptr),
+  RE2_regexp(nullptr) {
   init(regexp_string);
 }
 
@@ -35,9 +35,9 @@ regexp::regexp(const char *regexp_string, int regexp_len) :
   named_subpatterns_count(0),
   is_utf8(false),
   is_static(false),
-  subpattern_names(NULL),
-  pcre_regexp(NULL),
-  RE2_regexp(NULL) {
+  subpattern_names(nullptr),
+  pcre_regexp(nullptr),
+  RE2_regexp(nullptr) {
   init(regexp_string, regexp_len);
 }
 
@@ -286,7 +286,7 @@ void regexp::init(const string &regexp_string) {
     }
 
     regexp *re = regexp_cache->get_value(regexp_string);
-    if (re != NULL) {
+    if (re != nullptr) {
       php_assert (!re->is_static);
 
       subpatterns_count = re->subpatterns_count;
@@ -453,7 +453,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
       php_warning("RE2 compilation of regexp \"%s\" failed. Error %d at %s", static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
 
       delete RE2_regexp;
-      RE2_regexp = NULL;
+      RE2_regexp = nullptr;
     } else {
       std::string min_str;
       std::string max_str;
@@ -467,12 +467,12 @@ void regexp::init(const char *regexp_string, int regexp_len) {
     //So just ignore this distinction
   }
 
-  if (RE2_regexp == NULL || need_pcre) {
+  if (RE2_regexp == nullptr || need_pcre) {
     const char *error;
     int erroffset;
-    pcre_regexp = pcre_compile(static_SB.c_str(), pcre_options, &error, &erroffset, NULL);
+    pcre_regexp = pcre_compile(static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 
-    if (pcre_regexp == NULL) {
+    if (pcre_regexp == nullptr) {
       php_warning("Regexp compilation failed: %s at offset %d", error, erroffset);
       clean();
       return;
@@ -485,19 +485,19 @@ void regexp::init(const char *regexp_string, int regexp_len) {
   if (RE2_regexp) {
     subpatterns_count = RE2_regexp->NumberOfCapturingGroups();
   } else {
-    php_assert (pcre_fullinfo(pcre_regexp, NULL, PCRE_INFO_CAPTURECOUNT, &subpatterns_count) == 0);
+    php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_CAPTURECOUNT, &subpatterns_count) == 0);
 
     if (subpatterns_count) {
-      php_assert (pcre_fullinfo(pcre_regexp, NULL, PCRE_INFO_NAMECOUNT, &named_subpatterns_count) == 0);
+      php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMECOUNT, &named_subpatterns_count) == 0);
 
       if (named_subpatterns_count > 0) {
         subpattern_names = new string[subpatterns_count + 1];
 
         int name_entry_size;
-        php_assert (pcre_fullinfo(pcre_regexp, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
+        php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
 
         char *name_table;
-        php_assert (pcre_fullinfo(pcre_regexp, NULL, PCRE_INFO_NAMETABLE, &name_table) == 0);
+        php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
 
         for (int i = 0; i < named_subpatterns_count; i++) {
           int name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
@@ -542,16 +542,16 @@ void regexp::clean(void) {
   is_utf8 = false;
   is_static = false;
 
-  if (pcre_regexp != NULL) {
+  if (pcre_regexp != nullptr) {
     pcre_free(pcre_regexp);
-    pcre_regexp = NULL;
+    pcre_regexp = nullptr;
   }
 
   delete RE2_regexp;
-  RE2_regexp = NULL;
+  RE2_regexp = nullptr;
 
   delete[] subpattern_names;
-  subpattern_names = NULL;
+  subpattern_names = nullptr;
 
   dl::use_script_allocator = false;
 }
@@ -577,7 +577,7 @@ int regexp::exec(const string &subject, int offset, bool second_try) const {
 
     int count = -1;
     for (int i = 0; i < subpatterns_count; i++) {
-      if (RE2_submatch[i].data() == NULL) {
+      if (RE2_submatch[i].data() == nullptr) {
         submatch[i + i] = -1;
         submatch[i + i + 1] = -1;
       } else {
@@ -614,7 +614,7 @@ int regexp::exec(const string &subject, int offset, bool second_try) const {
 OrFalse<int> regexp::match(const string &subject, bool all_matches __attribute__((unused))) const {
   pcre_last_error = 0;
 
-  if (pcre_regexp == NULL && RE2_regexp == NULL) {
+  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     return false;
   }
 
@@ -658,7 +658,7 @@ OrFalse<int> regexp::match(const string &subject, bool all_matches __attribute__
 OrFalse<int> regexp::match(const string &subject, var &matches, bool all_matches, int offset) const {
   pcre_last_error = 0;
 
-  if (pcre_regexp == NULL && RE2_regexp == NULL) {
+  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     matches = array<var>();
     return false;
   }
@@ -747,7 +747,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, bool all_matches
 OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool all_matches, int offset) const {
   pcre_last_error = 0;
 
-  if (pcre_regexp == NULL && RE2_regexp == NULL) {
+  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     matches = array<var>();
     return false;
   }
@@ -877,7 +877,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
 OrFalse<array<var>> regexp::split(const string &subject, int limit, int flags) const {
   pcre_last_error = 0;
 
-  if (pcre_regexp == NULL && RE2_regexp == NULL) {
+  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     return false;
   }
 

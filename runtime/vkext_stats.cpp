@@ -191,7 +191,7 @@ OrFalse<string> f$vk_stats_merge_samples(const array<var> &a) {
     }
   }
 
-  sample_t *sample = NULL;
+  sample_t *sample = nullptr;
   string result;
 
   for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {

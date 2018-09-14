@@ -155,7 +155,7 @@ static int run_cmd(const string &cmd) {
   for (int i = 0; i < (int)args.size(); i++) {
     argv[i] = (char *)args[i].c_str();
   }
-  argv.back() = NULL;
+  argv.back() = nullptr;
 
   int pid = vfork();
   if (pid < 0) {
@@ -189,7 +189,7 @@ bool Make::finish_job(int pid, int return_code, int by_signal) {
   map<int, Target *>::iterator it = jobs.find(pid);
   assert (it != jobs.end());
   Target *target = it->second;
-  if (G->env().get_stats_file() != NULL) {
+  if (G->env().get_stats_file() != nullptr) {
     double passed = dl_time() - target->start_time;
     fprintf(G->env().get_stats_file(), "%lfs %s\n", passed, target->get_name().c_str());
   }
@@ -358,8 +358,8 @@ const string &KphpMakeEnv::get_debug_level() const {
 /*** KphpTarget ***/
 KphpTarget::KphpTarget() :
   Target(),
-  file(NULL),
-  env(NULL) {
+  file(nullptr),
+  env(nullptr) {
 }
 
 string KphpTarget::get_name() {
@@ -386,7 +386,7 @@ void KphpTarget::after_run_fail() {
 }
 
 void KphpTarget::set_file(File *new_file) {
-  assert (file == NULL);
+  assert (file == nullptr);
   file = new_file;
   set_mtime(file->mtime);
 }
@@ -396,7 +396,7 @@ File *KphpTarget::get_file() const {
 }
 
 void KphpTarget::set_env(KphpMakeEnv *new_env) {
-  assert (env == NULL);
+  assert (env == nullptr);
   env = new_env;
 }
 
@@ -448,7 +448,7 @@ string Objs2BinTarget::get_cmd() {
 }
 
 void KphpMake::target_set_file(KphpTarget *target, File *file) {
-  assert (file->target == NULL);
+  assert (file->target == nullptr);
   target->set_file(file);
   file->target = target;
 }
@@ -458,7 +458,7 @@ void KphpMake::target_set_env(KphpTarget *target) {
 }
 
 KphpTarget *KphpMake::to_target(File *file) {
-  if (file->target != NULL) {
+  if (file->target != nullptr) {
     return dynamic_cast <KphpTarget *> (file->target);
   }
   return create_cpp_target(file);

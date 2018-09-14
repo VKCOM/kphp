@@ -6,7 +6,7 @@
 
 template<PrimitiveType T_ID>
 const char *ptype_name() {
-  return NULL;
+  return nullptr;
 }
 
 #define PTYPE_NAME_FUNC(id) template <> inline const char *ptype_name <id> () {return PTYPE_NAME (id);}

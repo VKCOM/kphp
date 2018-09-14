@@ -19,7 +19,7 @@ extern long long cur_qres_id, first_qres_id;
 static char last_net_error[MAX_NET_ERROR_LEN + 1];
 
 static void save_last_net_error(const char *s) {
-  if (s == NULL) {
+  if (s == nullptr) {
     last_net_error[0] = 0;
     return;
   }
@@ -98,11 +98,11 @@ void *alloc_at_least(size_t n, size_t use) {
 
   if (pages_n == max_pages_n || alloc_size > max_mem || alloc_size + cur_mem > max_mem) {
     assert ("NOT ENOUGH MEMORY\n" && false);
-    return NULL;
+    return nullptr;
   }
 
   void *ptr = pages[pages_n] = malloc(alloc_size);
-  assert (ptr != NULL);
+  assert (ptr != nullptr);
 
   pages_size[pages_n] = alloc_size;
 
@@ -174,7 +174,7 @@ void *qmem_malloc_tmp(size_t n) {
 
 void *qmem_malloc0(size_t n) {
   void *res = qmem_malloc(n);
-  if (res != NULL) {
+  if (res != nullptr) {
     memset(res, 0, n);
   }
   return res;
@@ -236,7 +236,7 @@ const char *qmem_pstr(char const *msg, ...) {
 
 str_buf_t *str_buf_create(void) {
   str_buf_t *buf = (str_buf_t *)qmem_malloc(sizeof(str_buf_t));
-  assert (buf != NULL);
+  assert (buf != nullptr);
   buf->buf_len = 0;
   buf->len = 0;
 
@@ -248,7 +248,7 @@ void str_buf_append(str_buf_t *buf, data_reader_t *reader) {
   if (need >= buf->buf_len) {
     need = need * 2 + 1;
     char *new_buf = (char *)qmem_malloc(need);
-    assert (new_buf != NULL);
+    assert (new_buf != nullptr);
     memcpy(new_buf, buf->buf, buf->len);
     buf->buf = new_buf;
     buf->buf_len = need;
@@ -275,17 +275,17 @@ void chain_conn(chain_t *a, chain_t *b) {
 
 chain_t *chain_create(void) {
   chain_t *chain = (chain_t *)qmem_malloc(sizeof(chain_t));
-  assert (chain != NULL);
+  assert (chain != nullptr);
   chain_conn(chain, chain);
   return chain;
 }
 
 void chain_append(chain_t *chain, data_reader_t *reader) {
   chain_t *node = (chain_t *)qmem_malloc(sizeof(chain_t));
-  assert (node != NULL);
+  assert (node != nullptr);
 
   node->buf = (char *)qmem_malloc(reader->len);
-  assert (node->buf != NULL);
+  assert (node->buf != nullptr);
   node->len = reader->len;
   reader->read(reader, node->buf);
 
@@ -586,7 +586,7 @@ mc_ansgen_t *mc_ansgen_packet_create(void) {
   ansgen->base.qmem_req_generation = qmem_generation;
   ansgen->base.state = st_ansgen_wait;
   ansgen->base.ans = (php_net_query_packet_answer_t *)qmem_malloc0(sizeof(php_net_query_packet_answer_t));
-  assert (ansgen->base.ans != NULL);
+  assert (ansgen->base.ans != nullptr);
 
   ansgen->state = ap_any;
 
@@ -616,7 +616,7 @@ void sql_ansgen_packet_ready(sql_ansgen_t *sql_self, void *data) {
   assert (base_self->state == st_ansgen_wait);
   assert (self->state == sql_ap_wait_conn);
 
-  if (self->writer != NULL) {
+  if (self->writer != nullptr) {
     self->writer->run(self->writer, data);
   }
   self->state = sql_ap_wait_ans;
@@ -651,9 +651,9 @@ void sql_ansgen_packet_done(sql_ansgen_t *sql_self) {
 
 void sql_ansgen_packet_free(net_ansgen_t *base_self) {
   sql_ansgen_packet_t *self = (sql_ansgen_packet_t *)base_self;
-  if (self->writer != NULL) {
+  if (self->writer != nullptr) {
     self->writer->free(self->writer);
-    self->writer = NULL;
+    self->writer = nullptr;
   }
   free(self);
 }
@@ -693,10 +693,10 @@ sql_ansgen_t *sql_ansgen_packet_create(void) {
   ansgen->base.qmem_req_generation = qmem_generation;
   ansgen->base.state = st_ansgen_wait;
   ansgen->base.ans = (php_net_query_packet_answer_t *)qmem_malloc0(sizeof(php_net_query_packet_answer_t));
-  assert (ansgen->base.ans != NULL);
+  assert (ansgen->base.ans != nullptr);
 
   ansgen->state = sql_ap_init;
-  ansgen->writer = NULL;
+  ansgen->writer = nullptr;
 
 
   ansgen->chain = chain_create();
@@ -753,7 +753,7 @@ public:
 
   DataT *create() {
     if (cnt == N) {
-      return NULL;
+      return nullptr;
     }
     DataT *res = &q[end];
     end++;
@@ -776,7 +776,7 @@ public:
 
   DataT *pop() {
     if (empty()) {
-      return NULL;
+      return nullptr;
     }
     DataT *res = &q[begin];
     begin++;
@@ -793,13 +793,13 @@ static StaticQueue<net_query_t, 2000000> net_queries;
 
 void *dl_allocate_safe(size_t size) {
   if (size == 0 || PHPScriptBase::ml_flag) {
-    return NULL;
+    return nullptr;
   }
 
   assert (size <= (1u << 30) - 13);
   void *dest = dl::allocate(size + 13);
-  if (dest == NULL) {
-    return NULL;
+  if (dest == nullptr) {
+    return nullptr;
   }
 
   int *dest_int = static_cast <int *> (dest);
@@ -822,7 +822,7 @@ int alloc_net_event(slot_id_t slot_id, net_event_type_t type, net_event_t **res)
   }
 
   net_event_t *event = net_events.create();
-  if (event == NULL) {
+  if (event == nullptr) {
     return -2;
   }
   event->slot_id = slot_id;
@@ -843,7 +843,7 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
   }
   event->error_code = error_code;
   event->error_message = error_message; //in static memory
-  if (res != NULL) {
+  if (res != nullptr) {
     *res = event;
   }
   return 1;
@@ -858,16 +858,16 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   size_t size = len * sizeof(int);
   if (size != 0) {
     void *buf = dl_allocate_safe(size);
-    if (buf == NULL) {
+    if (buf == nullptr) {
       unalloc_net_event(event);
       return -1;
     }
     event->result = static_cast <char *> (buf);
   } else {
-    event->result = NULL;
+    event->result = nullptr;
   }
   event->result_len = size;
-  assert (res != NULL);
+  assert (res != nullptr);
   *res = event;
   return 1;
 }
@@ -878,8 +878,8 @@ int net_events_empty() {
 
 net_query_t *create_net_query(net_query_type_t type) {
   net_query_t *query = net_queries.create();
-  if (query == NULL) {
-    return NULL;
+  if (query == nullptr) {
+    return nullptr;
   }
   query->type = type;
   return query;
@@ -899,15 +899,15 @@ void free_net_query(net_query_t *query) {
 
 /*** main functions ***/
 void engine_mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) {
-  php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_memcached, query_type | (PNETF_IMMEDIATE * (callback == NULL)));
+  php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_memcached, query_type | (PNETF_IMMEDIATE * (callback == nullptr)));
   if (res->state == nq_error) {
-    if (callback != NULL) {
+    if (callback != nullptr) {
       fprintf(stderr, "engine_mc_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
     }
     save_last_net_error(res->res);
   } else {
-    assert (res->res != NULL);
-    if (callback != NULL) {
+    assert (res->res != nullptr);
+    if (callback != nullptr) {
       callback(res->res, res->res_len);
     }
   }
@@ -919,7 +919,7 @@ void engine_sql_run_query(int host_num, const char *request, int request_len, in
     fprintf(stderr, "engine_sql_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
     save_last_net_error(res->res);
   } else {
-    assert (res->chain != NULL);
+    assert (res->chain != nullptr);
     chain_t *cur = res->chain->next;
     while (cur != res->chain) {
       //fprintf (stderr, "sql_callback [len = %d]\n", cur->len);
@@ -931,7 +931,7 @@ void engine_sql_run_query(int host_num, const char *request, int request_len, in
 
 static slot_id_t engine_rpc_send_query(int host_num, char *request, int request_size, int timeout_ms) {
   net_query_t *query = create_net_query(nq_rpc_send);
-  if (query == NULL) {
+  if (query == nullptr) {
     return -1; // memory limit
   }
   query->slot_id = create_slot();
@@ -1003,7 +1003,7 @@ void http_set_result_(const char *headers, int headers_len, const char *body, in
 void rpc_set_result_(const char *body, int body_len, int exit_code) {
   script_result res;
   res.exit_code = exit_code;
-  res.headers = NULL;
+  res.headers = nullptr;
   res.headers_len = 0;
   res.body = body;
   res.body_len = body_len;

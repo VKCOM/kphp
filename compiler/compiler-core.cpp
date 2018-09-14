@@ -8,7 +8,7 @@
 #include "compiler/pass-register-vars.hpp"
 
 CompilerCore::CompilerCore() :
-  env_(NULL) {
+  env_(nullptr) {
 }
 
 void CompilerCore::start() {
@@ -27,18 +27,18 @@ void CompilerCore::finish() {
   stage::die_if_global_errors();
 
   delete env_;
-  env_ = NULL;
+  env_ = nullptr;
 
   PROF (total).finish();
 }
 
 void CompilerCore::register_env(KphpEnviroment *env) {
-  kphp_assert (env_ == NULL);
+  kphp_assert (env_ == nullptr);
   env_ = env;
 }
 
 const KphpEnviroment &CompilerCore::env() const {
-  kphp_assert (env_ != NULL);
+  kphp_assert (env_ != nullptr);
   return *env_;
 }
 
@@ -401,7 +401,7 @@ void CompilerCore::load_index() {
     return;
   }
   FILE *f = fopen(index_path.c_str(), "r");
-  if (f == NULL) {
+  if (f == nullptr) {
     return;
   }
   cpp_index.load(f);
@@ -415,7 +415,7 @@ void CompilerCore::save_index() {
   }
   string tmp_index_path = index_path + ".tmp";
   FILE *f = fopen(tmp_index_path.c_str(), "w");
-  if (f == NULL) {
+  if (f == nullptr) {
     return;
   }
   cpp_index.save(f);
@@ -495,7 +495,7 @@ bool kphp_make(File *bin, Index *obj_dir, Index *cpp_dir,
       long long &h_mtime = header_mtime[i];
       for (const auto &include : h_file->includes) {
         File *header = cpp_dir->get_file(include, false);
-        kphp_assert (header != NULL);
+        kphp_assert (header != nullptr);
         kphp_assert (header->on_disk);
         long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
         h_mtime = std::max(h_mtime, dep_mtime);
@@ -511,7 +511,7 @@ bool kphp_make(File *bin, Index *obj_dir, Index *cpp_dir,
         Target *cpp_target = cpp_file->target;
         for (auto include : cpp_file->includes) {
           File *header = cpp_dir->get_file(include, false);
-          kphp_assert (header != NULL);
+          kphp_assert (header != nullptr);
           kphp_assert (header->on_disk);
           long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
           cpp_target->force_changed(dep_mtime);
@@ -551,7 +551,7 @@ bool kphp_make(File *bin, Index *obj_dir, Index *cpp_dir,
         Target *cpp_target = cpp_file->target;
         for (auto include : cpp_file->includes) {
           File *header = cpp_dir->get_file(include, false);
-          kphp_assert (header != NULL);
+          kphp_assert (header != nullptr);
           kphp_assert (header->on_disk);
           long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
           cpp_target->force_changed(dep_mtime);

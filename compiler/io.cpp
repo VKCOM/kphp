@@ -279,7 +279,7 @@ bool WriterData::compile_with_debug_info() const {
 Writer::Writer() :
   state(w_stopped),
   data(),
-  callback(NULL),
+  callback(nullptr),
   indent_level(0),
   need_indent(0),
   lock_comments_cnt(1) {
@@ -333,7 +333,7 @@ void Writer::begin_write(bool compile_with_debug_info_flag) {
 void Writer::end_write() {
   end_line();
 
-  if (callback != NULL) {
+  if (callback != nullptr) {
     callback->on_end_write(&data);
   }
 

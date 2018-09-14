@@ -49,7 +49,7 @@ public:
       res = (block_t *)__libc_malloc(block_size);
     } else {
       size_t bucket_id = size >> 3;
-      if (free_blocks[bucket_id] != NULL) {
+      if (free_blocks[bucket_id] != nullptr) {
         res = free_blocks[bucket_id];
         free_blocks[bucket_id] = res->next;
       } else {
@@ -85,12 +85,12 @@ public:
   }
 
   inline void *realloc(void *ptr, size_t new_size) {
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
       return alloc(new_size);
     }
     if (new_size == 0) {
       free(ptr);
-      return NULL;
+      return nullptr;
     }
     block_t *block = to_block(ptr);
     size_t old_size = block->size;
@@ -108,7 +108,7 @@ public:
   }
 
   inline void free(void *ptr) {
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
       return;
     }
     block_t *block = to_block(ptr);
@@ -131,7 +131,7 @@ void *realloc(void *ptr, size_t size) {
 __attribute__((error("memalign function is assert(0), don't use it")))
 void *memalign(size_t aligment __attribute__((unused)), size_t size __attribute__((unused))) {
   assert (0);
-  return NULL;
+  return nullptr;
 }
 void free(void *ptr) {
   return zallocator->free(ptr);
@@ -168,7 +168,7 @@ void OneThreadScheduler::add_sync_node(Node *node) {
 }
 
 void OneThreadScheduler::add_task(Task *task) {
-  assert (task_pull != NULL);
+  assert (task_pull != nullptr);
   task_pull->add_task(task);
 }
 
@@ -183,7 +183,7 @@ void OneThreadScheduler::execute() {
     run_flag = false;
     for (int i = 0; i < (int)nodes.size(); i++) {
       Task *task;
-      while ((task = nodes[i]->get_task()) != NULL) {
+      while ((task = nodes[i]->get_task()) != nullptr) {
         run_flag = true;
         task->execute();
         delete task;
@@ -201,7 +201,7 @@ void OneThreadScheduler::execute() {
 void *thread_execute(void *arg) {
   ThreadLocalStorage *tls = (ThreadLocalStorage *)arg;
   tls->scheduler->thread_execute(tls);
-  return NULL;
+  return nullptr;
 }
 
 Scheduler::Scheduler() :
@@ -222,7 +222,7 @@ void Scheduler::add_sync_node(Node *node) {
 }
 
 void Scheduler::add_task(Task *task) {
-  assert (task_pull != NULL);
+  assert (task_pull != nullptr);
   task_pull->add_task(task);
 }
 
@@ -239,7 +239,7 @@ void Scheduler::execute() {
     if (i <= (int)one_thread_nodes.size()) {
       threads[i].node = one_thread_nodes[i - 1];
     }
-    pthread_create(&threads[i].pthread_id, NULL, ::thread_execute, &threads[i]);
+    pthread_create(&threads[i].pthread_id, nullptr, ::thread_execute, &threads[i]);
   }
 
   while (true) {
@@ -257,7 +257,7 @@ void Scheduler::execute() {
   for (int i = 1; i <= threads_count; i++) {
     threads[i].run_flag = false;
     __sync_synchronize();
-    pthread_join(threads[i].pthread_id, NULL);
+    pthread_join(threads[i].pthread_id, nullptr);
   }
 }
 
@@ -268,7 +268,7 @@ void Scheduler::set_threads_count(int new_threads_count) {
 
 bool Scheduler::thread_process_node(Node *node) {
   Task *task = node->get_task();
-  if (task == NULL) {
+  if (task == nullptr) {
     return false;
   }
   execute_task(task);
@@ -280,7 +280,7 @@ void Scheduler::thread_execute(ThreadLocalStorage *tls) {
   set_thread_id(tls->thread_id);
 
   while (tls->run_flag) {
-    if (tls->node != NULL) {
+    if (tls->node != nullptr) {
       while (thread_process_node(tls->node)) {
       }
     } else {
@@ -300,17 +300,17 @@ void Scheduler::thread_execute(ThreadLocalStorage *tls) {
 static SchedulerBase *scheduler;
 
 void set_scheduler(SchedulerBase *new_scheduler) {
-  assert (scheduler == NULL);
+  assert (scheduler == nullptr);
   scheduler = new_scheduler;
 }
 
 void unset_scheduler(SchedulerBase *old_scheduler) {
   assert (scheduler == old_scheduler);
-  scheduler = NULL;
+  scheduler = nullptr;
 }
 
 SchedulerBase *get_scheduler() {
-  assert (scheduler != NULL);
+  assert (scheduler != nullptr);
   return scheduler;
 }
 

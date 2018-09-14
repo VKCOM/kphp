@@ -168,7 +168,7 @@ string f$base64url_encode_ulong_NN(ULong val) {
 static void parse_str_set_array_value(var &arr, const char *left_br_pos, int key_len, const string &value) {
   php_assert (*left_br_pos == '[');
   const char *right_br_pos = (const char *)memchr(left_br_pos + 1, ']', key_len - 1);
-  if (right_br_pos != NULL) {
+  if (right_br_pos != nullptr) {
     string next_key(left_br_pos + 1, (dl::size_type)(right_br_pos - left_br_pos - 1));
     if (!arr.is_array()) {
       arr = array<var>();
@@ -191,7 +191,7 @@ static void parse_str_set_array_value(var &arr, const char *left_br_pos, int key
 void parse_str_set_value(var &arr, const string &key, const string &value) {
   const char *key_c = key.c_str();
   const char *left_br_pos = (const char *)memchr(key_c, '[', key.size());
-  if (left_br_pos != NULL) {
+  if (left_br_pos != nullptr) {
     return parse_str_set_array_value(arr[string(key_c, (dl::size_type)(left_br_pos - key_c))], left_br_pos, (int)(key_c + key.size() - left_br_pos), value);
   }
 

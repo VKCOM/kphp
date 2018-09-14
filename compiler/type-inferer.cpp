@@ -163,12 +163,12 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   node->isset_was |= isset_flags;
 
   tinf::TypeNode *type_node = dynamic_cast <tinf::TypeNode *> (node);
-  if (type_node != NULL) {
+  if (type_node != nullptr) {
     return false;
   }
 
   tinf::ExprNode *expr_node = dynamic_cast <tinf::ExprNode *> (node);
-  if (expr_node != NULL) {
+  if (expr_node != nullptr) {
     VertexPtr v = expr_node->get_expr();
     if (v->type() == op_index && isset_is_dangerous(isset_flags, node->get_type())) {
       node->isset_was = -1;
@@ -201,7 +201,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   }
 
   tinf::VarNode *var_node = dynamic_cast <tinf::VarNode *> (node);
-  if (var_node != NULL) {
+  if (var_node != nullptr) {
     VarPtr from_var = var_node->get_var();
     for (auto e : var_node->get_next()) {
       if (e->from_at->begin() != e->from_at->end()) {
@@ -214,7 +214,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
       if (from_var.not_null()) {
         VarPtr to_var;
         tinf::VarNode *to_var_node = dynamic_cast <tinf::VarNode *> (to_node);
-        if (to_var_node != NULL) {
+        if (to_var_node != nullptr) {
           to_var = to_var_node->get_var();
         }
         if (to_var.not_null() && to_var->type() == VarData::var_param_t &&
@@ -330,13 +330,13 @@ void NodeRecalc::add_dependency_impl(tinf::Node *from, tinf::Node *to) {
   tinf::Edge *e = new tinf::Edge();
   e->from = from;
   e->to = to;
-  e->from_at = NULL;
+  e->from_at = nullptr;
   inferer_->add_edge(e);
   inferer_->add_node(e->to);
 }
 
 void NodeRecalc::add_dependency(const RValue &rvalue) {
-  if (auto_edge_flag() && rvalue.node != NULL) {
+  if (auto_edge_flag() && rvalue.node != nullptr) {
     add_dependency_impl(node_, rvalue.node);
   }
 }
@@ -345,24 +345,24 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
   if (new_type_->error_flag()) {
     return;
   }
-  const TypeData *type = NULL;
+  const TypeData *type = nullptr;
   PrimitiveType ptype = new_type_->ptype();
-  if (rvalue.node != NULL) {
+  if (rvalue.node != nullptr) {
     if (auto_edge_flag()) {
       add_dependency_impl(node_, rvalue.node);
     }
     __sync_synchronize();
     type = rvalue.node->get_type();
-  } else if (rvalue.type != NULL) {
+  } else if (rvalue.type != nullptr) {
     type = rvalue.type;
   } else {
     kphp_fail();
   }
 
-  if (rvalue.key != NULL) {
+  if (rvalue.key != nullptr) {
     type = type->const_read_at(*rvalue.key);
   }
-  if (key == NULL) {
+  if (key == nullptr) {
     key = &MultiKey::any_key(0);
   }
 
@@ -389,7 +389,7 @@ void NodeRecalc::set_lca_at(const MultiKey *key, PrimitiveType ptype) {
 }
 
 void NodeRecalc::set_lca(const RValue &rvalue) {
-  set_lca_at(NULL, rvalue);
+  set_lca_at(nullptr, rvalue);
 }
 
 void NodeRecalc::set_lca(PrimitiveType ptype) {
@@ -400,11 +400,11 @@ void NodeRecalc::set_lca(FunctionPtr function, int id) {
   set_lca(as_rvalue(function, id));
 }
 
-void NodeRecalc::set_lca(VertexPtr vertex, const MultiKey *key /* = NULL*/) {
+void NodeRecalc::set_lca(VertexPtr vertex, const MultiKey *key /* = nullptr*/) {
   set_lca(as_rvalue(vertex, key));
 }
 
-void NodeRecalc::set_lca(const TypeData *type, const MultiKey *key /* = NULL*/) {
+void NodeRecalc::set_lca(const TypeData *type, const MultiKey *key /* = nullptr*/) {
   set_lca(as_rvalue(type, key));
 }
 
@@ -421,7 +421,7 @@ void NodeRecalc::set_lca(ClassPtr klass) {
 
 
 NodeRecalc::NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer) :
-  new_type_(NULL),
+  new_type_(nullptr),
   node_(node),
   inferer_(inferer) {}
 
@@ -429,7 +429,7 @@ void NodeRecalc::on_changed() {
   __sync_synchronize();
 
   node_->set_type(new_type_);
-  new_type_ = NULL;
+  new_type_ = nullptr;
 
   __sync_synchronize();
 
@@ -596,7 +596,7 @@ void ExprNodeRecalc::recalc_constructor_call(VertexAdaptor<op_constructor_call> 
     if (call->type_help == tp_MC || call->type_help == tp_Exception) {
       set_lca(call->type_help);
     } else {
-      kphp_error (0, "op_constructor_call has class_id NULL");
+      kphp_error (0, "op_constructor_call has class_id nullptr");
     }
   }
 }

@@ -187,24 +187,24 @@ void udp_init_static_once(void) {
   static stream_functions udp_stream_functions;
 
   udp_stream_functions.name = string("udp", 3);
-  udp_stream_functions.fopen = NULL;
+  udp_stream_functions.fopen = nullptr;
   udp_stream_functions.fwrite = udp_fwrite;
-  udp_stream_functions.fseek = NULL;
-  udp_stream_functions.ftell = NULL;
-  udp_stream_functions.fread = NULL;
-  udp_stream_functions.fgetc = NULL;
-  udp_stream_functions.fgets = NULL;
-  udp_stream_functions.fpassthru = NULL;
-  udp_stream_functions.fflush = NULL;
-  udp_stream_functions.feof = NULL;
+  udp_stream_functions.fseek = nullptr;
+  udp_stream_functions.ftell = nullptr;
+  udp_stream_functions.fread = nullptr;
+  udp_stream_functions.fgetc = nullptr;
+  udp_stream_functions.fgets = nullptr;
+  udp_stream_functions.fpassthru = nullptr;
+  udp_stream_functions.fflush = nullptr;
+  udp_stream_functions.feof = nullptr;
   udp_stream_functions.fclose = udp_fclose;
 
-  udp_stream_functions.file_get_contents = NULL;
-  udp_stream_functions.file_put_contents = NULL;
+  udp_stream_functions.file_get_contents = nullptr;
+  udp_stream_functions.file_put_contents = nullptr;
 
   udp_stream_functions.stream_socket_client = udp_stream_socket_client;
-  udp_stream_functions.context_set_option = NULL;
-  udp_stream_functions.stream_set_option = NULL;
+  udp_stream_functions.context_set_option = nullptr;
+  udp_stream_functions.stream_set_option = nullptr;
   udp_stream_functions.get_fd = udp_get_fd;
 
   register_stream_functions(&udp_stream_functions, false);

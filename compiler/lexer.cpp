@@ -11,7 +11,7 @@ template<class T>
 class Singleton {
 public:
   static T *instance() {
-    if (val == NULL) {
+    if (val == nullptr) {
       assert (get_thread_id() == 0);
       val = (T *)(operator new(sizeof(T)));
       new(val) T();
@@ -23,20 +23,21 @@ private:
   static T *val;
 };
 
-template<class T> T *Singleton<T>::val = (T *)NULL;
+template<class T>
+T *Singleton<T>::val = nullptr;
 
 /***
   LexerData
  ***/
 LexerData::LexerData() :
   line_num(-1),
-  code(NULL),
-  code_end(NULL),
-  start(NULL),
+  code(nullptr),
+  code_end(nullptr),
+  start(nullptr),
   code_len(0),
   in_gen_str(false),
-  str_begin(NULL),
-  str_cur(NULL) {}
+  str_begin(nullptr),
+  str_cur(nullptr) {}
 
 LexerData::~LexerData() {
 }
@@ -82,7 +83,7 @@ void LexerData::add_token_(Token *tok, int shift) {
 }
 
 void LexerData::add_token(Token *tok, int shift) {
-  kphp_assert (tok != NULL);
+  kphp_assert (tok != nullptr);
   flush_str();
   add_token_(tok, shift);
 }
@@ -206,7 +207,7 @@ void LexerData::post_process(const string &main_func_name) {
           tokens.push_back(new Token(tok_else));
           tokens.push_back(new Token(tok_if));
           delete oldtokens[i];
-          oldtokens[i] = NULL;
+          oldtokens[i] = nullptr;
           i++;
           break;
         }
@@ -216,15 +217,15 @@ void LexerData::post_process(const string &main_func_name) {
             tokens.push_back(new Token(tok_str));
             delete oldtokens[i];
             delete oldtokens[i + 1];
-            oldtokens[i] = NULL;
-            oldtokens[i + 1] = NULL;
+            oldtokens[i] = nullptr;
+            oldtokens[i + 1] = nullptr;
             i += 2;
           } else if (are_next_tokens(oldtokens, i, tok_str, tok_str_end)) {
             tokens.push_back(oldtokens[i + 1]);
             delete oldtokens[i];
             delete oldtokens[i + 2];
-            oldtokens[i] = NULL;
-            oldtokens[i + 2] = NULL;
+            oldtokens[i] = nullptr;
+            oldtokens[i + 2] = nullptr;
             i += 3;
           }
           break;
@@ -236,7 +237,7 @@ void LexerData::post_process(const string &main_func_name) {
             tokens.back()->type() = tok_constructor_call;
             tokens.back()->str_val = oldtokens[i + 1]->str_val;
             delete oldtokens[i + 1];
-            oldtokens[i + 1] = NULL;
+            oldtokens[i + 1] = nullptr;
             if (i + 2 == n || oldtokens[i + 2]->type() != tok_oppar) {
               tokens.push_back(new Token(tok_oppar));
               tokens.push_back(new Token(tok_clpar));
@@ -264,7 +265,7 @@ void LexerData::post_process(const string &main_func_name) {
           if (str_val == "static") {
             i++;
             break;
-          } else if (i == 0 || (oldtokens[i - 1] != NULL && oldtokens[i - 1]->type() != tok_function)) {
+          } else if (i == 0 || (oldtokens[i - 1] != nullptr && oldtokens[i - 1]->type() != tok_function)) {
             if (str_val == "err" && are_next_tokens(oldtokens, i, tok_oppar)) {
               tokens.push_back(oldtokens[i]);
               tokens.push_back(oldtokens[i + 1]);
@@ -364,9 +365,9 @@ void LexerData::post_process(const string &main_func_name) {
       delete oldtokens[i];
       delete oldtokens[i + 1];
       delete oldtokens[i + 2];
-      oldtokens[i] = NULL;
-      oldtokens[i + 1] = NULL;
-      oldtokens[i + 2] = NULL;
+      oldtokens[i] = nullptr;
+      oldtokens[i + 1] = nullptr;
+      oldtokens[i + 2] = nullptr;
       i += 3;
     }
   }
@@ -402,7 +403,7 @@ int parse_with_helper(LexerData *lexer_data, Helper<TokenLexer> *h) {
   TokenLexer *fnd = h->get_help(s);
 
   int ret;
-  if (fnd == NULL || (ret = fnd->parse(lexer_data)) != 0) {
+  if (fnd == nullptr || (ret = fnd->parse(lexer_data)) != 0) {
     ret = h->get_default()->parse(lexer_data);
   }
 
@@ -479,7 +480,7 @@ int TokenLexerName::parse(LexerData *lexer_data) const {
 
   if (type == tok_func_name) {
     const KeywordType *tp = KeywordsSet::get_type(name.begin(), name.length());
-    if (tp != NULL) {
+    if (tp != nullptr) {
       lexer_data->add_token(new Token(tp->type, s, t), (int)(t - st));
       return 0;
     }
@@ -755,11 +756,11 @@ Helper<TokenLexer> *TokenLexerStringExpr::gen_helper() {
 }
 
 TokenLexerStringExpr::TokenLexerStringExpr() :
-  h(NULL) {
+  h(nullptr) {
 }
 
 void TokenLexerStringExpr::init() {
-  assert (h == NULL);
+  assert (h == nullptr);
   h = gen_helper();
 }
 
@@ -768,7 +769,7 @@ TokenLexerStringExpr::~TokenLexerStringExpr() {
 }
 
 int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
-  assert (h != NULL);
+  assert (h != nullptr);
   const char *s = lexer_data->get_code();
   assert (*s == '{');
   lexer_data->add_token(new Token(tok_expr_begin), 1);
@@ -893,11 +894,11 @@ Helper<TokenLexer> *TokenLexerHeredocString::gen_helper() {
 }
 
 TokenLexerString::TokenLexerString() :
-  h(NULL) {
+  h(nullptr) {
 }
 
 void TokenLexerString::init() {
-  assert (h == NULL);
+  assert (h == nullptr);
   h = gen_helper();
 }
 
@@ -906,11 +907,11 @@ TokenLexerString::~TokenLexerString() {
 }
 
 TokenLexerHeredocString::TokenLexerHeredocString() :
-  h(NULL) {
+  h(nullptr) {
 }
 
 void TokenLexerHeredocString::init() {
-  assert (h == NULL);
+  assert (h == nullptr);
   h = gen_helper();
 }
 
@@ -919,7 +920,7 @@ TokenLexerHeredocString::~TokenLexerHeredocString() {
 }
 
 int TokenLexerString::parse(LexerData *lexer_data) const {
-  assert (h != NULL);
+  assert (h != nullptr);
   const char *s = lexer_data->get_code();
   int is_heredoc = s[0] == '<';
   assert (!is_heredoc);
@@ -1107,7 +1108,7 @@ int TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
 }
 
 TokenLexerWithHelper::TokenLexerWithHelper() :
-  h(NULL) {
+  h(nullptr) {
 }
 
 TokenLexerWithHelper::~TokenLexerWithHelper() {
@@ -1115,12 +1116,12 @@ TokenLexerWithHelper::~TokenLexerWithHelper() {
 }
 
 void TokenLexerWithHelper::init() {
-  assert (h == NULL);
+  assert (h == nullptr);
   h = gen_helper();
 }
 
 int TokenLexerWithHelper::parse(LexerData *lexer_data) const {
-  assert (h != NULL);
+  assert (h != nullptr);
   return parse_with_helper(lexer_data, h);
 }
 
@@ -1246,7 +1247,7 @@ TokenLexerPHP::TokenLexerPHP() {
 
 TokenLexerGlobal::TokenLexerGlobal() {
   php_lexer = Singleton<TokenLexerPHP>::instance();
-  assert (php_lexer != NULL);
+  assert (php_lexer != nullptr);
 }
 
 int TokenLexerGlobal::parse(LexerData *lexer_data) const {

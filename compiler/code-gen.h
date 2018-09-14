@@ -35,9 +35,9 @@ public:
   bool debug_flag;
 
   CodeGenerator() :
-    master_writer(NULL),
-    writer(NULL),
-    callback_(NULL),
+    master_writer(nullptr),
+    writer(nullptr),
+    callback_(nullptr),
     context(),
     own_flag(false),
     debug_flag(false) {
@@ -45,7 +45,7 @@ public:
 
   explicit CodeGenerator(const CodeGenerator &from) :
     master_writer(from.master_writer),
-    writer(NULL),
+    writer(nullptr),
     callback_(from.callback_),
     context(from.context),
     own_flag(false),
@@ -64,8 +64,8 @@ public:
       delete callback_;
       own_flag = false;
     }
-    master_writer = NULL;
-    callback_ = NULL;
+    master_writer = nullptr;
+    callback_ = nullptr;
   }
 
   ~CodeGenerator() {
@@ -81,14 +81,14 @@ public:
   }
 
   inline void lock_writer() {
-    assert (writer == NULL);
+    assert (writer == nullptr);
     writer = master_writer->lock_get();
   }
 
   inline void unlock_writer() {
-    assert (writer != NULL);
+    assert (writer != nullptr);
     master_writer->unlock_get(writer);
-    writer = NULL;
+    writer = nullptr;
   }
 
 
@@ -540,7 +540,7 @@ CodeGenerator &CodeGenerator::operator<<(const T &value) {
 }
 
 inline Writer &CodeGenerator::get_writer() {
-  assert (writer != NULL);
+  assert (writer != nullptr);
   return *writer;
 }
 
@@ -1454,7 +1454,7 @@ inline void StaticInit::compile(CodeGenerator &W) const {
       W << FunctionName(to) << "$static_init();" << NL;
     }
   }
-  W << "dl::allocator_init (NULL, 0);" << NL;
+  W << "dl::allocator_init (nullptr, 0);" << NL;
   W << END << NL;
 }
 
@@ -1973,7 +1973,7 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
   VertexPtr true_expr = root->true_expr();
   VertexPtr false_expr = root->false_expr();
 
-  const TypeData *true_expr_tp, *false_expr_tp, *res_tp = NULL;
+  const TypeData *true_expr_tp, *false_expr_tp, *res_tp = nullptr;
   true_expr_tp = tinf::get_type(true_expr);
   false_expr_tp = tinf::get_type(false_expr);
 
@@ -1984,21 +1984,21 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
 
   W << Operand(cond, root->type(), true) << " ? ";
 
-  if (res_tp != NULL) {
+  if (res_tp != nullptr) {
     W << TypeName(res_tp) << "(";
   }
   W << Operand(true_expr, root->type(), true);
-  if (res_tp != NULL) {
+  if (res_tp != nullptr) {
     W << ")";
   }
 
   W << " : ";
 
-  if (res_tp != NULL) {
+  if (res_tp != nullptr) {
     W << TypeName(res_tp) << "(";
   }
   W << Operand(false_expr, root->type(), true);
-  if (res_tp != NULL) {
+  if (res_tp != nullptr) {
     W << ")";
   }
 }
@@ -2322,11 +2322,11 @@ struct CaseInfo {
   inline CaseInfo() :
     hash(0),
     is_default(false),
-    next(NULL) {}
+    next(nullptr) {}
 
   inline CaseInfo(VertexPtr root) :
     hash(0),
-    next(NULL),
+    next(nullptr),
     v(root) {
     if (v->type() == op_default) {
       is_default = true;
@@ -2355,10 +2355,10 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   }
   int n = (int)cases.size();
 
-  CaseInfo *default_case = NULL;
+  CaseInfo *default_case = nullptr;
   for (int i = 0; i < n; i++) {
     if (cases[i].is_default) {
-      kphp_error_return (default_case == NULL, "Several default cases in switch");
+      kphp_error_return (default_case == nullptr, "Several default cases in switch");
       default_case = &cases[i];
     }
   }
@@ -2378,7 +2378,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       cases[i].next = default_case;
     }
     CaseInfo *next = cases[i].next;
-    if (next != NULL && next->goto_name.empty()) {
+    if (next != nullptr && next->goto_name.empty()) {
       next->goto_name = gen_unique_name("switch_goto");
     }
   }
@@ -2411,7 +2411,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
         "if (!equals (" << root->ss() << ", " << cur->expr << ")) " <<
         BEGIN;
       string next_goto;
-      if (cur->next != NULL) {
+      if (cur->next != nullptr) {
         next_goto = cur->next->goto_name;
         W << "goto " << next_goto << ";" << NL;
       } else {

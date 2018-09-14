@@ -48,7 +48,7 @@ bool f$mail(const string &to, const string &subject, const string &message, stri
   }
   dl::enter_critical_section();
   FILE *sendmail = popen(sendmail_path.c_str(), "w");
-  if (sendmail == NULL) {
+  if (sendmail == nullptr) {
     php_warning("Could not execute \"%s\"", sendmail_path.c_str());
     return false;
   }

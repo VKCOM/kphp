@@ -49,7 +49,7 @@ static long long curl_last_query_num = -1;
 
 static curl_handler *get_curl_handler(curl id) {
   if (dl::query_num != curl_last_query_num) {
-    return NULL;
+    return nullptr;
   }
 
   return curl_handlers->get_value(id - 1);
@@ -84,7 +84,7 @@ static size_t curl_write_header(char *data, size_t size, size_t nmemb, void *use
   int length = static_cast <int> (size * nmemb);
 
   size_t result = size * nmemb;
-  if (ch->header_function != NULL) {
+  if (ch->header_function != nullptr) {
     ch->in_callback = true;
     result = (size_t)f$intval(ch->header_function(ch->id, string(data, length)));
     ch->in_callback = false;
@@ -113,7 +113,7 @@ curl f$curl_init(const string &url) {
   dl::enter_critical_section();//OK
   CURL *cp = curl_easy_init();
   dl::leave_critical_section();
-  if (cp == NULL) {
+  if (cp == nullptr) {
     php_warning("Could not initialize a new cURL handle");
     return 0;
   }
@@ -122,7 +122,7 @@ curl f$curl_init(const string &url) {
   new(ch) curl_handler();
 
   ch->cp = cp;
-  ch->header_function = NULL;
+  ch->header_function = nullptr;
   ch->in_callback = false;
   ch->return_transfer = false;
 
@@ -169,8 +169,8 @@ static bool curl_setopt(curl_handler *ch, int option, const var &value) {
       php_assert (curl_easy_setopt(ch->cp, CURLOPT_DEBUGDATA, (void *)ch) == CURLE_OK);
       php_assert (curl_easy_setopt(ch->cp, CURLOPT_VERBOSE, 1) == CURLE_OK);
     } else {
-      php_assert (curl_easy_setopt(ch->cp, CURLOPT_DEBUGFUNCTION, NULL) == CURLE_OK);
-      php_assert (curl_easy_setopt(ch->cp, CURLOPT_DEBUGDATA, NULL) == CURLE_OK);
+      php_assert (curl_easy_setopt(ch->cp, CURLOPT_DEBUGFUNCTION, nullptr) == CURLE_OK);
+      php_assert (curl_easy_setopt(ch->cp, CURLOPT_DEBUGDATA, nullptr) == CURLE_OK);
       php_assert (curl_easy_setopt(ch->cp, CURLOPT_VERBOSE, 0) == CURLE_OK);
     }
     dl::leave_critical_section();
@@ -584,7 +584,7 @@ static bool curl_setopt(curl_handler *ch, int option, const var &value) {
       }
 
       const array<var> &v = value.to_array();
-      curl_slist *slist = NULL;
+      curl_slist *slist = nullptr;
 
       for (array<var>::const_iterator p = v.begin(); p != v.end(); ++p) {
         dl::enter_critical_section();//OK
@@ -613,8 +613,8 @@ static bool curl_setopt(curl_handler *ch, int option, const var &value) {
       if (value.is_array()) {
         const array<var> &postfields = value.to_array();
 
-        struct curl_httppost *first = NULL;
-        struct curl_httppost *last = NULL;
+        struct curl_httppost *first = nullptr;
+        struct curl_httppost *last = nullptr;
 
         for (array<var>::const_iterator p = postfields.begin(); p != postfields.end(); ++p) {
           const string key = f$strval(p.get_key());
@@ -650,7 +650,7 @@ static bool curl_setopt(curl_handler *ch, int option, const var &value) {
           return false;
         }
 
-        if (first != NULL) {
+        if (first != nullptr) {
           ch->httpposts_to_free.push_back(first);
           dl::enter_critical_section();//OK
           ch->error_no = curl_easy_setopt (ch->cp, CURLOPT_HTTPPOST, first);
@@ -683,7 +683,7 @@ static bool curl_setopt(curl_handler *ch, int option, const var &value) {
 
 bool f$curl_set_header_function(curl id, var (*header_function)(var curl_id, var string)) {
   curl_handler *ch = get_curl_handler(id);
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return false;
   }
@@ -700,7 +700,7 @@ bool f$curl_set_header_function(curl id, var (*header_function)(var curl_id, var
 
 bool f$curl_setopt(curl id, int option, const var &value) {
   curl_handler *ch = get_curl_handler(id);
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return false;
   }
@@ -720,7 +720,7 @@ bool f$curl_setopt(curl id, int option, const var &value) {
 
 bool f$curl_setopt_array(curl id, const array<var> &options) {
   curl_handler *ch = get_curl_handler(id);
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return false;
   }
@@ -744,7 +744,7 @@ bool f$curl_setopt_array(curl id, const array<var> &options) {
 
 var f$curl_exec(curl id) {
   curl_handler *ch = get_curl_handler(id);
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return false;
   }
@@ -774,7 +774,7 @@ var f$curl_exec(curl id) {
 
 var f$curl_getinfo(curl id, int option) {
   curl_handler *ch = get_curl_handler(id);
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return false;
   }
@@ -793,10 +793,10 @@ var f$curl_getinfo(curl id, int option) {
     double d_code;
 
     //TODO: Need to enter critical section for safety
-    if (curl_easy_getinfo (cp, CURLINFO_EFFECTIVE_URL, &s_code) == CURLE_OK && s_code != NULL) {
+    if (curl_easy_getinfo (cp, CURLINFO_EFFECTIVE_URL, &s_code) == CURLE_OK && s_code != nullptr) {
       result.set_value(string("url", 3), string(s_code, strlen(s_code)));
     }
-    if (curl_easy_getinfo (cp, CURLINFO_CONTENT_TYPE, &s_code) == CURLE_OK && s_code != NULL) {
+    if (curl_easy_getinfo (cp, CURLINFO_CONTENT_TYPE, &s_code) == CURLE_OK && s_code != nullptr) {
       result.set_value(string("content_type", 12), string(s_code, strlen(s_code)));
     }
     if (curl_easy_getinfo (cp, CURLINFO_RESPONSE_CODE, &l_code) == CURLE_OK) {
@@ -853,16 +853,16 @@ var f$curl_getinfo(curl id, int option) {
     if (curl_easy_getinfo (cp, CURLINFO_REDIRECT_TIME, &d_code) == CURLE_OK) {
       result.set_value(string("redirect_time", 13), d_code);
     }
-    if (curl_easy_getinfo (cp, CURLINFO_REDIRECT_URL, &s_code) == CURLE_OK && s_code != NULL) {
+    if (curl_easy_getinfo (cp, CURLINFO_REDIRECT_URL, &s_code) == CURLE_OK && s_code != nullptr) {
       result.set_value(string("redirect_url", 12), string(s_code, strlen(s_code)));
     }
-    if (curl_easy_getinfo (cp, CURLINFO_PRIMARY_IP, &s_code) == CURLE_OK && s_code != NULL) {
+    if (curl_easy_getinfo (cp, CURLINFO_PRIMARY_IP, &s_code) == CURLE_OK && s_code != nullptr) {
       result.set_value(string("primary_ip", 10), string(s_code, strlen(s_code)));
     }
     if (curl_easy_getinfo (cp, CURLINFO_PRIMARY_PORT, &l_code) == CURLE_OK) {
       result.set_value(string("primary_port", 12), (int)l_code);
     }
-    if (curl_easy_getinfo (cp, CURLINFO_LOCAL_IP, &s_code) == CURLE_OK && s_code != NULL) {
+    if (curl_easy_getinfo (cp, CURLINFO_LOCAL_IP, &s_code) == CURLE_OK && s_code != nullptr) {
       result.set_value(string("local_ip", 8), string(s_code, strlen(s_code)));
     }
     if (curl_easy_getinfo (cp, CURLINFO_LOCAL_PORT, &l_code) == CURLE_OK) {
@@ -910,10 +910,10 @@ var f$curl_getinfo(curl id, int option) {
   int type = CURLINFO_TYPEMASK & curl_option;
   switch (type) {
     case CURLINFO_STRING: {
-      char *s_code = NULL;
+      char *s_code = nullptr;
 
       dl::enter_critical_section();//OK
-      if (curl_easy_getinfo (cp, curl_option, &s_code) == CURLE_OK && s_code != NULL) {
+      if (curl_easy_getinfo (cp, curl_option, &s_code) == CURLE_OK && s_code != nullptr) {
         dl::leave_critical_section();
         return string(s_code, strlen(s_code));
       }
@@ -961,7 +961,7 @@ var f$curl_getinfo(curl id, int option) {
 string f$curl_error(curl id) {
   curl_handler *ch = get_curl_handler(id);
 
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return string();
   }
@@ -981,7 +981,7 @@ string f$curl_error(curl id) {
 int f$curl_errno(curl id) {
   curl_handler *ch = get_curl_handler(id);
 
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return 0;
   }
@@ -1002,7 +1002,7 @@ static void curl_close(curl_handler *ch) {
   const curl_handler *const_ch = ch;
   for (array<curl_slist *>::const_iterator p = const_ch->slists_to_free.begin(); p != const_ch->slists_to_free.end(); ++p) {
     curl_slist *v = p.get_value();
-    php_assert (v != NULL);
+    php_assert (v != nullptr);
     dl::enter_critical_section();//OK
     curl_slist_free_all(v);
     dl::leave_critical_section();
@@ -1010,7 +1010,7 @@ static void curl_close(curl_handler *ch) {
 
   for (array<curl_httppost *>::const_iterator p = const_ch->httpposts_to_free.begin(); p != const_ch->httpposts_to_free.end(); ++p) {
     curl_httppost *v = p.get_value();
-    php_assert (v != NULL);
+    php_assert (v != nullptr);
     dl::enter_critical_section();//OK
     curl_formfree(v);
     dl::leave_critical_section();
@@ -1023,7 +1023,7 @@ static void curl_close(curl_handler *ch) {
 void f$curl_close(curl id) {
   curl_handler *ch = get_curl_handler(id);
 
-  if (ch == NULL) {
+  if (ch == nullptr) {
     php_warning("Wrong curl handler specified");
     return;
   }
@@ -1033,7 +1033,7 @@ void f$curl_close(curl id) {
     return;
   }
 
-  curl_handlers->set_value(id - 1, NULL);
+  curl_handlers->set_value(id - 1, nullptr);
 
   curl_close(ch);
 }
@@ -1043,15 +1043,15 @@ static void *malloc_replace(size_t x) {
   size_t real_allocate = x + sizeof(size_t);
   php_assert (real_allocate >= sizeof(size_t));
   void *p = dl::allocate(real_allocate);
-  if (p == NULL) {
-    return NULL;//We believe that curl can handle this
+  if (p == nullptr) {
+    return nullptr;//We believe that curl can handle this
   }
   *static_cast <size_t *> (p) = real_allocate;
   return static_cast <void *> (static_cast <char *> (p) + sizeof(size_t));
 }
 
 static void free_replace(void *p) {
-  if (p == NULL) {
+  if (p == nullptr) {
     return;
   }
 
@@ -1061,13 +1061,13 @@ static void free_replace(void *p) {
 }
 
 static void *realloc_replace(void *p, size_t x) {
-  if (p == NULL) {
+  if (p == nullptr) {
     return malloc_replace(x);
   }
 
   if (x == 0) {
     free_replace(p);
-    return NULL;
+    return nullptr;
   }
 
   void *real_p = static_cast <void *> (static_cast <char *> (p) - sizeof(size_t));
@@ -1075,8 +1075,8 @@ static void *realloc_replace(void *p, size_t x) {
   size_t old_size = *static_cast <size_t *> (real_p);
 
   void *new_p = malloc_replace(x);
-  if (new_p == NULL) {
-    return NULL;
+  if (new_p == nullptr) {
+    return nullptr;
   }
   memcpy(new_p, p, min(x, old_size));
 
@@ -1088,8 +1088,8 @@ static void *realloc_replace(void *p, size_t x) {
 static char *strdup_replace(const char *str) {
   int len = strlen(str) + 1;
   char *res = static_cast <char *> (static_cast <void *> (malloc_replace(len)));
-  if (res == NULL) {
-    return NULL;
+  if (res == nullptr) {
+    return nullptr;
   }
   memcpy(res, str, len);
   return res;
@@ -1097,8 +1097,8 @@ static char *strdup_replace(const char *str) {
 
 static void *calloc_replace(size_t nmemb, size_t size) {
   void *res = malloc_replace(nmemb * size);
-  if (res == NULL) {
-    return NULL;
+  if (res == nullptr) {
+    return nullptr;
   }
   return memset(res, 0, nmemb * size);
 }
@@ -1132,7 +1132,7 @@ void curl_free_static(void) {
   if (dl::query_num == curl_last_query_num) {
     const array<curl_handler *> *const_curl_handlers = curl_handlers;
     for (array<curl_handler *>::const_iterator p = const_curl_handlers->begin(); p != const_curl_handlers->end(); ++p) {
-      if (p.get_value() != NULL) {
+      if (p.get_value() != nullptr) {
         curl_close(p.get_value());
       }
     }

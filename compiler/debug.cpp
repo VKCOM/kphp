@@ -255,9 +255,9 @@ GdbVertex *debugVertexToGdb(VertexPtr impl) {
 
   g->type = (impl.is_null() ? meta_op_base : impl->type());
   g->str = impl.is_null() ? "" : debugVertexMore(impl);
-  g->ith0 = size > 0 ? debugVertexToGdb(impl->ith(0)) : NULL;
-  g->ith1 = size > 1 ? debugVertexToGdb(impl->ith(1)) : NULL;
-  g->ith2 = size > 2 ? debugVertexToGdb(impl->ith(2)) : NULL;
+  g->ith0 = size > 0 ? debugVertexToGdb(impl->ith(0)) : nullptr;
+  g->ith1 = size > 1 ? debugVertexToGdb(impl->ith(1)) : nullptr;
+  g->ith2 = size > 2 ? debugVertexToGdb(impl->ith(2)) : nullptr;
 
   return g;
 }

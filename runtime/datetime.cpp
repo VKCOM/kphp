@@ -356,7 +356,7 @@ static string date(const string &format, const tm &t, int timestamp, bool local)
 
 string f$date(const string &format, int timestamp) {
   if (timestamp == INT_MIN) {
-    timestamp = (int)time(NULL);
+    timestamp = (int)time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -382,7 +382,7 @@ string f$date_default_timezone_get(void) {
 
 array<var> f$getdate(int timestamp) {
   if (timestamp == INT_MIN) {
-    timestamp = (int)time(NULL);
+    timestamp = (int)time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -407,7 +407,7 @@ array<var> f$getdate(int timestamp) {
 
 string f$gmdate(const string &format, int timestamp) {
   if (timestamp == INT_MIN) {
-    timestamp = (int)time(NULL);
+    timestamp = (int)time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -418,7 +418,7 @@ string f$gmdate(const string &format, int timestamp) {
 
 int f$gmmktime(int h, int m, int s, int month, int day, int year) {
   tm t;
-  time_t timestamp_t = time(NULL);
+  time_t timestamp_t = time(nullptr);
   gmtime_r(&timestamp_t, &t);
 
   if (h != INT_MIN) {
@@ -451,7 +451,7 @@ int f$gmmktime(int h, int m, int s, int month, int day, int year) {
 
 array<var> f$localtime(int timestamp, bool is_associative) {
   if (timestamp == INT_MIN) {
-    timestamp = (int)time(NULL);
+    timestamp = (int)time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -507,7 +507,7 @@ var f$microtime(bool get_as_float) {
 
 int f$mktime(int h, int m, int s, int month, int day, int year) {
   tm t;
-  time_t timestamp_t = time(NULL);
+  time_t timestamp_t = time(nullptr);
   localtime_r(&timestamp_t, &t);
 
   if (h != INT_MIN) {
@@ -541,7 +541,7 @@ int f$mktime(int h, int m, int s, int month, int day, int year) {
 
 string f$strftime(const string &format, int timestamp) {
   if (timestamp == INT_MIN) {
-    timestamp = (int)time(NULL);
+    timestamp = (int)time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -556,7 +556,7 @@ string f$strftime(const string &format, int timestamp) {
 
 OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
   if (timestamp == INT_MIN) {
-    timestamp = (int)time(NULL);
+    timestamp = (int)time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -740,7 +740,7 @@ OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
     for (int tr = 0; tr < 2 && !found; tr++) {
       for (int i = 0; i < patterns_size && !found; i++) {
         const char *res = strptime(s.c_str(), patterns[i], &t);
-        if (res != NULL) {
+        if (res != nullptr) {
           while (*res == ' ') {
             res++;
           }
@@ -775,8 +775,8 @@ OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
 
       if (tr == 0) {
         if (!found) {
-          const char *cur_locale_c_ctr = setlocale(LC_TIME, NULL);
-          php_assert (cur_locale_c_ctr != NULL);
+          const char *cur_locale_c_ctr = setlocale(LC_TIME, nullptr);
+          php_assert (cur_locale_c_ctr != nullptr);
           cur_locale.assign(cur_locale_c_ctr, (dl::size_type)strlen(cur_locale_c_ctr));
           setlocale(LC_TIME, "C");
         }
@@ -800,7 +800,7 @@ OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
 }
 
 int f$time(void) {
-  return (int)time(NULL);
+  return (int)time(nullptr);
 }
 
 

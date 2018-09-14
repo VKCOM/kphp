@@ -15,7 +15,7 @@ TLS<VarPtr> last_ub_error;
 
 template<class T>
 bool in_vector(const vector<T> *vec, const T &val) {
-  if (vec != NULL && std::find(vec->begin(), vec->end(), val) != vec->end()) {
+  if (vec != nullptr && std::find(vec->begin(), vec->end(), val) != vec->end()) {
     *last_ub_error = val;
     return true;
   }
@@ -24,7 +24,7 @@ bool in_vector(const vector<T> *vec, const T &val) {
 
 template<class T>
 bool vectors_intersect(const vector<T> *a, const vector<T> *b) {
-  if (a == NULL || b == NULL) {
+  if (a == nullptr || b == nullptr) {
     return false;
   }
   for (const T &ai : *a) {
@@ -45,7 +45,7 @@ bool is_same_var(const VarPtr &a, const VarPtr &b) {
 }
 
 bool is_var_written(const FunctionPtr &function, const VarPtr &var) {
-  if (function->bad_vars == NULL || (var->type() != VarData::var_global_t && var->bad_vars == NULL)) {
+  if (function->bad_vars == nullptr || (var->type() != VarData::var_global_t && var->bad_vars == nullptr)) {
     return false;
   }
   if (in_vector(function->bad_vars, var)) {
@@ -59,7 +59,7 @@ bool is_ub_functions(const FunctionPtr &first, const FunctionPtr &second) {
   vector<VarPtr> *a = first->bad_vars;
   vector<VarPtr> *b = second->bad_vars;
 
-  if (a == NULL || b == NULL) {
+  if (a == nullptr || b == nullptr) {
     return false;
   }
   if (a->size() > b->size()) {

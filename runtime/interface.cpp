@@ -222,12 +222,12 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
 
   //regular header
   const char *p = strchr(str, ':');
-  if (p == NULL) {
+  if (p == nullptr) {
     php_warning("Wrong header line specified: \"%s\"", str);
     return;
   }
   string name = f$trim(string(str, (dl::size_type)(p - str)));
-  if (strpbrk(name.c_str(), "()<>@,;:\\\"/[]?={}") != NULL) {
+  if (strpbrk(name.c_str(), "()<>@,;:\\\"/[]?={}") != nullptr) {
     php_warning("Wrong header name: \"%s\"", name.c_str());
     return;
   }
@@ -440,7 +440,7 @@ void f$fastcgi_finish_request(int exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
-      php_assert (http_set_result != NULL);
+      php_assert (http_set_result != nullptr);
 
       const string_buffer *compressed;
       if ((http_need_gzip & 5) == 5) {
@@ -459,7 +459,7 @@ void f$fastcgi_finish_request(int exit_code) {
       break;
     }
     case QUERY_TYPE_RPC: {
-      php_assert (rpc_set_result != NULL);
+      php_assert (rpc_set_result != nullptr);
       rpc_set_result(oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), exit_code);
 
       break;
@@ -550,7 +550,7 @@ string f$long2ip(int num) {
 OrFalse<array<string>> f$gethostbynamel(const string &name) {
   dl::enter_critical_section();//OK
   struct hostent *hp = gethostbyname(name.c_str());
-  if (hp == NULL || hp->h_addr_list == NULL) {
+  if (hp == nullptr || hp->h_addr_list == nullptr) {
     dl::leave_critical_section();
     return false;
   }
@@ -753,7 +753,7 @@ public:
     post_len(post_len),
     buf_pos(0),
     boundary(boundary) {
-    if (post == NULL) {
+    if (post == nullptr) {
       buf = php_buf;
       buf_len = 0;
     } else {
@@ -901,7 +901,7 @@ public:
           php_assert (0 <= i && i <= buf_len);
 
           s = static_cast <const char *>(memmem(buf + i, buf_len - i, boundary.c_str(), boundary.size()));
-          if (s == NULL) {
+          if (s == nullptr) {
             break;
           }
 
@@ -918,7 +918,7 @@ public:
 
           i = r + 1;
         }
-        if (s != NULL) {
+        if (s != nullptr) {
           break;
         }
 
@@ -960,7 +960,7 @@ public:
         buf_len = to_leave + http_load_long_query(buf + to_leave, min(PHP_BUF_LEN - to_leave, left), min(PHP_BUF_LEN - to_leave, left));
       }
 
-      php_assert (s != NULL);
+      php_assert (s != nullptr);
 
       dl::enter_critical_section();//OK
       int to_write = (int)(s - (buf + pos - buf_pos));
@@ -1189,7 +1189,7 @@ void f$parse_multipart(const string &post, const string &boundary) {
 
 
 static char arg_vars_storage[sizeof(array<string>)];
-static array<string> *arg_vars = NULL;
+static array<string> *arg_vars = nullptr;
 
 OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
   if (!arg_vars) {
@@ -1225,7 +1225,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
   array<var> result;
 
   optind = 0;
-  while (int i = getopt_long(php_argc, (char *const *)php_argv, real_options.c_str(), real_longopts, NULL)) {
+  while (int i = getopt_long(php_argc, (char *const *)php_argv, real_options.c_str(), real_longopts, nullptr)) {
     if (i == -1 || i == '?') {
       break;
     }
@@ -1254,7 +1254,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
 void arg_add(const char *value) {
   php_assert (dl::query_num == 0);
 
-  if (arg_vars == NULL) {
+  if (arg_vars == nullptr) {
     new(arg_vars_storage) array<string>();
     arg_vars = reinterpret_cast <array<string> *> (arg_vars_storage);
   }
@@ -1341,10 +1341,10 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
       header_value = f$trim(header_value);
 
       if (!strcmp(header_name.c_str(), "accept-encoding")) {
-        if (strstr(header_value.c_str(), "gzip") != NULL) {
+        if (strstr(header_value.c_str(), "gzip") != nullptr) {
           http_need_gzip |= 1;
         }
-        if (strstr(header_value.c_str(), "deflate") != NULL) {
+        if (strstr(header_value.c_str(), "deflate") != nullptr) {
           http_need_gzip |= 2;
         }
       } else if (!strcmp(header_name.c_str(), "cookie")) {
@@ -1405,10 +1405,10 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
   }
 
   if (post_len > 0) {
-    bool is_parsed = (post != NULL);
+    bool is_parsed = (post != nullptr);
 //    fprintf (stderr, "!!!%.*s!!!\n", post_len, post);
     if (strstr(content_type_lower.c_str(), "application/x-www-form-urlencoded")) {
-      if (post != NULL) {
+      if (post != nullptr) {
         dl::enter_critical_section();//OK
         raw_post_data.assign(post, post_len);
         dl::leave_critical_section();
@@ -1433,7 +1433,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
         }
       }
     } else {
-      if (post != NULL) {
+      if (post != nullptr) {
         dl::enter_critical_section();//OK
         raw_post_data.assign(post, post_len);
         dl::leave_critical_section();
@@ -1478,10 +1478,10 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
                                                                          << v$_SERVER[string("SERVER_NAME", 11)] << " Port 80").str());
   v$_SERVER.set_value(string("SERVER_SOFTWARE", 15), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch", 60));
 
-  if (environ != NULL) {
-    for (int i = 0; environ[i] != NULL; i++) {
+  if (environ != nullptr) {
+    for (int i = 0; environ[i] != nullptr; i++) {
       const char *s = strchr(environ[i], '=');
-      php_assert (s != NULL);
+      php_assert (s != nullptr);
       v$_ENV.set_value(string(environ[i], (dl::size_type)(s - environ[i])), string(s + 1, (dl::size_type)strlen(s + 1)));
     }
   }
@@ -1490,7 +1490,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
   v$_REQUEST.as_array("", -1) += v$_POST.to_array();
   v$_REQUEST.as_array("", -1) += v$_COOKIE.to_array();
 
-  if (uri != NULL) {
+  if (uri != nullptr) {
     if (keep_alive) {
       header("Connection: keep-alive", 22);
     } else {
@@ -1498,7 +1498,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     }
   }
 
-  if (arg_vars == NULL) {
+  if (arg_vars == nullptr) {
     if (get_len > 0) {
       array<var> argv_array(array_size(1, 0, true));
       argv_array.push_back(get_str);
@@ -1528,15 +1528,15 @@ static rpc_query_data empty_rpc_data;
 void init_superglobals(php_query_data *data) {
   http_query_data *http_data;
   rpc_query_data *rpc_data;
-  if (data != NULL) {
-    if (data->http_data == NULL) {
-      php_assert (data->rpc_data != NULL);
+  if (data != nullptr) {
+    if (data->http_data == nullptr) {
+      php_assert (data->rpc_data != nullptr);
       query_type = QUERY_TYPE_RPC;
 
       http_data = &empty_http_data;
       rpc_data = data->rpc_data;
     } else {
-      php_assert (data->rpc_data == NULL);
+      php_assert (data->rpc_data == nullptr);
       query_type = QUERY_TYPE_HTTP;
 
       http_data = data->http_data;
@@ -1589,12 +1589,12 @@ int f$get_engine_workers_number() {
 }
 
 static char ini_vars_storage[sizeof(array<string>)];
-static array<string> *ini_vars = NULL;
+static array<string> *ini_vars = nullptr;
 
 void ini_set(const char *key, const char *value) {
   php_assert (dl::query_num == 0);
 
-  if (ini_vars == NULL) {
+  if (ini_vars == nullptr) {
     new(ini_vars_storage) array<string>();
     ini_vars = reinterpret_cast <array<string> *> (ini_vars_storage);
   }
@@ -1603,7 +1603,7 @@ void ini_set(const char *key, const char *value) {
 }
 
 OrFalse<string> f$ini_get(const string &s) {
-  if (ini_vars != NULL && ini_vars->has_key(s)) {
+  if (ini_vars != nullptr && ini_vars->has_key(s)) {
     return ini_vars->get_value(s);
   }
 
@@ -1820,7 +1820,7 @@ static OrFalse<string> php_fgets(const Stream &stream, int length) {
       return false;
     }
     dl::leave_critical_section();
-    if (result == NULL) {
+    if (result == nullptr) {
       return false;
     }
 
@@ -1960,10 +1960,10 @@ static void interface_init_static_once(void) {
   php_stream_functions.file_get_contents = php_file_get_contents;
   php_stream_functions.file_put_contents = php_file_put_contents;
 
-  php_stream_functions.stream_socket_client = NULL;
-  php_stream_functions.context_set_option = NULL;
-  php_stream_functions.stream_set_option = NULL;
-  php_stream_functions.get_fd = NULL;
+  php_stream_functions.stream_socket_client = nullptr;
+  php_stream_functions.context_set_option = nullptr;
+  php_stream_functions.stream_set_option = nullptr;
+  php_stream_functions.get_fd = nullptr;
 
   register_stream_functions(&php_stream_functions, false);
 }

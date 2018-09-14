@@ -24,7 +24,7 @@ string f$uniqid(const string &prefix, bool more_entropy) {
   dl::enter_critical_section();//OK
 
   struct timeval tv;
-  gettimeofday(&tv, NULL);
+  gettimeofday(&tv, nullptr);
   int sec = (int)tv.tv_sec;
   int usec = (int)(tv.tv_usec & 0xFFFFF);
 
@@ -71,7 +71,7 @@ OrFalse<string> f$iconv(const string &input_encoding, const string &output_encod
       break;
     }
 */
-    iconv(cd, NULL, NULL, NULL, NULL);
+    iconv(cd, nullptr, nullptr, nullptr, nullptr);
   }
 
   iconv_close(cd);
@@ -131,7 +131,7 @@ void f$usleep(const int &micro_seconds) {
   timer.it_value.tv_sec = time_left / 1000000;
   timer.it_value.tv_usec = time_left % 1000000;
   dl::enter_critical_section();//OK
-  setitimer(ITIMER_REAL, &timer, NULL);
+  setitimer(ITIMER_REAL, &timer, nullptr);
   dl::leave_critical_section();
 }
 
@@ -230,7 +230,7 @@ var f$getimagesize(const string &name) {
         type = IMAGETYPE_JPEG;
 
         unsigned char *image = (unsigned char *)dl::allocate((dl::size_type)size);
-        if (image == NULL) {
+        if (image == nullptr) {
           php_warning("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
           close(read_fd);
           dl::leave_critical_section();

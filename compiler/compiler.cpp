@@ -62,7 +62,7 @@ struct FileAndTokens {
 
   FileAndTokens() :
     file(),
-    tokens(NULL) {
+    tokens(nullptr) {
   }
 };
 
@@ -892,7 +892,7 @@ void prepare_function_misc(FunctionPtr func) {
  * Сейчас пока что есть костыль: @kphp-required анализируется всё равно в gentree
  */
 void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
-  if (f->phpdoc_token == NULL || f->phpdoc_token->type() != tok_phpdoc_kphp) {
+  if (f->phpdoc_token == nullptr || f->phpdoc_token->type() != tok_phpdoc_kphp) {
     return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
   }
 
@@ -1563,7 +1563,7 @@ private:
   int current_label_id;
 
   int get_label_id(VertexAdaptor<meta_op_cycle> cycle, Operation op) {
-    int *val = NULL;
+    int *val = nullptr;
     if (op == op_break) {
       val = &cycle->break_label_id;
     } else if (op == op_continue) {
@@ -1884,7 +1884,7 @@ struct FunctionAndEdges {
 
   FunctionAndEdges() :
     function(),
-    edges(NULL) {
+    edges(nullptr) {
   }
 
   FunctionAndEdges(FunctionPtr function, vector<FunctionPtr> *edges) :
@@ -2349,7 +2349,7 @@ struct FunctionAndCFG {
 
   FunctionAndCFG() :
     function(),
-    callback(NULL) {
+    callback(nullptr) {
   }
 
   FunctionAndCFG(FunctionPtr function, CFGCallback *callback) :
@@ -2407,8 +2407,8 @@ public:
   }
 
   tinf::Node *node_from_rvalue(const RValue &rvalue) {
-    if (rvalue.node == NULL) {
-      kphp_assert (rvalue.type != NULL);
+    if (rvalue.node == nullptr) {
+      kphp_assert (rvalue.type != nullptr);
       return new tinf::TypeNode(rvalue.type);
     }
 
@@ -2416,7 +2416,7 @@ public:
   }
 
   virtual void require_node(const RValue &rvalue) {
-    if (rvalue.node != NULL) {
+    if (rvalue.node != nullptr) {
       inferer_->add_node(rvalue.node);
     }
   }
@@ -2751,7 +2751,7 @@ public:
     if (local->from_seq == false) {
       return vertex;
     }
-    VertexPtr *replace = NULL;
+    VertexPtr *replace = nullptr;
     VertexAdaptor<op_func_call> func_call;
     Operation op = vertex->type();
     if (op == op_return) {
@@ -3285,7 +3285,7 @@ public:
     if (file->on_disk) {
       if (file->crc64 == (unsigned long long)-1) {
         FILE *old_file = fopen(full_file_name.c_str(), "r");
-        dl_passert (old_file != NULL,
+        dl_passert (old_file != nullptr,
                     dl_pstr("Failed to open [%s]", full_file_name.c_str()));
         unsigned long long old_crc = 0;
         unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
@@ -3342,7 +3342,7 @@ public:
         dl_passert (err == 0, dl_pstr("Failed to unlink [%s]", full_file_name.c_str()));
       }
       FILE *dest_file = fopen(full_file_name.c_str(), "w");
-      dl_passert (dest_file != NULL,
+      dl_passert (dest_file != nullptr,
                   dl_pstr("Failed to open [%s] for write\n", full_file_name.c_str()));
 
       dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", ~crc));
@@ -3450,7 +3450,7 @@ public:
                  dl_pstr("var $%s assumed to be %s, but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(t).c_str()));
     } else if (assum == assum_instance_array) {
       const TypeData *t = var->tinf_node.get_type()->lookup_at(Key::any_key());
-      kphp_error(t != NULL && ((t->ptype() == tp_Class && klass.ptr == t->class_type().ptr)
+      kphp_error(t != nullptr && ((t->ptype() == tp_Class && klass.ptr == t->class_type().ptr)
                                || (t->ptype() == tp_Exception || t->ptype() == tp_MC)),
                  dl_pstr("var $%s assumed to be %s[], but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(var->tinf_node.get_type()).c_str()));
     }

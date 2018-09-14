@@ -11,7 +11,7 @@ void Trie<T>::add(const string &s, const T &val) {
   for (int i = 0; i < (int)s.size(); i++) {
     int c = (unsigned char)s[i];
 
-    if (cur->next[c] == NULL) {
+    if (cur->next[c] == nullptr) {
       cur->next[c] = new Trie();
     }
     cur = cur->next[c];
@@ -24,7 +24,7 @@ void Trie<T>::add(const string &s, const T &val) {
 
 template<typename T>
 T *Trie<T>::get_deepest(const char *s) {
-  T *best = NULL;
+  T *best = nullptr;
   Trie<T> *cur = this;
 
   while (cur) {

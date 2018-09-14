@@ -64,18 +64,18 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
   script_time(0),
   queries_cnt(0),
   state(rst_empty),
-  error_message(NULL),
-  query(NULL),
-  run_stack(NULL),
-  protected_end(NULL),
-  run_stack_end(NULL),
-  run_mem(NULL),
+  error_message(nullptr),
+  query(nullptr),
+  run_stack(nullptr),
+  protected_end(nullptr),
+  run_stack_end(nullptr),
+  run_mem(nullptr),
   mem_size(mem_size),
   stack_size(stack_size),
   run_context(),
-  run_main(NULL),
-  data(NULL),
-  res(NULL) {
+  run_main(nullptr),
+  data(nullptr),
+  res(nullptr) {
   //fprintf (stderr, "PHPScriptBase: constructor\n");
   stack_size += 2 * getpagesize() - 1;
   stack_size /= getpagesize();
@@ -85,7 +85,7 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
   protected_end = run_stack + getpagesize();
   run_stack_end = run_stack + stack_size;
 
-  run_mem = static_cast<char *>(mmap(NULL, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+  run_mem = static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
   //fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
 
@@ -96,10 +96,10 @@ PHPScriptBase::~PHPScriptBase(void) {
 }
 
 void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
-  assert (script != NULL);
+  assert (script != nullptr);
   assert (state == rst_empty);
 
-  query = NULL;
+  query = nullptr;
   state = rst_before_init;
 
   assert (state == rst_before_init);
@@ -107,7 +107,7 @@ void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
   getcontext(&run_context);
   run_context.uc_stack.ss_sp = run_stack;
   run_context.uc_stack.ss_size = stack_size;
-  run_context.uc_link = NULL;
+  run_context.uc_link = nullptr;
   makecontext(&run_context, &cur_run, 0);
 
   run_main = script;
@@ -144,7 +144,7 @@ void PHPScriptBase::resume() {
 void dump_query_stats(void) {
   char tmp[100];
   char *s = tmp;
-  if (query_stats.desc != NULL) {
+  if (query_stats.desc != nullptr) {
     s += sprintf(s, "%s:", query_stats.desc);
   }
   if (query_stats.port != 0) {
@@ -156,7 +156,7 @@ void dump_query_stats(void) {
   *s = 0;
   kprintf ("%s\n", tmp);
 
-  if (query_stats.query != NULL) {
+  if (query_stats.query != nullptr) {
     const char *s = query_stats.query;
     const char *t = s;
     while (*t && *t != '\r' && *t != '\n') {
@@ -223,17 +223,17 @@ void PHPScriptBase::finish() {
   worker_acc_stats.tot_script_queries += queries_cnt;
 
   if (save_state == rst_error) {
-    assert (error_message != NULL);
+    assert (error_message != nullptr);
     kprintf ("Critical error during script execution: %s\n", error_message);
   }
   if (save_state == rst_error || (int)dl::memory_get_total_usage() >= 100000000) {
-    if (data != NULL) {
+    if (data != nullptr) {
       http_query_data *http_data = data->http_data;
-      if (http_data != NULL) {
+      if (http_data != nullptr) {
         assert (http_data->headers);
 
         kprintf ("HEADERS: len = %d\n%.*s\nEND HEADERS\n", http_data->headers_len, min(http_data->headers_len, 1 << 16), http_data->headers);
-        kprintf ("POST: len = %d\n%.*s\nEND POST\n", http_data->post_len, min(http_data->post_len, 1 << 16), http_data->post == NULL ? "" : http_data->post);
+        kprintf ("POST: len = %d\n%.*s\nEND POST\n", http_data->post_len, min(http_data->post_len, 1 << 16), http_data->post == nullptr ? "" : http_data->post);
       }
     }
   }
@@ -241,9 +241,9 @@ void PHPScriptBase::finish() {
   static char buf[5000];
   buf[0] = 0;
   if (disable_access_log < 2) {
-    if (data != NULL) {
+    if (data != nullptr) {
       http_query_data *http_data = data->http_data;
-      if (http_data != NULL) {
+      if (http_data != nullptr) {
         if (disable_access_log) {
           sprintf(buf, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
         } else {
@@ -303,9 +303,9 @@ void PHPScriptBase::run(void) {
   is_running = true;
   check_tl();
 
-  if (data != NULL) {
+  if (data != nullptr) {
     http_query_data *http_data = data->http_data;
-    if (http_data != NULL) {
+    if (http_data != nullptr) {
       //fprintf (stderr, "arguments\n");
       //fprintf (stderr, "[uri = %.*s]\n", http_data->uri_len, http_data->uri);
       //fprintf (stderr, "[get = %.*s]\n", http_data->get_len, http_data->get);
@@ -314,7 +314,7 @@ void PHPScriptBase::run(void) {
     }
 
     rpc_query_data *rpc_data = data->rpc_data;
-    if (rpc_data != NULL) {
+    if (rpc_data != nullptr) {
       /*
       fprintf (stderr, "N = %d\n", rpc_data->len);
       for (int i = 0; i < rpc_data->len; i++) {
@@ -323,19 +323,19 @@ void PHPScriptBase::run(void) {
       */
     }
   }
-  assert (run_main->run != NULL);
+  assert (run_main->run != nullptr);
 
-//  regex_ptr = NULL;
+//  regex_ptr = nullptr;
 #ifdef FAST_EXCEPTIONS
-  CurException = NULL;
+  CurException = nullptr;
   run_main->run(data, run_mem, mem_size);
   if (!CurException) {
-    set_script_result(NULL);
+    set_script_result(nullptr);
   } else {
     const Exception &e = *CurException;
     const char *msg = dl_pstr("%s%d%sError %d: %s.\nUnhandled Exception caught in file %s at line %d.\n"
                               "Backtrace:\n%s",
-                              engine_tag, (int)time(NULL), engine_pid,
+                              engine_tag, (int)time(nullptr), engine_pid,
                               e.code, e.message.c_str(), e.file.c_str(), e.line,
                               f$exception_getTraceAsString(e).c_str());
     fprintf(stderr, "%s", msg);
@@ -346,11 +346,11 @@ void PHPScriptBase::run(void) {
   //in fact it may lead to undefined behaviour
   try {
     run_main->run (data, run_mem, mem_size);
-    set_script_result (NULL);
+    set_script_result (nullptr);
   } catch (Exception &e) {
     const char *msg = dl_pstr ("%s%d%sError %d: %s.\nUnhandled Exception caught in file %s at line %d.\n"
                                "Backtrace:\n%s",
-                               engine_tag, (int)time (NULL), engine_pid,
+                               engine_tag, (int)time (nullptr), engine_pid,
                                e.code, e.message.c_str(), e.file.c_str(), e.line,
                                f$exception_getTraceAsString (e).c_str());
     fprintf (stderr, "%s", msg);
@@ -487,7 +487,7 @@ void print_http_data() {
 void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *data __attribute__((unused))) {
   write_str(2, engine_tag);
   char buf[13], *s = buf + 13;
-  int t = (int)time(NULL);
+  int t = (int)time(nullptr);
   *--s = 0;
   do {
     *--s = (char)(t % 10 + '0');
@@ -499,7 +499,7 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
   void *addr = info->si_addr;
   if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected((char *)addr)) {
     write_str(2, "Error -1: Callstack overflow");
-/*    if (regex_ptr != NULL) {
+/*    if (regex_ptr != nullptr) {
       write_str (2, " regex = [");
       write_str (2, regex_ptr->c_str());
       write_str (2, "]\n");
@@ -552,13 +552,13 @@ void init_handlers(void) {
   segv_stack.ss_sp = valloc(SEGV_STACK_SIZE);
   segv_stack.ss_flags = 0;
   segv_stack.ss_size = SEGV_STACK_SIZE;
-  sigaltstack(&segv_stack, NULL);
+  sigaltstack(&segv_stack, nullptr);
 
   ksignal(SIGALRM, sigalrm_handler);
   ksignal(SIGUSR2, sigusr2_handler);
 
-  dl_sigaction(SIGSEGV, NULL, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
-  dl_sigaction(SIGBUS, NULL, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
+  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
+  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
 }
 
 void php_script_finish(void *ptr) {
@@ -629,7 +629,7 @@ void php_script_set_timeout(double t) {
   timer.it_value.tv_usec = 0;
 
   //stop old timer
-  setitimer(ITIMER_REAL, &timer, NULL);
+  setitimer(ITIMER_REAL, &timer, nullptr);
 
   if (t > MAX_SCRIPT_TIMEOUT) {
     return;
@@ -640,7 +640,7 @@ void php_script_set_timeout(double t) {
   timer.it_value.tv_usec = usec;
 
   PHPScriptBase::tl_flag = false;
-  setitimer(ITIMER_REAL, &timer, NULL);
+  setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
 static php_immediate_stats_t imm_stats[2];

@@ -213,10 +213,10 @@ private:
 
       for (int i = (int)edges.size() - 1; i >= 0; i--) {
         FunctionPtr function = edges[i];
-        if (function->bad_vars == NULL) {
+        if (function->bad_vars == nullptr) {
           fprintf(stderr, "%s\n", function->name.c_str());
         }
-        assert (function->bad_vars != NULL);
+        assert (function->bad_vars != nullptr);
         bad_vars->insert(bad_vars->end(), function->bad_vars->begin(), function->bad_vars->end());
       }
       my_unique(bad_vars);
@@ -346,7 +346,7 @@ private:
         res->insert(res->end(), to_merge_[var].begin(), to_merge_[var].end());
       }
       for (const auto &var : edges) {
-        if (var->bad_vars != NULL) {
+        if (var->bad_vars != nullptr) {
           res->insert(res->end(), var->bad_vars->begin(), var->bad_vars->end());
         }
       }

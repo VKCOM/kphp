@@ -258,7 +258,7 @@ var regexp::replace(const T &replace_val, const string &subject, int limit, int 
   pcre_last_error = 0;
   int result_count = 0;//calls can be recursive, can't write to replace_count directly
 
-  if (pcre_regexp == NULL && RE2_regexp == NULL) {
+  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     return var();
   }
 

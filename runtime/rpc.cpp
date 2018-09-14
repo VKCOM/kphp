@@ -300,20 +300,20 @@ double f$fetch_double() {
 }
 
 static inline const char *f$fetch_string_raw(int *string_len) {
-  TRY_CALL_VOID_(check_rpc_data_len(1), return NULL);
+  TRY_CALL_VOID_(check_rpc_data_len(1), return nullptr);
   const char *str = reinterpret_cast <const char *> (rpc_data);
   int result_len = (unsigned char)*str++;
   if (result_len < 254) {
-    TRY_CALL_VOID_(check_rpc_data_len(result_len >> 2), return NULL);
+    TRY_CALL_VOID_(check_rpc_data_len(result_len >> 2), return nullptr);
     rpc_data += (result_len >> 2) + 1;
   } else if (result_len == 254) {
     result_len = (unsigned char)str[0] + ((unsigned char)str[1] << 8) + ((unsigned char)str[2] << 16);
     str += 3;
-    TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return NULL);
+    TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return nullptr);
     rpc_data += ((result_len + 7) >> 2);
   } else {
     THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
-    return NULL;
+    return nullptr;
   }
 
   *string_len = result_len;
@@ -756,7 +756,7 @@ protected:
     php_assert (dl::query_num == rpc_requests_last_query_num);
     rpc_request *request = get_rpc_request(request_id);
     php_assert (request->resumable_id < 0);
-    php_assert (input_ == NULL);
+    php_assert (input_ == nullptr);
 
 /*
     if (request->resumable_id == -1) {
@@ -776,7 +776,7 @@ protected:
         int resumable_id = get_rpc_request(rpc_first_unfinished_request_id)->resumable_id;
         php_assert (resumable_id > 0);
         const Resumable *resumable = get_forked_resumable(resumable_id);
-        php_assert (resumable != NULL);
+        php_assert (resumable != nullptr);
         static_cast <const rpc_resumable *>(resumable)->set_server_status_rpc();
       } else {
         ::set_server_status_rpc(0, 0, get_precise_now());
@@ -787,7 +787,7 @@ protected:
     output_->save<rpc_request>(*request, load_rpc_request_as_var);
     php_assert (request->resumable_id == -2 || request->resumable_id == -1);
     request->resumable_id = -3;
-    request->answer = NULL;
+    request->answer = nullptr;
 
     return true;
   }
@@ -858,7 +858,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
     rpc_next_request_id = result + 1;
     rpc_first_unfinished_request_id = result;
     gotten_rpc_request.resumable_id = -3;
-    gotten_rpc_request.answer = NULL;
+    gotten_rpc_request.answer = nullptr;
   } else {
     php_assert (rpc_next_request_id == result);
     rpc_next_request_id++;
@@ -880,7 +880,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
   rpc_request *cur = get_rpc_request(result);
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(result, conn.port, conn.default_actor_id));
-  cur->timer = NULL;
+  cur->timer = nullptr;
   if (ignore_answer) {
     int resumable_id = cur->resumable_id;
     process_rpc_timeout(result);
@@ -900,7 +900,7 @@ void f$rpc_flush(void) {
     int id = iter.get_key().to_int();
     rpc_request *cur = get_rpc_request(id);
     if (cur->resumable_id > 0) {
-      php_assert (cur->timer == NULL);
+      php_assert (cur->timer == nullptr);
       cur->timer = allocate_event_timer(iter.get_value() + get_precise_now(), timeout_wakeup_id, id);
     }
   }
@@ -931,7 +931,7 @@ void process_rpc_answer(int request_id, char *result, int result_len __attribute
   rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
-    php_assert (result != NULL);
+    php_assert (result != nullptr);
     dl::deallocate(result - 12, result_len + 13);
     php_assert (request->resumable_id != -1);
     return;
@@ -943,7 +943,7 @@ void process_rpc_answer(int request_id, char *result, int result_len __attribute
     remove_event_timer(request->timer);
   }
 
-  php_assert (result != NULL);
+  php_assert (result != nullptr);
   request->answer = result;
 //  fprintf (stderr, "answer_len = %d\n", result_len);
 
@@ -989,7 +989,7 @@ protected:
       }
 
       Storage *input = get_forked_storage(resumable_id);
-      if (input->getter_ == NULL) {
+      if (input->getter_ == nullptr) {
         last_rpc_error = "Result already was gotten";
         RETURN(false);
       }
@@ -1000,7 +1000,7 @@ protected:
 
       rpc_request res = input->load<rpc_request, rpc_request>();
 #ifdef FAST_EXCEPTIONS
-      php_assert (CurException == NULL);
+      php_assert (CurException == nullptr);
 #endif
 
       if (res.resumable_id == -2) {
@@ -1052,7 +1052,7 @@ protected:
       }
 
       Storage *input = get_forked_storage(resumable_id);
-      if (input->getter_ == NULL) {
+      if (input->getter_ == nullptr) {
         last_rpc_error = "Result already was gotten";
         RETURN(false);
       }
@@ -1063,7 +1063,7 @@ protected:
 
       rpc_request res = input->load<rpc_request, rpc_request>();
 #ifdef FAST_EXCEPTIONS
-      php_assert (CurException == NULL);
+      php_assert (CurException == nullptr);
 #endif
 
       if (res.resumable_id == -2) {
@@ -1299,7 +1299,7 @@ public:
 
   virtual void destroy(void) {
     for (int i = 0; i < children.count(); i++) {
-      if (children.get_value(i) != NULL) {
+      if (children.get_value(i) != nullptr) {
         children.get_value(i)->destroy();
       }
     }
@@ -1483,7 +1483,7 @@ public:
   virtual void destroy(void) {
     multiplicity->destroy();
     for (int i = 0; i < args.count(); i++) {
-      if (args[i].type != NULL) {
+      if (args[i].type != nullptr) {
         args[i].type->destroy();
       }
     }
@@ -1560,10 +1560,10 @@ tl_tree **get_var_space(tl_tree **vars, int n) {
   php_assert (res >= vars_buffer);
 
   for (int i = 0; i < n; i++) {
-    if (res[i] != NULL && res + i >= last_var_ptr) {
+    if (res[i] != nullptr && res + i >= last_var_ptr) {
       res[i]->destroy();
     }
-    res[i] = NULL;
+    res[i] = nullptr;
   }
   if (last_var_ptr > res) {
     last_var_ptr = res;
@@ -1574,9 +1574,9 @@ tl_tree **get_var_space(tl_tree **vars, int n) {
 
 void free_var_space(tl_tree **vars, int n) {
   for (int i = 0; i < n; i++) {
-    if (vars[i] != NULL) {
+    if (vars[i] != nullptr) {
       vars[i]->destroy();
-      vars[i] = NULL;
+      vars[i] = nullptr;
     }
   }
 }
@@ -1614,13 +1614,13 @@ typedef void *(*function_ptr)(void **IP, void **Data, var *arr, tl_tree **vars);
 static const char *tl_current_function_name;
 
 tl_tree *store_function(const var &tl_object) {
-  if (tl_config.fetchIP == NULL) {
+  if (tl_config.fetchIP == nullptr) {
     php_warning("rpc_tl_query not supported due to missing TL scheme");
-    return NULL;
+    return nullptr;
   }
   if (!tl_object.is_array()) {
     php_warning("Not an array passed to function rpc_tl_query");
-    return NULL;
+    return nullptr;
   }
 
   //fprintf (stderr, "Before STORE\n");
@@ -1635,9 +1635,9 @@ tl_tree *store_function(const var &tl_object) {
   } else {
     c = tl_config.name_to_function.get_value(f.to_string());
   }
-  if (c == NULL) {
+  if (c == nullptr) {
     php_warning("Function \"%s\" not found in rpc_tl_query", f.to_string().c_str());
-    return NULL;
+    return nullptr;
   }
 
   tl_current_function_name = c->name.c_str();
@@ -1653,14 +1653,14 @@ tl_tree *store_function(const var &tl_object) {
 #ifdef FAST_EXCEPTIONS
   res = (tl_tree *)((*(function_ptr *)c->IP)(c->IP + 1, Data_stack, var_stack, vars));
   if (CurException) {
-    res = NULL;
+    res = nullptr;
     FREE_EXCEPTION;
   }
 #else
   try {
     res = (tl_tree *)TLUNI_START (c->IP, Data_stack, var_stack, vars);
   } catch (Exception &e) {
-    res = NULL;
+    res = nullptr;
   }
 #endif
   //fprintf (stderr, "Before FREE in STORE\n");
@@ -1668,7 +1668,7 @@ tl_tree *store_function(const var &tl_object) {
   free_arr_space();
   //fprintf (stderr, "After FREE in STORE\n");
 
-  if (res != NULL) {
+  if (res != nullptr) {
     tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
     new(T) tl_tree_type(0, tl_config.ReqResult, array_size(1, 0, true));
     T->children.push_back(res);
@@ -1722,13 +1722,13 @@ void hexdump(const void *start, const void *end) {
 }
 
 array<var> fetch_function(tl_tree *T) {
-  if (tl_config.fetchIP == NULL) {
+  if (tl_config.fetchIP == nullptr) {
     php_warning("rpc_tl_query_result not supported due to missing TL scheme");
     php_critical_error ("unreachable");
     return tl_fetch_error("TL scheme was not loaded", TL_ERROR_UNKNOWN_FUNCTION_ID);
   }
   //fprintf (stderr, "Before FETCH\n");
-  php_assert (T != NULL);
+  php_assert (T != nullptr);
   new(var_stack) var();
 
   int x = 0;
@@ -1845,7 +1845,7 @@ int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double tim
   f$rpc_clean();
 
   tl_tree *result_tree = store_function(tl_object);
-  if (result_tree == NULL) {
+  if (result_tree == nullptr) {
     return 0;
   }
 
@@ -1915,7 +1915,7 @@ array<int> f$rpc_tl_query(const rpc_connection &c, const array<var> &tl_objects,
     f$rpc_clean();
 
     tl_tree *result_tree = store_function(it.get_value());
-    if (result_tree == NULL) {
+    if (result_tree == nullptr) {
       result.set_value(it.get_key(), 0);
       continue;
     }
@@ -1965,11 +1965,11 @@ protected:
     bool ready;
 
     RESUMABLE_BEGIN
-      last_rpc_error = NULL;
+      last_rpc_error = nullptr;
       ready = f$rpc_get_and_parse(query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
-        php_assert (last_rpc_error != NULL);
+        php_assert (last_rpc_error != nullptr);
         T->destroy();
         RETURN(tl_fetch_error(last_rpc_error, TL_ERROR_UNKNOWN));
       }
@@ -2001,7 +2001,7 @@ array<var> f$rpc_tl_query_result_one(int query_id) {
   }
 
   tl_tree *T = rpc_tl_results->get_value(query_id);
-  if (T == NULL) {
+  if (T == nullptr) {
     resumable_finished = true;
     return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
   }
@@ -2142,7 +2142,7 @@ void *tlcomb_skip_const_int(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   int a = TRY_CALL(int, void_ptr, tl_parse_int());
   if (a != (int)(long)*(IP++)) {
-    return NULL;
+    return nullptr;
   }
   TLUNI_NEXT;
 }
@@ -2163,22 +2163,22 @@ void *tlcomb_store_any_function(void **IP, void **Data, var *arr, tl_tree **vars
     v = arr->get_value(0);
     if (v.is_null()) {
       php_warning("Function name not found in unserialize(\"%s\") during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
-      return NULL;
+      return nullptr;
     }
   }
 
   const string &name = v.to_string();
   const tl_combinator *c = tl_config.name_to_function.get_value(name);
-  if (c == NULL) {
+  if (c == nullptr) {
     php_warning("Function %s not found during store type %s", name.c_str(), tl_current_function_name);
-    return NULL;
+    return nullptr;
   }
   tl_tree **new_vars = get_var_space(vars, c->var_count);
 
   void *res = TLUNI_START (c->IP, Data, arr, new_vars);
   free_var_space(new_vars, c->var_count);
-  if (res == NULL) {
-    return NULL;
+  if (res == nullptr) {
+    return nullptr;
   }
   *(Data++) = res;
   TLUNI_NEXT;
@@ -2193,9 +2193,9 @@ void *tlcomb_store_any_function(void **IP, void **Data, var *arr, tl_tree **vars
 void *tlcomb_fetch_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   tl_tree_type *e = dynamic_cast <tl_tree_type *> ((tl_tree *)(*(--Data)));
-  php_assert (e != NULL);
+  php_assert (e != nullptr);
   tl_type *t = e->type;
-  php_assert (t != NULL);
+  php_assert (t != nullptr);
   bool is_bare = e->flags & FLAG_BARE;
 
   int l = -1;
@@ -2212,7 +2212,7 @@ void *tlcomb_fetch_type(void **IP, void **Data, var *arr, tl_tree **vars) {
     }
     if (l < 0) {
       e->destroy();
-      return NULL;
+      return nullptr;
     }
   }
   int r;
@@ -2247,7 +2247,7 @@ void *tlcomb_fetch_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   if (r - l > 1) {
     e->destroy();
   }
-  return NULL;
+  return nullptr;
 }
 
 /****
@@ -2261,9 +2261,9 @@ void *tlcomb_store_bool(void **IP, void **Data, var *arr, tl_tree **vars);
 void *tlcomb_store_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   tl_tree_type *e = (tl_tree_type *)(*(--Data));
-  php_assert (e != NULL && e->get_type() == NODE_TYPE_TYPE);
+  php_assert (e != nullptr && e->get_type() == NODE_TYPE_TYPE);
   tl_type *t = e->type;
-  php_assert (t != NULL);
+  php_assert (t != nullptr);
 //  fprintf (stderr, "%s\n", t->name.c_str());
   php_assert (t->constructors_num != 0);
   if (t->id == TYPE_ID_BOOL) {
@@ -2283,7 +2283,7 @@ void *tlcomb_store_type(void **IP, void **Data, var *arr, tl_tree **vars) {
       if (l < 0) {
         php_warning("Constructor %s not found during store type %s", s.c_str(), tl_current_function_name);
         e->destroy();
-        return NULL;
+        return nullptr;
       }
     }
   } else {
@@ -2321,7 +2321,7 @@ void *tlcomb_store_type(void **IP, void **Data, var *arr, tl_tree **vars) {
     e->destroy();
   }
   php_warning("Apropriate constructor doesn't found in unserialize(%s) during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
-  return NULL;
+  return nullptr;
 }
 
 /****
@@ -2339,7 +2339,7 @@ void *tlcomb_store_field(void **IP, void **Data, var *arr, tl_tree **vars) {
     v = arr->get_value(num);
     if (v.is_null()) {
       php_warning("Field \"%s\"(%d) not found during store type %s", name->c_str(), num, tl_current_function_name);
-      return NULL;
+      return nullptr;
     }
   }
   new(++arr) var(v);
@@ -2383,16 +2383,16 @@ void *tlcomb_store_array(void **IP, void **Data, var *arr, tl_tree **vars) {
   void **newIP = (void **)*(IP++);
   if (!arr->is_array()) {
     php_warning("Array expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
-    return NULL;
+    return nullptr;
   }
   tl_tree_nat_const *c = (tl_tree_nat_const *)(*(--Data));
-  php_assert (c != NULL && c->get_type() == NODE_TYPE_NAT_CONST);
+  php_assert (c != nullptr && c->get_type() == NODE_TYPE_NAT_CONST);
   int multiplicity = c->num;
   c->destroy();
   for (int i = 0; i < multiplicity; i++) {
     if (!arr->isset(i)) {
       php_warning("Field %d not found in array during store type %s", i, tl_current_function_name);
-      return NULL;
+      return nullptr;
     }
     var w = arr->get_value(i);
     new(++arr) var(w);
@@ -2400,7 +2400,7 @@ void *tlcomb_store_array(void **IP, void **Data, var *arr, tl_tree **vars) {
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
-      return NULL;
+      return nullptr;
     }
     *arr-- = var();
     last_arr_ptr = arr;
@@ -2418,7 +2418,7 @@ void *tlcomb_fetch_array(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   void **newIP = (void **)*(IP++);
   tl_tree_nat_const *c = (tl_tree_nat_const *)(*(--Data));
-  php_assert (c != NULL && c->get_type() == NODE_TYPE_NAT_CONST);
+  php_assert (c != nullptr && c->get_type() == NODE_TYPE_NAT_CONST);
   int multiplicity = c->num;
   c->destroy();
   *arr = array<var>();
@@ -2428,7 +2428,7 @@ void *tlcomb_fetch_array(void **IP, void **Data, var *arr, tl_tree **vars) {
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
-      return NULL;
+      return nullptr;
     }
     arr[-1].push_back(*arr);
     *arr-- = var();
@@ -2486,7 +2486,7 @@ void *tlcomb_fetch_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
   /*
   if (multiplicity < 0 || multiplicity > rpc_data_len) {
     THROW_EXCEPTION(Exception (rpc_filename, __LINE__, f$sprintf(array<var>(string("vector size is %d, when %d bytes remaining in answer"), multiplicity, rpc_data_len * 4)), -1));
-    return NULL;
+    return nullptr;
   }
   */
 
@@ -2497,7 +2497,7 @@ void *tlcomb_fetch_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
-      return NULL;
+      return nullptr;
     }
     arr[-1].push_back(*arr);
     *arr-- = var();
@@ -2519,7 +2519,7 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
   /*
   if (multiplicity < 0 || multiplicity > rpc_data_len) {
     THROW_EXCEPTION(Exception (rpc_filename, __LINE__, f$sprintf(array<var>(string("dictionary size is %d, when %d bytes remaining in answer"), multiplicity, rpc_data_len * 4)), -1));
-    return NULL;
+    return nullptr;
   }
   */
 
@@ -2532,7 +2532,7 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
-      return NULL;
+      return nullptr;
     }
     arr[-1].set_value(key, *arr);
     *arr-- = var();
@@ -2553,7 +2553,7 @@ void *tlcomb_fetch_maybe(void **IP, void **Data, var *arr, tl_tree **vars) {
   if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
     *arr-- = var();
     last_arr_ptr = arr;
-    return NULL;
+    return nullptr;
   }
   TLUNI_NEXT;
 }
@@ -2571,7 +2571,7 @@ void *tlcomb_store_var_num(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
   new(T) tl_tree_nat_const(0, num);
 
-  php_assert (vars[var_num] == NULL);
+  php_assert (vars[var_num] == nullptr);
   vars[var_num] = T;
   f$store_int(num);
   TLUNI_NEXT;
@@ -2591,7 +2591,7 @@ void *tlcomb_fetch_var_num(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
   new(T) tl_tree_nat_const(0, num);
 
-  php_assert (vars[var_num] == NULL);
+  php_assert (vars[var_num] == nullptr);
   vars[var_num] = T;
 
   TLUNI_NEXT;
@@ -2606,10 +2606,10 @@ void *tlcomb_fetch_check_var_num(void **IP, void **Data, var *arr, tl_tree **var
   tl_debug(__FUNCTION__, -1);
   int num = TRY_CALL(int, void_ptr, tl_parse_int());
   int var_num = (int)(long)*(IP++);
-  php_assert (vars[var_num] != NULL && vars[var_num]->get_type() == NODE_TYPE_NAT_CONST);
+  php_assert (vars[var_num] != nullptr && vars[var_num]->get_type() == NODE_TYPE_NAT_CONST);
 
   if (num != ((tl_tree_nat_const *)vars[var_num])->num) {
-    return NULL;
+    return nullptr;
   }
   TLUNI_NEXT;
 }
@@ -2626,14 +2626,14 @@ void *tlcomb_store_var_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   int flags = (int)(long)*(IP++);
   string s = f$strval(*arr);
   tl_type *t = tl_config.name_to_type.get_value(s);
-  if (t == NULL) {
-    return NULL;
+  if (t == nullptr) {
+    return nullptr;
   }
 
   tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
   new(T) tl_tree_type(flags, t, array_size(0, 0, true));
 
-  php_assert (vars[var_num] == NULL);
+  php_assert (vars[var_num] == nullptr);
   vars[var_num] = T;
   TLUNI_NEXT;
 }
@@ -2700,7 +2700,7 @@ void *tlcomb_store_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
 
   if (!arr->is_array()) {
     php_warning("Vector expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
-    return NULL;
+    return nullptr;
   }
   int multiplicity = arr->count();
   f$store_int(multiplicity);
@@ -2708,7 +2708,7 @@ void *tlcomb_store_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
   for (int i = 0; i < multiplicity; i++) {
     if (!arr->isset(i)) {
       php_warning("Field %d not found in vector during store type %s", i, tl_current_function_name);
-      return NULL;
+      return nullptr;
     }
     var w = arr->get_value(i);
     new(++arr) var(w);
@@ -2716,7 +2716,7 @@ void *tlcomb_store_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
-      return NULL;
+      return nullptr;
     }
     *arr-- = var();
     last_arr_ptr = arr;
@@ -2736,7 +2736,7 @@ void *tlcomb_store_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
 
   if (!arr->is_array()) {
     php_warning("Dictionary expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
-    return NULL;
+    return nullptr;
   }
   int multiplicity = arr->count();
   f$store_int(multiplicity);
@@ -2750,7 +2750,7 @@ void *tlcomb_store_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
     if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
       *arr-- = var();
       last_arr_ptr = arr;
-      return NULL;
+      return nullptr;
     }
     *arr-- = var();
     last_arr_ptr = arr;
@@ -2770,9 +2770,9 @@ void *tlcomb_check_bit(void **IP, void **Data, var *arr, tl_tree **vars) {
   int shift = (int)(long)*(IP++);
 
   int num = 0;
-  if (vars[var_num] != NULL) {
+  if (vars[var_num] != nullptr) {
     tl_tree_nat_const *c = dynamic_cast <tl_tree_nat_const *> (vars[var_num]);
-    php_assert (c != NULL);
+    php_assert (c != nullptr);
 
     num = c->num;
   }
@@ -2798,7 +2798,7 @@ void *tluni_check_type(void **IP, void **Data, var *arr, tl_tree **vars) {
 
   if (res->type != *(IP++)) {
     res->destroy();
-    return NULL;
+    return nullptr;
   }
 
   for (int i = res->children.count() - 1; i >= 0; i--) {
@@ -2823,7 +2823,7 @@ void *tluni_check_nat_const(void **IP, void **Data, var *arr, tl_tree **vars) {
 
   if (res->num != (long)*(IP++)) {
     res->destroy();
-    return NULL;
+    return nullptr;
   }
 
   res->destroy();
@@ -2843,7 +2843,7 @@ void *tluni_check_array(void **IP, void **Data, var *arr, tl_tree **vars) {
 
   if (!res->equals(static_cast <const tl_tree *> (*(IP++)))) {
     res->destroy();
-    return NULL;
+    return nullptr;
   }
   for (int i = res->args.count() - 1; i >= 0; i--) {
     *(Data++) = &res->args[i];
@@ -2866,11 +2866,11 @@ void *tluni_check_arg(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   arg *res = (arg *)(*(--Data));
   const string *name = (const string *)(IP++);
-  php_assert (name != NULL);
+  php_assert (name != nullptr);
 
   if (strcmp(name->c_str(), res->name.c_str())) {
     res->type->destroy();
-    return NULL;
+    return nullptr;
   }
   *(Data++) = res->type;
   TLUNI_NEXT;
@@ -2892,10 +2892,10 @@ void *tluni_set_nat_var(void **IP, void **Data, var *arr, tl_tree **vars) {
 
   if (c->num < 0) {
     c->destroy();
-    return NULL;
+    return nullptr;
   }
 
-  php_assert (vars[var_num] == NULL);
+  php_assert (vars[var_num] == nullptr);
   vars[var_num] = c;
   TLUNI_NEXT;
 }
@@ -2910,7 +2910,7 @@ void *tluni_set_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
 
-  php_assert (vars[var_num] == NULL);
+  php_assert (vars[var_num] == nullptr);
   vars[var_num] = (tl_tree *)(*(--Data));
   TLUNI_NEXT;
 }
@@ -2925,16 +2925,16 @@ void *tluni_set_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
 void *tluni_check_nat_var(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
-  php_assert (vars[var_num] != NULL);
+  php_assert (vars[var_num] != nullptr);
   if (vars[var_num]->get_type() != NODE_TYPE_NAT_CONST) {
-    return NULL;
+    return nullptr;
   }
 
   tl_tree_nat_const *v = (tl_tree_nat_const *)(vars[var_num]);
   tl_tree_nat_const *c = (tl_tree_nat_const *)(*(--Data));
   if (c->get_type() != NODE_TYPE_NAT_CONST || v->num != c->num + (int)(long)*(IP++)) {
     c->destroy();
-    return NULL;
+    return nullptr;
   }
   c->destroy();
   TLUNI_NEXT;
@@ -2951,10 +2951,10 @@ void *tluni_check_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   tl_tree *x = (tl_tree *)(*(--Data));
   tl_tree *y = vars[(long)*(IP++)];
-  php_assert (y != NULL);
+  php_assert (y != nullptr);
   if (!y->equals(x)) {
     x->destroy();
-    return NULL;
+    return nullptr;
   }
   x->destroy();
   TLUNI_NEXT;
@@ -2973,7 +2973,7 @@ void *tlsub_create_array(void **IP, void **Data, var *arr, tl_tree **vars) {
   int args_num = (int)(long)*(IP++);
 
   tl_tree_array *T = (tl_tree_array *)dl::allocate(sizeof(tl_tree_array));
-  new(T) tl_tree_array(flags, NULL, array_size(args_num, 0, true));
+  new(T) tl_tree_array(flags, nullptr, array_size(args_num, 0, true));
 
   for (int i = 0; i < args_num; i++) {
     T->args[i];//allocate vector
@@ -3006,7 +3006,7 @@ void *tlsub_create_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   new(T) tl_tree_type(flags, type, array_size(children_num, 0, true));
 
   for (int i = 0; i < children_num; i++) {
-    T->children[i] = NULL;//allocate vector
+    T->children[i] = nullptr;//allocate vector
   }
   for (int i = children_num - 1; i >= 0; i--) {
     T->children[i] = (tl_tree *)*(--Data);
@@ -3034,7 +3034,7 @@ void *tlsub_push_type_var(void **IP, void **Data, var *arr, tl_tree **vars) {
 void *tlsub_push_nat_var(void **IP, void **Data, var *arr, tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   int var_num = (int)(long)*(IP++);
-  php_assert (vars[var_num] != NULL && vars[var_num]->get_type() == NODE_TYPE_NAT_CONST);
+  php_assert (vars[var_num] != nullptr && vars[var_num]->get_type() == NODE_TYPE_NAT_CONST);
   int num = ((tl_tree_nat_const *)vars[var_num])->num + (int)(long)*(IP++);
 
   tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
@@ -3059,12 +3059,12 @@ void **IP_dup(void **IP, int len) {
 
 int gen_uni(tl_tree *t, void **IP, int max_size, int *vars_int) {
   php_assert (max_size > 10);
-  php_assert (t != NULL);
+  php_assert (t != nullptr);
   int l = 0;
   switch (t->get_type()) {
     case NODE_TYPE_TYPE: {
       tl_tree_type *t1 = dynamic_cast <tl_tree_type *> (t);
-      php_assert (t1 != NULL);
+      php_assert (t1 != nullptr);
       IP[l++] = (void *)tluni_check_type;
       IP[l++] = (void *)t1->type;
       for (int i = 0; i < t1->children.count(); i++) {
@@ -3074,14 +3074,14 @@ int gen_uni(tl_tree *t, void **IP, int max_size, int *vars_int) {
     }
     case NODE_TYPE_NAT_CONST: {
       tl_tree_nat_const *t1 = dynamic_cast <tl_tree_nat_const *> (t);
-      php_assert (t1 != NULL);
+      php_assert (t1 != nullptr);
       IP[l++] = (void *)tluni_check_nat_const;
       IP[l++] = (void *)(long)t1->num;
       return l;
     }
     case NODE_TYPE_ARRAY: {
       tl_tree_array *t1 = dynamic_cast <tl_tree_array *> (t);
-      php_assert (t1 != NULL);
+      php_assert (t1 != nullptr);
       IP[l++] = (void *)tluni_check_array;
       IP[l++] = (void *)t;
       l += gen_uni(t1->multiplicity, IP + l, max_size - l, vars_int);
@@ -3094,7 +3094,7 @@ int gen_uni(tl_tree *t, void **IP, int max_size, int *vars_int) {
     }
     case NODE_TYPE_VAR_TYPE: {
       tl_tree_var_type *t1 = dynamic_cast <tl_tree_var_type *> (t);
-      php_assert (t1 != NULL);
+      php_assert (t1 != nullptr);
 
       int var_num = t1->var_num;
       if (!vars_int[var_num]) {
@@ -3111,7 +3111,7 @@ int gen_uni(tl_tree *t, void **IP, int max_size, int *vars_int) {
     }
     case NODE_TYPE_VAR_NUM: {
       tl_tree_var_num *t1 = dynamic_cast <tl_tree_var_num *> (t);
-      php_assert (t1 != NULL);
+      php_assert (t1 != nullptr);
 
       int var_num = t1->var_num;
       if (!vars_int[var_num]) {
@@ -3156,7 +3156,7 @@ int gen_create(tl_tree *t, void **IP, int max_size, int *vars_int) {
     }
     case NODE_TYPE_ARRAY: {
       tl_tree_array *t1 = (tl_tree_array *)t;
-      php_assert (t1->multiplicity != NULL);
+      php_assert (t1->multiplicity != nullptr);
       l += gen_create(t1->multiplicity, IP + l, max_size - l, vars_int);
 
       for (int i = 0; i < t1->args.count(); i++) {
@@ -3228,7 +3228,7 @@ int gen_field(const arg &arg, void **IP, int max_size, int *vars_int, int num, b
     IP[l++] = (void *)tlcomb_check_bit;
     IP[l++] = (void *)(long)arg.exist_var_num;
     IP[l++] = (void *)(long)arg.exist_var_bit;
-    IP[l++] = NULL;//temporary
+    IP[l++] = nullptr;//temporary
   }
   if (!flat) {
     IP[l++] = (void *)tlcomb_store_field;
@@ -3254,7 +3254,7 @@ int gen_field(const arg &arg, void **IP, int max_size, int *vars_int, int num, b
     if ((type == NODE_TYPE_TYPE || type == NODE_TYPE_VAR_TYPE)) {
       tl_tree_type *t1 = dynamic_cast <tl_tree_type *> (arg.type);
 
-      if (0 && t1 != NULL && t1->type->arity == 0 && t1->type->constructors_num == 1) {
+      if (0 && t1 != nullptr && t1->type->arity == 0 && t1->type->constructors_num == 1) {
         tl_combinator *constructor = t1->type->constructors[0];
         if (!(t1->flags & FLAG_BARE)) {
           IP[l++] = (void *)tls_store_int;
@@ -3304,7 +3304,7 @@ int gen_field_fetch(const arg &arg, void **IP, int max_size, int *vars_int, int 
     IP[l++] = (void *)tlcomb_check_bit;
     IP[l++] = (void *)(long)arg.exist_var_num;
     IP[l++] = (void *)(long)arg.exist_var_bit;
-    IP[l++] = NULL;//temporary
+    IP[l++] = nullptr;//temporary
   }
   if (!flat) {
     IP[l++] = (void *)tls_arr_push;
@@ -3333,7 +3333,7 @@ int gen_field_fetch(const arg &arg, void **IP, int max_size, int *vars_int, int 
     if (t == NODE_TYPE_TYPE || t == NODE_TYPE_VAR_TYPE) {
       tl_tree_type *t1 = dynamic_cast <tl_tree_type *> (arg.type);
 
-      if (0 && t1 != NULL && t1->type->arity == 0 && t1->type->constructors_num == 1) {
+      if (0 && t1 != nullptr && t1->type->arity == 0 && t1->type->constructors_num == 1) {
         tl_combinator *constructor = t1->type->constructors[0];
         if (!(t1->flags & FLAG_BARE)) {
           IP[l++] = (void *)tlcomb_skip_const_int;
@@ -3397,7 +3397,7 @@ int gen_field_excl(const arg &arg, void **IP, int max_size, int *vars_int, int n
 }
 
 int gen_constructor_store(tl_combinator &c, void **IP, int max_size) {
-  if (c.IP != NULL) {
+  if (c.IP != nullptr) {
     return c.IP_len;
   }
   php_assert (max_size > 10);
@@ -3458,7 +3458,7 @@ int gen_constructor_store(tl_combinator &c, void **IP, int max_size) {
 
 int gen_function_store(tl_combinator &c, void **IP, int max_size) {
   php_assert (max_size > 10);
-  php_assert (c.IP == NULL);
+  php_assert (c.IP == nullptr);
   int l = 0;
   IP[l++] = (void *)tls_store_int;
   IP[l++] = (void *)(long)c.id;
@@ -3619,7 +3619,7 @@ tl_tree *read_array(int *var_count) {
 
 tl_tree *read_type(int *var_count) {
   tl_type *type = tl_config.id_to_type.get_value(TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
-  php_assert (type != NULL);
+  php_assert (type != nullptr);
   int flags = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) | FLAG_NOVAR;
   php_assert (type->arity == TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
 
@@ -3649,7 +3649,7 @@ tl_tree *read_type_expr(int *var_count) {
     default:
       fprintf(stderr, "tree_type = %d\n", tree_type);
       php_assert (0);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -3663,7 +3663,7 @@ tl_tree *read_nat_expr(int *var_count) {
     default:
       fprintf(stderr, "tree_type = %d\n", tree_type);
       php_assert (0);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -3677,7 +3677,7 @@ tl_tree *read_expr(int *var_count) {
     default:
       fprintf(stderr, "tree_type = %d\n", tree_type);
       php_assert (0);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -3747,8 +3747,8 @@ tl_combinator *read_combinator(void) {
   php_assert (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) == TLS_COMBINATOR_RIGHT_V2);
   combinator->result = read_type_expr(&combinator->var_count);
 
-  combinator->IP = NULL;
-  combinator->fetchIP = NULL;
+  combinator->IP = nullptr;
+  combinator->fetchIP = nullptr;
   combinator->IP_len = 0;
   combinator->fetchIP_len = 0;
 
@@ -3786,7 +3786,7 @@ int get_schema_version(int a) {
 
 void renew_tl_config(void) {
   php_assert (!dl::query_num);
-  php_assert (tl_config.fetchIP == NULL);
+  php_assert (tl_config.fetchIP == nullptr);
 
   tl_schema_version = get_schema_version(TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()));
   php_assert (tl_schema_version != -1);
@@ -3807,7 +3807,7 @@ void renew_tl_config(void) {
   }
 
   tl_config.ReqResult = tl_config.name_to_type.get_value(string("ReqResult", 9));
-  php_assert (tl_config.ReqResult != NULL);
+  php_assert (tl_config.ReqResult != nullptr);
   php_assert (tl_config.ReqResult->arity == 1);
 
   int constructors_n = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
@@ -3862,8 +3862,8 @@ void update_tl_config(const char *data, dl::size_type data_len) {
   php_assert (f$rpc_parse(string(data, data_len)));
   renew_tl_config();
 
-  rpc_parse(NULL, 0);//remove rpc_data_copy
-  rpc_parse(NULL, 0);//remove rpc_data_backup
+  rpc_parse(nullptr, 0);//remove rpc_data_copy
+  rpc_parse(nullptr, 0);//remove rpc_data_backup
   free_arr_space();
 }
 
@@ -3875,8 +3875,8 @@ void read_tl_config(const char *file_name) {
   php_assert (f$rpc_parse(config.val()));
   renew_tl_config();
 
-  rpc_parse(NULL, 0);//remove rpc_data_copy
-  rpc_parse(NULL, 0);//remove rpc_data_backup
+  rpc_parse(nullptr, 0);//remove rpc_data_copy
+  rpc_parse(nullptr, 0);//remove rpc_data_backup
   free_arr_space();
 }
 
@@ -3895,8 +3895,8 @@ void rpc_init_static(void) {
   INIT_VAR(string, rpc_data_copy_backup);
   INIT_VAR(array<double>, rpc_request_need_timer);
 
-  rpc_parse(NULL, 0);
-  rpc_parse(NULL, 0);//init backup
+  rpc_parse(nullptr, 0);
+  rpc_parse(nullptr, 0);//init backup
 
   f$rpc_clean(false);
   rpc_stored = 0;

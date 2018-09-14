@@ -108,9 +108,9 @@ bool TypeInferer::add_node(Node *node) {
 }
 
 void TypeInferer::add_edge(Edge *edge) {
-  assert (edge != NULL);
-  assert (edge->from != NULL);
-  assert (edge->to != NULL);
+  assert (edge != nullptr);
+  assert (edge->from != nullptr);
+  assert (edge->to != nullptr);
   //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
   edge->from->add_edge(edge);
   edge->to->add_rev_edge(edge);
@@ -217,10 +217,10 @@ bool TypeInferer::is_finished() {
 }
 
 
-static TypeInferer *CI = NULL;
+static TypeInferer *CI = nullptr;
 
 void register_inferer(TypeInferer *inferer) {
-  if (!__sync_bool_compare_and_swap(&CI, NULL, inferer)) {
+  if (!__sync_bool_compare_and_swap(&CI, nullptr, inferer)) {
     kphp_fail();
   }
 }
