@@ -28,7 +28,7 @@ void SrcFile::add_prefix(const string &new_prefix) {
   prefix = new_prefix;
 }
 
-bool SrcFile::load(void) {
+bool SrcFile::load() {
   if (loaded) {
     return true;
   }
@@ -288,7 +288,7 @@ Writer::Writer() :
 Writer::~Writer() {
 }
 
-void Writer::write_indent(void) {
+void Writer::write_indent() {
   append(indent_level, ' ');
 }
 
@@ -300,11 +300,11 @@ void Writer::append(size_t n, char c) {
   data.append(n, c);
 }
 
-void Writer::begin_line(void) {
+void Writer::begin_line() {
   data.begin_line();
 }
 
-void Writer::end_line(void) {
+void Writer::end_line() {
   data.end_line();
 
   data.append(1, '\n'); // for crc64

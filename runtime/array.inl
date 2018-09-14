@@ -162,12 +162,12 @@ void sort(TT *begin_init, TT *end_init, const T1 &compare) {
 } // namespace dl
 
 template<class T>
-typename array<T>::key_type array<T>::int_hash_entry::get_key(void) const {
+typename array<T>::key_type array<T>::int_hash_entry::get_key() const {
   return key_type(int_key);
 }
 
 template<class T>
-typename array<T>::key_type array<T>::string_hash_entry::get_key(void) const {
+typename array<T>::key_type array<T>::string_hash_entry::get_key() const {
   return key_type(string_key);
 }
 
@@ -180,7 +180,7 @@ int empty_array_storage[] __attribute__ ((weak)) = {REF_CNT_FOR_CONST /* ref_cnt
                                                     0 /* int_size */, 2 /* int_buf_size */, 0 /* string_size */, -1 /* string_buf_size */};
 
 template<class T>
-typename array<T>::array_inner *array<T>::array_inner::empty_array(void) {
+typename array<T>::array_inner *array<T>::array_inner::empty_array() {
   return reinterpret_cast <array_inner *> (empty_array_storage);
 }
 
@@ -197,7 +197,7 @@ const T array<T>::array_inner::empty_T = T();
 
 
 template<class T>
-bool array<T>::array_inner::is_vector(void) const {
+bool array<T>::array_inner::is_vector() const {
   return string_buf_size == -1;
 }
 
@@ -216,7 +216,7 @@ typename array<T>::entry_pointer_type array<T>::array_inner::get_pointer(list_ha
 
 
 template<class T>
-const typename array<T>::string_hash_entry *array<T>::array_inner::begin(void) const {
+const typename array<T>::string_hash_entry *array<T>::array_inner::begin() const {
   return (const string_hash_entry *)get_entry(end_.next);
 }
 
@@ -231,12 +231,12 @@ const typename array<T>::string_hash_entry *array<T>::array_inner::prev(const st
 }
 
 template<class T>
-const typename array<T>::string_hash_entry *array<T>::array_inner::end(void) const {
+const typename array<T>::string_hash_entry *array<T>::array_inner::end() const {
   return (const string_hash_entry *)&end_;
 }
 
 template<class T>
-typename array<T>::string_hash_entry *array<T>::array_inner::begin(void) {
+typename array<T>::string_hash_entry *array<T>::array_inner::begin() {
   return (string_hash_entry *)get_entry(end_.next);
 }
 
@@ -251,7 +251,7 @@ typename array<T>::string_hash_entry *array<T>::array_inner::prev(string_hash_en
 }
 
 template<class T>
-typename array<T>::string_hash_entry *array<T>::array_inner::end(void) {
+typename array<T>::string_hash_entry *array<T>::array_inner::end() {
   return (string_hash_entry * ) & end_;
 }
 
@@ -261,12 +261,12 @@ bool array<T>::array_inner::is_string_hash_entry(const string_hash_entry *p) con
 }
 
 template<class T>
-const typename array<T>::string_hash_entry *array<T>::array_inner::get_string_entries(void) const {
+const typename array<T>::string_hash_entry *array<T>::array_inner::get_string_entries() const {
   return (const string_hash_entry *)(int_entries + int_buf_size);
 }
 
 template<class T>
-typename array<T>::string_hash_entry *array<T>::array_inner::get_string_entries(void) {
+typename array<T>::string_hash_entry *array<T>::array_inner::get_string_entries() {
   return (string_hash_entry * )(int_entries + int_buf_size);
 }
 
@@ -321,7 +321,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, 
 }
 
 template<class T>
-void array<T>::array_inner::dispose(void) {
+void array<T>::array_inner::dispose() {
   if (ref_cnt != REF_CNT_FOR_CONST) {
     ref_cnt--;
     if (ref_cnt <= -1) {
@@ -348,7 +348,7 @@ void array<T>::array_inner::dispose(void) {
 
 
 template<class T>
-typename array<T>::array_inner *array<T>::array_inner::ref_copy(void) {
+typename array<T>::array_inner *array<T>::array_inner::ref_copy() {
   if (ref_cnt != REF_CNT_FOR_CONST) {
     ref_cnt++;
   }
@@ -505,7 +505,7 @@ inline bool array<var>::array_inner::isset_value(int int_key) const {
 }
 
 template<class T>
-void array<T>::array_inner::unset_vector_value(void) {
+void array<T>::array_inner::unset_vector_value() {
   ((T *)int_entries)[max_key].~T();
   max_key--;
   int_size--;
@@ -731,7 +731,7 @@ void array<T>::array_inner::unset_map_value(int int_key, const string &string_ke
 
 
 template<class T>
-bool array<T>::is_vector(void) const {
+bool array<T>::is_vector() const {
   return p->is_vector();
 }
 
@@ -780,7 +780,7 @@ bool array<T>::mutate_if_map_shared(int mul) {
 }
 
 template<class T>
-void array<T>::mutate_if_vector_needed_int(void) {
+void array<T>::mutate_if_vector_needed_int() {
   if (mutate_if_vector_shared(2)) {
     return;
   }
@@ -802,7 +802,7 @@ void array<T>::mutate_to_size(int int_size) {
 }
 
 template<class T>
-void array<T>::mutate_if_map_needed_int(void) {
+void array<T>::mutate_if_map_needed_int() {
   if (mutate_if_map_shared(2)) {
     return;
   }
@@ -826,7 +826,7 @@ void array<T>::mutate_if_map_needed_int(void) {
 }
 
 template<class T>
-void array<T>::mutate_if_map_needed_string(void) {
+void array<T>::mutate_if_map_needed_string() {
   if (mutate_if_map_shared(2)) {
     return;
   }
@@ -890,7 +890,7 @@ void array<T>::push_back_values(Arg &&arg, Args &&... args) {
 }
 
 template<class T>
-array<T>::const_iterator::const_iterator(void):
+array<T>::const_iterator::const_iterator():
   self(NULL),
   entry(NULL) {
 }
@@ -902,7 +902,7 @@ array<T>::const_iterator::const_iterator(const typename array<T>::array_inner *s
 }
 
 template<class T>
-const T &array<T>::const_iterator::get_value(void) const {
+const T &array<T>::const_iterator::get_value() const {
   if (self->is_vector()) {
     return force_convert_to<T>::convert(*(const T *)entry);
   }
@@ -911,7 +911,7 @@ const T &array<T>::const_iterator::get_value(void) const {
 }
 
 template<class T>
-typename array<T>::key_type array<T>::const_iterator::get_key(void) const {
+typename array<T>::key_type array<T>::const_iterator::get_key() const {
   if (self->is_vector()) {
     return key_type((int)((const T *)entry - (const T *)self->int_entries));
   }
@@ -924,7 +924,7 @@ typename array<T>::key_type array<T>::const_iterator::get_key(void) const {
 }
 
 template<class T>
-typename array<T>::const_iterator &array<T>::const_iterator::operator--(void) {
+typename array<T>::const_iterator &array<T>::const_iterator::operator--() {
   if (self->is_vector()) {
     entry = (const list_hash_entry *)((const T *)entry - 1);
   } else {
@@ -934,7 +934,7 @@ typename array<T>::const_iterator &array<T>::const_iterator::operator--(void) {
 }
 
 template<class T>
-typename array<T>::const_iterator &array<T>::const_iterator::operator++(void) {
+typename array<T>::const_iterator &array<T>::const_iterator::operator++() {
   if (self->is_vector()) {
     entry = (const list_hash_entry *)((const T *)entry + 1);
   } else {
@@ -955,7 +955,7 @@ bool array<T>::const_iterator::operator!=(const array<T>::const_iterator &other)
 
 
 template<class T>
-typename array<T>::const_iterator array<T>::begin(void) const {
+typename array<T>::const_iterator array<T>::begin() const {
   if (is_vector()) {
     return typename array<T>::const_iterator(p, p->int_entries);
   }
@@ -1013,7 +1013,7 @@ typename array<T>::const_iterator array<T>::middle(int n) const {
 }
 
 template<class T>
-typename array<T>::const_iterator array<T>::end(void) const {
+typename array<T>::const_iterator array<T>::end() const {
   if (is_vector()) {
     return typename array<T>::const_iterator(p, (const list_hash_entry *)((const T *)p->int_entries + p->int_size));
   }
@@ -1023,7 +1023,7 @@ typename array<T>::const_iterator array<T>::end(void) const {
 
 
 template<class T>
-array<T>::iterator::iterator(void):
+array<T>::iterator::iterator():
   self(NULL),
   entry(NULL) {
 }
@@ -1035,7 +1035,7 @@ array<T>::iterator::iterator(typename array<T>::array_inner *self, list_hash_ent
 }
 
 template<class T>
-T &array<T>::iterator::get_value(void) {
+T &array<T>::iterator::get_value() {
   if (self->is_vector()) {
     return force_convert_to<T>::convert(*(T *)entry);
   }
@@ -1044,7 +1044,7 @@ T &array<T>::iterator::get_value(void) {
 }
 
 template<class T>
-typename array<T>::key_type array<T>::iterator::get_key(void) const {
+typename array<T>::key_type array<T>::iterator::get_key() const {
   if (self->is_vector()) {
     return key_type((int)((const T *)entry - (const T *)self->int_entries));
   }
@@ -1057,7 +1057,7 @@ typename array<T>::key_type array<T>::iterator::get_key(void) const {
 }
 
 template<class T>
-typename array<T>::iterator &array<T>::iterator::operator--(void) {
+typename array<T>::iterator &array<T>::iterator::operator--() {
   if (self->is_vector()) {
     entry = (list_hash_entry * )((T *)entry - 1);
   } else {
@@ -1067,7 +1067,7 @@ typename array<T>::iterator &array<T>::iterator::operator--(void) {
 }
 
 template<class T>
-typename array<T>::iterator &array<T>::iterator::operator++(void) {
+typename array<T>::iterator &array<T>::iterator::operator++() {
   if (self->is_vector()) {
     entry = (list_hash_entry * )((T *)entry + 1);
   } else {
@@ -1088,7 +1088,7 @@ bool array<T>::iterator::operator!=(const array<T>::iterator &other) const {
 
 
 template<class T>
-typename array<T>::iterator array<T>::begin(void) {
+typename array<T>::iterator array<T>::begin() {
   if (is_vector()) {
     mutate_if_vector_shared();
     return typename array<T>::iterator(p, p->int_entries);
@@ -1148,7 +1148,7 @@ typename array<T>::iterator array<T>::middle(int n) {
 }
 
 template<class T>
-typename array<T>::iterator array<T>::end(void) {
+typename array<T>::iterator array<T>::end() {
   if (is_vector()) {
     return typename array<T>::iterator(p, (list_hash_entry * )((T *)p->int_entries + p->int_size));
   }
@@ -1158,7 +1158,7 @@ typename array<T>::iterator array<T>::end(void) {
 
 
 template<class T>
-void array<T>::convert_to_map(void) {
+void array<T>::convert_to_map() {
   array_inner *new_array = array_inner::create(p->int_size + 4, p->int_size + 4, false);
 
   for (int it = 0; it != p->int_size; it++) {
@@ -1201,7 +1201,7 @@ void array<T>::copy_from(const array<T1> &other) {
 
 
 template<class T>
-array<T>::array(void):
+array<T>::array():
   p(array_inner::empty_array()) {
 }
 
@@ -1273,20 +1273,20 @@ array<T> &array<T>::operator=(const array<T1> &other) {
 }
 
 template<class T>
-void array<T>::destroy(void) {
+void array<T>::destroy() {
   if (p) {
     p->dispose();
   }
 }
 
 template<class T>
-array<T>::~array(void) {
+array<T>::~array() {
   destroy();
 }
 
 
 template<class T>
-void array<T>::clear(void) {
+void array<T>::clear() {
   destroy();
   p = array_inner::empty_array();
 }
@@ -2072,17 +2072,17 @@ void array<T>::unset(const iterator &it) {
 
 
 template<class T>
-bool array<T>::empty(void) const {
+bool array<T>::empty() const {
   return p->int_size + p->string_size == 0;
 }
 
 template<class T>
-int array<T>::count(void) const {
+int array<T>::count() const {
   return p->int_size + p->string_size;
 }
 
 template<class T>
-array_size array<T>::size(void) const {
+array_size array<T>::size() const {
   return array_size(p->int_size, p->string_size, is_vector());
 }
 
@@ -2358,7 +2358,7 @@ const T array<T>::push_back_return(const T &v) {
 
 
 template<class T>
-int array<T>::get_next_key(void) const {
+int array<T>::get_next_key() const {
   return p->max_key + 1;
 }
 
@@ -2525,7 +2525,7 @@ void array<T>::swap(array<T> &other) {
 }
 
 template<class T>
-T array<T>::pop(void) {
+T array<T>::pop() {
   if (empty()) {
 //    php_warning ("Cannot use function array_pop on empty array");
     return array_inner::empty_T;
@@ -2557,7 +2557,7 @@ T array<T>::pop(void) {
 }
 
 template<class T>
-T array<T>::shift(void) {
+T array<T>::shift() {
   if (count() == 0) {
     php_warning("Cannot use array_shift on empty array");
     return array_inner::empty_T;
@@ -2649,22 +2649,22 @@ int array<T>::unshift(const T &val) {
 
 
 template<class T>
-bool array<T>::to_bool(void) const {
+bool array<T>::to_bool() const {
   return (bool)(p->int_size + p->string_size);
 }
 
 template<class T>
-int array<T>::to_int(void) const {
+int array<T>::to_int() const {
   return p->int_size + p->string_size;
 }
 
 template<class T>
-double array<T>::to_float(void) const {
+double array<T>::to_float() const {
   return p->int_size + p->string_size;
 }
 
 template<class T>
-int array<T>::get_reference_counter(void) const {
+int array<T>::get_reference_counter() const {
   return p->ref_cnt + 1;
 }
 
@@ -2674,7 +2674,7 @@ void array<T>::set_reference_counter_to_const() {
 }
 
 template<class T>
-const T *array<T>::get_const_vector_pointer(void) const {
+const T *array<T>::get_const_vector_pointer() const {
   php_assert (is_vector());
   return &(p->get_vector_value(0));
 }

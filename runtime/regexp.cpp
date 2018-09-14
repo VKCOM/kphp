@@ -9,7 +9,7 @@ static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 int regexp::submatch[3 * MAX_SUBPATTERNS];
 pcre_extra regexp::extra;
 
-regexp::regexp(void) :
+regexp::regexp() :
   subpatterns_count(0),
   named_subpatterns_count(0),
   is_utf8(false),
@@ -528,7 +528,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
   dl::use_script_allocator = false;
 }
 
-void regexp::clean(void) {
+void regexp::clean() {
   if (!is_static) {
     //from cache
     dl::use_script_allocator = false;
@@ -556,7 +556,7 @@ void regexp::clean(void) {
   dl::use_script_allocator = false;
 }
 
-regexp::~regexp(void) {
+regexp::~regexp() {
   clean();
 }
 
@@ -982,7 +982,7 @@ OrFalse<array<var>> regexp::split(const string &subject, int limit, int flags) c
   return result;
 }
 
-int regexp::last_error(void) {
+int regexp::last_error() {
   switch (pcre_last_error) {
     case PHP_PCRE_NO_ERROR:
       return PHP_PCRE_NO_ERROR;
@@ -1048,7 +1048,7 @@ string f$preg_quote(const string &str, const string &delimiter) {
 }
 
 
-void regexp::init_static(void) {
+void regexp::init_static() {
   pcre_malloc = dl::malloc_replace;
   pcre_free = dl::free_replace;
 

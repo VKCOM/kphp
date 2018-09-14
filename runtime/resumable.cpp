@@ -42,7 +42,7 @@ var Storage::load_as_var() {
   return getter(storage_);
 }
 
-void Storage::save_void(void) {
+void Storage::save_void() {
   if (CurException) {
     save_exception();
   } else {
@@ -50,7 +50,7 @@ void Storage::save_void(void) {
   }
 }
 
-void Storage::save_exception(void) {
+void Storage::save_exception() {
   php_assert (CurException != nullptr);
   php_assert (sizeof(Exception *) <= sizeof(var));
   *reinterpret_cast <Exception **> (storage_) = CurException;
@@ -106,7 +106,7 @@ bool Resumable::resume(int resumable_id, Storage *input) {
   return res;
 }
 
-void Resumable::update_output(void) {
+void Resumable::update_output() {
   if (runned_resumable_id) {
     output_ = get_storage(runned_resumable_id);
   } else {
@@ -165,7 +165,7 @@ static int yielded_resumables_l;
 static int yielded_resumables_r;
 static int yielded_resumables_size;
 
-bool in_main_thread(void) {
+bool in_main_thread() {
   return runned_resumable_id == 0;
 }
 
@@ -404,7 +404,7 @@ void unregister_started_resumable(int resumable_id) {
 }
 
 
-static bool resumable_has_finished(void) {
+static bool resumable_has_finished() {
   return finished_resumables_count > 0 || yielded_resumables_l != yielded_resumables_r;
 }
 
@@ -422,7 +422,7 @@ static void yielded_resumables_push(int id) {
   }
 }
 
-static int yielded_resumables_pop(void) {
+static int yielded_resumables_pop() {
   php_assert (yielded_resumables_l != yielded_resumables_r);
   int result = yielded_resumables[yielded_resumables_l];
   yielded_resumables_l++;
@@ -669,7 +669,7 @@ class wait_resumable : public Resumable {
   int child_id;
   event_timer *timer;
 protected:
-  bool run(void) {
+  bool run() {
     if (timer != nullptr) {
       remove_event_timer(timer);
       timer = nullptr;
@@ -704,7 +704,7 @@ class wait_multiple_resumable : public Resumable {
   int child_id;
   forked_resumable_info *info;
 protected:
-  bool run(void) {
+  bool run() {
     RESUMABLE_BEGIN
       while (true) {
         info = get_forked_resumable_info(child_id);
@@ -745,7 +745,7 @@ class wait_result_resumable : public Resumable {
   double timeout;
   bool ready;
 protected:
-  bool run(void) {
+  bool run() {
     RESUMABLE_BEGIN
       ready = f$wait(resumable_id, timeout);
       TRY_WAIT(wait_result_resumable_label_1, ready, bool);
@@ -929,7 +929,7 @@ void unregister_wait_queue(int queue_id) {
   first_free_queue_id = queue_id;
 }
 
-int f$wait_queue_create(void) {
+int f$wait_queue_create() {
   int res_id;
   if (first_free_queue_id != 0) {
     res_id = first_free_queue_id;
@@ -1073,7 +1073,7 @@ class wait_queue_resumable : public Resumable {
   int queue_id;
   event_timer *timer;
 protected:
-  bool run(void) {
+  bool run() {
     if (timer != nullptr) {
       remove_event_timer(timer);
       timer = nullptr;
@@ -1179,7 +1179,7 @@ int f$wait_queue_next_synchronously(int queue_id) {
   return wait_queue_next_synchronously(queue_id);
 }
 
-void f$sched_yield(void) {
+void f$sched_yield() {
   if (in_main_thread()) {
     resumable_finished = true;
     return;
@@ -1194,7 +1194,7 @@ void f$sched_yield(void) {
   yielded_resumables_push(id);
 }
 
-void resumable_init_static_once(void) {
+void resumable_init_static_once() {
   php_assert (wait_timeout_wakeup_id == -1);
   php_assert (wait_queue_timeout_wakeup_id == -1);
 
@@ -1202,7 +1202,7 @@ void resumable_init_static_once(void) {
   wait_queue_timeout_wakeup_id = register_wakeup_callback(&process_wait_queue_timeout);
 }
 
-void resumable_init_static(void) {
+void resumable_init_static() {
   php_assert (wait_timeout_wakeup_id != -1);
   php_assert (wait_queue_timeout_wakeup_id != -1);
 

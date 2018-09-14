@@ -79,7 +79,7 @@ int f$hexdec(const string &number) {
   return (int)v;
 }
 
-double f$lcg_value(void) {
+double f$lcg_value() {
   dl::enter_critical_section();//OK
 
   static long long lcg_value_last_query_num = -1;
@@ -118,7 +118,7 @@ double f$lcg_value(void) {
 }
 
 
-static int make_seed(void) {
+static int make_seed() {
   struct timespec T;
   php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
   return ((int)T.tv_nsec * 123456789) ^ ((int)T.tv_sec * 987654321);
@@ -131,7 +131,7 @@ void f$srand(int seed) {
   srand(seed);
 }
 
-int f$rand(void) {
+int f$rand() {
   return rand();
 }
 
@@ -156,7 +156,7 @@ int f$rand(int l, int r) {
   return l + shift;
 }
 
-int f$getrandmax(void) {
+int f$getrandmax() {
   return RAND_MAX;
 }
 
@@ -167,7 +167,7 @@ void f$mt_srand(int seed) {
   srand(seed);
 }
 
-int f$mt_rand(void) {
+int f$mt_rand() {
   return rand();
 }
 
@@ -175,7 +175,7 @@ int f$mt_rand(int l, int r) {
   return f$rand(l, r);
 }
 
-int f$mt_getrandmax(void) {
+int f$mt_getrandmax() {
   return RAND_MAX;
 }
 

@@ -35,33 +35,33 @@ private:
 
     static size_type empty_string_storage[];
 
-    inline static string_inner &empty_string(void);
+    inline static string_inner &empty_string();
 
-    inline bool is_shared(void) const;
+    inline bool is_shared() const;
     inline void set_length_and_sharable(size_type n);
 
-    inline char *ref_data(void) const;
+    inline char *ref_data() const;
 
     inline static size_type new_capacity(size_type requested_capacity, size_type old_capacity);
     inline static string_inner *create(size_type requested_capacity, size_type old_capacity);
 
     inline char *reserve(size_type requested_capacity);
 
-    inline void dispose(void);
+    inline void dispose();
 
-    inline void destroy(void);
+    inline void destroy();
 
-    inline char *ref_copy(void);
+    inline char *ref_copy();
 
     inline char *clone(size_type requested_cap);
   };
 
-  inline string_inner *inner(void) const;
+  inline string_inner *inner() const;
 
   inline bool disjunct(const char *s) const;
   inline void set_size(size_type new_size);
 
-  inline static string_inner &empty_string(void);
+  inline static string_inner &empty_string();
 
   inline static char *create(const char *beg, const char *end);
   inline static char *create(size_type req, char c);
@@ -70,7 +70,7 @@ private:
 public:
   static const size_type max_size = ((size_type)-1 - sizeof(string_inner) - 1) / 4;
 
-  inline string(void);
+  inline string();
   inline string(const string &str);
   inline string(string &&str) noexcept;
   inline string(const char *s, size_type n);
@@ -80,23 +80,23 @@ public:
   inline explicit string(int i);
   inline explicit string(double f);
 
-  inline ~string(void);
+  inline ~string();
 
   inline string &operator=(const string &str);
   inline string &operator=(string &&str) noexcept;
 
-  inline size_type size(void) const;
+  inline size_type size() const;
 
   inline void shrink(size_type n);
 
-  inline size_type capacity(void) const;
+  inline size_type capacity() const;
 
-  inline void make_not_shared(void);
+  inline void make_not_shared();
 
   inline void force_reserve(size_type res);
   inline string &reserve_at_least(size_type res);
 
-  inline bool empty(void) const;
+  inline bool empty() const;
 
   inline const char &operator[](size_type pos) const;
   inline char &operator[](size_type pos);
@@ -117,7 +117,7 @@ public:
   inline string &append_unsafe(const string &str) __attribute__((always_inline));
   inline string &append_unsafe(const char *s, size_type n) __attribute__((always_inline));
   inline string &append_unsafe(const var &v) __attribute__((always_inline));
-  inline string &finish_append(void) __attribute__((always_inline));
+  inline string &finish_append() __attribute__((always_inline));
 
   template<class T>
   inline string &append_unsafe(const array<T> &a) __attribute__((always_inline));
@@ -140,32 +140,32 @@ public:
 
   inline void swap(string &s);
 
-  inline char *buffer(void);
-  inline const char *c_str(void) const;
+  inline char *buffer();
+  inline const char *c_str() const;
 
   inline string substr(size_type pos, size_type n) const;
 
   inline size_type find_first_of(const string &s, size_type pos = 0) const;
   inline size_type find(const string &s, size_type pos = 0) const;
 
-  inline void warn_on_float_conversion(void) const;
+  inline void warn_on_float_conversion() const;
 
   inline bool try_to_int(int *val) const;
   inline bool try_to_float(double *val) const;
 
-  inline var to_numeric(void) const;
-  inline bool to_bool(void) const;
+  inline var to_numeric() const;
+  inline bool to_bool() const;
   inline static int to_int(const char *s, int l);
-  inline int to_int(void) const;
-  inline double to_float(void) const;
-  inline const string &to_string(void) const;
+  inline int to_int() const;
+  inline double to_float() const;
+  inline const string &to_string() const;
 
-  inline int safe_to_int(void) const;
+  inline int safe_to_int() const;
 
-  inline bool is_int(void) const;
-  inline bool is_numeric(void) const;
+  inline bool is_int() const;
+  inline bool is_numeric() const;
 
-  inline int hash(void) const;
+  inline int hash() const;
 
   inline int compare(const string &str) const;
 
@@ -173,7 +173,7 @@ public:
   inline const string get_value(const string &string_key) const;
   inline const string get_value(const var &v) const;
 
-  inline int get_reference_counter(void) const;
+  inline int get_reference_counter() const;
   inline void set_reference_counter_to_const();
 
   inline void destroy() __attribute__((always_inline));

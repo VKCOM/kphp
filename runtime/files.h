@@ -26,7 +26,7 @@ bool f$chmod(const string &s, int mode);
 
 bool f$chmod(const string &s, int mode);
 
-void f$clearstatcache(void);
+void f$clearstatcache();
 
 bool f$copy(const string &from, const string &to);
 
@@ -63,8 +63,8 @@ OrFalse<array<string>> f$scandir(const string &directory);
 OrFalse<string> file_file_get_contents(const string &name);
 
 
-void files_init_static_once(void);
+void files_init_static_once();
 
-void files_init_static(void);
+void files_init_static();
 
-void files_free_static(void);
+void files_free_static();

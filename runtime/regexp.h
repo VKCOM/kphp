@@ -47,7 +47,7 @@ private:
   pcre *pcre_regexp;
   re2::RE2 *RE2_regexp;
 
-  void clean(void);
+  void clean();
 
   int exec(const string &subject, int offset, bool second_try) const;
 
@@ -66,7 +66,7 @@ private:
   regexp &operator=(const regexp &);//DISABLE copy assignment
 
 public:
-  regexp(void);
+  regexp();
 
   explicit regexp(const string &regexp_string);
   regexp(const char *regexp_string, int regexp_len);
@@ -85,11 +85,11 @@ public:
   template<class T>
   var replace(const T &replace_val, const string &subject, int limit, int &replace_count) const;
 
-  static int last_error(void);
+  static int last_error();
 
   ~regexp();
 
-  static void init_static(void);
+  static void init_static();
 };
 
 
@@ -179,7 +179,7 @@ inline OrFalse<array<var>> f$preg_split(const var &regex, const string &subject,
 
 string f$preg_quote(const string &str, const string &delimiter = string());
 
-inline int f$preg_last_error(void);
+inline int f$preg_last_error();
 
 
 /*
@@ -600,7 +600,7 @@ OrFalse<array<var>> f$preg_split(const var &regex, const string &subject, int li
   return f$preg_split(regexp(regex.to_string()), subject, limit, flags);
 }
 
-int f$preg_last_error(void) {
+int f$preg_last_error() {
   return regexp::last_error();
 }
 

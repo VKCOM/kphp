@@ -15,7 +15,7 @@ enum openssl_algo : int {
   OPENSSL_ALGO_RMD160 = 10,
 };
 
-array<string> f$hash_algos(void);
+array<string> f$hash_algos();
 
 string f$hash(const string &algo, const string &s, bool raw_output = false);
 
@@ -50,8 +50,8 @@ OrFalse<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = t
 
 var f$openssl_x509_checkpurpose(const string &data, int purpose);
 
-void openssl_init_static_once(void);
+void openssl_init_static_once();
 
-void openssl_init_static(void);
+void openssl_init_static();
 
-void openssl_free_static(void);
+void openssl_free_static();

@@ -215,19 +215,19 @@ void stage::set_line(int line) {
   get_location_ptr()->set_line(line);
 }
 
-SrcFilePtr stage::get_file(void) {
+SrcFilePtr stage::get_file() {
   return get_location().get_file();
 }
 
-FunctionPtr stage::get_function(void) {
+FunctionPtr stage::get_function() {
   return get_location().get_function();
 }
 
-int stage::get_line(void) {
+int stage::get_line() {
   return get_location().get_line();
 }
 
-const string &stage::get_file_name(void) {
+const string &stage::get_file_name() {
   static string no_file = "unknown";
   SrcFilePtr file = get_file();
   if (file.is_null()) {
@@ -236,7 +236,7 @@ const string &stage::get_file_name(void) {
   return file->file_name;
 }
 
-const string &stage::get_function_name(void) {
+const string &stage::get_function_name() {
   static string no_function = "unknown";
   FunctionPtr function = get_function();
   if (function.is_null()) {

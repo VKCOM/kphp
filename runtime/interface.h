@@ -7,25 +7,25 @@
 extern string_buffer *coub;//TODO static
 
 
-void f$ob_clean(void);
+void f$ob_clean();
 
-bool f$ob_end_clean(void);
+bool f$ob_end_clean();
 
-OrFalse<string> f$ob_get_clean(void);
+OrFalse<string> f$ob_get_clean();
 
-string f$ob_get_contents(void);
+string f$ob_get_contents();
 
 void f$ob_start(const string &callback = string());
 
-void f$ob_flush(void);
+void f$ob_flush();
 
-bool f$ob_end_flush(void);
+bool f$ob_end_flush();
 
-OrFalse<string> f$ob_get_flush(void);
+OrFalse<string> f$ob_get_flush();
 
-OrFalse<int> f$ob_get_length(void);
+OrFalse<int> f$ob_get_length();
 
-int f$ob_get_level(void);
+int f$ob_get_level();
 
 void f$header(const string &str, bool replace = true, int http_response_code = 0);
 
@@ -33,7 +33,7 @@ void f$setcookie(const string &name, const string &value, int expire = 0, const 
 
 void f$setrawcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$register_shutdown_function(var (*f)(void));
+void f$register_shutdown_function(var (*f)());
 
 void f$fastcgi_finish_request(int exit_code = 0);
 
@@ -75,10 +75,10 @@ int dbg_echo(const string &s);
 int dbg_echo(const string_buffer &sb);
 
 
-bool f$get_magic_quotes_gpc(void);
+bool f$get_magic_quotes_gpc();
 
 
-string f$php_sapi_name(void);
+string f$php_sapi_name();
 
 
 extern var v$_SERVER;
@@ -112,16 +112,16 @@ void init_superglobals(php_query_data *data);
 bool f$set_server_status(const string &status);
 
 
-double f$get_net_time(void);
+double f$get_net_time();
 
-double f$get_script_time(void);
+double f$get_script_time();
 
-int f$get_net_queries_count(void);
+int f$get_net_queries_count();
 
 
-int f$get_engine_uptime(void);
+int f$get_engine_uptime();
 
-string f$get_engine_version(void);
+string f$get_engine_version();
 
 int f$get_engine_workers_number();
 
@@ -139,11 +139,11 @@ OrFalse<string> f$ini_get(const string &s);
 
 OrFalse<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
 
-void init_static_once(void);
+void init_static_once();
 
-void init_static(void);
+void init_static();
 
-void free_static(void);
+void free_static();
 
 /*
  *

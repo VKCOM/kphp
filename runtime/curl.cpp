@@ -17,7 +17,7 @@
 #  error Outdated libcurl
 #endif
 
-void curl_init_static(void);
+void curl_init_static();
 
 
 const int LAST_ERROR_NO = CURL_LAST + CURL_FORMADD_LAST;
@@ -1103,7 +1103,7 @@ static void *calloc_replace(size_t nmemb, size_t size) {
   return memset(res, 0, nmemb * size);
 }
 
-void curl_init_static(void) {
+void curl_init_static() {
   if (dl::query_num != curl_last_query_num) {
     new(curl_handlers_storage) array<curl_handler *>();
 
@@ -1127,7 +1127,7 @@ void curl_init_static(void) {
   }
 }
 
-void curl_free_static(void) {
+void curl_free_static() {
   dl::enter_critical_section();//OK
   if (dl::query_num == curl_last_query_num) {
     const array<curl_handler *> *const_curl_handlers = curl_handlers;

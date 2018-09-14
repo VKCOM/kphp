@@ -2,7 +2,7 @@
 
 #include "runtime/string_functions.h"
 
-array<array<string>> f$debug_backtrace(void) {
+array<array<string>> f$debug_backtrace() {
   dl::enter_critical_section();//OK
   void *buffer[64];
   int nptrs = fast_backtrace(buffer, 64);
@@ -178,7 +178,7 @@ string f$exception_getTraceAsString(const Exception &e) {
 }
 
 
-void exception_init_static(void) {
+void exception_init_static() {
 #ifdef FAST_EXCEPTIONS
   CurException = nullptr;
 #endif

@@ -183,7 +183,7 @@ static bool udp_fclose(const Stream &stream) {
   return result == 0;
 }
 
-void udp_init_static_once(void) {
+void udp_init_static_once() {
   static stream_functions udp_stream_functions;
 
   udp_stream_functions.name = string("udp", 3);
@@ -210,10 +210,10 @@ void udp_init_static_once(void) {
   register_stream_functions(&udp_stream_functions, false);
 }
 
-void udp_init_static(void) {
+void udp_init_static() {
 }
 
-void udp_free_static(void) {
+void udp_free_static() {
   dl::enter_critical_section();//OK
   if (dl::query_num == opened_udp_sockets_last_query_num) {
     const array<int> *const_opened_udp_sockets = opened_udp_sockets;

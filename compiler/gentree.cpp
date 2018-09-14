@@ -178,7 +178,7 @@ void GenTree::exit_function() {
   in_func_cnt_--;
 }
 
-void GenTree::next_cur(void) {
+void GenTree::next_cur() {
   if (cur != end) {
     cur++;
     if ((*cur)->line_num != -1) {
@@ -1069,7 +1069,7 @@ PrimitiveType GenTree::get_ptype() {
   return tp;
 }
 
-PrimitiveType GenTree::get_type_help(void) {
+PrimitiveType GenTree::get_type_help() {
   PrimitiveType res = tp_Unknown;
   if ((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin) {
     bool should_end = (*cur)->type() == tok_triple_colon_begin;
@@ -1087,7 +1087,7 @@ PrimitiveType GenTree::get_type_help(void) {
   return res;
 }
 
-VertexPtr GenTree::get_type_rule_func(void) {
+VertexPtr GenTree::get_type_rule_func() {
   AutoLocation rule_location(this);
   string_ref name = (*cur)->str_val;
   next_cur();
@@ -1103,7 +1103,7 @@ VertexPtr GenTree::get_type_rule_func(void) {
   return rule;
 }
 
-VertexPtr GenTree::get_type_rule_(void) {
+VertexPtr GenTree::get_type_rule_() {
   PrimitiveType tp = get_ptype();
   TokenType tok = (*cur)->type();
   VertexPtr res = VertexPtr(nullptr);
@@ -1172,7 +1172,7 @@ VertexPtr GenTree::get_type_rule_(void) {
   return res;
 }
 
-VertexPtr GenTree::get_type_rule(void) {
+VertexPtr GenTree::get_type_rule() {
   VertexPtr res, first;
 
   TokenType tp = (*cur)->type();

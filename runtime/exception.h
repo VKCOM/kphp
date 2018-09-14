@@ -2,7 +2,7 @@
 
 #include "runtime/kphp_core.h"
 
-array<array<string>> f$debug_backtrace(void);
+array<array<string>> f$debug_backtrace();
 
 
 class Exception {
@@ -78,4 +78,4 @@ bool not_equals(bool value, const Exception &my_exception);
 bool not_equals(const Exception &my_exception, bool value);
 
 
-void exception_init_static(void);
+void exception_init_static();

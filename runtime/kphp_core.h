@@ -664,21 +664,21 @@ const int E_DEPRECATED = 8192;
 const int E_USER_DEPRECATED = 16384;
 const int E_ALL = 32767;
 
-inline var f$error_get_last(void);
+inline var f$error_get_last();
 
 inline int f$error_reporting(int level);
 
-inline int f$error_reporting(void);
+inline int f$error_reporting();
 
 inline void f$warning(const string &message);
 
-inline int f$memory_get_static_usage(void);
+inline int f$memory_get_static_usage();
 
 inline int f$memory_get_peak_usage(bool real_usage = false);
 
 inline int f$memory_get_usage(bool real_usage = false);
 
-inline int f$memory_get_total_usage(void);
+inline int f$memory_get_total_usage();
 
 
 template<class T>
@@ -1836,23 +1836,19 @@ bool f$is_real(const T &v) {
 }
 
 
-const char *get_type_c_str(const bool &v) {
-  (void)v;
+const char *get_type_c_str(const bool &) {
   return "boolean";
 }
 
-const char *get_type_c_str(const int &v) {
-  (void)v;
+const char *get_type_c_str(const int &) {
   return "integer";
 }
 
-const char *get_type_c_str(const double &v) {
-  (void)v;
+const char *get_type_c_str(const double &) {
   return "double";
 }
 
-const char *get_type_c_str(const string &v) {
-  (void)v;
+const char *get_type_c_str(const string &) {
   return "string";
 }
 
@@ -1861,14 +1857,12 @@ const char *get_type_c_str(const var &v) {
 }
 
 template<class T>
-const char *get_type_c_str(const array<T> &v) {
-  (void)v;
+const char *get_type_c_str(const array<T> &) {
   return "array";
 }
 
 template<class T>
-const char *get_type_c_str(const class_instance<T> &v) {
-  (void)v;
+const char *get_type_c_str(const class_instance<T> &) {
   return "object";
 }
 
@@ -1880,26 +1874,22 @@ string f$get_type(const T &v) {
 }
 
 
-string f$get_class(const bool &v) {
-  (void)v;
+string f$get_class(const bool &) {
   php_warning("Called get_class() on boolean");
   return string();
 }
 
-string f$get_class(const int &v) {
-  (void)v;
+string f$get_class(const int &) {
   php_warning("Called get_class() on integer");
   return string();
 }
 
-string f$get_class(const double &v) {
-  (void)v;
+string f$get_class(const double &) {
   php_warning("Called get_class() on double");
   return string();
 }
 
-string f$get_class(const string &v) {
-  (void)v;
+string f$get_class(const string &) {
   php_warning("Called get_class() on string");
   return string();
 }
@@ -1910,8 +1900,7 @@ string f$get_class(const var &v) {
 }
 
 template<class T>
-string f$get_class(const array<T> &v) {
-  (void)v;
+string f$get_class(const array<T> &) {
   php_warning("Called get_class() on array");
   return string();
 }
@@ -1959,7 +1948,7 @@ bool f$function_exists(const T &a1) {
 }
 
 
-var f$error_get_last(void) {
+var f$error_get_last() {
   return var();
 }
 
@@ -1974,7 +1963,7 @@ int f$error_reporting(int level) {
   return prev;
 }
 
-int f$error_reporting(void) {
+int f$error_reporting() {
   return php_warning_level;
 }
 
@@ -1982,7 +1971,7 @@ void f$warning(const string &message) {
   php_warning("%s", message.c_str());
 }
 
-int f$memory_get_static_usage(void) {
+int f$memory_get_static_usage() {
   return (int)dl::static_memory_used;
 }
 
@@ -1998,7 +1987,7 @@ int f$memory_get_usage(bool real_usage __attribute__((unused))) {
   return (int)dl::memory_used;
 }
 
-int f$memory_get_total_usage(void) {
+int f$memory_get_total_usage() {
   return (int)dl::memory_get_total_usage();
 }
 

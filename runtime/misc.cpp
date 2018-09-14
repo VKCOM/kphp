@@ -452,14 +452,14 @@ var f$getimagesize(const string &name) {
 }
 
 
-int f$posix_getpid(void) {
+int f$posix_getpid() {
   dl::enter_critical_section();//OK
   int result = (int)getpid();
   dl::leave_critical_section();
   return result;
 }
 
-int f$posix_getuid(void) {
+int f$posix_getuid() {
   dl::enter_critical_section();//OK
   int result = (int)getuid();
   dl::leave_critical_section();

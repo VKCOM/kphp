@@ -20,7 +20,7 @@ int timeout_convert_to_ms(double timeout) {
 
 static double precise_now;
 
-void update_precise_now(void) {
+void update_precise_now() {
   struct timespec T;
   php_assert (clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
   precise_now = (double)T.tv_sec + (double)T.tv_nsec * 1e-9;
@@ -46,7 +46,7 @@ static bool process_net_event(net_event_t *e) {
   return true;
 }
 
-static int process_net_events(void) {
+static int process_net_events() {
   int result = 0;
   while (process_net_event(pop_net_event())) {
     result++;
@@ -142,7 +142,7 @@ void remove_event_timer(event_timer *et) {
   event_timers_heap[i] = et;
 }
 
-int remove_expired_event_timers(void) {
+int remove_expired_event_timers() {
   int expired_events = 0;
   while (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= precise_now) {
     event_timer *et = event_timers_heap[1];
@@ -188,7 +188,7 @@ int wait_net(int timeout_ms) {
 }
 
 
-void net_events_init_static(void) {
+void net_events_init_static() {
   event_timers_heap_size = 0;
   event_timers_max_heap_size = 1023;
   event_timers_heap = static_cast <event_timer **> (dl::allocate(sizeof(event_timer *) * event_timers_max_heap_size));

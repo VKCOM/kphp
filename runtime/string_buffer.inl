@@ -36,7 +36,7 @@ string_buffer::string_buffer(dl::size_type buffer_len) :
   buffer_len(buffer_len) {
 }
 
-string_buffer &string_buffer::clean(void) {
+string_buffer &string_buffer::clean() {
   buffer_end = buffer_begin;
   return *this;
 }
@@ -181,26 +181,26 @@ string_buffer &operator<<(string_buffer &sb, unsigned long long x) {
   return sb;
 }
 
-dl::size_type string_buffer::size(void) const {
+dl::size_type string_buffer::size() const {
   return (dl::size_type)(buffer_end - buffer_begin);
 }
 
-char *string_buffer::buffer(void) {
+char *string_buffer::buffer() {
   return buffer_begin;
 }
 
-const char *string_buffer::buffer(void) const {
+const char *string_buffer::buffer() const {
   return buffer_begin;
 }
 
-const char *string_buffer::c_str(void) {
+const char *string_buffer::c_str() {
   reserve_at_least(1);
   *buffer_end = 0;
 
   return buffer_begin;
 }
 
-string string_buffer::str(void) const {
+string string_buffer::str() const {
   php_assert (size() <= buffer_len);
   return string(buffer_begin, size());
 }
@@ -211,7 +211,7 @@ bool string_buffer::set_pos(int pos) {
   return true;
 }
 
-string_buffer::~string_buffer(void) {
+string_buffer::~string_buffer() {
   dl::static_deallocate((void **)&buffer_begin, &buffer_len);
 }
 

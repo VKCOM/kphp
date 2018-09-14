@@ -81,9 +81,9 @@ const string &get_name();
 void set_file(SrcFilePtr file);
 void set_function(FunctionPtr function);
 void set_line(int line);
-SrcFilePtr get_file(void);
-FunctionPtr get_function(void);
-int get_line(void);
+SrcFilePtr get_file();
+FunctionPtr get_function();
+int get_line();
 
 const string &get_file_name();
 const string &get_function_name();

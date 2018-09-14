@@ -104,7 +104,7 @@ static inline T store_parse_number_hex(const string &v) {
 }
 
 
-static void rpc_parse_save_backup(void) {
+static void rpc_parse_save_backup() {
   dl::enter_critical_section();//OK
   rpc_data_copy_backup = rpc_data_copy;
   dl::leave_critical_section();
@@ -114,7 +114,7 @@ static void rpc_parse_save_backup(void) {
   rpc_data_len_backup = rpc_data_len;
 }
 
-static void rpc_parse_restore_previous(void) {
+static void rpc_parse_restore_previous() {
   php_assert ((rpc_data_copy_backup.size() & 3) == 0);
 
   dl::enter_critical_section();//OK
@@ -166,7 +166,7 @@ bool f$rpc_parse(const OrFalse<string> &new_rpc_data) {
   return new_rpc_data.bool_value ? f$rpc_parse(new_rpc_data.val()) : f$rpc_parse(var(false));
 }
 
-int rpc_get_pos(void) {
+int rpc_get_pos() {
   return (int)(long)(rpc_data - rpc_data_begin);
 }
 
@@ -375,7 +375,7 @@ bool f$fetch_end() {
 }
 
 
-rpc_connection::rpc_connection(void) :
+rpc_connection::rpc_connection() :
   bool_value(false),
   host_num(-1),
   port(-1),
@@ -463,7 +463,7 @@ void f$store_gzip_pack_threshold(int pack_threshold_bytes) {
   rpc_pack_threshold = pack_threshold_bytes;
 }
 
-void f$store_start_gzip_pack(void) {
+void f$store_start_gzip_pack() {
   rpc_pack_from = data_buf.size();
 }
 
@@ -652,7 +652,7 @@ bool f$store_many(const array<var> &a) {
 }
 
 
-bool f$store_finish(void) {
+bool f$store_finish() {
   return rpc_store(false);
 }
 
@@ -669,13 +669,13 @@ bool f$rpc_clean(bool is_error) {
   return true;
 }
 
-string f$rpc_get_clean(void) {
+string f$rpc_get_clean() {
   string data = string(data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
   f$rpc_clean();
   return data;
 }
 
-string f$rpc_get_contents(void) {
+string f$rpc_get_contents() {
   return string(data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
 }
 
@@ -752,7 +752,7 @@ private:
   double begin_time;
 
 protected:
-  bool run(void) {
+  bool run() {
     php_assert (dl::query_num == rpc_requests_last_query_num);
     rpc_request *request = get_rpc_request(request_id);
     php_assert (request->resumable_id < 0);
@@ -892,7 +892,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
   }
 }
 
-void f$rpc_flush(void) {
+void f$rpc_flush() {
   update_precise_now();
   wait_net(0);
   update_precise_now();
@@ -979,7 +979,7 @@ class rpc_get_resumable : public Resumable {
 
   bool ready;
 protected:
-  bool run(void) {
+  bool run() {
     RESUMABLE_BEGIN
       ready = f$wait(resumable_id, timeout);
       TRY_WAIT(rpc_get_resumable_label_0, ready, bool);
@@ -1042,7 +1042,7 @@ class rpc_get_and_parse_resumable : public Resumable {
 
   bool ready;
 protected:
-  bool run(void) {
+  bool run() {
     RESUMABLE_BEGIN
       ready = f$wait(resumable_id, timeout);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
@@ -1126,27 +1126,27 @@ bool f$store_unsigned_long(const var &v) {
  */
 
 
-int tl_parse_int(void) {
+int tl_parse_int() {
   return TRY_CALL(int, int, (f$fetch_int()));
 }
 
-long long tl_parse_long(void) {
+long long tl_parse_long() {
   return TRY_CALL(long long, int, (f$fetch_Long().l));
 }
 
-double tl_parse_double(void) {
+double tl_parse_double() {
   return TRY_CALL(double, double, (f$fetch_double()));
 }
 
-string tl_parse_string(void) {
+string tl_parse_string() {
   return TRY_CALL(string, string, (f$fetch_string()));
 }
 
-void tl_parse_end(void) {
+void tl_parse_end() {
   TRY_CALL_VOID(void, (f$fetch_end()));
 }
 
-int tl_parse_save_pos(void) {
+int tl_parse_save_pos() {
   return rpc_get_pos();
 }
 
@@ -1236,15 +1236,15 @@ public:
 
   virtual void print(int shift = 0) const = 0;
 
-  virtual int get_type(void) const = 0;
+  virtual int get_type() const = 0;
 
   virtual bool equals(const tl_tree *other) const = 0;
 
-  virtual tl_tree *dup(void) const = 0;
+  virtual tl_tree *dup() const = 0;
 
-  virtual void destroy(void) = 0;
+  virtual void destroy() = 0;
 
-  virtual ~tl_tree(void) {
+  virtual ~tl_tree() {
   }
 };
 
@@ -1266,7 +1266,7 @@ public:
     }
   }
 
-  virtual int get_type(void) const {
+  virtual int get_type() const {
     return NODE_TYPE_TYPE;
   }
 
@@ -1286,7 +1286,7 @@ public:
     return true;
   }
 
-  virtual tl_tree *dup(void) const {
+  virtual tl_tree *dup() const {
     tl_tree_type *T = (tl_tree_type *)dl::allocate(sizeof(tl_tree_type));
     //fprintf (stderr, "dup type %s (%p), result = %p\n", type->name.c_str(), this, T);
     new(T) tl_tree_type(flags, type, children.size());
@@ -1297,7 +1297,7 @@ public:
     return T;
   }
 
-  virtual void destroy(void) {
+  virtual void destroy() {
     for (int i = 0; i < children.count(); i++) {
       if (children.get_value(i) != nullptr) {
         children.get_value(i)->destroy();
@@ -1322,7 +1322,7 @@ public:
     fprintf(stderr, "%*sConst %d\n", shift, "", num);
   }
 
-  virtual int get_type(void) const {
+  virtual int get_type() const {
     return NODE_TYPE_NAT_CONST;
   }
 
@@ -1330,7 +1330,7 @@ public:
     return other->get_type() == NODE_TYPE_NAT_CONST && num == static_cast <const tl_tree_nat_const *> (other)->num;
   }
 
-  virtual tl_tree *dup(void) const {
+  virtual tl_tree *dup() const {
     tl_tree_nat_const *T = (tl_tree_nat_const *)dl::allocate(sizeof(tl_tree_nat_const));
     //fprintf (stderr, "dup nat const %d (%p), result = %p\n", num, this, T);
     new(T) tl_tree_nat_const(flags, num);
@@ -1338,7 +1338,7 @@ public:
     return T;
   }
 
-  virtual void destroy(void) {
+  virtual void destroy() {
     this->~tl_tree_nat_const();
     dl::deallocate(this, sizeof(*this));
   }
@@ -1357,7 +1357,7 @@ public:
     fprintf(stderr, "%*sVariable type, var_num = %d.\n", shift, "", var_num);
   }
 
-  virtual int get_type(void) const {
+  virtual int get_type() const {
     return NODE_TYPE_VAR_TYPE;
   }
 
@@ -1366,7 +1366,7 @@ public:
     return false;
   }
 
-  virtual tl_tree *dup(void) const {
+  virtual tl_tree *dup() const {
     tl_tree_var_type *T = (tl_tree_var_type *)dl::allocate(sizeof(tl_tree_var_type));
     //fprintf (stderr, "dup var type (%p), result = %p\n", this, T);
     new(T) tl_tree_var_type(flags, var_num);
@@ -1374,7 +1374,7 @@ public:
     return T;
   }
 
-  virtual void destroy(void) {
+  virtual void destroy() {
     this->~tl_tree_var_type();
     dl::deallocate(this, sizeof(*this));
   }
@@ -1395,7 +1395,7 @@ public:
     fprintf(stderr, "%*sVariable number, var_num = %d, diff = %d.\n", shift, "", var_num, diff);
   }
 
-  virtual int get_type(void) const {
+  virtual int get_type() const {
     return NODE_TYPE_VAR_NUM;
   }
 
@@ -1404,7 +1404,7 @@ public:
     return false;
   }
 
-  virtual tl_tree *dup(void) const {
+  virtual tl_tree *dup() const {
     tl_tree_var_num *T = (tl_tree_var_num *)dl::allocate(sizeof(tl_tree_var_num));
     //fprintf (stderr, "dup var num (%p), result = %p\n", this, T);
     new(T) tl_tree_var_num(flags, var_num, diff);
@@ -1412,7 +1412,7 @@ public:
     return T;
   }
 
-  virtual void destroy(void) {
+  virtual void destroy() {
     this->~tl_tree_var_num();
     dl::deallocate(this, sizeof(*this));
   }
@@ -1446,7 +1446,7 @@ public:
     }
   }
 
-  virtual int get_type(void) const {
+  virtual int get_type() const {
     return NODE_TYPE_ARRAY;
   }
 
@@ -1467,7 +1467,7 @@ public:
     return true;
   }
 
-  virtual tl_tree *dup(void) const {
+  virtual tl_tree *dup() const {
     tl_tree_array *T = (tl_tree_array *)dl::allocate(sizeof(tl_tree_array));
     //fprintf (stderr, "dup array (%p), result = %p\n", this, T);
     new(T) tl_tree_array(flags, multiplicity->dup(), args.size());
@@ -1480,7 +1480,7 @@ public:
     return T;
   }
 
-  virtual void destroy(void) {
+  virtual void destroy() {
     multiplicity->destroy();
     for (int i = 0; i < args.count(); i++) {
       if (args[i].type != nullptr) {
@@ -1590,13 +1590,13 @@ static var var_stack[MAX_DEPTH];
 
 var *last_arr_ptr;
 
-void free_arr_space(void) {
+void free_arr_space() {
   while (last_arr_ptr >= var_stack) {
     *last_arr_ptr-- = var();
   }
 }
 
-void clear_arr_space(void) {
+void clear_arr_space() {
   while (last_arr_ptr >= var_stack) {
     CLEAR_VAR(var, *last_arr_ptr);
     last_arr_ptr--;
@@ -1961,7 +1961,7 @@ class rpc_tl_query_result_one_resumable : public Resumable {
   tl_tree *T;
 
 protected:
-  bool run(void) {
+  bool run() {
     bool ready;
 
     RESUMABLE_BEGIN
@@ -2020,7 +2020,7 @@ class rpc_tl_query_result_resumable : public Resumable {
   int query_id;
 
 protected:
-  bool run(void) {
+  bool run() {
     RESUMABLE_BEGIN
       if (query_ids.count() == 1) {
         query_id = query_ids.begin().get_value();
@@ -3727,7 +3727,7 @@ array<arg> read_args_list(int *var_count) {
 }
 
 
-tl_combinator *read_combinator(void) {
+tl_combinator *read_combinator() {
   php_assert (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) == TLS_COMBINATOR);
 
   tl_combinator *combinator = (tl_combinator *)dl::allocate(sizeof(tl_combinator));
@@ -3755,7 +3755,7 @@ tl_combinator *read_combinator(void) {
   return combinator;
 }
 
-tl_type *read_type(void) {
+tl_type *read_type() {
   php_assert (TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int()) == TLS_TYPE);
 
   tl_type *type = (tl_type *)dl::allocate(sizeof(tl_type));
@@ -3784,7 +3784,7 @@ int get_schema_version(int a) {
   return -1;
 }
 
-void renew_tl_config(void) {
+void renew_tl_config() {
   php_assert (!dl::query_num);
   php_assert (tl_config.fetchIP == nullptr);
 
@@ -3881,13 +3881,13 @@ void read_tl_config(const char *file_name) {
 }
 
 
-void rpc_init_static_once(void) {
+void rpc_init_static_once() {
   php_assert (timeout_wakeup_id == -1);
 
   timeout_wakeup_id = register_wakeup_callback(&process_rpc_timeout);
 }
 
-void rpc_init_static(void) {
+void rpc_init_static() {
   php_assert (timeout_wakeup_id != -1);
 
   INIT_VAR(string, rpc_filename);
@@ -3907,7 +3907,7 @@ void rpc_init_static(void) {
   last_var_ptr = vars_buffer + MAX_VARS;
 }
 
-void rpc_free_static(void) {
+void rpc_free_static() {
   CLEAR_VAR(string, rpc_filename);
   CLEAR_VAR(string, rpc_data_copy);
   CLEAR_VAR(string, rpc_data_copy_backup);

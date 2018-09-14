@@ -34,7 +34,7 @@ class var {
 
 public:
   var(const void *) = delete; // deprecate conversion from pointer to boolean
-  inline var(void);
+  inline var();
   inline var(const Unknown &u);
   inline var(bool b);
   inline var(int i);
@@ -68,10 +68,10 @@ public:
   template<class T>
   inline var &operator=(const OrFalse<array<T>> &other);
 
-  inline const var operator-(void) const;
-  inline const var operator+(void) const;
+  inline const var operator-() const;
+  inline const var operator+() const;
 
-  inline int operator~(void) const;
+  inline int operator~() const;
 
   inline var &operator+=(const var &other);
   inline var &operator-=(const var &other);
@@ -91,21 +91,21 @@ public:
   inline var &safe_set_shl(const var &other);
 
 
-  inline var &operator++(void);
+  inline var &operator++();
   inline const var operator++(int);
 
-  inline var &operator--(void);
+  inline var &operator--();
   inline const var operator--(int);
 
 
-  inline var &safe_incr_pre(void);
-  inline const var safe_incr_post(void);
+  inline var &safe_incr_pre();
+  inline const var safe_incr_post();
 
-  inline var &safe_decr_pre(void);
-  inline const var safe_decr_post(void);
+  inline var &safe_decr_pre();
+  inline const var safe_decr_post();
 
 
-  inline bool operator!(void) const;
+  inline bool operator!() const;
 
   inline var &append(const string &v);
 
@@ -144,27 +144,27 @@ public:
   inline void unset(const array<var>::const_iterator &it);
   inline void unset(const array<var>::iterator &it);
 
-  inline void destroy(void);
-  inline ~var(void);
+  inline void destroy();
+  inline ~var();
 
-  inline void clear(void);
+  inline void clear();
 
-  inline const var to_numeric(void) const;
-  inline bool to_bool(void) const;
-  inline int to_int(void) const;
-  inline double to_float(void) const;
-  inline const string to_string(void) const;
-  inline const array<var> to_array(void) const;
+  inline const var to_numeric() const;
+  inline bool to_bool() const;
+  inline int to_int() const;
+  inline double to_float() const;
+  inline const string to_string() const;
+  inline const array<var> to_array() const;
 
-  inline int safe_to_int(void) const;
+  inline int safe_to_int() const;
 
-  inline void convert_to_numeric(void);
-  inline void convert_to_bool(void);
-  inline void convert_to_int(void);
-  inline void convert_to_float(void);
-  inline void convert_to_string(void);
+  inline void convert_to_numeric();
+  inline void convert_to_bool();
+  inline void convert_to_int();
+  inline void convert_to_float();
+  inline void convert_to_string();
 
-  inline void safe_convert_to_int(void);
+  inline void safe_convert_to_int();
 
   inline const bool &as_bool(const char *function, int parameter_num) const;
   inline const int &as_int(const char *function, int parameter_num) const;
@@ -178,31 +178,31 @@ public:
   inline string &as_string(const char *function, int parameter_num);
   inline array<var> &as_array(const char *function, int parameter_num);
 
-  inline bool is_numeric(void) const;
-  inline bool is_scalar(void) const;
+  inline bool is_numeric() const;
+  inline bool is_scalar() const;
 
-  inline bool is_null(void) const;
-  inline bool is_bool(void) const;
-  inline bool is_int(void) const;
-  inline bool is_float(void) const;
-  inline bool is_string(void) const;
-  inline bool is_array(void) const;
+  inline bool is_null() const;
+  inline bool is_bool() const;
+  inline bool is_int() const;
+  inline bool is_float() const;
+  inline bool is_string() const;
+  inline bool is_array() const;
 
-  inline const string get_type(void) const;
-  inline const char *get_type_c_str(void) const;
+  inline const string get_type() const;
+  inline const char *get_type_c_str() const;
 
-  inline bool empty(void) const;
-  inline int count(void) const;
+  inline bool empty() const;
+  inline int count() const;
 
-  inline array<var>::const_iterator begin(void) const;
-  inline array<var>::const_iterator end(void) const;
+  inline array<var>::const_iterator begin() const;
+  inline array<var>::const_iterator end() const;
 
-  inline array<var>::iterator begin(void);
-  inline array<var>::iterator end(void);
+  inline array<var>::iterator begin();
+  inline array<var>::iterator end();
 
   inline void swap(var &other);
 
-  inline int get_reference_counter(void) const;
+  inline int get_reference_counter() const;
   inline void set_reference_counter_to_const();
 
   inline friend const var operator-(const string &lhs);

@@ -17,7 +17,7 @@ bool f$rpc_parse(const var &new_rpc_data);
 
 bool f$rpc_parse(const OrFalse<string> &new_rpc_data);
 
-int rpc_get_pos(void);
+int rpc_get_pos();
 
 bool rpc_set_pos(int pos);
 
@@ -67,7 +67,7 @@ struct rpc_connection {
   int connect_timeout;
   int reconnect_timeout;
 
-  rpc_connection(void);
+  rpc_connection();
 
   rpc_connection(bool value);
 
@@ -95,7 +95,7 @@ bool not_equals(const rpc_connection &my_rpc, bool value);
 
 void f$store_gzip_pack_threshold(int pack_threshold_bytes);
 
-void f$store_start_gzip_pack(void);
+void f$store_start_gzip_pack();
 
 void f$store_finish_gzip_pack(int threshold);
 
@@ -132,13 +132,13 @@ bool f$store_string(const string &v);
 
 bool f$store_many(const array<var> &a);
 
-bool f$store_finish(void);
+bool f$store_finish();
 
 bool f$rpc_clean(bool is_error = false);
 
-string f$rpc_get_contents(void);
+string f$rpc_get_contents();
 
-string f$rpc_get_clean(void);
+string f$rpc_get_clean();
 
 bool rpc_store(bool is_error = false);
 
@@ -147,7 +147,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer = fa
 
 int f$rpc_send_noflush(const rpc_connection &conn, double timeout = -1.0);
 
-void f$rpc_flush(void);
+void f$rpc_flush();
 
 OrFalse<string> f$rpc_get(int request_id, double timeout = -1.0);
 
@@ -156,7 +156,7 @@ OrFalse<string> f$rpc_get_synchronously(int request_id);
 bool f$rpc_get_and_parse(int request_id, double timeout = -1.0);
 
 
-inline int f$rpc_queue_create(void);
+inline int f$rpc_queue_create();
 
 inline int f$rpc_queue_create(const var &request_ids);
 
@@ -196,11 +196,11 @@ array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids)
 int f$query_x2(int x);
 
 
-void rpc_init_static_once(void);
+void rpc_init_static_once();
 
-void rpc_init_static(void);
+void rpc_init_static();
 
-void rpc_free_static(void);
+void rpc_free_static();
 
 
 /*
@@ -220,7 +220,7 @@ array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids)
   return f$rpc_tl_query_result_synchronously(array<int>(query_ids));
 }
 
-int f$rpc_queue_create(void) {
+int f$rpc_queue_create() {
   return f$wait_queue_create();
 }
 

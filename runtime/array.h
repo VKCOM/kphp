@@ -53,7 +53,7 @@ private:
 
     int int_key;
 
-    inline key_type get_key(void) const;
+    inline key_type get_key() const;
   };
 
   struct string_hash_entry : list_hash_entry {
@@ -62,7 +62,7 @@ private:
     int int_key;
     string string_key;
 
-    inline key_type get_key(void) const;
+    inline key_type get_key() const;
   };
 
   template<class T1>
@@ -114,34 +114,34 @@ private:
     int string_buf_size;
     int_hash_entry int_entries[0];
 
-    inline bool is_vector(void) const __attribute__ ((always_inline));
+    inline bool is_vector() const __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
 
-    inline const string_hash_entry *begin(void) const __attribute__ ((always_inline));
+    inline const string_hash_entry *begin() const __attribute__ ((always_inline));
     inline const string_hash_entry *next(const string_hash_entry *p) const __attribute__ ((always_inline));
     inline const string_hash_entry *prev(const string_hash_entry *p) const __attribute__ ((always_inline));
-    inline const string_hash_entry *end(void) const __attribute__ ((always_inline));
+    inline const string_hash_entry *end() const __attribute__ ((always_inline));
 
-    inline string_hash_entry *begin(void) __attribute__ ((always_inline));
+    inline string_hash_entry *begin() __attribute__ ((always_inline));
     inline string_hash_entry *next(string_hash_entry *p) __attribute__ ((always_inline));
     inline string_hash_entry *prev(string_hash_entry *p) __attribute__ ((always_inline));
-    inline string_hash_entry *end(void) __attribute__ ((always_inline));
+    inline string_hash_entry *end() __attribute__ ((always_inline));
 
     inline bool is_string_hash_entry(const string_hash_entry *p) const __attribute__ ((always_inline));
-    inline const string_hash_entry *get_string_entries(void) const __attribute__ ((always_inline));
-    inline string_hash_entry *get_string_entries(void) __attribute__ ((always_inline));
+    inline const string_hash_entry *get_string_entries() const __attribute__ ((always_inline));
+    inline string_hash_entry *get_string_entries() __attribute__ ((always_inline));
 
     inline static int choose_bucket(const int key, const int buf_size) __attribute__ ((always_inline));
 
     inline static array_inner *create(int new_int_size, int new_string_size, bool is_vector);
 
-    inline static array_inner *empty_array(void) __attribute__ ((always_inline));
+    inline static array_inner *empty_array() __attribute__ ((always_inline));
 
-    inline void dispose(void) __attribute__ ((always_inline));
+    inline void dispose() __attribute__ ((always_inline));
 
-    inline array_inner *ref_copy(void) __attribute__ ((always_inline));
+    inline array_inner *ref_copy() __attribute__ ((always_inline));
 
     inline const var get_var(int int_key) const;
     inline const T get_value(int int_key) const;
@@ -150,7 +150,7 @@ private:
     inline T &set_map_value(int int_key, const T &v, bool save_value) /*__attribute__ ((always_inline))*/;
     inline bool has_key(int int_key) const;
     inline bool isset_value(int int_key) const;
-    inline void unset_vector_value(void);
+    inline void unset_vector_value();
     inline void unset_map_value(int int_key);
 
     inline const var get_var(int int_key, const string &string_key) const;
@@ -162,7 +162,7 @@ private:
     inline bool isset_value(int int_key, const string &string_key) const;
     inline void unset_map_value(int int_key, const string &string_key);
 
-    inline array_inner(void) __attribute__ ((always_inline)); // deleted
+    inline array_inner() __attribute__ ((always_inline)); // deleted
     inline array_inner(const array_inner &other) __attribute__ ((always_inline)); // deleted
     inline array_inner &operator=(const array_inner &other) __attribute__ ((always_inline)); // deleted
   };
@@ -171,16 +171,16 @@ private:
   inline bool mutate_to_size_if_vector_shared(int int_size);
   inline void mutate_to_size(int int_size);
   inline bool mutate_if_map_shared(int mul = 1);
-  inline void mutate_if_vector_needed_int(void);
-  inline void mutate_if_map_needed_int(void);
-  inline void mutate_if_map_needed_string(void);
+  inline void mutate_if_vector_needed_int();
+  inline void mutate_if_map_needed_int();
+  inline void mutate_if_map_needed_string();
 
-  inline void convert_to_map(void);
+  inline void convert_to_map();
 
   template<class T1>
   inline void copy_from(const array<T1> &other);
 
-  inline void destroy(void) __attribute__ ((always_inline));
+  inline void destroy() __attribute__ ((always_inline));
 
 public:
 
@@ -189,13 +189,13 @@ public:
     const array_inner *self;
     const list_hash_entry *entry;
   public:
-    inline const_iterator(void) __attribute__ ((always_inline));
+    inline const_iterator() __attribute__ ((always_inline));
     inline const_iterator(const array_inner *self, const list_hash_entry *entry) __attribute__ ((always_inline));
 
-    inline const T &get_value(void) const __attribute__ ((always_inline));
-    inline key_type get_key(void) const __attribute__ ((always_inline));
-    inline const_iterator &operator++(void) __attribute__ ((always_inline));
-    inline const_iterator &operator--(void) __attribute__ ((always_inline));
+    inline const T &get_value() const __attribute__ ((always_inline));
+    inline key_type get_key() const __attribute__ ((always_inline));
+    inline const_iterator &operator++() __attribute__ ((always_inline));
+    inline const_iterator &operator--() __attribute__ ((always_inline));
     inline bool operator==(const const_iterator &other) const __attribute__ ((always_inline));
     inline bool operator!=(const const_iterator &other) const __attribute__ ((always_inline));
 
@@ -208,13 +208,13 @@ public:
     array_inner *self;
     list_hash_entry *entry;
   public:
-    inline iterator(void) __attribute__ ((always_inline));
+    inline iterator() __attribute__ ((always_inline));
     inline iterator(array_inner *self, list_hash_entry *entry) __attribute__ ((always_inline));
 
-    inline T &get_value(void) __attribute__ ((always_inline));
-    inline key_type get_key(void) const __attribute__ ((always_inline));
-    inline iterator &operator++(void) __attribute__ ((always_inline));
-    inline iterator &operator--(void) __attribute__ ((always_inline));
+    inline T &get_value() __attribute__ ((always_inline));
+    inline key_type get_key() const __attribute__ ((always_inline));
+    inline iterator &operator++() __attribute__ ((always_inline));
+    inline iterator &operator--() __attribute__ ((always_inline));
     inline bool operator==(const iterator &other) const __attribute__ ((always_inline));
     inline bool operator!=(const iterator &other) const __attribute__ ((always_inline));
 
@@ -223,7 +223,7 @@ public:
     class array;
   };
 
-  inline array(void) __attribute__ ((always_inline));
+  inline array() __attribute__ ((always_inline));
 
   inline explicit array(const array_size &s) __attribute__ ((always_inline));
 
@@ -247,11 +247,11 @@ public:
   template<class T1>
   inline array &operator=(const array<T1> &other) __attribute__ ((always_inline));
 
-  inline ~array(void) /*__attribute__ ((always_inline))*/;
+  inline ~array() /*__attribute__ ((always_inline))*/;
 
-  inline void clear(void) __attribute__ ((always_inline));
+  inline void clear() __attribute__ ((always_inline));
 
-  inline bool is_vector(void) const __attribute__ ((always_inline));
+  inline bool is_vector() const __attribute__ ((always_inline));
 
   T &operator[](int int_key);
   T &operator[](const string &s);
@@ -290,7 +290,7 @@ public:
   void push_back(const iterator &it);
   const T push_back_return(const T &v);
 
-  inline int get_next_key(void) const __attribute__ ((always_inline));
+  inline int get_next_key() const __attribute__ ((always_inline));
 
   bool has_key(int int_key) const;
   bool has_key(const string &s) const;
@@ -310,10 +310,10 @@ public:
   void unset(const const_iterator &it);
   void unset(const iterator &it);
 
-  inline bool empty(void) const __attribute__ ((always_inline));
-  inline int count(void) const __attribute__ ((always_inline));
+  inline bool empty() const __attribute__ ((always_inline));
+  inline int count() const __attribute__ ((always_inline));
 
-  inline array_size size(void) const __attribute__ ((always_inline));
+  inline array_size size() const __attribute__ ((always_inline));
 
   template<class T1>
   void merge_with(const array<T1> &other);
@@ -321,13 +321,13 @@ public:
   const array operator+(const array &other) const;
   array &operator+=(const array &other);
 
-  inline const_iterator begin(void) const __attribute__ ((always_inline));
+  inline const_iterator begin() const __attribute__ ((always_inline));
   inline const_iterator middle(int n) const __attribute__ ((always_inline));
-  inline const_iterator end(void) const __attribute__ ((always_inline));
+  inline const_iterator end() const __attribute__ ((always_inline));
 
-  inline iterator begin(void) __attribute__ ((always_inline));
+  inline iterator begin() __attribute__ ((always_inline));
   inline iterator middle(int n) __attribute__ ((always_inline));
-  inline iterator end(void) __attribute__ ((always_inline));
+  inline iterator end() __attribute__ ((always_inline));
 
   template<class T1>
   void sort(const T1 &compare, bool renumber);
@@ -338,22 +338,22 @@ public:
   inline void swap(array &other) __attribute__ ((always_inline));
 
 
-  T pop(void);
+  T pop();
 
-  T shift(void);
+  T shift();
 
   int unshift(const T &val);
 
 
-  inline bool to_bool(void) const __attribute__ ((always_inline));
-  inline int to_int(void) const __attribute__ ((always_inline));
-  inline double to_float(void) const __attribute__ ((always_inline));
+  inline bool to_bool() const __attribute__ ((always_inline));
+  inline int to_int() const __attribute__ ((always_inline));
+  inline double to_float() const __attribute__ ((always_inline));
 
 
-  int get_reference_counter(void) const;
+  int get_reference_counter() const;
   void set_reference_counter_to_const();
 
-  const T *get_const_vector_pointer(void) const; // unsafe
+  const T *get_const_vector_pointer() const; // unsafe
 
   void reserve(int int_size, int string_size, bool make_vector_if_possible);
 

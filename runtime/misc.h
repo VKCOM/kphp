@@ -29,8 +29,8 @@ const int IMAGETYPE_JP2 = 10;
 var f$getimagesize(const string &name);
 
 
-int f$posix_getpid(void);
-int f$posix_getuid(void);
+int f$posix_getpid();
+int f$posix_getuid();
 OrFalse<array<var>> f$posix_getpwuid(int uid);
 
 

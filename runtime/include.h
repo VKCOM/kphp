@@ -86,7 +86,7 @@ public:
   T value;
   bool bool_value;
 
-  OrFalse(void) :
+  OrFalse() :
     value(),
     bool_value() {
   }
@@ -132,16 +132,16 @@ public:
   }
 
 
-  T &ref(void) {
+  T &ref() {
     bool_value = true;
     return value;
   }
 
-  T &val(void) {
+  T &val() {
     return value;
   }
 
-  const T &val(void) const {
+  const T &val() const {
     return value;
   }
 };

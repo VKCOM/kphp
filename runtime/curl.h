@@ -26,7 +26,7 @@ int f$curl_errno(curl id);
 void f$curl_close(curl id);
 
 
-void curl_free_static(void);
+void curl_free_static();
 
 
 /*

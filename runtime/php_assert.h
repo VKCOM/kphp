@@ -152,7 +152,7 @@ void php_warning(char const *message, ...) {
 
 inline void php_assert__(const char *msg, const char *file, int line);
 
-#define php_assert(EX) (void)((EX) || (php_assert__ (#EX, __FILE__, __LINE__), 0))
+#define php_assert(EX) static_cast<void>((EX) || (php_assert__ (#EX, __FILE__, __LINE__), 0))
 
 void php_assert__(const char *msg, const char *file, int line) {
   php_warning("Assertion \"%s\" failed in file %s on line %d", msg, file, line);

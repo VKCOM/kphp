@@ -29,7 +29,7 @@
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
 
-array<string> f$hash_algos(void) {
+array<string> f$hash_algos() {
   return array<string>(
     string("sha1", 4),
     string("sha256", 6),
@@ -526,7 +526,7 @@ static long long ssl_connections_last_query_num = -1;
 
 const int DEFAULT_SOCKET_TIMEOUT = 60;
 
-static const char *ssl_get_error_string(void) {
+static const char *ssl_get_error_string() {
   static_SB.clean();
   while (unsigned long error_code = ERR_get_error()) {
     static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";
@@ -1051,7 +1051,7 @@ static int ssl_get_fd(const Stream &stream) {
   return c->sock;
 }
 
-void openssl_init_static_once(void) {
+void openssl_init_static_once() {
   static stream_functions ssl_stream_functions;
 
   ssl_stream_functions.name = string("ssl", 3);
@@ -1082,10 +1082,10 @@ void openssl_init_static_once(void) {
   OpenSSL_add_ssl_algorithms();
 }
 
-void openssl_init_static(void) {
+void openssl_init_static() {
 }
 
-void openssl_free_static(void) {
+void openssl_free_static() {
   dl::enter_critical_section();//OK
   if (dl::query_num == openssl_pkey_last_query_num) {
     const array<EVP_PKEY *> *const_openssl_pkey = openssl_pkey;

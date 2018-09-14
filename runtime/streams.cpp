@@ -768,12 +768,12 @@ OrFalse<int> f$file_put_contents(const string &stream, const var &content_var, i
 }
 
 
-void streams_init_static(void) {
+void streams_init_static() {
   INIT_VAR(var, error_number_dummy);
   INIT_VAR(var, error_description_dummy);
 }
 
-void streams_free_static(void) {
+void streams_free_static() {
   CLEAR_VAR(var, error_number_dummy);
   CLEAR_VAR(var, error_description_dummy);
 }

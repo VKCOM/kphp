@@ -68,10 +68,10 @@ public:
 
   static VertexPtr embrace(VertexPtr v);
   PrimitiveType get_ptype();
-  PrimitiveType get_type_help(void);
-  VertexPtr get_type_rule_func(void);
-  VertexPtr get_type_rule_(void);
-  VertexPtr get_type_rule(void);
+  PrimitiveType get_type_help();
+  VertexPtr get_type_rule_func();
+  VertexPtr get_type_rule_();
+  VertexPtr get_type_rule();
 
   static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, int ref_flag = 0);
   template<PrimitiveType ToT>

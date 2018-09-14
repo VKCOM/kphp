@@ -1013,8 +1013,8 @@ inline void InitScriptsH::compile(CodeGenerator &W) const {
     "  extern \"C\" {" << NL <<
     "#endif" << NL;
 
-  W << "void static_init_scripts (void);" << NL;
-  W << "void init_scripts (void);" << NL;
+  W << "void static_init_scripts();" << NL;
+  W << "void init_scripts();" << NL;
 
   W << "#ifdef  __cplusplus" << NL <<
     "  }" << NL <<
@@ -1057,7 +1057,7 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
     W << RunFunction(i->main_function);
   }
 
-  W << "void init_scripts (void)" <<
+  W << "void init_scripts()" <<
     BEGIN <<
     "init_func_ptrs();" << NL;
 
@@ -1414,7 +1414,7 @@ void FunctionStaticInit::compile(CodeGenerator &W) const {
   if (function->root->inline_flag) {
     W << "static inline ";
   }
-  W << "void " << FunctionName(function) << "$static_init (void)";
+  W << "void " << FunctionName(function) << "$static_init()";
   if (in_header) {
     W << ";" << NL;
     return;
@@ -1445,7 +1445,7 @@ inline void StaticInit::compile(CodeGenerator &W) const {
   }
   W << "void const_vars_init();" << NL;
 
-  W << "void static_init_scripts (void)";
+  W << "void static_init_scripts()";
   W << " " << BEGIN;
   W << "init_static_once();" << NL;
   W << "const_vars_init();" << NL;
@@ -1476,7 +1476,7 @@ void DfsInit::compile_dfs_init_part(
       W << VarExternDeclaration(var);
     }
   }
-  W << "void " << FunctionName(func) << "$dfs_init" << int_to_str(part_i) << " (void)";
+  W << "void " << FunctionName(func) << "$dfs_init" << int_to_str(part_i) << "()";
 
   if (full_flag) {
     W << " " << BEGIN;
@@ -1504,7 +1504,7 @@ void DfsInit::compile_dfs_init_part(
   W << NL;
 
 
-  W << "void " << FunctionName(func) << "$dfs_clear" << int_to_str(part_i) << "(void)";
+  W << "void " << FunctionName(func) << "$dfs_clear" << int_to_str(part_i) << "()";
   if (full_flag) {
     W << " " << BEGIN;
 
@@ -1541,7 +1541,7 @@ void DfsInit::compile_dfs_init_func(
     }
   }
 
-  W << "void " << FunctionName(func) << "$dfs_init (void)";
+  W << "void " << FunctionName(func) << "$dfs_init()";
   if (full_flag) {
     W << " " << BEGIN;
 
@@ -1561,7 +1561,7 @@ void DfsInit::compile_dfs_init_func(
   }
   W << NL;
 
-  W << "void " << FunctionName(func) << "$dfs_clear (void)";
+  W << "void " << FunctionName(func) << "$dfs_clear()";
   if (full_flag) {
     W << " " << BEGIN;
 
@@ -2384,7 +2384,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   }
 
   W << BEGIN;
-  W << "(void)" << root->switch_var() << ";" << NL;
+  W << "static_cast<void>(" << root->switch_var() << ");" << NL;
   W << root->ss() << " = f$strval (" << root->expr() << ");" << NL;
   W << root->ss_hash() << " = " << root->ss() << ".hash();" << NL;
   W << root->switch_flag() << " = false;" << NL;
@@ -2438,10 +2438,10 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << "switch (f$intval (" << root->expr() << "))" <<
     BEGIN;
-  W << "(void)" << root->ss() << ";" << NL;
-  W << "(void)" << root->ss_hash() << ";" << NL;
-  W << "(void)" << root->switch_var() << ";" << NL;
-  W << "(void)" << root->switch_flag() << ";" << NL;
+  W << "static_cast<void>(" << root->ss() << ");" << NL;
+  W << "static_cast<void>(" << root->ss_hash() << ");" << NL;
+  W << "static_cast<void>(" << root->switch_var() << ");" << NL;
+  W << "static_cast<void>(" << root->switch_flag() << ");" << NL;
 
   set<string> used;
   for (auto i : root->cases()) {
@@ -2481,8 +2481,8 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   string goto_name;
 
   W << "do " << BEGIN;
-  W << "(void)" << root->ss() << ";" << NL;
-  W << "(void)" << root->ss_hash() << ";" << NL;
+  W << "static_cast<void>(" << root->ss() << ");" << NL;
+  W << "static_cast<void>(" << root->ss_hash() << ");" << NL;
   W << root->switch_var() << " = " << root->expr() << ";" << NL <<
     root->switch_flag() << " = false;" << NL;
 

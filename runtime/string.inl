@@ -6,11 +6,11 @@ string::size_type string::string_inner::empty_string_storage[sizeof(string_inner
                                                                                                                                      0 /* capacity */,
                                                                                                                                      REF_CNT_FOR_CONST};
 
-string::string_inner &string::string_inner::empty_string(void) {
+string::string_inner &string::string_inner::empty_string() {
   return *reinterpret_cast <string_inner *> (empty_string_storage);
 }
 
-bool string::string_inner::is_shared(void) const {
+bool string::string_inner::is_shared() const {
   return ref_count > 0;
 }
 
@@ -21,7 +21,7 @@ void string::string_inner::set_length_and_sharable(size_type n) {
   ref_data()[n] = '\0';
 }
 
-char *string::string_inner::ref_data(void) const {
+char *string::string_inner::ref_data() const {
   return (char *)(this + 1);
 }
 
@@ -69,7 +69,7 @@ char *string::string_inner::reserve(size_type requested_capacity) {
   return p->ref_data();
 }
 
-void string::string_inner::dispose(void) {
+void string::string_inner::dispose() {
 //  fprintf (stderr, "dec ref cnt %d %s\n", ref_count - 1, ref_data());
   if (ref_count != REF_CNT_FOR_CONST) {
     ref_count--;
@@ -79,12 +79,12 @@ void string::string_inner::dispose(void) {
   }
 }
 
-void string::string_inner::destroy(void) {
+void string::string_inner::destroy() {
   dl::deallocate((void *)this, (size_type)(sizeof(string_inner) + (capacity + 1)));
 }
 
 
-char *string::string_inner::ref_copy(void) {
+char *string::string_inner::ref_copy() {
 //  fprintf (stderr, "inc ref cnt %d, %s\n", ref_count + 1, ref_data());
   if (ref_count != REF_CNT_FOR_CONST) {
     ref_count++;
@@ -103,7 +103,7 @@ char *string::string_inner::clone(size_type requested_cap) {
 }
 
 
-string::string_inner *string::inner(void) const {
+string::string_inner *string::inner() const {
   return (string::string_inner *)p - 1;
 }
 
@@ -123,7 +123,7 @@ void string::set_size(size_type new_size) {
   inner()->set_length_and_sharable(new_size);
 }
 
-string::string_inner &string::empty_string(void) {
+string::string_inner &string::empty_string() {
   return string_inner::empty_string();
 }
 
@@ -290,7 +290,7 @@ string::string(double f) {
 }
 
 
-string::~string(void) {
+string::~string() {
   destroy();
 }
 
@@ -307,7 +307,7 @@ string &string::operator=(string &&str) noexcept {
   return *this;
 }
 
-string::size_type string::size(void) const {
+string::size_type string::size() const {
   return inner()->size;
 }
 
@@ -329,11 +329,11 @@ void string::shrink(size_type n) {
   }
 }
 
-string::size_type string::capacity(void) const {
+string::size_type string::capacity() const {
   return inner()->capacity;
 }
 
-void string::make_not_shared(void) {
+void string::make_not_shared() {
   if (inner()->is_shared()) {
     force_reserve(size());
   }
@@ -354,7 +354,7 @@ string &string::reserve_at_least(size_type res) {
   return *this;
 }
 
-bool string::empty(void) const {
+bool string::empty() const {
   return size() == 0;
 }
 
@@ -586,7 +586,7 @@ string &string::append_unsafe(const var &v) {
   }
 }
 
-string &string::finish_append(void) {
+string &string::finish_append() {
   php_assert (inner()->size <= inner()->capacity);
   p[inner()->size] = '\0';
   return *this;
@@ -672,16 +672,16 @@ void string::swap(string &s) {
   s.p = tmp;
 }
 
-char *string::buffer(void) {
+char *string::buffer() {
   return p;
 }
 
-const char *string::c_str(void) const {
+const char *string::c_str() const {
   return p;
 }
 
 
-inline void string::warn_on_float_conversion(void) const {
+inline void string::warn_on_float_conversion() const {
   const char *s = c_str();
   while (isspace(*s)) {
     s++;
@@ -743,7 +743,7 @@ bool string::try_to_float(double *val) const {
 }
 
 
-var string::to_numeric(void) const {
+var string::to_numeric() const {
   char *end_ptr;
   double res = strtod(p, &end_ptr);
   if (end_ptr == p) {
@@ -756,7 +756,7 @@ var string::to_numeric(void) const {
   return res;
 }
 
-bool string::to_bool(void) const {
+bool string::to_bool() const {
   int l = size();
   return l >= 2 || (l == 1 && p[0] != '0');
 }
@@ -782,11 +782,11 @@ int string::to_int(const char *s, int l) {
 }
 
 
-int string::to_int(void) const {
+int string::to_int() const {
   return to_int(p, size());
 }
 
-double string::to_float(void) const {
+double string::to_float() const {
   char *end_ptr = NULL;
   double res = strtod(p, &end_ptr);
 //  if (*end_ptr) {
@@ -798,12 +798,12 @@ double string::to_float(void) const {
   return res;
 }
 
-const string &string::to_string(void) const {
+const string &string::to_string() const {
   return *this;
 }
 
 
-int string::safe_to_int(void) const {
+int string::safe_to_int() const {
   int mul = 1, l = size(), cur = 0;
   if (l > 0 && (p[0] == '-' || p[0] == '+')) {
     if (p[0] == '-') {
@@ -826,12 +826,12 @@ int string::safe_to_int(void) const {
 }
 
 
-bool string::is_int(void) const {
+bool string::is_int() const {
   return php_is_int(p, size());
 }
 
 
-bool string::is_numeric(void) const {
+bool string::is_numeric() const {
   const char *s = c_str();
   while (isspace(*s)) {
     s++;
@@ -887,7 +887,7 @@ bool string::is_numeric(void) const {
   return *s == '\0';
 }
 
-int string::hash(void) const {
+int string::hash() const {
   return string_hash(p, size());
 }
 
@@ -973,7 +973,7 @@ const string string::get_value(const var &v) const {
 }
 
 
-int string::get_reference_counter(void) const {
+int string::get_reference_counter() const {
   return inner()->ref_count + 1;
 }
 

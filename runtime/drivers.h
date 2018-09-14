@@ -6,8 +6,8 @@
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 
-void drivers_init_static(void);
-void drivers_free_static(void);
+void drivers_init_static();
+void drivers_free_static();
 
 extern var (*base128DecodeMixed_pointer)(var str);
 extern var (*debugServerLog_pointer)(array<var>);
@@ -46,14 +46,14 @@ public:
   virtual var decrement(const string &key, const var &v = 1) = 0;
   virtual var increment(const string &key, const var &v = 1) = 0;
 
-  virtual var getVersion(void) = 0;
+  virtual var getVersion() = 0;
 
-  virtual var getTag(void) const = 0;
-  virtual var getLastQueryTime(void) const = 0;
+  virtual var getTag() const = 0;
+  virtual var getLastQueryTime() const = 0;
 
-  virtual void bufferNextLog(void) = 0;
-  virtual void clearLogBuffer(void) = 0;
-  virtual void flushLogBuffer(void) = 0;
+  virtual void bufferNextLog() = 0;
+  virtual void clearLogBuffer() = 0;
+  virtual void flushLogBuffer() = 0;
 };
 
 class Memcache : public MC_object {
@@ -65,7 +65,7 @@ private:
     int host_weight;
     int timeout_ms;
 
-    host(void);
+    host();
     host(int host_num, int host_port, int host_weight, int timeout_ms);
   };
 
@@ -79,7 +79,7 @@ private:
   var run_increment(const string &key, const var &count);
 
 public:
-  Memcache(void);
+  Memcache();
 
   bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
   bool connect(const string &host_name, int port = 11211, int timeout = 1);
@@ -97,14 +97,14 @@ public:
   var decrement(const string &key, const var &v = 1);
   var increment(const string &key, const var &v = 1);
 
-  var getVersion(void);
+  var getVersion();
 
-  var getTag(void) const;
-  var getLastQueryTime(void) const;
+  var getTag() const;
+  var getLastQueryTime() const;
 
-  void bufferNextLog(void);
-  void clearLogBuffer(void);
-  void flushLogBuffer(void);
+  void bufferNextLog();
+  void clearLogBuffer();
+  void flushLogBuffer();
 };
 
 class RpcMemcache : public MC_object {
@@ -115,7 +115,7 @@ private:
     int host_weight;
     int actor_id;
 
-    host(void);
+    host();
     host(const string &host_name, int port, int actor_id, int host_weight, int timeout_ms);
     host(const rpc_connection &c);
   };
@@ -145,14 +145,14 @@ public:
   var decrement(const string &key, const var &v = 1);
   var increment(const string &key, const var &v = 1);
 
-  var getVersion(void);
+  var getVersion();
 
-  var getTag(void) const;
-  var getLastQueryTime(void) const;
+  var getTag() const;
+  var getLastQueryTime() const;
 
-  void bufferNextLog(void);
-  void clearLogBuffer(void);
-  void flushLogBuffer(void);
+  void bufferNextLog();
+  void clearLogBuffer();
+  void flushLogBuffer();
 };
 
 class true_mc : public MC_object {
@@ -197,14 +197,14 @@ public:
   var decrement(const string &key, const var &v = 1);
   var increment(const string &key, const var &v = 1);
 
-  var getVersion(void);
+  var getVersion();
 
-  var getTag(void) const;
-  var getLastQueryTime(void) const;
+  var getTag() const;
+  var getLastQueryTime() const;
 
-  void bufferNextLog(void);
-  void clearLogBuffer(void);
-  void flushLogBuffer(void);
+  void bufferNextLog();
+  void clearLogBuffer();
+  void flushLogBuffer();
 };
 
 class MyMemcache {
@@ -214,7 +214,7 @@ private:
 
   MyMemcache(MC_object *mc);
 public:
-  MyMemcache(void);
+  MyMemcache();
 
   friend bool f$memcached_addServer(const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms);
   friend bool f$memcached_connect(const MyMemcache &mc, const string &host_name, int port, int timeout);
@@ -257,7 +257,7 @@ public:
   friend int f$mcGetClusterSize(const MyMemcache &MC);
 
 
-  friend MyMemcache f$new_Memcache(void);
+  friend MyMemcache f$new_Memcache();
   friend MyMemcache f$new_RpcMemcache(bool fake);
   friend MyMemcache f$new_true_mc(const MyMemcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold);
   friend MyMemcache f$new_test_mc(const MyMemcache &mc, const string &engine_tag);
@@ -301,7 +301,7 @@ array<string> f$mcGetStats(const MyMemcache &MC);
 
 int f$mcGetClusterSize(const MyMemcache &MC);
 
-MyMemcache f$new_Memcache(void);
+MyMemcache f$new_Memcache();
 MyMemcache f$new_RpcMemcache(bool fake = false);
 MyMemcache f$new_true_mc(const MyMemcache &mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
 MyMemcache f$new_test_mc(const MyMemcache &mc, const string &engine_tag = string());
@@ -348,13 +348,13 @@ private:
 public:
   explicit db_driver();
 
-  void do_connect_no_log(void);
+  void do_connect_no_log();
 
-  int get_affected_rows(void);
+  int get_affected_rows();
 
-  int get_num_rows(void);
+  int get_num_rows();
 
-  int get_insert_id(void);
+  int get_insert_id();
 
   bool mysql_query(const string &query);
 
@@ -379,7 +379,7 @@ private:
 
   explicit MyDB(db_driver *db);
 public:
-  MyDB(void);
+  MyDB();
 
   friend void db_do_connect_no_log(const MyDB &db);
 
@@ -484,7 +484,7 @@ class rpc_mc_multiget_resumable : public Resumable {
   bool return_false_if_not_found;
 
 protected:
-  bool run(void) {
+  bool run() {
     RESUMABLE_BEGIN
       while (keys_n > 0) {
         request_id = f$wait_queue_next(queue_id, -1);

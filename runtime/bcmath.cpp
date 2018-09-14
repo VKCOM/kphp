@@ -744,6 +744,6 @@ int f$bccomp(const string &lhs, const string &rhs, int scale) {
 }
 
 
-void bcmath_init_static(void) {
+void bcmath_init_static() {
   bc_scale = 0;
 }

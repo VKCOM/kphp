@@ -376,7 +376,7 @@ bool f$date_default_timezone_set(const string &s) {
   return true;
 }
 
-string f$date_default_timezone_get(void) {
+string f$date_default_timezone_get() {
   return string("Europe/Moscow", 13);
 }
 
@@ -477,13 +477,13 @@ array<var> f$localtime(int timestamp, bool is_associative) {
 }
 
 
-double microtime_monotonic(void) {
+double microtime_monotonic() {
   struct timespec T;
   php_assert (clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
   return (double)T.tv_sec + T.tv_nsec * 1e-9;
 }
 
-static string microtime_string(void) {
+static string microtime_string() {
   struct timespec T;
   php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
   char buf[45];
@@ -491,7 +491,7 @@ static string microtime_string(void) {
   return string(buf, len);
 }
 
-double microtime(void) {
+double microtime() {
   struct timespec T;
   php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
   return (double)T.tv_sec + T.tv_nsec * 1e-9;
@@ -799,12 +799,12 @@ OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
   return false;
 }
 
-int f$time(void) {
+int f$time() {
   return (int)time(nullptr);
 }
 
 
-void datetime_init_static(void) {
+void datetime_init_static() {
   dl::enter_critical_section();//OK
 
   setenv("TZ", "Etc/GMT-3", 1);

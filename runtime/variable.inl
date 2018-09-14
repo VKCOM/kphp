@@ -58,7 +58,7 @@ void var::copy_from(var &&other) {
   other.type = NULL_TYPE;
 }
 
-var::var(void) :
+var::var() :
   type(NULL_TYPE) {
 }
 
@@ -411,7 +411,7 @@ var &var::operator=(const OrFalse<array<T>> &other) {
   return *this;
 }
 
-const var var::operator-(void) const {
+const var var::operator-() const {
   var arg1 = to_numeric();
 
   if (arg1.type == INTEGER_TYPE) {
@@ -422,12 +422,12 @@ const var var::operator-(void) const {
   return arg1;
 }
 
-const var var::operator+(void) const {
+const var var::operator+() const {
   return to_numeric();
 }
 
 
-int var::operator~(void) const {
+int var::operator~() const {
   return ~to_int();
 }
 
@@ -715,7 +715,7 @@ var &var::safe_set_shl(const var &other) {
 }
 
 
-var &var::operator++(void) {
+var &var::operator++() {
   switch (type) {
     case NULL_TYPE:
       type = INTEGER_TYPE;
@@ -776,7 +776,7 @@ const var var::operator++(int) {
   }
 }
 
-var &var::operator--(void) {
+var &var::operator--() {
   if (likely (type == INTEGER_TYPE)) {
     --i;
     return *this;
@@ -847,7 +847,7 @@ const var var::operator--(int) {
 }
 
 
-var &var::safe_incr_pre(void) {
+var &var::safe_incr_pre() {
   switch (type) {
     case NULL_TYPE:
       type = INTEGER_TYPE;
@@ -874,7 +874,7 @@ var &var::safe_incr_pre(void) {
   }
 }
 
-const var var::safe_incr_post(void) {
+const var var::safe_incr_post() {
   switch (type) {
     case NULL_TYPE:
       type = INTEGER_TYPE;
@@ -908,7 +908,7 @@ const var var::safe_incr_post(void) {
   }
 }
 
-var &var::safe_decr_pre(void) {
+var &var::safe_decr_pre() {
   switch (type) {
     case NULL_TYPE:
       php_warning("Can't apply operator -- to null");
@@ -934,7 +934,7 @@ var &var::safe_decr_pre(void) {
   }
 }
 
-const var var::safe_decr_post(void) {
+const var var::safe_decr_post() {
   switch (type) {
     case NULL_TYPE:
       php_warning("Can't apply operator -- to null");
@@ -968,7 +968,7 @@ const var var::safe_decr_post(void) {
 }
 
 
-bool var::operator!(void) const {
+bool var::operator!() const {
   return !to_bool();
 }
 
@@ -982,7 +982,7 @@ var &var::append(const string &v) {
 }
 
 
-void var::destroy(void) {
+void var::destroy() {
   switch (type) {
     case NULL_TYPE:
     case BOOLEAN_TYPE:
@@ -1001,7 +1001,7 @@ void var::destroy(void) {
   }
 }
 
-var::~var(void) {
+var::~var() {
   // do not remove copy-paste from clear.
   // It makes stacktraces unreadable
   destroy();
@@ -1009,13 +1009,13 @@ var::~var(void) {
 }
 
 
-void var::clear(void) {
+void var::clear() {
   destroy();
   type = NULL_TYPE;
 }
 
 
-const var var::to_numeric(void) const {
+const var var::to_numeric() const {
   switch (type) {
     case NULL_TYPE:
       return 0;
@@ -1037,7 +1037,7 @@ const var var::to_numeric(void) const {
 }
 
 
-bool var::to_bool(void) const {
+bool var::to_bool() const {
   switch (type) {
     case NULL_TYPE:
       return false;
@@ -1057,7 +1057,7 @@ bool var::to_bool(void) const {
   }
 }
 
-int var::to_int(void) const {
+int var::to_int() const {
   switch (type) {
     case NULL_TYPE:
       return 0;
@@ -1078,7 +1078,7 @@ int var::to_int(void) const {
   }
 }
 
-double var::to_float(void) const {
+double var::to_float() const {
   switch (type) {
     case NULL_TYPE:
       return 0.0;
@@ -1099,7 +1099,7 @@ double var::to_float(void) const {
   }
 }
 
-const string var::to_string(void) const {
+const string var::to_string() const {
   switch (type) {
     case NULL_TYPE:
       return string();
@@ -1120,7 +1120,7 @@ const string var::to_string(void) const {
   }
 }
 
-const array<var> var::to_array(void) const {
+const array<var> var::to_array() const {
   switch (type) {
     case NULL_TYPE:
       return array<var>();
@@ -1140,7 +1140,7 @@ const array<var> var::to_array(void) const {
   }
 }
 
-int var::safe_to_int(void) const {
+int var::safe_to_int() const {
   switch (type) {
     case NULL_TYPE:
       return 0;
@@ -1165,7 +1165,7 @@ int var::safe_to_int(void) const {
 }
 
 
-void var::convert_to_numeric(void) {
+void var::convert_to_numeric() {
   switch (type) {
     case NULL_TYPE:
       type = INTEGER_TYPE;
@@ -1195,7 +1195,7 @@ void var::convert_to_numeric(void) {
   }
 }
 
-void var::convert_to_bool(void) {
+void var::convert_to_bool() {
   switch (type) {
     case NULL_TYPE:
       type = BOOLEAN_TYPE;
@@ -1231,7 +1231,7 @@ void var::convert_to_bool(void) {
   }
 }
 
-void var::convert_to_int(void) {
+void var::convert_to_int() {
   switch (type) {
     case NULL_TYPE:
       type = INTEGER_TYPE;
@@ -1268,7 +1268,7 @@ void var::convert_to_int(void) {
   }
 }
 
-void var::convert_to_float(void) {
+void var::convert_to_float() {
   switch (type) {
     case NULL_TYPE:
       type = FLOAT_TYPE;
@@ -1305,7 +1305,7 @@ void var::convert_to_float(void) {
   }
 }
 
-void var::convert_to_string(void) {
+void var::convert_to_string() {
   switch (type) {
     case NULL_TYPE:
       type = STRING_TYPE;
@@ -1342,7 +1342,7 @@ void var::convert_to_string(void) {
 }
 
 
-void var::safe_convert_to_int(void) {
+void var::safe_convert_to_int() {
   switch (type) {
     case NULL_TYPE:
       type = INTEGER_TYPE;
@@ -1569,7 +1569,7 @@ array<var> &var::as_array(const char *function, int parameter_num) {
 }
 
 
-bool var::is_numeric(void) const {
+bool var::is_numeric() const {
   switch (type) {
     case NULL_TYPE:
     case BOOLEAN_TYPE:
@@ -1587,37 +1587,37 @@ bool var::is_numeric(void) const {
   }
 }
 
-bool var::is_scalar(void) const {
+bool var::is_scalar() const {
   return type != NULL_TYPE && type != ARRAY_TYPE;
 }
 
 
-bool var::is_null(void) const {
+bool var::is_null() const {
   return type == NULL_TYPE;
 }
 
-bool var::is_bool(void) const {
+bool var::is_bool() const {
   return type == BOOLEAN_TYPE;
 }
 
-bool var::is_int(void) const {
+bool var::is_int() const {
   return type == INTEGER_TYPE;
 }
 
-bool var::is_float(void) const {
+bool var::is_float() const {
   return type == FLOAT_TYPE;
 }
 
-bool var::is_string(void) const {
+bool var::is_string() const {
   return type == STRING_TYPE;
 }
 
-bool var::is_array(void) const {
+bool var::is_array() const {
   return type == ARRAY_TYPE;
 }
 
 
-inline const char *var::get_type_c_str(void) const {
+inline const char *var::get_type_c_str() const {
   switch (type) {
     case NULL_TYPE:
       return "NULL";
@@ -1637,17 +1637,17 @@ inline const char *var::get_type_c_str(void) const {
   }
 }
 
-inline const string var::get_type(void) const {
+inline const string var::get_type() const {
   const char *result = get_type_c_str();
   return string(result, (dl::size_type)strlen(result));
 }
 
 
-bool var::empty(void) const {
+bool var::empty() const {
   return !to_bool();
 }
 
-int var::count(void) const {
+int var::count() const {
   switch (type) {
     case NULL_TYPE:
       return 0;
@@ -2086,7 +2086,7 @@ void var::unset(const array<var>::iterator &it) {
 }
 
 
-array<var>::const_iterator var::begin(void) const {
+array<var>::const_iterator var::begin() const {
   if (likely (type == ARRAY_TYPE)) {
     return AS_CONST_ARRAY(a)->begin();
   }
@@ -2094,7 +2094,7 @@ array<var>::const_iterator var::begin(void) const {
   return array<var>::const_iterator();
 }
 
-array<var>::const_iterator var::end(void) const {
+array<var>::const_iterator var::end() const {
   if (likely (type == ARRAY_TYPE)) {
     return AS_CONST_ARRAY(a)->end();
   }
@@ -2102,7 +2102,7 @@ array<var>::const_iterator var::end(void) const {
 }
 
 
-array<var>::iterator var::begin(void) {
+array<var>::iterator var::begin() {
   if (likely (type == ARRAY_TYPE)) {
     return AS_ARRAY(a)->begin();
   }
@@ -2110,7 +2110,7 @@ array<var>::iterator var::begin(void) {
   return array<var>::iterator();
 }
 
-array<var>::iterator var::end(void) {
+array<var>::iterator var::end() {
   if (likely (type == ARRAY_TYPE)) {
     return AS_ARRAY(a)->end();
   }
@@ -2118,7 +2118,7 @@ array<var>::iterator var::end(void) {
 }
 
 
-int var::get_reference_counter(void) const {
+int var::get_reference_counter() const {
   switch (type) {
     case NULL_TYPE:
       return -1;

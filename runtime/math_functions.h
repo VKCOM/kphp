@@ -10,24 +10,24 @@ string f$dechex(int number);
 
 int f$hexdec(const string &number);
 
-double f$lcg_value(void);
+double f$lcg_value();
 
 
 void f$srand(int seed = INT_MIN);
 
-int f$rand(void);
+int f$rand();
 
 int f$rand(int r, int l);
 
-int f$getrandmax(void);
+int f$getrandmax();
 
 void f$mt_srand(int seed = INT_MIN);
 
-int f$mt_rand(void);
+int f$mt_rand();
 
 int f$mt_rand(int r, int l);
 
-int f$mt_getrandmax(void);
+int f$mt_getrandmax();
 
 
 var f$min(const var &a);
@@ -90,7 +90,7 @@ inline double f$log(double v);
 
 inline double f$log(double v, double base);
 
-inline double f$pi(void);
+inline double f$pi();
 
 var f$pow(const var &num, const var &deg);
 
@@ -238,7 +238,7 @@ double f$log(double v, double base) {
   return log(v) / log(base);
 }
 
-double f$pi(void) {
+double f$pi() {
   return M_PI;
 }
 

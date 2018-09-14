@@ -42,11 +42,11 @@ static string_buffer oub[OB_MAX_BUFFERS];
 string_buffer *coub;
 static int http_need_gzip;
 
-void f$ob_clean(void) {
+void f$ob_clean() {
   coub->clean();
 }
 
-bool f$ob_end_clean(void) {
+bool f$ob_end_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -55,7 +55,7 @@ bool f$ob_end_clean(void) {
   return true;
 }
 
-OrFalse<string> f$ob_get_clean(void) {
+OrFalse<string> f$ob_get_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -66,7 +66,7 @@ OrFalse<string> f$ob_get_clean(void) {
   return result;
 }
 
-string f$ob_get_contents(void) {
+string f$ob_get_contents() {
   return coub->str();
 }
 
@@ -87,7 +87,7 @@ void f$ob_start(const string &callback) {
   coub->clean();
 }
 
-void f$ob_flush(void) {
+void f$ob_flush() {
   if (ob_cur_buffer == 0) {
     php_warning("ob_flush with no buffer opented");
     return;
@@ -100,7 +100,7 @@ void f$ob_flush(void) {
   f$ob_clean();
 }
 
-bool f$ob_end_flush(void) {
+bool f$ob_end_flush() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -108,7 +108,7 @@ bool f$ob_end_flush(void) {
   return f$ob_end_clean();
 }
 
-OrFalse<string> f$ob_get_flush(void) {
+OrFalse<string> f$ob_get_flush() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -118,14 +118,14 @@ OrFalse<string> f$ob_get_flush(void) {
   return result;
 }
 
-OrFalse<int> f$ob_get_length(void) {
+OrFalse<int> f$ob_get_length() {
   if (ob_cur_buffer == 0) {
     return false;
   }
   return coub->size();
 }
 
-int f$ob_get_level(void) {
+int f$ob_get_level() {
   return ob_cur_buffer;
 }
 
@@ -400,7 +400,7 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
 
 #define MAX_SHUTDOWN_FUNCTIONS 256
 
-typedef var (*shutdown_function_type)(void);
+typedef var (*shutdown_function_type)();
 
 static shutdown_function_type shutdown_functions[MAX_SHUTDOWN_FUNCTIONS];
 int shutdown_functions_count;
@@ -474,7 +474,7 @@ void f$fastcgi_finish_request(int exit_code) {
   coub->clean();
 }
 
-void f$register_shutdown_function(var (*f)(void)) {
+void f$register_shutdown_function(var (*f)()) {
   if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
     return;
@@ -667,14 +667,14 @@ int dbg_echo(const string_buffer &sb) {
 }
 
 
-bool f$get_magic_quotes_gpc(void) {
+bool f$get_magic_quotes_gpc() {
   return false;
 }
 
 string v$d$PHP_SAPI __attribute__ ((weak));
 
 
-static string php_sapi_name(void) {
+static string php_sapi_name() {
   switch (query_type) {
     case QUERY_TYPE_CONSOLE:
       return string("cli", 3);
@@ -692,7 +692,7 @@ static string php_sapi_name(void) {
   }
 }
 
-string f$php_sapi_name(void) {
+string f$php_sapi_name() {
   return v$d$PHP_SAPI;
 }
 
@@ -1562,24 +1562,24 @@ bool f$set_server_status(const string &status) {
 }
 
 
-double f$get_net_time(void) {
+double f$get_net_time() {
   return get_net_time();
 }
 
-double f$get_script_time(void) {
+double f$get_script_time() {
   return get_script_time();
 }
 
-int f$get_net_queries_count(void) {
+int f$get_net_queries_count() {
   return get_net_queries_count();
 }
 
 
-int f$get_engine_uptime(void) {
+int f$get_engine_uptime() {
   return get_engine_uptime();
 }
 
-string f$get_engine_version(void) {
+string f$get_engine_version() {
   const char *full_version_str = get_engine_version();
   return string(full_version_str, strlen(full_version_str));
 }
@@ -1941,7 +1941,7 @@ static bool php_fclose(const Stream &stream) {
 }
 
 
-static void interface_init_static_once(void) {
+static void interface_init_static_once() {
   static stream_functions php_stream_functions;
 
   php_stream_functions.name = string("php", 3);
@@ -1969,7 +1969,7 @@ static void interface_init_static_once(void) {
 }
 
 
-void init_static_once(void) {
+void init_static_once() {
   files_init_static_once();
   interface_init_static_once();
   openssl_init_static_once();
@@ -1985,7 +1985,7 @@ void init_static_once(void) {
 dl::size_type string_buffer::MIN_BUFFER_LEN = 266175; //TODO: move to some better place
 dl::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24); //TODO: move to some better place
 
-void init_static(void) {
+void init_static() {
   bcmath_init_static();
   //curl_init_static();//lazy inited
   datetime_init_static();
@@ -2048,7 +2048,7 @@ void init_static(void) {
   php_assert (dl::in_critical_section == 0);
 }
 
-void free_static(void) {
+void free_static() {
   php_assert (dl::in_critical_section == 0);
 
   curl_free_static();

@@ -28,7 +28,7 @@ public:
   static int string_buffer_error_flag;
   inline explicit string_buffer(dl::size_type buffer_len = 4000);
 
-  inline string_buffer &clean(void);
+  inline string_buffer &clean();
 
   friend inline string_buffer &operator<<(string_buffer &sb, char c);
   friend inline string_buffer &operator<<(string_buffer &sb, const char *s);
@@ -48,17 +48,17 @@ public:
 
   inline void reserve(int len);
 
-  inline dl::size_type size(void) const;
+  inline dl::size_type size() const;
 
-  inline char *buffer(void);
-  inline const char *buffer(void) const;
+  inline char *buffer();
+  inline const char *buffer() const;
 
-  inline const char *c_str(void);
-  inline string str(void) const;
+  inline const char *c_str();
+  inline string str() const;
 
   inline bool set_pos(int pos);
 
-  inline ~string_buffer(void);
+  inline ~string_buffer();
 
   friend void string_buffer_init_static(int max_length);
 };

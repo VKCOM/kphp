@@ -403,7 +403,7 @@ void mc_version_callback(const char *result, int result_len) {
 MC_object::~MC_object() {
 }
 
-Memcache::host::host(void) :
+Memcache::host::host() :
   host_num(-1),
   host_port(-1),
   host_weight(0),
@@ -524,7 +524,7 @@ var Memcache::run_increment(const string &key, const var &count) {
   }
 }
 
-Memcache::Memcache(void) :
+Memcache::Memcache() :
   hosts(array_size(1, 0, true)) {
 }
 
@@ -670,7 +670,7 @@ var Memcache::increment(const string &key, const var &count) {
   return run_increment(key, count);
 }
 
-var Memcache::getVersion(void) {
+var Memcache::getVersion() {
   static const char *version_str = "version\r\n";
   if (hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::getVersion");
@@ -685,17 +685,17 @@ var Memcache::getVersion(void) {
 }
 
 
-var Memcache::getTag(void) const {
+var Memcache::getTag() const {
   php_warning("Method getTag doesn't supported for object of class Memcache");
   return var();
 }
 
-var Memcache::getLastQueryTime(void) const {
+var Memcache::getLastQueryTime() const {
   php_warning("Method getLastQueryTime doesn't supported for object of class Memcache");
   return var();
 }
 
-void Memcache::bufferNextLog(void) {
+void Memcache::bufferNextLog() {
   php_warning("Method bufferNextLog doesn't supported for object of class Memcache");
 }
 
@@ -708,7 +708,7 @@ void Memcache::flushLogBuffer() {
 }
 
 
-RpcMemcache::host::host(void) :
+RpcMemcache::host::host() :
   conn(),
   host_weight(0),
   actor_id(-1) {
@@ -894,7 +894,7 @@ var RpcMemcache::increment(const string &key, const var &count) {
   return res;
 }
 
-var RpcMemcache::getVersion(void) {
+var RpcMemcache::getVersion() {
   if (hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::getVersion");
     return false;
@@ -905,17 +905,17 @@ var RpcMemcache::getVersion(void) {
 }
 
 
-var RpcMemcache::getTag(void) const {
+var RpcMemcache::getTag() const {
   php_warning("Method getTag doesn't supported for object of class RpcMemcache");
   return var();
 }
 
-var RpcMemcache::getLastQueryTime(void) const {
+var RpcMemcache::getLastQueryTime() const {
   php_warning("Method getLastQueryTime doesn't supported for object of class RpcMemcache");
   return var();
 }
 
-void RpcMemcache::bufferNextLog(void) {
+void RpcMemcache::bufferNextLog() {
   php_warning("Method bufferNextLog doesn't supported for object of class RpcMemcache");
 }
 
@@ -1077,7 +1077,7 @@ var true_mc::increment(const string &key, const var &v) {
   return result;
 }
 
-var true_mc::getVersion(void) {
+var true_mc::getVersion() {
   if (mc == nullptr) {
     php_warning("Memcache object is NULL in true_mc->mc->getVersion");
     return false;
@@ -1235,15 +1235,15 @@ void true_mc::check_result(const char *operation, const var &key_var, double tim
   }
 }
 
-var true_mc::getTag(void) const {
+var true_mc::getTag() const {
   return engine_tag;
 }
 
-var true_mc::getLastQueryTime(void) const {
+var true_mc::getLastQueryTime() const {
   return last_query_time;
 }
 
-void true_mc::bufferNextLog(void) {
+void true_mc::bufferNextLog() {
   use_log_buffer = true;
 }
 
@@ -1462,7 +1462,7 @@ MyMemcache::MyMemcache(MC_object *mc) :
   mc(mc) {
 }
 
-MyMemcache::MyMemcache(void) :
+MyMemcache::MyMemcache() :
   bool_value(),
   mc(nullptr) {
 }
@@ -1511,7 +1511,7 @@ int f$mcGetClusterSize(const MyMemcache &MC) {
 }
 
 
-MyMemcache f$new_Memcache(void) {
+MyMemcache f$new_Memcache() {
   void *buf = dl::allocate(sizeof(Memcache));
   return MyMemcache(new(buf) Memcache());
 }
@@ -1579,7 +1579,7 @@ var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout, 
     TRY_CALL_VOID(var, f$fetch_long());//query_id
     int error_code = TRY_CALL(int, bool, f$fetch_int());
     string error = TRY_CALL(string, bool, f$fetch_string());
-    (void)error_code;
+    static_cast<void>(error_code);
     return false;
   }
   var result = TRY_CALL(var, var, f$fetch_memcache_value());
@@ -1964,7 +1964,7 @@ db_driver::db_driver() :
   query_results.push_back(array<array<var>>());
 }
 
-void db_driver::do_connect_no_log(void) {
+void db_driver::do_connect_no_log() {
   if (connection_id >= 0 || connected) {
     return;
   }
@@ -1988,21 +1988,21 @@ var db_driver::mysql_query_update_last(const string &query_string) {
 }
 
 
-int db_driver::get_affected_rows(void) {
+int db_driver::get_affected_rows() {
   if (connected < 0) {
     return 0;
   }
   return affected_rows;
 }
 
-int db_driver::get_num_rows(void) {
+int db_driver::get_num_rows() {
   if (connected < 0) {
     return 0;
   }
   return query_results[last_query_id].count();
 }
 
-int db_driver::get_insert_id(void) {
+int db_driver::get_insert_id() {
   if (connected < 0) {
     return -1;
   }
@@ -2172,7 +2172,7 @@ MyDB::MyDB(db_driver *db) :
   db(db) {
 }
 
-MyDB::MyDB(void) :
+MyDB::MyDB() :
   bool_value(),
   db(nullptr) {
 }
@@ -2263,7 +2263,7 @@ var v$Durov __attribute__ ((weak));
 var v$FullMCTime __attribute__ ((weak));
 var v$KPHP_MC_WRITE_STAT_PROBABILITY __attribute__ ((weak));
 
-void drivers_init_static(void) {
+void drivers_init_static() {
   INIT_VAR(MyMemcache, v$MC);
   INIT_VAR(MyMemcache, v$MC_True);
   INIT_VAR(var, v$config);
@@ -2285,7 +2285,7 @@ void drivers_init_static(void) {
   drivers_h_filename = string("drivers.h", 9);
 }
 
-void drivers_free_static(void) {
+void drivers_free_static() {
   CLEAR_VAR(MyMemcache, v$MC);
   CLEAR_VAR(MyMemcache, v$MC_True);
   CLEAR_VAR(var, v$config);

@@ -34,7 +34,7 @@ private:
 
   static var load_exception(char *storage);
 
-  void save_exception(void);
+  void save_exception();
 
 public:
   typedef var (*Getter)(char *);
@@ -49,7 +49,7 @@ public:
   template<class T1, class T2>
   void save(const T2 &x);
 
-  void save_void(void);
+  void save_void();
 
   template<class X, class Y>
   Y load();
@@ -75,7 +75,7 @@ public:
 
   bool resume(int resumable_id, Storage *input);
 
-  static void update_output(void);
+  static void update_output();
 };
 
 
@@ -101,10 +101,10 @@ bool f$wait_multiple(int resumable_id);
 
 var f$wait_result(int resumable_id, double timeout = -1.0);
 
-void f$sched_yield(void);
+void f$sched_yield();
 
 
-bool in_main_thread(void);
+bool in_main_thread();
 
 int register_forked_resumable(Resumable *resumable);
 
@@ -123,7 +123,7 @@ Storage *get_forked_storage(int resumable_id);
 Resumable *get_forked_resumable(int resumable_id);
 
 
-int f$wait_queue_create(void);
+int f$wait_queue_create();
 int f$wait_queue_create(const var &request_ids);
 int wait_queue_create(const array<int> &resumable_ids);
 void unregister_wait_queue(int queue_id);
@@ -139,9 +139,9 @@ int f$wait_queue_next(int queue_id, double timeout = -1.0);
 int wait_queue_next_synchronously(int queue_id);
 int f$wait_queue_next_synchronously(int queue_id);
 
-void resumable_init_static_once(void);
+void resumable_init_static_once();
 
-void resumable_init_static(void);
+void resumable_init_static();
 
 int f$get_running_fork_id();
 

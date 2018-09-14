@@ -101,20 +101,20 @@ int result_buff_len;
 int result_buff_pos;
 #define cur_buff_len (int)((wptr - buff) + result_buff_pos)
 
-inline void init_buff(void) {
+inline void init_buff() {
   wptr = buff;
   result_buff = nullptr;
   result_buff_len = 0;
   result_buff_pos = 0;
 }
 
-inline void free_buff(void) {
+inline void free_buff() {
   if (result_buff_len) {
     dl::deallocate(result_buff, result_buff_len);
   }
 }
 
-inline void realloc_buff(void) {
+inline void realloc_buff() {
   if (!result_buff_len) {
     result_buff_len = 2 * BUFF_LEN;
     result_buff = (char *)dl::allocate(result_buff_len);
@@ -125,7 +125,7 @@ inline void realloc_buff(void) {
   }
 }
 
-inline void flush_buff(void) {
+inline void flush_buff() {
   while (cur_buff_len > result_buff_len) {
     realloc_buff();
   }

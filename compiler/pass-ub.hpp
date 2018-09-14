@@ -84,7 +84,7 @@ public:
     return vertex;
   }
 
-  void on_finish(void) {
+  void on_finish() {
     my_unique(&data.dep);
     my_unique(&data.used_global_vars);
   }

@@ -116,7 +116,7 @@ private:
 
   int lock_comments_cnt;
 
-  void write_indent(void);
+  void write_indent();
   void append(const char *begin, size_t length);
   void append(size_t n, char c);
   void begin_line();

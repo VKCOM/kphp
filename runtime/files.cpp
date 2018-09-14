@@ -114,7 +114,7 @@ bool f$chmod(const string &s, int mode) {
   return result;
 }
 
-void f$clearstatcache(void) {
+void f$clearstatcache() {
   //TODO
 }
 
@@ -859,7 +859,7 @@ static OrFalse<int> file_file_put_contents(const string &name, const string &con
 }
 
 
-void files_init_static_once(void) {
+void files_init_static_once() {
   static stream_functions file_stream_functions;
 
   file_stream_functions.name = string("file", 4);
@@ -886,11 +886,11 @@ void files_init_static_once(void) {
   register_stream_functions(&file_stream_functions, true);
 }
 
-void files_init_static(void) {
+void files_init_static() {
   opened_fd = -1;
 }
 
-void files_free_static(void) {
+void files_free_static() {
   dl::enter_critical_section();//OK
   if (dl::query_num == opened_files_last_query_num) {
     const array<FILE *> *const_opened_files = opened_files;

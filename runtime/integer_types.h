@@ -10,7 +10,7 @@ class Long {
 public:
   long long l;
 
-  explicit inline Long(void);
+  explicit inline Long();
   inline Long(long long l);
 
   inline Long(int i);
@@ -85,7 +85,7 @@ class ULong {
 public:
   unsigned long long l;
 
-  explicit inline ULong(void);
+  explicit inline ULong();
   inline ULong(unsigned long long l);
 
   inline ULong(int i);
@@ -157,7 +157,7 @@ class UInt {
 public:
   unsigned int l;
 
-  explicit inline UInt(void);
+  explicit inline UInt();
   inline UInt(unsigned int l);
 
   inline UInt(int i);
@@ -297,7 +297,7 @@ void Long::convert_from(const string &s) {
   l *= mul;
 }
 
-Long::Long(void) :
+Long::Long() :
   l(0) {
 }
 
@@ -548,7 +548,7 @@ void ULong::convert_from(const string &s) {
   l *= mul;
 }
 
-ULong::ULong(void) :
+ULong::ULong() :
   l(0) {
 }
 
@@ -780,7 +780,7 @@ void UInt::convert_from(const string &s) {
   l *= mul;
 }
 
-UInt::UInt(void) :
+UInt::UInt() :
   l(0) {
 }
 

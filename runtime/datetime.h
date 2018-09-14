@@ -8,7 +8,7 @@ string f$date(const string &format, int timestamp = INT_MIN);
 
 bool f$date_default_timezone_set(const string &s);
 
-string f$date_default_timezone_get(void);
+string f$date_default_timezone_get();
 
 array<var> f$getdate(int timestamp = INT_MIN);
 
@@ -18,9 +18,9 @@ int f$gmmktime(int h = INT_MIN, int m = INT_MIN, int s = INT_MIN, int month = IN
 
 array<var> f$localtime(int timestamp = INT_MIN, bool is_associative = false);
 
-double microtime_monotonic(void);
+double microtime_monotonic();
 
-double microtime(void);
+double microtime();
 
 var f$microtime(bool get_as_float = false);
 
@@ -30,7 +30,7 @@ string f$strftime(const string &format, int timestamp = INT_MIN);
 
 OrFalse<int> f$strtotime(const string &time_str, int timestamp = INT_MIN);
 
-int f$time(void);
+int f$time();
 
 
-void datetime_init_static(void);
+void datetime_init_static();

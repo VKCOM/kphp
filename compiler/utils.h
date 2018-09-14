@@ -36,7 +36,7 @@ class Enumerator {
 public:
   vector<T> vars;
 
-  int size(void) {
+  int size() {
     return vars.size();
   }
 
