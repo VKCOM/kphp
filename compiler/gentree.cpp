@@ -2485,10 +2485,12 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
         return;
       }
 
+      Token* phpdoc_token = info.root->get_func_id()->phpdoc_token;
       info.root = func;
       FunctionPtr registered_function = register_function(info);
       if (registered_function.not_null()) {
-        info.root->get_func_id()->access_type = access_type;
+        registered_function->access_type = access_type;
+        registered_function->phpdoc_token = phpdoc_token;
       }
     }
 
