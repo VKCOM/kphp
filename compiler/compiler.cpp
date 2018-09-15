@@ -1200,7 +1200,7 @@ public:
             VertexPtr check_cmd;
 
             VertexPtr isset;
-            VertexPtr a_copy = clone_vertex(a);
+            VertexPtr a_copy = a.clone();
             if (b->type() == op_true || b->type() == op_false) {
               auto is_bool = VertexAdaptor<op_func_call>::create(a_copy);
               is_bool->str_val = "is_bool";
@@ -1430,7 +1430,7 @@ private:
     size_t func_args_n = func_args.size();
 
     FunctionPtr new_function(new FunctionData());
-    CLONE_VERTEX(new_func_root, op_function, func->root.as<op_function>());
+    auto new_func_root =  func->root.as<op_function>().clone();
 
     for (auto id_classPtr_it : template_type_id_to_ClassPtr) {
       const std::pair<AssumType, ClassPtr> &assum_and_class = id_classPtr_it.second;

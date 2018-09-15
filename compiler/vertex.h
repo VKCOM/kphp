@@ -134,7 +134,7 @@ public:
     assert (n == -1);
     n = from.size();
     for (int i = 0; i < n; i++) {
-      new(&arr()[-i]) VertexPtr(clone_vertex(from.ith(i)));
+      new(&arr()[-i]) VertexPtr(from.ith(i).clone());
     }
   }
 
@@ -348,70 +348,6 @@ vertex_inner<Op> *raw_clone_vertex_inner(const vertex_inner<Op> &from) {
   ptr->raw_copy(from);
   return ptr;
 }
-
-template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(vertex_inner<meta_op_base> *from_ptr = nullptr) {
-  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(0, (vertex_inner<Op> *)from_ptr);
-  return ptr;
-}
-
-template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(VertexPtr first, vertex_inner<meta_op_base> *from_ptr = nullptr) {
-  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(1, (vertex_inner<Op> *)from_ptr);
-  (*ptr)[0] = first;
-  return ptr;
-}
-
-template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, vertex_inner<meta_op_base> *from_ptr = nullptr) {
-  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(2, (vertex_inner<Op> *)from_ptr);
-  (*ptr)[0] = first;
-  (*ptr)[1] = second;
-  return ptr;
-}
-
-template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second,
-                                      VertexPtr third, vertex_inner<meta_op_base> *from_ptr = nullptr) {
-  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(3, (vertex_inner<Op> *)from_ptr);
-  (*ptr)[0] = first;
-  (*ptr)[1] = second;
-  (*ptr)[2] = third;
-  return ptr;
-}
-
-template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(VertexPtr first, VertexPtr second, VertexPtr third,
-                                      VertexPtr forth, vertex_inner<meta_op_base> *from_ptr = nullptr) {
-  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(4, (vertex_inner<Op> *)from_ptr);
-  (*ptr)[0] = first;
-  (*ptr)[1] = second;
-  (*ptr)[2] = third;
-  (*ptr)[3] = forth;
-  return ptr;
-}
-
-template<Operation Op>
-vertex_inner<Op> *create_vertex_inner(const vector<VertexPtr> &next,
-                                      vertex_inner<meta_op_base> *from_ptr = nullptr) {
-  vertex_inner<Op> *ptr = raw_create_vertex_inner<Op>(
-    (int)next.size(),
-    (vertex_inner<Op> *)from_ptr
-  );
-  for (int i = 0, ni = (int)next.size(); i < ni; i++) {
-    ptr->ith(i) = next[i];
-  }
-  return ptr;
-}
-
-template<Operation Op>
-vertex_inner<Op> *clone_vertex_inner(const vertex_inner<Op> &from) {
-  vertex_inner<Op> *ptr = raw_clone_vertex_inner<Op>(from);
-  return ptr;
-}
-
-#define CLONE_VERTEX(name, op, from)\
-  VertexAdaptor <op> name = VertexPtr (clone_vertex_inner <op> (*from))
 
 template <typename... Args>
 VertexPtr create_vertex(Operation op, Args&& ...args) {

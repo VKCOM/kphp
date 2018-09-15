@@ -2521,9 +2521,8 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
   vector<VertexPtr> new_params_call;
   for (const auto &parameter : params_next) {
     if (parameter->type() == op_func_param) {
-      CLONE_VERTEX(new_var, op_var, parameter.as<op_func_param>()->var().as<op_var>());
-      new_params_call.push_back(new_var);
-      new_params_next.push_back(clone_vertex(parameter));
+      new_params_call.push_back(parameter.as<op_func_param>()->var().as<op_var>().clone());
+      new_params_next.push_back(parameter.clone());
     } else if (parameter->type() == op_func_param_callback) {
       if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
         return VertexPtr();

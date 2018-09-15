@@ -547,19 +547,16 @@ public:
       tmp_var->set_string(gen_unique_name("tmp_var"));
       tmp_var->extra_type = op_ex_var_superlocal_inplace;        // отвечает требованиям: инициализируется 1 раз и внутри set
       auto set_var = VertexAdaptor<op_set>::create(tmp_var, list->array());
-      CLONE_VERTEX(tmp_var_rval, op_var, tmp_var);
-      list->array() = tmp_var_rval;
+      list->array() = tmp_var.clone();
       op_set_to_tmp_var = set_var;
     }
 
-    CLONE_VERTEX(tmp_var_rval, op_var, list->array().as<op_var>());
-
     VertexPtr result_seq;
     if (op_set_to_tmp_var.is_null()) {
-      auto seq = VertexAdaptor<op_seq_rval>::create(list, tmp_var_rval);
+      auto seq = VertexAdaptor<op_seq_rval>::create(list, list->array().as<op_var>().clone());
       result_seq = seq;
     } else {
-      auto seq = VertexAdaptor<op_seq_rval>::create(op_set_to_tmp_var, list, tmp_var_rval);
+      auto seq = VertexAdaptor<op_seq_rval>::create(op_set_to_tmp_var, list, list->array().as<op_var>().clone());
       result_seq = seq;
     }
     set_location(result_seq, list->location);

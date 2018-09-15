@@ -30,6 +30,12 @@ typedef Id<FunctionSet> FunctionSetPtr;
 template<Operation Op>
 class vertex_inner;
 
+template<Operation Op>
+class VertexAdaptor;
+
+typedef VertexAdaptor<meta_op_base> VertexPtr;
+
+VertexPtr clone_vertex(VertexPtr);
 
 //TODO: use private and protected when necessary
 template<Operation Op>
@@ -45,7 +51,6 @@ public:
     impl(impl) {
   }
 
-  //TODO: use dynamic cast to enforce correctnes
   template<Operation FromOp>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) :
     impl(dynamic_cast <vertex_inner<Op> *> (from.impl)) {
@@ -111,7 +116,10 @@ public:
     return VertexAdaptor<Op>(vertex_inner<Op>::copy_create(from, args...));
   }
 
+  VertexAdaptor<Op> clone() const {
+    return VertexAdaptor<Op>(clone_vertex(*this));
+  }
+
 };
 
-typedef VertexAdaptor<meta_op_base> VertexPtr;
 
