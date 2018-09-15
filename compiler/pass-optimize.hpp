@@ -42,15 +42,12 @@ public:
                   dl_pstr("Can not use [] for %s", type_out(tinf::get_type(a)).c_str()));
 
       if (set_op->rl_type == val_none) {
-        CREATE_VERTEX (push_back, op_push_back, a, c);
-        result = push_back;
+        result = VertexAdaptor<op_push_back>::create(a, c);
       } else {
-        CREATE_VERTEX (push_back_return, op_push_back_return, a, c);
-        result = push_back_return;
+        result = VertexAdaptor<op_push_back_return>::create(a, c);
       }
     } else {
-      CREATE_VERTEX (set_value, op_set_value, a, b, c);
-      result = set_value;
+      result = VertexAdaptor<op_set_value>::create(a, b, c);
     }
     result->location = save_root->get_location();
     result->extra_type = op_ex_internal_func;
@@ -71,7 +68,7 @@ public:
   VertexPtr optimize_string_building(VertexPtr root) {
     vector<VertexPtr> collected;
     collect_concat(root, &collected);
-    CREATE_VERTEX (new_root, op_string_build, collected);
+    auto new_root = VertexAdaptor<op_string_build>::create(collected);
     new_root->location = root->get_location();
     new_root->rl_type = root->rl_type;
 
@@ -80,7 +77,7 @@ public:
 
   VertexPtr optimize_postfix_inc(VertexPtr root) {
     if (root->rl_type == val_none) {
-      CREATE_VERTEX (new_root, op_prefix_inc, root.as<op_postfix_inc>()->expr());
+      auto new_root = VertexAdaptor<op_prefix_inc>::create(root.as<op_postfix_inc>()->expr());
       new_root->rl_type = root->rl_type;
       new_root->location = root->get_location();
       root = new_root;
@@ -90,7 +87,7 @@ public:
 
   VertexPtr optimize_postfix_dec(VertexPtr root) {
     if (root->rl_type == val_none) {
-      CREATE_VERTEX (new_root, op_prefix_dec, root.as<op_postfix_dec>()->expr());
+      auto new_root = VertexAdaptor<op_prefix_dec>::create(root.as<op_postfix_dec>()->expr());
       new_root->rl_type = root->rl_type;
       new_root->location = root->get_location();
       root = new_root;
@@ -139,7 +136,7 @@ public:
       return from;
     }
 
-    CREATE_VERTEX (res, ToOp);
+    auto res = VertexAdaptor<ToOp>::create();
     res->str_val = (*tmp)->get_string();
     //FIXME: it should be a copy
     res->rl_type = from->rl_type;

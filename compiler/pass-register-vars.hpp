@@ -54,7 +54,7 @@ public:
       name = gen_unique_name("const_var");
     }
 
-    CREATE_VERTEX (var, op_var);
+    auto var = VertexAdaptor<op_var>::create();
     var->str_val = name;
     var->extra_type = op_ex_var_const;
     var->location = loc;
@@ -407,13 +407,13 @@ public:
     if (root->type() == op_global) {
       visit_global_vertex(root);
       local->need_recursion_flag = false;
-      CREATE_VERTEX (empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     } else if (root->type() == op_static) {
       kphp_error(!stage::get_function()->root->inline_flag, "Inline functions don't support static variables");
       visit_static_vertex(root);
       local->need_recursion_flag = false;
-      CREATE_VERTEX (empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     } else if (root->type() == op_var) {
       visit_var(root);
@@ -543,10 +543,10 @@ public:
   VertexPtr process_list_assignment(VertexAdaptor<op_list> list) {
     VertexPtr op_set_to_tmp_var;
     if (list->array()->type() != op_var) {        // list(...) = $var не трогаем, только list(...) = f()
-      CREATE_VERTEX(tmp_var, op_var);
+      auto tmp_var = VertexAdaptor<op_var>::create();
       tmp_var->set_string(gen_unique_name("tmp_var"));
       tmp_var->extra_type = op_ex_var_superlocal_inplace;        // отвечает требованиям: инициализируется 1 раз и внутри set
-      CREATE_VERTEX(set_var, op_set, tmp_var, list->array());
+      auto set_var = VertexAdaptor<op_set>::create(tmp_var, list->array());
       CLONE_VERTEX(tmp_var_rval, op_var, tmp_var);
       list->array() = tmp_var_rval;
       op_set_to_tmp_var = set_var;
@@ -556,10 +556,10 @@ public:
 
     VertexPtr result_seq;
     if (op_set_to_tmp_var.is_null()) {
-      CREATE_VERTEX(seq, op_seq_rval, list, tmp_var_rval);
+      auto seq = VertexAdaptor<op_seq_rval>::create(list, tmp_var_rval);
       result_seq = seq;
     } else {
-      CREATE_VERTEX(seq, op_seq_rval, op_set_to_tmp_var, list, tmp_var_rval);
+      auto seq = VertexAdaptor<op_seq_rval>::create(op_set_to_tmp_var, list, tmp_var_rval);
       result_seq = seq;
     }
     set_location(result_seq, list->location);

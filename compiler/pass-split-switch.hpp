@@ -25,16 +25,16 @@ private:
       return goto_op;
     }
 
-    CREATE_VERTEX (minus_one, op_int_const);
+    auto minus_one = VertexAdaptor<op_int_const>::create();
     minus_one->str_val = "-1";
-    CREATE_VERTEX (state, op_var);
+    auto state = VertexAdaptor<op_var>::create();
     state->str_val = state_name;
-    CREATE_VERTEX (expr, op_set, state, minus_one);
+    auto expr = VertexAdaptor<op_set>::create(state, minus_one);
 
     //TODO: auto_return instead of return true!
-    CREATE_VERTEX (true_val, op_true);
-    CREATE_VERTEX (new_return, op_return, true_val);
-    CREATE_VERTEX (seq, op_seq, expr, new_return);
+    auto true_val = VertexAdaptor<op_true>::create();
+    auto new_return = VertexAdaptor<op_return>::create(true_val);
+    auto seq = VertexAdaptor<op_seq>::create(expr, new_return);
     return seq;
   }
 
@@ -43,12 +43,12 @@ private:
     const string &state_name,
     int cycle_depth) {
     if (root->type() == op_return) {
-      CREATE_VERTEX (one, op_int_const);
+      auto one = VertexAdaptor<op_int_const>::create();
       one->str_val = "1";
-      CREATE_VERTEX (state, op_var);
+      auto state = VertexAdaptor<op_var>::create();
       state->str_val = state_name;
-      CREATE_VERTEX (expr, op_set, state, one);
-      CREATE_VERTEX (seq, op_seq, expr, root);
+      auto expr = VertexAdaptor<op_set>::create(state, one);
+      auto seq = VertexAdaptor<op_seq>::create(expr, root);
       return seq;
     }
     if ((root->type() == op_continue || root->type() == op_break)) {
@@ -96,66 +96,66 @@ public:
       }
 
       string func_name_str = stage::get_function_name() + "$" + gen_unique_name("switch_func");
-      CREATE_VERTEX (func_name, op_func_name);
+      auto func_name = VertexAdaptor<op_func_name>::create();
       func_name->str_val = func_name_str;
 
-      CREATE_VERTEX (case_state, op_var);
+      auto case_state = VertexAdaptor<op_var>::create();
       case_state->ref_flag = 1;
       string case_state_name = gen_unique_name("switch_case_state");
       case_state->str_val = case_state_name;
 
-      CREATE_VERTEX (case_state_3, op_var);
+      auto case_state_3 = VertexAdaptor<op_var>::create();
       case_state_3->str_val = case_state_name;
       case_state_3->extra_type = op_ex_var_superlocal;
-      CREATE_VERTEX (case_state_0, op_var);
+      auto case_state_0 = VertexAdaptor<op_var>::create();
       case_state_0->str_val = case_state_name;
       case_state_0->extra_type = op_ex_var_superlocal;
-      CREATE_VERTEX (case_state_1, op_var);
+      auto case_state_1 = VertexAdaptor<op_var>::create();
       case_state_1->str_val = case_state_name;
       case_state_1->extra_type = op_ex_var_superlocal;
-      CREATE_VERTEX (case_state_2, op_var);
+      auto case_state_2 = VertexAdaptor<op_var>::create();
       case_state_2->str_val = case_state_name;
       case_state_2->extra_type = op_ex_var_superlocal;
 
-      CREATE_VERTEX (case_state_param, op_func_param, case_state);
-      CREATE_VERTEX (func_params, op_func_param_list, case_state_param);
-      CREATE_VERTEX (func, op_function, func_name, func_params, seq);
+      auto case_state_param = VertexAdaptor<op_func_param>::create(case_state);
+      auto func_params = VertexAdaptor<op_func_param_list>::create(case_state_param);
+      auto func = VertexAdaptor<op_function>::create(func_name, func_params, seq);
       func->extra_type = op_ex_func_switch;
       func = prepare_switch_func(func, case_state_name, 1);
       GenTree::func_force_return(func);
       new_functions.push_back(func);
 
-      CREATE_VERTEX (func_call, op_func_call, case_state_0);
+      auto func_call = VertexAdaptor<op_func_call>::create(case_state_0);
       func_call->str_val = func_name_str;
 
       string case_res_name = gen_unique_name("switch_case_res");
-      CREATE_VERTEX (case_res, op_var);
+      auto case_res = VertexAdaptor<op_var>::create();
       case_res->str_val = case_res_name;
       case_res->extra_type = op_ex_var_superlocal;
-      CREATE_VERTEX (case_res_copy, op_var);
+      auto case_res_copy = VertexAdaptor<op_var>::create();
       case_res_copy->str_val = case_res_name;
       case_res_copy->extra_type = op_ex_var_superlocal;
-      CREATE_VERTEX (run_func, op_set, case_res, func_call);
+      auto run_func = VertexAdaptor<op_set>::create(case_res, func_call);
 
 
-      CREATE_VERTEX (zero, op_int_const);
+      auto zero = VertexAdaptor<op_int_const>::create();
       zero->str_val = "0";
-      CREATE_VERTEX (one, op_int_const);
+      auto one = VertexAdaptor<op_int_const>::create();
       one->str_val = "1";
-      CREATE_VERTEX (minus_one, op_int_const);
+      auto minus_one = VertexAdaptor<op_int_const>::create();
       minus_one->str_val = "-1";
 
-      CREATE_VERTEX (eq_one, op_eq2, case_state_1, one);
-      CREATE_VERTEX (eq_minus_one, op_eq2, case_state_2, minus_one);
+      auto eq_one = VertexAdaptor<op_eq2>::create(case_state_1, one);
+      auto eq_minus_one = VertexAdaptor<op_eq2>::create(case_state_2, minus_one);
 
-      CREATE_VERTEX (cmd_one, op_return, case_res_copy);
-      CREATE_VERTEX (one_2, op_int_const);
+      auto cmd_one = VertexAdaptor<op_return>::create(case_res_copy);
+      auto one_2 = VertexAdaptor<op_int_const>::create();
       one_2->str_val = "1";
-      CREATE_VERTEX (cmd_minus_one, op_break, one_2);
+      auto cmd_minus_one = VertexAdaptor<op_break>::create(one_2);
 
-      CREATE_VERTEX (init, op_set, case_state_3, zero);
-      CREATE_VERTEX (if_one, op_if, eq_one, GenTree::embrace(cmd_one));
-      CREATE_VERTEX (if_minus_one, op_if, eq_minus_one, GenTree::embrace(cmd_minus_one));
+      auto init = VertexAdaptor<op_set>::create(case_state_3, zero);
+      auto if_one = VertexAdaptor<op_if>::create(eq_one, GenTree::embrace(cmd_one));
+      auto if_minus_one = VertexAdaptor<op_if>::create(eq_minus_one, GenTree::embrace(cmd_minus_one));
 
       vector<VertexPtr> new_seq_next;
       new_seq_next.push_back(init);
@@ -163,7 +163,7 @@ public:
       new_seq_next.push_back(if_one);
       new_seq_next.push_back(if_minus_one);
 
-      CREATE_VERTEX (new_seq, op_seq, new_seq_next);
+      auto new_seq = VertexAdaptor<op_seq>::create(new_seq_next);
       cs->back() = new_seq;
     }
 

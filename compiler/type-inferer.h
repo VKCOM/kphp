@@ -488,8 +488,8 @@ private:
         v->type() == op_postfix_dec ||
         v->type() == op_postfix_inc) {
       VertexAdaptor<meta_op_unary_op> unary = v;
-      CREATE_VERTEX (one, op_int_const);
-      CREATE_VERTEX  (res, op_add, unary->expr(), one);
+      auto one = VertexAdaptor<op_int_const>::create();
+      auto res = VertexAdaptor<op_add>::create(unary->expr(), one);
       set_location(one, stage::get_location());
       set_location(res, stage::get_location());
       return as_rvalue(res);
@@ -497,11 +497,7 @@ private:
 
     if (OpInfo::arity(v->type()) == binary_opp) {
       VertexAdaptor<meta_op_binary_op> binary = v;
-      CREATE_META_VERTEX (
-        res,
-        meta_op_binary_op, OpInfo::base_op(v->type()),
-        binary->lhs(), binary->rhs()
-      );
+      VertexPtr res = create_vertex(OpInfo::base_op(v->type()), binary->lhs(), binary->rhs());
       set_location(res, stage::get_location());
       return as_rvalue(res);
     }
@@ -747,9 +743,9 @@ private:
       if (cur->type() != op_lvalue_null) {
         // делаем $cur = $list_array[$i]; хотелось бы array[i] выразить через rvalue multikey int_key, но
         // при составлении edges (from_node[from_at] = to_node) этот key теряется, поэтому через op_index
-        CREATE_VERTEX(ith_index, op_int_const);
+        auto ith_index = VertexAdaptor<op_int_const>::create();
         ith_index->set_string(int_to_str(i));
-        CREATE_VERTEX(new_v, op_index, list->array(), ith_index);
+        auto new_v = VertexAdaptor<op_index>::create(list->array(), ith_index);
         set_location(new_v, stage::get_location());
         create_set(cur, new_v);
       }

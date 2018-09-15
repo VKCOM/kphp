@@ -172,12 +172,12 @@ VertexPtr GenTree::conv_to_lval(VertexPtr x) {
   VertexPtr res;
   switch (ToT) {
     case tp_array: {
-      CREATE_VERTEX (v, op_conv_array_l, x);
+      auto v = VertexAdaptor<op_conv_array_l>::create(x);
       res = v;
       break;
     }
     case tp_int: {
-      CREATE_VERTEX (v, op_conv_int_l, x);
+      auto v = VertexAdaptor<op_conv_int_l>::create(x);
       res = v;
       break;
     }
@@ -191,47 +191,47 @@ VertexPtr GenTree::conv_to(VertexPtr x) {
   VertexPtr res;
   switch (ToT) {
     case tp_int: {
-      CREATE_VERTEX (v, op_conv_int, x);
+      auto v = VertexAdaptor<op_conv_int>::create(x);
       res = v;
       break;
     }
     case tp_bool: {
-      CREATE_VERTEX (v, op_conv_bool, x);
+      auto v = VertexAdaptor<op_conv_bool>::create(x);
       res = v;
       break;
     }
     case tp_string: {
-      CREATE_VERTEX (v, op_conv_string, x);
+      auto v = VertexAdaptor<op_conv_string>::create(x);
       res = v;
       break;
     }
     case tp_float: {
-      CREATE_VERTEX (v, op_conv_float, x);
+      auto v = VertexAdaptor<op_conv_float>::create(x);
       res = v;
       break;
     }
     case tp_array: {
-      CREATE_VERTEX (v, op_conv_array, x);
+      auto v = VertexAdaptor<op_conv_array>::create(x);
       res = v;
       break;
     }
     case tp_UInt: {
-      CREATE_VERTEX (v, op_conv_uint, x);
+      auto v = VertexAdaptor<op_conv_uint>::create(x);
       res = v;
       break;
     }
     case tp_Long: {
-      CREATE_VERTEX (v, op_conv_long, x);
+      auto v = VertexAdaptor<op_conv_long>::create(x);
       res = v;
       break;
     }
     case tp_ULong: {
-      CREATE_VERTEX (v, op_conv_ulong, x);
+      auto v = VertexAdaptor<op_conv_ulong>::create(x);
       res = v;
       break;
     }
     case tp_regexp: {
-      CREATE_VERTEX (v, op_conv_regexp, x);
+      auto v = VertexAdaptor<op_conv_regexp>::create(x);
       res = v;
       break;
     }

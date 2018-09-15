@@ -133,7 +133,7 @@ bool split_by_break_file(VertexAdaptor<op_function> root, vector<VertexPtr> *res
     auto cur_arg = args.begin();
     while (true) {
       if ((cur_arg == args.end()) || (*cur_arg)->type() == op_break_file) {
-        CREATE_VERTEX (new_seq, op_seq, cur_next);
+        auto new_seq = VertexAdaptor<op_seq>::create(cur_next);
         splitted.push_back(new_seq);
         cur_next.clear();
       } else {
@@ -150,14 +150,14 @@ bool split_by_break_file(VertexAdaptor<op_function> root, vector<VertexPtr> *res
   VertexAdaptor<op_function> next_func;
   for (int i = splitted_n - 1; i >= 0; i--) {
     string func_name_str = gen_unique_name(stage::get_file()->short_file_name);
-    CREATE_VERTEX (func_name, op_func_name);
+    auto func_name = VertexAdaptor<op_func_name>::create();
     func_name->str_val = func_name_str;
-    CREATE_VERTEX (func_params, op_func_param_list);
-    CREATE_VERTEX (func, op_function, func_name, func_params, splitted[i]);
+    auto func_params = VertexAdaptor<op_func_param_list>::create();
+    auto func = VertexAdaptor<op_function>::create(func_name, func_params, splitted[i]);
     func->extra_type = op_ex_func_global;
 
     if (next_func.not_null()) {
-      CREATE_VERTEX (call, op_func_call);
+      auto call = VertexAdaptor<op_func_call>::create();
       call->str_val = next_func->name()->get_string();
       GenTree::func_force_return(func, call);
     } else {
@@ -168,11 +168,11 @@ bool split_by_break_file(VertexAdaptor<op_function> root, vector<VertexPtr> *res
     res->push_back(func);
   }
 
-  CREATE_VERTEX (func_call, op_func_call);
+  auto func_call = VertexAdaptor<op_func_call>::create();
   func_call->str_val = next_func->name()->get_string();
 
-  CREATE_VERTEX (ret, op_return, func_call);
-  CREATE_VERTEX (new_seq, op_seq, ret);
+  auto ret = VertexAdaptor<op_return>::create(func_call);
+  auto new_seq = VertexAdaptor<op_seq>::create(ret);
   root->cmd() = new_seq;
 
   return true;
@@ -378,7 +378,7 @@ public:
           file->req_id = current_function;
         }
 
-        CREATE_VERTEX (call, op_func_call);
+        auto call = VertexAdaptor<op_func_call>::create();
         if (file.not_null()) {
           call->str_val = file->main_func_name;
           cur = call;
@@ -445,25 +445,25 @@ private:
 
     VertexAdaptor<op_switch> switch_v = v;
 
-    CREATE_VERTEX (root_ss, op_var);
+    auto root_ss = VertexAdaptor<op_var>::create();
     root_ss->str_val = gen_unique_name("ss");
     root_ss->extra_type = op_ex_var_superlocal;
     root_ss->type_help = tp_string;
     switch_v->ss() = root_ss;
 
-    CREATE_VERTEX (root_ss_hash, op_var);
+    auto root_ss_hash = VertexAdaptor<op_var>::create();
     root_ss_hash->str_val = gen_unique_name("ss_hash");
     root_ss_hash->extra_type = op_ex_var_superlocal;
     root_ss_hash->type_help = tp_int;
     switch_v->ss_hash() = root_ss_hash;
 
-    CREATE_VERTEX (root_switch_flag, op_var);
+    auto root_switch_flag = VertexAdaptor<op_var>::create();
     root_switch_flag->str_val = gen_unique_name("switch_flag");
     root_switch_flag->extra_type = op_ex_var_superlocal;
     root_switch_flag->type_help = tp_bool;
     switch_v->switch_flag() = root_switch_flag;
 
-    CREATE_VERTEX (root_switch_var, op_var);
+    auto root_switch_var = VertexAdaptor<op_var>::create();
     root_switch_var->str_val = gen_unique_name("switch_var");
     root_switch_var->extra_type = op_ex_var_superlocal;
     root_switch_var->type_help = tp_var;
@@ -490,7 +490,7 @@ private:
       CREATE_VERTEX(seq_op, op_seq, set_op);
       foreach_v->pre_cmd() = seq_op;*/
 
-      CREATE_VERTEX(temp_var2, op_var);
+      auto temp_var2 = VertexAdaptor<op_var>::create();
       temp_var2->str_val = gen_unique_name("tmp_expr");
       temp_var2->extra_type = op_ex_var_superlocal;
       temp_var2->needs_const_iterator_flag = true;
@@ -577,7 +577,7 @@ public:
     defines_stream.set_sink(true);
     all_fun.set_sink(true);
 
-    CREATE_VERTEX(val, op_string);
+    auto val = VertexAdaptor<op_string>::create();
     val->set_string(get_version_string());
     DefineData *data = new DefineData(val, DefineData::def_php);
     data->name = "KPHP_COMPILER_VERSION";
@@ -728,19 +728,19 @@ public:
                    dl_pstr("Couldn't calculate value of %s", name->get_string().substr(2).c_str()));
         def_type = DefineData::def_var;
 
-        CREATE_VERTEX (var, op_var);
+        auto var = VertexAdaptor<op_var>::create();
         var->extra_type = op_ex_var_superglobal;
         var->str_val = name->get_string();
         set_location(var, name->get_location());
         name = var;
 
         define->value() = VertexPtr();
-        CREATE_VERTEX (new_root, op_set, name, val);
+        auto new_root = VertexAdaptor<op_set>::create(name, val);
         set_location(new_root, root->get_location());
         root = new_root;
       } else {
         def_type = DefineData::def_php;
-        CREATE_VERTEX (new_root, op_empty);
+        auto new_root = VertexAdaptor<op_empty>::create();
         root = new_root;
       }
 
@@ -977,16 +977,16 @@ void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           kphp_error(doc_type.not_null(),
                      dl_pstr("Failed to parse type '%s'", type_help.c_str()));
           if (infer_type & 1) {
-            CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
-            CREATE_VERTEX(doc_rule_var, op_var);
+            auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+            auto doc_rule_var = VertexAdaptor<op_var>::create();
             doc_rule_var->str_val = var->str_val;
             doc_rule_var->type_rule = doc_type_check;
             set_location(doc_rule_var, f->root->location);
             prepend_cmd.push_back(doc_rule_var);
           }
           if (infer_type & 2) {
-            CREATE_VERTEX(doc_type_check, op_common_type_rule, doc_type);
-            CREATE_VERTEX(doc_rule_var, op_var);
+            auto doc_type_check = VertexAdaptor<op_common_type_rule>::create(doc_type);
+            auto doc_rule_var = VertexAdaptor<op_var>::create();
             doc_rule_var->str_val = var->str_val;
             doc_rule_var->type_rule = doc_type_check;
             set_location(doc_rule_var, f->root->location);
@@ -1045,7 +1045,7 @@ void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     for (auto i : *f->root.as<op_function>()->cmd()) {
       prepend_cmd.push_back(i);
     }
-    CREATE_VERTEX(new_cmd, op_seq, prepend_cmd);
+    auto new_cmd = VertexAdaptor<op_seq>::create(prepend_cmd);
     ::set_location(new_cmd, f->root->location);
     f->root.as<op_function>()->cmd() = new_cmd;
   }
@@ -1118,10 +1118,10 @@ public:
       is_defined = def.not_null() && def->name == name;
 
       if (is_defined) {
-        CREATE_VERTEX (true_val, op_true);
+        auto true_val = VertexAdaptor<op_true>::create();
         root = true_val;
       } else {
-        CREATE_VERTEX (false_val, op_false);
+        auto false_val = VertexAdaptor<op_false>::create();
         root = false_val;
       }
     }
@@ -1133,12 +1133,12 @@ public:
       if (d.not_null()) {
         assert (d->name == name);
         if (d->type() == DefineData::def_var) {
-          CREATE_VERTEX (var, op_var);
+          auto var = VertexAdaptor<op_var>::create();
           var->extra_type = op_ex_var_superglobal;
           var->str_val = "d$" + name;
           root = var;
         } else if (d->type() == DefineData::def_raw || d->type() == DefineData::def_php) {
-          CREATE_VERTEX (def, op_define_val);
+          auto def = VertexAdaptor<op_define_val>::create();
           def->set_define_id(d);
           root = def;
         } else {
@@ -1184,11 +1184,11 @@ public:
         if (ok) {
           if (b->type() == op_null) {
             VertexPtr check_cmd;
-            CREATE_VERTEX (isset, op_isset, a);
+            auto isset = VertexAdaptor<op_isset>::create(a);
             if (root->type() == op_neq3) {
               check_cmd = isset;
             } else {
-              CREATE_VERTEX (not_isset, op_log_not, isset);
+              auto not_isset = VertexAdaptor<op_log_not>::create(isset);
               check_cmd = not_isset;
             }
             root = check_cmd;
@@ -1202,23 +1202,23 @@ public:
             VertexPtr isset;
             VertexPtr a_copy = clone_vertex(a);
             if (b->type() == op_true || b->type() == op_false) {
-              CREATE_VERTEX(is_bool, op_func_call, a_copy);
+              auto is_bool = VertexAdaptor<op_func_call>::create(a_copy);
               is_bool->str_val = "is_bool";
               isset = is_bool;
             } else if (b->type() == op_string) {
-              CREATE_VERTEX(is_string, op_func_call, a_copy);
+              auto is_string = VertexAdaptor<op_func_call>::create(a_copy);
               is_string->str_val = "is_string";
               isset = is_string;
             } else if (b->type() == op_int_const) {
-              CREATE_VERTEX(is_integer, op_func_call, a_copy);
+              auto is_integer = VertexAdaptor<op_func_call>::create(a_copy);
               is_integer->str_val = "is_integer";
               isset = is_integer;
             } else if (b->type() == op_float_const) {
-              CREATE_VERTEX(is_float, op_func_call, a_copy);
+              auto is_float = VertexAdaptor<op_func_call>::create(a_copy);
               is_float->str_val = "is_float";
               isset = is_float;
             } else if (b->type() == op_array) {
-              CREATE_VERTEX(is_array, op_func_call, a_copy);
+              auto is_array = VertexAdaptor<op_func_call>::create(a_copy);
               is_array->str_val = "is_array";
               isset = is_array;
             } else {
@@ -1227,11 +1227,11 @@ public:
 
 
             if (root->type() == op_neq3) {
-              CREATE_VERTEX (not_isset, op_log_not, isset);
-              CREATE_VERTEX (check, op_log_or, not_isset, root);
+              auto not_isset = VertexAdaptor<op_log_not>::create(isset);
+              auto check = VertexAdaptor<op_log_or>::create(not_isset, root);
               check_cmd = check;
             } else {
-              CREATE_VERTEX (check, op_log_and, isset, root);
+              auto check = VertexAdaptor<op_log_and>::create(isset, root);
               check_cmd = check;
             }
             root = check_cmd;
@@ -1267,7 +1267,7 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
     if (root->type() == op_function_c) {
-      CREATE_VERTEX (new_root, op_string);
+      auto new_root = VertexAdaptor<op_string>::create();
       if (stage::get_function_name() != stage::get_file()->main_func_name) {
         new_root->set_string(stage::get_function_name());
       }
@@ -1323,12 +1323,12 @@ private:
       if (call_args_n == 1 && call_args[0]->type() == op_varg) {
         args = call_args[0].as<op_varg>()->expr();
       } else {
-        CREATE_VERTEX (new_args, op_array, call->get_next());
+        auto new_args = VertexAdaptor<op_array>::create(call->get_next());
         new_args->location = call->get_location();
         args = new_args;
       }
       vector<VertexPtr> tmp(1, GenTree::conv_to<tp_array>(args));
-      COPY_CREATE_VERTEX (new_call, call, op_func_call, tmp);
+      auto new_call = VertexAdaptor<op_func_call>::copy_create(call, tmp);
       return new_call;
     }
 
@@ -1643,7 +1643,7 @@ private:
   AUTO_PROF (preprocess_break);
 
   VertexPtr create_va_list_var(Location loc) {
-    CREATE_VERTEX(result, op_var);
+    auto result = VertexAdaptor<op_var>::create();
     result->str_val = "$VA_LIST";
     set_location(result, loc);
     return result;
@@ -1662,12 +1662,12 @@ public:
       } else if (name == "func_get_arg") {
         kphp_error(call->size() == 1, "Strange func_num_arg not one argument");
         VertexPtr arr = create_va_list_var(call->location);
-        CREATE_VERTEX(index, op_index, arr, call->ith(0));
+        auto index = VertexAdaptor<op_index>::create(arr, call->ith(0));
         return index;
       } else if (name == "func_num_args") {
         kphp_error(call->size() == 0, "Strange func_num_args with arguments");
         VertexPtr arr = create_va_list_var(call->location);
-        CREATE_VERTEX(count_call, op_func_call, arr);
+        auto count_call = VertexAdaptor<op_func_call>::create(arr);
         count_call->str_val = "count";
         set_location(count_call, call->location);
         return count_call;
@@ -1678,9 +1678,9 @@ public:
       VertexPtr old_params = root.as<op_function>()->params();
       vector<VertexPtr> params_varg;
       VertexPtr va_list_var = create_va_list_var(root->location);
-      CREATE_VERTEX(va_list_param, op_func_param, va_list_var);
+      auto va_list_param = VertexAdaptor<op_func_param>::create(va_list_var);
       params_varg.push_back(va_list_param);
-      CREATE_VERTEX (params_new, op_func_param_list, params_varg);
+      auto params_new = VertexAdaptor<op_func_param_list>::create(params_varg);
 
       root.as<op_function>()->params() = params_new;
 
@@ -1694,22 +1694,22 @@ public:
         if (arg->has_default()) {
           def = arg->default_value();
         } else {
-          CREATE_VERTEX(null, op_null);
+          auto null = VertexAdaptor<op_null>::create();
           def = null;
         }
 
-        CREATE_VERTEX(id0, op_int_const);
+        auto id0 = VertexAdaptor<op_int_const>::create();
         id0->str_val = int_to_str(ii);
-        CREATE_VERTEX(isset_value, op_index, create_va_list_var(root->location), id0);
-        CREATE_VERTEX(isset, op_isset, isset_value);
+        auto isset_value = VertexAdaptor<op_index>::create(create_va_list_var(root->location), id0);
+        auto isset = VertexAdaptor<op_isset>::create(isset_value);
 
-        CREATE_VERTEX(id1, op_int_const);
+        auto id1 = VertexAdaptor<op_int_const>::create();
         id1->str_val = int_to_str(ii);
-        CREATE_VERTEX(result_value, op_index, create_va_list_var(root->location), id1);
+        auto result_value = VertexAdaptor<op_index>::create(create_va_list_var(root->location), id1);
 
 
-        CREATE_VERTEX(expr, op_ternary, isset, result_value, def);
-        CREATE_VERTEX(set, op_set, var, expr);
+        auto expr = VertexAdaptor<op_ternary>::create(isset, result_value, def);
+        auto set = VertexAdaptor<op_set>::create(var, expr);
         params_init.push_back(set);
         ii++;
       }
@@ -1720,7 +1720,7 @@ public:
         for (auto i : *seq) {
           params_init.push_back(i);
         }
-        CREATE_VERTEX(new_seq, op_seq, params_init);
+        auto new_seq = VertexAdaptor<op_seq>::create(params_init);
         root.as<op_function>()->cmd() = new_seq;
       }
     }
@@ -1780,7 +1780,7 @@ public:
         if (!kphp_error(doc_type.not_null(),
                         dl_pstr("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), var->name.c_str()))) {
           doc_type->location = klass->root->location;
-          CREATE_VERTEX(doc_type_check, op_lt_type_rule, doc_type);
+          auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
           v->type_rule = doc_type_check;
         }
       }
@@ -2212,7 +2212,7 @@ public:
 
   void unused_vertices(vector<VertexPtr *> &v) {
     for (auto i: v) {
-      CREATE_VERTEX (empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       *i = empty;
     }
   }
@@ -2784,19 +2784,19 @@ public:
     if (func->root->resumable_flag == false) {
       return vertex;
     }
-    CREATE_VERTEX(temp_var, op_var);
+    auto temp_var = VertexAdaptor<op_var>::create();
     temp_var->str_val = gen_unique_name("resumable_temp_var");
     VarPtr var = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
     var->tinf_node.copy_type_from(tinf::get_type(func, -1));
     temp_var->set_var_id(var);
-    CREATE_VERTEX(set_op, op_set, temp_var, func_call);
+    auto set_op = VertexAdaptor<op_set>::create(temp_var, func_call);
 
-    CREATE_VERTEX(temp_var2, op_var);
+    auto temp_var2 = VertexAdaptor<op_var>::create();
     temp_var2->str_val = temp_var->str_val;
     temp_var2->set_var_id(var);
     *replace = temp_var2;
 
-    CREATE_VERTEX(seq, op_seq, set_op, vertex);
+    auto seq = VertexAdaptor<op_seq>::create(set_op, vertex);
     return seq;
   }
 };
@@ -2847,11 +2847,11 @@ public:
       return vertex;
     }
     if (lhs.is_null()) {
-      CREATE_VERTEX (empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       set_location(empty, vertex->get_location());
       lhs = empty;
     }
-    CREATE_VERTEX (async, op_async, lhs, func_call);
+    auto async = VertexAdaptor<op_async>::create(lhs, func_call);
     set_location(async, func_call->get_location());
     return async;
   }

@@ -265,6 +265,14 @@ public:
     v->set_children(0, std::forward<Args>(args)...);
     return v;
   }
+
+  template<typename... Args>
+  static vertex_inner<meta_op_base>* copy_create(VertexPtr from, Args&&... args) {
+    vertex_inner<meta_op_base> *v = raw_create_vertex_inner<meta_op_base>(get_children_size(std::forward<Args>(args)...), &(*from));
+    v->set_children(0, std::forward<Args>(args)...);
+    return v;
+  }
+
 };
 
 inline bool operator==(const VertexPtr &a, const VertexPtr &b) {
@@ -404,18 +412,11 @@ vertex_inner<Op> *clone_vertex_inner(const vertex_inner<Op> &from) {
 
 #define CLONE_VERTEX(name, op, from)\
   VertexAdaptor <op> name = VertexPtr (clone_vertex_inner <op> (*from))
-#define CREATE_VERTEX(name, op, args...)\
-  auto name = VertexAdaptor<op>::create(args)
-#define COPY_CREATE_VERTEX(name, from, op, args...)\
-  VertexAdaptor <op> name = VertexPtr (create_vertex_inner <op> (args, &*from))
-
-#define CREATE_META_VERTEX(name, meta_op, op, args...)\
-  VertexAdaptor <meta_op> name = create_vertex (op, args)
 
 template <typename... Args>
 VertexPtr create_vertex(Operation op, Args&& ...args) {
   switch (op) {
-#define FOREACH_OP(x) case x: {CREATE_VERTEX (res, x, std::forward<Args>(args)...); return res;} break;
+#define FOREACH_OP(x) case x: return VertexAdaptor<x>::create(std::forward<Args>(args)...);
 
 #include "foreach_op.h"
 
@@ -434,6 +435,12 @@ VertexPtr create_vertex(Operation op, Args&& ...args) {
     template<typename... Args> \
     static vertex_inner<Op>* create(Args&&... args) { \
       vertex_inner<Op> *v = raw_create_vertex_inner<Op>(get_children_size(std::forward<Args>(args)...), NULL); \
+      v->set_children(0, std::forward<Args>(args)...); \
+      return v; \
+    } \
+    template<typename... Args> \
+    static vertex_inner<Op>* copy_create(VertexPtr from, Args&&... args) { \
+      vertex_inner<Op> *v = raw_create_vertex_inner<Op>(get_children_size(std::forward<Args>(args)...), &(*(VertexAdaptor<Op>)from)); \
       v->set_children(0, std::forward<Args>(args)...); \
       return v; \
     }

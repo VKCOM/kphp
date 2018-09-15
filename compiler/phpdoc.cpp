@@ -147,13 +147,13 @@ bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const string &phpdoc, php_doc_tag:
 }
 
 VertexPtr PhpDocTypeRuleParser::create_type_help_vertex(PrimitiveType type) {
-  CREATE_VERTEX(type_rule, op_type_rule);
+  auto type_rule = VertexAdaptor<op_type_rule>::create();
   type_rule->type_help = type;
   return type_rule;
 }
 
 VertexPtr PhpDocTypeRuleParser::create_type_help_class_vertex(ClassPtr klass) {
-  CREATE_VERTEX(type_rule, op_class_type_rule);
+  auto type_rule = VertexAdaptor<op_class_type_rule>::create();
   type_rule->type_help = tp_Class;
   type_rule->class_ptr = klass;
   return type_rule;
@@ -258,7 +258,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string &s, size_t &pos) 
     case 'a': {
       if (s.substr(pos, 5) == "array") {
         pos += 5;
-        CREATE_VERTEX(res, op_type_rule, create_type_help_vertex(tp_var));
+        auto res = VertexAdaptor<op_type_rule>::create(create_type_help_vertex(tp_var));
         res->type_help = tp_array;
         return res;
       }
@@ -285,7 +285,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const string &s, size_t &pos) {
   }
   while (pos < s.size() && s[pos] == '[') {
     CHECK(pos + 1 < s.size() && s[pos + 1] == ']', "Failed to parse phpdoc type: unmatching []");
-    CREATE_VERTEX(new_res, op_type_rule, res);
+    auto new_res = VertexAdaptor<op_type_rule>::create(res);
     new_res->type_help = tp_array;
     res = new_res;
     pos += 2;
@@ -304,7 +304,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression(const string &s, size_t &p
     if (next.is_null()) {
       return next;
     }
-    CREATE_VERTEX (rule, op_type_rule_func, res, next);
+    auto rule = VertexAdaptor<op_type_rule_func>::create(res, next);
     rule->str_val = "lca";
     res = rule;
   }

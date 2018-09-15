@@ -105,6 +105,12 @@ public:
   static VertexAdaptor<Op> create(Args... args) {
     return VertexAdaptor<Op>(vertex_inner<Op>::create(args...));
   }
+
+  template <typename... Args>
+  static VertexAdaptor<Op> copy_create(VertexAdaptor<meta_op_base> from, Args... args) {
+    return VertexAdaptor<Op>(vertex_inner<Op>::copy_create(from, args...));
+  }
+
 };
 
 typedef VertexAdaptor<meta_op_base> VertexPtr;

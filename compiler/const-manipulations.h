@@ -295,7 +295,7 @@ protected:
 
   VertexPtr on_non_const(VertexPtr v) override {
     if (v->type() == op_concat || v->type() == op_string_build) {
-      CREATE_VERTEX(new_val, op_string);
+      auto new_val = VertexAdaptor<op_string>::create();
       new_val->location = v->get_location();
 
       for (auto i : *v) {

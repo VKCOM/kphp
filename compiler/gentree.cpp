@@ -110,16 +110,16 @@ void GenTree::enter_class(const string &class_name, Token *phpdoc_token) {
 }
 
 VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
-  CREATE_VERTEX (name_of_const_field_class, op_func_name);
+  auto name_of_const_field_class = VertexAdaptor<op_func_name>::create();
   name_of_const_field_class->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$class";
 
   kphp_error_act(cur_class().constants.find("class") == cur_class().constants.end(),
                  ("A class constant must not be called 'class'; it is reserved for class name fetching: " + name_of_const_field_class->str_val).c_str(), return VertexPtr{});
 
-  CREATE_VERTEX(value_of_const_field_class, op_string);
+  auto value_of_const_field_class = VertexAdaptor<op_string>::create();
   value_of_const_field_class->set_string(namespace_name + "\\" + cur_class().name);
 
-  CREATE_VERTEX(def, op_define, name_of_const_field_class, value_of_const_field_class);
+  auto def = VertexAdaptor<op_define>::create(name_of_const_field_class, value_of_const_field_class);
   def->location = root->location;
 
   return def;
@@ -138,15 +138,15 @@ void GenTree::exit_and_register_class(VertexPtr root) {
 
     const string &name_str = stage::get_file()->main_func_name;
     vector<VertexPtr> empty;
-    CREATE_VERTEX (name, op_func_name);
+    auto name = VertexAdaptor<op_func_name>::create();
     name->str_val = name_str;
-    CREATE_VERTEX (params, op_func_param_list, empty);
+    auto params = VertexAdaptor<op_func_param_list>::create(empty);
 
     vector<VertexPtr> seq = get_map_values(cur_class().constants);
     seq.insert(seq.end(), cur_class().static_members.begin(), cur_class().static_members.end());
 
-    CREATE_VERTEX (func_root, op_seq, seq);
-    CREATE_VERTEX (main, op_function, name, params, func_root);
+    auto func_root = VertexAdaptor<op_seq>::create(seq);
+    auto main = VertexAdaptor<op_function>::create(name, params, func_root);
     func_force_return(main);
 
     main->auto_flag = false;
@@ -215,7 +215,7 @@ VertexPtr GenTree::get_var_name() {
   if ((*cur)->type() != tok_var_name) {
     return VertexPtr();
   }
-  CREATE_VERTEX (var, op_var);
+  auto var = VertexAdaptor<op_var>::create();
   var->str_val = (*cur)->str_val;
 
   set_location(var, var_location);
@@ -274,7 +274,7 @@ bool GenTree::gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim) {
         if (EmptyOp == op_none) {
           break;
         }
-        CREATE_VERTEX (tmp, EmptyOp);
+        auto tmp = VertexAdaptor<EmptyOp>::create();
         v = tmp;
       } else if (prev_delim) {
         kphp_error (0, "Expected something after ','");
@@ -301,7 +301,7 @@ VertexPtr GenTree::get_conv() {
   next_cur();
   VertexPtr first_node = get_expression();
   CE (!kphp_error(first_node.not_null(), "get_conv failed"));
-  CREATE_VERTEX (conv, Op, first_node);
+  auto conv = VertexAdaptor<Op>::create(first_node);
   set_location(conv, conv_location);
   return conv;
 }
@@ -317,12 +317,12 @@ VertexPtr GenTree::get_varg_call() {
   vector<VertexPtr> args_next;
   bool ok_args_next = gen_list<op_err>(&args_next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_args_next, "get_varg_call failed"));
-  CREATE_VERTEX (args, op_array, args_next);
+  auto args = VertexAdaptor<op_array>::create(args_next);
   set_location(args, args_location);
 
   CE (expect(tok_clpar, "')'"));
 
-  CREATE_VERTEX (call, Op, args);
+  auto call = VertexAdaptor<Op>::create(args);
   set_location(call, call_location);
   return call;
 }
@@ -336,7 +336,7 @@ VertexPtr GenTree::get_require() {
   bool ok_next = gen_list<op_err>(&next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_next, "get_require_list failed"));
   close_parent (is_opened);
-  CREATE_VERTEX (require, Op, next);
+  auto require = VertexAdaptor<Op>::create(next);
   set_location(require, require_location);
   return require;
 }
@@ -356,19 +356,17 @@ VertexPtr GenTree::get_func_call() {
 
   if (Op == op_isset) {
     CE (!kphp_error(!next.empty(), "isset function requires at least one argument"));
-    VertexPtr left;
-    CREATE_VERTEX (left_, op_isset, next[0]);
-    left = left_;
+    VertexPtr left = VertexAdaptor<op_isset>::create(next[0]);
     for (size_t i = 1; i < next.size(); i++) {
-      CREATE_VERTEX (right, op_isset, next[i]);
-      CREATE_VERTEX (log_and, op_log_and, left, right);
+      auto right = VertexAdaptor<op_isset>::create(next[i]);
+      auto log_and = VertexAdaptor<op_log_and>::create(left, right);
       left = log_and;
     }
     set_location(left, call_location);
     return left;
   }
 
-  CREATE_VERTEX (call, Op, next);
+  auto call = VertexAdaptor<Op>::create(next);
   set_location(call, call_location);
 
   //hack..
@@ -407,7 +405,7 @@ VertexPtr GenTree::get_short_array() {
   CE (!kphp_error(ok_next, "get short array failed"));
   CE (expect(tok_clbrk, "']'"));
 
-  CREATE_VERTEX (arr, op_array, next);
+  auto arr = VertexAdaptor<op_array>::create(next);
   set_location(arr, call_location);
 
   return arr;
@@ -415,7 +413,7 @@ VertexPtr GenTree::get_short_array() {
 
 
 VertexPtr GenTree::get_string() {
-  CREATE_VERTEX (str, op_string);
+  auto str = VertexAdaptor<op_string>::create();
   set_location(str, AutoLocation(this));
   str->str_val = (*cur)->str_val;
   next_cur();
@@ -454,7 +452,7 @@ VertexPtr GenTree::get_string_build() {
     }
   }
   CE (expect(tok_str_end, "'\"'"));
-  CREATE_VERTEX (sb, op_string_build, v_next);
+  auto sb = VertexAdaptor<op_string_build>::create(v_next);
   set_location(sb, sb_location);
   return sb;
 }
@@ -468,13 +466,13 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
     need = false;
 
     if (tp == tok_inc) {
-      CREATE_VERTEX (v, op_postfix_inc, res);
+      auto v = VertexAdaptor<op_postfix_inc>::create(res);
       set_location(v, AutoLocation(this));
       res = v;
       need = true;
       next_cur();
     } else if (tp == tok_dec) {
-      CREATE_VERTEX (v, op_postfix_dec, res);
+      auto v = VertexAdaptor<op_postfix_dec>::create(res);
       set_location(v, AutoLocation(this));
       res = v;
       need = true;
@@ -490,10 +488,10 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
       }
       //TODO: it should be to separate operations
       if (i.is_null()) {
-        CREATE_VERTEX (v, op_index, res);
+        auto v = VertexAdaptor<op_index>::create(res);
         res = v;
       } else {
-        CREATE_VERTEX (v, op_index, res, i);
+        auto v = VertexAdaptor<op_index>::create(res, i);
         res = v;
       }
       set_location(res, location);
@@ -503,7 +501,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
       next_cur();
       VertexPtr i = get_expr_top();
       CE (!kphp_error(i.not_null(), "Failed to parse right argument of '->'"));
-      CREATE_VERTEX (v, op_arrow, res, i);
+      auto v = VertexAdaptor<op_arrow>::create(res, i);
       res = v;
       set_location(res, location);
       need = true;
@@ -522,7 +520,7 @@ VertexPtr GenTree::get_expr_top() {
   bool return_flag = true;
   switch (type) {
     case tok_line_c: {
-      CREATE_VERTEX (v, op_int_const);
+      auto v = VertexAdaptor<op_int_const>::create();
       set_location(v, AutoLocation(this));
       v->str_val = int_to_str(stage::get_line());
       res = v;
@@ -530,7 +528,7 @@ VertexPtr GenTree::get_expr_top() {
       break;
     }
     case tok_file_c: {
-      CREATE_VERTEX (v, op_string);
+      auto v = VertexAdaptor<op_string>::create();
       set_location(v, AutoLocation(this));
       v->str_val = stage::get_file()->file_name;
       next_cur();
@@ -538,14 +536,14 @@ VertexPtr GenTree::get_expr_top() {
       break;
     }
     case tok_func_c: {
-      CREATE_VERTEX (v, op_function_c);
+      auto v = VertexAdaptor<op_function_c>::create();
       set_location(v, AutoLocation(this));
       next_cur();
       res = v;
       break;
     }
     case tok_int_const: {
-      CREATE_VERTEX (v, op_int_const);
+      auto v = VertexAdaptor<op_int_const>::create();
       set_location(v, AutoLocation(this));
       v->str_val = (*cur)->str_val;
       next_cur();
@@ -553,7 +551,7 @@ VertexPtr GenTree::get_expr_top() {
       break;
     }
     case tok_float_const: {
-      CREATE_VERTEX (v, op_float_const);
+      auto v = VertexAdaptor<op_float_const>::create();
       set_location(v, AutoLocation(this));
       v->str_val = (*cur)->str_val;
       next_cur();
@@ -561,21 +559,21 @@ VertexPtr GenTree::get_expr_top() {
       break;
     }
     case tok_null: {
-      CREATE_VERTEX (v, op_null);
+      auto v = VertexAdaptor<op_null>::create();
       set_location(v, AutoLocation(this));
       next_cur();
       res = v;
       break;
     }
     case tok_false: {
-      CREATE_VERTEX (v, op_false);
+      auto v = VertexAdaptor<op_false>::create();
       set_location(v, AutoLocation(this));
       next_cur();
       res = v;
       break;
     }
     case tok_true: {
-      CREATE_VERTEX (v, op_true);
+      auto v = VertexAdaptor<op_true>::create();
       set_location(v, AutoLocation(this));
       next_cur();
       res = v;
@@ -620,7 +618,7 @@ VertexPtr GenTree::get_expr_top() {
       first_node = get_expression();
       CE (!kphp_error(first_node.not_null(), "Failed to get print argument"));
       first_node = conv_to<tp_string>(first_node);
-      CREATE_VERTEX (print, op_print, first_node);
+      auto print = VertexAdaptor<op_print>::create(first_node);
       set_location(print, print_location);
       res = print;
       break;
@@ -644,7 +642,7 @@ VertexPtr GenTree::get_expr_top() {
       cur++;
       if (!test_expect(tok_oppar)) {
         cur--;
-        CREATE_VERTEX (v, op_func_name);
+        auto v = VertexAdaptor<op_func_name>::create();
         set_location(v, AutoLocation(this));
         next_cur();
         v->str_val = (*op)->str_val;
@@ -738,7 +736,7 @@ VertexPtr GenTree::get_unary_op() {
     if (tp == op_not) {
       left = conv_to<tp_int>(left);
     }
-    CREATE_META_VERTEX (expr, meta_op_unary_op, tp, left);
+    VertexPtr expr = create_vertex(tp, left);
     set_location(expr, expr_location);
     return expr;
   }
@@ -814,30 +812,30 @@ VertexPtr GenTree::get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, b
     VertexPtr expr;
     if (ternary) {
       if (!right.is_null()) {
-        CREATE_VERTEX (v, op_ternary, left, right, third);
+        auto v = VertexAdaptor<op_ternary>::create(left, right, third);
         expr = v;
       } else {
         string left_name = gen_shorthand_ternary_name();
-        CREATE_VERTEX (left_var, op_var);
+        auto left_var = VertexAdaptor<op_var>::create();
         left_var->str_val = left_name;
         left_var->extra_type = op_ex_var_superlocal;
 
-        CREATE_VERTEX (left_set, op_set, left_var, left);
+        auto left_set = VertexAdaptor<op_set>::create(left_var, left);
         auto left_set_bool = conv_to<tp_bool>(left_set);
 
 
-        CREATE_VERTEX (left_var_copy, op_var);
+        auto left_var_copy = VertexAdaptor<op_var>::create();
         left_var_copy->str_val = left_name;
         left_var_copy->extra_type = op_ex_var_superlocal;
 
-        CREATE_VERTEX(left_var_move, op_move, left_var_copy);
+        auto left_var_move = VertexAdaptor<op_move>::create(left_var_copy);
 
-        CREATE_VERTEX (result, op_ternary, left_set_bool, left_var_move, third);
+        auto result = VertexAdaptor<op_ternary>::create(left_set_bool, left_var_move, third);
 
         expr = result;
       }
     } else {
-      CREATE_META_VERTEX (v, meta_op_binary_op, tp, left, right);
+      VertexPtr v = create_vertex(tp, left, right);
       expr = v;
     }
     set_location(expr, expr_location);
@@ -861,7 +859,7 @@ VertexPtr GenTree::get_expression() {
 
 VertexPtr GenTree::embrace(VertexPtr v) {
   if (v->type() != op_seq) {
-    CREATE_VERTEX (brace, op_seq, v);
+    auto brace = VertexAdaptor<op_seq>::create(v);
     ::set_location(brace, v->get_location());
     return brace;
   }
@@ -885,7 +883,7 @@ VertexPtr GenTree::get_func_param() {
   VertexPtr res;
   AutoLocation st_location(this);
   if (test_expect(tok_func_name) && (*(cur + 1))->type() == tok_oppar) { // callback
-    CREATE_VERTEX (name, op_func_name);
+    auto name = VertexAdaptor<op_func_name>::create();
     set_location(name, st_location);
     name->str_val = (*cur)->str_val;
     next_cur();
@@ -910,7 +908,7 @@ VertexPtr GenTree::get_func_param() {
     if (def_val.not_null()) {
       next.push_back(def_val);
     }
-    CREATE_VERTEX (v, op_func_param_callback, next);
+    auto v = VertexAdaptor<op_func_param_callback>::create(next);
     set_location(v, st_location);
     v->param_cnt = param_cnt;
     res = v;
@@ -935,7 +933,7 @@ VertexPtr GenTree::get_func_param() {
     if (def_val.not_null()) {
       next.push_back(def_val);
     }
-    CREATE_VERTEX (v, op_func_param, next);
+    auto v = VertexAdaptor<op_func_param>::create(next);
     set_location(v, st_location);
     if (tok_type_declaration != nullptr) {
       v->type_declaration = tok_type_declaration->str_val;
@@ -972,12 +970,12 @@ VertexPtr GenTree::get_foreach_param() {
   vector<VertexPtr> next;
   next.push_back(xs);
   next.push_back(x);
-  CREATE_VERTEX(empty, op_empty);
+  auto empty = VertexAdaptor<op_empty>::create();
   next.push_back(empty); // will be replaced
   if (key.not_null()) {
     next.push_back(key);
   }
-  CREATE_VERTEX (res, op_foreach_param, next);
+  auto res = VertexAdaptor<op_foreach_param>::create(next);
   set_location(res, location);
   return res;
 }
@@ -1100,7 +1098,7 @@ VertexPtr GenTree::get_type_rule_func() {
   CE (!kphp_error(ok_next, "Failed get_type_rule_func"));
   CE (expect(tok_gt, ">"));
 
-  CREATE_VERTEX (rule, op_type_rule_func, next);
+  auto rule = VertexAdaptor<op_type_rule_func>::create(next);
   set_location(rule, rule_location);
   rule->str_val = name;
   return rule;
@@ -1127,7 +1125,7 @@ VertexPtr GenTree::get_type_rule_() {
     if (first.not_null()) {
       next.push_back(first);
     }
-    CREATE_VERTEX (arr, op_type_rule, next);
+    auto arr = VertexAdaptor<op_type_rule>::create(next);
     arr->type_help = tp;
     set_location(arr, arr_location);
     res = arr;
@@ -1135,7 +1133,7 @@ VertexPtr GenTree::get_type_rule_() {
     if ((*cur)->str_val == "lca" || (*cur)->str_val == "OrFalse") {
       res = get_type_rule_func();
     } else if ((*cur)->str_val == "self") {
-      CREATE_VERTEX (self, op_self);
+      auto self = VertexAdaptor<op_self>::create();
       res = self;
     } else if ((*cur)->str_val == "CONST") {
       next_cur();
@@ -1158,7 +1156,7 @@ VertexPtr GenTree::get_type_rule_() {
     for (const char *s = (*cur)->str_val.begin(), *t = (*cur)->str_val.end(); s != t; s++) {
       cnt = cnt * 10 + *s - '0';
     }
-    CREATE_VERTEX (v, op_arg_ref);
+    auto v = VertexAdaptor<op_arg_ref>::create();
     set_location(v, AutoLocation(this));
     v->int_val = cnt;
     res = v;
@@ -1167,7 +1165,7 @@ VertexPtr GenTree::get_type_rule_() {
       AutoLocation opbrk_location(this);
       next_cur();
       CE (expect(tok_clbrk, "]"));
-      CREATE_VERTEX (index, op_index, res);
+      auto index = VertexAdaptor<op_index>::create(res);
       set_location(index, opbrk_location);
       res = index;
     }
@@ -1195,7 +1193,7 @@ VertexPtr GenTree::get_type_rule() {
       return VertexPtr()
     );
 
-    CREATE_META_VERTEX (rule, meta_op_base, OpInfo::tok_to_op[tp], first);
+    VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], first);
 
     if (should_end) {
       if ((*cur)->type() == tok_triple_colon_end) {
@@ -1222,30 +1220,30 @@ void GenTree::func_force_return(VertexPtr root, VertexPtr val) {
 
   bool no_result = val.is_null();
   if (no_result) {
-    CREATE_VERTEX (return_val, op_null);
+    auto return_val = VertexAdaptor<op_null>::create();
     val = return_val;
   }
 
-  CREATE_VERTEX (return_node, op_return, val);
+  auto return_node = VertexAdaptor<op_return>::create(val);
   return_node->void_flag = no_result;
   vector<VertexPtr> next = cmd->get_next();
   next.push_back(return_node);
-  CREATE_VERTEX (seq, op_seq, next);
+  auto seq = VertexAdaptor<op_seq>::create(next);
   func->cmd() = seq;
 }
 
 VertexPtr GenTree::create_vertex_this(const AutoLocation &location, bool with_type_rule) {
-  CREATE_VERTEX (this_var, op_var);
+  auto this_var = VertexAdaptor<op_var>::create();
   this_var->str_val = "this";
   this_var->extra_type = op_ex_var_this;
   this_var->const_type = cnst_const_val;
   set_location(this_var, location);
 
   if (with_type_rule) {
-    CREATE_VERTEX(rule_this_var, op_class_type_rule);
+    auto rule_this_var = VertexAdaptor<op_class_type_rule>::create();
     rule_this_var->type_help = tp_Class;
 
-    CREATE_META_VERTEX (type_rule, meta_op_base, op_common_type_rule, rule_this_var);
+    VertexPtr type_rule = create_vertex(op_common_type_rule, rule_this_var);
     this_var->type_rule = type_rule;
 
     cur_class().this_type_rules.push_back(rule_this_var);
@@ -1260,7 +1258,7 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const Clas
   VertexPtr cmd = func->cmd();
   assert (cmd->type() == op_seq);
 
-  CREATE_VERTEX (return_node, op_return, create_vertex_this(location));
+  auto return_node = VertexAdaptor<op_return>::create(create_vertex_this(location));
   set_location(return_node, location);
 
   std::vector<VertexPtr> next = cmd->get_next();
@@ -1270,30 +1268,30 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const Clas
   for (std::vector<VertexPtr>::const_iterator i = cur_class.members.begin(); i != cur_class.members.end(); ++i) {
     VertexPtr var = *i;
     if (var->type() == op_class_var && var.as<op_class_var>()->def_val.not_null()) {
-      CREATE_VERTEX(inst_prop, op_instance_prop, create_vertex_this(location));
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(location));
       inst_prop->str_val = var->get_string();
 
-      CREATE_VERTEX(set_c1_node, op_set, inst_prop, var.as<op_class_var>()->def_val);
+      auto set_c1_node = VertexAdaptor<op_set>::create(inst_prop, var.as<op_class_var>()->def_val);
       next.insert(next.begin() + 1, set_c1_node);
     }
   }
 
-  CREATE_VERTEX (seq, op_seq, next);
+  auto seq = VertexAdaptor<op_seq>::create(next);
   func->cmd() = seq;
 }
 
 // function fname(args) => function fname($this ::: class_instance, args)
 void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location) {
-  CREATE_VERTEX (param, op_func_param, create_vertex_this(func_location, true));
+  auto param = VertexAdaptor<op_func_param>::create(create_vertex_this(func_location, true));
   params_next.push_back(param);
 }
 
 FunctionPtr GenTree::create_default_constructor(const ClassInfo &cur_class) {
-  CREATE_VERTEX (func_name, op_func_name);
+  auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = replace_characters(class_context, '\\', '$') + "$$__construct";
-  CREATE_VERTEX (func_params, op_func_param_list);
-  CREATE_VERTEX (func_root, op_seq);
-  CREATE_VERTEX (func, op_function, func_name, func_params, func_root);
+  auto func_params = VertexAdaptor<op_func_param_list>::create();
+  auto func_root = VertexAdaptor<op_seq>::create();
+  auto func = VertexAdaptor<op_function>::create(func_name, func_params, func_root);
   func->extra_type = op_ex_func_member;
   func->inline_flag = true;
 
@@ -1318,11 +1316,11 @@ VertexPtr GenTree::get_multi_call(GetFunc f) {
     if (type == tok_echo || type == tok_dbg_echo) {
       next[i] = conv_to<tp_string>(next[i]);
     }
-    CREATE_VERTEX (v, Op, next[i]);
+    auto v = VertexAdaptor<Op>::create(next[i]);
     ::set_location(v, next[i]->get_location());
     next[i] = v;
   }
-  CREATE_VERTEX (seq, op_seq, next);
+  auto seq = VertexAdaptor<op_seq>::create(next);
   set_location(seq, seq_location);
   return seq;
 }
@@ -1335,12 +1333,12 @@ VertexPtr GenTree::get_return() {
   VertexPtr return_val = get_expression();
   bool no_result = false;
   if (return_val.is_null()) {
-    CREATE_VERTEX (tmp, op_null);
+    auto tmp = VertexAdaptor<op_null>::create();
     set_location(tmp, AutoLocation(this));
     return_val = tmp;
     no_result = true;
   }
-  CREATE_VERTEX (ret, op_return, return_val);
+  auto ret = VertexAdaptor<op_return>::create(return_val);
   set_location(ret, ret_location);
   CE (expect(tok_semicolon, "';'"));
   ret->void_flag = no_result;
@@ -1357,11 +1355,11 @@ VertexPtr GenTree::get_exit() {
     close_parent (is_opened);
   }
   if (exit_val.is_null()) {
-    CREATE_VERTEX (tmp, op_int_const);
+    auto tmp = VertexAdaptor<op_int_const>::create();
     tmp->str_val = "0";
     exit_val = tmp;
   }
-  CREATE_VERTEX (v, op_exit, exit_val);
+  auto v = VertexAdaptor<op_exit>::create(exit_val);
   set_location(v, exit_location);
   return v;
 }
@@ -1374,12 +1372,12 @@ VertexPtr GenTree::get_break_continue() {
   CE (expect(tok_semicolon, "';'"));
 
   if (first_node.is_null()) {
-    CREATE_VERTEX (one, op_int_const);
+    auto one = VertexAdaptor<op_int_const>::create();
     one->str_val = "1";
     first_node = one;
   }
 
-  CREATE_VERTEX (res, Op, first_node);
+  auto res = VertexAdaptor<Op>::create(first_node);
   set_location(res, res_location);
   return res;
 }
@@ -1398,9 +1396,9 @@ VertexPtr GenTree::get_foreach() {
   VertexPtr second_node = get_statement();
   CE (!kphp_error(second_node.not_null(), "Failed to parse 'foreach' body"));
 
-  CREATE_VERTEX(temp_node, op_empty);
+  auto temp_node = VertexAdaptor<op_empty>::create();
 
-  CREATE_VERTEX (foreach, op_foreach, first_node, embrace(second_node), temp_node);
+  auto foreach = VertexAdaptor<op_foreach>::create(first_node, embrace(second_node), temp_node);
   set_location(foreach, foreach_location);
   return foreach;
 }
@@ -1418,7 +1416,7 @@ VertexPtr GenTree::get_while() {
   VertexPtr second_node = get_statement();
   CE (!kphp_error(second_node.not_null(), "Failed to parse 'while' body"));
 
-  CREATE_VERTEX (while_vertex, op_while, first_node, embrace(second_node));
+  auto while_vertex = VertexAdaptor<op_while>::create(first_node, embrace(second_node));
   set_location(while_vertex, while_location);
   return while_vertex;
 }
@@ -1447,10 +1445,10 @@ VertexPtr GenTree::get_if() {
 
   if (third_node.not_null()) {
     third_node = embrace(third_node);
-    CREATE_VERTEX (v, op_if, first_node, second_node, third_node);
+    auto v = VertexAdaptor<op_if>::create(first_node, second_node, third_node);
     if_vertex = v;
   } else {
-    CREATE_VERTEX (v, op_if, first_node, second_node);
+    auto v = VertexAdaptor<op_if>::create(first_node, second_node);
     if_vertex = v;
   }
   set_location(if_vertex, if_location);
@@ -1467,7 +1465,7 @@ VertexPtr GenTree::get_for() {
   vector<VertexPtr> first_next;
   bool ok_first_next = gen_list<op_err>(&first_next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_first_next, "Failed to parse 'for' precondition"));
-  CREATE_VERTEX (pre_cond, op_seq, first_next);
+  auto pre_cond = VertexAdaptor<op_seq>::create(first_next);
   set_location(pre_cond, pre_cond_location);
 
   CE (expect(tok_semicolon, "';'"));
@@ -1477,12 +1475,12 @@ VertexPtr GenTree::get_for() {
   bool ok_second_next = gen_list<op_err>(&second_next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_second_next, "Failed to parse 'for' action"));
   if (second_next.empty()) {
-    CREATE_VERTEX (v_true, op_true);
+    auto v_true = VertexAdaptor<op_true>::create();
     second_next.push_back(v_true);
   } else {
     second_next.back() = conv_to<tp_bool>(second_next.back());
   }
-  CREATE_VERTEX (cond, op_seq_comma, second_next);
+  auto cond = VertexAdaptor<op_seq_comma>::create(second_next);
   set_location(cond, cond_location);
 
   CE (expect(tok_semicolon, "';'"));
@@ -1491,7 +1489,7 @@ VertexPtr GenTree::get_for() {
   vector<VertexPtr> third_next;
   bool ok_third_next = gen_list<op_err>(&third_next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_third_next, "Failed to parse 'for' postcondition"));
-  CREATE_VERTEX (post_cond, op_seq, third_next);
+  auto post_cond = VertexAdaptor<op_seq>::create(third_next);
   set_location(post_cond, post_cond_location);
 
   CE (expect(tok_clpar, "')'"));
@@ -1500,7 +1498,7 @@ VertexPtr GenTree::get_for() {
   CE (!kphp_error(cmd.not_null(), "Failed to parse 'for' statement"));
 
   cmd = embrace(cmd);
-  CREATE_VERTEX (for_vertex, op_for, pre_cond, cond, post_cond, cmd);
+  auto for_vertex = VertexAdaptor<op_for>::create(pre_cond, cond, post_cond, cmd);
   set_location(for_vertex, for_location);
   return for_vertex;
 }
@@ -1521,7 +1519,7 @@ VertexPtr GenTree::get_do() {
   CE (expect(tok_clpar, "')'"));
   CE (expect(tok_semicolon, "';'"));
 
-  CREATE_VERTEX (do_vertex, op_do, second_node, first_node);
+  auto do_vertex = VertexAdaptor<op_do>::create(second_node, first_node);
   set_location(do_vertex, do_location);
   return do_vertex;
 }
@@ -1542,13 +1540,13 @@ VertexPtr GenTree::get_switch() {
 
   // they will be replaced by vars later. 
   // It can't be done now, gen_name is not working here. 
-  CREATE_VERTEX(temp_ver1, op_empty);
+  auto temp_ver1 = VertexAdaptor<op_empty>::create();
   switch_next.push_back(temp_ver1);
-  CREATE_VERTEX(temp_ver2, op_empty);
+  auto temp_ver2 = VertexAdaptor<op_empty>::create();
   switch_next.push_back(temp_ver2);
-  CREATE_VERTEX(temp_ver3, op_empty);
+  auto temp_ver3 = VertexAdaptor<op_empty>::create();
   switch_next.push_back(temp_ver3);
-  CREATE_VERTEX(temp_ver4, op_empty);
+  auto temp_ver4 = VertexAdaptor<op_empty>::create();
   switch_next.push_back(temp_ver4);
 
   while ((*cur)->type() != tok_clbrc) {
@@ -1587,20 +1585,20 @@ VertexPtr GenTree::get_switch() {
       }
     }
 
-    CREATE_VERTEX (seq, op_seq, seq_next);
+    auto seq = VertexAdaptor<op_seq>::create(seq_next);
     set_location(seq, seq_location);
     if (cur_type == tok_case) {
-      CREATE_VERTEX (case_block, op_case, case_val, seq);
+      auto case_block = VertexAdaptor<op_case>::create(case_val, seq);
       set_location(case_block, case_location);
       switch_next.push_back(case_block);
     } else if (cur_type == tok_default) {
-      CREATE_VERTEX (case_block, op_default, seq);
+      auto case_block = VertexAdaptor<op_default>::create(seq);
       set_location(case_block, case_location);
       switch_next.push_back(case_block);
     }
   }
 
-  CREATE_VERTEX (switch_vertex, op_switch, switch_next);
+  auto switch_vertex = VertexAdaptor<op_switch>::create(switch_next);
   set_location(switch_vertex, switch_location);
 
   CE (expect(tok_clbrc, "'}'"));
@@ -1637,7 +1635,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
       name_str += "$$" + full_context_name;
     }
   }
-  CREATE_VERTEX (name, op_func_name);
+  auto name = VertexAdaptor<op_func_name>::create();
   set_location(name, name_location);
   name->str_val = name_str;
 
@@ -1664,7 +1662,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
     bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
     CE (!kphp_error(ok_params_next, "Failed to parse function params"));
   }
-  CREATE_VERTEX (params, op_func_param_list, params_next);
+  auto params = VertexAdaptor<op_func_param_list>::create(params_next);
   set_location(params, params_location);
 
   CE (expect(tok_clpar, "')'"));
@@ -1742,7 +1740,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
   }
 
   if (anonimous_flag) {
-    CREATE_VERTEX (func_ptr, op_func_name);
+    auto func_ptr = VertexAdaptor<op_func_name>::create();
     set_location(func_ptr, name_location);
     func_ptr->str_val = name->str_val;
     return func_ptr;
@@ -1797,7 +1795,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
       class_context = namespace_name + "\\" + name_str;
     }
   }
-  CREATE_VERTEX (name, op_func_name);
+  auto name = VertexAdaptor<op_func_name>::create();
   set_location(name, AutoLocation(this));
   name->str_val = name_str;
 
@@ -1808,7 +1806,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   if (test_expect(tok_extends)) {
     next_cur();
     CE (!kphp_error(test_expect(tok_func_name), "Class name expected after 'extends'"));
-    CREATE_VERTEX (tmp, op_func_name);
+    auto tmp = VertexAdaptor<op_func_name>::create();
     set_location(tmp, AutoLocation(this));
     tmp->str_val = (*cur)->str_val;
     class_extends = (*cur)->str_val;
@@ -1820,7 +1818,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   VertexPtr class_body = get_statement();
   CE (!kphp_error(class_body.not_null(), "Failed to parse class body"));
 
-  CREATE_VERTEX (class_vertex, op_class, name, parent_name);
+  auto class_vertex = VertexAdaptor<op_class>::create(name, parent_name);
   set_location(class_vertex, class_location);
 
   exit_and_register_class(class_vertex);
@@ -1974,7 +1972,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       next_cur();
       first_node = get_expression();
       CE (!kphp_error(first_node.not_null(), "Empty expression in throw"));
-      CREATE_VERTEX (throw_vertex, op_throw, first_node);
+      auto throw_vertex = VertexAdaptor<op_throw>::create(first_node);
       set_location(throw_vertex, throw_location);
       CE (check_statement_end());
       return throw_vertex;
@@ -2049,7 +2047,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
         }
       }
       cur_class().static_members.push_back(v);
-      CREATE_VERTEX (empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
     case tok_phpdoc_kphp:
@@ -2078,22 +2076,22 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (expect(tok_clpar, "')'"));
       third_node = get_statement();
       CE (!kphp_error(third_node.not_null(), "Cannot parse catch block"));
-      CREATE_VERTEX (try_vertex, op_try, embrace(first_node), second_node, embrace(third_node));
+      auto try_vertex = VertexAdaptor<op_try>::create(embrace(first_node), second_node, embrace(third_node));
       set_location(try_vertex, try_location);
       return try_vertex;
     }
     case tok_break_file: {
-      CREATE_VERTEX (v, op_break_file);
+      auto v = VertexAdaptor<op_break_file>::create();
       set_location(v, AutoLocation(this));
       next_cur();
       return v;
     }
     case tok_inline_html: {
-      CREATE_VERTEX (html_code, op_string);
+      auto html_code = VertexAdaptor<op_string>::create();
       set_location(html_code, AutoLocation(this));
       html_code->str_val = (*cur)->str_val;
 
-      CREATE_VERTEX (echo_cmd, op_echo, html_code);
+      auto echo_cmd = VertexAdaptor<op_echo>::create(html_code);
       set_location(echo_cmd, AutoLocation(this));
       next_cur();
       return echo_cmd;
@@ -2103,7 +2101,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       next_cur();
       first_node = get_statement();
       CE (first_node.not_null());
-      CREATE_VERTEX (noerr, op_noerr, first_node);
+      auto noerr = VertexAdaptor<op_noerr>::create(first_node);
       set_location(noerr, noerr_location);
       return noerr;
     }
@@ -2122,7 +2120,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CE (!kphp_error(!has_access_modifier, "unexpected const after private/protected/public keyword"));
 
-      CREATE_VERTEX (name, op_func_name);
+      auto name = VertexAdaptor<op_func_name>::create();
       string const_name = (*cur)->str_val;
 
       if (const_in_class) {
@@ -2134,14 +2132,14 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
-      CREATE_VERTEX(def, op_define, name, v);
+      auto def = VertexAdaptor<op_define>::create(name, v);
       set_location(def, const_location);
       CE (check_statement_end());
 
       if (const_in_class) {
         kphp_error(cur_class().constants.find(const_name) == cur_class().constants.end(), dl_pstr("Redeclaration of const %s", const_name.c_str()));
         cur_class().constants[const_name] = def;
-        CREATE_VERTEX (empty, op_empty);
+        auto empty = VertexAdaptor<op_empty>::create();
         return empty;
       }
 
@@ -2151,21 +2149,21 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       AutoLocation const_location(this);
       CE (!kphp_error(!in_class() && in_func_cnt_ == 1, "'use' can be declared only in global scope"));
       get_use();
-      CREATE_VERTEX (empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
     case tok_var: {
       next_cur();
       get_vars_list(phpdoc_token, op_ex_static_public);
       CE (check_statement_end());
-      CREATE_VERTEX(empty, op_empty);
+      auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
     default:
       res = get_expression();
       if (res.is_null()) {
         if ((*cur)->type() == tok_semicolon) {
-          CREATE_VERTEX (empty, op_empty);
+          auto empty = VertexAdaptor<op_empty>::create();
           set_location(empty, AutoLocation(this));
           res = empty;
         } else if (phpdoc_token) {
@@ -2193,7 +2191,7 @@ VertexPtr GenTree::get_vars_list(Token *phpdoc_token, OperationExtra extra_type)
 
   const std::string &var_name = (*cur)->str_val;
   CE (expect(tok_var_name, "expected variable name"));
-  CREATE_VERTEX (var, op_class_var);
+  auto var = VertexAdaptor<op_class_var>::create();
   var->extra_type = extra_type;       // чтобы в create_class() определить, это public/private/protected
   var->str_val = var_name;
   var->phpdoc_token = phpdoc_token;
@@ -2226,7 +2224,7 @@ VertexPtr GenTree::get_seq() {
     }
     seq_next.push_back(cur_node);
   }
-  CREATE_VERTEX (seq, op_seq, seq_next);
+  auto seq = VertexAdaptor<op_seq>::create(seq_next);
   set_location(seq, seq_location);
 
   return seq;
@@ -2282,7 +2280,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
       if (op == op_fork) {
         arg->fork_flag = true;
       }
-      CREATE_META_VERTEX (new_root, meta_op_base, op, arg);
+      VertexPtr new_root = create_vertex(op, arg);
       ::set_location(new_root, root->get_location());
       return post_process(new_root);
     }
@@ -2306,7 +2304,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
       vector<VertexPtr> next;
       next = set_op->lhs()->get_next();
       next.push_back(set_op->rhs());
-      CREATE_VERTEX (list, op_list, next);
+      auto list = VertexAdaptor<op_list>::create(next);
       ::set_location(list, root->get_location());
       list->phpdoc_token = root.as<op_set>()->phpdoc_token;
       return post_process(list);
@@ -2317,7 +2315,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
     VertexAdaptor<meta_op_define> define = root;
     VertexPtr name = define->name();
     if (name->type() == op_func_name) {
-      CREATE_VERTEX (new_name, op_string);
+      auto new_name = VertexAdaptor<op_string>::create();
       new_name->str_val = name.as<op_func_name>()->str_val;
       ::set_location(new_name, name->get_location());
       define->name() = new_name;
@@ -2325,7 +2323,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
   }
 
   if (root->type() == op_function && root->get_string() == "requireOnce") {
-    CREATE_VERTEX (empty, op_empty);
+    auto empty = VertexAdaptor<op_empty>::create();
     return post_process(empty);
   }
 
@@ -2333,9 +2331,9 @@ VertexPtr GenTree::post_process(VertexPtr root) {
     VertexRange args = root.as<op_func_call>()->args();
     kphp_error ((int)args.size() == 2, dl_pstr("Call_user_func_array expected 2 arguments, got %d", (int)root->size()));
     kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
-    CREATE_VERTEX (arg, op_varg, args[1]);
+    auto arg = VertexAdaptor<op_varg>::create(args[1]);
     ::set_location(arg, args[1]->get_location());
-    CREATE_VERTEX (new_root, op_func_call, arg);
+    auto new_root = VertexAdaptor<op_func_call>::create(arg);
     ::set_location(new_root, arg->get_location());
     new_root->str_val = args[0].as<op_string>()->str_val;
     return post_process(new_root);
@@ -2356,7 +2354,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
     VertexPtr rhs = arrow->rhs();
 
     if (rhs->type() == op_func_name) {
-      CREATE_VERTEX(inst_prop, op_instance_prop, arrow->lhs());
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(arrow->lhs());
       inst_prop->set_string(rhs->get_string());
 
       root = inst_prop;
@@ -2367,7 +2365,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
       new_next.push_back(arrow->lhs());
       new_next.insert(new_next.end(), old_next.begin(), old_next.end());
 
-      CREATE_VERTEX (new_root, op_func_call, new_next);
+      auto new_root = VertexAdaptor<op_func_call>::create(new_next);
       ::set_location(new_root, root->get_location());
       new_root->extra_type = op_ex_func_member;
       new_root->str_val = rhs->get_string();
@@ -2409,14 +2407,14 @@ VertexPtr GenTree::create_function_vertex_with_flags(VertexPtr name, VertexPtr p
   VertexPtr res;
   if (cmd.is_null()) {
     if (type == tok_ex_function) {
-      CREATE_VERTEX (func, op_extern_func, name, params);
+      auto func = VertexAdaptor<op_extern_func>::create(name, params);
       res = func;
     } else if (type == tok_function) {
-      CREATE_VERTEX (func, op_func_decl, name, params);
+      auto func = VertexAdaptor<op_func_decl>::create(name, params);
       res = func;
     }
   } else {
-    CREATE_VERTEX (func, op_function, name, params, cmd);
+    auto func = VertexAdaptor<op_function>::create(name, params, cmd);
     res = func;
     if (is_constructor) {
       patch_func_constructor(res, cur_class());
@@ -2517,7 +2515,7 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
 }
 
 VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next) {
-  CREATE_VERTEX(new_name, op_func_name);
+  auto new_name = VertexAdaptor<op_func_name>::create();
   new_name->set_string(get_name_for_new_function_with_parent_call(info, real_name));
   vector<VertexPtr> new_params_next;
   vector<VertexPtr> new_params_call;
@@ -2533,16 +2531,16 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
     }
   }
 
-  CREATE_VERTEX(new_func_call, op_func_call, new_params_call);
+  auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
 
   string parent_function_name = replace_backslashes(namespace_name) + "$" + replace_backslashes(cur_class().name) + "$$" + real_name + "$$" + replace_backslashes(class_context);
   // it's equivalent to new_func_call->set_string("parent::" + real_name);
   new_func_call->set_string(parent_function_name);
 
-  CREATE_VERTEX(new_return, op_return, new_func_call);
-  CREATE_VERTEX(new_cmd, op_seq, new_return);
-  CREATE_VERTEX(new_params, op_func_param_list, new_params_next);
-  CREATE_VERTEX(func, op_function, new_name, new_params, new_cmd);
+  auto new_return = VertexAdaptor<op_return>::create(new_func_call);
+  auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
+  auto new_params = VertexAdaptor<op_func_param_list>::create(new_params_next);
+  auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
   func->copy_location_and_flags(*info.root);
   func_force_return(func);
   func->inline_flag = true;

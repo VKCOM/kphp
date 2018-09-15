@@ -651,7 +651,7 @@ VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function) {
     string name = conv_to_func_ptr_name(call);
     if (!name.empty()) {
       name = get_full_static_member_name(current_function, name, true);
-      CREATE_VERTEX (new_call, op_func_ptr);
+      auto new_call = VertexAdaptor<op_func_ptr>::create();
       new_call->str_val = name;
       set_location(new_call, call->get_location());
       call = new_call;
