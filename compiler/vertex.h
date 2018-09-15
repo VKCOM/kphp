@@ -226,6 +226,45 @@ public:
 
   template<Operation Op>
   friend vertex_inner<Op> *raw_create_vertex_inner(int args_n, vertex_inner<Op> *from_ptr);
+
+  template<class... Args>
+  void set_children(int shift, VertexPtr arg, Args&&... args) {
+    ith(shift) = arg;
+    set_children(shift + 1, std::forward<Args>(args)...);
+  }
+
+  template<class... Args>
+  void set_children(int shift, const std::vector<VertexPtr> &arg, Args&&... args) {
+    for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
+      ith(shift + i) = arg[i];
+    }
+    set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
+  }
+
+  void set_children(int shift) {
+    dl_assert(shift == n, "???");
+  }
+
+  template<class... Args>
+  static int get_children_size(const VertexPtr &, Args&&... args) {
+    return 1 + get_children_size(std::forward<Args>(args)...);
+  }
+
+  template<class... Args>
+  static int get_children_size(const std::vector<VertexPtr> &arg, Args&&... args) {
+    return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
+  }
+
+  static int get_children_size() {
+    return 0;
+  }
+
+  template<typename... Args>
+  static vertex_inner<meta_op_base>* create(Args&&... args) {
+    vertex_inner<meta_op_base> *v = raw_create_vertex_inner<meta_op_base>(get_children_size(std::forward<Args>(args)...), NULL);
+    v->set_children(0, std::forward<Args>(args)...);
+    return v;
+  }
 };
 
 inline bool operator==(const VertexPtr &a, const VertexPtr &b) {
@@ -242,8 +281,8 @@ int get_index(const VertexAdaptor<Op> &v) {
 }
 
 template<Operation Op>
-void set_index(VertexAdaptor<Op> *v, int id) {
-  (*v)->id = id;
+void set_index(VertexAdaptor<Op> &v, int id) {
+  v->id = id;
 }
 
 template<Operation Op>
@@ -363,27 +402,42 @@ vertex_inner<Op> *clone_vertex_inner(const vertex_inner<Op> &from) {
   return ptr;
 }
 
-VertexPtr create_vertex(Operation op, VertexPtr first);
-VertexPtr create_vertex(Operation op, VertexPtr first, VertexPtr second);
-
 #define CLONE_VERTEX(name, op, from)\
   VertexAdaptor <op> name = VertexPtr (clone_vertex_inner <op> (*from))
 #define CREATE_VERTEX(name, op, args...)\
-  VertexAdaptor <op> name = VertexPtr (create_vertex_inner <op> (args))
+  auto name = VertexAdaptor<op>::create(args)
 #define COPY_CREATE_VERTEX(name, from, op, args...)\
   VertexAdaptor <op> name = VertexPtr (create_vertex_inner <op> (args, &*from))
 
-#define CREATE_META_VERTEX_1(name, meta_op, op, first)\
-  VertexAdaptor <meta_op> name = create_vertex (op, first)
-#define CREATE_META_VERTEX_2(name, meta_op, op, first, second)\
-  VertexAdaptor <meta_op> name = create_vertex (op, first, second)
+#define CREATE_META_VERTEX(name, meta_op, op, args...)\
+  VertexAdaptor <meta_op> name = create_vertex (op, args)
+
+template <typename... Args>
+VertexPtr create_vertex(Operation op, Args&& ...args) {
+  switch (op) {
+#define FOREACH_OP(x) case x: {CREATE_VERTEX (res, x, std::forward<Args>(args)...); return res;} break;
+
+#include "foreach_op.h"
+
+    default:
+    kphp_fail();
+  }
+  return VertexPtr();
+}
 
 #define VA_BEGIN(Op, BaseOp) \
   template<>\
   class vertex_inner <Op> : public vertex_inner <BaseOp> {\
   public:\
     typedef vertex_inner <BaseOp> super;\
-    typedef vertex_inner <Op> self;
+    typedef vertex_inner <Op> self; \
+    template<typename... Args> \
+    static vertex_inner<Op>* create(Args&&... args) { \
+      vertex_inner<Op> *v = raw_create_vertex_inner<Op>(get_children_size(std::forward<Args>(args)...), NULL); \
+      v->set_children(0, std::forward<Args>(args)...); \
+      return v; \
+    }
+
 #define VA_END };
 
 #define PROPERTIES_BEGIN\
@@ -544,38 +598,6 @@ VA_BEGIN (meta_op_varg_, meta_op_base)
 
   VertexRange args() { return VertexRange(begin(), end()); }
 VA_END
-
-//VA_BEGIN (op_func_call, meta_op_base)
-//void *func_;
-//RAW_INIT_BEGIN
-//func_ = nullptr;
-//RAW_INIT_END
-//PROPERTIES_BEGIN
-//OPP (main, statement_opp);
-//PROPERTIES_END
-//void* &func() {return func_;}
-//VA_END
-
-//VA_BEGIN (op_int_const, meta_op_base)
-//string str_;
-//RAW_INIT_BEGIN
-//new (&str_) string();
-//RAW_INIT_END
-//PROPERTIES_BEGIN
-//OPP (main, expression_opp);
-//OPP (minor, term_opp);
-//PROPERTIES_END
-//string &value() {return str_;}
-//VA_END
-
-//VA_BINARY_BEGIN (op_add)
-//OPP (math, arithmetic_opp);
-//OPP (fixity, left_opp);
-//OPP (str, "+");
-//OPP (rl, rl_op);
-//OPP (cnst, cnst_const_func);
-//VA_BINARY_END
-
 
 VA_BINARY_BEGIN (op_set_shl)
     OPP (type, binary_op);
@@ -1914,6 +1936,24 @@ VA_BEGIN_1 (op_type_rule_func, meta_op_varg_, string)
 VA_END
 
 VA_BEGIN_1 (op_arg_ref, meta_op_base, int)
+VA_END
+
+VA_BEGIN(op_none, meta_op_base)
+VA_END
+
+VA_BEGIN(op_break_file, meta_op_base)
+VA_END
+
+VA_BEGIN(op_function_c, meta_op_base)
+VA_END
+
+VA_BEGIN(op_list_ce, meta_op_base)
+VA_END
+
+VA_BEGIN(op_self, meta_op_base)
+VA_END
+
+VA_BEGIN(op_err, meta_op_base)
 VA_END
 
 

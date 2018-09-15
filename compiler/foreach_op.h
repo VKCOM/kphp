@@ -25,8 +25,6 @@ FOREACH_OP_2 (meta_op_function)
 
 FOREACH_OP_1 (meta_op_cycle)
 
-FOREACH_OP (meta_op_xprintf)
-
 FOREACH_OP (meta_op_xset)
 
 FOREACH_OP (meta_op_push_back)

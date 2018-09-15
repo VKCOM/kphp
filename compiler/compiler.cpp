@@ -2776,12 +2776,10 @@ public:
       replace = &vertex.as<op_if>()->cond();
     }
     skip_conv_and_sets(replace);
-    if (replace) {
-      func_call = *replace;
-    }
-    if (!replace || func_call.is_null() || func_call->type() != op_func_call) {
+    if (!replace || (*replace).is_null() || (*replace)->type() != op_func_call) {
       return vertex;
     }
+    func_call = *replace;
     FunctionPtr func = func_call->get_func_id();
     if (func->root->resumable_flag == false) {
       return vertex;

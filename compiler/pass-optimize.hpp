@@ -32,6 +32,9 @@ public:
     c = set_op->rhs();
 
     VertexPtr save_root = set_op;
+
+    VertexPtr result;
+
     if (b.is_null()) {
       // запрещаем '$s[] = ...' для не-массивов; для массивов превращаем в push_back
       PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
@@ -40,19 +43,19 @@ public:
 
       if (set_op->rl_type == val_none) {
         CREATE_VERTEX (push_back, op_push_back, a, c);
-        set_op = push_back;
+        result = push_back;
       } else {
         CREATE_VERTEX (push_back_return, op_push_back_return, a, c);
-        set_op = push_back_return;
+        result = push_back_return;
       }
     } else {
       CREATE_VERTEX (set_value, op_set_value, a, b, c);
-      set_op = set_value;
+      result = set_value;
     }
-    set_op->location = save_root->get_location();
-    set_op->extra_type = op_ex_internal_func;
-    set_op->rl_type = save_root->rl_type;
-    return set_op;
+    result->location = save_root->get_location();
+    result->extra_type = op_ex_internal_func;
+    result->rl_type = save_root->rl_type;
+    return result;
   }
 
   void collect_concat(VertexPtr root, vector<VertexPtr> *collected) {

@@ -356,7 +356,9 @@ VertexPtr GenTree::get_func_call() {
 
   if (Op == op_isset) {
     CE (!kphp_error(!next.empty(), "isset function requires at least one argument"));
-    CREATE_VERTEX (left, op_isset, next[0]);
+    VertexPtr left;
+    CREATE_VERTEX (left_, op_isset, next[0]);
+    left = left_;
     for (size_t i = 1; i < next.size(); i++) {
       CREATE_VERTEX (right, op_isset, next[i]);
       CREATE_VERTEX (log_and, op_log_and, left, right);
@@ -736,7 +738,7 @@ VertexPtr GenTree::get_unary_op() {
     if (tp == op_not) {
       left = conv_to<tp_int>(left);
     }
-    CREATE_META_VERTEX_1 (expr, meta_op_unary_op, tp, left);
+    CREATE_META_VERTEX (expr, meta_op_unary_op, tp, left);
     set_location(expr, expr_location);
     return expr;
   }
@@ -819,8 +821,9 @@ VertexPtr GenTree::get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, b
         CREATE_VERTEX (left_var, op_var);
         left_var->str_val = left_name;
         left_var->extra_type = op_ex_var_superlocal;
+
         CREATE_VERTEX (left_set, op_set, left_var, left);
-        left_set = conv_to<tp_bool>(left_set);
+        auto left_set_bool = conv_to<tp_bool>(left_set);
 
 
         CREATE_VERTEX (left_var_copy, op_var);
@@ -829,12 +832,12 @@ VertexPtr GenTree::get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, b
 
         CREATE_VERTEX(left_var_move, op_move, left_var_copy);
 
-        CREATE_VERTEX (result, op_ternary, left_set, left_var_move, third);
+        CREATE_VERTEX (result, op_ternary, left_set_bool, left_var_move, third);
 
         expr = result;
       }
     } else {
-      CREATE_META_VERTEX_2 (v, meta_op_binary_op, tp, left, right);
+      CREATE_META_VERTEX (v, meta_op_binary_op, tp, left, right);
       expr = v;
     }
     set_location(expr, expr_location);
@@ -1192,7 +1195,7 @@ VertexPtr GenTree::get_type_rule() {
       return VertexPtr()
     );
 
-    CREATE_META_VERTEX_1 (rule, meta_op_base, OpInfo::tok_to_op[tp], first);
+    CREATE_META_VERTEX (rule, meta_op_base, OpInfo::tok_to_op[tp], first);
 
     if (should_end) {
       if ((*cur)->type() == tok_triple_colon_end) {
@@ -1242,7 +1245,7 @@ VertexPtr GenTree::create_vertex_this(const AutoLocation &location, bool with_ty
     CREATE_VERTEX(rule_this_var, op_class_type_rule);
     rule_this_var->type_help = tp_Class;
 
-    CREATE_META_VERTEX_1 (type_rule, meta_op_base, op_common_type_rule, rule_this_var);
+    CREATE_META_VERTEX (type_rule, meta_op_base, op_common_type_rule, rule_this_var);
     this_var->type_rule = type_rule;
 
     cur_class().this_type_rules.push_back(rule_this_var);
@@ -2279,7 +2282,7 @@ VertexPtr GenTree::post_process(VertexPtr root) {
       if (op == op_fork) {
         arg->fork_flag = true;
       }
-      CREATE_META_VERTEX_1 (new_root, meta_op_base, op, arg);
+      CREATE_META_VERTEX (new_root, meta_op_base, op, arg);
       ::set_location(new_root, root->get_location());
       return post_process(new_root);
     }

@@ -49,12 +49,13 @@ public:
   template<Operation FromOp>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) :
     impl(dynamic_cast <vertex_inner<Op> *> (from.impl)) {
-    dl_assert (impl != nullptr, "???");
+    dl_assert (impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", FromOp, from.is_null() ? -1 : from->type(), Op));
   }
 
   template<Operation FromOp>
   VertexAdaptor &operator=(const VertexAdaptor<FromOp> &from) {
-    impl = (vertex_inner<Op> *)from.impl;
+    impl = dynamic_cast <vertex_inner<Op> *> (from.impl);
+    dl_assert (from.impl == nullptr || impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d> (real type %d) to VertexAdaptor<%d>", FromOp, from.is_null() ? -1 : from->type(), Op));
     return *this;
   }
 
@@ -98,6 +99,11 @@ public:
 
   static void init_properties(OpProperties *x) {
     vertex_inner<Op>::init_properties(x);
+  }
+
+  template <typename... Args>
+  static VertexAdaptor<Op> create(Args... args) {
+    return VertexAdaptor<Op>(vertex_inner<Op>::create(args...));
   }
 };
 

@@ -497,7 +497,7 @@ private:
 
     if (OpInfo::arity(v->type()) == binary_opp) {
       VertexAdaptor<meta_op_binary_op> binary = v;
-      CREATE_META_VERTEX_2 (
+      CREATE_META_VERTEX (
         res,
         meta_op_binary_op, OpInfo::base_op(v->type()),
         binary->lhs(), binary->rhs()

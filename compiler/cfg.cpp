@@ -931,7 +931,7 @@ void CFG::collect_unused(VertexPtr *v, vector<VertexPtr *> *unused_vertices) {
 }
 
 int CFG::register_vertices(VertexPtr v, int N) {
-  set_index(&v, N++);
+  set_index(v, N++);
   for (auto i : *v) {
     N = register_vertices(i, N);
   }
