@@ -91,7 +91,7 @@ FOREACH_OP (op_constructor_call)
 
 FOREACH_OP_2 (op_instance_prop)
 
-FOREACH_OP_3 (op_class_var)
+FOREACH_OP_2 (op_class_var)
 
 FOREACH_OP (op_seq)
 

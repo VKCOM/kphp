@@ -416,12 +416,6 @@ VertexPtr create_vertex(Operation op, Args&& ...args) {
   VA_END\
   VA_BEGIN_1 (Op, TMP_OP (Op, 1), arg2)\
 
-#define VA_BEGIN_3(Op, BaseOp, arg1, arg2, arg3)\
-  VA_BEGIN (TMP_OP (Op, 2), BaseOp)\
-    FIELD_BODY (arg1)\
-  VA_END\
-  VA_BEGIN_2 (Op, TMP_OP (Op, 2), arg2, arg3)\
-
 #define FIELD_BODY(field_name) DL_ADD_SUFF (FIELD_BODY, field_name)
 
 #define FIELD_BODY_function\
@@ -494,13 +488,6 @@ VertexPtr create_vertex(Operation op, Args&& ...args) {
   Token* phpdoc_token = nullptr;\
   RAW_COPY_BEGIN\
     phpdoc_token = from.phpdoc_token;\
-  RAW_COPY_END
-
-#define FIELD_BODY_def_val\
-  public:\
-  VertexPtr def_val;\
-  RAW_COPY_BEGIN\
-    def_val = from.def_val;\
   RAW_COPY_END
 
 VA_BEGIN (meta_op_unary_, meta_op_base)
@@ -1287,13 +1274,16 @@ VA_BEGIN_2 (op_instance_prop, meta_op_unary_, string, variable)
   PROPERTIES_END
 VA_END
 
-VA_BEGIN_3 (op_class_var, meta_op_base, string, def_val, phpdoc_token)
+VA_BEGIN_2 (op_class_var, meta_op_base, string, phpdoc_token)
   PROPERTIES_BEGIN
     OPP (type, common_op);
     OPP (rl, rl_error);
     OPP (cnst, cnst_const_func);
     OPP (str, "op_class_var");
   PROPERTIES_END
+
+  VertexPtr &def_val() { return ith(0); }
+  bool has_def_val() { return check_range(0);}
 VA_END
 
 VA_BEGIN_1 (op_define_val, meta_op_base, define)
@@ -1634,7 +1624,6 @@ VA_BEGIN (op_function, meta_op_function)
     OPP (str, "<TODO: function>");
   PROPERTIES_END
 
-  //virtual has_cmd() {return true;}
   VertexPtr &cmd() { return ith(2); }
 VA_END
 

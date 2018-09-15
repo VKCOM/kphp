@@ -1267,11 +1267,11 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const Clas
 
   for (std::vector<VertexPtr>::const_iterator i = cur_class.members.begin(); i != cur_class.members.end(); ++i) {
     VertexPtr var = *i;
-    if (var->type() == op_class_var && var.as<op_class_var>()->def_val.not_null()) {
+    if (var->type() == op_class_var && var.as<op_class_var>()->has_def_val()) {
       auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(location));
       inst_prop->str_val = var->get_string();
 
-      auto set_c1_node = VertexAdaptor<op_set>::create(inst_prop, var.as<op_class_var>()->def_val);
+      auto set_c1_node = VertexAdaptor<op_set>::create(inst_prop, var.as<op_class_var>()->def_val());
       next.insert(next.begin() + 1, set_c1_node);
     }
   }
@@ -2191,15 +2191,19 @@ VertexPtr GenTree::get_vars_list(Token *phpdoc_token, OperationExtra extra_type)
 
   const std::string &var_name = (*cur)->str_val;
   CE (expect(tok_var_name, "expected variable name"));
-  auto var = VertexAdaptor<op_class_var>::create();
+
+  VertexPtr def_val;
+
+  if (test_expect(tok_eq1)) {
+    next_cur();
+    def_val = get_expression();
+  }
+
+  auto var = def_val.is_null() ? VertexAdaptor<op_class_var>::create() : VertexAdaptor<op_class_var>::create(def_val);
   var->extra_type = extra_type;       // чтобы в create_class() определить, это public/private/protected
   var->str_val = var_name;
   var->phpdoc_token = phpdoc_token;
 
-  if (test_expect(tok_eq1)) {
-    next_cur();
-    var->def_val = get_expression();
-  }
 
   cur_class().vars.push_back(var);
   cur_class().members.push_back(var);
