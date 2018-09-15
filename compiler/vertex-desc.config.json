@@ -1,0 +1,181 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "KPHP AST vertices",
+  "definitions": {
+    "operation_property_dict": {
+      "type": "object",
+      "properties": {
+        "fixity": {
+          "enum": [
+            "ofixity_none",
+            "right_opp",
+            "left_opp"
+          ]
+        },
+        "arity": {
+          "enum": [
+            "oarity_none",
+            "unary_opp",
+            "binary_opp",
+            "ternary_opp"
+          ]
+        },
+        "main": {
+          "enum": [
+            "omain_none",
+            "statement_opp",
+            "expression_opp"
+          ]
+        },
+        "minor": {
+          "enum": [
+            "ominor_none",
+            "cycle_opp",
+            "term_opp",
+            "operator_opp"
+          ]
+        },
+        "rl": {
+          "title": "RLOperationType",
+          "enum": [
+            "rl_error",
+            "rl_set",
+            "rl_index",
+            "rl_op",
+            "rl_common",
+            "rl_const",
+            "rl_var",
+            "rl_func",
+            "rl_mem_func",
+            "rl_op_l",
+            "rl_instance_prop",
+            "rl_other"
+          ]
+        },
+        "cnst": {
+          "title": "ConstOperationType",
+          "enum": [
+            "cnst_error",
+            "cnst_not_func",
+            "cnst_nonconst_func",
+            "cnst_const_func",
+            "cnst_func"
+          ]
+        },
+        "type": {
+          "title": "OperationType",
+          "enum": [
+            "error_op",
+            "common_op",
+            "cycle_op",
+            "binary_op",
+            "binary_func_op",
+            "prefix_op",
+            "postfix_op",
+            "ternary_op",
+            "conv_op"
+          ]
+        },
+        "str": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "base_op": {
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name"],
+    "oneOf": [
+      {
+        "required": [
+          "base_name"
+        ]
+      },
+      {
+        "properties": {
+          "name": {
+            "enum": [
+              "meta_op_base"
+            ]
+          }
+        }
+      }
+    ],
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "base_name": {
+        "type": "string"
+      },
+      "sons": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "integer"
+        }
+      },
+      "alias": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "optional_sons": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "integer"
+        }
+      },
+      "ranges": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "extras": {
+        "type": "array",
+        "items": {
+          "enum": [
+            "function",
+            "string",
+            "variable"
+          ]
+        },
+        "uniqueItems": true
+      },
+      "extra_fields": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "default": {}
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "props": {
+        "$ref": "#/definitions/operation_property_dict"
+      },
+      "safe_props": {
+        "$ref": "#/definitions/operation_property_dict"
+      }
+    },
+    "additionalProperties": false
+  }
+}

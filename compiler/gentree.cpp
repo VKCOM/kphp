@@ -1024,7 +1024,7 @@ VertexPtr GenTree::get_actual_value(VertexPtr v) {
     return v->get_var_id()->init_val;
   }
   if (v->type() == op_define_val) {
-    DefinePtr d = v.as<op_define_val>()->get_define_id();
+    DefinePtr d = v.as<op_define_val>()->define_id;
     if (d->type() == DefineData::def_php) {
       return d->val;
     }

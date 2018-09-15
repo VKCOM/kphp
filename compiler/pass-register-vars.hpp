@@ -371,7 +371,7 @@ public:
       VertexAdaptor<op_func_param> param = i;
       VertexAdaptor<op_var> var = param->var();
       VertexPtr default_value;
-      if (param->has_default()) {
+      if (param->has_default_value()) {
         default_value = param->default_value();
         visit(param->default_value());
       }

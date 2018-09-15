@@ -244,7 +244,7 @@ void analyzer_check_array(VertexPtr to_check) {
           }
         }
       } else if (key->type() == op_define_val) {
-        DefinePtr d = key.as<op_define_val>()->get_define_id();
+        DefinePtr d = key.as<op_define_val>()->define_id;
         VertexPtr dval = d->val;
         if (dval->type() == op_string || dval->type() == op_int_const) {
           str = dval->get_string();

@@ -817,7 +817,7 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
     VertexAdaptor<op_func_param> param = i;
     VertexPtr var = param->var();
     VertexPtr def_val;
-    if (param->has_default()) {
+    if (param->has_default_value()) {
       def_val = param->default_value();
     }
 
@@ -3289,7 +3289,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
 //TODO: write proper define_raw
 
 void compile_define(VertexPtr root, CodeGenerator &W) {
-  DefinePtr d = root->get_define_id();
+  DefinePtr d = root.as<op_define_val>()->define_id;
 
   W << LockComments();
   switch (d->val->type()) {

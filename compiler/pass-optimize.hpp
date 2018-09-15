@@ -31,8 +31,6 @@ public:
     }
     c = set_op->rhs();
 
-    VertexPtr save_root = set_op;
-
     VertexPtr result;
 
     if (b.is_null()) {
@@ -49,9 +47,9 @@ public:
     } else {
       result = VertexAdaptor<op_set_value>::create(a, b, c);
     }
-    result->location = save_root->get_location();
+    result->location = set_op->get_location();
     result->extra_type = op_ex_internal_func;
-    result->rl_type = save_root->rl_type;
+    result->rl_type = set_op->rl_type;
     return result;
   }
 

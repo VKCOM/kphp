@@ -616,7 +616,7 @@ void ExprNodeRecalc::recalc_index(VertexAdaptor<op_index> index) {
     return;
   }
 
-  long int_index = GenTree::get_actual_value(index->key()).as<op_int_const>()->parse_int_from_string();
+  long int_index = parse_int_from_string(GenTree::get_actual_value(index->key()).as<op_int_const>());
   MultiKey key({Key::int_key((int)int_index)});
   set_lca(index->array(), &key);
 }
@@ -725,7 +725,7 @@ void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary_op> expr) {
 
 void ExprNodeRecalc::recalc_define_val(VertexAdaptor<op_define_val> define_val) {
   //TODO: fix?
-  set_lca(define_val->get_define_id()->val);
+  set_lca(define_val->define_id->val);
 }
 
 void ExprNodeRecalc::recalc_expr(VertexPtr expr) {

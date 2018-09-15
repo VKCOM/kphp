@@ -1,0 +1,1750 @@
+[
+  {
+    "name": "op_err",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "meta_op_base"
+  },
+  {
+    "sons": {
+      "expr": 0
+    },
+    "name": "meta_op_unary_",
+    "base_name": "meta_op_base"
+  },
+  {
+    "sons": {
+      "rhs": 1,
+      "lhs": 0
+    },
+    "name": "meta_op_binary_",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "meta_op_varg_",
+    "base_name": "meta_op_base",
+    "ranges" : {
+      "args" : [0, 0]
+    }
+  },
+  {
+    "name": "meta_op_unary_op",
+    "base_name": "meta_op_unary_",
+    "props": {
+      "fixity": "left_opp",
+      "arity": "unary_opp",
+      "main": "expression_opp",
+      "minor": "operator_opp"
+    }
+  },
+  {
+    "name": "meta_op_binary_op",
+    "base_name": "meta_op_binary_",
+    "props": {
+      "fixity": "left_opp",
+      "arity": "binary_opp",
+      "main": "expression_opp",
+      "minor": "operator_opp"
+    }
+  },
+  {
+    "sons": {
+      "params": 1,
+      "name": 0
+    },
+    "extras": [
+      "function",
+      "string"
+    ],
+    "name": "meta_op_function",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op"
+    }
+  },
+  {
+    "name": "meta_op_cycle",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "cycle_op"
+    },
+    "extra_fields": {
+      "break_label_id": {
+        "type": "int",
+        "default": 0
+      },
+      "continue_label_id": {
+        "type": "int",
+        "default": 0
+      }
+    }
+  },
+  {
+    "name": "meta_op_xset",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op"
+    }
+  },
+  {
+    "sons": {
+      "array": 0,
+      "value": 1
+    },
+    "name": "meta_op_push_back",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_error",
+      "cnst": "cnst_error",
+      "type": "common_op"
+    }
+  },
+  {
+    "name": "meta_op_require",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "cnst": "cnst_not_func",
+      "type": "common_op"
+    }
+  },
+  {
+    "extra_fields": {
+      "int_val": {
+        "type": "int",
+        "default": 0
+      }
+    },
+    "name": "meta_op_goto",
+    "base_name": "meta_op_unary_"
+  },
+  {
+    "sons": {
+      "name": 0,
+      "value": 1
+    },
+    "name": "meta_op_define",
+    "base_name": "meta_op_base"
+  },
+  {
+    "sons": {
+      "var": 0,
+      "default_value": 1
+    },
+    "optional_sons": {
+      "default_value": 1
+    },
+    "name": "meta_op_func_param",
+    "base_name": "meta_op_base",
+    "extra_fields": {
+      "template_type_id": {
+        "type": "int",
+        "default": -1
+      },
+      "type_declaration": {
+        "type": "std::string"
+      }
+    }
+  },
+  {
+    "name": "meta_op_type_rule",
+    "base_name": "meta_op_unary_"
+  },
+  {
+    "name": "meta_op_builtin_func",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_const_func",
+      "type": "common_op"
+    }
+  },
+  {
+    "extras": [
+      "string"
+    ],
+    "name": "meta_op_num",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_const_func",
+      "type": "common_op"
+    }
+  },
+  {
+    "name": "op_type_rule",
+    "base_name": "meta_op_varg_"
+  },
+  {
+    "extras": [
+      "string"
+    ],
+    "name": "op_type_rule_func",
+    "base_name": "meta_op_varg_"
+  },
+  {
+    "name": "op_common_type_rule",
+    "base_name": "meta_op_type_rule"
+  },
+  {
+    "name": "op_class_type_rule",
+    "base_name": "meta_op_type_rule",
+    "extra_fields": {
+      "class_ptr": {
+        "type": "ClassPtr"
+      }
+    }
+  },
+  {
+    "name": "op_lt_type_rule",
+    "base_name": "meta_op_type_rule"
+  },
+  {
+    "name": "op_gt_type_rule",
+    "base_name": "meta_op_type_rule"
+  },
+  {
+    "name": "op_eq_type_rule",
+    "base_name": "meta_op_type_rule"
+  },
+  {
+    "name": "op_self",
+    "base_name": "meta_op_base"
+  },
+  {
+    "extra_fields": {
+      "int_val": {
+        "type": "int",
+        "default": 0
+      }
+    },
+    "name": "op_arg_ref",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "op_empty",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: empty>"
+    }
+  },
+  {
+    "name": "op_function_c",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "op_int_const",
+    "base_name": "meta_op_num",
+    "props": {
+      "str": "<TODO: op_int>"
+    }
+  },
+  {
+    "name": "op_uint_const",
+    "base_name": "meta_op_num",
+    "props": {
+      "str": "<TODO: op_uint>"
+    }
+  },
+  {
+    "name": "op_long_const",
+    "base_name": "meta_op_num",
+    "props": {
+      "str": "<TODO: op_long>"
+    }
+  },
+  {
+    "name": "op_ulong_const",
+    "base_name": "meta_op_num",
+    "props": {
+      "str": "<TODO: op_ulong>"
+    }
+  },
+  {
+    "name": "op_float_const",
+    "base_name": "meta_op_num",
+    "props": {
+      "str": "<TODO: op_float>"
+    }
+  },
+  {
+    "extras": [
+      "variable",
+      "string"
+    ],
+    "name": "op_var",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_var",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: op_var>"
+    }
+  },
+  {
+    "extras": [
+      "string"
+    ],
+    "name": "op_string",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: op_string>"
+    }
+  },
+  {
+    "extras": [
+      "string"
+    ],
+    "name": "op_func_name",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: op_func_name>"
+    }
+  },
+  {
+    "name": "op_string_build",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: op_string_build>"
+    },
+    "ranges": {
+      "args": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "extras": [
+      "function",
+      "string"
+    ],
+    "name": "op_func_call",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_func",
+      "type": "common_op",
+      "str": "<TODO: op_func_call>"
+    }
+  },
+  {
+    "extras": [
+      "function",
+      "string"
+    ],
+    "name": "op_func_ptr",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_error",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: op_func_ptr>"
+    }
+  },
+  {
+    "name": "op_constructor_call",
+    "base_name": "op_func_call"
+  },
+  {
+    "extras": [
+      "string",
+      "variable"
+    ],
+    "name": "op_instance_prop",
+    "base_name": "meta_op_unary_",
+    "props": {
+      "rl": "rl_instance_prop",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "op_instance_prop"
+    }
+  },
+  {
+    "name": "op_class_var",
+    "base_name": "meta_op_base",
+    "sons": {
+      "def_val": 0
+    },
+    "props": {
+      "rl": "rl_error",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "op_class_var"
+    },
+    "optional_sons": {
+      "def_val": 0
+    },
+    "extras": [
+      "string"
+    ],
+    "extra_fields": {
+      "phpdoc_token": {
+        "type": "Token*",
+        "default": "nullptr"
+      }
+    }
+  },
+  {
+    "name": "op_seq",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: seq>"
+    }
+  },
+  {
+    "name": "op_seq_comma",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: seq_comma>"
+    }
+  },
+  {
+    "name": "op_seq_rval",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: seq_inplace_var>"
+    }
+  },
+  {
+    "name": "op_func_param_list",
+    "base_name": "meta_op_varg_",
+    "ranges": {
+      "params": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "name": "op_varg",
+    "base_name": "meta_op_unary_"
+  },
+  {
+    "name": "op_func_param",
+    "base_name": "meta_op_func_param"
+  },
+  {
+    "extra_fields": {
+      "param_cnt": {
+        "type": "int",
+        "default": 0
+      }
+    },
+    "name": "op_func_param_callback",
+    "base_name": "meta_op_func_param"
+  },
+  {
+    "name": "op_func_decl",
+    "base_name": "meta_op_function",
+    "props": {
+      "str": "<TODO: op_extern_func>"
+    }
+  },
+  {
+    "name": "op_extern_func",
+    "base_name": "meta_op_function",
+    "props": {
+      "str": "<TODO: op_extern_func>"
+    }
+  },
+  {
+    "name": "op_isset",
+    "base_name": "meta_op_xset",
+    "props": {
+      "rl": "rl_op",
+      "str": "<TODO: isset>"
+    }
+  },
+  {
+    "name": "op_unset",
+    "base_name": "meta_op_xset",
+    "props": {
+      "rl": "rl_common",
+      "str": "<TODO: unset>"
+    }
+  },
+  {
+    "name": "op_echo",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: echo>"
+    }
+  },
+  {
+    "name": "op_dbg_echo",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: dbg_echo>"
+    }
+  },
+  {
+    "name": "op_var_dump",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: var_dump>"
+    }
+  },
+  {
+    "name": "op_print",
+    "base_name": "meta_op_unary_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: print>"
+    }
+  },
+  {
+    "sons": {
+      "cmd": 1,
+      "cond": 0
+    },
+    "name": "op_while",
+    "base_name": "meta_op_cycle",
+    "props": {
+      "str": "<TODO: while>"
+    }
+  },
+  {
+    "sons": {
+      "cmd": 1,
+      "cond": 0
+    },
+    "name": "op_do",
+    "base_name": "meta_op_cycle",
+    "props": {
+      "str": "<TODO: do>"
+    }
+  },
+  {
+    "sons": {
+      "post_cond": 2,
+      "pre_cond": 0,
+      "cmd": 3,
+      "cond": 1
+    },
+    "name": "op_for",
+    "base_name": "meta_op_cycle",
+    "props": {
+      "str": "<TODO: for>"
+    }
+  },
+  {
+    "sons": {
+      "cmd": 1,
+      "params": 0
+    },
+    "name": "op_foreach",
+    "base_name": "meta_op_cycle",
+    "props": {
+      "str": "<TODO: foreach>"
+    }
+  },
+  {
+    "optional_sons": {
+      "key": 3
+    },
+    "sons": {
+      "temp_var": 2,
+      "xs": 0,
+      "key": 3,
+      "x": 1
+    },
+    "name": "op_foreach_param",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: op_foreach_param>"
+    }
+  },
+  {
+    "sons": {
+      "ss": 3,
+      "expr": 0,
+      "switch_flag": 2,
+      "switch_var": 1,
+      "ss_hash": 4
+    },
+    "name": "op_switch",
+    "base_name": "meta_op_cycle",
+    "props": {
+      "str": "<TODO: switch>"
+    },
+    "ranges": {
+      "variables": [
+        1,
+        5
+      ],
+      "cases": [
+        5,
+        0
+      ]
+    }
+  },
+  {
+    "optional_sons": {
+      "false_cmd": 2
+    },
+    "sons": {
+      "true_cmd": 1,
+      "cond": 0,
+      "false_cmd": 2
+    },
+    "name": "op_if",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: if>"
+    }
+  },
+  {
+    "name": "op_else",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: else>"
+    }
+  },
+  {
+    "name": "op_elseif",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: elseif>"
+    }
+  },
+  {
+    "name": "op_break",
+    "base_name": "meta_op_goto",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: break>"
+    }
+  },
+  {
+    "name": "op_continue",
+    "base_name": "meta_op_goto",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: continue>"
+    }
+  },
+  {
+    "sons": {
+      "cmd": 2
+    },
+    "name": "op_function",
+    "base_name": "meta_op_function",
+    "props": {
+      "str": "<TODO: function>"
+    }
+  },
+  {
+    "sons": {
+      "expr": 0,
+      "cmd": 1
+    },
+    "name": "op_case",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: case>"
+    }
+  },
+  {
+    "sons": {
+      "cmd": 0
+    },
+    "name": "op_default",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: op_default>"
+    }
+  },
+  {
+    "name": "op_array",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: array>"
+    }
+  },
+  {
+    "name": "op_tuple",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "tuple<>"
+    }
+  },
+  {
+    "name": "op_list",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: list>"
+    },
+    "sons": {
+      "array": -1
+    },
+    "ranges": {
+      "list": [
+        0,
+        -1
+      ]
+    },
+    "extra_fields": {
+      "phpdoc_token": {
+        "type": "Token*",
+        "default": "nullptr"
+      }
+    }
+  },
+  {
+    "name": "op_list_ce",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "op_global",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: global>"
+    }
+  },
+  {
+    "name": "op_static",
+    "base_name": "meta_op_varg_",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: static>"
+    }
+  },
+  {
+    "name": "op_return",
+    "base_name": "meta_op_unary_",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: return>"
+    }
+  },
+  {
+    "name": "op_min",
+    "base_name": "meta_op_builtin_func",
+    "props": {
+      "str": "f$min"
+    }
+  },
+  {
+    "name": "op_max",
+    "base_name": "meta_op_builtin_func",
+    "props": {
+      "str": "f$max"
+    }
+  },
+  {
+    "name": "op_eq2",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "eq2"
+    }
+  },
+  {
+    "name": "op_neq2",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "neq2"
+    }
+  },
+  {
+    "name": "op_eq3",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "equals"
+    }
+  },
+  {
+    "name": "op_neq3",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "not_equals"
+    }
+  },
+  {
+    "name": "op_le",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "<="
+    }
+  },
+  {
+    "name": "op_ge",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": ">="
+    }
+  },
+  {
+    "name": "op_lt",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "<"
+    }
+  },
+  {
+    "name": "op_gt",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": ">"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_add"
+    },
+    "name": "op_add",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "+"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_sub"
+    },
+    "name": "op_sub",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "-"
+    }
+  },
+  {
+    "name": "op_concat",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "<TODO: op_concat>"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_mul"
+    },
+    "name": "op_mul",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "*"
+    }
+  },
+  {
+    "name": "op_div",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "divide"
+    }
+  },
+  {
+    "name": "op_mod",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "modulo"
+    }
+  },
+  {
+    "name": "op_arrow",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "@op_arrow"
+    }
+  },
+  {
+    "name": "op_log_xor_let",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "^"
+    }
+  },
+  {
+    "name": "op_log_and_let",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "&&"
+    }
+  },
+  {
+    "name": "op_log_or_let",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "||"
+    }
+  },
+  {
+    "name": "op_log_and",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "&&"
+    }
+  },
+  {
+    "name": "op_log_or",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "||"
+    }
+  },
+  {
+    "name": "op_xor",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "^"
+    }
+  },
+  {
+    "name": "op_or",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "|"
+    }
+  },
+  {
+    "name": "op_and",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "&"
+    }
+  },
+  {
+    "name": "op_shr",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": ">>"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_shl"
+    },
+    "name": "op_shl",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "<<"
+    }
+  },
+  {
+    "name": "op_noerr",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_other",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "NOERR"
+    }
+  },
+  {
+    "name": "op_minus",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "prefix_op",
+      "str": " - "
+    }
+  },
+  {
+    "name": "op_plus",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "prefix_op",
+      "str": " + "
+    }
+  },
+  {
+    "alias": {
+      "value": "rhs",
+      "key": "lhs"
+    },
+    "name": "op_double_arrow",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_op",
+      "fixity": "right_opp",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "@op_double_arrow"
+    }
+  },
+  {
+    "name": "op_set",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "cnst": "cnst_nonconst_func",
+      "type": "binary_op",
+      "str": "="
+    },
+    "extra_fields": {
+      "phpdoc_token": {
+        "type": "Token*",
+        "default": "nullptr"
+      }
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_set_add"
+    },
+    "name": "op_set_add",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_add",
+      "str": "+=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_set_sub"
+    },
+    "name": "op_set_sub",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_sub",
+      "str": "-=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_set_mul"
+    },
+    "name": "op_set_mul",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_mul",
+      "str": "*=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "name": "op_set_div",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_div",
+      "str": "divide_self",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_func_op"
+    }
+  },
+  {
+    "name": "op_set_mod",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_mod",
+      "str": "modulo_self",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_func_op"
+    }
+  },
+  {
+    "name": "op_set_and",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_and",
+      "str": "&=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "name": "op_set_or",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_or",
+      "str": "|=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "name": "op_set_xor",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_xor",
+      "str": "^=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "name": "op_set_dot",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_concat",
+      "str": "append",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_func_op"
+    }
+  },
+  {
+    "name": "op_set_shr",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_shr",
+      "str": ">>=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "binary_func_op",
+      "str": "safe_set_shl"
+    },
+    "name": "op_set_shl",
+    "base_name": "meta_op_binary_op",
+    "props": {
+      "cnst": "cnst_nonconst_func",
+      "base_op": "op_shl",
+      "str": "<<=",
+      "rl": "rl_set",
+      "fixity": "right_opp",
+      "type": "binary_op"
+    }
+  },
+  {
+    "sons": {
+      "true_expr": 1,
+      "cond": 0,
+      "false_expr": 2
+    },
+    "name": "op_ternary",
+    "base_name": "meta_op_base",
+    "props": {
+      "cnst": "cnst_const_func",
+      "description": "ternary operator",
+      "str": "<TODO: ternary>",
+      "rl": "rl_op",
+      "fixity": "right_opp",
+      "main": "expression_opp",
+      "type": "ternary_op"
+    }
+  },
+  {
+    "name": "op_not",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "prefix_op",
+      "str": "~"
+    }
+  },
+  {
+    "name": "op_log_not",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "prefix_op",
+      "str": "!"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "conv_op",
+      "str": "safe_incr_pre"
+    },
+    "name": "op_prefix_inc",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op_l",
+      "cnst": "cnst_nonconst_func",
+      "type": "prefix_op",
+      "str": "++"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "conv_op",
+      "str": "safe_decr_pre"
+    },
+    "name": "op_prefix_dec",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op_l",
+      "cnst": "cnst_nonconst_func",
+      "type": "prefix_op",
+      "str": "--"
+    }
+  },
+  {
+    "name": "op_addr",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "prefix_op",
+      "str": "<TODO: op_addr>"
+    }
+  },
+  {
+    "safe_props": {
+      "str": "f$safe_intval"
+    },
+    "name": "op_conv_int",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$intval"
+    }
+  },
+  {
+    "name": "op_conv_int_l",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_other",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: op_conv_int_l>"
+    }
+  },
+  {
+    "name": "op_conv_float",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$floatval"
+    }
+  },
+  {
+    "name": "op_conv_string",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$strval"
+    }
+  },
+  {
+    "name": "op_conv_array",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$arrayval"
+    }
+  },
+  {
+    "name": "op_conv_array_l",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_other",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: op_conv_array_l>"
+    }
+  },
+  {
+    "name": "op_conv_object",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "<TODO: op_conv_object>"
+    }
+  },
+  {
+    "name": "op_conv_bool",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$boolval"
+    }
+  },
+  {
+    "name": "op_conv_var",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "var"
+    }
+  },
+  {
+    "name": "op_conv_uint",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$uintval"
+    }
+  },
+  {
+    "name": "op_conv_long",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$longval"
+    }
+  },
+  {
+    "name": "op_conv_ulong",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$ulongval"
+    }
+  },
+  {
+    "name": "op_conv_regexp",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "regexp"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "conv_op",
+      "str": "safe_incr_post"
+    },
+    "name": "op_postfix_inc",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op_l",
+      "cnst": "cnst_nonconst_func",
+      "type": "postfix_op",
+      "str": "++"
+    }
+  },
+  {
+    "safe_props": {
+      "type": "conv_op",
+      "str": "safe_decr_post"
+    },
+    "name": "op_postfix_dec",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op_l",
+      "cnst": "cnst_nonconst_func",
+      "type": "postfix_op",
+      "str": "--"
+    }
+  },
+  {
+    "optional_sons": {
+      "key": 1
+    },
+    "sons": {
+      "array": 0,
+      "key": 1
+    },
+    "name": "op_index",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_index",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "<TODO: op_index>"
+    }
+  },
+  {
+    "name": "op_push_back",
+    "base_name": "meta_op_push_back",
+    "props": {
+      "str": "push_back"
+    }
+  },
+  {
+    "name": "op_push_back_return",
+    "base_name": "meta_op_push_back",
+    "props": {
+      "str": "push_back_return"
+    }
+  },
+  {
+    "sons": {
+      "array": 0,
+      "value": 2,
+      "key": 1
+    },
+    "name": "op_set_value",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_error",
+      "cnst": "cnst_error",
+      "type": "common_op",
+      "str": "set_value"
+    }
+  },
+  {
+    "name": "op_false",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "false"
+    }
+  },
+  {
+    "name": "op_true",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "true"
+    }
+  },
+  {
+    "name": "op_null",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "null"
+    }
+  },
+  {
+    "name": "op_lvalue_null",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_var",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: op_lvalue_null>"
+    }
+  },
+  {
+    "name": "op_exit",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "conv_op",
+      "str": "f$exit"
+    }
+  },
+  {
+    "name": "op_move",
+    "base_name": "meta_op_unary_op",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "conv_op",
+      "str": "std::move"
+    }
+  },
+  {
+    "name": "op_require",
+    "base_name": "meta_op_require",
+    "props": {
+      "rl": "rl_func",
+      "str": "<TODO: require>"
+    }
+  },
+  {
+    "name": "op_require_once",
+    "base_name": "meta_op_require",
+    "props": {
+      "rl": "rl_common",
+      "str": "<TODO: require_once>"
+    }
+  },
+  {
+    "name": "op_define",
+    "base_name": "meta_op_define"
+  },
+  {
+    "name": "op_defined",
+    "base_name": "meta_op_unary_",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: defined>"
+    }
+  },
+  {
+    "name": "op_define_raw",
+    "base_name": "meta_op_define"
+  },
+  {
+    "extra_fields": {
+      "define_id": {
+        "type": "DefinePtr"
+      }
+    },
+    "name": "op_define_val",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: op_define_val>"
+    }
+  },
+  {
+    "sons": {
+      "try_cmd": 0,
+      "exception": 1,
+      "catch_cmd": 2
+    },
+    "name": "op_try",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: try>"
+    }
+  },
+  {
+    "sons": {
+      "func_call": 0
+    },
+    "name": "op_fork",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "<TODO: fork>"
+    }
+  },
+  {
+    "sons": {
+      "func_call": 1,
+      "lhs": 0
+    },
+    "name": "op_async",
+    "base_name": "meta_op_base",
+    "props": {
+      "type": "common_op",
+      "str": "<TODO: async>"
+    }
+  },
+  {
+    "name": "op_throw",
+    "base_name": "meta_op_unary_",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: throw>"
+    }
+  },
+  {
+    "name": "op_break_file",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "op_none",
+    "base_name": "meta_op_base"
+  },
+  {
+    "sons": {
+      "name": 0,
+      "parent": 1
+    },
+    "name": "op_class",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "<TODO: class>"
+    }
+  }
+]

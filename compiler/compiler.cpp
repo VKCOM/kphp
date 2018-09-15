@@ -870,7 +870,7 @@ void prepare_function_misc(FunctionPtr func) {
       kphp_error (params[i].as<meta_op_func_param>()->var()->ref_flag == false,
                   "Reference arguments are not supported in varg functions");
     }
-    if (params[i].as<meta_op_func_param>()->has_default()) {
+    if (params[i].as<meta_op_func_param>()->has_default_value()) {
       if (!was_default) {
         was_default = true;
         func->min_argn = i;
@@ -1139,7 +1139,7 @@ public:
           root = var;
         } else if (d->type() == DefineData::def_raw || d->type() == DefineData::def_php) {
           auto def = VertexAdaptor<op_define_val>::create();
-          def->set_define_id(d);
+          def->define_id = d;
           root = def;
         } else {
           assert (0 && "unreachable branch");
@@ -1311,6 +1311,7 @@ private:
     int call_args_n = (int)call_args.size();
     int func_args_n = (int)func_args.size();
 
+    // TODO: why it is here???
     if (func->varg_flag) {
       for (int i = 0; i < call_args_n; i++) {
         kphp_error_act (
@@ -1328,7 +1329,10 @@ private:
         args = new_args;
       }
       vector<VertexPtr> tmp(1, GenTree::conv_to<tp_array>(args));
-      auto new_call = VertexAdaptor<op_func_call>::copy_create(call, tmp);
+      auto new_call = VertexAdaptor<op_func_call>::create(tmp);
+      new_call->copy_location_and_flags(*call);
+      new_call->set_func_id(func);
+      new_call->str_val = call.as<op_func_call>()->str_val;
       return new_call;
     }
 
@@ -1691,7 +1695,7 @@ public:
         kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
         VertexPtr var = arg->var();
         VertexPtr def;
-        if (arg->has_default()) {
+        if (arg->has_default_value()) {
           def = arg->default_value();
         } else {
           auto null = VertexAdaptor<op_null>::create();

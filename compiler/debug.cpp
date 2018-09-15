@@ -179,7 +179,7 @@ void fillTokenTypeNames() {
 void fillOperationNames() {
 #define FOREACH_OP(x) OPERATION_NAMES[x] = #x;
 
-#include "foreach_op.h"
+#include "auto/compiler/vertex/foreach-op.h"
 }
 
 
@@ -263,8 +263,8 @@ GdbVertex *debugVertexToGdb(VertexPtr impl) {
 }
 
 // "expr*8" in CLion debugger
-#define FOREACH_OP(x)  \
-GdbVertex operator*(VertexAdaptor <x> v, int n __attribute__((unused))) { return *debugVertexToGdb(v); }
-
-#include "foreach_op.h"
+template<Operation Op>
+GdbVertex operator*(VertexAdaptor <Op> v, int n __attribute__((unused))) {
+  return *debugVertexToGdb(v);
+}
 

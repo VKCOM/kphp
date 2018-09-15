@@ -28,7 +28,7 @@ void OpInfo::init_static() {
   std::fill(P, P + Operation_size, default_properties);
 #define FOREACH_OP(x) VertexAdaptor <x>::init_properties (&P[x]);
 
-#include "foreach_op.h"
+#include "auto/compiler/vertex/foreach-op.h"
 
 #undef FOREACH_OP
 
