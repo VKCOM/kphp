@@ -452,7 +452,7 @@ TypeData::flags_t TypeData::flags() const {
 }
 
 void TypeData::set_flags(TypeData::flags_t new_flags) {
-  dl_assert ((flags_ & new_flags) == flags_, "It is forbiddent to remove flag");
+  dl_assert ((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
   if (flags_ != new_flags) {
     if (new_flags & error_flag_e) {
       set_error_flag(true);
@@ -594,6 +594,21 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false) {
   TypeData *lhs = this;
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
+  if (new_ptype == tp_var) {
+    if (lhs->ptype() == tp_array && lhs->anykey_value != nullptr) {
+      lhs->anykey_value->set_lca(tp_var);
+      if (lhs->ptype() == tp_Error) {
+        new_ptype = tp_Error;
+      }
+    }
+    if (rhs->ptype() == tp_array && rhs->anykey_value != nullptr) {
+      TypeData tmp(tp_var);
+      tmp.set_lca(rhs->anykey_value);
+      if (tmp.ptype() == tp_Error) {
+        new_ptype = tp_Error;
+      }
+    }
+  }
   lhs->set_ptype(new_ptype);
 
   TypeData::flags_t mask = save_or_false ? -1 : ~or_false_flag_e;
