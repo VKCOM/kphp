@@ -288,6 +288,11 @@ class Test:
                 return None, out_s
 
             cur_ans_path, cur_perf_path = run_test_mode_helper(mode, self.path)
+            if kphp_should_fail:
+                out_s += "Test [{path}] [{mode}]: {0}Compilation OK, but test has label: kphp_should_fail{1} \n".format(
+                    BashColors.FAIL, BashColors.END_COLOR, path=self.short_path, mode=mode)
+                die(args.keep_going)
+                return False, out_s
 
             if args.gen_answers:
                 out_s += self.save_answer(cur_ans_path, mode)
