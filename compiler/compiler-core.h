@@ -56,24 +56,16 @@ public:
   SrcFilePtr register_file(const string &file_name, const string &context);
   static bool add_to_function_set(FunctionSetPtr function_set, FunctionPtr function, bool req = false);
 
-  template<class DataStream>
-  void register_main_file(const string &file_name, DataStream &os);
-  template<class DataStream>
-  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &context, DataStream &os);
+  void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
+  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &context, DataStream<SrcFilePtr> &os);
 
-  template<class DataStream>
-  void require_function_set(FunctionSetPtr function_set, FunctionPtr by_function,
-                            DataStream &os);
+  void require_function_set(FunctionSetPtr function_set, FunctionPtr by_function, DataStream<FunctionPtr> &os);
+  void require_function_set(function_set_t type, const string &name, FunctionPtr by_function, DataStream<FunctionPtr> &os);
 
-  template<class DataStream>
-  void require_function_set(function_set_t type, const string &name,
-                            FunctionPtr by_function, DataStream &os);
-  template<class DataStream>
-  void register_function_header(VertexAdaptor<meta_op_function> function_header, DataStream &os);
-  template<class DataStream>
-  FunctionPtr register_function(const FunctionInfo &info, DataStream &os);
-  template<class DataStream>
-  ClassPtr register_class(const ClassInfo &info, DataStream &os);
+  void register_function_header(VertexAdaptor<meta_op_function> function_header, DataStream<FunctionPtr> &os);
+  FunctionPtr register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os);
+  ClassPtr register_class(const ClassInfo &info);
+
   FunctionSetPtr get_function_set(function_set_t type, const string &name, bool force);
   FunctionPtr get_function_unsafe(const string &name);
   ClassPtr get_class(const string &name);
@@ -104,4 +96,3 @@ bool try_optimize_var(VarPtr var);
 string conv_to_func_ptr_name(VertexPtr call);
 VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function);
 
-#include "compiler-core.hpp"

@@ -256,15 +256,23 @@ struct ReadyFunctionPtr {
   }
 };
 
-class CollectRequiredCallbackBase {
-public:
-  virtual pair<SrcFilePtr, bool> require_file(const string &file_name, const string &class_context) = 0;
-  virtual void require_function_set(
-    function_set_t type,
-    const string &name,
-    FunctionPtr by_function) = 0;
+class CollectRequiredCallback {
+private:
+  DataStream<SrcFilePtr> &file_stream;
+  DataStream<FunctionPtr> &function_stream;
 
-  virtual ~CollectRequiredCallbackBase() {
+public:
+
+  CollectRequiredCallback(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
+    file_stream(file_stream),
+    function_stream(function_stream) {}
+
+  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &class_context) {
+    return G->require_file(file_name, class_context, file_stream);
+  }
+
+  void require_function_set( function_set_t type, const string &name, FunctionPtr by_function) {
+    G->require_function_set(type, name, by_function, function_stream);
   }
 };
 
@@ -272,11 +280,12 @@ class CollectRequiredPass : public FunctionPassBase {
 private:
   AUTO_PROF (collect_required);
   bool force_func_ptr;
-  CollectRequiredCallbackBase *callback;
+  CollectRequiredCallback callback;
+
 public:
-  CollectRequiredPass(CollectRequiredCallbackBase *callback) :
+  CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
     force_func_ptr(false),
-    callback(callback) {
+    callback(file_stream, function_stream) {
   }
 
   struct LocalT : public FunctionPassBase::LocalT {
@@ -288,7 +297,7 @@ public:
   }
 
   void require_class(const string &class_name, const string &context_name) {
-    pair<SrcFilePtr, bool> res = callback->require_file(class_name + ".php", context_name);
+    pair<SrcFilePtr, bool> res = callback.require_file(class_name + ".php", context_name);
     kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
     if (res.second) {
       res.first->req_id = current_function;
@@ -329,7 +338,7 @@ public:
     bool new_force_func_ptr = false;
     if (root->type() == op_func_call || root->type() == op_func_name) {
       string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
-      callback->require_function_set(fs_function, name, current_function);
+      callback.require_function_set(fs_function, name, current_function);
     }
 
     if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
@@ -346,7 +355,7 @@ public:
         const string &class_name = resolve_uses(current_function, root->get_string(), '/');
         require_class(class_name, "");
       } else {
-        callback->require_function_set(fs_function, resolve_constructor_func_name(current_function, root), current_function);
+        callback.require_function_set(fs_function, resolve_constructor_func_name(current_function, root), current_function);
       }
     }
 
@@ -371,7 +380,7 @@ public:
       VertexAdaptor<meta_op_require> require = root;
       for (auto &cur : require->args()) {
         kphp_error_act (cur->type() == op_string, "Not a string in 'require' arguments", continue);
-        pair<SrcFilePtr, bool> tmp = callback->require_file(cur->get_string(), "");
+        pair<SrcFilePtr, bool> tmp = callback.require_file(cur->get_string(), "");
         SrcFilePtr file = tmp.first;
         bool required = tmp.second;
         if (required) {
@@ -392,35 +401,15 @@ public:
   }
 };
 
-template<class DataStream>
-class CollectRequiredCallback : public CollectRequiredCallbackBase {
-private:
-  DataStream *os;
-public:
-  CollectRequiredCallback(DataStream *os) :
-    os(os) {
-  }
-
-  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &class_context) {
-    return G->require_file(file_name, class_context, *os);
-  }
-
-  void require_function_set(
-    function_set_t type,
-    const string &name,
-    FunctionPtr by_function) {
-    G->require_function_set(type, name, by_function, *os);
-  }
-};
-
 class CollectRequiredF {
 public:
   DUMMY_ON_FINISH
 
   template<class OutputStream>
   void execute(FunctionPtr function, OutputStream &os) {
-    CollectRequiredCallback<OutputStream> callback(&os);
-    CollectRequiredPass pass(&callback);
+    auto &file_stream = *os.template project_to_single_data_stream<SrcFilePtr>();
+    auto &function_stream = *os.template project_to_single_data_stream<FunctionPtr>();
+    CollectRequiredPass pass(file_stream, function_stream);
 
     run_function_pass(function, &pass);
 

@@ -26,7 +26,7 @@ public:
   }
 
   ClassPtr register_class(const ClassInfo &info) {
-    return G->register_class(info, os);
+    return G->register_class(info);
   }
 
   ClassPtr get_class_by_name(const string &class_name) {
