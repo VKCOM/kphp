@@ -62,9 +62,7 @@ def output_class_header(f, base_name, name):
     f.write("""
 template<> 
 class vertex_inner<{name}> : public vertex_inner<{base_name}> {{
-public:
-
-""".format(name=name, base_name=base_name))
+public:""".format(name=name, base_name=base_name))
 
 
 def get_string_extra():
@@ -110,7 +108,7 @@ def output_extras(f, type_data):
 def output_one_extra_field(f, name, desc):
     f.write('  ' + desc["type"] + ' ' + name)
     if "default" in desc:
-        f.write(" = " + str(desc["default"]));
+        f.write(" = " + str(desc["default"]))
     f.write(";\n")
 
 
