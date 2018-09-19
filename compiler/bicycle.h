@@ -654,7 +654,6 @@ public:
   F (load_files)\
   F (lexer)\
   F (gentree)\
-  F (apply_break_file)\
   F (split_switch)\
   F (create_switch_vars)\
   F (collect_required)\

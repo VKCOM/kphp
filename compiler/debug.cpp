@@ -172,7 +172,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_protected] = "tok_protected";
   TOKEN_TYPE_NAMES[tok_resumable] = "tok_resumable";
   TOKEN_TYPE_NAMES[tok_phpdoc_kphp] = "tok_phpdoc_kphp";
-  TOKEN_TYPE_NAMES[tok_break_file] = "tok_break_file";
   TOKEN_TYPE_NAMES[tok_end] = "tok_end";
 }
 

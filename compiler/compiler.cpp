@@ -110,112 +110,6 @@ public:
   }
 };
 
-/*** Split main functions by #break_file ***/
-bool split_by_break_file(VertexAdaptor<op_function> root, vector<VertexPtr> *res) {
-  bool need_split = false;
-
-  VertexAdaptor<op_seq> seq = root->cmd();
-  for (auto i : seq->args()) {
-    if (i->type() == op_break_file) {
-      need_split = true;
-      break;
-    }
-  }
-
-  if (!need_split) {
-    return false;
-  }
-
-  vector<VertexPtr> splitted;
-  {
-    vector<VertexPtr> cur_next;
-    VertexRange args = seq->args();
-    auto cur_arg = args.begin();
-    while (true) {
-      if ((cur_arg == args.end()) || (*cur_arg)->type() == op_break_file) {
-        auto new_seq = VertexAdaptor<op_seq>::create(cur_next);
-        splitted.push_back(new_seq);
-        cur_next.clear();
-      } else {
-        cur_next.push_back(*cur_arg);
-      }
-      if (cur_arg == args.end()) {
-        break;
-      }
-      ++cur_arg;
-    }
-  }
-
-  int splitted_n = (int)splitted.size();
-  VertexAdaptor<op_function> next_func;
-  for (int i = splitted_n - 1; i >= 0; i--) {
-    string func_name_str = gen_unique_name(stage::get_file()->short_file_name);
-    auto func_name = VertexAdaptor<op_func_name>::create();
-    func_name->str_val = func_name_str;
-    auto func_params = VertexAdaptor<op_func_param_list>::create();
-    auto func = VertexAdaptor<op_function>::create(func_name, func_params, splitted[i]);
-    func->extra_type = op_ex_func_global;
-
-    if (next_func.not_null()) {
-      auto call = VertexAdaptor<op_func_call>::create();
-      call->str_val = next_func->name()->get_string();
-      GenTree::func_force_return(func, call);
-    } else {
-      GenTree::func_force_return(func);
-    }
-    next_func = func;
-
-    res->push_back(func);
-  }
-
-  auto func_call = VertexAdaptor<op_func_call>::create();
-  func_call->str_val = next_func->name()->get_string();
-
-  auto ret = VertexAdaptor<op_return>::create(func_call);
-  auto new_seq = VertexAdaptor<op_seq>::create(ret);
-  root->cmd() = new_seq;
-
-  return true;
-}
-
-class ApplyBreakFileF {
-public:
-  DUMMY_ON_FINISH
-
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
-    AUTO_PROF (apply_break_file);
-
-    stage::set_name("Apply #break_file");
-    stage::set_function(function);
-    kphp_assert (function.not_null());
-
-    VertexPtr root = function->root;
-
-    if (function->type() != FunctionData::func_global || root->type() != op_function) {
-      os << function;
-      return;
-    }
-
-    vector<VertexPtr> splitted;
-    split_by_break_file(root, &splitted);
-
-    if (stage::has_error()) {
-      return;
-    }
-
-    for (int i = 0; i < (int)splitted.size(); i++) {
-      G->register_function(FunctionInfo(
-        splitted[i], function->namespace_name,
-        function->class_name, function->class_context_name,
-        function->namespace_uses, function->class_extends, false, access_nonmember
-      ), os);
-    }
-
-    os << function;
-  }
-};
-
 /*** Replace cases in big global functions with functions call ***/
 class SplitSwitchF {
 public:
@@ -3566,7 +3460,6 @@ bool compiler_execute(KphpEnviroment *env) {
     PipeDataStream<LoadFileF, SrcFilePtr, SrcFilePtr> load_file_pipe;
     PipeDataStream<FileToTokensF, SrcFilePtr, FileAndTokens> file_to_tokens_pipe;
     PipeDataStream<ParseF, FileAndTokens, FunctionPtr> parse_pipe;
-    PipeDataStream<ApplyBreakFileF, FunctionPtr, FunctionPtr> apply_break_file_pipe;
     PipeDataStream<SplitSwitchF, FunctionPtr, FunctionPtr> split_switch_pipe;
     FunctionPassPipe<CreateSwitchForeachVarsF> create_switch_foreach_vars_pipe;
 
@@ -3625,7 +3518,6 @@ bool compiler_execute(KphpEnviroment *env) {
       >>
       file_to_tokens_pipe >>
       parse_pipe >>
-      apply_break_file_pipe >>
       split_switch_pipe >>
       create_switch_foreach_vars_pipe >>
       collect_required_pipe >> use_nth_output_tag<0>{} >> sync_node_tag{} >>
@@ -3670,7 +3562,7 @@ bool compiler_execute(KphpEnviroment *env) {
       write_files_pipe;
 
     scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<1>{} >> load_file_pipe;
-    scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<2>{} >> apply_break_file_pipe;
+    scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<2>{} >> split_switch_pipe;
 
     get_scheduler()->execute();
   }

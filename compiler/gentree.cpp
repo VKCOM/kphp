@@ -2080,12 +2080,6 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       set_location(try_vertex, try_location);
       return try_vertex;
     }
-    case tok_break_file: {
-      auto v = VertexAdaptor<op_break_file>::create();
-      set_location(v, AutoLocation(this));
-      next_cur();
-      return v;
-    }
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create();
       set_location(html_code, AutoLocation(this));

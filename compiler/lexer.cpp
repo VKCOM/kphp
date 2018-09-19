@@ -1045,9 +1045,6 @@ int TokenLexerComment::parse(LexerData *lexer_data) const {
     *st = s;
 
   assert (s[0] == '/' || s[0] == '#');
-  if (!strncmp("#break_file", s, 11)) {
-    lexer_data->add_token(new Token(tok_break_file), 0);
-  }
   if (s[0] == '#' || s[1] == '/') {
     while (s[0] && s[0] != '\n') {
       s++;

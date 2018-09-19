@@ -183,8 +183,6 @@ enum TokenType {
   tok_phpdoc_kphp,
   tok_phpdoc,
 
-  tok_break_file,
-
   tok_end
 };
 
