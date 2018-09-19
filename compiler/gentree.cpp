@@ -1232,7 +1232,7 @@ void GenTree::func_force_return(VertexPtr root, VertexPtr val) {
   func->cmd() = seq;
 }
 
-VertexPtr GenTree::create_vertex_this(const AutoLocation &location, bool with_type_rule) {
+VertexPtr GenTree::create_vertex_this(const AutoLocation &location, ClassInfo *cur_class, bool with_type_rule) {
   auto this_var = VertexAdaptor<op_var>::create();
   this_var->str_val = "this";
   this_var->extra_type = op_ex_var_this;
@@ -1246,7 +1246,8 @@ VertexPtr GenTree::create_vertex_this(const AutoLocation &location, bool with_ty
     VertexPtr type_rule = create_vertex(op_common_type_rule, rule_this_var);
     this_var->type_rule = type_rule;
 
-    cur_class().this_type_rules.push_back(rule_this_var);
+    kphp_assert(cur_class != nullptr);
+    cur_class->this_type_rules.push_back(rule_this_var);
   }
 
   return this_var;
@@ -1262,7 +1263,7 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const Clas
   set_location(return_node, location);
 
   std::vector<VertexPtr> next = cmd->get_next();
-  next.insert(next.begin(), create_vertex_this(location, true));
+  next.insert(next.begin(), create_vertex_this(location, &GenTree::cur_class(), true));
   next.push_back(return_node);
 
   for (std::vector<VertexPtr>::const_iterator i = cur_class.members.begin(); i != cur_class.members.end(); ++i) {
@@ -1282,7 +1283,7 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const Clas
 
 // function fname(args) => function fname($this ::: class_instance, args)
 void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location) {
-  auto param = VertexAdaptor<op_func_param>::create(create_vertex_this(func_location, true));
+  auto param = VertexAdaptor<op_func_param>::create(create_vertex_this(func_location, &cur_class(), true));
   params_next.push_back(param);
 }
 

@@ -80,7 +80,7 @@ public:
   static bool has_return(VertexPtr v);
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
-  VertexPtr create_vertex_this(const AutoLocation &location, bool with_type_rule = false);
+  static VertexPtr create_vertex_this(const AutoLocation &location, ClassInfo *cur_class = nullptr, bool with_type_rule = false);
   void patch_func_constructor(VertexAdaptor<op_function> func, const ClassInfo &cur_class);
   void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location);
   FunctionPtr create_default_constructor(const ClassInfo &cur_class);
