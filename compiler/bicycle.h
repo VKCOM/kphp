@@ -612,7 +612,7 @@ public:
 
   void start() {
     if (flag == 0) {
-      ticks -= dl_rdtsc();
+      ticks -= cycleclock_now();
       count++;
     }
     flag++;
@@ -622,7 +622,7 @@ public:
     //assert (flag == 1);
     flag--;
     if (flag == 0) {
-      ticks += dl_rdtsc();
+      ticks += cycleclock_now();
     }
   }
 

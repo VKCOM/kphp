@@ -20,6 +20,7 @@
 
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
+#include "common/cycleclock.h"
 #include "common/kprintf.h"
 #include "common/md5.h"
 #include "common/options.h"
@@ -3263,7 +3264,7 @@ void init_scripts(void);
 void static_init_scripts(void);
 
 void init_all(void) {
-  srand48((long)rdtsc());
+  srand48((long)cycleclock_now());
 
   //init pending_http_queue
   pending_http_queue.first_query = pending_http_queue.last_query = (struct conn_query *)&pending_http_queue;
