@@ -50,8 +50,8 @@ public:
   GenTree();
 
   void init(const vector<Token *> *tokens_new, const string &context, GenTreeCallback &callback_new);
-  FunctionPtr register_function(FunctionInfo info);
-  bool in_class();
+  FunctionPtr register_function(FunctionInfo info, ClassInfo *cur_class) const;
+  bool in_class() const;
   bool in_namespace() const;
   void enter_class(const string &class_name, Token *phpdoc_token);
   ClassInfo &cur_class();
@@ -81,9 +81,9 @@ public:
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   static VertexPtr create_vertex_this(const AutoLocation &location, ClassInfo *cur_class = nullptr, bool with_type_rule = false);
-  void patch_func_constructor(VertexAdaptor<op_function> func, const ClassInfo &cur_class);
+  void patch_func_constructor(VertexAdaptor<op_function> func, ClassInfo &cur_class) const;
   void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location);
-  FunctionPtr create_default_constructor(const ClassInfo &cur_class);
+  void create_default_constructor(ClassInfo &cur_class) const;
 
   VertexPtr get_func_param();
   VertexPtr get_foreach_param();
@@ -100,7 +100,7 @@ public:
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
-  VertexPtr post_process(VertexPtr root);
+  VertexPtr post_process(VertexPtr root) const;
   bool check_seq_end();
   bool check_statement_end();
   VertexPtr run();

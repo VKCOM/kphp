@@ -50,7 +50,7 @@ void GenTree::init(const vector<Token *> *tokens_new, const string &context, Gen
   stage::set_line(line_num);
 }
 
-bool GenTree::in_class() {
+bool GenTree::in_class() const {
   return !class_stack.empty();
 }
 
@@ -63,17 +63,17 @@ ClassInfo &GenTree::cur_class() {
   return class_stack.back();
 }
 
-FunctionPtr GenTree::register_function(FunctionInfo info) {
+FunctionPtr GenTree::register_function(FunctionInfo info, ClassInfo *cur_class) const {
   stage::set_line(0);
   info.root = post_process(info.root);
 
-  if (in_class() && !in_namespace()) {
+  if (cur_class != nullptr && info.namespace_name.empty()) {
     return FunctionPtr();
   }
 
   FunctionPtr function_ptr = callback->register_function(info);
 
-  if (!in_class()) {
+  if (cur_class == nullptr) {
     return function_ptr;
   }
 
@@ -87,9 +87,9 @@ FunctionPtr GenTree::register_function(FunctionInfo info) {
     }
 
     if (function_ptr->is_instance_function()) {
-      cur_class().methods.push_back(function_ptr->root);
+      cur_class->methods.push_back(function_ptr->root);
     } else {
-      cur_class().static_methods[name.substr(first, second - first)] = function_ptr;
+      cur_class->static_methods[name.substr(first, second - first)] = function_ptr;
     }
 
     if (function_ptr->is_instance_function()) {
@@ -157,12 +157,12 @@ void GenTree::exit_and_register_class(VertexPtr root) {
 
     const FunctionInfo &info = FunctionInfo(main, namespace_name, cur_class().name, class_context,
                                             this->namespace_uses, class_extends, false, access_nonmember);
-    kphp_assert(register_function(info).not_null());
+    kphp_assert(register_function(info, in_class() ? &cur_class() : nullptr).not_null());
   }
   cur_class().root = root;
   cur_class().extends = class_extends;
   if ((cur_class().has_instance_vars() || cur_class().has_instance_methods()) && cur_class().new_function.is_null()) {
-    cur_class().new_function = create_default_constructor(cur_class());
+    create_default_constructor(cur_class());
   }
   if (namespace_name + "\\" + cur_class().name == class_context) {
     kphp_assert(callback->register_class(cur_class()).not_null());
@@ -1254,7 +1254,7 @@ VertexPtr GenTree::create_vertex_this(const AutoLocation &location, ClassInfo *c
 }
 
 // __construct(args) { body } => __construct(args) { $this ::: tp_Class; body; return $this; }
-void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const ClassInfo &cur_class) {
+void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, ClassInfo &cur_class) const {
   const AutoLocation location(this);
   VertexPtr cmd = func->cmd();
   assert (cmd->type() == op_seq);
@@ -1263,7 +1263,7 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, const Clas
   set_location(return_node, location);
 
   std::vector<VertexPtr> next = cmd->get_next();
-  next.insert(next.begin(), create_vertex_this(location, &GenTree::cur_class(), true));
+  next.insert(next.begin(), create_vertex_this(location, &cur_class, true));
   next.push_back(return_node);
 
   for (std::vector<VertexPtr>::const_iterator i = cur_class.members.begin(); i != cur_class.members.end(); ++i) {
@@ -1287,7 +1287,7 @@ void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLoca
   params_next.push_back(param);
 }
 
-FunctionPtr GenTree::create_default_constructor(const ClassInfo &cur_class) {
+void GenTree::create_default_constructor(ClassInfo &cur_class) const {
   auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = replace_characters(class_context, '\\', '$') + "$$__construct";
   auto func_params = VertexAdaptor<op_func_param_list>::create();
@@ -1298,9 +1298,8 @@ FunctionPtr GenTree::create_default_constructor(const ClassInfo &cur_class) {
 
   patch_func_constructor(func, cur_class);
 
-  return register_function(FunctionInfo(
-    func, namespace_name, cur_class.name, class_context, this->namespace_uses, class_extends, false, access_public
-  ));
+  FunctionInfo info(func, namespace_name, cur_class.name, class_context, this->namespace_uses, class_extends, false, access_public);
+  cur_class.new_function = register_function(info, &cur_class);
 }
 
 template<Operation Op>
@@ -1720,7 +1719,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
     info = FunctionInfo(res, "", "", "", this->namespace_uses, "", kphp_required_flag, access_type);
     fill_info_about_class(info);
 
-    register_function(info);
+    register_function(info, in_class() ? &cur_class() : nullptr);
 
     if (info.root->type() == op_function) {
       info.root->get_func_id()->access_type = access_type;
@@ -2255,7 +2254,7 @@ bool GenTree::has_return(VertexPtr v) {
   return v->type() == op_return || std::any_of(v->begin(), v->end(), has_return);
 }
 
-VertexPtr GenTree::post_process(VertexPtr root) {
+VertexPtr GenTree::post_process(VertexPtr root) const {
   if (root->type() == op_func_call && root->size() == 1) {
     VertexAdaptor<op_func_call> call = root;
     string str = call->get_string();
@@ -2493,7 +2492,7 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
 
       Token* phpdoc_token = info.root->get_func_id()->phpdoc_token;
       info.root = func;
-      FunctionPtr registered_function = register_function(info);
+      FunctionPtr registered_function = register_function(info, in_class() ? &GenTree::cur_class() : nullptr);
       if (registered_function.not_null()) {
         registered_function->access_type = access_type;
         registered_function->phpdoc_token = phpdoc_token;
