@@ -12,7 +12,7 @@
  **/
 
 /*
-   KPHP_PATH ?= "~/engine/src"
+   KPHP_PATH ?= "~/engine"
    KPHP_FUNCTIONS ?= "$KPHP_PATH/PHP/functions.txt"
    KPHP_LIB_VERSION ?= "$KPHP_PATH/objs/PHP/php_lib_version.o"
    KPHP_MODE ?= "server";
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
   parse_option("threads-count", required_argument, 't', "Use <threads_count> threads. By default equals to 16");
   parse_option("tl-schema", required_argument, 'T', "Add builtin tl schema to kphp binary");
   parse_option("auto-dest-dir", no_argument, 'S', "Automatic destination dir");
-  parse_option("source-path", required_argument, 's', "Path to kphp source. Equals to $KPHP_PATH. ~/engine/src is used by default");
+  parse_option("source-path", required_argument, 's', "Path to kphp source. Equals to $KPHP_PATH. ~/engine is used by default");
   parse_option("version-file", required_argument, 'V', "<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default");
   parse_option("verbosity", no_argument, 'v', "Verbosity");
   parse_option("Werror", no_argument, 'W', "All compile time warnings will be errors");
