@@ -241,21 +241,6 @@ public:
 };
 
 
-/*** Collect files and functions used in function ***/
-struct ReadyFunctionPtr {
-  FunctionPtr function;
-
-  ReadyFunctionPtr() {}
-
-  explicit ReadyFunctionPtr(FunctionPtr function) :
-    function(function) {
-  }
-
-  operator FunctionPtr() const {
-    return function;
-  }
-};
-
 class CollectRequiredCallback {
 private:
   DataStream<SrcFilePtr> &file_stream;
@@ -404,11 +389,14 @@ public:
 class CollectRequiredF {
 public:
   DUMMY_ON_FINISH
+  using ReadyFunctionPtr = FunctionPtr;
+  using OStreamT = MultipleDataStreams<ReadyFunctionPtr, SrcFilePtr, FunctionPtr>;
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
-    auto &file_stream = *os.template project_to_single_data_stream<SrcFilePtr>();
-    auto &function_stream = *os.template project_to_single_data_stream<FunctionPtr>();
+  void execute(FunctionPtr function, OStreamT &os) {
+    auto &ready_function_stream = *os.template project_to_nth_data_stream<0>();
+    auto &file_stream = *os.template project_to_nth_data_stream<1>();
+    auto &function_stream = *os.template project_to_nth_data_stream<2>();
+
     CollectRequiredPass pass(file_stream, function_stream);
 
     run_function_pass(function, &pass);
@@ -421,7 +409,7 @@ public:
         (function->namespace_name + "\\" + function->class_name) != function->class_context_name) {
       return;
     }
-    os << ReadyFunctionPtr(function);
+    ready_function_stream << function;
   }
 };
 
@@ -3367,10 +3355,9 @@ public:
   DUMMY_ON_FINISH;
 
   template<class OutputStreamT>
-  void execute(ReadyFunctionPtr ready_data, OutputStreamT &os) {
+  void execute(FunctionPtr data, OutputStreamT &os) {
     stage::set_name("Collect classes");
 
-    FunctionPtr data = ready_data.function;
     if (data->class_id.not_null() && data->class_id->init_function == data) {
       ClassPtr klass = data->class_id;
       if (!data->class_extends.empty()) {
@@ -3585,9 +3572,9 @@ bool compiler_execute(KphpEnviroment *env) {
 
     Pipe<CollectRequiredF,
       DataStream<FunctionPtr>,
-      MultipleDataStreams<ReadyFunctionPtr, SrcFilePtr, FunctionPtr>> collect_required_pipe;
+      CollectRequiredF::OStreamT> collect_required_pipe;
 
-    PipeDataStream<CollectClassF, ReadyFunctionPtr, FunctionPtr> collect_classes_pipe;
+    PipeDataStream<CollectClassF, FunctionPtr, FunctionPtr> collect_classes_pipe;
     FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
     PipeDataStream<PreprocessDefinesConcatenationF, FunctionPtr, FunctionPtr> process_defines_concat;
     FunctionPassPipe<CollectDefinesPass> collect_defines_pipe;
