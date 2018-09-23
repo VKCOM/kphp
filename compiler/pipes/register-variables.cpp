@@ -1,6 +1,6 @@
-#include "compiler/pipes/register-variables.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/gentree.h"
+#include "compiler/pipes/register-variables.h"
 
 VarPtr RegisterVariables::create_global_var(const string &name) {
   VarPtr var = G->get_global_var(name, VarData::var_global_t, VertexPtr());
@@ -67,8 +67,7 @@ void RegisterVariables::register_static_var(VertexAdaptor<op_var> var_vertex, Ve
   string name;
   if (global_function_flag) {
     kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public || extra_type == op_ex_static_protected);
-    name = replace_characters(current_function->namespace_name, '\\', '$') + "$" +
-           current_function->class_name + "$$" + var_vertex->str_val;
+    name = GenTree::concat_namespace_class_function_names(current_function->namespace_name, current_function->class_name, var_vertex->str_val);
     var = get_global_var(name);
     var->class_id = current_function->class_id;
   } else {
@@ -122,7 +121,7 @@ void RegisterVariables::register_var(VertexAdaptor<op_var> var_vertex) {
       if (kphp_error(klass, dl_pstr("static field not found: %s", name.c_str()))) {
         return;
       }
-      name = replace_characters(klass->name, '\\', '$') + "$$" + var_name;
+      name = replace_backslashes(klass->name) + "$$" + var_name;
     }
     var = get_global_var(name);
   } else {

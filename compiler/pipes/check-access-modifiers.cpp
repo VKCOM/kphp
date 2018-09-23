@@ -41,7 +41,7 @@ VertexPtr CheckAccessModifiers::on_enter_vertex(VertexPtr root, LocalT *) {
     if (pos != string::npos) {
       kphp_assert(func_id->access_type != access_nonmember);
       kphp_error(func_id->access_type != access_static_private ||
-                 replace_characters(namespace_name, '\\', '$') + "$" + class_name == name.substr(0, pos),
+                 replace_backslashes(namespace_name) + "$" + class_name == name.substr(0, pos),
                  dl_pstr("Can't access private function %s", name.c_str()));
       // TODO: check protected
     }

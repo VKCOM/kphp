@@ -161,7 +161,7 @@ string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_ca
   ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
 
   if (likely(klass && klass->new_function)) {
-    return replace_characters(klass->name, '\\', '$').append("$$").append(arrow_call->get_string());
+    return replace_backslashes(klass->name) + "$$" + arrow_call->get_string();
   }
 
   // особый кейс зарезервированных классов: $mc->get() это memcached_get($mc) и пр.
@@ -299,7 +299,7 @@ string resolve_define_name(string name) {
         klass = klass->parent_class;
       }
       if (klass) {
-        name = "c#" + replace_characters(klass->name, '\\', '$') + "$$" + define_name;
+        name = "c#" + replace_backslashes(klass->name) + "$$" + define_name;
       }
     }
   }

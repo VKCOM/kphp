@@ -134,14 +134,19 @@ public:
   VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember);
   VertexPtr get_class(Token *phpdoc_token);
 
+  static std::string concat_namespace_class_function_names(const std::string &namespace_name,
+                                                           const std::string &class_name,
+                                                           const std::string &function_name);
+
+
 private:
   VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
   void set_extra_type(VertexPtr vertex, AccessType access_type) const;
   void fill_info_about_class(FunctionInfo &info);
   void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next);
   VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next);
-  static std::string add_namespace_and_context_to_function_name(const FunctionInfo &info, std::string function_name);
 
+  static std::string add_namespace_and_context_to_function_name(const FunctionInfo &info, std::string function_name);
   static void add_namespace_and_context_to_function_name(const std::string &namespace_name,
                                                          const std::string &class_name,
                                                          const std::string &class_context,

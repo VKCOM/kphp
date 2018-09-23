@@ -99,7 +99,7 @@ void GenTree::enter_class(const string &class_name, Token *phpdoc_token) {
 
 VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
   auto name_of_const_field_class = VertexAdaptor<op_func_name>::create();
-  name_of_const_field_class->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$class";
+  name_of_const_field_class->str_val = "c#" + concat_namespace_class_function_names(namespace_name, cur_class().name, "class");
 
   kphp_error_act(cur_class().constants.find("class") == cur_class().constants.end(),
                  ("A class constant must not be called 'class'; it is reserved for class name fetching: " + name_of_const_field_class->str_val).c_str(), return VertexPtr{});
@@ -2100,7 +2100,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       string const_name{(*cur)->str_val};
 
       if (const_in_class) {
-        name->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$" + const_name;
+        name->str_val = "c#" + concat_namespace_class_function_names(namespace_name, cur_class().name, const_name);
       } else {
         name->str_val = const_name;
       }
@@ -2496,7 +2496,7 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
 
   auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
 
-  string parent_function_name = replace_backslashes(namespace_name) + "$" + replace_backslashes(cur_class().name) + "$$" + real_name + "$$" + replace_backslashes(class_context);
+  string parent_function_name = concat_namespace_class_function_names(namespace_name, cur_class().name, real_name) + "$$" + replace_backslashes(class_context);
   // it's equivalent to new_func_call->set_string("parent::" + real_name);
   new_func_call->set_string(parent_function_name);
 
@@ -2511,6 +2511,12 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
   return func;
 }
 
+std::string GenTree::concat_namespace_class_function_names(const std::string &namespace_name,
+                                                           const std::string &class_name,
+                                                           const std::string &function_name) {
+  std::string full_class_name = replace_backslashes(namespace_name + "\\" + class_name);
+  return full_class_name + "$$" + function_name;
+}
 
 std::string GenTree::add_namespace_and_context_to_function_name(const FunctionInfo &info, std::string function_name) {
   add_namespace_and_context_to_function_name(info.namespace_name, info.class_name, info.class_context, function_name);
