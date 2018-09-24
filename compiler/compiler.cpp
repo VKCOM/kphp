@@ -150,8 +150,8 @@ public:
     return G->require_file(file_name, class_context, file_stream);
   }
 
-  void require_function_set( function_set_t type, const string &name, FunctionPtr by_function) {
-    G->require_function_set(type, name, by_function, function_stream);
+  void require_function(const string &name) {
+    G->require_function(name, function_stream);
   }
 };
 
@@ -216,8 +216,10 @@ public:
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *local) {
     bool new_force_func_ptr = false;
     if (root->type() == op_func_call || root->type() == op_func_name) {
-      string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
-      callback.require_function_set(fs_function, name, current_function);
+      if (root->extra_type != op_ex_func_member) {
+        string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
+        callback.require_function(name);
+      }
     }
 
     if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
@@ -233,9 +235,7 @@ public:
       if (likely(!root->type_help)) {     // type_help <=> Memcache | Exception
         const string &class_name = resolve_uses(current_function, root->get_string(), '/');
         require_class(class_name, "");
-      } else {
-        callback.require_function_set(fs_function, resolve_constructor_func_name(current_function, root), current_function);
-      }
+      } 
     }
 
     if (root->type() == op_func_call) {
@@ -926,8 +926,7 @@ void prepare_function(FunctionPtr function) {
   parse_and_apply_function_kphp_phpdoc(function);
   prepare_function_misc(function);
 
-  FunctionSetPtr function_set = function->function_set;
-  VertexPtr header = function_set->header;
+  VertexPtr header = G->get_extern_func_header(function->name);
   if (header.not_null()) {
     function_apply_header(function, header);
   }
@@ -1268,30 +1267,18 @@ private:
     }
 
     if (func->is_template) {
-      FunctionSetPtr function_set = G->get_function_set(fs_function, name_of_function_instance, true);
       call->set_string(name_of_function_instance);
       call->set_func_id({});
 
-      FunctionPtr new_function;
-      {
-        std::lock_guard<Lockable> guard{*function_set};
-
-        if (function_set->size() == 0) {
-          new_function = generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
-          bool added = function_set->add_function(new_function);
-          kphp_assert(added);
-
-          function_set->is_required = true;
-          new_function->function_set = function_set;
+      G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
+        if (f_inst.is_null()) {
+          f_inst = generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
+          f_inst->is_required = true;
+          (*os.project_to_nth_data_stream<1>()) << f_inst;
         }
-      }
 
-      kphp_assert(function_set->size() == 1);
-      set_func_id(call, function_set[0]);
-
-      if (new_function.not_null()) {
-        (*os.project_to_nth_data_stream<1>()) << new_function;
-      }
+        set_func_id(call, f_inst);
+      });
     }
 
     return call;
@@ -1327,7 +1314,6 @@ private:
     new_function->is_required = true;
     new_function->type() = func->type();
     new_function->file_id = func->file_id;
-    new_function->req_id = func->req_id;
     new_function->class_id = func->class_id;
     new_function->varg_flag = func->varg_flag;
     new_function->tinf_state = func->tinf_state;
@@ -1375,37 +1361,28 @@ private:
         ? resolve_instance_func_name(current_function, call)
         : call->get_string();
 
-    FunctionSetPtr function_set = G->get_function_set(fs_function, name, true);
+    FunctionPtr f = G->get_function(name);
 
-    switch (function_set->size()) {
-      case 1: {
-        if (!function_set->is_required) {
-          kphp_error(false, dl_pstr("Function is not required. Maybe you want to use `@kphp-required` for this function [%s]\n%s\n", name.c_str(), stage::get_function_history()
-            .c_str()));
-          break;
-        }
-        call = set_func_id(call, function_set[0]);
-        break;
-      }
-
-      case 0: {
-        if (call->type() == op_constructor_call) {
-          kphp_error(0, dl_pstr("Calling 'new %s()', but this class does not have fields and constructor\n%s\n",
-                                call->get_string().c_str(), stage::get_function_history().c_str()));
-        } else {
-          kphp_error(0, dl_pstr("Unknown function [%s]\n%s\n",
-                                name.c_str(), stage::get_function_history().c_str()));
-        }
-        break;
-      }
-
-      default: {
-        kphp_error(false, dl_pstr("Function overloading is not supported properly [%s]", name.c_str()));
-        break;
-      }
+    if (likely(f.not_null())) {
+      f->is_required = true;
+      call = set_func_id(call, f);
+    } else {
+      print_why_cant_set_func_id_error(call, name);
     }
 
     return call;
+  }
+
+  void print_why_cant_set_func_id_error(VertexPtr call, std::string unexisting_func_name) {
+    if (call->type() == op_constructor_call) {
+      kphp_error(0, dl_pstr("Calling 'new %s()', but this class is fully static", call->get_string().c_str()));
+    } else if (call->type() == op_func_call && call->extra_type == op_ex_func_member) {
+      ClassPtr klass;
+      infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
+      kphp_error(0, dl_pstr("Unknown function ->%s() of %s\n", call->get_string().c_str(), klass.not_null() ? klass->name.c_str() : "Unknown class"));
+    } else {
+      kphp_error(0, dl_pstr("Unknown function %s()\n", unexisting_func_name.c_str()));
+    }
   }
 };
 
@@ -2882,10 +2859,8 @@ public:
         v->type() == op_index || v->type() == op_constructor_call) {
       if (v->rl_type == val_r) {
         const TypeData *type = tinf::get_type(v);
-        // пока что, т.к. все методы всех классов считаются required, в реально неиспользуемых будет Unknown
-        // (потом когда-нибудь можно убирать реально неиспользуемые из required-списка, и убрать дополнительное условие)
-        if (type->get_real_ptype() == tp_Unknown && !current_function->is_instance_function()) {
-          string index_depth = "";
+        if (type->get_real_ptype() == tp_Unknown) {
+          string index_depth;
           while (v->type() == op_index) {
             v = v.as<op_index>()->array();
             index_depth += "[.]";
@@ -3000,7 +2975,7 @@ public:
       prepare_generate_function(fun);
     }
     for (vector<ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-      if (c->not_null() && !(*c)->is_fully_static()) {
+      if (c->not_null() && (*c)->was_constructor_invoked) {
         prepare_generate_class(*c);
       }
     }
@@ -3022,7 +2997,7 @@ public:
     }
 
     for (vector<ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-      if (c->not_null() && !(*c)->is_fully_static()) {
+      if (c->not_null() && (*c)->was_constructor_invoked) {
         W << Async(ClassDeclaration(*c));
       }
     }
@@ -3261,14 +3236,127 @@ public:
         klass->parent_class = G->get_class(klass->extends);
         kphp_assert(klass->parent_class.not_null());
         kphp_error(klass->is_fully_static() && klass->parent_class->is_fully_static(),
-                   dl_pstr("Invalid class extends %s and %s: extends is available only if classes are only-static", klass->name.c_str(), klass->parent_class
-                                                                                                                                              ->name
-                                                                                                                                              .c_str()));
+                   dl_pstr("Invalid class extends %s and %s: extends is available only if classes are only-static",
+                           klass->name.c_str(), klass->parent_class->name.c_str()));
       } else {
         klass->parent_class = ClassPtr();
       }
     }
     os << data;
+  }
+};
+
+struct FunctionAndActualCalls {
+  FunctionPtr function;
+  vector<VertexPtr> *calls;
+
+  FunctionAndActualCalls() :
+    function(),
+    calls(nullptr) {
+  }
+
+  FunctionAndActualCalls(FunctionPtr function, vector<VertexPtr> *calls) :
+    function(function),
+    calls(calls) {
+  }
+};
+
+bool operator<(const FunctionAndActualCalls &a, const FunctionAndActualCalls &b) {
+  return a.function.ptr < b.function.ptr;
+}
+
+class CalcActualCallsEdgesF {
+  class CalcActualCallsPass : public FunctionPassBase {
+  private:
+    vector<VertexPtr> *calls = new vector<VertexPtr>();   // деструктора нет намеренно
+  public:
+    string get_description() {
+      return "Collect actual calls edges";
+    }
+
+    VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__((unused))) {
+      if (v->type() == op_func_call || v->type() == op_constructor_call || v->type() == op_func_ptr) {
+        calls->emplace_back(v);
+      }
+      return v;
+    }
+
+    vector<VertexPtr> *get_calls() {
+      return calls;
+    }
+  };
+
+public:
+  DUMMY_ON_FINISH
+
+  void execute(FunctionPtr function, DataStream<FunctionAndActualCalls> &os) {
+    AUTO_PROF (calc_actual_calls_edges);
+    CalcActualCallsPass pass;
+    run_function_pass(function, &pass);
+
+    if (stage::has_error()) {
+      return;
+    }
+
+    os << FunctionAndActualCalls(function, pass.get_calls());
+  }
+};
+
+class FilterOnlyActuallyUsedFunctionsF {
+  DataStream<FunctionAndActualCalls> tmp_stream;
+public:
+  FilterOnlyActuallyUsedFunctionsF() {
+    tmp_stream.set_sink(true);
+  }
+
+  void execute(FunctionAndActualCalls f, DataStream<FunctionPtr> &os __attribute__ ((unused))) {
+    tmp_stream << f;
+  }
+
+  void on_finish(DataStream<FunctionPtr> &os) {
+    stage::set_name("Calc actual calls");
+    stage::die_if_global_errors();
+
+    AUTO_PROF (calc_actual_calls);
+    vector<FunctionAndActualCalls> all = tmp_stream.get_as_vector();
+    std::sort(all.begin(), all.end());      // т.к. часто приходится искать, будем делать lower_bound
+
+    int *queue = new int[all.size()];
+    int queue_cur = -1;
+    int queue_last = -1;
+    for (int i = 0; i < (int)all.size(); ++i) {
+      FunctionPtr f = all[i].function;
+      if (f->type() == FunctionData::func_global) {
+        f->is_actually_called = true;
+        queue[++queue_last] = i;
+      }
+    }
+
+    std::function<void(FunctionAndActualCalls *)> analyze_child_calls = [&](FunctionAndActualCalls *f_and_calls) {
+      for (VertexPtr root : *f_and_calls->calls) {
+        FunctionPtr called = root->get_func_id();
+        if (!called->is_actually_called) {
+          called->is_actually_called = true;
+          auto called_pos = std::lower_bound(all.begin(), all.end(), FunctionAndActualCalls(called, nullptr));
+          kphp_assert(called_pos->function.ptr == called.ptr);
+          queue[++queue_last] = int(called_pos - all.begin());
+        }
+
+        if (root->type() == op_constructor_call && called->class_id.not_null()) {
+          called->class_id->was_constructor_invoked = true;
+        }
+      }
+    };
+
+    while (queue_cur < queue_last) {
+      FunctionAndActualCalls *f = &all[queue[++queue_cur]];
+      analyze_child_calls(f);
+      os << f->function;        // дальше уходят только реально используемые, в т.ч. инстанс и extern
+      delete f->calls;
+    }
+
+    delete[] queue;
+    //printf("There are %d functions that are really reached in code\n", queue_cur + 1);
   }
 };
 
@@ -3288,7 +3376,7 @@ public:
     if (function->type() != FunctionData::func_extern && !function->assumptions.empty()) {
       analyze_function_vars(function);
     }
-    if (function->class_id.not_null() && function->class_id->init_function.ptr == function.ptr) {
+    if (function->class_id.not_null() && function->class_id->init_function.ptr == function.ptr && function->class_id->was_constructor_invoked) {
       analyze_class(function->class_id);
     }
 
@@ -3480,6 +3568,8 @@ bool compiler_execute(KphpEnviroment *env) {
     Pipe<PreprocessFunctionF,
       DataStream<FunctionPtr>,
       PreprocessFunctionCPass::OStreamT> preprocess_function_c_pipe;
+    PipeDataStream<CalcActualCallsEdgesF, FunctionPtr, FunctionAndActualCalls> calc_actual_calls_edges_pipe;
+    PipeDataStream<FilterOnlyActuallyUsedFunctionsF, FunctionAndActualCalls, FunctionPtr> filter_only_actually_used_pipe;
 
     FunctionPassPipe<PreprocessBreakPass> preprocess_break_pipe;
     FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
@@ -3533,6 +3623,8 @@ bool compiler_execute(KphpEnviroment *env) {
       // need to be preprocessed therefore we tie second output and input of Pipe
       preprocess_function_c_pipe >> use_nth_output_tag<1>{} >>
       preprocess_function_c_pipe >> use_nth_output_tag<0>{} >>
+      calc_actual_calls_edges_pipe >>
+      filter_only_actually_used_pipe >> use_previous_pipe_as_sync_node_tag{} >>
       preprocess_break_pipe >>
       calc_const_type_pipe >>
       collect_const_vars_pipe >>

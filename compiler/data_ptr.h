@@ -25,7 +25,6 @@ typedef Id<VarData> VarPtr;
 typedef Id<ClassData> ClassPtr;
 typedef Id<DefineData> DefinePtr;
 typedef Id<SrcFile> SrcFilePtr;
-typedef Id<FunctionSet> FunctionSetPtr;
 
 template<Operation Op>
 class vertex_inner;

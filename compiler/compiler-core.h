@@ -19,21 +19,19 @@
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization
-enum function_set_t {
-  fs_function,
-  fs_member_function
-};
 
 class CompilerCore {
 private:
   Index cpp_index;
   HT<SrcFilePtr> file_ht;
-  HT<FunctionSetPtr> function_set_ht;
+  HT<FunctionPtr> functions_ht;
   HT<DefinePtr> defines_ht;
   HT<VarPtr> global_vars_ht;
   vector<SrcFilePtr> main_files;
   KphpEnviroment *env_;
   HT<ClassPtr> classes_ht;
+  // это костыль, который должен уйти, когда мы перепишем часть php-кода
+  HT<VertexPtr> extern_func_headers_ht;
 
   FunctionPtr create_function(const FunctionInfo &info);
   ClassPtr create_class(const ClassInfo &info);
@@ -54,21 +52,21 @@ public:
   const KphpEnviroment &env() const;
   string unify_file_name(const string &file_name);
   SrcFilePtr register_file(const string &file_name, const string &context);
-  static bool add_to_function_set(FunctionSetPtr function_set, FunctionPtr function, bool req = false);
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
   pair<SrcFilePtr, bool> require_file(const string &file_name, const string &context, DataStream<SrcFilePtr> &os);
 
-  void require_function_set(FunctionSetPtr function_set, FunctionPtr by_function, DataStream<FunctionPtr> &os);
-  void require_function_set(function_set_t type, const string &name, FunctionPtr by_function, DataStream<FunctionPtr> &os);
+  void require_function(const string &name, DataStream<FunctionPtr> &os);
+  void operate_on_function_locking(const string &name, std::function<void(FunctionPtr&)> callback);
 
-  void register_function_header(VertexAdaptor<meta_op_function> function_header, DataStream<FunctionPtr> &os);
   FunctionPtr register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os);
   ClassPtr register_class(const ClassInfo &info);
 
-  FunctionSetPtr get_function_set(function_set_t type, const string &name, bool force);
-  FunctionPtr get_function_unsafe(const string &name);
+  FunctionPtr get_function(const string &name);
   ClassPtr get_class(const string &name);
+
+  VertexPtr get_extern_func_header(const string &name);
+  void save_extern_func_header(const string &name, VertexPtr header);
 
   bool register_define(DefinePtr def_id);
   DefinePtr get_define(const string &name);

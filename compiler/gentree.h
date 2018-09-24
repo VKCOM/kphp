@@ -21,10 +21,6 @@ public:
     return G->register_function(info, os);
   }
 
-  void require_function_set(FunctionPtr function) {
-    G->require_function_set(fs_function, function->name, FunctionPtr(), os);
-  }
-
   ClassPtr register_class(const ClassInfo &info) {
     return G->register_class(info);
   }

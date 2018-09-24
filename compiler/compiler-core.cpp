@@ -7,6 +7,8 @@
 #include "compiler/make.h"
 #include "compiler/pass-register-vars.hpp"
 
+FunctionData *const UNPARSED_BUT_REQUIRED_FUNC_PTR = reinterpret_cast<FunctionData *>(0x0001);
+
 CompilerCore::CompilerCore() :
   env_(nullptr) {
 }
@@ -43,43 +45,31 @@ const KphpEnviroment &CompilerCore::env() const {
 }
 
 
-bool CompilerCore::add_to_function_set(FunctionSetPtr function_set, FunctionPtr function, bool req) {
-  AutoLocker<FunctionSetPtr> locker(function_set);
-  if (req) {
-    kphp_assert (function_set->size() == 0);
-    function_set->is_required = true;
+FunctionPtr CompilerCore::get_function(const string &name) {
+  HT<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+  AutoLocker<Lockable *> locker(node);
+  if (node->data.ptr == nullptr || node->data.ptr == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
+    return FunctionPtr();
   }
-  function->function_set = function_set;
-  function_set->add_function(function);
-  return function_set->is_required;
+
+  FunctionPtr f = node->data;
+  kphp_assert_msg(f->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", f->name.c_str(), name.c_str()));
+  return f;
 }
 
-FunctionSetPtr CompilerCore::get_function_set(function_set_t type __attribute__((unused)), const string &name, bool force) {
-  HT<FunctionSetPtr> *ht = &function_set_ht;
-
-  HT<FunctionSetPtr>::HTNode *node = ht->at(hash_ll(name));
-  if (node->data.is_null()) {
-    if (!force) {
-      return FunctionSetPtr();
-    }
-    AutoLocker<Lockable *> locker(node);
-    if (node->data.is_null()) {
-      FunctionSetPtr new_func_set = FunctionSetPtr(new FunctionSet());
-      new_func_set->name = name;
-      node->data = new_func_set;
-    }
-  }
-  FunctionSetPtr function_set = node->data;
-  kphp_assert_msg (function_set->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", function_set->name.c_str(), name.c_str()));
-  return function_set;
+VertexPtr CompilerCore::get_extern_func_header(const string &name) {
+  HT<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
+  return node->data;
 }
 
-FunctionPtr CompilerCore::get_function_unsafe(const string &name) {
-  FunctionSetPtr func_set = get_function_set(fs_function, name, true);
-  kphp_assert (func_set->size() == 1);
-  FunctionPtr func = func_set[0];
-  kphp_assert (func.not_null());
-  return func;
+void CompilerCore::save_extern_func_header(const string &name, VertexPtr header) {
+  HT<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
+  AutoLocker<Lockable *> locker(node);
+  kphp_error_return (
+    node->data.is_null(),
+    dl_pstr("Several headers for one function [%s] are found", name.c_str())
+  );
+  node->data = header;
 }
 
 FunctionPtr CompilerCore::create_function(const FunctionInfo &info) {
@@ -148,7 +138,7 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   klass->extends = info.extends;
 
   string init_function_name_str = stage::get_file()->main_func_name;
-  klass->init_function = get_function_unsafe(init_function_name_str);
+  klass->init_function = get_function(init_function_name_str);
   klass->init_function->class_id = klass;
   klass->static_fields.insert(info.static_fields.begin(), info.static_fields.end());
 
@@ -280,48 +270,15 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, const string &co
   return file;
 }
 
-void CompilerCore::require_function_set(FunctionSetPtr function_set, FunctionPtr by_function, DataStream<FunctionPtr> &os) {
-  if (function_set->is_required) {
-    return;
-  }
-
-  AutoLocker<FunctionSetPtr> locker(function_set);
-  if (function_set->is_required) {
-    return;
-  }
-  function_set->is_required = true;
-  function_set->req_id = by_function;
-
-  for (int i = 0, ni = function_set->size(); i < ni; i++) {
-    FunctionPtr function = function_set[i];
-    kphp_assert (function.not_null());
-    function->is_required = true;
-    function->req_id = function_set->req_id;
-    os << function;
-  }
-}
-
-void CompilerCore::require_function_set(function_set_t type, const string &name, FunctionPtr by_function, DataStream<FunctionPtr> &os) {
-  FunctionSetPtr function_set = get_function_set(type, name, true);
-  kphp_assert (function_set.not_null());
-  require_function_set(function_set, by_function, os);
-}
-
-void CompilerCore::register_function_header(VertexAdaptor<meta_op_function> function_header, DataStream<FunctionPtr> &os) {
-  const string &function_name = function_header->name().as<op_func_name>()->str_val;
-  FunctionSetPtr function_set = get_function_set(fs_function, function_name, true);
-  kphp_assert (function_set.not_null());
-
-  {
-    AutoLocker<FunctionSetPtr> locker(function_set);
-    kphp_error_return (
-      function_set->header.is_null(),
-      dl_pstr("Several headers for one function [%s] are found", function_name.c_str())
-    );
-    function_set->header = function_header;
-  }
-
-  require_function_set(function_set, FunctionPtr(), os);
+void CompilerCore::require_function(const string &name, DataStream<FunctionPtr> &os) {
+  operate_on_function_locking(name, [&](FunctionPtr &f) {
+    if (f.ptr == nullptr) {
+      f.ptr = UNPARSED_BUT_REQUIRED_FUNC_PTR;
+    } else if (f.ptr != UNPARSED_BUT_REQUIRED_FUNC_PTR && !f->is_required) {
+      f->is_required = true;      // этот флаг прежде всего нужен, чтоб в output отправить только раз
+      os << f;
+    }
+  });
 }
 
 FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os) {
@@ -333,25 +290,41 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
   if (root->type() == op_function || root->type() == op_func_decl) {
     function = create_function(info);
   } else if (root->type() == op_extern_func) {
-    register_function_header(root, os);
+    string function_name = root.as<meta_op_function>()->name()->get_string();
+    save_extern_func_header(function_name, root);
     return FunctionPtr();
   } else {
     kphp_fail();
   }
-  FunctionSetPtr function_set = get_function_set(fs_function, function->name, true);
 
-  bool auto_require = info.kphp_required || function->type() == FunctionData::func_global || function->type() == FunctionData::func_extern;
-  if (add_to_function_set(function_set, function, auto_require)) {
-    function->is_required = true;
-    if (auto_require) {
-      function->req_id = stage::get_file()->req_id;
-    } else {
-      function->req_id = function_set->req_id;
+  bool auto_require = info.kphp_required
+                      || function->type() == FunctionData::func_global
+                      || function->type() == FunctionData::func_extern
+                      || function->is_instance_function();
+
+  operate_on_function_locking(function->name, [&](FunctionPtr &f) {
+    if (f.ptr == UNPARSED_BUT_REQUIRED_FUNC_PTR) {    
+      auto_require = true;
     }
+    kphp_error(f.ptr == nullptr || f.ptr == UNPARSED_BUT_REQUIRED_FUNC_PTR,
+               dl_pstr("Redeclaration of function %s(), the previous declaration was in [%s]",
+                       function->name.c_str(), f->file_id->file_name.c_str()));
+    f = function;
+  });
+
+  if (auto_require) {
+    function->is_required = true;
     os << function;
   }
+
   return function;
-};
+}
+
+void CompilerCore::operate_on_function_locking(const string &name, std::function<void(FunctionPtr &)> callback) {
+  HT<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+  AutoLocker<Lockable *> locker(node);
+  callback(node->data);
+}
 
 ClassPtr CompilerCore::register_class(const ClassInfo &info) {
   ClassPtr class_id = create_class(info);
@@ -360,8 +333,7 @@ ClassPtr CompilerCore::register_class(const ClassInfo &info) {
   kphp_error_act (
     node->data.is_null(),
     dl_pstr("Redeclaration of class [%s], the previous declaration was in [%s]",
-            class_id->name.c_str(),
-            node->data->file_id->file_name.c_str()),
+            class_id->name.c_str(), node->data->file_id->file_name.c_str()),
     return ClassPtr()
   );
   node->data = class_id;
@@ -402,8 +374,7 @@ bool CompilerCore::register_define(DefinePtr def_id) {
   kphp_error_act (
     node->data.is_null(),
     dl_pstr("Redeclaration of define [%s], the previous declaration was in [%s]",
-            def_id->name.c_str(),
-            node->data->file_id->file_name.c_str()),
+            def_id->name.c_str(), node->data->file_id->file_name.c_str()),
     return false
   );
 

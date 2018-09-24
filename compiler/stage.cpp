@@ -136,20 +136,6 @@ void stage::print_comment(FILE *f) {
   }
 }
 
-void stage::get_function_history(stringstream &ss, FunctionPtr function) {
-  if (function.is_null()) {
-    return;
-  }
-  get_function_history(ss, function->req_id);
-  ss << "->[" << function->file_id->short_file_name << ":" << function->name << "]";
-}
-
-string stage::get_function_history() {
-  stringstream ss;
-  get_function_history(ss, get_function());
-  return ss.str();
-}
-
 stage::StageInfo *stage::get_stage_info_ptr() {
   return &*stage_info;
 }

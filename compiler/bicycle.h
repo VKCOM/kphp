@@ -670,6 +670,8 @@ public:
   F (check_instance_props)\
   F (calc_const_type)\
   F (collect_const_vars)\
+  F (calc_actual_calls_edges)\
+  F (calc_actual_calls)\
   F (calc_throw_edges)\
   F (calc_throws)\
   F (check_function_calls)\

@@ -922,19 +922,7 @@ inline void Function::compile(CodeGenerator &W) const {
       W << NL << FunctionForkDeclaration(function, in_header) << ";";
     }
   } else {
-    // временно: пока все методы классов априори required и не исключаются из списка, то не выводим методы с Unknown-параметрами
-    // (потому что это будет мешать при компиляции при разных присваиваниях и т.п.)
-    // потом, когда буду реально неиспользуемые instance-методы вычёркивать, эта проверка не понадобится
-    bool output_cpp = true;
-
-    if (function->param_ids.size() >= 2) {
-      const TypeData *typeData = function->param_ids[1]->tinf_node.get_type();
-      output_cpp = !function->is_instance_function() || typeData->ptype() != tp_Unknown || typeData->or_false_flag();
-    }
-
-    if (output_cpp) {
-      W << function->root;
-    }
+    W << function->root;
   }
   W << NL;
 }

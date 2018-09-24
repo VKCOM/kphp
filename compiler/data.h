@@ -106,6 +106,7 @@ public:
 
   std::vector<Assumption> assumptions;
   int assumptions_inited_vars;
+  bool was_constructor_invoked;
 
   SrcFilePtr file_id;
   string src_name, header_name;
@@ -124,33 +125,6 @@ public:
   inline bool is_fully_static() const {
     return 0 == vars.size() && 0 == methods.size();
   }
-};
-
-template<>
-struct DataTraits<FunctionSet> {
-  typedef FunctionPtr value_type;
-};
-
-class FunctionSet : public Lockable {
-public:
-  int id;
-  bool is_required;
-  string name;
-  FunctionPtr req_id;
-  VertexPtr header;
-private:
-  DISALLOW_COPY_AND_ASSIGN (FunctionSet);
-
-  //data:
-  std::vector<FunctionPtr> functions;
-
-  //functions:
-
-public:
-  FunctionSet();
-  bool add_function(FunctionPtr new_function);
-  int size();
-  FunctionPtr operator[](int i);
 };
 
 
@@ -193,7 +167,7 @@ public:
   int id;
 
   VertexPtr root;
-  VertexPtr header;
+  VertexPtr header;   // это только для костыля extern_function, потом должно уйти
 
   bool is_required;
   enum func_type_t {
@@ -220,7 +194,6 @@ public:
   string subdir;
   string src_full_name, header_full_name;
   SrcFilePtr file_id;
-  FunctionPtr req_id;
   FunctionPtr fork_prev, wait_prev;
   ClassPtr class_id;
   bool varg_flag;
@@ -233,11 +206,12 @@ public:
 
   int min_argn;
   bool is_extern;
-  bool used_in_source;
+  bool used_in_source;    // это только для костыля extern_function, потом должно уйти
   bool is_callback;
   bool should_be_sync;
   bool kphp_required;
   bool is_template;
+  bool is_actually_called;
   string namespace_name;
   string class_name;
   string class_context_name;
@@ -245,8 +219,6 @@ public:
   AccessType access_type;
   map<string, string> namespace_uses;
   set<string> disabled_warnings;
-
-  FunctionSetPtr function_set;
 
   FunctionData();
   explicit FunctionData(VertexPtr root);

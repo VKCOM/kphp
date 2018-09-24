@@ -91,10 +91,6 @@ FunctionPtr GenTree::register_function(FunctionInfo info, ClassInfo *cur_class) 
     } else {
       cur_class->static_methods[name.substr(first, second - first)] = function_ptr;
     }
-
-    if (function_ptr->is_instance_function()) {
-      callback->require_function_set(function_ptr);
-    }
   }
   return function_ptr;
 }
@@ -2472,9 +2468,8 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
     kphp_assert(info.namespace_name + "\\" + info.class_name == cur_class_name);
 
     string new_function_name = get_name_for_new_function_with_parent_call(info, real_function_name);
-    FunctionSetPtr fs_new_function = G->get_function_set(fs_function, new_function_name, false);
 
-    if (fs_new_function.is_null() || fs_new_function->size() == 0) {
+    if (G->get_function(new_function_name).is_null()) {
       kphp_assert(!cur_class_name.empty() && cur_class_name[0] != '\\');
 
       info.extends = cur_class->extends;

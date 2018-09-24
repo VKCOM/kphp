@@ -478,13 +478,13 @@ inline AssumType infer_from_call(FunctionPtr f,
                              ? resolve_instance_func_name(f, call)
                              : get_full_static_member_name(f, call->str_val);
 
-  const FunctionSetPtr &ptr = G->get_function_set(fs_function, fname, false);
-  if (ptr.is_null() || !ptr->size()) {
-    kphp_error(ptr.not_null() && ptr->size() > 0, dl_pstr("%s() is undefined, can not infer class", fname.c_str()));
+  const FunctionPtr ptr = G->get_function(fname);
+  if (ptr.is_null()) {
+    kphp_error(0, dl_pstr("%s() is undefined, can not infer class", fname.c_str()));
     return assum_unknown;
   }
 
-  return calc_assumption_for_return(ptr[0], out_class);
+  return calc_assumption_for_return(ptr, out_class);
 }
 
 inline AssumType infer_from_array(FunctionPtr f,

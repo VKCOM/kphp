@@ -39,31 +39,8 @@ bool VarData::get_uninited_flag() {
 /*** ClassData ***/
 ClassData::ClassData() :
   id(0),
-  assumptions_inited_vars(0) {      // иначе в нет гарантии, что в примитивных типах не окажется мусор
-}
-
-/*** FunctionSet ***/
-int FunctionSet::size() {
-  return (int)functions.size();
-}
-
-FunctionPtr FunctionSet::operator[](int i) {
-  kphp_assert (0 <= i && i < size());
-  return functions[i];
-}
-
-FunctionSet::FunctionSet() :
-  id(),
-  is_required(false) {}
-
-bool FunctionSet::add_function(FunctionPtr new_function) {
-  std::vector<FunctionPtr>::iterator match = std::find(functions.begin(), functions.end(), new_function);
-  if (match != functions.end()) {
-    return false;
-  }
-
-  functions.push_back(new_function);
-  return true;
+  assumptions_inited_vars(0),
+  was_constructor_invoked(false) {      // иначе в нет гарантии, что в примитивных типах не окажется мусор
 }
 
 
@@ -77,7 +54,6 @@ FunctionData::FunctionData() :
   assumptions_inited_args(),
   assumptions_inited_return(),
   file_id(),
-  req_id(),
   class_id(),
   varg_flag(false),
   tinf_state(0),
@@ -90,6 +66,7 @@ FunctionData::FunctionData() :
   should_be_sync(),
   kphp_required(false),
   is_template(false),
+  is_actually_called(false),
   namespace_name(""),
   class_name("") {}
 
@@ -102,7 +79,6 @@ FunctionData::FunctionData(VertexPtr root) :
   assumptions_inited_args(),
   assumptions_inited_return(),
   file_id(),
-  req_id(),
   class_id(),
   varg_flag(false),
   tinf_state(0),
@@ -115,6 +91,7 @@ FunctionData::FunctionData(VertexPtr root) :
   should_be_sync(),
   kphp_required(false),
   is_template(false),
+  is_actually_called(false),
   namespace_name(""),
   class_name("") {}
 
