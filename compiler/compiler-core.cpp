@@ -584,68 +584,47 @@ bool kphp_make(File *bin, Index *obj_dir, Index *cpp_dir,
       }
     }
   }
-  if (G->env().get_use_subdirs()) {
-    for (auto cpp_file : files) {
-      if (cpp_file->ext == ".cpp") {
-        File *obj_file = obj_dir->get_file(cpp_file->name_without_ext + ".o", true);
-        obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
-        make.create_cpp2obj_target(cpp_file, obj_file);
-        Target *cpp_target = cpp_file->target;
-        for (auto include : cpp_file->includes) {
-          File *header = cpp_dir->get_file(include, false);
-          kphp_assert (header != nullptr);
-          kphp_assert (header->on_disk);
-          long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
-          cpp_target->force_changed(dep_mtime);
-        }
-        cpp_target->force_changed(lib_mtime);
-        objs.push_back(obj_file);
+  for (auto cpp_file : files) {
+    if (cpp_file->ext == ".cpp") {
+      File *obj_file = obj_dir->get_file(cpp_file->name_without_ext + ".o", true);
+      obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
+      make.create_cpp2obj_target(cpp_file, obj_file);
+      Target *cpp_target = cpp_file->target;
+      for (auto include : cpp_file->includes) {
+        File *header = cpp_dir->get_file(include, false);
+        kphp_assert (header != nullptr);
+        kphp_assert (header->on_disk);
+        long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
+        cpp_target->force_changed(dep_mtime);
       }
-    }
-    fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
-
-    map<string, vector<File *>> subdirs;
-    vector<File *> tmp_objs;
-    for (auto obj_file : objs) {
-      string name = obj_file->subdir;
-      name = name.substr(0, (int)name.size() - 1);
-      if (name.empty()) {
-        tmp_objs.push_back(obj_file);
-        continue;
-      }
-      name += ".o";
-      subdirs[name].push_back(obj_file);
-    }
-
-    objs = tmp_objs;
-    for (const auto &name_and_files : subdirs) {
-      File *obj_file = obj_dir->get_file(name_and_files.first, true);
-      make.create_objs2obj_target(name_and_files.second, obj_file);
+      cpp_target->force_changed(lib_mtime);
       objs.push_back(obj_file);
     }
-    fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
-    objs.push_back(link_file);
-    make.create_objs2bin_target(objs, bin);
-  } else {
-    for (auto cpp_file : files) {
-      if (cpp_file->ext == ".cpp") {
-        File *obj_file = obj_dir->get_file(cpp_file->name + ".o", true);
-        Target *cpp_target = cpp_file->target;
-        for (auto include : cpp_file->includes) {
-          File *header = cpp_dir->get_file(include, false);
-          kphp_assert (header != nullptr);
-          kphp_assert (header->on_disk);
-          long long dep_mtime = header_mtime[std::lower_bound(files.begin(), files.end(), header, compare_mtime) - files.begin()];
-          cpp_target->force_changed(dep_mtime);
-        }
-        cpp_target->force_changed(lib_mtime);
-        objs.push_back(obj_file);
-      }
-    }
-    fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
-    objs.push_back(link_file);
-    make.create_objs2bin_target(objs, bin);
   }
+  fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
+
+  map<string, vector<File *>> subdirs;
+  vector<File *> tmp_objs;
+  for (auto obj_file : objs) {
+    string name = obj_file->subdir;
+    name = name.substr(0, (int)name.size() - 1);
+    if (name.empty()) {
+      tmp_objs.push_back(obj_file);
+      continue;
+    }
+    name += ".o";
+    subdirs[name].push_back(obj_file);
+  }
+
+  objs = tmp_objs;
+  for (const auto &name_and_files : subdirs) {
+    File *obj_file = obj_dir->get_file(name_and_files.first, true);
+    make.create_objs2obj_target(name_and_files.second, obj_file);
+    objs.push_back(obj_file);
+  }
+  fprintf(stderr, "objs cnt = %d\n", (int)objs.size());
+  objs.push_back(link_file);
+  make.create_objs2bin_target(objs, bin);
   make.init_env(kphp_env);
   return make.make_target(bin, kphp_env.get_jobs_count());
 }

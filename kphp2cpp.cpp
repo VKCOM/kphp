@@ -63,9 +63,6 @@ int parse_args_f(int i) {
     case 'm':
       env->set_use_make("1");
       break;
-    case 'r':
-      env->set_use_subdirs("1");
-      break;
     case 'o':
       env->set_user_binary_path(optarg);
       break;
@@ -151,7 +148,6 @@ int main(int argc, char *argv[]) {
   parse_option("make", no_argument, 'm', "Run make");
   parse_option("output-file", required_argument, 'o', "Place output into <file>");
   parse_option("print-graph", no_argument, 'p', "Print graph of resumable calls to stderr");
-  parse_option("incremental-link", no_argument, 'r', "Split output into multiple directories");
   parse_option("threads-count", required_argument, 't', "Use <threads_count> threads. By default equals to 16");
   parse_option("tl-schema", required_argument, 'T', "Add builtin tl schema to kphp binary");
   parse_option("auto-dest-dir", no_argument, 'S', "Automatic destination dir");

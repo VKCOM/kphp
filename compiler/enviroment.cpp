@@ -25,7 +25,6 @@ KphpEnviroment::KphpEnviroment() :
   jobs_count_int_(0),
   use_make_bool_(false),
   make_force_bool_(false),
-  use_subdirs_bool_(false),
   threads_count_int_(0),
   verbosity_int_(0),
   print_resumable_graph_(0),
@@ -156,14 +155,6 @@ void KphpEnviroment::set_make_force(const string &make_force) {
 
 bool KphpEnviroment::get_make_force() const {
   return make_force_bool_;
-}
-
-void KphpEnviroment::set_use_subdirs(const string &use_subdirs) {
-  use_subdirs_ = use_subdirs;
-}
-
-bool KphpEnviroment::get_use_subdirs() const {
-  return use_subdirs_bool_;
 }
 
 //void KphpEnviroment::set_binary_path (const string &binary_path) {
@@ -375,10 +366,6 @@ bool KphpEnviroment::init() {
   init_env_var(&make_force_, "", "0");
   env_str2bool(&make_force_bool_, make_force_);
 
-//  fprintf (stderr, "%s\n", use_subdirs_.c_str());
-  init_env_var(&use_subdirs_, "KPHP_USE_SUBDIRS", "0");
-  env_str2bool(&use_subdirs_bool_, use_subdirs_);
-
   init_env_var(&threads_count_, "KPHP_THREADS_COUNT", "16");
   env_str2int(&threads_count_int_, threads_count_);
   if (threads_count_int_ <= 0 || threads_count_int_ > 100) {
@@ -448,7 +435,6 @@ void KphpEnviroment::debug() const {
        "KPHP_MODE=[" << get_mode() << "]\n" <<
        "KPHP_LINK_FILE=[" << get_link_file() << "]\n" <<
        "KPHP_USE_MAKE=[" << get_use_make() << "]\n" <<
-       "KPHP_USE_SUBDIRS=[" << get_use_subdirs() << "]\n" <<
        "KPHP_THREADS_COUNT=[" << get_threads_count() << "]\n" <<
        "KPHP_PATH=[" << get_path() << "]\n" <<
        "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<

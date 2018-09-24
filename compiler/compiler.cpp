@@ -3025,28 +3025,19 @@ private:
 
     string file_subdir = func->file_id->short_file_name;
 
-    if (G->env().get_use_subdirs()) {
-      func->header_name = file_name + ".h";
-      func->subdir = get_subdir(file_subdir);
+    func->header_name = file_name + ".h";
+    func->subdir = get_subdir(file_subdir);
 
-      recalc_hash_of_subdirectory(func->subdir, func->header_name);
+    recalc_hash_of_subdirectory(func->subdir, func->header_name);
 
-      if (!func->root->inline_flag) {
-        func->src_name = file_name + ".cpp";
-        func->src_full_name = func->subdir + "/" + func->src_name;
+    if (!func->root->inline_flag) {
+      func->src_name = file_name + ".cpp";
+      func->src_full_name = func->subdir + "/" + func->src_name;
 
-        recalc_hash_of_subdirectory(func->subdir, func->src_name);
-      }
-
-      func->header_full_name = func->subdir + "/" + func->header_name;
-    } else {
-      string full_name = file_subdir + "." + file_name;
-      func->src_name = full_name + ".cpp";
-      func->header_name = full_name + ".h";
-      func->subdir = "";
-      func->src_full_name = func->src_name;
-      func->header_full_name = func->header_name;
+      recalc_hash_of_subdirectory(func->subdir, func->src_name);
     }
+
+    func->header_full_name = func->subdir + "/" + func->header_name;
 
     my_unique(&func->static_var_ids);
     my_unique(&func->global_var_ids);
@@ -3055,8 +3046,6 @@ private:
   }
 
   string get_subdir(const string &base) {
-    kphp_assert (G->env().get_use_subdirs());
-
     int func_hash = hash(base);
     int bucket = func_hash % 100;
 

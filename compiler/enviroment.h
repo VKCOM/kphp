@@ -24,7 +24,6 @@ private:
   bool use_make_bool_;
   string make_force_;
   bool make_force_bool_;
-  string use_subdirs_;
   bool use_subdirs_bool_;
   string threads_count_;
   int threads_count_int_;
@@ -83,8 +82,6 @@ public:
   bool get_use_make() const;
   void set_make_force(const string &make_force);
   bool get_make_force() const;
-  void set_use_subdirs(const string &use_subdirs);
-  bool get_use_subdirs() const;
   void set_binary_path(const string &binary_path);
   const string &get_binary_path() const;
   void set_user_binary_path(const string &user_binary_path);
