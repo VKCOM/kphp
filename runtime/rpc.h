@@ -202,7 +202,6 @@ void rpc_init_static();
 
 void rpc_free_static();
 
-
 /*
  *
  *     IMPLEMENTATION
@@ -212,12 +211,12 @@ void rpc_free_static();
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result(const array<T> &query_ids) {
-  return f$rpc_tl_query_result(array<int>(query_ids));
+  return f$rpc_tl_query_result(array<int>::convert_from(query_ids));
 }
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids) {
-  return f$rpc_tl_query_result_synchronously(array<int>(query_ids));
+  return f$rpc_tl_query_result_synchronously(array<int>::convert_from(query_ids));
 }
 
 int f$rpc_queue_create() {
@@ -239,5 +238,3 @@ bool f$rpc_queue_empty(int queue_id) {
 int f$rpc_queue_next(int queue_id, double timeout) {
   return f$wait_queue_next(queue_id, timeout);
 }
-
-

@@ -180,7 +180,7 @@ private:
 
   inline void convert_to_map();
 
-  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
+  template<class T1>
   inline void copy_from(const array<T1> &other);
 
   inline void destroy() __attribute__ ((always_inline));
@@ -362,6 +362,8 @@ public:
 
   void reserve(int int_size, int string_size, bool make_vector_if_possible);
 
+  template<typename U>
+  static array<T> convert_from(const array<U> &);
 private:
   void push_back_values() {}
 

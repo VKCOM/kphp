@@ -1172,7 +1172,7 @@ void array<T>::convert_to_map() {
 }
 
 template<class T>
-template<class T1, class>
+template<class T1>
 void array<T>::copy_from(const array<T1> &other) {
   array_inner *new_array = array_inner::create(other.p->int_size, other.p->string_size, other.is_vector());
 
@@ -1199,6 +1199,13 @@ void array<T>::copy_from(const array<T1> &other) {
   php_assert (new_array->string_size == other.p->string_size);
 }
 
+template<class T>
+template<class U>
+array<T> array<T>::convert_from(const array<U> &other) {
+  array<T> res;
+  res.copy_from(other);
+  return res;
+}
 
 template<class T>
 array<T>::array():
@@ -2687,7 +2694,6 @@ const T *array<T>::get_const_vector_pointer() const {
   php_assert (is_vector());
   return &(p->get_vector_value(0));
 }
-
 
 template<class T>
 void swap(array<T> &lhs, array<T> &rhs) {

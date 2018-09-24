@@ -3900,6 +3900,7 @@ void rpc_init_static() {
 
   f$rpc_clean(false);
   rpc_stored = 0;
+
   rpc_pack_threshold = -1;
   rpc_pack_from = -1;
   rpc_filename = string("rpc.cpp", 7);
