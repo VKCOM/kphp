@@ -2077,7 +2077,8 @@ array<string> f$str_split(const string &str, int split_length) {
   if (split_length <= 0) {
     php_warning ("Wrong parameter split_length = %d in function str_split", split_length);
     array<string> result(array_size(1, 0, true));
-    result.set_value(0,str);return result;
+    result.set_value(0, str);
+    return result;
   }
 
   array<string> result(array_size((str.size() + split_length - 1) / split_length, 0, true));

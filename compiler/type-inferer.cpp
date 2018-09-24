@@ -653,7 +653,7 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary_op> conv) {
   } else {
     recalc_ptype<tp_array>();
     if (fast_get_type(arg)->ptype() != tp_Unknown) { //hack
-      set_lca_at(&MultiKey::any_key(1), tp_var);
+      set_lca_at(&MultiKey::any_key(1), fast_get_type(arg)->get_real_ptype());
     }
   }
 }

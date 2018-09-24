@@ -408,7 +408,7 @@ inline string f$strval(const var &val);
 
 
 template<class T>
-inline array<var> f$arrayval(const T &val);
+inline array<T> f$arrayval(const T &val);
 
 template<class T>
 inline const array<T> &f$arrayval(const array<T> &val);
@@ -1405,8 +1405,8 @@ string f$strval(const var &val) {
 
 
 template<class T>
-array<var> f$arrayval(const T &val) {
-  array<var> res(array_size(1, 0, true));
+array<T> f$arrayval(const T &val) {
+  array<T> res(array_size(1, 0, true));
   res.push_back(val);
   return res;
 }
