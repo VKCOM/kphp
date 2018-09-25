@@ -38,7 +38,7 @@ VarSplitPtr CFG::get_var_split(VarPtr var, bool force) {
     return VarSplitPtr();
   }
   VarSplitPtr res = var_split_data[var];
-  if (res.is_null() && force) {
+  if (!res && force) {
     res = VarSplitPtr(new VarSplitData());
     var_split_data[var] = res;
   }
@@ -53,9 +53,9 @@ Node CFG::new_node() {
 
 UsagePtr CFG::new_usage(UsageType type, VertexPtr v) {
   VarPtr var = v->get_var_id();
-  kphp_assert (!var.is_null());
+  kphp_assert (var);
   VarSplitPtr var_split = get_var_split(var, false);
-  if (var_split.is_null()) {
+  if (!var_split) {
     return UsagePtr();
   }
   UsagePtr res = UsagePtr(new UsageData(type, v));
@@ -65,7 +65,7 @@ UsagePtr CFG::new_usage(UsageType type, VertexPtr v) {
 }
 
 void CFG::add_usage(Node node, UsagePtr usage) {
-  if (usage.is_null()) {
+  if (!usage) {
     return;
   }
   //hope that one node will contain usages of the same type
@@ -82,12 +82,12 @@ SubTreePtr CFG::new_subtree(VertexPtr v, bool recursive_flag) {
 }
 
 void CFG::add_subtree(Node node, SubTreePtr subtree) {
-  kphp_assert (node.not_null() && subtree.not_null());
+  kphp_assert (node && subtree);
   node_subtrees[node].push_back(subtree);
 }
 
 void CFG::add_edge(Node from, Node to) {
-  if (from.not_null() && to.not_null()) {
+  if (from && to) {
     // fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), from->id, to->id);
     node_next[from].push_back(to);
     node_prev[to].push_back(from);
@@ -360,7 +360,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       FunctionPtr func = tree_node->get_func_id();
       VertexRange params;
       bool params_inited = false;
-      if (func.not_null() && !func->varg_flag) {
+      if (func && !func->varg_flag) {
         params = func->root.as<meta_op_function>()->params().
           as<op_func_param_list>()->params();
         params_inited = true;
@@ -379,7 +379,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
           weak_write_flag = true;
         }
 
-        kphp_assert (cur.not_null());
+        kphp_assert (cur);
         create_cfg(cur, &a, &b, false, weak_write_flag);
         add_edge(start, a);
         start = b;
@@ -426,7 +426,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_var: {
       Node res = new_node();
       UsagePtr usage = new_usage(write_flag ? usage_write_t : usage_read_t, tree_node);
-      if (usage.not_null()) {
+      if (usage) {
         usage->weak_write_flag = weak_write_flag;
       }
       add_usage(res, usage);
@@ -564,7 +564,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       }
       *res_finish = finish;
 
-      if (tree_node->type() == op_do && action_finish_pre.not_null()) {
+      if (tree_node->type() == op_do && action_finish_pre) {
         add_subtree(*res_start, new_subtree(cond, true));
       }
 
@@ -773,7 +773,7 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
   VarPtr another_var = another_usage->v->get_var_id();
   if (var == another_var) {
     VarSplitPtr var_split = get_var_split(var, false);
-    kphp_assert (var_split.not_null());
+    kphp_assert (var_split);
     dsu_uni(&var_split->parent, usage, another_usage);
     return true;
   }
@@ -795,7 +795,7 @@ void CFG::compress_usages(vector<UsagePtr> *usages) {
 
 void CFG::dfs(Node v, UsagePtr usage) {
   UsagePtr other_usage = node_mark[v];
-  if (other_usage.not_null()) {
+  if (other_usage) {
     try_uni_usages(usage, other_usage);
     return;
   }
@@ -835,7 +835,7 @@ UsagePtr CFG::search_uninited(Node v, VarPtr var) {
   for (Node i : node_next[v]) {
     if (node_was[i] != cur_dfs_mark) {
       UsagePtr res = search_uninited(i, var);
-      if (res.not_null()) {
+      if (res) {
         return res;
       }
     }
@@ -846,7 +846,7 @@ UsagePtr CFG::search_uninited(Node v, VarPtr var) {
 
 void CFG::process_var(VarPtr var) {
   VarSplitPtr var_split = get_var_split(var, false);
-  kphp_assert (var_split.not_null());
+  kphp_assert (var_split);
 
   if (var->type() == VarData::var_local_inplace_t) {
     return;
@@ -854,7 +854,7 @@ void CFG::process_var(VarPtr var) {
   if (var->type() != VarData::var_param_t) {
     cur_dfs_mark++;
     UsagePtr uninited = search_uninited(current_start, var);
-    if (uninited.not_null()) {
+    if (uninited) {
       callback->uninited(uninited->v);
     }
   }

@@ -176,7 +176,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string &s, size_t &pos) 
     case '(': {
       pos++;
       VertexPtr v = parse_type_expression(s, pos);
-      if (v.is_null()) {
+      if (!v) {
         return v;
       }
       CHECK(pos < s.size() && s[pos] == ')', "Failed to parse phpdoc type: unmatching ()");
@@ -269,7 +269,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string &s, size_t &pos) 
         const std::string &class_name = extract_classname_from_pos(s, pos);
         pos += class_name.size();
         ClassPtr klass = G->get_class(resolve_uses(current_function, class_name, '\\'));
-        kphp_error(klass.not_null(),
+        kphp_error(klass,
                    dl_pstr("Could not find class in phpdoc: %s", s.c_str()));
         return create_type_help_class_vertex(klass);
       }
@@ -280,7 +280,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string &s, size_t &pos) 
 
 VertexPtr PhpDocTypeRuleParser::parse_type_array(const string &s, size_t &pos) {
   VertexPtr res = parse_simple_type(s, pos);
-  if (res.is_null()) {
+  if (!res) {
     return res;
   }
   while (pos < s.size() && s[pos] == '[') {
@@ -295,13 +295,13 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const string &s, size_t &pos) {
 
 VertexPtr PhpDocTypeRuleParser::parse_type_expression(const string &s, size_t &pos) {
   VertexPtr res = parse_type_array(s, pos);
-  if (res.is_null()) {
+  if (!res) {
     return res;
   }
   while (pos < s.size() && s[pos] == '|') {
     pos++;
     VertexPtr next = parse_type_array(s, pos);
-    if (next.is_null()) {
+    if (!next) {
       return next;
     }
     auto rule = VertexAdaptor<op_type_rule_func>::create(res, next);
@@ -315,7 +315,7 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const string &type_str) {
 //  fprintf(stderr, "Parsing s = |%s|\n", s.c_str());
   size_t pos = 0;
   VertexPtr res = parse_type_expression(type_str, pos);
-  if (res.is_null()) {
+  if (!res) {
     return res;
   }
   CHECK(pos == type_str.size(), "Failed to parse phpdoc type: something left at the end after parsing");

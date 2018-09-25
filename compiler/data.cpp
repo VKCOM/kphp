@@ -105,14 +105,14 @@ bool FunctionData::is_static_init_empty_body() const {
 string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;
-  while (f.not_null()) {
+  while (f) {
     names.push_back(f->name);
     f = f->fork_prev;
   }
   std::reverse(names.begin(), names.end());
   names.push_back(name);
   f = wait_prev;
-  while (f.not_null()) {
+  while (f) {
     names.push_back(f->name);
     f = f->wait_prev;
   }

@@ -52,9 +52,9 @@ std::string assumption_debug(const Assumption &assumption) {
     case assum_not_instance:
       return "$" + assumption.var_name + " is not instance";
     case assum_instance:
-      return "$" + assumption.var_name + " is " + (assumption.klass.is_null() ? "null" : assumption.klass->name);
+      return "$" + assumption.var_name + " is " + (assumption.klass ? assumption.klass->name : "null");
     case assum_instance_array:
-      return "$" + assumption.var_name + " is " + (assumption.klass.is_null() ? "null" : assumption.klass->name) + "[]";
+      return "$" + assumption.var_name + " is " + (assumption.klass ? assumption.klass->name : "null") + "[]";
     default:
       return "$" + assumption.var_name + " unknown";
   }
@@ -79,9 +79,9 @@ void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name,
 
 void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name, const std::string &class_name) {
   ClassPtr klass = class_name.empty() ? ClassPtr() : G->get_class(resolve_uses(f, class_name, '\\'));
-  kphp_error(klass.not_null(),
+  kphp_error(klass,
              dl_pstr("Class %s (used in %s()) does not exist or never initialized", class_name.c_str(), f->name.c_str()));
-  if (klass.not_null()) {
+  if (klass) {
     assumption_add(f, assum, var_name, klass);
   }
 }
@@ -105,9 +105,9 @@ void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, Cl
 
 void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, const std::string &class_name) {
   ClassPtr klass = class_name.empty() ? ClassPtr() : G->get_class(resolve_uses(c->init_function, class_name, '\\'));
-  kphp_error(klass.not_null(),
+  kphp_error(klass,
              dl_pstr("Class %s (used in %s) does not exist or never initialized", class_name.c_str(), c->name.c_str()));
-  if (klass.not_null()) {
+  if (klass) {
     assumption_add(c, assum, var_name, klass);
   }
 }
@@ -133,7 +133,7 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
   }
 
   VertexPtr type_rule = phpdoc_parse_type(type_str, current_function);
-  if (type_rule.is_null()) {      // если всё-таки проник некорректный phpdoc-тип внутрь, чтоб не закрешилось
+  if (!type_rule) {      // если всё-таки проник некорректный phpdoc-тип внутрь, чтоб не закрешилось
     return assum_not_instance;
   }
 
@@ -183,7 +183,7 @@ void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const Tok
   if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str)) {
     AssumType assum = parse_phpdoc_classname(type_str, klass, c->init_function);
 
-    if (klass.not_null() && (param_var_name.empty() || var_name == param_var_name)) {
+    if (klass && (param_var_name.empty() || var_name == param_var_name)) {
       assumption_add(c, assum, var_name, klass);
     }
   }
@@ -197,7 +197,7 @@ void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const Vertex
   ClassPtr klass;
   AssumType assum = infer_class_of_expr(f, rhs, klass);
 
-  if (assum != assum_unknown && klass.not_null()) {
+  if (assum != assum_unknown && klass) {
     assumption_add(f, assum, var_name, klass);
   }
 }
@@ -478,19 +478,19 @@ inline AssumType infer_from_call(FunctionPtr f,
                              ? resolve_instance_func_name(f, call)
                              : get_full_static_member_name(f, call->str_val);
 
-  const FunctionPtr ptr = G->get_function(fname);
-  if (ptr.is_null()) {
-    kphp_error(0, dl_pstr("%s() is undefined, can not infer class", fname.c_str()));
+  const FunctionSetPtr &ptr = G->get_function_set(fs_function, fname, false);
+  if (!ptr || !ptr->size()) {
+    kphp_error(ptr && ptr->size() > 0, dl_pstr("%s() is undefined, can not infer class", fname.c_str()));
     return assum_unknown;
   }
 
-  return calc_assumption_for_return(ptr, out_class);
+  return calc_assumption_for_return(ptr[0], out_class);
 }
 
 inline AssumType infer_from_array(FunctionPtr f,
                                   VertexAdaptor<op_array> array,
                                   ClassPtr &out_class) {
-  kphp_assert(array.not_null());
+  kphp_assert(array);
   for (auto v : *array) {
     ClassPtr inferred_class;
     AssumType assum = infer_class_of_expr(f, v, inferred_class);
@@ -498,7 +498,7 @@ inline AssumType infer_from_array(FunctionPtr f,
       return assum_not_instance;
     }
 
-    if (out_class.is_null()) {
+    if (!out_class) {
       out_class = inferred_class;
     } else if (out_class->name != inferred_class->name) {
       return assum_not_instance;

@@ -85,7 +85,7 @@ string gen_unique_name(string prefix, bool flag) {
   prefix += "$u";
   AUTO_PROF (next_name);
   FunctionPtr function = stage::get_function();
-  if (function.is_null() || flag) {
+  if (!function || flag) {
     return register_unique_name(prefix);
   }
   map<long long, int> *name_gen_map = &function->name_gen_map;
@@ -161,15 +161,15 @@ string resolve_constructor_func_name(FunctionPtr function, VertexAdaptor<op_cons
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
 
-  if (likely(klass.not_null() && klass->new_function.not_null())) {
+  if (likely(klass && klass->new_function)) {
     return replace_characters(klass->name, '\\', '$').append("$$").append(arrow_call->get_string());
   }
 
   // особый кейс зарезервированных классов: $mc->get() это memcached_get($mc) и пр.
-  if (klass.not_null() && klass->name == "Exception") {
+  if (klass && klass->name == "Exception") {
     return "exception_" + arrow_call->get_string();
   }
-  if (klass.not_null() && klass->name == "Memcache") {
+  if (klass && klass->name == "Memcache") {
     return "memcached_" + arrow_call->get_string();
   }
 
@@ -195,7 +195,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     // (new A)->...
     case op_constructor_call: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
-      kphp_assert(assum == assum_instance && klass.not_null());
+      kphp_assert(assum == assum_instance && klass);
       return klass;
     }
 
@@ -295,11 +295,11 @@ string resolve_define_name(string name) {
     string define_name = name.substr(pos$$ + 2);
     const string &real_class_name = replace_characters(class_name, '$', '\\');
     ClassPtr klass = G->get_class(real_class_name);
-    if (klass.not_null()) {
-      while (klass.not_null() && klass->constants.find(define_name) == klass->constants.end()) {
+    if (klass) {
+      while (klass && klass->constants.find(define_name) == klass->constants.end()) {
         klass = klass->parent_class;
       }
-      if (klass.not_null()) {
+      if (klass) {
         name = "c#" + replace_characters(klass->name, '\\', '$') + "$$" + define_name;
       }
     }

@@ -19,8 +19,9 @@ public:
   Id(const Id &id);
   Id &operator=(const Id &id);
   IdData &operator*() const;
-  bool is_null() const;
-  bool not_null() const;
+  explicit operator bool() const {
+    return ptr != nullptr;
+  }
   void clear();
 
   IdData *operator->() const;

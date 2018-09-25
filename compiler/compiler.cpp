@@ -75,7 +75,7 @@ public:
     AUTO_PROF (lexer);
     stage::set_name("Split file to tokens");
     stage::set_file(file);
-    kphp_assert (file.not_null());
+    kphp_assert (file);
 
     kphp_assert (file->loaded);
     FileAndTokens res;
@@ -103,7 +103,7 @@ public:
     AUTO_PROF (gentree);
     stage::set_name("Parse file");
     stage::set_file(file_and_tokens.file);
-    kphp_assert (file_and_tokens.file.not_null());
+    kphp_assert (file_and_tokens.file);
 
     GenTreeCallback callback(os);
     php_gen_tree(file_and_tokens.tokens, file_and_tokens.file->class_context, file_and_tokens.file->main_func_name, callback);
@@ -177,7 +177,7 @@ public:
 
   void require_class(const string &class_name, const string &context_name) {
     pair<SrcFilePtr, bool> res = callback.require_file(class_name + ".php", context_name);
-    kphp_error(res.first.not_null(), dl_pstr("Class %s not found", class_name.c_str()));
+    kphp_error(res.first, dl_pstr("Class %s not found", class_name.c_str()));
     if (res.second) {
       res.first->req_id = current_function;
     }
@@ -267,7 +267,7 @@ public:
         }
 
         auto call = VertexAdaptor<op_func_call>::create();
-        if (file.not_null()) {
+        if (file) {
           call->str_val = file->main_func_name;
           cur = call;
         } else {
@@ -566,7 +566,7 @@ public:
 
     if (check_const.is_const(val)) {
       define->value() = make_const.make_const(val);
-      kphp_assert(define->value().not_null());
+      kphp_assert(define->value());
     }
   }
 };
@@ -681,15 +681,15 @@ void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_function> hea
   VertexAdaptor<meta_op_function> root = func->root;
   func->used_in_source = true;
 
-  kphp_assert (root.not_null() && header.not_null());
+  kphp_assert (root && header);
   kphp_error_return (
-    func->header.is_null(),
+    !func->header,
     dl_pstr("Function [%s]: multiple headers", func->name.c_str())
   );
   func->header = header;
 
   kphp_error_return (
-    root->type_rule.is_null(),
+    !root->type_rule,
     dl_pstr("Function [%s]: type_rule is overided by header", func->name.c_str())
   );
   root->type_rule = header->type_rule;
@@ -730,7 +730,7 @@ void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_function> hea
 
 void prepare_function_misc(FunctionPtr func) {
   VertexAdaptor<meta_op_function> func_root = func->root;
-  kphp_assert (func_root.not_null());
+  kphp_assert (func_root);
   VertexAdaptor<op_func_param_list> param_list = func_root->params();
   VertexRange params = param_list->args();
   int param_n = (int)params.size();
@@ -842,10 +842,10 @@ void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           VertexAdaptor<op_var> var = cur_func_param->var().as<op_var>();
           name_to_function_param.erase(func_param_it);
 
-          kphp_error(var.not_null(), "Something strange happened during @param parsing");
+          kphp_error(var, "Something strange happened during @param parsing");
 
           VertexPtr doc_type = phpdoc_parse_type(type_help, f);
-          kphp_error(doc_type.not_null(),
+          kphp_error(doc_type,
                      dl_pstr("Failed to parse type '%s'", type_help.c_str()));
           if (infer_type & 1) {
             auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
@@ -928,10 +928,10 @@ void prepare_function(FunctionPtr function) {
 
   FunctionSetPtr function_set = function->function_set;
   VertexPtr header = function_set->header;
-  if (header.not_null()) {
+  if (header) {
     function_apply_header(function, header);
   }
-  if (function->root.not_null() && function->root->varg_flag) {
+  if (function->root && function->root->varg_flag) {
     function->varg_flag = true;
   }
 }
@@ -944,7 +944,7 @@ public:
   void execute(FunctionPtr function, OutputStream &os) {
     stage::set_name("Prepare function");
     stage::set_function(function);
-    kphp_assert (function.not_null());
+    kphp_assert (function);
 
     prepare_function(function);
 
@@ -986,7 +986,7 @@ public:
 
       const string name = defined->expr().as<op_string>()->str_val;
       DefinePtr def = G->get_define(name);
-      is_defined = def.not_null() && def->name == name;
+      is_defined = def && def->name == name;
 
       if (is_defined) {
         auto true_val = VertexAdaptor<op_true>::create();
@@ -1001,7 +1001,7 @@ public:
       string name = root->get_string();
       name = resolve_define_name(name);
       DefinePtr d = G->get_define(name);
-      if (d.not_null()) {
+      if (d) {
         assert (d->name == name);
         if (d->type() == DefineData::def_var) {
           auto var = VertexAdaptor<op_var>::create();
@@ -1157,8 +1157,8 @@ private:
 
   VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
     kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
-    kphp_assert (func.not_null());
-    kphp_assert (call->get_func_id().is_null() || call->get_func_id() == func);
+    kphp_assert (func);
+    kphp_assert (!call->get_func_id() || call->get_func_id() == func);
     if (call->get_func_id() == func) {
       return call;
     }
@@ -1170,7 +1170,7 @@ private:
       return call;
     }
 
-    if (func->root.is_null()) {
+    if (!func->root) {
       kphp_fail();
       return call;
     }
@@ -1289,7 +1289,7 @@ private:
       kphp_assert(function_set->size() == 1);
       set_func_id(call, function_set[0]);
 
-      if (new_function.not_null()) {
+      if (new_function) {
         (*os.project_to_nth_data_stream<1>()) << new_function;
       }
     }
@@ -1364,7 +1364,7 @@ private:
    * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
    */
   VertexPtr try_set_func_id(VertexPtr call) {
-    if (call->get_func_id().not_null()) {
+    if (call->get_func_id()) {
       return call;
     }
 
@@ -1624,10 +1624,10 @@ public:
 
     if (v->type() == op_instance_prop) {
       ClassPtr klass = resolve_class_of_arrow_access(current_function, v);
-      if (klass.not_null()) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
+      if (klass) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
         VarPtr var = klass->find_var(v->get_string());
 
-        if (!kphp_error(var.not_null(),
+        if (!kphp_error(var,
                         dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()))) {
           v->set_var_id(var);
           init_class_instance_var(v, var, klass);
@@ -1652,7 +1652,7 @@ public:
       std::string var_name, type_str;
       if (PhpDocTypeRuleParser::find_tag_in_phpdoc(var->phpdoc_token->str_val, php_doc_tag::var, var_name, type_str)) {
         VertexPtr doc_type = phpdoc_parse_type(type_str, klass->init_function);
-        if (!kphp_error(doc_type.not_null(),
+        if (!kphp_error(doc_type,
                         dl_pstr("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), var->name.c_str()))) {
           doc_type->location = klass->root->location;
           auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
@@ -1691,9 +1691,9 @@ public:
   VertexPtr on_exit_vertex(VertexPtr v, LocalT *local) {
     switch (OpInfo::cnst(v->type())) {
       case cnst_func:
-        if (v->get_func_id().not_null()) {
+        if (v->get_func_id()) {
           VertexPtr root = v->get_func_id()->root;
-          if (root.is_null() || root->type_rule.is_null() || root->type_rule->extra_type != op_ex_rule_const) {
+          if (!root || !root->type_rule || root->type_rule->extra_type != op_ex_rule_const) {
             v->const_type = cnst_nonconst_val;
             break;
           }
@@ -1732,7 +1732,7 @@ public:
     }
     if (v->type() == op_func_call) {
       FunctionPtr from = v->get_func_id();
-      kphp_assert (from.not_null());
+      kphp_assert (from);
       edges.push_back(from);
     }
     return v;
@@ -1792,7 +1792,7 @@ static int throws_func_cnt = 0;
 void calc_throws_dfs(FunctionPtr from, IdMap<vector<FunctionPtr>> &graph, vector<FunctionPtr> *bt) {
   throws_func_cnt++;
   //FIXME
-  if (false && from->header.not_null()) {
+  if (false && from->header) {
     stringstream ss;
     ss << "Extern function [" << from->name << "] throws \n";
     for (int i = (int)bt->size() - 1; i >= 0; i--) {
@@ -1896,8 +1896,8 @@ public:
 
   void check_func_call(VertexPtr call) {
     FunctionPtr f = call->get_func_id();
-    kphp_assert (f.not_null());
-    kphp_error_return (f->root.not_null(), dl_pstr("Function [%s] undeclared", f->name.c_str()));
+    kphp_assert (f);
+    kphp_error_return (f->root, dl_pstr("Function [%s] undeclared", f->name.c_str()));
 
     if (call->type() == op_func_ptr) {
       return;
@@ -1951,7 +1951,7 @@ public:
         FunctionPtr func_ptr = call_params[i]->get_func_id();
 
         kphp_error_act (
-          func_ptr->root.not_null(),
+          func_ptr->root,
           dl_pstr("Unknown callback function [%s]", func_ptr->name.c_str()),
           continue
         );
@@ -2097,7 +2097,7 @@ public:
   }
 
   void uninited(VertexPtr v) {
-    if (v.not_null() && v->type() == op_var && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
+    if (v && v->type() == op_var && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
       uninited_vars.push_back(v);
       v->get_var_id()->set_uninited_flag(true);
     }
@@ -2651,7 +2651,7 @@ public:
       replace = &vertex.as<op_if>()->cond();
     }
     skip_conv_and_sets(replace);
-    if (!replace || (*replace).is_null() || (*replace)->type() != op_func_call) {
+    if (!replace || !*replace || (*replace)->type() != op_func_call) {
       return vertex;
     }
     func_call = *replace;
@@ -2714,14 +2714,14 @@ public:
         lhs = set->lhs();
       }
     }
-    if (func_call.is_null()) {
+    if (!func_call) {
       return vertex;
     }
     FunctionPtr func = func_call->get_func_id();
     if (func->root->resumable_flag == false) {
       return vertex;
     }
-    if (lhs.is_null()) {
+    if (!lhs) {
       auto empty = VertexAdaptor<op_empty>::create();
       set_location(empty, vertex->get_location());
       lhs = empty;
@@ -2852,11 +2852,11 @@ public:
     if (G->env().get_warnings_level() >= 1 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
       FunctionPtr function_where_require = stage::get_function();
 
-      if (function_where_require.not_null() && function_where_require->type() == FunctionData::func_local) {
+      if (function_where_require && function_where_require->type() == FunctionData::func_local) {
         for (auto v : *vertex) {
           FunctionPtr function_which_required = v->get_func_id();
 
-          kphp_assert(function_which_required.not_null());
+          kphp_assert(function_which_required);
           kphp_assert(function_which_required->type() == FunctionData::func_global);
 
           for (VarPtr global_var : function_which_required->global_var_ids) {
@@ -2896,7 +2896,7 @@ public:
             desc += "variable [$" + var->name + "]" + index_depth;
 
             FunctionPtr holder_func = var->holder_func;
-            if (holder_func.not_null() && holder_func->is_required && holder_func->kphp_required) {
+            if (holder_func && holder_func->is_required && holder_func->kphp_required) {
               desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
             }
 
@@ -2999,9 +2999,9 @@ public:
     for (const auto &fun : xall) {
       prepare_generate_function(fun);
     }
-    for (vector<ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-      if (c->not_null() && !(*c)->is_fully_static()) {
-        prepare_generate_class(*c);
+    for (const auto &c : all_classes) {
+      if (c && !c->is_fully_static()) {
+        prepare_generate_class(c);
       }
     }
 
@@ -3021,9 +3021,9 @@ public:
       W << Async(FunctionCpp(function));
     }
 
-    for (vector<ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-      if (c->not_null() && !(*c)->is_fully_static()) {
-        W << Async(ClassDeclaration(*c));
+    for (const auto &c : all_classes) {
+      if (c && !c->is_fully_static()) {
+        W << Async(ClassDeclaration(c));
       }
     }
 
@@ -3241,14 +3241,14 @@ public:
   void execute(FunctionPtr data, OutputStreamT &os) {
     stage::set_name("Collect classes");
 
-    if (data->class_id.not_null() && data->class_id->init_function == data) {
+    if (data->class_id && data->class_id->init_function == data) {
       ClassPtr klass = data->class_id;
       if (!data->class_extends.empty()) {
         klass->extends = resolve_uses(data, data->class_extends, '\\');
       }
       if (!klass->extends.empty()) {
         klass->parent_class = G->get_class(klass->extends);
-        kphp_assert(klass->parent_class.not_null());
+        kphp_assert(klass->parent_class);
         kphp_error(klass->is_fully_static() && klass->parent_class->is_fully_static(),
                    dl_pstr("Invalid class extends %s and %s: extends is available only if classes are only-static", klass->name.c_str(), klass->parent_class
                                                                                                                                               ->name
@@ -3277,7 +3277,7 @@ public:
     if (function->type() != FunctionData::func_extern && !function->assumptions.empty()) {
       analyze_function_vars(function);
     }
-    if (function->class_id.not_null() && function->class_id->init_function == function) {
+    if (function->class_id && function->class_id->init_function == function) {
       analyze_class(function->class_id);
     }
 

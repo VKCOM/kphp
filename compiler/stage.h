@@ -14,7 +14,7 @@
 #define kphp_warning(y)  compiler_assert (0, y, WRN_ASSERT_LEVEL)
 #define kphp_typed_warning(x, y) do {                                      \
   FunctionPtr kphp_warning_fun__ = stage::get_function();                  \
-  if (kphp_warning_fun__.not_null()) {                                     \
+  if (kphp_warning_fun__) {                                     \
     const set<string> &disabled__ = kphp_warning_fun__->disabled_warnings; \
     string s = x;                                                          \
     if (disabled__.find(s) == disabled__.end()) {                          \

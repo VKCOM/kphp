@@ -53,22 +53,18 @@ public:
   template<Operation FromOp>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) :
     impl(dynamic_cast <vertex_inner<Op> *> (from.impl)) {
-    dl_assert (impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", FromOp, from.is_null() ? -1 : from->type(), Op));
+    dl_assert (impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
   }
 
   template<Operation FromOp>
   VertexAdaptor &operator=(const VertexAdaptor<FromOp> &from) {
     impl = dynamic_cast <vertex_inner<Op> *> (from.impl);
-    dl_assert (from.impl == nullptr || impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d> (real type %d) to VertexAdaptor<%d>", FromOp, from.is_null() ? -1 : from->type(), Op));
+    dl_assert (from.impl == nullptr || impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d> (real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
     return *this;
   }
 
-  inline bool is_null() const {
-    return impl == nullptr;
-  }
-
-  inline bool not_null() const {
-    return !is_null();
+  explicit operator bool() const {
+    return impl != nullptr;
   }
 
   vertex_inner<Op> *operator->() {

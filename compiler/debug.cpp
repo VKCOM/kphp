@@ -215,8 +215,8 @@ std::string debugVertexMore(VertexPtr v) {
     case op_int_const:
       return v->get_string();
     case op_class_type_rule:
-      return v.as<op_class_type_rule>()->class_ptr.is_null()
-             ? "class_ptr = null" : v.as<op_class_type_rule>()->class_ptr->name;
+      return v.as<op_class_type_rule>()->class_ptr
+             ? v.as<op_class_type_rule>()->class_ptr->name : "class_ptr = null";
     default:
       return "";
   }
@@ -250,10 +250,10 @@ struct GdbVertex {
 
 GdbVertex *debugVertexToGdb(VertexPtr impl) {
   GdbVertex *g = new GdbVertex;
-  int size = impl.is_null() ? 0 : impl->size();
+  int size = impl ? impl->size() : 0;
 
-  g->type = (impl.is_null() ? meta_op_base : impl->type());
-  g->str = impl.is_null() ? "" : debugVertexMore(impl);
+  g->type = (impl ? impl->type() : meta_op_base);
+  g->str = impl ? debugVertexMore(impl) : "";
   g->ith0 = size > 0 ? debugVertexToGdb(impl->ith(0)) : nullptr;
   g->ith1 = size > 1 ? debugVertexToGdb(impl->ith(1)) : nullptr;
   g->ith2 = size > 2 ? debugVertexToGdb(impl->ith(2)) : nullptr;

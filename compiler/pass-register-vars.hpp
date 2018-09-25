@@ -231,7 +231,7 @@ public:
     var_vertex->set_var_id(create_global_var(name));
 
     FunctionPtr function_where_global_keyword_occured = var_vertex->location.get_function();
-    if (function_where_global_keyword_occured.not_null() && function_where_global_keyword_occured->type() == FunctionData::func_global) {
+    if (function_where_global_keyword_occured && function_where_global_keyword_occured->type() == FunctionData::func_global) {
       var_vertex->get_var_id()->marked_as_global = true;
     }
   }
@@ -265,7 +265,7 @@ public:
       var = create_local_var(name, VarData::var_static_t, true);
       var->static_id = current_function;
     }
-    if (default_value.not_null()) {
+    if (default_value) {
       if (!kphp_error (is_const(default_value), dl_pstr("Default value of [%s] is not constant", name.c_str()))) {
         var->init_val = default_value;
       }
@@ -282,8 +282,8 @@ public:
     string name = var_vertex->str_val;
     VarPtr var = create_local_var(name, VarData::var_param_t, true);
     var->is_reference = var_vertex->ref_flag;
-    kphp_assert (var.not_null());
-    if (default_value.not_null()) {
+    kphp_assert (var);
+    if (default_value) {
       if (!kphp_error (
         is_const(default_value) || is_global_var(default_value),
         dl_pstr("Default value of [%s] is not constant", name.c_str()))) {
@@ -305,11 +305,11 @@ public:
         string class_name = name.substr(0, pos$$);
         string var_name = name.substr(pos$$ + 2);
         ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
-        kphp_assert(klass.not_null());
-        while (klass.not_null() && klass->static_fields.find(var_name) == klass->static_fields.end()) {
+        kphp_assert(klass);
+        while (klass && klass->static_fields.find(var_name) == klass->static_fields.end()) {
           klass = klass->parent_class;
         }
-        if (kphp_error(klass.not_null(), dl_pstr("static field not found: %s", name.c_str()))) {
+        if (kphp_error(klass, dl_pstr("static field not found: %s", name.c_str()))) {
           return;
         }
         name = replace_characters(klass->name, '\\', '$') + "$$" + var_name;
@@ -366,7 +366,7 @@ public:
   template<class VisitT>
   void visit_func_param_list(VertexAdaptor<op_func_param_list> list, VisitT &visit) {
     for (auto i : list->params()) {
-      kphp_assert (i.not_null());
+      kphp_assert (i);
       kphp_assert (i->type() == op_func_param);
       VertexAdaptor<op_func_param> param = i;
       VertexAdaptor<op_var> var = param->var();
@@ -380,7 +380,7 @@ public:
   }
 
   void visit_var(VertexAdaptor<op_var> var) {
-    if (var->get_var_id().not_null()) {
+    if (var->get_var_id()) {
       // автогенерённые через CREATE_VERTEX op_var типы, когда один VarData на несколько разных vertex'ов
       kphp_assert (var->get_var_id()->type() == VarData::var_const_t ||
                    var->get_var_id()->type() == VarData::var_local_inplace_t);
@@ -403,7 +403,7 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *local) {
-    kphp_assert (root.not_null());
+    kphp_assert (root);
     if (root->type() == op_global) {
       visit_global_vertex(root);
       local->need_recursion_flag = false;
@@ -468,7 +468,7 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *local __attribute__((unused))) {
-    kphp_assert (root.not_null());
+    kphp_assert (root);
     if (root->type() == op_var) {
       VarPtr var_id = root.as<op_var>()->get_var_id();
       string real_name = root.as<op_var>()->str_val;
@@ -484,11 +484,11 @@ public:
           kphp_error_act(!namespace_name.empty() && !class_name.empty(), dl_pstr("Can't access protected field %s", real_name.c_str()), return root);
           ClassPtr var_class = var_id->class_id;
           ClassPtr klass = G->get_class(namespace_name + "\\" + class_name);
-          kphp_assert(klass.not_null());
-          while (klass.not_null() && var_class != klass) {
+          kphp_assert(klass);
+          while (klass && var_class != klass) {
             klass = klass->parent_class;
           }
-          kphp_error(klass.not_null(), dl_pstr("Can't access protected field %s", real_name.c_str()));
+          kphp_error(klass, dl_pstr("Can't access protected field %s", real_name.c_str()));
         }
       }
     } else if (root->type() == op_func_call) {
@@ -552,7 +552,7 @@ public:
     }
 
     VertexPtr result_seq;
-    if (op_set_to_tmp_var.is_null()) {
+    if (!op_set_to_tmp_var) {
       auto seq = VertexAdaptor<op_seq_rval>::create(list, list->array().as<op_var>().clone());
       result_seq = seq;
     } else {

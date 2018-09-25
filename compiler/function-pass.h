@@ -22,7 +22,7 @@ public:
   }
 
   bool default_check_function(FunctionPtr function) {
-    return function.not_null() && function->root.not_null();
+    return function && function->root;
   }
 
   virtual bool check_function(FunctionPtr function) {

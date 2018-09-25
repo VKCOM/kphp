@@ -20,16 +20,6 @@ Id<IdData> &Id<IdData>::operator=(const Id<IdData> &id) {
 }
 
 template<class IdData>
-bool Id<IdData>::is_null() const {
-  return ptr == nullptr;
-}
-
-template<class IdData>
-bool Id<IdData>::not_null() const {
-  return ptr != nullptr;
-}
-
-template<class IdData>
 IdData &Id<IdData>::operator*() const {
   assert (ptr != nullptr);
   return *ptr;

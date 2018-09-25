@@ -409,7 +409,7 @@ ClassPtr TypeData::class_type() const {
 }
 
 void TypeData::set_class_type(ClassPtr new_class_type) {
-  if (class_type_.is_null()) {
+  if (!class_type_) {
     class_type_ = new_class_type;
     on_changed();
   } else if (class_type_ != new_class_type) {
@@ -422,7 +422,7 @@ void TypeData::set_class_type(ClassPtr new_class_type) {
  * Быстрый аналог !get_all_class_types_inside().empty()
  */
 bool TypeData::has_class_type_inside() const {
-  if (class_type().not_null()) {
+  if (class_type()) {
     return true;
   }
   if (anykey_value != nullptr && anykey_value->has_class_type_inside()) {
@@ -436,7 +436,7 @@ bool TypeData::has_class_type_inside() const {
 }
 
 void TypeData::get_all_class_types_inside(vector<ClassPtr> &out) const {
-  if (class_type().not_null()) {
+  if (class_type()) {
     out.push_back(class_type());
   }
   if (anykey_value != nullptr) {

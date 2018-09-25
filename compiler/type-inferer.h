@@ -180,11 +180,11 @@ private:
     static bool is_same_vars(const tinf::Node *node, VertexPtr vertex) {
       if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
         if (vertex->type() == op_var) {
-          if (vertex->get_var_id().is_null() && var_node->var_.is_null()) {
+          if (!vertex->get_var_id() && !var_node->var_) {
             return true;
           }
 
-          return vertex->get_var_id().not_null() && var_node->var_.not_null() &&
+          return vertex->get_var_id() && var_node->var_ &&
                  vertex->get_var_id()->name == var_node->var_->name;
         }
       }
@@ -725,7 +725,7 @@ private:
       create_set(temp_var->get_var_id(), xs);
     }
     create_set(x->get_var_id(), params);
-    if (key.not_null()) {
+    if (key) {
       create_set(key->get_var_id(), tp_var);
     }
   }
@@ -838,7 +838,7 @@ private:
           PrimitiveType x = tp_Unknown;
 
           if (i == -1) {
-            if (function->root->type_rule.not_null()) {
+            if (function->root->type_rule) {
               kphp_error_act (function->root->type_rule->type() == op_common_type_rule, "...", continue);
               VertexAdaptor<op_common_type_rule> common_type_rule = function->root->type_rule;
               VertexPtr rule = common_type_rule->expr();
@@ -898,7 +898,7 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__((unused))) {
-    if (v->type_rule.not_null()) {
+    if (v->type_rule) {
       add_type_rule(v);
     }
     //FIXME: type_rule should be used indead of type_help
@@ -957,7 +957,7 @@ public:
       return;
     }
     require_node(var);
-    if (var->init_val.not_null()) {
+    if (var->init_val) {
       create_set(var, var->init_val);
     }
   }

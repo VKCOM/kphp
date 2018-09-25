@@ -129,7 +129,7 @@ public:
       kphp_assert(foreach_vars.size());
       foreach_vars.pop_back();
     }
-    if (local->to_forbid.not_null()) {
+    if (local->to_forbid) {
       forbidden_vars.push_back(local->to_forbid);
     }
     if (vertex->type() == op_unset) {

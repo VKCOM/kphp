@@ -183,7 +183,7 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
 
   *last_ub_error = VarPtr();
   if (v->type() == op_var) {
-    *data = UBMergeData::create_from_var(v, parent.not_null() && parent->type() == op_index);
+    *data = UBMergeData::create_from_var(v, parent && parent->type() == op_index);
   } else if (v->type() == op_func_ptr) {
     *data = UBMergeData::create_from_func_ptr(v);
   } else {

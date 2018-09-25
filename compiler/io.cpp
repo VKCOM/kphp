@@ -112,14 +112,14 @@ void WriterData::brk() {
 }
 
 void WriterData::add_location(SrcFilePtr file, int line) {
-  if (file.is_null()) {
+  if (!file) {
     return;
   }
-  if (lines.back().file.not_null() && !(lines.back().file == file)) {
+  if (lines.back().file && !(lines.back().file == file)) {
     return;
   }
   kphp_error (
-    lines.back().file.is_null() || lines.back().file == file,
+    !lines.back().file || lines.back().file == file,
     dl_pstr("%s|%s", file->file_name.c_str(), lines.back().file->file_name.c_str())
   );
   lines.back().file = file;
@@ -157,7 +157,7 @@ template<class T>
 void WriterData::dump(string &dest_str, T begin, T end, SrcFilePtr file) {
   int l = (int)1e9, r = -1;
 
-  if (file.not_null()) {
+  if (file) {
     dest_str += "//source = [";
     dest_str += file->unified_file_name.c_str();
     dest_str += "]\n";
@@ -248,14 +248,14 @@ void WriterData::dump(string &dest_str, T begin, T end, SrcFilePtr file) {
 
 void WriterData::dump(string &dest_str) {
   for (auto i = lines.begin(); i != lines.end();) {
-    if (i->file.is_null()) {
+    if (!i->file) {
       dump(dest_str, i, i + 1, SrcFilePtr());
       i++;
       continue;
     }
 
     decltype(i) j;
-    for (j = i + 1; j != lines.end() && (j->file.is_null() || i->file == j->file) && !j->brk; j++) {
+    for (j = i + 1; j != lines.end() && (!j->file || i->file == j->file) && !j->brk; j++) {
     }
     dump(dest_str, i, j, i->file);
     i = j;

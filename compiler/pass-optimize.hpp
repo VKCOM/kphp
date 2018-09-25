@@ -33,7 +33,7 @@ public:
 
     VertexPtr result;
 
-    if (b.is_null()) {
+    if (!b) {
       // запрещаем '$s[] = ...' для не-массивов; для массивов превращаем в push_back
       PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
       kphp_error (a_ptype == tp_array || a_ptype == tp_var,
@@ -173,7 +173,7 @@ public:
         //} else if (root->type() == op_conv_regexp && tp->ptype() != tp_string) {
         //res = expr;
       }
-      if (res.not_null()) {
+      if (res) {
         res->rl_type = root->rl_type;
         root = res;
       }
@@ -212,8 +212,8 @@ public:
   bool user_recursion(VertexPtr root, LocalT *local __attribute__((unused)), VisitT &visit) {
     if (root->type() == op_var) {
       VarPtr var = root->get_var_id();
-      kphp_assert (var.not_null());
-      if (var->init_val.not_null()) {
+      kphp_assert (var);
+      if (var->init_val) {
         if (try_optimize_var(var)) {
           visit(var->init_val);
         }

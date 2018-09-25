@@ -59,7 +59,7 @@ void Location::set_file(SrcFilePtr new_file) {
 }
 
 void Location::set_function(FunctionPtr new_function) {
-  if (new_function.not_null()) {
+  if (new_function) {
     file = new_function->file_id;
   }
   function = new_function;
@@ -183,7 +183,7 @@ const Location &stage::get_location() {
 }
 
 void stage::set_location(const Location &new_location) {
-  if (new_location.get_file().is_null()) {
+  if (!new_location.get_file()) {
     return;
   }
   *get_location_ptr() = new_location;
@@ -216,7 +216,7 @@ int stage::get_line() {
 const string &stage::get_file_name() {
   static string no_file = "unknown";
   SrcFilePtr file = get_file();
-  if (file.is_null()) {
+  if (!file) {
     return no_file;
   }
   return file->file_name;
@@ -225,7 +225,7 @@ const string &stage::get_file_name() {
 const string &stage::get_function_name() {
   static string no_function = "unknown";
   FunctionPtr function = get_function();
-  if (function.is_null()) {
+  if (!function) {
     return no_function;
   }
   return function->name;

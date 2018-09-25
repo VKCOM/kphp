@@ -236,7 +236,7 @@ public:
   }
 
   inline bool is_constructor() const {
-    return class_id.not_null() && &*(class_id->new_function) == this;
+    return class_id && &*(class_id->new_function) == this;
   }
 
 private:
@@ -251,22 +251,26 @@ inline bool operator<(const VarPtr &a, const VarPtr &b) {
   int cmp_res = a->name.compare(b->name);
 
   if (cmp_res == 0) {
-    bool af = a->static_id.not_null();
-    bool bf = b->static_id.not_null();
-    if (af || bf) {
-      if (af && bf) {
-        return a->static_id < b->static_id;
-      } else {
-        return af < bf;
+    {
+      bool af{a->static_id};
+      bool bf{b->static_id};
+      if (af || bf) {
+        if (af && bf) {
+          return a->static_id < b->static_id;
+        } else {
+          return af < bf;
+        }
       }
     }
-    af = a->holder_func.not_null();
-    bf = b->holder_func.not_null();
-    if (af || bf) {
-      if (af && bf) {
-        return a->holder_func < b->holder_func;
-      } else {
-        return af < bf;
+    {
+      bool af{a->holder_func};
+      bool bf{b->holder_func};
+      if (af || bf) {
+        if (af && bf) {
+          return a->holder_func < b->holder_func;
+        } else {
+          return af < bf;
+        }
       }
     }
     return false;

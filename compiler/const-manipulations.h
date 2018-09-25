@@ -181,7 +181,7 @@ protected:
   }
 
   bool on_var(VertexPtr v) override {
-    if (v->get_var_id().not_null() && (v->extra_type == op_ex_var_const || v->get_var_id()->is_constant)) {
+    if (v->get_var_id() && (v->extra_type == op_ex_var_const || v->get_var_id()->is_constant)) {
       return visit(v->get_var_id()->init_val);
     }
 

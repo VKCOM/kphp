@@ -738,7 +738,7 @@ inline VarName::VarName(VarPtr var) :
 }
 
 void VarName::compile(CodeGenerator &W) const {
-  if (var->static_id.not_null()) {
+  if (var->static_id) {
     W << FunctionName(var->static_id) << "$";
   }
 
@@ -832,7 +832,7 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
     }
     W << VarName(var->get_var_id());
 
-    if (def_val.not_null() && in_header) {
+    if (def_val && in_header) {
       W << " = " << def_val;
     }
 
@@ -947,7 +947,7 @@ inline void InitFuncPtrs::compile(CodeGenerator &W) const {
 
   for (int i = 0; i < n; i++) {
     FunctionPtr f = ids[i];
-    if (ids[i].not_null() && (ids[i]->root.is_null() || !ids[i]->is_required)) {
+    if (ids[i] && (!ids[i]->root || !ids[i]->is_required)) {
       //skip
     } else {
       kphp_assert (f->root->type() == op_function);
@@ -961,7 +961,7 @@ inline void InitFuncPtrs::compile(CodeGenerator &W) const {
   for (int i = 0; i < n; i++) {
     FunctionPtr f = ids[i];
     //FIXME: copypast %(
-    if (ids[i].not_null() && (ids[i]->root.is_null() || !ids[i]->is_required)) {
+    if (ids[i] && (!ids[i]->root || !ids[i]->is_required)) {
       //skip
     } else {
       W << f->name << "_pointer = " << FunctionName(f) << ";" << NL;
@@ -1478,7 +1478,7 @@ void DfsInit::compile_dfs_init_part(
 
       W << "INIT_VAR (" << TypeNameInsideMacro(tp) << ", " << VarName(var) << ");" << NL;
       //FIXME: brk and comments
-      if (var->init_val.not_null()) {
+      if (var->init_val) {
         W << UnlockComments();
         W << VarName(var) << " = " << var->init_val << ";" << NL;
         W << LockComments();
@@ -1569,7 +1569,7 @@ void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
   for (; begin != end; begin++) {
     VarPtr var_id = *begin;
     int var_hash;
-    if (var_id->class_id.not_null()) {
+    if (var_id->class_id) {
       var_hash = hash(var_id->class_id->init_function->name);
     } else {
       var_hash = hash(var_id->name);
@@ -1616,7 +1616,7 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
   vector<ClassPtr> classes = G->get_classes();
   for (auto ci : classes) {
-    if (ci.not_null()) {
+    if (ci) {
       collect_used_funcs_and_vars(ci->init_function, &used_functions, used_vars, parts_n);
     }
   }
@@ -2227,7 +2227,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
   W << x << " = " << it << ".get_value();" << NL;
 
   //save key
-  if (key.not_null()) {
+  if (key) {
     W << key << " = " << it << ".get_key();" << NL;
   }
 }
@@ -2267,7 +2267,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   W << x << " = " << temp_var << "$it" << ".get_value();" << NL;
 
   //save key
-  if (key.not_null()) {
+  if (key) {
     W << key << " = " << temp_var << "$it" << ".get_key();" << NL;
   }
 }
@@ -3220,7 +3220,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
       }
     }
   }
-  if (!func.is_null() && func->root->auto_flag) {
+  if (func && func->root->auto_flag) {
     const TypeData *tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }

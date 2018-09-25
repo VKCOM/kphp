@@ -77,14 +77,14 @@ void print_why_tinf_occured_error(
   std::string desc1 = node1->get_description();
   std::string desc2 = node2 ? node2->get_description() : "unknown";
 
-  if (mix_class.not_null() && mix_class2.not_null() && mix_class != mix_class2) {
+  if (mix_class && mix_class2 && mix_class != mix_class2) {
     kphp_error(0, dl_pstr("Type Error: mix classes %s and %s: %s and %s\n",
                           mix_class->name.c_str(), mix_class2->name.c_str(),
                           desc1.c_str(), desc2.c_str()));
 
-  } else if (mix_class.not_null() || mix_class2.not_null()) {
+  } else if (mix_class || mix_class2) {
     kphp_error(0, dl_pstr("Type Error: mix class %s with non-class: %s and %s\n",
-                          mix_class.not_null() ? mix_class->name.c_str() : mix_class2->name.c_str(),
+                          mix_class ? mix_class->name.c_str() : mix_class2->name.c_str(),
                           desc1.c_str(), desc2.c_str()));
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
@@ -177,7 +177,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
     }
     if (v->type() == op_var) {
       VarPtr from_var = v.as<op_var>()->get_var_id();
-      if (from_var.not_null() && from_var->get_uninited_flag() && isset_is_dangerous(isset_flags, node->get_type())) {
+      if (from_var && from_var->get_uninited_flag() && isset_is_dangerous(isset_flags, node->get_type())) {
         node->isset_was = -1;
         find_dangerous_isset_warning(*bt, node, "[uninited varialbe]");
         return true;
@@ -211,13 +211,13 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
       tinf::Node *to_node = e->to;
 
       /*** function f(&$a){}; f($b) fix ***/
-      if (from_var.not_null()) {
+      if (from_var) {
         VarPtr to_var;
         tinf::VarNode *to_var_node = dynamic_cast <tinf::VarNode *> (to_node);
         if (to_var_node != nullptr) {
           to_var = to_var_node->get_var();
         }
-        if (to_var.not_null() && to_var->type() == VarData::var_param_t &&
+        if (to_var && to_var->type() == VarData::var_param_t &&
             !(to_var->holder_func == from_var->holder_func)) {
           continue;
         }
@@ -251,20 +251,25 @@ void tinf::ExprNode::recalc(tinf::TypeInferer *inferer) {
 
 string tinf::VarNode::get_description() {
   stringstream ss;
-  if (function_.is_null()) {
-    if (var_.not_null() && var_->holder_func.not_null()) {
+  if (!function_) {
+    if (var_ && var_->holder_func) {
       function_ = var_->holder_func;
     }
   }
-  if (param_i == -2) {
-    ss << "[$" << (var_.is_null() ? "STRANGE_VAR" : var_->class_id.not_null() ? var_->class_id->name + "::" + var_->name
-                                                                              : var_->name) << "]";
-  } else if (param_i == -1) {
+  if (is_variable()) {
+    ss << "[$";
+    if (!var_) {
+      ss << "STRANGE_VAR";
+    } else {
+      ss << (var_->class_id ? (var_->class_id->name + "::" + var_->name) : var_->name);
+    }
+    ss << "]";
+  } else if (is_return_value_from_function()) {
     ss << "[return .]";
   } else {
-    ss << "[arg #" << int_to_str(param_i) << " ($" << (var_.is_null() ? "STRANGE_VAR" : var_->name) << ")]";
+    ss << "[arg #" << int_to_str(param_i) << " ($" << (var_ ? var_->name : "STRANGE_VAR") << ")]";
   }
-  if (function_.not_null()) {
+  if (function_) {
     ss << "\tat [function = " << function_->name << "]";
   }
   return ss.str();
@@ -535,7 +540,7 @@ void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, Vert
 
 void ExprNodeRecalc::apply_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
   int i = arg->int_val;
-  if (expr.is_null() || i < 1 || expr->type() != op_func_call ||
+  if (!expr || i < 1 || expr->type() != op_func_call ||
       i > (int)get_function_params(expr->get_func_id()->root).size()) {
     kphp_error (0, "error in type rule");
     recalc_ptype<tp_Error>();
@@ -581,7 +586,7 @@ void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexPtr expr) {
 
 void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr function = call->get_func_id();
-  if (function->root->type_rule.not_null()) {
+  if (function->root->type_rule) {
     apply_type_rule(function->root->type_rule.as<meta_op_type_rule>()->expr(), call);
   } else {
     set_lca(function, -1);
@@ -590,7 +595,7 @@ void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
 
 void ExprNodeRecalc::recalc_constructor_call(VertexAdaptor<op_constructor_call> call) {
   FunctionPtr function = call->get_func_id();
-  if (likely(function->class_id.not_null())) {
+  if (likely(static_cast<bool>(function->class_id))) {
     set_lca(function->class_id);
   } else {
     if (call->type_help == tp_MC || call->type_help == tp_Exception) {
@@ -804,6 +809,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_not:
     case op_or:
     case op_and:
+    case op_xor:
     case op_fork:
       recalc_ptype<tp_int>();
       break;
