@@ -211,7 +211,6 @@ public:
   bool should_be_sync;
   bool kphp_required;
   bool is_template;
-  bool is_actually_called;
   string namespace_name;
   string class_name;
   string class_context_name;
@@ -236,7 +235,7 @@ public:
   }
 
   inline bool is_constructor() const {
-    return class_id && &*(class_id->new_function) == this;
+    return class_id && class_id->new_function && &*(class_id->new_function) == this;
   }
 
 private:

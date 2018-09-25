@@ -66,7 +66,6 @@ FunctionData::FunctionData() :
   should_be_sync(),
   kphp_required(false),
   is_template(false),
-  is_actually_called(false),
   namespace_name(""),
   class_name("") {}
 
@@ -91,7 +90,6 @@ FunctionData::FunctionData(VertexPtr root) :
   should_be_sync(),
   kphp_required(false),
   is_template(false),
-  is_actually_called(false),
   namespace_name(""),
   class_name("") {}
 

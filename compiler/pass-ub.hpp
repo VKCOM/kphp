@@ -240,7 +240,7 @@ private:
 
   void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData *> &dep_datas) {
     FunctionPtr wait_func = G->get_function("unserialize");
-    if (wait_func.is_null()) {     // когда functions.txt пустой или отключенный для dev
+    if (!wait_func) {     // когда functions.txt пустой или отключенный для dev
       return;
     }
 

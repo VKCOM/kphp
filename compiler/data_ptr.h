@@ -16,8 +16,6 @@ class SrcFile;
 
 class Token;
 
-class FunctionSet;
-
 class Location;
 
 typedef Id<FunctionData> FunctionPtr;
