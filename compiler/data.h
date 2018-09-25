@@ -236,7 +236,7 @@ public:
   }
 
   inline bool is_constructor() const {
-    return class_id.not_null() && class_id->new_function.ptr == this;
+    return class_id.not_null() && &*(class_id->new_function) == this;
   }
 
 private:
@@ -244,9 +244,6 @@ private:
 };
 
 inline bool operator<(FunctionPtr a, FunctionPtr b) {
-  if (a->name == b->name) {
-    return (unsigned long)a.ptr < (unsigned long)b.ptr;
-  }
   return a->name < b->name;
 }
 
@@ -263,7 +260,16 @@ inline bool operator<(const VarPtr &a, const VarPtr &b) {
         return af < bf;
       }
     }
-    return (unsigned long)a.ptr < (unsigned long)b.ptr;
+    af = a->holder_func.not_null();
+    bf = b->holder_func.not_null();
+    if (af || bf) {
+      if (af && bf) {
+        return a->holder_func < b->holder_func;
+      } else {
+        return af < bf;
+      }
+    }
+    return false;
   }
 
   if (a->dependency_level != b->dependency_level) {

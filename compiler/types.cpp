@@ -412,7 +412,7 @@ void TypeData::set_class_type(ClassPtr new_class_type) {
   if (class_type_.is_null()) {
     class_type_ = new_class_type;
     on_changed();
-  } else if (class_type_.ptr != new_class_type.ptr) {
+  } else if (class_type_ != new_class_type) {
     // нельзя в одной переменной/массиве смешивать инстансы разных классов
     set_ptype(tp_Error);
   }

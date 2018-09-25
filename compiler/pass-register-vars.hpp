@@ -189,7 +189,7 @@ public:
     if (it.second == false) {
       VarPtr old_var = it.first->second;
       kphp_error (
-        old_var.ptr == var.ptr,
+        old_var == var,
         dl_pstr("conflict in variable names [%s]", old_var->name.c_str())
       );
     } else {
@@ -485,7 +485,7 @@ public:
           ClassPtr var_class = var_id->class_id;
           ClassPtr klass = G->get_class(namespace_name + "\\" + class_name);
           kphp_assert(klass.not_null());
-          while (klass.not_null() && var_class.ptr != klass.ptr) {
+          while (klass.not_null() && var_class != klass) {
             klass = klass->parent_class;
           }
           kphp_error(klass.not_null(), dl_pstr("Can't access protected field %s", real_name.c_str()));

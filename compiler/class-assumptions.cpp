@@ -65,7 +65,7 @@ void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name,
 
   for (std::vector<Assumption>::iterator i = f->assumptions.begin(); i != f->assumptions.end(); ++i) {
     if (i->var_name == var_name) {
-      if (i->assum_type != assum || i->klass.ptr != klass.ptr)
+      if (i->assum_type != assum || i->klass != klass)
         kphp_error(false, dl_pstr("Assumption for %s()::$%s is ambigulous\n", f->name.c_str(), var_name.c_str()));
       exists = true;
     }
@@ -91,7 +91,7 @@ void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, Cl
 
   for (std::vector<Assumption>::iterator i = c->assumptions.begin(); i != c->assumptions.end(); ++i) {
     if (i->var_name == var_name) {
-      if (i->assum_type != assum || i->klass.ptr != klass.ptr)
+      if (i->assum_type != assum || i->klass != klass)
         kphp_error(false, dl_pstr("Assumption for %s::$%s is ambigulous\n", var_name.c_str(), c->name.c_str()));
       exists = true;
     }

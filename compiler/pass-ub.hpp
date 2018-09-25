@@ -185,7 +185,7 @@ struct FuncCallGraph {
     std::swap(functions, other_functions);
 
     for (int cur_id = 0, i = 0; i < n; i++, cur_id++) {
-      set_index(&functions[i], cur_id);
+      set_index(functions[i], cur_id);
     }
 
     for (int i = 0; i < n; i++) {
@@ -369,7 +369,7 @@ private:
     my_unique(&vars);
     assert ((int)vars.size() == vars_n);
     for (int cur_id = 0, i = 0; i < vars_n; i++, cur_id++) {
-      set_index(&vars[i], cur_id);
+      set_index(vars[i], cur_id);
     }
 
     IdMap<vector<VarPtr>> rev_graph(vars_n), graph(vars_n), ref_vars(vars_n);

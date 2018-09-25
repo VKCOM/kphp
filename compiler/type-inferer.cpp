@@ -72,19 +72,19 @@ void print_why_tinf_occured_error(
   vector<ClassPtr> classes1, classes2;
   errored_type->get_all_class_types_inside(classes1);
   because_of_type->get_all_class_types_inside(classes2);
-  ClassData *mix_class = classes1.empty() ? nullptr : classes1[0].ptr;
-  ClassData *mix_class2 = classes2.empty() ? nullptr : classes2[0].ptr;
+  ClassPtr mix_class = classes1.empty() ? ClassPtr() : classes1[0];
+  ClassPtr mix_class2 = classes2.empty() ? ClassPtr() : classes2[0];
   std::string desc1 = node1->get_description();
   std::string desc2 = node2 ? node2->get_description() : "unknown";
 
-  if (mix_class && mix_class2 && mix_class != mix_class2) {
+  if (mix_class.not_null() && mix_class2.not_null() && mix_class != mix_class2) {
     kphp_error(0, dl_pstr("Type Error: mix classes %s and %s: %s and %s\n",
                           mix_class->name.c_str(), mix_class2->name.c_str(),
                           desc1.c_str(), desc2.c_str()));
 
-  } else if (mix_class || mix_class2) {
+  } else if (mix_class.not_null() || mix_class2.not_null()) {
     kphp_error(0, dl_pstr("Type Error: mix class %s with non-class: %s and %s\n",
-                          mix_class ? mix_class->name.c_str() : mix_class2->name.c_str(),
+                          mix_class.not_null() ? mix_class->name.c_str() : mix_class2->name.c_str(),
                           desc1.c_str(), desc2.c_str()));
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {

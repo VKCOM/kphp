@@ -953,7 +953,7 @@ void CFG::process_function(FunctionPtr function) {
   var_split_data.update_size(var_n);
   for (int var_i = 0; var_i < var_n; var_i++) {
     VarPtr var = splittable_vars[var_i];
-    set_index(&var, var_i);
+    set_index(var, var_i);
     get_var_split(var, true);
   }
 

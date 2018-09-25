@@ -61,13 +61,12 @@ typename DataTraits<IdData>::value_type Id<IdData>::operator[](const IndexType &
 /*** [get|set]_index ***/
 template<class T>
 int get_index(const Id<T> &i) {
-  assert (i.ptr != nullptr);
-  return i.ptr->id;
+  return i->id;
 }
 
 template<class T>
-void set_index(Id<T> *d, int index) {
-  d->ptr->id = index;
+void set_index(Id<T> &d, int index) {
+  d->id = index;
 }
 
 /*** IdMap ***/
@@ -124,7 +123,6 @@ void IdMap<DataType>::renumerate_ids(const vector<int> &new_ids) {
     int new_id = new_ids[i];
     if (new_id >= 0) {
       std::swap(new_data[new_id], data[i]);
-      //set_index (&new_data[new_id], new_id);
     }
   }
 
@@ -156,7 +154,7 @@ void IdGen<IdType>::remove_id_map(IdMapBase *to_remove) {
 
 template<class IdType>
 int IdGen<IdType>::init_id(IdType *to_add) {
-  set_index(to_add, n);
+  set_index(*to_add, n);
 
   if ((n & 0xff) == 0) {
     int real_n = (n | 0xff) + 1;

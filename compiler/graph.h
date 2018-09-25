@@ -11,8 +11,9 @@ struct DataTraits {
 
 /*** Id ***/
 template<class IdData>
-struct Id {
+class Id {
   IdData *ptr;
+public:
   Id();
   explicit Id(IdData *ptr);
   Id(const Id &id);
@@ -27,6 +28,9 @@ struct Id {
   bool operator==(const Id<IdData> &other) const {
     return (unsigned long)ptr == (unsigned long)other.ptr;
   }
+  bool operator!=(const Id<IdData> &other) const {
+    return (unsigned long)ptr != (unsigned long)other.ptr;
+  }
 
   template<class IndexType>
   typename DataTraits<IdData>::value_type operator[](const IndexType &i) const;
@@ -35,10 +39,10 @@ struct Id {
 
 /*** [get|set]_index ***/
 template<class T>
-int get_index(const T &i);
+int get_index(const Id<T> &i);
 
 template<class T>
-void set_index(T &d, int index);
+void set_index(Id<T> &d, int index);
 
 /*** IdMapBase ***/
 struct IdMapBase {
