@@ -250,10 +250,6 @@ inline bool operator<(FunctionPtr a, FunctionPtr b) {
   return a->name < b->name;
 }
 
-inline bool operator==(const FunctionPtr &a, const FunctionPtr &b) {
-  return (unsigned long)a.ptr == (unsigned long)b.ptr;
-}
-
 inline bool operator<(const VarPtr &a, const VarPtr &b) {
   int cmp_res = a->name.compare(b->name);
 
@@ -276,11 +272,6 @@ inline bool operator<(const VarPtr &a, const VarPtr &b) {
 
   return cmp_res < 0;
 }
-
-inline bool operator==(const VarPtr &a, const VarPtr &b) {
-  return (unsigned long)a.ptr == (unsigned long)b.ptr;
-}
-
 
 class DefineData {
 public:

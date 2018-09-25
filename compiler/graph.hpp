@@ -46,32 +46,6 @@ inline string &Id<IdData>::str() {
   return ptr->str_val;
 }
 
-/*
-template <class IdData>
-bool Id<IdData>::operator < (const Id <IdData> &b) {
-  return get_index (*this) < get_index (b);
-}
-template <class IdData>
-bool Id<IdData>::operator == (const Id <IdData> &b) {
-  return get_index (*this) < get_index (b);
-} */
-
-
-template<class IdData>
-bool operator<(const Id<IdData> &a, const Id<IdData> &b) {
-  return get_index(a) < get_index(b);
-}
-
-template<class IdData>
-bool operator==(const Id<IdData> &a, const Id<IdData> &b) {
-  bool fa = a.is_null();
-  bool fb = b.is_null();
-  if (fa || fb) {
-    return fa && fb;
-  }
-  return get_index(a) == get_index(b);
-}
-
 template<class IdData>
 void Id<IdData>::clear() {
   delete ptr; //TODO: be very-very carefull with it
@@ -249,60 +223,6 @@ void IdGen<IdType>::delete_ids(const vector<IndexType> &to_del) {
     set_index(ids[i], i);
   }
 }
-
-/*** XNameToId ***/
-template<typename T>
-XNameToId<T>::XNameToId(IdGen<T> *new_id_gen) {
-  init(new_id_gen);
-}
-
-template<typename T>
-void XNameToId<T>::clear() {
-  id_gen = nullptr;
-  name_to_id.clear();
-}
-
-template<typename T>
-void XNameToId<T>::init(IdGen<T> *new_id_gen) {
-  clear();
-  id_gen = new_id_gen;
-}
-
-template<typename T>
-T XNameToId<T>::get_id(const string &name) {
-  auto res = name_to_id.find(name);
-  if (res == name_to_id.end()) {
-    return T();
-  }
-  return res->second;
-}
-
-template<typename T>
-bool XNameToId<T>::add_name(const string &name, T *new_id) {
-  T *id = &name_to_id[name];
-  if (id->is_null()) {
-    id_gen->init_id(new_id);
-    *id = *new_id;
-  } else {
-    return false;
-  }
-  return true;
-}
-
-template<typename T>
-T *XNameToId<T>::operator[](int id) {
-  return id_gen[id];
-}
-
-template<typename T>
-set<T> XNameToId<T>::get_ids() {
-  set<T> res;
-  for (const auto &i : name_to_id) {
-    res.insert(i.second);
-  }
-  return res;
-}
-
 
 /*** Range ***/
 template<class Iterator>

@@ -24,18 +24,14 @@ struct Id {
 
   IdData *operator->() const;
 
-  //bool operator < (const Id <IdData>&);
-  //bool operator == (const Id <IdData>&);
+  bool operator==(const Id<IdData> &other) const {
+    return (unsigned long)ptr == (unsigned long)other.ptr;
+  }
 
   template<class IndexType>
   typename DataTraits<IdData>::value_type operator[](const IndexType &i) const;
   string &str();
 };
-
-template<class T>
-bool operator<(const Id<T> &a, const Id<T> &b);
-template<class T>
-bool operator==(const Id<T> &a, const Id<T> &b);
 
 /*** [get|set]_index ***/
 template<class T>
@@ -98,26 +94,6 @@ struct IdGen {
   template<class IndexType>
   void delete_ids(const vector<IndexType> &to_del);
 };
-
-/*** XNameToId ***/
-template<typename T>
-class XNameToId {
-public:
-  explicit XNameToId(IdGen<T> *id_gen);
-  void clear();
-  void init(IdGen<T> *id_gen);
-
-  T get_id(const string &name);
-  bool add_name(const string &name, T *new_id);
-  T *operator[](int id);
-
-  set<T> get_ids();
-private:
-  map<string, T> name_to_id;
-  IdGen<T> *id_gen;
-  DISALLOW_COPY_AND_ASSIGN (XNameToId);
-};
-
 
 /*** Range ***/
 template<class Iterator>
