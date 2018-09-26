@@ -523,13 +523,7 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
 }
 
 static __inline__ void *get_sp(void) {
-  void *sp;
-#if defined(__i386__)
-  __asm__ volatile ("movl %%esp, %[r]" : [r] "=r" (sp));
-#elif defined(__x86_64__)
-  __asm__ volatile ("movq %%rsp, %[r]" :[r] "=r"(sp));
-#endif
-  return sp;
+  return __builtin_frame_address(0);
 }
 
 void check_stack_overflow(void) __attribute__ ((noinline));
