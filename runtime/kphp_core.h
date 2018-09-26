@@ -618,6 +618,9 @@ inline int f$count(const OrFalse<T> &a);
 template<class T>
 inline int f$count(const array<T> &a);
 
+template<class ...Args>
+inline int f$count(const tuple<Args...> &a);
+
 template<class T>
 inline int f$count(const T &v);
 
@@ -1661,6 +1664,11 @@ int f$count(const OrFalse<T> &a) {
 template<class T>
 int f$count(const array<T> &a) {
   return a.count();
+}
+
+template<class ...Args>
+inline int f$count(const tuple<Args...> &a __attribute__ ((unused))) {
+  return (int)std::tuple_size<tuple<Args...>>::value;
 }
 
 template<class T>
