@@ -2,7 +2,7 @@
 
 namespace Classes;
 
-class Z2Fail
+class Z2Empty
 {
   const Z = 'Z';
 
