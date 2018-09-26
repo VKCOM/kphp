@@ -1,10 +1,9 @@
 #pragma once
 
-#include "compiler/common.h"
-
 #include "compiler/bicycle.h"
-#include "compiler/stage.h"
+#include "compiler/common.h"
 #include "compiler/debug.h"
+#include "compiler/stage.h"
 
 /*** Function Pass ***/
 class FunctionPassBase {
@@ -136,8 +135,7 @@ class FunctionPassF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     FunctionPassT pass;
     run_function_pass(function, &pass);
     if (stage::has_error()) {

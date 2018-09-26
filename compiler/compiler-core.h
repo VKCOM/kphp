@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <ftw.h>
+#include <functional>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>

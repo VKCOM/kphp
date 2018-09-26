@@ -1,19 +1,24 @@
+#include "compiler/compiler.h"
+
 #include <dirent.h>
 #include <fcntl.h>
 #include <ftw.h>
+#include <functional>
+#include <mutex>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
-#include <functional>
-#include <mutex>
+
+#include "common/crc32.h"
+#include "common/type_traits/function_traits.h"
+#include "common/version-string.h"
 
 #include "compiler/analyzer.h"
 #include "compiler/bicycle.h"
 #include "compiler/cfg.h"
 #include "compiler/code-gen.h"
 #include "compiler/compiler-core.h"
-#include "compiler/compiler.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data_ptr.h"
 #include "compiler/function-pass.h"
@@ -30,16 +35,13 @@
 #include "compiler/stage.h"
 #include "compiler/type-inferer.h"
 #include "compiler/utils.h"
-#include "common/crc32.h"
-#include "common/version-string.h"
 
 /*** Load file ***/
 class LoadFileF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(SrcFilePtr file, OutputStream &os) {
+  void execute(SrcFilePtr file, DataStream<SrcFilePtr> &os) {
     AUTO_PROF (load_files);
     stage::set_name("Load file");
     stage::set_file(file);
@@ -70,8 +72,7 @@ class FileToTokensF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(SrcFilePtr file, OutputStream &os) {
+  void execute(SrcFilePtr file, DataStream<FileAndTokens> &os) {
     AUTO_PROF (lexer);
     stage::set_name("Split file to tokens");
     stage::set_file(file);
@@ -98,8 +99,7 @@ class ParseF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FileAndTokens file_and_tokens, OutputStream &os) {
+  void execute(FileAndTokens file_and_tokens, DataStream<FunctionPtr> &os) {
     AUTO_PROF (gentree);
     stage::set_name("Parse file");
     stage::set_file(file_and_tokens.file);
@@ -115,8 +115,7 @@ class SplitSwitchF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     SplitSwitchPass split_switch;
     run_function_pass(function, &split_switch);
 
@@ -461,8 +460,7 @@ public:
     return "Process defines concatenation";
   }
 
-  template<class OutputStreamT>
-  void execute(FunctionPtr function, OutputStreamT &os __attribute__((unused))) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os __attribute__((unused))) {
     AUTO_PROF (preprocess_defines);
     CollectDefinesToVectorPass pass;
     run_function_pass(function, &pass);
@@ -474,8 +472,7 @@ public:
     all_fun << function;
   }
 
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os) {
+  void on_finish(DataStream<FunctionPtr> &os) {
     AUTO_PROF (preprocess_defines_finish);
     stage::set_name("Preprocess defines");
     stage::set_file(SrcFilePtr());
@@ -939,8 +936,7 @@ class PrepareFunctionF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     stage::set_name("Prepare function");
     stage::set_function(function);
     kphp_assert (function);
@@ -1874,8 +1870,7 @@ class CalcRLF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     AUTO_PROF (calc_rl);
     stage::set_name("Calc RL");
     stage::set_function(function);
@@ -2123,8 +2118,7 @@ class CheckReturnsF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionAndCFG function_and_cfg, OutputStream &os) {
+  void execute(FunctionAndCFG function_and_cfg, DataStream<FunctionAndCFG> &os) {
     CheckReturnsPass pass;
     run_function_pass(function_and_cfg.function, &pass);
     if (stage::has_error()) {
@@ -2138,8 +2132,7 @@ class CFGBeginF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
     AUTO_PROF (CFG);
     stage::set_name("Calc control flow graph");
     stage::set_function(function);
@@ -2214,8 +2207,7 @@ public:
     tinf::register_inferer(new tinf::TypeInferer());
   }
 
-  template<class OutputStreamT>
-  void execute(FunctionAndCFG input, OutputStreamT &os) {
+  void execute(FunctionAndCFG input, DataStream<FunctionAndCFG> &os) {
     AUTO_PROF (tinf_infer_gen_dep);
     CollectMainEdgesCallback callback(tinf::get_inferer());
     CollectMainEdgesPass pass(&callback);
@@ -2223,8 +2215,7 @@ public:
     os << input;
   }
 
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os __attribute__((unused))) {
+  void on_finish(DataStream<FunctionAndCFG> &os __attribute__((unused))) {
     //FIXME: rebalance Queues
     vector<Task *> tasks = tinf::get_inferer()->get_tasks();
     for (int i = 0; i < (int)tasks.size(); i++) {
@@ -2241,13 +2232,11 @@ public:
     tmp_stream.set_sink(true);
   }
 
-  template<class OutputStreamT>
-  void execute(FunctionAndCFG input, OutputStreamT &os __attribute__((unused))) {
+  void execute(FunctionAndCFG input, DataStream<FunctionAndCFG> &os __attribute__((unused))) {
     tmp_stream << input;
   }
 
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os) {
+  void on_finish(DataStream<FunctionAndCFG> &os) {
     tinf::get_inferer()->check_restrictions();
     tinf::get_inferer()->finish();
 
@@ -2262,8 +2251,7 @@ class CFGEndF {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionAndCFG data, OutputStream &os) {
+  void execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
     AUTO_PROF (CFG_End);
     stage::set_name("Control flow graph. End");
     stage::set_function(data.function);
@@ -2387,8 +2375,7 @@ public:
     tmp_stream.set_sink(true);
   }
 
-  template<class OutputStreamT>
-  void execute(FunctionPtr function, OutputStreamT &os __attribute__((unused))) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os __attribute__((unused))) {
     CalcFuncDepPass pass;
     run_function_pass(function, &pass);
     DepData *data = new DepData();
@@ -2397,8 +2384,7 @@ public:
   }
 
 
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os) {
+  void on_finish(DataStream<FunctionPtr> &os) {
     stage::die_if_global_errors();
 
     AUTO_PROF (calc_bad_vars);
@@ -2417,8 +2403,7 @@ class CheckUBF {
 public:
   DUMMY_ON_FINISH;
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     AUTO_PROF (check_ub);
     stage::set_name("Check for undefined behaviour");
     stage::set_function(function);
@@ -2440,8 +2425,7 @@ class AnalyzerF {
 public:
   DUMMY_ON_FINISH;
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     AUTO_PROF (check_ub);
     stage::set_name("Try to detect common errors");
     stage::set_function(function);
@@ -2845,8 +2829,7 @@ public:
     tmp_stream.set_sink(true);
   }
 
-  template<class OutputStreamT>
-  void execute(FunctionPtr input, OutputStreamT &os __attribute__((unused))) {
+  void execute(FunctionPtr input, DataStream<WriterData *> &os __attribute__((unused))) {
     tmp_stream << input;
   }
 
@@ -2854,8 +2837,7 @@ public:
     return cnt_global_vars > 1000 ? 64 : 1;
   }
 
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os) {
+  void on_finish(DataStream<WriterData *> &os) {
     AUTO_PROF (code_gen);
 
     stage::set_name("GenerateCode");
@@ -2877,7 +2859,7 @@ public:
     G->init_dest_dir();
     G->load_index();
 
-    W.init(new WriterCallback<OutputStreamT>(os));
+    W.init(new WriterCallback<DataStream<WriterData *>>(os));
 
     //TODO: parallelize;
     for (const auto &fun : xall) {
@@ -3007,8 +2989,7 @@ class WriteFilesF {
 public:
   DUMMY_ON_FINISH;
 
-  template<class OutputStreamT>
-  void execute(WriterData *data, OutputStreamT &os __attribute__((unused))) {
+  void execute(WriterData *data, EmptyStream &os __attribute__((unused))) {
     AUTO_PROF (end_write);
     stage::set_name("Write files");
     string dir = G->cpp_dir;
@@ -3121,8 +3102,7 @@ class CollectClassF {
 public:
   DUMMY_ON_FINISH;
 
-  template<class OutputStreamT>
-  void execute(FunctionPtr data, OutputStreamT &os) {
+  void execute(FunctionPtr data, DataStream<FunctionPtr> &os) {
     stage::set_name("Collect classes");
 
     if (data->class_id && data->class_id->init_function == data) {
@@ -3285,8 +3265,7 @@ class CheckInferredInstances {
 public:
   DUMMY_ON_FINISH
 
-  template<class OutputStream>
-  void execute(FunctionPtr function, OutputStream &os) {
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     stage::set_name("Check inferred instances");
     stage::set_function(function);
 
@@ -3399,11 +3378,22 @@ public:
   }
 };
 
-template<class PipeFunctionT, class InputStreamT, class OutputStreamT>
-using PipeDataStream = Pipe<PipeFunctionT, DataStream<InputStreamT>, DataStream<OutputStreamT>>;
+template<typename F>
+using ExecuteFunctionArguments = vk::FunctionTraits<decltype(&F::execute)>;
+template<typename F>
+using ExecuteFunctionInput = typename ExecuteFunctionArguments<F>::template Argument<0>;
+template<typename F>
+using ExecuteFunctionOutput = typename std::remove_reference<typename ExecuteFunctionArguments<F>::template Argument<1>>::type;
+
+template<class PipeFunctionT>
+using PipeStream = Pipe<
+  PipeFunctionT,
+  DataStream<ExecuteFunctionInput<PipeFunctionT>>,
+  ExecuteFunctionOutput<PipeFunctionT>
+>;
 
 template<class Pass>
-using FunctionPassPipe = PipeDataStream<FunctionPassF<Pass>, FunctionPtr, FunctionPtr>;
+using FunctionPassPipe = PipeStream<FunctionPassF<Pass>>;
 
 bool compiler_execute(KphpEnviroment *env) {
   double st = dl_time();
@@ -3462,31 +3452,27 @@ bool compiler_execute(KphpEnviroment *env) {
     }
 
 
-    PipeDataStream<LoadFileF, SrcFilePtr, SrcFilePtr> load_file_pipe;
-    PipeDataStream<FileToTokensF, SrcFilePtr, FileAndTokens> file_to_tokens_pipe;
-    PipeDataStream<ParseF, FileAndTokens, FunctionPtr> parse_pipe;
-    PipeDataStream<SplitSwitchF, FunctionPtr, FunctionPtr> split_switch_pipe;
+    PipeStream<LoadFileF> load_file_pipe;
+    PipeStream<FileToTokensF> file_to_tokens_pipe;
+    PipeStream<ParseF> parse_pipe;
+    PipeStream<SplitSwitchF> split_switch_pipe;
     FunctionPassPipe<CreateSwitchForeachVarsF> create_switch_foreach_vars_pipe;
 
-    Pipe<CollectRequiredF,
-      DataStream<FunctionPtr>,
-      CollectRequiredF::OStreamT> collect_required_pipe;
+    PipeStream<CollectRequiredF> collect_required_pipe;
 
-    PipeDataStream<CollectClassF, FunctionPtr, FunctionPtr> collect_classes_pipe;
+    PipeStream<CollectClassF> collect_classes_pipe;
     FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
-    PipeDataStream<PreprocessDefinesConcatenationF, FunctionPtr, FunctionPtr> process_defines_concat;
+    PipeStream<PreprocessDefinesConcatenationF> process_defines_concat;
     FunctionPassPipe<CollectDefinesPass> collect_defines_pipe;
-    PipeDataStream<PrepareFunctionF, FunctionPtr, FunctionPtr> prepare_function_pipe;
+    PipeStream<PrepareFunctionF> prepare_function_pipe;
     FunctionPassPipe<RegisterDefinesPass> register_defines_pipe;
 
     FunctionPassPipe<PreprocessVarargPass> preprocess_vararg_pipe;
     FunctionPassPipe<PreprocessEq3Pass> preprocess_eq3_pipe;
 
-    Pipe<PreprocessFunctionF,
-      DataStream<FunctionPtr>,
-      PreprocessFunctionCPass::OStreamT> preprocess_function_c_pipe;
-    PipeDataStream<CalcActualCallsEdgesF, FunctionPtr, FunctionAndEdges> calc_actual_calls_edges_pipe;
-    PipeDataStream<FilterOnlyActuallyUsedFunctionsF, FunctionAndEdges, FunctionPtr> filter_only_actually_used_pipe;
+    PipeStream <PreprocessFunctionF> preprocess_function_c_pipe;
+    PipeStream<CalcActualCallsEdgesF> calc_actual_calls_edges_pipe;
+    PipeStream<FilterOnlyActuallyUsedFunctionsF> filter_only_actually_used_pipe;
 
     FunctionPassPipe<PreprocessBreakPass> preprocess_break_pipe;
     FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
@@ -3496,25 +3482,25 @@ bool compiler_execute(KphpEnviroment *env) {
     FunctionPassPipe<RegisterVariables> register_variables_pipe;
 
     FunctionPassPipe<CheckFunctionCallsPass> check_func_calls_pipe;
-    PipeDataStream<CalcRLF, FunctionPtr, FunctionPtr> calc_rl_pipe;
-    PipeDataStream<CFGBeginF, FunctionPtr, FunctionAndCFG> cfg_begin_pipe;
-    PipeDataStream<CheckReturnsF, FunctionAndCFG, FunctionAndCFG> check_returns_pipe;
-    PipeDataStream<TypeInfererF, FunctionAndCFG, FunctionAndCFG> type_inferer_pipe;
-    PipeDataStream<TypeInfererEndF, FunctionAndCFG, FunctionAndCFG> type_inferer_end_pipe;
-    PipeDataStream<CFGEndF, FunctionAndCFG, FunctionPtr> cfg_end_pipe;
-    PipeDataStream<CheckInferredInstances, FunctionPtr, FunctionPtr> check_inferred_instances_pipe;
+    PipeStream<CalcRLF> calc_rl_pipe;
+    PipeStream<CFGBeginF> cfg_begin_pipe;
+    PipeStream<CheckReturnsF> check_returns_pipe;
+    PipeStream<TypeInfererF> type_inferer_pipe;
+    PipeStream<TypeInfererEndF> type_inferer_end_pipe;
+    PipeStream<CFGEndF> cfg_end_pipe;
+    PipeStream<CheckInferredInstances> check_inferred_instances_pipe;
     FunctionPassPipe<OptimizationPass> optimization_pipe;
     FunctionPassPipe<CalcValRefPass> calc_val_ref_pipe;
 
-    PipeDataStream<CalcBadVarsF, FunctionPtr, FunctionPtr> calc_bad_vars_pipe;
-    PipeDataStream<CheckUBF, FunctionPtr, FunctionPtr> check_ub_pipe;
+    PipeStream<CalcBadVarsF> calc_bad_vars_pipe;
+    PipeStream<CheckUBF> check_ub_pipe;
     FunctionPassPipe<ExtractResumableCallsPass> extract_resumable_calls_pipe;
     FunctionPassPipe<ExtractAsyncPass> extract_async_pipe;
-    PipeDataStream<AnalyzerF, FunctionPtr, FunctionPtr> analyzer_pipe;
+    PipeStream<AnalyzerF> analyzer_pipe;
     FunctionPassPipe<CheckAccessModifiers> check_access_modifiers_pass;
     FunctionPassPipe<FinalCheckPass> final_check_pass;
-    PipeDataStream<CodeGenF, FunctionPtr, WriterData *> code_gen_pipe;
-    Pipe<WriteFilesF, DataStream<WriterData *>, EmptyStream> write_files_pipe(false);
+    PipeStream<CodeGenF> code_gen_pipe;
+    PipeStream<WriteFilesF> write_files_pipe(false);
 
 
     load_file_pipe.set_input_stream(&file_stream);

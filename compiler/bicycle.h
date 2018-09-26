@@ -1,8 +1,9 @@
 #pragma once
 
+#include "common/algorithms/find.h"
+
 #include "compiler/common.h"
 #include "compiler/stage.h"
-#include "common/algorithms/find.h"
 
 extern volatile int bicycle_counter;
 
@@ -475,7 +476,7 @@ private:
 
 public:
   template<size_t data_id>
-  using NthDataType = typename std::tuple_element<data_id, std::tuple<DataTypes...>>::type;
+  using NthDataType = vk::get_nth_type<data_id, DataTypes...>;
 
   template<size_t stream_id>
   decltype(std::get<stream_id>(streams_)) &project_to_nth_data_stream() {
