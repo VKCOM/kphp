@@ -62,7 +62,7 @@ struct IdMap : public IdMapBase {
 
   typedef typename vector<DataType>::iterator iterator;
   IdMap();
-  IdMap(int size, DataType val = DataType());
+  explicit IdMap(int size, DataType val = DataType());
   template<class IndexType>
   DataType &operator[](const IndexType &i);
   template<class IndexType>

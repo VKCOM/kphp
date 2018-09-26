@@ -57,7 +57,15 @@ public:
   pair<SrcFilePtr, bool> require_file(const string &file_name, const string &context, DataStream<SrcFilePtr> &os);
 
   void require_function(const string &name, DataStream<FunctionPtr> &os);
-  void operate_on_function_locking(const string &name, std::function<void(FunctionPtr&)> callback);
+
+  template <class CallbackT>
+  void operate_on_function_locking(const string &name, CallbackT callback) {
+    static_assert(std::is_constructible<std::function<void(FunctionPtr&)>, CallbackT>::value, "invalid callback signature");
+    
+    HT<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+    AutoLocker<Lockable *> locker(node);
+    callback(node->data);
+  }
 
   FunctionPtr register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os);
   ClassPtr register_class(const ClassInfo &info);

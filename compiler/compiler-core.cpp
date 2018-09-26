@@ -320,12 +320,6 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
   return function;
 }
 
-void CompilerCore::operate_on_function_locking(const string &name, std::function<void(FunctionPtr &)> callback) {
-  HT<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
-  AutoLocker<Lockable *> locker(node);
-  callback(node->data);
-}
-
 ClassPtr CompilerCore::register_class(const ClassInfo &info) {
   ClassPtr class_id = create_class(info);
   HT<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(class_id->name));

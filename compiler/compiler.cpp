@@ -1741,15 +1741,17 @@ public:
     return v;
   }
 
-  void on_enter_edge(VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex, LocalT *from_local __attribute__ ((unused))) {
-    if (vertex->type() == op_try) {
-      VertexAdaptor<op_try> try_v = vertex.as<op_try>();
-      if (&*dest_vertex == &*try_v->try_cmd()) {
-        inside_try++;
-      } else if (&*dest_vertex == &*try_v->catch_cmd()) {
-        inside_try--;
-      }
+  template<class VisitT>
+  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
+    if (v->type() == op_try) {
+      VertexAdaptor<op_try> try_v = v.as<op_try>();
+      inside_try++;
+      visit(try_v->try_cmd());
+      inside_try--;
+      visit(try_v->catch_cmd());
+      return true;
     }
+    return false;
   }
 
   vector<FunctionAndEdges::EdgeInfo> *get_edges() {
@@ -2881,9 +2883,9 @@ public:
     for (const auto &fun : xall) {
       prepare_generate_function(fun);
     }
-    for (vector<ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-      if (*c && (*c)->was_constructor_invoked) {
-        prepare_generate_class(*c);
+    for (const auto &c : all_classes) {
+      if (c && c->was_constructor_invoked) {
+        prepare_generate_class(c);
       }
     }
 
@@ -2903,9 +2905,9 @@ public:
       W << Async(FunctionCpp(function));
     }
 
-    for (vector<ClassPtr>::const_iterator c = all_classes.begin(); c != all_classes.end(); ++c) {
-      if (*c && (*c)->was_constructor_invoked) {
-        W << Async(ClassDeclaration(*c));
+    for (const auto &c : all_classes) {
+      if (c && c->was_constructor_invoked) {
+        W << Async(ClassDeclaration(c));
       }
     }
 
@@ -3173,30 +3175,29 @@ class FilterOnlyActuallyUsedFunctionsF {
   void calc_throws_having_call_edges(vector<FunctionAndEdges> &all) {
     vector<FunctionPtr> from;
 
-    for (auto &i : all) {
-      if (i.function->root->throws_flag) {
-        from.push_back(i.function);
+    for (auto &f_and_e : all) {
+      if (f_and_e.function->root->throws_flag) {
+        from.push_back(f_and_e.function);
       }
     }
 
-    IdMap<vector<FunctionPtr>> graph;
-    graph.update_size((int)all.size());
-    for (auto &i : all) {
-      for (auto &j : *i.edges) {
-        if (!j.inside_try) {
-          graph[j.called_f].push_back(i.function);
+    IdMap<vector<FunctionPtr>> graph((int)all.size());
+    for (auto &f_and_e : all) {
+      for (auto &edge : *f_and_e.edges) {
+        if (!edge.inside_try) {
+          graph[edge.called_f].push_back(f_and_e.function);
         }
       }
     }
 
-    for (auto &i : from) {
-      calc_throws_dfs(i, graph);
+    for (auto &f : from) {
+      calc_throws_dfs(f, graph);
     }
   }
 
   void calc_throws_dfs(FunctionPtr from, IdMap<vector<FunctionPtr>> &graph) {
     throws_func_cnt++;
-    for (FunctionPtr to : graph[from]) {
+    for (const FunctionPtr &to : graph[from]) {
       if (!to->root->throws_flag) {
         to->root->throws_flag = true;
         calc_throws_dfs(to, graph);
@@ -3205,38 +3206,32 @@ class FilterOnlyActuallyUsedFunctionsF {
   }
 
   void calc_actually_used_having_call_edges(vector<FunctionAndEdges> &all, DataStream<FunctionPtr> &os) {
-    std::sort(all.begin(), all.end());      // т.к. часто приходится искать, будем делать lower_bound
+    IdMap<vector<FunctionAndEdges::EdgeInfo>> graph((int)all.size());
+    IdMap<int> used((int)all.size());
 
-    vector<int> queue;
-    queue.reserve(all.size());
-    vector<bool> actually_called(all.size());
-    
-    for (int i = 0; i < (int)all.size(); ++i) {
-      FunctionPtr f = all[i].function;
-      if (f->type() == FunctionData::func_global) {
-        os << f;
-        actually_called[f->id] = true;
-        queue.push_back(i);
-      }
+    for (const auto &f_and_e : all) {
+      graph[f_and_e.function] = std::move(*f_and_e.edges);
+      delete f_and_e.edges;
     }
 
-    while (actually_called_func_cnt < queue.size()) {
-      int cur_idx = queue[actually_called_func_cnt++];
-      for (auto edge : *all[cur_idx].edges) {
-        FunctionPtr called = edge.called_f;
+    for (const auto &f_and_e : all) {
+      if (f_and_e.function->type() == FunctionData::func_global && !used[f_and_e.function]) {
+        calc_actually_used_dfs(f_and_e.function, graph, used, os);
+      }
+    }
+  }
 
-        if (!actually_called[called->id]) {              // id < all.size() гарантированно, т.к. они из all и присваивались
-          actually_called[called->id] = true;
-          os << called;
+  void calc_actually_used_dfs(FunctionPtr from, IdMap<vector<FunctionAndEdges::EdgeInfo>> &graph, IdMap<int> &used, DataStream<FunctionPtr> &os) {
+    actually_called_func_cnt++;
+    used[from] = 1;
+    os << from;
 
-          auto called_pos = std::lower_bound(all.begin(), all.end(), FunctionAndEdges(called, nullptr));
-          kphp_assert(called_pos->function == called);
-          queue.push_back(int(called_pos - all.begin()));   // idx в массиве all
-        }
-
-        if (called->is_constructor()) {
-          called->class_id->was_constructor_invoked = true;
-        }
+    if (from->is_constructor()) {
+      from->class_id->was_constructor_invoked = true;
+    }
+    for (const auto &to : graph[from]) {
+      if (!used[to.called_f]) {
+        calc_actually_used_dfs(to.called_f, graph, used, os);
       }
     }
   }
@@ -3253,16 +3248,16 @@ public:
   void on_finish(DataStream<FunctionPtr> &os) {
     vector<FunctionAndEdges> all = tmp_stream.get_as_vector();
 
-    stage::set_name("Calc throw");
-    stage::set_file(SrcFilePtr());
-    stage::die_if_global_errors();
-    AUTO_PROF(calc_throws);
-
     // присваиваем FunctionData::id
     int cur_id = -1;
     for (auto &i : all) {
       set_index(i.function, ++cur_id);
     }
+
+    stage::set_name("Calc throw");
+    stage::set_file(SrcFilePtr());
+    stage::die_if_global_errors();
+    AUTO_PROF(calc_throws);
 
     // устанавливаем throws_flag у функций, которые вызывают те, которые делают явный throw
     calc_throws_having_call_edges(all);
@@ -3273,15 +3268,12 @@ public:
     AUTO_PROF(calc_actual_calls);
 
     // вычисляем реально достижимые функции, и по мере вычисления прокидываем в os
+    // должен идти последним
     calc_actually_used_having_call_edges(all, os);
 
     stage::die_if_global_errors();
     //printf("There are %d functions that are really reached in code\n", actually_called_func_cnt);
     //printf("There are %d functions that can potentially throw an exception\n", throws_func_cnt);
-
-    for (auto &i : all) {
-      delete i.edges;
-    }
   }
 };
 
