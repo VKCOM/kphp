@@ -3195,7 +3195,10 @@ class FilterOnlyActuallyUsedFunctionsF {
     }
 
     for (const auto &f_and_e : all) {
-      if (f_and_e.function->type() == FunctionData::func_global && !used[f_and_e.function]) {
+      bool should_be_used_apriori =
+         f_and_e.function->type() == FunctionData::func_global ||
+        (f_and_e.function->type() == FunctionData::func_extern && f_and_e.function->name == "wait");
+      if (should_be_used_apriori && !used[f_and_e.function]) {
         calc_actually_used_dfs(f_and_e.function, graph, used, os);
       }
     }
