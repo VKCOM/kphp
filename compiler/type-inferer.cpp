@@ -170,7 +170,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   tinf::ExprNode *expr_node = dynamic_cast <tinf::ExprNode *> (node);
   if (expr_node != nullptr) {
     VertexPtr v = expr_node->get_expr();
-    if (v->type() == op_index && isset_is_dangerous(isset_flags, node->get_type())) {
+    if (v->type() == op_index && tinf::get_type(v.as<op_index>()->array())->ptype() != tp_tuple && isset_is_dangerous(isset_flags, node->get_type())) {
       node->isset_was = -1;
       find_dangerous_isset_warning(*bt, node, "[index]");
       return true;
