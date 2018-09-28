@@ -1,9 +1,9 @@
-#pragma once
+#include "compiler/pipes/split-switch.h"
 
-#include "compiler/compiler-core.h"
+#include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 
-/*** Replace cases in big global functions with functions call ***/
 class SplitSwitchPass : public FunctionPassBase {
 private:
   AUTO_PROF (split_switch);
@@ -184,3 +184,19 @@ public:
   }
 };
 
+void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  SplitSwitchPass split_switch;
+  run_function_pass(function, &split_switch);
+
+  for (VertexPtr new_function : split_switch.get_new_functions()) {
+    G->register_function(FunctionInfo(new_function, function->namespace_name,
+                                      function->class_name, function->class_context_name, function->namespace_uses,
+                                      function->class_extends, false, access_nonmember), os);
+  }
+
+  if (stage::has_error()) {
+    return;
+  }
+
+  os << function;
+}

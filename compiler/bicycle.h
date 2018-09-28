@@ -241,8 +241,6 @@ public:
   virtual void on_finish() = 0;
 };
 
-#define DUMMY_ON_FINISH template <class OutputStreamT> void on_finish (OutputStreamT &os __attribute__((unused))) {}
-
 class TaskPull;
 
 class OneThreadScheduler : public SchedulerBase {
@@ -689,6 +687,7 @@ public:
   F (calc_func_dep)\
   F (calc_bad_vars)\
   F (check_ub)\
+  F (analizer)\
   F (extract_resumable_calls)\
   F (extract_async)\
   F (check_access_modifiers)\

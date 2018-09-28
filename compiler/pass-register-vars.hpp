@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compiler/compiler-core.h"
-#include "compiler/analyzer.h"
 #include "compiler/gentree.h"
 
 /*** Replace constant expressions with const variables ***/

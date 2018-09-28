@@ -1,7 +1,8 @@
-#include "compiler/pass-rl.h"
+#include "compiler/pipes/calc-rl.h"
 
 #include "compiler/data.h"
-#include "compiler/stage.h"
+
+void rl_calc(VertexPtr root, RLValueType expected_rl_type);
 
 void rl_none_calc(VertexPtr root, int except) {
   int ii = 0;
@@ -325,4 +326,18 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
     kphp_fail();
       break;
   }
+}
+
+void CalcRLF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  AUTO_PROF (calc_rl);
+  stage::set_name("Calc RL");
+  stage::set_function(function);
+
+  rl_calc(function->root, val_none);
+
+  if (stage::has_error()) {
+    return;
+  }
+
+  os << function;
 }

@@ -1,98 +1,7 @@
-#pragma once
-#ifndef __PASS_UB_CPP__
+#include "compiler/pipes/calc-bad-vars.h"
 
 #include "compiler/compiler-core.h"
-
-struct DepData {
-  vector<FunctionPtr> dep;
-  vector<VarPtr> used_global_vars;
-
-  vector<VarPtr> used_ref_vars;
-  vector<std::pair<VarPtr, VarPtr>> ref_ref_edges;
-  vector<std::pair<VarPtr, VarPtr>> global_ref_edges;
-
-  vector<FunctionPtr> forks;
-};
-
-inline void swap(DepData &a, DepData &b) {
-  swap(a.dep, b.dep);
-  swap(a.used_global_vars, b.used_global_vars);
-  swap(a.used_ref_vars, b.used_ref_vars);
-  swap(a.ref_ref_edges, b.ref_ref_edges);
-  swap(a.global_ref_edges, b.global_ref_edges);
-  swap(a.forks, b.forks);
-}
-
-class CalcFuncDepPass : public FunctionPassBase {
-private:
-  AUTO_PROF (calc_func_dep);
-  DepData data;
-public:
-  string get_description() {
-    return "Calc function depencencies";
-  }
-
-  bool check_function(FunctionPtr function) {
-    return default_check_function(function) && function->type() != FunctionData::func_extern;
-  }
-
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local __attribute__((unused))) {
-    //NB: There is no user functions in default values of any kind.
-    if (vertex->type() == op_func_call) {
-      VertexAdaptor<op_func_call> call = vertex;
-      FunctionPtr other_function = call->get_func_id();
-      data.dep.push_back(other_function);
-      if (other_function->type() != FunctionData::func_extern && !other_function->varg_flag) {
-        int ii = 0;
-        for (auto val : call->args()) {
-          VarPtr to_var = other_function->param_ids[ii];
-          if (to_var->is_reference) { //passed as reference
-            while (val->type() == op_index) {
-              val = val.as<op_index>()->array();
-            }
-            kphp_assert (val->type() == op_var || val->type() == op_instance_prop);
-            VarPtr from_var = val->get_var_id();
-            if (from_var->type() == VarData::var_global_t) {
-              data.global_ref_edges.push_back(std::make_pair(from_var, to_var));
-            } else if (from_var->is_reference) {
-              data.ref_ref_edges.push_back(std::make_pair(from_var, to_var));
-            }
-          }
-          ii++;
-        }
-      }
-    } else if (vertex->type() == op_func_ptr) {
-      data.dep.push_back(vertex.as<op_func_ptr>()->get_func_id());
-    } else if (vertex->type() == op_constructor_call) {
-      data.dep.push_back(vertex.as<op_constructor_call>()->get_func_id());
-    } else if (vertex->type() == op_var/* && vertex->rl_type == val_l*/) {
-      VarPtr var = vertex.as<op_var>()->get_var_id();
-      if (var->type() == VarData::var_global_t) {
-        data.used_global_vars.push_back(var);
-      }
-    } else if (vertex->type() == op_func_param) {
-      VarPtr var = vertex.as<op_func_param>()->var()->get_var_id();
-      if (var->is_reference) {
-        data.used_ref_vars.push_back(var);
-      }
-    } else if (vertex->type() == op_fork) {
-      VertexPtr func_call = vertex.as<op_fork>()->func_call();
-      kphp_error (func_call->type() == op_func_call, "Fork can be called only for function call.");
-      data.forks.push_back(func_call->get_func_id());
-    }
-
-    return vertex;
-  }
-
-  void on_finish() {
-    my_unique(&data.dep);
-    my_unique(&data.used_global_vars);
-  }
-
-  DepData *get_data_ptr() {
-    return &data;
-  }
-};
+#include "compiler/function-pass.h"
 
 /*** Common algorithm ***/
 // Graph G
@@ -167,6 +76,97 @@ public:
 
       callback->for_component(component, edges);
     }
+  }
+};
+
+struct DepData {
+  vector<FunctionPtr> dep;
+  vector<VarPtr> used_global_vars;
+
+  vector<VarPtr> used_ref_vars;
+  vector<std::pair<VarPtr, VarPtr>> ref_ref_edges;
+  vector<std::pair<VarPtr, VarPtr>> global_ref_edges;
+
+  vector<FunctionPtr> forks;
+};
+
+inline void swap(DepData &a, DepData &b) {
+  swap(a.dep, b.dep);
+  swap(a.used_global_vars, b.used_global_vars);
+  swap(a.used_ref_vars, b.used_ref_vars);
+  swap(a.ref_ref_edges, b.ref_ref_edges);
+  swap(a.global_ref_edges, b.global_ref_edges);
+  swap(a.forks, b.forks);
+}
+
+class CalcFuncDepPass : public FunctionPassBase {
+private:
+  AUTO_PROF (calc_func_dep);
+  DepData data;
+public:
+  string get_description() {
+    return "Calc function depencencies";
+  }
+
+  bool check_function(FunctionPtr function) {
+    return default_check_function(function) && function->type() != FunctionData::func_extern;
+  }
+
+  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *) {
+    //NB: There is no user functions in default values of any kind.
+    if (vertex->type() == op_func_call) {
+      VertexAdaptor<op_func_call> call = vertex;
+      FunctionPtr other_function = call->get_func_id();
+      data.dep.push_back(other_function);
+      if (other_function->type() != FunctionData::func_extern && !other_function->varg_flag) {
+        int ii = 0;
+        for (auto val : call->args()) {
+          VarPtr to_var = other_function->param_ids[ii];
+          if (to_var->is_reference) { //passed as reference
+            while (val->type() == op_index) {
+              val = val.as<op_index>()->array();
+            }
+            kphp_assert (val->type() == op_var || val->type() == op_instance_prop);
+            VarPtr from_var = val->get_var_id();
+            if (from_var->type() == VarData::var_global_t) {
+              data.global_ref_edges.push_back(std::make_pair(from_var, to_var));
+            } else if (from_var->is_reference) {
+              data.ref_ref_edges.push_back(std::make_pair(from_var, to_var));
+            }
+          }
+          ii++;
+        }
+      }
+    } else if (vertex->type() == op_func_ptr) {
+      data.dep.push_back(vertex.as<op_func_ptr>()->get_func_id());
+    } else if (vertex->type() == op_constructor_call) {
+      data.dep.push_back(vertex.as<op_constructor_call>()->get_func_id());
+    } else if (vertex->type() == op_var/* && vertex->rl_type == val_l*/) {
+      VarPtr var = vertex.as<op_var>()->get_var_id();
+      if (var->type() == VarData::var_global_t) {
+        data.used_global_vars.push_back(var);
+      }
+    } else if (vertex->type() == op_func_param) {
+      VarPtr var = vertex.as<op_func_param>()->var()->get_var_id();
+      if (var->is_reference) {
+        data.used_ref_vars.push_back(var);
+      }
+    } else if (vertex->type() == op_fork) {
+      VertexPtr func_call = vertex.as<op_fork>()->func_call();
+      kphp_error (func_call->type() == op_func_call, "Fork can be called only for function call.");
+      data.forks.push_back(func_call->get_func_id());
+    }
+
+    return vertex;
+  }
+
+  void on_finish() {
+    my_unique(&data.dep);
+    my_unique(&data.used_global_vars);
+  }
+
+  DepData *get_data_ptr() {
+    return &data;
   }
 };
 
@@ -410,4 +410,23 @@ public:
   }
 };
 
-#endif
+void CalcBadVarsF::execute(FunctionPtr function, DataStream<FunctionPtr> &) {
+  CalcFuncDepPass pass;
+  run_function_pass(function, &pass);
+  DepData *data = new DepData();
+  swap(*data, *pass.get_data_ptr());
+  tmp_stream << std::make_pair(function, data);
+}
+
+void CalcBadVarsF::on_finish(DataStream<FunctionPtr> &os) {
+  stage::die_if_global_errors();
+
+  AUTO_PROF (calc_bad_vars);
+  stage::set_name("Calc bad vars (for UB check)");
+  vector<pair<FunctionPtr, DepData *>> tmp_vec = tmp_stream.get_as_vector();
+  CalcBadVars{}.run(tmp_vec);
+  for (const auto &fun_dep : tmp_vec) {
+    delete fun_dep.second;
+    os << fun_dep.first;
+  }
+}

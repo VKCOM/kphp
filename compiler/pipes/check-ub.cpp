@@ -1,12 +1,8 @@
-#ifndef CLION
-#define __PASS_UB_CPP__
-#endif
-
-#include "compiler/pass-ub.h"
+#include "compiler/pipes/check-ub.h"
 
 #include "compiler/common.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/data.h"
 #include "compiler/gentree.h"
 
 /*** C++ undefined behaviour fixes ***/
@@ -273,3 +269,18 @@ void fix_undefined_behaviour(FunctionPtr function) {
 }
 
 
+void CheckUBF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  AUTO_PROF (check_ub);
+  stage::set_name("Check for undefined behaviour");
+  stage::set_function(function);
+
+  if (function->root->type() == op_function) {
+    fix_undefined_behaviour(function);
+  }
+
+  if (stage::has_error()) {
+    return;
+  }
+
+  os << function;
+}
