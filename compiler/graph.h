@@ -2,13 +2,6 @@
 
 #include "compiler/common.h"
 
-/**Data Traits**/
-struct UnexistingType;
-template<class T>
-struct DataTraits {
-  typedef UnexistingType value_type;
-};
-
 /*** Id ***/
 template<class IdData>
 class Id {
@@ -33,8 +26,6 @@ public:
     return (unsigned long)ptr != (unsigned long)other.ptr;
   }
 
-  template<class IndexType>
-  typename DataTraits<IdData>::value_type operator[](const IndexType &i) const;
   string &str();
 };
 

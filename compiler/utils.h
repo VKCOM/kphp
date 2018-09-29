@@ -13,66 +13,35 @@ inline string get_full_path(const string &file_name) {
   }
 }
 
-static inline int is_alpha(int c);
-static inline int is_alphanum(int c);
-static inline int is_digit(int c);
-static inline int conv_oct_digit(int c);
-static inline int conv_hex_digit(int c);
+static inline int is_alpha(int c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
+}
 
-template<class T>
-void clear(T &val);
+static inline int is_alphanum(int c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_') || ('0' <= c && c <= '9');
+}
 
-template<class T>
-void save_to_ptr(T *ptr, const T &data);
+static inline int is_digit(int c) {
+  return '0' <= c && c <= '9';
+}
 
-template<class ArrayType, class IndexType>
-IndexType dsu_get(const ArrayType &arr, IndexType i);
-
-template<class ArrayType, class IndexType>
-void dsu_uni(ArrayType *arr, IndexType i, IndexType j);
-
-template<class T>
-class Enumerator {
-public:
-  vector<T> vars;
-
-  int size() {
-    return vars.size();
+static inline int conv_oct_digit(int c) {
+  if ('0' <= c && c <= '7') {
+    return c - '0';
   }
+  return -1;
+}
 
-  Enumerator() {
+static inline int conv_hex_digit(int c) {
+  if ('0' <= c && c <= '9') {
+    return c - '0';
   }
-
-  int next_id(const T &new_data) {
-    vars.push_back(new_data);
-    return (int)vars.size();
+  c |= 0x20;
+  if ('a' <= c && c <= 'f') {
+    return c - 'a' + 10;
   }
-
-  T &operator[](int id) {
-    assert (0 < id && id <= (int)vars.size());
-    return vars[id - 1];
-  }
-
-private:
-  DISALLOW_COPY_AND_ASSIGN (Enumerator);
-};
-
-template<typename KeyT, typename EntryT>
-class MapToId {
-public:
-  explicit MapToId(Enumerator<EntryT> *cur_id);
-
-  int get_id(const KeyT &name);
-  int add_name(const KeyT &name, const EntryT &add);
-  EntryT &operator[](int id);
-
-  set<int> get_ids();
-
-private:
-  map<KeyT, int> name_to_id;
-  Enumerator<EntryT> *items;
-  DISALLOW_COPY_AND_ASSIGN (MapToId);
-};
+  return -1;
+}
 
 class string_ref {
 private:
@@ -181,9 +150,6 @@ inline std::vector<std::string> split_skipping_delimeters(const std::string &str
   return tokens;
 }
 
-template<class T>
-void my_unique(T *v);
-
 static inline void ltrim(std::string &s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
     return !std::isspace(ch);
@@ -201,20 +167,34 @@ static inline void trim(std::string &s) {
   rtrim(s);
 }
 
-static inline std::string ltrim_copy(std::string s) {
-  ltrim(s);
-  return s;
+template<class T>
+void clear(T &val) {
+  val.clear();
 }
 
-static inline std::string rtrim_copy(std::string s) {
-  rtrim(s);
-  return s;
+template<class ArrayType, class IndexType>
+IndexType dsu_get(ArrayType *arr, IndexType i) {
+  if ((*arr)[i] == i) {
+    return i;
+  }
+  return (*arr)[i] = dsu_get(arr, (*arr)[i]);
 }
 
-static inline std::string trim_copy(std::string s) {
-  trim(s);
-  return s;
+template<class ArrayType, class IndexType>
+void dsu_uni(ArrayType *arr, IndexType i, IndexType j) {
+  i = dsu_get(arr, i);
+  j = dsu_get(arr, j);
+  if (!(i == j)) {
+    if (rand() & 1) {
+      (*arr)[i] = j;
+    } else {
+      (*arr)[j] = i;
+    }
+  }
 }
 
-#include "utils.hpp"
-#include "graph.h"
+template<class T>
+void my_unique(T *v) {
+  sort(v->begin(), v->end());
+  v->erase(std::unique(v->begin(), v->end()), v->end());
+}

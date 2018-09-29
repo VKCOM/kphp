@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "compiler/utils.h"
 
 /*** Id ***/
 template<class IdData>
@@ -40,12 +40,6 @@ template<class IdData>
 void Id<IdData>::clear() {
   delete ptr; //TODO: be very-very carefull with it
   ptr = nullptr;
-}
-
-template<class IdData>
-template<class IndexType>
-typename DataTraits<IdData>::value_type Id<IdData>::operator[](const IndexType &i) const {
-  return (*ptr)[i];
 }
 
 /*** [get|set]_index ***/
