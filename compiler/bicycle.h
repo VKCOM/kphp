@@ -419,6 +419,14 @@ public:
 
 template<class PipeF, class InputStreamT, class OutputStreamT>
 class Pipe : public Node {
+  struct have_on_finish_helper {
+    template<typename T, void (T::*)(OutputStreamT &)>
+    struct SFINAE;
+    template<typename T>
+    static std::true_type Test(SFINAE<T, &T::on_finish> *);
+    template<typename T>
+    static std::false_type Test(...);
+  };
 public:
   using PipeFunctionType = PipeF;
   using InputStreamType = InputStreamT;
@@ -427,6 +435,8 @@ public:
   using InputType = typename InputStreamT::DataType;
   using SelfType = Pipe<PipeF, InputStreamT, OutputStreamT>;
   using TaskType = PipeTask<SelfType>;
+
+  using pipe_fun_have_on_finish = decltype(have_on_finish_helper::template Test<PipeF>(0));
 
 private:
   InputStreamType *input_stream = nullptr;
@@ -459,7 +469,9 @@ public:
     return new TaskType(x, this);
   }
 
-  void on_finish() override { function.on_finish(*output_stream); }
+  void on_finish(std::true_type) { function.on_finish(*output_stream); }
+  void on_finish(std::false_type) {}
+  void on_finish() override { on_finish(pipe_fun_have_on_finish{}); }
 };
 
 struct EmptyStream {
@@ -499,11 +511,46 @@ using ConcreteIndexedStream = DataStream<typename StreamT::template NthDataType<
 struct sync_node_tag {
 };
 
-struct use_previous_pipe_as_sync_node_tag {
-};
-
 template<size_t id>
 struct use_nth_output_tag {
+};
+
+template<class PipeT, bool parallel, bool unique>
+class pipe_creator;
+
+template<class PipeT, bool parallel>
+class pipe_creator<PipeT, parallel, true> {
+  static PipeT *pipe;
+public:
+  static PipeT *get() {
+    if (pipe == nullptr) {
+      pipe = new PipeT(parallel);
+    }
+    return pipe;
+  }
+};
+
+template<class PipeT, bool parallel>
+PipeT *pipe_creator<PipeT, parallel, true>::pipe = nullptr;
+
+template<class PipeT, bool parallel>
+class pipe_creator<PipeT, parallel, false> {
+public:
+  static PipeT *get() {
+    return new PipeT(parallel);
+  }
+};
+
+
+template<class PipeT, bool parallel = true, bool unique = true>
+struct pipe_creator_tag : pipe_creator<PipeT, parallel, unique> {
+  static_assert(!PipeT::pipe_fun_have_on_finish::value, "Non-sync pipe mustn't have on_finish function");
+
+};
+
+template<class PipeT, bool parallel = false, bool unique = true>
+struct sync_pipe_creator_tag : pipe_creator<PipeT, parallel, unique> {
+  static_assert(PipeT::pipe_fun_have_on_finish::value, "Sync pipe must have on_finish function");
 };
 
 template<class StreamT>
@@ -548,6 +595,13 @@ private:
     }
   }
 
+  template<class NextPipeT>
+  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(NextPipeT &next_pipe) {
+    connect(previous_output_stream, next_pipe.get_input_stream());
+    next_pipe.init_output_stream_if_not_inited();
+    return {scheduler, &next_pipe};
+  }
+
 public:
   SC_Pipe(SchedulerBase *scheduler, StreamT *&stream, Node *previous_node) :
     scheduler(scheduler),
@@ -563,8 +617,17 @@ public:
   }
 
   SC_Pipe operator>>(sync_node_tag) {
-    auto *sync_pipe = new Pipe<SyncPipeF, StreamT, StreamT>();
-    return *this >> *sync_pipe >> use_previous_pipe_as_sync_node_tag{};
+    return *this >> sync_pipe_creator_tag<Pipe<SyncPipeF, StreamT, StreamT>, true, false>{};
+  }
+
+  template<typename NextPipeT, bool parallel, bool unique>
+  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(pipe_creator<NextPipeT, parallel, unique>) {
+    auto pipe = pipe_creator<NextPipeT, parallel, unique>::get();
+    auto res = *this >> *pipe;
+    if (NextPipeT::pipe_fun_have_on_finish::value) {
+      pipe->add_to_scheduler_as_sync_node();
+    }
+    return res;
   }
 
   template<size_t id>
@@ -572,23 +635,26 @@ public:
     return SC_Pipe<ConcreteIndexedStream<id, StreamT>>{scheduler, previous_output_stream->template project_to_nth_data_stream<id>(), previous_node};
   }
 
-  SC_Pipe &operator>>(use_previous_pipe_as_sync_node_tag) {
-    previous_node->add_to_scheduler_as_sync_node();
-    return *this;
-  }
-
-  template<class NextPipeT>
-  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(NextPipeT &next_pipe) {
-    connect(previous_output_stream, next_pipe.get_input_stream());
-    next_pipe.init_output_stream_if_not_inited();
-    return {scheduler, &next_pipe};
-  }
 };
 
-template<class PipeT>
-SC_Pipe<typename PipeT::OutputStreamType> scheduler_constructor(SchedulerBase *scheduler, PipeT &pipe) {
-  return {scheduler, &pipe};
-}
+class SchedulerConstructor {
+  SchedulerBase *scheduler;
+public:
+
+  template<typename NextPipeT, bool parallel, bool unique>
+  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(pipe_creator<NextPipeT, parallel, unique>) {
+    auto pipe = pipe_creator<NextPipeT, parallel, unique>::get();
+    SC_Pipe<typename NextPipeT::OutputStreamType> sc_pipe{scheduler, pipe};
+    if (NextPipeT::pipe_fun_have_on_finish::value) {
+      pipe->add_to_scheduler_as_sync_node();
+    }
+    return sc_pipe;
+  }
+
+  explicit SchedulerConstructor(SchedulerBase *scheduler) :
+    scheduler(scheduler) {}
+};
+
 
 /*** Multithreaded profiler ***/
 #define TACT_SPEED (1e-6 / 2266.0)

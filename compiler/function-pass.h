@@ -133,8 +133,6 @@ bool run_function_pass(FunctionPtr function, FunctionPassT *pass) {
 template<class FunctionPassT>
 class FunctionPassF {
 public:
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os __attribute__((unused))) {}
 
   void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     FunctionPassT pass;

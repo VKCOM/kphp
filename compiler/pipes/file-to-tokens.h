@@ -6,7 +6,5 @@
 
 class FileToTokensF {
 public:
-  void on_finish(DataStream<FileAndTokens> &) {}
-
   void execute(SrcFilePtr file, DataStream<FileAndTokens> &os);
 };

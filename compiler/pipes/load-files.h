@@ -5,6 +5,5 @@
 
 class LoadFileF {
 public:
-  void on_finish(DataStream<SrcFilePtr> &) {}
   void execute(SrcFilePtr file, DataStream<SrcFilePtr> &os);
 };

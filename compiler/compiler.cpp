@@ -208,8 +208,6 @@ public:
 
 class CollectRequiredF {
 public:
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os __attribute__((unused))) {}
   using ReadyFunctionPtr = FunctionPtr;
   using OStreamT = MultipleDataStreams<ReadyFunctionPtr, SrcFilePtr, FunctionPtr>;
 
@@ -495,7 +493,6 @@ void prepare_function(FunctionPtr function) {
 
 class PrepareFunctionF {
 public:
-  void on_finish(DataStream<FunctionPtr> &) {}
 
   void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     stage::set_name("Prepare function");
@@ -786,9 +783,6 @@ private:
 
 class PreprocessFunctionF {
 public:
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os __attribute__((unused))) {}
-
   void execute(FunctionPtr function, PreprocessFunctionCPass::OStreamT &os) {
     PreprocessFunctionCPass pass(os);
 
@@ -1131,9 +1125,6 @@ public:
 
 class CFGBeginF {
 public:
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os __attribute__((unused))) {}
-
   void execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
     AUTO_PROF (CFG);
     stage::set_name("Calc control flow graph");
@@ -1251,8 +1242,6 @@ public:
 /*** Control flow graph. End ***/
 class CFGEndF {
 public:
-  template<class OutputStreamT>
-  void on_finish(OutputStreamT &os __attribute__((unused))) {}
 
   void execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
     AUTO_PROF (CFG_End);
@@ -1537,6 +1526,17 @@ using PipeStream = Pipe<
 template<class Pass>
 using FunctionPassPipe = PipeStream<FunctionPassF<Pass>>;
 
+template<class PipeFunctionT, bool parallel = true>
+using PipeC = pipe_creator_tag<PipeStream<PipeFunctionT>, parallel>;
+
+template<class Pass>
+using PassC = pipe_creator_tag<FunctionPassPipe<Pass>>;
+
+template<class PipeFunctionT>
+using SyncC = sync_pipe_creator_tag<PipeStream<PipeFunctionT>>;
+
+
+
 bool compiler_execute(KphpEnviroment *env) {
   double st = dl_time();
   G = new CompilerCore();
@@ -1583,122 +1583,78 @@ bool compiler_execute(KphpEnviroment *env) {
     return false;
   }
 
-  {
-    SchedulerBase *scheduler;
-    if (G->env().get_threads_count() == 1) {
-      scheduler = new OneThreadScheduler();
-    } else {
-      auto s = new Scheduler();
-      s->set_threads_count(G->env().get_threads_count());
-      scheduler = s;
-    }
-
-
-    PipeStream<LoadFileF> load_file_pipe;
-    PipeStream<FileToTokensF> file_to_tokens_pipe;
-    PipeStream<ParseF> parse_pipe;
-    PipeStream<SplitSwitchF> split_switch_pipe;
-    FunctionPassPipe<CreateSwitchForeachVarsF> create_switch_foreach_vars_pipe;
-
-    PipeStream<CollectRequiredF> collect_required_pipe;
-
-    PipeStream<CollectClassF> collect_classes_pipe;
-    FunctionPassPipe<CalcLocationsPass> calc_locations_pipe;
-    PipeStream<PreprocessDefinesF> process_defines_concat;
-    FunctionPassPipe<CollectDefinesPass> collect_defines_pipe;
-    PipeStream<PrepareFunctionF> prepare_function_pipe;
-    FunctionPassPipe<RegisterDefinesPass> register_defines_pipe;
-
-    FunctionPassPipe<PreprocessVarargPass> preprocess_vararg_pipe;
-    FunctionPassPipe<PreprocessEq3Pass> preprocess_eq3_pipe;
-
-    PipeStream <PreprocessFunctionF> preprocess_function_c_pipe;
-    PipeStream<CalcActualCallsEdgesF> calc_actual_calls_edges_pipe;
-    PipeStream<FilterOnlyActuallyUsedFunctionsF> filter_only_actually_used_pipe;
-
-    FunctionPassPipe<PreprocessBreakPass> preprocess_break_pipe;
-    FunctionPassPipe<CalcConstTypePass> calc_const_type_pipe;
-    FunctionPassPipe<CollectConstVarsPass> collect_const_vars_pipe;
-    FunctionPassPipe<CheckInstanceProps> check_instance_props_pipe;
-    FunctionPassPipe<ConvertListAssignmentsPass> convert_list_assignments_pipe;
-    FunctionPassPipe<RegisterVariables> register_variables_pipe;
-
-    FunctionPassPipe<CheckFunctionCallsPass> check_func_calls_pipe;
-    PipeStream<CalcRLF> calc_rl_pipe;
-    PipeStream<CFGBeginF> cfg_begin_pipe;
-    PipeStream<CheckReturnsF> check_returns_pipe;
-    PipeStream<TypeInfererF> type_inferer_pipe;
-    PipeStream<TypeInfererEndF> type_inferer_end_pipe;
-    PipeStream<CFGEndF> cfg_end_pipe;
-    PipeStream<CheckInferredInstances> check_inferred_instances_pipe;
-    FunctionPassPipe<OptimizationPass> optimization_pipe;
-    FunctionPassPipe<CalcValRefPass> calc_val_ref_pipe;
-
-    PipeStream<CalcBadVarsF> calc_bad_vars_pipe;
-    PipeStream<CheckUBF> check_ub_pipe;
-    FunctionPassPipe<ExtractResumableCallsPass> extract_resumable_calls_pipe;
-    FunctionPassPipe<ExtractAsyncPass> extract_async_pipe;
-    PipeStream<AnalyzerF> analyzer_pipe;
-    FunctionPassPipe<CheckAccessModifiers> check_access_modifiers_pass;
-    FunctionPassPipe<FinalCheckPass> final_check_pass;
-    PipeStream<CodeGenF> code_gen_pipe;
-    PipeStream<WriteFilesF> write_files_pipe(false);
-
-
-    load_file_pipe.set_input_stream(&file_stream);
-
-    scheduler_constructor(scheduler, load_file_pipe)
-      >>
-      file_to_tokens_pipe >>
-      parse_pipe >>
-      split_switch_pipe >>
-      create_switch_foreach_vars_pipe >>
-      collect_required_pipe >> use_nth_output_tag<0>{} >> sync_node_tag{} >>
-      collect_classes_pipe >>
-      calc_locations_pipe >>
-      process_defines_concat >> use_previous_pipe_as_sync_node_tag{} >>
-      collect_defines_pipe >> sync_node_tag{} >>
-      prepare_function_pipe >> sync_node_tag{} >>
-      register_defines_pipe >>
-      preprocess_vararg_pipe >>
-      preprocess_eq3_pipe >>
-      // functions which were generated from templates
-      // need to be preprocessed therefore we tie second output and input of Pipe
-      preprocess_function_c_pipe >> use_nth_output_tag<1>{} >>
-      preprocess_function_c_pipe >> use_nth_output_tag<0>{} >>
-      calc_actual_calls_edges_pipe >>
-      filter_only_actually_used_pipe >> use_previous_pipe_as_sync_node_tag{} >>
-      preprocess_break_pipe >>
-      calc_const_type_pipe >>
-      collect_const_vars_pipe >>
-      check_instance_props_pipe >>
-      convert_list_assignments_pipe >>
-      register_variables_pipe >>
-      check_func_calls_pipe >>
-      calc_rl_pipe >>
-      cfg_begin_pipe >>
-      check_returns_pipe >> sync_node_tag{} >>
-      type_inferer_pipe >> use_previous_pipe_as_sync_node_tag{} >>
-      type_inferer_end_pipe >> use_previous_pipe_as_sync_node_tag{} >>
-      cfg_end_pipe >>
-      check_inferred_instances_pipe >>
-      optimization_pipe >>
-      calc_val_ref_pipe >>
-      calc_bad_vars_pipe >> use_previous_pipe_as_sync_node_tag{} >>
-      check_ub_pipe >>
-      extract_resumable_calls_pipe >>
-      extract_async_pipe >>
-      analyzer_pipe >>
-      check_access_modifiers_pass >>
-      final_check_pass >>
-      code_gen_pipe >> use_previous_pipe_as_sync_node_tag{} >>
-      write_files_pipe;
-
-    scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<1>{} >> load_file_pipe;
-    scheduler_constructor(scheduler, collect_required_pipe) >> use_nth_output_tag<2>{} >> split_switch_pipe;
-
-    get_scheduler()->execute();
+  SchedulerBase *scheduler;
+  if (G->env().get_threads_count() == 1) {
+    scheduler = new OneThreadScheduler();
+  } else {
+    auto s = new Scheduler();
+    s->set_threads_count(G->env().get_threads_count());
+    scheduler = s;
   }
+
+  PipeC<LoadFileF>::get()->set_input_stream(&file_stream);
+
+
+  SchedulerConstructor{scheduler}
+    >> PipeC<LoadFileF>{}
+    >> PipeC<FileToTokensF>{}
+    >> PipeC<ParseF>{}
+    >> PipeC<SplitSwitchF>{}
+    >> PassC<CreateSwitchForeachVarsF>{}
+    >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<0>{}
+    >> sync_node_tag{}
+    >> PipeC<CollectClassF>{}
+    >> PassC<CalcLocationsPass>{}
+    >> SyncC<PreprocessDefinesF>{}
+    >> PassC<CollectDefinesPass>{}
+    >> sync_node_tag{}
+    >> PipeC<PrepareFunctionF>{}
+    >> sync_node_tag{}
+    >> PassC<RegisterDefinesPass>{}
+    >> PassC<PreprocessVarargPass>{}
+    >> PassC<PreprocessEq3Pass>{}
+    // functions which were generated from templates
+    // need to be preprocessed therefore we tie second output and input of Pipe
+    >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
+    >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<0>{}
+    >> PipeC<CalcActualCallsEdgesF>{}
+    >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
+    >> PassC<PreprocessBreakPass>{}
+    >> PassC<CalcConstTypePass>{}
+    >> PassC<CollectConstVarsPass>{}
+    >> PassC<CheckInstanceProps>{}
+    >> PassC<ConvertListAssignmentsPass>{}
+    >> PassC<RegisterVariables>{}
+    >> PassC<CheckFunctionCallsPass>{}
+    >> PipeC<CalcRLF>{}
+    >> PipeC<CFGBeginF>{}
+    >> PipeC<CheckReturnsF>{}
+    >> sync_node_tag{}
+    >> SyncC<TypeInfererF>{}
+    >> SyncC<TypeInfererEndF>{}
+    >> PipeC<CFGEndF>{}
+    >> PipeC<CheckInferredInstances>{}
+    >> PassC<OptimizationPass>{}
+    >> PassC<CalcValRefPass>{}
+    >> SyncC<CalcBadVarsF>{}
+    >> PipeC<CheckUBF>{}
+    >> PassC<ExtractResumableCallsPass>{}
+    >> PassC<ExtractAsyncPass>{}
+    >> PipeC<AnalyzerF>{}
+    >> PassC<CheckAccessModifiers>{}
+    >> PassC<FinalCheckPass>{}
+    >> SyncC<CodeGenF>{}
+    >> PipeC<WriteFilesF, false>{};
+
+  SchedulerConstructor{scheduler}
+    >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<1>{}
+    >> PipeC<LoadFileF>{};
+
+  SchedulerConstructor{scheduler}
+    >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<2>{}
+    >> PipeC<SplitSwitchF>{};
+
+  get_scheduler()->execute();
 
   if (G->env().get_error_on_warns() && stage::warnings_count > 0) {
     stage::error();

@@ -5,7 +5,5 @@
 
 class CheckReturnsF {
 public:
-  void on_finish(DataStream<FunctionAndCFG> &) {}
-
   void execute(FunctionAndCFG function_and_cfg, DataStream<FunctionAndCFG> &);
 };

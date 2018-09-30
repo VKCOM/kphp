@@ -5,7 +5,5 @@
 
 class CalcActualCallsEdgesF {
 public:
-  void on_finish(DataStream<FunctionAndEdges> &) {}
-
   void execute(FunctionPtr function, DataStream<FunctionAndEdges> &os);
 };

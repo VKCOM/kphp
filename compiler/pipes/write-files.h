@@ -5,7 +5,5 @@
 
 class WriteFilesF {
 public:
-  void on_finish(EmptyStream &) {};
-
   void execute(WriterData *data, EmptyStream &);
 };
