@@ -1,0 +1,24 @@
+#pragma once
+
+class Node;
+
+class Task;
+
+class SchedulerBase {
+public:
+  SchedulerBase();
+  virtual ~SchedulerBase();
+  virtual void add_node(Node *node) = 0;
+  virtual void add_sync_node(Node *node) = 0;
+  virtual void add_task(Task *task) = 0;
+  virtual void execute() = 0;
+};
+
+SchedulerBase *get_scheduler();
+void set_scheduler(SchedulerBase *new_scheduler);
+void unset_scheduler(SchedulerBase *old_scheduler);
+
+
+inline void register_async_task(Task *task) {
+  get_scheduler()->add_task(task);
+}

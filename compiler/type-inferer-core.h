@@ -1,11 +1,11 @@
 #pragma once
 
-#include "compiler/common.h"
-
 #include "compiler/bicycle.h"
+#include "compiler/common.h"
 #include "compiler/data_ptr.h"
-#include "compiler/types.h"
 #include "compiler/location.h"
+#include "compiler/scheduler/task.h"
+#include "compiler/types.h"
 
 namespace tinf {
 class Edge;

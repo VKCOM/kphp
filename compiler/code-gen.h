@@ -1,13 +1,15 @@
 #pragma once
 
+#include "common/algorithms/find.h"
+
 #include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data.h"
 #include "compiler/io.h"
-#include "compiler/vertex.h"
 #include "compiler/pass-register-vars.hpp"
-
-#include "common/algorithms/find.h"
+#include "compiler/scheduler/scheduler-base.h"
+#include "compiler/scheduler/task.h"
+#include "compiler/vertex.h"
 
 struct CGContext {
   vector<string> catch_labels;
