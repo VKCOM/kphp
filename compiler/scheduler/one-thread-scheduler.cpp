@@ -31,9 +31,9 @@ void OneThreadScheduler::execute() {
   bool run_flag = true;
   while (run_flag) {
     run_flag = false;
-    for (int i = 0; i < (int)nodes.size(); i++) {
+    for (auto node : nodes) {
       Task *task;
-      while ((task = nodes[i]->get_task()) != nullptr) {
+      while ((task = node->get_task()) != nullptr) {
         run_flag = true;
         task->execute();
         delete task;
@@ -44,5 +44,8 @@ void OneThreadScheduler::execute() {
       sync_nodes.pop();
       run_flag = true;
     }
+  }
+  for (auto node : nodes) {
+    delete node;
   }
 }

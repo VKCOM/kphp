@@ -77,6 +77,10 @@ void Scheduler::execute() {
     __sync_synchronize();
     pthread_join(threads[i].pthread_id, nullptr);
   }
+
+  for (auto node : nodes) {
+    delete node;
+  }
 }
 
 void Scheduler::set_threads_count(int new_threads_count) {
