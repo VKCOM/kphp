@@ -610,10 +610,10 @@ private:
     }
 
     std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
-    std::string name_of_function_instance = func->name + "$instance";
-    for (int i = 0; i < call_args_n; i++) {
-      if (i < func_args_n) {
-        if (func_args[i]->type() == op_func_param) {
+    std::string name_of_function_instance = func->name;
+    for (int i = 0; i < std::min(call_args_n, func_args_n); i++) {
+      switch (func_args[i]->type()) {
+        case op_func_param: {
           if (call_args[i]->type() == op_func_name) {
             string msg = "Unexpected function pointer: " + call_args[i]->get_string();
             kphp_error(false, msg.c_str());
@@ -622,6 +622,7 @@ private:
             string msg = "function: `" + func->name + "` must takes variable-length argument list";
             kphp_error_act(false, msg.c_str(), break);
           }
+
           VertexAdaptor<op_func_param> param = func_args[i];
           if (param->type_help != tp_Unknown) {
             call_args[i] = GenTree::conv_to(call_args[i], param->type_help, param->var()->ref_flag);
@@ -632,12 +633,7 @@ private:
             ClassPtr class_corresponding_to_parameter;
             AssumType assum = infer_class_of_expr(stage::get_function(), call_args[i], class_corresponding_to_parameter);
 
-            {
-              std::string error_msg = "function templates support only instances as argument value; " + func->name + "; " + param->var()
-                                                                                                                                 ->get_string() + " argument";
-              kphp_error_act(vk::any_of_equal(assum, assum_instance, assum_instance_array), error_msg.c_str(), return {});
-            }
-
+            kphp_assert(assum != assum_unknown);
             auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
             if (!insertion_result.second) {
               const std::pair<AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
@@ -658,12 +654,21 @@ private:
               name_of_function_instance += "$arr";
             }
 
-            name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
+            if (assum != assum_not_instance) {
+              name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
+            } else {
+              name_of_function_instance += std::to_string(i) + "$not_instance";
+            }
           }
-        } else if (func_args[i]->type() == op_func_param_callback) {
+          break;
+        }
+
+        case op_func_param_callback: {
           call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
-          kphp_error (call_args[i]->type() == op_func_ptr, "Function pointer expected");
-        } else {
+          break;
+        }
+
+        default: {
           kphp_fail();
         }
       }
@@ -675,8 +680,14 @@ private:
 
       G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
         if (!f_inst) {
-          f_inst = generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
+          f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
           f_inst->is_required = true;
+          f_inst->kphp_required = true;
+          ClassPtr klass = G->get_class(f_inst->namespace_name + "\\" + f_inst->class_name);
+          if (klass) {
+            klass->methods.emplace_back(f_inst);
+          }
+
           (*os.project_to_nth_data_stream<1>()) << f_inst;
         }
 
@@ -685,65 +696,6 @@ private:
     }
 
     return call;
-  }
-
-  FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
-                                                     FunctionPtr func,
-                                                     const std::string &name_of_function_instance) {
-    VertexAdaptor<op_func_param_list> param_list = func->root.as<meta_op_function>()->params();
-    VertexRange func_args = param_list->params();
-    size_t func_args_n = func_args.size();
-
-    FunctionPtr new_function(new FunctionData());
-    auto new_func_root =  func->root.as<op_function>().clone();
-
-    for (auto id_classPtr_it : template_type_id_to_ClassPtr) {
-      const std::pair<AssumType, ClassPtr> &assum_and_class = id_classPtr_it.second;
-      for (size_t i = 0; i < func_args_n; ++i) {
-        VertexAdaptor<op_func_param> param = func_args[i];
-        if (param->template_type_id == id_classPtr_it.first) {
-          new_function->assumptions.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
-          new_function->assumptions_inited_args = 2;
-
-          new_func_root->params()->ith(i).as<op_func_param>()->template_type_id = -1;
-        }
-      }
-    }
-
-    new_func_root->name()->set_string(name_of_function_instance);
-
-    new_function->root = new_func_root;
-    new_function->root->set_func_id(new_function);
-    new_function->is_required = true;
-    new_function->type() = func->type();
-    new_function->file_id = func->file_id;
-    new_function->class_id = func->class_id;
-    new_function->varg_flag = func->varg_flag;
-    new_function->tinf_state = func->tinf_state;
-    new_function->const_data = func->const_data;
-    new_function->phpdoc_token = func->phpdoc_token;
-    new_function->min_argn = func->min_argn;
-    new_function->is_extern = func->is_extern;
-    new_function->used_in_source = func->used_in_source;
-    new_function->kphp_required = true;
-    new_function->namespace_name = func->namespace_name;
-    new_function->class_name = func->class_name;
-    new_function->class_context_name = func->class_context_name;
-    new_function->class_extends = func->class_extends;
-    new_function->access_type = func->access_type;
-    new_function->namespace_uses = func->namespace_uses;
-    new_function->is_template = false;
-    new_function->name = name_of_function_instance;
-
-    std::function<void(VertexPtr, FunctionPtr)> set_location_for_all = [&set_location_for_all](VertexPtr root, FunctionPtr function_location) {
-      root->location.function = function_location;
-      for (VertexPtr &v : *root) {
-        set_location_for_all(v, function_location);
-      }
-    };
-    set_location_for_all(new_func_root, new_function);
-
-    return new_function;
   }
 
   /**

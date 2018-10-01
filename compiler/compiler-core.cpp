@@ -71,50 +71,6 @@ void CompilerCore::save_extern_func_header(const string &name, VertexPtr header)
   node->data = header;
 }
 
-FunctionPtr CompilerCore::create_function(const FunctionInfo &info) {
-  VertexAdaptor<meta_op_function> function_root = info.root;
-  AUTO_PROF (create_function);
-  string function_name = function_root->name().as<op_func_name>()->str_val;
-  FunctionPtr function = FunctionPtr(new FunctionData());
-
-  function->name = function_name;
-  function->root = function_root;
-  function->namespace_name = info.namespace_name;
-  function->class_name = info.class_name;
-  function->class_context_name = info.class_context;
-  function->class_extends = info.extends;
-  function->namespace_uses = info.namespace_uses;
-  function->access_type = info.access_type;
-  function_root->set_func_id(function);
-  function->file_id = stage::get_file();
-  function->kphp_required = info.kphp_required;
-
-  if (function_root->type() == op_func_decl) {
-    function->is_extern = true;
-    function->type() = FunctionData::func_extern;
-  } else {
-    switch (function_root->extra_type) {
-      case op_ex_func_switch:
-        function->type() = FunctionData::func_switch;
-        break;
-      case op_ex_func_global:
-        function->type() = FunctionData::func_global;
-        break;
-      default:
-        function->type() = FunctionData::func_local;
-        break;
-    }
-  }
-
-  if (function->type() == FunctionData::func_global) {
-    if (stage::get_file()->main_func_name == function->name) {
-      stage::get_file()->main_function = function;
-    }
-  }
-
-  return function;
-}
-
 void CompilerCore::create_builtin_classes() {
   ClassPtr exception = ClassPtr(new ClassData());
   exception->name = "Exception";
@@ -287,7 +243,7 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
   }
   FunctionPtr function;
   if (root->type() == op_function || root->type() == op_func_decl) {
-    function = create_function(info);
+    function = FunctionData::create_function(info);
   } else if (root->type() == op_extern_func) {
     string function_name = root.as<meta_op_function>()->name()->get_string();
     save_extern_func_header(function_name, root);

@@ -1,11 +1,11 @@
 #pragma once
 
 #include "compiler/bicycle.h"
+#include "compiler/class-assumptions.h"
 #include "compiler/data_ptr.h"
 #include "compiler/type-inferer-core.h"
 #include "compiler/utils.h"
 #include "compiler/vertex.h"
-#include "compiler/class-assumptions.h"
 
 class Assumption;
 
@@ -219,11 +219,13 @@ public:
   map<string, string> namespace_uses;
   set<string> disabled_warnings;
 
-  FunctionData();
-  explicit FunctionData(VertexPtr root);
   string name;
 
   map<long long, int> name_gen_map;
+
+  FunctionData();
+  explicit FunctionData(VertexPtr root);
+  static FunctionPtr create_function(const FunctionInfo &info);
 
   inline func_type_t &type() { return type_; }
 
@@ -237,6 +239,10 @@ public:
   inline bool is_constructor() const {
     return class_id && class_id->new_function && &*(class_id->new_function) == this;
   }
+
+  static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
+                                                            FunctionPtr func,
+                                                            const std::string &name_of_function_instance);
 
 private:
   DISALLOW_COPY_AND_ASSIGN (FunctionData);

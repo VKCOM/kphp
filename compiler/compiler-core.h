@@ -34,7 +34,6 @@ private:
   // это костыль, который должен уйти, когда мы перепишем часть php-кода
   HT<VertexPtr> extern_func_headers_ht;
 
-  FunctionPtr create_function(const FunctionInfo &info);
   ClassPtr create_class(const ClassInfo &info);
   void create_builtin_classes();
 

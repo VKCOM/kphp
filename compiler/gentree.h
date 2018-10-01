@@ -77,9 +77,9 @@ public:
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   static VertexPtr create_vertex_this(const AutoLocation &location, ClassInfo *cur_class = nullptr, bool with_type_rule = false);
-  void patch_func_constructor(VertexAdaptor<op_function> func, ClassInfo &cur_class) const;
-  void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location);
-  void create_default_constructor(ClassInfo &cur_class) const;
+  static void patch_func_constructor(VertexAdaptor<op_function> func, ClassInfo &cur_class, AutoLocation location);
+  static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassInfo &cur_class);
+  void create_default_constructor(ClassInfo &cur_class, FunctionInfo info, AutoLocation location) const;
 
   VertexPtr get_func_param();
   VertexPtr get_foreach_param();
@@ -140,7 +140,14 @@ private:
   void fill_info_about_class(FunctionInfo &info);
   void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next);
   VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next);
-  string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &real_name);
+  static std::string add_namespace_and_context_to_function_name(const FunctionInfo &info, std::string function_name);
+
+  static void add_namespace_and_context_to_function_name(const std::string &namespace_name,
+                                                         const std::string &class_name,
+                                                         const std::string &class_context,
+                                                         std::string &function_name);
+
+  static std::string get_real_name_from_full_method_name(const std::string &full_name);
 
 public:
   int line_num;
