@@ -1,9 +1,11 @@
-#include "compiler/data.h"
-
 #include <functional>
 
 #include "compiler/bicycle.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data.h"
+#include "compiler/gentree.h"
 #include "compiler/io.h"
+#include "compiler/type-inferer.h"
 
 //IdGen <VertexPtr> tree_id_gen;
 //BikeIdGen <VertexPtr> bike_tree_id_gen;
@@ -46,6 +48,46 @@ ClassData::ClassData() :
   was_constructor_invoked(false) {      // иначе в нет гарантии, что в примитивных типах не окажется мусор
 }
 
+std::string ClassData::get_name_of_invoke_function_for_extern(FunctionPtr extern_function) const {
+  std::string invoke_method_name = GenTree::concat_namespace_class_function_names(new_function->namespace_name, name, "__invoke");
+  for (size_t i = 0; i < extern_function->min_argn; ++i) {
+    invoke_method_name += "$" + std::to_string(i) + "not_instance";
+  }
+  return invoke_method_name;
+}
+
+FunctionPtr ClassData::get_invoke_function_for_extern_function(FunctionPtr extern_function) const {
+  /**
+   * Will be rewritten in future
+   * need finding `invoke` method which conforms to parameters types of extern_function
+   */
+  kphp_assert(extern_function->is_extern);
+  std::string invoke_method_name = get_name_of_invoke_function_for_extern(extern_function);
+  auto invoke_method_it = std::find_if(methods.begin(), methods.end(),
+                                       [&](FunctionPtr m) { return m->name.find(invoke_method_name) != std::string::npos; }
+  );
+
+  if (invoke_method_it == methods.end()) {
+    return {};
+  }
+
+  return *invoke_method_it;
+}
+
+FunctionPtr ClassData::get_template_of_invoke_function() const {
+  kphp_assert(new_function->is_lambda());
+  auto invoke_method_it = std::find_if(methods.begin(), methods.end(),
+                                       [&](FunctionPtr m) { return m->is_template && m->name.find("__invoke") != std::string::npos; }
+  );
+
+  if (invoke_method_it == methods.end()) {
+    kphp_assert(methods.size() == 2);
+    return methods[0] != new_function ? methods[0] : methods[1];
+  }
+
+  return *invoke_method_it;
+}
+
 
 /*** FunctionData ***/
 FunctionData::FunctionData() :
@@ -68,9 +110,7 @@ FunctionData::FunctionData() :
   is_callback(false),
   should_be_sync(),
   kphp_required(false),
-  is_template(false),
-  namespace_name(""),
-  class_name("") {}
+  is_template(false) {}
 
 FunctionData::FunctionData(VertexPtr root) :
   id(0),
@@ -92,9 +132,7 @@ FunctionData::FunctionData(VertexPtr root) :
   is_callback(false),
   should_be_sync(),
   kphp_required(false),
-  is_template(false),
-  namespace_name(""),
-  class_name("") {}
+  is_template(false) {}
 
 FunctionPtr FunctionData::create_function(const FunctionInfo &info) {
   VertexAdaptor<meta_op_function> function_root = info.root;
@@ -113,6 +151,7 @@ FunctionPtr FunctionData::create_function(const FunctionInfo &info) {
   function_root->set_func_id(function);
   function->file_id = stage::get_file();
   function->kphp_required = info.kphp_required;
+  function->set_function_in_which_lambda_was_created(function_root->get_func_id()->function_in_which_lambda_was_created);
 
   if (function_root->type() == op_func_decl) {
     function->is_extern = true;
@@ -154,7 +193,9 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     VertexAdaptor<op_func_param> param = new_func_root->params()->ith(i).as<op_func_param>();
     auto id_classPtr_it = template_type_id_to_ClassPtr.find(param->template_type_id);
     if (id_classPtr_it == template_type_id_to_ClassPtr.end()) {
-      kphp_assert(param->template_type_id == -1 || template_type_id_to_ClassPtr.empty());
+      kphp_error_act(template_type_id_to_ClassPtr.empty() || param->template_type_id == -1,
+                     "Can't deduce template parameter of function (check count of arguments passed).",
+                     return {});
       param->template_type_id = -1;
       continue;
     }
@@ -191,6 +232,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->namespace_uses = func->namespace_uses;
   new_function->is_template = false;
   new_function->name = name_of_function_instance;
+  new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
 
   std::function<void(VertexPtr, FunctionPtr)> set_location_for_all = [&set_location_for_all](VertexPtr root, FunctionPtr function_location) {
     root->location.function = function_location;
@@ -201,6 +243,40 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   set_location_for_all(new_func_root, new_function);
 
   return new_function;
+}
+
+ClassPtr FunctionData::is_lambda(VertexPtr v) {
+  if (tinf::Node *tinf_node = get_tinf_node(v)) {
+    if (tinf_node->get_type()->ptype() != tp_Unknown) {
+      if (ClassPtr klass = tinf_node->get_type()->class_type()) {
+        return klass->new_function->is_lambda() ? klass : ClassPtr{};
+      }
+      return ClassPtr{};
+    }
+  }
+
+  switch (v->type()) {
+    case op_function:
+    case op_constructor_call: {
+      if (v->get_func_id()->is_lambda()) {
+        return v->get_func_id()->class_id;
+      }
+      return {};
+    }
+
+    case op_func_call:
+    case op_var: {
+      ClassPtr c;
+      AssumType assum = infer_class_of_expr(stage::get_function(), v, c);
+      if (assum == assum_instance && c->new_function && c->new_function->is_lambda()) {
+        return c;
+      }
+      return {};
+    }
+
+    default:
+      return {};
+  }
 }
 
 bool FunctionData::is_static_init_empty_body() const {
@@ -233,7 +309,6 @@ string FunctionData::get_resumable_path() const {
   }
   return res.str();
 }
-
 /*** DefineData ***/
 DefineData::DefineData() :
   id(),

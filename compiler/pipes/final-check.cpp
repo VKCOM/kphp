@@ -3,15 +3,18 @@
 #include "compiler/compiler-core.h"
 #include "compiler/io.h"
 
+
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
   }
   return function->type() != FunctionData::func_extern;
 }
+
 void FinalCheckPass::init() {
   from_return = 0;
 }
+
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_return) {
     from_return++;
@@ -106,6 +109,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
         kphp_warning(dl_pstr("Using result of void function %s\n", fun->name.c_str()));
       }
     }
+    check_op_func_call(vertex.as<op_func_call>());
   }
 
   if (G->env().get_warnings_level() >= 1 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
@@ -129,9 +133,48 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   //TODO: may be this should be moved to tinf_check
   return vertex;
 }
+
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_return) {
     from_return--;
   }
   return vertex;
+}
+
+void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
+  FunctionPtr f = call->get_func_id();
+  VertexRange func_params = f->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
+
+  VertexRange call_params = call->args();
+  int call_params_n = static_cast<int>(call_params.size());
+  if (call_params_n != func_params.size()) {
+    return;
+  }
+
+  for (int i = 0; i < call_params_n; i++) {
+      if (func_params[i]->type() != op_func_param_callback) {
+        kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
+        continue;
+      }
+
+      ClassPtr lambda_class = FunctionData::is_lambda(call_params[i]);
+      kphp_error_act(call_params[i]->type() == op_func_ptr || lambda_class, "Callable object expected", continue);
+
+      FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
+      if (lambda_class) {
+        func_ptr_of_callable = lambda_class->get_invoke_function_for_extern_function(f);
+      }
+
+      kphp_error_act(func_ptr_of_callable->root, dl_pstr("Unknown callback function [%s]", func_ptr_of_callable->name.c_str()), continue);
+      VertexRange cur_params = func_ptr_of_callable->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
+
+      int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
+      int expected_arguments_count = func_params[i].as<op_func_param_callback>()->param_cnt;
+      kphp_error_act(given_arguments_count == expected_arguments_count, "Wrong callback arguments count", continue);
+
+      for (auto cur_param : cur_params) {
+        kphp_error_return(cur_param->type() == op_func_param, "Callback function with callback parameter");
+        kphp_error_return(cur_param.as<op_func_param>()->var()->ref_flag == 0, "Callback function with reference parameter");
+      }
+    }
 }

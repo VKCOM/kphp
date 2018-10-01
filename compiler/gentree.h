@@ -36,6 +36,9 @@ public:
   struct AutoLocation {
     int line_num;
 
+    explicit AutoLocation(int line_num) :
+      line_num(line_num) {}
+
     explicit AutoLocation(const GenTree *gen) :
       line_num(gen->line_num) {
     }
@@ -132,6 +135,11 @@ public:
   VertexPtr get_do();
   VertexPtr get_switch();
   VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember);
+
+  VertexAdaptor<op_function> generate__invoke_method(ClassInfo &class_info, VertexAdaptor<op_function> function) const;
+  static VertexPtr generate_constructor_call(const ClassInfo &info);
+  VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function) const;
+
   VertexPtr get_class(Token *phpdoc_token);
 
   static std::string concat_namespace_class_function_names(const std::string &namespace_name,
@@ -152,6 +160,10 @@ private:
                                                          const std::string &class_context,
                                                          std::string &function_name);
 
+ /**
+  * @param full_name full method name including namespace and context encoded
+  * @return `method_name` if `Namespace$ClassName$$method_name$$Context` was passed
+  */
   static std::string get_real_name_from_full_method_name(const std::string &full_name);
 
 public:

@@ -494,7 +494,25 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
       res = v;
       set_location(res, location);
       need = true;
+    } else if (tp == tok_oppar) {
+      AutoLocation location(this);
+      next_cur();
+      skip_phpdoc_tokens();
+      vector<VertexPtr> next;
+      bool ok_next = gen_list<op_err>(&next, &GenTree::get_expression, tok_comma);
+      CE (!kphp_error(ok_next, "get argument list failed"));
+      CE (expect(tok_clpar, "')'"));
+
+      auto call = VertexAdaptor<op_func_call>::create(next);
+      set_location(call, location);
+
+      call->set_string("__invoke");
+
+      res = VertexAdaptor<op_arrow>::create(res, call);
+      set_location(res, location);
+      need = true;
     }
+
 
   }
   return res;
@@ -644,9 +662,14 @@ VertexPtr GenTree::get_expr_top() {
       return_flag = was_arrow;
       break;
     }
-    case tok_function:
+    case tok_function: {
       res = get_function(true);
+      if (res) {
+        FunctionPtr fun = G->get_function(res->get_string());
+        res = generate_anonymous_class(fun->root.as<op_function>());
+      }
       break;
+    }
     case tok_isset:
       res = get_func_call<op_isset, op_err>();
       break;
@@ -875,6 +898,7 @@ VertexPtr GenTree::get_func_param() {
     auto name = VertexAdaptor<op_func_name>::create();
     set_location(name, st_location);
     name->str_val = static_cast<string>((*cur)->str_val);
+    kphp_assert(name->str_val == "callback");
     next_cur();
 
     CE (expect(tok_oppar, "'('"));
@@ -1807,6 +1831,83 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   return VertexPtr();
 }
 
+VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassInfo &class_info, VertexAdaptor<op_function> function) const {
+  auto func_name = VertexAdaptor<op_func_name>::create();
+  func_name->set_string("__invoke");
+
+  std::vector<VertexPtr> func_parameters;
+  patch_func_add_this(func_parameters, AutoLocation(this), class_info);
+  auto range = function->params().as<op_func_param_list>()->args();
+  func_parameters.insert(func_parameters.end(), range.begin(), range.end());
+
+  // every parameter (excluding $this) could be any class_instance
+  for (size_t i = 1, id = 0; i < func_parameters.size(); ++i) {
+    VertexAdaptor<op_func_param> param = func_parameters[i].as<op_func_param>();
+    if (param->type_declaration.empty()) {
+      param->template_type_id = id++;
+    }
+  }
+
+  auto params = VertexAdaptor<op_func_param_list>::create(func_parameters);
+  params->location.line = function->params()->location.line;
+
+  return VertexAdaptor<op_function>::create(func_name, params, function->cmd().clone());
+}
+
+VertexPtr GenTree::generate_constructor_call(const ClassInfo &info) {
+  auto constructor_call = VertexAdaptor<op_constructor_call>::create();
+  constructor_call->set_string(info.new_function->name);
+  constructor_call->set_func_id(info.new_function);
+
+  return constructor_call;
+}
+
+VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function) const {
+  VertexAdaptor<op_func_name> lambda_name = VertexAdaptor<op_func_name>::create();
+  lambda_name->str_val = get_real_name_from_full_method_name(function->ith(0)->get_string());
+  lambda_name->location.line = function->name()->location.line;
+
+  VertexAdaptor<op_class> generated_class = VertexAdaptor<op_class>::create(lambda_name);
+
+  ClassInfo class_info;
+  class_info.name = lambda_name->get_string();
+  class_info.namespace_name = FunctionData::get_lambda_namespace();
+  class_info.root = generated_class;
+
+  FunctionInfo func_info({}, class_info.namespace_name, class_info.name,
+                         class_info.namespace_name + '\\' + class_info.name, function->get_func_id()->namespace_uses, "", true, access_public);
+
+  auto register_fun = [&](VertexAdaptor<op_function> fun) {
+    func_info.root = fun;
+    std::string s = fun->name()->get_string();
+    fun->name()->set_string(concat_namespace_class_function_names(func_info.namespace_name, func_info.class_name, s));
+    FunctionPtr registered_function = register_function(func_info, &class_info);
+    fun->name()->set_string(s);
+
+    auto params = fun->params().as<op_func_param_list>()->args();
+    registered_function->is_template = std::any_of(params.begin(), params.end(),
+                                                   [](VertexPtr v) {
+                                                     return v.as<op_func_param>()->template_type_id >= 0;
+                                                   }
+    );
+    registered_function->is_required = true;
+    registered_function->kphp_required = true;
+    registered_function->set_function_in_which_lambda_was_created(function->get_func_id());
+
+    return registered_function;
+  };
+
+  register_fun(generate__invoke_method(class_info, function));
+
+  create_default_constructor(class_info, func_info, AutoLocation(lambda_name->location.line));
+  class_info.new_function->set_function_in_which_lambda_was_created(function->get_func_id());
+
+  ClassPtr registered_class = callback->register_class(class_info);
+  registered_class->init_function = FunctionPtr(new FunctionData());
+
+  return generate_constructor_call(class_info);
+}
+
 VertexPtr GenTree::get_use() {
   kphp_assert(test_expect(tok_use));
   next_cur();
@@ -2537,8 +2638,12 @@ void GenTree::add_namespace_and_context_to_function_name(const std::string &name
 }
 
 std::string GenTree::get_real_name_from_full_method_name(const std::string &full_name) {
-  size_t first_dollars_pos = full_name.find("$$") + 2;
-  kphp_assert(first_dollars_pos != string::npos);
+  size_t first_dollars_pos = full_name.find("$$");
+  if (first_dollars_pos == string::npos) {
+    return full_name;
+  }
+  first_dollars_pos += 2;
+
   size_t second_dollars_pos = full_name.find("$$", first_dollars_pos);
   if (second_dollars_pos == string::npos) {
     second_dollars_pos = full_name.size();

@@ -91,7 +91,7 @@ struct ClassInfo {
   }
 };
 
-class ClassData {
+class ClassData : public Lockable {
 public:
   int id;
   string name;
@@ -127,6 +127,10 @@ public:
   inline bool is_fully_static() const {
     return 0 == vars.size() && 0 == methods.size();
   }
+
+  std::string get_name_of_invoke_function_for_extern(FunctionPtr extern_function) const;
+  FunctionPtr get_invoke_function_for_extern_function(FunctionPtr extern_function) const;
+  FunctionPtr get_template_of_invoke_function() const;
 };
 
 
@@ -217,6 +221,7 @@ public:
   string class_name;
   string class_context_name;
   string class_extends;
+
   AccessType access_type;
   map<string, string> namespace_uses;
   set<string> disabled_warnings;
@@ -246,6 +251,8 @@ public:
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
 
+  static ClassPtr is_lambda(VertexPtr v);
+
   static std::string get_lambda_namespace() {
     static std::string lambda_namespace("LAMBDA$NAMESPACE");
     return lambda_namespace;
@@ -259,8 +266,40 @@ public:
     return is_in_lambda_namespace(namespace_name);
   }
 
+  const std::string get_outer_namespace_name() const {
+    return get_or_default_field(&FunctionData::namespace_name);
+  }
+
+  const std::string &get_outer_class_name() const {
+    return get_or_default_field(&FunctionData::class_name);
+  }
+
+  const std::string &get_outer_class_context_name() const {
+    return get_or_default_field(&FunctionData::class_context_name);
+  }
+
+  const std::string &get_outer_class_extends() const {
+    return get_or_default_field(&FunctionData::class_extends);
+  }
+
+  void set_function_in_which_lambda_was_created(FunctionPtr f) {
+    std::swap(function_in_which_lambda_was_created, f);
+  }
+
 private:
+  const std::string &get_or_default_field(std::string (FunctionData::*field)) const {
+    if (is_lambda()) {
+      kphp_assert(function_in_which_lambda_was_created);
+      return function_in_which_lambda_was_created->get_or_default_field(field);
+    }
+
+    return this->*field;
+  }
+
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
+
+private:
+  FunctionPtr function_in_which_lambda_was_created;
 };
 
 inline bool operator<(FunctionPtr a, FunctionPtr b) {

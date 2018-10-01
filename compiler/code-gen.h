@@ -3197,6 +3197,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
       kphp_error (0, dl_pstr("Can't compile resumable function [%s] without async\n"
                              "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
     }
+
     if (state == 2) {
       W << FunctionForkName(func);
     } else {
@@ -3238,7 +3239,22 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
     } else {
       W << ", ";
     }
+    ClassPtr is_lambda_in_extern = func->is_extern ? FunctionData::is_lambda(*i) : ClassPtr{};
+    int cnt_lambda_args = 0;
+    if (is_lambda_in_extern) {
+      FunctionPtr invoke_method = is_lambda_in_extern->get_invoke_function_for_extern_function(func);
+      cnt_lambda_args = invoke_method->min_argn;
+      W << "std::bind(" << FunctionName(invoke_method) << ", ";
+    }
+
     W << *i;
+
+    if (is_lambda_in_extern) {
+      for (size_t param_id = 1; param_id < cnt_lambda_args; ++param_id) {
+        W << ", std::placeholders::_" << std::to_string(param_id);
+      }
+      W << ")";
+    }
   }
   W << ")";
 }

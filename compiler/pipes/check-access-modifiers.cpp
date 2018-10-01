@@ -6,8 +6,8 @@ bool CheckAccessModifiers::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
   }
-  namespace_name = function->namespace_name;
-  class_name = function->class_name;
+  namespace_name = function->get_outer_namespace_name();
+  class_name = function->get_outer_class_name();
   return true;
 }
 VertexPtr CheckAccessModifiers::on_enter_vertex(VertexPtr root, LocalT *) {

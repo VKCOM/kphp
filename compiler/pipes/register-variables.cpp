@@ -66,7 +66,8 @@ void RegisterVariables::register_static_var(VertexAdaptor<op_var> var_vertex, Ve
   VarPtr var;
   string name;
   if (global_function_flag) {
-    kphp_assert (extra_type == op_ex_static_private || extra_type == op_ex_static_public || extra_type == op_ex_static_protected);
+    kphp_assert(extra_type == op_ex_static_private || extra_type == op_ex_static_public || extra_type == op_ex_static_protected);
+    kphp_assert(!current_function->is_lambda());
     name = GenTree::concat_namespace_class_function_names(current_function->namespace_name, current_function->class_name, var_vertex->str_val);
     var = get_global_var(name);
     var->class_id = current_function->class_id;

@@ -5,6 +5,7 @@
 #include "compiler/data.h"
 #include "compiler/gentree.h"
 #include "compiler/io.h"
+#include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
 
 string register_unique_name(const string &prefix) {
@@ -98,17 +99,19 @@ string gen_unique_name(string prefix, bool flag) {
 }
 
 inline string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
+  const std::string &namespace_name = current_function->get_outer_namespace_name();
+
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
-      kphp_error(!current_function->namespace_name.empty(),
-                 "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
+      kphp_error(!namespace_name.empty(), "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
       if (class_name == "parent") {
-        kphp_assert(!current_function->class_extends.empty());
-        class_name = resolve_uses(current_function, current_function->class_extends, delim);
+        const std::string &extends = current_function->get_outer_class_extends();
+        kphp_assert(!extends.empty());
+        class_name = resolve_uses(current_function, extends, delim);
       } else if (class_name == "static") {
-        class_name = current_function->class_context_name;
+        class_name = current_function->get_outer_class_context_name();
       } else {
-        class_name = current_function->namespace_name + "\\" + current_function->class_name;
+        class_name = namespace_name + "\\" + current_function->get_outer_class_name();
       }
     } else {
       size_t slash_pos = class_name.find('\\');
@@ -116,12 +119,12 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
         slash_pos = class_name.length();
       }
       string class_name_start = class_name.substr(0, slash_pos);
-      map<string, string>::const_iterator uses_it = current_function->namespace_uses.find(class_name_start);
+      auto uses_it = current_function->namespace_uses.find(class_name_start);
 
       if (uses_it != current_function->namespace_uses.end()) {
         class_name = uses_it->second + class_name.substr(class_name_start.length());
       } else {
-        class_name = current_function->namespace_name + "\\" + class_name;
+        class_name = namespace_name + "\\" + class_name;
       }
     }
   }
@@ -262,7 +265,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
 
 string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim) {
   if (class_name == "static" || class_name == "self" || class_name == "parent") {
-    return resolve_uses(function, "\\" + function->class_context_name, delim);
+    return resolve_uses(function, "\\" + function->get_outer_class_context_name(), delim);
   }
   return resolve_uses(function, class_name, delim);
 }
@@ -278,7 +281,7 @@ string get_full_static_member_name(FunctionPtr function, const string &name, boo
   string class_name = resolve_uses(function, prefix_name, '$');
   string fun_name = name.substr(pos$$ + 2);
   string new_name = class_name + "$$" + fun_name;
-  if (append_with_context) {
+  if (!function->is_lambda() && append_with_context) {
     string context_name = get_context_by_prefix(function, prefix_name);
     if (context_name != class_name) {
       new_name += "$$" + context_name;

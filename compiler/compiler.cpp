@@ -166,7 +166,8 @@ public:
       }
     }
     if (root->type() == op_constructor_call) {
-      if (likely(!root->type_help)) {     // type_help <=> Memcache | Exception
+      bool is_lambda = root->get_func_id() && root->get_func_id()->is_lambda();
+      if (!is_lambda && likely(!root->type_help)) {     // type_help <=> Memcache | Exception
         const string &class_name = resolve_uses(current_function, root->get_string(), '/');
         require_class(class_name, "");
       }
@@ -657,7 +658,7 @@ private:
             if (assum != assum_not_instance) {
               name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
             } else {
-              name_of_function_instance += std::to_string(i) + "$not_instance";
+              name_of_function_instance += "$" + std::to_string(i) + "not_instance";
             }
           }
           break;
@@ -665,6 +666,31 @@ private:
 
         case op_func_param_callback: {
           call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
+          if (ClassPtr lambda_class = FunctionData::is_lambda(call_args[i])) {
+            auto template_of_invoke_method = lambda_class->get_invoke_function_for_extern_function(call->get_func_id());
+
+            if (!template_of_invoke_method) {
+              template_of_invoke_method = lambda_class->get_template_of_invoke_function();
+              std::string invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call->get_func_id());
+
+              G->operate_on_function_locking(invoke_name, [&](FunctionPtr &f_inst) {
+                if (!f_inst) {
+                  f_inst = FunctionData::generate_instance_of_template_function({}, template_of_invoke_method, invoke_name);
+                  if (f_inst) {
+                    f_inst->is_required = true;
+                    f_inst->kphp_required = true;
+                    (*os.project_to_nth_data_stream<1>()) << f_inst;
+                    AutoLocker<Lockable *> locker(&(*lambda_class));
+                    lambda_class->methods.emplace_back(f_inst);
+                  }
+                }
+
+                if (f_inst) {
+                  f_inst->is_callback = true;
+                }
+              });
+            }
+          }
           break;
         }
 
@@ -681,17 +707,22 @@ private:
       G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
         if (!f_inst) {
           f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
-          f_inst->is_required = true;
-          f_inst->kphp_required = true;
-          ClassPtr klass = G->get_class(f_inst->namespace_name + "\\" + f_inst->class_name);
-          if (klass) {
-            klass->methods.emplace_back(f_inst);
-          }
+          if (f_inst) {
+            f_inst->is_required = true;
+            f_inst->kphp_required = true;
+            ClassPtr klass = G->get_class(f_inst->namespace_name + "\\" + f_inst->class_name);
+            if (klass) {
+              AutoLocker<Lockable *> locker(&(*klass));
+              klass->methods.emplace_back(f_inst);
+            }
 
-          (*os.project_to_nth_data_stream<1>()) << f_inst;
+            (*os.project_to_nth_data_stream<1>()) << f_inst;
+          }
         }
 
-        set_func_id(call, f_inst);
+        if (f_inst) {
+          set_func_id(call, f_inst);
+        }
       });
     }
 
@@ -773,90 +804,38 @@ public:
     return default_check_function(function) && function->root->type() == op_function;
   }
 
-  bool on_start(FunctionPtr function) {
-    if (!FunctionPassBase::on_start(function)) {
-      return false;
-    }
-    return true;
-  }
-
   void check_func_call(VertexPtr call) {
     FunctionPtr f = call->get_func_id();
-    kphp_assert (f);
-    kphp_error_return (f->root, dl_pstr("Function [%s] undeclared", f->name.c_str()));
+    kphp_assert(f);
+    kphp_error_return(f->root, dl_pstr("Function [%s] undeclared", f->name.c_str()));
 
-    if (call->type() == op_func_ptr) {
+    if (call->type() == op_func_ptr || f->varg_flag) {
       return;
     }
 
-    VertexRange func_params = f->root.as<meta_op_function>()->params().
-      as<op_func_param_list>()->params();
-
-    if (f->varg_flag) {
-      return;
-    }
+    VertexRange func_params = f->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
 
     VertexRange call_params = call->type() == op_constructor_call ? call.as<op_constructor_call>()->args()
                                                                   : call.as<op_func_call>()->args();
-    int func_params_n = (int)func_params.size(), call_params_n = (int)call_params.size();
+    int func_params_n = static_cast<int>(func_params.size());
+    int call_params_n = static_cast<int>(call_params.size());
 
-    kphp_error_return (
-      call_params_n >= f->min_argn,
+    kphp_error_return(call_params_n >= f->min_argn,
       dl_pstr("Not enough arguments in function [%s:%s] [found %d] [expected at least %d]",
               f->file_id->file_name.c_str(), f->name.c_str(), call_params_n, f->min_argn)
     );
 
-    kphp_error (
-      call_params.begin() == call_params.end() || call_params[0]->type() != op_varg,
-      dl_pstr(
-        "call_user_func_array is used for function [%s:%s]",
+    kphp_error(call_params.begin() == call_params.end() || call_params[0]->type() != op_varg,
+      dl_pstr("call_user_func_array is used for function [%s:%s]",
         f->file_id->file_name.c_str(), f->name.c_str()
       )
     );
 
-    kphp_error_return (
-      func_params_n >= call_params_n,
-      dl_pstr(
-        "Too much arguments in function [%s:%s] [found %d] [expected %d]",
+    kphp_error_return(func_params_n >= call_params_n,
+      dl_pstr("Too much arguments in function [%s:%s] [found %d] [expected %d]",
         f->file_id->file_name.c_str(), f->name.c_str(), call_params_n, func_params_n
       )
     );
-    for (int i = 0; i < call_params_n; i++) {
-      if (func_params[i]->type() == op_func_param_callback) {
-        kphp_error_act (
-          call_params[i]->type() != op_string,
-          "Can't use a string as callback function's name",
-          continue
-        );
-        kphp_error_act (
-          call_params[i]->type() == op_func_ptr,
-          "Function pointer expected",
-          continue
-        );
-
-        FunctionPtr func_ptr = call_params[i]->get_func_id();
-
-        kphp_error_act (
-          func_ptr->root,
-          dl_pstr("Unknown callback function [%s]", func_ptr->name.c_str()),
-          continue
-        );
-        VertexRange cur_params = func_ptr->root.as<meta_op_function>()->params().
-          as<op_func_param_list>()->params();
-        kphp_error (
-          (int)cur_params.size() == func_params[i].as<op_func_param_callback>()->param_cnt,
-          "Wrong callback arguments count"
-        );
-        for (int j = 0; j < (int)cur_params.size(); j++) {
-          kphp_error (cur_params[j]->type() == op_func_param,
-                      "Callback function with callback parameter");
-          kphp_error (cur_params[j].as<op_func_param>()->var()->ref_flag == 0,
-                      "Callback function with reference parameter");
-        }
-      } else {
-        kphp_error (call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
-      }
-    }
   }
 
   VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__((unused))) {

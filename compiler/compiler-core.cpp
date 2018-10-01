@@ -92,11 +92,12 @@ ClassPtr CompilerCore::create_class(const ClassInfo &info) {
   klass->root = info.root;
   klass->extends = info.extends;
 
-  string init_function_name_str = stage::get_file()->main_func_name;
-  klass->init_function = get_function(init_function_name_str);
-  klass->init_function->class_id = klass;
+  if (!FunctionData::is_in_lambda_namespace(info.namespace_name)) {
+    string init_function_name_str = stage::get_file()->main_func_name;
+    klass->init_function = get_function(init_function_name_str);
+    klass->init_function->class_id = klass;
+  }
   klass->static_fields.insert(info.static_fields.begin(), info.static_fields.end());
-
   for (std::vector<VertexPtr>::const_iterator v = info.vars.begin(); v != info.vars.end(); ++v) {
     OperationExtra extra_type = (*v)->extra_type;
 
@@ -213,7 +214,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, const string &co
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, context));
       char tmp[50];
       sprintf(tmp, "%x", hash(full_file_name + context));
-      string func_name = gen_unique_name("src$" + new_file->short_file_name + tmp, true);
+      string func_name = gen_unique_name("src_" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name(new_file->file_name);
       size_t last_slash = new_file->unified_file_name.rfind('/');
@@ -243,7 +244,7 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
   }
   FunctionPtr function;
   if (root->type() == op_function || root->type() == op_func_decl) {
-    function = FunctionData::create_function(info);
+    function = root->get_func_id() ?: FunctionData::create_function(info);
   } else if (root->type() == op_extern_func) {
     string function_name = root.as<meta_op_function>()->name()->get_string();
     save_extern_func_header(function_name, root);

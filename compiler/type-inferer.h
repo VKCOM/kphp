@@ -828,7 +828,7 @@ private:
         //FIXME?.. just use pointer to node?..
         create_set(as_lvalue(function, i), function->param_ids[i]);
         create_set(function->param_ids[i], as_rvalue(function, i));
-        if (function->is_callback) {
+        if (function->is_callback && (i > 0 || !function->is_lambda())) {
           create_set(as_lvalue(function, i), tp_var);
         }
       }

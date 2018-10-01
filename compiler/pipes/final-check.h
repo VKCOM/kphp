@@ -63,5 +63,8 @@ public:
   }
 
   VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *local __attribute__((unused)));
+
+private:
+  void check_op_func_call(VertexAdaptor<op_func_call> call);
 };
 
