@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/wrappers/string_view.h"
+
 #include "compiler/bicycle.h"
 #include "compiler/class-assumptions.h"
 #include "compiler/data_ptr.h"
@@ -243,6 +245,19 @@ public:
   static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
+
+  static std::string get_lambda_namespace() {
+    static std::string lambda_namespace("LAMBDA$NAMESPACE");
+    return lambda_namespace;
+  }
+
+  static bool is_in_lambda_namespace(const std::string &namespace_name) {
+    return vk::string_view{namespace_name}.starts_with(get_lambda_namespace());
+  }
+
+  bool is_lambda() const {
+    return is_in_lambda_namespace(namespace_name);
+  }
 
 private:
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
