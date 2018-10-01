@@ -5,7 +5,6 @@
 #include "compiler/const-manipulations.h"
 #include "compiler/gentree.h"
 #include "compiler/make.h"
-#include "compiler/pass-register-vars.hpp"
 
 FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 

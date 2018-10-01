@@ -25,8 +25,6 @@
 #include "compiler/io.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
-#include "compiler/pass-optimize.hpp"
-#include "compiler/pass-register-vars.hpp"
 #include "compiler/phpdoc.h"
 #include "compiler/pipes/analyzer.h"
 #include "compiler/pipes/calc-actual-edges.h"
@@ -35,12 +33,16 @@
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
+#include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-infered-instances.h"
 #include "compiler/pipes/check-instance-props.h"
+#include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-returns.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/collect-classes.h"
+#include "compiler/pipes/collect-const-vars.h"
 #include "compiler/pipes/collect-defines.h"
+#include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/create-switch-foreach-vars.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
@@ -49,12 +51,14 @@
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
 #include "compiler/pipes/load-files.h"
+#include "compiler/pipes/optimization.h"
 #include "compiler/pipes/parse.h"
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-defines.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-vararg.h"
 #include "compiler/pipes/register-defines.h"
+#include "compiler/pipes/register-variables.h"
 #include "compiler/pipes/split-switch.h"
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
@@ -1644,7 +1648,8 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<CheckUBF>{}
     >> PassC<ExtractResumableCallsPass>{}
     >> PassC<ExtractAsyncPass>{}
-    >> PipeC<AnalyzerF>{}
+    >> PassC<CheckNestedForeachPass>{}
+    >> PassC<CommonAnalyzerPass>{}
     >> PassC<CheckAccessModifiers>{}
     >> PassC<FinalCheckPass>{}
     >> SyncC<CodeGenF>{}

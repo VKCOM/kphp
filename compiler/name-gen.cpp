@@ -1,12 +1,11 @@
 #include "compiler/name-gen.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/const-manipulations.h"
 #include "compiler/data.h"
+#include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/stage.h"
-#include "compiler/gentree.h"
-#include "compiler/pass-register-vars.hpp"
-#include "compiler/const-manipulations.h"
 
 string register_unique_name(const string &prefix) {
   //static set <string> v;
