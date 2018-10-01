@@ -1,10 +1,12 @@
 #pragma once
 
-#include "PHP/common-net-functions.h"
+#include <functional>
 
+#include "PHP/common-net-functions.h"
 #include "runtime/kphp_core.h"
 
 extern string_buffer *coub;//TODO static
+using shutdown_function_type = std::function<var()>;
 
 
 void f$ob_clean();
@@ -33,7 +35,7 @@ void f$setcookie(const string &name, const string &value, int expire = 0, const 
 
 void f$setrawcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$register_shutdown_function(var (*f)());
+void f$register_shutdown_function(shutdown_function_type callback);
 
 void f$fastcgi_finish_request(int exit_code = 0);
 

@@ -1,13 +1,13 @@
 #include "runtime/interface.h"
 
 #include <arpa/inet.h>
+#include <functional>
 #include <getopt.h>
 #include <netdb.h>
 #include <unistd.h>
 
 #include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
-
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/curl.h"
@@ -398,11 +398,8 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
   return &static_SB_spare;
 }
 
-#define MAX_SHUTDOWN_FUNCTIONS 256
-
-typedef var (*shutdown_function_type)();
-
-static shutdown_function_type shutdown_functions[MAX_SHUTDOWN_FUNCTIONS];
+constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
+shutdown_function_type shutdown_functions[MAX_SHUTDOWN_FUNCTIONS];
 int shutdown_functions_count;
 static bool finished;
 static bool flushed;
@@ -474,12 +471,12 @@ void f$fastcgi_finish_request(int exit_code) {
   coub->clean();
 }
 
-void f$register_shutdown_function(var (*f)()) {
+void f$register_shutdown_function(shutdown_function_type f) {
   if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
     return;
   }
-  shutdown_functions[shutdown_functions_count++] = f;
+  shutdown_functions[shutdown_functions_count++] = std::move(f);
 }
 
 void finish(int exit_code) {
