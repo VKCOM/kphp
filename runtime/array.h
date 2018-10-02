@@ -290,6 +290,8 @@ public:
   void push_back(const iterator &it);
   const T push_back_return(const T &v);
 
+  inline void fill_vector(int num, const T &value);
+
   inline int get_next_key() const __attribute__ ((always_inline));
 
   bool has_key(int int_key) const;
