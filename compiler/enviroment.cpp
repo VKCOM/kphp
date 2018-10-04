@@ -252,6 +252,10 @@ const string &KphpEnviroment::get_cxx_flags() const {
   return cxx_flags_;
 }
 
+const string &KphpEnviroment::get_ld() const {
+  return ld_;
+}
+
 const string &KphpEnviroment::get_ld_flags() const {
   return ld_flags_;
 }
@@ -393,6 +397,7 @@ bool KphpEnviroment::init() {
      " -fno-omit-frame-pointer";
   cxx_flags_ = ss.str();
 
+  init_env_var(&ld_, "LD", "ld");
   string user_ld_flags;
   init_env_var(&user_ld_flags, "LDFLAGS", "-ggdb");
   ld_flags_ = user_ld_flags + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -rdynamic";

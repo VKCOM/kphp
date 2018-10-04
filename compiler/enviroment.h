@@ -36,6 +36,7 @@ private:
 
   string cxx_;
   string cxx_flags_;
+  string ld_;
   string ld_flags_;
 
   string dest_dir_;
@@ -127,6 +128,7 @@ public:
 
   const string &get_cxx() const;
   const string &get_cxx_flags() const;
+  const string &get_ld() const;
   const string &get_ld_flags() const;
 
   bool init();

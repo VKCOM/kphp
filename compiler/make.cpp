@@ -347,6 +347,10 @@ const string &KphpMakeEnv::get_cxx_flags() const {
   return cxx_flags;
 }
 
+const string &KphpMakeEnv::get_ld() const {
+  return ld;
+}
+
 const string &KphpMakeEnv::get_ld_flags() const {
   return ld_flags;
 }
@@ -431,7 +435,7 @@ string Cpp2ObjTarget::get_cmd() {
 
 string Objs2ObjTarget::get_cmd() {
   std::stringstream ss;
-  ss << "ld" <<
+  ss << env->get_ld() <<
      " -r" <<
      " -o" << target() <<
      " " << dep_list();
@@ -511,6 +515,7 @@ KphpTarget *KphpMake::create_objs2bin_target(const vector<File *> &objs, File *b
 void KphpMake::init_env(const KphpEnviroment &kphp_env) {
   env.cxx = kphp_env.get_cxx();
   env.cxx_flags = kphp_env.get_cxx_flags();
+  env.ld = kphp_env.get_ld();
   env.ld_flags = kphp_env.get_ld_flags();
   env.debug_level = kphp_env.get_debug_level();
 }
