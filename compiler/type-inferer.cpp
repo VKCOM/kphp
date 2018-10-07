@@ -1,6 +1,8 @@
+#include <regex>
 #include "compiler/type-inferer.h"
 
 #include "compiler/gentree.h"
+#include "common/wrappers/string_view.h"
 
 void init_functions_tinf_nodes(FunctionPtr function) {
   assert (function->tinf_state == 1);
@@ -250,34 +252,44 @@ void tinf::ExprNode::recalc(tinf::TypeInferer *inferer) {
   f.run();
 }
 
-string tinf::VarNode::get_description() {
-  stringstream ss;
+string tinf::VarNode::get_var_name() {
+  return (var_ ? var_->get_human_readable_name() : "$STRANGE_VAR");
+}
+
+string tinf::VarNode::get_function_name() {
   if (!function_) {
     if (var_ && var_->holder_func) {
       function_ = var_->holder_func;
     }
   }
+  return (function_ ? string(function_->is_static_function() ? "static " : "")
+                       + "function: " + function_->get_human_readable_name() : (var_->type_ == VarData::Type::var_global_t ? "global scope" : ""));
+}
+
+string tinf::VarNode::get_var_as_argument_name() {
+  int actual_num = (function_ && function_->class_id && function_->is_instance_function()
+                    ? param_i - 1 : param_i);
+  string what_arg = (actual_num < 0 ? "implicit" : int_to_str(actual_num) + "-th");
+  return what_arg + " arg (" + get_var_name() + ")";
+}
+
+string tinf::VarNode::get_description() {
+  stringstream ss;
   if (is_variable()) {
-    ss << "[$";
-    if (!var_) {
-      ss << "STRANGE_VAR";
-    } else {
-      ss << (var_->class_id ? (var_->class_id->name + "::" + var_->name) : var_->name);
-    }
-    ss << "]";
+    ss << "as variable:" << "  " << get_var_name();
   } else if (is_return_value_from_function()) {
-    ss << "[return .]";
+    ss << "as expression:" << "  " << "return ...";
   } else {
-    ss << "[arg #" << int_to_str(param_i) << " ($" << (var_ ? var_->name : "STRANGE_VAR") << ")]";
+    ss << "as argument:" << "  " << get_var_as_argument_name();
   }
-  if (function_) {
-    ss << "\tat [function = " << function_->name << "]";
-  }
+  ss << "  " << "at " + get_function_name();
   return ss.str();
 }
 
 string tinf::TypeNode::get_description() {
-  return "type[" + type_out(type_) + "]";
+  stringstream ss;
+  ss << "as type:" << "  " << type_out(type_);
+  return ss.str();
 }
 
 static string get_expr_description(VertexPtr expr) {
@@ -285,8 +297,14 @@ static string get_expr_description(VertexPtr expr) {
     case op_var:
       return "$" + expr.as<op_var>()->get_var_id()->name;
 
-    case op_func_call:
-      return expr.as<op_func_call>()->get_func_id()->name + "(...)";
+    case op_func_call: {
+      string function_name = expr.as<op_func_call>()->get_func_id()->get_human_readable_name();
+      std::smatch matched;
+      if (std::regex_match(function_name, matched, std::regex("(.+)( \\(inherited from .+?\\))"))) {
+        return matched[1].str() + "(...)" + matched[2].str();
+      }
+      return function_name + "(...)";
+    }
 
     case op_constructor_call:
       return "new " + expr->get_string() + "()";
@@ -313,11 +331,17 @@ static string get_expr_description(VertexPtr expr) {
 
 string tinf::ExprNode::get_description() {
   stringstream ss;
-  ss << "expr[";
-  ss << get_expr_description(expr_);
-  ss << "]";
-  ss << "\tat [" << stage::to_str(expr_->get_location()) << "]";
+  ss << "as expression:" << "  " << get_expr_description(expr_) << "  " << "at " + get_location_text();
   return ss.str();
+}
+
+string tinf::ExprNode::get_location_text() {
+  string location = stage::to_str(expr_->get_location());
+  string root_path = G->env().get_base_dir();
+  if (vk::string_view(location).starts_with(root_path)) {
+    return string(".../") + location.substr(root_path.length());
+  }
+  return location;
 }
 
 const Location &tinf::ExprNode::get_location() {

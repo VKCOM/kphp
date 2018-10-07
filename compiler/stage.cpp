@@ -31,9 +31,9 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   if (assert_level == WRN_ASSERT_LEVEL && G->env().get_warnings_file()) {
     file = G->env().get_warnings_file();
   }
-  fprintf(file, "%s [gen by %s at %d]\n", get_assert_level_desc(assert_level), file_name, line_number);
+  fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n%s [gen by %s at %d]\n", get_assert_level_desc(assert_level), file_name, line_number);
   stage::print(file);
-  fprintf(file, " %s\n\n", full_description);
+  fprintf(file, "%s\n\n", full_description);
   if (assert_level == FATAL_ASSERT_LEVEL) {
     fprintf(file, "Compilation failed.\n"
                   "It is probably happened due to incorrect or unsupported PHP input.\n"
@@ -101,7 +101,8 @@ void stage::print_file(FILE *f) {
 }
 
 void stage::print_function(FILE *f) {
-  fprintf(f, "[function = %s]\n", get_function_name().c_str());
+  FunctionPtr function = get_function();
+  fprintf(f, "[function = %s]\n", (function ? function->get_human_readable_name() : "unknown function").c_str());
 }
 
 void stage::print_line(FILE *f) {
@@ -232,8 +233,8 @@ const string &stage::get_function_name() {
 
 string stage::to_str(const Location &new_location) {
   set_location(new_location);
-
+  FunctionPtr function = get_function();
   stringstream ss;
-  ss << get_file_name() << ":" << get_function_name() << ":" << get_line();
+  ss << get_file_name() << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();
   return ss.str();
 }

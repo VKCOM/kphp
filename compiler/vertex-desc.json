@@ -233,7 +233,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: empty>"
+      "str": "empty"
     }
   },
   {
@@ -244,35 +244,35 @@
     "name": "op_int_const",
     "base_name": "meta_op_num",
     "props": {
-      "str": "<TODO: op_int>"
+      "str": "const int"
     }
   },
   {
     "name": "op_uint_const",
     "base_name": "meta_op_num",
     "props": {
-      "str": "<TODO: op_uint>"
+      "str": "const uint"
     }
   },
   {
     "name": "op_long_const",
     "base_name": "meta_op_num",
     "props": {
-      "str": "<TODO: op_long>"
+      "str": "const long"
     }
   },
   {
     "name": "op_ulong_const",
     "base_name": "meta_op_num",
     "props": {
-      "str": "<TODO: op_ulong>"
+      "str": "const ulong"
     }
   },
   {
     "name": "op_float_const",
     "base_name": "meta_op_num",
     "props": {
-      "str": "<TODO: op_float>"
+      "str": "const float"
     }
   },
   {
@@ -286,7 +286,7 @@
       "rl": "rl_var",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: op_var>"
+      "str": "var"
     }
   },
   {
@@ -299,7 +299,7 @@
       "rl": "rl_const",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: op_string>"
+      "str": "const string"
     }
   },
   {
@@ -312,7 +312,7 @@
       "rl": "rl_const",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: op_func_name>"
+      "str": "function name"
     }
   },
   {
@@ -322,7 +322,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: op_string_build>"
+      "str": "string build"
     },
     "ranges": {
       "args": [
@@ -342,7 +342,7 @@
       "rl": "rl_func",
       "cnst": "cnst_func",
       "type": "common_op",
-      "str": "<TODO: op_func_call>"
+      "str": "function call"
     }
   },
   {
@@ -356,7 +356,7 @@
       "rl": "rl_error",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: op_func_ptr>"
+      "str": "function ptr"
     }
   },
   {
@@ -409,7 +409,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: seq>"
+      "str": "sequence"
     }
   },
   {
@@ -419,7 +419,7 @@
       "rl": "rl_func",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: seq_comma>"
+      "str": "comma separated sequence"
     }
   },
   {
@@ -429,7 +429,7 @@
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: seq_inplace_var>"
+      "str": "seq_rval"
     }
   },
   {
@@ -464,14 +464,14 @@
     "name": "op_func_decl",
     "base_name": "meta_op_function",
     "props": {
-      "str": "<TODO: op_extern_func>"
+      "str": "function declaration"
     }
   },
   {
     "name": "op_extern_func",
     "base_name": "meta_op_function",
     "props": {
-      "str": "<TODO: op_extern_func>"
+      "str": "extern function"
     }
   },
   {
@@ -479,7 +479,7 @@
     "base_name": "meta_op_xset",
     "props": {
       "rl": "rl_op",
-      "str": "<TODO: isset>"
+      "str": "isset"
     }
   },
   {
@@ -487,7 +487,7 @@
     "base_name": "meta_op_xset",
     "props": {
       "rl": "rl_common",
-      "str": "<TODO: unset>"
+      "str": "unset"
     }
   },
   {
@@ -497,7 +497,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: echo>"
+      "str": "echo"
     }
   },
   {
@@ -507,7 +507,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: dbg_echo>"
+      "str": "debug echo"
     }
   },
   {
@@ -517,7 +517,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: var_dump>"
+      "str": "var_dump"
     }
   },
   {
@@ -527,7 +527,7 @@
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: print>"
+      "str": "print"
     }
   },
   {
@@ -538,7 +538,7 @@
     "name": "op_while",
     "base_name": "meta_op_cycle",
     "props": {
-      "str": "<TODO: while>"
+      "str": "while-loop"
     }
   },
   {
@@ -549,7 +549,7 @@
     "name": "op_do",
     "base_name": "meta_op_cycle",
     "props": {
-      "str": "<TODO: do>"
+      "str": "do-loop"
     }
   },
   {
@@ -562,7 +562,7 @@
     "name": "op_for",
     "base_name": "meta_op_cycle",
     "props": {
-      "str": "<TODO: for>"
+      "str": "for-loop"
     }
   },
   {
@@ -573,7 +573,7 @@
     "name": "op_foreach",
     "base_name": "meta_op_cycle",
     "props": {
-      "str": "<TODO: foreach>"
+      "str": "foreach-loop"
     }
   },
   {
@@ -592,7 +592,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: op_foreach_param>"
+      "str": "foreach parameter"
     }
   },
   {
@@ -606,7 +606,7 @@
     "name": "op_switch",
     "base_name": "meta_op_cycle",
     "props": {
-      "str": "<TODO: switch>"
+      "str": "switch"
     },
     "ranges": {
       "variables": [
@@ -634,7 +634,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: if>"
+      "str": "if"
     }
   },
   {
@@ -644,7 +644,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: else>"
+      "str": "else"
     }
   },
   {
@@ -654,7 +654,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: elseif>"
+      "str": "elseif"
     }
   },
   {
@@ -664,7 +664,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: break>"
+      "str": "break"
     }
   },
   {
@@ -674,7 +674,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: continue>"
+      "str": "continue"
     }
   },
   {
@@ -684,7 +684,7 @@
     "name": "op_function",
     "base_name": "meta_op_function",
     "props": {
-      "str": "<TODO: function>"
+      "str": "function"
     }
   },
   {
@@ -698,7 +698,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: case>"
+      "str": "case"
     }
   },
   {
@@ -711,7 +711,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: op_default>"
+      "str": "default"
     }
   },
   {
@@ -721,7 +721,7 @@
       "rl": "rl_func",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: array>"
+      "str": "array"
     }
   },
   {
@@ -741,7 +741,7 @@
       "rl": "rl_func",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: list>"
+      "str": "list"
     },
     "sons": {
       "array": -1
@@ -770,7 +770,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: global>"
+      "str": "global"
     }
   },
   {
@@ -780,7 +780,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: static>"
+      "str": "static"
     }
   },
   {
@@ -790,7 +790,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: return>"
+      "str": "return"
     }
   },
   {
@@ -922,7 +922,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_op",
-      "str": "<TODO: op_concat>"
+      "str": "concatenation"
     }
   },
   {
@@ -936,7 +936,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_op",
-      "str": "*"
+      "str": "multiplication"
     }
   },
   {
@@ -946,7 +946,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "divide"
+      "str": "division"
     }
   },
   {
@@ -1293,8 +1293,8 @@
     "base_name": "meta_op_base",
     "props": {
       "cnst": "cnst_const_func",
-      "description": "ternary operator",
-      "str": "<TODO: ternary>",
+      "description": "? ... : ...",
+      "str": "ternary operator",
       "rl": "rl_op",
       "fixity": "right_opp",
       "main": "expression_opp",
@@ -1356,7 +1356,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "prefix_op",
-      "str": "<TODO: op_addr>"
+      "str": "&$..."
     }
   },
   {
@@ -1379,7 +1379,7 @@
       "rl": "rl_other",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: op_conv_int_l>"
+      "str": "(int)"
     }
   },
   {
@@ -1419,7 +1419,7 @@
       "rl": "rl_other",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: op_conv_array_l>"
+      "str": "(array)"
     }
   },
   {
@@ -1429,7 +1429,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "conv_op",
-      "str": "<TODO: op_conv_object>"
+      "str": "(object)"
     }
   },
   {
@@ -1534,7 +1534,7 @@
       "rl": "rl_index",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "<TODO: op_index>"
+      "str": "$...[.]"
     }
   },
   {
@@ -1603,7 +1603,7 @@
       "rl": "rl_var",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: op_lvalue_null>"
+      "str": "lvalue null"
     }
   },
   {
@@ -1631,7 +1631,7 @@
     "base_name": "meta_op_require",
     "props": {
       "rl": "rl_func",
-      "str": "<TODO: require>"
+      "str": "require"
     }
   },
   {
@@ -1639,7 +1639,7 @@
     "base_name": "meta_op_require",
     "props": {
       "rl": "rl_common",
-      "str": "<TODO: require_once>"
+      "str": "require_once"
     }
   },
   {
@@ -1653,7 +1653,7 @@
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: defined>"
+      "str": "defined"
     }
   },
   {
@@ -1672,7 +1672,7 @@
       "rl": "rl_const",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: op_define_val>"
+      "str": "define_val"
     }
   },
   {
@@ -1687,7 +1687,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: try>"
+      "str": "try"
     }
   },
   {
@@ -1700,7 +1700,7 @@
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "<TODO: fork>"
+      "str": "fork"
     }
   },
   {
@@ -1712,7 +1712,7 @@
     "base_name": "meta_op_base",
     "props": {
       "type": "common_op",
-      "str": "<TODO: async>"
+      "str": "async"
     }
   },
   {
@@ -1722,7 +1722,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: throw>"
+      "str": "throw"
     }
   },
   {
@@ -1740,7 +1740,7 @@
       "rl": "rl_common",
       "cnst": "cnst_not_func",
       "type": "common_op",
-      "str": "<TODO: class>"
+      "str": "class"
     }
   }
 ]

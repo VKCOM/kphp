@@ -1,3 +1,4 @@
+#include <regex>
 #include "compiler/data.h"
 
 #include <functional>
@@ -7,6 +8,7 @@
 #include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/type-inferer.h"
+#include "compiler/name-gen.h"
 
 //IdGen <VertexPtr> tree_id_gen;
 //BikeIdGen <VertexPtr> bike_tree_id_gen;
@@ -40,6 +42,10 @@ void VarData::set_uninited_flag(bool f) {
 
 bool VarData::get_uninited_flag() {
   return uninited_flag;
+}
+
+string VarData::get_human_readable_name() const {
+  return (this->class_id ? (this->class_id->name + " :: $" + this->name) : "$" + this->name);
 }
 
 /*** ClassData ***/
@@ -310,6 +316,18 @@ string FunctionData::get_resumable_path() const {
   }
   return res.str();
 }
+
+string FunctionData::get_human_readable_name() const {
+  std::smatch matched;
+  if (std::regex_match(this->name, matched, std::regex("(.+)\\$\\$(.+)\\$\\$(.+)"))) {
+    string base_class = matched[1].str(), actual_class = matched[3].str();
+    base_class = replace_characters(base_class, '$', '\\');
+    actual_class = replace_characters(actual_class, '$', '\\');
+    return actual_class + " :: " + matched[2].str() + " (" + "inherited from " + base_class + ")";
+  }
+  return std::regex_replace(std::regex_replace(this->name, std::regex("\\$\\$"), " :: "), std::regex("\\$"), "\\");
+}
+
 /*** DefineData ***/
 DefineData::DefineData() :
   id(),

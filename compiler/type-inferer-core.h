@@ -102,6 +102,9 @@ public:
   }
 
   string get_description();
+  string get_var_name();
+  string get_function_name();
+  string get_var_as_argument_name();
 
   bool is_variable() const {
     return param_i == e_variable;
@@ -135,6 +138,7 @@ public:
   }
 
   string get_description();
+  string get_location_text();
   const Location &get_location();
 };
 

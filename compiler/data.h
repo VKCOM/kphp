@@ -62,6 +62,8 @@ public:
   VarData(Type type = var_unknown_t);
 
   inline Type &type() { return type_; }
+
+  string get_human_readable_name() const;
 };
 
 struct ClassInfo {
@@ -238,9 +240,14 @@ public:
 
   bool is_static_init_empty_body() const;
   string get_resumable_path() const;
+  string get_human_readable_name() const;
 
   inline bool is_instance_function() const {
     return access_type == access_public || access_type == access_protected || access_type == access_private;
+  }
+
+  inline bool is_static_function() const {
+    return access_type == access_static_public || access_type == access_static_protected || access_type == access_static_private;
   }
 
   inline bool is_constructor() const {
