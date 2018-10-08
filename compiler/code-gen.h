@@ -661,7 +661,7 @@ inline PlainCode::PlainCode(const string_ref &s) :
 
 inline void PlainCode::compile(CodeGenerator &W) const {
   if (W.debug_flag) {
-    fprintf(stderr, "%s", str.c_str());
+    fprintf(stderr, "%.*s", (int)str.size(), str.begin());
     return;
   }
   W.get_writer()(str);
@@ -683,7 +683,7 @@ inline Include::Include(const PlainCode &plain_code, bool is_extern) :
 
 inline void Include::compile(CodeGenerator &W) const {
   if (!is_extern) {
-    W.get_writer().add_include(plain_code.str.str());
+    W.get_writer().add_include(static_cast<string>(plain_code.str));
   }
   W << "#include \"" << plain_code << "\"" << NL;
 }

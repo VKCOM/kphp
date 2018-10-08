@@ -73,7 +73,7 @@ bool SrcFile::load() {
 string_ref SrcFile::get_line(int id) {
   id--;
   if (id < 0 || id >= (int)lines.size()) {
-    return string_ref();
+    return string_ref(nullptr, nullptr);
   }
   return lines[id];
 }
@@ -188,7 +188,7 @@ void WriterData::dump(string &dest_str, T begin, T end, SrcFilePtr file) {
               dest_str += dl_pstr("//%d: ", cur_id);
               string_ref comment = file->get_line(cur_id);
               int last_printed = ':';
-              for (int j = 0, nj = comment.length(); j < nj; j++) {
+              for (int j = 0, nj = comment.size(); j < nj; j++) {
                 int c = comment.begin()[j];
                 if (c == '\n') {
                   dest_str += "\\n";
@@ -362,7 +362,7 @@ void Writer::operator()(const string_ref &s) {
     need_indent = 0;
     write_indent();
   }
-  append(s.begin(), s.length());
+  append(s.begin(), s.size());
 }
 
 void Writer::indent(int diff) {

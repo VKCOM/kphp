@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/wrappers/string_view.h"
+
 #include "compiler/common.h"
 
 inline string get_full_path(const string &file_name) {
@@ -43,72 +45,14 @@ static inline int conv_hex_digit(int c) {
   return -1;
 }
 
-class string_ref {
-private:
-  const char *s, *t;
+using string_ref = vk::string_view;
 
-public:
-  string_ref();
-  string_ref(const char *s, const char *t);
-
-  int length() const;
-
-  const char *begin() const;
-  const char *end() const;
-
-  string str() const;
-  const char *c_str() const;
-
-  bool starts_with(const char *rhs) const;
-
-  inline operator string() const {
-    return string(s, t);
-  }
-};
-
-inline string_ref::string_ref() :
-  s(nullptr),
-  t(nullptr) {}
-
-inline string_ref::string_ref(const char *s, const char *t) :
-  s(s),
-  t(t) {}
-
-inline int string_ref::length() const {
-  return (int)(t - s);
+inline string_ref string_ref_dup(const string_ref &s) {
+  char *buf = new char[s.size()];
+  memcpy(buf, s.begin(), s.size());
+  return string_ref(buf, buf + s.size());
 }
 
-inline const char *string_ref::begin() const {
-  return s;
-}
-
-inline const char *string_ref::end() const {
-  return t;
-}
-
-inline bool operator==(const string_ref &lhs, const char *rhs) {
-  int len = (int)strlen(rhs);
-  return len == lhs.length() && strncmp(rhs, lhs.begin(), len) == 0;
-}
-
-inline string_ref string_ref_dup(const string &s) {
-  char *buf = new char[s.length()];
-  memcpy(buf, &s[0], s.size());
-  return string_ref(buf, buf + s.length());
-}
-
-inline string string_ref::str() const {
-  return string(begin(), end());
-}
-
-inline const char *string_ref::c_str() const {
-  return str().c_str();
-}
-
-inline bool string_ref::starts_with(const char *str) const {
-  int len = (int)strlen(str);
-  return len <= length() && strncmp(str, begin(), len) == 0;
-}
 
 inline string int_to_str(int x) {
   char tmp[50];

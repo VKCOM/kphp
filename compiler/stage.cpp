@@ -1,8 +1,7 @@
 #include "compiler/stage.h"
 
-#include "compiler/common.h"
-
 #include "compiler/bicycle.h"
+#include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data.h"
 #include "compiler/io.h"
@@ -116,7 +115,7 @@ void stage::print_comment(FILE *f) {
     string_ref comment = get_file()->get_line(get_line());
     fprintf(f, "//%4d:", get_line());
     int last_printed = ':';
-    for (int j = 0, nj = comment.length(); j < nj; j++) {
+    for (int j = 0, nj = comment.size(); j < nj; j++) {
       int c = comment.begin()[j];
       if (c == '\n') {
         putc('\\', f);

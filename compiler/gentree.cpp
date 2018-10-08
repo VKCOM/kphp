@@ -216,7 +216,7 @@ VertexPtr GenTree::get_var_name() {
     return VertexPtr();
   }
   auto var = VertexAdaptor<op_var>::create();
-  var->str_val = (*cur)->str_val;
+  var->str_val = static_cast<string>((*cur)->str_val);
 
   set_location(var, var_location);
 
@@ -344,7 +344,7 @@ VertexPtr GenTree::get_require() {
 template<Operation Op, Operation EmptyOp>
 VertexPtr GenTree::get_func_call() {
   AutoLocation call_location(this);
-  string name = (*cur)->str_val;
+  string name{(*cur)->str_val};
   next_cur();
 
   CE (expect(tok_oppar, "'('"));
@@ -415,7 +415,7 @@ VertexPtr GenTree::get_short_array() {
 VertexPtr GenTree::get_string() {
   auto str = VertexAdaptor<op_string>::create();
   set_location(str, AutoLocation(this));
-  str->str_val = (*cur)->str_val;
+  str->str_val = static_cast<string>((*cur)->str_val);
   next_cur();
   return str;
 }
@@ -545,7 +545,7 @@ VertexPtr GenTree::get_expr_top() {
     case tok_int_const: {
       auto v = VertexAdaptor<op_int_const>::create();
       set_location(v, AutoLocation(this));
-      v->str_val = (*cur)->str_val;
+      v->str_val = static_cast<string>((*cur)->str_val);
       next_cur();
       res = v;
       break;
@@ -553,7 +553,7 @@ VertexPtr GenTree::get_expr_top() {
     case tok_float_const: {
       auto v = VertexAdaptor<op_float_const>::create();
       set_location(v, AutoLocation(this));
-      v->str_val = (*cur)->str_val;
+      v->str_val = static_cast<string>((*cur)->str_val);
       next_cur();
       res = v;
       break;
@@ -645,7 +645,7 @@ VertexPtr GenTree::get_expr_top() {
         auto v = VertexAdaptor<op_func_name>::create();
         set_location(v, AutoLocation(this));
         next_cur();
-        v->str_val = (*op)->str_val;
+        v->str_val = static_cast<string>((*op)->str_val);
         res = v;
         return_flag = was_arrow;
         break;
@@ -885,7 +885,7 @@ VertexPtr GenTree::get_func_param() {
   if (test_expect(tok_func_name) && (*(cur + 1))->type() == tok_oppar) { // callback
     auto name = VertexAdaptor<op_func_name>::create();
     set_location(name, st_location);
-    name->str_val = (*cur)->str_val;
+    name->str_val = static_cast<string>((*cur)->str_val);
     next_cur();
 
     CE (expect(tok_oppar, "'('"));
@@ -936,7 +936,7 @@ VertexPtr GenTree::get_func_param() {
     auto v = VertexAdaptor<op_func_param>::create(next);
     set_location(v, st_location);
     if (tok_type_declaration != nullptr) {
-      v->type_declaration = tok_type_declaration->str_val;
+      v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
       v->type_help = tok_type_declaration->type() == tok_Exception ? tp_Exception : tp_Class;
     }
 
@@ -1058,7 +1058,7 @@ PrimitiveType GenTree::get_ptype() {
       tp = tp_Exception;
       break;
     case tok_func_name:
-      tp = get_ptype_by_name((*cur)->str_val);
+      tp = get_ptype_by_name(static_cast<string>((*cur)->str_val));
       break;
     default:
       tp = tp_Error;
@@ -1090,7 +1090,7 @@ PrimitiveType GenTree::get_type_help() {
 
 VertexPtr GenTree::get_type_rule_func() {
   AutoLocation rule_location(this);
-  string_ref name = (*cur)->str_val;
+  string name{(*cur)->str_val};
   next_cur();
   CE (expect(tok_lt, "<"));
   vector<VertexPtr> next;
@@ -1142,9 +1142,10 @@ VertexPtr GenTree::get_type_rule_() {
         res->extra_type = op_ex_rule_const;
       }
     } else {
+      string error_msg = "Can't parse type_rule. Unknown string [" + static_cast<string>((*cur)->str_val) + "]";
       kphp_error (
         0,
-        dl_pstr("Can't parse type_rule. Unknown string [%s]", (*cur)->str_val.c_str())
+        error_msg.c_str()
       );
     }
   } else if (tok == tok_xor) {
@@ -1620,7 +1621,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
   } else {
     CE (expect(tok_func_name, "'tok_func_name'"));
     cur--;
-    name_str = (*cur)->str_val;
+    name_str = static_cast<string>((*cur)->str_val);
     next_cur();
   }
 
@@ -1706,7 +1707,7 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
   // тут раньше был парсинг '@kphp-' тегов в phpdoc, но ему не место в gentree, он переехал в PrepareFunctionF
   // но! костыль: @kphp-required нам всё равно нужно именно тут, чтобы функция пошла дальше по пайплайну
   if (phpdoc_token != nullptr && phpdoc_token->type() == tok_phpdoc_kphp) {
-    kphp_required_flag = phpdoc_token->str_val.str().find("@kphp-required") != string::npos;
+    kphp_required_flag = static_cast<string>(phpdoc_token->str_val).find("@kphp-required") != string::npos;
   }
 
   set_location(flags, func_location);
@@ -1783,7 +1784,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   CE (expect(tok_class, "'class'"));
   CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
 
-  string name_str = (*cur)->str_val;
+  string name_str = static_cast<string>((*cur)->str_val);
   if (in_namespace()) {
     string expected_name = stage::get_file()->short_file_name;
     kphp_error (name_str == expected_name,
@@ -1808,8 +1809,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
     CE (!kphp_error(test_expect(tok_func_name), "Class name expected after 'extends'"));
     auto tmp = VertexAdaptor<op_func_name>::create();
     set_location(tmp, AutoLocation(this));
-    tmp->str_val = (*cur)->str_val;
-    class_extends = (*cur)->str_val;
+    tmp->str_val = static_cast<string>((*cur)->str_val);
+    class_extends = static_cast<string>((*cur)->str_val);
     parent_name = tmp;
     next_cur();
   }
@@ -1832,7 +1833,7 @@ VertexPtr GenTree::get_use() {
     if (!test_expect(tok_func_name)) {
       expect(tok_func_name, "<namespace path>");
     }
-    string name = (*cur)->str_val;
+    string name = static_cast<string>((*cur)->str_val);
     kphp_assert(!name.empty());
     if (name[0] == '\\') {
       name = name.substr(1);
@@ -1845,7 +1846,7 @@ VertexPtr GenTree::get_use() {
       if (!test_expect(tok_func_name)) {
         expect(tok_func_name, "<use alias>");
       }
-      alias = (*cur)->str_val;
+      alias = static_cast<string>((*cur)->str_val);
       next_cur();
     }
     map<string, string> &uses = this->namespace_uses;
@@ -1866,7 +1867,7 @@ VertexPtr GenTree::get_namespace_class() {
   next_cur();
   kphp_error (test_expect(tok_func_name), "Namespace name expected");
   SrcFilePtr current_file = stage::get_file();
-  string namespace_name = (*cur)->str_val;
+  string namespace_name{(*cur)->str_val};
   string expected_namespace_name = replace_characters(current_file->unified_dir_name, '/', '\\');
 
   kphp_error (namespace_name == expected_namespace_name,
@@ -1949,7 +1950,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
 
       if (cur != end) {
         Token *next_token = *(cur + 1);
-        std::string error_msg = "Expected `function` or variable name after keyword `static`, but got: " + next_token->str_val.str();
+        std::string error_msg = "Expected `function` or variable name after keyword `static`, but got: " + static_cast<string>(next_token->str_val);
         if (kphp_error(next_token->type() == tok_function || next_token->type() == tok_var_name, error_msg.c_str())) {
           next_cur();
           CE(false);
@@ -2083,7 +2084,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create();
       set_location(html_code, AutoLocation(this));
-      html_code->str_val = (*cur)->str_val;
+      html_code->str_val = static_cast<string>((*cur)->str_val);
 
       auto echo_cmd = VertexAdaptor<op_echo>::create(html_code);
       set_location(echo_cmd, AutoLocation(this));
@@ -2115,7 +2116,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (!kphp_error(!has_access_modifier, "unexpected const after private/protected/public keyword"));
 
       auto name = VertexAdaptor<op_func_name>::create();
-      string const_name = (*cur)->str_val;
+      string const_name{(*cur)->str_val};
 
       if (const_in_class) {
         name->str_val = "c#" + replace_backslashes(namespace_name) + "$" + cur_class().name + "$$" + const_name;
@@ -2183,7 +2184,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
 VertexPtr GenTree::get_vars_list(Token *phpdoc_token, OperationExtra extra_type) {
   kphp_error(in_class(), "var declaration is outside of class");
 
-  const std::string &var_name = (*cur)->str_val;
+  const string_ref &var_name = (*cur)->str_val;
   CE (expect(tok_var_name, "expected variable name"));
 
   VertexPtr def_val;
@@ -2195,13 +2196,12 @@ VertexPtr GenTree::get_vars_list(Token *phpdoc_token, OperationExtra extra_type)
 
   auto var = def_val ? VertexAdaptor<op_class_var>::create(def_val) : VertexAdaptor<op_class_var>::create();
   var->extra_type = extra_type;       // чтобы в create_class() определить, это public/private/protected
-  var->str_val = var_name;
+  var->str_val = static_cast<string>(var_name);
   var->phpdoc_token = phpdoc_token;
 
 
   cur_class().vars.push_back(var);
   cur_class().members.push_back(var);
-  //printf("var %s in class %s\n", var_name.c_str(), cur_class().name.c_str());
 
   if (test_expect(tok_comma)) {
     next_cur();

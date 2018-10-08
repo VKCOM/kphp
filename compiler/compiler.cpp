@@ -343,7 +343,7 @@ void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   std::size_t id_of_kphp_template = 0;
   stage::set_location(f->root->get_location());
-  for (auto &tag : parse_php_doc(f->phpdoc_token->str_val.str())) {
+  for (auto &tag : parse_php_doc(f->phpdoc_token->str_val)) {
     stage::set_line(tag.line_num);
     switch (tag.type) {
       case php_doc_tag::kphp_inline: {
