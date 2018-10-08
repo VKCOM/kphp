@@ -662,8 +662,7 @@ private:
       key->push_back(Key::any_key());
       val.key = key;
 
-      ++args.begin_;
-      for (auto i : args) {
+      for (auto i : VertexRange(args.begin() + 1, args.end())) {
         create_set(val, i);
       }
     }

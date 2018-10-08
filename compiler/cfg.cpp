@@ -358,13 +358,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_func_call:
     case op_constructor_call: {
       FunctionPtr func = tree_node->get_func_id();
-      VertexRange params;
-      bool params_inited = false;
-      if (func && !func->varg_flag) {
-        params = func->root.as<meta_op_function>()->params().
-          as<op_func_param_list>()->params();
-        params_inited = true;
-      }
 
       Node start, a, b;
       start = new_node();
@@ -372,15 +365,17 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
 
       int ii = 0;
       for (auto cur : tree_node.as<op_func_call>()->args()) {
-        bool weak_write_flag = false;
+        bool new_weak_write_flag = false;
 
-        if (params_inited && params[ii]->type() == op_func_param &&
-            params[ii].as<op_func_param>()->var()->ref_flag) {
-          weak_write_flag = true;
+        if (func && !func->varg_flag) {
+          auto params = func->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
+          if (params[ii]->type() == op_func_param && params[ii].as<op_func_param>()->var()->ref_flag) {
+            new_weak_write_flag = true;
+          }
         }
 
         kphp_assert (cur);
-        create_cfg(cur, &a, &b, false, weak_write_flag);
+        create_cfg(cur, &a, &b, false, new_weak_write_flag);
         add_edge(start, a);
         start = b;
 

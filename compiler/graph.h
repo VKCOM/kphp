@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/wrappers/iterator_range.h"
+
 #include "compiler/common.h"
 
 /*** Id ***/
@@ -89,29 +91,6 @@ struct IdGen {
 
   template<class IndexType>
   void delete_ids(const vector<IndexType> &to_del);
-};
-
-/*** Range ***/
-template<class Iterator>
-struct Range {
-  Iterator begin_, end_;
-  typedef typename std::iterator_traits<Iterator>::value_type value_type;
-  typedef typename std::iterator_traits<Iterator>::reference reference_type;
-  bool empty();
-  size_t size();
-  value_type &operator[](size_t i);
-  reference_type operator*();
-  value_type *operator->();
-
-  Range();
-  Range(Iterator begin, Iterator end);
-
-  Iterator begin() const;
-  Iterator end() const;
-
-  Range<std::reverse_iterator<Iterator>> get_reversed_range() const {
-    return {end_, begin_};
-  }
 };
 
 #include "graph.hpp"

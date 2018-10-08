@@ -256,7 +256,7 @@ public:
 
 };
 
-typedef vertex_inner<meta_op_base> Vertex;
-typedef Range<Vertex::iterator> VertexRange;
-typedef Range<Vertex::const_iterator> VertexConstRange;
+using Vertex = vertex_inner<meta_op_base>;
+using VertexRange = vk::iterator_range<Vertex::iterator>;
+using VertexConstRange = vk::iterator_range<Vertex::const_iterator>;
 
