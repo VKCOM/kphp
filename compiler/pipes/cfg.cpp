@@ -1,9 +1,333 @@
-#include "compiler/cfg.h"
+#include "compiler/pipes/cfg.h"
 
-#include "compiler/stage.h"
+#include "compiler/data.h"
+#include "compiler/gentree.h"
 
-//Control Flow Graph constructions
+class CFGData {
+private:
+  FunctionPtr function;
+
+  vector<VertexPtr> uninited_vars;
+  vector<VarPtr> todo_var;
+  vector<vector<vector<VertexPtr>>> todo_parts;
+public:
+  void set_function(FunctionPtr new_function) {
+    function = new_function;
+  }
+
+  void split_var(VarPtr var, vector<vector<VertexPtr>> &parts) {
+    assert (var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
+    int parts_size = (int)parts.size();
+    if (parts_size == 0) {
+      if (var->type() == VarData::var_local_t) {
+        function->local_var_ids.erase(
+          std::find(
+            function->local_var_ids.begin(),
+            function->local_var_ids.end(),
+            var));
+      }
+      return;
+    }
+    assert (parts_size > 1);
+
+    for (int i = 0; i < parts_size; i++) {
+      string new_name = var->name + "$v_" + int_to_str(i);
+      VarPtr new_var = G->create_var(new_name, var->type());
+
+      for (int j = 0; j < (int)parts[i].size(); j++) {
+        VertexPtr v = parts[i][j];
+        v->set_var_id(new_var);
+      }
+
+      VertexRange params = function->root.
+        as<meta_op_function>()->params().
+                                     as<op_func_param_list>()->args();
+      if (var->type() == VarData::var_local_t) {
+        new_var->type() = VarData::var_local_t;
+        function->local_var_ids.push_back(new_var);
+      } else if (var->type() == VarData::var_param_t) {
+        bool was_var = std::find(
+          parts[i].begin(),
+          parts[i].end(),
+          params[var->param_i].as<op_func_param>()->var()
+        ) != parts[i].end();
+
+        if (was_var) { //union of part that contains function argument
+          new_var->type() = VarData::var_param_t;
+          new_var->param_i = var->param_i;
+          new_var->init_val = var->init_val;
+          function->param_ids[var->param_i] = new_var;
+        } else {
+          new_var->type() = VarData::var_local_t;
+          function->local_var_ids.push_back(new_var);
+        }
+      } else {
+        kphp_fail();
+      }
+
+    }
+
+    if (var->type() == VarData::var_local_t) {
+      vector<VarPtr>::iterator tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
+      if (function->local_var_ids.end() != tmp) {
+        function->local_var_ids.erase(tmp);
+      } else {
+        kphp_fail();
+      }
+    }
+
+    todo_var.push_back(var);
+
+    //it could be simple std::move
+    todo_parts.push_back(vector<vector<VertexPtr>>());
+    std::swap(todo_parts.back(), parts);
+  }
+
+  void unused_vertices(vector<VertexPtr *> &v) {
+    for (auto i: v) {
+      auto empty = VertexAdaptor<op_empty>::create();
+      *i = empty;
+    }
+  }
+
+  FunctionPtr get_function() {
+    return function;
+  }
+
+  void uninited(VertexPtr v) {
+    if (v && v->type() == op_var && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
+      uninited_vars.push_back(v);
+      v->get_var_id()->set_uninited_flag(true);
+    }
+  }
+
+  void check_uninited() {
+    for (int i = 0; i < (int)uninited_vars.size(); i++) {
+      VertexPtr v = uninited_vars[i];
+      VarPtr var = v->get_var_id();
+      if (tinf::get_type(v)->ptype() == tp_var) {
+        continue;
+      }
+
+      stage::set_location(v->get_location());
+      kphp_warning (dl_pstr("Variable [%s] may be used uninitialized", var->name.c_str()));
+    }
+  }
+
+  VarPtr merge_vars(vector<VarPtr> vars, const string &new_name) {
+    VarPtr new_var = G->create_var(new_name, VarData::var_unknown_t);;
+    //new_var->tinf = vars[0]->tinf; //hack, TODO: fix it
+    new_var->tinf_node.copy_type_from(tinf::get_type(vars[0]));
+
+    int param_i = -1;
+    for (VarPtr var : vars) {
+      if (var->type() == VarData::var_param_t) {
+        param_i = var->param_i;
+      } else if (var->type() == VarData::var_local_t) {
+        //FIXME: remember to remove all unused variables
+        //func->local_var_ids.erase (*i);
+        vector<VarPtr>::iterator tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
+        if (function->local_var_ids.end() != tmp) {
+          function->local_var_ids.erase(tmp);
+        } else {
+          kphp_fail();
+        }
+
+      } else {
+        assert (0 && "unreachable");
+      }
+    }
+    if (param_i != -1) {
+      new_var->type() = VarData::var_param_t;
+      function->param_ids[param_i] = new_var;
+    } else {
+      new_var->type() = VarData::var_local_t;
+      function->local_var_ids.push_back(new_var);
+    }
+
+    return new_var;
+  }
+
+
+  struct MergeData {
+    int id;
+    VarPtr var;
+
+    MergeData(int id, VarPtr var) :
+      id(id),
+      var(var) {
+    }
+  };
+
+  static bool cmp_merge_data(const MergeData &a, const MergeData &b) {
+    return type_out(tinf::get_type(a.var)) <
+           type_out(tinf::get_type(b.var));
+  }
+
+  static bool eq_merge_data(const MergeData &a, const MergeData &b) {
+    return type_out(tinf::get_type(a.var)) ==
+           type_out(tinf::get_type(b.var));
+  }
+
+  void merge_same_type() {
+    int todo_n = (int)todo_parts.size();
+    for (int todo_i = 0; todo_i < todo_n; todo_i++) {
+      vector<vector<VertexPtr>> &parts = todo_parts[todo_i];
+
+      int n = (int)parts.size();
+      vector<MergeData> to_merge;
+      for (int i = 0; i < n; i++) {
+        to_merge.push_back(MergeData(i, parts[i][0]->get_var_id()));
+      }
+      sort(to_merge.begin(), to_merge.end(), cmp_merge_data);
+
+      vector<int> ids;
+      int merge_id = 0;
+      for (int i = 0; i <= n; i++) {
+        if (i == n || (i > 0 && !eq_merge_data(to_merge[i - 1], to_merge[i]))) {
+          vector<VarPtr> vars;
+          for (int id : ids) {
+            vars.push_back(parts[id][0]->get_var_id());
+          }
+          string new_name = vars[0]->name;
+          int name_i = (int)new_name.size() - 1;
+          while (new_name[name_i] != '$') {
+            name_i--;
+          }
+          new_name.erase(name_i);
+          new_name += "$v";
+          new_name += int_to_str(merge_id++);
+
+          VarPtr new_var = merge_vars(vars, new_name);
+          for (int id : ids) {
+            for (VertexPtr v : parts[id]) {
+              v->set_var_id(new_var);
+            }
+          }
+
+          ids.clear();
+        }
+        if (i == n) {
+          break;
+        }
+        ids.push_back(to_merge[i].id);
+      }
+    }
+  }
+};
+
 namespace cfg {
+//just simple int id type
+struct IdBase {
+  int id;
+  IdBase();
+};
+
+typedef Id<IdBase> Node;
+typedef vector<Node> NodesList;
+
+enum UsageType {
+  usage_write_t,
+  usage_read_t
+};
+
+struct UsageData {
+  int id;
+  int part_id;
+  UsageType type;
+  bool weak_write_flag;
+  VertexPtr v;
+  Node node;
+  explicit UsageData(UsageType type, VertexPtr v);
+};
+
+typedef Id<UsageData> UsagePtr;
+
+struct SubTreeData {
+  VertexPtr v;
+  bool recursive_flag;
+  SubTreeData(VertexPtr v, bool recursive_flag);
+};
+
+typedef Id<SubTreeData> SubTreePtr;
+
+struct VertexUsage {
+  bool used;
+  bool used_rec;
+  VertexUsage();
+};
+
+struct VarSplitData {
+  int n;
+
+  IdGen<UsagePtr> usage_gen;
+  IdMap<UsagePtr> parent;
+
+  VarSplitData();
+};
+
+typedef Id<VarSplitData> VarSplitPtr;
+
+class CFG {
+  CFGData *data;
+  FunctionPtr cur_function;
+  IdGen<Node> node_gen;
+  IdMap<vector<Node>> node_next, node_prev;
+  IdMap<vector<UsagePtr>> node_usages;
+  IdMap<vector<SubTreePtr>> node_subtrees;
+  IdMap<VertexUsage> vertex_usage;
+  int cur_dfs_mark;
+  Node current_start;
+  Node current_finish;
+
+  IdMap<int> node_was;
+  IdMap<UsagePtr> node_mark;
+  IdMap<VarSplitPtr> var_split_data;
+
+  vector<vector<Node>> continue_nodes;
+  vector<vector<Node>> break_nodes;
+  void create_cfg_enter_cycle();
+  void create_cfg_exit_cycle(Node continue_dest, Node break_dest);
+  void create_cfg_add_break_node(Node v, int depth);
+  void create_cfg_add_continue_node(Node v, int depth);
+
+  vector<vector<Node>> exception_nodes;
+  void create_cfg_begin_try();
+  void create_cfg_end_try(Node to);
+  void create_cfg_register_exception(Node from);
+
+  VarSplitPtr get_var_split(VarPtr var, bool force);
+  Node new_node();
+  UsagePtr new_usage(UsageType type, VertexPtr v);
+  void add_usage(Node node, UsagePtr usage);
+  SubTreePtr new_subtree(VertexPtr v, bool recursive_flag);
+  void add_subtree(Node node, SubTreePtr subtree);
+  void add_edge(Node from, Node to);
+  void collect_ref_vars(VertexPtr v, set<VarPtr> *ref);
+  void find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars);
+  void collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *throws_flag);
+  void create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish);
+  void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish,
+                  bool set_flag = false, bool weak_write_flag = false);
+  void create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false);
+
+  void calc_used(Node v);
+  void confirm_usage(VertexPtr, bool recursive_flags);
+  void collect_unused(VertexPtr *v, vector<VertexPtr *> *unused_vertices);
+
+  UsagePtr search_uninited(Node v, VarPtr var);
+
+  bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
+  void compress_usages(vector<UsagePtr> *usages);
+  void dfs(Node v, UsagePtr usage);
+  void process_var(VarPtr v);
+  void process_node(Node v);
+  int register_vertices(VertexPtr v, int N);
+  void process_function(FunctionPtr func);
+public:
+  void run(CFGData *new_data);
+};
+
 //just simple int id type
 IdBase::IdBase() :
   id(-1) {
@@ -850,7 +1174,7 @@ void CFG::process_var(VarPtr var) {
     cur_dfs_mark++;
     UsagePtr uninited = search_uninited(current_start, var);
     if (uninited) {
-      callback->uninited(uninited->v);
+      data->uninited(uninited->v);
     }
   }
 
@@ -885,7 +1209,7 @@ void CFG::process_var(VarPtr var) {
     }
   }
 
-  callback->split_var(var, parts);
+  data->split_var(var, parts);
 }
 
 void CFG::confirm_usage(VertexPtr v, bool recursive_flag) {
@@ -972,14 +1296,48 @@ void CFG::process_function(FunctionPtr function) {
   calc_used(start);
   vector<VertexPtr *> unused_vertices;
   collect_unused(&function->root.as<op_function>()->cmd(), &unused_vertices);
-  callback->unused_vertices(unused_vertices);
+  data->unused_vertices(unused_vertices);
 
   std::for_each(splittable_vars.begin(), splittable_vars.end(), std::bind1st(std::mem_fun(&CFG::process_var), this));
   clear(node_gen);
 }
 
-void CFG::run(CFGCallbackBase *new_callback) {
-  callback = new_callback;
-  process_function(callback->get_function());
+void CFG::run(CFGData *new_data) {
+  data = new_data;
+  process_function(data->get_function());
 }
+}
+
+void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
+  AUTO_PROF (CFG);
+  stage::set_name("Calc control flow graph");
+  stage::set_function(function);
+
+  cfg::CFG cfg;
+  CFGData *data = new CFGData();
+  data->set_function(function);
+  cfg.run(data);
+
+  if (stage::has_error()) {
+    return;
+  }
+
+  os << FunctionAndCFG(function, data);
+}
+
+void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
+  AUTO_PROF (CFG_End);
+  stage::set_name("Control flow graph. End");
+  stage::set_function(data.function);
+  if (G->env().get_warnings_level() >= 1) {
+    data.data->check_uninited();
+  }
+  data.data->merge_same_type();
+  delete data.data;
+
+  if (stage::has_error()) {
+    return;
+  }
+
+  os << data.function;
 }

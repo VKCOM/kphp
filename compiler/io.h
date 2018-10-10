@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compiler/common.h"
-
 #include "compiler/data_ptr.h"
 #include "compiler/utils.h"
 

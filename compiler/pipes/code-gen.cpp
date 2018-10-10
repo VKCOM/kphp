@@ -1,10 +1,11 @@
-#pragma once
+#include "compiler/pipes/code-gen.h"
 
 #include "common/algorithms/find.h"
 
 #include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data.h"
+#include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"
@@ -24,6 +25,27 @@ struct CGContext {
 };
 
 struct PlainCode;
+
+class WriterCallback : public WriterCallbackBase {
+private:
+  DataStream<WriterData *> &os;
+public:
+  WriterCallback(DataStream<WriterData *> &os, const string dir __attribute__((unused)) = "./") :
+    os(os) {
+  }
+
+  void on_end_write(WriterData *data) {
+    if (stage::has_error()) {
+      return;
+    }
+
+    WriterData *data_copy = new WriterData();
+    data_copy->swap(*data);
+    data_copy->calc_crc();
+    os << data_copy;
+  }
+};
+
 
 class CodeGenerator {
 private:
@@ -3782,4 +3804,157 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
   if (close_par) {
     W << ")";
   }
+}
+
+int CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
+  return cnt_global_vars > 1000 ? 64 : 1;
+}
+
+void CodeGenF::on_finish(DataStream<WriterData *> &os) {
+  AUTO_PROF (code_gen);
+
+  stage::set_name("GenerateCode");
+  stage::set_file(SrcFilePtr());
+  stage::die_if_global_errors();
+
+  vector<FunctionPtr> xall = tmp_stream.get_as_vector();
+  sort(xall.begin(), xall.end());
+  const vector<ClassPtr> &all_classes = G->get_classes();
+
+  //TODO: delete W_ptr
+  CodeGenerator *W_ptr = new CodeGenerator();
+  CodeGenerator &W = *W_ptr;
+
+  if (G->env().get_use_safe_integer_arithmetic()) {
+    W.use_safe_integer_arithmetic();
+  }
+
+  G->init_dest_dir();
+  G->load_index();
+
+  W.init(new WriterCallback(os));
+
+  //TODO: parallelize;
+  for (const auto &fun : xall) {
+    prepare_generate_function(fun);
+  }
+  for (const auto &c : all_classes) {
+    if (c && c->was_constructor_invoked) {
+      prepare_generate_class(c);
+    }
+  }
+
+  vector<SrcFilePtr> main_files = G->get_main_files();
+  vector<FunctionPtr> all_functions;
+  vector<FunctionPtr> source_functions;
+  for (int i = 0; i < (int)xall.size(); i++) {
+    FunctionPtr function = xall[i];
+    if (function->used_in_source) {
+      source_functions.push_back(function);
+    }
+    if (function->type() == FunctionData::func_extern) {
+      continue;
+    }
+    all_functions.push_back(function);
+    W << Async(FunctionH(function));
+    W << Async(FunctionCpp(function));
+  }
+
+  for (const auto &c : all_classes) {
+    if (c && c->was_constructor_invoked) {
+      W << Async(ClassDeclaration(c));
+    }
+  }
+
+  //W << Async (XmainCpp());
+  W << Async(InitScriptsH());
+  for (const auto &main_file : main_files) {
+    W << Async(DfsInit(main_file));
+  }
+  W << Async(InitScriptsCpp(/*std::move*/main_files, source_functions, all_functions));
+
+  vector<VarPtr> vars = G->get_global_vars();
+  int parts_cnt = calc_count_of_parts(vars.size());
+  W << Async(VarsCpp(vars, parts_cnt));
+
+  write_hashes_of_subdirs_to_dep_files(W);
+
+  write_tl_schema(W);
+}
+
+void CodeGenF::prepare_generate_function(FunctionPtr func) {
+  string file_name = func->name;
+  std::replace(file_name.begin(), file_name.end(), '$', '@');
+
+  string file_subdir = func->file_id->short_file_name;
+
+  func->header_name = file_name + ".h";
+  func->subdir = get_subdir(file_subdir);
+
+  recalc_hash_of_subdirectory(func->subdir, func->header_name);
+
+  if (!func->root->inline_flag) {
+    func->src_name = file_name + ".cpp";
+    func->src_full_name = func->subdir + "/" + func->src_name;
+
+    recalc_hash_of_subdirectory(func->subdir, func->src_name);
+  }
+
+  func->header_full_name = func->subdir + "/" + func->header_name;
+
+  my_unique(&func->static_var_ids);
+  my_unique(&func->global_var_ids);
+  my_unique(&func->header_global_var_ids);
+  my_unique(&func->local_var_ids);
+}
+
+string CodeGenF::get_subdir(const string &base) {
+  int func_hash = hash(base);
+  int bucket = func_hash % 100;
+
+  return string("o_") + int_to_str(bucket);
+}
+
+void CodeGenF::recalc_hash_of_subdirectory(const string &subdir, const string &file_name) {
+  long long &cur_hash = subdir_hash[subdir];
+  cur_hash = cur_hash * 987654321 + hash(file_name);
+}
+
+void CodeGenF::write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
+  for (const auto &dir_and_hash : subdir_hash) {
+    W << OpenFile("_dep.cpp", dir_and_hash.first, false);
+    char tmp[100];
+    sprintf(tmp, "%llx", dir_and_hash.second);
+    W << "//" << (const char *)tmp << NL;
+    W << CloseFile();
+  }
+}
+
+void CodeGenF::write_tl_schema(CodeGenerator &W) {
+  string schema;
+  int schema_length = -1;
+  if (G->env().get_tl_schema_file() != "") {
+    FILE *f = fopen(G->env().get_tl_schema_file().c_str(), "r");
+    const int MAX_SCHEMA_LEN = 1024 * 1024;
+    static char buf[MAX_SCHEMA_LEN + 1];
+    kphp_assert (f && "can't open tl schema file");
+    schema_length = fread(buf, 1, sizeof(buf), f);
+    kphp_assert (schema_length > 0 && schema_length < MAX_SCHEMA_LEN);
+    schema.assign(buf, buf + schema_length);
+    kphp_assert (!fclose(f));
+  }
+  W << OpenFile("_tl_schema.cpp", "", false);
+  W << "extern \"C\" " << BEGIN;
+  W << "const char *builtin_tl_schema = " << NL << Indent(2);
+  compile_string_raw(schema, W);
+  W << ";" << NL;
+  W << "int builtin_tl_schema_length = ";
+  char buf[100];
+  sprintf(buf, "%d", schema_length);
+  W << string(buf) << ";" << NL;
+  W << END;
+  W << CloseFile();
+}
+
+void CodeGenF::prepare_generate_class(ClassPtr) {
 }

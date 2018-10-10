@@ -2,19 +2,19 @@
 
 #include "compiler/data_ptr.h"
 
-class CFGCallback;
+class CFGData;
 
 struct FunctionAndCFG {
   FunctionPtr function;
-  CFGCallback *callback;
+  CFGData *data;
 
   FunctionAndCFG() :
     function(),
-    callback(nullptr) {
+    data(nullptr) {
   }
 
-  FunctionAndCFG(FunctionPtr function, CFGCallback *callback) :
+  FunctionAndCFG(FunctionPtr function, CFGData *data) :
     function(function),
-    callback(callback) {
+    data(data) {
   }
 };
