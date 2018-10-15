@@ -251,6 +251,8 @@ public:
     function_in_which_lambda_was_created = f;
   }
 
+  VertexRange get_params();
+
 private:
   const std::string &get_or_default_field(std::string (FunctionData::*field)) const {
     if (is_lambda()) {

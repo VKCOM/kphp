@@ -353,6 +353,11 @@ string FunctionData::get_human_readable_name() const {
   return std::regex_replace(std::regex_replace(this->name, std::regex("\\$\\$"), " :: "), std::regex("\\$"), "\\");
 }
 
+
+VertexRange FunctionData::get_params() {
+  return ::get_function_params(root.as<meta_op_function>());
+}
+
 /*** DefineData ***/
 DefineData::DefineData() :
   id(),

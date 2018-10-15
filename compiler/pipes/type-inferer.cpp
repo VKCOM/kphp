@@ -231,7 +231,7 @@ private:
 
   void on_func_call(VertexAdaptor<op_func_call> call) {
     FunctionPtr function = call->get_func_id();
-    VertexRange function_params = get_function_params(function->root);
+    VertexRange function_params = function->get_params();
 
     //hardcoded hack
     if (function->name == "array_unshift" || function->name == "array_push") {
@@ -248,26 +248,25 @@ private:
     }
 
 
-    if (!function->varg_flag || !function->is_extern) {
-      int ii = 0;
-      for (auto arg : call->args()) {
+    if (!(function->varg_flag && function->is_extern)) {
+      for (int i = 0; i < call->args().size(); ++i) {
+        VertexPtr arg = call->args()[i];
+
         if (!function->is_extern) {
-          create_set(as_lvalue(function, ii), arg);
+          create_set(as_lvalue(function, i), arg);
         }
 
-        VertexAdaptor<meta_op_func_param> param = function_params[ii];
+        VertexAdaptor<meta_op_func_param> param = function_params[i];
         if (param->var()->ref_flag) {
-          create_set(arg, as_rvalue(function, ii));
+          create_set(arg, as_rvalue(function, i));
         }
-
-        ii++;
       }
     }
   }
 
   void on_constructor_call(VertexAdaptor<op_constructor_call> call) {
     FunctionPtr function = call->get_func_id();
-    VertexRange function_params = get_function_params(function->root);
+    VertexRange function_params = function->get_params();
 
     int ii = 0;
     for (auto arg : call->args()) {
@@ -381,7 +380,7 @@ private:
   }
 
   void on_function(FunctionPtr function) {
-    VertexRange params = get_function_params(function->root);
+    VertexRange params = function->get_params();
     int params_n = (int)params.size();
 
     for (int i = -1; i < params_n; i++) {

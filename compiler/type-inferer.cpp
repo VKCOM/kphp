@@ -8,7 +8,7 @@
 
 void init_functions_tinf_nodes(FunctionPtr function) {
   assert (function->tinf_state == 1);
-  VertexRange params = get_function_params(function->root);
+  VertexRange params = function->get_params();
   function->tinf_nodes.resize(params.size() + 1);
   for (int i = 0; i < (int)function->tinf_nodes.size(); i++) {
     function->tinf_nodes[i].param_i = i - 1;
@@ -724,7 +724,7 @@ void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, Vert
 void ExprNodeRecalc::apply_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
   int i = arg->int_val;
   if (!expr || i < 1 || expr->type() != op_func_call ||
-      i > (int)get_function_params(expr->get_func_id()->root).size()) {
+      i > (int)expr->get_func_id()->get_params().size()) {
     kphp_error (0, "error in type rule");
     recalc_ptype<tp_Error>();
   }
