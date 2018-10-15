@@ -136,7 +136,8 @@
       "var": 0,
       "default_value": {
         "id": 1,
-        "optional": true
+        "optional": true,
+        "virtual": true
       }
     },
     "name": "meta_op_func_param",
@@ -350,6 +351,17 @@
       "function",
       "string"
     ],
+    "sons": {
+      "bound_class": {
+        "_comment": [
+          "needed for passing to function as `this` parameter",
+          "e.g. bound_class->_invoke(args) => _invoke(bound_class, args)",
+          "in code-gen we use std::bind(_invoke, bound_class, _1, _2, ..., _n)"
+        ],
+        "id": 0,
+        "optional": true
+      }
+    },
     "name": "op_func_ptr",
     "base_name": "meta_op_base",
     "props": {
@@ -451,10 +463,12 @@
     "base_name": "meta_op_func_param"
   },
   {
-    "extra_fields": {
-      "param_cnt": {
-        "type": "int",
-        "default": 0
+    "sons": {
+      "params": 1,
+      "default_value": {
+        "id": 2,
+        "optional": true,
+        "override": true
       }
     },
     "name": "op_func_param_callback",

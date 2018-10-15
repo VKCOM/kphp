@@ -76,6 +76,8 @@ public:
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
   void create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const;
 
+  VertexPtr get_func_param_without_callbacks(bool from_callback = false);
+  VertexPtr get_func_param_from_callback();
   VertexPtr get_func_param();
   VertexPtr get_foreach_param();
   VertexPtr get_var_name();

@@ -154,14 +154,14 @@ bool GenTree::test_expect(TokenType tp) {
 }
 
 #define expect(tp, msg) ({ \
-  bool res;\
+  bool res__;\
   if (kphp_error (test_expect (tp), dl_pstr ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : (*cur)->to_str().c_str()))) {\
-    res = false;\
+    res__ = false;\
   } else {\
     next_cur();\
-    res = true;\
+    res__ = true;\
   }\
-  res; \
+  res__; \
 })
 
 #define expect2(tp1, tp2, msg) ({ \
@@ -863,8 +863,55 @@ VertexPtr GenTree::get_def_value() {
   return val;
 }
 
+VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
+  AutoLocation st_location(this);
+  Token *tok_type_declaration = nullptr;
+  if ((*cur)->type() == tok_func_name || (*cur)->type() == tok_Exception) {
+    tok_type_declaration = *cur;
+    next_cur();
+  }
+
+  VertexPtr name = get_var_name_ref();
+  if (!name) {
+    return VertexPtr();
+  }
+
+  vector<VertexPtr> next;
+  next.push_back(name);
+
+  PrimitiveType tp = tp_Unknown;
+  VertexPtr type_rule;
+  if (!from_callback) {
+    tp = get_type_help();
+  } else {
+    type_rule = get_type_rule();
+  }
+
+  VertexPtr def_val = get_def_value();
+  if (def_val) {
+    next.push_back(def_val);
+  }
+  auto v = VertexAdaptor<op_func_param>::create(next);
+  set_location(v, st_location);
+  if (tok_type_declaration != nullptr) {
+    v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
+    v->type_help = tok_type_declaration->type() == tok_Exception ? tp_Exception : tp_Class;
+  }
+
+  if (from_callback) {
+    v->type_rule = type_rule;
+  } else if (tp != tp_Unknown) {
+    v->type_help = tp;
+  }
+
+  return v;
+}
+
+VertexPtr GenTree::get_func_param_from_callback() {
+  return get_func_param_without_callbacks(true);
+}
+
 VertexPtr GenTree::get_func_param() {
-  VertexPtr res;
   AutoLocation st_location(this);
   if (test_expect(tok_func_name) && (*(cur + 1))->type() == tok_oppar) { // callback
     auto name = VertexAdaptor<op_func_name>::create();
@@ -874,64 +921,32 @@ VertexPtr GenTree::get_func_param() {
     next_cur();
 
     CE (expect(tok_oppar, "'('"));
-    int param_cnt = 0;
-    if (!test_expect(tok_clpar)) {
-      while (true) {
-        param_cnt++;
-        CE (expect(tok_var_name, "'var_name'"));
-        if (test_expect(tok_clpar)) {
-          break;
-        }
-        CE (expect(tok_comma, "','"));
-      }
-    }
+    std::vector<VertexPtr> callback_params;
+    bool ok_params_next = gen_list<op_err>(&callback_params, &GenTree::get_func_param_from_callback, tok_comma);
+    CE (!kphp_error(ok_params_next, "Failed to parse callback params"));
+    auto params = VertexAdaptor<op_func_param_list>::create(callback_params);
+    set_location(params, st_location);
     CE (expect(tok_clpar, "')'"));
 
-    vector<VertexPtr> next;
-    next.push_back(name);
-    VertexPtr def_val = get_def_value();
-    if (def_val) {
-      next.push_back(def_val);
-    }
-    auto v = VertexAdaptor<op_func_param_callback>::create(next);
-    set_location(v, st_location);
-    v->param_cnt = param_cnt;
-    res = v;
-  } else {
-    Token *tok_type_declaration = nullptr;
-    if ((*cur)->type() == tok_func_name || (*cur)->type() == tok_Exception) {
-      tok_type_declaration = *cur;
-      next_cur();
-    }
-
-    VertexPtr name = get_var_name_ref();
-    if (!name) {
-      return VertexPtr();
-    }
-
-    vector<VertexPtr> next;
-    next.push_back(name);
-
-    PrimitiveType tp = get_type_help();
+    VertexPtr type_rule = get_type_rule();
 
     VertexPtr def_val = get_def_value();
+    kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
+
+    VertexPtr v;
     if (def_val) {
-      next.push_back(def_val);
-    }
-    auto v = VertexAdaptor<op_func_param>::create(next);
-    set_location(v, st_location);
-    if (tok_type_declaration != nullptr) {
-      v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
-      v->type_help = tok_type_declaration->type() == tok_Exception ? tp_Exception : tp_Class;
+      v = VertexAdaptor<op_func_param_callback>::create(name, params, def_val);
+    } else {
+      v = VertexAdaptor<op_func_param_callback>::create(name, params);
     }
 
-    if (tp != tp_Unknown) {
-      v->type_help = tp;
-    }
-    res = v;
+    v->type_rule = type_rule;
+    set_location(v, st_location);
+
+    return v;
   }
 
-  return res;
+  return get_func_param_without_callbacks();
 }
 
 VertexPtr GenTree::get_foreach_param() {
@@ -1154,6 +1169,16 @@ VertexPtr GenTree::get_type_rule_() {
       auto index = VertexAdaptor<op_index>::create(res);
       set_location(index, opbrk_location);
       res = index;
+    }
+
+    if (test_expect(tok_oppar)) {
+      AutoLocation oppar_location(this);
+      next_cur();
+      CE (expect(tok_clpar, ")"));
+      auto call = VertexAdaptor<op_type_rule_func>::create(res);
+      call->set_string("callback_call");
+      set_location(call, oppar_location);
+      res = call;
     }
   }
   return res;

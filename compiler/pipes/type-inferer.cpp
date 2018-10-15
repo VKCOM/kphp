@@ -229,6 +229,33 @@ private:
     create_set(v, v->type_help);
   }
 
+  void on_func_param_callback(VertexAdaptor<op_func_call> call, int id) {
+    const FunctionPtr call_function = call->get_func_id();
+    const VertexPtr ith_argument_of_call = call->args()[id];
+    VertexAdaptor<op_func_param_callback> callback_param = call_function->get_params()[id];
+
+    FunctionPtr callback_function;
+    if (ith_argument_of_call->type() == op_func_ptr) {
+      callback_function = ith_argument_of_call->get_func_id();
+    }
+
+    kphp_assert(callback_function);
+
+    VertexRange callback_args = get_function_params(callback_param);
+    for (int i = 0; i < callback_args.size(); ++i) {
+      VertexAdaptor<op_func_param> callback_ith_arg = callback_args[i];
+
+      if (VertexPtr type_rule = callback_ith_arg->type_rule) {
+         auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
+         fake_func_call->type_rule = type_rule;
+         fake_func_call->set_func_id(call_function);
+
+         int id_of_callbak_argument = callback_function->is_lambda() ? i + 1 : i;
+         create_set(as_lvalue(callback_function, id_of_callbak_argument), fake_func_call);
+      }
+    }
+  }
+
   void on_func_call(VertexAdaptor<op_func_call> call) {
     FunctionPtr function = call->get_func_id();
     VertexRange function_params = function->get_params();
@@ -251,14 +278,18 @@ private:
     if (!(function->varg_flag && function->is_extern)) {
       for (int i = 0; i < call->args().size(); ++i) {
         VertexPtr arg = call->args()[i];
-
-        if (!function->is_extern) {
-          create_set(as_lvalue(function, i), arg);
-        }
-
         VertexAdaptor<meta_op_func_param> param = function_params[i];
-        if (param->var()->ref_flag) {
-          create_set(arg, as_rvalue(function, i));
+
+        if (param->type() == op_func_param_callback) {
+          on_func_param_callback(call, i);
+        } else {
+          if (!function->is_extern) {
+            create_set(as_lvalue(function, i), arg);
+          }
+
+          if (param->var()->ref_flag) {
+            create_set(arg, as_rvalue(function, i));
+          }
         }
       }
     }
@@ -407,9 +438,6 @@ private:
         //FIXME?.. just use pointer to node?..
         create_set(as_lvalue(function, i), function->param_ids[i]);
         create_set(function->param_ids[i], as_rvalue(function, i));
-        if (function->is_callback && (i > 0 || !function->is_lambda())) {
-          create_set(as_lvalue(function, i), tp_var);
-        }
       }
       if (function->used_in_source) {
         for (int i = -1; i < params_n; i++) {

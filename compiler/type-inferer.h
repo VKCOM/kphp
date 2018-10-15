@@ -503,7 +503,7 @@ private:
 
   void recalc_require(VertexAdaptor<op_require> require);
   void recalc_ternary(VertexAdaptor<op_ternary> ternary);
-  void apply_type_rule_func(VertexAdaptor<op_type_rule_func> func, VertexPtr expr);
+  void apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_type_rule, VertexPtr expr);
   void apply_type_rule_type(VertexAdaptor<op_type_rule> rule, VertexPtr expr);
   void apply_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
   void apply_index(VertexAdaptor<op_index> index, VertexPtr expr);

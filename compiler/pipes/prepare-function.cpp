@@ -70,7 +70,15 @@ static void prepare_function_misc(FunctionPtr func) {
       kphp_error (params[i].as<meta_op_func_param>()->var()->ref_flag == false,
                   "Reference arguments are not supported in varg functions");
     }
-    if (params[i].as<meta_op_func_param>()->has_default_value()) {
+
+    VertexAdaptor<meta_op_func_param> param = params[i].as<meta_op_func_param>();
+    if (param->type_declaration == "Callable" || param->type_declaration == "callable") {
+      param->template_type_id = param_n + i;
+      param->type_declaration.clear();
+      func->is_template = true;
+    }
+
+    if (param->has_default_value() && param->default_value()) {
       if (!was_default) {
         was_default = true;
         func->min_argn = i;
@@ -170,6 +178,13 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
           VertexAdaptor<op_var> var = cur_func_param->var().as<op_var>();
           name_to_function_param.erase(func_param_it);
+
+          if (type_help == "callable" || type_help == "Callable") {
+            f->is_template = true;
+            cur_func_param->template_type_id = id_of_kphp_template;
+            id_of_kphp_template++;
+            continue;
+          }
 
           kphp_error(var, "Something strange happened during @param parsing");
 

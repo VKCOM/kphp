@@ -19,8 +19,8 @@
   var_dump (array_filter ($a_filter, is_string));
   var_dump (array_filter ($a_filter, is_array));
   var_dump (array_filter ($a_filter, is_object));
-  var_dump (array_filter ($a_filter, is_numeric, ARRAY_FILTER_USE_KEY));
-  var_dump (array_filter ($a_filter, function($x) { return $x < 4; }, ARRAY_FILTER_USE_KEY));
+  var_dump (array_filter ($a_filter, is_numeric));
+  var_dump (array_filter ($a_filter, function($x) { return $x < 4; }));
 
 //  var_dump (explode ('', ',,,,,,,'));
   var_dump (explode (',', ',,,,,,,'));

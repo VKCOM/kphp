@@ -85,13 +85,17 @@ public:
   }
 
   template<Operation to>
-  VertexAdaptor<to> as() {
+  VertexAdaptor<to> as() const {
     return *this;
   }
 
   template<Operation to>
-  const VertexAdaptor<to> as() const {
-    return *this;
+  VertexAdaptor<to> try_as() const {
+    if (auto new_impl = dynamic_cast<vertex_inner<to> *>(impl)) {
+      return VertexAdaptor<to>{new_impl};
+    }
+
+    return {};
   }
 
   static void init_properties(OpProperties *x) {

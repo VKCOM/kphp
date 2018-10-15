@@ -45,7 +45,7 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
       kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
       VertexPtr var = arg->var();
       VertexPtr def;
-      if (arg->has_default_value()) {
+      if (arg->has_default_value() && arg->default_value()) {
         def = arg->default_value();
       } else {
         auto null = VertexAdaptor<op_null>::create();

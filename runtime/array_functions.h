@@ -37,13 +37,7 @@ template<class T>
 array<T> f$array_filter(const array<T> &a);
 
 template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 callback, int flags = 0);
-
-template<class T, class T1>
-array<var> f$array_map(const T1 callback, const array<T> &a);
-
-template<class T, class T1>
-var f$array_reduce(const array<T> &a, const T1 callback, const var initial = var());
+array<T> f$array_filter(const array<T> &a, const T1 &callback, int flags = 0);
 
 template<class T>
 T f$array_merge(const T &a1);
@@ -467,8 +461,6 @@ ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &defa
   return f$array_fill(0, std::abs(size), default_value);
 }
 
-const int ARRAY_FILTER_USE_KEY = 1;
-
 template<class T>
 array<T> f$array_filter(const array<T> &a) {
   array<T> result(a.size());
@@ -482,16 +474,12 @@ array<T> f$array_filter(const array<T> &a) {
 }
 
 template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 callback, int flags) {
+array<T> f$array_filter(const array<T> &a, const T1 &callback, int flags) {
   array<T> result(a.size());
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
     bool need_set_value;
 
-    if (flags == ARRAY_FILTER_USE_KEY) {
-      need_set_value = f$boolval(callback(it.get_key()));
-    } else {
-      need_set_value = f$boolval(callback(it.get_value()));
-    }
+    need_set_value = f$boolval(callback(it.get_value()));
 
     if (need_set_value) {
       result.set_value(it);
@@ -502,9 +490,9 @@ array<T> f$array_filter(const array<T> &a, const T1 callback, int flags) {
 }
 
 
-template<class T, class T1>
-array<var> f$array_map(const T1 callback, const array<T> &a) {
-  array<var> result(a.size());
+template<class T, class CallbackT, class R = typename std::result_of<typename std::decay<CallbackT>::type(T)>::type>
+array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
+  array<R> result(a.size());
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
     result.set_value(it.get_key(), callback(it.get_value()));
   }
@@ -512,9 +500,9 @@ array<var> f$array_map(const T1 callback, const array<T> &a) {
   return result;
 }
 
-template<class T, class T1>
-var f$array_reduce(const array<T> &a, const T1 callback, const var initial) {
-  var result = initial;
+template<class R, class T, class CallbackT, class InitialT>
+R f$array_reduce(const array<T> &a, const CallbackT callback, const InitialT initial) {
+  R result = initial;
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
     result = callback(result, it.get_value());
   }

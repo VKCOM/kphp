@@ -838,7 +838,7 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
     VertexAdaptor<op_func_param> param = i;
     VertexPtr var = param->var();
     VertexPtr def_val;
-    if (param->has_default_value()) {
+    if (param->has_default_value() && param->default_value()) {
       def_val = param->default_value();
     }
 
@@ -3259,22 +3259,8 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
     } else {
       W << ", ";
     }
-    ClassPtr is_lambda_in_extern = func->is_extern ? FunctionData::is_lambda(*i) : ClassPtr{};
-    int cnt_lambda_args = 0;
-    if (is_lambda_in_extern) {
-      FunctionPtr invoke_method = is_lambda_in_extern->get_invoke_function_for_extern_function(func);
-      cnt_lambda_args = invoke_method->min_argn;
-      W << "std::bind(" << FunctionName(invoke_method) << ", ";
-    }
 
     W << *i;
-
-    if (is_lambda_in_extern) {
-      for (size_t param_id = 1; param_id < cnt_lambda_args; ++param_id) {
-        W << ", std::placeholders::_" << std::to_string(param_id);
-      }
-      W << ")";
-    }
   }
   W << ")";
 }
@@ -3307,7 +3293,19 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
       root->str_val == "is_real") {
     W << "(bool (*) (const var &))";
   }
-  W << FunctionName(root->get_func_id());
+  if (root->get_func_id()->is_lambda()) {
+    FunctionPtr invoke_method = root->get_func_id();
+    W << "std::bind(" << FunctionName(invoke_method) << ", ";
+
+    W << root->bound_class();
+    for (size_t param_id = 1; param_id < invoke_method->min_argn; ++param_id) {
+      W << ", std::placeholders::_" << std::to_string(param_id);
+    }
+
+    W << ")";
+  } else {
+    W << FunctionName(root->get_func_id());
+  }
 }
 
 

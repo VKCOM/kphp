@@ -689,25 +689,43 @@ void ExprNodeRecalc::recalc_ternary(VertexAdaptor<op_ternary> ternary) {
   set_lca(ternary->false_expr());
 }
 
-void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func, VertexPtr expr) {
-  if (func->str_val == "lca") {
-    for (auto i : func->args()) {
+void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_type_rule, VertexPtr expr) {
+  if (func_type_rule->str_val == "lca") {
+    for (auto i : func_type_rule->args()) {
       //TODO: is it hack?
       apply_type_rule(i, expr);
     }
-    return;
-  }
-  if (func->str_val == "OrFalse") {
-    if (kphp_error (!func->args().empty(), "OrFalse with no arguments")) {
+  } else if (func_type_rule->str_val == "OrFalse") {
+    if (kphp_error (!func_type_rule->args().empty(), "OrFalse with no arguments")) {
       recalc_ptype<tp_Error>();
     } else {
-      apply_type_rule(func->args()[0], expr);
+      apply_type_rule(func_type_rule->args()[0], expr);
       recalc_ptype<tp_False>();
     }
-    return;
+  } else if (func_type_rule->str_val == "callback_call") {
+    kphp_assert(func_type_rule->size() == 1);
+
+    VertexAdaptor<op_arg_ref> arg = func_type_rule->args()[0];
+    int callback_arg_id = arg->int_val;
+    if (!expr || callback_arg_id < 1 || expr->type() != op_func_call || callback_arg_id > (int)expr->get_func_id()->get_params().size()) {
+      kphp_error (0, "error in type rule");
+      recalc_ptype<tp_Error>();
+    }
+    const FunctionPtr called_function = expr->get_func_id();
+    kphp_assert(called_function->is_extern && called_function->get_params()[callback_arg_id - 1]->type() == op_func_param_callback);
+
+    VertexRange call_args = expr.as<op_func_call>()->args();
+    VertexPtr callback_arg = call_args[callback_arg_id - 1];
+
+    if (callback_arg->type() == op_func_ptr) {
+      set_lca(callback_arg->get_func_id(), -1);
+    } else {
+      recalc_ptype<tp_Error>();
+    }
+  } else {
+    kphp_error (0, dl_pstr("unknown type_rule function [%s]", func_type_rule->str_val.c_str()));
+    recalc_ptype<tp_Error>();
   }
-  kphp_error (0, dl_pstr("unknown type_rule function [%s]", func->str_val.c_str()));
-  recalc_ptype<tp_Error>();
 }
 
 void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, VertexPtr expr) {
@@ -769,6 +787,11 @@ void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexPtr expr) {
 
 void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr function = call->get_func_id();
+  if (call->type_rule) {
+    apply_type_rule(call->type_rule.as<meta_op_type_rule>()->expr(), call);
+    return;
+  }
+
   if (function->root->type_rule) {
     apply_type_rule(function->root->type_rule.as<meta_op_type_rule>()->expr(), call);
   } else {

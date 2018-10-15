@@ -94,6 +94,7 @@ public:
 
 
 inline void preg_add_match(array<var> &v, const var &match, const string &name);
+inline void preg_add_match(array<string> &v, const string &match, const string &name);
 
 inline int preg_get_backref(const char **str, int *backref);
 
@@ -235,7 +236,7 @@ inline string regexp::get_replacement(const string &replace_val, const string &s
 template<class T>
 string regexp::get_replacement(const T &replace_val, const string &subject, int count) const {
   int size = fix_php_bugs ? subpatterns_count : count;
-  array<var> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+  array<string> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
 
   if (named_subpatterns_count) {
     for (int i = 0; i < size; i++) {
@@ -321,6 +322,14 @@ var regexp::replace(const T &replace_val, const string &subject, int limit, int 
 
 
 void preg_add_match(array<var> &v, const var &match, const string &name) {
+  if (name.size()) {
+    v.set_value(name, match);
+  }
+
+  v.push_back(match);
+}
+
+void preg_add_match(array<string> &v, const string &match, const string &name) {
   if (name.size()) {
     v.set_value(name, match);
   }
