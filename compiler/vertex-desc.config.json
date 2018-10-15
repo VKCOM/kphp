@@ -91,7 +91,9 @@
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["name"],
+    "required": [
+      "name"
+    ],
     "oneOf": [
       {
         "required": [
@@ -118,19 +120,42 @@
       "sons": {
         "type": "object",
         "additionalProperties": {
-          "type": "integer"
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_comment": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "id": {
+                  "type": "integer"
+                },
+                "optional": {
+                  "enum": [true]
+                },
+                "virtual": {
+                  "enum": [true]
+                },
+                "override": {
+                  "enum": [true]
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            }
+          ]
         }
       },
       "alias": {
         "type": "object",
         "additionalProperties": {
           "type": "string"
-        }
-      },
-      "optional_sons": {
-        "type": "object",
-        "additionalProperties": {
-          "type": "integer"
         }
       },
       "ranges": {

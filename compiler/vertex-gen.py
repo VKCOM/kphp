@@ -167,15 +167,29 @@ def output_sons(f, type_data):
     if "sons" in type_data:
         f.write("\n")
         for son_name in type_data["sons"]:
-            son_id = type_data["sons"][son_name]
+            son_properties = type_data["sons"][son_name]
+            if isinstance(son_properties, int):
+                son_properties = {"id": son_properties}
+
+            son_id = son_properties["id"] if "id" in son_properties else son_properties
+            optional = "optional" in son_properties
+            virtual = "virtual" if "virtual" in son_properties else ""
+            override = "override" if "override" in son_properties else ""
+
             if son_id < 0:
                 son_id = "size() - " + str(-son_id)
             else:
                 son_id = str(son_id)
 
-            f.write("  VertexPtr &{son_name}() {{ return ith({son_id}); }}\n".format(son_name=son_name, son_id=son_id))
-            f.write("  const VertexPtr &{son_name}() const {{ return ith({son_id}); }}\n".format(son_name=son_name,
-                                                                                                 son_id=son_id))
+            if optional:
+                f.write("  {virtual} bool has_{son_name}() const {override} {{ return check_range({son_id}); }}\n"
+                        .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override))
+
+            f.write("  {virtual} VertexPtr &{son_name}() {override} {{ return ith({son_id}); }}\n"
+                    .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override))
+
+            f.write("  {virtual} const VertexPtr &{son_name}() const {override} {{ return ith({son_id}); }}\n"
+                    .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override))
 
 
 def output_aliases(f, type_data):
@@ -205,14 +219,6 @@ def output_ranges(f, type_data):
             f.write("  VertexConstRange %s() const { return VertexConstRange(%s, %s); }\n" % (range_name, from_r, to_r))
 
 
-def output_optional_sons(f, type_data):
-    if "optional_sons" in type_data:
-        f.write("\n")
-        for son_name in type_data["optional_sons"]:
-            assert type_data["sons"][son_name] == type_data["optional_sons"][son_name]
-            f.write("  bool has_%s() const { return check_range(%d); }\n" % (son_name, type_data["optional_sons"][son_name]))
-
-
 def output_class_footer(f):
     f.write("};\n")
 
@@ -235,7 +241,6 @@ def output_vertex_type(type_data, schema):
         output_sons(f, type_data)
         output_aliases(f, type_data)
         output_ranges(f, type_data)
-        output_optional_sons(f, type_data)
 
         output_class_footer(f)
 

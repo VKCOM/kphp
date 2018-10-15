@@ -134,10 +134,10 @@
   {
     "sons": {
       "var": 0,
-      "default_value": 1
-    },
-    "optional_sons": {
-      "default_value": 1
+      "default_value": {
+        "id": 1,
+        "optional": true
+      }
     },
     "name": "meta_op_func_param",
     "base_name": "meta_op_base",
@@ -381,16 +381,16 @@
     "name": "op_class_var",
     "base_name": "meta_op_base",
     "sons": {
-      "def_val": 0
+      "def_val": {
+        "id": 0,
+        "optional": true
+      }
     },
     "props": {
       "rl": "rl_error",
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "op_class_var"
-    },
-    "optional_sons": {
-      "def_val": 0
     },
     "extras": [
       "string"
@@ -567,8 +567,8 @@
   },
   {
     "sons": {
-      "cmd": 1,
-      "params": 0
+      "params": 0,
+      "cmd": 1
     },
     "name": "op_foreach",
     "base_name": "meta_op_cycle",
@@ -577,14 +577,14 @@
     }
   },
   {
-    "optional_sons": {
-      "key": 3
-    },
     "sons": {
-      "temp_var": 2,
       "xs": 0,
-      "key": 3,
-      "x": 1
+      "x": 1,
+      "temp_var": 2,
+      "key": {
+        "id": 3,
+        "optional": true
+      }
     },
     "name": "op_foreach_param",
     "base_name": "meta_op_base",
@@ -620,13 +620,13 @@
     }
   },
   {
-    "optional_sons": {
-      "false_cmd": 2
-    },
     "sons": {
       "true_cmd": 1,
       "cond": 0,
-      "false_cmd": 2
+      "false_cmd": {
+        "id": 2,
+        "optional": true
+      }
     },
     "name": "op_if",
     "base_name": "meta_op_base",
@@ -1521,12 +1521,12 @@
     }
   },
   {
-    "optional_sons": {
-      "key": 1
-    },
     "sons": {
       "array": 0,
-      "key": 1
+      "key": {
+        "id":1,
+        "optional": true
+      }
     },
     "name": "op_index",
     "base_name": "meta_op_base",
