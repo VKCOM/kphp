@@ -19,6 +19,7 @@
  */
 
 #include "compiler/class-assumptions.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/phpdoc.h"
 
@@ -139,15 +140,15 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
 
   // phpdoc-тип в виде строки сейчас представлен в виде дерева vertex'ов; допускаем 'A', 'A[]', 'A|false'
   // другие, более сложные, по типу '(A|int)', не разбираем и считаем assum_not_instance
-  if (unlikely(type_rule->type() == op_type_rule_func && type_rule->ith(1)->type_help == tp_False)) {
-    type_rule = type_rule->ith(0);  // из 'A|false', 'A[]|false' достаём 'A' / 'A[]'
+  if (unlikely(type_rule->type() == op_type_rule_func && type_rule.as<op_type_rule_func>()->args()[1]->type_help == tp_False)) {
+    type_rule = type_rule.as<op_type_rule_func>()->args()[0];  // из 'A|false', 'A[]|false' достаём 'A' / 'A[]'
   }
 
   if (type_rule->type_help == tp_Class) {
     out_klass = type_rule.as<op_class_type_rule>()->class_ptr;
     return assum_instance;
-  } else if (type_rule->type_help == tp_array && type_rule->ith(0)->type_help == tp_Class) {
-    out_klass = type_rule->ith(0).as<op_class_type_rule>()->class_ptr;
+  } else if (type_rule->type_help == tp_array && type_rule.as<op_type_rule>()->args()[0]->type_help == tp_Class) {
+    out_klass = type_rule.as<op_type_rule>()->args()[0].as<op_class_type_rule>()->class_ptr;
     return assum_instance_array;
   }
 
@@ -215,7 +216,7 @@ void analyze_catch_of_var(FunctionPtr f, const std::string &var_name, VertexAdap
  */
 void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAdaptor<op_foreach_param> root) {
   ClassPtr klass;
-  AssumType iter_assum = infer_class_of_expr(f, root->ith(0), klass);
+  AssumType iter_assum = infer_class_of_expr(f, root->xs(), klass);
 
   if (iter_assum == assum_instance_array) {
     assumption_add(f, assum_instance, var_name, klass);
@@ -241,39 +242,48 @@ void analyze_global_var(FunctionPtr f, const std::string &var_name) {
  */
 void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_name, VertexPtr root) {
   switch (root->type()) {
-    case op_set:
-      if (root->ith(0)->type() == op_var && root->ith(0)->get_string() == var_name) {
-        if (root.as<op_set>()->phpdoc_token) {
-          analyze_phpdoc_with_type(f, var_name, root.as<op_set>()->phpdoc_token);
+    case op_set: {
+      auto set = root.as<op_set>();
+      if (set->lhs()->type() == op_var && set->lhs()->get_string() == var_name) {
+        if (set->phpdoc_token) {
+          analyze_phpdoc_with_type(f, var_name, set->phpdoc_token);
         } else {
-          analyze_set_to_var(f, var_name, root->ith(1));
+          analyze_set_to_var(f, var_name, set->rhs());
         }
       }
       return;
+    }
 
-    case op_list:
+    case op_list: {
       if (root.as<op_list>()->phpdoc_token) {
         analyze_phpdoc_with_type(f, std::string(), root.as<op_list>()->phpdoc_token);
       }
       return;
+    }
 
-    case op_try:
-      if (root->size() > 1 && root->ith(1)->type() == op_var && root->ith(1)->get_string() == var_name) {
+    case op_try: {
+      auto t = root.as<op_try>();
+      if (t->exception()->type() == op_var && t->exception()->get_string() == var_name) {
         analyze_catch_of_var(f, var_name, root);
       }
       break;    // внутрь try зайти чтоб
+    }
 
-    case op_foreach_param:
-      if (root->ith(1)->type() == op_var && root->ith(1)->get_string() == var_name) {
+    case op_foreach_param: {
+      auto foreach = root.as<op_foreach_param>();
+      if (foreach->x()->type() == op_var && foreach->x()->get_string() == var_name) {
         analyze_foreach(f, var_name, root);
       }
       return;
+    }
 
-    case op_global:
-      if (root->ith(0)->type() == op_var && root->ith(0)->get_string() == var_name) {
+    case op_global: {
+      auto global = root.as<op_global>();
+      if (global->args()[0]->type() == op_var && global->args()[0]->get_string() == var_name) {
         analyze_global_var(f, var_name);
       }
       return;
+    }
 
     default:
       break;
@@ -524,7 +534,7 @@ AssumType infer_from_instance_prop(FunctionPtr f,
                                    VertexAdaptor<op_instance_prop> prop,
                                    ClassPtr &out_class) {
   ClassPtr lhs_class;
-  AssumType lhs_assum = infer_class_of_expr(f, prop->ith(0), lhs_class);
+  AssumType lhs_assum = infer_class_of_expr(f, prop->expr(), lhs_class);
 
   if (lhs_assum != assum_instance) {
     return assum_not_instance;
@@ -547,10 +557,14 @@ AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class
       return infer_from_instance_prop(f, root, out_class);
     case op_func_call:
       return infer_from_call(f, root, out_class);
-    case op_index:
-      return root->size() == 2 && assum_instance_array == infer_class_of_expr(f, root->ith(0), out_class)
-             ? assum_instance
-             : assum_not_instance;
+    case op_index: {
+      auto index = root.as<op_index>();
+      if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class)) {
+        return assum_instance;
+      } else {
+        return assum_not_instance;
+      }
+    }
     case op_array:
       return infer_from_array(f, root, out_class);
 

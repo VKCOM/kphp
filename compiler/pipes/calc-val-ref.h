@@ -24,11 +24,9 @@ public:
 
   template<class VisitT>
   bool user_recursion(VertexPtr v, LocalT *local, VisitT &visit) {
-    for (int i = 0; i < v->size(); ++i) {
-      bool is_last_elem = (i == v->size() - 1);
-
-      local->allowed = is_allowed_for_getting_val_or_ref(v->type(), is_last_elem);
-      visit(v->ith(i));
+    for (VertexPtr &child : *v) {
+      local->allowed = is_allowed_for_getting_val_or_ref(v->type(), &child == &v->back());
+      visit(child);
     }
     return true;
   }

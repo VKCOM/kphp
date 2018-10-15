@@ -1864,7 +1864,7 @@ VertexPtr GenTree::generate_constructor_call(const ClassInfo &info) {
 
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function) const {
   VertexAdaptor<op_func_name> lambda_name = VertexAdaptor<op_func_name>::create();
-  lambda_name->str_val = get_real_name_from_full_method_name(function->ith(0)->get_string());
+  lambda_name->str_val = get_real_name_from_full_method_name(function->name()->get_string());
   lambda_name->location.line = function->name()->location.line;
 
   VertexAdaptor<op_class> generated_class = VertexAdaptor<op_class>::create(lambda_name);

@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "compiler/vertex.h"
 #include "compiler/data_ptr.h"
-#include "compiler/utils.h"
-#include "compiler/operation.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/utils.h"
+#include "compiler/vertex.h"
 
 #if __cplusplus < 201103L
 #define override
@@ -33,7 +33,7 @@ protected:
 
   virtual bool on_array_double_arrow(VertexAdaptor<op_double_arrow>) { return false; }
 
-  virtual bool on_array_value(VertexPtr array __attribute__((unused)), size_t ind __attribute__((unused))) { return false; }
+  virtual bool on_array_value(VertexAdaptor<op_array> array __attribute__((unused)), size_t ind __attribute__((unused))) { return false; }
 
   virtual T on_array_finish(VertexAdaptor<op_array> v) { return on_non_const(v); }
 
@@ -176,8 +176,8 @@ protected:
     return visit(key) && visit(value);
   }
 
-  bool on_array_value(VertexPtr v, size_t ind) override {
-    return visit(GenTree::get_actual_value(v->ith(ind)));
+  bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
+    return visit(GenTree::get_actual_value(v->args()[ind]));
   }
 
   bool on_var(VertexPtr v) override {
@@ -267,8 +267,8 @@ protected:
     return v;
   }
 
-  bool on_array_value(VertexPtr v, size_t ind) override {
-    v->ith(ind) = make_const(v->ith(ind));
+  bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
+    v->args()[ind] = make_const(v->args()[ind]);
     return true;
   }
 

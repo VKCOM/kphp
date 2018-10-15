@@ -1,20 +1,17 @@
 #pragma once
 
+#include "auto/compiler/vertex/vertex-all.h"
+
 #include "compiler/data_ptr.h"
 #include "compiler/graph.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer-core.h"
 #include "compiler/types.h"
-#include "auto/compiler/vertex/vertex-all.h"
 
 size_t vertex_total_mem_used __attribute__ ((weak));
 
 inline bool operator==(const VertexPtr &a, const VertexPtr &b) {
   return a->id == b->id;
-}
-
-inline bool operator<(const VertexPtr &a, const VertexPtr &b) {
-  return a->id < b->id;
 }
 
 template<Operation Op>

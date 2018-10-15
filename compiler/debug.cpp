@@ -3,6 +3,7 @@
 //
 
 #include "compiler/debug.h"
+
 #include <string>
 #include <vector>
 
@@ -248,22 +249,22 @@ struct GdbVertex {
   GdbVertex *ith2;
 };
 
-GdbVertex *debugVertexToGdb(VertexPtr impl) {
+GdbVertex *debugVertexToGdb(VertexPtr v) {
   GdbVertex *g = new GdbVertex;
-  int size = impl ? impl->size() : 0;
+  int size = v ? v->size() : 0;
 
-  g->type = (impl ? impl->type() : meta_op_base);
-  g->str = impl ? debugVertexMore(impl) : "";
-  g->ith0 = size > 0 ? debugVertexToGdb(impl->ith(0)) : nullptr;
-  g->ith1 = size > 1 ? debugVertexToGdb(impl->ith(1)) : nullptr;
-  g->ith2 = size > 2 ? debugVertexToGdb(impl->ith(2)) : nullptr;
+  g->type = (v ? v->type() : meta_op_base);
+  g->str = v ? debugVertexMore(v) : "";
+  VertexRange sons{v->begin(), v->end()};
+  g->ith0 = size > 0 ? debugVertexToGdb(sons[0]) : nullptr;
+  g->ith1 = size > 1 ? debugVertexToGdb(sons[1]) : nullptr;
+  g->ith2 = size > 2 ? debugVertexToGdb(sons[2]) : nullptr;
 
   return g;
 }
 
 // "expr*8" in CLion debugger
-template<Operation Op>
-GdbVertex operator*(VertexAdaptor <Op> v, int n __attribute__((unused))) {
+GdbVertex operator*(VertexPtr v, int n __attribute__((unused))) {
   return *debugVertexToGdb(v);
 }
 

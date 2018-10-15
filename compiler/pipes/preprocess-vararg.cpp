@@ -16,7 +16,7 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     } else if (name == "func_get_arg") {
       kphp_error(call->size() == 1, "Strange func_num_arg not one argument");
       VertexPtr arr = create_va_list_var(call->location);
-      auto index = VertexAdaptor<op_index>::create(arr, call->ith(0));
+      auto index = VertexAdaptor<op_index>::create(arr, call.as<op_func_call>()->args()[0]);
       return index;
     } else if (name == "func_num_args") {
       kphp_error(call->size() == 0, "Strange func_num_args with arguments");

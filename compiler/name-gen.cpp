@@ -190,7 +190,9 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
   // 2) lhs->propname
   kphp_assert((v->type() == op_func_call && v->extra_type == op_ex_func_member) || v->type() == op_instance_prop);
 
-  VertexPtr lhs = v->ith(0);      // в обоих случаях lhs вычисляется так
+  VertexPtr lhs = v->type() == op_instance_prop ?
+                  v.as<op_instance_prop>()->expr() :
+                  v.as<op_func_call>()->args()[0];
   ClassPtr klass;
 
   switch (lhs->type()) {
@@ -205,7 +207,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_var: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, dl_pstr("$%s is not an instance", lhs->get_string().c_str())).c_str());
+                 _err_instance_access(v, dl_pstr("$%s is not an instance", lhs->get_c_string())).c_str());
       return klass;
     }
 
@@ -213,15 +215,15 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_func_call: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, dl_pstr("%s() does not return instance", lhs->get_string().c_str())).c_str());
+                 _err_instance_access(v, dl_pstr("%s() does not return instance", lhs->get_c_string())).c_str());
       return klass;
     }
 
       // ...->anotherInstance->...
     case op_instance_prop: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
-      kphp_error(assum == assum_instance,
-                 _err_instance_access(v, dl_pstr("$%s->%s is not an instance", lhs->ith(0)->get_string().c_str(), lhs->get_string().c_str())).c_str());
+      auto desc = dl_pstr("$%s->%s is not an instance", lhs.as<op_instance_prop>()->expr()->get_c_string(), lhs->get_c_string());
+      kphp_error(assum == assum_instance, _err_instance_access(v, desc).c_str());
       return klass;
     }
 
@@ -233,23 +235,23 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
         // $var[$idx]->...
         if (array->type() == op_var) {
           AssumType assum = infer_class_of_expr(function, array, klass);
-          kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, dl_pstr("$%s is not an array of instances", array->get_string().c_str())).c_str());
+          auto desc = dl_pstr("$%s is not an array of instances", array->get_c_string());
+          kphp_error(assum == assum_instance_array, _err_instance_access(v, desc).c_str());
           return klass;
         }
         // getArr()[$idx]->...
         if (array->type() == op_func_call) {
           AssumType assum = infer_class_of_expr(function, array, klass);
-          kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, dl_pstr("%s() does not return array of instances", array->get_string().c_str())).c_str());
+          auto desc = dl_pstr("%s() does not return array of instances", array->get_c_string());
+          kphp_error(assum == assum_instance_array, _err_instance_access(v, desc).c_str());
           return klass;
         }
         // ...->arrOfInstances[$idx]->...
         if (array->type() == op_instance_prop) {
           AssumType assum = infer_class_of_expr(function, array, klass);
-          kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, dl_pstr("$%s->%s is not array of instances", array->ith(0)->get_string().c_str(), array->get_string()
-                                                                                                                                    .c_str())).c_str());
+          auto desc = dl_pstr("$%s->%s is not array of instances",
+                              array.as<op_instance_prop>()->expr()->get_c_string(), array->get_c_string());
+          kphp_error(assum == assum_instance_array, _err_instance_access(v, desc).c_str());
           return klass;
         }
       }

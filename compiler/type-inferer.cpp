@@ -1,4 +1,5 @@
 #include "compiler/type-inferer.h"
+
 #include "compiler/gentree.h"
 
 void init_functions_tinf_nodes(FunctionPtr function) {
@@ -736,7 +737,7 @@ void ExprNodeRecalc::recalc_define_val(VertexAdaptor<op_define_val> define_val) 
 void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
   switch (expr->type()) {
     case op_move:
-      recalc_expr(expr->ith(0));
+      recalc_expr(expr.as<op_move>()->expr());
       break;
     case op_require:
       recalc_require(expr);

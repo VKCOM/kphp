@@ -15,11 +15,11 @@ public:
   typedef std::reverse_iterator<xiterator> iterator;
   typedef std::reverse_iterator<const_xiterator> const_iterator;
 
-  //Data
-  int id;
 private:
   Operation type_;
+  int n;
 public:
+  int id;
   tinf::ExprNode tinf_node;
   VertexPtr type_rule;
   Location location;
@@ -42,11 +42,63 @@ public:
   bool inline_flag : 1;
   bool void_flag : 1;
 
-  int n;
+private:
+  VertexPtr *arr() const {
+    return (VertexPtr *)this - 1;
+  }
 
+protected:
+
+  bool check_range(int i) const { return 0 <= i && i < size(); }
+
+  VertexPtr &ith(int i) {
+    assert (check_range(i));
+    return arr()[-i];
+  }
+
+  const VertexPtr &ith(int i) const {
+    assert (check_range(i));
+    return arr()[-i];
+  }
+
+  template<class... Args>
+  void set_children(int shift, VertexPtr arg, Args &&... args) {
+    ith(shift) = arg;
+    set_children(shift + 1, std::forward<Args>(args)...);
+  }
+
+  template<class... Args>
+  void set_children(int shift, const std::vector<VertexPtr> &arg, Args &&... args) {
+    for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
+      ith(shift + i) = arg[i];
+    }
+    set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
+  }
+
+  void set_children(int shift) {
+    dl_assert(shift == n, "???");
+  }
+
+  template<class... Args>
+  static int get_children_size(const VertexPtr &, Args &&... args) {
+    return 1 + get_children_size(std::forward<Args>(args)...);
+  }
+
+  template<class... Args>
+  static int get_children_size(const std::vector<VertexPtr> &arg, Args &&... args) {
+    return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
+  }
+
+  static int get_children_size() {
+    return 0;
+  }
+
+
+public:
   vertex_inner() :
-    id(0),
     type_(op_none),
+    n(-1),
+    id(0),
     tinf_node(VertexPtr(this)),
     type_rule(),
     location(),
@@ -63,13 +115,13 @@ public:
     parent_flag(),
     needs_const_iterator_flag(),
     inline_flag(),
-    void_flag(),
-    n(-1) {
+    void_flag() {
   }
 
   vertex_inner(const vertex_inner<meta_op_base> &from) :
-    id(from.id),
     type_(from.type_),
+    n(-1),
+    id(from.id),
     tinf_node(VertexPtr(this)),
     type_rule(from.type_rule),
     location(from.location),
@@ -86,12 +138,10 @@ public:
     parent_flag(from.parent_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
     inline_flag(from.inline_flag),
-    void_flag(from.void_flag),
-    n(-1) {
+    void_flag(from.void_flag) {
   }
 
-  virtual ~vertex_inner() {
-  }
+  virtual ~vertex_inner() {}
 
   void copy_location_and_flags(const vertex_inner<meta_op_base> &from) {
     type_rule = from.type_rule;
@@ -109,16 +159,11 @@ public:
     void_flag = from.void_flag;
   }
 
-
-  VertexPtr *arr() const {
-    return (VertexPtr *)this - 1;
-  }
-
   void raw_init(int real_n) {
     assert (n == -1);
     n = real_n;
     for (int i = 0; i < n; i++) {
-      new(&arr()[-i]) VertexPtr();
+      new(&ith(i)) VertexPtr();
     }
   }
 
@@ -126,77 +171,35 @@ public:
     assert (n == -1);
     n = from.size();
     for (int i = 0; i < n; i++) {
-      new(&arr()[-i]) VertexPtr(from.ith(i).clone());
+      new(&ith(i)) VertexPtr(from.ith(i).clone());
     }
   }
 
-  inline bool check_range(int i) const {
-    return 0 <= i && i < size();
-  }
+  int size() const { return n; }
 
-  inline VertexPtr &operator[](int i) {
-    assert (check_range(i));
-    return arr()[-i];
-  }
+  VertexPtr &back() { return ith(size() - 1); }
 
-  inline const VertexPtr &operator[](int i) const {
-    assert (check_range(i));
-    return arr()[-i];
-  }
+  vector<VertexPtr> get_next() { return vector<VertexPtr>(begin(), end()); }
 
-  inline int size() const {
-    return n;
-  }
+  bool empty() { return size() == 0; }
 
-  VertexPtr &back() {
-    return (*this)[size() - 1];
-  }
+  iterator begin() { return iterator(arr() + 1); }
 
-  vector<VertexPtr> get_next() {
-    vector<VertexPtr> res(begin(), end());
-    return res;
-  }
+  iterator end() { return iterator(arr() - size() + 1); }
 
-  bool empty() {
-    return size() == 0;
-  }
+  const_iterator begin() const { return const_iterator(arr() + 1); }
 
-  inline VertexPtr &ith(int i) {
-    return (*this)[i];
-  }
+  const_iterator end() const { return const_iterator(arr() - size() + 1); }
 
-  inline const VertexPtr &ith(int i) const {
-    return (*this)[i];
-  }
+  const Location &get_location() { return location; }
 
-  inline iterator begin() {
-    return iterator(arr() + 1);
-  }
+  void init() {}
 
-  inline iterator end() {
-    return iterator(arr() - size() + 1);
-  }
-
-  inline const_iterator begin() const {
-    return const_iterator(arr() + 1);
-  }
-
-  inline const_iterator end() const {
-    return const_iterator(arr() - size() + 1);
-  }
-
-  const Location &get_location() {
-    return location;
-  }
-
-
-  void init() {
-  }
-
-  static void init_properties(OpProperties *p __attribute__((unused))) {
-  }
+  static void init_properties(OpProperties *p __attribute__((unused))) {}
 
   const Operation &type() const { return type_; }
+
+  const char *get_c_string() const { return get_string().c_str(); }
 
   virtual const FunctionPtr &get_func_id() const { dl_fail ("get_func_id is not supported"); }
 
@@ -215,40 +218,8 @@ public:
   template<Operation Op>
   friend vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
-  template<class... Args>
-  void set_children(int shift, VertexPtr arg, Args&&... args) {
-    ith(shift) = arg;
-    set_children(shift + 1, std::forward<Args>(args)...);
-  }
-
-  template<class... Args>
-  void set_children(int shift, const std::vector<VertexPtr> &arg, Args&&... args) {
-    for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
-      ith(shift + i) = arg[i];
-    }
-    set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
-  }
-
-  void set_children(int shift) {
-    dl_assert(shift == n, "???");
-  }
-
-  template<class... Args>
-  static int get_children_size(const VertexPtr &, Args&&... args) {
-    return 1 + get_children_size(std::forward<Args>(args)...);
-  }
-
-  template<class... Args>
-  static int get_children_size(const std::vector<VertexPtr> &arg, Args&&... args) {
-    return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
-  }
-
-  static int get_children_size() {
-    return 0;
-  }
-
   template<typename... Args>
-  static vertex_inner<meta_op_base>* create(Args&&... args) {
+  static vertex_inner<meta_op_base> *create(Args &&... args) {
     vertex_inner<meta_op_base> *v = raw_create_vertex_inner<meta_op_base>(get_children_size(std::forward<Args>(args)...));
     v->set_children(0, std::forward<Args>(args)...);
     return v;

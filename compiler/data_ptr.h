@@ -34,11 +34,10 @@ typedef VertexAdaptor<meta_op_base> VertexPtr;
 
 VertexPtr clone_vertex(VertexPtr);
 
-//TODO: use private and protected when necessary
 template<Operation Op>
 class VertexAdaptor {
-public:
   vertex_inner<Op> *impl;
+public:
 
   VertexAdaptor() :
     impl(nullptr) {
@@ -108,6 +107,12 @@ public:
     return VertexAdaptor<Op>(clone_vertex(*this));
   }
 
+  template<Operation Op2>
+  friend class VertexAdaptor;
+
+  bool operator==(VertexPtr other) {
+    return static_cast<vertex_inner<meta_op_base> *>(impl) == other.impl;
+  }
 };
 
 

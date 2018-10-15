@@ -1,8 +1,9 @@
+#include "compiler/data.h"
+
 #include <functional>
 
 #include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
 #include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/type-inferer.h"
@@ -190,7 +191,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   auto new_func_root =  func->root.as<op_function>().clone();
 
   for (size_t i = 0; i < func_args_n; ++i) {
-    VertexAdaptor<op_func_param> param = new_func_root->params()->ith(i).as<op_func_param>();
+    VertexAdaptor<op_func_param> param = new_func_root->params().as<op_func_param_list>()->params()[i].as<op_func_param>();
     auto id_classPtr_it = template_type_id_to_ClassPtr.find(param->template_type_id);
     if (id_classPtr_it == template_type_id_to_ClassPtr.end()) {
       kphp_error_act(template_type_id_to_ClassPtr.empty() || param->template_type_id == -1,

@@ -653,8 +653,8 @@ string conv_to_func_ptr_name(VertexPtr call) {
 
     case op_array: {
       if (name_v->size() == 2) {
-        VertexPtr class_name = GenTree::get_actual_value(name_v->ith(0));
-        VertexPtr fun_name = GenTree::get_actual_value(name_v->ith(1));
+        VertexPtr class_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[0]);
+        VertexPtr fun_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[1]);
 
         if (class_name->type() == op_string && fun_name->type() == op_string) {
           return class_name->get_string() + "::" + fun_name->get_string();
