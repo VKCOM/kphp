@@ -130,7 +130,7 @@ public:
 };
 
 template<typename F>
-using ExecuteFunctionArguments = vk::FunctionTraits<decltype(&F::execute)>;
+using ExecuteFunctionArguments = vk::function_traits<decltype(&F::execute)>;
 template<typename F>
 using ExecuteFunctionInput = typename ExecuteFunctionArguments<F>::template Argument<0>;
 template<typename F>
