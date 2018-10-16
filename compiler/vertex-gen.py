@@ -210,7 +210,7 @@ def output_optional_sons(f, type_data):
         f.write("\n")
         for son_name in type_data["optional_sons"]:
             assert type_data["sons"][son_name] == type_data["optional_sons"][son_name]
-            f.write("  bool has_%s() { return check_range(%d); }\n" % (son_name, type_data["optional_sons"][son_name]))
+            f.write("  bool has_%s() const { return check_range(%d); }\n" % (son_name, type_data["optional_sons"][son_name]))
 
 
 def output_class_footer(f):

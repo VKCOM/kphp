@@ -873,16 +873,16 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(klass->header_name, "cl");
   W << "#pragma once" << NL;
 
-  klass->members.for_each([&](ClassMemberInstanceField *f) {
-    if (f->var->tinf_node.get_type()->has_class_type_inside()) {
-      W << IncludeClass(f->var->tinf_node.get_type());
+  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+    if (f.var->tinf_node.get_type()->has_class_type_inside()) {
+      W << IncludeClass(f.var->tinf_node.get_type());
     }
   });
 
   W << NL << "struct " << klass->src_name << " " << BEGIN;
   W << "int ref_cnt;" << NL << NL;
-  klass->members.for_each([&](ClassMemberInstanceField *f) {
-    W << TypeName(tinf::get_type(f->var)) << " $" << f->local_name() << ";" << NL;
+  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+    W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;
   });
 
   W << NL << "inline const char *get_class() const " << BEGIN << "return ";

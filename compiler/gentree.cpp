@@ -93,14 +93,14 @@ void GenTree::exit_and_register_class(VertexPtr root) {
   auto params = VertexAdaptor<op_func_param_list>::create(empty);
 
   vector<VertexPtr> seq;
-  cur_class->members.for_each([&seq](ClassMemberConstant *f) {
-    seq.emplace_back(f->root);
+  cur_class->members.for_each([&seq](ClassMemberConstant &f) {
+    seq.emplace_back(f.root);
   });
-  cur_class->members.for_each([&seq](ClassMemberStaticField *f) {
+  cur_class->members.for_each([&seq](ClassMemberStaticField &f) {
     // todo на второй итерации переписывания парсинга классов — root без seq2
     // (но подумать, можно ли сохранять комментарии при этом)
-    auto seq2 = VertexAdaptor<op_seq>::create(f->root);
-    seq2->location = f->root->location;
+    auto seq2 = VertexAdaptor<op_seq>::create(f.root);
+    seq2->location = f.root->location;
     seq.emplace_back(seq2);
   });
 
@@ -1247,13 +1247,13 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr c
   next.insert(next.begin(), create_vertex_this(location, cur_class, true));
 
   // выносим "$var = 0" в начало конструктора; переменные класса — в порядке, обратном объявлению, это не страшно
-  cur_class->members.for_each([&](ClassMemberInstanceField *f) {
-    if (f->root->has_def_val()) {
+  cur_class->members.for_each([&](ClassMemberInstanceField &f) {
+    if (f.root->has_def_val()) {
       auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(location, ClassPtr()));
       set_location(inst_prop, location);
-      inst_prop->str_val = f->root->get_string();
+      inst_prop->str_val = f.root->get_string();
 
-      next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f->root->def_val()));
+      next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f.root->def_val()));
     }
   });
 

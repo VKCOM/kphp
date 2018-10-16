@@ -10,9 +10,11 @@ VertexPtr CheckInstanceProps::on_enter_vertex(VertexPtr v, LocalT *) {
     if (klass) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
       auto m = klass->members.get_instance_field(v->get_string());
 
-      if (!kphp_error(m, dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_string().c_str(), klass->name.c_str()))) {
+      if (m) {
         v->set_var_id(m->var);
         init_class_instance_var(v, m, klass);
+      } else {
+        kphp_error(0, dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_c_string(), klass->name.c_str()));
       }
     }
   }

@@ -247,7 +247,7 @@ private:
     } else if (call->type() == op_func_call && call->extra_type == op_ex_func_member) {
       ClassPtr klass;
       infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
-      kphp_error(0, dl_pstr("Unknown function ->%s() of %s\n", call->get_string().c_str(), klass ? klass->name.c_str() : "Unknown class"));
+      kphp_error(0, dl_pstr("Unknown function ->%s() of %s\n", call->get_c_string(), klass ? klass->name.c_str() : "Unknown class"));
     } else {
       kphp_error(0, dl_pstr("Unknown function %s()\n", unexisting_func_name.c_str()));
     }

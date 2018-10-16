@@ -50,9 +50,9 @@ void CheckInferredInstances::analyze_function_var(FunctionPtr function, VarPtr v
 void CheckInferredInstances::analyze_class(ClassPtr klass) {
   // при несовпадении phpdoc и выведенного типов — ошибка уже кинулась раньше, на этапе type inferring
   // а здесь мы проверим переменные классов, которые объявлены, но никогда не записывались и не имеют дефолтного значения
-  klass->members.for_each([&](ClassMemberInstanceField *f) {
-    PrimitiveType ptype = f->var->tinf_node.get_type()->get_real_ptype();
+  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+    PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_Unknown,
-               dl_pstr("var %s::$%s is declared but never written", klass->name.c_str(), f->local_name().c_str()));
+               dl_pstr("var %s::$%s is declared but never written", klass->name.c_str(), f.local_name().c_str()));
   });
 }

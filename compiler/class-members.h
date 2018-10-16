@@ -1,6 +1,5 @@
 /*
- *  У классов есть статические / инстанс поля, методы; есть константы.
- * Тип этого — enum MemberKind. Реализация этого — наследники ClassMemberBase.
+ *  У классов есть статические / инстанс поля, методы; есть константы. См. struct ClassMember*
  *  У ClassData есть поле members, которое предоставляет compile-time reflection, например:
  * пробежаться по всем статическим полям, проверить существование константы, найти метод по условию и т.п.
  *  Методы, статические поля и константы превращаются в глобальные функции / переменные / дефайны, по именованию
@@ -24,14 +23,6 @@ enum AccessType {
   access_protected,
 };
 
-enum MemberKind {
-  mem_static_method,
-  mem_instance_method,
-  mem_static_field,
-  mem_instance_field,
-  mem_constant,
-};
-
 enum ClassType {
   ctype_class,
   ctype_interface,
@@ -39,68 +30,46 @@ enum ClassType {
 };
 
 
-class ClassMemberBase {
-protected:
-  explicit ClassMemberBase(ClassPtr klass __attribute__ ((unused)), MemberKind member_kind) :
-    member_kind(member_kind) {}
-
-public:
-  MemberKind member_kind;
-
-  virtual ~ClassMemberBase() = default;
-};
-
-struct ClassMemberStaticMethod : public ClassMemberBase {
-  static const MemberKind TRAITS_MEM_KIND = mem_static_method;
-
+struct ClassMemberStaticMethod {
   AccessType access_type;
   FunctionPtr function;
 
-  ClassMemberStaticMethod(ClassPtr klass, FunctionPtr function, AccessType access_type) :
-    ClassMemberBase(klass, TRAITS_MEM_KIND),
+  ClassMemberStaticMethod(FunctionPtr function, AccessType access_type) :
     access_type(access_type),
     function(function) {}
 
   const string &global_name() const;
-  const string local_name() const;
+  string local_name() const;
 };
 
-struct ClassMemberInstanceMethod : public ClassMemberBase {
-  static const MemberKind TRAITS_MEM_KIND = mem_instance_method;
-
+struct ClassMemberInstanceMethod {
   AccessType access_type;
   FunctionPtr function;
 
-  ClassMemberInstanceMethod(ClassPtr klass, FunctionPtr function, AccessType access_type) :
-    ClassMemberBase(klass, TRAITS_MEM_KIND),
+  ClassMemberInstanceMethod(FunctionPtr function, AccessType access_type) :
     access_type(access_type),
     function(function) {}
 
   const string &global_name() const;
-  const string local_name() const;
+  string local_name() const;
 };
 
-struct ClassMemberStaticField : public ClassMemberBase {
-  static const MemberKind TRAITS_MEM_KIND = mem_static_field;
-
+struct ClassMemberStaticField {
   // тут мне не нравится, но пока что для совместимости с ClassInfo; потом name можно удалить, реализовать global_name/local_name
   AccessType access_type;
   VertexAdaptor<op_static> root;
   string full_name;
 
-  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_static> root, AccessType access_type, string full_name) :
-    ClassMemberBase(klass, TRAITS_MEM_KIND),
+  ClassMemberStaticField(VertexAdaptor<op_static> root, AccessType access_type, string full_name) :
     access_type(access_type),
     root(root),
     full_name(std::move(full_name)) {}
 
   const string &global_name() const;
-  const string local_name() const;
+  string local_name() const;
 };
 
-struct ClassMemberInstanceField : public ClassMemberBase {
-  static const MemberKind TRAITS_MEM_KIND = mem_instance_field;
-
+struct ClassMemberInstanceField {
   AccessType access_type;
   VertexAdaptor<op_class_var> root;
   VarPtr var;
@@ -111,17 +80,14 @@ struct ClassMemberInstanceField : public ClassMemberBase {
   const string &local_name() const;
 };
 
-struct ClassMemberConstant : public ClassMemberBase {
-  static const MemberKind TRAITS_MEM_KIND = mem_constant;
-
+struct ClassMemberConstant {
   VertexAdaptor<op_define> root;
 
-  ClassMemberConstant(ClassPtr klass, VertexAdaptor<op_define> root) :
-    ClassMemberBase(klass, TRAITS_MEM_KIND),
+  explicit ClassMemberConstant(VertexAdaptor<op_define> root) :
     root(root) {}
 
   const string &global_name() const;
-  const string local_name() const;
+  string local_name() const;
 };
 
 
@@ -130,26 +96,41 @@ struct ClassMemberConstant : public ClassMemberBase {
 
  *  У каждого php-класса (ClassData) есть members — объект ClassMembersContainer.
  *  Собственно, он хранит все члены php-класса и предоставляет осмысленные методы доступа.
- *  Он хранит вектор ClassMemberBase — т.к. нужен порядок сохранения и кодогенерации.
- * И параллельно с ним — set хешей, для быстрой проверки существования по имени (особенно актуально для констант).
- *  Несмотря на то, что хранится ClassMemberBase — функции for_each и find_member имеют пробегаться
- * по конкретным типам member'ов, а не Base: тип определяется как первый аргумент callback'а, см. usages.
+ *  Он хранит вектора — т.к. нужен порядок сохранения и кодогенерации.
+ * И параллельно с ними — set хешей, для быстрой проверки существования по имени (особенно актуально для констант).
+ *  Несмотря на то, что хранятся 5 векторов — функции for_each и find_member одни, и пробегаются по нужному вектору:
+ * он определяется исходя из типа, как первый аргумент callback'а, см. usages.
  */
 class ClassMembersContainer {
   ClassPtr klass;
 
-  vector<ClassMemberBase *> all_members;
-  set<unsigned long long> names_hashes;
+  vector<ClassMemberStaticMethod> static_methods;
+  vector<ClassMemberInstanceMethod> instance_methods;
+  vector<ClassMemberStaticField> static_fields;
+  vector<ClassMemberInstanceField> instance_fields;
+  vector<ClassMemberConstant> contants;
+  set<uint64_t> names_hashes;
 
-  void append_member(const string &hash_name, ClassMemberBase *member);
+  template<class MemberT>
+  void append_member(const string &hash_name, const MemberT &member);
   bool member_exists(const string &hash_name) const;
 
   template<class CallbackT>
   struct arg_helper {
-    using MemberT = typename std::remove_pointer<
+    using MemberT = typename std::decay<
       typename vk::function_traits<CallbackT>::template Argument<0>
     >::type;
   };
+
+  // выбор нужного vector'а из static_methods/instance_methods/etc; реализации см. внизу
+  template<class MemberT>
+  vector<MemberT> &get_all_of() {
+    static_assert(sizeof(MemberT) == -1u, "Invalid template MemberT parameter");
+    return {};
+  }
+
+  template<class MemberT>
+  const vector<MemberT> &get_all_of() const { return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>(); }
 
 public:
   explicit ClassMembersContainer(ClassData *klass) :
@@ -157,22 +138,23 @@ public:
 
   template<class CallbackT>
   inline void for_each(CallbackT callback) const {
-    using MemberT = typename arg_helper<CallbackT>::MemberT;
+    for (const auto &it : get_all_of<typename arg_helper<CallbackT>::MemberT>()) {
+      callback(it);
+    }
+  }
 
-    for (auto &it : all_members) {    // TRAITS_MEM_KIND — чтоб не делать dynamic_cast != null всему подряд
-      if (it->member_kind == MemberT::TRAITS_MEM_KIND) {
-        callback(dynamic_cast<MemberT *>(it));
-      }
+  template<class CallbackT>
+  inline void for_each(CallbackT callback) {
+    for (auto &it : get_all_of<typename arg_helper<CallbackT>::MemberT>()) {
+      callback(it);
     }
   }
 
   template<class CallbackT>
   inline const typename arg_helper<CallbackT>::MemberT *find_member(CallbackT callbackReturningBool) const {
-    using MemberT = typename arg_helper<CallbackT>::MemberT;
-
-    for (auto &it : all_members) {    // TRAITS_MEM_KIND — чтоб не делать dynamic_cast != null всему подряд
-      if (it->member_kind == MemberT::TRAITS_MEM_KIND && callbackReturningBool(dynamic_cast<MemberT *>(it))) {
-        return dynamic_cast<MemberT *>(it);
+    for (const auto &it : get_all_of<typename arg_helper<CallbackT>::MemberT>()) {
+      if (callbackReturningBool(it)) {
+        return &it;
       }
     }
 
@@ -181,7 +163,7 @@ public:
 
   template<class MemberT>
   inline const MemberT* find_by_local_name(const string &local_name) const {
-    return find_member([&](MemberT *f) { return f->local_name() == local_name; });
+    return find_member([&](const MemberT &f) { return f.local_name() == local_name; });
   }
 
   void add_static_method(FunctionPtr function, AccessType access_type);
@@ -217,3 +199,13 @@ inline string get_local_name_from_global_$$(const string &global_name) {
   return pos$$ == string::npos ? global_name : global_name.substr(pos$$ + 2);
 }
 
+template<>
+inline vector<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() { return static_methods; }
+template<>
+inline vector<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() { return instance_methods; }
+template<>
+inline vector<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() { return static_fields; }
+template<>
+inline vector<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
+template<>
+inline vector<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return contants; }

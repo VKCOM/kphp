@@ -371,9 +371,9 @@ void init_assumptions_for_all_vars(ClassPtr c) {
   assert (c->assumptions_inited_vars == 1);
 //  printf("[%d] init_assumptions_for_all_vars of %s\n", get_thread_id(), c->name.c_str());
 
-  c->members.for_each([&](ClassMemberInstanceField *f) {
-    if (f->phpdoc_token) {
-      analyze_phpdoc_with_type(c, f->local_name(), f->phpdoc_token);
+  c->members.for_each([&](ClassMemberInstanceField &f) {
+    if (f.phpdoc_token) {
+      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_token);
     }
   });
 }

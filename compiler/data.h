@@ -89,7 +89,7 @@ public:
   int id;
   ClassType class_type;       // класс / интерфейс / трейт
   string name;                // название класса с полным namespace и слешами: "VK\Feed\A"
-  VertexPtr root;             // op_class
+  VertexAdaptor<op_class> root;
 
   vector<StrDependence> str_dependents; // extends / implements / use trait на время парсинга, до связки ptr'ов
   ClassPtr parent_class;                // extends
@@ -117,7 +117,7 @@ public:
 
   void set_name_and_src_name(const string &name);
 
-  void debugPrint() const;
+  void debugPrint();
 };
 
 

@@ -9,7 +9,7 @@ const string &ClassMemberStaticMethod::global_name() const {
   return function->name;
 }
 
-const string ClassMemberStaticMethod::local_name() const {
+string ClassMemberStaticMethod::local_name() const {
   return get_local_name_from_global_$$(global_name());
 }
 
@@ -18,7 +18,7 @@ const string &ClassMemberInstanceMethod::global_name() const {
   return function->name;
 }
 
-const string ClassMemberInstanceMethod::local_name() const {
+string ClassMemberInstanceMethod::local_name() const {
   return get_local_name_from_global_$$(global_name());
 }
 
@@ -27,7 +27,7 @@ const string &ClassMemberStaticField::global_name() const {
   return full_name;
 }
 
-const string ClassMemberStaticField::local_name() const {
+string ClassMemberStaticField::local_name() const {
   return get_local_name_from_global_$$(full_name);
 }
 
@@ -37,7 +37,6 @@ const string &ClassMemberInstanceField::local_name() const {
 }
 
 ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_class_var> root, AccessType access_type) :
-  ClassMemberBase(klass, TRAITS_MEM_KIND),
   access_type(access_type),
   root(root),
   phpdoc_token(root->phpdoc_token) {
@@ -52,16 +51,17 @@ const string &ClassMemberConstant::global_name() const {
   return root->name()->get_string();
 }
 
-const string ClassMemberConstant::local_name() const {
+string ClassMemberConstant::local_name() const {
   return get_local_name_from_global_$$(global_name());
 }
 
 
-void ClassMembersContainer::append_member(const string &hash_name, ClassMemberBase *member) {
+template <class MemberT>
+void ClassMembersContainer::append_member(const string &hash_name, const MemberT &member) {
   unsigned long long hash_num = hash_ll(hash_name);
   kphp_error(names_hashes.insert(hash_num).second,
              dl_pstr("Redeclaration of %s :: %s", klass->name.c_str(), hash_name.c_str()));
-  all_members.emplace_back(member);
+  get_all_of<MemberT>().push_back(member);
   //printf("append %s :: %s\n", klass->name.c_str(), hash_name.c_str());
 }
 
@@ -72,7 +72,7 @@ inline bool ClassMembersContainer::member_exists(const string &hash_name) const 
 
 void ClassMembersContainer::add_static_method(FunctionPtr function, AccessType access_type) {
   string hash_name = function->name + "()";     // не local_name из-за context-наследования, там коллизии
-  append_member(hash_name, new ClassMemberStaticMethod(klass, function, access_type));
+  append_member(hash_name, ClassMemberStaticMethod(function, access_type));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
   function->class_id = klass;
@@ -80,7 +80,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function, AccessType a
 
 void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType access_type) {
   string hash_name = get_local_name_from_global_$$(function->name) + "()";
-  append_member(hash_name, new ClassMemberInstanceMethod(klass, function, access_type));
+  append_member(hash_name, ClassMemberInstanceMethod(function, access_type));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
   function->class_id = klass;
@@ -97,23 +97,23 @@ void ClassMembersContainer::add_static_field(VertexAdaptor<op_static> root, cons
   // мне не нравится, что тут op_static со странными вложенностями внутри, но это исправим на второй итерации
   string hash_name = "$" + name;
   string global_name = replace_backslashes(klass->name) + "$$" + name;
-  append_member(hash_name, new ClassMemberStaticField(klass, root, access_type, global_name));
+  append_member(hash_name, ClassMemberStaticField(root, access_type, global_name));
 }
 
 void ClassMembersContainer::add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type) {
   string hash_name = "$" + root->str_val;
-  append_member(hash_name, new ClassMemberInstanceField(klass, root, access_type));
+  append_member(hash_name, ClassMemberInstanceField(klass, root, access_type));
 }
 
 void ClassMembersContainer::add_constant(VertexAdaptor<op_define> root) {
   string hash_name = get_local_name_from_global_$$(root->name()->get_string());
-  append_member(hash_name, new ClassMemberConstant(klass, root));
+  append_member(hash_name, ClassMemberConstant(root));
 }
 
 
 bool ClassMembersContainer::has_constant(const string &local_name) const {
   const string &hash_name = local_name;
-  return member_exists(local_name);
+  return member_exists(hash_name);
 }
 
 bool ClassMembersContainer::has_field(const string &local_name) const {
@@ -127,11 +127,11 @@ bool ClassMembersContainer::has_instance_method(const string &local_name) const 
 }
 
 bool ClassMembersContainer::has_any_instance_var() const {
-  return find_member([](ClassMemberInstanceField *) { return true; });
+  return !instance_fields.empty();
 }
 
 bool ClassMembersContainer::has_any_instance_method() const {
-  return find_member([](ClassMemberInstanceMethod *) { return true; });
+  return !instance_methods.empty();
 }
 
 bool ClassMembersContainer::has_constructor() const {

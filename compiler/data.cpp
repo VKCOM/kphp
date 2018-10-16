@@ -66,27 +66,27 @@ void ClassData::set_name_and_src_name(const string &name) {
   this->header_name = replace_characters(src_name + ".h", '$', '@');
 }
 
-void ClassData::debugPrint() const {
+void ClassData::debugPrint() {
   string str_class_type =
     class_type == ctype_interface ? "interface" :
     class_type == ctype_trait ? "trait" :
     "class";
   printf("=== %s %s\n", str_class_type.c_str(), name.c_str());
 
-  members.for_each([](ClassMemberConstant *m) {
-    printf("const %s\n", m->local_name().c_str());
+  members.for_each([](ClassMemberConstant &m) {
+    printf("const %s\n", m.local_name().c_str());
   });
-  members.for_each([](ClassMemberStaticField *m) {
-    printf("static $%s\n", m->local_name().c_str());
+  members.for_each([](ClassMemberStaticField &m) {
+    printf("static $%s\n", m.local_name().c_str());
   });
-  members.for_each([](ClassMemberStaticMethod *m) {
-    printf("static %s()\n", m->local_name().c_str());
+  members.for_each([](ClassMemberStaticMethod &m) {
+    printf("static %s()\n", m.local_name().c_str());
   });
-  members.for_each([](ClassMemberInstanceField *m) {
-    printf("var $%s\n", m->local_name().c_str());
+  members.for_each([](ClassMemberInstanceField &m) {
+    printf("var $%s\n", m.local_name().c_str());
   });
-  members.for_each([](ClassMemberInstanceMethod *m) {
-    printf("method %s()\n", m->local_name().c_str());
+  members.for_each([](ClassMemberInstanceMethod &m) {
+    printf("method %s()\n", m.local_name().c_str());
   });
 }
 
@@ -105,8 +105,8 @@ FunctionPtr ClassData::get_invoke_function_for_extern_function(FunctionPtr exter
    */
   kphp_assert(extern_function->is_extern);
   std::string invoke_method_name = get_name_of_invoke_function_for_extern(extern_function);
-  auto found_method = members.find_member([&](const ClassMemberInstanceMethod *f) {
-    return f->global_name() == invoke_method_name;
+  auto found_method = members.find_member([&](const ClassMemberInstanceMethod &f) {
+    return f.global_name() == invoke_method_name;
   });
 
   return found_method ? found_method->function : FunctionPtr();
@@ -114,8 +114,8 @@ FunctionPtr ClassData::get_invoke_function_for_extern_function(FunctionPtr exter
 
 FunctionPtr ClassData::get_template_of_invoke_function() const {
   kphp_assert(new_function->is_lambda());
-  auto found_method = members.find_member([&](const ClassMemberInstanceMethod *f) {
-    return f->local_name() == "__invoke";
+  auto found_method = members.find_member([&](const ClassMemberInstanceMethod &f) {
+    return f.local_name() == "__invoke";
   });
   // это может быть is_template, а может быть и нет
 
