@@ -136,12 +136,12 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
   return class_name;
 }
 
-static string _err_instance_access(VertexPtr v, const char *desc) {
+static const char *_err_instance_access(VertexPtr v, const char *desc) {
   if (v->type() == op_func_call) {
-    return std::string("Invalid call ...->" + v->get_string() + "(): " + desc);
+    return std::string("Invalid call ...->" + v->get_string() + "(): " + desc).c_str();
   }
 
-  return std::string("Invalid property ...->" + v->get_string() + ": " + desc);
+  return std::string("Invalid property ...->" + v->get_string() + ": " + desc).c_str();
 }
 
 /*
@@ -207,7 +207,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_var: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, dl_pstr("$%s is not an instance", lhs->get_c_string())).c_str());
+                 _err_instance_access(v, dl_pstr("$%s is not an instance", lhs->get_c_string())));
       return klass;
     }
 
@@ -215,15 +215,15 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_func_call: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, dl_pstr("%s() does not return instance", lhs->get_c_string())).c_str());
+                 _err_instance_access(v, dl_pstr("%s() does not return instance", lhs->get_c_string())));
       return klass;
     }
 
       // ...->anotherInstance->...
     case op_instance_prop: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
-      auto desc = dl_pstr("$%s->%s is not an instance", lhs.as<op_instance_prop>()->expr()->get_c_string(), lhs->get_c_string());
-      kphp_error(assum == assum_instance, _err_instance_access(v, desc).c_str());
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, dl_pstr("$%s->%s is not an instance", lhs.as<op_instance_prop>()->expr()->get_c_string(), lhs->get_c_string())));
       return klass;
     }
 
@@ -235,23 +235,23 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
         // $var[$idx]->...
         if (array->type() == op_var) {
           AssumType assum = infer_class_of_expr(function, array, klass);
-          auto desc = dl_pstr("$%s is not an array of instances", array->get_c_string());
-          kphp_error(assum == assum_instance_array, _err_instance_access(v, desc).c_str());
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, dl_pstr("$%s is not an array of instances", array->get_c_string())));
           return klass;
         }
         // getArr()[$idx]->...
         if (array->type() == op_func_call) {
           AssumType assum = infer_class_of_expr(function, array, klass);
-          auto desc = dl_pstr("%s() does not return array of instances", array->get_c_string());
-          kphp_error(assum == assum_instance_array, _err_instance_access(v, desc).c_str());
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, dl_pstr("%s() does not return array of instances", array->get_c_string())));
           return klass;
         }
         // ...->arrOfInstances[$idx]->...
         if (array->type() == op_instance_prop) {
           AssumType assum = infer_class_of_expr(function, array, klass);
-          auto desc = dl_pstr("$%s->%s is not array of instances",
-                              array.as<op_instance_prop>()->expr()->get_c_string(), array->get_c_string());
-          kphp_error(assum == assum_instance_array, _err_instance_access(v, desc).c_str());
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, dl_pstr("$%s->%s is not array of instances",
+                                                     array.as<op_instance_prop>()->expr()->get_c_string(), array->get_c_string())));
           return klass;
         }
       }
@@ -259,7 +259,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
 
       /* fallthrough */
     default:
-      kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting").c_str());
+      kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting"));
       return klass;
   }
 }
