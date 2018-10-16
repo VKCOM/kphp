@@ -16,10 +16,11 @@ public:
 
   string main_func_name;
   FunctionPtr main_function;
-  FunctionPtr req_id;
 
   vector<string_ref> lines;
 
+  string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
+  map<string, string> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
   string class_context;
 
   SrcFile();

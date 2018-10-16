@@ -8,18 +8,8 @@
 #include "compiler/type-inferer-core.h"
 #include "compiler/utils.h"
 #include "compiler/vertex.h"
+#include "compiler/class-members.h"
 
-class Assumption;
-
-enum AccessType {
-  access_nonmember = 0,
-  access_static_public,
-  access_static_private,
-  access_static_protected,   // static   functions/vars of a class
-  access_public,
-  access_private,
-  access_protected,                        // instance functions/vars of a class
-};
 
 class VarData {
 public:
@@ -52,61 +42,63 @@ public:
   bool global_init_flag;
   bool needs_const_iterator_flag;
   bool marked_as_global;
-  AccessType access_type;
   int dependency_level;
-  Token *phpdoc_token;
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();
 
-  VarData(Type type = var_unknown_t);
+  explicit VarData(Type type = var_unknown_t);
 
   inline Type &type() { return type_; }
 
   string get_human_readable_name() const;
-};
 
-struct ClassInfo {
-  string name;
-  string namespace_name;
-  VertexPtr root;
-  string extends;
-  vector<VertexPtr> members;
-  map<string, VertexPtr> constants;
-  // todo разобраться со static_members и static_methods и static_fields, members и будущим methods
-  // (а ещё лучше — сначала таки вкостылить methods, потом написать тесты, а потом рефакторить)
-  vector<VertexPtr> static_members;
-  vector<VertexPtr> this_type_rules;
-  vector<VertexPtr> vars;    // vector of op_class_var  todo потом избавиться от vars, их можно вычислить из members
-  set<string> static_fields;
-  map<string, FunctionPtr> static_methods;
-  vector<VertexPtr> methods;
-  FunctionPtr new_function;
-  Token *phpdoc_token;
-
-  inline bool has_instance_vars() const {
-    return !vars.empty();
+  inline bool is_global_var() const {
+    return type_ == var_global_t && !class_id;
   }
 
-  inline bool has_instance_methods() const {
-    return !methods.empty();
+  inline bool is_function_static_var() const {
+    return type_ == var_static_t;
   }
+
+  inline bool is_class_static_var() const {
+    return type_ == var_global_t && class_id;
+  }
+
+  inline bool is_class_instance_var() const {
+    return type_ == var_instance_t;
+  }
+
+  const ClassMemberStaticField *as_class_static_field() const;
+  const ClassMemberInstanceField *as_class_instance_field() const;
 };
 
+// todo мне не нравится, что это теперь Lockable, подумать, можно ли переделать (см. set_func_id())
 class ClassData : public Lockable {
 public:
+  // описание extends / implements / use trait в строковом виде (class_name)
+  struct StrDependence {
+    ClassType type;
+    string class_name;
+
+    StrDependence(ClassType type, string class_name) :
+      type(type),
+      class_name(std::move(class_name)) {}
+  };
+
   int id;
-  string name;
-  string extends;
-  ClassPtr parent_class;
-  VertexPtr root;
+  ClassType class_type;       // класс / интерфейс / трейт
+  string name;                // название класса с полным namespace и слешами: "VK\Feed\A"
+  VertexPtr root;             // op_class
+
+  vector<StrDependence> str_dependents; // extends / implements / use trait на время парсинга, до связки ptr'ов
+  ClassPtr parent_class;                // extends
+  vector<ClassPtr> implements;          // на будущее
+  vector<ClassPtr> traits_uses;         // на будущее
 
   FunctionPtr init_function;
   FunctionPtr new_function;
-  set<string> static_fields;
-  set<string> constants;
-  vector<VarPtr> vars;
-  vector<FunctionPtr> methods;
+  Token *phpdoc_token;
 
   std::vector<Assumption> assumptions;
   int assumptions_inited_vars;
@@ -115,24 +107,17 @@ public:
   SrcFilePtr file_id;
   string src_name, header_name;
 
+  ClassMembersContainer members;
+
   ClassData();
-
-  inline VarPtr find_var(const std::string &var_name) const {
-    for (std::vector<VarPtr>::const_iterator i = vars.begin(); i != vars.end(); ++i) {
-      if ((*i)->name == var_name) {
-        return *i;
-      }
-    }
-    return VarPtr();
-  }
-
-  inline bool is_fully_static() const {
-    return 0 == vars.size() && 0 == methods.size();
-  }
 
   std::string get_name_of_invoke_function_for_extern(FunctionPtr extern_function) const;
   FunctionPtr get_invoke_function_for_extern_function(FunctionPtr extern_function) const;
   FunctionPtr get_template_of_invoke_function() const;
+
+  void set_name_and_src_name(const string &name);
+
+  void debugPrint() const;
 };
 
 
@@ -140,10 +125,7 @@ class FunctionInfo {
 public:
   VertexPtr root;
   string namespace_name;
-  string class_name;
   string class_context;
-  map<string, string> namespace_uses;
-  string extends;
   bool kphp_required;
   AccessType access_type;
 
@@ -151,33 +133,24 @@ public:
     kphp_required(false),
     access_type(access_nonmember) {}
 
-  FunctionInfo(VertexPtr root, const string &namespace_name, const string &class_name,
-               const string &class_context, const map<string, string> namespace_uses,
-               string extends, bool kphp_required, AccessType access_type) :
+  FunctionInfo(VertexPtr root, string namespace_name, string class_context,
+               bool kphp_required, AccessType access_type) :
     root(root),
-    namespace_name(namespace_name),
-    class_name(class_name),
-    class_context(class_context),
-    namespace_uses(namespace_uses),
-    extends(extends),
+    namespace_name(std::move(namespace_name)),
+    class_context(std::move(class_context)),
     kphp_required(kphp_required),
     access_type(access_type) {}
-
-  void fill_namespace_and_class_name(const string &full_name) {
-    size_t pos = full_name.rfind('\\');
-    namespace_name = full_name.substr(0, pos);
-    class_name = full_name.substr(pos + 1);
-  }
 };
 
 class FunctionData {
 public:
   int id;
 
-  VertexPtr root;
+  string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
+  VertexPtr root;     // op_function
   VertexPtr header;   // это только для костыля extern_function, потом должно уйти
-
   bool is_required;
+
   enum func_type_t {
     func_global,
     func_local,
@@ -200,7 +173,7 @@ public:
 
   string src_name, header_name;
   string subdir;
-  string src_full_name, header_full_name;
+  string header_full_name;
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
   ClassPtr class_id;
@@ -220,16 +193,9 @@ public:
   bool kphp_required;
   bool is_template;
   string namespace_name;
-  string class_name;
   string class_context_name;
-  string class_extends;
-
   AccessType access_type;
-  map<string, string> namespace_uses;
   set<string> disabled_warnings;
-
-  string name;
-
   map<long long, int> name_gen_map;
 
   FunctionData();
@@ -260,37 +226,29 @@ public:
 
   static ClassPtr is_lambda(VertexPtr v);
 
-  static std::string get_lambda_namespace() {
+  static const std::string &get_lambda_namespace() {
     static std::string lambda_namespace("LAMBDA$NAMESPACE");
     return lambda_namespace;
   }
 
-  static bool is_in_lambda_namespace(const std::string &namespace_name) {
-    return vk::string_view{namespace_name}.starts_with(get_lambda_namespace());
-  }
-
   bool is_lambda() const {
-    return is_in_lambda_namespace(namespace_name);
+    return !!function_in_which_lambda_was_created;
   }
 
   const std::string get_outer_namespace_name() const {
     return get_or_default_field(&FunctionData::namespace_name);
   }
 
-  const std::string &get_outer_class_name() const {
-    return get_or_default_field(&FunctionData::class_name);
+  ClassPtr get_outer_class() const {
+    return is_lambda() ? function_in_which_lambda_was_created->class_id : class_id;
   }
 
   const std::string &get_outer_class_context_name() const {
     return get_or_default_field(&FunctionData::class_context_name);
   }
 
-  const std::string &get_outer_class_extends() const {
-    return get_or_default_field(&FunctionData::class_extends);
-  }
-
   void set_function_in_which_lambda_was_created(FunctionPtr f) {
-    std::swap(function_in_which_lambda_was_created, f);
+    function_in_which_lambda_was_created = f;
   }
 
 private:

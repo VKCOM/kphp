@@ -103,15 +103,16 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
 
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
-      kphp_error(!namespace_name.empty(), "parent::<func_name>, static::<func_name> or self::<func_name> can be used only inside class");
       if (class_name == "parent") {
-        const std::string &extends = current_function->get_outer_class_extends();
-        kphp_assert(!extends.empty());
-        class_name = resolve_uses(current_function, extends, delim);
+        // тут (пока что?) именно extends как строка, т.к. parent_class присваивается позже, чем может вызываться resolve_uses()
+        auto extends_it = std::find_if(current_function->class_id->str_dependents.begin(), current_function->class_id->str_dependents.end(),
+                                       [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
+        kphp_assert(extends_it != current_function->class_id->str_dependents.end());
+        class_name = resolve_uses(current_function, extends_it->class_name, delim);
       } else if (class_name == "static") {
         class_name = current_function->get_outer_class_context_name();
       } else {
-        class_name = namespace_name + "\\" + current_function->get_outer_class_name();
+        class_name = current_function->get_outer_class()->name;
       }
     } else {
       size_t slash_pos = class_name.find('\\');
@@ -119,19 +120,21 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
         slash_pos = class_name.length();
       }
       string class_name_start = class_name.substr(0, slash_pos);
-      auto uses_it = current_function->namespace_uses.find(class_name_start);
+      auto uses_it = current_function->file_id->namespace_uses.find(class_name_start);
 
-      if (uses_it != current_function->namespace_uses.end()) {
+      if (uses_it != current_function->file_id->namespace_uses.end()) {
         class_name = uses_it->second + class_name.substr(class_name_start.length());
       } else {
-        class_name = namespace_name + "\\" + class_name;
+        class_name = current_function->file_id->namespace_name + "\\" + class_name;
       }
     }
   }
   if (class_name[0] == '\\') {
     class_name = class_name.substr(1);
   }
-  std::replace(class_name.begin(), class_name.end(), '\\', delim);
+  if (delim != '\\') {
+    std::replace(class_name.begin(), class_name.end(), '\\', delim);
+  }
 
   return class_name;
 }
@@ -300,7 +303,7 @@ string resolve_define_name(string name) {
     const string &real_class_name = replace_characters(class_name, '$', '\\');
     ClassPtr klass = G->get_class(real_class_name);
     if (klass) {
-      while (klass && klass->constants.find(define_name) == klass->constants.end()) {
+      while (klass && !klass->members.has_constant(define_name)) {
         klass = klass->parent_class;
       }
       if (klass) {

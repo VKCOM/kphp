@@ -352,7 +352,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
         }
         assumption_add(f, assum_instance, VAR_NAME_RETURN, class_name);   // return A
       } else if (expr->type() == op_var && expr->get_string() == "this" && f->is_instance_function()) {
-        assumption_add(f, assum_instance, VAR_NAME_RETURN, f->class_name);        // return this
+        assumption_add(f, assum_instance, VAR_NAME_RETURN, f->class_id);  // return this
       } else if (expr->type() != op_null) {
         ClassPtr klass;
         AssumType assum = infer_class_of_expr(f, expr, klass);
@@ -367,15 +367,15 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
  * Это можно определить только по phpdoc @var Chat перед 'public $chat' декларации свойства.
  * Единожды на класс вызывается эта функция, которая парсит все phpdoc'и ко всем var'ам.
  */
-void init_assumptions_for_all_vars(ClassPtr c, VertexAdaptor<op_class> root __attribute__((unused))) {
+void init_assumptions_for_all_vars(ClassPtr c) {
   assert (c->assumptions_inited_vars == 1);
 //  printf("[%d] init_assumptions_for_all_vars of %s\n", get_thread_id(), c->name.c_str());
 
-  for (vector<VarPtr>::const_iterator var = c->vars.begin(); var != c->vars.end(); ++var) {
-    if ((*var)->phpdoc_token) {
-      analyze_phpdoc_with_type(c, (*var)->name, (*var)->phpdoc_token);
+  c->members.for_each([&](ClassMemberInstanceField *f) {
+    if (f->phpdoc_token) {
+      analyze_phpdoc_with_type(c, f->local_name(), f->phpdoc_token);
     }
-  }
+  });
 }
 
 
@@ -447,7 +447,7 @@ AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
 AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
   if (c->assumptions_inited_vars == 0) {
     if (__sync_bool_compare_and_swap(&c->assumptions_inited_vars, 0, 1)) {
-      init_assumptions_for_all_vars(c, c->root);
+      init_assumptions_for_all_vars(c);
       __sync_synchronize();
       c->assumptions_inited_vars = 2;
     }

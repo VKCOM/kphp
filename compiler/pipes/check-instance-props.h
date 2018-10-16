@@ -10,12 +10,7 @@ class CheckInstanceProps : public FunctionPassBase {
 private:
   AUTO_PROF (check_instance_props);
 
-  /**
-   * Если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc.
-   * Это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка.
-   * С инстансами это тоже работает, т.е. / ** @var \AnotherClass * / будет тоже проверяться при выводе типов.
-   */
-  void init_class_instance_var(VertexPtr v, VarPtr var, ClassPtr klass);
+  void init_class_instance_var(VertexPtr v, const ClassMemberInstanceField *field, ClassPtr klass);
 
 public:
   string get_description() {

@@ -9,5 +9,5 @@ void ParseF::execute(FileAndTokens file_and_tokens, DataStream<FunctionPtr> &os)
   kphp_assert(file_and_tokens.file);
 
   GenTreeCallback callback(os);
-  php_gen_tree(file_and_tokens.tokens, file_and_tokens.file->class_context, file_and_tokens.file->main_func_name, callback);
+  php_gen_tree(file_and_tokens.tokens, file_and_tokens.file, callback);
 }

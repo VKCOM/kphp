@@ -27,9 +27,7 @@ VarData::VarData(VarData::Type type_) :
   global_init_flag(false),
   needs_const_iterator_flag(false),
   marked_as_global(false),
-  access_type(access_nonmember),
-  dependency_level(0),
-  phpdoc_token() {}
+  dependency_level(0) {}
 
 void VarData::set_uninited_flag(bool f) {
   uninited_flag = f;
@@ -43,15 +41,57 @@ string VarData::get_human_readable_name() const {
   return (this->class_id ? (this->class_id->name + " :: $" + this->name) : "$" + this->name);
 }
 
+const ClassMemberStaticField *VarData::as_class_static_field() const {
+  kphp_assert(is_class_static_var() && class_id);
+  return class_id->members.get_static_field(get_local_name_from_global_$$(name));
+}
+
+const ClassMemberInstanceField *VarData::as_class_instance_field() const {
+  kphp_assert(is_class_instance_var() && class_id);
+  return class_id->members.get_instance_field(name);
+}
+
 /*** ClassData ***/
 ClassData::ClassData() :
   id(0),
+  class_type(ctype_class),
   assumptions_inited_vars(0),
-  was_constructor_invoked(false) {      // иначе в нет гарантии, что в примитивных типах не окажется мусор
+  was_constructor_invoked(false),
+  members(this) {
+}
+
+void ClassData::set_name_and_src_name(const string &name) {
+  this->name = name;
+  this->src_name = std::string("C$").append(replace_backslashes(name));
+  this->header_name = replace_characters(src_name + ".h", '$', '@');
+}
+
+void ClassData::debugPrint() const {
+  string str_class_type =
+    class_type == ctype_interface ? "interface" :
+    class_type == ctype_trait ? "trait" :
+    "class";
+  printf("=== %s %s\n", str_class_type.c_str(), name.c_str());
+
+  members.for_each([](ClassMemberConstant *m) {
+    printf("const %s\n", m->local_name().c_str());
+  });
+  members.for_each([](ClassMemberStaticField *m) {
+    printf("static $%s\n", m->local_name().c_str());
+  });
+  members.for_each([](ClassMemberStaticMethod *m) {
+    printf("static %s()\n", m->local_name().c_str());
+  });
+  members.for_each([](ClassMemberInstanceField *m) {
+    printf("var $%s\n", m->local_name().c_str());
+  });
+  members.for_each([](ClassMemberInstanceMethod *m) {
+    printf("method %s()\n", m->local_name().c_str());
+  });
 }
 
 std::string ClassData::get_name_of_invoke_function_for_extern(FunctionPtr extern_function) const {
-  std::string invoke_method_name = GenTree::concat_namespace_class_function_names(new_function->namespace_name, name, "__invoke");
+  std::string invoke_method_name = replace_backslashes(name) + "$$" + "__invoke";
   for (size_t i = 0; i < extern_function->min_argn; ++i) {
     invoke_method_name += "$" + std::to_string(i) + "not_instance";
   }
@@ -65,29 +105,21 @@ FunctionPtr ClassData::get_invoke_function_for_extern_function(FunctionPtr exter
    */
   kphp_assert(extern_function->is_extern);
   std::string invoke_method_name = get_name_of_invoke_function_for_extern(extern_function);
-  auto invoke_method_it = std::find_if(methods.begin(), methods.end(),
-                                       [&](FunctionPtr m) { return m->name.find(invoke_method_name) != std::string::npos; }
-  );
+  auto found_method = members.find_member([&](const ClassMemberInstanceMethod *f) {
+    return f->global_name() == invoke_method_name;
+  });
 
-  if (invoke_method_it == methods.end()) {
-    return {};
-  }
-
-  return *invoke_method_it;
+  return found_method ? found_method->function : FunctionPtr();
 }
 
 FunctionPtr ClassData::get_template_of_invoke_function() const {
   kphp_assert(new_function->is_lambda());
-  auto invoke_method_it = std::find_if(methods.begin(), methods.end(),
-                                       [&](FunctionPtr m) { return m->is_template && m->name.find("__invoke") != std::string::npos; }
-  );
+  auto found_method = members.find_member([&](const ClassMemberInstanceMethod *f) {
+    return f->local_name() == "__invoke";
+  });
+  // это может быть is_template, а может быть и нет
 
-  if (invoke_method_it == methods.end()) {
-    kphp_assert(methods.size() == 2);
-    return methods[0] != new_function ? methods[0] : methods[1];
-  }
-
-  return *invoke_method_it;
+  return found_method ? found_method->function : FunctionPtr();
 }
 
 
@@ -145,10 +177,7 @@ FunctionPtr FunctionData::create_function(const FunctionInfo &info) {
   function->name = function_name;
   function->root = function_root;
   function->namespace_name = info.namespace_name;
-  function->class_name = info.class_name;
   function->class_context_name = info.class_context;
-  function->class_extends = info.extends;
-  function->namespace_uses = info.namespace_uses;
   function->access_type = info.access_type;
   function_root->set_func_id(function);
   function->file_id = stage::get_file();
@@ -227,11 +256,8 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->used_in_source = func->used_in_source;
   new_function->kphp_required = true;
   new_function->namespace_name = func->namespace_name;
-  new_function->class_name = func->class_name;
   new_function->class_context_name = func->class_context_name;
-  new_function->class_extends = func->class_extends;
   new_function->access_type = func->access_type;
-  new_function->namespace_uses = func->namespace_uses;
   new_function->is_template = false;
   new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;

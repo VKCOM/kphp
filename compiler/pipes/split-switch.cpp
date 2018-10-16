@@ -189,9 +189,8 @@ void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   run_function_pass(function, &split_switch);
 
   for (VertexPtr new_function : split_switch.get_new_functions()) {
-    G->register_function(FunctionInfo(new_function, function->namespace_name,
-                                      function->class_name, function->class_context_name, function->namespace_uses,
-                                      function->class_extends, false, access_nonmember), os);
+    G->register_function(FunctionInfo(new_function, function->file_id->namespace_name,
+                                      function->class_context_name, false, access_nonmember), os);
   }
 
   if (stage::has_error()) {

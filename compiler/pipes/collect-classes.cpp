@@ -9,18 +9,19 @@ void CollectClassF::execute(FunctionPtr data, DataStream<FunctionPtr> &os) {
 
   if (data->class_id && data->class_id->init_function == data) {
     ClassPtr klass = data->class_id;
-    if (!data->class_extends.empty()) {
-      klass->extends = resolve_uses(data, data->class_extends, '\\');
-    }
-    if (!klass->extends.empty()) {
-      klass->parent_class = G->get_class(klass->extends);
+
+    auto extends_it = std::find_if(klass->str_dependents.begin(), klass->str_dependents.end(),
+                                   [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
+
+    if (extends_it != klass->str_dependents.end()) {
+      string extends_full_classname = resolve_uses(data, extends_it->class_name, '\\');
+      klass->parent_class = G->get_class(extends_full_classname);
       kphp_assert(klass->parent_class);
-      kphp_error(klass->is_fully_static() && klass->parent_class->is_fully_static(),
+      kphp_error(!klass->members.has_constructor() && !klass->parent_class->members.has_constructor(),
                  dl_pstr("Invalid class extends %s and %s: extends is available only if classes are only-static",
                          klass->name.c_str(), klass->parent_class->name.c_str()));
-    } else {
-      klass->parent_class = ClassPtr();
     }
   }
+  
   os << data;
 }

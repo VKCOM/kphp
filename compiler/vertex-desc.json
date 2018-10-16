@@ -1731,8 +1731,7 @@
   },
   {
     "sons": {
-      "name": 0,
-      "parent": 1
+      "name": 0
     },
     "name": "op_class",
     "base_name": "meta_op_base",

@@ -66,11 +66,11 @@ void RegisterVariables::register_static_var(VertexAdaptor<op_var> var_vertex, Ve
   VarPtr var;
   string name;
   if (global_function_flag) {
-    kphp_assert(extra_type == op_ex_static_private || extra_type == op_ex_static_public || extra_type == op_ex_static_protected);
     kphp_assert(!current_function->is_lambda());
-    name = GenTree::concat_namespace_class_function_names(current_function->namespace_name, current_function->class_name, var_vertex->str_val);
+    name = replace_backslashes(current_function->class_id->name) + "$$" + var_vertex->str_val;
     var = get_global_var(name);
     var->class_id = current_function->class_id;
+    kphp_assert (var->is_class_static_var());
   } else {
     kphp_assert (extra_type == op_ex_none);
     name = var_vertex->str_val;
@@ -83,11 +83,6 @@ void RegisterVariables::register_static_var(VertexAdaptor<op_var> var_vertex, Ve
     }
   }
   var_vertex->set_var_id(var);
-  var->access_type =
-    extra_type == op_ex_static_public ? access_static_public :
-    extra_type == op_ex_static_private ? access_static_private :
-    extra_type == op_ex_static_protected ? access_static_protected :
-    access_nonmember;
 }
 void RegisterVariables::register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
   string name = var_vertex->str_val;
@@ -116,7 +111,7 @@ void RegisterVariables::register_var(VertexAdaptor<op_var> var_vertex) {
       string var_name = name.substr(pos$$ + 2);
       ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
       kphp_assert(klass);
-      while (klass && klass->static_fields.find(var_name) == klass->static_fields.end()) {
+      while (klass && !klass->members.has_field(var_name)) {
         klass = klass->parent_class;
       }
       if (kphp_error(klass, dl_pstr("static field not found: %s", name.c_str()))) {

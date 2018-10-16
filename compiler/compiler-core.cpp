@@ -83,61 +83,6 @@ void CompilerCore::create_builtin_classes() {
   classes_ht.at(hash_ll(memcache->name))->data = memcache;
 }
 
-ClassPtr CompilerCore::create_class(const ClassInfo &info) {
-  ClassPtr klass = ClassPtr(new ClassData());
-  klass->name = (info.namespace_name.empty() ? "" : info.namespace_name + "\\") + info.name;
-  klass->file_id = stage::get_file();
-  klass->src_name = std::string("C$").append(replace_characters(klass->name, '\\', '$'));
-  klass->header_name = replace_characters(klass->src_name + ".h", '$', '@');
-  klass->root = info.root;
-  klass->extends = info.extends;
-
-  if (!FunctionData::is_in_lambda_namespace(info.namespace_name)) {
-    string init_function_name_str = stage::get_file()->main_func_name;
-    klass->init_function = get_function(init_function_name_str);
-    klass->init_function->class_id = klass;
-  }
-  klass->static_fields.insert(info.static_fields.begin(), info.static_fields.end());
-  for (std::vector<VertexPtr>::const_iterator v = info.vars.begin(); v != info.vars.end(); ++v) {
-    OperationExtra extra_type = (*v)->extra_type;
-
-    VarPtr var = VarPtr(new VarData(VarData::var_instance_t));
-    var->param_i = int(v - info.vars.begin());
-    var->class_id = klass;
-    var->name = (*v)->get_string();
-    var->phpdoc_token = ((VertexPtr)(*v)).as<op_class_var>()->phpdoc_token;
-    var->access_type =
-      extra_type == op_ex_static_public ? access_public :
-      extra_type == op_ex_static_private ? access_private :
-      extra_type == op_ex_static_protected ? access_protected :
-      access_public;
-    klass->vars.push_back(var);
-  }
-
-  for (const auto &name_and_constant : info.constants) {
-    klass->constants.insert(name_and_constant.first);
-  }
-
-  for (const auto &name_and_method : info.static_methods) {
-    name_and_method.second->class_id = klass;
-  }
-
-  for (const auto &method : info.methods) {
-    FunctionPtr f = method->get_func_id();
-    f->class_id = klass;
-    klass->methods.push_back(f);
-  }
-  for (vector<VertexPtr>::const_iterator i = info.this_type_rules.begin(); i != info.this_type_rules.end(); ++i) {
-    ((VertexPtr)(*i)).as<op_class_type_rule>()->class_ptr = klass;
-  }
-
-  kphp_error(!info.new_function || !klass->is_fully_static(),
-             dl_pstr("Class %s has __construct() but does not have any fields", klass->name.c_str()));
-  klass->new_function = info.new_function;
-
-  return klass;
-}
-
 string CompilerCore::unify_file_name(const string &file_name) {
   if (env().get_base_dir().empty()) { //hack: directory of first file will be used ad base_dir
     size_t i = file_name.find_last_of("/");
@@ -276,18 +221,24 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
   return function;
 }
 
-ClassPtr CompilerCore::register_class(const ClassInfo &info) {
-  ClassPtr class_id = create_class(info);
-  HT<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(class_id->name));
+ClassPtr CompilerCore::register_class(ClassPtr cur_class) {
+  vk::string_view sv{cur_class->name};
+  if (!sv.starts_with(FunctionData::get_lambda_namespace())) {
+    string init_function_name_str = stage::get_file()->main_func_name;
+    cur_class->init_function = get_function(init_function_name_str);
+    cur_class->init_function->class_id = cur_class;
+  }
+
+  HT<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(cur_class->name));
   AutoLocker<Lockable *> locker(node);
   kphp_error_act (
     !node->data,
     dl_pstr("Redeclaration of class [%s], the previous declaration was in [%s]",
-            class_id->name.c_str(), node->data->file_id->file_name.c_str()),
+            cur_class->name.c_str(), node->data->file_id->file_name.c_str()),
     return ClassPtr()
   );
-  node->data = class_id;
-  return class_id;
+  node->data = cur_class;
+  return cur_class;
 }
 
 void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFilePtr> &os) {

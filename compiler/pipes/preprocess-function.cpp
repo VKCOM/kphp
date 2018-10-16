@@ -163,7 +163,7 @@ private:
                     f_inst->kphp_required = true;
                     instance_of_function_template_stream << f_inst;
                     AutoLocker<Lockable *> locker(&(*lambda_class));
-                    lambda_class->methods.emplace_back(f_inst);
+                    lambda_class->members.add_instance_method(f_inst, access_public);
                   }
                 }
 
@@ -192,10 +192,10 @@ private:
           if (f_inst) {
             f_inst->is_required = true;
             f_inst->kphp_required = true;
-            ClassPtr klass = G->get_class(f_inst->namespace_name + "\\" + f_inst->class_name);
+            ClassPtr klass = f_inst->class_id;
             if (klass) {
               AutoLocker<Lockable *> locker(&(*klass));
-              klass->methods.emplace_back(f_inst);
+              klass->members.add_instance_method(f_inst, f_inst->access_type);
             }
 
             instance_of_function_template_stream << f_inst;

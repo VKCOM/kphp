@@ -34,7 +34,6 @@ private:
   // это костыль, который должен уйти, когда мы перепишем часть php-кода
   HT<VertexPtr> extern_func_headers_ht;
 
-  ClassPtr create_class(const ClassInfo &info);
   void create_builtin_classes();
 
   inline bool try_require_file(SrcFilePtr file) {
@@ -68,7 +67,7 @@ public:
   }
 
   FunctionPtr register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os);
-  ClassPtr register_class(const ClassInfo &info);
+  ClassPtr register_class(ClassPtr cur_class);
 
   FunctionPtr get_function(const string &name);
   ClassPtr get_class(const string &name);

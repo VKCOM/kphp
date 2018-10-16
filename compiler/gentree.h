@@ -21,12 +21,8 @@ public:
     return G->register_function(info, os);
   }
 
-  ClassPtr register_class(const ClassInfo &info) {
-    return G->register_class(info);
-  }
-
-  ClassPtr get_class_by_name(const string &class_name) {
-    return G->get_class(class_name);
+  ClassPtr register_class(ClassPtr cur_class) {
+    return G->register_class(cur_class);
   }
 };
 
@@ -48,12 +44,8 @@ public:
 
   GenTree();
 
-  void init(const vector<Token *> *tokens_new, const string &context, GenTreeCallback &callback_new);
-  FunctionPtr register_function(FunctionInfo info, ClassInfo *cur_class) const;
-  bool in_class() const;
-  bool in_namespace() const;
-  void enter_class(const string &class_name, Token *phpdoc_token);
-  ClassInfo &cur_class();
+  void init(const vector<Token *> *tokens_new, SrcFilePtr file, GenTreeCallback &callback_new);
+  FunctionPtr register_function(FunctionInfo info, ClassPtr cur_class) const;
   VertexPtr generate_constant_field_class(VertexPtr root);
   void exit_and_register_class(VertexPtr root);
   void enter_function();
@@ -79,10 +71,10 @@ public:
   static bool has_return(VertexPtr v);
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
-  static VertexPtr create_vertex_this(const AutoLocation &location, ClassInfo *cur_class = nullptr, bool with_type_rule = false);
-  static void patch_func_constructor(VertexAdaptor<op_function> func, ClassInfo &cur_class, AutoLocation location);
-  static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassInfo &cur_class);
-  void create_default_constructor(ClassInfo &cur_class, FunctionInfo info, AutoLocation location) const;
+  static VertexPtr create_vertex_this(const AutoLocation &location, ClassPtr cur_class, bool with_type_rule = false);
+  static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
+  static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
+  void create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const;
 
   VertexPtr get_func_param();
   VertexPtr get_foreach_param();
@@ -95,7 +87,7 @@ public:
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(Token *phpdoc_token = nullptr);
-  VertexPtr get_vars_list(Token *phpdoc_token, OperationExtra extra_type);
+  VertexPtr get_vars_list(Token *phpdoc_token, AccessType access_type);
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
@@ -136,8 +128,8 @@ public:
   VertexPtr get_switch();
   VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember);
 
-  VertexAdaptor<op_function> generate__invoke_method(ClassInfo &class_info, VertexAdaptor<op_function> function) const;
-  static VertexPtr generate_constructor_call(const ClassInfo &info);
+  VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const;
+  static VertexPtr generate_constructor_call(ClassPtr cur_class);
   VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function) const;
 
   VertexPtr get_class(Token *phpdoc_token);
@@ -150,11 +142,10 @@ public:
 private:
   VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
   void set_extra_type(VertexPtr vertex, AccessType access_type) const;
-  void fill_info_about_class(FunctionInfo &info);
   void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next);
-  VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &real_name, const vector<VertexPtr> &params_next);
+  VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, const vector<VertexPtr> &params_next);
+  string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &class_local_name, const string &function_local_name);
 
-  static std::string add_namespace_and_context_to_function_name(const FunctionInfo &info, std::string function_name);
   static void add_namespace_and_context_to_function_name(const std::string &namespace_name,
                                                          const std::string &class_name,
                                                          const std::string &class_context,
@@ -166,6 +157,8 @@ private:
   */
   static std::string get_real_name_from_full_method_name(const std::string &full_name);
 
+  bool in_namespace() const;
+
 public:
   int line_num;
 
@@ -175,17 +168,15 @@ private:
   int in_func_cnt_;
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
-  vector<ClassInfo> class_stack;
-  string namespace_name;
+  vector<ClassPtr> class_stack;
+  ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
+  SrcFilePtr processing_file;
   string class_context;
-  ClassPtr context_class_ptr;
-  string class_extends;
-  map<string, string> namespace_uses;
 };
 
 void gen_tree_init();
 
-void php_gen_tree(vector<Token *> *tokens, const string &context, const string &main_func_name, GenTreeCallback &callback);
+void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, GenTreeCallback &callback);
 
 template<PrimitiveType ToT>
 VertexPtr GenTree::conv_to_lval(VertexPtr x) {

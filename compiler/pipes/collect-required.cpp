@@ -7,7 +7,6 @@
 class CollectRequiredPass : public FunctionPassBase {
 private:
   AUTO_PROF (collect_required);
-  bool force_func_ptr;
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
 
@@ -22,9 +21,6 @@ private:
   void require_class(const string &class_name, const string &context_name) {
     pair<SrcFilePtr, bool> res = require_file(class_name + ".php", context_name);
     kphp_error(res.first, dl_pstr("Class %s not found", class_name.c_str()));
-    if (res.second) {
-      res.first->req_id = current_function;
-    }
   }
 
   string get_class_name_for(const string &name, char delim = '$') {
@@ -40,39 +36,30 @@ private:
 
 public:
   CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
-    force_func_ptr(false),
     file_stream(file_stream),
     function_stream(function_stream) {
   }
-
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool saved_force_func_ptr;
-  };
 
   string get_description() {
     return "Collect required";
   }
 
-  template<class VisitT>
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit __attribute__((unused))) {
-    if (v->type() == op_function && v.as<op_function>()->name().as<op_func_name>()->get_string() == current_function->name) {
-      if (current_function->type() == FunctionData::func_global && !current_function->class_name.empty()) {
-        if (!current_function->class_extends.empty()) {
-          require_class(resolve_uses(current_function, current_function->class_extends, '/'), current_function->class_context_name);
-        }
-        if ((current_function->namespace_name + "\\" + current_function->class_name) != current_function->class_context_name) {
-          return true;
-        }
-        if (!current_function->class_extends.empty()) {
-          require_class(resolve_uses(current_function, current_function->class_extends, '/'), "");
-        }
+  bool on_start(FunctionPtr function) {
+    if (!FunctionPassBase::on_start(function)) {
+      return false;
+    }
+
+    if (function->type() == FunctionData::func_global && function->class_id) {
+      for (const auto &dep : function->class_id->str_dependents) {
+        const string &path_classname = resolve_uses(function, dep.class_name, '/');
+        require_class(path_classname, function->class_context_name);
+        require_class(path_classname, "");  
       }
     }
-    return false;
+    return true;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *local) {
-    bool new_force_func_ptr = false;
+  VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
     if (root->type() == op_func_call || root->type() == op_func_name) {
       if (root->extra_type != op_ex_func_member) {
         string name = get_full_static_member_name(current_function, root->get_string(), root->type() == op_func_call);
@@ -98,32 +85,22 @@ public:
     }
 
     if (root->type() == op_func_call) {
-      new_force_func_ptr = true;
       const string &name = root->get_string();
       if (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args") {
         current_function->varg_flag = true;
       }
     }
 
-    local->saved_force_func_ptr = force_func_ptr;
-    force_func_ptr = new_force_func_ptr;
-
     return root;
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local) {
-    force_func_ptr = local->saved_force_func_ptr;
-
+  VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
     if (root->type() == op_require || root->type() == op_require_once) {
       VertexAdaptor<meta_op_require> require = root;
       for (auto &cur : require->args()) {
         kphp_error_act (cur->type() == op_string, "Not a string in 'require' arguments", continue);
         pair<SrcFilePtr, bool> tmp = require_file(cur->get_string(), "");
         SrcFilePtr file = tmp.first;
-        bool required = tmp.second;
-        if (required) {
-          file->req_id = current_function;
-        }
 
         auto call = VertexAdaptor<op_func_call>::create();
         if (file) {
@@ -152,8 +129,8 @@ void CollectRequiredF::execute(FunctionPtr function, CollectRequiredF::OStreamT 
     return;
   }
 
-  if (function->type() == FunctionData::func_global && !function->class_name.empty() &&
-      (function->namespace_name + "\\" + function->class_name) != function->class_context_name) {
+  if (function->type() == FunctionData::func_global && function->class_id &&
+      function->class_id->name != function->class_context_name) {
     return;
   }
   ready_function_stream << function;
