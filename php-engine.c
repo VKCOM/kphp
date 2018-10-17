@@ -35,7 +35,6 @@
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
-#include "net/net-events.h"
 #include "net/net-http-server.h"
 #include "net/net-memcache-client.h"
 #include "net/net-memcache-server.h"
@@ -44,6 +43,7 @@
 #include "net/net-rpc-common.h"
 #include "net/net-rpc-server.h"
 #include "net/net-sockaddr-storage.h"
+#include "net/net-socket.h"
 
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-master.h"
