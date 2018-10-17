@@ -1,14 +1,9 @@
-#include <regex>
 #include "compiler/data.h"
+#include <regex>
 
-#include <functional>
-
-#include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
 #include "compiler/gentree.h"
-#include "compiler/io.h"
 #include "compiler/type-inferer.h"
-#include "compiler/name-gen.h"
 
 //IdGen <VertexPtr> tree_id_gen;
 //BikeIdGen <VertexPtr> bike_tree_id_gen;

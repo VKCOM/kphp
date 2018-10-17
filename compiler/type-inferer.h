@@ -1,15 +1,9 @@
 #pragma once
 
-#include <iomanip>
-#include <regex>
-#include "compiler/common.h"
 #include "compiler/data.h"
 #include "compiler/function-pass.h"
-#include "compiler/io.h"
-#include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer-core.h"
-#include "common/wrappers/string_view.h"
 
 tinf::Node *get_tinf_node(VertexPtr vertex);
 tinf::Node *get_tinf_node(VarPtr var);
@@ -136,16 +130,7 @@ private:
     }
   };
 
-  row parse_description(string const &description) {
-    //Все description'ы состоят из трех колонок, разделенных между собой двумя пробелами (внутри колонки двух пробелов не должно быть)
-    //Здесь происходит парсинг description'а на колонки по двум пробелам в качестве разделителя
-    //Это нужно для динамичекого подсчета ширины колонок
-    std::smatch matched;
-    if (std::regex_match(description, matched, std::regex("(.+?)\\s\\s(.*?)(\\s\\s(.*))?"))) {
-      return row(matched[1], matched[2], matched[4]);
-    }
-    return row("", "", description);
-  }
+  row parse_description(string const &description);
 
 public:
   tinf::Node *actual_, *expected_;
@@ -161,114 +146,11 @@ public:
     return dl_pstr("%s", desc.c_str());
   }
 
-  string get_actual_error_message() {
-    tinf::ExprNode *as_expr_0 = nullptr;
-    tinf::VarNode *as_var_0 = nullptr;
-    tinf::VarNode *as_var_1 = nullptr;
-    tinf::VarNode *as_var_2 = nullptr;
-    if (stacktrace.size() >= 2) {
-      as_expr_0 = dynamic_cast<tinf::ExprNode *>(stacktrace[0]);
-      as_var_0 = dynamic_cast<tinf::VarNode *>(stacktrace[0]);
-      as_var_1 = dynamic_cast<tinf::VarNode *>(stacktrace[1]);
-      if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop &&
-          as_var_1 && as_var_1->is_variable()) {
-        return string("Incorrect type of the following class field: ") + as_var_1->get_var_name() + "\n";
-      }
-    }
-    if (stacktrace.size() >= 3) {
-      as_var_2 = dynamic_cast<tinf::VarNode *>(stacktrace[2]);
-      if ((!as_var_0 || as_var_0->is_variable() || as_var_0->is_return_value_from_function()) &&
-          (!as_var_1 || as_var_1->is_variable() || as_var_1->is_return_value_from_function()) &&
-          as_var_2 && !as_var_2->is_variable() && !as_var_2->is_return_value_from_function()) {
-        return string("Incorrect type of the ") + as_var_2->get_var_as_argument_name() + " at " + as_var_2->get_function_name() + "\n";
-      }
-    }
-    if (stacktrace.size() >= 3 && as_expr_0 && as_var_1 &&
-        dynamic_cast<tinf::TypeNode *>(stacktrace[2]) && dynamic_cast<tinf::TypeNode *>(stacktrace[2])->type_->ptype() == tp_var) {
-      return "Unexpected conversion to var one of the arguments of the following function:\n" + as_expr_0->get_location_text() + "\n";
-    }
-    return "Mismatch of types\n";
-  }
-
-
-  string get_stacktrace_text() {
-    //Делаем красивое форматирование stacktrace'а:
-    //1) Динамически считаем ширину его колонок, выводим выровненно
-    //2) Удаляем некоторые бесполезные дубликаты строчек
-    vector<row> rows;
-    for (int i = 0; i < stacktrace.size(); ++i) {
-      row cur = parse_description(stacktrace[i]->get_description());
-      row next = (i != int(stacktrace.size() - 1) ? parse_description(stacktrace[i + 1]->get_description()) : row());
-      if (cur.col[0] == "as expression:" && next.col[0] == "as variable:" && cur.col[1] == next.col[1]) {
-        i++;
-      }
-      rows.push_back(cur);
-    }
-    auto ith_row = [&](int idx) -> row { return (idx < rows.size() ? rows[idx] : row()); };
-    //Удаление дубликатов при вызове статически отнаследованных функций (2 случая)
-    // 1) Дублирование аргумента, в котором произошла ошибка:
-    //  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
-    //  0-th arg ($x)                             at static function: VK\D :: demo (inherited from VK\A)
-    //  $x                                        at .../VK/A.php: VK\D :: demo : 20
-    //  0-th arg ($x)                             at static function: VK\D :: demo
-    //
-    // 2) Дубирование return'а:
-    //  VK\B :: calc(...) (inherited from VK\A)   at .../dev.php: src_dev3b832f7b\u : 12
-    //  return ...                                at static function: VK\B :: calc
-    //  VK\B :: calc(...) (inherited from VK\A)   at .../VK/A.php: VK\B :: calc : -1
-    //  return ...                                at static function: VK\B :: calc (inherited from VK\A)
-    for (int i = 0; i < rows.size(); ++i) {
-      if (ith_row(i).col[0] == "as expression:" && ith_row(i + 1).col[0] == "as argument:" &&
-          ith_row(i + 2).col[0] == "as expression:" && ith_row(i + 3).col[0] == "as argument:" &&
-          ith_row(i).col[1] == ith_row(i + 2).col[1] && ith_row(i + 1).col[1] == ith_row(i + 3).col[1] &&
-          vk::string_view(ith_row(i + 1).col[2]).starts_with("at static function: ") &&
-          vk::string_view(ith_row(i + 1).col[2]).starts_with(ith_row(i + 3).col[2]) &&
-          ith_row(i + 1).col[2].substr(ith_row(i + 3).col[2].length(), 17) == " (inherited from ") {
-        rows.erase(rows.begin() + i + 2, rows.begin() + i + 4);
-      } else if (ith_row(i + 1).col[1] == "return ..." && ith_row(i + 3).col[1] == "return ..." &&
-                 vk::string_view(ith_row(i + 3).col[2]).starts_with("at static function: ") &&
-                 vk::string_view(ith_row(i + 3).col[2]).starts_with(ith_row(i + 1).col[2]) &&
-                 ith_row(i + 3).col[2].substr(ith_row(i + 1).col[2].length(), 17) == " (inherited from ") {
-        std::smatch matched;
-        string sanitized_col_i_1 = std::regex_replace(ith_row(i).col[1], std::regex(R"([\\\(\)])"), R"(\$&)");
-        if (std::regex_match(ith_row(i + 2).col[1], matched, std::regex(sanitized_col_i_1 + " (\\(inherited from .+?\\))"))) {
-          rows[i].col[1] += " " + matched[1].str();
-          rows.erase(rows.begin() + i + 2, rows.begin() + i + 4);
-        }
-      }
-    }
-    int width[3] = {10, 15, 30};
-    for (int i = 0; i < rows.size(); ++i) {
-      width[0] = std::max(width[0], (int)rows[i].col[0].length() + 3);
-      width[1] = std::max(width[1], (int)rows[i].col[1].length() + 3);
-      width[2] = std::max(width[2], (int)rows[i].col[2].length());
-    }
-    stringstream ss;
-    for (int i = 0; i < rows.size(); ++i) {
-      ss << std::setw(width[1]) << std::left << rows[i].col[1];
-      ss << std::setw(width[2]) << std::left << rows[i].col[2] << std::endl;
-    }
-    return ss.str();
-  }
+  string get_actual_error_message();
+  string get_stacktrace_text();
 
 protected:
-  bool check_broken_restriction_impl() override {
-    const TypeData *actual_type = actual_->get_type();
-    const TypeData *expected_type = expected_->get_type();
-
-    if (is_less(actual_type, expected_type)) {
-      find_call_trace_with_error(actual_);
-      desc = "\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n";
-      desc += get_actual_error_message();
-      desc += "Expected type:\t" + type_out(expected_type) + "\nActual type:\t" + type_out(actual_type) + "\n";
-      desc += "+-------------+\n| STACKTRACE: |\n+-------------+";
-      desc += "\n";
-      desc += get_stacktrace_text();
-      return true;
-    }
-
-    return false;
-  }
+  bool check_broken_restriction_impl() override;
 
   bool is_broken_restriction_an_error() override {
     return true;
