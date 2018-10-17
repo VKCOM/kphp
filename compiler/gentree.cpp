@@ -2234,7 +2234,6 @@ VertexPtr GenTree::get_vars_list(Token *phpdoc_token, AccessType access_type) {
   CE (expect(tok_var_name, "expected variable name"));
 
   VertexPtr def_val;
-
   if (test_expect(tok_eq1)) {
     next_cur();
     def_val = get_expression();
@@ -2243,7 +2242,7 @@ VertexPtr GenTree::get_vars_list(Token *phpdoc_token, AccessType access_type) {
   auto var = def_val ? VertexAdaptor<op_class_var>::create(def_val) : VertexAdaptor<op_class_var>::create();
   var->str_val = static_cast<string>(var_name);
   var->phpdoc_token = phpdoc_token;
-
+  set_location(var, AutoLocation(this));
 
   cur_class->members.add_instance_field(var, access_type);
 
@@ -2397,6 +2396,7 @@ VertexPtr GenTree::post_process(VertexPtr root) const {
 
     if (rhs->type() == op_func_name) {
       auto inst_prop = VertexAdaptor<op_instance_prop>::create(arrow->lhs());
+      ::set_location(inst_prop, root->get_location());
       inst_prop->set_string(rhs->get_string());
 
       root = inst_prop;

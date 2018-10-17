@@ -38,9 +38,8 @@ void CheckInstanceProps::init_class_instance_var(VertexPtr v, const ClassMemberI
       VertexPtr doc_type = phpdoc_parse_type(type_str, klass->init_function);
       if (!kphp_error(doc_type,
                       dl_pstr("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), field->local_name().c_str()))) {
-        doc_type->location = klass->root->location;
-        auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
-        v->type_rule = doc_type_check;
+        doc_type->location = field->root->location;
+        v->type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
       }
     }
   }

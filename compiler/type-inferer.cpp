@@ -168,6 +168,14 @@ string RestrictionLess::get_stacktrace_text() {
     rows.push_back(cur);
   }
   auto ith_row = [&](int idx) -> row { return (idx < rows.size() ? rows[idx] : row()); };
+  
+  // Если это ошибка несовпадения phpdoc у переменной инстанса, то первым в стектрейсе идёт ->var_name, убираем
+  if (vk::string_view{rows[0].col[1]}.starts_with("->")) {
+    auto as_expr_0 = dynamic_cast<tinf::ExprNode *>(stacktrace[0]);
+    if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop) {
+      rows.erase(rows.begin());
+    }
+  }
   // Удаление дубликатов при вызове статически отнаследованных функций (2 случая)
   // 1) Дублирование аргумента, в котором произошла ошибка:
   //  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
@@ -201,15 +209,15 @@ string RestrictionLess::get_stacktrace_text() {
     }
   }
   int width[3] = {10, 15, 30};
-  for (int i = 0; i < rows.size(); ++i) {
-    width[0] = std::max(width[0], (int)rows[i].col[0].length() + 3);
-    width[1] = std::max(width[1], (int)rows[i].col[1].length() + 3);
-    width[2] = std::max(width[2], (int)rows[i].col[2].length());
+  for (auto &row : rows) {
+    width[0] = std::max(width[0], (int)row.col[0].length() + 3);
+    width[1] = std::max(width[1], (int)row.col[1].length() + 3);
+    width[2] = std::max(width[2], (int)row.col[2].length());
   }
   stringstream ss;
-  for (int i = 0; i < rows.size(); ++i) {
-    ss << std::setw(width[1]) << std::left << rows[i].col[1];
-    ss << std::setw(width[2]) << std::left << rows[i].col[2] << std::endl;
+  for (auto &row : rows) {
+    ss << std::setw(width[1]) << std::left << row.col[1];
+    ss << std::setw(width[2]) << std::left << row.col[2] << std::endl;
   }
   return ss.str();
 }
@@ -382,12 +390,23 @@ string tinf::VarNode::get_function_name() {
       function_ = var_->holder_func;
     }
   }
-  return (function_ ? string(function_->is_static_function() ? "static " : "")
-                       + "function: " + function_->get_human_readable_name() : (var_->type_ == VarData::Type::var_global_t ? "global scope" : ""));
+  if (function_) {
+    return string(function_->is_static_function() ? "static " : "") + "function: " + function_->get_human_readable_name();
+  }
+  if (var_->is_global_var()) {
+    return "global scope";
+  }
+  if (var_->is_class_instance_var()) {
+    return string("class ") + var_->class_id->name + " : " + int_to_str(var_->as_class_instance_field()->root->location.line);
+  }
+  if (var_->is_class_static_var()) {
+    return string("class ") + var_->class_id->name + " : " + int_to_str(var_->as_class_static_field()->root->location.line);
+  }
+  return "";
 }
 
 string tinf::VarNode::get_var_as_argument_name() {
-  int actual_num = (function_ && function_->class_id && function_->is_instance_function()
+  int actual_num = (function_ && function_->is_instance_function() && !function_->is_constructor()
                     ? param_i - 1 : param_i);
   string what_arg = (actual_num < 0 ? "implicit" : int_to_str(actual_num) + "-th");
   return what_arg + " arg (" + get_var_name() + ")";
@@ -442,7 +461,10 @@ static string get_expr_description(VertexPtr expr) {
     }
 
     case op_int_const:
-      return expr.as<op_int_const>()->str_val;
+    case op_float_const:
+      return expr->get_string();
+    case op_string:
+      return '"' + expr->get_string() + '"';
 
     default:
       return OpInfo::str(expr->type());
