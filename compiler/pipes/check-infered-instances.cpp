@@ -2,7 +2,7 @@
 
 #include "compiler/data.h"
 
-void CheckInferredInstances::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+void CheckInferredInstancesPass::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Check inferred instances");
   stage::set_function(function);
 
@@ -19,7 +19,7 @@ void CheckInferredInstances::execute(FunctionPtr function, DataStream<FunctionPt
 
   os << function;
 }
-void CheckInferredInstances::analyze_function_vars(FunctionPtr function) {
+void CheckInferredInstancesPass::analyze_function_vars(FunctionPtr function) {
   auto analyze_vars = [this, function](const std::vector<VarPtr> &vars) {
     for (const auto &var: vars) {
       analyze_function_var(function, var);
@@ -30,7 +30,7 @@ void CheckInferredInstances::analyze_function_vars(FunctionPtr function) {
   analyze_vars(function->global_var_ids);
   analyze_vars(function->static_var_ids);
 }
-void CheckInferredInstances::analyze_function_var(FunctionPtr function, VarPtr var) {
+void CheckInferredInstancesPass::analyze_function_var(FunctionPtr function, VarPtr var) {
   ClassPtr klass;
   AssumType assum = assumption_get(function, var->name, klass);
 
@@ -47,7 +47,7 @@ void CheckInferredInstances::analyze_function_var(FunctionPtr function, VarPtr v
   }
 }
 
-void CheckInferredInstances::analyze_class(ClassPtr klass) {
+void CheckInferredInstancesPass::analyze_class(ClassPtr klass) {
   // при несовпадении phpdoc и выведенного типов — ошибка уже кинулась раньше, на этапе type inferring
   // а здесь мы проверим переменные классов, которые объявлены, но никогда не записывались и не имеют дефолтного значения
   klass->members.for_each([&](const ClassMemberInstanceField &f) {

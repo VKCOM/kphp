@@ -9,7 +9,7 @@
  * 4. Local variables
  * 5. Class static fields
  */
-class RegisterVariables : public FunctionPassBase {
+class RegisterVariablesPass : public FunctionPassBase {
 private:
   AUTO_PROF (register_variables);
   map<string, VarPtr> registred_vars;
@@ -56,7 +56,7 @@ public:
       need_recursion_flag(true) {}
   };
 
-  RegisterVariables() :
+  RegisterVariablesPass() :
     global_function_flag(false),
     in_param_list(0) {
   }

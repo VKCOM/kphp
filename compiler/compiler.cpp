@@ -242,9 +242,9 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<PreprocessBreakPass>{}
     >> PassC<CalcConstTypePass>{}
     >> PassC<CollectConstVarsPass>{}
-    >> PassC<CheckInstanceProps>{}
+    >> PassC<CheckInstancePropsPass>{}
     >> PassC<ConvertListAssignmentsPass>{}
-    >> PassC<RegisterVariables>{}
+    >> PassC<RegisterVariablesPass>{}
     >> PassC<CheckFunctionCallsPass>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
@@ -253,7 +253,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
     >> PipeC<CFGEndF>{}
-    >> PipeC<CheckInferredInstances>{}
+    >> PipeC<CheckInferredInstancesPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<CalcValRefPass>{}
     >> SyncC<CalcBadVarsF>{}
@@ -262,7 +262,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<ExtractAsyncPass>{}
     >> PassC<CheckNestedForeachPass>{}
     >> PassC<CommonAnalyzerPass>{}
-    >> PassC<CheckAccessModifiers>{}
+    >> PassC<CheckAccessModifiersPass>{}
     >> PassC<FinalCheckPass>{}
     >> SyncC<CodeGenF>{}
     >> PipeC<WriteFilesF, false>{};

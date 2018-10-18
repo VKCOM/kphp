@@ -2,7 +2,7 @@
 
 #include "compiler/function-pass.h"
 
-class CheckAccessModifiers : public FunctionPassBase {
+class CheckAccessModifiersPass : public FunctionPassBase {
 private:
   AUTO_PROF (check_access_modifiers);
   string namespace_name;

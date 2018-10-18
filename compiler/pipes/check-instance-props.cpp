@@ -3,7 +3,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 
-VertexPtr CheckInstanceProps::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CheckInstancePropsPass::on_enter_vertex(VertexPtr v, LocalT *) {
 
   if (v->type() == op_instance_prop) {
     ClassPtr klass = resolve_class_of_arrow_access(current_function, v);
@@ -27,7 +27,7 @@ VertexPtr CheckInstanceProps::on_enter_vertex(VertexPtr v, LocalT *) {
  * Это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка.
  * С инстансами это тоже работает, т.е. / ** @var \AnotherClass * / будет тоже проверяться при выводе типов.
  */
-void CheckInstanceProps::init_class_instance_var(VertexPtr v, const ClassMemberInstanceField *field, ClassPtr klass) {
+void CheckInstancePropsPass::init_class_instance_var(VertexPtr v, const ClassMemberInstanceField *field, ClassPtr klass) {
   kphp_assert(field->var->class_id == klass);
 
   // сейчас phpdoc у class var'а парсится каждый раз при ->обращении;

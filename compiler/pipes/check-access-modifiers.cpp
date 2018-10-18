@@ -2,14 +2,14 @@
 
 #include "compiler/compiler-core.h"
 
-bool CheckAccessModifiers::on_start(FunctionPtr function) {
+bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
   }
   class_id = function->class_id ? function->get_outer_class() : ClassPtr();
   return true;
 }
-VertexPtr CheckAccessModifiers::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_var) {
     VarPtr var_id = root.as<op_var>()->get_var_id();
     if (var_id->is_class_static_var()) {

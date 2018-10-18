@@ -6,7 +6,7 @@
  * Для обращений к свойствам $a->b определяем тип $a, убеждаемся в наличии свойства b у класса,
  * а также заполняем vertex<op_instance_prop>->var (понадобится для type inferring)
  */
-class CheckInstanceProps : public FunctionPassBase {
+class CheckInstancePropsPass : public FunctionPassBase {
 private:
   AUTO_PROF (check_instance_props);
 
