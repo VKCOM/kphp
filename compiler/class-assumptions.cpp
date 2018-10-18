@@ -27,10 +27,10 @@ static const std::string VAR_NAME_RETURN = "$return";
 
 
 AssumType assumption_get(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
-  for (std::vector<Assumption>::const_iterator i = f->assumptions.begin(); i != f->assumptions.end(); ++i) {
-    if (i->var_name == var_name) {
-      out_class = i->klass;
-      return i->assum_type;
+  for (const auto &a : f->assumptions) {
+    if (a.var_name == var_name) {
+      out_class = a.klass;
+      return a.assum_type;
     }
   }
 
@@ -38,10 +38,10 @@ AssumType assumption_get(FunctionPtr f, const std::string &var_name, ClassPtr &o
 }
 
 AssumType assumption_get(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
-  for (std::vector<Assumption>::const_iterator i = c->assumptions.begin(); i != c->assumptions.end(); ++i) {
-    if (i->var_name == var_name) {
-      out_class = i->klass;
-      return i->assum_type;
+  for (const auto &a : c->assumptions) {
+    if (a.var_name == var_name) {
+      out_class = a.klass;
+      return a.assum_type;
     }
   }
 
@@ -64,16 +64,16 @@ std::string assumption_debug(const Assumption &assumption) {
 void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
   bool exists = false;
 
-  for (std::vector<Assumption>::iterator i = f->assumptions.begin(); i != f->assumptions.end(); ++i) {
-    if (i->var_name == var_name) {
-      if (i->assum_type != assum || i->klass != klass)
-        kphp_error(false, dl_pstr("Assumption for %s()::$%s is ambigulous\n", f->name.c_str(), var_name.c_str()));
+  for (const auto &a : f->assumptions) {
+    if (a.var_name == var_name) {
+      kphp_error(a.assum_type == assum && a.klass == klass,
+                 dl_pstr("%s()::$%s is both %s and %s\n", f->name.c_str(), var_name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
       exists = true;
     }
   }
 
   if (!exists) {
-    f->assumptions.push_back(Assumption(assum, var_name, klass));
+    f->assumptions.emplace_back(assum, var_name, klass);
 //    printf("%s() %s\n", f->name.c_str(), assumption_debug(f->assumptions.back()).c_str());
   }
 }
@@ -90,16 +90,16 @@ void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name,
 void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, ClassPtr klass) {
   bool exists = false;
 
-  for (std::vector<Assumption>::iterator i = c->assumptions.begin(); i != c->assumptions.end(); ++i) {
-    if (i->var_name == var_name) {
-      if (i->assum_type != assum || i->klass != klass)
-        kphp_error(false, dl_pstr("Assumption for %s::$%s is ambigulous\n", var_name.c_str(), c->name.c_str()));
+  for (const auto &a : c->assumptions) {
+    if (a.var_name == var_name) {
+      kphp_error(a.assum_type == assum && a.klass == klass,
+                 dl_pstr("%s::$%s is both %s and %s\n", var_name.c_str(), c->name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
       exists = true;
     }
   }
 
   if (!exists) {
-    c->assumptions.push_back(Assumption(assum, var_name, klass));
+    c->assumptions.emplace_back(assum, var_name, klass);
 //    printf("%s::%s\n", c->name.c_str(), assumption_debug(c->assumptions.back()).c_str());
   }
 }
@@ -123,8 +123,8 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
   // если внутри таких функций есть ->обращения; надо бы эти phpdoc'и все править, но пока что с этим как-то жить
   // и вот чтобы не реагировать на ошибки, то не парсим очередной @param, если там, видимо, нет имени класса
   bool seems_classname_inside = false;
-  for (int i = 0; i < type_str.size(); ++i) {
-    if (type_str[i] >= 'A' && type_str[i] <= 'Z') {
+  for (char c : type_str) {
+    if (c >= 'A' && c <= 'Z') {
       seems_classname_inside = true;
       break;
     }
@@ -162,12 +162,12 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
  * Т.е. имя класса есть, а название переменной может отсутствовать (но это в контексте конкретной переменной, это ок).
  */
 void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const Token *phpdoc_token) {
-  std::string type_str, param_var_name;
+  int param_i = 0;
+  std::string param_var_name, type_str;
   ClassPtr klass;
-  if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str)) {
-    AssumType assum = parse_phpdoc_classname(type_str, klass, f);
-
+  while (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str, param_i++)) {
     if (!param_var_name.empty() || !var_name.empty()) {
+      AssumType assum = parse_phpdoc_classname(type_str, klass, f);
       assumption_add(f, assum, param_var_name.empty() ? var_name : param_var_name, klass);
     }
   }
@@ -304,12 +304,11 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     int param_i = 0;
     std::string param_var_name, type_str;
     ClassPtr klass;
-    while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::param, param_var_name, type_str, param_i)) {
+    while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::param, param_var_name, type_str, param_i++)) {
       if (!param_var_name.empty() && !type_str.empty()) {
         AssumType assum = parse_phpdoc_classname(type_str, klass, f);
         assumption_add(f, assum, param_var_name, klass);
       }
-      param_i++;
     }
   }
 
@@ -413,7 +412,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
     return calculated;
   }
 
-  f->assumptions.push_back(Assumption(assum_not_instance, var_name, ClassPtr()));
+  f->assumptions.emplace_back(assum_not_instance, var_name, ClassPtr());
   return assum_not_instance;
 }
 
