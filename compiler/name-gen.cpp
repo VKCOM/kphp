@@ -141,10 +141,10 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
 
 static const char *_err_instance_access(VertexPtr v, const char *desc) {
   if (v->type() == op_func_call) {
-    return std::string("Invalid call ...->" + v->get_string() + "(): " + desc).c_str();
+    return strdup(std::string("Invalid call ...->" + v->get_string() + "(): " + desc).c_str());
   }
 
-  return std::string("Invalid property ...->" + v->get_string() + ": " + desc).c_str();
+  return strdup(std::string("Invalid property ...->" + v->get_string() + ": " + desc).c_str());
 }
 
 /*
