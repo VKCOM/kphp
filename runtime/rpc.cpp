@@ -2473,6 +2473,12 @@ void *tlcomb_fetch_true(void **IP, void **Data, var *arr, tl_tree **vars) {
   TLUNI_NEXT;
 }
 
+void *tlcomb_fetch_unknown_as_array_var(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  *arr = array<var>();
+  TLUNI_NEXT;
+}
+
 /*****
  *
  * IP: newIP
@@ -3536,6 +3542,7 @@ int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size) {
   } else if (c.id == ID_BOOL_TRUE) {
     IP[l++] = (void *)tlcomb_fetch_true;
   } else {
+    IP[l++] = (void *)tlcomb_fetch_unknown_as_array_var;
     int z = 0;
     if (c.result->get_type() == NODE_TYPE_TYPE) {
       tl_type *t = ((tl_tree_type *)c.result)->type;
