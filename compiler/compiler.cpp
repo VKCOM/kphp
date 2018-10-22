@@ -99,7 +99,7 @@ public:
     }
 
     std::stringstream ss;
-    ss << std::hex << hash(dest_path) << "_kphp_temp_lock";
+    ss << "/tmp/" << std::hex << hash(dest_path) << "_kphp_temp_lock";
     locked_filename_ = ss.str();
 
     fd_ = open(locked_filename_.c_str(), O_RDWR | O_CREAT, 0666);
