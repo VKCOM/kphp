@@ -9,9 +9,6 @@
  *
  */
 
-template <typename T, typename T1>
-using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
-
 struct array_size {
   int int_size;
   int string_size;

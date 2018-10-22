@@ -41,7 +41,7 @@ public:
   inline var(double f);
   inline var(const string &s);
   inline var(const char *s, int len);
-  template<class T>
+  template<class T, class = enable_if_constructible_or_unknown<var, T>>
   inline var(const array<T> &a);
   inline var(const var &v);
   inline var(var &&v);
@@ -49,7 +49,7 @@ public:
   inline var(const OrFalse<int> &v);
   inline var(const OrFalse<double> &v);
   inline var(const OrFalse<string> &v);
-  template<class T>
+  template<class T, class = enable_if_constructible_or_unknown<var, T>>
   inline var(const OrFalse<array<T>> &v);
 
   inline var &operator=(bool other);
@@ -57,7 +57,7 @@ public:
   inline var &operator=(double other);
   inline var &operator=(const string &other);
   inline var &assign(const char *other, int len);
-  template<class T>
+  template<class T, class = enable_if_constructible_or_unknown<var, T>>
   inline var &operator=(const array<T> &other);
   inline var &operator=(const var &other);
   inline var &operator=(var &&other);
@@ -65,7 +65,7 @@ public:
   inline var &operator=(const OrFalse<int> &other);
   inline var &operator=(const OrFalse<double> &other);
   inline var &operator=(const OrFalse<string> &other);
-  template<class T>
+  template<class T, class = enable_if_constructible_or_unknown<var, T>>
   inline var &operator=(const OrFalse<array<T>> &other);
 
   inline const var operator-() const;

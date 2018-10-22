@@ -1,7 +1,11 @@
 #pragma once
 
-#include "allocator.h"
-#include "include.h"
+#include "runtime/allocator.h"
+#include "runtime/include.h"
+
+template<typename T, typename T1>
+using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
+
 #include "string.h"
 #include "array.h"
 #include "class_instance.h"

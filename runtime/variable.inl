@@ -92,7 +92,7 @@ var::var(const char *s_, int len) :
   new(&s) string(s_, len);
 }
 
-template<class T>
+template<class T, class>
 var::var(const array<T> &a_):
   type(ARRAY_TYPE) {
   new(&a) array<var>(a_);
@@ -128,7 +128,7 @@ var::var(const OrFalse<string> &v) {
   }
 }
 
-template<class T>
+template<class T, class>
 var::var(const OrFalse<array<T>> &v) {
   if (likely (v.bool_value)) {
     type = ARRAY_TYPE;
@@ -310,7 +310,7 @@ var &var::assign(const char *other, int len) {
   }
 }
 
-template<class T>
+template<class T, class>
 var &var::operator=(const array<T> &other) {
   switch (type) {
     case NULL_TYPE:
@@ -399,7 +399,7 @@ var &var::operator=(const OrFalse<string> &other) {
   return *this;
 }
 
-template<class T>
+template<class T, class>
 var &var::operator=(const OrFalse<array<T>> &other) {
   if (likely (other.bool_value)) {
     *this = other.value;
