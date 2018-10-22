@@ -1,0 +1,38 @@
+@ok
+<?php
+#ifndef KittenPHP
+require_once __DIR__.'/../dl/polyfill/fork-php-polyfill.php';
+require_once 'Classes/autoload.php';
+#endif
+
+/** @return Classes\A */
+function getA() {
+    sched_yield();
+    $a = new Classes\A;
+    $a->a = 22;
+    return $a;
+}
+
+/** @return Classes\A[] */
+function getAArr() {
+    sched_yield();
+    $a1 = new Classes\A;
+    $a1->a = 10;
+    return [$a1, new Classes\A];
+}
+
+function demo() {
+    $a = new Classes\A;
+    echo $a->a, "\n";
+
+    $a2 = getA();
+    echo $a2->a, "\n";
+
+    $arr = getAArr();
+    foreach($arr as $aa) {
+        echo $aa->a, "\n";
+    }
+}
+
+$ii = fork(demo());
+wait_result($ii);
