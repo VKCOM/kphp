@@ -19,15 +19,9 @@ Storage::Storage() :
   memset(storage_, 0, sizeof(var));
 }
 
-var Storage::load_void(char *storage __attribute__((unused))) {
-  // result of void function should not be loaded
-  php_assert (0);
-  return var();
-}
-
 var Storage::load_exception(char *storage) {
   php_assert (CurException == nullptr);
-  CurException = *reinterpret_cast <Exception **> (storage);
+  CurException = load_implementation_helper<Exception *, Exception *>::load(storage);
   return var();
 }
 
@@ -46,16 +40,15 @@ void Storage::save_void() {
   if (CurException) {
     save_exception();
   } else {
-    getter_ = load_void;
+    getter_ = load_implementation_helper<void, var>::load;
   }
 }
 
 void Storage::save_exception() {
   php_assert (CurException != nullptr);
-  php_assert (sizeof(Exception *) <= sizeof(var));
-  *reinterpret_cast <Exception **> (storage_) = CurException;
+  Exception *exception = CurException;
   CurException = nullptr;
-  getter_ = load_exception;
+  save<Exception *>(exception, load_exception);
 }
 
 Storage *Resumable::input_;

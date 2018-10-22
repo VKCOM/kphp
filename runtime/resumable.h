@@ -25,12 +25,8 @@ class Storage {
 private:
   char storage_[sizeof(var)];
 
-  template<class X, class Y>
-  struct load_implementation_helper {
-    static Y load(char *storage);
-  };
-
-  static var load_void(char *storage);
+  template<class X, class Y, class Tag = typename std::is_convertible<X, Y>::type>
+  struct load_implementation_helper;
 
   static var load_exception(char *storage);
 
@@ -152,45 +148,58 @@ int f$get_running_fork_id();
  */
 
 
+template<class X>
+struct Storage::load_implementation_helper<X, var, std::false_type> {
+  static var load(char *storage __attribute__((unused))) {
+    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
+    return var();
+  }
+};
+
 template<class X, class Y>
-Y Storage::load_implementation_helper<X, Y>::load(char *storage) {
-  X *data = reinterpret_cast <X *> (storage);
-  Y result = *data;
-  data->~X();
-  return result;
-}
-
-template<class T>
-struct Storage::load_implementation_helper<class_instance<T>, var> {
-  static var load(char *storage) {
-    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
-    return var();
+struct Storage::load_implementation_helper<X, Y, std::true_type> {
+  static Y load(char *storage) {
+    if (sizeof(X) > sizeof(storage_)) {
+      // какие-нибудь длинные tuple'ы (см. save())
+      // тогда в storage лежит указатель на выделенную память
+      storage = static_cast<char *>(*reinterpret_cast<void **>(storage));
+    }
+    X *data = reinterpret_cast <X *> (storage);
+    Y result = *data;
+    data->~X();
+    if (sizeof(X) > sizeof(storage_)) {
+      dl::deallocate(storage, sizeof(X));
+    }
+    return result;
   }
 };
 
-template<class T>
-struct Storage::load_implementation_helper<array<class_instance<T>>, var> {
-  static var load(char *storage) {
-    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
-    return var();
-  }
+template<>
+struct Storage::load_implementation_helper<void, void, std::true_type> {
+  static void load(char *storage __attribute__((unused))) {}
 };
 
-template<class T>
-struct Storage::load_implementation_helper<OrFalse<array<class_instance<T>>>, var> {
-  static var load(char *storage) {
-    php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
-    return var();
-  }
-};
 
 template<class T1, class T2>
 void Storage::save(const T2 &x, Getter getter) {
   if (CurException) {
     save_exception();
   } else {
-    php_assert (sizeof(T1) <= sizeof(var));
-    new(storage_) T1(x);
+    if (sizeof(T1) <= sizeof(storage_)) {
+      #pragma GCC diagnostic push
+      #if __GNUC__ >= 6
+      #pragma GCC diagnostic ignored "-Wplacement-new="
+      #endif
+      new(storage_) T1(x);
+      #pragma GCC diagnostic pop
+    } else {
+      // какие-нибудь длинные tuple'ы, которые не влазят в var
+      // для них выделяем память отдельно, а в storage сохраняем указатель
+      void *mem = dl::allocate(sizeof(T1));
+      new(mem) T1(x);
+      *reinterpret_cast<void **>(storage_) = mem;
+    }
+
     getter_ = getter;
     php_assert (getter_ != nullptr);
   }
@@ -213,19 +222,6 @@ Y Storage::load() {
   getter_ = nullptr;
   return load_implementation_helper<X, Y>::load(storage_);
 }
-
-template<>
-inline void Storage::load<void, void>() {
-  php_assert (getter_ != nullptr);
-  if (getter_ == load_exception) {
-    getter_ = nullptr;
-    load_exception(storage_);
-    return;
-  }
-
-  getter_ = nullptr;
-}
-
 
 template<class T>
 T start_resumable(Resumable *resumable) {
