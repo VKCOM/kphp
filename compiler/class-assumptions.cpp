@@ -194,9 +194,9 @@ void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const Tok
 /*
  * Из $a = ...rhs... определяем, что за тип присваивается $a
  */
-void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const VertexPtr &rhs) {
+void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const VertexPtr &rhs, size_t depth) {
   ClassPtr klass;
-  AssumType assum = infer_class_of_expr(f, rhs, klass);
+  AssumType assum = infer_class_of_expr(f, rhs, klass, depth + 1);
 
   if (assum != assum_unknown && klass) {
     assumption_add(f, assum, var_name, klass);
@@ -240,7 +240,7 @@ void analyze_global_var(FunctionPtr f, const std::string &var_name) {
  * Если есть запись $a->... (где $a это локальная переменная) то надо понять, что такое $a.
  * Собственно, этим и занимается эта функция: комплексно анализирует использования переменной и вызывает то, что выше.
  */
-void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_name, VertexPtr root) {
+void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_name, VertexPtr root, size_t depth) {
   switch (root->type()) {
     case op_set: {
       auto set = root.as<op_set>();
@@ -248,7 +248,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
         if (set->phpdoc_token) {
           analyze_phpdoc_with_type(f, var_name, set->phpdoc_token);
         } else {
-          analyze_set_to_var(f, var_name, set->rhs());
+          analyze_set_to_var(f, var_name, set->rhs(), depth + 1);
         }
       }
       return;
@@ -290,7 +290,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
   }
 
   for (auto i : *root) {
-    calc_assumptions_for_var_internal(f, var_name, i);
+    calc_assumptions_for_var_internal(f, var_name, i, depth + 1);
   }
 }
 
@@ -382,7 +382,7 @@ void init_assumptions_for_all_vars(ClassPtr c) {
  * Высокоуровневая функция, определяющая, что такое $a внутри f.
  * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
  */
-AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
+AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class, size_t depth) {
   if (f->is_instance_function() && var_name.size() == 4 && var_name == "this") {
     out_class = f->class_id;
     return assum_instance;
@@ -399,7 +399,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
   }
 
 
-  calc_assumptions_for_var_internal(f, var_name, f->root.as<op_function>()->cmd());
+  calc_assumptions_for_var_internal(f, var_name, f->root.as<op_function>()->cmd(), depth + 1);
 
   if (f->type() == FunctionData::func_global || f->type() == FunctionData::func_switch) {
     if ((var_name.size() == 2 && var_name == "MC") || (var_name.size() == 3 && var_name == "PMC")) {
@@ -487,8 +487,9 @@ inline AssumType infer_from_ctor(FunctionPtr f,
 
 inline AssumType infer_from_var(FunctionPtr f,
                                 VertexAdaptor<op_var> var,
-                                ClassPtr &out_class) {
-  return calc_assumption_for_var(f, var->str_val, out_class);
+                                ClassPtr &out_class,
+                                size_t depth) {
+  return calc_assumption_for_var(f, var->str_val, out_class, depth + 1);
 }
 
 
@@ -512,6 +513,10 @@ inline AssumType infer_from_array(FunctionPtr f,
                                   VertexAdaptor<op_array> array,
                                   ClassPtr &out_class) {
   kphp_assert(array);
+  if (array->size() == 0) {
+    return assum_unknown;
+  }
+
   for (auto v : *array) {
     ClassPtr inferred_class;
     AssumType assum = infer_class_of_expr(f, v, inferred_class);
@@ -531,9 +536,10 @@ inline AssumType infer_from_array(FunctionPtr f,
 
 AssumType infer_from_instance_prop(FunctionPtr f,
                                    VertexAdaptor<op_instance_prop> prop,
-                                   ClassPtr &out_class) {
+                                   ClassPtr &out_class,
+                                   size_t depth) {
   ClassPtr lhs_class;
-  AssumType lhs_assum = infer_class_of_expr(f, prop->expr(), lhs_class);
+  AssumType lhs_assum = infer_class_of_expr(f, prop->expr(), lhs_class, depth + 1);
 
   if (lhs_assum != assum_instance) {
     return assum_not_instance;
@@ -546,19 +552,22 @@ AssumType infer_from_instance_prop(FunctionPtr f,
 /*
  * Главная функция, вызывающаяся извне: возвращает assumption для любого выражения root внутри f.
  */
-AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class) {
+AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class, size_t depth /*= 0*/) {
+  if (depth > 10000) {
+    return assum_not_instance;
+  }
   switch (root->type()) {
     case op_constructor_call:
       return infer_from_ctor(f, root, out_class);
     case op_var:
-      return infer_from_var(f, root, out_class);
+      return infer_from_var(f, root, out_class, depth);
     case op_instance_prop:
-      return infer_from_instance_prop(f, root, out_class);
+      return infer_from_instance_prop(f, root, out_class, depth);
     case op_func_call:
       return infer_from_call(f, root, out_class);
     case op_index: {
       auto index = root.as<op_index>();
-      if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class)) {
+      if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class, depth)) {
         return assum_instance;
       } else {
         return assum_not_instance;
@@ -566,6 +575,8 @@ AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class
     }
     case op_array:
       return infer_from_array(f, root, out_class);
+    case op_conv_array:
+      return infer_class_of_expr(f, root.as<op_conv_array>()->expr(), out_class, depth);
 
     default:
       return assum_not_instance;

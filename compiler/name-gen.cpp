@@ -104,10 +104,11 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       if (class_name == "parent") {
+        ClassPtr class_id = current_function->get_outer_class();
         // тут (пока что?) именно extends как строка, т.к. parent_class присваивается позже, чем может вызываться resolve_uses()
-        auto extends_it = std::find_if(current_function->class_id->str_dependents.begin(), current_function->class_id->str_dependents.end(),
+        auto extends_it = std::find_if(class_id->str_dependents.begin(), class_id->str_dependents.end(),
                                        [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
-        kphp_assert(extends_it != current_function->class_id->str_dependents.end());
+        kphp_assert(extends_it != class_id->str_dependents.end());
         class_name = resolve_uses(current_function, extends_it->class_name, delim);
       } else if (class_name == "static") {
         class_name = current_function->get_outer_class_context_name();
