@@ -5,6 +5,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data.h"
 #include "compiler/io.h"
+#include "common/termformat/termformat.h"
 
 int stage::warnings_count;
 
@@ -33,7 +34,13 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   }
   fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n%s [gen by %s at %d]\n", get_assert_level_desc(assert_level), file_name, line_number);
   stage::print(file);
-  fprintf(file, "%s\n\n", full_description);
+  string correct_description;
+  if (!TermStringFormat::is_terminal(file)) {
+    correct_description = TermStringFormat::remove_special_symbols(full_description);
+  } else {
+    correct_description = full_description;
+  }
+  fprintf(file, "%s\n\n", correct_description.c_str());
   if (assert_level == FATAL_ASSERT_LEVEL) {
     fprintf(file, "Compilation failed.\n"
                   "It is probably happened due to incorrect or unsupported PHP input.\n"
@@ -102,7 +109,11 @@ void stage::print_file(FILE *f) {
 
 void stage::print_function(FILE *f) {
   FunctionPtr function = get_function();
-  fprintf(f, "[function = %s]\n", (function ? function->get_human_readable_name() : "unknown function").c_str());
+  string function_name_str = (function ? function->get_human_readable_name() : "unknown function");
+  if (TermStringFormat::is_terminal(f)) {
+    function_name_str = TermStringFormat::add_text_attribute(function_name_str, TermStringFormat::bold);
+  }
+  fprintf(f, "[function = %s]\n", function_name_str.c_str());
 }
 
 void stage::print_line(FILE *f) {
@@ -235,6 +246,8 @@ string stage::to_str(const Location &new_location) {
   set_location(new_location);
   FunctionPtr function = get_function();
   stringstream ss;
+
+  //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
   ss << get_file_name() << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();
   return ss.str();
 }

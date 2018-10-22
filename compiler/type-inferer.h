@@ -117,6 +117,7 @@ private:
   std::vector<tinf::Node *> stacktrace;
   std::vector<tinf::Node *> node_path_;
   static const unsigned long max_cnt_nodes_in_path = 30;
+  string desc;
 
   struct row {
     string col[3];
@@ -134,7 +135,6 @@ private:
 
 public:
   tinf::Node *actual_, *expected_;
-  string desc;
 
   RestrictionLess(tinf::Node *a, tinf::Node *b) :
     actual_(a),

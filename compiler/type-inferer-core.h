@@ -97,7 +97,7 @@ public:
 
   void recalc(TypeInferer *inferer);
 
-  VarPtr get_var() {
+  VarPtr get_var() const {
     return var_;
   }
 
@@ -129,11 +129,7 @@ public:
 
   void recalc(TypeInferer *inferer);
 
-  VertexPtr get_expr() {
-    return expr_;
-  }
-
-  const VertexPtr get_expr() const {
+  VertexPtr get_expr() const {
     return expr_;
   }
 

@@ -4,6 +4,7 @@
 
 #include "compiler/gentree.h"
 #include "common/wrappers/string_view.h"
+#include "common/termformat/termformat.h"
 
 void init_functions_tinf_nodes(FunctionPtr function) {
   assert (function->tinf_state == 1);
@@ -136,7 +137,7 @@ string RestrictionLess::get_actual_error_message() {
     as_var_1 = dynamic_cast<tinf::VarNode *>(stacktrace[1]);
     if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop &&
         as_var_1 && as_var_1->is_variable()) {
-      return string("Incorrect type of the following class field: ") + as_var_1->get_var_name() + "\n";
+      return string("Incorrect type of the following class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
     }
   }
   if (stacktrace.size() >= 3) {
@@ -144,12 +145,12 @@ string RestrictionLess::get_actual_error_message() {
     if ((!as_var_0 || as_var_0->is_variable() || as_var_0->is_return_value_from_function()) &&
         (!as_var_1 || as_var_1->is_variable() || as_var_1->is_return_value_from_function()) &&
         as_var_2 && !as_var_2->is_variable() && !as_var_2->is_return_value_from_function()) {
-      return string("Incorrect type of the ") + as_var_2->get_var_as_argument_name() + " at " + as_var_2->get_function_name() + "\n";
+      return string("Incorrect type of the ") + TermStringFormat::add_text_attribute(as_var_2->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_2->get_function_name() + "\n";
     }
   }
   if (stacktrace.size() >= 3 && as_expr_0 && as_var_1 &&
       dynamic_cast<tinf::TypeNode *>(stacktrace[2]) && dynamic_cast<tinf::TypeNode *>(stacktrace[2])->type_->ptype() == tp_var) {
-    return "Unexpected conversion to var one of the arguments of the following function:\n" + as_expr_0->get_location_text() + "\n";
+    return TermStringFormat::paint("Unexpected conversion to var one of the arguments of the following function:\n", TermStringFormat::red, false) + TermStringFormat::add_text_attribute(as_expr_0->get_location_text(), TermStringFormat::bold, false) + "\n";
   }
   return "Mismatch of types\n";
 }
@@ -210,13 +211,13 @@ string RestrictionLess::get_stacktrace_text() {
   }
   int width[3] = {10, 15, 30};
   for (auto &row : rows) {
-    width[0] = std::max(width[0], (int)row.col[0].length() + 3);
-    width[1] = std::max(width[1], (int)row.col[1].length() + 3);
+    width[0] = std::max(width[0], (int)row.col[0].length());
+    width[1] = std::max(width[1], (int)row.col[1].length() - TermStringFormat::get_length_without_symbols(row.col[1]));
     width[2] = std::max(width[2], (int)row.col[2].length());
   }
   stringstream ss;
   for (auto &row : rows) {
-    ss << std::setw(width[1]) << std::left << row.col[1];
+    ss << std::setw(width[1] + 3 + TermStringFormat::get_length_without_symbols(row.col[1])) << std::left << row.col[1];
     ss << std::setw(width[2]) << std::left << row.col[2] << std::endl;
   }
   return ss.str();
@@ -228,10 +229,10 @@ bool RestrictionLess::check_broken_restriction_impl() {
 
   if (is_less(actual_type, expected_type)) {
     find_call_trace_with_error(actual_);
-    desc = "\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n";
-    desc += get_actual_error_message();
-    desc += "Expected type:\t" + type_out(expected_type) + "\nActual type:\t" + type_out(actual_type) + "\n";
-    desc += "+-------------+\n| STACKTRACE: |\n+-------------+";
+    desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
+    desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
+    desc += "Expected type:\t" + TermStringFormat::paint(type_out(expected_type), TermStringFormat::green) + "\nActual type:\t" + TermStringFormat::paint(type_out(actual_type), TermStringFormat::green) + "\n";
+    desc += TermStringFormat::add_text_attribute("+-------------+\n| STACKTRACE: |\n+-------------+", TermStringFormat::bold);
     desc += "\n";
     desc += get_stacktrace_text();
     return true;
@@ -408,18 +409,18 @@ string tinf::VarNode::get_function_name() {
 string tinf::VarNode::get_var_as_argument_name() {
   int actual_num = (function_ && function_->is_instance_function() && !function_->is_constructor()
                     ? param_i - 1 : param_i);
-  string what_arg = (actual_num < 0 ? "implicit" : int_to_str(actual_num) + "-th");
-  return what_arg + " arg (" + get_var_name() + ")";
+  return (actual_num < 0 ? "implicit arg" : "arg #" + int_to_str(actual_num)) + " (" + get_var_name() + ")";
 }
 
 string tinf::VarNode::get_description() {
   stringstream ss;
   if (is_variable()) {
-    ss << "as variable:" << "  " << get_var_name();
+    //Вывод должен совпадать с выводом в соответсвующей ветке в get_expr_description, чтобы детектились и убирались дубликаты в стектрейсе
+    ss << "as variable:" << "  " << get_var_name() << " : " << TermStringFormat::paint(type_out(tinf::get_type(var_)), TermStringFormat::green);
   } else if (is_return_value_from_function()) {
     ss << "as expression:" << "  " << "return ...";
   } else {
-    ss << "as argument:" << "  " << get_var_as_argument_name();
+    ss << "as argument:" << "  " << get_var_as_argument_name() << " : " << TermStringFormat::paint(type_out(tinf::get_type(var_)), TermStringFormat::green);
   }
   ss << "  " << "at " + get_function_name();
   return ss.str();
@@ -431,33 +432,38 @@ string tinf::TypeNode::get_description() {
   return ss.str();
 }
 
-static string get_expr_description(VertexPtr expr) {
+static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
+  auto print_type = [&](VertexPtr type_out_of) -> string {
+    return with_type_hint ? " : " + TermStringFormat::paint(type_out(tinf::get_type(type_out_of)), TermStringFormat::green) : "";
+  };
+
   switch (expr->type()) {
     case op_var:
-      return "$" + expr.as<op_var>()->get_var_id()->name;
+      //Вывод должен совпадать с выводом в соответсвующей ветке в tinf::VarNode::get_description, чтобы детектились и убирались дубликаты в стектрейсе
+      return "$" + expr.as<op_var>()->get_var_id()->name + print_type(expr);
 
     case op_func_call: {
       string function_name = expr.as<op_func_call>()->get_func_id()->get_human_readable_name();
       std::smatch matched;
       if (std::regex_match(function_name, matched, std::regex("(.+)( \\(inherited from .+?\\))"))) {
-        return matched[1].str() + "(...)" + matched[2].str();
+        return matched[1].str() + "(...)" + matched[2].str() + print_type(expr);
       }
-      return function_name + "(...)";
+      return function_name + "(...)" + print_type(expr);
     }
-
     case op_constructor_call:
       return "new " + expr->get_string() + "()";
 
     case op_instance_prop:
-      return "->" + expr->get_string();
+      return "->" + expr->get_string() + print_type(expr);
 
     case op_index: {
       string suff = "";
+      auto orig_expr = expr;
       while (expr->type() == op_index) {
         suff += "[.]";
         expr = expr.as<op_index>()->array();
       }
-      return get_expr_description(expr) + suff;
+      return get_expr_description(expr, false) + suff + print_type(orig_expr);
     }
 
     case op_int_const:
@@ -479,9 +485,19 @@ string tinf::ExprNode::get_description() {
 
 string tinf::ExprNode::get_location_text() {
   string location = stage::to_str(expr_->get_location());
+
+  //Убираем дублирование имени класса в пути до класса
+  std::smatch matched;
+  if (std::regex_match(location, matched, std::regex("(.+?): ((.*?) :: .*)"))) {
+    string class_name = replace_characters(matched[3].str(), '\\', '/');
+    if (matched[1].str().find(class_name + ".php") == matched[1].str().length() - (class_name.length() + 4)) {
+      return matched[2].str();
+    }
+  }
+
   string root_path = G->env().get_base_dir();
   if (vk::string_view(location).starts_with(root_path)) {
-    return string(".../") + location.substr(root_path.length());
+    location = string(".../") + location.substr(root_path.length());
   }
   return location;
 }
@@ -648,7 +664,7 @@ void VarNodeRecalc::do_recalc() {
   //fprintf (stderr, "recalc var %d %p %s\n", get_thread_id(), node_, node_->get_description().c_str());
 
   if (inferer_->is_finished()) {
-    kphp_error (0, dl_pstr("%s: %d\n", node_->get_description().c_str(), node_->recalc_cnt_));
+    kphp_error (0, dl_pstr("%s: %d\n", "", node_->recalc_cnt_));
     kphp_fail();
   }
   for (auto e : node_->get_next()) {

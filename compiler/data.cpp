@@ -339,6 +339,9 @@ string FunctionData::get_resumable_path() const {
 }
 
 string FunctionData::get_human_readable_name() const {
+  if (this->access_type == access_nonmember) {
+    return this->name;
+  }
   std::smatch matched;
   if (std::regex_match(this->name, matched, std::regex("(.+)\\$\\$(.+)\\$\\$(.+)"))) {
     string base_class = matched[1].str(), actual_class = matched[3].str();
@@ -346,6 +349,7 @@ string FunctionData::get_human_readable_name() const {
     actual_class = replace_characters(actual_class, '$', '\\');
     return actual_class + " :: " + matched[2].str() + " (" + "inherited from " + base_class + ")";
   }
+  //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
   return std::regex_replace(std::regex_replace(this->name, std::regex("\\$\\$"), " :: "), std::regex("\\$"), "\\");
 }
 
