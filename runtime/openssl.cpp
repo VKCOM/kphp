@@ -239,60 +239,111 @@ int f$crc32_file(const string &file_name) {
   return res ^ -1;
 }
 
+struct EVPKeyResourceStorage {
+public:
+  EVPKeyResourceStorage (char prefixChar)
+    : registered_keys_(reinterpret_cast<KeysArray *>(&storage_)),
+      last_query_num_(-1),
+      prefixChar_(prefixChar)
+    {}
 
-static char openssl_pkey_storage[sizeof(array<EVP_PKEY *>)];
-static array<EVP_PKEY *> *openssl_pkey = (array<EVP_PKEY *> *)openssl_pkey_storage;
-static long long openssl_pkey_last_query_num = -1;
+  string register_resource(EVP_PKEY *pkey) {
+    if (dl::query_num != last_query_num_) {
+      new(&storage_) KeysArray();
+      last_query_num_ = dl::query_num;
+    }
 
-static EVP_PKEY *openssl_get_evp(const string &key, const string &passphrase, bool is_public, bool *from_cache) {
-  int num = 0;
-  if (openssl_pkey_last_query_num == dl::query_num && key[0] == ':' && key[1] == ':' && sscanf(key.c_str() + 2, "%d", &num) == 1 && (unsigned int)num < (unsigned int)openssl_pkey
-    ->count()) {
-    *from_cache = true;
-    return openssl_pkey->get_value(num);
+    string result(2, prefixChar_);
+    result.append(registered_keys_->count());
+    registered_keys_->push_back(pkey);
+    return result;
   }
 
-  dl::enter_critical_section();//OK
-  BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
-  if (in == nullptr) {
+  EVP_PKEY *find_resource(const string &key) {
+    int num = 0;
+    if (last_query_num_ == dl::query_num &&
+        key.size() > 2 && key[0] == prefixChar_ && key[1] == prefixChar_ &&
+        sscanf(key.c_str() + 2, "%d", &num) == 1 &&
+        static_cast <unsigned int> (num) < static_cast <unsigned int> (registered_keys_->count())) {
+      return registered_keys_->get_value(num);
+    }
+    return nullptr;
+  }
+
+  void free_resources() {
+    if (dl::query_num == last_query_num_) {
+      for (auto keyIt = registered_keys_->begin(); keyIt != registered_keys_->end(); ++keyIt) {
+        EVP_PKEY_free(keyIt.get_value());
+      }
+      last_query_num_--;
+    }
+  }
+
+private:
+  using KeysArray = array<EVP_PKEY *>;
+  using KeysArrayStorage = std::aligned_storage<sizeof(KeysArray), alignof(KeysArray)>::type;
+
+  KeysArrayStorage storage_;
+  KeysArray *registered_keys_;
+  long long last_query_num_;
+  const char prefixChar_;
+};
+
+// uses different prefixes for avoid of resource identifier collisions
+static EVPKeyResourceStorage public_keys{';'};
+static EVPKeyResourceStorage private_keys{':'};
+
+static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passphrase, bool *from_cache) {
+  if (EVP_PKEY *evp_pkey = private_keys.find_resource(key)) {
+    *from_cache = true;
+    return evp_pkey;
+  }
+
+  *from_cache = false;
+  EVP_PKEY *evp_pkey = nullptr;
+  dl::enter_critical_section(); // OK
+  if (BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
+    evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
+    BIO_free(in);
+  }
+  dl::leave_critical_section();
+  return evp_pkey;
+}
+
+static EVP_PKEY *openssl_get_public_evp(const string &key, bool *from_cache) {
+
+  if (EVP_PKEY *evp_pkey = public_keys.find_resource(key)) {
+    *from_cache = true;
+    return evp_pkey;
+  }
+
+  *from_cache = false;
+  EVP_PKEY *evp_pkey = nullptr;
+  dl::enter_critical_section(); // OK
+  BIO *cert_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
+  if (cert_in == nullptr) {
     dl::leave_critical_section();
     return nullptr;
   }
-  EVP_PKEY *evp_pkey;
-  X509 *cert = (X509 *)PEM_ASN1_read_bio((d2i_of_void *)d2i_X509, PEM_STRING_X509, in, nullptr, nullptr, nullptr);
-  BIO_free(in);
-  if (cert == nullptr) {
-    in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
-    if (in == nullptr) {
-      dl::leave_critical_section();
-      return nullptr;
-    }
-    evp_pkey = is_public ? PEM_read_bio_PUBKEY(in, nullptr, nullptr, nullptr) : PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase
-      .c_str())));
-    BIO_free(in);
-  } else {
+  X509 *cert = reinterpret_cast<X509 *>(PEM_ASN1_read_bio(
+    reinterpret_cast<d2i_of_void *>(d2i_X509), PEM_STRING_X509, cert_in, nullptr, nullptr, nullptr));
+  BIO_free(cert_in);
+  if (cert) {
     evp_pkey = X509_get_pubkey(cert);
     X509_free(cert);
+  } else if (BIO *key_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
+    evp_pkey = PEM_read_bio_PUBKEY(key_in, nullptr, nullptr, nullptr);
+    BIO_free(key_in);
   }
-/*
-  ERR_load_crypto_strings();
-  if (evp_pkey == nullptr) {
-    unsigned long val;
-    while ((val = ERR_get_error())) {
-      fprintf (stderr, "%s\n", ERR_error_string (val, nullptr));
-    }
-  }
-*/
-  dl::leave_critical_section();
 
-  *from_cache = false;
+  dl::leave_critical_section();
   return evp_pkey;
 }
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key) {
   dl::enter_critical_section();//OK
   bool from_cache;
-  EVP_PKEY *pkey = openssl_get_evp(key, string(), true, &from_cache);
+  EVP_PKEY *pkey = openssl_get_public_evp(key, &from_cache);
   if (pkey == nullptr) {
     dl::leave_critical_section();
 
@@ -348,7 +399,7 @@ bool f$openssl_public_encrypt(const string &data, var &result, const string &key
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key) {
   dl::enter_critical_section();//OK
   bool from_cache;
-  EVP_PKEY *pkey = openssl_get_evp(key, string(), false, &from_cache);
+  EVP_PKEY *pkey = openssl_get_private_evp(key, string(), &from_cache);
   if (pkey == nullptr) {
     dl::leave_critical_section();
     php_warning("Parameter key is not a valid private key");
@@ -393,33 +444,28 @@ bool f$openssl_private_decrypt(const string &data, var &result, const string &ke
 }
 
 OrFalse<string> f$openssl_pkey_get_private(const string &key, const string &passphrase) {
-  dl::enter_critical_section();//NOT OK: openssl_pkey
-
-  bool from_cache;
-  EVP_PKEY *pkey = openssl_get_evp(key, passphrase, false, &from_cache);
-
-  if (pkey == nullptr) {
-    dl::leave_critical_section();
-
+  OrFalse<string> result = false;
+  dl::enter_critical_section(); // NOT OK: openssl_pkey
+  bool from_cache = false;
+  if (EVP_PKEY *pkey = openssl_get_private_evp(key, passphrase, &from_cache)) {
+    result = from_cache ? key : private_keys.register_resource(pkey);
+  } else {
     php_warning("Parameter key is not a valid key or passphrase is not a valid password");
-    return false;
   }
-
-  if (from_cache) {
-    dl::leave_critical_section();
-    return key;
-  }
-
-  if (dl::query_num != openssl_pkey_last_query_num) {
-    new(openssl_pkey_storage) array<EVP_PKEY *>();
-    openssl_pkey_last_query_num = dl::query_num;
-  }
-
-  string result(2, ':');
-  result.append(openssl_pkey->count());
-  openssl_pkey->push_back(pkey);
   dl::leave_critical_section();
+  return result;
+}
 
+OrFalse<string> f$openssl_pkey_get_public(const string &key) {
+  OrFalse<string> result = false;
+  dl::enter_critical_section(); // NOT OK: openssl_pkey
+  bool from_cache = false;
+  if (EVP_PKEY *pkey = openssl_get_public_evp(key, &from_cache)) {
+    result = from_cache ? key : public_keys.register_resource(pkey);
+  } else {
+    php_warning("Parameter key is not a valid key");
+  }
+  dl::leave_critical_section();
   return result;
 }
 
@@ -475,7 +521,7 @@ int f$openssl_verify(const string &data, const string &signature, const string &
   }
 
   bool from_cache;
-  pkey = openssl_get_evp(pub_key_id, string("", 0), true, &from_cache);
+  pkey = openssl_get_public_evp(pub_key_id, &from_cache);
   if (pkey == nullptr) {
     php_warning("supplied key param cannot be converted into a public key");
     dl::leave_critical_section();
@@ -1086,14 +1132,9 @@ void openssl_init_static() {
 }
 
 void openssl_free_static() {
-  dl::enter_critical_section();//OK
-  if (dl::query_num == openssl_pkey_last_query_num) {
-    const array<EVP_PKEY *> *const_openssl_pkey = openssl_pkey;
-    for (array<EVP_PKEY *>::const_iterator p = const_openssl_pkey->begin(); p != const_openssl_pkey->end(); ++p) {
-      EVP_PKEY_free(p.get_value());
-    }
-    openssl_pkey_last_query_num--;
-  }
+  dl::enter_critical_section(); //OK
+  public_keys.free_resources();
+  private_keys.free_resources();
 
   if (dl::query_num == ssl_connections_last_query_num) {
     const array<ssl_connection> *const_ssl_connections = ssl_connections;

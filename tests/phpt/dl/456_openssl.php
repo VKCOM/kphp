@@ -1,4 +1,4 @@
-@ok
+@ok openssl
 <?php
 
 $ads_public_key = <<<EOF
@@ -49,7 +49,7 @@ EOF;
 
 $data = "Hello world!!!";
 
-var_dump (openssl_public_encrypt($data, $crypted, $SSLPubKey));
+var_dump (openssl_public_encrypt ($data, $crypted, $SSLPubKey));
 //var_dump ($crypted);
 
 
@@ -77,8 +77,16 @@ EOF;
 
 $SSLPass = "SAGER@#*&^)ds3!cew45hfopwn";
 
-$key_pointer = openssl_pkey_get_private ($SSLPrivKey, $SSLPass);
+$private_key_pointer = openssl_pkey_get_private ($SSLPrivKey, $SSLPass);
 
 $decrypted = "";
-var_dump (openssl_private_decrypt($crypted, $decrypted, $key_pointer));
+var_dump (openssl_private_decrypt ($crypted, $decrypted, $private_key_pointer));
+var_dump ($decrypted);
+
+$public_key_pointer = openssl_pkey_get_public ($SSLPubKey);
+$crypted = "";
+var_dump (openssl_public_encrypt ($data, $crypted, $public_key_pointer));
+
+$decrypted = "";
+var_dump (openssl_private_decrypt ($crypted, $decrypted, $private_key_pointer));
 var_dump ($decrypted);

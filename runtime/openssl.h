@@ -42,6 +42,8 @@ bool f$openssl_private_decrypt(const string &data, var &result, const string &ke
 
 OrFalse<string> f$openssl_pkey_get_private(const string &key, const string &passphrase = string());
 
+OrFalse<string> f$openssl_pkey_get_public(const string &key);
+
 int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int algo = OPENSSL_ALGO_SHA1);
 
 OrFalse<string> f$openssl_random_pseudo_bytes(int length);
