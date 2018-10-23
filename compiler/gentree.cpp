@@ -1771,7 +1771,8 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const string &name) {
-  static set<string> disallowed_names{"Exception", "RpcMemcache", "Memcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc", "db_decl"};
+  static set<string> disallowed_names{"Exception", "RpcMemcache", "Memcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc",
+                                      "db_decl"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }
@@ -1970,6 +1971,47 @@ VertexPtr GenTree::get_namespace_class() {
   return cv;
 }
 
+AccessType get_access_type(TokenType access_token, TokenType static_token) {
+  return static_token == tok_static
+         ? (access_token == tok_public ? access_static_public :
+            access_token == tok_private ? access_static_private : access_static_protected)
+         : (access_token == tok_public ? access_public :
+            access_token == tok_private ? access_private : access_protected);
+}
+
+VertexPtr GenTree::add_static_member(VertexPtr v, AccessType access_type) {
+  CE(v);
+
+  const OperationExtra extra_type =
+    access_type == access_static_private ? op_ex_static_private :
+    access_type == access_static_public ? op_ex_static_public : op_ex_static_protected;
+
+  // с учётом переделок, это можно удалить: оно по факту нужно лишь чтобы достать local_name
+  for (auto e : *v) {
+    kphp_assert(e->type() == op_static);
+    e->extra_type = extra_type;
+    VertexAdaptor<op_static> seq = e;
+    for (auto node : seq->args()) {
+      VertexAdaptor<op_var> var;
+      if (node->type() == op_var) {
+        var = node;
+      } else if (node->type() == op_set) {
+        VertexAdaptor<op_set> set_expr = node;
+        var = set_expr->lhs();
+        kphp_error_act (
+          var->type() == op_var,
+          "unexpected expression in 'static'",
+          continue
+        );
+      } else {
+        kphp_error_act (0, "unexpected expression in 'static'", continue);
+      }
+      cur_class->members.add_static_field(e, var->str_val, access_type);
+    }
+  }
+  return VertexAdaptor<op_empty>::create();
+}
+
 VertexPtr GenTree::get_statement(Token *phpdoc_token) {
   VertexPtr res, first_node, second_node, third_node, forth_node, tmp_node;
   TokenType type = (*cur)->type();
@@ -2020,9 +2062,23 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (check_statement_end());
       return res;
     case tok_static:
-
-      if (cur != end) {
+      if (cur != end && cur + 1 != end) {
         Token *next_token = *(cur + 1);
+        if (next_token->type() == tok_public || next_token->type() == tok_private || next_token->type() == tok_protected) {
+          CE(!kphp_error(cur_class, "Access modifier used outside of class"));
+          const AccessType access_type = get_access_type(next_token->type(), type);
+          next_cur();
+          const TokenType next_token_type = cur + 1 == end ? tok_semicolon : (*(cur + 1))->type();
+          if (next_token_type == tok_var_name) {
+            VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);
+            CE(check_statement_end());
+            return add_static_member(v, access_type);
+          }
+
+          CE(!kphp_error(next_token_type == tok_function, "Expected `function` or variable name after access modifier"));
+          next_cur();
+          return get_function(false, phpdoc_token, access_type);
+        }
         std::string error_msg = "Expected `function` or variable name after keyword `static`, but got: " + static_cast<string>(next_token->str_val);
         if (kphp_error(next_token->type() == tok_function || next_token->type() == tok_var_name, error_msg.c_str())) {
           next_cur();
@@ -2069,17 +2125,9 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
     case tok_private: {
       CE (!kphp_error(cur_class, "Access modifier used outside of class"));
       next_cur();
-      TokenType cur_tok = cur == end ? tok_semicolon : (*cur)->type();
-      TokenType next_tok = cur == end || cur + 1 == end ? tok_semicolon : (*(cur + 1))->type();
-      AccessType access_type =
-        cur_tok == tok_static
-        ? (type == tok_public ? access_static_public :
-           type == tok_private ? access_static_private : access_static_protected)
-        : (type == tok_public ? access_public :
-           type == tok_private ? access_private : access_protected);
-      OperationExtra extra_type =
-        type == tok_private ? op_ex_static_private :
-        type == tok_public ? op_ex_static_public : op_ex_static_protected;
+      const TokenType cur_tok = cur == end ? tok_semicolon : (*cur)->type();
+      const TokenType next_tok = cur == end || cur + 1 == end ? tok_semicolon : (*(cur + 1))->type();
+      const AccessType access_type = get_access_type(type, cur_tok);
 
       // не статическая функция (public function ...)
       if (cur_tok == tok_function) {
@@ -2096,32 +2144,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       }
       // статическое свойство (public static $staticVar)
       VertexPtr v = get_statement(phpdoc_token);
-      CE(v);
-      // с учётом переделок, это можно удалить: оно по факту нужно лишь чтобы достать local_name
-      for (auto e : *v) {
-        kphp_assert(e->type() == op_static);
-        e->extra_type = extra_type;
-        VertexAdaptor<op_static> seq = e;
-        for (auto node : seq->args()) {
-          VertexAdaptor<op_var> var;
-          if (node->type() == op_var) {
-            var = node;
-          } else if (node->type() == op_set) {
-            VertexAdaptor<op_set> set_expr = node;
-            var = set_expr->lhs();
-            kphp_error_act (
-              var->type() == op_var,
-              "unexpected expression in 'static'",
-              continue
-            );
-          } else {
-            kphp_error_act (0, "unexpected expression in 'static'", continue);
-          }
-          cur_class->members.add_static_field(e, var->str_val, access_type);
-        }
-      }
-      auto empty = VertexAdaptor<op_empty>::create();
-      return empty;
+      return add_static_member(v, access_type);
     }
     case tok_phpdoc_kphp:
     case tok_phpdoc: {
@@ -2534,7 +2557,7 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
         return;
       }
 
-      Token* phpdoc_token = info.root->get_func_id()->phpdoc_token;
+      Token *phpdoc_token = info.root->get_func_id()->phpdoc_token;
       info.root = func;
       FunctionPtr registered_function = register_function(info, GenTree::cur_class);
       if (registered_function) {

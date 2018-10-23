@@ -8,13 +8,22 @@ class Base {
 
     public static $f1 = 'BaseField1';
     private static $f2 = 'BaseField2';
-    private static $f3 = 'BaseField3';
+    static public $f3 = 'BaseField3';
+    static private $f4 = 'BaseField4';
 
     private static function test1() {
 
     }
 
     protected static function test2() {
+
+    }
+
+    static private function test3() {
+
+    }
+
+    static protected function test4() {
 
     }
 
@@ -33,13 +42,13 @@ class Base {
         echo static::C1."\n";
     }
 
-    public static function const_test3() {
+    static public function const_test3() {
         echo self::C2."\n";
         echo static::C2."\n";
         echo parent::C2."\n";
     }
 
-    public static function const_test4() {
+    static public function const_test4() {
         echo self::C2."\n";
         echo static::C2."\n";
     }

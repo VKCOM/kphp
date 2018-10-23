@@ -153,13 +153,15 @@ private:
                                                          const std::string &class_context,
                                                          std::string &function_name);
 
- /**
-  * @param full_name full method name including namespace and context encoded
-  * @return `method_name` if `Namespace$ClassName$$method_name$$Context` was passed
-  */
+  /**
+   * @param full_name full method name including namespace and context encoded
+   * @return `method_name` if `Namespace$ClassName$$method_name$$Context` was passed
+   */
   static std::string get_real_name_from_full_method_name(const std::string &full_name);
 
   bool in_namespace() const;
+
+  VertexPtr add_static_member(VertexPtr v, AccessType access_type);
 
 public:
   int line_num;
