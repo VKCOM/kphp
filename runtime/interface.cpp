@@ -484,6 +484,7 @@ void finish(int exit_code) {
     finished = true;
     for (int i = 0; i < shutdown_functions_count; i++) {
       shutdown_functions[i]();
+      shutdown_functions[i] = nullptr;
     }
   }
 
