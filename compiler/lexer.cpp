@@ -745,7 +745,7 @@ Helper<TokenLexer> *TokenLexerStringExpr::gen_helper() {
 
   h->add_rule("\'", Singleton<TokenLexerSimpleString>::instance());
   h->add_rule("\"", Singleton<TokenLexerString>::instance());
-  h->add_rule("[a-zA-Z_$]", Singleton<TokenLexerName>::instance());
+  h->add_rule("[a-zA-Z_$\\]", Singleton<TokenLexerName>::instance());
 
   //TODO: double (?)
   h->add_rule("[0-9]|.[0-9]", Singleton<TokenLexerNum>::instance());
