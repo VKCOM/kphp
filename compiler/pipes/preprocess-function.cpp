@@ -39,6 +39,123 @@ public:
   }
 
 private:
+  void instantiate_lambda(VertexAdaptor<op_func_call> call, VertexPtr &call_arg) {
+    if (ClassPtr lambda_class = FunctionData::is_lambda(call_arg)) {
+      //if (lambda_class->get_invoke_function_for_extern_function(call, current_function)) {
+      //  return;
+      //}
+
+      FunctionPtr instance_of_template_invoke;
+      std::string invoke_name;
+
+      if (auto template_of_invoke_method = lambda_class->get_template_of_invoke_function()) {
+        std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
+        invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call->get_func_id());
+
+        G->operate_on_function_locking(invoke_name, [&](FunctionPtr &f_inst) {
+          if (!f_inst) {
+            f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
+            if (f_inst) {
+              f_inst->is_required = true;
+              f_inst->kphp_required = true;
+              instance_of_function_template_stream << f_inst;
+              AutoLocker<Lockable *> locker(&(*lambda_class));
+              lambda_class->members.add_instance_method(f_inst, access_public);
+            }
+          }
+
+          if (f_inst) {
+            instance_of_template_invoke = f_inst;
+            f_inst->is_callback = true;
+          }
+        });
+      } else {
+        kphp_assert(lambda_class->members.has_any_instance_method());
+        instance_of_template_invoke = lambda_class->members.get_instance_method("__invoke")->function;
+        invoke_name = instance_of_template_invoke->name;
+      }
+
+      if (instance_of_template_invoke) {
+        VertexAdaptor<op_func_ptr> new_call_arg = VertexAdaptor<op_func_ptr>::create(call_arg);
+        new_call_arg->set_func_id(instance_of_template_invoke);
+        new_call_arg->set_string(invoke_name);
+        call_arg = new_call_arg;
+      }
+    }
+  }
+
+  VertexAdaptor<op_func_call> set_func_id_for_template(FunctionPtr func, VertexAdaptor<op_func_call> call) {
+    kphp_assert(func->is_template);
+
+    std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
+    std::string name_of_function_instance = func->name;
+
+    VertexRange func_args = func->get_params();
+
+    for (int i = 0; i < func_args.size(); ++i) {
+      if (auto param = func_args[i].as<op_func_param>()) {
+        if (param->template_type_id >= 0) {
+          ClassPtr class_corresponding_to_parameter{nullptr};
+          VertexPtr call_arg = i < call->args().size() ? call->args()[i] : param->default_value();
+
+          AssumType assum = infer_class_of_expr(stage::get_function(), call_arg, class_corresponding_to_parameter);
+
+          kphp_assert(assum != assum_unknown);
+          auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
+          if (!insertion_result.second) {
+            const std::pair <AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
+            auto wrap_if_array = [](const std::string &s, AssumType assum) {
+              return assum == assum_instance_array ? s + "[]" : s;
+            };
+
+            std::string error_msg =
+              "argument $" + param->var()->get_string() + " of " + func->name +
+              " has a type: `" + wrap_if_array(class_corresponding_to_parameter->name, assum) +
+              "` but expected type: `" + wrap_if_array(previous_assum_and_class.second->name, previous_assum_and_class.first) + "`";
+
+            kphp_error_act(previous_assum_and_class.second->name == class_corresponding_to_parameter->name, error_msg.c_str(), return {});
+            kphp_error_act(previous_assum_and_class.first == assum, error_msg.c_str(), return {});
+          }
+
+          if (assum == assum_instance_array) {
+            name_of_function_instance += "$arr";
+          }
+
+          if (assum != assum_not_instance) {
+            name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
+          } else {
+            name_of_function_instance += "$" + std::to_string(i) + "not_instance";
+          }
+        }
+      }
+    }
+
+    call->set_string(name_of_function_instance);
+    call->set_func_id({});
+
+    G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
+      if (!f_inst) {
+        f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
+        if (f_inst) {
+          f_inst->is_required = true;
+          f_inst->kphp_required = true;
+          ClassPtr klass = f_inst->class_id;
+          if (klass) {
+            AutoLocker<Lockable *> locker(&(*klass));
+            klass->members.add_instance_method(f_inst, f_inst->access_type);
+          }
+
+          instance_of_function_template_stream << f_inst;
+        }
+      }
+
+      if (f_inst) {
+        set_func_id(call, f_inst);
+      }
+    });
+
+    return call;
+  }
 
   VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
     kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
@@ -96,8 +213,6 @@ private:
       return new_call;
     }
 
-    std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
-    std::string name_of_function_instance = func->name;
     for (int i = 0; i < std::min(call_args_n, func_args_n); i++) {
       switch (func_args[i]->type()) {
         case op_func_param: {
@@ -115,68 +230,12 @@ private:
             call_args[i] = GenTree::conv_to(call_args[i], param->type_help, param->var()->ref_flag);
           }
 
-          if (param->template_type_id >= 0) {
-            kphp_assert(func->is_template);
-            ClassPtr class_corresponding_to_parameter;
-            AssumType assum = infer_class_of_expr(stage::get_function(), call_args[i], class_corresponding_to_parameter);
-
-            kphp_assert(assum != assum_unknown);
-            auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
-            if (!insertion_result.second) {
-              const std::pair<AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
-              auto wrap_if_array = [](const std::string &s, AssumType assum) {
-                return assum == assum_instance_array ? s + "[]" : s;
-              };
-
-              std::string error_msg =
-                "argument $" + param->var()->get_string() + " of " + func->name +
-                " has a type: `" + wrap_if_array(class_corresponding_to_parameter->name, assum) +
-                "` but expected type: `" + wrap_if_array(previous_assum_and_class.second->name, previous_assum_and_class.first) + "`";
-
-              kphp_error_act(previous_assum_and_class.second->name == class_corresponding_to_parameter->name, error_msg.c_str(), return {});
-              kphp_error_act(previous_assum_and_class.first == assum, error_msg.c_str(), return {});
-            }
-
-            if (assum == assum_instance_array) {
-              name_of_function_instance += "$arr";
-            }
-
-            if (assum != assum_not_instance) {
-              name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
-            } else {
-              name_of_function_instance += "$" + std::to_string(i) + "not_instance";
-            }
-          }
           break;
         }
 
         case op_func_param_callback: {
           call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
-          if (ClassPtr lambda_class = FunctionData::is_lambda(call_args[i])) {
-            auto template_of_invoke_method = lambda_class->get_invoke_function_for_extern_function(call->get_func_id());
-
-            if (!template_of_invoke_method) {
-              template_of_invoke_method = lambda_class->get_template_of_invoke_function();
-              std::string invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call->get_func_id());
-
-              G->operate_on_function_locking(invoke_name, [&](FunctionPtr &f_inst) {
-                if (!f_inst) {
-                  f_inst = FunctionData::generate_instance_of_template_function({}, template_of_invoke_method, invoke_name);
-                  if (f_inst) {
-                    f_inst->is_required = true;
-                    f_inst->kphp_required = true;
-                    instance_of_function_template_stream << f_inst;
-                    AutoLocker<Lockable *> locker(&(*lambda_class));
-                    lambda_class->members.add_instance_method(f_inst, access_public);
-                  }
-                }
-
-                if (f_inst) {
-                  f_inst->is_callback = true;
-                }
-              });
-            }
-          }
+          instantiate_lambda(call.as<op_func_call>(), call_args[i]);
           break;
         }
 
@@ -187,29 +246,7 @@ private:
     }
 
     if (func->is_template) {
-      call->set_string(name_of_function_instance);
-      call->set_func_id({});
-
-      G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
-        if (!f_inst) {
-          f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
-          if (f_inst) {
-            f_inst->is_required = true;
-            f_inst->kphp_required = true;
-            ClassPtr klass = f_inst->class_id;
-            if (klass) {
-              AutoLocker<Lockable *> locker(&(*klass));
-              klass->members.add_instance_method(f_inst, f_inst->access_type);
-            }
-
-            instance_of_function_template_stream << f_inst;
-          }
-        }
-
-        if (f_inst) {
-          set_func_id(call, f_inst);
-        }
-      });
+      call = set_func_id_for_template(func, call.as<op_func_call>());
     }
 
     return call;
