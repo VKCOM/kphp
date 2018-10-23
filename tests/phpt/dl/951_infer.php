@@ -265,7 +265,7 @@ function test1() {
 
 
 
-  $array /*:= array <var>*/;
+  $array /*:= array <int>*/;
  
 
   1 + 1 /*:= int*/;
