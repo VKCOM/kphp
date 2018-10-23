@@ -39,12 +39,6 @@ public:
           if (v->type() == op_var) {
             VarPtr var = v->get_var_id();
             desc += "variable [$" + var->name + "]" + index_depth;
-
-            FunctionPtr holder_func = var->holder_func;
-            if (holder_func && holder_func->is_required && holder_func->kphp_required) {
-              desc += dl_pstr("\nMaybe because `@kphp-required` is set for function `%s` but it has never been used", holder_func->name.c_str());
-            }
-
           } else if (v->type() == op_func_call) {
             desc += "function [" + v.as<op_func_call>()->get_func_id()->name + "]" + index_depth;
           } else if (v->type() == op_constructor_call) {

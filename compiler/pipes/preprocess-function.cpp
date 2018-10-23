@@ -52,6 +52,10 @@ private:
     call->set_func_id(func);
     if (call->type() == op_func_ptr) {
       func->is_callback = true;
+      if (!func->is_required) {
+        std::string err = "function: `" + func->name + "` need tag @kphp-required, because used only as string passed to internal functions";
+        kphp_error_act(false, err.c_str(), return call);
+      }
       return call;
     }
 
@@ -232,7 +236,6 @@ private:
     FunctionPtr f = G->get_function(name);
 
     if (likely(!!f)) {
-      f->is_required = true;
       call = set_func_id(call, f);
     } else {
       print_why_cant_set_func_id_error(call, name);
