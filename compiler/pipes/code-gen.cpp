@@ -720,9 +720,7 @@ inline IncludeClass::IncludeClass(const TypeData *type) {
 
 inline void IncludeClass::compile(CodeGenerator &W) const {
   for (auto klass: klasses) {
-    std::string class_h_filename = "cl/" + klass->header_name;
-    W.get_writer().add_include(class_h_filename);
-    W << "#include \"" << class_h_filename << "\"" << NL;
+    W << Include("cl/" + klass->header_name);
   }
 }
 

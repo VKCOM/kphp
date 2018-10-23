@@ -437,7 +437,9 @@ bool TypeData::has_class_type_inside() const {
 
 void TypeData::get_all_class_types_inside(vector<ClassPtr> &out) const {
   if (class_type()) {
-    out.push_back(class_type());
+    if (std::find(out.begin(), out.end(), class_type()) == out.end()) {
+      out.push_back(class_type());
+    }
   }
   if (anykey_value != nullptr) {
     anykey_value->get_all_class_types_inside(out);
