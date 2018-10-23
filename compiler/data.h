@@ -227,7 +227,7 @@ public:
   static ClassPtr is_lambda(VertexPtr v);
 
   static const std::string &get_lambda_namespace() {
-    static std::string lambda_namespace("LAMBDA$NAMESPACE");
+    static std::string lambda_namespace("$L");
     return lambda_namespace;
   }
 

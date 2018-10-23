@@ -44,7 +44,7 @@ string gen_anonymous_function_name() {
   static volatile int x = 0;
   static map<unsigned long long, int> name_map;
 
-  return gen_unique_name_inside_file("anonymous_function", x, name_map);
+  return gen_unique_name_inside_file("anon", x, name_map);
 }
 
 
