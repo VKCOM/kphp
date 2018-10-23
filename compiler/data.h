@@ -111,8 +111,11 @@ public:
 
   ClassData();
 
-  std::string get_name_of_invoke_function_for_extern(FunctionPtr extern_function) const;
-  FunctionPtr get_invoke_function_for_extern_function(FunctionPtr extern_function) const;
+  std::string get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
+                                                     FunctionPtr function_context,
+                                                     std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr = nullptr,
+                                                     FunctionPtr *template_of_invoke_method = nullptr) const;
+  FunctionPtr get_invoke_function_for_extern_function(VertexAdaptor<op_func_call> extern_function_call, FunctionPtr function_context) const;
   FunctionPtr get_template_of_invoke_function() const;
 
   void set_name_and_src_name(const string &name);

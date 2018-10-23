@@ -133,7 +133,7 @@ public:
          * therefore no one know that outside function depends on LAMBDA$$__invoke method
          * this dependency need for generating #include directive for this method
          */
-        data.dep.push_back(lambda_class->get_invoke_function_for_extern_function(local->extern_func_call->get_func_id()));
+        data.dep.push_back(lambda_class->get_invoke_function_for_extern_function(local->extern_func_call, FunctionPtr{}));
       }
     }
 

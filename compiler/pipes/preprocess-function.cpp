@@ -50,7 +50,7 @@ private:
 
       if (auto template_of_invoke_method = lambda_class->get_template_of_invoke_function()) {
         std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
-        invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call->get_func_id());
+        invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, &template_of_invoke_method);
 
         G->operate_on_function_locking(invoke_name, [&](FunctionPtr &f_inst) {
           if (!f_inst) {
