@@ -2887,11 +2887,11 @@ void prepare_full_stats(void) {
   int s_left = 65530;
 
   int uptime = get_uptime();
-  worker_acc_stats.tot_idle_time = tot_idle_time;
+  worker_acc_stats.tot_idle_time = epoll_total_idle_time();
   worker_acc_stats.tot_idle_percent =
-    uptime > 0 ? tot_idle_time / uptime * 100 : 0;
-  worker_acc_stats.a_idle_percent = a_idle_quotient > 0 ?
-                                    a_idle_time / a_idle_quotient * 100 : 0;
+    uptime > 0 ? epoll_total_idle_time() / uptime * 100 : 0;
+  worker_acc_stats.a_idle_percent = epoll_average_idle_quotient() > 0 ?
+                                    epoll_average_idle_time() / epoll_average_idle_quotient() * 100 : 0;
   size_t acc_stats_size = sizeof(worker_acc_stats);
   assert (s_left > acc_stats_size);
   memcpy(s, &worker_acc_stats, acc_stats_size);

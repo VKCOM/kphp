@@ -1056,9 +1056,7 @@ int run_worker(void) {
     //The same epoll_fd will be used by master
     //Solution: close epoll_fd first
     //Problems: "epoll_ctl(): Invalid argument" is printed to stderr
-    close(epoll_fd);
-    epoll_fd = 0;
-
+    close_epoll();
     init_epoll();
 
     //verbosity = 0;
