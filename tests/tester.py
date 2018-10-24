@@ -648,3 +648,6 @@ def check_minimum_required_python_version():
 if __name__ == "__main__":
     check_minimum_required_python_version()
     main()
+
+    if dead:
+        sys.exit(1)
