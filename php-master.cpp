@@ -970,7 +970,7 @@ struct connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extr
   event_t *ev;
   struct connection *c;
 
-  ev = Events + pipe_fd;
+  ev = epoll_fd_event(pipe_fd);
   c = Connections + pipe_fd;
   memset(c, 0, sizeof(struct connection));
   c->fd = pipe_fd;

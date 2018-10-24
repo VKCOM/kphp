@@ -991,7 +991,7 @@ void php_worker_wait(php_worker *worker, int timeout_ms) {
   if (timeout_ms == 0) {
     int new_net_events_cnt = epoll_fetch_events(0);
     //TODO: maybe we have to wait for timers too
-    if (ev_heap_size > 0) {
+    if (epoll_event_heap_size() > 0) {
       vkprintf (2, "paused for some nonblocking net activity [req_id = %016llx]\n", worker->req_id);
       php_worker_wakeup(worker);
       return;
