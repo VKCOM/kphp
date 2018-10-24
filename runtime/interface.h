@@ -35,7 +35,7 @@ void f$setcookie(const string &name, const string &value, int expire = 0, const 
 
 void f$setrawcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$register_shutdown_function(shutdown_function_type callback);
+void f$register_shutdown_function(const shutdown_function_type &callback);
 
 void f$fastcgi_finish_request(int exit_code = 0);
 

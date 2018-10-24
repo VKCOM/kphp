@@ -399,8 +399,10 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
 }
 
 constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
-shutdown_function_type shutdown_functions[MAX_SHUTDOWN_FUNCTIONS];
+// i don't want destructors of this array to be called
 int shutdown_functions_count;
+char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
+shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
 static bool finished;
 static bool flushed;
 
@@ -471,12 +473,13 @@ void f$fastcgi_finish_request(int exit_code) {
   coub->clean();
 }
 
-void f$register_shutdown_function(shutdown_function_type f) {
+void f$register_shutdown_function(const shutdown_function_type &f) {
   if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
     return;
   }
-  shutdown_functions[shutdown_functions_count++] = std::move(f);
+  // I really need this, because this memory can contain random trash, if previouse script failed
+  new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
 
 void finish(int exit_code) {
@@ -484,7 +487,6 @@ void finish(int exit_code) {
     finished = true;
     for (int i = 0; i < shutdown_functions_count; i++) {
       shutdown_functions[i]();
-      shutdown_functions[i] = nullptr;
     }
   }
 

@@ -501,7 +501,7 @@ array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
 }
 
 template<class R, class T, class CallbackT, class InitialT>
-R f$array_reduce(const array<T> &a, const CallbackT callback, const InitialT initial) {
+R f$array_reduce(const array<T> &a, const CallbackT &callback, const InitialT initial) {
   R result = initial;
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
     result = callback(result, it.get_value());
