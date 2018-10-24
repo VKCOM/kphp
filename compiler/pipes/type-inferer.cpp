@@ -241,6 +241,22 @@ private:
 
     kphp_assert(callback_function);
 
+    // not now
+    // // restriction on return type
+    // bool is_any = false;
+    // if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
+    //   if (auto son = rule->expr().try_as<op_type_rule>()) {
+    //     is_any = son->type_help == tp_Any;
+    //   }
+    // }
+
+    // if (!is_any) {
+    //   auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
+    //   fake_func_call->type_rule = callback_param->type_rule;
+    //   fake_func_call->set_func_id(call_function);
+    //   create_less(as_rvalue(callback_function, -1), fake_func_call);
+    // }
+
     VertexRange callback_args = get_function_params(callback_param);
     for (int i = 0; i < callback_args.size(); ++i) {
       VertexAdaptor<op_func_param> callback_ith_arg = callback_args[i];
