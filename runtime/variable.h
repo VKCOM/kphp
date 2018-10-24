@@ -224,7 +224,6 @@ public:
   inline friend bool operator<(const var &lhs, const var &rhs);
   inline friend bool operator>(const var &lhs, const var &rhs);
   inline friend bool equals(const var &lhs, const var &rhs);
-  inline friend bool not_equals(const var &lhs, const var &rhs);
 
   inline friend bool eq2(bool lhs, const var &rhs);
   inline friend bool eq2(int lhs, const var &rhs);
@@ -303,7 +302,6 @@ inline bool operator>=(const var &lhs, const var &rhs);
 inline bool operator<(const var &lhs, const var &rhs);
 inline bool operator>(const var &lhs, const var &rhs);
 inline bool equals(const var &lhs, const var &rhs);
-inline bool not_equals(const var &lhs, const var &rhs);
 
 
 inline void swap(var &lhs, var &rhs);
@@ -543,9 +541,6 @@ inline bool equals(const var &lhs, const class_instance<T> &rhs);
 template<class T>
 inline bool equals(bool lhs, const class_instance<T> &rhs);
 
-template<class T1, class T2>
-inline bool not_equals(const T1 &lhs, const T2 &rhs);
-
 template<class T>
 bool eq2(const var &v, const OrFalse<T> &value);
 
@@ -557,10 +552,4 @@ bool equals(const OrFalse<T> &value, const var &v);
 
 template<class T>
 bool equals(const var &v, const OrFalse<T> &value);
-
-template<class T>
-bool not_equals(const OrFalse<T> &value, const var &v);
-
-template<class T>
-bool not_equals(const var &v, const OrFalse<T> &value);
 

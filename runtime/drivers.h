@@ -246,8 +246,6 @@ public:
   friend bool eq2(bool value, const MyMemcache &my_mc);
   friend bool equals(bool value, const MyMemcache &my_mc);
   friend bool equals(const MyMemcache &my_mc, bool value);
-  friend bool not_equals(bool value, const MyMemcache &my_mc);
-  friend bool not_equals(const MyMemcache &my_mc, bool value);
 
   MyMemcache &operator=(bool value);
   MyMemcache(bool value);
@@ -294,8 +292,6 @@ bool eq2(const MyMemcache &my_mc, bool value);
 bool eq2(bool value, const MyMemcache &my_mc);
 bool equals(bool value, const MyMemcache &my_mc);
 bool equals(const MyMemcache &my_mc, bool value);
-bool not_equals(bool value, const MyMemcache &my_mc);
-bool not_equals(const MyMemcache &my_mc, bool value);
 
 array<string> f$mcGetStats(const MyMemcache &MC);
 
@@ -396,8 +392,6 @@ public:
   friend bool eq2(bool value, const MyDB &my_db);
   friend bool equals(bool value, const MyDB &my_db);
   friend bool equals(const MyDB &my_db, bool value);
-  friend bool not_equals(bool value, const MyDB &my_db);
-  friend bool not_equals(const MyDB &my_db, bool value);
 
   MyDB &operator=(bool value);
   explicit MyDB(bool value);
@@ -422,8 +416,6 @@ bool eq2(const MyDB &my_db, bool value);
 bool eq2(bool value, const MyDB &my_db);
 bool equals(bool value, const MyDB &my_db);
 bool equals(const MyDB &my_db, bool value);
-bool not_equals(bool value, const MyDB &my_db);
-bool not_equals(const MyDB &my_db, bool value);
 
 
 string f$mysqli_error(const MyDB &db);

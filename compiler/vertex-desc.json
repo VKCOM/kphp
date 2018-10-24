@@ -858,7 +858,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "not_equals"
+      "str": "!equals"
     }
   },
   {

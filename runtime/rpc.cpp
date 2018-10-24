@@ -442,14 +442,6 @@ bool equals(const rpc_connection &my_rpc, bool value) {
   return equals(my_rpc.bool_value, value);
 }
 
-bool not_equals(bool value, const rpc_connection &my_rpc) {
-  return not_equals(value, my_rpc.bool_value);
-}
-
-bool not_equals(const rpc_connection &my_rpc, bool value) {
-  return not_equals(my_rpc.bool_value, value);
-}
-
 
 static string_buffer data_buf;
 static const int data_buf_header_size = 2 * sizeof(long long) + 4 * sizeof(int);

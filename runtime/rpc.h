@@ -88,10 +88,6 @@ bool equals(bool value, const rpc_connection &my_rpc);
 
 bool equals(const rpc_connection &my_rpc, bool value);
 
-bool not_equals(bool value, const rpc_connection &my_rpc);
-
-bool not_equals(const rpc_connection &my_rpc, bool value);
-
 
 void f$store_gzip_pack_threshold(int pack_threshold_bytes);
 

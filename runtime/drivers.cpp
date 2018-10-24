@@ -1438,14 +1438,6 @@ bool equals(const MyMemcache &my_mc, bool value) {
   return equals(my_mc.bool_value, value);
 }
 
-bool not_equals(bool value, const MyMemcache &my_mc) {
-  return not_equals(value, my_mc.bool_value);
-}
-
-bool not_equals(const MyMemcache &my_mc, bool value) {
-  return not_equals(my_mc.bool_value, value);
-}
-
 
 MyMemcache &MyMemcache::operator=(bool value) {
   bool_value = value;
@@ -2145,14 +2137,6 @@ bool equals(bool value, const MyDB &my_db) {
 
 bool equals(const MyDB &my_db, bool value) {
   return equals(my_db.bool_value, value);
-}
-
-bool not_equals(bool value, const MyDB &my_db) {
-  return not_equals(value, my_db.bool_value);
-}
-
-bool not_equals(const MyDB &my_db, bool value) {
-  return not_equals(my_db.bool_value, value);
 }
 
 

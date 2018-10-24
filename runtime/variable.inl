@@ -2565,10 +2565,6 @@ bool equals(const var &lhs, const var &rhs) {
   }
 }
 
-bool not_equals(const var &lhs, const var &rhs) {
-  return !equals(lhs, rhs);
-}
-
 
 void swap(var &lhs, var &rhs) {
   lhs.swap(rhs);
@@ -3255,11 +3251,6 @@ bool equals(bool lhs, const class_instance<T> &rhs) {
   return equals(rhs, lhs);
 }
 
-template<class T1, class T2>
-bool not_equals(const T1 &lhs, const T2 &rhs) {
-  return !equals(lhs, rhs);
-}
-
 
 template<class T>
 bool eq2(const var &v, const OrFalse<T> &value) {
@@ -3279,16 +3270,6 @@ bool equals(const OrFalse<T> &value, const var &v) {
 template<class T>
 bool equals(const var &v, const OrFalse<T> &value) {
   return likely (value.bool_value) ? equals(value.value, v) : equals(false, v);
-}
-
-template<class T>
-bool not_equals(const OrFalse<T> &value, const var &v) {
-  return likely (value.bool_value) ? not_equals(value.value, v) : not_equals(false, v);
-}
-
-template<class T>
-bool not_equals(const var &v, const OrFalse<T> &value) {
-  return likely (value.bool_value) ? not_equals(value.value, v) : not_equals(false, v);
 }
 
 template<class T>

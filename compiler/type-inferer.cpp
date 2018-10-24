@@ -274,14 +274,14 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
   if (isset_flags & ifi_isset) {
     return ptp != tp_var;
   }
-  res |= (ptp == tp_array) && (isset_flags & ifi_is_array);
+  res |= (ptp == tp_array) &&
+         (isset_flags & (ifi_is_array));
   res |= (ptp == tp_bool || tp->use_or_false()) &&
          (isset_flags & (ifi_is_bool | ifi_is_scalar));
   res |= (ptp == tp_int) &&
          (isset_flags & (ifi_is_scalar | ifi_is_numeric | ifi_is_integer | ifi_is_long));
   res |= (ptp == tp_float) &&
-         (isset_flags & (ifi_is_scalar | ifi_is_numeric | ifi_is_float |
-                         ifi_is_double | ifi_is_real));
+         (isset_flags & (ifi_is_scalar | ifi_is_numeric | ifi_is_float | ifi_is_double | ifi_is_real));
   res |= (ptp == tp_string) &&
          (isset_flags & (ifi_is_scalar | ifi_is_string));
   return res;

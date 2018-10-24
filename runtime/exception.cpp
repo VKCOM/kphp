@@ -159,14 +159,6 @@ bool equals(const Exception &my_exception, bool value) {
   return equals(my_exception.bool_value, value);
 }
 
-bool not_equals(bool value, const Exception &my_exception) {
-  return not_equals(value, my_exception.bool_value);
-}
-
-bool not_equals(const Exception &my_exception, bool value) {
-  return not_equals(my_exception.bool_value, value);
-}
-
 
 string f$exception_getTraceAsString(const Exception &e) {
   static_SB.clean();

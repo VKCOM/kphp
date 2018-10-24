@@ -28,7 +28,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_eq3) {
     const TypeData *type_left = tinf::get_type(VertexAdaptor<meta_op_binary_op>(vertex)->lhs());
     const TypeData *type_right = tinf::get_type(VertexAdaptor<meta_op_binary_op>(vertex)->rhs());
-    if (type_left->ptype() == tp_float || type_right->ptype() == tp_float) {
+    if ((type_left->ptype() == tp_float && !type_left->or_false_flag()) ||
+        (type_right->ptype() == tp_float && !type_right->or_false_flag())) {
       kphp_warning(dl_pstr("Using === with float operand"));
     }
     if (!can_be_same_type(type_left, type_right)) {

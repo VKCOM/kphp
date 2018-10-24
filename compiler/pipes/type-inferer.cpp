@@ -410,13 +410,12 @@ private:
       if (cur->type() == op_var && cur->get_var_id()->type() == VarData::var_const_t) {
         continue;
       }
-      if (cur->type() == op_var || (ifi_tp > ifi_isset && cur->type() == op_index)) {
-        if (ifi_tp != ifi_is_object) {      // чтобы is_object() не обобщал класс до var
-          create_set(cur, tp_var);
-        }
+
+      if (cur->type() == op_var && (ifi_tp == ifi_unset || ifi_tp == ifi_isset)) {
+        create_set(cur, tp_var);
       }
 
-      if (cur->type() == op_var && ifi_tp != ifi_unset) {
+      if ((cur->type() == op_var && ifi_tp != ifi_unset) || (ifi_tp > ifi_isset && cur->type() == op_index)) {
         tinf::Node *node = get_tinf_node(cur);
         if (node->isset_flags == 0) {
           create_isset_check(node);

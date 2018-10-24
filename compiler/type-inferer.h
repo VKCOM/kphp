@@ -43,9 +43,31 @@ inline is_func_id_t get_ifi_id_(VertexPtr v) {
   if (v->type() == op_isset) {
     return ifi_isset;
   }
+  if (v->type() == op_eq3 || v->type() == op_neq3) {
+    VertexPtr b = v.as<meta_op_binary_>()->rhs();
+    if (b->type() == op_var || b->type() == op_index) {
+      b = v.as<meta_op_binary_>()->lhs();
+    }
+
+    if (b->type() == op_false) {
+      return ifi_is_bool;
+    }
+    if (b->type() == op_string && b->get_string() == "") {
+      return ifi_is_string;
+    }
+    if (b->type() == op_int_const && b->get_string() == "0") {
+      return ifi_is_integer;
+    }
+    if (b->type() == op_float_const) {
+      return ifi_is_float;
+    }
+    if (b->type() == op_array && b->empty()) {
+      return ifi_is_array;
+    }
+  }
   if (v->type() == op_func_call) {
     const string &name = v->get_func_id()->name;
-    if (name[0] == 'i' && name[1] == 's') {
+    if (name.size() > 2 && name[0] == 'i' && name[1] == 's') {
       if (name == "is_bool") {
         return ifi_is_bool;
       }

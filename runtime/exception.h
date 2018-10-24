@@ -73,9 +73,5 @@ bool equals(bool value, const Exception &my_exception);
 
 bool equals(const Exception &my_exception, bool value);
 
-bool not_equals(bool value, const Exception &my_exception);
-
-bool not_equals(const Exception &my_exception, bool value);
-
 
 void exception_init_static();
