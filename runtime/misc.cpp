@@ -485,9 +485,6 @@ OrFalse<array<var>> f$posix_getpwuid(int uid) {
 }
 
 
-#define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
-#define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
-
 static inline void do_serialize(bool b) {
   static_SB.reserve(4);
   static_SB.append_char('b');
@@ -536,13 +533,12 @@ void do_serialize(const var &v) {
     case var::FLOAT_TYPE:
       return do_serialize(v.f);
     case var::STRING_TYPE:
-      return do_serialize(*AS_CONST_STRING(v.s));
+      return do_serialize(v.s);
     case var::ARRAY_TYPE: {
-      const array<var> &a = *AS_CONST_ARRAY(v.a);
       static_SB.append("a:", 2);
-      static_SB << a.count();
+      static_SB << v.a.count();
       static_SB.append(":{", 2);
-      for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+      for (array<var>::const_iterator p = v.a.begin(); p != v.a.end(); ++p) {
         const array<var>::key_type &key = p.get_key();
         if (array<var>::is_int_key(key)) {
           do_serialize(key.to_int());
@@ -969,24 +965,23 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
       return true;
     case var::STRING_TYPE:
       if (simple_encode) {
-        return do_json_encode_string_vkext(AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size());
+        return do_json_encode_string_vkext(v.s.c_str(), v.s.size());
       }
 
-      return do_json_encode_string_php(AS_CONST_STRING(v.s)->c_str(), AS_CONST_STRING(v.s)->size(), options);
+      return do_json_encode_string_php(v.s.c_str(), v.s.size(), options);
     case var::ARRAY_TYPE: {
-      const array<var> &a = *AS_CONST_ARRAY(v.a);
-      bool is_vector = a.is_vector();
-      bool force_object = (bool)(JSON_FORCE_OBJECT & options);
-      if (!force_object && !is_vector && a.size().string_size == 0) {
+      bool is_vector = v.a.is_vector();
+      const bool force_object = (bool)(JSON_FORCE_OBJECT & options);
+      if (!force_object && !is_vector && v.a.size().string_size == 0) {
         int n = 0;
-        for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+        for (array<var>::const_iterator p = v.a.begin(); p != v.a.end(); ++p) {
           if (p.get_key().to_int() != n) {
             break;
           }
           n++;
         }
-        if (n == a.count()) {
-          if (a.get_next_key() == a.count()) {
+        if (n == v.a.count()) {
+          if (v.a.get_next_key() == v.a.count()) {
             is_vector = true;
           } else {
             php_warning("Corner case in json convertion, [] could be easy transformed to {}");
@@ -997,8 +992,8 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
 
       static_SB << "{["[is_vector];
 
-      for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
-        if (p != a.begin()) {
+      for (array<var>::const_iterator p = v.a.begin(); p != v.a.end(); ++p) {
+        if (p != v.a.begin()) {
           static_SB << ',';
         }
 
@@ -1344,16 +1339,15 @@ void do_print_r(const var &v, int depth) {
       *coub << v.f;
       break;
     case var::STRING_TYPE:
-      *coub << *AS_CONST_STRING(v.s);
+      *coub << v.s;
       break;
     case var::ARRAY_TYPE: {
-      const array<var> *a = AS_CONST_ARRAY(v.a);
       *coub << "Array\n";
 
       string shift(depth << 3, ' ');
       *coub << shift << "(\n";
 
-      for (array<var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+      for (array<var>::const_iterator it = v.a.begin(); it != v.a.end(); ++it) {
         *coub << shift << "    [" << it.get_key() << "] => ";
         do_print_r(it.get_value(), depth + 1);
         *coub << '\n';
@@ -1390,14 +1384,12 @@ void do_var_dump(const var &v, int depth) {
       *coub << shift << "float(" << v.f << ')';
       break;
     case var::STRING_TYPE:
-      *coub << shift << "string(" << (int)AS_CONST_STRING(v.s)->size() << ") \"" << *AS_CONST_STRING(v.s) << '"';
+      *coub << shift << "string(" << (int)v.s.size() << ") \"" << v.s << '"';
       break;
     case var::ARRAY_TYPE: {
-      const array<var> *a = AS_CONST_ARRAY(v.a);
+      *coub << shift << (0 && v.a.is_vector() ? "vector(" : "array(") << v.a.count() << ") {\n";
 
-      *coub << shift << (0 && a->is_vector() ? "vector(" : "array(") << a->count() << ") {\n";
-
-      for (array<var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+      for (array<var>::const_iterator it = v.a.begin(); it != v.a.end(); ++it) {
         *coub << shift << "  [";
         if (array<var>::is_int_key(it.get_key())) {
           *coub << it.get_key();
@@ -1457,16 +1449,14 @@ void do_var_export(const var &v, int depth, char endc) {
       break;
     case var::STRING_TYPE:
       *coub << shift << '\'';
-      var_export_escaped_string(*AS_CONST_STRING(v.s));
+      var_export_escaped_string(v.s);
       *coub << '\'';
       break;
     case var::ARRAY_TYPE: {
-      const array<var> *a = AS_CONST_ARRAY(v.a);
-
-      bool is_vector = a->is_vector();
+      const bool is_vector = v.a.is_vector();
       *coub << shift << "array(\n";
 
-      for (array<var>::const_iterator it = a->begin(); it != a->end(); ++it) {
+      for (array<var>::const_iterator it = v.a.begin(); it != v.a.end(); ++it) {
         if (!is_vector) {
           *coub << shift;
           if (array<var>::is_int_key(it.get_key())) {
@@ -1499,9 +1489,6 @@ void do_var_export(const var &v, int depth, char endc) {
   *coub << '\n';
 }
 
-
-#undef AS_CONST_STRING
-#undef AS_CONST_ARRAY
 
 string f$print_r(const var &v, bool buffered) {
   if (buffered) {

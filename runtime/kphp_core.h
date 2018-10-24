@@ -14,21 +14,11 @@ using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<
 #include "string_buffer.h"
 #include "profiler.h"
 
-#define AS_STRING(s) (reinterpret_cast <string *> (&s))
-#define AS_CONST_STRING(s) (reinterpret_cast <const string *> (&s))
-#define AS_ARRAY(a) (reinterpret_cast <array <var> *> (&a))
-#define AS_CONST_ARRAY(a) (reinterpret_cast <const array <var> *> (&a))
-
 #include "string.inl"
 #include "array.inl"
 #include "class_instance.inl"
 #include "variable.inl"
 #include "string_buffer.inl"
-
-#undef AS_STRING
-#undef AS_CONST_STRING
-#undef AS_ARRAY
-#undef AS_CONST_ARRAY
 
 #include "common/type_traits/list_of_types.h"
 

@@ -1277,10 +1277,10 @@ T &array<T>::operator[](const var &v) {
     case var::FLOAT_TYPE:
       return (*this)[(int)v.f];
     case var::STRING_TYPE:
-      return (*this)[*AS_CONST_STRING(v.s)];
+      return (*this)[v.s];
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return (*this)[AS_CONST_ARRAY(v.a)->to_int()];
+      return (*this)[v.a.to_int()];
     default:
       php_assert (0);
       exit(1);
@@ -1458,10 +1458,10 @@ void array<T>::set_value(const var &v, const T &value) {
     case var::FLOAT_TYPE:
       return set_value((int)v.f, value);
     case var::STRING_TYPE:
-      return set_value(*AS_CONST_STRING(v.s), value);
+      return set_value(v.s, value);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return set_value(AS_CONST_ARRAY(v.a)->to_int(), value);
+      return set_value(v.a.to_int(), value);
     default:
       php_assert (0);
       exit(1);
@@ -1624,10 +1624,10 @@ const var array<T>::get_var(const var &v) const {
     case var::FLOAT_TYPE:
       return get_var((int)v.f);
     case var::STRING_TYPE:
-      return get_var(*AS_CONST_STRING(v.s));
+      return get_var(v.s);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return get_var(AS_CONST_ARRAY(v.a)->to_int());
+      return get_var(v.a.to_int());
     default:
       php_assert (0);
       exit(1);
@@ -1667,10 +1667,10 @@ const T array<T>::get_value(const var &v) const {
     case var::FLOAT_TYPE:
       return get_value((int)v.f);
     case var::STRING_TYPE:
-      return get_value(*AS_CONST_STRING(v.s));
+      return get_value(v.s);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return get_value(AS_CONST_ARRAY(v.a)->to_int());
+      return get_value(v.a.to_int());
     default:
       php_assert (0);
       exit(1);
@@ -1739,10 +1739,10 @@ bool array<T>::has_key(const var &v) const {
     case var::FLOAT_TYPE:
       return has_key((int)v.f);
     case var::STRING_TYPE:
-      return has_key(*AS_CONST_STRING(v.s));
+      return has_key(v.s);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return has_key(AS_CONST_ARRAY(v.a)->to_int());
+      return has_key(v.a.to_int());
     default:
       php_assert (0);
       exit(1);
@@ -1810,10 +1810,10 @@ bool array<T>::isset(const var &v) const {
     case var::FLOAT_TYPE:
       return isset((int)v.f);
     case var::STRING_TYPE:
-      return isset(*AS_CONST_STRING(v.s));
+      return isset(v.s);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return isset(AS_CONST_ARRAY(v.a)->to_int());
+      return isset(v.a.to_int());
     default:
       php_assert (0);
       exit(1);
@@ -1900,10 +1900,10 @@ void array<T>::unset(const var &v) {
     case var::FLOAT_TYPE:
       return unset((int)v.f);
     case var::STRING_TYPE:
-      return unset(*AS_CONST_STRING(v.s));
+      return unset(v.s);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return unset(AS_CONST_ARRAY(v.a)->to_int());
+      return unset(v.a.to_int());
     default:
       php_assert (0);
       exit(1);
