@@ -270,10 +270,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string_ref &s, size_t &p
         const string_ref &class_name = extract_classname_from_pos(s, pos);
         pos += class_name.size();
         ClassPtr klass = G->get_class(resolve_uses(current_function, static_cast<string>(class_name), '\\'));
-        if (!klass) {
-          string error_msg = "Could not find class in phpdoc: " + static_cast<string>(s.substr(pos));
-          kphp_error(klass, error_msg.c_str());
-        }
+        kphp_error(klass, dl_pstr("Could not find class in phpdoc: %s\nProbably, this class is used only in phpdoc and never created in reachable code", string(class_name).c_str()));
         return create_type_help_class_vertex(klass);
       }
     }
