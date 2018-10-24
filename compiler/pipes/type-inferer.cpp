@@ -411,7 +411,7 @@ private:
         continue;
       }
 
-      if (cur->type() == op_var && (ifi_tp == ifi_unset || ifi_tp == ifi_isset)) {
+      if (cur->type() == op_var && (ifi_tp == ifi_unset || ifi_tp == ifi_isset || ifi_tp == ifi_is_null)) {
         create_set(cur, tp_var);
       }
 
