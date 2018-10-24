@@ -3,7 +3,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/io.h"
 
-
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
@@ -113,7 +112,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     check_op_func_call(vertex.as<op_func_call>());
   }
 
-  if (G->env().get_warnings_level() >= 1 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
+  if (G->env().get_warnings_level() >= 2 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
     FunctionPtr function_where_require = stage::get_function();
 
     if (function_where_require && function_where_require->type() == FunctionData::func_local) {

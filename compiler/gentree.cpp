@@ -2013,7 +2013,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (check_statement_end());
       return res;
     case tok_global:
-      if (G->env().get_warnings_level() >= 1 && in_func_cnt_ > 1 && !is_top_of_the_function_) {
+      if (G->env().get_warnings_level() >= 2 && in_func_cnt_ > 1 && !is_top_of_the_function_) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
       }
       res = get_multi_call<op_global>(&GenTree::get_var_name);
