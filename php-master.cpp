@@ -1855,8 +1855,7 @@ void run_master() {
   me->http_fd_port = http_fd_port;
   me->own_http_fd = http_fd != nullptr && *http_fd != -1;
 
-  err = epoll_sethandler(signal_fd, 0, signal_epoll_handler, nullptr);
-  dl_assert (err >= 0, "epoll_sethalder failed");
+  epoll_sethandler(signal_fd, 0, signal_epoll_handler, nullptr);
   err = epoll_insert(signal_fd, EVT_READ);
   dl_assert (err >= 0, "epoll_insert failed");
 
