@@ -166,9 +166,9 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
 void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const Token *phpdoc_token) {
   int param_i = 0;
   std::string param_var_name, type_str;
-  ClassPtr klass;
   while (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str, param_i++)) {
     if (!param_var_name.empty() || !var_name.empty()) {
+      ClassPtr klass;
       AssumType assum = parse_phpdoc_classname(type_str, klass, f);
       assumption_add(f, assum, param_var_name.empty() ? var_name : param_var_name, klass);
     }
@@ -305,9 +305,9 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   if (f->phpdoc_token != nullptr) {
     int param_i = 0;
     std::string param_var_name, type_str;
-    ClassPtr klass;
     while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::param, param_var_name, type_str, param_i++)) {
       if (!param_var_name.empty() && !type_str.empty()) {
+        ClassPtr klass;
         AssumType assum = parse_phpdoc_classname(type_str, klass, f);
         assumption_add(f, assum, param_var_name, klass);
       }
