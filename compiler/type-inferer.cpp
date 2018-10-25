@@ -420,7 +420,11 @@ string tinf::VarNode::get_description() {
   } else if (is_return_value_from_function()) {
     ss << "as expression:" << "  " << "return ...";
   } else {
-    ss << "as argument:" << "  " << get_var_as_argument_name() << " : " << TermStringFormat::paint(type_out(tinf::get_type(var_)), TermStringFormat::green);
+    std::string var_description;
+    if (var_) {
+      var_description = TermStringFormat::paint(type_out(tinf::get_type(var_)), TermStringFormat::green);
+    }
+    ss << "as argument:" << "  " << get_var_as_argument_name() << " : " << var_description;
   }
   ss << "  " << "at " + get_function_name();
   return ss.str();
