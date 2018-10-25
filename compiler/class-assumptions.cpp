@@ -67,7 +67,9 @@ void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name,
   for (const auto &a : f->assumptions) {
     if (a.var_name == var_name) {
       kphp_error(a.assum_type == assum && a.klass == klass,
-                 dl_pstr("%s()::$%s is both %s and %s\n", f->name.c_str(), var_name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
+                 dl_pstr("%s()::$%s is both %s and %s\n", f->name.c_str(), var_name.c_str(),
+                         a.klass ? a.klass->name.c_str() : "[primitive]",
+                         klass ? klass->name.c_str() : "[primitive]"));
       exists = true;
     }
   }
