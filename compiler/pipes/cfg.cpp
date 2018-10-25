@@ -729,6 +729,24 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       add_edge(a, b);
       break;
     }
+    case op_set_add:
+    case op_set_sub:
+    case op_set_mul:
+    case op_set_div:
+    case op_set_mod:
+    case op_set_and:
+    case op_set_or:
+    case op_set_xor:
+    case op_set_dot:
+    case op_set_shr:
+    case op_set_shl: {
+      VertexAdaptor<meta_op_binary_op> set_op = tree_node;
+      Node a, b;
+      create_cfg(set_op->rhs(), res_start, &a);
+      create_full_cfg(set_op->lhs(), &b, res_finish);
+      add_edge(a, b);
+      break;
+    }
     case op_list: {
       VertexAdaptor<op_list> list = tree_node;
       Node prev;
