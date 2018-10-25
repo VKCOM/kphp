@@ -21,7 +21,7 @@ test7();
 test8(1, array ("abacaba"));
 test9();
 test10();
-test11(array());
+test11(array(1));
 //test12();
 //test13();
 test14();
