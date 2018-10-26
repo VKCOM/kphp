@@ -28,9 +28,6 @@ class var;
 class Unknown {
 };
 
-template<class T, class TT = T>
-class force_convert_to;
-
 class string;
 
 class string_buffer;

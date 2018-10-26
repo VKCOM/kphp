@@ -65,33 +65,6 @@ private:
     inline key_type get_key() const;
   };
 
-  template<class T1>
-  class compare_list_entry_by_value {
-  private:
-    const T1 &comp;
-
-  public:
-    inline compare_list_entry_by_value(const T1 &comp);
-
-    inline compare_list_entry_by_value(const compare_list_entry_by_value &comp);
-
-    inline bool operator()(const int_hash_entry *lhs, const int_hash_entry *rhs) const;
-  };
-
-  template<class T1>
-  class compare_TT_by_T {
-  private:
-    const T1 &comp;
-
-  public:
-    inline compare_TT_by_T(const T1 &comp);
-
-    inline compare_TT_by_T(const compare_TT_by_T &comp);
-
-    inline bool operator()(const T &lhs, const T &rhs) const;
-  };
-
-
   struct array_inner {
     //if key is number, int_key contains this number, there is no string_key.
     //if key is string, int_key contains hash of this string, string_key contains this string.

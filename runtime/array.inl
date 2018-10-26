@@ -1,76 +1,5 @@
 #pragma once
 
-template<class T>
-class force_convert_to<T, T> {
-public:
-  inline static T &convert(T &x) {
-    return x;
-  }
-
-  inline static const T &convert(const T &x) {
-    return x;
-  }
-};
-
-template<>
-class force_convert_to<bool, var> {
-public:
-  inline static bool &convert(var &x) {
-    return x.b;
-  }
-
-  inline static const bool &convert(const var &x) {
-    return x.b;
-  }
-};
-
-template<>
-class force_convert_to<int, var> {
-public:
-  inline static int &convert(var &x) {
-    return x.i;
-  }
-
-  inline static const int &convert(const var &x) {
-    return x.i;
-  }
-};
-
-template<>
-class force_convert_to<double, var> {
-public:
-  inline static double &convert(var &x) {
-    return x.f;
-  }
-
-  inline static const double &convert(const var &x) {
-    return x.f;
-  }
-};
-
-template<>
-class force_convert_to<string, var> {
-public:
-  inline static string &convert(var &x) {
-    return *AS_STRING(x.s);
-  }
-
-  inline static const string &convert(const var &x) {
-    return *AS_CONST_STRING(x.s);
-  }
-};
-
-template<>
-class force_convert_to<array<var>, var> {
-public:
-  inline static array<var> &convert(var &x) {
-    return *AS_ARRAY(x.a);
-  }
-
-  inline static const array<var> &convert(const var &x) {
-    return *AS_CONST_ARRAY(x.a);
-  }
-};
 
 array_size::array_size(int int_size, int string_size, bool is_vector) :
   int_size(int_size),
@@ -106,23 +35,23 @@ array_size &array_size::min(const array_size &other) {
 
 namespace dl {
 
-template<class T, class TT, class T1>
-void sort(TT *begin_init, TT *end_init, const T1 &compare) {
-  TT *begin_stack[32];
-  TT *end_stack[32];
+template<class T, class T1>
+void sort(T *begin_init, T *end_init, const T1 &compare) {
+  T *begin_stack[32];
+  T *end_stack[32];
 
   begin_stack[0] = begin_init;
   end_stack[0] = end_init - 1;
 
   for (int depth = 0; depth >= 0; --depth) {
-    TT *begin = begin_stack[depth];
-    TT *end = end_stack[depth];
+    T *begin = begin_stack[depth];
+    T *end = end_stack[depth];
 
     while (begin < end) {
       int offset = (end - begin) >> 1;
-      swap(force_convert_to<T>::convert(*begin), force_convert_to<T>::convert(begin[offset]));
+      swap(*begin, begin[offset]);
 
-      TT *i = begin + 1, *j = end;
+      T *i = begin + 1, *j = end;
 
       while (1) {
         while (i < j && compare(*begin, *i) > 0) {
@@ -137,10 +66,10 @@ void sort(TT *begin_init, TT *end_init, const T1 &compare) {
           break;
         }
 
-        swap(force_convert_to<T>::convert(*i++), force_convert_to<T>::convert(*j--));
+        swap(*i++, *j--);
       }
 
-      swap(force_convert_to<T>::convert(*begin), force_convert_to<T>::convert(*j));
+      swap(*begin, *j);
 
       if (j - begin <= end - j) {
         if (j + 1 < end) {
@@ -377,7 +306,7 @@ const var array<T>::array_inner::get_var(int int_key) const {
     return var();
   }
 
-  return force_convert_to<T>::convert(int_entries[bucket].value);
+  return int_entries[bucket].value;
 }
 
 
@@ -402,7 +331,7 @@ const T array<T>::array_inner::get_value(int int_key) const {
     return empty_T;
   }
 
-  return force_convert_to<T>::convert(int_entries[bucket].value);
+  return int_entries[bucket].value;
 }
 
 
@@ -413,22 +342,22 @@ T &array<T>::array_inner::push_back_vector_value(const T &v) {
   max_key++;
   int_size++;
 
-  return force_convert_to<T>::convert(((T *)int_entries)[max_key]);
+  return reinterpret_cast<T *>(int_entries)[max_key];
 }
 
 template<class T>
 T &array<T>::array_inner::get_vector_value(int int_key) {
-  return force_convert_to<T>::convert(((T *)int_entries)[int_key]);
+  return reinterpret_cast<T *>(int_entries)[int_key];
 }
 
 template<class T>
 const T &array<T>::array_inner::get_vector_value(int int_key) const {
-  return force_convert_to<T>::convert(((T *)int_entries)[int_key]);
+  return reinterpret_cast<const T *>(int_entries)[int_key];
 }
 
 template<class T>
 T &array<T>::array_inner::set_vector_value(int int_key, const T &v) {
-  ((T *)int_entries)[int_key] = v;
+  reinterpret_cast<T *>(int_entries)[int_key] = v;
   return get_vector_value(int_key);
 }
 
@@ -464,7 +393,7 @@ T &array<T>::array_inner::set_map_value(int int_key, const T &v, bool save_value
     }
   }
 
-  return force_convert_to<T>::convert(int_entries[bucket].value);
+  return int_entries[bucket].value;
 }
 
 template<class T>
@@ -581,7 +510,7 @@ const var array<T>::array_inner::get_var(int int_key, const string &string_key) 
     return var();
   }
 
-  return force_convert_to<T>::convert(string_entries[bucket].value);
+  return string_entries[bucket].value;
 }
 
 template<class T>
@@ -602,7 +531,7 @@ const T array<T>::array_inner::get_value(int int_key, const string &string_key) 
     return empty_T;
   }
 
-  return force_convert_to<T>::convert(string_entries[bucket].value);
+  return string_entries[bucket].value;
 }
 
 template<class T>
@@ -634,7 +563,7 @@ T &array<T>::array_inner::set_map_value(int int_key, const string &string_key, c
     }
   }
 
-  return force_convert_to<T>::convert(string_entries[bucket].value);
+  return string_entries[bucket].value;
 }
 
 template<class T>
@@ -904,10 +833,10 @@ array<T>::const_iterator::const_iterator(const typename array<T>::array_inner *s
 template<class T>
 const T &array<T>::const_iterator::get_value() const {
   if (self->is_vector()) {
-    return force_convert_to<T>::convert(*(const T *)entry);
+    return *reinterpret_cast<const T *>(entry);
   }
 
-  return force_convert_to<T>::convert(((const int_hash_entry *)entry)->value);
+  return reinterpret_cast<const int_hash_entry *>(entry)->value;
 }
 
 template<class T>
@@ -1037,10 +966,10 @@ array<T>::iterator::iterator(typename array<T>::array_inner *self, list_hash_ent
 template<class T>
 T &array<T>::iterator::get_value() {
   if (self->is_vector()) {
-    return force_convert_to<T>::convert(*(T *)entry);
+    return *reinterpret_cast<T *>(entry);
   }
 
-  return force_convert_to<T>::convert(((int_hash_entry *)entry)->value);
+  return reinterpret_cast<int_hash_entry *>(entry)->value;
 }
 
 template<class T>
@@ -1181,14 +1110,14 @@ void array<T>::copy_from(const array<T1> &other) {
     T1 *it = (T1 *)other.p->int_entries;
 
     for (int i = 0; i < size; i++) {
-      new_array->push_back_vector_value(convert_to<T>::convert(force_convert_to<T1>::convert(it[i])));
+      new_array->push_back_vector_value(convert_to<T>::convert(it[i]));
     }
   } else {
     for (const typename array<T1>::string_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
-        new_array->set_map_value(it->int_key, it->string_key, convert_to<T>::convert(force_convert_to<T1>::convert(it->value)), false);
+        new_array->set_map_value(it->int_key, it->string_key, convert_to<T>::convert(it->value), false);
       } else {
-        new_array->set_map_value(it->int_key, convert_to<T>::convert(force_convert_to<T1>::convert(it->value)), false);
+        new_array->set_map_value(it->int_key, convert_to<T>::convert(it->value), false);
       }
     }
   }
@@ -2100,14 +2029,14 @@ void array<T>::merge_with(const array<T1> &other) {
     if (it.self->is_vector()) {//TODO move if outside for
       if (is_vector()) {
         mutate_if_vector_needed_int();
-        p->push_back_vector_value(force_convert_to<T1>::convert(*(T1 *)it.entry));
+        p->push_back_vector_value(*reinterpret_cast<const T1 *>(it.entry));
       } else {
         mutate_if_map_needed_int();
-        p->set_map_value(get_next_key(), force_convert_to<T1>::convert(*(T1 *)it.entry), false);
+        p->set_map_value(get_next_key(), *reinterpret_cast<const T1 *>(it.entry), false);
       }
     } else {
       const typename array<T1>::string_hash_entry *entry = (const typename array<T1>::string_hash_entry *)it.entry;
-      const T1 &value = force_convert_to<T1>::convert(entry->value);
+      const T1 &value = entry->value;
 
       if (it.self->is_string_hash_entry(entry)) {
         if (is_vector()) {
@@ -2363,11 +2292,11 @@ const T array<T>::push_back_return(const T &v) {
   }
 }
 
-template <class T>
-void array <T>::fill_vector (int num, const T &value) {
+template<class T>
+void array<T>::fill_vector(int num, const T &value) {
   php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
 
-  std::uninitialized_fill((T *) p->int_entries, (T *) p->int_entries + num, value);
+  std::uninitialized_fill((T *)p->int_entries, (T *)p->int_entries + num, value);
   p->max_key = num - 1;
   p->int_size = num;
 }
@@ -2378,41 +2307,6 @@ int array<T>::get_next_key() const {
   return p->max_key + 1;
 }
 
-template<class T>
-template<class T1>
-array<T>::compare_list_entry_by_value<T1>::compare_list_entry_by_value(const T1 &comp):
-  comp(comp) {
-}
-
-template<class T>
-template<class T1>
-array<T>::compare_list_entry_by_value<T1>::compare_list_entry_by_value(const compare_list_entry_by_value <T1> &comp):
-  comp(comp.comp) {
-}
-
-template<class T>
-template<class T1>
-bool array<T>::compare_list_entry_by_value<T1>::operator()(const typename array<T>::int_hash_entry *lhs, const typename array<T>::int_hash_entry *rhs) const {
-  return comp(force_convert_to<T>::convert(lhs->value), force_convert_to<T>::convert(rhs->value)) > 0;
-}
-
-template<class T>
-template<class T1>
-array<T>::compare_TT_by_T<T1>::compare_TT_by_T(const T1 &comp):
-  comp(comp) {
-}
-
-template<class T>
-template<class T1>
-array<T>::compare_TT_by_T<T1>::compare_TT_by_T(const compare_TT_by_T <T1> &comp):
-  comp(comp.comp) {
-}
-
-template<class T>
-template<class T1>
-bool array<T>::compare_TT_by_T<T1>::operator()(const T &lhs, const T &rhs) const {
-  return comp(force_convert_to<T>::convert(lhs), force_convert_to<T>::convert(rhs)) > 0;
-}
 
 template<class T>
 template<class T1>
@@ -2436,7 +2330,12 @@ void array<T>::sort(const T1 &compare, bool renumber) {
       mutate_if_vector_shared();
     }
 
-    dl::sort<T, T, compare_TT_by_T < T1> > ((T *)p->int_entries, (T *)p->int_entries + n, compare_TT_by_T<T1>(compare));
+    const auto elements_cmp =
+      [&compare](const T &lhs, const T &rhs) {
+        return compare(lhs, rhs) > 0;
+      };
+    T *begin = reinterpret_cast<T *>(p->int_entries);
+    dl::sort<T, decltype(elements_cmp)>(begin, begin + n, elements_cmp);
     return;
   }
 
@@ -2457,7 +2356,11 @@ void array<T>::sort(const T1 &compare, bool renumber) {
   }
   php_assert (i == n);
 
-  dl::sort<int_hash_entry *, int_hash_entry *, compare_list_entry_by_value < T1> > (arTmp, arTmp + n, compare_list_entry_by_value<T1>(compare));
+  const auto hash_entry_cmp =
+    [&compare](const int_hash_entry *lhs, const int_hash_entry *rhs) {
+      return compare(lhs->value, rhs->value) > 0;
+    };
+  dl::sort<int_hash_entry *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
 
   arTmp[0]->prev = p->get_pointer(p->end());
   p->end()->next = p->get_pointer(arTmp[0]);
@@ -2496,7 +2399,7 @@ void array<T>::ksort(const T1 &compare) {
   }
 
   key_type *keysp = (key_type *)keys.p->int_entries;
-  dl::sort<key_type, key_type, T1>(keysp, keysp + n, compare);
+  dl::sort<key_type, T1>(keysp, keysp + n, compare);
 
   list_hash_entry *prev = (list_hash_entry *)p->end();
   for (int j = 0; j < n; j++) {
@@ -2551,7 +2454,7 @@ T array<T>::pop() {
     mutate_if_vector_shared();
 
     T *it = (T *)p->int_entries;
-    T result = force_convert_to<T>::convert(it[p->max_key]);
+    T result = it[p->max_key];
 
     p->unset_vector_value();
 
@@ -2560,7 +2463,7 @@ T array<T>::pop() {
     mutate_if_map_shared();
 
     string_hash_entry *it = p->prev(p->end());
-    T result = force_convert_to<T>::convert(it->value);
+    T result = it->value;
 
     if (p->is_string_hash_entry(it)) {
       p->unset_map_value(it->int_key, it->string_key);
@@ -2583,7 +2486,7 @@ T array<T>::shift() {
     mutate_if_vector_shared();
 
     T *it = (T *)p->int_entries;
-    T res = force_convert_to<T>::convert(*it);
+    T res = *it;
 
     it->~T();
     memmove((void *)it, it + 1, --p->int_size * sizeof(T));
@@ -2596,7 +2499,7 @@ T array<T>::shift() {
 
     array_inner *new_array = array_inner::create(new_size.int_size, new_size.string_size, is_v);
     string_hash_entry *it = p->begin();
-    T res = force_convert_to<T>::convert(it->value);
+    T res = it->value;
 
     it = p->next(it);
     while (it != p->end()) {

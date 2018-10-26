@@ -266,10 +266,6 @@ public:
 
   template<class T>
   friend class array;
-
-  template<class T, class TT>
-  friend
-  class force_convert_to;
 };
 
 void do_var_export(const var &v, int depth, char endc = 0);
