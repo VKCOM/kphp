@@ -11,6 +11,7 @@
 
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
+#include "compiler/compiler-core.h"
 
 WriterData::WriterData(bool compile_with_debug_info_flag) :
   lines(),

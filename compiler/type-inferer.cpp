@@ -511,11 +511,6 @@ string tinf::ExprNode::get_location_text() {
       return matched[2].str();
     }
   }
-
-  string root_path = G->env().get_base_dir();
-  if (vk::string_view(location).starts_with(root_path)) {
-    location = string(".../") + location.substr(root_path.length());
-  }
   return location;
 }
 

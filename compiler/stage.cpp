@@ -248,6 +248,6 @@ string stage::to_str(const Location &new_location) {
   stringstream ss;
 
   //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
-  ss << get_file_name() << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();
+  ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();
   return ss.str();
 }
