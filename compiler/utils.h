@@ -137,8 +137,4 @@ void dsu_uni(ArrayType *arr, IndexType i, IndexType j) {
   }
 }
 
-template<class T>
-void my_unique(T *v) {
-  sort(v->begin(), v->end());
-  v->erase(std::unique(v->begin(), v->end()), v->end());
-}
+

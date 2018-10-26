@@ -1,13 +1,20 @@
 #pragma once
 
-#include "common/wrappers/iterator_range.h"
+#include <unordered_set>
 
 #include "compiler/common.h"
+#include "common/wrappers/iterator_range.h"
 
 /*** Id ***/
 template<class IdData>
 class Id {
   IdData *ptr;
+public:
+  struct Hash {
+    size_t operator()(const Id<IdData> &arg) const noexcept {
+      return reinterpret_cast<size_t>(arg.ptr);
+    }
+  };
 public:
   Id();
   explicit Id(IdData *ptr);
@@ -30,6 +37,17 @@ public:
 
   string &str();
 };
+
+template<class T>
+void my_unique(std::vector<Id<T>> *v) {
+  if (v->empty()) {
+    return;
+  }
+
+  std::unordered_set<Id<T>, typename Id<T>::Hash> us(v->begin(), v->end());
+  v->assign(us.begin(), us.end());
+  std::sort(v->begin(), v->end());
+}
 
 /*** [get|set]_index ***/
 template<class T>

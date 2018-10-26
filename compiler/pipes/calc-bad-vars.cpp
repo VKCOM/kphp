@@ -234,25 +234,21 @@ class CalcBadVars {
 private:
   class MergeBadVarsCallback : public MergeReachalbeCallback<FunctionPtr> {
   public:
-    void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) {
-      vector<VarPtr> *bad_vars = new vector<VarPtr>();
-      for (int i = (int)component.size() - 1; i >= 0; i--) {
-        FunctionPtr function = component[i];
-        bad_vars->insert(bad_vars->end(), function->tmp_vars.begin(), function->tmp_vars.end());
+    void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
+      std::unordered_set<VarPtr, typename VarPtr::Hash> bad_vars_uniq;
+
+      for (FunctionPtr f : component) {
+        bad_vars_uniq.insert(f->tmp_vars.begin(), f->tmp_vars.end());
       }
 
-      for (int i = (int)edges.size() - 1; i >= 0; i--) {
-        FunctionPtr function = edges[i];
-        if (function->bad_vars == nullptr) {
-          fprintf(stderr, "%s\n", function->name.c_str());
-        }
-        assert (function->bad_vars != nullptr);
-        bad_vars->insert(bad_vars->end(), function->bad_vars->begin(), function->bad_vars->end());
+      for (FunctionPtr f : edges) {
+        kphp_assert(f->bad_vars != nullptr);
+        bad_vars_uniq.insert(f->bad_vars->begin(), f->bad_vars->end());
       }
-      my_unique(bad_vars);
-      for (int i = (int)component.size() - 1; i >= 0; i--) {
-        FunctionPtr function = component[i];
-        function->bad_vars = bad_vars;
+
+      auto bad_vars = new vector<VarPtr>(bad_vars_uniq.begin(), bad_vars_uniq.end());
+      for (FunctionPtr f : component) {
+        f->bad_vars = bad_vars;
       }
     }
   };
