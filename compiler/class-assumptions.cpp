@@ -23,11 +23,9 @@
 #include "compiler/compiler-core.h"
 #include "compiler/phpdoc.h"
 
-static const std::string VAR_NAME_RETURN = "$return";
 
-
-AssumType assumption_get(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
-  for (const auto &a : f->assumptions) {
+AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
+  for (const auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
       out_class = a.klass;
       return a.assum_type;
@@ -37,8 +35,8 @@ AssumType assumption_get(FunctionPtr f, const std::string &var_name, ClassPtr &o
   return assum_unknown;
 }
 
-AssumType assumption_get(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
-  for (const auto &a : c->assumptions) {
+AssumType assumption_get_for_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
+  for (const auto &a : c->assumptions_for_vars) {
     if (a.var_name == var_name) {
       out_class = a.klass;
       return a.assum_type;
@@ -61,10 +59,10 @@ std::string assumption_debug(const Assumption &assumption) {
   }
 }
 
-void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
+void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
   bool exists = false;
 
-  for (const auto &a : f->assumptions) {
+  for (const auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
       kphp_error(a.assum_type == assum && a.klass == klass,
                  dl_pstr("%s()::$%s is both %s and %s\n", f->name.c_str(), var_name.c_str(),
@@ -75,24 +73,29 @@ void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name,
   }
 
   if (!exists) {
-    f->assumptions.emplace_back(assum, var_name, klass);
-//    printf("%s() %s\n", f->name.c_str(), assumption_debug(f->assumptions.back()).c_str());
+    f->assumptions_for_vars.emplace_back(assum, var_name, klass);
+    //printf("%s() %s\n", f->name.c_str(), assumption_debug(f->assumptions_for_vars.back()).c_str());
   }
 }
 
-void assumption_add(FunctionPtr f, AssumType assum, const std::string &var_name, const std::string &class_name) {
-  ClassPtr klass = class_name.empty() ? ClassPtr() : G->get_class(resolve_uses(f, class_name, '\\'));
-  kphp_error(klass,
-             dl_pstr("Class %s (used in %s()) does not exist or never initialized", class_name.c_str(), f->name.c_str()));
-  if (klass) {
-    assumption_add(f, assum, var_name, klass);
+void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
+  const Assumption &a = f->assumption_for_return;
+
+  if (a.assum_type != assum_unknown) {
+    kphp_error(a.assum_type == assum && a.klass == klass,
+               dl_pstr("%s() returns both %s and %s\n", f->name.c_str(),
+                       a.klass ? a.klass->name.c_str() : "[primitive]",
+                       klass ? klass->name.c_str() : "[primitive]"));
   }
+
+  f->assumption_for_return = Assumption(assum, "", klass);
+  //printf("%s() returns %s\n", f->name.c_str(), assumption_debug(f->assumption_for_return).c_str());
 }
 
-void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, ClassPtr klass) {
+void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_name, ClassPtr klass) {
   bool exists = false;
 
-  for (const auto &a : c->assumptions) {
+  for (const auto &a : c->assumptions_for_vars) {
     if (a.var_name == var_name) {
       kphp_error(a.assum_type == assum && a.klass == klass,
                  dl_pstr("%s::$%s is both %s and %s\n", var_name.c_str(), c->name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
@@ -101,17 +104,8 @@ void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, Cl
   }
 
   if (!exists) {
-    c->assumptions.emplace_back(assum, var_name, klass);
-//    printf("%s::%s\n", c->name.c_str(), assumption_debug(c->assumptions.back()).c_str());
-  }
-}
-
-void assumption_add(ClassPtr c, AssumType assum, const std::string &var_name, const std::string &class_name) {
-  ClassPtr klass = class_name.empty() ? ClassPtr() : G->get_class(resolve_uses(c->init_function, class_name, '\\'));
-  kphp_error(klass,
-             dl_pstr("Class %s (used in %s) does not exist or never initialized", class_name.c_str(), c->name.c_str()));
-  if (klass) {
-    assumption_add(c, assum, var_name, klass);
+    c->assumptions_for_vars.emplace_back(assum, var_name, klass);
+    //printf("%s::%s\n", c->name.c_str(), assumption_debug(c->assumptions_for_vars.back()).c_str());
   }
 }
 
@@ -170,7 +164,7 @@ void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const 
     if (!param_var_name.empty() || !var_name.empty()) {
       ClassPtr klass;
       AssumType assum = parse_phpdoc_classname(type_str, klass, f);
-      assumption_add(f, assum, param_var_name.empty() ? var_name : param_var_name, klass);
+      assumption_add_for_var(f, assum, param_var_name.empty() ? var_name : param_var_name, klass);
     }
   }
 }
@@ -187,7 +181,7 @@ void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const Tok
     AssumType assum = parse_phpdoc_classname(type_str, klass, c->init_function);
 
     if (klass && (param_var_name.empty() || var_name == param_var_name)) {
-      assumption_add(c, assum, var_name, klass);
+      assumption_add_for_var(c, assum, var_name, klass);
     }
   }
 }
@@ -201,7 +195,7 @@ void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const Vertex
   AssumType assum = infer_class_of_expr(f, rhs, klass, depth + 1);
 
   if (assum != assum_unknown && klass) {
-    assumption_add(f, assum, var_name, klass);
+    assumption_add_for_var(f, assum, var_name, klass);
   }
 }
 
@@ -210,7 +204,7 @@ void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const Vertex
  * Пользовательских классов исключений и наследования исключений у нас нет, и пока не планируется.
  */
 void analyze_catch_of_var(FunctionPtr f, const std::string &var_name, VertexAdaptor<op_try> root __attribute__((unused))) {
-  assumption_add(f, assum_instance, var_name, "\\Exception");
+  assumption_add_for_var(f, assum_instance, var_name, G->get_class("Exception"));
 }
 
 /*
@@ -221,7 +215,7 @@ void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAdaptor<o
   AssumType iter_assum = infer_class_of_expr(f, root->xs(), klass);
 
   if (iter_assum == assum_instance_array) {
-    assumption_add(f, assum_instance, var_name, klass);
+    assumption_add_for_var(f, assum_instance, var_name, klass);
   }
 }
 
@@ -233,7 +227,7 @@ void analyze_global_var(FunctionPtr f, const std::string &var_name) {
   if (var_name == "MC" || var_name == "MC_Local" || var_name == "MC2" || var_name == "MC_Ads"
       || var_name == "PMC" || var_name == "mc_fast" || var_name == "MC_Config" || var_name == "MC_Stats"
       || var_name == "MC_Log") {
-    assumption_add(f, assum_instance, var_name, "\\Memcache");
+    assumption_add_for_var(f, assum_instance, var_name, G->get_class("Memcache"));
   }
 }
 
@@ -309,7 +303,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
       if (!param_var_name.empty() && !type_str.empty()) {
         ClassPtr klass;
         AssumType assum = parse_phpdoc_classname(type_str, klass, f);
-        assumption_add(f, assum, param_var_name, klass);
+        assumption_add_for_var(f, assum, param_var_name, klass);
       }
     }
   }
@@ -318,7 +312,9 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   for (auto i : params.get_reversed_range()) {
     VertexAdaptor<op_func_param> param = i;
     if (!param->type_declaration.empty()) {
-      assumption_add(f, assum_instance, param->var()->get_string(), param->type_declaration);
+      ClassPtr klass = G->get_class(resolve_uses(f, param->type_declaration, '\\'));
+      kphp_error(klass, dl_pstr("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
+      assumption_add_for_var(f, assum_instance, param->var()->get_string(), klass);
     }
   }
 }
@@ -334,10 +330,10 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
 
   if (f->phpdoc_token != nullptr) {
     std::string type_str, dummy;
-    ClassPtr klass;
     if (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::returns, dummy, type_str)) {
+      ClassPtr klass;
       AssumType assum = parse_phpdoc_classname(type_str, klass, f);
-      assumption_add(f, assum, VAR_NAME_RETURN, klass);       // 'self' тоже работает
+      assumption_add_for_return(f, assum, klass);       // 'self' тоже работает
       return;
     }
   }
@@ -347,17 +343,17 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       VertexPtr expr = i.as<op_return>()->expr();
 
       if (expr->type() == op_constructor_call) {
-        std::string class_name = expr->get_string();
-        if (expr->get_func_id()) {
-          class_name = "\\" + expr->get_func_id()->class_context_name;
-        }
-        assumption_add(f, assum_instance, VAR_NAME_RETURN, class_name);   // return A
+        ClassPtr klass = expr->get_func_id()
+                         ? expr->get_func_id()->class_id
+                         : G->get_class(resolve_uses(f, expr->get_string(), '\\'));
+        kphp_assert(klass);
+        assumption_add_for_return(f, assum_instance, klass);        // return A
       } else if (expr->type() == op_var && expr->get_string() == "this" && f->is_instance_function()) {
-        assumption_add(f, assum_instance, VAR_NAME_RETURN, f->class_id);  // return this
+        assumption_add_for_return(f, assum_instance, f->class_id);  // return this
       } else if (expr->type() != op_null) {
         ClassPtr klass;
         AssumType assum = infer_class_of_expr(f, expr, klass);
-        assumption_add(f, assum, VAR_NAME_RETURN, klass);
+        assumption_add_for_return(f, assum, klass);
       }
     }
   }
@@ -395,7 +391,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
     f->assumptions_inited_args = 2;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
   }
 
-  AssumType existing = assumption_get(f, var_name, out_class);
+  AssumType existing = assumption_get_for_var(f, var_name, out_class);
   if (existing != assum_unknown) {
     return existing;
   }
@@ -405,16 +401,16 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
 
   if (f->type() == FunctionData::func_global || f->type() == FunctionData::func_switch) {
     if ((var_name.size() == 2 && var_name == "MC") || (var_name.size() == 3 && var_name == "PMC")) {
-      assumption_add(f, assum_instance, var_name, "\\Memcache");
+      assumption_add_for_var(f, assum_instance, var_name, G->get_class("Memcache"));
     }
   }
 
-  AssumType calculated = assumption_get(f, var_name, out_class);
+  AssumType calculated = assumption_get_for_var(f, var_name, out_class);
   if (calculated != assum_unknown) {
     return calculated;
   }
 
-  f->assumptions.emplace_back(assum_not_instance, var_name, ClassPtr());
+  f->assumptions_for_vars.emplace_back(assum_not_instance, var_name, ClassPtr());
   return assum_not_instance;
 }
 
@@ -438,7 +434,8 @@ AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
     __sync_synchronize();
   }
 
-  return assumption_get(f, VAR_NAME_RETURN, out_class);
+  out_class = f->assumption_for_return.klass;
+  return f->assumption_for_return.assum_type;
 }
 
 /*
@@ -457,7 +454,7 @@ AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name,
     __sync_synchronize();
   }
 
-  return assumption_get(c, var_name, out_class);
+  return assumption_get_for_var(c, var_name, out_class);
 }
 
 

@@ -100,7 +100,7 @@ public:
   FunctionPtr new_function;
   Token *phpdoc_token;
 
-  std::vector<Assumption> assumptions;
+  std::vector<Assumption> assumptions_for_vars;
   int assumptions_inited_vars;
   bool was_constructor_invoked;
 
@@ -170,7 +170,8 @@ public:
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
 
-  std::vector<Assumption> assumptions;
+  std::vector<Assumption> assumptions_for_vars;
+  Assumption assumption_for_return;
   int assumptions_inited_args;
   int assumptions_inited_return;
 

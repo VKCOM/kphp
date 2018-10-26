@@ -6,7 +6,7 @@ void CheckInferredInstancesPass::execute(FunctionPtr function, DataStream<Functi
   stage::set_name("Check inferred instances");
   stage::set_function(function);
 
-  if (function->type() != FunctionData::func_extern && !function->assumptions.empty()) {
+  if (function->type() != FunctionData::func_extern && !function->assumptions_for_vars.empty()) {
     analyze_function_vars(function);
   }
   if (function->class_id && function->class_id->init_function == function && function->class_id->was_constructor_invoked) {
@@ -32,7 +32,7 @@ void CheckInferredInstancesPass::analyze_function_vars(FunctionPtr function) {
 }
 void CheckInferredInstancesPass::analyze_function_var(FunctionPtr function, VarPtr var) {
   ClassPtr klass;
-  AssumType assum = assumption_get(function, var->name, klass);
+  AssumType assum = assumption_get_for_var(function, var->name, klass);
 
   if (assum == assum_instance) {
     const TypeData *t = var->tinf_node.get_type();

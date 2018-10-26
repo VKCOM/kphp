@@ -343,7 +343,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
 
     const std::pair<AssumType, ClassPtr> &assum_and_class = id_classPtr_it->second;
     if (assum_and_class.first != assum_not_instance) {
-      new_function->assumptions.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
+      new_function->assumptions_for_vars.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
       new_function->assumptions_inited_args = 2;
     }
   }

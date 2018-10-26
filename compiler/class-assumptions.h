@@ -18,15 +18,20 @@ public:
   std::string var_name;
   ClassPtr klass;
 
-  Assumption(AssumType type, const std::string &var_name, ClassPtr klass) :
+  Assumption() :
+    assum_type(assum_unknown),
+    var_name(),
+    klass() {}
+
+  Assumption(AssumType type, std::string var_name, ClassPtr klass) :
     assum_type(type),
-    var_name(var_name),
+    var_name(std::move(var_name)),
     klass(klass) {}
 };
 
 
-AssumType assumption_get(FunctionPtr f, const std::string &var_name, ClassPtr &out_class);
-AssumType assumption_get(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
+AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class);
+AssumType assumption_get_for_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
 AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class, size_t depth = 0);
 AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class);
 
