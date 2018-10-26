@@ -9,8 +9,7 @@
 __thread int bicycle_thread_id;
 
 /*** Malloc hooks ***/
-#define BICYCLE_MALLOC
-#ifdef BICYCLE_MALLOC
+#ifndef __SANITIZE_ADDRESS__
 extern "C" {
 extern decltype(malloc) __libc_malloc;
 extern decltype(free) __libc_free;
