@@ -107,7 +107,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     FunctionPtr fun = vertex.as<op_func_call>()->get_func_id();
     if (fun->root->void_flag && vertex->rl_type == val_r && from_return == 0) {
       if (fun->type() != FunctionData::func_switch && fun->file_id->main_func_name != fun->name) {
-        kphp_warning(dl_pstr("Using result of void function %s\n", fun->name.c_str()));
+        kphp_warning(dl_pstr("Using result of void function %s\n", fun->get_human_readable_name().c_str()));
       }
     }
     check_op_func_call(vertex.as<op_func_call>());
@@ -163,7 +163,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
 
     FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
 
-    kphp_error_act(func_ptr_of_callable->root, dl_pstr("Unknown callback function [%s]", func_ptr_of_callable->name.c_str()), continue);
+    kphp_error_act(func_ptr_of_callable->root, dl_pstr("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
     VertexRange cur_params = func_ptr_of_callable->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
 
     int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);

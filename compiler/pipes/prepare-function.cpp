@@ -12,19 +12,19 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
   kphp_assert (root && header);
   kphp_error_return (
     !func->header,
-    dl_pstr("Function [%s]: multiple headers", func->name.c_str())
+    dl_pstr("Function [%s]: multiple headers", func->get_human_readable_name().c_str())
   );
   func->header = header;
 
   kphp_error_return (
     !root->type_rule,
-    dl_pstr("Function [%s]: type_rule is overided by header", func->name.c_str())
+    dl_pstr("Function [%s]: type_rule is overided by header", func->get_human_readable_name().c_str())
   );
   root->type_rule = header->type_rule;
 
   kphp_error_return (
     !(!header->varg_flag && func->varg_flag),
-    dl_pstr("Function [%s]: varg_flag mismatch with header", func->name.c_str())
+    dl_pstr("Function [%s]: varg_flag mismatch with header", func->get_human_readable_name().c_str())
   );
   func->varg_flag = header->varg_flag;
 
@@ -36,7 +36,7 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
 
     kphp_error (
       root_params.size() == header_params.size(),
-      dl_pstr("Bad header for function [%s]", func->name.c_str())
+      dl_pstr("Bad header for function [%s]", func->get_human_readable_name().c_str())
     );
     int params_n = (int)root_params.size();
     for (int i = 0; i < params_n; i++) {
@@ -44,12 +44,12 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
         root_params[i]->size() == header_params[i]->size(),
         dl_pstr(
           "Function [%s]: %dth param has problem with default value",
-          func->name.c_str(), i + 1
+          func->get_human_readable_name().c_str(), i + 1
         )
       );
       kphp_error (
         root_params[i]->type_help == tp_Unknown,
-        dl_pstr("Function [%s]: type_help is overrided by header", func->name.c_str())
+        dl_pstr("Function [%s]: type_help is overrided by header", func->get_human_readable_name().c_str())
       );
       root_params[i]->type_help = header_params[i]->type_help;
     }
@@ -84,12 +84,12 @@ static void prepare_function_misc(FunctionPtr func) {
       }
       if (func->type() == FunctionData::func_local) {
         kphp_error (params[i].as<meta_op_func_param>()->var()->ref_flag == false,
-                    dl_pstr("Default value in reference function argument [function = %s]", func->name.c_str()));
+                    dl_pstr("Default value in reference function argument [function = %s]", func->get_human_readable_name().c_str()));
       }
     } else {
       kphp_error (!was_default,
                   dl_pstr("Default value expected [function = %s] [param_i = %d]",
-                          func->name.c_str(), i));
+                          func->get_human_readable_name().c_str(), i));
     }
   }
 }

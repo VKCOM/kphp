@@ -3218,7 +3218,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
     func = root->get_func_id();
     if (state != 1 && state != 2 && W.get_context().resumable_flag && func->root->resumable_flag) {
       kphp_error (0, dl_pstr("Can't compile resumable function [%s] without async\n"
-                             "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
+                             "Function is resumable because of calls chain:\n%s\n", func->get_human_readable_name().c_str(), func->get_resumable_path().c_str()));
     }
 
     if (state == 2) {

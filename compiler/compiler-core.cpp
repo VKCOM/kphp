@@ -213,7 +213,7 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
     }
     kphp_error(!f || f == UNPARSED_BUT_REQUIRED_FUNC_PTR,
                dl_pstr("Redeclaration of function %s(), the previous declaration was in [%s]",
-                       function->name.c_str(), f->file_id->file_name.c_str()));
+                       function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
     f = function;
   });
 
