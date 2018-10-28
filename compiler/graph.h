@@ -58,7 +58,6 @@ void set_index(Id<T> &d, int index);
 
 /*** IdMapBase ***/
 struct IdMapBase {
-  virtual void renumerate_ids(const vector<int> &new_ids) = 0;
   virtual void update_size(int new_max_id) = 0;
   virtual void clear() = 0;
 
@@ -68,12 +67,12 @@ struct IdMapBase {
 /*** IdMap ***/
 template<class DataType>
 struct IdMap : public IdMapBase {
-  DataType def_val;
   vector<DataType> data;
 
   typedef typename vector<DataType>::iterator iterator;
-  IdMap();
-  explicit IdMap(int size, DataType val = DataType());
+  IdMap() = default;
+  explicit IdMap(int size);
+
   template<class IndexType>
   DataType &operator[](const IndexType &i);
   template<class IndexType>
@@ -82,8 +81,6 @@ struct IdMap : public IdMapBase {
   iterator begin();
   iterator end();
   void clear();
-
-  void renumerate_ids(const vector<int> &new_ids);
 
   void update_size(int n);
 };
@@ -99,16 +96,12 @@ struct IdGen {
 
   IdGen();
   void add_id_map(IdMapBase *to_add);
-  void remove_id_map(IdMapBase *to_remove);
 
-  int init_id(IdType *id);
+  int init_id(IdType *to_add);
   int size();
   iterator begin();
   iterator end();
   void clear();
-
-  template<class IndexType>
-  void delete_ids(const vector<IndexType> &to_del);
 };
 
 #include "graph.hpp"

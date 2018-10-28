@@ -204,7 +204,6 @@ public:
   }
 
   Maybe<DataT> get() {
-    //AutoLocker <Lockable *> (this);
     while (true) {
       int old_read_i = read_i;
       if (old_read_i < write_i) {
@@ -350,11 +349,6 @@ public:
 #define PROF_E_(x) prof_ ## x
 #define PROF_E(x) PROF_E_(x)
 #define FOREACH_PROF(F)\
-  F (A)\
-  F (B)\
-  F (C)\
-  F (D)\
-  F (E)\
   F (next_name)\
   F (next_const_string_name)\
   F (create_function)\
@@ -436,21 +430,21 @@ inline void profiler_print(ProfilerId id, const char *desc) {
   long long total_count = 0;
   size_t total_memory = 0;
   for (int i = 0; i <= MAX_THREADS_COUNT; i++) {
-    total_time += profiler.get(i)->raw[id].get_time();
-    total_count += profiler.get(i)->raw[id].get_count();
-    total_ticks += profiler.get(i)->raw[id].get_ticks();
-    total_memory += profiler.get(i)->raw[id].get_memory();
+    total_time += profiler->raw[id].get_time();
+    total_count += profiler->raw[id].get_count();
+    total_ticks += profiler->raw[id].get_ticks();
+    total_memory += profiler->raw[id].get_memory();
   }
   if (total_count > 0) {
     if (total_ticks > 0) {
       fprintf(
-        stderr, "%40s:\t\%lf %lld %lld\n",
-        desc, total_time, total_count, total_ticks / max(1ll, total_count)
+        stderr, "%40s:\t%lf %lld %lld\n",
+        desc, total_time, total_count, total_ticks / std::max(1ll, total_count)
       );
     }
     if (total_memory > 0) {
       fprintf(
-        stderr, "%40s:\t\%.5lfMb %lld %.5lf\n",
+        stderr, "%40s:\t%.5lfMb %lld %.5lf\n",
         desc, (double)total_memory / (1 << 20), total_count, (double)total_memory / total_count
       );
     }
@@ -479,42 +473,8 @@ public:
 
 #define AUTO_PROF(x) AutoProfiler <PROF_E (x)> x ## _auto_prof
 
-/*** Multithreaded version of IdGen ***/
-class BikeIdGen {
-private:
-  int used_n;
-
-  struct IdRange {
-    int l = 0;
-    int r = 0;
-  };
-  TLS<IdRange> range;
-public:
-
-  BikeIdGen() :
-    used_n(0) {}
-
-  int next_id() {
-    IdRange &cur = *range;
-    if (unlikely (cur.l == cur.r)) {
-      int old_used_n;
-      while (true) {
-        old_used_n = used_n;
-        if (__sync_bool_compare_and_swap(&used_n, old_used_n, old_used_n + 4096)) {
-          break;
-        }
-        usleep(250);
-      }
-      cur.l = old_used_n;
-      cur.r = old_used_n + 4096;
-    }
-    int index = cur.l++;
-    return index;
-  }
-};
 
 /*** Multithreaded hash table ***/
-//long long -> T
 //Too much memory, not resizable, do not support collisions. Yep.
 static const int N = 1000000;
 
@@ -532,12 +492,13 @@ public:
   };
 
 private:
-  BikeIdGen id_gen;
   HTNode *nodes;
+  int used_size;
   int nodes_size;
 public:
   HT() :
     nodes(new HTNode[N]),
+    used_size(0),
     nodes_size(N) {
   }
 
@@ -551,7 +512,7 @@ public:
         }
       }
       if (nodes[i].hash == 0 && !__sync_bool_compare_and_swap(&nodes[i].hash, 0, hash)) {
-        int id = id_gen.next_id();
+        int id = atomic_int_inc(&used_size);
         assert (id * 2 < N);
         continue;
       }
@@ -572,7 +533,6 @@ public:
 };
 
 
-#define BICYCLE_DL_PSTR
 #define dl_pstr bicycle_dl_pstr
 char *bicycle_dl_pstr(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 

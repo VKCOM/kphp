@@ -34,7 +34,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
       local->to_forbid = x_var;
       for (int i = 0; i < forbidden_vars.size(); i++) {
         if (forbidden_vars[i]->name == x_var->name) {
-          swap(forbidden_vars[i], forbidden_vars.back());
+          std::swap(forbidden_vars[i], forbidden_vars.back());
           forbidden_vars.pop_back();
           break;
         }
@@ -61,7 +61,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
     for (int i = 0; i < forbidden_vars.size(); i++) {
       if (var->name == forbidden_vars[i]->name) {
         kphp_warning (dl_pstr("Reference foreach value \"%s\" is used after foreach", var->name.c_str()));
-        swap(forbidden_vars[i], forbidden_vars.back());
+        std::swap(forbidden_vars[i], forbidden_vars.back());
         forbidden_vars.pop_back();
         break;
       }

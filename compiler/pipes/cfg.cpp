@@ -1317,7 +1317,7 @@ void CFG::process_function(FunctionPtr function) {
   data->unused_vertices(unused_vertices);
 
   std::for_each(splittable_vars.begin(), splittable_vars.end(), std::bind1st(std::mem_fun(&CFG::process_var), this));
-  clear(node_gen);
+  node_gen.clear();
 }
 
 void CFG::run(CFGData *new_data) {

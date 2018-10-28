@@ -89,7 +89,7 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return tp_var;
   }
 
-  return max(a, b);
+  return std::max(a, b);
 }
 
 /*** Key ***/
@@ -153,11 +153,6 @@ string Key::to_string() const {
   }
   dl_unreachable("...");
   return "fail";
-}
-
-/*** MultiKey ***/
-MultiKey::MultiKey() :
-  keys_() {
 }
 
 MultiKey::MultiKey(const vector<Key> &keys) :
@@ -304,8 +299,7 @@ TypeData::TypeData() :
   flags_(0),
   generation_(current_generation()),
   parent_(nullptr),
-  anykey_value(nullptr),
-  subkeys_values() {
+  anykey_value(nullptr) {
 }
 
 TypeData::TypeData(PrimitiveType ptype) :
@@ -313,8 +307,7 @@ TypeData::TypeData(PrimitiveType ptype) :
   flags_(0),
   generation_(current_generation()),
   parent_(nullptr),
-  anykey_value(nullptr),
-  subkeys_values() {
+  anykey_value(nullptr) {
   if (ptype_ == tp_False) {
     set_or_false_flag(true);
     ptype_ = tp_Unknown;
@@ -912,10 +905,7 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
   if (can_store_false(type1) && can_store_false(type2)) {
     return true;
   }
-  if (type1->ptype() == type2->ptype()) {
-    return true;
-  }
-  return false;
+  return type1->ptype() == type2->ptype();
 }
 
 

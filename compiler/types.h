@@ -77,7 +77,7 @@ private:
 public:
   typedef vector<Key>::const_iterator iterator;
   typedef vector<Key>::const_reverse_iterator reverse_iterator;
-  MultiKey();
+  MultiKey() = default;
   MultiKey(const MultiKey &multi_key);
   MultiKey &operator=(const MultiKey &multi_key);
   explicit MultiKey(const vector<Key> &keys);

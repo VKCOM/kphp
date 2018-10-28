@@ -55,7 +55,7 @@ public:
   void run(const GraphT &graph, const GraphT &rev_graph, const vector<VertexT> &vertices,
            MergeReachalbeCallback<VertexT> *callback) {
     int vertex_n = (int)vertices.size();
-    IdMap<int> was(vertex_n, 0);
+    IdMap<int> was(vertex_n);
     vector<VertexT> topsorted;
     for (const auto &vertex : vertices) {
       dfs(vertex, rev_graph, &was, &topsorted);

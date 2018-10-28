@@ -430,49 +430,49 @@ void KphpEnviroment::init_dest_dirs() {
 }
 
 void KphpEnviroment::debug() const {
-  cerr << "HOME=[" << get_home() << "]\n" <<
-       "KPHP_USE_SAFE_INTEGER_ARITHMETIC=[" << get_use_safe_integer_arithmetic() << "]\n" <<
-       "KPHP_BASE_DIR=[" << get_base_dir() << "]\n" <<
-       "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
-       "KPHP_FUNCTIONS=[" << get_functions() << "]\n" <<
-       "KPHP_INDEX=[" << get_index() << "]\n" <<
-       "KPHP_JOBS_COUNT=[" << get_jobs_count() << "]\n" <<
-       "KPHP_MODE=[" << get_mode() << "]\n" <<
-       "KPHP_LINK_FILE=[" << get_link_file() << "]\n" <<
-       "KPHP_USE_MAKE=[" << get_use_make() << "]\n" <<
-       "KPHP_THREADS_COUNT=[" << get_threads_count() << "]\n" <<
-       "KPHP_PATH=[" << get_path() << "]\n" <<
-       "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<
-       "KPHP_LIB_VERSION=[" << get_lib_version() << "]\n" <<
-       "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
+  std::cerr << "HOME=[" << get_home() << "]\n" <<
+            "KPHP_USE_SAFE_INTEGER_ARITHMETIC=[" << get_use_safe_integer_arithmetic() << "]\n" <<
+            "KPHP_BASE_DIR=[" << get_base_dir() << "]\n" <<
+            "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
+            "KPHP_FUNCTIONS=[" << get_functions() << "]\n" <<
+            "KPHP_INDEX=[" << get_index() << "]\n" <<
+            "KPHP_JOBS_COUNT=[" << get_jobs_count() << "]\n" <<
+            "KPHP_MODE=[" << get_mode() << "]\n" <<
+            "KPHP_LINK_FILE=[" << get_link_file() << "]\n" <<
+            "KPHP_USE_MAKE=[" << get_use_make() << "]\n" <<
+            "KPHP_THREADS_COUNT=[" << get_threads_count() << "]\n" <<
+            "KPHP_PATH=[" << get_path() << "]\n" <<
+            "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<
+            "KPHP_LIB_VERSION=[" << get_lib_version() << "]\n" <<
+            "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
 
-       "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
-       "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
-       "KPHP_DEST_CPP_DIR=[" << get_dest_cpp_dir() << "]\n" <<
-       "KPHP_DEST_OBJS_DIR=[" << get_dest_objs_dir() << "]\n" <<
-       "CXX=[" << get_cxx() << "]\n" <<
-       "CXX_FLAGS=[" << get_cxx_flags() << "]\n" <<
-       "LD_FLAGS=[" << get_ld_flags() << "]\n";
-  cerr << "KPHP_INCLUDES=[";
+            "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
+            "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
+            "KPHP_DEST_CPP_DIR=[" << get_dest_cpp_dir() << "]\n" <<
+            "KPHP_DEST_OBJS_DIR=[" << get_dest_objs_dir() << "]\n" <<
+            "CXX=[" << get_cxx() << "]\n" <<
+            "CXX_FLAGS=[" << get_cxx_flags() << "]\n" <<
+            "LD_FLAGS=[" << get_ld_flags() << "]\n";
+  std::cerr << "KPHP_INCLUDES=[";
   bool is_first = true;
   for (const auto &include : get_includes()) {
     if (is_first) {
       is_first = false;
     } else {
-      cerr << ";";
+      std::cerr << ";";
     }
-    cerr << include;
+    std::cerr << include;
   }
-  cerr << "]\n";
-  cerr << "KPHP_MAIN_FILES=[";
+  std::cerr << "]\n";
+  std::cerr << "KPHP_MAIN_FILES=[";
   is_first = true;
   for (const auto &main_file : get_main_files()) {
     if (is_first) {
       is_first = false;
     } else {
-      cerr << ";";
+      std::cerr << ";";
     }
-    cerr << main_file;
+    std::cerr << main_file;
   }
-  cerr << "]\n";
+  std::cerr << "]\n";
 }

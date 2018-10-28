@@ -94,7 +94,7 @@ public:
     block_t *block = to_block(ptr);
     size_t old_size = block->size;
     void *res = alloc(new_size);
-    memcpy(res, ptr, min(old_size, new_size));
+    memcpy(res, ptr, std::min(old_size, new_size));
     block_free(block);
     return res;
   }

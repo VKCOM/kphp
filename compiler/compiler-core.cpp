@@ -260,7 +260,7 @@ pair<SrcFilePtr, bool> CompilerCore::require_file(const string &file_name, const
     required = true;
     os << file;
   }
-  return make_pair(file, required);
+  return {file, required};
 }
 
 

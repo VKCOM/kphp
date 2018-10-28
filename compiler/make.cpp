@@ -257,7 +257,7 @@ bool Make::make_target(Target *target, int jobs_count) {
     start_jobs_st
   } state = start_jobs_st;
   while (true) {
-    int perc = (total_jobs - targets_left) * 100 / max(1, total_jobs);
+    int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
     if (old_perc != perc) {
       fprintf(stderr, "%3d%% [total jobs %d] [left jobs %d] [running jobs %d] [waiting jobs %d]\n",
               perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);

@@ -111,11 +111,6 @@ static inline void trim(std::string &s) {
   rtrim(s);
 }
 
-template<class T>
-void clear(T &val) {
-  val.clear();
-}
-
 template<class ArrayType, class IndexType>
 IndexType dsu_get(ArrayType *arr, IndexType i) {
   if ((*arr)[i] == i) {

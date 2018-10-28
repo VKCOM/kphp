@@ -55,14 +55,8 @@ void set_index(Id<T> &d, int index) {
 
 /*** IdMap ***/
 template<class DataType>
-IdMap<DataType>::IdMap() :
-  def_val() {
-}
-
-template<class DataType>
-IdMap<DataType>::IdMap(int size, DataType val) :
-  def_val(val),
-  data(size, def_val) {
+IdMap<DataType>::IdMap(int size) :
+  data(size) {
 }
 
 template<class DataType>
@@ -99,24 +93,9 @@ void IdMap<DataType>::clear() {
 }
 
 template<class DataType>
-void IdMap<DataType>::renumerate_ids(const vector<int> &new_ids) {
-  int max_id = *std::max_element(new_ids.begin(), new_ids.end());
-  vector<DataType> new_data(max_id + 1);
-
-  for (int i = 0; i < (int)new_ids.size(); i++) {
-    int new_id = new_ids[i];
-    if (new_id >= 0) {
-      std::swap(new_data[new_id], data[i]);
-    }
-  }
-
-  std::swap(data, new_data);
-}
-
-template<class DataType>
 void IdMap<DataType>::update_size(int n) {
   assert ((int)data.size() <= n);
-  data.resize(n, def_val);
+  data.resize(n);
 }
 
 /*** IdGen ***/
@@ -129,11 +108,6 @@ template<class IdType>
 void IdGen<IdType>::add_id_map(IdMapBase *to_add) {
   to_add->update_size((n | 0xff) + 1);
   id_maps.push_back(to_add);
-}
-
-template<class IdType>
-void IdGen<IdType>::remove_id_map(IdMapBase *to_remove) {
-  id_maps.erase(find(id_maps.begin(), id_maps.end(), to_remove));
 }
 
 template<class IdType>
@@ -172,36 +146,12 @@ typename IdGen<IdType>::iterator IdGen<IdType>::end() {
 template<class IdType>
 void IdGen<IdType>::clear() {
   n = 0;
-  std::for_each(ids.begin(), ids.end(), ::clear<IdType>);
-  ::clear(ids);
+  for (auto &x: ids) {
+    x.clear();
+  }
+  ids.clear();
   for (int i = 0; i < (int)id_maps.size(); i++) {
-    ::clear(*id_maps[i]);
+    id_maps[i]->clear();
   }
-  ::clear(id_maps);
-}
-
-template<class IdType>
-template<class IndexType>
-void IdGen<IdType>::delete_ids(const vector<IndexType> &to_del) {
-  vector<int> new_ids(size(), 0);
-
-  for (int i = 0; i < (int)to_del.size(); i++) {
-    new_ids[get_index(to_del[i])] = -1;
-    clear(ids[to_del[i]]);
-  }
-
-  for (int i = 0, cur = 0; i < size(); i++) {
-    if (new_ids[i] == 0) {
-      new_ids[i] = cur++;
-    }
-  }
-
-  ids.renumerate_ids(new_ids);
-  for (int i = 0; i < (int)id_maps.size(); i++) {
-    id_maps[i]->renumerate_ids(new_ids);
-  }
-
-  for (int i = 0; i < size(); i++) {
-    set_index(ids[i], i);
-  }
+  id_maps.clear();
 }

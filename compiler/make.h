@@ -53,7 +53,7 @@ private:
   int targets_left;
   vector<Target *> all_targets;
 
-  priority_queue<Target *, vector<Target *>, compare_by_priority> pending_jobs;
+  std::priority_queue<Target *, vector<Target *>, compare_by_priority> pending_jobs;
   map<int, Target *> jobs;
 
   bool fail_flag;
