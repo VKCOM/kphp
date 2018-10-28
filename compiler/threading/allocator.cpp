@@ -1,14 +1,13 @@
-#include "compiler/bicycle.h"
-
-#include <pthread.h>
-#include <stdarg.h>
-#include <stddef.h>
+#include <algorithm>
+#include <cassert>
+#include <malloc.h>
+#include <memory.h>
 
 #include "common/container_of.h"
+#include "common/wrappers/likely.h"
 
-__thread int bicycle_thread_id;
+#include "compiler/threading/tls.h"
 
-/*** Malloc hooks ***/
 #ifndef __SANITIZE_ADDRESS__
 extern "C" {
 extern decltype(malloc) __libc_malloc;
@@ -138,31 +137,3 @@ void free(void *ptr) {
 }
 #endif
 
-int get_thread_id() {
-  return bicycle_thread_id;
-}
-
-void set_thread_id(int new_thread_id) {
-  bicycle_thread_id = new_thread_id;
-}
-
-/*** ThreadLocalStorage ***/
-
-volatile int bicycle_counter;
-
-TLS<Profiler> profiler;
-
-
-typedef char pstr_buff_t[5000];
-TLS<pstr_buff_t> pstr_buff;
-
-char *bicycle_dl_pstr(char const *msg, ...) {
-  pstr_buff_t &s = *pstr_buff;
-  va_list args;
-
-  va_start (args, msg);
-  vsnprintf(s, 5000, msg, args);
-  va_end (args);
-
-  return s;
-}

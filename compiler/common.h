@@ -34,9 +34,9 @@ using std::queue;
 using std::stringstream;
 using std::string;
 
-#define DISALLOW_COPY_AND_ASSIGN(type_name) \
-  type_name (const type_name&);             \
-  void operator = (const type_name&);
+#define DISALLOW_COPY_AND_ASSIGN(type_name)   \
+  type_name (const type_name&) = delete;      \
+  void operator = (const type_name&) = delete;
 
 
 bool use_safe_integer_arithmetic __attribute__ ((weak)) = false;

@@ -5,11 +5,17 @@
 #include "common/algorithms/find.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-info.h"
+#include "compiler/data/src-file.h"
 #include "compiler/debug.h"
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/vertex.h"
 
 GenTree::GenTree() :
   line_num(-1),
@@ -2280,7 +2286,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
 VertexPtr GenTree::get_instance_var_list(Token *phpdoc_token, AccessType access_type) {
   kphp_error(cur_class, "var declaration is outside of class");
 
-  const string_ref &var_name = (*cur)->str_val;
+  const vk::string_view &var_name = (*cur)->str_val;
   CE (expect(tok_var_name, "expected variable name"));
 
   VertexPtr def_val;

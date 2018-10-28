@@ -1,10 +1,11 @@
 #pragma once
 
-#include "compiler/bicycle.h"
 #include "compiler/common.h"
 #include "compiler/data_ptr.h"
 #include "compiler/location.h"
 #include "compiler/scheduler/task.h"
+#include "compiler/threading/locks.h"
+#include "compiler/threading/tls.h"
 #include "compiler/types.h"
 
 namespace tinf {

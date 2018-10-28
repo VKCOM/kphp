@@ -2,7 +2,8 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
-#include "compiler/data.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/pipes/register-variables.h"

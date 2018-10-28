@@ -1,6 +1,6 @@
 #include "compiler/enviroment.h"
 
-#include "compiler/utils.h"
+#include "compiler/utils/string-utils.h"
 
 /*** Enviroment ***/
 

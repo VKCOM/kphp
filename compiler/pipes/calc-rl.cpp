@@ -1,6 +1,7 @@
 #include "compiler/pipes/calc-rl.h"
 
-#include "compiler/data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/vertex.h"
 
 void rl_calc(VertexPtr root, RLValueType expected_rl_type);
 

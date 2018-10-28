@@ -1,7 +1,7 @@
 #pragma once
 
-#include "compiler/bicycle.h"
 #include "compiler/data_ptr.h"
+#include "compiler/threading/data-stream.h"
 
 class CollectRequiredF {
 public:

@@ -1,6 +1,8 @@
 #include "compiler/pipes/check-infered-instances.h"
 
-#include "compiler/data.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
 
 void CheckInferredInstancesPass::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Check inferred instances");

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "compiler/common.h"
-
-#include "compiler/trie.h"
+#include "compiler/utils/trie.h"
 
 template<typename T>
 struct Helper {

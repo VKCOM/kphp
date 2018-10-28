@@ -8,7 +8,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"
-#include "compiler/utils.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 #if __cplusplus < 201103L

@@ -2,7 +2,6 @@
 
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
 #include "compiler/gentree.h"
 
 /*** C++ undefined behaviour fixes ***/

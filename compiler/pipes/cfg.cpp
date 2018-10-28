@@ -1,7 +1,8 @@
 #include "compiler/pipes/cfg.h"
 
-#include "compiler/data.h"
 #include "compiler/gentree.h"
+#include "compiler/utils/dsu.h"
+#include "compiler/utils/idgen.h"
 
 class CFGData {
 private:

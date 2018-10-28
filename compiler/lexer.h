@@ -1,10 +1,9 @@
 #pragma once
 
 #include "compiler/common.h"
-
-#include "compiler/data.h"
 #include "compiler/helper.h"
-#include "compiler/utils.h"
+#include "compiler/token.h"
+#include "compiler/utils/string-utils.h"
 
 struct LexerData {
   LexerData();

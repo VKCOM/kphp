@@ -14,7 +14,6 @@
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
 
-#include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data_ptr.h"
@@ -72,7 +71,7 @@
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer.h"
-#include "compiler/utils.h"
+#include "compiler/utils/string-utils.h"
 
 class lockf_wrapper {
   std::string locked_filename_;

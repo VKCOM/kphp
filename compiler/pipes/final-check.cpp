@@ -1,7 +1,8 @@
 #include "compiler/pipes/final-check.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/io.h"
+#include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {

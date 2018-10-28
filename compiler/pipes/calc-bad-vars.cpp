@@ -1,7 +1,9 @@
 #include "compiler/pipes/calc-bad-vars.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/utils/idmap.h"
 
 /*** Common algorithm ***/
 // Graph G

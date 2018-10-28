@@ -1,7 +1,9 @@
 #include "compiler/pipes/file-to-tokens.h"
 
-#include "compiler/io.h"
+#include "compiler/data/src-file.h"
 #include "compiler/lexer.h"
+#include "compiler/stage.h"
+#include "compiler/threading/profiler.h"
 
 void FileToTokensF::execute(SrcFilePtr file, DataStream<FileAndTokens> &os) {
   AUTO_PROF(lexer);

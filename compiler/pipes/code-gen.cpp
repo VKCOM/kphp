@@ -2,9 +2,12 @@
 
 #include "common/algorithms/find.h"
 
-#include "compiler/bicycle.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/scheduler/scheduler-base.h"
@@ -118,7 +121,7 @@ public:
   inline CodeGenerator &operator<<(const char *s);
   inline CodeGenerator &operator<<(char c);
   inline CodeGenerator &operator<<(const string &s);
-  inline CodeGenerator &operator<<(const string_ref &s);
+  inline CodeGenerator &operator<<(const vk::string_view &s);
 
   template<Operation Op>
   inline CodeGenerator &operator<<(VertexAdaptor<Op> vertex);
@@ -202,10 +205,10 @@ struct Indent {
 };
 
 struct PlainCode {
-  string_ref str;
+  vk::string_view str;
   inline PlainCode(const char *s);
   inline PlainCode(const string &s);
-  inline PlainCode(const string_ref &s);
+  inline PlainCode(const vk::string_view &s);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -539,7 +542,7 @@ inline CodeGenerator &CodeGenerator::operator<<(const char *s) {
 }
 
 inline CodeGenerator &CodeGenerator::operator<<(char c) {
-  string_ref s(&c, &c + 1);
+  vk::string_view s(&c, &c + 1);
   return (*this) << PlainCode(s);
 }
 
@@ -547,7 +550,7 @@ inline CodeGenerator &CodeGenerator::operator<<(const string &s) {
   return (*this) << PlainCode(s);
 }
 
-inline CodeGenerator &CodeGenerator::operator<<(const string_ref &s) {
+inline CodeGenerator &CodeGenerator::operator<<(const vk::string_view &s) {
   return (*this) << PlainCode(s);
 }
 
@@ -677,7 +680,7 @@ inline PlainCode::PlainCode(const string &s) :
   str(&s[0], &s[0] + s.size()) {
 }
 
-inline PlainCode::PlainCode(const string_ref &s) :
+inline PlainCode::PlainCode(const vk::string_view &s) :
   str(s) {
 }
 

@@ -1,6 +1,7 @@
 #include "compiler/pipes/check-access-modifiers.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 
 bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {

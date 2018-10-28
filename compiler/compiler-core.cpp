@@ -3,8 +3,12 @@
 #include <numeric>
 
 #include "compiler/const-manipulations.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/make.h"
+#include "compiler/threading/hash-table.h"
 
 FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
@@ -45,7 +49,7 @@ const KphpEnviroment &CompilerCore::env() const {
 
 
 FunctionPtr CompilerCore::get_function(const string &name) {
-  HT<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+  TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
   AutoLocker<Lockable *> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
     return FunctionPtr();
@@ -57,12 +61,12 @@ FunctionPtr CompilerCore::get_function(const string &name) {
 }
 
 VertexPtr CompilerCore::get_extern_func_header(const string &name) {
-  HT<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
+  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
   return node->data;
 }
 
 void CompilerCore::save_extern_func_header(const string &name, VertexPtr header) {
-  HT<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
+  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
   AutoLocker<Lockable *> locker(node);
   kphp_error_return (
     !node->data,
@@ -152,7 +156,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, const string &co
   }
 
   //register file if needed
-  HT<SrcFilePtr>::HTNode *node = file_ht.at(hash_ll(full_file_name + context));
+  TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(hash_ll(full_file_name + context));
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
@@ -229,7 +233,7 @@ ClassPtr CompilerCore::register_class(ClassPtr cur_class) {
     cur_class->init_function->class_id = cur_class;
   }
 
-  HT<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(cur_class->name));
+  TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(cur_class->name));
   AutoLocker<Lockable *> locker(node);
   kphp_error_act (
     !node->data,
@@ -269,7 +273,7 @@ ClassPtr CompilerCore::get_class(const string &name) {
 }
 
 bool CompilerCore::register_define(DefinePtr def_id) {
-  HT<DefinePtr>::HTNode *node = defines_ht.at(hash_ll(def_id->name));
+  TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(hash_ll(def_id->name));
   AutoLocker<Lockable *> locker(node);
 
   kphp_error_act (
@@ -295,7 +299,7 @@ VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
 
 VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
                                     VertexPtr init_val) {
-  HT<VarPtr>::HTNode *node = global_vars_ht.at(hash_ll(name));
+  TSHashTable<VarPtr>::HTNode *node = global_vars_ht.at(hash_ll(name));
   VarPtr new_var;
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
@@ -586,6 +590,9 @@ void CompilerCore::make() {
       stage::die_if_global_errors();
     }
   }
+}
+bool CompilerCore::try_require_file(SrcFilePtr file) {
+  return __sync_bool_compare_and_swap(&file->is_required, false, true);
 }
 
 CompilerCore *G;

@@ -1,5 +1,6 @@
 #include "compiler/pipes/split-switch.h"
 
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"

@@ -1,5 +1,7 @@
 #include "compiler/pipes/register-defines.h"
 
+#include "compiler/data/define-data.h"
+
 VertexPtr RegisterDefinesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_defined) {
     bool is_defined = false;
@@ -41,7 +43,7 @@ VertexPtr RegisterDefinesPass::on_enter_vertex(VertexPtr root, LocalT *) {
         def->define_id = d;
         root = def;
       } else {
-        assert (0 && "unreachable branch");
+        kphp_assert (0 && "unreachable branch");
       }
     }
   }

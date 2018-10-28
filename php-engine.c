@@ -3228,8 +3228,8 @@ void start_server(void) {
       hts_stop();
     }
 
-    if (epoll_pre_event) {
-      epoll_pre_event();
+    if (main_thread_reactor.pre_event) {
+      main_thread_reactor.pre_event();
     }
 
     if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag &&

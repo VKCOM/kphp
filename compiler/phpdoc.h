@@ -45,20 +45,20 @@ class PhpDocTypeRuleParser {
 
   VertexPtr create_type_help_vertex(PrimitiveType type);
   VertexPtr create_type_help_class_vertex(ClassPtr klass);
-  string_ref extract_classname_from_pos(const string_ref &str, size_t pos);
-  VertexPtr parse_simple_type(const string_ref &s, size_t &pos);
-  VertexPtr parse_type_array(const string_ref &s, size_t &pos);
-  VertexPtr parse_type_expression(const string_ref &s, size_t &pos);
+  vk::string_view extract_classname_from_pos(const vk::string_view &str, size_t pos);
+  VertexPtr parse_simple_type(const vk::string_view &s, size_t &pos);
+  VertexPtr parse_type_array(const vk::string_view &s, size_t &pos);
+  VertexPtr parse_type_expression(const vk::string_view &s, size_t &pos);
 
 public:
   PhpDocTypeRuleParser(FunctionPtr current_function) :
     current_function(current_function) {}
 
-  VertexPtr parse_from_type_string(const string_ref &type_str);
+  VertexPtr parse_from_type_string(const vk::string_view &type_str);
 
-  static bool find_tag_in_phpdoc(const string_ref &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset = 0);
+  static bool find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset = 0);
   static void run_tipa_unit_tests_parsing_tags();
 };
 
-std::vector<php_doc_tag> parse_php_doc(const string_ref &phpdoc);
-VertexPtr phpdoc_parse_type(const string_ref &type_str, FunctionPtr current_function);
+std::vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc);
+VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function);

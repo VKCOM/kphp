@@ -1,11 +1,11 @@
 #include "compiler/stage.h"
 
-#include "compiler/bicycle.h"
+#include "common/termformat/termformat.h"
+
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/io.h"
-#include "common/termformat/termformat.h"
 
 int stage::warnings_count;
 
@@ -124,7 +124,7 @@ void stage::print_line(FILE *f) {
 
 void stage::print_comment(FILE *f) {
   if (get_line() > 0) {
-    string_ref comment = get_file()->get_line(get_line());
+    vk::string_view comment = get_file()->get_line(get_line());
     fprintf(f, "//%4d:", get_line());
     int last_printed = ':';
     for (int j = 0, nj = comment.size(); j < nj; j++) {

@@ -8,15 +8,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "compiler/bicycle.h"
 #include "compiler/compiler.h"
-#include "compiler/data.h"
+#include "compiler/data/function-info.h"
+#include "compiler/data/var-data.h"
 #include "compiler/data_ptr.h"
 #include "compiler/function-pass.h"
 #include "compiler/index.h"
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/hash-table.h"
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization
@@ -24,21 +26,19 @@
 class CompilerCore {
 private:
   Index cpp_index;
-  HT<SrcFilePtr> file_ht;
-  HT<FunctionPtr> functions_ht;
-  HT<DefinePtr> defines_ht;
-  HT<VarPtr> global_vars_ht;
+  TSHashTable<SrcFilePtr> file_ht;
+  TSHashTable<FunctionPtr> functions_ht;
+  TSHashTable<DefinePtr> defines_ht;
+  TSHashTable<VarPtr> global_vars_ht;
   vector<SrcFilePtr> main_files;
   KphpEnviroment *env_;
-  HT<ClassPtr> classes_ht;
+  TSHashTable<ClassPtr> classes_ht;
   // это костыль, который должен уйти, когда мы перепишем часть php-кода
-  HT<VertexPtr> extern_func_headers_ht;
+  TSHashTable<VertexPtr> extern_func_headers_ht;
 
   void create_builtin_classes();
 
-  inline bool try_require_file(SrcFilePtr file) {
-    return __sync_bool_compare_and_swap(&file->is_required, false, true);
-  }
+  inline bool try_require_file(SrcFilePtr file);
 
 public:
   string cpp_dir;
@@ -60,8 +60,8 @@ public:
   template <class CallbackT>
   void operate_on_function_locking(const string &name, CallbackT callback) {
     static_assert(std::is_constructible<std::function<void(FunctionPtr&)>, CallbackT>::value, "invalid callback signature");
-    
-    HT<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+
+    TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
     AutoLocker<Lockable *> locker(node);
     callback(node->data);
   }

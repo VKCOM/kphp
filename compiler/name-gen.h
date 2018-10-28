@@ -22,14 +22,3 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v);
 string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim = '$');
 string get_full_static_member_name(FunctionPtr function, const string &name, bool append_with_context = false);
 string resolve_define_name(string name);
-
-static inline string replace_characters(string s, char from, char to) {
-  std::replace(s.begin(), s.end(), from, to);
-  return s;
-}
-
-static inline string replace_backslashes(const string &s) {
-  return replace_characters(s, '\\', '$');
-}
-
-

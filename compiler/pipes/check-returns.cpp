@@ -1,5 +1,6 @@
 #include "compiler/pipes/check-returns.h"
 
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/io.h"
 

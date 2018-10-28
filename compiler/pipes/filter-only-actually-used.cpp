@@ -1,5 +1,9 @@
 #include "compiler/pipes/filter-only-actually-used.h"
 
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/threading/profiler.h"
+
 void FilterOnlyActuallyUsedFunctionsF::calc_throws_having_call_edges(vector<FunctionAndEdges> &all) {
   vector<FunctionPtr> from;
 

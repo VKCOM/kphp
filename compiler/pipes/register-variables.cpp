@@ -1,6 +1,8 @@
 #include "compiler/pipes/register-variables.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
 
 VarPtr RegisterVariablesPass::create_global_var(const string &name) {

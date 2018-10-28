@@ -1,7 +1,7 @@
 #pragma once
 
-#include "compiler/bicycle.h"
 #include "compiler/scheduler/node.h"
+#include "compiler/threading/data-stream.h"
 
 class Task;
 

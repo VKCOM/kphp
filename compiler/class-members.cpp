@@ -1,9 +1,13 @@
 #include "compiler/class-members.h"
-#include "compiler/data.h"
-#include "compiler/name-gen.h"
-#include "compiler/debug.h"
+
 #include "common/wrappers/string_view.h"
 
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/debug.h"
+#include "compiler/name-gen.h"
+#include "compiler/vertex.h"
 
 const string &ClassMemberStaticMethod::global_name() const {
   return function->name;

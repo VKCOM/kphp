@@ -1,6 +1,7 @@
 #pragma once
 
-#include "compiler/bicycle.h"
+#include "compiler/data_ptr.h"
+#include "compiler/threading/data-stream.h"
 
 /*
  * Для всех функций, всех переменных проверяем, что если делались предположения насчёт классов, то они совпали с выведенными.

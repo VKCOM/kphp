@@ -3,8 +3,8 @@
 #include "auto/compiler/vertex/vertex-all.h"
 
 #include "compiler/data_ptr.h"
-#include "compiler/graph.h"
 #include "compiler/stage.h"
+#include "compiler/threading/profiler.h"
 #include "compiler/type-inferer-core.h"
 #include "compiler/types.h"
 

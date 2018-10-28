@@ -1,6 +1,6 @@
 #include "compiler/pipes/check-function-calls.h"
 
-#include "compiler/io.h"
+#include "compiler/data/src-file.h"
 
 void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   FunctionPtr f = call->get_func_id();

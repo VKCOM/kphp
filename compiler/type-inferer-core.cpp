@@ -1,6 +1,8 @@
 #include "compiler/type-inferer-core.h"
 
-#include "compiler/data.h"
+#include "compiler/stage.h"
+#include "compiler/threading/profiler.h"
+#include "compiler/threading/thread-id.h"
 
 namespace tinf {
 Node::Node() :

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 
 class FinalCheckPass : public FunctionPassBase {

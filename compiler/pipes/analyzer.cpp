@@ -1,7 +1,7 @@
 #include "compiler/pipes/analyzer.h"
 
-#include "compiler/data.h"
-#include "compiler/function-pass.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/var-data.h"
 
 void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
   bool have_arrow = false;

@@ -1,10 +1,15 @@
 #include "compiler/type-inferer.h"
-#include <regex>
-#include <iomanip>
 
-#include "compiler/gentree.h"
-#include "common/wrappers/string_view.h"
+#include <iomanip>
+#include <regex>
+
 #include "common/termformat/termformat.h"
+#include "common/wrappers/string_view.h"
+
+#include "compiler/data/class-data.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/gentree.h"
 
 void init_functions_tinf_nodes(FunctionPtr function) {
   assert (function->tinf_state == 1);
@@ -1142,3 +1147,17 @@ const TypeData *tinf::get_type(FunctionPtr function, int id) {
   return get_type(function, id, tinf::get_inferer());
 }
 
+bool RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType::is_same_vars(const tinf::Node *node, VertexPtr vertex) {
+  if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
+    if (vertex->type() == op_var) {
+      if (!vertex->get_var_id() && !var_node->var_) {
+        return true;
+      }
+
+      return vertex->get_var_id() && var_node->var_ &&
+             vertex->get_var_id()->name == var_node->var_->name;
+    }
+  }
+
+  return false;
+}

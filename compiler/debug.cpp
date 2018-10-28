@@ -1,11 +1,11 @@
-//
-// Created by alexandr.kirsanov on 03/01/2018.
-//
-
 #include "compiler/debug.h"
 
 #include <string>
 #include <vector>
+
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/vertex.h"
 
 static std::map<TokenType, std::string> TOKEN_TYPE_NAMES;
 static std::map<Operation, std::string> OPERATION_NAMES;

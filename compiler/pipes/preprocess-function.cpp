@@ -1,8 +1,9 @@
 #include "compiler/pipes/preprocess-function.h"
 
+#include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
-#include "compiler/io.h"
 
 class PreprocessFunctionPass : public FunctionPassBase {
 private:

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "compiler/bicycle.h"
 #include "compiler/pipes/function-and-cfg.h"
+#include "compiler/threading/data-stream.h"
 
 class CheckReturnsF {
 public:

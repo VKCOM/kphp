@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+volatile int tasks_before_sync_node;
+
 static SchedulerBase *scheduler;
 
 void set_scheduler(SchedulerBase *new_scheduler) {

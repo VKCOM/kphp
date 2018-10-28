@@ -3,7 +3,6 @@
 #include <unordered_map>
 
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
 #include "compiler/phpdoc.h"
 
 static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_function> header) {

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "compiler/common.h"
-
-#include "compiler/utils.h"
+#include "compiler/utils/string-utils.h"
 
 enum TokenType {
   tok_empty,
@@ -189,13 +188,13 @@ enum TokenType {
 class Token {
 public:
   TokenType type_;
-  string_ref str_val;
-  string_ref debug_str;
+  vk::string_view str_val;
+  vk::string_view debug_str;
 
   int line_num;
 
   explicit Token(TokenType type);
-  Token(TokenType type, const string_ref &s);
+  Token(TokenType type, const vk::string_view &s);
   Token(TokenType type, const char *s, const char *t);
 
   inline TokenType &type() { return type_; }

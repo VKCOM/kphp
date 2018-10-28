@@ -1,8 +1,9 @@
 #include "compiler/pipes/collect-required.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
-#include "compiler/io.h"
 
 class CollectRequiredPass : public FunctionPassBase {
 private:

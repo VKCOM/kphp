@@ -8,7 +8,7 @@ Token::Token(TokenType type_) :
   line_num(-1) {
 }
 
-Token::Token(TokenType type_, const string_ref &s) :
+Token::Token(TokenType type_, const vk::string_view &s) :
   type_(type_),
   str_val(s),
   debug_str(nullptr, nullptr),

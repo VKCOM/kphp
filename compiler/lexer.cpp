@@ -2,11 +2,9 @@
 
 #include "auto/compiler/keywords_set.hpp"
 
-#include "compiler/bicycle.h"
 #include "compiler/io.h"
 #include "compiler/stage.h"
-
-//FILE *F = fopen ("tok", "w");
+#include "compiler/threading/thread-id.h"
 
 template<class T>
 class Singleton {
@@ -77,7 +75,7 @@ void LexerData::pass_raw(int shift) {
 void LexerData::add_token_(Token *tok, int shift) {
   kphp_assert (code + shift <= code_end);
   tok->line_num = line_num;
-  tok->debug_str = string_ref(code, code + shift);
+  tok->debug_str = vk::string_view(code, code + shift);
   tokens.push_back(tok);
   //fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
   pass(shift);
@@ -164,7 +162,7 @@ void LexerData::post_process(const string &main_func_name) {
 
     if (!main_func_name.empty()) {
       tokens.push_back(new Token(tok_function));
-      tokens.push_back(new Token(tok_func_name, string_ref_dup(main_func_name)));
+      tokens.push_back(new Token(tok_func_name, string_view_dup(main_func_name)));
       tokens.push_back(new Token(tok_oppar));
       tokens.push_back(new Token(tok_clpar));
     }
@@ -201,7 +199,7 @@ void LexerData::post_process(const string &main_func_name) {
     }
     if (tp == tok_empty) {
       int old_i = i;
-      const string_ref &str_val = oldtokens[i]->str_val;
+      const vk::string_view &str_val = oldtokens[i]->str_val;
 
       switch (oldtokens[i]->type()) {
         case tok_elseif: {
@@ -309,7 +307,7 @@ void LexerData::post_process(const string &main_func_name) {
             }
 
             string pref_name = (oldtokens[i]->type() == tok_static ? "static" : string(oldtokens[i]->str_val));
-            tokens.back()->str_val = string_ref_dup(pref_name + "::" + string(oldtokens[i + 2]->str_val));
+            tokens.back()->str_val = string_view_dup(pref_name + "::" + string(oldtokens[i + 2]->str_val));
             tokens.back()->line_num = oldtokens[i]->line_num;
             i += 3;
           }
@@ -325,7 +323,7 @@ void LexerData::post_process(const string &main_func_name) {
               are_next_tokens(oldtokens, i, tok_opbrk, tok_str, tok_clbrk) &&
               config_func().count(static_cast<string>(oldtokens[i + 2]->str_val))) {
             tokens.push_back(new Token(tok_func_name));
-            tokens.back()->str_val = string_ref_dup((config_func().find(static_cast<string>(oldtokens[i + 2]->str_val)))->second);
+            tokens.back()->str_val = string_view_dup((config_func().find(static_cast<string>(oldtokens[i + 2]->str_val)))->second);
             i += 4;
           }
           break;
@@ -347,7 +345,7 @@ void LexerData::post_process(const string &main_func_name) {
             }
             tokens.push_back(oldtokens[i]);
             tokens.push_back(new Token(tok_func_name));
-            tokens.back()->str_val = string_ref_dup(oldtokens[i + 1]->str_val);
+            tokens.back()->str_val = string_view_dup(oldtokens[i + 1]->str_val);
             i += 2;
           }
           break;
@@ -477,7 +475,7 @@ int TokenLexerName::parse(LexerData *lexer_data) const {
     return TokenLexerError("Variable name expected").parse(lexer_data);
   }
 
-  string_ref name(s, t);
+  vk::string_view name(s, t);
 
   if (type == tok_func_name) {
     const KeywordType *tp = KeywordsSet::get_type(name.begin(), name.size());

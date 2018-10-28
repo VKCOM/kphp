@@ -1,5 +1,7 @@
 #include "compiler/pipes/type-inferer.h"
 
+#include "compiler/data/define-data.h"
+#include "compiler/data/var-data.h"
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/type-inferer-core.h"

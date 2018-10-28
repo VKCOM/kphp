@@ -2,7 +2,6 @@
 
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
 

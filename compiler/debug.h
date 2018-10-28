@@ -1,10 +1,9 @@
 #ifndef PHP_DEBUG_H
 #define PHP_DEBUG_H
 
-#include "compiler/token.h"
+#include "compiler/data_ptr.h"
 #include "compiler/operation.h"
-#include "compiler/data.h"
-
+#include "compiler/token.h"
 
 std::string debugOperationName(Operation o);
 std::string debugTokenName(TokenType t);

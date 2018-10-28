@@ -1,3 +1,24 @@
+#pragma once
+
+#include "compiler/common.h"
+
+template<typename T>
+struct Trie {
+  Trie *next[256];
+  int has_val;
+  T val;
+
+  Trie();
+
+  void add(const string &s, const T &val);
+  T *get_deepest(const char *s);
+  void clear();
+  ~Trie();
+
+private:
+  DISALLOW_COPY_AND_ASSIGN(Trie);
+};
+
 template<typename T>
 Trie<T>::Trie() {
   memset(next, 0, sizeof(next));
@@ -52,4 +73,7 @@ template<typename T>
 Trie<T>::~Trie() {
   clear();
 }
+<<<<<<< HEAD:PHP/compiler/trie.hpp
 
+=======
+>>>>>>> f48689eb... PHP: split some files:PHP/compiler/utils/trie.h

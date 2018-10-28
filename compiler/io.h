@@ -2,34 +2,7 @@
 
 #include "compiler/common.h"
 #include "compiler/data_ptr.h"
-#include "compiler/utils.h"
-
-class SrcFile {
-public:
-  int id;
-  string prefix;
-  string text, file_name, short_file_name;
-  string unified_file_name;
-  string unified_dir_name;
-  bool loaded;
-  bool is_required;
-
-  string main_func_name;
-  FunctionPtr main_function;
-
-  vector<string_ref> lines;
-
-  string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
-  map<string, string> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
-  string class_context;
-
-  SrcFile();
-  SrcFile(const string &file_name, const string &short_file_name, const string &class_context);
-  void add_prefix(const string &s);
-  bool load();
-
-  string_ref get_line(int id);
-};
+#include "compiler/utils/string-utils.h"
 
 struct Line {
   int begin_pos, end_pos;
@@ -134,7 +107,7 @@ public:
 
   void operator()(const string &s);
   void operator()(const char *s);
-  void operator()(const string_ref &s);
+  void operator()(const vk::string_view &s);
   void indent(int diff);
   void new_line();
   void brk();

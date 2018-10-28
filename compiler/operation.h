@@ -1,9 +1,9 @@
 #pragma once
 
-#include "compiler/token.h"
-#include "compiler/utils.h"
-
 #include "auto/compiler/vertex/vertex-types.h"
+
+#include "compiler/token.h"
+#include "compiler/utils/string-utils.h"
 
 enum OperationExtra {
   op_ex_none = 0,

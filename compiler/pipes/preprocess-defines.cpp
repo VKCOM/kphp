@@ -2,6 +2,8 @@
 
 #include "common/version-string.h"
 
+#include "compiler/data/define-data.h"
+
 class CollectDefinesToVectorPass : public FunctionPassBase {
 private:
   vector<VertexPtr> defines;

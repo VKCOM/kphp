@@ -21,8 +21,9 @@
 #include "compiler/class-assumptions.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/phpdoc.h"
-
 
 AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
   for (const auto &a : f->assumptions_for_vars) {

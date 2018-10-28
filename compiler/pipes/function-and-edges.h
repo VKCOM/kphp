@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "compiler/data.h"
 #include "compiler/data_ptr.h"
 
 struct FunctionAndEdges {
@@ -28,9 +27,3 @@ struct FunctionAndEdges {
     edges(edges) {
   }
 };
-
-/*
-static bool operator<(const FunctionAndEdges &a, const FunctionAndEdges &b) {
-  return a.function->id < b.function->id;
-}
-*/

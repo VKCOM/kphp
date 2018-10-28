@@ -1,6 +1,5 @@
 #pragma once
 
-#include "compiler/data.h"
 #include "compiler/function-pass.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer-core.h"
@@ -192,20 +191,7 @@ private:
 
     const TypeData *expected;
 
-    static bool is_same_vars(const tinf::Node *node, VertexPtr vertex) {
-      if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
-        if (vertex->type() == op_var) {
-          if (!vertex->get_var_id() && !var_node->var_) {
-            return true;
-          }
-
-          return vertex->get_var_id() && var_node->var_ &&
-                 vertex->get_var_id()->name == var_node->var_->name;
-        }
-      }
-
-      return false;
-    }
+    static bool is_same_vars(const tinf::Node *node, VertexPtr vertex);
 
     int get_priority(const tinf::Edge *edge) const {
       const tinf::Node *from_node = edge->from;

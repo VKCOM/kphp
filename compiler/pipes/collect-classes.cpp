@@ -1,7 +1,7 @@
 #include "compiler/pipes/collect-classes.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
+#include "compiler/data/class-data.h"
 #include "compiler/name-gen.h"
 
 void CollectClassF::execute(FunctionPtr data, DataStream<FunctionPtr> &os) {

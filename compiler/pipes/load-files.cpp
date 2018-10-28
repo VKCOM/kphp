@@ -1,6 +1,8 @@
 #include "compiler/pipes/load-files.h"
 
-#include "compiler/io.h"
+#include "compiler/data/src-file.h"
+#include "compiler/stage.h"
+#include "compiler/threading/profiler.h"
 
 void LoadFileF::execute(SrcFilePtr file, DataStream<SrcFilePtr> &os) {
   AUTO_PROF (load_files);

@@ -1,6 +1,8 @@
 #include "compiler/types.h"
 
-#include "compiler/data.h"
+#include "compiler/data/class-data.h"
+#include "compiler/stage.h"
+#include "compiler/threading/hash-table.h"
 
 /*** PrimitiveType ***/
 map<string, PrimitiveType> name_to_ptype;
@@ -95,9 +97,9 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
 /*** Key ***/
 
 namespace {
-HT<Key *> int_keys_ht;
-HT<Key *> string_keys_ht;
-HT<string *> string_key_names_ht;
+TSHashTable<Key *> int_keys_ht;
+TSHashTable<Key *> string_keys_ht;
+TSHashTable<string *> string_key_names_ht;
 int n_string_keys_ht = 0;
 }
 
@@ -114,16 +116,16 @@ Key Key::any_key() {
 }
 
 Key Key::string_key(const string &key) {
-  HT<Key *>::HTNode *node = string_keys_ht.at(hash_ll(key));
+  TSHashTable<Key *>::HTNode *node = string_keys_ht.at(hash_ll(key));
   if (node->data != nullptr) {
     return *node->data;
   }
 
   AutoLocker<Lockable *> locker(node);
-  int old_n = atomic_int_inc(&n_string_keys_ht);
+  int old_n = __sync_fetch_and_add(&n_string_keys_ht, 1);
   node->data = new Key(old_n * 2 + 2);
 
-  HT<string *>::HTNode *name_node = string_key_names_ht.at(node->data->id);
+  TSHashTable<string *>::HTNode *name_node = string_key_names_ht.at(node->data->id);
   dl_assert(name_node->data == nullptr, "");
   name_node->data = new string(key);
 
@@ -131,7 +133,7 @@ Key Key::string_key(const string &key) {
 }
 
 Key Key::int_key(int key) {
-  HT<Key *>::HTNode *node = int_keys_ht.at((unsigned int)key);
+  TSHashTable<Key *>::HTNode *node = int_keys_ht.at((unsigned int)key);
   if (node->data != nullptr) {
     return *node->data;
   }

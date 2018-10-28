@@ -1,6 +1,7 @@
 #include "compiler/pipes/collect-defines.h"
 
 #include "compiler/const-manipulations.h"
+#include "compiler/data/define-data.h"
 
 VertexPtr CollectDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_define || root->type() == op_define_raw) {

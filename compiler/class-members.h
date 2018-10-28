@@ -9,9 +9,9 @@
  */
 #pragma once
 
-#include "compiler/data_ptr.h"
 #include "common/type_traits/function_traits.h"
 
+#include "compiler/data_ptr.h"
 
 enum AccessType {
   access_nonmember = 0,
@@ -22,13 +22,6 @@ enum AccessType {
   access_private,
   access_protected,
 };
-
-enum ClassType {
-  ctype_class,
-  ctype_interface,
-  ctype_trait
-};
-
 
 struct ClassMemberStaticMethod {
   AccessType access_type;

@@ -6,7 +6,7 @@
 #include <sys/wait.h>
 
 #include "compiler/compiler-core.h"
-#include "compiler/utils.h"
+#include "compiler/utils/string-utils.h"
 
 /*** Target ***/
 //TODO: review mtime

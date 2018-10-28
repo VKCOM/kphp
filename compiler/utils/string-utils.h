@@ -45,14 +45,11 @@ static inline int conv_hex_digit(int c) {
   return -1;
 }
 
-using string_ref = vk::string_view;
-
-inline string_ref string_ref_dup(const string_ref &s) {
+inline vk::string_view string_view_dup(const vk::string_view &s) {
   char *buf = new char[s.size()];
   memcpy(buf, s.begin(), s.size());
-  return string_ref(buf, buf + s.size());
+  return vk::string_view(buf, buf + s.size());
 }
-
 
 inline string int_to_str(int x) {
   char tmp[50];
@@ -111,25 +108,11 @@ static inline void trim(std::string &s) {
   rtrim(s);
 }
 
-template<class ArrayType, class IndexType>
-IndexType dsu_get(ArrayType *arr, IndexType i) {
-  if ((*arr)[i] == i) {
-    return i;
-  }
-  return (*arr)[i] = dsu_get(arr, (*arr)[i]);
+static inline string replace_characters(string s, char from, char to) {
+  std::replace(s.begin(), s.end(), from, to);
+  return s;
 }
 
-template<class ArrayType, class IndexType>
-void dsu_uni(ArrayType *arr, IndexType i, IndexType j) {
-  i = dsu_get(arr, i);
-  j = dsu_get(arr, j);
-  if (!(i == j)) {
-    if (rand() & 1) {
-      (*arr)[i] = j;
-    } else {
-      (*arr)[j] = i;
-    }
-  }
+static inline string replace_backslashes(const string &s) {
+  return replace_characters(s, '\\', '$');
 }
-
-

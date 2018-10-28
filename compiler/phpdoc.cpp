@@ -3,7 +3,6 @@
 #include <cstdio>
 
 #include "compiler/compiler-core.h"
-#include "compiler/data.h"
 #include "compiler/stage.h"
 #include "compiler/vertex.h"
 
@@ -51,7 +50,7 @@ const std::string php_doc_tag::get_value_token(unsigned long chars_offset) const
   return value.substr(chars_offset, pos - chars_offset);
 }
 
-vector<php_doc_tag> parse_php_doc(const string_ref &phpdoc) {
+vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
   int line_num_of_function_declaration = stage::get_line();
 
   vector<string> lines(1);
@@ -120,7 +119,7 @@ vector<php_doc_tag> parse_php_doc(const string_ref &phpdoc) {
  * Считается, что даже сложный тип '(string|(int|false))[]' написан без пробелов; он возвращается как строка.
  * Возвращает bool — нашёлся ли; если да, то out_type_str заполнен, а out_var_name либо заполен, либо пустая строка.
  */
-bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const string_ref &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset) {
+bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset) {
   const std::vector<php_doc_tag> &tags = parse_php_doc(phpdoc);
   int idx = 0;
   for (std::vector<php_doc_tag>::const_iterator tag = tags.begin(); tag != tags.end(); ++tag) {
@@ -162,7 +161,7 @@ VertexPtr PhpDocTypeRuleParser::create_type_help_class_vertex(ClassPtr klass) {
 /*
  * Имея строку '(\VK\A|false)[]' и pos=1 — найти, где заканчивается имя класса. ('\VK\A' оно в данном случае)
  */
-string_ref PhpDocTypeRuleParser::extract_classname_from_pos(const string_ref &str, size_t pos) {
+vk::string_view PhpDocTypeRuleParser::extract_classname_from_pos(const vk::string_view &str, size_t pos) {
   size_t pos_end = pos;
   while (pos_end < str.size() && (isalnum(str[pos_end]) || str[pos_end] == '\\' || str[pos_end] == '_')) {
     ++pos_end;
@@ -171,7 +170,7 @@ string_ref PhpDocTypeRuleParser::extract_classname_from_pos(const string_ref &st
   return str.substr(pos, pos_end - pos);
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string_ref &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size_t &pos) {
   CHECK(pos < s.size(), "Failed to parse phpdoc type: unexpected end");
   switch (s[pos]) {
     case '(': {
@@ -267,7 +266,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string_ref &s, size_t &p
     }
     default: {
       if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z')) {
-        const string_ref &class_name = extract_classname_from_pos(s, pos);
+        const vk::string_view &class_name = extract_classname_from_pos(s, pos);
         pos += class_name.size();
         ClassPtr klass = G->get_class(resolve_uses(current_function, static_cast<string>(class_name), '\\'));
         kphp_error(klass, dl_pstr("Could not find class in phpdoc: %s\nProbably, this class is used only in phpdoc and never created in reachable code", string(class_name).c_str()));
@@ -280,7 +279,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const string_ref &s, size_t &p
   return VertexPtr();
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_array(const string_ref &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_t &pos) {
   VertexPtr res = parse_simple_type(s, pos);
   if (!res) {
     return res;
@@ -295,7 +294,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const string_ref &s, size_t &po
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_expression(const string_ref &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, size_t &pos) {
   VertexPtr res = parse_type_array(s, pos);
   if (!res) {
     return res;
@@ -313,7 +312,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression(const string_ref &s, size_
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const string_ref &type_str) {
+VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const vk::string_view &type_str) {
 //  fprintf(stderr, "Parsing s = |%s|\n", s.c_str());
   size_t pos = 0;
   VertexPtr res = parse_type_expression(type_str, pos);
@@ -324,7 +323,7 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const string_ref &type_st
   return res;
 }
 
-VertexPtr phpdoc_parse_type(const string_ref &type_str, FunctionPtr current_function) {
+VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function) {
   PhpDocTypeRuleParser parser(current_function);
   return parser.parse_from_type_string(type_str);
 }

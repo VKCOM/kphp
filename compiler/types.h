@@ -7,11 +7,10 @@
 #include <map>
 #include <string>
 
-#include "compiler/bicycle.h"
 #include "compiler/data_ptr.h"
-#include "compiler/utils.h"
+#include "compiler/threading/tls.h"
+#include "compiler/utils/string-utils.h"
 
-//H
 /*** PrimitiveType ***/
 
 //foreach_ptype.h contain calls of FOREACH_PTYPE(tp) for each primitive_type name.

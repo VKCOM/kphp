@@ -1,7 +1,8 @@
 #pragma once
 
-#include "compiler/bicycle.h"
 #include "compiler/pipes/function-and-edges.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/utils/idmap.h"
 
 /**
  * Имеет на входе FunctionAndEdges — какая функция какие вызывает —  делает следующее:

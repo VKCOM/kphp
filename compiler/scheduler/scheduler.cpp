@@ -1,6 +1,12 @@
 #include "compiler/scheduler/scheduler.h"
 
+#include <vector>
+
+#include "drinkless/dl-utils-lite.h"
+
 #include "compiler/scheduler/task.h"
+#include "compiler/threading/thread-id.h"
+#include "compiler/threading/tls.h"
 
 class ThreadContext {
 public:
@@ -47,7 +53,7 @@ void Scheduler::add_task(Task *task) {
 void Scheduler::execute() {
   task_pull->add_to_scheduler(this);
   set_thread_id(0);
-  vector<ThreadContext> threads(threads_count + 1);
+  std::vector<ThreadContext> threads(threads_count + 1);
 
   assert ((int)one_thread_nodes.size() < threads_count);
   for (int i = 1; i <= threads_count; i++) {
@@ -61,7 +67,7 @@ void Scheduler::execute() {
   }
 
   while (true) {
-    if (bicycle_counter > 0) {
+    if (tasks_before_sync_node > 0) {
       usleep(250);
       continue;
     }
@@ -95,7 +101,7 @@ bool Scheduler::thread_process_node(Node *node) {
   }
   task->execute();
   delete task;
-  atomic_int_dec(&bicycle_counter);
+  __sync_fetch_and_sub(&tasks_before_sync_node, 1);
   return true;
 }
 

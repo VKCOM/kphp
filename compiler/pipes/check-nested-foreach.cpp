@@ -1,5 +1,7 @@
 #include "compiler/pipes/check-nested-foreach.h"
 
+#include "compiler/data/var-data.h"
+
 void CheckNestedForeachPass::init() {
   in_unset = 0;
   forbidden_vars = vector<VarPtr>();
