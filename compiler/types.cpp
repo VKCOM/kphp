@@ -819,15 +819,15 @@ void type_out_impl(const TypeData *type, string *res) {
 
   bool need_all_subkeys = tp == tp_tuple;
   if (need_all_subkeys) {
-    *res += "< ";
+    *res += "<";
     for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
       if (subkey != type->lookup_begin()) {
-        *res += ",";
+        *res += " , ";
       }
       kphp_assert(subkey->first.is_int_key());
       type_out_impl(type->const_read_at(subkey->first), res);
     }
-    *res += " >";
+    *res += ">";
   }
 
   if (or_false) {
