@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 array_size::array_size(int int_size, int string_size, bool is_vector) :
   int_size(int_size),

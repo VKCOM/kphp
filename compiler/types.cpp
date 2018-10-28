@@ -781,20 +781,37 @@ void type_out_impl(const TypeData *type, string *res) {
     *res += "OrFalse < ";
   }
 
-  if (tp == tp_DB) {
-    *res += "MyDB";
-  } else if (tp == tp_MC) {
-    *res += "MyMemcache";
-  } else if (tp == tp_Class) {
-    *res += "class_instance<";
-    *res += type->class_type()->src_name;
-    *res += ">";
-  } else if (tp == tp_RPC) {
-    *res += "rpc_connection";
-  } else if (tp == tp_float) {
-    *res += "double";
-  } else {
-    *res += ptype_name(tp);
+  switch (tp) {
+    case tp_DB: {
+      *res += "MyDB";
+      break;
+    }
+    case tp_MC: {
+      *res += "MyMemcache";
+      break;
+    }
+    case tp_Class: {
+      *res += "class_instance<";
+      *res += type->class_type()->src_name;
+      *res += ">";
+      break;
+    }
+    case tp_RPC: {
+      *res += "rpc_connection";
+      break;
+    }
+    case tp_float: {
+      *res += "double";
+      break;
+    }
+    case tp_tuple: {
+      *res += "std::tuple";
+      break;
+    }
+    default : {
+      *res += ptype_name(tp);
+      break;
+    }
   }
 
   bool need_any_key = tp == tp_array;

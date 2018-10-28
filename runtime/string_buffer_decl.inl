@@ -1,11 +1,8 @@
 #pragma once
 
-/*
- *
- *   Do not include with file directly
- *   Include kphp_core.h instead
- *
- */
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 #define STRING_BUFFER_ERROR_FLAG_ON -1
 #define STRING_BUFFER_ERROR_FLAG_OFF 0

@@ -1,12 +1,8 @@
 #pragma once
 
-/*
- *
- *   Do not include with file directly
- *   Include kphp_core.h instead
- *
- */
-
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 // из php-шных классов генерируются С++ структуры такого вида
 // а для их инстанцирования — class_instance<T>

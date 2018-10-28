@@ -1,11 +1,8 @@
 #pragma once
 
-/*
- *
- *   Do not include with file directly
- *   Include kphp_core.h instead
- *
- */
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 namespace dl {
 
@@ -21,7 +18,7 @@ inline bool is_decimal_digit(const int c) {
 
 class string {
 public:
-  typedef dl::size_type size_type;
+  using size_type = dl::size_type;
   static const size_type npos = (size_type)-1;
 
 private:

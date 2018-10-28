@@ -1,13 +1,8 @@
 #pragma once
 
-/*
- *
- *   Do not include with file directly
- *   Include kphp_core.h instead
- *
- */
-
-#include "runtime/string_buffer.h"
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 class var {
   enum var_type {
@@ -409,7 +404,7 @@ template<class T>
 inline bool eq2(bool lhs, const array<T> &rhs);
 
 template<class ...Args>
-inline bool eq2(bool lhs, const tuple<Args...> &rhs);
+inline bool eq2(bool lhs, const std::tuple<Args...> &rhs);
 
 template<class T>
 inline bool eq2(int lhs, const array<T> &rhs);
@@ -424,7 +419,7 @@ template<class T>
 inline bool eq2(const array<T> &lhs, bool rhs);
 
 template<class ...Args>
-inline bool eq2(const tuple<Args...> &lhs, bool rhs);
+inline bool eq2(const std::tuple<Args...> &lhs, bool rhs);
 
 template<class T>
 inline bool eq2(const array<T> &lhs, int rhs);

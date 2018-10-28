@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
+
 bool empty_bool __attribute__ ((weak));
 int empty_int __attribute__ ((weak));
 double empty_float __attribute__ ((weak));
@@ -2900,7 +2904,7 @@ bool eq2(bool lhs, const array<T> &rhs) {
 }
 
 template<class ...Args>
-bool eq2(bool lhs, const tuple<Args...> &rhs) {
+bool eq2(bool lhs, const std::tuple<Args...> &rhs) {
   return lhs;
 }
 
@@ -2928,7 +2932,7 @@ bool eq2(const array<T> &lhs, bool rhs) {
 }
 
 template<class ...Args>
-bool eq2(const tuple<Args...> &lhs, bool rhs) {
+bool eq2(const std::tuple<Args...> &lhs, bool rhs) {
   return rhs;
 }
 

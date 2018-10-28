@@ -1,8 +1,8 @@
-//
-// Created by alexandr.kirsanov on 09/01/2018.
-//
-
 #pragma once
+
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 template<class T>
 class_instance<T>::class_instance() :

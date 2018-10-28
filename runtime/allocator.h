@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdlib>
 #include <cstddef>
+#include <cstdlib>
 
 namespace dl {
 
@@ -16,7 +16,7 @@ extern long long query_num;//engine query number. query_num == 0 before first qu
 extern bool script_runned;//betwen init_static and free_static
 extern bool use_script_allocator;//use script allocator instead of static heap allocator
 
-typedef unsigned int size_type;
+using size_type = unsigned int;
 
 extern size_t memory_begin;//begin of script memory arena
 extern size_t memory_end;//end of script memory arena

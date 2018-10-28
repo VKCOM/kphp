@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
+
 const string::size_type string::max_size __attribute__ ((weak));
 
 string::size_type string::string_inner::empty_string_storage[sizeof(string_inner) / sizeof(size_type) + 1] __attribute__ ((weak)) = {0 /* size */,

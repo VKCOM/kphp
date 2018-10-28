@@ -2,12 +2,9 @@
 
 #include "runtime/include.h"
 
-/*
- *
- *   Do not include with file directly
- *   Include kphp_core.h instead
- *
- */
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
 
 struct array_size {
   int int_size;
@@ -32,15 +29,12 @@ template<class T>
 class array : array_tag {
 
 public:
-//  typedef string key_type;
   typedef var key_type;
 
   inline static bool is_int_key(const key_type &key);
 
 private:
 
-//  struct list_hash_entry;
-//  typedef list_hash_entry *entry_pointer_type;
   using entry_pointer_type = dl::size_type;
 
   struct list_hash_entry {
@@ -135,9 +129,9 @@ private:
     inline bool isset_value(int int_key, const string &string_key) const;
     inline void unset_map_value(int int_key, const string &string_key);
 
-    inline array_inner() __attribute__ ((always_inline)); // deleted
-    inline array_inner(const array_inner &other) __attribute__ ((always_inline)); // deleted
-    inline array_inner &operator=(const array_inner &other) __attribute__ ((always_inline)); // deleted
+    inline array_inner() = delete;
+    inline array_inner(const array_inner &other) = delete;
+    inline array_inner &operator=(const array_inner &other) = delete;
   };
 
   inline bool mutate_if_vector_shared(int mul = 1);

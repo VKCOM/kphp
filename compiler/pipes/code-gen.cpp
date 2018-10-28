@@ -3172,7 +3172,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
 }
 
 void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
-  W << "make_tuple(";
+  W << "std::make_tuple(";
   VertexRange args = root->args();
   for (int i = 0; i < args.size(); ++i) {
     if (i) {

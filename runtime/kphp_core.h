@@ -1,18 +1,26 @@
 #pragma once
 
+#include <tuple>
+#include <utility>
+
+#include "common/type_traits/list_of_types.h"
+
 #include "runtime/allocator.h"
 #include "runtime/include.h"
+#include "runtime/profiler.h"
 
 template<typename T, typename T1>
 using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
 
-#include "string.h"
-#include "array.h"
-#include "class_instance.h"
-#include "tuple.h"
-#include "variable.h"
-#include "string_buffer.h"
-#include "profiler.h"
+// order of includes below matters, be careful
+
+#define INCLUDED_FROM_KPHP_CORE
+
+#include "string_decl.inl"
+#include "array_decl.inl"
+#include "class_instance_decl.inl"
+#include "variable_decl.inl"
+#include "string_buffer_decl.inl"
 
 #include "string.inl"
 #include "array.inl"
@@ -20,9 +28,8 @@ using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<
 #include "variable.inl"
 #include "string_buffer.inl"
 
-#include "common/type_traits/list_of_types.h"
+#undef INCLUDED_FROM_KPHP_CORE
 
-#include <utility>
 
 class UnknownType {
 };
@@ -319,7 +326,7 @@ template<class T>
 inline bool f$boolval(const class_instance<T> &val);
 
 template<class ...Args>
-bool f$boolval(const tuple<Args...> &val);
+bool f$boolval(const std::tuple<Args...> &val);
 
 template<class T>
 inline bool f$boolval(const OrFalse<T> &val);
@@ -390,7 +397,7 @@ template<class T>
 inline string f$strval(const array<T> &val);
 
 template<class ...Args>
-inline string f$strval(const tuple<Args...> &val);
+inline string f$strval(const std::tuple<Args...> &val);
 
 template<class T>
 inline string f$strval(const OrFalse<T> &val);
@@ -613,7 +620,7 @@ template<class T>
 inline int f$count(const array<T> &a);
 
 template<class ...Args>
-inline int f$count(const tuple<Args...> &a);
+inline int f$count(const std::tuple<Args...> &a);
 
 template<class T>
 inline int f$count(const T &v);
@@ -1243,7 +1250,7 @@ bool f$boolval(const class_instance<T> &val) {
 }
 
 template<class ...Args>
-bool f$boolval(const tuple<Args...> &val) {
+bool f$boolval(const std::tuple<Args...> &val) {
   return true;
 }
 
@@ -1378,7 +1385,7 @@ string f$strval(const array<T> &) {
 }
 
 template<class ...Args>
-string f$strval(const tuple<Args...> &) {
+string f$strval(const std::tuple<Args...> &) {
   php_warning("Convertion from tuple to string");
   return string("Array", 5);
 }
@@ -1661,8 +1668,8 @@ int f$count(const array<T> &a) {
 }
 
 template<class ...Args>
-inline int f$count(const tuple<Args...> &a __attribute__ ((unused))) {
-  return (int)std::tuple_size<tuple<Args...>>::value;
+inline int f$count(const std::tuple<Args...> &a __attribute__ ((unused))) {
+  return (int)std::tuple_size<std::tuple<Args...>>::value;
 }
 
 template<class T>

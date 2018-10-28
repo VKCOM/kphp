@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
+
 inline void string_buffer::resize(dl::size_type new_buffer_len) {
   if (new_buffer_len < MIN_BUFFER_LEN) {
     new_buffer_len = MIN_BUFFER_LEN;
