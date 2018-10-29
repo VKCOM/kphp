@@ -89,7 +89,7 @@ public:
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(Token *phpdoc_token = nullptr);
-  VertexPtr get_vars_list(Token *phpdoc_token, AccessType access_type);
+  VertexPtr get_instance_var_list(Token *phpdoc_token, AccessType access_type);
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
@@ -161,7 +161,7 @@ private:
 
   bool in_namespace() const;
 
-  VertexPtr add_static_member(VertexPtr v, AccessType access_type);
+  VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
 
 public:
   int line_num;
