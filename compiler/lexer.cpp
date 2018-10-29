@@ -1166,6 +1166,7 @@ Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
   add_rule(h, ".", tok_dot);
   add_rule(h, ",", tok_comma);
 
+  add_rule(h, "**", tok_pow);
   add_rule(h, "++", tok_inc);
   add_rule(h, "--", tok_dec);
   add_rule(h, "+", tok_plus);
@@ -1190,6 +1191,7 @@ Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
   add_rule(h, "*=", tok_set_mul);
   add_rule(h, "/=", tok_set_div);
   add_rule(h, "%=", tok_set_mod);
+  add_rule(h, "**=", tok_set_pow);
   add_rule(h, "&=", tok_set_and);
   add_rule(h, "&&", tok_log_and);
   add_rule(h, "|=", tok_set_or);

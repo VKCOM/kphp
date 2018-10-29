@@ -980,6 +980,17 @@
     }
   },
   {
+    "name": "op_pow",
+    "base_name": "meta_op_binary",
+    "props": {
+      "cnst": "cnst_const_func",
+      "fixity": "right_opp",
+      "rl": "rl_op",
+      "type": "binary_func_op",
+      "str": "power"
+    }
+  },
+  {
     "name": "op_arrow",
     "base_name": "meta_op_binary",
     "props": {
@@ -1225,6 +1236,18 @@
       "rl": "rl_set",
       "fixity": "right_opp",
       "type": "binary_func_op"
+    }
+  },
+  {
+    "name": "op_set_pow",
+    "base_name": "meta_op_binary",
+    "props": {
+      "base_op": "op_pow",
+      "cnst": "cnst_nonconst_func",
+      "fixity": "right_opp",
+      "rl": "rl_set",
+      "type": "binary_func_op",
+      "str": "power_self"
     }
   },
   {

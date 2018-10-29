@@ -50,7 +50,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
       }
     }
   }
-  if (vertex->type() == op_sub || vertex->type() == op_mul || vertex->type() == op_div || vertex->type() == op_mod) {
+  if (vk::any_of_equal(vertex->type(), op_sub, op_mul, op_div, op_mod, op_pow)) {
     const TypeData *type_left = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->lhs());
     const TypeData *type_right = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->rhs());
     if ((type_left->ptype() == tp_array) || (type_right->ptype() == tp_array)) {

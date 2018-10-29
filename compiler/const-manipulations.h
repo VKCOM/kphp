@@ -115,6 +115,7 @@ protected:
       case op_sub:
       case op_div:
       case op_mod:
+      case op_pow:
       case op_and:
       case op_or:
       case op_xor:

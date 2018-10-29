@@ -73,6 +73,7 @@ public:
   static VertexPtr create_vertex_this(const AutoLocation &location, ClassPtr cur_class, bool with_type_rule = false);
   static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
+  static VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   void create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const;
 
   VertexPtr get_func_param_without_callbacks(bool from_callback = false);
@@ -83,8 +84,8 @@ public:
   VertexPtr get_var_name_ref();
   VertexPtr get_expr_top();
   VertexPtr get_postfix_expression(VertexPtr res);
-  VertexPtr get_unary_op();
-  VertexPtr get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary);
+  VertexPtr get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary);
+  VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(Token *phpdoc_token = nullptr);
@@ -276,9 +277,16 @@ static inline bool is_const_int(VertexPtr root) {
     case op_shl:
     case op_shr:
     case op_mod:
+    case op_pow:
       return is_const_int(root.as<meta_op_binary>()->lhs()) && is_const_int(root.as<meta_op_binary>()->rhs());
     default:
       break;
   }
   return false;
+}
+
+inline bool is_positive_constexpr_int(VertexPtr v) {
+  VertexPtr actual_value = GenTree::get_actual_value(v);
+  return actual_value->type() == op_int_const &&
+         parse_int_from_string(actual_value) >= 0;
 }

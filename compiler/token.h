@@ -84,6 +84,7 @@ enum TokenType {
 
   tok_at,
 
+  tok_pow,
   tok_inc,
   tok_dec,
   tok_plus,
@@ -108,6 +109,7 @@ enum TokenType {
   tok_set_mul,
   tok_set_div,
   tok_set_mod,
+  tok_set_pow,
   tok_set_and,
   tok_log_and,
   tok_log_and_let,

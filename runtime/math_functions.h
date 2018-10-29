@@ -92,8 +92,6 @@ inline double f$log(double v, double base);
 
 inline double f$pi();
 
-var f$pow(const var &num, const var &deg);
-
 double f$round(double v, int precision = 0);
 
 inline double f$sin(double v);

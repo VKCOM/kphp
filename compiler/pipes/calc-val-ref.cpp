@@ -20,6 +20,7 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
     case op_set_mul:
     case op_set_div:
     case op_set_mod:
+    case op_set_pow:
     case op_set_and:
     case op_set_or:
     case op_set_xor:
@@ -31,6 +32,7 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
     case op_mul:
     case op_div:
     case op_mod:
+    case op_pow:
     case op_not:
     case op_log_not:
 

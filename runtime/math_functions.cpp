@@ -255,39 +255,6 @@ string f$base_convert(const string &number, int frombase, int tobase) {
   return result;
 }
 
-int pow_int(int x, int y) {
-  int res = 1;
-  while (y > 0) {
-    if (y & 1) {
-      res *= x;
-    }
-    x *= x;
-    y >>= 1;
-  }
-  return res;
-}
-
-double pow_float(double x, double y) {
-  if (x < 0.0) {
-    php_warning("Calculating pow with negative base and double exp will produce zero");
-    return 0.0;
-  }
-
-  if (x == 0.0) {
-    return y == 0.0;
-  }
-
-  return pow(x, y);
-}
-
-var f$pow(const var &num, const var &deg) {
-  if (num.is_int() && deg.is_int() && deg.to_int() >= 0) {
-    return pow_int(num.to_int(), deg.to_int());
-  } else {
-    return pow_float(num.to_float(), deg.to_float());
-  }
-}
-
 double f$round(double v, int precision) {
   if (abs(precision) > 100) {
     php_warning("Wrong parameter precision (%d) in function round", precision);

@@ -38,7 +38,9 @@ private:
   void recalc_noerr(VertexAdaptor<op_noerr> expr);
   void recalc_arithm(VertexAdaptor<meta_op_binary> expr);
   void recalc_define_val(VertexAdaptor<op_define_val> define_val);
+  void recalc_power(VertexAdaptor<op_pow> expr);
   void recalc_expr(VertexPtr expr);
+
 public:
   ExprNodeRecalc(tinf::ExprNode *node, tinf::TypeInferer *inferer);
   tinf::ExprNode *get_node();
@@ -313,6 +315,18 @@ void ExprNodeRecalc::recalc_define_val(VertexAdaptor<op_define_val> define_val) 
   set_lca(define_val->define_id->val);
 }
 
+void ExprNodeRecalc::recalc_power(VertexAdaptor<op_pow> expr) {
+  VertexPtr base = expr->lhs();
+  add_dependency(as_rvalue(base));
+  const PrimitiveType base_ptype = tinf::get_type(base)->get_real_ptype();
+  VertexPtr exponent = expr->rhs();
+  if (tp_int == type_lca(base_ptype, tp_int) && is_positive_constexpr_int(exponent)) {
+    recalc_ptype<tp_int>();
+  } else {
+    recalc_ptype<tp_var>();
+  }
+}
+
 void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
   switch (expr->type()) {
     case op_move:
@@ -468,6 +482,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_shl:
     case op_shr:
       recalc_arithm(expr);
+      break;
+
+    case op_pow:
+      recalc_power(expr);
       break;
 
     case op_define_val:

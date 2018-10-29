@@ -299,6 +299,47 @@ inline int modulo(int lhs, int rhs);
 template<class T1, class T2>
 inline int modulo(const T1 &lhs, const T2 &rhs);
 
+inline int int_power(int base, int exp) {
+  int res = 1;
+  while (exp > 0) {
+    if (exp & 1) {
+      res *= base;
+    }
+    base *= base;
+    exp >>= 1;
+  }
+  return res;
+}
+
+inline var var_power(const var &base, const var &exp) {
+  if (base.is_int() && exp.is_int() && exp.to_int() >= 0) {
+    return int_power(base.to_int(), exp.to_int());
+  }
+  const double float_base = base.to_float();
+  if (exp.is_int()) {
+    return std::pow(float_base, exp.to_int());
+  }
+
+  const double float_exp = exp.to_float();
+  if (float_exp == static_cast<int>(float_exp)) {
+    return std::pow(float_base, float_exp);
+  }
+
+  if (base < 0.0) {
+    php_warning("Calculating pow with negative base and double exp will produce zero");
+    return 0.0;
+  }
+
+  return std::pow(float_base, float_exp);
+}
+
+inline int &power_self(int &base, int exp) {
+  return base = int_power(base, exp);
+}
+
+inline var &power_self(var &base, const var &exp) {
+  return base = var_power(base, exp);
+}
 
 template<class T1, class T2>
 inline T1 &divide_self(T1 &lhs, const T2 &rhs);

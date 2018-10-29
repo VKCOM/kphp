@@ -30,7 +30,7 @@ echo "$x\n";
 echo "$y\n";
 echo "$z\n";
 
-$x /= $y += $z *= 4;
+$x /= $y **= $z *= -1;
 echo "$x\n";
 echo "$y\n";
 echo "$z\n";
@@ -40,7 +40,7 @@ echo "$x\n";
 echo "$y\n";
 echo "$z\n";
 
-$z |= $x &= $y *= $z += 1;
+$z |= $x &= $y *= $z += $x **= 2;
 echo "$x\n";
 echo "$y\n";
 echo "$z\n";

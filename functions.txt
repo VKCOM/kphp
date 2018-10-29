@@ -331,7 +331,6 @@ function floor ($v ::: float) ::: CONST float;
 function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527) ::: CONST float;
 function fmod ($x ::: float, $y ::: float) ::: CONST float;
 function pi() ::: CONST float;
-function pow ($num, $deg);//TODO
 function round ($v ::: float, $precision ::: int = 0) ::: CONST float;
 function sin ($v ::: float) ::: CONST float;
 function sqrt ($v ::: float) ::: CONST float;

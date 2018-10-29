@@ -61,7 +61,7 @@ struct OpInfo {
   static Operation tok_to_unary_op[255];
   static OpProperties P[Operation_size];
 
-  static int bin_op_begin, bin_op_end;
+  static int op_priority_begin, op_priority_end;
   static int ternaryP;
 
   static inline void add_binary_op(int priority, TokenType tok, Operation op);

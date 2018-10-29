@@ -736,6 +736,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_set_mul:
     case op_set_div:
     case op_set_mod:
+    case op_set_pow:
     case op_set_and:
     case op_set_or:
     case op_set_xor:

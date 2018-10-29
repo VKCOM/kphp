@@ -38,7 +38,7 @@ void OpInfo::init_static() {
 
   int curP = 1;
 
-  bin_op_begin = curP;
+  op_priority_begin = curP;
   add_binary_op(curP, tok_log_or_let, op_log_or_let);
   curP++;
   add_binary_op(curP, tok_log_xor_let, op_log_xor_let);
@@ -53,6 +53,7 @@ void OpInfo::init_static() {
   add_binary_op(curP, tok_set_mul, op_set_mul);
   add_binary_op(curP, tok_set_div, op_set_div);
   add_binary_op(curP, tok_set_mod, op_set_mod);
+  add_binary_op(curP, tok_set_pow, op_set_pow);
   add_binary_op(curP, tok_set_and, op_set_and);
   add_binary_op(curP, tok_set_or, op_set_or);
   add_binary_op(curP, tok_set_xor, op_set_xor);
@@ -107,15 +108,16 @@ void OpInfo::init_static() {
   add_binary_op(curP, tok_mod, op_mod);
   curP++;
 
-  //add_binary_op (curP, tok_arrow, op_arrow, true);
-  //curP++;
-  bin_op_end = curP;
-
   add_unary_op(curP, tok_not, op_not);
   add_unary_op(curP, tok_log_not, op_log_not);
   add_unary_op(curP, tok_minus, op_minus);
   add_unary_op(curP, tok_plus, op_plus);
   add_unary_op(curP, tok_and, op_addr);
+  ++curP;
+
+  add_binary_op(curP, tok_pow, op_pow);
+  ++curP;
+
   add_unary_op(curP, tok_inc, op_prefix_inc);
   add_unary_op(curP, tok_dec, op_prefix_dec);
   add_unary_op(curP, tok_at, op_noerr);
@@ -129,8 +131,8 @@ void OpInfo::init_static() {
   add_unary_op(curP, tok_conv_object, op_conv_object);
   add_unary_op(curP, tok_conv_bool, op_conv_bool);
   add_unary_op(curP, tok_conv_var, op_conv_var);
-  //prefix_unary_op = curP;
-  curP++;
+
+  op_priority_end = ++curP;
 
   add_op(tok_triple_colon, op_common_type_rule);
   add_op(tok_triple_lt, op_lt_type_rule);
@@ -150,5 +152,5 @@ Operation OpInfo::tok_to_op[255];
 Operation OpInfo::tok_to_binary_op[255];
 Operation OpInfo::tok_to_unary_op[255];
 
-int OpInfo::bin_op_begin, OpInfo::bin_op_end;
+int OpInfo::op_priority_begin, OpInfo::op_priority_end;
 int OpInfo::ternaryP;

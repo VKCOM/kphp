@@ -709,76 +709,92 @@ VertexPtr GenTree::get_expr_top() {
   return res;
 }
 
-VertexPtr GenTree::get_unary_op() {
-  Operation tp = OpInfo::tok_to_unary_op[(*cur)->type()];
-  if (tp != op_err) {
-    AutoLocation expr_location(this);
-    next_cur();
-
-    VertexPtr left = get_unary_op();
-    if (!left) {
-      return VertexPtr();
-    }
-
-    if (tp == op_log_not) {
-      left = conv_to<tp_bool>(left);
-    }
-    if (tp == op_not) {
-      left = conv_to<tp_int>(left);
-    }
-    VertexPtr expr = create_vertex(tp, left);
-    set_location(expr, expr_location);
-    return expr;
+VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third) {
+  if (right) {
+    return VertexAdaptor<op_ternary>::create(left, right, third);
   }
 
-  VertexPtr res = get_expr_top();
-  return res;
+  string left_name = gen_shorthand_ternary_name();
+  auto left_var = VertexAdaptor<op_var>::create();
+  left_var->str_val = left_name;
+  left_var->extra_type = op_ex_var_superlocal;
+
+  auto left_set = VertexAdaptor<op_set>::create(left_var, left);
+  auto left_set_bool = conv_to<tp_bool>(left_set);
+
+  auto left_var_copy = VertexAdaptor<op_var>::create();
+  left_var_copy->str_val = left_name;
+  left_var_copy->extra_type = op_ex_var_superlocal;
+
+  auto left_var_move = VertexAdaptor<op_move>::create(left_var_copy);
+  return VertexAdaptor<op_ternary>::create(left_set_bool, left_var_move, third);
 }
 
+VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary) {
+  AutoLocation expr_location(this);
+  next_cur();
 
-VertexPtr GenTree::get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, bool till_ternary) {
-  if (bin_op_cur == bin_op_end) {
-    return (this->*next)();
-  }
-
-  VertexPtr left = get_binary_op(bin_op_cur + 1, bin_op_end, next, till_ternary);
+  VertexPtr left = get_binary_op(op_priority_cur, till_ternary);
   if (!left) {
     return VertexPtr();
   }
 
-  bool need = true;
-  bool ternary = bin_op_cur == OpInfo::ternaryP;
-  //fprintf (stderr, "get binary op: [%d..%d], cur = %d[%s]\n", bin_op_cur, bin_op_end, tok_priority[cur == end ? 0 : (*cur)->type()], cur == end ? "<none>" : (*cur)->to_str().c_str());
-  while (need && cur != end) {
-    Operation tp = OpInfo::tok_to_binary_op[(*cur)->type()];
-    if (tp == op_err || OpInfo::priority(tp) != bin_op_cur) {
-      break;
-    }
-    if (ternary && till_ternary) {
-      break;
-    }
-    AutoLocation expr_location(this);
+  if (unary_op_tp == op_log_not) {
+    left = conv_to<tp_bool>(left);
+  }
+  if (unary_op_tp == op_not) {
+    left = conv_to<tp_int>(left);
+  }
+  VertexPtr expr = create_vertex(unary_op_tp, left);
+  set_location(expr, expr_location);
+  return expr;
+}
 
-    bool left_to_right = OpInfo::fixity(tp) == left_opp;
+VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
+  op_priority_cur = std::min(op_priority_cur, OpInfo::op_priority_end);
+  if (op_priority_cur == OpInfo::op_priority_end) {
+    return get_expr_top();
+  }
+
+  if (cur != end) {
+    const Operation unary_op_tp = OpInfo::tok_to_unary_op[(*cur)->type()];
+    if (unary_op_tp != op_err && OpInfo::priority(unary_op_tp) <= op_priority_cur) {
+      return get_unary_op(op_priority_cur, unary_op_tp, till_ternary);
+    }
+  }
+
+  const bool ternary = op_priority_cur == OpInfo::ternaryP;
+  VertexPtr left = get_binary_op(op_priority_cur + 1, till_ternary);
+  if (!left || (ternary && till_ternary)) {
+    return left;
+  }
+
+  bool need = true;
+  while (need && cur != end) {
+    const Operation binary_op_tp = OpInfo::tok_to_binary_op[(*cur)->type()];
+    if (binary_op_tp == op_err || OpInfo::priority(binary_op_tp) != op_priority_cur) {
+      break;
+    }
+
+    AutoLocation expr_location(this);
+    const bool left_to_right = OpInfo::fixity(binary_op_tp) == left_opp;
 
     next_cur();
-    VertexPtr right, third;
-    if (ternary) {
-      right = get_expression();
-    } else {
-      right = get_binary_op(bin_op_cur + left_to_right, bin_op_end, next, till_ternary && bin_op_cur >= OpInfo::ternaryP);
-    }
+    VertexPtr right = ternary
+                      ? get_expression()
+                      : get_binary_op(op_priority_cur + left_to_right,
+                                      till_ternary && op_priority_cur >= OpInfo::ternaryP);
     if (!right && !ternary) {
-      kphp_error (0, dl_pstr("Failed to parse second argument in [%s]", OpInfo::str(tp).c_str()));
+      kphp_error (0, dl_pstr("Failed to parse second argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
       return VertexPtr();
     }
 
+    VertexPtr third;
     if (ternary) {
       CE (expect(tok_colon, "':'"));
-      //third = get_binary_op (bin_op_cur + 1, bin_op_end, next);
       third = get_expression_impl(true);
       if (!third) {
-        kphp_error (0, dl_pstr("Failed to parse third argument in [%s]", OpInfo::str(tp).c_str()));
+        kphp_error (0, dl_pstr("Failed to parse third argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
         return VertexPtr();
       }
       if (right) {
@@ -786,60 +802,31 @@ VertexPtr GenTree::get_binary_op(int bin_op_cur, int bin_op_end, GetFunc next, b
       }
     }
 
-
-    if (tp == op_log_or || tp == op_log_and || tp == op_log_or_let || tp == op_log_and_let || tp == op_log_xor_let) {
+    if (vk::any_of_equal(binary_op_tp, op_log_or, op_log_and, op_log_or_let, op_log_and_let, op_log_xor_let)) {
       left = conv_to<tp_bool>(left);
       right = conv_to<tp_bool>(right);
     }
-    if (tp == op_set_or || tp == op_set_and || tp == op_set_xor || tp == op_set_shl || tp == op_set_shr) {
+    if (vk::any_of_equal(binary_op_tp, op_set_or, op_set_and, op_set_xor, op_set_shl, op_set_shr)) {
       right = conv_to<tp_int>(right);
     }
-    if (tp == op_or || tp == op_and || tp == op_xor) {
+    if (vk::any_of_equal(binary_op_tp, op_or, op_and, op_xor)) {
       left = conv_to<tp_int>(left);
       right = conv_to<tp_int>(right);
     }
 
-    VertexPtr expr;
-    if (ternary) {
-      if (right) {
-        auto v = VertexAdaptor<op_ternary>::create(left, right, third);
-        expr = v;
-      } else {
-        string left_name = gen_shorthand_ternary_name();
-        auto left_var = VertexAdaptor<op_var>::create();
-        left_var->str_val = left_name;
-        left_var->extra_type = op_ex_var_superlocal;
+    VertexPtr expr = ternary
+                     ? create_ternary_op_vertex(left, right, third)
+                     : create_vertex(binary_op_tp, left, right);
 
-        auto left_set = VertexAdaptor<op_set>::create(left_var, left);
-        auto left_set_bool = conv_to<tp_bool>(left_set);
-
-
-        auto left_var_copy = VertexAdaptor<op_var>::create();
-        left_var_copy->str_val = left_name;
-        left_var_copy->extra_type = op_ex_var_superlocal;
-
-        auto left_var_move = VertexAdaptor<op_move>::create(left_var_copy);
-
-        auto result = VertexAdaptor<op_ternary>::create(left_set_bool, left_var_move, third);
-
-        expr = result;
-      }
-    } else {
-      VertexPtr v = create_vertex(tp, left, right);
-      expr = v;
-    }
     set_location(expr, expr_location);
-
     left = expr;
-
     need = need && (left_to_right || ternary);
   }
   return left;
-
 }
 
 VertexPtr GenTree::get_expression_impl(bool till_ternary) {
-  return get_binary_op(OpInfo::bin_op_begin, OpInfo::bin_op_end, &GenTree::get_unary_op, till_ternary);
+  return get_binary_op(OpInfo::op_priority_begin, till_ternary);
 }
 
 VertexPtr GenTree::get_expression() {
@@ -2382,12 +2369,22 @@ VertexPtr GenTree::post_process(VertexPtr root) const {
     }
   }
 
+  if (root->type() == op_func_call && root->size() == 2) {
+    VertexAdaptor<op_func_call> call = root;
+    if ("pow" == call->get_string()) {
+      VertexRange args = call->args();
+      VertexPtr new_root = VertexAdaptor<op_pow>::create(args[0], args[1]);
+      ::set_location(new_root, root->get_location());
+      return post_process(new_root);
+    }
+  }
+
   if (root->type() == op_minus || root->type() == op_plus) {
     VertexAdaptor<meta_op_unary> minus = root;
     VertexPtr maybe_num = minus->expr();
-    string prefix = root->type() == op_minus ? "-" : "";
     if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
       VertexAdaptor<meta_op_num> num = maybe_num;
+      string prefix = root->type() == op_minus ? "-" : "";
       num->str_val = prefix + num->str_val;
       minus->expr() = VertexPtr();
       return post_process(num);

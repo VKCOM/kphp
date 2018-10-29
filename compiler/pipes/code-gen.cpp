@@ -511,6 +511,7 @@ inline void compile_conv_array_l(VertexAdaptor<op_conv_array_l> root, CodeGenera
 inline void compile_conv_int_l(VertexAdaptor<op_conv_int_l> root, CodeGenerator &W);
 inline void compile_cycle_op(VertexPtr root, CodeGenerator &W);
 inline void compile_min_max(VertexPtr root, CodeGenerator &W);
+inline void compile_power(VertexAdaptor<op_pow> root, CodeGenerator &W);
 inline void compile_common_op(VertexPtr root, CodeGenerator &W);
 inline void compile(VertexPtr root, CodeGenerator &W);
 
@@ -1877,7 +1878,12 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
 
 
 void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
-  W << OpInfo::str(root->type()) << " (" <<
+  if (root->type() == op_pow) {
+    compile_power(root, W);
+  } else {
+    W << OpInfo::str(root->type());
+  }
+  W << " (" <<
     Operand(root->lhs(), root->type(), true) <<
     ", " <<
     Operand(root->rhs(), root->type(), false) <<
@@ -3513,6 +3519,21 @@ void compile_min_max(VertexPtr root, CodeGenerator &W) {
     ")";
 }
 
+void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W) {
+  switch (tinf::get_type(power)->ptype()) {
+    case tp_int:
+      // pow return type with positive constexpr integer exponent and any integer base is inferred as int
+      W << "int_power";
+      return;
+    case tp_var:
+      // pow return type with any other types in exponent,
+      // including negative constexpr integer or unknown integer, is inferred as var
+      W << "var_power";
+      return;
+    default:
+      kphp_error(false, "Unexpected power return type");
+  }
+}
 
 void compile_common_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();

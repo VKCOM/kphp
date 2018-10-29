@@ -9,21 +9,16 @@ void ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *&replace) {
     if (!replace) {
       break;
     }
-    Operation op = (*replace)->type();
-    if (op == op_set_add || op == op_set_sub ||
-        op == op_set_mul || op == op_set_div ||
-        op == op_set_mod || op == op_set_and ||
-        op == op_set_or || op == op_set_xor ||
-        op == op_set_dot || op == op_set ||
-        op == op_set_shr || op == op_set_shl) {
+    const Operation op = (*replace)->type();
+    if (vk::any_of_equal(
+      op, op_set_add, op_set_sub, op_set_mul, op_set_div, op_set_mod, op_set_pow,
+      op_set, op_set_and, op_set_or, op_set_xor, op_set_dot, op_set_shr, op_set_shl
+    )) {
       replace = &((*replace).as<meta_op_binary>()->rhs());
-    } else if (op == op_conv_int || op == op_conv_bool ||
-               op == op_conv_int_l || op == op_conv_float ||
-               op == op_conv_string || op == op_conv_array ||
-               op == op_conv_array_l || op == op_conv_var ||
-               op == op_conv_uint || op == op_conv_long ||
-               op == op_conv_ulong || op == op_conv_regexp ||
-               op == op_log_not) {
+    } else if (vk::any_of_equal(
+      op, op_conv_int, op_conv_bool, op_conv_int_l, op_conv_float, op_conv_string, op_conv_array_l,
+      op_conv_var, op_conv_uint, op_conv_long, op_conv_ulong, op_conv_regexp, op_log_not
+    )) {
       replace = &((*replace).as<meta_op_unary>()->expr());
     } else {
       break;
@@ -39,12 +34,10 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
   Operation op = vertex->type();
   if (op == op_return) {
     replace = &vertex.as<op_return>()->expr();
-  } else if (op == op_set_add || op == op_set_sub ||
-             op == op_set_mul || op == op_set_div ||
-             op == op_set_mod || op == op_set_and ||
-             op == op_set_or || op == op_set_xor ||
-             op == op_set_dot || op == op_set ||
-             op == op_set_shr || op == op_set_shl) {
+  } else if (vk::any_of_equal(
+    op, op_set_add, op_set_sub, op_set_mul, op_set_div, op_set_mod, op_set_pow,
+    op_set, op_set_and, op_set_or, op_set_xor, op_set_dot, op_set_shr, op_set_shl
+  )) {
     replace = &vertex.as<meta_op_binary>()->rhs();
     if ((*replace)->type() == op_func_call && op == op_set) {
       return vertex;
