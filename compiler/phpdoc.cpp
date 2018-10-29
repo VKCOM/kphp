@@ -20,7 +20,8 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@return",                returns},
   {"@returns",               returns},
   {"@kphp-disable-warnings", kphp_disable_warnings},
-  {"@kphp-template",         kphp_template}
+  {"@kphp-template",         kphp_template},
+  {"@kphp-return",           kphp_return}
 };
 
 /*
@@ -128,10 +129,10 @@ bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const vk::string_view &phpdoc, php
       const std::string &a1 = tag->get_value_token();
       const std::string &a2 = tag->get_value_token(a1.size());
 
-      if (a1[0] == '$') {
+      if (!a1.empty() && a1[0] == '$') {
         out_var_name = a1.substr(1);
         out_type_str = a2;
-      } else if (a2[0] == '$') {
+      } else if (!a2.empty() && a2[0] == '$') {
         out_var_name = a2.substr(1);
         out_type_str = a1;
       } else {

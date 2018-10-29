@@ -221,10 +221,16 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
       case php_doc_tag::kphp_template: {
         f->is_template = true;
+        bool is_first_time = true;
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
           if (var_name[0] != '$') {
+            if (is_first_time) {
+              is_first_time = false;
+              continue;
+            }
             break;
           }
+          is_first_time = false;
 
           auto func_param_it = name_to_function_param.find(var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(), dl_pstr("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));

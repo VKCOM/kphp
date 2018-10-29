@@ -337,6 +337,24 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       assumption_add_for_return(f, assum, klass);       // 'self' тоже работает
       return;
     }
+
+    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::kphp_return, dummy, type_str)) {
+      kphp_error_return(f->assumptions_inited_args == 2,
+        ("function: `" + f->name + "` was not instantiated yet, please add `@kphp-return` tag to function which called this function").c_str());
+
+      int param_i = 0;
+      std::string template_type_of_arg;
+      std::string template_arg_name;
+      while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::kphp_template, template_arg_name, template_type_of_arg, param_i++)) {
+        if (!template_arg_name.empty() && !template_type_of_arg.empty() && template_type_of_arg == type_str) {
+          ClassPtr klass;
+          AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
+          assumption_add_for_return(f, assum, klass);
+          return;
+        }
+      }
+      kphp_error_return(false, "wrong kphp-return argument supplied");
+    }
   }
 
   for (auto i : *root->cmd()) {

@@ -17,7 +17,8 @@ struct php_doc_tag {
     var,
     kphp_required,
     kphp_sync,
-    kphp_template
+    kphp_template,
+    kphp_return
   };
 
 public:
