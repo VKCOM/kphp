@@ -128,15 +128,25 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local) {
-    if (local->extern_func_call) {
-      if (ClassPtr lambda_class = FunctionData::is_lambda(vertex)) {
+    if (local->extern_func_call && vertex->type() == op_func_ptr) {
+      FunctionPtr callback_passed_to_extern_func = vertex->get_func_id();
+      kphp_assert(callback_passed_to_extern_func);
+
+      if (callback_passed_to_extern_func->is_lambda()) {
         /**
          * During code generation we replace constructor call in extern func_call with std::bind(LAMBDA$$__invoke, constructor_call, _1, _2, ...)
          * therefore no one know that outside function depends on LAMBDA$$__invoke method
          * this dependency need for generating #include directive for this method
          */
-        data.dep.push_back(lambda_class->get_invoke_function_for_extern_function(local->extern_func_call, FunctionPtr{}));
+        data.dep.push_back(callback_passed_to_extern_func);
       }
+
+      // There are 117 callbacks was passed to internal functions which throw exception
+      //bool extern_func_throws_exception = local->extern_func_call->get_func_id()->root->throws_flag;
+      //bool callback_throws = !callback_passed_to_extern_func->root->throws_flag;
+      //if (callback_throws && !extern_func_throws_exception) {
+      //  kphp_error(false, "It's not allowed to throw exception in callback which was passed to internal function");
+      //}
     }
 
     //NB: There is no user functions in default values of any kind.
