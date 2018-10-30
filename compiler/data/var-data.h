@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "compiler/class-members.h"
+#include "compiler/data/class-members.h"
 #include "compiler/type-inferer-core.h"
 
 class VarData {

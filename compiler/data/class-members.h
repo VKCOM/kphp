@@ -11,7 +11,7 @@
 
 #include "common/type_traits/function_traits.h"
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 
 enum AccessType {
   access_nonmember = 0,

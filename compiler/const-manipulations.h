@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "compiler/class-assumptions.h"
-#include "compiler/class-members.h"
+#include "compiler/data/class-members.h"
 #include "compiler/threading/locks.h"
 
 enum ClassType {

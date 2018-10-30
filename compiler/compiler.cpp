@@ -16,7 +16,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/io.h"

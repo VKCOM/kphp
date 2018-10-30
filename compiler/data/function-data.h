@@ -1,9 +1,9 @@
 #pragma once
 
 #include "compiler/class-assumptions.h"
-#include "compiler/class-members.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-info.h"
-#include "compiler/data_ptr.h"
 #include "compiler/stage.h"
 #include "compiler/type-inferer-core.h"
 #include "compiler/vertex-meta_op_base.h"

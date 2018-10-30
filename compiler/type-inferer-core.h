@@ -1,7 +1,7 @@
 #pragma once
 
 #include "compiler/common.h"
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/location.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/threading/locks.h"

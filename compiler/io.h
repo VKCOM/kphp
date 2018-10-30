@@ -1,7 +1,7 @@
 #pragma once
 
 #include "compiler/common.h"
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/utils/string-utils.h"
 
 struct Line {

@@ -1,4 +1,4 @@
-#include "compiler/class-members.h"
+#include "compiler/data/class-members.h"
 
 #include "common/wrappers/string_view.h"
 

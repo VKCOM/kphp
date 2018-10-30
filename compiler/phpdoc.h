@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/types.h"
 
 struct php_doc_tag {

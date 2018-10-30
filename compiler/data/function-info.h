@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "compiler/class-members.h"
-#include "compiler/data_ptr.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/data_ptr.h"
 
 class FunctionInfo {
 public:

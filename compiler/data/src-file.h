@@ -2,7 +2,7 @@
 
 #include "common/wrappers/string_view.h"
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 
 class SrcFile {
 public:

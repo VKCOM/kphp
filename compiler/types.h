@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 

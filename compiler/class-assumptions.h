@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 
 enum AssumType {
   assum_unknown,

@@ -9,9 +9,9 @@
 #include <unistd.h>
 
 #include "compiler/compiler.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-info.h"
 #include "compiler/data/var-data.h"
-#include "compiler/data_ptr.h"
 #include "compiler/function-pass.h"
 #include "compiler/index.h"
 #include "compiler/io.h"

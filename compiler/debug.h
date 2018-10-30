@@ -1,7 +1,7 @@
 #ifndef PHP_DEBUG_H
 #define PHP_DEBUG_H
 
-#include "compiler/data_ptr.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
 
