@@ -1583,6 +1583,14 @@ bool GenTree::parse_function_specifiers(VertexPtr flags) {
       break;
     }
 
+    case tok_auto: {
+      flags->auto_flag = true;
+      if (!expect(tok_auto, "'auto'")) {
+        return false;
+      }
+      break;
+    }
+
     default:
       return true;
   }
@@ -1629,10 +1637,6 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
 
   vertex_inner<meta_op_base> flags_inner;
   VertexPtr flags(&flags_inner);
-  if (test_expect(tok_auto)) {
-    next_cur();
-    flags->auto_flag = true;
-  }
 
   CE (expect(tok_oppar, "'('"));
 
