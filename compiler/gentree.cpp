@@ -1306,6 +1306,7 @@ void GenTree::create_default_constructor(const string &class_context, ClassPtr c
   auto func = VertexAdaptor<op_function>::create(func_name, func_params, func_root);
   func->extra_type = op_ex_func_member;
   func->inline_flag = true;
+  func->location.line = location.line_num;
 
   patch_func_constructor(func, cur_class, location);
 
@@ -1837,7 +1838,7 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
   func_name->set_string("__invoke");
 
   std::vector<VertexPtr> func_parameters;
-  patch_func_add_this(func_parameters, AutoLocation(this), cur_class);
+  patch_func_add_this(func_parameters, AutoLocation(function->location.line), cur_class);
   auto range = function->params().as<op_func_param_list>()->args();
   func_parameters.insert(func_parameters.end(), range.begin(), range.end());
 
@@ -1852,7 +1853,9 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
   auto params = VertexAdaptor<op_func_param_list>::create(func_parameters);
   params->location.line = function->params()->location.line;
 
-  return VertexAdaptor<op_function>::create(func_name, params, function->cmd().clone());
+  auto res = VertexAdaptor<op_function>::create(func_name, params, function->cmd().clone());
+  res->location = function->location;
+  return res;
 }
 
 VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
@@ -1898,7 +1901,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
 
   register_fun(generate__invoke_method(anon_class, function));
 
-  create_default_constructor(anon_class->name, anon_class, AutoLocation(lambda_name->location.line));
+  create_default_constructor(anon_class->name, anon_class, AutoLocation(function->location.line));
   anon_class->new_function->namespace_name = FunctionData::get_lambda_namespace();
   anon_class->new_function->class_context_name = anon_class->name;
   anon_class->new_function->set_function_in_which_lambda_was_created(function->get_func_id());
