@@ -125,7 +125,9 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  VertexPtr get_function(bool anonimous_flag = false, Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember);
+  bool parse_function_specifiers(VertexPtr flags);
+  VertexPtr get_anonymous_function();
+  VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, bool anonimous_flag = false);
 
   VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const;
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
@@ -145,8 +147,7 @@ private:
   VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, const vector<VertexPtr> &params_next);
   string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &class_local_name, const string &function_local_name);
 
-  static void add_namespace_and_context_to_function_name(const std::string &namespace_name,
-                                                         const std::string &class_name,
+  static void add_namespace_and_context_to_function_name(std::string full_class_name,
                                                          const std::string &class_context,
                                                          std::string &function_name);
 

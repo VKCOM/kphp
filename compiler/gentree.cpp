@@ -640,11 +640,7 @@ VertexPtr GenTree::get_expr_top() {
       break;
     }
     case tok_function: {
-      res = get_function(true);
-      if (res) {
-        FunctionPtr fun = G->get_function(res->get_string());
-        res = generate_anonymous_class(fun->root.as<op_function>());
-      }
+      res = get_anonymous_function();
       break;
     }
     case tok_isset:
@@ -1569,15 +1565,48 @@ VertexPtr GenTree::get_switch() {
   return switch_vertex;
 }
 
-VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, AccessType access_type) {
+bool GenTree::parse_function_specifiers(VertexPtr flags) {
+  switch ((*cur)->type()) {
+    case tok_throws: {
+      flags->throws_flag = true;
+      if (!expect(tok_throws, "'throws'")) {
+        return false;
+      }
+      break;
+    }
+
+    case tok_resumable: {
+      flags->resumable_flag = true;
+      if (!expect(tok_resumable, "'resumable'")) {
+        return false;
+      }
+      break;
+    }
+
+    default:
+      return true;
+  }
+
+  return parse_function_specifiers(flags);
+}
+
+VertexPtr GenTree::get_anonymous_function() {
+  VertexPtr f = get_function(nullptr, access_nonmember, true);
+  if (auto anon_function = f.try_as<op_function>()) {
+    return generate_anonymous_class(anon_function);
+  }
+
+  return {};
+}
+
+VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, bool anonimous_flag) {
   AutoLocation func_location(this);
 
   TokenType type = (*cur)->type();
-  kphp_assert (test_expect(tok_function) || test_expect(tok_ex_function));
+  kphp_assert(test_expect(tok_function) || test_expect(tok_ex_function));
   next_cur();
 
   string name_str;
-  AutoLocation name_location(this);
   if (anonimous_flag) {
     name_str = gen_anonymous_function_name();
   } else {
@@ -1591,15 +1620,11 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
   bool is_constructor = is_instance_method && name_str == "__construct";
 
   if (cur_class) {
-    string full_class_name = replace_backslashes(cur_class->name);
-    string full_context_name = replace_backslashes(class_context);
-    name_str = full_class_name + "$$" + name_str;
-    if (full_class_name != full_context_name) {
-      name_str += "$$" + full_context_name;
-    }
+    add_namespace_and_context_to_function_name(cur_class->name, class_context, name_str);
   }
+
   auto name = VertexAdaptor<op_func_name>::create();
-  set_location(name, name_location);
+  set_location(name, func_location);
   name->str_val = name_str;
 
   vertex_inner<meta_op_base> flags_inner;
@@ -1630,38 +1655,22 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
 
   CE (expect(tok_clpar, "')'"));
 
-  bool flag = true;
-  while (flag) {
-    flag = false;
-    if (test_expect(tok_throws)) {
-      flags->throws_flag = true;
-      CE (expect(tok_throws, "'throws'"));
-      flag = true;
-    }
-    if (test_expect(tok_resumable)) {
-      flags->resumable_flag = true;
-      CE (expect(tok_resumable, "'resumable'"));
-      flag = true;
-    }
-  }
+  CE(parse_function_specifiers(flags));
 
-  VertexPtr type_rule = get_type_rule();
+  flags->type_rule = get_type_rule();
 
   VertexPtr cmd;
-  if ((*cur)->type() == tok_opbrc) {
+  if (test_expect(tok_opbrc)) {
     enter_function();
     is_top_of_the_function_ = in_func_cnt_ > 1;
     cmd = get_statement();
     exit_function();
-    kphp_error (type != tok_ex_function, "Extern function header should not have a body");
-    CE (!kphp_error(cmd, "Failed to parse function body"));
+    kphp_error(type != tok_ex_function, "Extern function header should not have a body");
+    CE(!kphp_error(cmd, "Failed to parse function body"));
+
+    cmd = embrace(cmd);
   } else {
     CE (expect(tok_semicolon, "';'"));
-  }
-
-
-  if (cmd) {
-    cmd = embrace(cmd);
   }
 
   bool kphp_required_flag = false;
@@ -1669,40 +1678,30 @@ VertexPtr GenTree::get_function(bool anonimous_flag, Token *phpdoc_token, Access
   // тут раньше был парсинг '@kphp-' тегов в phpdoc, но ему не место в gentree, он переехал в PrepareFunctionF
   // но! костыль: @kphp-required нам всё равно нужно именно тут, чтобы функция пошла дальше по пайплайну
   if (phpdoc_token != nullptr && phpdoc_token->type() == tok_phpdoc_kphp) {
-    kphp_required_flag = static_cast<string>(phpdoc_token->str_val).find("@kphp-required") != string::npos;
+    kphp_required_flag = phpdoc_token->str_val.find("@kphp-required") != std::string::npos;
   }
 
   set_location(flags, func_location);
-  flags->type_rule = type_rule;
 
-  FunctionInfo info;
-  {
-    VertexPtr res = create_function_vertex_with_flags(name, params, flags, type, cmd, is_constructor);
-    set_extra_type(res, access_type);
-    info = FunctionInfo(res, processing_file->namespace_name, class_context, kphp_required_flag, access_type);
+  VertexPtr res = create_function_vertex_with_flags(name, params, flags, type, cmd, is_constructor);
+  set_extra_type(res, access_type);
+  FunctionInfo info(res, processing_file->namespace_name, class_context, kphp_required_flag, access_type);
 
-    register_function(info, cur_class);
+  register_function(info, cur_class);
 
-    if (info.root->type() == op_function) {
-      info.root->get_func_id()->access_type = access_type;
-      info.root->get_func_id()->phpdoc_token = phpdoc_token;
-    }
+  if (info.root->type() == op_function) {
+    info.root->get_func_id()->access_type = access_type;
+    info.root->get_func_id()->phpdoc_token = phpdoc_token;
   }
 
   if (cur_class && !processing_file->class_context.empty()) {
     add_parent_function_to_descendants_with_context(info, access_type, params_next);
   }
 
-  if (stage::has_error()) {
-    CE(false);
+  if (anonimous_flag && !stage::has_error()) {
+    return info.root;
   }
 
-  if (anonimous_flag) {
-    auto func_ptr = VertexAdaptor<op_func_name>::create();
-    set_location(func_ptr, name_location);
-    func_ptr->str_val = name->str_val;
-    return func_ptr;
-  }
   return {};
 }
 
@@ -2032,7 +2031,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
           // статическая функция (static public function ...)
           if (next_tok == tok_function) {
             next_cur();
-            return get_function(false, phpdoc_token, access_type);
+            return get_function(phpdoc_token, access_type);
           }
           // статическое свойство (static public $staticField [, $staticField2...])
           if (next_tok == tok_var_name) {
@@ -2091,12 +2090,12 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
 
       // не статическая функция (public function ...)
       if (cur_tok == tok_function) {
-        return get_function(false, phpdoc_token, access_type);
+        return get_function(phpdoc_token, access_type);
       }
       // статическая функция (public static function ...)
       if (next_tok == tok_function) {
         expect (tok_static, "'static'");
-        return get_function(false, phpdoc_token, access_type);
+        return get_function(phpdoc_token, access_type);
       }
       // не статическое свойство (public $var1 [=default] [,$var2...])
       if (cur_tok == tok_var_name) {
@@ -2113,7 +2112,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
     }
     case tok_ex_function:
     case tok_function:
-      return get_function(false, phpdoc_token);
+      return get_function(phpdoc_token);
 
     case tok_try: {
       AutoLocation try_location(this);
@@ -2432,11 +2431,10 @@ std::string GenTree::concat_namespace_class_function_names(const std::string &na
   return full_class_name + "$$" + function_name;
 }
 
-void GenTree::add_namespace_and_context_to_function_name(const std::string &namespace_name,
-                                                         const std::string &class_name,
+void GenTree::add_namespace_and_context_to_function_name(std::string full_class_name,
                                                          const std::string &class_context,
                                                          std::string &function_name) {
-  std::string full_class_name = replace_backslashes(namespace_name + "\\" + class_name);
+  full_class_name = replace_backslashes(full_class_name);
   std::string full_context_name = replace_backslashes(class_context);
   function_name = full_class_name + "$$" + function_name;
 
