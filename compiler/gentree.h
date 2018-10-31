@@ -143,8 +143,8 @@ public:
 private:
   VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
   void set_extra_type(VertexPtr vertex, AccessType access_type) const;
-  void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next);
-  VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, const vector<VertexPtr> &params_next);
+  void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, VertexRange params_next);
+  VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, VertexRange params_next);
   string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &class_local_name, const string &function_local_name);
 
   static void add_namespace_and_context_to_function_name(std::string full_class_name,

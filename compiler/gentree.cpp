@@ -1614,31 +1614,27 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
   kphp_assert(test_expect(tok_function) || test_expect(tok_ex_function));
   next_cur();
 
-  string name_str;
+  auto name = VertexAdaptor<op_func_name>::create();
+  set_location(name, func_location);
+
   if (anonimous_flag) {
-    name_str = gen_anonymous_function_name();
+    name->str_val = gen_anonymous_function_name();
   } else {
-    CE (expect(tok_func_name, "'tok_func_name'"));
-    cur--;
-    name_str = static_cast<string>((*cur)->str_val);
-    next_cur();
+    CE(expect(tok_func_name, "'tok_func_name'"));
+    name->str_val = static_cast<string>((*std::prev(cur))->str_val);
   }
 
   bool is_instance_method = vk::any_of_equal(access_type, access_private, access_protected, access_public);
-  bool is_constructor = is_instance_method && name_str == "__construct";
+  bool is_constructor = is_instance_method && name->str_val == "__construct";
 
   if (cur_class) {
-    add_namespace_and_context_to_function_name(cur_class->name, class_context, name_str);
+    add_namespace_and_context_to_function_name(cur_class->name, class_context, name->str_val);
   }
-
-  auto name = VertexAdaptor<op_func_name>::create();
-  set_location(name, func_location);
-  name->str_val = name_str;
 
   vertex_inner<meta_op_base> flags_inner;
   VertexPtr flags(&flags_inner);
 
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
 
   AutoLocation params_location(this);
   vector<VertexPtr> params_next;
@@ -1652,12 +1648,13 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
     next_cur();
   } else {
     bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
-    CE (!kphp_error(ok_params_next, "Failed to parse function params"));
+    CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   }
+
   auto params = VertexAdaptor<op_func_param_list>::create(params_next);
   set_location(params, params_location);
 
-  CE (expect(tok_clpar, "')'"));
+  CE(expect(tok_clpar, "')'"));
 
   CE(parse_function_specifiers(flags));
 
@@ -1677,13 +1674,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
     CE (expect(tok_semicolon, "';'"));
   }
 
-  bool kphp_required_flag = false;
-
-  // тут раньше был парсинг '@kphp-' тегов в phpdoc, но ему не место в gentree, он переехал в PrepareFunctionF
-  // но! костыль: @kphp-required нам всё равно нужно именно тут, чтобы функция пошла дальше по пайплайну
-  if (phpdoc_token != nullptr && phpdoc_token->type() == tok_phpdoc_kphp) {
-    kphp_required_flag = phpdoc_token->str_val.find("@kphp-required") != std::string::npos;
-  }
+  bool kphp_required_flag = phpdoc_token && phpdoc_token->str_val.find("@kphp-required") != std::string::npos;
 
   set_location(flags, func_location);
 
@@ -1699,7 +1690,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
   }
 
   if (cur_class && !processing_file->class_context.empty()) {
-    add_parent_function_to_descendants_with_context(info, access_type, params_next);
+    add_parent_function_to_descendants_with_context(info, access_type, params->params());
   }
 
   if (anonimous_flag && !stage::has_error()) {
@@ -2344,7 +2335,7 @@ void GenTree::set_extra_type(VertexPtr vertex, AccessType access_type) const {
   }
 }
 
-void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, const vector<VertexPtr> &params_next) {
+void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, VertexRange params_next) {
   string cur_class_name = class_context;
   ClassPtr cur_class = G->get_class(cur_class_name);
 
@@ -2395,7 +2386,7 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
   }
 }
 
-VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, const vector<VertexPtr> &params_next) {
+VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, VertexRange params_next) {
   auto new_name = VertexAdaptor<op_func_name>::create();
   new_name->set_string(get_name_for_new_function_with_parent_call(info, class_local_name, function_local_name));
   vector<VertexPtr> new_params_next;
