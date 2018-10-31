@@ -1599,7 +1599,9 @@ bool GenTree::parse_function_specifiers(VertexPtr flags) {
 }
 
 VertexPtr GenTree::get_anonymous_function() {
-  VertexPtr f = get_function(nullptr, access_nonmember, true);
+  std::vector<VertexPtr> uses_of_lambda;
+  VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
+  (void) uses_of_lambda;
   if (auto anon_function = f.try_as<op_function>()) {
     return generate_anonymous_class(anon_function);
   }
@@ -1607,17 +1609,21 @@ VertexPtr GenTree::get_anonymous_function() {
   return {};
 }
 
-VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, bool anonimous_flag) {
+VertexPtr GenTree::parse_function_declaration(AccessType access_type,
+                                              std::vector<VertexPtr> *uses_of_lambda,
+                                              VertexAdaptor<op_func_param_list> &params,
+                                              VertexPtr &flags,
+                                              bool &is_constructor) {
   AutoLocation func_location(this);
+  set_location(flags, func_location);
 
-  TokenType type = (*cur)->type();
   kphp_assert(test_expect(tok_function) || test_expect(tok_ex_function));
   next_cur();
 
   auto name = VertexAdaptor<op_func_name>::create();
   set_location(name, func_location);
 
-  if (anonimous_flag) {
+  if (uses_of_lambda != nullptr) {
     name->str_val = gen_anonymous_function_name();
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
@@ -1625,14 +1631,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
   }
 
   bool is_instance_method = vk::any_of_equal(access_type, access_private, access_protected, access_public);
-  bool is_constructor = is_instance_method && name->str_val == "__construct";
-
-  if (cur_class) {
-    add_namespace_and_context_to_function_name(cur_class->name, class_context, name->str_val);
-  }
-
-  vertex_inner<meta_op_base> flags_inner;
-  VertexPtr flags(&flags_inner);
+  is_constructor = is_instance_method && name->str_val == "__construct";
 
   CE(expect(tok_oppar, "'('"));
 
@@ -1651,7 +1650,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
     CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   }
 
-  auto params = VertexAdaptor<op_func_param_list>::create(params_next);
+  params = VertexAdaptor<op_func_param_list>::create(params_next);
   set_location(params, params_location);
 
   CE(expect(tok_clpar, "')'"));
@@ -1659,6 +1658,23 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
   CE(parse_function_specifiers(flags));
 
   flags->type_rule = get_type_rule();
+
+  if (cur_class) {
+    add_namespace_and_context_to_function_name(cur_class->name, class_context, name->str_val);
+  }
+
+  return name;
+}
+
+VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexPtr> *uses_of_lambda) {
+  TokenType type = (*cur)->type();
+
+  vertex_inner<meta_op_base> flags_inner;
+  VertexPtr flags(&flags_inner);
+  VertexAdaptor<op_func_param_list> params;
+  bool is_constructor = false;
+  VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor);
+  CE(name);
 
   VertexPtr cmd;
   if (test_expect(tok_opbrc)) {
@@ -1676,8 +1692,6 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
 
   bool kphp_required_flag = phpdoc_token && phpdoc_token->str_val.find("@kphp-required") != std::string::npos;
 
-  set_location(flags, func_location);
-
   VertexPtr res = create_function_vertex_with_flags(name, params, flags, type, cmd, is_constructor);
   set_extra_type(res, access_type);
   FunctionInfo info(res, processing_file->namespace_name, class_context, kphp_required_flag, access_type);
@@ -1693,8 +1707,8 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, boo
     add_parent_function_to_descendants_with_context(info, access_type, params->params());
   }
 
-  if (anonimous_flag && !stage::has_error()) {
-    return info.root;
+  if (uses_of_lambda != nullptr && !stage::has_error()) {
+    return res;
   }
 
   return {};

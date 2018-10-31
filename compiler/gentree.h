@@ -127,7 +127,7 @@ public:
   VertexPtr get_switch();
   bool parse_function_specifiers(VertexPtr flags);
   VertexPtr get_anonymous_function();
-  VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, bool anonimous_flag = false);
+  VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, std::vector<VertexPtr> *uses_of_lambda = nullptr);
 
   VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const;
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
@@ -141,6 +141,12 @@ public:
 
 
 private:
+  VertexPtr parse_function_declaration(AccessType access_type,
+                                       std::vector<VertexPtr> *uses_of_lambda,
+                                       VertexAdaptor<op_func_param_list> &params,
+                                       VertexPtr &flags,
+                                       bool &is_constructor);
+
   VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
   void set_extra_type(VertexPtr vertex, AccessType access_type) const;
   void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, VertexRange params_next);
