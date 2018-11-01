@@ -75,6 +75,7 @@ public:
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
   static VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   void create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const;
+  void create_constructor_with_args(const string &class_context, ClassPtr cur_class, AutoLocation location, VertexAdaptor<op_func_param_list> params) const;
 
   VertexPtr get_func_param_without_callbacks(bool from_callback = false);
   VertexPtr get_func_param_from_callback();
@@ -126,12 +127,14 @@ public:
   VertexPtr get_do();
   VertexPtr get_switch();
   bool parse_function_specifiers(VertexPtr flags);
+  bool parse_function_uses(std::vector<VertexPtr> *uses_of_lambda);
   VertexPtr get_anonymous_function();
   VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, std::vector<VertexPtr> *uses_of_lambda = nullptr);
 
+  void add_this_to_captured_variables_in_lambda_body(VertexPtr &cmd, ClassPtr lambda_class) const;
   VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const;
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
-  VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function) const;
+  VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function, std::vector<VertexPtr> &&uses_of_lambda) const;
 
   VertexPtr get_class(Token *phpdoc_token);
 

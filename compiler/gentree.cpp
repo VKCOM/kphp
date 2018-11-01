@@ -1247,11 +1247,25 @@ void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLoca
 }
 
 void GenTree::create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const {
+  create_constructor_with_args(class_context, cur_class, location, VertexAdaptor<op_func_param_list>::create());
+}
+
+void GenTree::create_constructor_with_args(const string &class_context, ClassPtr cur_class, AutoLocation location, VertexAdaptor<op_func_param_list> params) const {
   auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = replace_backslashes(class_context) + "$$" + "__construct";
-  auto func_params = VertexAdaptor<op_func_param_list>::create();
-  auto func_root = VertexAdaptor<op_seq>::create();
-  auto func = VertexAdaptor<op_function>::create(func_name, func_params, func_root);
+
+  std::vector<VertexPtr> fields_initializers;
+  for (auto param : params->params()) {
+    param = param.as<op_func_param>()->var();
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(location, ClassPtr()));
+    set_location(inst_prop, location);
+    inst_prop->str_val = param->get_string();
+
+    fields_initializers.emplace_back(VertexAdaptor<op_set>::create(inst_prop, param.clone()));
+  }
+  auto func_root = VertexAdaptor<op_seq>::create(fields_initializers);
+
+  auto func = VertexAdaptor<op_function>::create(func_name, params, func_root);
   func->extra_type = op_ex_func_member;
   func->inline_flag = true;
   func->location.line = location.line_num;
@@ -1598,12 +1612,32 @@ bool GenTree::parse_function_specifiers(VertexPtr flags) {
   return parse_function_specifiers(flags);
 }
 
+bool GenTree::parse_function_uses(std::vector<VertexPtr> *uses_of_lambda) {
+  if (test_expect(tok_use)) {
+    kphp_error_act(uses_of_lambda, "Unexpected `use` token", return false);
+
+    next_cur();
+    if (!expect(tok_oppar, "`(`")) {
+      return false;
+    }
+
+    bool ok_params_next = gen_list<op_err>(uses_of_lambda, &GenTree::get_var_name_ref, tok_comma);
+    for (auto &v : *uses_of_lambda) {
+      kphp_error(!v->ref_flag, "references to variables in `use` block are forbidden in lambdas");
+      v = VertexAdaptor<op_func_param>::create(v);
+    }
+
+    return ok_params_next && expect(tok_clpar, "`)`");
+  }
+
+  return true;
+}
+
 VertexPtr GenTree::get_anonymous_function() {
   std::vector<VertexPtr> uses_of_lambda;
   VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
-  (void) uses_of_lambda;
   if (auto anon_function = f.try_as<op_function>()) {
-    return generate_anonymous_class(anon_function);
+    return generate_anonymous_class(anon_function, std::move(uses_of_lambda));
   }
 
   return {};
@@ -1656,6 +1690,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
   CE(expect(tok_clpar, "')'"));
 
   CE(parse_function_specifiers(flags));
+  CE(parse_function_uses(uses_of_lambda));
 
   flags->type_rule = get_type_rule();
 
@@ -1793,6 +1828,27 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   return VertexPtr();
 }
 
+void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) const {
+  switch (root->type()) {
+    case op_var: {
+      if (lambda_class->members.get_instance_field(root->get_string())) {
+        auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(AutoLocation(-1), ClassPtr()));
+        inst_prop->location = root->location;
+        inst_prop->str_val = root->get_string();
+        root = inst_prop;
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+
+  for (auto &v : *root) {
+    add_this_to_captured_variables_in_lambda_body(v, lambda_class);
+  }
+}
+
 VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const {
   function->name()->set_string("__invoke");
 
@@ -1812,20 +1868,29 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
   auto params = VertexAdaptor<op_func_param_list>::create(func_parameters);
   params->location.line = function->params()->location.line;
 
+  add_this_to_captured_variables_in_lambda_body(function->cmd(), cur_class);
+
   auto res = VertexAdaptor<op_function>::create(function->name(), params, function->cmd());
   res->location = function->location;
   return res;
 }
 
 VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
-  auto constructor_call = VertexAdaptor<op_constructor_call>::create();
+  std::vector<VertexPtr> args;
+  cur_class->members.for_each([&args, &cur_class](const ClassMemberInstanceField &field) {
+    args.emplace_back(VertexAdaptor<op_var>::create());
+    args.back()->set_string(field.root->get_string());
+    args.back()->location = field.root->location;
+  });
+
+  auto constructor_call = VertexAdaptor<op_constructor_call>::create(args);
   constructor_call->set_string(cur_class->name);
   constructor_call->set_func_id(cur_class->new_function);
 
   return constructor_call;
 }
 
-VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function) const {
+VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function, std::vector<VertexPtr> &&uses_of_lambda) const {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
   lambda_class_name->str_val = gen_anonymous_function_name();
   lambda_class_name->location.line = function->name()->location.line;
@@ -1835,6 +1900,15 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
   ClassPtr anon_class(new ClassData());
   anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_class_name->get_string());
   anon_class->root = class_vertex;
+
+  for (auto one_use : uses_of_lambda) {
+    if (auto param_as_use = one_use.try_as<op_func_param>()) {
+      auto variable_in_use = VertexAdaptor<op_class_var>::create();
+      variable_in_use->str_val = param_as_use->var()->get_string();
+      set_location(variable_in_use, AutoLocation(this));
+      anon_class->members.add_instance_field(variable_in_use, access_public);
+    }
+  }
 
   FunctionInfo func_info({}, FunctionData::get_lambda_namespace(), anon_class->name, true, access_public);
 
@@ -1861,7 +1935,10 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
 
   register_invoke(generate__invoke_method(anon_class, function));
 
-  create_default_constructor(anon_class->name, anon_class, AutoLocation(function->location.line));
+  auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses_of_lambda);
+  ::set_location(constructor_params, lambda_class_name->location);
+  create_constructor_with_args(anon_class->name, anon_class, AutoLocation(function->location.line), constructor_params);
+
   anon_class->new_function->namespace_name = FunctionData::get_lambda_namespace();
   anon_class->new_function->class_context_name = anon_class->name;
   anon_class->new_function->function_in_which_lambda_was_created = function->get_func_id();
