@@ -36,8 +36,11 @@
   {
     "name": "meta_op_varg",
     "base_name": "meta_op_base",
-    "ranges" : {
-      "args" : [0, 0]
+    "ranges": {
+      "args": [
+        0,
+        0
+      ]
     }
   },
   {
@@ -112,8 +115,11 @@
         "default": 0
       }
     },
+    "sons": {
+      "level": 0
+    },
     "name": "meta_op_goto",
-    "base_name": "meta_op_unary"
+    "base_name": "meta_op_base"
   },
   {
     "sons": {
@@ -146,7 +152,10 @@
   },
   {
     "name": "meta_op_type_rule",
-    "base_name": "meta_op_unary"
+    "base_name": "meta_op_base",
+    "sons": {
+      "rule": 0
+    }
   },
   {
     "name": "meta_op_builtin_func",
@@ -373,7 +382,10 @@
       "variable"
     ],
     "name": "op_instance_prop",
-    "base_name": "meta_op_unary",
+    "base_name": "meta_op_base",
+    "sons": {
+      "instance": 0
+    },
     "props": {
       "rl": "rl_instance_prop",
       "cnst": "cnst_const_func",
@@ -448,7 +460,10 @@
   },
   {
     "name": "op_varg",
-    "base_name": "meta_op_unary"
+    "base_name": "meta_op_base",
+    "sons": {
+      "array": 0
+    }
   },
   {
     "name": "op_func_param",
@@ -791,7 +806,10 @@
   },
   {
     "name": "op_return",
-    "base_name": "meta_op_unary",
+    "base_name": "meta_op_base",
+    "sons": {
+      "expr": 0
+    },
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
@@ -1530,7 +1548,7 @@
     "sons": {
       "array": 0,
       "key": {
-        "id":1,
+        "id": 1,
         "optional": true
       }
     },
@@ -1654,7 +1672,10 @@
   },
   {
     "name": "op_defined",
-    "base_name": "meta_op_unary",
+    "base_name": "meta_op_base",
+    "sons": {
+      "expr": 0
+    },
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
@@ -1723,7 +1744,10 @@
   },
   {
     "name": "op_throw",
-    "base_name": "meta_op_unary",
+    "base_name": "meta_op_base",
+    "sons": {
+      "exception": 0
+    },
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",

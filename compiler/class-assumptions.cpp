@@ -557,7 +557,7 @@ AssumType infer_from_instance_prop(FunctionPtr f,
                                    ClassPtr &out_class,
                                    size_t depth) {
   ClassPtr lhs_class;
-  AssumType lhs_assum = infer_class_of_expr(f, prop->expr(), lhs_class, depth + 1);
+  AssumType lhs_assum = infer_class_of_expr(f, prop->instance(), lhs_class, depth + 1);
 
   if (lhs_assum != assum_instance) {
     return assum_not_instance;

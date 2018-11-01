@@ -2143,13 +2143,13 @@ void compile_throw_fast_action(CodeGenerator &W) {
 
 
 void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
-  W << "throw (" << root->expr() << ")";
+  W << "throw (" << root->exception() << ")";
 }
 
 
 void compile_throw_fast(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << BEGIN <<
-    "THROW_EXCEPTION (" << root->expr() << ");" << NL;
+    "THROW_EXCEPTION (" << root->exception() << ");" << NL;
   compile_throw_fast_action(W);
   W << ";" << NL <<
     END << NL;
@@ -2947,7 +2947,7 @@ void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W) {
 }
 
 void compile_instance_prop(VertexAdaptor<op_instance_prop> root, CodeGenerator &W) {
-  W << root->expr() << "->$" << root->get_string();
+  W << root->instance() << "->$" << root->get_string();
 }
 
 void compile_seq_rval(VertexPtr root, CodeGenerator &W) {

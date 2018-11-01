@@ -196,7 +196,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
   kphp_assert((v->type() == op_func_call && v->extra_type == op_ex_func_member) || v->type() == op_instance_prop);
 
   VertexPtr lhs = v->type() == op_instance_prop ?
-                  v.as<op_instance_prop>()->expr() :
+                  v.as<op_instance_prop>()->instance() :
                   v.as<op_func_call>()->args()[0];
   ClassPtr klass;
 
@@ -228,7 +228,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_instance_prop: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, dl_pstr("$%s->%s is not an instance", lhs.as<op_instance_prop>()->expr()->get_c_string(), lhs->get_c_string())));
+                 _err_instance_access(v, dl_pstr("$%s->%s is not an instance", lhs.as<op_instance_prop>()->instance()->get_c_string(), lhs->get_c_string())));
       return klass;
     }
 
@@ -256,7 +256,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
           AssumType assum = infer_class_of_expr(function, array, klass);
           kphp_error(assum == assum_instance_array,
                      _err_instance_access(v, dl_pstr("$%s->%s is not array of instances",
-                                                     array.as<op_instance_prop>()->expr()->get_c_string(), array->get_c_string())));
+                                                     array.as<op_instance_prop>()->instance()->get_c_string(), array->get_c_string())));
           return klass;
         }
       }

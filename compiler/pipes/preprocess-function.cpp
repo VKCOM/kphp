@@ -200,7 +200,7 @@ private:
       }
       VertexPtr args;
       if (call_args_n == 1 && call_args[0]->type() == op_varg) {
-        args = call_args[0].as<op_varg>()->expr();
+        args = call_args[0].as<op_varg>()->array();
       } else {
         auto new_args = VertexAdaptor<op_array>::create(call->get_next());
         new_args->location = call->get_location();

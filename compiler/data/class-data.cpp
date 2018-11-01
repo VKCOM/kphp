@@ -125,7 +125,7 @@ std::string ClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_f
     if (auto type_rule = callback_param->type_rule) {
       kphp_assert(type_rule->type() == op_common_type_rule);
       callback_param->type_help =
-        infer_type_of_callback_arg(type_rule.as<op_common_type_rule>()->expr(), call_params, function_context, extern_func_params, assum, klass_assumed);
+        infer_type_of_callback_arg(type_rule.as<op_common_type_rule>()->rule(), call_params, function_context, extern_func_params, assum, klass_assumed);
     }
 
     switch (assum) {

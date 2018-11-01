@@ -814,7 +814,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       VertexAdaptor<op_break> break_op = tree_node;
       recursive_flag = true;
       Node start = new_node(), finish = Node();
-      create_cfg_add_break_node(start, atoi(break_op->expr()->get_string().c_str()));
+      create_cfg_add_break_node(start, atoi(break_op->level()->get_string().c_str()));
 
       *res_start = start;
       *res_finish = finish;
@@ -824,7 +824,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       VertexAdaptor<op_continue> continue_op = tree_node;
       recursive_flag = true;
       Node start = new_node(), finish = Node();
-      create_cfg_add_continue_node(start, atoi(continue_op->expr()->get_string().c_str()));
+      create_cfg_add_continue_node(start, atoi(continue_op->level()->get_string().c_str()));
 
       *res_start = start;
       *res_finish = finish;
@@ -1034,7 +1034,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_throw: {
       VertexAdaptor<op_throw> throw_op = tree_node;
       Node throw_start, throw_finish;
-      create_cfg(throw_op->expr(), &throw_start, &throw_finish);
+      create_cfg(throw_op->exception(), &throw_start, &throw_finish);
       create_cfg_register_exception(throw_finish);
 
       *res_start = throw_start;

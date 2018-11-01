@@ -24,11 +24,11 @@ VertexPtr PreprocessBreakPass::on_enter_vertex(VertexPtr root, PreprocessBreakPa
     int val;
     VertexAdaptor<meta_op_goto> goto_op = root;
     kphp_error_act (
-      goto_op->expr()->type() == op_int_const,
+      goto_op->level()->type() == op_int_const,
       "Break/continue parameter expected to be constant integer",
       return root
     );
-    val = atoi(goto_op->expr()->get_string().c_str());
+    val = atoi(goto_op->level()->get_string().c_str());
     kphp_error_act (
       1 <= val && val <= 10,
       "Break/continue parameter expected to be in [1;10] interval",

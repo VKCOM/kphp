@@ -805,12 +805,12 @@ void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexPtr expr) {
 void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr function = call->get_func_id();
   if (call->type_rule) {
-    apply_type_rule(call->type_rule.as<meta_op_type_rule>()->expr(), call);
+    apply_type_rule(call->type_rule.as<meta_op_type_rule>()->rule(), call);
     return;
   }
 
   if (function->root->type_rule) {
-    apply_type_rule(function->root->type_rule.as<meta_op_type_rule>()->expr(), call);
+    apply_type_rule(function->root->type_rule.as<meta_op_type_rule>()->rule(), call);
   } else {
     set_lca(function, -1);
   }
@@ -977,7 +977,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_gt_type_rule:
     case op_lt_type_rule:
     case op_eq_type_rule:
-      apply_type_rule(expr.as<meta_op_type_rule>()->expr(), VertexPtr());
+      apply_type_rule(expr.as<meta_op_type_rule>()->rule(), VertexPtr());
       break;
     case op_var:
       recalc_var(expr);

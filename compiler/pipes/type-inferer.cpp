@@ -386,8 +386,8 @@ private:
   }
 
   void on_throw(VertexAdaptor<op_throw> throw_op) {
-    create_less(tp_Exception, throw_op->expr());
-    create_less(throw_op->expr(), tp_Exception);
+    create_less(tp_Exception, throw_op->exception());
+    create_less(throw_op->exception(), tp_Exception);
   }
 
   void on_set_op(VertexPtr v) {
@@ -464,7 +464,7 @@ private:
             if (function->root->type_rule) {
               kphp_error_act (function->root->type_rule->type() == op_common_type_rule, "...", continue);
               VertexAdaptor<op_common_type_rule> common_type_rule = function->root->type_rule;
-              VertexPtr rule = common_type_rule->expr();
+              VertexPtr rule = common_type_rule->rule();
               kphp_error_act (rule->type() == op_type_rule, "...", continue);
               x = rule->type_help;
             }

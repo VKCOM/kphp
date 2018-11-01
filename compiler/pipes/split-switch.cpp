@@ -14,13 +14,9 @@ private:
   static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
                                       const string &state_name, int cycle_depth) {
     int depth = -1;
-    if (goto_op->empty()) {
-      depth = 1;
-    } else {
-      VertexPtr label = goto_op->expr();
-      if (label->type() == op_int_const) {
-        depth = atoi(label->get_string().c_str());
-      }
+    VertexPtr label = goto_op->level();
+    if (label->type() == op_int_const) {
+      depth = atoi(label->get_string().c_str());
     }
     if (depth != cycle_depth) {
       return goto_op;
