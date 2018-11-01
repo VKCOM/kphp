@@ -43,10 +43,8 @@ struct OpProperties {
   Operation base_op; // op_add for op_set_add
 
   int priority;
-  opp_main_t main;
   opp_arity_t arity;
   opp_fixity_t fixity;
-  opp_minor_t minor;
 
   RLOperationType rl;
   ConstOperationType cnst;

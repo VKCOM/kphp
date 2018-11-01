@@ -14,9 +14,7 @@
     "base_name": "meta_op_base",
     "props": {
       "fixity": "left_opp",
-      "arity": "unary_opp",
-      "main": "expression_opp",
-      "minor": "operator_opp"
+      "arity": "unary_opp"
     }
   },
   {
@@ -28,9 +26,7 @@
     "base_name": "meta_op_base",
     "props": {
       "fixity": "left_opp",
-      "arity": "binary_opp",
-      "main": "expression_opp",
-      "minor": "operator_opp"
+      "arity": "binary_opp"
     }
   },
   {
@@ -1321,7 +1317,6 @@
       "str": "ternary operator",
       "rl": "rl_op",
       "fixity": "right_opp",
-      "main": "expression_opp",
       "type": "ternary_op"
     }
   },

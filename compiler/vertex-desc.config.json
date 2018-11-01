@@ -20,21 +20,6 @@
             "ternary_opp"
           ]
         },
-        "main": {
-          "enum": [
-            "omain_none",
-            "statement_opp",
-            "expression_opp"
-          ]
-        },
-        "minor": {
-          "enum": [
-            "ominor_none",
-            "cycle_opp",
-            "term_opp",
-            "operator_opp"
-          ]
-        },
         "rl": {
           "title": "RLOperationType",
           "enum": [
