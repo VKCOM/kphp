@@ -19,8 +19,8 @@
   },
   {
     "sons": {
-      "rhs": 1,
-      "lhs": 0
+      "lhs": 0,
+      "rhs": 1
     },
     "name": "meta_op_binary",
     "base_name": "meta_op_base",
@@ -41,8 +41,8 @@
   },
   {
     "sons": {
-      "params": 1,
-      "name": 0
+      "name": 0,
+      "params": 1
     },
     "extras": [
       "function",
@@ -549,8 +549,8 @@
   },
   {
     "sons": {
-      "cmd": 1,
-      "cond": 0
+      "cond": 0,
+      "cmd": 1
     },
     "name": "op_while",
     "base_name": "meta_op_cycle",
@@ -560,8 +560,8 @@
   },
   {
     "sons": {
-      "cmd": 1,
-      "cond": 0
+      "cond": 0,
+      "cmd": 1
     },
     "name": "op_do",
     "base_name": "meta_op_cycle",
@@ -571,10 +571,10 @@
   },
   {
     "sons": {
-      "post_cond": 2,
       "pre_cond": 0,
-      "cmd": 3,
-      "cond": 1
+      "cond": 1,
+      "post_cond": 2,
+      "cmd": 3
     },
     "name": "op_for",
     "base_name": "meta_op_cycle",
@@ -614,10 +614,10 @@
   },
   {
     "sons": {
-      "ss": 3,
       "expr": 0,
-      "switch_flag": 2,
       "switch_var": 1,
+      "switch_flag": 2,
+      "ss": 3,
       "ss_hash": 4
     },
     "name": "op_switch",
@@ -638,8 +638,8 @@
   },
   {
     "sons": {
-      "true_cmd": 1,
       "cond": 0,
+      "true_cmd": 1,
       "false_cmd": {
         "id": 2,
         "optional": true
@@ -1573,8 +1573,8 @@
   {
     "sons": {
       "array": 0,
-      "value": 2,
-      "key": 1
+      "key": 1,
+      "value": 2
     },
     "name": "op_set_value",
     "base_name": "meta_op_base",
@@ -1727,8 +1727,8 @@
   },
   {
     "sons": {
-      "func_call": 1,
-      "lhs": 0
+      "lhs": 0,
+      "func_call": 1
     },
     "name": "op_async",
     "base_name": "meta_op_base",
