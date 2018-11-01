@@ -32,6 +32,7 @@
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg.h"
 #include "compiler/pipes/check-access-modifiers.h"
+#include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-function-calls.h"
 #include "compiler/pipes/check-infered-instances.h"
 #include "compiler/pipes/check-instance-props.h"
@@ -252,7 +253,8 @@ bool compiler_execute(KphpEnviroment *env) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
     >> PipeC<CFGEndF>{}
-    >> PipeC<CheckInferredInstancesPass>{}
+    >> PipeC<CheckInferredInstancesF>{}
+    >> PipeC<CheckClassesF>{}
     >> PassC<OptimizationPass>{}
     >> PassC<CalcValRefPass>{}
     >> SyncC<CalcBadVarsF>{}
