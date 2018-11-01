@@ -24,6 +24,14 @@ void init_functions_tinf_nodes(FunctionPtr function) {
   }
 }
 
+string colored_type_out(const TypeData *type) {
+  string type_str = type_out(type);
+  if (vk::string_view(type_str).starts_with("std::")) {
+    type_str = type_str.substr(5);
+  }
+  return TermStringFormat::paint(type_str, TermStringFormat::green);
+}
+
 tinf::Node *get_tinf_node(FunctionPtr function, int id) {
   if (function->tinf_state == 0) {
     if (__sync_bool_compare_and_swap(&function->tinf_state, 0, 1)) {
@@ -236,7 +244,7 @@ bool RestrictionLess::check_broken_restriction_impl() {
     find_call_trace_with_error(actual_);
     desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
     desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
-    desc += "Expected type:\t" + TermStringFormat::paint(type_out(expected_type), TermStringFormat::green) + "\nActual type:\t" + TermStringFormat::paint(type_out(actual_type), TermStringFormat::green) + "\n";
+    desc += "Expected type:\t" + colored_type_out(expected_type) + "\nActual type:\t" + colored_type_out(actual_type) + "\n";
     desc += TermStringFormat::add_text_attribute("+-------------+\n| STACKTRACE: |\n+-------------+", TermStringFormat::bold);
     desc += "\n";
     desc += get_stacktrace_text();
@@ -421,13 +429,13 @@ string tinf::VarNode::get_description() {
   stringstream ss;
   if (is_variable()) {
     //Вывод должен совпадать с выводом в соответсвующей ветке в get_expr_description, чтобы детектились и убирались дубликаты в стектрейсе
-    ss << "as variable:" << "  " << get_var_name() << " : " << TermStringFormat::paint(type_out(tinf::get_type(var_)), TermStringFormat::green);
+    ss << "as variable:" << "  " << get_var_name() << " : " << colored_type_out(tinf::get_type(var_));
   } else if (is_return_value_from_function()) {
     ss << "as expression:" << "  " << "return ...";
   } else {
     std::string var_type;
     if (var_) {
-      var_type = " : " + TermStringFormat::paint(type_out(tinf::get_type(var_)), TermStringFormat::green);
+      var_type = " : " + colored_type_out(tinf::get_type(var_));
     }
     ss << "as argument:" << "  " << get_var_as_argument_name() << var_type;
   }
@@ -443,7 +451,7 @@ string tinf::TypeNode::get_description() {
 
 static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
   auto print_type = [&](VertexPtr type_out_of) -> string {
-    return with_type_hint ? " : " + TermStringFormat::paint(type_out(tinf::get_type(type_out_of)), TermStringFormat::green) : "";
+    return with_type_hint ? " : " + colored_type_out(tinf::get_type(type_out_of)) : "";
   };
 
   switch (expr->type()) {
