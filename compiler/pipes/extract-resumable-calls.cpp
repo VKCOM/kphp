@@ -15,7 +15,7 @@ void ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *&replace) {
         op == op_set_or || op == op_set_xor ||
         op == op_set_dot || op == op_set ||
         op == op_set_shr || op == op_set_shl) {
-      replace = &((*replace).as<meta_op_binary_op>()->rhs());
+      replace = &((*replace).as<meta_op_binary>()->rhs());
     } else if (op == op_conv_int || op == op_conv_bool ||
                op == op_conv_int_l || op == op_conv_float ||
                op == op_conv_string || op == op_conv_array ||
@@ -23,7 +23,7 @@ void ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *&replace) {
                op == op_conv_uint || op == op_conv_long ||
                op == op_conv_ulong || op == op_conv_regexp ||
                op == op_log_not) {
-      replace = &((*replace).as<meta_op_unary_op>()->expr());
+      replace = &((*replace).as<meta_op_unary>()->expr());
     } else {
       break;
     }
@@ -44,7 +44,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
              op == op_set_or || op == op_set_xor ||
              op == op_set_dot || op == op_set ||
              op == op_set_shr || op == op_set_shl) {
-    replace = &vertex.as<meta_op_binary_op>()->rhs();
+    replace = &vertex.as<meta_op_binary>()->rhs();
     if ((*replace)->type() == op_func_call && op == op_set) {
       return vertex;
     }

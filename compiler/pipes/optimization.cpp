@@ -126,7 +126,7 @@ VertexPtr OptimizationPass::fix_int_const(VertexPtr root) {
   return root;
 }
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
-  VertexPtr expr = root.as<meta_op_unary_op>()->expr();
+  VertexPtr expr = root.as<meta_op_unary>()->expr();
   const TypeData *tp = tinf::get_type(expr);
   if (tp->use_or_false() == false) {
     VertexPtr res;

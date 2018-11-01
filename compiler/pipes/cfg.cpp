@@ -575,7 +575,7 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
     case op_log_and:
     case op_log_or: {
       Node first_start, first_true, first_false, second_start, second_true, second_false;
-      VertexAdaptor<meta_op_binary_op> op = tree_node;
+      VertexAdaptor<meta_op_binary> op = tree_node;
       create_condition_cfg(op->lhs(), &first_start, &first_true, &first_false);
       create_condition_cfg(op->rhs(), &second_start, &second_true, &second_false);
       *res_start = first_start;
@@ -620,7 +620,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         *res_finish = a;
         break;
       }
-      VertexRange args = tree_node.as<meta_op_varg_>()->args();
+      VertexRange args = tree_node.as<meta_op_varg>()->args();
       create_cfg(args[0], res_start, &b);
       end = b;
       for (int i = 1; i < (int)tree_node->size(); i++) {
@@ -639,7 +639,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_eq3:
     case op_eq2:
     case op_neq2: {
-      VertexAdaptor<meta_op_binary_op> op = tree_node;
+      VertexAdaptor<meta_op_binary> op = tree_node;
       if (op->rhs()->type() == op_false || op->rhs()->type() == op_null) {
         Node first_start, first_finish, second_start;
         create_cfg(op->lhs(), res_start, &first_finish);
@@ -669,7 +669,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_log_and:
     case op_log_or: {
       Node first_start, first_finish, second_start, second_finish;
-      VertexAdaptor<meta_op_binary_op> op = tree_node;
+      VertexAdaptor<meta_op_binary> op = tree_node;
       create_cfg(op->lhs(), &first_start, &first_finish);
       create_cfg(op->rhs(), &second_start, &second_finish);
       Node finish = new_node();
@@ -741,7 +741,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_set_dot:
     case op_set_shr:
     case op_set_shl: {
-      VertexAdaptor<meta_op_binary_op> set_op = tree_node;
+      VertexAdaptor<meta_op_binary> set_op = tree_node;
       Node a, b;
       create_cfg(set_op->rhs(), res_start, &a);
       create_full_cfg(set_op->lhs(), &b, res_finish);
@@ -1082,7 +1082,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_conv_ulong:
     case op_conv_regexp:
     case op_conv_bool: {
-      create_cfg(tree_node.as<meta_op_unary_op>()->expr(), res_start, res_finish);
+      create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish);
       break;
     }
     case op_function: {

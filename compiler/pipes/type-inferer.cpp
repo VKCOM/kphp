@@ -69,7 +69,7 @@ private:
         v->type() == op_prefix_dec ||
         v->type() == op_postfix_dec ||
         v->type() == op_postfix_inc) {
-      VertexAdaptor<meta_op_unary_op> unary = v;
+      VertexAdaptor<meta_op_unary> unary = v;
       auto one = VertexAdaptor<op_int_const>::create();
       auto res = VertexAdaptor<op_add>::create(unary->expr(), one);
       set_location(one, stage::get_location());
@@ -78,7 +78,7 @@ private:
     }
 
     if (OpInfo::arity(v->type()) == binary_opp) {
-      VertexAdaptor<meta_op_binary_op> binary = v;
+      VertexAdaptor<meta_op_binary> binary = v;
       VertexPtr res = create_vertex(OpInfo::base_op(v->type()), binary->lhs(), binary->rhs());
       set_location(res, stage::get_location());
       return as_rvalue(res);
@@ -108,7 +108,7 @@ private:
       value = get_tinf_node(v->get_var_id());
     } else if (v->type() == op_conv_array_l || v->type() == op_conv_int_l) {
       kphp_assert (depth == 0);
-      return as_lvalue(v.as<meta_op_unary_op>()->expr());
+      return as_lvalue(v.as<meta_op_unary>()->expr());
     } else if (v->type() == op_array) {
       kphp_fail();
     } else if (v->type() == op_func_call) {
@@ -393,9 +393,9 @@ private:
   void on_set_op(VertexPtr v) {
     VertexPtr lval;
     if (OpInfo::arity(v->type()) == binary_opp) {
-      lval = v.as<meta_op_binary_op>()->lhs();
+      lval = v.as<meta_op_binary>()->lhs();
     } else if (OpInfo::arity(v->type()) == unary_opp) {
-      lval = v.as<meta_op_unary_op>()->expr();
+      lval = v.as<meta_op_unary>()->expr();
     } else {
       kphp_fail();
     }

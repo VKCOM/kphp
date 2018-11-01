@@ -265,7 +265,7 @@ static inline bool is_const_int(VertexPtr root) {
     case op_minus:
     case op_plus:
     case op_not:
-      return is_const_int(root.as<meta_op_unary_op>()->expr());
+      return is_const_int(root.as<meta_op_unary>()->expr());
     case op_add:
     case op_mul:
     case op_sub:
@@ -276,7 +276,7 @@ static inline bool is_const_int(VertexPtr root) {
     case op_shl:
     case op_shr:
     case op_mod:
-      return is_const_int(root.as<meta_op_binary_op>()->lhs()) && is_const_int(root.as<meta_op_binary_op>()->rhs());
+      return is_const_int(root.as<meta_op_binary>()->lhs()) && is_const_int(root.as<meta_op_binary>()->rhs());
     default:
       break;
   }

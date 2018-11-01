@@ -10,27 +10,8 @@
     "sons": {
       "expr": 0
     },
-    "name": "meta_op_unary_",
-    "base_name": "meta_op_base"
-  },
-  {
-    "sons": {
-      "rhs": 1,
-      "lhs": 0
-    },
-    "name": "meta_op_binary_",
-    "base_name": "meta_op_base"
-  },
-  {
-    "name": "meta_op_varg_",
+    "name": "meta_op_unary",
     "base_name": "meta_op_base",
-    "ranges" : {
-      "args" : [0, 0]
-    }
-  },
-  {
-    "name": "meta_op_unary_op",
-    "base_name": "meta_op_unary_",
     "props": {
       "fixity": "left_opp",
       "arity": "unary_opp",
@@ -39,13 +20,24 @@
     }
   },
   {
-    "name": "meta_op_binary_op",
-    "base_name": "meta_op_binary_",
+    "sons": {
+      "rhs": 1,
+      "lhs": 0
+    },
+    "name": "meta_op_binary",
+    "base_name": "meta_op_base",
     "props": {
       "fixity": "left_opp",
       "arity": "binary_opp",
       "main": "expression_opp",
       "minor": "operator_opp"
+    }
+  },
+  {
+    "name": "meta_op_varg",
+    "base_name": "meta_op_base",
+    "ranges" : {
+      "args" : [0, 0]
     }
   },
   {
@@ -86,7 +78,7 @@
   },
   {
     "name": "meta_op_xset",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "cnst": "cnst_nonconst_func",
       "type": "common_op"
@@ -107,7 +99,7 @@
   },
   {
     "name": "meta_op_require",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "cnst": "cnst_not_func",
       "type": "common_op"
@@ -121,7 +113,7 @@
       }
     },
     "name": "meta_op_goto",
-    "base_name": "meta_op_unary_"
+    "base_name": "meta_op_unary"
   },
   {
     "sons": {
@@ -154,11 +146,11 @@
   },
   {
     "name": "meta_op_type_rule",
-    "base_name": "meta_op_unary_"
+    "base_name": "meta_op_unary"
   },
   {
     "name": "meta_op_builtin_func",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_const_func",
@@ -179,14 +171,14 @@
   },
   {
     "name": "op_type_rule",
-    "base_name": "meta_op_varg_"
+    "base_name": "meta_op_varg"
   },
   {
     "extras": [
       "string"
     ],
     "name": "op_type_rule_func",
-    "base_name": "meta_op_varg_"
+    "base_name": "meta_op_varg"
   },
   {
     "name": "op_common_type_rule",
@@ -318,7 +310,7 @@
   },
   {
     "name": "op_string_build",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -338,7 +330,7 @@
       "string"
     ],
     "name": "op_func_call",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_func",
@@ -381,7 +373,7 @@
       "variable"
     ],
     "name": "op_instance_prop",
-    "base_name": "meta_op_unary_",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_instance_prop",
       "cnst": "cnst_const_func",
@@ -416,7 +408,7 @@
   },
   {
     "name": "op_seq",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
@@ -426,7 +418,7 @@
   },
   {
     "name": "op_seq_comma",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_const_func",
@@ -436,7 +428,7 @@
   },
   {
     "name": "op_seq_rval",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
@@ -446,7 +438,7 @@
   },
   {
     "name": "op_func_param_list",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "ranges": {
       "params": [
         0,
@@ -456,7 +448,7 @@
   },
   {
     "name": "op_varg",
-    "base_name": "meta_op_unary_"
+    "base_name": "meta_op_unary"
   },
   {
     "name": "op_func_param",
@@ -536,7 +528,7 @@
   },
   {
     "name": "op_print",
-    "base_name": "meta_op_unary_",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
@@ -730,7 +722,7 @@
   },
   {
     "name": "op_array",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_const_func",
@@ -740,7 +732,7 @@
   },
   {
     "name": "op_tuple",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_const_func",
@@ -779,7 +771,7 @@
   },
   {
     "name": "op_global",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
@@ -789,7 +781,7 @@
   },
   {
     "name": "op_static",
-    "base_name": "meta_op_varg_",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
@@ -799,7 +791,7 @@
   },
   {
     "name": "op_return",
-    "base_name": "meta_op_unary_",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
@@ -823,7 +815,7 @@
   },
   {
     "name": "op_eq2",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -833,7 +825,7 @@
   },
   {
     "name": "op_neq2",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -843,7 +835,7 @@
   },
   {
     "name": "op_eq3",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -853,7 +845,7 @@
   },
   {
     "name": "op_neq3",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -863,7 +855,7 @@
   },
   {
     "name": "op_le",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -873,7 +865,7 @@
   },
   {
     "name": "op_ge",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -883,7 +875,7 @@
   },
   {
     "name": "op_lt",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -893,7 +885,7 @@
   },
   {
     "name": "op_gt",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -907,7 +899,7 @@
       "str": "safe_add"
     },
     "name": "op_add",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -921,7 +913,7 @@
       "str": "safe_sub"
     },
     "name": "op_sub",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -931,7 +923,7 @@
   },
   {
     "name": "op_concat",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -945,7 +937,7 @@
       "str": "safe_mul"
     },
     "name": "op_mul",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -955,7 +947,7 @@
   },
   {
     "name": "op_div",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -965,7 +957,7 @@
   },
   {
     "name": "op_mod",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -975,7 +967,7 @@
   },
   {
     "name": "op_arrow",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -985,7 +977,7 @@
   },
   {
     "name": "op_log_xor_let",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -995,7 +987,7 @@
   },
   {
     "name": "op_log_and_let",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1005,7 +997,7 @@
   },
   {
     "name": "op_log_or_let",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1015,7 +1007,7 @@
   },
   {
     "name": "op_log_and",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1025,7 +1017,7 @@
   },
   {
     "name": "op_log_or",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1035,7 +1027,7 @@
   },
   {
     "name": "op_xor",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1045,7 +1037,7 @@
   },
   {
     "name": "op_or",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1055,7 +1047,7 @@
   },
   {
     "name": "op_and",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1065,7 +1057,7 @@
   },
   {
     "name": "op_shr",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1079,7 +1071,7 @@
       "str": "safe_shl"
     },
     "name": "op_shl",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1089,7 +1081,7 @@
   },
   {
     "name": "op_noerr",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_other",
       "cnst": "cnst_const_func",
@@ -1099,7 +1091,7 @@
   },
   {
     "name": "op_minus",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1109,7 +1101,7 @@
   },
   {
     "name": "op_plus",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1123,7 +1115,7 @@
       "key": "lhs"
     },
     "name": "op_double_arrow",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_op",
       "fixity": "right_opp",
@@ -1134,7 +1126,7 @@
   },
   {
     "name": "op_set",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "rl": "rl_set",
       "fixity": "right_opp",
@@ -1155,7 +1147,7 @@
       "str": "safe_set_add"
     },
     "name": "op_set_add",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_add",
@@ -1171,7 +1163,7 @@
       "str": "safe_set_sub"
     },
     "name": "op_set_sub",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_sub",
@@ -1187,7 +1179,7 @@
       "str": "safe_set_mul"
     },
     "name": "op_set_mul",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_mul",
@@ -1199,7 +1191,7 @@
   },
   {
     "name": "op_set_div",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_div",
@@ -1211,7 +1203,7 @@
   },
   {
     "name": "op_set_mod",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_mod",
@@ -1223,7 +1215,7 @@
   },
   {
     "name": "op_set_and",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_and",
@@ -1235,7 +1227,7 @@
   },
   {
     "name": "op_set_or",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_or",
@@ -1247,7 +1239,7 @@
   },
   {
     "name": "op_set_xor",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_xor",
@@ -1259,7 +1251,7 @@
   },
   {
     "name": "op_set_dot",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_concat",
@@ -1271,7 +1263,7 @@
   },
   {
     "name": "op_set_shr",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_shr",
@@ -1287,7 +1279,7 @@
       "str": "safe_set_shl"
     },
     "name": "op_set_shl",
-    "base_name": "meta_op_binary_op",
+    "base_name": "meta_op_binary",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_shl",
@@ -1317,7 +1309,7 @@
   },
   {
     "name": "op_not",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1327,7 +1319,7 @@
   },
   {
     "name": "op_log_not",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1341,7 +1333,7 @@
       "str": "safe_incr_pre"
     },
     "name": "op_prefix_inc",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op_l",
       "cnst": "cnst_nonconst_func",
@@ -1355,7 +1347,7 @@
       "str": "safe_decr_pre"
     },
     "name": "op_prefix_dec",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op_l",
       "cnst": "cnst_nonconst_func",
@@ -1365,7 +1357,7 @@
   },
   {
     "name": "op_addr",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1378,7 +1370,7 @@
       "str": "f$safe_intval"
     },
     "name": "op_conv_int",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1388,7 +1380,7 @@
   },
   {
     "name": "op_conv_int_l",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_other",
       "cnst": "cnst_const_func",
@@ -1398,7 +1390,7 @@
   },
   {
     "name": "op_conv_float",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1408,7 +1400,7 @@
   },
   {
     "name": "op_conv_string",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1418,7 +1410,7 @@
   },
   {
     "name": "op_conv_array",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1428,7 +1420,7 @@
   },
   {
     "name": "op_conv_array_l",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_other",
       "cnst": "cnst_const_func",
@@ -1438,7 +1430,7 @@
   },
   {
     "name": "op_conv_object",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1448,7 +1440,7 @@
   },
   {
     "name": "op_conv_bool",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1458,7 +1450,7 @@
   },
   {
     "name": "op_conv_var",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1468,7 +1460,7 @@
   },
   {
     "name": "op_conv_uint",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1478,7 +1470,7 @@
   },
   {
     "name": "op_conv_long",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1488,7 +1480,7 @@
   },
   {
     "name": "op_conv_ulong",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1498,7 +1490,7 @@
   },
   {
     "name": "op_conv_regexp",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
@@ -1512,7 +1504,7 @@
       "str": "safe_incr_post"
     },
     "name": "op_postfix_inc",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op_l",
       "cnst": "cnst_nonconst_func",
@@ -1526,7 +1518,7 @@
       "str": "safe_decr_post"
     },
     "name": "op_postfix_dec",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op_l",
       "cnst": "cnst_nonconst_func",
@@ -1622,7 +1614,7 @@
   },
   {
     "name": "op_exit",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_nonconst_func",
@@ -1632,7 +1624,7 @@
   },
   {
     "name": "op_move",
-    "base_name": "meta_op_unary_op",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_nonconst_func",
@@ -1662,7 +1654,7 @@
   },
   {
     "name": "op_defined",
-    "base_name": "meta_op_unary_",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
@@ -1731,7 +1723,7 @@
   },
   {
     "name": "op_throw",
-    "base_name": "meta_op_unary_",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",

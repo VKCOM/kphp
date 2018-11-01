@@ -193,7 +193,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
       switch (expected_rl_type) {
         case val_r:
         case val_none: {
-          VertexAdaptor<meta_op_binary_op> set_op = root;
+          VertexAdaptor<meta_op_binary> set_op = root;
           if (set_op->lhs()->extra_type != op_ex_var_superlocal_inplace) {
             rl_calc(set_op->lhs(), val_l);
           }
@@ -276,7 +276,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          rl_calc(root.as<meta_op_unary_op>()->expr(), val_l);
+          rl_calc(root.as<meta_op_unary>()->expr(), val_l);
           break;
         default:
         kphp_fail();

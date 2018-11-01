@@ -865,7 +865,7 @@ void ExprNodeRecalc::recalc_foreach_param(VertexAdaptor<op_foreach_param> param)
   set_lca(param->xs(), &MultiKey::any_key(1));
 }
 
-void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary_op> conv) {
+void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   VertexPtr arg = conv->expr();
   //FIXME: (extra dependenty)
   add_dependency(as_rvalue(arg));
@@ -909,14 +909,14 @@ void ExprNodeRecalc::recalc_tuple(VertexAdaptor<op_tuple> tuple) {
   }
 }
 
-void ExprNodeRecalc::recalc_plus_minus(VertexAdaptor<meta_op_unary_op> expr) {
+void ExprNodeRecalc::recalc_plus_minus(VertexAdaptor<meta_op_unary> expr) {
   set_lca(drop_or_false(as_rvalue(expr->expr())));
   if (new_type()->ptype() == tp_string) {
     recalc_ptype<tp_var>();
   }
 }
 
-void ExprNodeRecalc::recalc_inc_dec(VertexAdaptor<meta_op_unary_op> expr) {
+void ExprNodeRecalc::recalc_inc_dec(VertexAdaptor<meta_op_unary> expr) {
   //or false ???
   set_lca(drop_or_false(as_rvalue(expr->expr())));
 }
@@ -926,7 +926,7 @@ void ExprNodeRecalc::recalc_noerr(VertexAdaptor<op_noerr> expr) {
 }
 
 
-void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary_op> expr) {
+void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   VertexPtr lhs = expr->lhs();
   VertexPtr rhs = expr->rhs();
 

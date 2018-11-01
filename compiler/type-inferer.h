@@ -43,9 +43,9 @@ inline is_func_id_t get_ifi_id_(VertexPtr v) {
     return ifi_isset;
   }
   if (v->type() == op_eq3 || v->type() == op_neq3) {
-    VertexPtr b = v.as<meta_op_binary_>()->rhs();
+    VertexPtr b = v.as<meta_op_binary>()->rhs();
     if (b->type() == op_var || b->type() == op_index) {
-      b = v.as<meta_op_binary_>()->lhs();
+      b = v.as<meta_op_binary>()->lhs();
     }
 
     if (b->type() == op_false) {
@@ -203,7 +203,7 @@ private:
         VertexPtr expr_vertex = expr_node->get_expr();
 
         if (OpInfo::arity(expr_vertex->type()) == binary_opp) {
-          VertexAdaptor<meta_op_binary_op> binary_vertex = expr_vertex.as<meta_op_binary_op>();
+          VertexAdaptor<meta_op_binary> binary_vertex = expr_vertex.as<meta_op_binary>();
           VertexPtr lhs = binary_vertex->lhs();
           VertexPtr rhs = binary_vertex->rhs();
 
@@ -525,14 +525,14 @@ private:
   void recalc_set(VertexAdaptor<op_set> set);
   void recalc_double_arrow(VertexAdaptor<op_double_arrow> arrow);
   void recalc_foreach_param(VertexAdaptor<op_foreach_param> param);
-  void recalc_conv_array(VertexAdaptor<meta_op_unary_op> conv);
+  void recalc_conv_array(VertexAdaptor<meta_op_unary> conv);
   void recalc_min_max(VertexAdaptor<meta_op_builtin_func> func);
   void recalc_array(VertexAdaptor<op_array> array);
   void recalc_tuple(VertexAdaptor<op_tuple> tuple);
-  void recalc_plus_minus(VertexAdaptor<meta_op_unary_op> expr);
-  void recalc_inc_dec(VertexAdaptor<meta_op_unary_op> expr);
+  void recalc_plus_minus(VertexAdaptor<meta_op_unary> expr);
+  void recalc_inc_dec(VertexAdaptor<meta_op_unary> expr);
   void recalc_noerr(VertexAdaptor<op_noerr> expr);
-  void recalc_arithm(VertexAdaptor<meta_op_binary_op> expr);
+  void recalc_arithm(VertexAdaptor<meta_op_binary> expr);
   void recalc_define_val(VertexAdaptor<op_define_val> define_val);
   void recalc_expr(VertexPtr expr);
 public:

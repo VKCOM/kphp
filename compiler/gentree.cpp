@@ -2387,7 +2387,7 @@ VertexPtr GenTree::post_process(VertexPtr root) const {
   }
 
   if (root->type() == op_minus || root->type() == op_plus) {
-    VertexAdaptor<meta_op_unary_op> minus = root;
+    VertexAdaptor<meta_op_unary> minus = root;
     VertexPtr maybe_num = minus->expr();
     string prefix = root->type() == op_minus ? "-" : "";
     if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {

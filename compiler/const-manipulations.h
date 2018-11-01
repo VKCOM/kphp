@@ -23,11 +23,11 @@ public:
 protected:
   virtual T on_trivial(VertexPtr v) { return on_non_const(v); }
 
-  virtual T on_conv(VertexAdaptor<meta_op_unary_op> v) { return on_non_const(v); }
+  virtual T on_conv(VertexAdaptor<meta_op_unary> v) { return on_non_const(v); }
 
-  virtual T on_unary(VertexAdaptor<meta_op_unary_op> v) { return on_non_const(v); }
+  virtual T on_unary(VertexAdaptor<meta_op_unary> v) { return on_non_const(v); }
 
-  virtual T on_binary(VertexAdaptor<meta_op_binary_op> v) { return on_non_const(v); }
+  virtual T on_binary(VertexAdaptor<meta_op_binary> v) { return on_non_const(v); }
 
   virtual T on_double_arrow(VertexAdaptor<op_double_arrow> v) { return on_non_const(v); }
 
@@ -91,7 +91,7 @@ protected:
       case op_conv_long:
       case op_conv_ulong:
       case op_conv_regexp:
-        return on_conv(v.as<meta_op_unary_op>());
+        return on_conv(v.as<meta_op_unary>());
 
       case op_int_const:
       case op_uint_const:
@@ -107,7 +107,7 @@ protected:
       case op_minus:
       case op_plus:
       case op_not:
-        return on_unary(v.as<meta_op_unary_op>());
+        return on_unary(v.as<meta_op_unary>());
 
       case op_add:
       case op_mul:
@@ -119,7 +119,7 @@ protected:
       case op_xor:
       case op_shl:
       case op_shr:
-        return on_binary(v.as<meta_op_binary_op>());
+        return on_binary(v.as<meta_op_binary>());
 
       case op_array:
         return on_array(v.as<op_array>());
@@ -156,15 +156,15 @@ protected:
     return true;
   }
 
-  bool on_conv(VertexAdaptor<meta_op_unary_op> v) override {
+  bool on_conv(VertexAdaptor<meta_op_unary> v) override {
     return visit(v->expr());
   }
 
-  bool on_unary(VertexAdaptor<meta_op_unary_op> v) override {
+  bool on_unary(VertexAdaptor<meta_op_unary> v) override {
     return visit(v->expr());
   }
 
-  bool on_binary(VertexAdaptor<meta_op_binary_op> v) override {
+  bool on_binary(VertexAdaptor<meta_op_binary> v) override {
     VertexPtr lhs = GenTree::get_actual_value(v->lhs());
     VertexPtr rhs = GenTree::get_actual_value(v->rhs());
     return visit(lhs) && visit(rhs);
@@ -256,12 +256,12 @@ protected:
     return v;
   }
 
-  VertexPtr on_unary(VertexAdaptor<meta_op_unary_op> v) override {
+  VertexPtr on_unary(VertexAdaptor<meta_op_unary> v) override {
     v->expr() = make_const(v->expr());
     return v;
   }
 
-  VertexPtr on_binary(VertexAdaptor<meta_op_binary_op> v) override {
+  VertexPtr on_binary(VertexAdaptor<meta_op_binary> v) override {
     v->lhs() = make_const(v->lhs());
     v->rhs() = make_const(v->rhs());
     return v;
@@ -282,7 +282,7 @@ protected:
     return v;
   }
 
-  VertexPtr on_conv(VertexAdaptor<meta_op_unary_op> v) override {
+  VertexPtr on_conv(VertexAdaptor<meta_op_unary> v) override {
     return make_const(v->expr());
   }
 
@@ -332,11 +332,11 @@ protected:
     return string_hash(s.c_str(), static_cast<int>(s.size()));
   }
 
-  long long on_conv(VertexAdaptor<meta_op_unary_op> v) override {
+  long long on_conv(VertexAdaptor<meta_op_unary> v) override {
     return visit(v->expr());
   }
 
-  long long on_unary(VertexAdaptor<meta_op_unary_op> v) override {
+  long long on_unary(VertexAdaptor<meta_op_unary> v) override {
     string type_str = OpInfo::str(v->type());
     long long hash_of_type = string_hash(type_str.c_str(), static_cast<int>(type_str.size()));
 
@@ -347,7 +347,7 @@ protected:
     return visit(GenTree::get_actual_value(v));
   }
 
-  long long on_binary(VertexAdaptor<meta_op_binary_op> v) override {
+  long long on_binary(VertexAdaptor<meta_op_binary> v) override {
     VertexPtr key = v->lhs();
     VertexPtr value = v->rhs();
 
@@ -408,11 +408,11 @@ protected:
     return s + OpInfo::str(v->type());
   }
 
-  std::string on_conv(VertexAdaptor<meta_op_unary_op> v) override {
+  std::string on_conv(VertexAdaptor<meta_op_unary> v) override {
     return visit(v->expr());
   }
 
-  std::string on_unary(VertexAdaptor<meta_op_unary_op> v) override {
+  std::string on_unary(VertexAdaptor<meta_op_unary> v) override {
     return visit(v->expr()) + ':' + OpInfo::str(v->type());
   }
 
@@ -420,7 +420,7 @@ protected:
     return visit(GenTree::get_actual_value(v));
   }
 
-  std::string on_binary(VertexAdaptor<meta_op_binary_op> v) override {
+  std::string on_binary(VertexAdaptor<meta_op_binary> v) override {
     VertexPtr key = v->lhs();
     VertexPtr value = v->rhs();
 

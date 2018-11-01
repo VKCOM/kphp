@@ -475,12 +475,12 @@ struct FunctionCpp {
   inline void compile(CodeGenerator &W) const;
 };
 
-inline void compile_prefix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W);
-inline void compile_postfix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W);
-inline void compile_conv_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W);
+inline void compile_prefix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W);
+inline void compile_postfix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W);
+inline void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W);
 inline void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W);
-inline void compile_binary_func_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W);
-inline void compile_binary_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W);
+inline void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W);
+inline void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W);
 inline void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W);
 inline void compile_if(VertexAdaptor<op_if> root, CodeGenerator &W);
 inline void compile_while(VertexAdaptor<op_while> root, CodeGenerator &W);
@@ -1881,16 +1881,16 @@ inline void TupleGetIndex::compile(CodeGenerator &W) const {
   W << "std::get<" << int_index << ">(" << tuple << ")";
 }
 
-void compile_prefix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W) {
+void compile_prefix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   W << OpInfo::str(root->type()) << Operand(root->expr(), root->type(), true);
 }
 
-void compile_postfix_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W) {
+void compile_postfix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   W << Operand(root->expr(), root->type(), true) << OpInfo::str(root->type());
 }
 
 
-void compile_conv_op(VertexAdaptor<meta_op_unary_op> root, CodeGenerator &W) {
+void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   if (root->type() == op_conv_regexp) {
     W << root->expr();
   } else {
@@ -1908,7 +1908,7 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
 }
 
 
-void compile_binary_func_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W) {
+void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   W << OpInfo::str(root->type()) << " (" <<
     Operand(root->lhs(), root->type(), true) <<
     ", " <<
@@ -1917,7 +1917,7 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator
 }
 
 
-void compile_binary_op(VertexAdaptor<meta_op_binary_op> root, CodeGenerator &W) {
+void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   kphp_error_return (OpInfo::str(root->type())[0] != '@', dl_pstr("Unexpected %s\n", OpInfo::str(root->type()).c_str() + 1));
 
   VertexPtr lhs = root->lhs();
@@ -3357,7 +3357,7 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       TypeName(tinf::get_type(set_value->value())) <<
       ")";
   } else if (OpInfo::rl(root->type()) == rl_set) {
-    VertexAdaptor<meta_op_binary_op> op = root;
+    VertexAdaptor<meta_op_binary> op = root;
     if (OpInfo::type(root->type()) == binary_func_op) {
       W << "SAFE_SET_FUNC_OP (";
     } else if (OpInfo::type(root->type()) == binary_op) {
