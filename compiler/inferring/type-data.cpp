@@ -54,15 +54,15 @@ void TypeData::init_static() {
   }
   primitive_types.resize(ptype_size);
   array_types.resize(ptype_size);
-  #define FOREACH_PTYPE(tp) primitive_types[tp] = new TypeData (tp);
 
-  #include "compiler/foreach_ptype.h"
+  for (int tp = 0; tp < ptype_size; tp++) {
+    primitive_types[tp] = new TypeData((PrimitiveType)tp);
+  }
 
-  #define FOREACH_PTYPE(tp) \
-    array_types[tp] = new TypeData (tp_array); \
+  for (int tp = 0; tp < ptype_size; tp++) {
+    array_types[tp] = new TypeData(tp_array);
     array_types[tp]->set_lca_at (MultiKey::any_key (1), primitive_types[tp ==  tp_Any ? tp_CreateAny : tp]);
-
-  #include "compiler/foreach_ptype.h"
+  }
 }
 
 const TypeData *TypeData::get_type(PrimitiveType type) {

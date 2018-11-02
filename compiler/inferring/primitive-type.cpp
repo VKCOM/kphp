@@ -3,12 +3,15 @@
 #include <map>
 #include <string>
 
+#include "compiler/stage.h"
+
 std::map<std::string, PrimitiveType> name_to_ptype;
 
 void get_ptype_by_name_init() {
-#define FOREACH_PTYPE(tp) name_to_ptype[PTYPE_NAME(tp)] = tp;
-
-#include "../foreach_ptype.h"
+  for (int tp_id = 0; tp_id < ptype_size; tp_id++) {
+    auto tp = static_cast<PrimitiveType>(tp_id);
+    name_to_ptype[ptype_name(tp)] = tp;
+  }
 }
 
 PrimitiveType get_ptype_by_name(const std::string &s) {
@@ -26,13 +29,31 @@ PrimitiveType get_ptype_by_name(const std::string &s) {
 
 const char *ptype_name(PrimitiveType id) {
   switch (id) {
-#define FOREACH_PTYPE(tp) case tp: return PTYPE_NAME (tp);
-
-#include "../foreach_ptype.h"
-
-    default:
-      return nullptr;
+    case tp_Unknown:    return "Unknown";
+    case tp_False:      return "False";
+    case tp_bool:       return "bool";
+    case tp_int:        return "int";
+    case tp_float:      return "float";
+    case tp_array:      return "array";
+    case tp_string:     return "string";
+    case tp_var:        return "var";
+    case tp_UInt:       return "UInt";
+    case tp_Long:       return "Long";
+    case tp_ULong:      return "ULong";
+    case tp_MC:         return "MC";
+    case tp_DB:         return "DB";
+    case tp_RPC:        return "RPC";
+    case tp_tuple:      return "tuple";
+    case tp_regexp:     return "regexp";
+    case tp_Exception:  return "Exception";
+    case tp_Class:      return "Class";
+    case tp_void:       return "void";
+    case tp_Error:      return "Error";
+    case tp_Any:        return "Any";
+    case tp_CreateAny:  return "CreateAny";
+    case ptype_size: kphp_fail();
   }
+  kphp_fail();
 }
 
 bool can_store_bool(PrimitiveType tp) {
