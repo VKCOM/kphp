@@ -64,6 +64,7 @@
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/pipes/split-switch.h"
+#include "compiler/pipes/type-inferer-end.h"
 #include "compiler/pipes/type-inferer.h"
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
@@ -190,6 +191,8 @@ bool compiler_execute(KphpEnviroment *env) {
   OpInfo::init_static();
   MultiKey::init_static();
   TypeData::init_static();
+  tinf::register_inferer(new tinf::TypeInferer());
+
 //  PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags(); return true;
 
   DataStream<SrcFilePtr> file_stream;

@@ -7,15 +7,8 @@
 #include "compiler/type-inferer-core.h"
 #include "compiler/type-inferer.h"
 
-class CollectMainEdgesCallback {
+class CollectMainEdgesPass : public FunctionPassBase {
 private:
-  tinf::TypeInferer *inferer_;
-
-public:
-  CollectMainEdgesCallback(tinf::TypeInferer *inferer) :
-    inferer_(inferer) {
-  }
-
   tinf::Node *node_from_rvalue(const RValue &rvalue) {
     if (rvalue.node == nullptr) {
       kphp_assert (rvalue.type != nullptr);
@@ -25,40 +18,35 @@ public:
     return rvalue.node;
   }
 
-  virtual void require_node(const RValue &rvalue) {
+  void require_node(const RValue &rvalue) {
     if (rvalue.node != nullptr) {
-      inferer_->add_node(rvalue.node);
+      tinf::get_inferer()->add_node(rvalue.node);
     }
   }
 
-  virtual void create_set(const LValue &lvalue, const RValue &rvalue) {
+  void create_set(const LValue &lvalue, const RValue &rvalue) {
     tinf::Edge *edge = new tinf::Edge();
     edge->from = lvalue.value;
     edge->from_at = lvalue.key;
     edge->to = node_from_rvalue(rvalue);
-    inferer_->add_edge(edge);
-    inferer_->add_node(edge->from);
+    tinf::get_inferer()->add_edge(edge);
+    tinf::get_inferer()->add_node(edge->from);
   }
 
-  virtual void create_less(const RValue &lhs, const RValue &rhs) {
+  void create_less(const RValue &lhs, const RValue &rhs) {
     tinf::Node *a = node_from_rvalue(lhs);
     tinf::Node *b = node_from_rvalue(rhs);
-    inferer_->add_node(a);
-    inferer_->add_node(b);
-    inferer_->add_restriction(new RestrictionLess(a, b));
+    tinf::get_inferer()->add_node(a);
+    tinf::get_inferer()->add_node(b);
+    tinf::get_inferer()->add_restriction(new RestrictionLess(a, b));
   }
 
-  virtual void create_isset_check(const RValue &rvalue) {
+  void create_isset_check(const RValue &rvalue) {
     tinf::Node *a = node_from_rvalue(rvalue);
-    inferer_->add_node(a);
-    inferer_->add_restriction(new RestrictionIsset(a));
+    tinf::get_inferer()->add_node(a);
+    tinf::get_inferer()->add_restriction(new RestrictionIsset(a));
   }
-};
 
-
-class CollectMainEdgesPass : public FunctionPassBase {
-private:
-  CollectMainEdgesCallback *callback_;
 
   RValue as_set_value(VertexPtr v) {
     if (v->type() == op_set) {
@@ -162,40 +150,24 @@ private:
     return lvalue;
   }
 
-  void do_create_set(const LValue &lvalue, const RValue &rvalue) {
-    callback_->create_set(lvalue, rvalue);
-  }
-
-  void do_create_less(const RValue &lhs, const RValue &rhs) {
-    callback_->create_less(lhs, rhs);
-  }
-
-  void do_require_node(const RValue &a) {
-    callback_->require_node(a);
-  }
-
-  void do_create_isset_check(const RValue &a) {
-    callback_->create_isset_check(a);
-  }
-
   template<class A, class B>
   void create_set(const A &a, const B &b) {
-    do_create_set(as_lvalue(a), as_rvalue(b));
+    create_set(as_lvalue(a), as_rvalue(b));
   }
 
   template<class A, class B>
   void create_less(const A &a, const B &b) {
-    do_create_less(as_rvalue(a), as_rvalue(b));
+    create_less(as_rvalue(a), as_rvalue(b));
   }
 
   template<class A>
   void require_node(const A &a) {
-    do_require_node(as_rvalue(a));
+    require_node(as_rvalue(a));
   }
 
   template<class A>
   void create_isset_check(const A &a) {
-    do_create_isset_check(as_rvalue(a));
+    create_isset_check(as_rvalue(a));
   }
 
   void add_type_rule(VertexPtr v) {
@@ -357,13 +329,6 @@ private:
     }
   }
 
-  void on_index(VertexAdaptor<op_index> index __attribute__ ((unused))) {
-    // здесь было безусловное { create_set (index->array(), tp_array) }, но это не верно:
-    // при наличии $s[idx] переменная $s это не обязательно массив: это может быть строка или кортеж
-    // если rvalue $s[idx], то вызовется const_read_at()
-    // если lvalue $s[idx], то вызовется make_structured()
-  }
-
   void on_list(VertexAdaptor<op_list> list) {
     int i = 0;
     for (auto cur : list->list()) {
@@ -501,10 +466,6 @@ private:
   }
 
 public:
-  explicit CollectMainEdgesPass(CollectMainEdgesCallback *callback) :
-    callback_(callback) {
-  }
-
   string get_description() {
     return "Collect main tinf edges";
   }
@@ -542,9 +503,6 @@ public:
         break;
       case op_foreach:
         on_foreach(v);
-        break;
-      case op_index:
-        on_index(v);
         break;
       case op_list:
         on_list(v);
@@ -605,31 +563,16 @@ public:
 };
 
 
-TypeInfererF::TypeInfererF() {
-  tinf::register_inferer(new tinf::TypeInferer());
-}
-
 void TypeInfererF::execute(FunctionAndCFG input, DataStream<FunctionAndCFG> &os) {
   AUTO_PROF (tinf_infer_gen_dep);
-  CollectMainEdgesCallback callback(tinf::get_inferer());
-  CollectMainEdgesPass pass(&callback);
+  CollectMainEdgesPass pass;
   run_function_pass(input.function, &pass);
   os << input;
 }
 
 void TypeInfererF::on_finish(DataStream<FunctionAndCFG> &) {
-  //FIXME: rebalance Queues
   vector<Task *> tasks = tinf::get_inferer()->get_tasks();
   for (int i = 0; i < (int)tasks.size(); i++) {
     register_async_task(tasks[i]);
-  }
-}
-
-void TypeInfererEndF::on_finish(DataStream<FunctionAndCFG> &os) {
-  tinf::get_inferer()->check_restrictions();
-  tinf::get_inferer()->finish();
-
-  for (auto &f_and_cfg : tmp_stream.get_as_vector()) {
-    os << f_and_cfg;
   }
 }
