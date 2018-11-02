@@ -13,6 +13,8 @@
 
 #include "compiler/data/data_ptr.h"
 
+class TypeData;
+
 enum AccessType {
   access_nonmember = 0,
   access_static_public,
@@ -60,6 +62,7 @@ struct ClassMemberStaticField {
 
   const string &global_name() const;
   string local_name() const;
+  const TypeData *get_inferred_type() const;
 };
 
 struct ClassMemberInstanceField {
@@ -71,6 +74,7 @@ struct ClassMemberInstanceField {
   ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_class_var> root, AccessType access_type);
 
   const string &local_name() const;
+  const TypeData *get_inferred_type() const;
 };
 
 struct ClassMemberConstant {
