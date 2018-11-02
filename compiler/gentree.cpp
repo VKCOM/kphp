@@ -1786,8 +1786,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
 }
 
 VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const {
-  auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->set_string("__invoke");
+  function->name()->set_string("__invoke");
 
   std::vector<VertexPtr> func_parameters;
   patch_func_add_this(func_parameters, AutoLocation(function->location.line), cur_class);
@@ -1805,7 +1804,7 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
   auto params = VertexAdaptor<op_func_param_list>::create(func_parameters);
   params->location.line = function->params()->location.line;
 
-  auto res = VertexAdaptor<op_function>::create(func_name, params, function->cmd().clone());
+  auto res = VertexAdaptor<op_function>::create(function->name(), params, function->cmd());
   res->location = function->location;
   return res;
 }
@@ -1819,14 +1818,14 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
 }
 
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function) const {
-  VertexAdaptor<op_func_name> lambda_name = VertexAdaptor<op_func_name>::create();
-  lambda_name->str_val = get_real_name_from_full_method_name(function->name()->get_string());
-  lambda_name->location.line = function->name()->location.line;
+  VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
+  lambda_class_name->str_val = gen_anonymous_function_name();
+  lambda_class_name->location.line = function->name()->location.line;
 
-  VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_name);
+  VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
 
   ClassPtr anon_class(new ClassData());
-  anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_name->get_string());
+  anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_class_name->get_string());
   anon_class->root = class_vertex;
 
   FunctionInfo func_info({}, FunctionData::get_lambda_namespace(), anon_class->name, true, access_public);
@@ -1834,7 +1833,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
   auto register_invoke = [&](VertexAdaptor<op_function> fun) {
     func_info.root = fun;
     std::string s = fun->name()->get_string();
-    fun->name()->set_string(concat_namespace_class_function_names(func_info.namespace_name, lambda_name->get_string(), s));
+    fun->name()->set_string(concat_namespace_class_function_names(func_info.namespace_name, lambda_class_name->get_string(), s));
     FunctionPtr registered_function = register_function(func_info, anon_class);
     fun->name()->set_string(s);
 
