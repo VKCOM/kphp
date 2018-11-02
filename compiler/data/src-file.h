@@ -29,4 +29,5 @@ public:
   bool load();
 
   vk::string_view get_line(int id);
+  string get_short_name();
 };
