@@ -3,7 +3,7 @@
 #include "common/wrappers/iterator_range.h"
 
 #include "compiler/data/data_ptr.h"
-#include "compiler/type-inferer-core.h"
+#include "compiler/inferring/expr-node.h"
 
 template<Operation Op>
 vertex_inner<Op> *raw_create_vertex_inner(int args_n);

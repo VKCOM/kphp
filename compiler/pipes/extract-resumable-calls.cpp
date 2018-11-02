@@ -1,6 +1,7 @@
 #include "compiler/pipes/extract-resumable-calls.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 
 void ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *&replace) {

@@ -1,5 +1,7 @@
 #include "compiler/pipes/optimization.h"
 
+#include "compiler/inferring/public.h"
+
 VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op) {
   if (set_op->lhs()->type() != op_index) {
     return set_op;

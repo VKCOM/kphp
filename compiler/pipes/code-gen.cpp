@@ -9,6 +9,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/inferring/public.h"
 #include "compiler/io.h"
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"

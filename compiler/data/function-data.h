@@ -4,8 +4,8 @@
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/function-info.h"
+#include "compiler/inferring/var-node.h"
 #include "compiler/stage.h"
-#include "compiler/type-inferer-core.h"
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData {

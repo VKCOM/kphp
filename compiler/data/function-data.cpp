@@ -5,8 +5,8 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/public.h"
 #include "compiler/io.h"
-#include "compiler/type-inferer.h"
 #include "compiler/vertex.h"
 
 FunctionData::FunctionData() :
@@ -162,7 +162,7 @@ ClassPtr FunctionData::is_lambda(VertexPtr v) {
     return is_lambda(v->get_func_id()->root);
   }
 
-  if (tinf::Node *tinf_node = get_tinf_node(v)) {
+  if (tinf::Node *tinf_node = tinf::get_tinf_node(v)) {
     if (tinf_node->get_type()->ptype() != tp_Unknown) {
       if (ClassPtr klass = tinf_node->get_type()->class_type()) {
         return klass->new_function->is_lambda() ? klass : ClassPtr{};

@@ -72,7 +72,6 @@
 #include "compiler/scheduler/pipe.h"
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
-#include "compiler/type-inferer.h"
 #include "compiler/utils/string-utils.h"
 
 class lockf_wrapper {

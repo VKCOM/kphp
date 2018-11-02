@@ -1,5 +1,7 @@
 #include "compiler/pipes/calc-val-ref.h"
 
+#include "compiler/inferring/public.h"
+
 bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_last) {
   switch (op) {
     case op_push_back:

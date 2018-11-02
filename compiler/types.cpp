@@ -1,5 +1,7 @@
 #include "compiler/types.h"
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/data/class-data.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
@@ -839,6 +841,14 @@ string type_out(const TypeData *type) {
   string res;
   type_out_impl(type, &res);
   return res;
+}
+
+string colored_type_out(const TypeData *type) {
+  string type_str = type_out(type);
+  if (vk::string_view(type_str).starts_with("std::")) {
+    type_str = type_str.substr(5);
+  }
+  return TermStringFormat::paint(type_str, TermStringFormat::green);
 }
 
 int type_strlen(const TypeData *type) {

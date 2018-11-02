@@ -3,7 +3,7 @@
 #include <string>
 
 #include "compiler/data/class-members.h"
-#include "compiler/type-inferer-core.h"
+#include "compiler/inferring/var-node.h"
 
 class VarData {
 public:

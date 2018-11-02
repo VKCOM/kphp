@@ -1,6 +1,6 @@
 #include "compiler/pipes/type-inferer-end.h"
 
-#include "compiler/type-inferer-core.h"
+#include "compiler/inferring/public.h"
 
 void TypeInfererEndF::on_finish(DataStream<FunctionAndCFG> &os) {
   tinf::get_inferer()->check_restrictions();

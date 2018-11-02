@@ -1,6 +1,7 @@
 #include "compiler/pipes/cfg.h"
 
 #include "compiler/gentree.h"
+#include "compiler/inferring/public.h"
 #include "compiler/utils/dsu.h"
 #include "compiler/utils/idgen.h"
 

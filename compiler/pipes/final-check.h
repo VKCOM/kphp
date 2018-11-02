@@ -2,6 +2,7 @@
 
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/public.h"
 
 class FinalCheckPass : public FunctionPassBase {
 private:
