@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "compiler/inferring/edge.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/threading/locks.h"
-#include "compiler/types.h"
 
 namespace tinf {
 

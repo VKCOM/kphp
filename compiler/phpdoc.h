@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "compiler/data/data_ptr.h"
-#include "compiler/types.h"
+#include "compiler/inferring/type-data.h"
 
 struct php_doc_tag {
   enum doc_type {

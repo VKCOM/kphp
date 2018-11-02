@@ -8,93 +8,10 @@
 #include <string>
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
-
-/*** PrimitiveType ***/
-
-//foreach_ptype.h contain calls of FOREACH_PTYPE(tp) for each primitive_type name.
-//All new primitive types should be added to foreach_ptype.h
-//All primitive type names must start with tp_
-enum PrimitiveType {
-#define FOREACH_PTYPE(tp) tp,
-
-#include "foreach_ptype.h"
-
-  ptype_size
-};
-
-//interface to PrimitiveType
-template<PrimitiveType T_ID>
-inline const char *ptype_name();
-const char *ptype_name(PrimitiveType tp);
-PrimitiveType get_ptype_by_name(const string &s);
-PrimitiveType type_lca(PrimitiveType a, PrimitiveType b);
-bool can_store_bool(PrimitiveType tp);
-
-/*** Key ***/
-class Key {
-private:
-  int id;
-
-  explicit Key(int id);
-
-public:
-  Key();
-  Key(const Key &other) = default;
-  Key &operator=(const Key &other) = default;
-
-  static Key any_key();
-  static Key string_key(const string &key);
-  static Key int_key(int key);
-
-  string to_string() const;
-
-  inline bool is_any_key() const { return id == 0; }
-
-  inline bool is_int_key() const { return id > 0 && id % 2 == 1; }
-
-  inline bool is_string_key() const { return id > 0 && id % 2 == 0; }
-
-  friend inline bool operator<(const Key &a, const Key &b);
-  friend inline bool operator>(const Key &a, const Key &b);
-  friend inline bool operator<=(const Key &a, const Key &b);
-  friend inline bool operator!=(const Key &a, const Key &b);
-  friend inline bool operator==(const Key &a, const Key &b);
-};
-
-inline bool operator<(const Key &a, const Key &b);
-inline bool operator>(const Key &a, const Key &b);
-inline bool operator<=(const Key &a, const Key &b);
-inline bool operator!=(const Key &a, const Key &b);
-inline bool operator==(const Key &a, const Key &b);
-
-/*** MultiKey ***/
-class MultiKey {
-private:
-  vector<Key> keys_;
-public:
-  typedef vector<Key>::const_iterator iterator;
-  typedef vector<Key>::const_reverse_iterator reverse_iterator;
-  MultiKey() = default;
-  MultiKey(const MultiKey &multi_key);
-  MultiKey &operator=(const MultiKey &multi_key);
-  explicit MultiKey(const vector<Key> &keys);
-  void push_back(const Key &key);
-  void push_front(const Key &key);
-  string to_string() const;
-
-  inline unsigned int depth() const { return (unsigned int)keys_.size(); }
-
-  iterator begin() const;
-  iterator end() const;
-  reverse_iterator rbegin() const;
-  reverse_iterator rend() const;
-
-  static vector<MultiKey> any_key_vec;
-  static void init_static();
-  static const MultiKey &any_key(int depth);
-};
 
 /*** TypeData ***/
 // read/write/lookup at
@@ -216,7 +133,6 @@ public:
   static void upd_generation(TypeData::generation_t other_generation);
 };
 
-inline bool operator<(const TypeData::KeyValue &a, const TypeData::KeyValue &b);
 bool operator<(const TypeData &a, const TypeData &b);
 bool operator==(const TypeData &a, const TypeData &b);
 
@@ -224,9 +140,6 @@ string type_out(const TypeData *type);
 string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
-
-void test_TypeData();
-void test_PrimitiveType();
 
 template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag(bool f) {
@@ -251,4 +164,6 @@ inline void TypeData::set_flag<TypeData::error_flag_e>(bool f) {
   }
 }
 
-#include "types.hpp"
+inline bool operator<(const TypeData::KeyValue &a, const TypeData::KeyValue &b) {
+  return a.first < b.first;
+}

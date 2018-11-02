@@ -3,7 +3,7 @@
 #include "compiler/data/data_ptr.h"
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/type-inferer.h"
-#include "compiler/types.h"
+#include "compiler/inferring/type-data.h"
 
 namespace tinf {
 

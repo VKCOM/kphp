@@ -3,9 +3,9 @@
 #include "auto/compiler/vertex/vertex-all.h"
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
-#include "compiler/types.h"
 
 size_t vertex_total_mem_used __attribute__ ((weak));
 
