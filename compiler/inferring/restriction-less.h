@@ -3,7 +3,7 @@
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 
-class RestrictionLess : public tinf::Restriction {
+class RestrictionLess : public tinf::RestrictionBase {
 private:
   std::vector<tinf::Node *> stacktrace;
   std::vector<tinf::Node *> node_path_;

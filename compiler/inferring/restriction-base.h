@@ -4,26 +4,22 @@
 
 namespace tinf {
 
-// TODO: merge it to one class
-struct RestrictionBase {
+class RestrictionBase {
+public:
   virtual ~RestrictionBase() = default;
   virtual const char *get_description() = 0;
-  virtual bool check_broken_restriction() = 0;
 
-protected:
-  virtual bool is_broken_restriction_an_error() { return false; }
 
-  virtual bool check_broken_restriction_impl() = 0;
-};
-
-class Restriction : public RestrictionBase {
-public:
-  Location location;
-
-  Restriction() :
+  RestrictionBase() :
     location(stage::get_location()) {}
 
-  bool check_broken_restriction() override;
+  virtual bool check_broken_restriction();
+
+protected:
+  Location location;
+
+  virtual bool is_broken_restriction_an_error() { return false; }
+  virtual bool check_broken_restriction_impl() = 0;
 };
 
 }

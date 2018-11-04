@@ -1,6 +1,6 @@
 #include "compiler/inferring/restriction-base.h"
 
-bool tinf::Restriction::check_broken_restriction() {
+bool tinf::RestrictionBase::check_broken_restriction() {
   bool err = check_broken_restriction_impl();
   if (err) {
     stage::set_location(location);

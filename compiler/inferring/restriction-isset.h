@@ -3,7 +3,7 @@
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 
-class RestrictionIsset : public tinf::Restriction {
+class RestrictionIsset : public tinf::RestrictionBase {
 public:
   tinf::Node *a_;
   string desc;
