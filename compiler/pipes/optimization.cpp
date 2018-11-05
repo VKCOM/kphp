@@ -74,23 +74,12 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
   return root;
 }
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
-  bool has_key = index->has_key();
-  if (!has_key) {
+  if (!index->has_key()) {
     if (index->rl_type == val_l) {
       kphp_error (0, "Unsupported []");
     } else {
       kphp_error (0, "Cannot use [] for reading");
     }
-    return index;
-  }
-  if (index->rl_type != val_l) {
-    index->extra_type = op_ex_index_rval;
-  }
-  return index;
-}
-VertexPtr OptimizationPass::optimize_instance_prop(VertexAdaptor<op_instance_prop> index) {
-  if (index->rl_type != val_l) {
-    index->extra_type = op_ex_index_rval;
   }
   return index;
 }
@@ -171,8 +160,6 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
     root = optimize_postfix_dec(root);
   } else if (root->type() == op_index) {
     root = optimize_index(root);
-  } else if (root->type() == op_instance_prop) {
-    root = optimize_instance_prop(root);
   }
 
   root = fix_int_const(root);

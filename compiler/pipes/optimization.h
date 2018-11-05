@@ -13,7 +13,6 @@ private:
   VertexPtr optimize_postfix_inc(VertexPtr root);
   VertexPtr optimize_postfix_dec(VertexPtr root);
   VertexPtr optimize_index(VertexAdaptor<op_index> index);
-  VertexPtr optimize_instance_prop(VertexAdaptor<op_instance_prop> index);
   template<Operation FromOp, Operation ToOp>
   VertexPtr fix_int_const(VertexPtr from, const string &from_func);
   VertexPtr fix_int_const(VertexPtr root);

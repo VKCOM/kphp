@@ -2920,13 +2920,11 @@ void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
 }
 
 void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
-  if (root->extra_type == op_ex_none) {
-    W << root->array() << "[";
-    if (root->has_key()) {
-      W << root->key();
-    }
-    W << "]";
-  } else if (root->extra_type == op_ex_index_rval) {
+  bool used_as_rval = root->rl_type != val_l;
+  if (!used_as_rval) {
+    kphp_assert(root->has_key());
+    W << root->array() << "[" << root->key() << "]";
+  } else {
     W << root->array() << ".get_value (" << root->key();
     // если это обращение по константной строке, типа $a['somekey'],
     // вычисляем хеш строки 'somekey' на этапе компиляции, и вызовем array<T>::get_value(string, precomputed_hash)
@@ -2935,8 +2933,6 @@ void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
       W << ", " << int_to_str(precomputed_hash);
     }
     W << ")";
-  } else {
-    kphp_fail();
   }
 }
 
