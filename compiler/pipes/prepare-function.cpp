@@ -57,24 +57,24 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
 }
 
 static void prepare_function_misc(FunctionPtr func) {
-  VertexAdaptor<meta_op_function> func_root = func->root;
-  kphp_assert (func_root);
-  VertexAdaptor<op_func_param_list> param_list = func_root->params();
-  VertexRange params = param_list->args();
+  VertexRange params = get_function_params(func->root.as<meta_op_function>());
   int param_n = (int)params.size();
   bool was_default = false;
   func->min_argn = param_n;
   for (int i = 0; i < param_n; i++) {
+    VertexAdaptor<meta_op_func_param> param = params[i].as<meta_op_func_param>();
+
     if (func->varg_flag) {
-      kphp_error (params[i].as<meta_op_func_param>()->var()->ref_flag == false,
+      kphp_error (!param->var()->ref_flag,
                   "Reference arguments are not supported in varg functions");
     }
 
-    VertexAdaptor<meta_op_func_param> param = params[i].as<meta_op_func_param>();
-    if (param->type_declaration == "Callable" || param->type_declaration == "callable") {
-      param->template_type_id = param_n + i;
-      param->type_declaration.clear();
-      func->is_template = true;
+    if (!param->type_declaration.empty()) {
+      if (param->type_declaration == "Callable" || param->type_declaration == "callable") {
+        param->template_type_id = param_n + i;
+        param->type_declaration.clear();
+        func->is_template = true;
+      }
     }
 
     if (param->has_default_value() && param->default_value()) {
@@ -83,13 +83,12 @@ static void prepare_function_misc(FunctionPtr func) {
         func->min_argn = i;
       }
       if (func->type() == FunctionData::func_local) {
-        kphp_error (params[i].as<meta_op_func_param>()->var()->ref_flag == false,
+        kphp_error (!param->var()->ref_flag,
                     dl_pstr("Default value in reference function argument [function = %s]", func->get_human_readable_name().c_str()));
       }
     } else {
       kphp_error (!was_default,
-                  dl_pstr("Default value expected [function = %s] [param_i = %d]",
-                          func->get_human_readable_name().c_str(), i));
+                  dl_pstr("Default value expected [function = %s] [param_i = %d]", func->get_human_readable_name().c_str(), i));
     }
   }
 }
@@ -276,7 +275,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 }
 
-static void prepare_function(FunctionPtr function) {
+void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  stage::set_name("Prepare function");
+  stage::set_function(function);
+  kphp_assert (function);
+
   parse_and_apply_function_kphp_phpdoc(function);
   prepare_function_misc(function);
 
@@ -287,14 +290,6 @@ static void prepare_function(FunctionPtr function) {
   if (function->root && function->root->varg_flag) {
     function->varg_flag = true;
   }
-}
-
-void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
-  stage::set_name("Prepare function");
-  stage::set_function(function);
-  kphp_assert (function);
-
-  prepare_function(function);
 
   if (stage::has_error()) {
     return;
