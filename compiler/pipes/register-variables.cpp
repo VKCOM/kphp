@@ -55,7 +55,7 @@ void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex
 }
 bool RegisterVariablesPass::is_const(VertexPtr v) {
   return v->const_type == cnst_const_val ||
-         (v->type() == op_var && v->get_var_id()->type() == VarData::var_const_t) ||
+         (v->type() == op_var && v->get_var_id()->is_constant()) ||
          v->type() == op_define_val;
 }
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
@@ -171,7 +171,7 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
 void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
   if (var->get_var_id()) {
     // автогенерённые через CREATE_VERTEX op_var типы, когда один VarData на несколько разных vertex'ов
-    kphp_assert (var->get_var_id()->type() == VarData::var_const_t ||
+    kphp_assert (var->get_var_id()->is_constant() ||
                  var->get_var_id()->type() == VarData::var_local_inplace_t);
     return;
   }

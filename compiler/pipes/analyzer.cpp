@@ -18,7 +18,7 @@ void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
         str = key->get_string();
       } else if (key->type() == op_var) {
         VarPtr key_var = key.as<op_var>()->get_var_id();
-        if (key_var->is_constant) {
+        if (key_var->is_constant()) {
           VertexPtr init = key_var->init_val;
           if (init->type() == op_string) {
             str = init->get_string();
@@ -68,7 +68,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT * local) 
   }
   if (vertex->type() == op_var) {
     VarPtr var = vertex.as<op_var>()->get_var_id();
-    if (var->is_constant) {
+    if (var->is_constant()) {
       VertexPtr init = var->init_val;
       run_function_pass(init, this, local);
     }

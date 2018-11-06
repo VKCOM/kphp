@@ -328,7 +328,7 @@ private:
       return;
     }
     for (auto cur : *v) {
-      if (cur->type() == op_var && cur->get_var_id()->type() == VarData::var_const_t) {
+      if (cur->type() == op_var && cur->get_var_id()->is_constant()) {
         continue;
       }
 

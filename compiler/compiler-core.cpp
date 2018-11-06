@@ -306,7 +306,6 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
     if (!node->data) {
       new_var = create_var(name, type);
       new_var->init_val = init_val;
-      new_var->is_constant = type == VarData::var_const_t;
       node->data = new_var;
     }
   }

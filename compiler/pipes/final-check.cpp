@@ -94,7 +94,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
             }
           }
         } else {
-          kphp_error(var->type() != VarData::var_const_t, "Can't use isset on const variable");
+          kphp_error(!var->is_constant(), "Can't use isset on const variable");
         }
       } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
         const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());

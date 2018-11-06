@@ -1256,7 +1256,7 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     }
 
     W << VarDeclaration(var);
-    if (var->type() == VarData::var_const_t && var->global_init_flag) {
+    if (var->is_constant() && var->global_init_flag) {
       switch (var->init_val->type()) {
         case op_string:
           const_string_vars.push_back(var);
@@ -1495,7 +1495,7 @@ void DfsInit::compile_dfs_init_part(
     W << " " << BEGIN;
 
     for (auto var : used_vars) {
-      if (var->is_constant) {
+      if (var->is_constant()) {
         continue;
       }
 
@@ -1522,7 +1522,7 @@ void DfsInit::compile_dfs_init_part(
     W << " " << BEGIN;
 
     for (auto var : used_vars) {
-      if (var->is_constant) {
+      if (var->is_constant()) {
         continue;
       }
 

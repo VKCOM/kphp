@@ -28,7 +28,6 @@ public:
   FunctionPtr static_id; // id of function if variable is static
   ClassPtr class_id; // id of class if variable is static fields
   vector<VarPtr> *bad_vars;
-  bool is_constant;
   bool is_reference;
   bool uninited_flag;
   bool optimize_flag;
@@ -61,6 +60,10 @@ public:
 
   inline bool is_class_instance_var() const {
     return type_ == var_instance_t;
+  }
+
+  inline bool is_constant() const {
+    return type_ == var_const_t;
   }
 
   const ClassMemberStaticField *as_class_static_field() const;

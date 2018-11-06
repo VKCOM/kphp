@@ -10,7 +10,6 @@ VarData::VarData(VarData::Type type_) :
   tinf_node(VarPtr(this)),
   init_val(nullptr),
   bad_vars(nullptr),
-  is_constant(false),
   is_reference(false),
   uninited_flag(false),
   optimize_flag(false),
