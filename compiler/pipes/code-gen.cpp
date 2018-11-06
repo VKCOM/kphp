@@ -763,8 +763,8 @@ inline VarName::VarName(VarPtr var) :
 }
 
 void VarName::compile(CodeGenerator &W) const {
-  if (var->static_id) {
-    W << FunctionName(var->static_id) << "$";
+  if (var->is_function_static_var()) {
+    W << FunctionName(var->holder_func) << "$";
   }
 
   W << "v$" << var->name;

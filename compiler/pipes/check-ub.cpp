@@ -40,7 +40,7 @@ bool is_same_var(const VarPtr &a, const VarPtr &b) {
 }
 
 bool is_var_written(const FunctionPtr &function, const VarPtr &var) {
-  if (function->bad_vars == nullptr || (var->type() != VarData::var_global_t && var->bad_vars == nullptr)) {
+  if (function->bad_vars == nullptr || (!var->is_in_global_scope() && var->bad_vars == nullptr)) {
     return false;
   }
   if (in_vector(function->bad_vars, var)) {

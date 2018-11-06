@@ -87,7 +87,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
         VarPtr var = v.as<op_var>()->get_var_id();
         if (vertex->type() == op_unset) {
           kphp_error(!var->is_reference, "Unset of reference variables is not supported");
-          if (var->type() == VarData::var_global_t) {
+          if (var->is_in_global_scope()) {
             FunctionPtr f = stage::get_function();
             if (f->type() != FunctionData::func_global && f->type() != FunctionData::func_switch) {
               kphp_error(0, "Unset of global variables in functions is not supported");

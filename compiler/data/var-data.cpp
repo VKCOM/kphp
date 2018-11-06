@@ -46,17 +46,6 @@ bool operator<(VarPtr a, VarPtr b) {
 
   if (cmp_res == 0) {
     {
-      bool af{a->static_id};
-      bool bf{b->static_id};
-      if (af || bf) {
-        if (af && bf) {
-          return a->static_id < b->static_id;
-        } else {
-          return af < bf;
-        }
-      }
-    }
-    {
       bool af{a->holder_func};
       bool bf{b->holder_func};
       if (af || bf) {

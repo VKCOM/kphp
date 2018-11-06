@@ -343,13 +343,8 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
   return var;
 }
 
-VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name,
-                                      VarData::Type type) {
-  VarData::Type real_type = type;
-  if (type == VarData::var_static_t) {
-    real_type = VarData::var_global_t;
-  }
-  VarPtr var = create_var(name, real_type);
+VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, VarData::Type type) {
+  VarPtr var = create_var(name, type);
   var->holder_func = function;
   switch (type) {
     case VarData::var_local_t:
@@ -364,7 +359,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name,
       function->param_ids.push_back(var);
       break;
     default:
-    kphp_fail();
+      kphp_fail();
   }
   return var;
 }

@@ -25,7 +25,6 @@ public:
   tinf::VarNode tinf_node;
   VertexPtr init_val;
   FunctionPtr holder_func;
-  FunctionPtr static_id; // id of function if variable is static
   ClassPtr class_id; // id of class if variable is static fields
   vector<VarPtr> *bad_vars;
   bool is_reference;
@@ -48,6 +47,10 @@ public:
 
   inline bool is_global_var() const {
     return type_ == var_global_t && !class_id;
+  }
+
+  inline bool is_in_global_scope() const {
+    return type_ == var_global_t || type_ == var_static_t;
   }
 
   inline bool is_function_static_var() const {

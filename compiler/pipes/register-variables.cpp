@@ -59,7 +59,7 @@ bool RegisterVariablesPass::is_const(VertexPtr v) {
          v->type() == op_define_val;
 }
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
-  return v->type() == op_var && v->get_var_id()->type() == VarData::var_global_t;
+  return v->type() == op_var && v->get_var_id()->is_in_global_scope();
 }
 void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value, OperationExtra extra_type) {
   kphp_error_return (!global_function_flag || extra_type == op_ex_static_private || extra_type == op_ex_static_public
@@ -73,15 +73,15 @@ void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex
     name = replace_backslashes(current_function->class_id->name) + "$$" + var_vertex->str_val;
     var = get_global_var(name);
     var->class_id = current_function->class_id;
-    kphp_assert (var->is_class_static_var());
+    kphp_assert(var->is_class_static_var());
   } else {
-    kphp_assert (extra_type == op_ex_none);
+    kphp_assert(extra_type == op_ex_none);
     name = var_vertex->str_val;
     var = create_local_var(name, VarData::var_static_t, true);
-    var->static_id = current_function;
+    kphp_assert(var->is_function_static_var());
   }
   if (default_value) {
-    if (!kphp_error (is_const(default_value), dl_pstr("Default value of [%s] is not constant", name.c_str()))) {
+    if (!kphp_error(is_const(default_value), dl_pstr("Default value of [%s] is not constant", name.c_str()))) {
       var->init_val = default_value;
     }
   }
