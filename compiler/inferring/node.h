@@ -30,8 +30,12 @@ public:
 
   Node();
 
-  int get_recalc_cnt();
-  int get_holder_id();
+  int get_recalc_cnt() const {
+    return recalc_cnt_;
+  }
+  int get_holder_id() const {
+    return holder_id_;
+  }
 
   void add_edge(Edge *edge);
   void add_rev_edge(Edge *edge);

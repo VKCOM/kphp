@@ -7,9 +7,6 @@
 
 namespace tinf {
 
-const TypeData *fast_get_type(VertexPtr vertex);
-const TypeData *fast_get_type(VarPtr var);
-const TypeData *fast_get_type(FunctionPtr function, int id);
 tinf::Node *get_tinf_node(VertexPtr vertex);
 tinf::Node *get_tinf_node(VarPtr var);
 tinf::Node *get_tinf_node(FunctionPtr function, int id);

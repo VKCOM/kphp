@@ -23,14 +23,6 @@ void Node::add_rev_edge(Edge *edge) {
   rev_next_.push_back(edge);
 }
 
-int Node::get_recalc_cnt() {
-  return recalc_cnt_;
-}
-
-int Node::get_holder_id() {
-  return holder_id_;
-}
-
 bool Node::try_start_recalc() {
   while (true) {
     int recalc_state_copy = recalc_state_;

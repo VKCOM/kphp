@@ -43,18 +43,6 @@ Node *get_tinf_node(VarPtr vertex) {
   return &vertex->tinf_node;
 }
 
-const TypeData *fast_get_type(VertexPtr vertex) {
-  return get_tinf_node(vertex)->get_type();
-}
-
-const TypeData *fast_get_type(VarPtr var) {
-  return get_tinf_node(var)->get_type();
-}
-
-const TypeData *fast_get_type(FunctionPtr function, int id) {
-  return get_tinf_node(function, id)->get_type();
-}
-
 static TypeInferer *CI = nullptr;
 
 void register_inferer(TypeInferer *inferer) {
@@ -67,16 +55,23 @@ TypeInferer *get_inferer() {
   return CI;
 }
 
+inline const TypeData *get_type_impl(Node *node) {
+  if (node->get_recalc_cnt() == -1) {
+    get_inferer()->run_node(node);
+  }
+  return node->type_;
+}
+
 const TypeData *get_type(VertexPtr vertex) {
-  return get_inferer()->get_type(get_tinf_node(vertex));
+  return get_type_impl(get_tinf_node(vertex));
 }
 
 const TypeData *get_type(VarPtr var) {
-  return get_inferer()->get_type(get_tinf_node(var));
+  return get_type_impl(get_tinf_node(var));
 }
 
 const TypeData *get_type(FunctionPtr function, int id) {
-  return get_inferer()->get_type(get_tinf_node(function, id));
+  return get_type_impl(get_tinf_node(function, id));
 }
 
 }

@@ -121,11 +121,6 @@ void TypeInferer::run_node(Node *node) {
   }
 }
 
-const TypeData *TypeInferer::get_type(Node *node) {
-  run_node(node);
-  return node->type_;
-}
-
 void TypeInferer::finish() {
   finish_flag = true;
 }

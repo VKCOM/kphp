@@ -226,14 +226,14 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   VertexPtr arg = conv->expr();
   //FIXME: (extra dependenty)
   add_dependency(as_rvalue(arg));
-  if (tinf::fast_get_type(arg)->get_real_ptype() == tp_array) {
+  if (tinf::get_type(arg)->get_real_ptype() == tp_array) {
     set_lca(drop_or_false(as_rvalue(arg)));
-  } else if (tinf::fast_get_type(arg)->ptype() == tp_tuple) {   // foreach/array_map/(array) на tuple'ах — ошибка
+  } else if (tinf::get_type(arg)->ptype() == tp_tuple) {   // foreach/array_map/(array) на tuple'ах — ошибка
     set_lca(TypeData::get_type(tp_Error));
   } else {
     recalc_ptype<tp_array>();
-    if (tinf::fast_get_type(arg)->ptype() != tp_Unknown) { //hack
-      set_lca_at(&MultiKey::any_key(1), tinf::fast_get_type(arg)->get_real_ptype());
+    if (tinf::get_type(arg)->ptype() != tp_Unknown) { //hack
+      set_lca_at(&MultiKey::any_key(1), tinf::get_type(arg)->get_real_ptype());
     }
   }
 }
@@ -291,13 +291,13 @@ void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   add_dependency(as_rvalue(lhs));
   add_dependency(as_rvalue(rhs));
 
-  if (tinf::fast_get_type(lhs)->ptype() == tp_bool) {
+  if (tinf::get_type(lhs)->ptype() == tp_bool) {
     recalc_ptype<tp_int>();
   } else {
     set_lca(drop_or_false(as_rvalue(lhs)));
   }
 
-  if (tinf::fast_get_type(rhs)->ptype() == tp_bool) {
+  if (tinf::get_type(rhs)->ptype() == tp_bool) {
     recalc_ptype<tp_int>();
   } else {
     set_lca(drop_or_false(as_rvalue(rhs)));

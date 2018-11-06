@@ -32,7 +32,6 @@ public:
   vector<Task *> get_tasks();
 
   void run_node(Node *node);
-  const TypeData *get_type(Node *node);
 
   void finish();
   bool is_finished();
