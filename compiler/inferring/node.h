@@ -15,7 +15,6 @@ private:
   std::vector<Edge *> next_;
   std::vector<Edge *> rev_next_;
   volatile int recalc_state_;
-  volatile int holder_id_;
 public:
   const TypeData *type_;
   volatile int recalc_cnt_;
@@ -32,9 +31,6 @@ public:
 
   int get_recalc_cnt() const {
     return recalc_cnt_;
-  }
-  int get_holder_id() const {
-    return holder_id_;
   }
 
   void add_edge(Edge *edge);

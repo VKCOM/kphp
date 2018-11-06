@@ -12,11 +12,6 @@ void TypeInferer::recalc_node(Node *node) {
   //fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   if (node->try_start_recalc()) {
     Q->push(node);
-  } else if (is_finished()) {
-    if (node->get_holder_id() != get_thread_id()) {
-      fprintf(stderr, "node->get_holder_id() = %d, get_thread_id = %d\n", node->get_holder_id(), get_thread_id());
-      kphp_assert(node->get_holder_id() == get_thread_id());
-    }
   }
 }
 
