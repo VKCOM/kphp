@@ -7,7 +7,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/debug.h"
 #include "compiler/name-gen.h"
-#include "compiler/type-inferer.h"
+#include "compiler/inferring/public.h"
 #include "compiler/vertex.h"
 
 const string &ClassMemberStaticMethod::global_name() const {
@@ -40,9 +40,9 @@ const TypeData *ClassMemberStaticField::get_inferred_type() const {
   const VertexPtr child = root->args()[0];
   switch (child->type()) {
     case op_var:
-      return fast_get_type(child->get_var_id());
+      return tinf::fast_get_type(child->get_var_id());
     case op_set:
-      return fast_get_type(child.as<op_set>()->lhs()->get_var_id());
+      return tinf::fast_get_type(child.as<op_set>()->lhs()->get_var_id());
     default:
       return nullptr;
   }
@@ -64,7 +64,7 @@ ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor
 }
 
 const TypeData *ClassMemberInstanceField::get_inferred_type() const {
-  return fast_get_type(var);
+  return tinf::fast_get_type(var);
 }
 
 
