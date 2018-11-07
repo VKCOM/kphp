@@ -65,7 +65,7 @@ FunctionPtr FunctionData::create_function(const FunctionInfo &info) {
   function_root->set_func_id(function);
   function->file_id = stage::get_file();
   function->kphp_required = info.kphp_required;
-  function->set_function_in_which_lambda_was_created(function_root->get_func_id()->function_in_which_lambda_was_created);
+  function->function_in_which_lambda_was_created = function_root->get_func_id()->function_in_which_lambda_was_created;
 
   if (function_root->type() == op_func_decl) {
     function->is_extern = true;

@@ -4,10 +4,11 @@
 
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
+#include "auto/compiler/vertex/vertex-meta_op_function.h"
 
 class FunctionInfo {
 public:
-  VertexPtr root;
+  VertexAdaptor<meta_op_function> root;
   std::string namespace_name;
   std::string class_context;
   bool kphp_required;
@@ -17,7 +18,7 @@ public:
     kphp_required(false),
     access_type(access_nonmember) {}
 
-  FunctionInfo(VertexPtr root, string namespace_name, string class_context,
+  FunctionInfo(VertexAdaptor<meta_op_function> root, string namespace_name, string class_context,
                bool kphp_required, AccessType access_type) :
     root(root),
     namespace_name(std::move(namespace_name)),

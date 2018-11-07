@@ -13,7 +13,7 @@ public:
   int id;
 
   string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
-  VertexPtr root;     // op_function
+  VertexAdaptor<meta_op_function> root;
   VertexPtr header;   // это только для костыля extern_function, потом должно уйти
   bool is_required;
 
@@ -63,6 +63,7 @@ public:
   AccessType access_type;
   set<string> disabled_warnings;
   map<long long, int> name_gen_map;
+  FunctionPtr function_in_which_lambda_was_created;
 
   FunctionData();
   explicit FunctionData(VertexPtr root);
@@ -115,10 +116,6 @@ public:
     return get_or_default_field(&FunctionData::class_context_name);
   }
 
-  void set_function_in_which_lambda_was_created(FunctionPtr f) {
-    function_in_which_lambda_was_created = f;
-  }
-
   VertexRange get_params();
 
 private:
@@ -132,7 +129,4 @@ private:
   }
 
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
-
-private:
-  FunctionPtr function_in_which_lambda_was_created;
 };

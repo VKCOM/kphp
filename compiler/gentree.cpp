@@ -1846,7 +1846,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
     );
     registered_function->is_required = true;
     registered_function->kphp_required = true;
-    registered_function->set_function_in_which_lambda_was_created(function->get_func_id());
+    registered_function->function_in_which_lambda_was_created = function->get_func_id();
 
     return registered_function;
   };
@@ -1856,7 +1856,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
   create_default_constructor(anon_class->name, anon_class, AutoLocation(function->location.line));
   anon_class->new_function->namespace_name = FunctionData::get_lambda_namespace();
   anon_class->new_function->class_context_name = anon_class->name;
-  anon_class->new_function->set_function_in_which_lambda_was_created(function->get_func_id());
+  anon_class->new_function->function_in_which_lambda_was_created = function->get_func_id();
 
   ClassPtr registered_class = callback->register_class(anon_class);
   registered_class->init_function = FunctionPtr(new FunctionData());
