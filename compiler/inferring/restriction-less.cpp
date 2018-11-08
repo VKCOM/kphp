@@ -282,7 +282,7 @@ string RestrictionLess::get_stacktrace_text() {
                vk::string_view(ith_row(i + 3).col[2]).starts_with(ith_row(i + 1).col[2]) &&
                ith_row(i + 3).col[2].substr(ith_row(i + 1).col[2].length(), 17) == " (inherited from ") {
       std::smatch matched;
-      string sanitized_col_i_1 = std::regex_replace(ith_row(i).col[1], std::regex(R"([\\\(\)])"), R"(\$&)");
+      string sanitized_col_i_1 = std::regex_replace(ith_row(i).col[1], std::regex(R"([\\\(\)\[\]])"), R"(\$&)");
       if (std::regex_match(ith_row(i + 2).col[1], matched, std::regex(sanitized_col_i_1 + " (\\(inherited from .+?\\))"))) {
         rows[i].col[1] += " " + matched[1].str();
         rows.erase(rows.begin() + i + 2, rows.begin() + i + 4);
