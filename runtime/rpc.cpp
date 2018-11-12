@@ -1161,13 +1161,13 @@ const int ID_DOUBLE = 0x2210c154;
 const int ID_STRING = 0xb5286e24;
 const int ID_VECTOR = 0x1cb5c415;
 const int ID_DICTIONARY = 0x1f4c618f;
+const int ID_INT_KEY_DICTIONARY = 0x07bafc42;
+const int ID_LONG_KEY_DICTIONARY = 0xb424d8f1;
 const int ID_MAYBE_TRUE = 0x3f9c8ef8;
 const int ID_MAYBE_FALSE = 0x27930a7b;
 const int ID_BOOL_FALSE = 0xbc799737;
 const int ID_BOOL_TRUE = 0x997275b5;
-
 const int TYPE_ID_BOOL = 0x250be282;
-
 
 const int FLAG_OPT_VAR = (1 << 17);
 const int FLAG_EXCL = (1 << 18);
@@ -1539,7 +1539,7 @@ int get_constructor_by_id(const tl_type *t, int id) {
 }
 
 inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__((unused))) {
-//  fprintf (stderr, "%s\n", s);
+  //fprintf(stderr, "%s\n", s);
 }
 
 const int MAX_VARS = 100000;
@@ -1967,7 +1967,7 @@ protected:
       }
 
       array<var> tl_object = fetch_function(T);
-//      fprintf (stderr, "!!! %s\n", f$serialize (tl_object).c_str());
+      //fprintf (stderr, "!!! %s\n", f$serialize (tl_object).c_str());
       rpc_parse_restore_previous();
       RETURN(tl_object);
     RESUMABLE_END
@@ -2220,7 +2220,7 @@ void *tlcomb_fetch_type(void **IP, void **Data, var *arr, tl_tree **vars) {
     if (r - l > 1) {
       *Data = e->dup();
     }
-//    ((tl_tree *)Data[0])->print();
+    //((tl_tree *)Data[0])->print();
     tl_combinator *constructor = t->constructors.get_value(n);
     tl_tree **new_vars = get_var_space(vars, constructor->var_count);
     void *res = TLUNI_START (constructor->fetchIP, Data + 1, arr, new_vars);
@@ -2481,7 +2481,6 @@ void *tlcomb_fetch_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
   int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
   void **newIP = (void **)*(IP++);
 
-
   if (multiplicity < 0) {
     THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("vector size is negative"), -1));
     return nullptr;
@@ -2546,6 +2545,73 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
   TLUNI_NEXT;
 }
 
+void *tlcomb_fetch_int_key_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
+  void **newIP = (void **)*(IP++);
+
+  if (multiplicity < 0) {
+    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    return nullptr;
+  }
+
+  if (multiplicity <= rpc_data_len) {
+    *arr = array<var>(array_size(multiplicity, 0, true));
+  } else {
+    *arr = array<var>();
+  }
+
+  for (int i = 0; i < multiplicity; i++) {
+    new(++arr) var();
+    last_arr_ptr = arr;
+
+    int key = TRY_CALL(int, void_ptr, tl_parse_int());
+    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+      *arr-- = var();
+      last_arr_ptr = arr;
+      return nullptr;
+    }
+    arr[-1].set_value(key, *arr);
+    *arr-- = var();
+    last_arr_ptr = arr;
+  }
+  TLUNI_NEXT;
+}
+
+void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+  int multiplicity = TRY_CALL(int, void_ptr, tl_parse_int());
+  void **newIP = (void **)*(IP++);
+
+  if (multiplicity < 0) {
+    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    return nullptr;
+  }
+
+  if (multiplicity <= rpc_data_len) {
+    *arr = array<var>(array_size(multiplicity, 0, true));
+  } else {
+    *arr = array<var>();
+  }
+
+  for (int i = 0; i < multiplicity; i++) {
+    new(++arr) var();
+    last_arr_ptr = arr;
+
+    long long key = TRY_CALL(long long, void_ptr, tl_parse_long());
+    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+      *arr-- = var();
+      last_arr_ptr = arr;
+      return nullptr;
+    }
+    char buf[30];
+    sprintf(buf, "%lld", key);
+    arr[-1].set_value(string(buf), *arr);
+    *arr-- = var();
+    last_arr_ptr = arr;
+  }
+  TLUNI_NEXT;
+}
 
 /*****
  *
@@ -2749,6 +2815,64 @@ void *tlcomb_store_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
   const array<var> a = arr->to_array();
   for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
     f$store_string(f$strval(p.get_key()));
+
+    new(++arr) var(p.get_value());
+    last_arr_ptr = arr;
+    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+      *arr-- = var();
+      last_arr_ptr = arr;
+      return nullptr;
+    }
+    *arr-- = var();
+    last_arr_ptr = arr;
+  }
+  TLUNI_NEXT;
+}
+
+void *tlcomb_store_int_key_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+
+  void **newIP = (void **)*(IP++);
+
+  if (!arr->is_array()) {
+    php_warning("Dictionary expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
+    return nullptr;
+  }
+  int multiplicity = arr->count();
+  f$store_int(multiplicity);
+
+  const array<var> a = arr->to_array();
+  for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+    f$store_int(f$safe_intval(p.get_key()));
+
+    new(++arr) var(p.get_value());
+    last_arr_ptr = arr;
+    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+      *arr-- = var();
+      last_arr_ptr = arr;
+      return nullptr;
+    }
+    *arr-- = var();
+    last_arr_ptr = arr;
+  }
+  TLUNI_NEXT;
+}
+
+void *tlcomb_store_long_key_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) {
+  tl_debug(__FUNCTION__, -1);
+
+  void **newIP = (void **)*(IP++);
+
+  if (!arr->is_array()) {
+    php_warning("Dictionary expected, unserialize (\"%s\") found during store type %s", f$serialize(*arr).c_str(), tl_current_function_name);
+    return nullptr;
+  }
+  int multiplicity = arr->count();
+  f$store_int(multiplicity);
+
+  const array<var> a = arr->to_array();
+  for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
+    f$store_Long(f$longval(p.get_key()));
 
     new(++arr) var(p.get_value());
     last_arr_ptr = arr;
@@ -3411,48 +3535,82 @@ int gen_constructor_store(tl_combinator &c, void **IP, int max_size) {
   memset(vars_int, 0, sizeof(int) * c.var_count);
   int l = gen_uni(c.result, IP, max_size, vars_int);
 
-  if (c.id == ID_INT) {
-    IP[l++] = (void *)tlcomb_store_int;
-  } else if (c.id == ID_LONG) {
-    IP[l++] = (void *)tlcomb_store_long;
-  } else if (c.id == ID_STRING) {
-    IP[l++] = (void *)tlcomb_store_string;
-  } else if (c.id == ID_DOUBLE) {
-    IP[l++] = (void *)tlcomb_store_double;
-  } else if (c.id == ID_VECTOR) {
-    IP[l++] = (void *)tlcomb_store_vector;
-    void *tIP[4];
-    tIP[0] = (void *)tlsub_push_type_var;
-    tIP[1] = (void *)(long)0;
-    tIP[2] = (void *)tlcomb_store_type;
-    tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup(tIP, 4);
-  } else if (c.id == ID_DICTIONARY) {
-    IP[l++] = (void *)tlcomb_store_dictionary;
-    void *tIP[4];
-    tIP[0] = (void *)tlsub_push_type_var;
-    tIP[1] = (void *)(long)0;
-    tIP[2] = (void *)tlcomb_store_type;
-    tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup(tIP, 4);
-  } else {
-    int z = 0;
-    if (c.result->get_type() == NODE_TYPE_TYPE) {
-      tl_type *t = ((tl_tree_type *)c.result)->type;
-      if (t->constructors_num == 1) {
-        for (int i = 0; i < c.args.count(); i++) {
-          if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-            z++;
+  switch (c.id) {
+    case ID_INT: {
+      IP[l++] = (void *)tlcomb_store_int;
+      break;
+    }
+    case ID_LONG: {
+      IP[l++] = (void *)tlcomb_store_long;
+      break;
+    }
+    case ID_STRING: {
+      IP[l++] = (void *)tlcomb_store_string;
+      break;
+    }
+    case ID_DOUBLE: {
+      IP[l++] = (void *)tlcomb_store_double;
+      break;
+    }
+    case ID_VECTOR: {
+      IP[l++] = (void *)tlcomb_store_vector;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_store_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_DICTIONARY: {
+      IP[l++] = (void *)tlcomb_store_dictionary;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_store_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_INT_KEY_DICTIONARY: {
+      IP[l++] = (void *)tlcomb_store_int_key_dictionary;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_store_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_LONG_KEY_DICTIONARY: {
+      IP[l++] = (void *)tlcomb_store_long_key_dictionary;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_store_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    default: {
+      int z = 0;
+      if (c.result->get_type() == NODE_TYPE_TYPE) {
+        tl_type *t = ((tl_tree_type *)c.result)->type;
+        if (t->constructors_num == 1) {
+          for (int i = 0; i < c.args.count(); i++) {
+            if (!(c.args[i].flags & FLAG_OPT_VAR)) {
+              z++;
+            }
           }
         }
       }
-    }
-    for (int i = 0; i < c.args.count(); i++) {
-      if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-        l += gen_field(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+      for (int i = 0; i < c.args.count(); i++) {
+        if (!(c.args[i].flags & FLAG_OPT_VAR)) {
+          l += gen_field(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+        }
       }
+      php_assert (max_size > 10);
     }
-    php_assert (max_size > 10);
   }
 
   IP[l++] = (void *)tlsub_ret_ok;
@@ -3497,61 +3655,103 @@ int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size) {
   memset(vars_int, 0, sizeof(int) * c.var_count);
   int l = gen_uni(c.result, IP, max_size, vars_int);
 
-  if (c.id == ID_INT) {
-    IP[l++] = (void *)tlcomb_fetch_int;
-  } else if (c.id == ID_LONG) {
-    IP[l++] = (void *)tlcomb_fetch_long;
-  } else if (c.id == ID_STRING) {
-    IP[l++] = (void *)tlcomb_fetch_string;
-  } else if (c.id == ID_DOUBLE) {
-    IP[l++] = (void *)tlcomb_fetch_double;
-  } else if (c.id == ID_VECTOR) {
-    IP[l++] = (void *)tlcomb_fetch_vector;
-    void *tIP[4];
-    tIP[0] = (void *)tlsub_push_type_var;
-    tIP[1] = (void *)(long)0;
-    tIP[2] = (void *)tlcomb_fetch_type;
-    tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup(tIP, 4);
-  } else if (c.id == ID_DICTIONARY) {
-    IP[l++] = (void *)tlcomb_fetch_dictionary;
-    void *tIP[4];
-    tIP[0] = (void *)tlsub_push_type_var;
-    tIP[1] = (void *)(long)0;
-    tIP[2] = (void *)tlcomb_fetch_type;
-    tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup(tIP, 4);
-  } else if (c.id == ID_MAYBE_TRUE) {
-    IP[l++] = (void *)tlcomb_fetch_maybe;
-    void *tIP[4];
-    tIP[0] = (void *)tlsub_push_type_var;
-    tIP[1] = (void *)(long)0;
-    tIP[2] = (void *)tlcomb_fetch_type;
-    tIP[3] = (void *)tlsub_ret_ok;
-    IP[l++] = (void *)IP_dup(tIP, 4);
-  } else if (c.id == ID_MAYBE_FALSE || c.id == ID_BOOL_FALSE) {
-    IP[l++] = (void *)tlcomb_fetch_false;
-  } else if (c.id == ID_BOOL_TRUE) {
-    IP[l++] = (void *)tlcomb_fetch_true;
-  } else {
-    IP[l++] = (void *)tlcomb_fetch_unknown_as_array_var;
-    int z = 0;
-    if (c.result->get_type() == NODE_TYPE_TYPE) {
-      tl_type *t = ((tl_tree_type *)c.result)->type;
-      if (t->constructors_num == 1) {
-        for (int i = 0; i < c.args.count(); i++) {
-          if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-            z++;
+  switch (c.id) {
+    case ID_INT: {
+      IP[l++] = (void *)tlcomb_fetch_int;
+      break;
+    }
+    case ID_LONG: {
+      IP[l++] = (void *)tlcomb_fetch_long;
+      break;
+    }
+    case ID_STRING: {
+      IP[l++] = (void *)tlcomb_fetch_string;
+      break;
+    }
+    case ID_DOUBLE: {
+      IP[l++] = (void *)tlcomb_fetch_double;
+      break;
+    }
+    case ID_VECTOR: {
+      IP[l++] = (void *)tlcomb_fetch_vector;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_fetch_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_DICTIONARY: {
+      IP[l++] = (void *)tlcomb_fetch_dictionary;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_fetch_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_INT_KEY_DICTIONARY: {
+      IP[l++] = (void *)tlcomb_fetch_int_key_dictionary;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_fetch_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_LONG_KEY_DICTIONARY: {
+      IP[l++] = (void *)tlcomb_fetch_long_key_dictionary;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_fetch_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_MAYBE_TRUE: {
+      IP[l++] = (void *)tlcomb_fetch_maybe;
+      void *tIP[4];
+      tIP[0] = (void *)tlsub_push_type_var;
+      tIP[1] = (void *)(long)0;
+      tIP[2] = (void *)tlcomb_fetch_type;
+      tIP[3] = (void *)tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      break;
+    }
+    case ID_MAYBE_FALSE:
+    case ID_BOOL_FALSE: {
+      IP[l++] = (void *)tlcomb_fetch_false;
+      IP[l++] = (void *)tlcomb_fetch_int;
+      break;
+    }
+    case ID_BOOL_TRUE: {
+      IP[l++] = (void *)tlcomb_fetch_true;
+      break;
+    }
+    default: {
+      IP[l++] = (void *)tlcomb_fetch_unknown_as_array_var;
+      int z = 0;
+      if (c.result->get_type() == NODE_TYPE_TYPE) {
+        tl_type *t = ((tl_tree_type *)c.result)->type;
+        if (t->constructors_num == 1) {
+          for (int i = 0; i < c.args.count(); i++) {
+            if (!(c.args[i].flags & FLAG_OPT_VAR)) {
+              z++;
+            }
           }
         }
       }
-    }
-    for (int i = 0; i < c.args.count(); i++) {
-      if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-        l += gen_field_fetch(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+      for (int i = 0; i < c.args.count(); i++) {
+        if (!(c.args[i].flags & FLAG_OPT_VAR)) {
+          l += gen_field_fetch(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+        }
       }
+      php_assert (max_size > 10 + l);
     }
-    php_assert (max_size > 10 + l);
   }
 
   IP[l++] = (void *)tlsub_ret_ok;
