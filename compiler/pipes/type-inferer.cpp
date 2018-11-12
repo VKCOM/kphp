@@ -173,7 +173,7 @@ private:
     // // restriction on return type
     // bool is_any = false;
     // if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
-    //   if (auto son = rule->expr().try_as<op_type_rule>()) {
+    //   if (auto son = rule->rule().try_as<op_type_rule>()) {
     //     is_any = son->type_help == tp_Any;
     //   }
     // }
