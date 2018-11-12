@@ -47,8 +47,7 @@ void FilterOnlyActuallyUsedFunctionsF::calc_actually_used_having_call_edges(vect
   for (const auto &f_and_e : all) {
     bool should_be_used_apriori =
       f_and_e.function->type() == FunctionData::func_global ||
-      (f_and_e.function->type() == FunctionData::func_extern && f_and_e.function->name == "wait") ||
-      (f_and_e.function->is_lambda() && !f_and_e.function->is_template);
+      (f_and_e.function->type() == FunctionData::func_extern && f_and_e.function->name == "wait");
     if (should_be_used_apriori && !used[f_and_e.function]) {
       calc_actually_used_dfs(f_and_e.function, graph, used, os);
     }
