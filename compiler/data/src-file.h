@@ -16,6 +16,7 @@ public:
 
   std::string main_func_name;
   FunctionPtr main_function;
+  LibPtr owner_lib;
 
   vector<vk::string_view> lines;
 
@@ -24,7 +25,7 @@ public:
   string class_context;
 
   SrcFile();
-  SrcFile(const string &file_name, const string &short_file_name, const string &class_context);
+  SrcFile(const string &file_name, const string &short_file_name, const string &class_context, LibPtr owner_lib_id);
   void add_prefix(const string &s);
   bool load();
 

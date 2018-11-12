@@ -27,6 +27,7 @@ FunctionData::FunctionData() :
   is_callback(false),
   should_be_sync(),
   kphp_required(false),
+  kphp_lib_export(false),
   is_template(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
@@ -256,6 +257,10 @@ string FunctionData::get_human_readable_name() const {
 
 bool FunctionData::is_lambda_with_uses() const {
   return is_lambda() && class_id && class_id->members.has_any_instance_var();
+}
+
+bool FunctionData::is_imported_from_static_lib() const {
+  return file_id->owner_lib && !file_id->owner_lib->is_raw_php() && &(*file_id->main_function) != this;
 }
 
 VertexRange FunctionData::get_params() {

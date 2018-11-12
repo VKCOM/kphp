@@ -548,13 +548,8 @@ bool operator==(const TypeData &a, const TypeData &b) {
   return cmp(&a, &b) == 0;
 }
 
-void type_out_impl(const TypeData *type, string *res) {
-  PrimitiveType tp = type->get_real_ptype();
-  bool or_false = type->use_or_false() && tp != tp_bool;
-
-  if (or_false) {
-    *res += "OrFalse < ";
-  }
+inline void get_cpp_style_type(const TypeData *type, string *res) {
+  const PrimitiveType tp = type->get_real_ptype();
 
   switch (tp) {
     case tp_DB: {
@@ -588,16 +583,31 @@ void type_out_impl(const TypeData *type, string *res) {
       break;
     }
   }
+}
 
-  bool need_any_key = tp == tp_array;
+void type_out_impl(const TypeData *type, string *res, bool cpp_out) {
+  const PrimitiveType tp = type->get_real_ptype();
+  const bool or_false = type->use_or_false() && tp != tp_bool;
+
+  if (or_false) {
+    *res += "OrFalse < ";
+  }
+
+  if (cpp_out) {
+    get_cpp_style_type(type, res);
+  } else {
+    *res += ptype_name(tp);
+  }
+
+  const bool need_any_key = tp == tp_array;
   const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
   if (anykey_value) {
     *res += "< ";
-    type_out_impl(anykey_value, res);
+    type_out_impl(anykey_value, res, cpp_out);
     *res += " >";
   }
 
-  bool need_all_subkeys = tp == tp_tuple;
+  const bool need_all_subkeys = tp == tp_tuple;
   if (need_all_subkeys) {
     *res += "<";
     for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
@@ -605,7 +615,7 @@ void type_out_impl(const TypeData *type, string *res) {
         *res += " , ";
       }
       kphp_assert(subkey->first.is_int_key());
-      type_out_impl(type->const_read_at(subkey->first), res);
+      type_out_impl(type->const_read_at(subkey->first), res, cpp_out);
     }
     *res += ">";
   }
@@ -615,9 +625,9 @@ void type_out_impl(const TypeData *type, string *res) {
   }
 }
 
-string type_out(const TypeData *type) {
+string type_out(const TypeData *type, bool cpp_out) {
   string res;
-  type_out_impl(type, &res);
+  type_out_impl(type, &res, cpp_out);
   return res;
 }
 

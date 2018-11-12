@@ -69,6 +69,12 @@ public:
     return type_ == var_const_t;
   }
 
+  inline bool is_builtin_global() const {
+    return type_ == var_global_t && does_name_eq_any_builtin_global(name);
+  }
+
   const ClassMemberStaticField *as_class_static_field() const;
   const ClassMemberInstanceField *as_class_instance_field() const;
+
+  static bool does_name_eq_any_builtin_global(const std::string &name);
 };

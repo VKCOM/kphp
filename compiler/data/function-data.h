@@ -58,6 +58,7 @@ public:
   bool is_callback;
   bool should_be_sync;
   bool kphp_required;
+  bool kphp_lib_export;
   bool is_template;
   string namespace_name;
   string class_context_name;
@@ -123,6 +124,8 @@ public:
   const std::string get_outer_namespace_name() const {
     return get_or_default_field(&FunctionData::namespace_name);
   }
+
+  bool is_imported_from_static_lib() const;
 
   ClassPtr get_outer_class() const {
     return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->class_id : class_id;

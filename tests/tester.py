@@ -446,7 +446,8 @@ def get_all_tests(args):
         ["tup"],
         ["templates"],
         ["lambdas"],
-        ["errors"]
+        ["errors"],
+        ["libs"]
     ]
 
     for tags in test_tags:

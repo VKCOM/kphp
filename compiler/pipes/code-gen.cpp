@@ -19,13 +19,9 @@ struct CGContext {
   vector<string> catch_labels;
   vector<int> catch_label_used;
   FunctionPtr parent_func;
-  bool use_safe_integer_arithmetic;
-  bool resumable_flag;
-
-  CGContext() :
-    use_safe_integer_arithmetic(false),
-    resumable_flag(false) {
-  }
+  bool use_safe_integer_arithmetic{false};
+  bool resumable_flag{false};
+  bool namespace_opened{false};
 };
 
 struct PlainCode;
@@ -158,7 +154,9 @@ struct OpenFile {
   string file_name;
   string subdir;
   bool compile_with_debug_info_flag;
-  inline OpenFile(const string &file_name, const string &subdir = "", bool compile_with_debug_info_flag = true);
+  bool compile_with_crc;
+  inline OpenFile(const string &file_name, const string &subdir = "",
+                  bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -195,6 +193,20 @@ struct OpenBlock {
 };
 
 struct CloseBlock {
+  inline void compile(CodeGenerator &W) const;
+};
+
+struct OpenNamespace {
+  inline OpenNamespace();
+  inline OpenNamespace(const string &ns);
+
+  inline void compile(CodeGenerator &W) const;
+
+private:
+  const string &ns_;
+};
+
+struct CloseNamespace {
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -238,9 +250,15 @@ struct VarName {
   inline void compile(CodeGenerator &W) const;
 };
 
+enum class gen_out_style {
+  cpp,
+  txt
+};
+
 struct TypeName {
   const TypeData *type;
-  inline TypeName(const TypeData *type);
+  gen_out_style style;
+  inline TypeName(const TypeData *type, gen_out_style style = gen_out_style::cpp);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -259,7 +277,9 @@ struct FunctionCallFlag {
 struct FunctionDeclaration {
   FunctionPtr function;
   bool in_header;
-  inline FunctionDeclaration(FunctionPtr function, bool in_header = false);
+  gen_out_style style;
+  inline FunctionDeclaration(FunctionPtr function, bool in_header = false,
+                             gen_out_style style = gen_out_style::cpp);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -273,8 +293,14 @@ struct FunctionForkDeclaration {
 struct FunctionParams {
   FunctionPtr function;
   bool in_header;
-  inline FunctionParams(FunctionPtr function, bool in_header = false);
+  gen_out_style style;
+  inline FunctionParams(FunctionPtr function, bool in_header = false,
+                        gen_out_style style = gen_out_style::cpp);
   inline void compile(CodeGenerator &W) const;
+
+private:
+  inline void declare_cpp_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const;
+  inline void declare_txt_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const;
 };
 
 struct ClassDeclaration {
@@ -375,6 +401,34 @@ struct StaticInit {
   inline void compile(CodeGenerator &W) const;
 };
 
+struct StaticLibraryInit {
+  const FunctionPtr &main_function;
+  inline StaticLibraryInit(const FunctionPtr &main_function);
+  inline void compile(CodeGenerator &W) const;
+};
+
+struct StaticLibraryRunGlobal {
+  gen_out_style style;
+  inline StaticLibraryRunGlobal(gen_out_style style);
+  inline void compile(CodeGenerator &W) const;
+};
+
+struct StaticLibraryRunGlobalHeaderH {
+  inline void compile(CodeGenerator &W) const;
+};
+
+struct LibHeaderH {
+  FunctionPtr exported_function;
+  inline LibHeaderH(FunctionPtr exported_function);
+  inline void compile(CodeGenerator &W) const;
+};
+
+struct LibHeaderTxt {
+  vector<FunctionPtr> exported_functions;
+  inline LibHeaderTxt(vector<FunctionPtr> &&exported_functions);
+  inline void compile(CodeGenerator &W) const;
+};
+
 struct InitScriptsH {
   inline void compile(CodeGenerator &W) const;
 };
@@ -398,8 +452,13 @@ struct InitFuncPtrs {
 
 struct RunFunction {
   FunctionPtr function;
-  bool in_header;
-  inline RunFunction(FunctionPtr function, bool in_header = false);
+  inline RunFunction(FunctionPtr function);
+  inline void compile(CodeGenerator &W) const;
+};
+
+struct FullCleanupFunction {
+  FunctionPtr function;
+  inline FullCleanupFunction(FunctionPtr function);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -604,16 +663,18 @@ inline void UnlockComments::compile(CodeGenerator &W) const {
   W.get_writer().unlock_comments();
 }
 
-inline OpenFile::OpenFile(const string &file_name, const string &subdir, bool compile_with_debug_info_flag) :
+inline OpenFile::OpenFile(const string &file_name, const string &subdir,
+                          bool compile_with_debug_info_flag, bool compile_with_crc) :
   file_name(file_name),
   subdir(subdir),
-  compile_with_debug_info_flag(compile_with_debug_info_flag) {
+  compile_with_debug_info_flag(compile_with_debug_info_flag),
+  compile_with_crc(compile_with_crc) {
 }
 
 inline void OpenFile::compile(CodeGenerator &W) const {
   W.lock_writer();
   W.get_writer().set_callback(W.callback());
-  W.get_writer().begin_write(compile_with_debug_info_flag);
+  W.get_writer().begin_write(compile_with_debug_info_flag, compile_with_crc);
   W.get_writer().set_file_name(file_name, subdir);
 }
 
@@ -668,6 +729,29 @@ inline void OpenBlock::compile(CodeGenerator &W) const {
 
 inline void CloseBlock::compile(CodeGenerator &W) const {
   W << Indent(-2) << "}";
+}
+
+inline OpenNamespace::OpenNamespace() :
+  OpenNamespace(G->get_global_namespace()) {
+}
+
+inline OpenNamespace::OpenNamespace(const string &ns) :
+  ns_(ns) {
+}
+
+inline void OpenNamespace::compile(CodeGenerator &W) const {
+  if (!ns_.empty()) {
+    kphp_assert(!W.get_context().namespace_opened);
+    W << "namespace " << ns_ << " {" << NL;
+    W.get_context().namespace_opened = true;
+  }
+}
+
+inline void CloseNamespace::compile(CodeGenerator &W) const {
+  if (W.get_context().namespace_opened) {
+    W << "} " << NL << NL;
+    W.get_context().namespace_opened = false;
+  }
 }
 
 inline Include::Include(const PlainCode &plain_code, bool is_extern) :
@@ -738,12 +822,13 @@ void VarName::compile(CodeGenerator &W) const {
   W << "v$" << var->name;
 }
 
-inline TypeName::TypeName(const TypeData *type) :
-  type(type) {
+inline TypeName::TypeName(const TypeData *type, gen_out_style style) :
+  type(type),
+  style(style) {
 }
 
 inline void TypeName::compile(CodeGenerator &W) const {
-  W << type_out(type);
+  W << type_out(type, style == gen_out_style::cpp);
 }
 
 inline TypeNameInsideMacro::TypeNameInsideMacro(const TypeData *type) :
@@ -767,14 +852,24 @@ inline void FunctionCallFlag::compile(CodeGenerator &W) const {
   W << FunctionName(function) << "$called";
 }
 
-inline FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header) :
+inline FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, gen_out_style style) :
   function(function),
-  in_header(in_header) {
+  in_header(in_header),
+  style(style) {
 }
 
 inline void FunctionDeclaration::compile(CodeGenerator &W) const {
-  W << TypeName(tinf::get_type(function, -1)) << " " << FunctionName(function) <<
-    "(" << FunctionParams(function, in_header) << ")";
+  TypeName ret_type_gen(tinf::get_type(function, -1), style);
+  FunctionParams params_gen(function, in_header, style);
+
+  switch (style) {
+    case gen_out_style::cpp:
+      W << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      break;
+    case gen_out_style::txt:
+      W << "function " << function->name << "(" << params_gen << ") ::: " << ret_type_gen;
+      break;
+  }
 }
 
 inline FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bool in_header) :
@@ -790,9 +885,25 @@ inline void FunctionForkDeclaration::compile(CodeGenerator &W) const {
 }
 
 
-inline FunctionParams::FunctionParams(FunctionPtr function, bool in_header) :
+inline FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_style style) :
   function(function),
-  in_header(in_header) {
+  in_header(in_header),
+  style(style) {
+}
+
+inline void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const {
+  W << type << " ";
+  if (var->ref_flag) {
+    W << "&";
+  }
+  W << VarName(var->get_var_id());
+}
+
+inline void FunctionParams::declare_txt_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const {
+  if (var->ref_flag) {
+    W << "&";
+  }
+  W << "$" << var->get_var_id()->name << " :<=: " << type;
 }
 
 inline void FunctionParams::compile(CodeGenerator &W) const {
@@ -807,28 +918,33 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
       assert ("functions with callback are not supported");
     }
 
-    VertexAdaptor<op_func_param> param = i;
-    VertexPtr var = param->var();
-    VertexPtr def_val;
-    if (param->has_default_value() && param->default_value()) {
-      def_val = param->default_value();
-    }
-
     if (first) {
       first = false;
     } else {
       W << ", ";
     }
-    W << TypeName(tinf::get_type(function, ii)) << " ";
-    if (var->ref_flag) {
-      W << "&";
-    }
-    W << VarName(var->get_var_id());
 
-    if (def_val && in_header) {
-      W << " = " << def_val;
+    VertexAdaptor<op_func_param> param = i;
+    VertexPtr var = param->var();
+    TypeName type_gen(tinf::get_type(function, ii), style);
+    switch (style) {
+      case gen_out_style::cpp: {
+        declare_cpp_param(W, var, type_gen);
+        if (param->has_default_value() && param->default_value() && in_header) {
+          W << " = " << param->default_value();
+        }
+        break;
+      }
+      case gen_out_style::txt: {
+        declare_txt_param(W, var, type_gen);
+        if (param->has_default_value() && param->default_value() && in_header) {
+          VertexPtr default_value = GenTree::get_actual_value(param->default_value());
+          kphp_assert(vk::any_of_equal(default_value->type(), op_int_const, op_float_const));
+          W << " = " << default_value->get_string();
+        }
+        break;
+      }
     }
-
     ii++;
   }
 }
@@ -839,7 +955,6 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
 }
 
 void ClassDeclaration::compile(CodeGenerator &W) const {
-//  VertexAdaptor <op_class> root = klass->root;
   W << OpenFile(klass->header_name, klass->get_subdir());
   W << "#pragma once" << NL;
 
@@ -849,6 +964,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     }
   });
 
+  W << OpenNamespace();
   W << NL << "struct " << klass->src_name << " " << BEGIN;
   W << "int ref_cnt;" << NL << NL;
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
@@ -862,6 +978,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   }
 
   W << END << ";" << NL;
+  W << CloseNamespace();
   W << CloseFile();
 }
 
@@ -874,6 +991,10 @@ inline VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_
 
 void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
+
+  if (var->is_builtin_global()) {
+    W << CloseNamespace();
+  }
 
   W << (extern_flag ? "extern " : "") <<
     TypeName(type) << " " <<
@@ -894,6 +1015,10 @@ void VarDeclaration::compile(CodeGenerator &W) const {
     W << (extern_flag ? "extern " : "") <<
       "decltype(const_begin(" << VarName(var) << "))" << " " <<
       VarName(var) << "$it;" << NL;
+  }
+
+  if (var->is_builtin_global()) {
+    W << OpenNamespace();
   }
 }
 
@@ -950,8 +1075,7 @@ inline void InitFuncPtrs::compile(CodeGenerator &W) const {
     }
   }
 
-  W << "void init_func_ptrs ()" <<
-    BEGIN;
+  W << "void init_func_ptrs () " << BEGIN;
 
   for (int i = 0; i < n; i++) {
     FunctionPtr f = ids[i];
@@ -965,43 +1089,122 @@ inline void InitFuncPtrs::compile(CodeGenerator &W) const {
   W << END << NL;
 }
 
-inline RunFunction::RunFunction(FunctionPtr function, bool in_header) :
-  function(function),
-  in_header(in_header) {
+inline RunFunction::RunFunction(FunctionPtr function) :
+  function(function) {
 }
 
 inline void RunFunction::compile(CodeGenerator &W) const {
-  W << "void " << FunctionName(function) << "$run (php_query_data *data, void *mem, size_t mem_size)";
-  if (!in_header) {
-    W << " " <<
-      BEGIN <<
-      "dl::allocator_init (mem, mem_size);" << NL <<
-      "init_static();" << NL <<
-      "drivers_init_static();" << NL <<
-      FunctionName(function) << "$dfs_init();" << NL <<
-      "init_superglobals (data);" << NL <<
-      "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL <<
-      "finish (0);" << NL <<
-      END;
-  } else {
-    W << ";";
+  W << "void " << FunctionName(function) << "$run (php_query_data *data, void *mem, size_t mem_size) "
+    << BEGIN
+    << "dl::allocator_init (mem, mem_size);" << NL
+    << "init_static();" << NL
+    << "drivers_init_static();" << NL;
+
+  for (LibPtr lib: G->get_libs()) {
+    if (lib && !lib->is_raw_php()) {
+      W << lib->lib_namespace() << "::init_lib_scripts();" << NL;
+    }
   }
+
+  W << FunctionName(function) << "$dfs_init();" << NL
+    << "init_superglobals (data);" << NL
+    << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
+    << "finish (0);" << NL
+    << END;
   W << NL;
+}
+
+inline FullCleanupFunction::FullCleanupFunction(FunctionPtr function) :
+  function(function) {
+}
+
+inline void FullCleanupFunction::compile(CodeGenerator &W) const {
+  W << "void " << FunctionName(function) << "$dfs_full_cleanup() " << BEGIN;
+  W << FunctionName(function) << "$dfs_clear();" << NL;
+  for (LibPtr lib: G->get_libs()) {
+    if (lib && !lib->is_raw_php()) {
+      W << lib->lib_namespace() << "::clear_lib_scripts();" << NL;
+    }
+  }
+  W << END << NL << NL;
+}
+
+inline StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
+  style(style) {
+}
+
+inline void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
+    switch(style) {
+      case gen_out_style::cpp:
+        W << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
+        break;
+      case gen_out_style::txt:
+        W << "function " << LibData::run_global_function_name(G->get_global_namespace()) << "() ::: void";
+        break;
+    }
+}
+
+inline void StaticLibraryRunGlobalHeaderH::compile(CodeGenerator &W) const {
+  const std::string header_path = LibData::headers_tmp_dir() +
+                                  LibData::run_global_function_name(G->get_global_namespace()) + ".h";
+
+  W << OpenFile(header_path, "", false);
+
+  W << "#pragma once" << NL << NL;
+  W << StaticLibraryRunGlobal(gen_out_style::cpp) << ";" << NL;
+  W << CloseFile();
+}
+
+inline LibHeaderTxt::LibHeaderTxt(vector<FunctionPtr> &&exported_functions) :
+  exported_functions(std::move(exported_functions)) {
+}
+
+inline void LibHeaderTxt::compile(CodeGenerator &W) const {
+  W << OpenFile(LibData::functions_txt_tmp_file(), "", false, false);
+
+  W << "<?php" << NL << NL;
+  W << StaticLibraryRunGlobal(gen_out_style::txt) << ';' << NL << NL;
+
+  for (const auto &function: exported_functions) {
+    W << FunctionDeclaration(function, true, gen_out_style::txt) << ";" << NL;
+  }
+
+  W << CloseFile();
+}
+
+inline LibHeaderH::LibHeaderH(FunctionPtr exported_function) :
+  exported_function(exported_function) {
+}
+
+inline void LibHeaderH::compile(CodeGenerator &W) const {
+  W << OpenFile(LibData::headers_tmp_dir() + exported_function->header_name, "", false);
+
+  W << "#pragma once" << NL;
+  W << ExternInclude("php_functions.h") << NL;
+
+  W << OpenNamespace()
+    << FunctionDeclaration(exported_function, true, gen_out_style::cpp) << ";" << NL
+    << CloseNamespace();
+
+  W << "using " << G->get_global_namespace() << "::" << FunctionName(exported_function) << ";" << NL;
+  W << CloseFile();
 }
 
 inline void InitScriptsH::compile(CodeGenerator &W) const {
   W << OpenFile("init_scripts.h", "", false);
 
-  W << "#ifdef  __cplusplus" << NL <<
-    "  extern \"C\" {" << NL <<
-    "#endif" << NL;
+  if (!G->env().is_static_lib_mode()) {
+    W << "#ifdef  __cplusplus" << NL <<
+      "  extern \"C\" {" << NL <<
+      "#endif" << NL;
 
-  W << "void static_init_scripts();" << NL;
-  W << "void init_scripts();" << NL;
+    W << "void static_init_scripts();" << NL;
+    W << "void init_scripts();" << NL;
 
-  W << "#ifdef  __cplusplus" << NL <<
-    "  }" << NL <<
-    "#endif" << NL;
+    W << "#ifdef  __cplusplus" << NL <<
+      "  }" << NL <<
+      "#endif" << NL;
+  }
 
   W << CloseFile();
 }
@@ -1032,23 +1235,40 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
   }
 
   W << "extern string_buffer SB;" << NL;
-
-  W << InitFuncPtrs(source_functions);
   W << StaticInit(all_functions);
+
+  if (G->env().is_static_lib_mode()) {
+    // only one main file is allowed for static lib mode
+    kphp_assert(main_file_ids.size() == 1);
+    W << StaticLibraryInit(main_file_ids.back()->main_function);
+    W << CloseFile();
+    return;
+  }
+
+  for (LibPtr lib: G->get_libs()) {
+    if (lib && !lib->is_raw_php()) {
+      W << OpenNamespace(lib->lib_namespace())
+        << "void init_lib_scripts();" << NL
+        << "void clear_lib_scripts();" << NL
+        << CloseNamespace();
+    }
+  }
 
   for (auto i : main_file_ids) {
     W << RunFunction(i->main_function);
+    W << FullCleanupFunction(i->main_function);
   }
 
-  W << "void init_scripts()" <<
-    BEGIN <<
+  W << InitFuncPtrs(source_functions);
+
+  W << "void init_scripts()" << BEGIN <<
     "init_func_ptrs();" << NL;
 
   for (auto i : main_file_ids) {
     W << "set_script (" <<
       "\"@" << i->short_file_name << "\", " <<
       FunctionName(i->main_function) << "$run, " <<
-      FunctionName(i->main_function) << "$dfs_clear);" << NL;
+      FunctionName(i->main_function) << "$dfs_full_cleanup);" << NL;
   }
 
   W << END;
@@ -1220,9 +1440,19 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
   vector<VarPtr> const_regexp_vars;
   std::map<std::string, VertexPtr> dependent_vars;
 
+  if (!G->env().is_static_lib_mode() && file_num == 0) {
+    W << "string_buffer SB;" << NL;
+  }
+
+  W << OpenNamespace();
   for (auto var : vars) {
+    if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
+      continue;
+    }
     if (var->tinf_node.get_type()->has_class_type_inside()) {
-      W << IncludeClass(var->tinf_node.get_type());
+      W << CloseNamespace()
+        << IncludeClass(var->tinf_node.get_type())
+        << OpenNamespace();
     }
 
     W << VarDeclaration(var);
@@ -1247,10 +1477,6 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
 
   for (auto name_and_vertex : dependent_vars) {
     W << VarDeclaration(name_and_vertex.second->get_var_id(), true, true);
-  }
-
-  if (file_num == 0) {
-    W << "string_buffer SB;" << NL;
   }
 
   string raw_data;
@@ -1309,6 +1535,7 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     W << END << NL;
   }
 
+  W << CloseNamespace();
   W << CloseFile();
 }
 
@@ -1335,19 +1562,23 @@ inline void VarsCpp::compile(CodeGenerator &W) const {
   }
 
   W << OpenFile("vars.cpp", "", false);
-
-  W << "void const_vars_init()" << BEGIN;
+  W << OpenNamespace();
   for (int pr = 0; pr <= max_dependency_level; ++pr) {
     for (int i = 0; i < parts_cnt; i++) {
       // function declaration
       W << "void const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(i) << "();" << NL;
+    }
+  }
 
+  W << "void const_vars_init() " << BEGIN;
+  for (int pr = 0; pr <= max_dependency_level; ++pr) {
+    for (int i = 0; i < parts_cnt; i++) {
       W << "const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(i) << "();" << NL;
     }
   }
   W << END;
+  W << CloseNamespace();
   W << CloseFile();
-
 }
 
 inline InitVar::InitVar(VarPtr var) :
@@ -1426,20 +1657,67 @@ inline void StaticInit::compile(CodeGenerator &W) const {
       W << Include(to->header_full_name);
     }
   }
-  W << "void const_vars_init();" << NL;
 
-  W << "void static_init_scripts()";
-  W << " " << BEGIN;
-  W << "init_static_once();" << NL;
+  for (LibPtr lib: G->get_libs()) {
+    if (lib && !lib->is_raw_php()) {
+      W << OpenNamespace(lib->lib_namespace())
+        << "void static_init_lib_scripts();" << NL
+        << CloseNamespace();
+    }
+  }
+
+  W << OpenNamespace();
+  W << "void const_vars_init();" << NL << NL;
+
+  if (G->env().is_static_lib_mode()) {
+    W << "void static_init_lib_scripts() " << BEGIN;
+  } else {
+    W << "void static_init_scripts() " << BEGIN;
+    W << "init_static_once();" << NL;
+    for (LibPtr lib: G->get_libs()) {
+      if (lib && !lib->is_raw_php()) {
+        W << lib->lib_namespace() << "::static_init_lib_scripts();" << NL;
+      }
+    }
+  }
+
   W << "const_vars_init();" << NL;
   for (auto to : all_functions) {
     if (!to->is_static_init_empty_body()) {
       W << FunctionName(to) << "$static_init();" << NL;
     }
   }
-  W << "dl::allocator_init (nullptr, 0);" << NL;
+  if (!G->env().is_static_lib_mode()) {
+    W << "dl::allocator_init (nullptr, 0);" << NL;
+  }
   W << END << NL;
+  W << CloseNamespace();
 }
+
+inline StaticLibraryInit::StaticLibraryInit(const FunctionPtr &main_fn) :
+  main_function(main_fn) {
+}
+
+inline void StaticLibraryInit::compile(CodeGenerator &W) const {
+  W << OpenNamespace();
+  W << "void init_lib_scripts() " << BEGIN
+    << FunctionCallFlag(main_function) << " = false;" << NL
+    << FunctionName(main_function) << "$dfs_init();" << NL
+    << END << NL << NL;
+
+  W << "void clear_lib_scripts() " << BEGIN
+    << FunctionName(main_function) << "$dfs_clear();" << NL
+    << END << NL << NL;
+  W << CloseNamespace();
+
+  W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
+    << "using namespace " << G->get_global_namespace() << ";" << NL
+    << "require_once ("
+    << FunctionCallFlag(main_function) << ", "
+    << FunctionName(main_function) << "());" << NL
+    << END << NL << NL;
+}
+
 
 DfsInit::DfsInit(SrcFilePtr main_file) :
   main_file(main_file) {
@@ -1450,10 +1728,13 @@ void DfsInit::compile_dfs_init_part(
   const set<VarPtr> &used_vars, bool full_flag,
   int part_i, CodeGenerator &W) {
 
+  W << OpenNamespace();
   if (full_flag) {
     for (auto var : used_vars) {
       if (var->tinf_node.get_type()->has_class_type_inside()) {
-        W << IncludeClass(var->tinf_node.get_type());
+        W << CloseNamespace()
+          << IncludeClass(var->tinf_node.get_type())
+          << OpenNamespace();
       }
 
       W << VarExternDeclaration(var);
@@ -1465,7 +1746,7 @@ void DfsInit::compile_dfs_init_part(
     W << " " << BEGIN;
 
     for (auto var : used_vars) {
-      if (var->is_constant()) {
+      if (var->is_constant() || (G->env().is_static_lib_mode() && var->is_builtin_global())) {
         continue;
       }
 
@@ -1492,12 +1773,11 @@ void DfsInit::compile_dfs_init_part(
     W << " " << BEGIN;
 
     for (auto var : used_vars) {
-      if (var->is_constant()) {
+      if (var->is_constant() || (G->env().is_static_lib_mode() && var->is_builtin_global())) {
         continue;
       }
 
       const TypeData *type = tinf::get_type(var);
-
       W << "CLEAR_VAR (" << TypeNameInsideMacro(type) << ", " << VarName(var) << ");" << NL;
     }
 
@@ -1506,6 +1786,7 @@ void DfsInit::compile_dfs_init_part(
     W << ";";
   }
   W << NL;
+  W << CloseNamespace();
 }
 
 void DfsInit::compile_dfs_init_func(
@@ -1524,6 +1805,7 @@ void DfsInit::compile_dfs_init_func(
     }
   }
 
+  W << OpenNamespace();
   W << "void " << FunctionName(func) << "$dfs_init()";
   if (full_flag) {
     W << " " << BEGIN;
@@ -1557,6 +1839,7 @@ void DfsInit::compile_dfs_init_func(
     W << ";";
   }
   W << NL;
+  W << CloseNamespace();
 }
 
 template<class It>
@@ -1648,12 +1931,14 @@ inline void DfsInit::compile(CodeGenerator &W) const {
 
 static inline void include_dependent_headers(FunctionPtr function, CodeGenerator &W) {
   for (auto to_include : function->dep) {
-    if (to_include == function ||
-        to_include->type() == FunctionData::func_extern) {
+    if (to_include == function) {
       continue;
     }
-
-    W << Include(to_include->header_full_name);
+    if (to_include->is_imported_from_static_lib()) {
+      W << ExternInclude(to_include->header_full_name);
+    } else if (to_include->type() != FunctionData::func_extern) {
+      W << Include(to_include->header_full_name);
+    }
   }
   for (auto global_var : function->global_var_ids) {
     if (global_var->tinf_node.get_type()->has_class_type_inside()) {
@@ -1695,6 +1980,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     }
   }
 
+  W << OpenNamespace();
   for (auto global_var : function->header_global_var_ids) {
     W << VarExternDeclaration(global_var) << NL;
   }
@@ -1712,7 +1998,9 @@ void FunctionH::compile(CodeGenerator &W) const {
     stage::set_function(function);
     declare_global_vars(function, W);
     declare_const_vars(function, W);
+    W << CloseNamespace();
     include_dependent_headers(function, W);
+    W << OpenNamespace();
     W << UnlockComments();
     W << Function(function);
     W << LockComments();
@@ -1722,6 +2010,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << FunctionStaticInit(function, true);
   }
 
+  W << CloseNamespace();
   W << CloseFile();
 }
 
@@ -1740,11 +2029,12 @@ void FunctionCpp::compile(CodeGenerator &W) const {
 
   include_dependent_headers(function, W);
 
+  W << "extern string_buffer SB;" << NL;
+
+  W << OpenNamespace();
   declare_global_vars(function, W);
   declare_const_vars(function, W);
   declare_static_vars(function, W);
-
-  W << "extern string_buffer SB;" << NL;
 
   if (function->type() == FunctionData::func_global) {
     W << "bool " << FunctionCallFlag(function) << ";" << NL;
@@ -1755,7 +2045,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << LockComments();
 
   W << FunctionStaticInit(function);
-
+  W << CloseNamespace();
   W << CloseFile();
 }
 
@@ -1948,7 +2238,6 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
       return;
     }
   }
-
 
   W << Operand(lhs, root->type(), true) <<
     " " << OpInfo::str(root->type()) << " " <<
@@ -2705,17 +2994,10 @@ void compile_string_build_raw(VertexAdaptor<op_string_build> root, CodeGenerator
 
 struct StrlenInfo {
   VertexPtr v;
-  int len;
-  bool str_flag;
-  bool var_flag;
+  int len{0};
+  bool str_flag{false};
+  bool var_flag{false};
   string str;
-
-  StrlenInfo() :
-    len(0),
-    str_flag(false),
-    var_flag(false),
-    str() {
-  }
 };
 
 static bool can_save_ref(VertexPtr v) {
@@ -3806,6 +4088,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vector<SrcFilePtr> main_files = G->get_main_files();
   vector<FunctionPtr> all_functions;
   vector<FunctionPtr> source_functions;
+  vector<FunctionPtr> exported_functions;
   for (int i = 0; i < (int)xall.size(); i++) {
     FunctionPtr function = xall[i];
     if (function->body_seq == FunctionData::body_value::empty) {
@@ -3820,6 +4103,10 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     all_functions.push_back(function);
     W << Async(FunctionH(function));
     W << Async(FunctionCpp(function));
+
+    if (function->kphp_lib_export && G->env().is_static_lib_mode()) {
+      exported_functions.emplace_back(function);
+    }
   }
 
   for (const auto &c : all_classes) {
@@ -3828,7 +4115,6 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     }
   }
 
-  //W << Async (XmainCpp());
   W << Async(InitScriptsH());
   for (const auto &main_file : main_files) {
     W << Async(DfsInit(main_file));
@@ -3839,6 +4125,14 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   int parts_cnt = calc_count_of_parts(vars.size());
   W << Async(VarsCpp(vars, parts_cnt));
 
+  if (G->env().is_static_lib_mode()) {
+    for (FunctionPtr exported_function: exported_functions) {
+      W << Async(LibHeaderH(exported_function));
+    }
+    W << Async(LibHeaderTxt(std::move(exported_functions)));
+    W << Async(StaticLibraryRunGlobalHeaderH());
+  }
+
   write_hashes_of_subdirs_to_dep_files(W);
 
   write_tl_schema(W);
@@ -3848,10 +4142,8 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   string file_name = func->name;
   std::replace(file_name.begin(), file_name.end(), '$', '@');
 
-  string file_subdir = func->file_id->short_file_name;
-
   func->header_name = file_name + ".h";
-  func->subdir = get_subdir(file_subdir);
+  func->subdir = get_subdir(func->file_id->short_file_name);
 
   recalc_hash_of_subdirectory(func->subdir, func->header_name);
 
@@ -3860,7 +4152,10 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
     recalc_hash_of_subdirectory(func->subdir, func->src_name);
   }
 
-  func->header_full_name = func->subdir + "/" + func->header_name;
+  func->header_full_name =
+    func->is_imported_from_static_lib()
+    ? func->file_id->owner_lib->headers_dir() + func->header_name
+    : func->subdir + "/" + func->header_name;
 
   my_unique(&func->static_var_ids);
   my_unique(&func->global_var_ids);
@@ -3903,17 +4198,19 @@ void CodeGenF::write_tl_schema(CodeGenerator &W) {
     schema.assign(buf, buf + schema_length);
     kphp_assert (!fclose(f));
   }
-  W << OpenFile("_tl_schema.cpp", "", false);
-  W << "extern \"C\" " << BEGIN;
-  W << "const char *builtin_tl_schema = " << NL << Indent(2);
-  compile_string_raw(schema, W);
-  W << ";" << NL;
-  W << "int builtin_tl_schema_length = ";
-  char buf[100];
-  sprintf(buf, "%d", schema_length);
-  W << string(buf) << ";" << NL;
-  W << END;
-  W << CloseFile();
+  if (!G->env().is_static_lib_mode()) {
+    W << OpenFile("_tl_schema.cpp", "", false);
+    W << "extern \"C\" " << BEGIN;
+    W << "const char *builtin_tl_schema = " << NL << Indent(2);
+    compile_string_raw(schema, W);
+    W << ";" << NL;
+    W << "int builtin_tl_schema_length = ";
+    char buf[100];
+    sprintf(buf, "%d", schema_length);
+    W << string(buf) << ";" << NL;
+    W << END;
+    W << CloseFile();
+  }
 }
 
 void CodeGenF::prepare_generate_class(ClassPtr) {

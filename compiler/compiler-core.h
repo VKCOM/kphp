@@ -7,10 +7,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <forward_list>
 
 #include "compiler/compiler.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/function-info.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/index.h"
@@ -30,6 +32,7 @@ private:
   TSHashTable<FunctionPtr> functions_ht;
   TSHashTable<DefinePtr> defines_ht;
   TSHashTable<VarPtr> global_vars_ht;
+  TSHashTable<LibPtr> libs_ht;
   vector<SrcFilePtr> main_files;
   KphpEnviroment *env_;
   TSHashTable<ClassPtr> classes_ht;
@@ -49,11 +52,13 @@ public:
   void finish();
   void register_env(KphpEnviroment *env);
   const KphpEnviroment &env() const;
+  const string &get_global_namespace() const;
   string unify_file_name(const string &file_name);
-  SrcFilePtr register_file(const string &file_name, const string &context);
+  SrcFilePtr register_file(const string &file_name, const string &context, LibPtr owner_lib);
+
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
-  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &context, DataStream<SrcFilePtr> &os);
+  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &context, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
 
   void require_function(const string &name, DataStream<FunctionPtr> &os);
 
@@ -68,6 +73,7 @@ public:
 
   FunctionPtr register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os);
   ClassPtr register_class(ClassPtr cur_class);
+  LibPtr register_lib(LibPtr lib);
 
   FunctionPtr get_function(const string &name);
   ClassPtr get_class(const string &name);
@@ -86,6 +92,7 @@ public:
   vector<VarPtr> get_global_vars();
   vector<ClassPtr> get_classes();
   vector<DefinePtr> get_defines();
+  vector<LibPtr> get_libs();
 
   void load_index();
   void save_index();
@@ -93,6 +100,10 @@ public:
   void del_extra_files();
   void init_dest_dir();
   std::string get_subdir_name() const;
+
+private:
+  void copy_static_lib_to_out_dir(const File &static_archive, bool show_copy_cmd) const;
+  std::forward_list<File> collect_external_libs();
 };
 
 extern CompilerCore *G;

@@ -9,9 +9,11 @@ private:
   string path_;
   string functions_;
   string mode_;
-  string link_file_name_;
   string link_file_;
   string lib_version_;
+  string runtime_sha256_filename_;
+  string static_lib_out_dir_;
+  string static_lib_name_;
 
   string use_safe_integer_arithmetic_;
   bool use_safe_integer_arithmetic_bool_;
@@ -24,7 +26,6 @@ private:
   bool use_make_bool_;
   string make_force_;
   bool make_force_bool_;
-  bool use_subdirs_bool_;
   string threads_count_;
   int threads_count_int_;
   string verbosity_;
@@ -38,6 +39,7 @@ private:
   string cxx_flags_;
   string ld_;
   string ld_flags_;
+  string ar_;
 
   string dest_dir_;
   string use_auto_dest_;
@@ -84,8 +86,10 @@ public:
   bool get_use_make() const;
   void set_make_force(const string &make_force);
   bool get_make_force() const;
-  void set_binary_path(const string &binary_path);
   const string &get_binary_path() const;
+  void set_static_lib_out_dir(string &&lib_dir);
+  const string &get_static_lib_out_dir() const;
+  const string &get_static_lib_name() const;
   void set_user_binary_path(const string &user_binary_path);
   const string &get_user_binary_path() const;
   void set_threads_count(const string &threads_count);
@@ -94,6 +98,8 @@ public:
   const string &get_path() const;
   void set_lib_version(const string &lib_version);
   const string &get_lib_version() const;
+  void set_runtime_sha256_file(string &&file_name);
+  const string &get_runtime_sha256_file() const;
   void inc_verbosity();
   int get_verbosity() const;
   void set_print_resumable_graph();
@@ -131,8 +137,10 @@ public:
   const string &get_cxx_flags() const;
   const string &get_ld() const;
   const string &get_ld_flags() const;
+  const string &get_ar() const;
 
   const string &get_version() const;
+  bool is_static_lib_mode() const;
 
   bool init();
   void debug() const;

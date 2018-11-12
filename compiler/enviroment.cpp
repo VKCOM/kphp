@@ -159,9 +159,6 @@ bool KphpEnviroment::get_make_force() const {
   return make_force_bool_;
 }
 
-//void KphpEnviroment::set_binary_path (const string &binary_path) {
-//binary_path_ = binary_path;
-//}
 const string &KphpEnviroment::get_binary_path() const {
   return binary_path_;
 }
@@ -172,6 +169,18 @@ void KphpEnviroment::set_user_binary_path(const string &user_binary_path) {
 
 const string &KphpEnviroment::get_user_binary_path() const {
   return user_binary_path_;
+}
+
+void KphpEnviroment::set_static_lib_out_dir(string &&lib_dir) {
+  static_lib_out_dir_ = std::move(lib_dir);
+}
+
+const string &KphpEnviroment::get_static_lib_out_dir() const {
+  return static_lib_out_dir_;
+}
+
+const string &KphpEnviroment::get_static_lib_name() const {
+  return static_lib_name_;
 }
 
 void KphpEnviroment::set_threads_count(const string &threads_count) {
@@ -204,6 +213,14 @@ void KphpEnviroment::set_lib_version(const string &lib_version) {
 
 const string &KphpEnviroment::get_lib_version() const {
   return lib_version_;
+}
+
+void KphpEnviroment::set_runtime_sha256_file(string &&file_name) {
+  runtime_sha256_filename_ = std::move(file_name);
+}
+
+const string &KphpEnviroment::get_runtime_sha256_file() const {
+  return runtime_sha256_filename_;
 }
 
 void KphpEnviroment::inc_verbosity() {
@@ -260,6 +277,14 @@ const string &KphpEnviroment::get_ld() const {
 
 const string &KphpEnviroment::get_ld_flags() const {
   return ld_flags_;
+}
+
+const string &KphpEnviroment::get_ar() const {
+  return ar_;
+}
+
+bool KphpEnviroment::is_static_lib_mode() const {
+  return mode_ == "lib";
 }
 
 void KphpEnviroment::set_error_on_warns() {
@@ -342,18 +367,55 @@ bool KphpEnviroment::init() {
   if (mode_ == "net") {
     mode_ = "server";
   }
+  string link_file_name;
   if (mode_ == "server") {
-    link_file_name_ = "php-server.a";
+    link_file_name = "php-server.a";
   } else if (mode_ == "cli") {
-    link_file_name_ = "php-cli.a";
-  } else {
+    link_file_name = "php-cli.a";
+  } else if (!is_static_lib_mode()) {
     printf("Unknown $KPHP_MODE=%s\n", mode_.c_str());
     return false;
   }
-  init_env_var(&link_file_, "KPHP_LINK_FILE", get_path() + "objs/PHP/" + link_file_name_);
-  as_file(&link_file_);
+
+  if (is_static_lib_mode()) {
+    if (main_files_.size() > 1) {
+      printf("Multiple main directories are forbidden for static lib mode");
+      return false;
+    }
+    if (!tl_schema_file_.empty()) {
+      printf("tl-schema is forbidden for static lib mode");
+      return false;
+    }
+    std::string lib_dir = get_full_path(main_files_.back());
+    std::size_t last_slash = lib_dir.rfind('/');
+    if (last_slash == std::string::npos) {
+      printf("Bad lib directory");
+      return false;
+    }
+    static_lib_name_ = lib_dir.substr(last_slash + 1);
+    if (static_lib_name_.empty()) {
+      printf("Got empty static lib name");
+      return false;
+    }
+    as_dir(&lib_dir);
+    add_include(lib_dir + "php/");
+    init_env_var(&static_lib_out_dir_, "KPHP_OUT_LIB_DIR", lib_dir + "lib/");
+    as_dir(&static_lib_out_dir_);
+    as_file(&main_files_.back().assign(lib_dir).append("/php/index.php"));
+  }
+  else {
+    if (!static_lib_out_dir_.empty()) {
+      printf("Output dir is allowed only for static lib mode");
+      return false;
+    }
+    init_env_var(&link_file_, "KPHP_LINK_FILE", get_path() + "objs/PHP/" + link_file_name);
+    as_file(&link_file_);
+  }
   init_env_var(&lib_version_, "KPHP_LIB_VERSION", get_path() + "objs/PHP/php_lib_version.o");
   as_file(&lib_version_);
+
+  init_env_var(&runtime_sha256_filename_, "KPHP_RUNTIME_SHA256", get_path() + "objs/PHP/php_lib_version.sha256");
+  as_file(&runtime_sha256_filename_);
 
   init_env_var(&use_safe_integer_arithmetic_, "KPHP_USE_SAFE_INTEGER_ARITHMETIC", "0");
   env_str2bool(&use_safe_integer_arithmetic_bool_, use_safe_integer_arithmetic_);
@@ -409,6 +471,8 @@ bool KphpEnviroment::init() {
   init_env_var(&user_ld_flags, "LDFLAGS", "-ggdb");
   ld_flags_ = user_ld_flags + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -rdynamic";
 
+  init_env_var(&ar_, "AR", "ar");
+
   //todo: use some hash???
   init_env_var(&dest_dir_, "KPHP_DEST_DIR", get_path() + "PHP/tests/kphp_tmp/default/");
   as_dir(&dest_dir_);
@@ -452,13 +516,19 @@ void KphpEnviroment::debug() const {
             "KPHP_PATH=[" << get_path() << "]\n" <<
             "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<
             "KPHP_LIB_VERSION=[" << get_lib_version() << "]\n" <<
+            "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256_file() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
             "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
             "KPHP_DEST_CPP_DIR=[" << get_dest_cpp_dir() << "]\n" <<
-            "KPHP_DEST_OBJS_DIR=[" << get_dest_objs_dir() << "]\n" <<
-            "CXX=[" << get_cxx() << "]\n" <<
+            "KPHP_DEST_OBJS_DIR=[" << get_dest_objs_dir() << "]\n";
+
+  if (is_static_lib_mode()) {
+    std::cerr << "KPHP_OUT_LIB_DIR=[" << get_static_lib_out_dir() << "]\n";
+  }
+
+  std::cerr << "CXX=[" << get_cxx() << "]\n" <<
             "CXX_FLAGS=[" << get_cxx_flags() << "]\n" <<
             "LD_FLAGS=[" << get_ld_flags() << "]\n";
   std::cerr << "KPHP_INCLUDES=[";

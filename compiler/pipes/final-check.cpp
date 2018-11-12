@@ -9,11 +9,14 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->type() == FunctionData::func_extern) {
     return false;
   }
-
   for (auto &static_var : function->static_var_ids) {
     check_static_var_inited(static_var);
   }
 
+  if (function->kphp_lib_export) {
+    check_lib_exported_function(function);
+  }
+  stage::die_if_global_errors();
   return true;
 }
 
@@ -202,4 +205,22 @@ inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
   kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_var,
              format("static $%s is not inited at declaration (inferred %s)",
                      static_var->name.c_str(), colored_type_out(tinf::get_type(static_var)).c_str()));
+}
+
+void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
+  const TypeData *ret_type = tinf::get_type(function, -1);
+  kphp_error(!ret_type->has_class_type_inside(),
+             "Can not use class instance in return of @kphp-lib-export function");
+
+  for (auto p: function->get_params()) {
+    VertexAdaptor<op_func_param> param = p;
+    if (param->has_default_value() && param->default_value()) {
+      VertexPtr default_value = GenTree::get_actual_value(param->default_value());
+      kphp_error_act(vk::any_of_equal(default_value->type(), op_int_const, op_float_const),
+                     "Only const int, const float are allowed as default param for @kphp-lib-export function",
+                     continue);
+    }
+    kphp_error(!tinf::get_type(p)->has_class_type_inside(),
+               "Can not use class instance in param of @kphp-lib-export function");
+  }
 }

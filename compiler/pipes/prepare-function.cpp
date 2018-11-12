@@ -116,6 +116,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 
   int infer_type = 0;
+  enum infer_mask {
+    check = 0b001,
+    hint = 0b010,
+    cast = 0b100
+  };
   vector<VertexPtr> prepend_cmd;
   VertexPtr func_params = f->root.as<op_function>()->params();
   const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_token->str_val);
@@ -147,11 +152,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         string token;
         while (is >> token) {
           if (token == "check") {
-            infer_type |= 1;
+            infer_type |= infer_mask::check;
           } else if (token == "hint") {
-            infer_type |= 2;
+            infer_type |= infer_mask::hint;
           } else if (token == "cast") {
-            infer_type |= 4;
+            infer_type |= infer_mask::cast;
           } else {
             kphp_error(0, format("Unknown kphp-infer tag type '%s'", token.c_str()));
           }
@@ -167,6 +172,13 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             kphp_warning(format("Warning '%s' has been disabled twice", token.c_str()));
           }
         }
+        break;
+      }
+
+      case php_doc_tag::kphp_lib_export: {
+        f->kphp_lib_export = true;
+        f->kphp_required = true;
+        infer_type |= (infer_mask::check | infer_mask::hint);
         break;
       }
 
@@ -234,7 +246,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           VertexPtr doc_type = phpdoc_parse_type(type_help, f);
           kphp_error(doc_type, format("Failed to parse type '%s'", type_help.c_str()));
 
-          if (infer_type & 1) {
+          if (infer_type & infer_mask::check) {
             auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
             auto doc_rule_var = VertexAdaptor<op_var>::create();
             doc_rule_var->str_val = var->str_val;
@@ -242,7 +254,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             set_location(doc_rule_var, f->root->location);
             prepend_cmd.push_back(doc_rule_var);
           }
-          if (infer_type & 2) {
+          if (infer_type & infer_mask::hint) {
             auto doc_type_check = VertexAdaptor<op_common_type_rule>::create(doc_type);
             auto doc_rule_var = VertexAdaptor<op_var>::create();
             doc_rule_var->str_val = var->str_val;
@@ -250,7 +262,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             set_location(doc_rule_var, f->root->location);
             prepend_cmd.push_back(doc_rule_var);
           }
-          if (infer_type & 4) {
+          if (infer_type & infer_mask::cast) {
             kphp_error(doc_type->type() == op_type_rule && doc_type.as<op_type_rule>()->args().empty(),
                        format("Too hard rule '%s' for cast", type_help.c_str()));
             kphp_error(cur_func_param->type_help == tp_Unknown,

@@ -32,9 +32,6 @@ Target::Target() :
   is_ready(false) {
 }
 
-Target::~Target() {
-}
-
 void Target::compute_priority() {
   priority = 0;
 }
@@ -355,6 +352,10 @@ const string &KphpMakeEnv::get_ld_flags() const {
   return ld_flags;
 }
 
+const string &KphpMakeEnv::get_ar() const {
+  return ar;
+}
+
 const string &KphpMakeEnv::get_debug_level() const {
   return debug_level;
 }
@@ -420,7 +421,6 @@ void Cpp2ObjTarget::compute_priority() {
 
 string Cpp2ObjTarget::get_cmd() {
   std::stringstream ss;
-  //ss << "echo " << target();
   ss << env->get_cxx() <<
      " -c -o " << target() <<
      " " << dep_list() <<
@@ -444,10 +444,14 @@ string Objs2ObjTarget::get_cmd() {
 
 string Objs2BinTarget::get_cmd() {
   std::stringstream ss;
-  ss << env->get_cxx() <<
-     " -o " << target() <<
-     " -Wl,--whole-archive " << dep_list() << " -Wl,--no-whole-archive "
-                                              " " << env->get_ld_flags();
+  ss << env->get_cxx() << " -o " << target() << " -Wl,--whole-archive " << dep_list()
+     << " -Wl,--no-whole-archive " << env->get_ld_flags();
+  return ss.str();
+}
+
+string Objs2StaticLibTarget::get_cmd() {
+  std::stringstream ss;
+  ss << env->get_ar() << " rcs " << target() << " " << dep_list();
   return ss.str();
 }
 
@@ -512,11 +516,20 @@ KphpTarget *KphpMake::create_objs2bin_target(const vector<File *> &objs, File *b
   return res;
 }
 
+KphpTarget *KphpMake::create_objs2static_lib_target(const vector<File *> &objs, File *static_lib) {
+  KphpTarget *res = new Objs2StaticLibTarget();
+  target_set_file(res, static_lib);
+  target_set_env(res);
+  make.register_target(res, to_targets(objs));
+  return res;
+}
+
 void KphpMake::init_env(const KphpEnviroment &kphp_env) {
   env.cxx = kphp_env.get_cxx();
   env.cxx_flags = kphp_env.get_cxx_flags();
   env.ld = kphp_env.get_ld();
   env.ld_flags = kphp_env.get_ld_flags();
+  env.ar = kphp_env.get_ar();
   env.debug_level = kphp_env.get_debug_level();
 }
 

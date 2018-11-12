@@ -24,7 +24,7 @@ public:
   long long priority;
   double start_time;
   Target();
-  virtual ~Target();
+  virtual ~Target() = default;
 
   virtual void compute_priority();
   virtual string get_cmd() = 0;
@@ -86,12 +86,15 @@ private:
   string cxx_flags;
   string ld;
   string ld_flags;
+  string ar;
   string debug_level;
+
 public:
   const string &get_cxx() const;
   const string &get_cxx_flags() const;
   const string &get_ld() const;
   const string &get_ld_flags() const;
+  const string &get_ar() const;
   const string &get_debug_level() const;
 };
 
@@ -102,10 +105,10 @@ protected:
   const KphpMakeEnv *env;
 public:
   KphpTarget();
-  virtual string get_name();
-  virtual void on_require();
-  virtual bool after_run_success();
-  virtual void after_run_fail();
+  virtual string get_name() final;
+  virtual void on_require() final;
+  virtual bool after_run_success() final;
+  virtual void after_run_fail() final;
   void set_file(File *new_file);
   File *get_file() const;
   void set_env(KphpMakeEnv *new_env);
@@ -113,23 +116,28 @@ public:
 
 class FileTarget : public KphpTarget {
 public:
-  string get_cmd();
+  string get_cmd() final;
 };
 
 class Cpp2ObjTarget : public KphpTarget {
 public:
-  string get_cmd();
+  string get_cmd() final;
   void compute_priority();
 };
 
 class Objs2ObjTarget : public KphpTarget {
 public:
-  string get_cmd();
+  string get_cmd() final;
 };
 
 class Objs2BinTarget : public KphpTarget {
 public:
-  string get_cmd();
+  string get_cmd() final;
+};
+
+class Objs2StaticLibTarget : public KphpTarget {
+public:
+  string get_cmd() final;
 };
 
 class KphpMake {
@@ -146,6 +154,7 @@ public:
   KphpTarget *create_cpp2obj_target(File *cpp, File *obj);
   KphpTarget *create_objs2obj_target(const vector<File *> &objs, File *obj);
   KphpTarget *create_objs2bin_target(const vector<File *> &objs, File *bin);
+  KphpTarget *create_objs2static_lib_target(const vector<File *> &objs, File *lib);
   void init_env(const KphpEnviroment &kphp_env);
   bool make_target(File *bin, int jobs_count = 32);
 };

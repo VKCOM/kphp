@@ -78,12 +78,14 @@ class VarData;
 class ClassData;
 class DefineData;
 class FunctionData;
+class LibData;
 class SrcFile;
 
-typedef Id<FunctionData> FunctionPtr;
 typedef Id<VarData> VarPtr;
 typedef Id<ClassData> ClassPtr;
 typedef Id<DefineData> DefinePtr;
+typedef Id<FunctionData> FunctionPtr;
+typedef Id<LibData> LibPtr;
 typedef Id<SrcFile> SrcFilePtr;
 
 bool operator<(FunctionPtr, FunctionPtr);

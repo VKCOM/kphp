@@ -138,7 +138,7 @@ public:
 bool operator<(const TypeData &a, const TypeData &b);
 bool operator==(const TypeData &a, const TypeData &b);
 
-string type_out(const TypeData *type);
+string type_out(const TypeData *type, bool cpp_out = true);
 string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);

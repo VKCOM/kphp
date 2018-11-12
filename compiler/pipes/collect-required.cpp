@@ -12,7 +12,7 @@ private:
   DataStream<FunctionPtr> &function_stream;
 
   pair<SrcFilePtr, bool> require_file(const string &file_name, const string &class_context) {
-    return G->require_file(file_name, class_context, file_stream);
+    return G->require_file(file_name, class_context, current_function->file_id->owner_lib, file_stream);
   }
 
   void require_function(const string &name) {

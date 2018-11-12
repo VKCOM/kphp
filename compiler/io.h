@@ -34,6 +34,7 @@ private:
 
   vector<string> includes;
   bool compile_with_debug_info_flag;
+  bool compile_with_crc_flag;
 
 public:
   string file_name;
@@ -45,7 +46,7 @@ private:
   void dump(string &dest_str, const T &begin, const T &end, SrcFilePtr file);
 
 public:
-  explicit WriterData(bool compile_with_debug_info_flag = true);
+  explicit WriterData(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
 
   inline void append(const char *begin, size_t length) {
     text.append(begin, length);
@@ -70,6 +71,7 @@ public:
   void swap(WriterData &other);
 
   bool compile_with_debug_info() const;
+  bool compile_with_crc() const;
 };
 
 class WriterCallbackBase {
@@ -108,7 +110,7 @@ public:
   void set_file_name(const string &file_name, const string &subdir = "");
   void set_callback(WriterCallbackBase *new_callback);
 
-  void begin_write(bool compile_with_debug_info_flag = true);
+  void begin_write(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
   void end_write();
 
   inline void append(const string &s) {

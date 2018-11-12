@@ -65,5 +65,6 @@ public:
 
 private:
   void check_op_func_call(VertexAdaptor<op_func_call> call);
+  void check_lib_exported_function(FunctionPtr function);
 };
 

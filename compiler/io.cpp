@@ -13,11 +13,12 @@
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
 
-WriterData::WriterData(bool compile_with_debug_info_flag) :
+WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc) :
   lines(),
   text(),
   crc(-1),
   compile_with_debug_info_flag(compile_with_debug_info_flag),
+  compile_with_crc_flag(compile_with_crc),
   file_name(),
   subdir() {
 }
@@ -195,10 +196,15 @@ void WriterData::swap(WriterData &other) {
   std::swap(subdir, other.subdir);
   std::swap(includes, other.includes);
   std::swap(compile_with_debug_info_flag, other.compile_with_debug_info_flag);
+  std::swap(compile_with_crc_flag, other.compile_with_crc_flag);
 }
 
 bool WriterData::compile_with_debug_info() const {
   return compile_with_debug_info_flag;
+}
+
+bool WriterData::compile_with_crc() const {
+  return compile_with_crc_flag;
 }
 
 Writer::Writer() :
@@ -235,13 +241,13 @@ void Writer::set_callback(WriterCallbackBase *new_callback) {
   callback = new_callback;
 }
 
-void Writer::begin_write(bool compile_with_debug_info_flag) {
+void Writer::begin_write(bool compile_with_debug_info_flag, bool compile_with_crc) {
   assert (state == w_stopped);
   state = w_running;
 
   indent_level = 0;
   need_indent = false;
-  data = WriterData(compile_with_debug_info_flag);
+  data = WriterData(compile_with_debug_info_flag, compile_with_crc);
   begin_line();
 }
 

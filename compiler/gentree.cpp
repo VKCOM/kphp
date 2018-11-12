@@ -1768,7 +1768,9 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     CE (expect(tok_semicolon, "';'"));
   }
 
-  bool kphp_required_flag = phpdoc_token && phpdoc_token->str_val.find("@kphp-required") != std::string::npos;
+  const bool kphp_required_flag = phpdoc_token &&
+                                  (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
+                                   phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
 
   VertexPtr res = create_function_vertex_with_flags(name, params, flags, type, cmd, is_constructor);
   set_extra_type(res, access_type);
@@ -2070,8 +2072,14 @@ VertexPtr GenTree::get_namespace_class() {
   next_cur();
   kphp_error (test_expect(tok_func_name), "Namespace name expected");
   string namespace_name{(*cur)->str_val};
-  string expected_namespace_name = replace_characters(processing_file->unified_dir_name, '/', '\\');
-
+  std::string real_unified_dir = processing_file->unified_dir_name;
+  if (processing_file->owner_lib) {
+    vk::string_view current_file_unified_dir = real_unified_dir;
+    vk::string_view lib_unified_dir = processing_file->owner_lib->unified_lib_dir();
+    kphp_assert_msg(current_file_unified_dir.starts_with(lib_unified_dir), "lib processing file should be in lib dir");
+    real_unified_dir.erase(0, lib_unified_dir.size() + 1);
+  }
+  string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
   kphp_error (namespace_name == expected_namespace_name,
               format("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
   processing_file->namespace_name = namespace_name;

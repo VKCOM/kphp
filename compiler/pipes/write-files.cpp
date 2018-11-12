@@ -24,7 +24,7 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   file->includes = data->get_includes();
   file->compile_with_debug_info_flag = data->compile_with_debug_info();
 
-  if (file->on_disk) {
+  if (file->on_disk && data->compile_with_crc()) {
     if (file->crc64 == (unsigned long long)-1) {
       FILE *old_file = fopen(full_file_name.c_str(), "r");
       dl_passert (old_file != nullptr,
@@ -50,11 +50,11 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   bool need_del = false;
   bool need_fix = false;
   bool need_save_time = false;
-  unsigned long long crc = data->calc_crc();
+  const unsigned long long crc = data->calc_crc();
   string code_str;
   data->dump(code_str);
-  unsigned long long crc_with_comments = compute_crc64(code_str.c_str(), code_str.length());
-  if (file->on_disk) {
+  const unsigned long long crc_with_comments = compute_crc64(code_str.c_str(), code_str.length());
+  if (file->on_disk && data->compile_with_crc()) {
     if (file->crc64 != crc) {
       need_fix = true;
       need_del = true;
@@ -87,13 +87,18 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
     dl_passert (dest_file != nullptr,
                 format("Failed to open [%s] for write\n", full_file_name.c_str()));
 
-    dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", ~crc));
-    dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
-    dl_pcheck (fprintf(dest_file, "%s", code_str.c_str()));
-    dl_pcheck (fflush(dest_file));
-    dl_pcheck (fseek(dest_file, 0, SEEK_SET));
-    dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", crc));
-    dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", crc_with_comments));
+    if (data->compile_with_crc()) {
+      dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", ~crc));
+      dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
+      dl_pcheck (fprintf(dest_file, "%s", code_str.c_str()));
+      dl_pcheck (fflush(dest_file));
+      dl_pcheck (fseek(dest_file, 0, SEEK_SET));
+      dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", crc));
+      dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", crc_with_comments));
+    }
+    else {
+      dl_pcheck (fprintf(dest_file, "%s", code_str.c_str()));
+    }
 
     dl_pcheck (fflush(dest_file));
     dl_pcheck (fclose(dest_file));
