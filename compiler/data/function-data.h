@@ -64,6 +64,7 @@ public:
   set<string> disabled_warnings;
   map<long long, int> name_gen_map;
   FunctionPtr function_in_which_lambda_was_created;
+  std::vector<FunctionPtr> lambdas_inside;
 
   FunctionData();
   explicit FunctionData(VertexPtr root);
@@ -101,7 +102,7 @@ public:
   }
 
   bool is_lambda() const {
-    return !!function_in_which_lambda_was_created;
+    return namespace_name == get_lambda_namespace();
   }
 
   const std::string get_outer_namespace_name() const {

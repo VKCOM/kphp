@@ -1635,9 +1635,19 @@ bool GenTree::parse_function_uses(std::vector<VertexPtr> *uses_of_lambda) {
 
 VertexPtr GenTree::get_anonymous_function() {
   std::vector<VertexPtr> uses_of_lambda;
+  SetFunctionsStackGuard fun_stack_g(this);
   VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
   if (auto anon_function = f.try_as<op_function>()) {
-    return generate_anonymous_class(anon_function, std::move(uses_of_lambda));
+    auto anon_constructor_call = generate_anonymous_class(anon_function, std::move(uses_of_lambda));
+    auto &members_of_anon_class = anon_constructor_call->get_func_id()->class_id->members;
+
+    if (fun_stack_g.prev_functions_stack) {
+      members_of_anon_class.for_each([&fun_stack_g](const ClassMemberInstanceMethod &m) {
+        fun_stack_g.prev_functions_stack->push_back(m.function);
+      });
+    }
+
+    return anon_constructor_call;
   }
 
   return {};
@@ -1694,7 +1704,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
 
   flags->type_rule = get_type_rule();
 
-  if (cur_class) {
+  if (cur_class && !uses_of_lambda) {
     add_namespace_and_context_to_function_name(cur_class->name, class_context, name->str_val);
   }
 
@@ -1710,6 +1720,11 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   bool is_constructor = false;
   VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor);
   CE(name);
+
+  SetFunctionsStackGuard fun_stack_g(this);
+  if (uses_of_lambda) {
+    fun_stack_g.reset();
+  }
 
   VertexPtr cmd;
   if (test_expect(tok_opbrc)) {
@@ -1731,7 +1746,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   set_extra_type(res, access_type);
   FunctionInfo info(res, processing_file->namespace_name, class_context, kphp_required_flag, access_type);
 
-  register_function(info, cur_class);
+  FunctionPtr registered_fun = register_function(info, cur_class);
 
   if (info.root->type() == op_function) {
     info.root->get_func_id()->access_type = access_type;
@@ -1740,6 +1755,14 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
 
   if (cur_class && !processing_file->class_context.empty()) {
     add_parent_function_to_descendants_with_context(info, access_type, params->params());
+  }
+
+  for (auto &new_lambda : *functions_stack) {
+    new_lambda->function_in_which_lambda_was_created = registered_fun;
+    if (registered_fun->is_template) {
+      registered_fun->lambdas_inside.emplace_back(new_lambda);
+    }
+    callback->require_function(new_lambda);
   }
 
   if (uses_of_lambda != nullptr && !stage::has_error()) {
@@ -1910,7 +1933,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     }
   }
 
-  FunctionInfo func_info({}, FunctionData::get_lambda_namespace(), anon_class->name, true, access_public);
+  FunctionInfo func_info({}, FunctionData::get_lambda_namespace(), anon_class->name, false, access_public);
 
   auto register_invoke = [&](VertexAdaptor<op_function> fun) {
     func_info.root = fun;
@@ -1941,7 +1964,6 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
 
   anon_class->new_function->namespace_name = FunctionData::get_lambda_namespace();
   anon_class->new_function->class_context_name = anon_class->name;
-  anon_class->new_function->function_in_which_lambda_was_created = function->get_func_id();
 
   ClassPtr registered_class = callback->register_class(anon_class);
   registered_class->init_function = FunctionPtr(new FunctionData());

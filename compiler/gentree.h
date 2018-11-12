@@ -20,6 +20,10 @@ public:
     return G->register_function(info, os);
   }
 
+  void require_function(FunctionPtr f_ptr) {
+    G->require_function(f_ptr->name, os);
+  }
+
   ClassPtr register_class(ClassPtr cur_class) {
     return G->register_class(cur_class);
   }
@@ -27,6 +31,28 @@ public:
 
 
 class GenTree {
+private:
+  class SetFunctionsStackGuard {
+  public:
+    SetFunctionsStackGuard(GenTree *g) :
+      prev_functions_stack(g->functions_stack),
+      g(g) {
+      g->functions_stack = &new_functions_stack;
+    }
+
+    void reset() {
+      g->functions_stack = prev_functions_stack;
+    }
+
+    ~SetFunctionsStackGuard() {
+      g->functions_stack = prev_functions_stack;
+    }
+
+    std::vector<FunctionPtr> *prev_functions_stack = nullptr;
+    std::vector<FunctionPtr> new_functions_stack;
+  private:
+    GenTree *g;
+  };
 public:
   struct AutoLocation {
     int line_num;
@@ -180,6 +206,7 @@ private:
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
   vector<ClassPtr> class_stack;
+  std::vector<FunctionPtr> *functions_stack = nullptr;
   ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
   SrcFilePtr processing_file;
   string class_context;

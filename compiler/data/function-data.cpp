@@ -146,6 +146,10 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
 
+  for (auto f : func->lambdas_inside) {
+    f->function_in_which_lambda_was_created = new_function;
+  }
+
   std::function<void(VertexPtr, FunctionPtr)> set_location_for_all = [&set_location_for_all](VertexPtr root, FunctionPtr function_location) {
     root->location.function = function_location;
     for (VertexPtr &v : *root) {
