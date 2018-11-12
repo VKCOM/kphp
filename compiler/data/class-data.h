@@ -54,6 +54,8 @@ public:
   FunctionPtr get_invoke_function_for_extern_function(VertexAdaptor<op_func_call> extern_function_call, FunctionPtr function_context) const;
   FunctionPtr get_template_of_invoke_function() const;
 
+  bool is_lambda_class() const;
+
   void set_name_and_src_name(const string &name);
 
   void debugPrint();

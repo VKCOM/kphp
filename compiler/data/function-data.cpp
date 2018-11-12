@@ -165,7 +165,7 @@ ClassPtr FunctionData::is_lambda(VertexPtr v) {
   if (tinf::Node *tinf_node = tinf::get_tinf_node(v)) {
     if (tinf_node->get_type()->ptype() != tp_Unknown) {
       if (ClassPtr klass = tinf_node->get_type()->class_type()) {
-        return klass->new_function->is_lambda() ? klass : ClassPtr{};
+        return klass->is_lambda_class() ? klass : ClassPtr{};
       }
       return ClassPtr{};
     }
@@ -184,7 +184,7 @@ ClassPtr FunctionData::is_lambda(VertexPtr v) {
     case op_var: {
       ClassPtr c;
       AssumType assum = infer_class_of_expr(stage::get_function(), v, c);
-      if (assum == assum_instance && c->new_function && c->new_function->is_lambda()) {
+      if (assum == assum_instance && c->is_lambda_class()) {
         return c;
       }
       return {};

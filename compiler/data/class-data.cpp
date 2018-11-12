@@ -176,8 +176,12 @@ FunctionPtr ClassData::get_invoke_function_for_extern_function(VertexAdaptor<op_
 }
 
 FunctionPtr ClassData::get_template_of_invoke_function() const {
-  kphp_assert(new_function->is_lambda());
+  kphp_assert(is_lambda_class());
   auto found_method = members.get_instance_method("__invoke");
 
   return (found_method && found_method->function->is_template) ? found_method->function : FunctionPtr();
+}
+
+bool ClassData::is_lambda_class() const {
+  return new_function && new_function->is_lambda();
 }
