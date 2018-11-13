@@ -42,13 +42,21 @@ public:
 private:
   void write_code(string &dest_str, const Line &line);
   template<class T>
-  void dump(string &dest_str, T begin, T end, SrcFilePtr file);
+  void dump(string &dest_str, const T &begin, const T &end, SrcFilePtr file);
 
 public:
   explicit WriterData(bool compile_with_debug_info_flag = true);
 
-  void append(const char *begin, size_t length);
-  void append(size_t n, char c);
+  inline void append(const char *begin, size_t length) {
+    text.append(begin, length);
+  }
+  inline void append(size_t n, char c) {
+    text.append(n, c);
+  }
+  inline void append(char c) {
+    text.push_back(c);
+  }
+
   void begin_line();
   void end_line();
   void brk();
@@ -90,14 +98,12 @@ private:
   int lock_comments_cnt;
 
   void write_indent();
-  void append(const char *begin, size_t length);
-  void append(size_t n, char c);
   void begin_line();
   void end_line();
 
 public:
   Writer();
-  ~Writer();
+  ~Writer() = default;
 
   void set_file_name(const string &file_name, const string &subdir = "");
   void set_callback(WriterCallbackBase *new_callback);
@@ -105,13 +111,35 @@ public:
   void begin_write(bool compile_with_debug_info_flag = true);
   void end_write();
 
-  void operator()(const string &s);
-  void operator()(const char *s);
-  void operator()(const vk::string_view &s);
+  inline void append(const string &s) {
+    if (need_indent) {
+      write_indent();
+    }
+    data.append(s.c_str(), s.size());
+  }
+
+  inline void append(const char *s) {
+    if (need_indent) {
+      write_indent();
+    }
+    data.append(s, strlen(s));
+  }
+
+  inline void append(char c) {
+    data.append(c);
+  }
+
+  inline void append(const vk::string_view &s) {
+    if (need_indent) {
+      write_indent();
+    }
+    data.append(s.begin(), s.size());
+  }
+
   void indent(int diff);
   void new_line();
   void brk();
-  void operator()(SrcFilePtr file_id, int line_num);
+  void add_location(SrcFilePtr file_id, int line_num);
   void lock_comments();
   void unlock_comments();
   bool is_comments_locked();

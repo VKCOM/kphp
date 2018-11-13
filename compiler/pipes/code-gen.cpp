@@ -185,10 +185,6 @@ struct CloseFile {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct ClearLocation {
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct UpdateLocation {
   const Location &location;
   inline UpdateLocation(const Location &location);
@@ -539,20 +535,23 @@ inline void compile(VertexPtr root, CodeGenerator &W);
 
 /*** Implementation ***/
 inline CodeGenerator &CodeGenerator::operator<<(const char *s) {
-  return (*this) << PlainCode(s);
+  get_writer().append(s);
+  return *this;
 }
 
 inline CodeGenerator &CodeGenerator::operator<<(char c) {
-  vk::string_view s(&c, &c + 1);
-  return (*this) << PlainCode(s);
+  get_writer().append(c);
+  return *this;
 }
 
 inline CodeGenerator &CodeGenerator::operator<<(const string &s) {
-  return (*this) << PlainCode(s);
+  get_writer().append(s);
+  return *this;
 }
 
 inline CodeGenerator &CodeGenerator::operator<<(const vk::string_view &s) {
-  return (*this) << PlainCode(s);
+  get_writer().append(s);
+  return *this;
 }
 
 template<Operation Op>
@@ -641,11 +640,6 @@ inline void CloseFile::compile(CodeGenerator &W) const {
   W.unlock_writer();
 }
 
-inline void ClearLocation::compile(CodeGenerator &W) const {
-  stage::set_location(Location());
-  W << UpdateLocation(Location());
-}
-
 inline UpdateLocation::UpdateLocation(const Location &location) :
   location(location) {
 }
@@ -653,15 +647,11 @@ inline UpdateLocation::UpdateLocation(const Location &location) :
 inline void UpdateLocation::compile(CodeGenerator &W) const {
   if (!W.get_writer().is_comments_locked()) {
     stage::set_location(location);
-    W.get_writer()(stage::get_file(), stage::get_line());
+    W.get_writer().add_location(stage::get_file(), stage::get_line());
   }
 }
 
 inline void NewLine::compile(CodeGenerator &W) const {
-  if (W.debug_flag) {
-    fprintf(stderr, "\n");
-    return;
-  }
   W.get_writer().new_line();
 }
 
@@ -686,11 +676,7 @@ inline PlainCode::PlainCode(const vk::string_view &s) :
 }
 
 inline void PlainCode::compile(CodeGenerator &W) const {
-  if (W.debug_flag) {
-    fprintf(stderr, "%.*s", (int)str.size(), str.begin());
-    return;
-  }
-  W.get_writer()(str);
+  W.get_writer().append(str);
 }
 
 

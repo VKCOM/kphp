@@ -23,18 +23,9 @@ WriterData::WriterData(bool compile_with_debug_info_flag) :
 }
 
 
-void WriterData::append(const char *begin, size_t length) {
-//  fprintf (stdout, "%*s\n", (int)length, begin);
-  text.append(begin, length);
-}
-
-void WriterData::append(size_t n, char c) {
-  text.append(n, c);
-}
-
 void WriterData::begin_line() {
 //  fprintf (stdout, "<<<<BEGIN>>>>\n");
-  lines.push_back(Line((int)text.size()));
+  lines.emplace_back((int)text.size());
 }
 
 void WriterData::end_line() {
@@ -85,16 +76,16 @@ void WriterData::write_code(string &dest_str, const Line &line) {
   const char *s = &text[line.begin_pos];
   int length = line.end_pos - line.begin_pos;
   dest_str.append(s, length);
-  dest_str += "\n";
+  dest_str += '\n';
 }
 
 template<class T>
-void WriterData::dump(string &dest_str, T begin, T end, SrcFilePtr file) {
+void WriterData::dump(string &dest_str, const T &begin, const T &end, SrcFilePtr file) {
   int l = (int)1e9, r = -1;
 
   if (file) {
     dest_str += "//source = [";
-    dest_str += file->unified_file_name.c_str();
+    dest_str += file->unified_file_name;
     dest_str += "]\n";
   }
 
@@ -122,9 +113,8 @@ void WriterData::dump(string &dest_str, T begin, T end, SrcFilePtr file) {
             if (cur_id + 10 > id) {
               dest_str += dl_pstr("//%d: ", cur_id);
               vk::string_view comment = file->get_line(cur_id);
-              int last_printed = ':';
-              for (int j = 0, nj = comment.size(); j < nj; j++) {
-                int c = comment.begin()[j];
+              char last_printed = ':';
+              for (char c : comment) {
                 if (c == '\n') {
                   dest_str += "\\n";
                   last_printed = 'n';
@@ -136,9 +126,9 @@ void WriterData::dump(string &dest_str, T begin, T end, SrcFilePtr file) {
                 }
               }
               if (last_printed == '\\') {
-                dest_str += ";";
+                dest_str += ';';
               }
-              dest_str += "\n";
+              dest_str += '\n';
             }
 
             int new_pos = rev[cur_id - l];
@@ -216,34 +206,24 @@ Writer::Writer() :
   data(),
   callback(nullptr),
   indent_level(0),
-  need_indent(0),
+  need_indent(false),
   lock_comments_cnt(1) {
 }
 
-Writer::~Writer() {
-}
-
 void Writer::write_indent() {
-  append(indent_level, ' ');
+  need_indent = false;
+  data.append(indent_level, ' ');
 }
 
-void Writer::append(const char *begin, size_t length) {
-  data.append(begin, length);
-}
-
-void Writer::append(size_t n, char c) {
-  data.append(n, c);
-}
-
-void Writer::begin_line() {
+inline void Writer::begin_line() {
   data.begin_line();
 }
 
-void Writer::end_line() {
+inline void Writer::end_line() {
   data.end_line();
 
   data.append(1, '\n'); // for crc64
-  need_indent = 1;
+  need_indent = true;
 }
 
 void Writer::set_file_name(const string &file_name, const string &subdir) {
@@ -260,7 +240,7 @@ void Writer::begin_write(bool compile_with_debug_info_flag) {
   state = w_running;
 
   indent_level = 0;
-  need_indent = 0;
+  need_indent = false;
   data = WriterData(compile_with_debug_info_flag);
   begin_line();
 }
@@ -276,30 +256,6 @@ void Writer::end_write() {
   state = w_stopped;
 }
 
-void Writer::operator()(const string &s) {
-  if (need_indent) {
-    need_indent = 0;
-    write_indent();
-  }
-  append(s.c_str(), s.size());
-}
-
-void Writer::operator()(const char *s) {
-  if (need_indent) {
-    need_indent = 0;
-    write_indent();
-  }
-  append(s, strlen(s));
-}
-
-void Writer::operator()(const vk::string_view &s) {
-  if (need_indent) {
-    need_indent = 0;
-    write_indent();
-  }
-  append(s.begin(), s.size());
-}
-
 void Writer::indent(int diff) {
   indent_level += diff;
 }
@@ -313,7 +269,7 @@ void Writer::brk() {
   data.brk();
 }
 
-void Writer::operator()(SrcFilePtr file, int line_num) {
+void Writer::add_location(SrcFilePtr file, int line_num) {
   if (lock_comments_cnt > 0) {
     return;
   }
