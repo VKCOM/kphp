@@ -59,4 +59,11 @@ public:
   void set_name_and_src_name(const string &name);
 
   void debugPrint();
+
+  std::string get_subdir() const {
+    static std::string lambda_subdir("cl_l");
+    static std::string common_subdir("cl");
+
+    return is_lambda_class() ? lambda_subdir : common_subdir;
+  }
 };

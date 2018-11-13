@@ -692,7 +692,7 @@ inline IncludeClass::IncludeClass(const TypeData *type) {
 
 inline void IncludeClass::compile(CodeGenerator &W) const {
   for (auto klass: klasses) {
-    W << Include("cl/" + klass->header_name);
+    W << Include(klass->get_subdir() + "/" + klass->header_name);
   }
 }
 
@@ -840,7 +840,7 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
 
 void ClassDeclaration::compile(CodeGenerator &W) const {
 //  VertexAdaptor <op_class> root = klass->root;
-  W << OpenFile(klass->header_name, "cl");
+  W << OpenFile(klass->header_name, klass->get_subdir());
   W << "#pragma once" << NL;
 
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
