@@ -67,11 +67,11 @@ public:
   F (create_switch_vars)\
   F (collect_required)\
   F (calc_locations)\
-  F (preprocess_defines)\
-  F (preprocess_defines_finish)\
-  F (collect_defines)\
-  F (check_returns)\
   F (register_defines)\
+  F (register_defines_finish)\
+  F (erase_defines_declarations)\
+  F (inline_defines_usages)\
+  F (check_returns)\
   F (preprocess_eq3)\
   F (preprocess_function_c)\
   F (preprocess_break)\

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/define-data.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"
@@ -196,10 +197,6 @@ protected:
 struct CheckConstWithDefines
   : CheckConst {
 public:
-  explicit CheckConstWithDefines(const std::map<std::string, VertexPtr> &define_vertex) :
-    in_concat(0),
-    define_vertex(define_vertex) {}
-
   bool is_const(VertexPtr v) {
     return visit(v);
   }
@@ -211,9 +208,9 @@ protected:
 
   bool on_func_name(VertexAdaptor<op_func_name> v) override {
     std::string name = resolve_define_name(v->str_val);
-    auto it = define_vertex.find(name);
-    if (it != define_vertex.end()) {
-      return visit(it->second.as<op_define>()->value());
+    DefinePtr define = G->get_define(name);
+    if (define) {
+      return visit(define->val);
     }
     return false;
   }
@@ -236,17 +233,13 @@ protected:
   }
 
 private:
-  int in_concat;
-  const std::map<std::string, VertexPtr> &define_vertex;
+  int in_concat = 0;
 };
 
 
 struct MakeConst
   : ConstManipulations<VertexPtr> {
 public:
-  explicit MakeConst(const std::map<std::string, VertexPtr> &define_vertex) :
-    define_vertex(define_vertex) {}
-
   VertexPtr make_const(VertexPtr v) {
     return visit(v);
   }
@@ -288,9 +281,7 @@ protected:
 
   VertexPtr on_func_name(VertexAdaptor<op_func_name> v) override {
     std::string name = resolve_define_name(v->str_val);
-    auto iter = define_vertex.find(name);
-    kphp_assert(iter != define_vertex.end());
-    return iter->second.as<op_define>()->value();
+    return G->get_define(name)->val;
   }
 
   VertexPtr on_non_const(VertexPtr v) override {
@@ -309,9 +300,6 @@ protected:
 
     return VertexPtr();
   }
-
-private:
-  const std::map<std::string, VertexPtr> &define_vertex;
 };
 
 struct ArrayHash

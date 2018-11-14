@@ -85,6 +85,7 @@ public:
   const vector<SrcFilePtr> &get_main_files();
   vector<VarPtr> get_global_vars();
   vector<ClassPtr> get_classes();
+  vector<DefinePtr> get_defines();
 
   void load_index();
   void save_index();

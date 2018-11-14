@@ -42,22 +42,22 @@
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-classes.h"
 #include "compiler/pipes/collect-const-vars.h"
-#include "compiler/pipes/collect-defines.h"
 #include "compiler/pipes/collect-required.h"
 #include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/create-switch-foreach-vars.h"
+#include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
 #include "compiler/pipes/file-and-token.h"
 #include "compiler/pipes/file-to-tokens.h"
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
+#include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
 #include "compiler/pipes/parse.h"
 #include "compiler/pipes/prepare-function.h"
 #include "compiler/pipes/preprocess-break.h"
-#include "compiler/pipes/preprocess-defines.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/preprocess-vararg.h"
@@ -222,17 +222,17 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<FileToTokensF>{}
     >> PipeC<ParseF>{}
     >> PipeC<SplitSwitchF>{}
-    >> PassC<CreateSwitchForeachVarsF>{}
+    >> PassC<CreateSwitchForeachVarsPass>{}
     >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<0>{}
     >> sync_node_tag{}
     >> PipeC<CollectClassF>{}
     >> PassC<CalcLocationsPass>{}
-    >> SyncC<PreprocessDefinesF>{}
-    >> PassC<CollectDefinesPass>{}
+    >> SyncC<RegisterDefinesF>{}
+    >> PassC<EraseDefinesDeclarationsPass>{}
     >> sync_node_tag{}
     >> PipeC<PrepareFunctionF>{}
     >> sync_node_tag{}
-    >> PassC<RegisterDefinesPass>{}
+    >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
     // functions which were generated from templates

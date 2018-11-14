@@ -2,10 +2,10 @@
 
 DefineData::DefineData() :
   id(),
-  val(nullptr),
-  type_(def_php) {}
+  type_(def_unknown),
+  val(nullptr) {}
 
 DefineData::DefineData(VertexPtr val, DefineType type_) :
   id(),
-  val(val),
-  type_(type_) {}
+  type_(type_),
+  val(val) {}

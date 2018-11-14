@@ -519,7 +519,7 @@ inline void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W);
 inline void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W);
 inline void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int fix = 0, int state = 0);
 inline void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W);
-inline void compile_define(VertexPtr root, CodeGenerator &W);
+inline void compile_define_val(VertexPtr root, CodeGenerator &W);
 inline void compile_defined(VertexPtr root, CodeGenerator &W);
 inline void compile_safe_version(VertexPtr root, CodeGenerator &W);
 inline void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W);
@@ -3309,7 +3309,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
 }
 
 
-void compile_define(VertexPtr root, CodeGenerator &W) {
+void compile_define_val(VertexPtr root, CodeGenerator &W) {
   DefinePtr d = root.as<op_define_val>()->define_id;
 
   W << LockComments();
@@ -3717,7 +3717,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_empty:
       break;
     case op_define_val:
-      compile_define(root, W);
+      compile_define_val(root, W);
       break;
     case op_defined:
       compile_defined(root, W);

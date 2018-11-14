@@ -28,7 +28,6 @@ public:
   vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, header_global_var_ids;
   vector<VarPtr> tmp_vars;
   vector<VarPtr> *bad_vars;
-  vector<DefinePtr> define_ids;
   set<VarPtr> const_var_ids, header_const_var_ids;
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;

@@ -2,7 +2,7 @@
 
 #include "compiler/function-pass.h"
 
-class CreateSwitchForeachVarsF : public FunctionPassBase {
+class CreateSwitchForeachVarsPass : public FunctionPassBase {
 private:
   AUTO_PROF (create_switch_vars);
 

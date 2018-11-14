@@ -497,10 +497,6 @@ public:
     }
   }
 
-  void on_define(DefinePtr def) {
-    require_node(def->val);
-  }
-
   void on_finish() {
     call_on_var(current_function->local_var_ids);
     call_on_var(current_function->global_var_ids);
@@ -509,10 +505,6 @@ public:
     call_on_var(current_function->const_var_ids);
     call_on_var(current_function->header_const_var_ids);
     call_on_var(current_function->param_ids);
-
-    for (auto def : current_function->define_ids) {
-      on_define(def);
-    }
   }
 };
 

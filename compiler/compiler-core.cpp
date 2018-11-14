@@ -376,6 +376,10 @@ vector<ClassPtr> CompilerCore::get_classes() {
   return classes_ht.get_all();
 }
 
+vector<DefinePtr> CompilerCore::get_defines() {
+  return defines_ht.get_all();
+}
+
 void CompilerCore::load_index() {
   string index_path = env().get_index();
   if (index_path.empty()) {

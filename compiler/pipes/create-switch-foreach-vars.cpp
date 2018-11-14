@@ -2,7 +2,7 @@
 
 #include "compiler/name-gen.h"
 
-VertexPtr CreateSwitchForeachVarsF::process_switch(VertexPtr v) {
+VertexPtr CreateSwitchForeachVarsPass::process_switch(VertexPtr v) {
   VertexAdaptor<op_switch> switch_v = v;
 
   auto root_ss = VertexAdaptor<op_var>::create();
@@ -31,7 +31,7 @@ VertexPtr CreateSwitchForeachVarsF::process_switch(VertexPtr v) {
   return switch_v;
 }
 
-VertexPtr CreateSwitchForeachVarsF::process_foreach(VertexPtr v) {
+VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexPtr v) {
 
   VertexAdaptor<op_foreach> foreach_v = v;
   VertexAdaptor<op_foreach_param> foreach_param = foreach_v->params();
@@ -50,7 +50,7 @@ VertexPtr CreateSwitchForeachVarsF::process_foreach(VertexPtr v) {
   return foreach_v;
 }
 
-VertexPtr CreateSwitchForeachVarsF::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CreateSwitchForeachVarsPass::on_enter_vertex(VertexPtr v, LocalT *) {
   if (v->type() == op_switch) {
     return process_switch(v);
   }
