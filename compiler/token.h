@@ -153,7 +153,6 @@ enum TokenType {
 
   tok_define,
   tok_defined,
-  tok_define_raw,
 
   tok_triple_colon,
   tok_triple_gt,

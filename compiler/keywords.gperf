@@ -73,7 +73,6 @@ or, tok_log_or_let
 define, tok_define
 DEFINE, tok_define
 defined, tok_defined
-define_raw, tok_define_raw
 new, tok_new
 throw, tok_throw
 Exception, tok_Exception

@@ -51,22 +51,22 @@ function register_shutdown_function (callback() ::: var) ::: void;//TODO var :::
   function fastcgi_finish_request() ::: void;
 */
 
-define_raw ('E_ERROR', 1);
-define_raw ('E_WARNING', 2);
-define_raw ('E_PARSE', 4);
-define_raw ('E_NOTICE', 8);
-define_raw ('E_CORE_ERROR', 16);
-define_raw ('E_CORE_WARNING', 32);
-define_raw ('E_COMPILE_ERROR', 64);
-define_raw ('E_COMPILE_WARNING', 128);
-define_raw ('E_USER_ERROR', 256);
-define_raw ('E_USER_WARNING', 512);
-define_raw ('E_USER_NOTICE', 1024);
-define_raw ('E_STRICT', 2048);
-define_raw ('E_RECOVERABLE_ERROR', 4096);
-define_raw ('E_DEPRECATED', 8192);
-define_raw ('E_USER_DEPRECATED', 16384);
-define_raw ('E_ALL', 32767);
+define('E_ERROR', 1);
+define('E_WARNING', 2);
+define('E_PARSE', 4);
+define('E_NOTICE', 8);
+define('E_CORE_ERROR', 16);
+define('E_CORE_WARNING', 32);
+define('E_COMPILE_ERROR', 64);
+define('E_COMPILE_WARNING', 128);
+define('E_USER_ERROR', 256);
+define('E_USER_WARNING', 512);
+define('E_USER_NOTICE', 1024);
+define('E_STRICT', 2048);
+define('E_RECOVERABLE_ERROR', 4096);
+define('E_DEPRECATED', 8192);
+define('E_USER_DEPRECATED', 16384);
+define('E_ALL', 32767);
 
 function set_server_status ($status ::: string) ::: bool;
 
@@ -131,7 +131,7 @@ function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 function array_pad auto ($a ::: array, $size ::: int, $value ::: Any) ::: array< lca< ^1[], ^3 > >;
 
-define_raw ('ARRAY_FILTER_USE_KEY', 1);
+define('ARRAY_FILTER_USE_KEY', 1);
 
 function array_filter ($a ::: array, callback ($x ::: ^1[]) ::: bool = TODO) ::: ^1;
 function array_map (callback ($x ::: ^2[]) ::: Any, $a ::: array) ::: array <^1()>;
@@ -163,17 +163,17 @@ function get_class ($v ::: Any) ::: string;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
 
-define_raw ('DATE_ATOM', "Y-m-d\TH:i:sP");
-define_raw ('DATE_COOKIE', "l, d-M-y H:i:s T");
-define_raw ('DATE_ISO8601', "Y-m-d\TH:i:sO");
-define_raw ('DATE_RFC822', "D, d M y H:i:s O");
-define_raw ('DATE_RFC850', "l, d-M-y H:i:s T");
-define_raw ('DATE_RFC1036', "D, d M y H:i:s O");
-define_raw ('DATE_RFC1123', "D, d M Y H:i:s O");
-define_raw ('DATE_RFC2822', "D, d M Y H:i:s O");
-define_raw ('DATE_RFC3339', "Y-m-d\TH:i:sP");
-define_raw ('DATE_RSS', "D, d M Y H:i:s O");
-define_raw ('DATE_W3C', "Y-m-d\TH:i:sP");
+define('DATE_ATOM', "Y-m-d\TH:i:sP");
+define('DATE_COOKIE', "l, d-M-y H:i:s T");
+define('DATE_ISO8601', "Y-m-d\TH:i:sO");
+define('DATE_RFC822', "D, d M y H:i:s O");
+define('DATE_RFC850', "l, d-M-y H:i:s T");
+define('DATE_RFC1036', "D, d M y H:i:s O");
+define('DATE_RFC1123', "D, d M Y H:i:s O");
+define('DATE_RFC2822', "D, d M Y H:i:s O");
+define('DATE_RFC3339', "Y-m-d\TH:i:sP");
+define('DATE_RSS', "D, d M Y H:i:s O");
+define('DATE_W3C', "Y-m-d\TH:i:sP");
 
 function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
 function date ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
@@ -200,21 +200,21 @@ function inet_pton ($address ::: string) ::: OrFalse <string>;
 function pack (...) ::: string;
 function unpack ($pattern ::: string, $data ::: string) ::: array <var>;
 
-define_raw ('JSON_UNESCAPED_UNICODE', 1);
-define_raw ('JSON_FORCE_OBJECT', 16);
-define_raw ('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
+define('JSON_UNESCAPED_UNICODE', 1);
+define('JSON_FORCE_OBJECT', 16);
+define('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
 
 function serialize ($v ::: Any) ::: string;
 function unserialize ($v ::: string) ::: CONST var;
 function json_encode ($v ::: Any, $options ::: int = 0) ::: OrFalse<string>;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 
-define_raw ('PREG_PATTERN_ORDER', 1);
-define_raw ('PREG_SET_ORDER', 2);
-define_raw ('PREG_OFFSET_CAPTURE', 4);
-define_raw ('PREG_SPLIT_NO_EMPTY', 8);
-define_raw ('PREG_SPLIT_DELIM_CAPTURE', 16);
-define_raw ('PREG_SPLIT_OFFSET_CAPTURE', 32);
+define('PREG_PATTERN_ORDER', 1);
+define('PREG_SET_ORDER', 2);
+define('PREG_OFFSET_CAPTURE', 4);
+define('PREG_SPLIT_NO_EMPTY', 8);
+define('PREG_SPLIT_DELIM_CAPTURE', 16);
+define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 
 function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: OrFalse <int>;//TODO
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0) ::: OrFalse <int>;//TODO
@@ -224,9 +224,9 @@ function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: OrFalse < array <var> >;
 
-define_raw ('SORT_REGULAR', 0);
-define_raw ('SORT_NUMERIC', 1);
-define_raw ('SORT_STRING', 2);
+define('SORT_REGULAR', 0);
+define('SORT_NUMERIC', 1);
+define('SORT_STRING', 2);
 
 function shuffle (&$a ::: array) ::: void;
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
@@ -316,7 +316,7 @@ define (PHP_URL_FRAGMENT, 7);
 
 function parse_url ($str ::: string, $component ::: int = -1) ::: var;
 
-define_raw ('M_PI', 3.1415926535897932384626433832795);
+define('M_PI', 3.1415926535897932384626433832795);
 
 function abs ($v);//TODO
 function acos ($v ::: float) ::: CONST float;
@@ -338,10 +338,10 @@ function sqrt ($v ::: float) ::: CONST float;
 function tan ($v ::: float) ::: CONST float;
 
 
-define_raw ('ENT_HTML401', 0);
-define_raw ('ENT_COMPAT', 0);
-define_raw ('ENT_QUOTES', 1);
-define_raw ('ENT_NOQUOTES', 2);
+define('ENT_HTML401', 0);
+define('ENT_COMPAT', 0);
+define('ENT_QUOTES', 1);
+define('ENT_NOQUOTES', 2);
 
 function addcslashes ($str ::: string, $what ::: string) ::: string;
 function addslashes ($str ::: string) ::: string;
@@ -380,9 +380,9 @@ function long2ip ($ip) ::: string;
 function get_magic_quotes_gpc() ::: bool;
 function php_sapi_name() ::: string;
 
-define_raw ('STR_PAD_LEFT', 0);
-define_raw ('STR_PAD_RIGHT', 1);
-define_raw ('STR_PAD_BOTH', 2);
+define('STR_PAD_LEFT', 0);
+define('STR_PAD_RIGHT', 1);
+define('STR_PAD_BOTH', 2);
 
 function str_pad ($input ::: string, $len ::: int, $pad_str ::: string = " ", $pad_type ::: int = STR_PAD_RIGHT) ::: string;
 function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
@@ -428,13 +428,13 @@ function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 
 function xor_strings ($s ::: string, $t ::: string) ::: string;
 
-define_raw ('LC_ALL', 6);
-define_raw ('LC_COLLATE', 3);
-define_raw ('LC_CTYPE', 0);
-define_raw ('LC_MONETARY', 4);
-define_raw ('LC_NUMERIC', 1);
-define_raw ('LC_TIME', 2);
-define_raw ('LC_MESSAGES', 5);
+define('LC_ALL', 6);
+define('LC_COLLATE', 3);
+define('LC_CTYPE', 0);
+define('LC_MONETARY', 4);
+define('LC_NUMERIC', 1);
+define('LC_TIME', 2);
+define('LC_MESSAGES', 5);
 
 function setlocale ($category ::: int, $locale ::: string) ::: OrFalse <string>;
 
@@ -448,10 +448,10 @@ function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: stri
 function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
 function mb_substr ($str ::: string, $start ::: int, $length ::: var = INT_MAX, $encoding ::: string = "1251") ::: string;
 
-define_raw ('PHP_ROUND_HALF_UP', 123423141);
-define_raw ('PHP_ROUND_HALF_DOWN', 123423144);
-define_raw ('PHP_ROUND_HALF_EVEN', 123423145);
-define_raw ('PHP_ROUND_HALF_ODD', 123423146);
+define('PHP_ROUND_HALF_UP', 123423141);
+define('PHP_ROUND_HALF_DOWN', 123423144);
+define('PHP_ROUND_HALF_EVEN', 123423145);
+define('PHP_ROUND_HALF_ODD', 123423146);
 
 function bcscale ($scale ::: int) ::: void;
 function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
@@ -506,22 +506,22 @@ function usleep ($micro_seconds ::: int) ::: void;
 
 function getimagesize ($name ::: string) ::: var;
 
-define_raw ('IMAGETYPE_UNKNOWN', 0);
-define_raw ('IMAGETYPE_GIF', 1);
-define_raw ('IMAGETYPE_JPEG', 2);
-define_raw ('IMAGETYPE_PNG', 3);
-define_raw ('IMAGETYPE_SWF', 4);
-define_raw ('IMAGETYPE_PSD', 5);
-define_raw ('IMAGETYPE_BMP', 6);
-define_raw ('IMAGETYPE_TIFF_II', 7);
-define_raw ('IMAGETYPE_TIFF_MM', 8);
-define_raw ('IMAGETYPE_JPC', 9);
-define_raw ('IMAGETYPE_JPEG2000', 9);
-define_raw ('IMAGETYPE_JP2', 10);
+define('IMAGETYPE_UNKNOWN', 0);
+define('IMAGETYPE_GIF', 1);
+define('IMAGETYPE_JPEG', 2);
+define('IMAGETYPE_PNG', 3);
+define('IMAGETYPE_SWF', 4);
+define('IMAGETYPE_PSD', 5);
+define('IMAGETYPE_BMP', 6);
+define('IMAGETYPE_TIFF_II', 7);
+define('IMAGETYPE_TIFF_MM', 8);
+define('IMAGETYPE_JPC', 9);
+define('IMAGETYPE_JPEG2000', 9);
+define('IMAGETYPE_JP2', 10);
 
 /** Memcached **/
 
-define_raw ('MEMCACHE_COMPRESSED', 2);
+define('MEMCACHE_COMPRESSED', 2);
 
 function new_Memcache() ::: MC;
 function new_RpcMemcache($fake ::: bool = false) ::: MC;

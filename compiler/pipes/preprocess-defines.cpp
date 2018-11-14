@@ -94,7 +94,7 @@ void PreprocessDefinesF::process_define_recursive(VertexPtr root) {
 }
 void PreprocessDefinesF::process_define(VertexPtr root) {
   stage::set_location(root->location);
-  VertexAdaptor<meta_op_define> define = root;
+  VertexAdaptor<op_define> define = root;
   VertexPtr name_v = define->name();
   VertexPtr val = define->value();
 

@@ -6,7 +6,6 @@ class DefineData {
 public:
   enum DefineType {
     def_php,
-    def_raw,
     def_var
   };
 

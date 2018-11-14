@@ -3309,8 +3309,6 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
 }
 
 
-//TODO: write proper define_raw
-
 void compile_define(VertexPtr root, CodeGenerator &W) {
   DefinePtr d = root.as<op_define_val>()->define_id;
 

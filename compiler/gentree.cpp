@@ -2061,10 +2061,6 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       res = get_func_call<op_define, op_err>();
       CE (check_statement_end());
       return res;
-    case tok_define_raw:
-      res = get_func_call<op_define_raw, op_err>();
-      CE (check_statement_end());
-      return res;
     case tok_global:
       if (G->env().get_warnings_level() >= 2 && in_func_cnt_ > 1 && !is_top_of_the_function_) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
@@ -2411,8 +2407,8 @@ VertexPtr GenTree::post_process(VertexPtr root) const {
     }
   }
 
-  if (root->type() == op_define || root->type() == op_define_raw) {
-    VertexAdaptor<meta_op_define> define = root;
+  if (root->type() == op_define) {
+    VertexAdaptor<op_define> define = root;
     VertexPtr name = define->name();
     if (name->type() == op_func_name) {
       auto new_name = VertexAdaptor<op_string>::create();

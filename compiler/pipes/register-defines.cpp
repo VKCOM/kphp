@@ -4,8 +4,6 @@
 
 VertexPtr RegisterDefinesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_defined) {
-    bool is_defined = false;
-
     VertexAdaptor<op_defined> defined = root;
 
     kphp_error_act (
@@ -14,16 +12,12 @@ VertexPtr RegisterDefinesPass::on_enter_vertex(VertexPtr root, LocalT *) {
       return VertexPtr()
     );
 
-    const string name = defined->expr().as<op_string>()->str_val;
-    DefinePtr def = G->get_define(name);
-    is_defined = def && def->name == name;
+    DefinePtr def = G->get_define(defined->expr()->get_string());
 
-    if (is_defined) {
-      auto true_val = VertexAdaptor<op_true>::create();
-      root = true_val;
+    if (def) {
+      root = VertexAdaptor<op_true>::create();
     } else {
-      auto false_val = VertexAdaptor<op_false>::create();
-      root = false_val;
+      root = VertexAdaptor<op_false>::create();
     }
   }
 
@@ -38,13 +32,11 @@ VertexPtr RegisterDefinesPass::on_enter_vertex(VertexPtr root, LocalT *) {
         var->extra_type = op_ex_var_superglobal;
         var->str_val = "d$" + name;
         root = var;
-      } else if (d->type() == DefineData::def_raw || d->type() == DefineData::def_php) {
+      } else {
         auto def = VertexAdaptor<op_define_val>::create();
         def->define_id = d;
         root = def;
-      } else {
-        kphp_assert (0 && "unreachable branch");
-      }
+      } 
     }
   }
   return root;

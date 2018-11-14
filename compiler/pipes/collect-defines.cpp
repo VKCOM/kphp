@@ -4,8 +4,8 @@
 #include "compiler/data/define-data.h"
 
 VertexPtr CollectDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
-  if (root->type() == op_define || root->type() == op_define_raw) {
-    VertexAdaptor<meta_op_define> define = root;
+  if (root->type() == op_define) {
+    VertexAdaptor<op_define> define = root;
     VertexPtr name = define->name();
     VertexPtr val = define->value();
 
