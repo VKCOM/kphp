@@ -51,8 +51,7 @@ inline bool GenTree::in_namespace() const {
   return !processing_file->namespace_name.empty();
 }
 
-FunctionPtr GenTree::register_function(FunctionInfo info, ClassPtr cur_class) const {
-  kphp_assert(processing_file == stage::get_file());
+FunctionPtr GenTree::register_function(FunctionInfo info, ClassPtr cur_class, GenTreeCallback *callback) {
   stage::set_line(0);
 
   FunctionPtr function = callback->register_function(info);
@@ -120,7 +119,7 @@ void GenTree::exit_and_register_class(VertexPtr root) {
   main->extra_type = op_ex_func_global;
 
   FunctionInfo info(main, processing_file->namespace_name, class_context, false, access_nonmember);
-  kphp_assert(register_function(info, cur_class));
+  kphp_assert(register_function(info, cur_class, callback));
 
   if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) &&
       !cur_class->members.has_constructor()) {
@@ -1247,10 +1246,12 @@ void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLoca
 }
 
 void GenTree::create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const {
-  create_constructor_with_args(class_context, cur_class, location, VertexAdaptor<op_func_param_list>::create());
+  create_constructor_with_args(class_context, cur_class, location, VertexAdaptor<op_func_param_list>::create(), callback);
 }
 
-void GenTree::create_constructor_with_args(const string &class_context, ClassPtr cur_class, AutoLocation location, VertexAdaptor<op_func_param_list> params) const {
+void GenTree::create_constructor_with_args(const string &class_context, ClassPtr cur_class,
+                                           AutoLocation location, VertexAdaptor<op_func_param_list> params,
+                                           GenTreeCallback *callback) {
   auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = replace_backslashes(class_context) + "$$" + "__construct";
 
@@ -1272,8 +1273,8 @@ void GenTree::create_constructor_with_args(const string &class_context, ClassPtr
 
   patch_func_constructor(func, cur_class, location);
 
-  FunctionInfo info(func, processing_file->namespace_name, class_context, false, access_public);
-  register_function(info, cur_class);
+  FunctionInfo info(func, cur_class->get_namespace(), class_context, false, access_public);
+  register_function(info, cur_class, callback);
 }
 
 template<Operation Op>
@@ -1638,7 +1639,7 @@ VertexPtr GenTree::get_anonymous_function() {
   SetFunctionsStackGuard fun_stack_g(this);
   VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
   if (auto anon_function = f.try_as<op_function>()) {
-    auto anon_constructor_call = generate_anonymous_class(anon_function, std::move(uses_of_lambda));
+    auto anon_constructor_call = generate_anonymous_class(anon_function, callback, std::move(uses_of_lambda));
     auto &members_of_anon_class = anon_constructor_call->get_func_id()->class_id->members;
 
     if (fun_stack_g.prev_functions_stack) {
@@ -1746,7 +1747,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   set_extra_type(res, access_type);
   FunctionInfo info(res, processing_file->namespace_name, class_context, kphp_required_flag, access_type);
 
-  FunctionPtr registered_fun = register_function(info, cur_class);
+  FunctionPtr registered_fun = register_function(info, cur_class, callback);
 
   if (info.root->type() == op_function) {
     info.root->get_func_id()->access_type = access_type;
@@ -1787,6 +1788,7 @@ bool GenTree::check_statement_end() {
   //return true;
   //}
   if (!test_expect(tok_semicolon)) {
+    stage::set_line(line_num);
     kphp_error (0, "Failed to parse statement. Expected `;`");
     while (cur != end && !test_expect(tok_clbrc) && !test_expect(tok_semicolon)) {
       next_cur();
@@ -1851,7 +1853,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   return VertexPtr();
 }
 
-void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) const {
+void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) {
   switch (root->type()) {
     case op_var: {
       if (lambda_class->members.get_instance_field(root->get_string())) {
@@ -1872,7 +1874,7 @@ void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, Cla
   }
 }
 
-VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) const {
+VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function) {
   function->name()->set_string("__invoke");
 
   std::vector<VertexPtr> func_parameters;
@@ -1913,7 +1915,7 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
   return constructor_call;
 }
 
-VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function, std::vector<VertexPtr> &&uses_of_lambda) const {
+VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function, GenTreeCallback *callback, std::vector<VertexPtr> &&uses_of_lambda) {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
   lambda_class_name->str_val = gen_anonymous_function_name();
   lambda_class_name->location.line = function->name()->location.line;
@@ -1928,7 +1930,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     if (auto param_as_use = one_use.try_as<op_func_param>()) {
       auto variable_in_use = VertexAdaptor<op_class_var>::create();
       variable_in_use->str_val = param_as_use->var()->get_string();
-      set_location(variable_in_use, AutoLocation(this));
+      ::set_location(variable_in_use, param_as_use->location);
       anon_class->members.add_instance_field(variable_in_use, access_public);
     }
   }
@@ -1939,7 +1941,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     func_info.root = fun;
     std::string s = fun->name()->get_string();
     fun->name()->set_string(concat_namespace_class_function_names(func_info.namespace_name, lambda_class_name->get_string(), s));
-    FunctionPtr registered_function = register_function(func_info, anon_class);
+    FunctionPtr registered_function = register_function(func_info, anon_class, callback);
     fun->name()->set_string(s);
 
     auto params = fun->params().as<op_func_param_list>()->args();
@@ -1960,7 +1962,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
 
   auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses_of_lambda);
   ::set_location(constructor_params, lambda_class_name->location);
-  create_constructor_with_args(anon_class->name, anon_class, AutoLocation(function->location.line), constructor_params);
+  create_constructor_with_args(anon_class->name, anon_class, AutoLocation(function->location.line), constructor_params, callback);
 
   anon_class->new_function->namespace_name = FunctionData::get_lambda_namespace();
   anon_class->new_function->class_context_name = anon_class->name;
@@ -2479,7 +2481,7 @@ void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info,
 
       Token *phpdoc_token = info.root->get_func_id()->phpdoc_token;
       info.root = func;
-      FunctionPtr registered_function = register_function(info, GenTree::cur_class);
+      FunctionPtr registered_function = register_function(info, GenTree::cur_class, callback);
       if (registered_function) {
         registered_function->access_type = access_type;
         registered_function->phpdoc_token = phpdoc_token;

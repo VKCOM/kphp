@@ -1,5 +1,6 @@
 #include "compiler/data/class-data.h"
 
+#include "compiler/data/src-file.h"
 #include "compiler/data/function-data.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
@@ -40,6 +41,10 @@ void ClassData::debugPrint() {
   members.for_each([](ClassMemberInstanceMethod &m) {
     printf("method %s()\n", m.local_name().c_str());
   });
+}
+
+std::string ClassData::get_namespace() const {
+  return is_lambda_class() ? FunctionData::get_lambda_namespace() : file_id->namespace_name;
 }
 
 PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexRange call_params, FunctionPtr function_context, VertexRange extern_func_params,
@@ -169,5 +174,5 @@ FunctionPtr ClassData::get_template_of_invoke_function() const {
 }
 
 bool ClassData::is_lambda_class() const {
-  return new_function && new_function->is_lambda();
+  return vk::string_view(name).starts_with(FunctionData::get_lambda_namespace());
 }

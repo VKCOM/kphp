@@ -54,7 +54,6 @@ private:
             f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
             if (f_inst) {
               f_inst->is_required = true;
-              f_inst->kphp_required = true;
               instance_of_function_template_stream << f_inst;
               AutoLocker<Lockable *> locker(&(*lambda_class));
               lambda_class->members.add_instance_method(f_inst, access_public);
@@ -139,7 +138,6 @@ private:
         f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
         if (f_inst) {
           f_inst->is_required = true;
-          f_inst->kphp_required = true;
           ClassPtr klass = f_inst->class_id;
           if (klass) {
             AutoLocker<Lockable *> locker(&(*klass));

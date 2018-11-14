@@ -60,6 +60,8 @@ public:
 
   void debugPrint();
 
+  std::string get_namespace() const;
+
   const std::string &get_subdir() const {
     static std::string lambda_subdir("cl_l");
     static std::string common_subdir("cl");

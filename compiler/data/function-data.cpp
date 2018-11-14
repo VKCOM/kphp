@@ -99,7 +99,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   kphp_assert_msg(func->is_template, "function must be template");
   VertexAdaptor<op_func_param_list> param_list = func->root.as<meta_op_function>()->params();
   VertexRange func_args = param_list->params();
-  size_t func_args_n = func_args.size();
+  auto func_args_n = static_cast<size_t>(func_args.size());
 
   FunctionPtr new_function(new FunctionData());
   auto new_func_root = func->root.as<op_function>().clone();
@@ -138,7 +138,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->min_argn = func->min_argn;
   new_function->is_extern = func->is_extern;
   new_function->used_in_source = func->used_in_source;
-  new_function->kphp_required = true;
   new_function->namespace_name = func->namespace_name;
   new_function->class_context_name = func->class_context_name;
   new_function->access_type = func->access_type;
@@ -245,6 +244,9 @@ string FunctionData::get_human_readable_name() const {
   return std::regex_replace(std::regex_replace(this->name, std::regex("\\$\\$"), " :: "), std::regex("\\$"), "\\");
 }
 
+bool FunctionData::is_lambda_with_uses() const {
+  return is_lambda() && class_id && class_id->members.has_any_instance_var();
+}
 
 VertexRange FunctionData::get_params() {
   return ::get_function_params(root.as<meta_op_function>());

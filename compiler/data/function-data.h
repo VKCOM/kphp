@@ -35,7 +35,7 @@ public:
   std::vector<Assumption> assumptions_for_vars;
   Assumption assumption_for_return;
   int assumptions_inited_args;
-  int assumptions_inited_return;
+  volatile int assumptions_inited_return;
 
   string src_name, header_name;
   string subdir;
@@ -104,6 +104,8 @@ public:
   bool is_lambda() const {
     return namespace_name == get_lambda_namespace();
   }
+
+  bool is_lambda_with_uses() const;
 
   const std::string get_outer_namespace_name() const {
     return get_or_default_field(&FunctionData::namespace_name);

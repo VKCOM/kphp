@@ -29,8 +29,7 @@ $x = function () {
 var_dump($x()(10)(100));
 
 $f2 = function() {
-    $a = new Classes\CallbackHolder();
-    return $a;
+    return new Classes\CallbackHolder();
 };
 
 var_dump($f2()->get_callback()(10, 20) + 20);

@@ -100,8 +100,6 @@ string gen_unique_name(string prefix, bool flag) {
 }
 
 inline string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
-  const std::string &namespace_name = current_function->get_outer_namespace_name();
-
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       if (class_name == "parent") {

@@ -24,7 +24,7 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
   return var;
 }
 VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type type, bool create_flag) {
-  map<string, VarPtr>::iterator it = registred_vars.find(name);
+  auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
     kphp_error (!create_flag, "Redeclaration of local variable");
     return it->second;
