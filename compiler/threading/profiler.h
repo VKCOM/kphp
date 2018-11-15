@@ -68,7 +68,7 @@ public:
   F (collect_required)\
   F (calc_locations)\
   F (register_defines)\
-  F (register_defines_finish)\
+  F (calc_real_defines_values)\
   F (erase_defines_declarations)\
   F (inline_defines_usages)\
   F (check_returns)\

@@ -1,28 +1,19 @@
 #pragma once
 
-#include "compiler/const-manipulations.h"
-#include "compiler/vertex.h"
+#include "compiler/function-pass.h"
+#include "compiler/data/define-data.h"
 
-class RegisterDefinesF {
-private:
-  set<string*> in_progress;
-  vector<string*> stack;
-
-  DataStream<FunctionPtr> all_fun;
-
-  CheckConstWithDefines check_const;
-  MakeConst make_const;
-
-  void process_define_recursive(VertexPtr root);
-  void process_define(DefinePtr def);
-
-  void print_error_infinite_define(DefinePtr cur_def);
+class RegisterDefinesPass : public FunctionPassBase {
+  AUTO_PROF(register_defines);
 
 public:
+  string get_description() {
+    return "Register defines";
+  }
 
-  RegisterDefinesF();
+  VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
 
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &os __attribute__((unused)));
-
-  void on_finish(DataStream<FunctionPtr> &os);
+  inline bool need_recursion(VertexPtr v, LocalT *) {
+    return can_define_be_inside_op(v->type());
+  }
 };

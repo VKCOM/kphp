@@ -28,6 +28,7 @@
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
 #include "compiler/pipes/calc-locations.h"
+#include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg.h"
@@ -227,7 +228,8 @@ bool compiler_execute(KphpEnviroment *env) {
     >> sync_node_tag{}
     >> PipeC<CollectClassF>{}
     >> PassC<CalcLocationsPass>{}
-    >> SyncC<RegisterDefinesF>{}
+    >> PassC<RegisterDefinesPass>{}
+    >> SyncC<CalcRealDefinesValuesF>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
     >> sync_node_tag{}
     >> PipeC<PrepareFunctionF>{}
