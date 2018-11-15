@@ -93,12 +93,9 @@ public:
   VertexPtr get_namespace_class();
   VertexPtr get_use();
   VertexPtr get_seq();
-  VertexPtr post_process(VertexPtr root) const;
   bool check_seq_end();
   bool check_statement_end();
   VertexPtr run();
-
-  static bool is_superglobal(const string &s);
 
   template<Operation EmptyOp>
   bool gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim);
@@ -177,8 +174,6 @@ private:
   SrcFilePtr processing_file;
   string class_context;
 };
-
-void gen_tree_init();
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, GenTreeCallback &callback);
 

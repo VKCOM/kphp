@@ -54,7 +54,6 @@ inline bool GenTree::in_namespace() const {
 FunctionPtr GenTree::register_function(FunctionInfo info, ClassPtr cur_class) const {
   kphp_assert(processing_file == stage::get_file());
   stage::set_line(0);
-  info.root = post_process(info.root);
 
   FunctionPtr function = callback->register_function(info);
 
@@ -72,7 +71,7 @@ FunctionPtr GenTree::register_function(FunctionInfo info, ClassPtr cur_class) co
 }
 
 VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
-  auto name_of_const_field_class = VertexAdaptor<op_func_name>::create();
+  auto name_of_const_field_class = VertexAdaptor<op_string>::create();
   name_of_const_field_class->str_val = "c#" + replace_backslashes(cur_class->name) + "$$class";
 
   auto value_of_const_field_class = VertexAdaptor<op_string>::create();
@@ -2204,7 +2203,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CE (!kphp_error(!has_access_modifier, "unexpected const after private/protected/public keyword"));
 
-      auto name = VertexAdaptor<op_func_name>::create();
+      auto name = VertexAdaptor<op_string>::create();
       string const_name{(*cur)->str_val};
 
       if (const_in_class) {
@@ -2313,164 +2312,8 @@ VertexPtr GenTree::get_seq() {
   return seq;
 }
 
-bool GenTree::is_superglobal(const string &s) {
-  static set<string> names;
-  static bool is_inited = false;
-  if (!is_inited) {
-    is_inited = true;
-    names.insert("_SERVER");
-    names.insert("_GET");
-    names.insert("_POST");
-    names.insert("_FILES");
-    names.insert("_COOKIE");
-    names.insert("_REQUEST");
-    names.insert("_ENV");
-  }
-  return names.count(s);
-}
-
 bool GenTree::has_return(VertexPtr v) {
   return v->type() == op_return || std::any_of(v->begin(), v->end(), has_return);
-}
-
-VertexPtr GenTree::post_process(VertexPtr root) const {
-  if (root->type() == op_func_call && root->size() == 1) {
-    VertexAdaptor<op_func_call> call = root;
-    string str = call->get_string();
-
-    Operation op = op_err;
-    if (str == "strval") {
-      op = op_conv_string;
-    } else if (str == "intval") {
-      op = op_conv_int;
-    } else if (str == "boolval") {
-      op = op_conv_bool;
-    } else if (str == "floatval") {
-      op = op_conv_float;
-    } else if (str == "arrayval") {
-      op = op_conv_array;
-    } else if (str == "uintval") {
-      op = op_conv_uint;
-    } else if (str == "longval") {
-      op = op_conv_long;
-    } else if (str == "ulongval") {
-      op = op_conv_ulong;
-    } else if (str == "fork") {
-      op = op_fork;
-    }
-    if (op != op_err) {
-      VertexPtr arg = call->args()[0];
-      if (op == op_fork) {
-        arg->fork_flag = true;
-      }
-      VertexPtr new_root = create_vertex(op, arg);
-      ::set_location(new_root, root->get_location());
-      return post_process(new_root);
-    }
-  }
-
-  if (root->type() == op_func_call && root->size() == 2) {
-    VertexAdaptor<op_func_call> call = root;
-    if ("pow" == call->get_string()) {
-      VertexRange args = call->args();
-      VertexPtr new_root = VertexAdaptor<op_pow>::create(args[0], args[1]);
-      ::set_location(new_root, root->get_location());
-      return post_process(new_root);
-    }
-  }
-
-  if (root->type() == op_minus || root->type() == op_plus) {
-    VertexAdaptor<meta_op_unary> minus = root;
-    VertexPtr maybe_num = minus->expr();
-    if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
-      VertexAdaptor<meta_op_num> num = maybe_num;
-      string prefix = root->type() == op_minus ? "-" : "";
-      num->str_val = prefix + num->str_val;
-      minus->expr() = VertexPtr();
-      return post_process(num);
-    }
-  }
-
-  if (root->type() == op_set) {
-    VertexAdaptor<op_set> set_op = root;
-    if (set_op->lhs()->type() == op_list_ce) {
-      vector<VertexPtr> next;
-      next = set_op->lhs()->get_next();
-      next.push_back(set_op->rhs());
-      auto list = VertexAdaptor<op_list>::create(next);
-      ::set_location(list, root->get_location());
-      list->phpdoc_token = root.as<op_set>()->phpdoc_token;
-      return post_process(list);
-    }
-  }
-
-  if (root->type() == op_define) {
-    VertexAdaptor<op_define> define = root;
-    VertexPtr name = define->name();
-    if (name->type() == op_func_name) {
-      auto new_name = VertexAdaptor<op_string>::create();
-      new_name->str_val = name.as<op_func_name>()->str_val;
-      ::set_location(new_name, name->get_location());
-      define->name() = new_name;
-    }
-  }
-
-  if (root->type() == op_function && root->get_string() == "requireOnce") {
-    auto empty = VertexAdaptor<op_empty>::create();
-    return post_process(empty);
-  }
-
-  if (root->type() == op_func_call && root->get_string() == "call_user_func_array") {
-    VertexRange args = root.as<op_func_call>()->args();
-    kphp_error ((int)args.size() == 2, dl_pstr("Call_user_func_array expected 2 arguments, got %d", (int)root->size()));
-    kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
-    auto arg = VertexAdaptor<op_varg>::create(args[1]);
-    ::set_location(arg, args[1]->get_location());
-    auto new_root = VertexAdaptor<op_func_call>::create(arg);
-    ::set_location(new_root, arg->get_location());
-    new_root->str_val = args[0].as<op_string>()->str_val;
-    return post_process(new_root);
-  }
-
-  for (auto &i : *root) {
-    i = post_process(i);
-  }
-
-  if (root->type() == op_var) {
-    if (is_superglobal(root->get_string())) {
-      root->extra_type = op_ex_var_superglobal;
-    }
-  }
-
-  if (root->type() == op_arrow) {
-    VertexAdaptor<op_arrow> arrow = root;
-    VertexPtr rhs = arrow->rhs();
-
-    if (rhs->type() == op_func_name) {
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(arrow->lhs());
-      ::set_location(inst_prop, root->get_location());
-      inst_prop->set_string(rhs->get_string());
-
-      root = inst_prop;
-    } else if (rhs->type() == op_func_call) {
-      vector<VertexPtr> new_next;
-      const vector<VertexPtr> &old_next = rhs.as<op_func_call>()->get_next();
-
-      new_next.push_back(arrow->lhs());
-      new_next.insert(new_next.end(), old_next.begin(), old_next.end());
-
-      auto new_root = VertexAdaptor<op_func_call>::create(new_next);
-      ::set_location(new_root, root->get_location());
-      new_root->extra_type = op_ex_func_member;
-      new_root->str_val = rhs->get_string();
-
-      root = new_root;
-    } else {
-      kphp_error (false, "Operator '->' expects property or function call as its right operand");
-    }
-  }
-
-  return root;
 }
 
 VertexPtr GenTree::run() {
@@ -2658,10 +2501,6 @@ string GenTree::get_name_for_new_function_with_parent_call(const FunctionInfo &i
   } else {
     return target_class + "$$" + function_local_name + "$$" + replace_backslashes(info.class_context);
   }
-}
-
-void gen_tree_init() {
-  GenTree::is_superglobal("");
 }
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, GenTreeCallback &callback) {

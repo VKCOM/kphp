@@ -28,7 +28,6 @@
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
 #include "compiler/pipes/calc-locations.h"
-#include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg.h"
@@ -43,22 +42,23 @@
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-classes.h"
 #include "compiler/pipes/collect-const-vars.h"
+#include "compiler/pipes/collect-defines.h"
 #include "compiler/pipes/collect-required.h"
 #include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/create-switch-foreach-vars.h"
-#include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
 #include "compiler/pipes/file-and-token.h"
 #include "compiler/pipes/file-to-tokens.h"
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
-#include "compiler/pipes/inline-defines-usages.h"
+#include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
 #include "compiler/pipes/parse.h"
 #include "compiler/pipes/prepare-function.h"
 #include "compiler/pipes/preprocess-break.h"
+#include "compiler/pipes/preprocess-defines.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/preprocess-vararg.h"
@@ -187,7 +187,6 @@ bool compiler_execute(KphpEnviroment *env) {
 
   //TODO: call it with pthread_once on need
   lexer_init();
-  gen_tree_init();
   OpInfo::init_static();
   MultiKey::init_static();
   TypeData::init_static();
@@ -222,20 +221,21 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<LoadFileF>{}
     >> PipeC<FileToTokensF>{}
     >> PipeC<ParseF>{}
+    >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
-    >> PassC<CreateSwitchForeachVarsPass>{}
+    >> PassC<CreateSwitchForeachVarsF>{}
     >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<0>{}
     >> sync_node_tag{}
     >> PipeC<CollectClassF>{}
     >> PassC<CalcLocationsPass>{}
-    >> PassC<RegisterDefinesPass>{}
-    >> SyncC<CalcRealDefinesValuesF>{}
-    >> PassC<EraseDefinesDeclarationsPass>{}
+    >> SyncC<PreprocessDefinesF>{}
+    >> PassC<CollectDefinesPass>{}
+    >> sync_node_tag{}
     >> PipeC<PrepareFunctionF>{}
-    >> PassC<InlineDefinesUsagesPass>{}
+    >> sync_node_tag{}
+    >> PassC<RegisterDefinesPass>{}
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
-    >> sync_node_tag{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
@@ -277,7 +277,7 @@ bool compiler_execute(KphpEnviroment *env) {
 
   SchedulerConstructor{scheduler}
     >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<2>{}
-    >> PipeC<SplitSwitchF>{};
+    >> PassC<GenTreePostprocessPass>{};
 
   get_scheduler()->execute();
 

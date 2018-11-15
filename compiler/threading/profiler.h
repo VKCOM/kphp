@@ -63,6 +63,7 @@ public:
   F (load_files)\
   F (lexer)\
   F (gentree)\
+  F (gentree_postprocess)\
   F (split_switch)\
   F (create_switch_vars)\
   F (collect_required)\
