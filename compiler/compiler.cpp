@@ -231,12 +231,11 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<RegisterDefinesPass>{}
     >> SyncC<CalcRealDefinesValuesF>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
-    >> sync_node_tag{}
     >> PipeC<PrepareFunctionF>{}
-    >> sync_node_tag{}
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
+    >> sync_node_tag{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
