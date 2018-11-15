@@ -59,24 +59,21 @@ private:
   CGContext context;
   bool own_flag;
 public:
-  bool debug_flag;
 
   CodeGenerator() :
     master_writer(nullptr),
     writer(nullptr),
     callback_(nullptr),
     context(),
-    own_flag(false),
-    debug_flag(false) {
+    own_flag(false) {
   }
 
-  explicit CodeGenerator(const CodeGenerator &from) :
+  CodeGenerator(const CodeGenerator &from) :
     master_writer(from.master_writer),
     writer(nullptr),
     callback_(from.callback_),
     context(from.context),
-    own_flag(false),
-    debug_flag(false) {
+    own_flag(false) {
   }
 
   void init(WriterCallbackBase *new_callback) {
@@ -131,22 +128,6 @@ public:
 
   inline Writer &get_writer();
   inline CGContext &get_context();
-};
-
-class ScopedDebug {
-private:
-  CodeGenerator *cg_;
-  ScopedDebug(const ScopedDebug &);
-  ScopedDebug &operator=(const ScopedDebug &);
-public:
-  ScopedDebug(CodeGenerator &cg) :
-    cg_(&cg) {
-    cg_->debug_flag = true;
-  }
-
-  ~ScopedDebug() {
-    cg_->debug_flag = false;
-  }
 };
 
 inline void compile_vertex(VertexPtr, CodeGenerator &W);
@@ -3208,24 +3189,6 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
       W << FunctionForkName(func);
     } else {
       W << FunctionName(func);
-    }
-    if (0) {
-      if (func->name == "preg_match" || func->name == "preg_match_all" || func->name == "preg_replace_callback" ||
-          func->name == "preg_split" || func->name == "preg_replace") {
-        VertexPtr first = root->args()[0];
-        VertexPtr val = GenTree::get_actual_value(first);
-        if (val->type() == op_string) {
-          ScopedDebug scoped_debug(W);
-          W << "const:";
-          compile_string(val, W);
-          W << NL;
-        } else {
-          ScopedDebug scoped_debug(W);
-          stage::print_file(stderr);
-          stage::print_comment(stderr);
-          W << "nonconst:" << first << NL;
-        }
-      }
     }
   }
   if (func && func->root->auto_flag) {
