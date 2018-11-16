@@ -20,7 +20,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     from_return++;
   }
   if (vertex->type() == op_func_name) {
-    kphp_error (0, dl_pstr("Unexpected function name: '%s'", vertex.as<op_func_name>()->str_val.c_str()));
+    kphp_error (0, dl_pstr("Unexpected %s (maybe, it should be a define?)", vertex->get_c_string()));
   }
   if (vertex->type() == op_addr) {
     kphp_error (0, "Getting references is unsupported");
