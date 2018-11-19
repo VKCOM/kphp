@@ -175,6 +175,14 @@ private:
     // if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
     //   if (auto son = rule->rule().try_as<op_type_rule>()) {
     //     is_any = son->type_help == tp_Any;
+    //
+    //     if (!is_any && callback_function && callback_function->is_extern) {
+    //       if (auto rule_of_callback = callback_function->root->type_rule.try_as<op_common_type_rule>()) {
+    //         if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_rule>()) {
+    //           is_any = son_of_callback_rule->type_help == son->type_help;
+    //         }
+    //       }
+    //     }
     //   }
     // }
 
