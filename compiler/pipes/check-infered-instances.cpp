@@ -9,6 +9,7 @@
 
 void CheckInferredInstancesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Check inferred instances");
+  stage::set_function(function);
 
   if (function->type() != FunctionData::func_extern && !function->assumptions_for_vars.empty()) {
     stage::set_function(function);

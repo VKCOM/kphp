@@ -5,10 +5,15 @@
 #include "compiler/data/var-data.h"
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
+  if (!FunctionPassBase::on_start(function) || function->type() == FunctionData::func_extern) {
     return false;
   }
-  return function->type() != FunctionData::func_extern;
+
+  for (auto &static_var : function->static_var_ids) {
+    check_static_var_inited(static_var);
+  }
+
+  return true;
 }
 
 void FinalCheckPass::init() {
@@ -175,4 +180,13 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       kphp_error_return(cur_param.as<op_func_param>()->var()->ref_flag == 0, "Callback function with reference parameter");
     }
   }
+}
+
+/*
+ * Inspection: static-переменная должна быть проинициализирована при объявлении (только если это не var)
+ */
+inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
+  kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_var,
+             format("static $%s is not inited at declaration (inferred %s)",
+                     static_var->name.c_str(), colored_type_out(tinf::get_type(static_var)).c_str()));
 }
