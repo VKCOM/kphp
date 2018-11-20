@@ -227,7 +227,9 @@ private:
           }
 
           VertexAdaptor<op_func_param> param = func_args[i];
-          if (param->type_help != tp_Unknown) {
+          if (param->type_rule) {
+            call_args[i]->type_rule = param->type_rule;
+          } else if (param->type_help != tp_Unknown) {
             call_args[i] = GenTree::conv_to(call_args[i], param->type_help, param->var()->ref_flag);
           }
 

@@ -873,8 +873,8 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
 
   PrimitiveType tp = tp_Unknown;
   VertexPtr type_rule;
-  if (!from_callback) {
-    tp = get_type_help();
+  if (!from_callback && ((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin)) {
+    tp = get_func_param_type_help();    // запишется в param->type_help, и при вызове будет неявный cast
   } else {
     type_rule = get_type_rule();
   }
@@ -890,7 +890,7 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
     v->type_help = tok_type_declaration->type() == tok_Exception ? tp_Exception : tp_Class;
   }
 
-  if (from_callback) {
+  if (type_rule) {
     v->type_rule = type_rule;
   } else if (tp != tp_Unknown) {
     v->type_help = tp;
@@ -1062,21 +1062,21 @@ PrimitiveType GenTree::get_ptype() {
   return tp;
 }
 
-PrimitiveType GenTree::get_type_help() {
-  PrimitiveType res = tp_Unknown;
-  if ((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin) {
-    bool should_end = (*cur)->type() == tok_triple_colon_begin;
-    next_cur();
-    res = get_ptype();
-    kphp_error (res != tp_Error, "Cannot parse type");
-    if (should_end) {
-      if ((*cur)->type() == tok_triple_colon_end) {
-        next_cur();
-      } else {
-        kphp_error(false, "Unfinished type hint comment");
-      }
+PrimitiveType GenTree::get_func_param_type_help() {
+  kphp_assert((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin);
+
+  bool should_end = (*cur)->type() == tok_triple_colon_begin;   // e.g. function f($port /*:: int*/)
+  next_cur();
+  PrimitiveType res = get_ptype();
+  kphp_error (res != tp_Error, "Cannot parse type");
+  if (should_end) {
+    if ((*cur)->type() == tok_triple_colon_end) {
+      next_cur();
+    } else {
+      kphp_error(false, "Unfinished type hint comment");
     }
   }
+
   return res;
 }
 

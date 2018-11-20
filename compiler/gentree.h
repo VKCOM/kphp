@@ -58,7 +58,7 @@ public:
 
   static VertexPtr embrace(VertexPtr v);
   PrimitiveType get_ptype();
-  PrimitiveType get_type_help();
+  PrimitiveType get_func_param_type_help();
   VertexPtr get_type_rule_func();
   VertexPtr get_type_rule_();
   VertexPtr get_type_rule();
