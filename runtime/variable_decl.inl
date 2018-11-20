@@ -15,14 +15,7 @@ class var {
   };
 
   var_type type;
-
-  union {
-    bool b;
-    int i;
-    double f;
-    string s;
-    array<var> a;
-  };
+  uint64_t storage;
 
   inline void copy_from(const var &other);
   inline void copy_from(var &&other);
@@ -150,6 +143,21 @@ public:
   inline double to_float() const;
   inline const string to_string() const;
   inline const array<var> to_array() const;
+
+  inline bool &as_bool() __attribute__((always_inline));
+  inline const bool &as_bool() const __attribute__((always_inline));
+
+  inline int &as_int() __attribute__((always_inline));
+  inline const int &as_int() const __attribute__((always_inline));
+
+  inline double &as_double() __attribute__((always_inline));
+  inline const double &as_double() const __attribute__((always_inline));
+
+  inline string &as_string() __attribute__((always_inline));
+  inline const string &as_string() const __attribute__((always_inline));
+
+  inline array<var> &as_array() __attribute__((always_inline));
+  inline const array<var> &as_array() const __attribute__((always_inline));
 
   inline int safe_to_int() const;
 

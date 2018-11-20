@@ -483,16 +483,16 @@ string &string::append(const var &v) {
     case var::NULL_TYPE:
       return *this;
     case var::BOOLEAN_TYPE:
-      if (v.b) {
+      if (v.as_bool()) {
         push_back('1');
       }
       return *this;
     case var::INTEGER_TYPE:
-      return append(v.i);
+      return append(v.as_int());
     case var::FLOAT_TYPE:
-      return append(string(v.f));
+      return append(string(v.as_double()));
     case var::STRING_TYPE:
-      return append(v.s);
+      return append(v.as_string());
     case var::ARRAY_TYPE:
       php_warning("Convertion from array to string");
       return append("Array", 5);
@@ -575,15 +575,15 @@ string &string::append_unsafe(const var &v) {
     case var::NULL_TYPE:
       return *this;
     case var::BOOLEAN_TYPE:
-      return append_unsafe(v.b);
+      return append_unsafe(v.as_bool());
     case var::INTEGER_TYPE:
-      return append_unsafe(v.i);
+      return append_unsafe(v.as_int());
     case var::FLOAT_TYPE:
-      return append_unsafe(v.f);
+      return append_unsafe(v.as_double());
     case var::STRING_TYPE:
-      return append_unsafe(v.s);
+      return append_unsafe(v.as_string());
     case var::ARRAY_TYPE:
-      return append_unsafe(v.a);
+      return append_unsafe(v.as_array());
     default:
       php_assert (0);
       exit(1);
@@ -960,13 +960,13 @@ const string string::get_value(const var &v) const {
     case var::NULL_TYPE:
       return get_value(0);
     case var::BOOLEAN_TYPE:
-      return get_value(v.b);
+      return get_value(v.as_bool());
     case var::INTEGER_TYPE:
-      return get_value(v.i);
+      return get_value(v.as_int());
     case var::FLOAT_TYPE:
-      return get_value((int)v.f);
+      return get_value((int)v.as_double());
     case var::STRING_TYPE:
-      return get_value(v.s);
+      return get_value(v.as_string());
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return string();
@@ -1077,15 +1077,15 @@ dl::size_type max_string_size(const var &v) {
     case var::NULL_TYPE:
       return 0;
     case var::BOOLEAN_TYPE:
-      return max_string_size(v.b);
+      return max_string_size(v.as_bool());
     case var::INTEGER_TYPE:
-      return max_string_size(v.i);
+      return max_string_size(v.as_int());
     case var::FLOAT_TYPE:
-      return max_string_size(v.f);
+      return max_string_size(v.as_double());
     case var::STRING_TYPE:
-      return max_string_size(v.s);
+      return max_string_size(v.as_string());
     case var::ARRAY_TYPE:
-      return max_string_size(v.a);
+      return max_string_size(v.as_array());
     default:
       php_assert (0);
       exit(1);

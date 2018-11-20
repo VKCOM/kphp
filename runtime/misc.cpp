@@ -527,18 +527,18 @@ void do_serialize(const var &v) {
       static_SB.append_char(';');
       return;
     case var::BOOLEAN_TYPE:
-      return do_serialize(v.b);
+      return do_serialize(v.as_bool());
     case var::INTEGER_TYPE:
-      return do_serialize(v.i);
+      return do_serialize(v.as_int());
     case var::FLOAT_TYPE:
-      return do_serialize(v.f);
+      return do_serialize(v.as_double());
     case var::STRING_TYPE:
-      return do_serialize(v.s);
+      return do_serialize(v.as_string());
     case var::ARRAY_TYPE: {
       static_SB.append("a:", 2);
-      static_SB << v.a.count();
+      static_SB << v.as_array().count();
       static_SB.append(":{", 2);
-      for (array<var>::const_iterator p = v.a.begin(); p != v.a.end(); ++p) {
+      for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
         const array<var>::key_type &key = p.get_key();
         if (array<var>::is_int_key(key)) {
           do_serialize(key.to_int());
@@ -942,20 +942,20 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
       static_SB.append("null", 4);
       return true;
     case var::BOOLEAN_TYPE:
-      if (v.b) {
+      if (v.as_bool()) {
         static_SB.append("true", 4);
       } else {
         static_SB.append("false", 5);
       }
       return true;
     case var::INTEGER_TYPE:
-      static_SB << v.i;
+      static_SB << v.as_int();
       return true;
     case var::FLOAT_TYPE:
-      if (is_ok_float(v.f)) {
-        static_SB << (simple_encode ? f$number_format(v.f, 6, DOT, string()) : string(v.f));
+      if (is_ok_float(v.as_double())) {
+        static_SB << (simple_encode ? f$number_format(v.as_double(), 6, DOT, string()) : string(v.as_double()));
       } else {
-        php_warning("strange double %lf in function json_encode", v.f);
+        php_warning("strange double %lf in function json_encode", v.as_double());
         if (options & JSON_PARTIAL_OUTPUT_ON_ERROR) {
           static_SB.append("0", 1);
         } else {
@@ -965,23 +965,23 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
       return true;
     case var::STRING_TYPE:
       if (simple_encode) {
-        return do_json_encode_string_vkext(v.s.c_str(), v.s.size());
+        return do_json_encode_string_vkext(v.as_string().c_str(), v.as_string().size());
       }
 
-      return do_json_encode_string_php(v.s.c_str(), v.s.size(), options);
+      return do_json_encode_string_php(v.as_string().c_str(), v.as_string().size(), options);
     case var::ARRAY_TYPE: {
-      bool is_vector = v.a.is_vector();
+      bool is_vector = v.as_array().is_vector();
       const bool force_object = (bool)(JSON_FORCE_OBJECT & options);
-      if (!force_object && !is_vector && v.a.size().string_size == 0) {
+      if (!force_object && !is_vector && v.as_array().size().string_size == 0) {
         int n = 0;
-        for (array<var>::const_iterator p = v.a.begin(); p != v.a.end(); ++p) {
+        for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
           if (p.get_key().to_int() != n) {
             break;
           }
           n++;
         }
-        if (n == v.a.count()) {
-          if (v.a.get_next_key() == v.a.count()) {
+        if (n == v.as_array().count()) {
+          if (v.as_array().get_next_key() == v.as_array().count()) {
             is_vector = true;
           } else {
             php_warning("Corner case in json convertion, [] could be easy transformed to {}");
@@ -992,8 +992,8 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
 
       static_SB << "{["[is_vector];
 
-      for (array<var>::const_iterator p = v.a.begin(); p != v.a.end(); ++p) {
-        if (p != v.a.begin()) {
+      for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
+        if (p != v.as_array().begin()) {
           static_SB << ',';
         }
 
@@ -1328,18 +1328,18 @@ void do_print_r(const var &v, int depth) {
     case var::NULL_TYPE:
       break;
     case var::BOOLEAN_TYPE:
-      if (v.b) {
+      if (v.as_bool()) {
         *coub << '1';
       }
       break;
     case var::INTEGER_TYPE:
-      *coub << v.i;
+      *coub << v.as_int();
       break;
     case var::FLOAT_TYPE:
-      *coub << v.f;
+      *coub << v.as_double();
       break;
     case var::STRING_TYPE:
-      *coub << v.s;
+      *coub << v.as_string();
       break;
     case var::ARRAY_TYPE: {
       *coub << "Array\n";
@@ -1347,7 +1347,7 @@ void do_print_r(const var &v, int depth) {
       string shift(depth << 3, ' ');
       *coub << shift << "(\n";
 
-      for (array<var>::const_iterator it = v.a.begin(); it != v.a.end(); ++it) {
+      for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         *coub << shift << "    [" << it.get_key() << "] => ";
         do_print_r(it.get_value(), depth + 1);
         *coub << '\n';
@@ -1375,21 +1375,21 @@ void do_var_dump(const var &v, int depth) {
       *coub << shift << "NULL";
       break;
     case var::BOOLEAN_TYPE:
-      *coub << shift << "bool(" << (v.b ? "true" : "false") << ')';
+      *coub << shift << "bool(" << (v.as_bool() ? "true" : "false") << ')';
       break;
     case var::INTEGER_TYPE:
-      *coub << shift << "int(" << v.i << ')';
+      *coub << shift << "int(" << v.as_int() << ')';
       break;
     case var::FLOAT_TYPE:
-      *coub << shift << "float(" << v.f << ')';
+      *coub << shift << "float(" << v.as_double() << ')';
       break;
     case var::STRING_TYPE:
-      *coub << shift << "string(" << (int)v.s.size() << ") \"" << v.s << '"';
+      *coub << shift << "string(" << (int)v.as_string().size() << ") \"" << v.as_string() << '"';
       break;
     case var::ARRAY_TYPE: {
-      *coub << shift << (0 && v.a.is_vector() ? "vector(" : "array(") << v.a.count() << ") {\n";
+      *coub << shift << (0 && v.as_array().is_vector() ? "vector(" : "array(") << v.as_array().count() << ") {\n";
 
-      for (array<var>::const_iterator it = v.a.begin(); it != v.a.end(); ++it) {
+      for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         *coub << shift << "  [";
         if (array<var>::is_int_key(it.get_key())) {
           *coub << it.get_key();
@@ -1439,24 +1439,24 @@ void do_var_export(const var &v, int depth, char endc) {
       *coub << shift << "NULL";
       break;
     case var::BOOLEAN_TYPE:
-      *coub << shift << (v.b ? "true" : "false");
+      *coub << shift << (v.as_bool() ? "true" : "false");
       break;
     case var::INTEGER_TYPE:
-      *coub << shift << v.i;
+      *coub << shift << v.as_int();
       break;
     case var::FLOAT_TYPE:
-      *coub << shift << v.f;
+      *coub << shift << v.as_double();
       break;
     case var::STRING_TYPE:
       *coub << shift << '\'';
-      var_export_escaped_string(v.s);
+      var_export_escaped_string(v.as_string());
       *coub << '\'';
       break;
     case var::ARRAY_TYPE: {
-      const bool is_vector = v.a.is_vector();
+      const bool is_vector = v.as_array().is_vector();
       *coub << shift << "array(\n";
 
-      for (array<var>::const_iterator it = v.a.begin(); it != v.a.end(); ++it) {
+      for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         if (!is_vector) {
           *coub << shift;
           if (array<var>::is_int_key(it.get_key())) {
