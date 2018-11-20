@@ -13,8 +13,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
 
   VertexRange func_params = f->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
 
-  VertexRange call_params = call->type() == op_constructor_call ? call.as<op_constructor_call>()->args()
-                                                                : call.as<op_func_call>()->args();
+  VertexRange call_params = call.as<op_func_call>()->args();
   int func_params_n = static_cast<int>(func_params.size());
   int call_params_n = static_cast<int>(call_params.size());
 
@@ -34,6 +33,17 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
                             f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, func_params_n
                     )
   );
+
+  for (int i = 0; i < call_params.size(); i++) {
+    if (func_params[i]->type() == op_func_param_callback) {
+      kphp_error_return(call_params[i]->type() == op_func_ptr,
+                        dl_pstr("Argument '%s' should be function pointer, but %s found [%s : %s]",
+                                func_params[i].as<op_func_param_callback>()->var()->get_c_string(),
+                                OpInfo::str(call_params[i]->type()).c_str(),
+                                f->file_id->file_name.c_str(), f->get_human_readable_name().c_str()
+                        ));
+    }
+  }
 }
 VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v, LocalT*) {
   if (v->type() == op_func_ptr || v->type() == op_func_call || v->type() == op_constructor_call) {
