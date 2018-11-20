@@ -215,13 +215,13 @@ inline double divide(const string &lhs, double rhs);
 inline double divide(const var &lhs, double rhs);
 
 
-inline double divide(int lhs, string rhs);
+inline double divide(int lhs, const string &rhs);
 
-inline double divide(double lhs, string rhs);
+inline double divide(double lhs, const string &rhs);
 
-inline double divide(const string &lhs, string rhs);
+inline double divide(const string &lhs, const string &rhs);
 
-inline double divide(const var &lhs, string rhs);
+inline double divide(const var &lhs, const string &rhs);
 
 
 inline double divide(int lhs, const var &rhs);
@@ -1083,19 +1083,19 @@ double divide(const var &lhs, double rhs) {
 }
 
 
-double divide(int lhs, string rhs) {
+double divide(int lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(double lhs, string rhs) {
+double divide(double lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(const string &lhs, string rhs) {
+double divide(const string &lhs, const string &rhs) {
   return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
-double divide(const var &lhs, string rhs) {
+double divide(const var &lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
@@ -1117,7 +1117,7 @@ double divide(const var &lhs, const var &rhs) {
 }
 
 
-double divide(bool lhs, bool rhs __attribute__((unused))) {
+double divide(bool lhs, bool) {
   php_warning("Both arguments of operator '/' are bool");
   return lhs;
 }
@@ -1129,31 +1129,31 @@ double divide(bool lhs, const T &rhs) {
 }
 
 template<class T>
-double divide(const T &lhs, bool rhs) {
+double divide(const T &lhs, bool) {
   php_warning("Second argument of operator '/' is bool");
   return f$floatval(lhs);
 }
 
 template<class T>
-double divide(bool lhs, const array<T> &rhs) {
+double divide(bool, const array<T> &) {
   php_warning("Unsupported operand types for operator '/' bool and array");
   return 0.0;
 }
 
 template<class T>
-double divide(const array<T> &lhs, bool rhs) {
+double divide(const array<T> &, bool) {
   php_warning("Unsupported operand types for operator '/' array and bool");
   return 0.0;
 }
 
 template<class T>
-double divide(bool lhs, const class_instance<T> &rhs) {
+double divide(bool, const class_instance<T> &) {
   php_warning("Unsupported operand types for operator '/' bool and object");
   return 0.0;
 }
 
 template<class T>
-double divide(const class_instance<T> &lhs, bool rhs) {
+double divide(const class_instance<T> &, bool) {
   php_warning("Unsupported operand types for operator '/' object and bool");
   return 0.0;
 }
@@ -1173,50 +1173,50 @@ double divide(const T1 &lhs, const array<T> &rhs) {
 
 
 template<class T, class T1>
-double divide(const class_instance<T> &lhs, const T1 &rhs) {
+double divide(const class_instance<T> &, const T1 &rhs) {
   php_warning("First argument of operator '/' is object");
   return divide(1.0, rhs);
 }
 
 template<class T, class T1>
-double divide(const T1 &lhs, const class_instance<T> &rhs) {
+double divide(const T1 &lhs, const class_instance<T> &) {
   php_warning("Second argument of operator '/' is object");
   return lhs;
 }
 
 
 template<class T>
-double divide(const array<T> &lhs, const array<T> &rhs) {
+double divide(const array<T> &, const array<T> &) {
   php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
 template<class T>
-double divide(const class_instance<T> &lhs, const class_instance<T> &rhs) {
+double divide(const class_instance<T> &, const class_instance<T> &) {
   php_warning("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
 template<class T, class T1>
-double divide(const array<T> &lhs, const array<T1> &rhs) {
+double divide(const array<T> &, const array<T1> &) {
   php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
 template<class T, class T1>
-double divide(const class_instance<T> &lhs, const class_instance<T1> &rhs) {
+double divide(const class_instance<T> &, const class_instance<T1> &) {
   php_warning("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
 template<class T, class T1>
-double divide(const array<T> &lhs, const class_instance<T1> &rhs) {
+double divide(const array<T> &, const class_instance<T1> &) {
   php_warning("Unsupported operand types for operator '/' array and object");
   return 0.0;
 }
 
 template<class T, class T1>
-double divide(const class_instance<T1> &lhs, const array<T> &rhs) {
+double divide(const class_instance<T1> &, const array<T> &) {
   php_warning("Unsupported operand types for operator '/' object and array");
   return 0.0;
 }
@@ -1291,7 +1291,7 @@ bool f$boolval(const class_instance<T> &val) {
 }
 
 template<class ...Args>
-bool f$boolval(const std::tuple<Args...> &val) {
+bool f$boolval(const std::tuple<Args...> &) {
   return true;
 }
 
@@ -1321,7 +1321,7 @@ int f$intval(const array<T> &val) {
 }
 
 template<class T>
-int f$intval(const class_instance<T> &val) {
+int f$intval(const class_instance<T> &) {
   php_warning("Wrong convertion from object to int");
   return 1;
 }
@@ -1362,7 +1362,7 @@ int f$safe_intval(const array<T> &val) {
 }
 
 template<class T>
-int f$safe_intval(const class_instance<T> &val) {
+int f$safe_intval(const class_instance<T> &) {
   php_warning("Wrong convertion from object to int");
   return 1;
 }
@@ -1388,7 +1388,7 @@ double f$floatval(const array<T> &val) {
 }
 
 template<class T>
-double f$floatval(const class_instance<T> &val) {
+double f$floatval(const class_instance<T> &) {
   php_warning("Wrong convertion from object to float");
   return 1.0;
 }
@@ -1459,7 +1459,7 @@ const array<T> &f$arrayval(const array<T> &val) {
 }
 
 template<class T>
-array<var> f$arrayval(const class_instance<T> &val) {
+array<var> f$arrayval(const class_instance<T> &) {
   php_warning("Can not convert class instance to array");
   return array<var>();
 }
@@ -1542,7 +1542,7 @@ const string &strval_ref(const var &val) {
 
 
 template<class T>
-array<T> &arrayval_ref(array<T> &val, const char *function, int parameter_num) {
+array<T> &arrayval_ref(array<T> &val, const char *function __attribute__((unused)), int parameter_num __attribute__((unused))) {
   return val;
 }
 
@@ -1551,7 +1551,7 @@ array<var> &arrayval_ref(var &val, const char *function, int parameter_num) {
 }
 
 template<class T>
-const array<T> &arrayval_ref(const array<T> &val, const char *function, int parameter_num) {
+const array<T> &arrayval_ref(const array<T> &val, const char *function __attribute__((unused)), int parameter_num __attribute__((unused))) {
   return val;
 }
 
@@ -1617,7 +1617,7 @@ const T &convert_to<T>::convert(const T &val) {
 }
 
 template<class T>
-T convert_to<T>::convert(const Unknown &val) {
+T convert_to<T>::convert(const Unknown &) {
   return T();
 }
 
@@ -1680,7 +1680,7 @@ bool f$empty(const array<T> &a) {
 }
 
 template<class T>
-bool f$empty(const class_instance<T> &a) {
+bool f$empty(const class_instance<T> &) {
   return false;
 }
 
@@ -1714,7 +1714,7 @@ inline int f$count(const std::tuple<Args...> &a __attribute__ ((unused))) {
 }
 
 template<class T>
-int f$count(const T &v) {
+int f$count(const T &) {
   php_warning("Count on non-array");
   return 1;
 }
@@ -1993,7 +1993,7 @@ string f$gettype(const var &v) {
 }
 
 template<class T>
-bool f$function_exists(const T &a1) {
+bool f$function_exists(const T &) {
   return true;
 }
 

@@ -66,7 +66,7 @@ enable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
 }
 
 template<class T, class U>
-disable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
+disable_if_one_of_types_is_unknown<T, U> equals(const T &, const U &) {
   return false;
 }
 
@@ -92,7 +92,7 @@ public:
   OrFalse(bool x) :
     value(),
     bool_value(x) {
-    php_assert (x == false);
+    php_assert(!x);
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
@@ -111,7 +111,7 @@ public:
   OrFalse &operator=(bool x) {
     value = T();
     bool_value = x;
-    php_assert (x == false);
+    php_assert(!x);
     return *this;
   }
 

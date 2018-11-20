@@ -291,7 +291,7 @@ OrFalse<string> f$stristr(const string &haystack, const var &needle, bool before
 
 template<class T>
 inline OrFalse<int> f$strpos(const string &haystack, const OrFalse<T> &needle, int offset) {
-  return f$strrpos(haystack, needle.val());
+  return f$strrpos(haystack, needle.val(), offset);
 }
 
 OrFalse<int> f$strpos(const string &haystack, const var &needle, int offset) {

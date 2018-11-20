@@ -37,7 +37,7 @@ template<class T>
 array<T> f$array_filter(const array<T> &a);
 
 template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 &callback, int flags = 0);
+array<T> f$array_filter(const array<T> &a, const T1 &callback);
 
 template<class T>
 T f$array_merge(const T &a1);
@@ -453,7 +453,7 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
 }
 
 template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value) {
+ReturnT f$array_pad(const array<Unknown> &, int size, const DefaultValueT &default_value) {
   if (size == 0) {
     return {};
   }
@@ -474,7 +474,7 @@ array<T> f$array_filter(const array<T> &a) {
 }
 
 template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 &callback, int flags) {
+array<T> f$array_filter(const array<T> &a, const T1 &callback) {
   array<T> result(a.size());
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
     bool need_set_value;
