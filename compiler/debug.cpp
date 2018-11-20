@@ -217,6 +217,8 @@ std::string debugVertexMore(VertexPtr v) {
     case op_class_type_rule:
       return v.as<op_class_type_rule>()->class_ptr
              ? v.as<op_class_type_rule>()->class_ptr->name : "class_ptr = null";
+    case op_type_rule:
+      return ptype_name(v->type_help);
     default:
       return "";
   }

@@ -94,6 +94,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   var->str_val = name;
   var->extra_type = op_ex_var_const;
   var->location = loc;
+  var->type_rule = root->type_rule;
 
   VarPtr var_id = G->get_global_var(name, VarData::var_const_t, root);
   if (root->type() != op_array) {
