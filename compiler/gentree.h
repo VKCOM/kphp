@@ -24,6 +24,10 @@ public:
     G->require_function(f_ptr->name, os);
   }
 
+  void require_lambdas_inside(FunctionPtr f_ptr) {
+    f_ptr->require_all_lambdas_inside(os);
+  }
+
   ClassPtr register_class(ClassPtr cur_class) {
     return G->register_class(cur_class);
   }
@@ -156,11 +160,12 @@ public:
   VertexPtr get_switch();
   bool parse_function_specifiers(VertexPtr flags);
   bool parse_function_uses(std::vector<VertexPtr> *uses_of_lambda);
+  static bool check_uses_and_args_are_not_intersect(const std::vector<VertexPtr> &uses, const std::vector<VertexPtr> &params);
   VertexPtr get_anonymous_function();
   VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, std::vector<VertexPtr> *uses_of_lambda = nullptr);
 
   static void add_this_to_captured_variables_in_lambda_body(VertexPtr &cmd, ClassPtr lambda_class);
-  static VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, VertexAdaptor<op_function> function);
+  static VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, const VertexAdaptor<op_function> &function);
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function, GenTreeCallback *callback, std::vector<VertexPtr> &&uses_of_lambda);
 

@@ -1,8 +1,8 @@
-#include "compiler/data/function-data.h"
-
 #include <regex>
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
@@ -117,10 +117,8 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     param->template_type_id = -1;
 
     const std::pair<AssumType, ClassPtr> &assum_and_class = id_classPtr_it->second;
-    if (assum_and_class.first != assum_not_instance) {
-      new_function->assumptions_for_vars.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
-      new_function->assumptions_inited_args = 2;
-    }
+    new_function->assumptions_for_vars.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
+    new_function->assumptions_inited_args = 2;
   }
 
   new_func_root->name()->set_string(name_of_function_instance);
@@ -158,6 +156,15 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   set_location_for_all(new_func_root, new_function);
 
   return new_function;
+}
+
+void FunctionData::require_all_lambdas_inside(DataStream<FunctionPtr> &os) const {
+  for (auto l : lambdas_inside) {
+    kphp_error(!(l->is_lambda_with_uses() && is_template), "it's not allowed lambda with uses inside template function(or another lambda)");
+    l->class_id->members.for_each([&os](const ClassMemberInstanceMethod &m) {
+      G->require_function(m.global_name(), os);
+    });
+  }
 }
 
 ClassPtr FunctionData::is_lambda(VertexPtr v) {
@@ -251,6 +258,7 @@ bool FunctionData::is_lambda_with_uses() const {
 VertexRange FunctionData::get_params() {
   return ::get_function_params(root.as<meta_op_function>());
 }
+
 bool FunctionData::is_constructor() const {
   return class_id && class_id->new_function && &*(class_id->new_function) == this;
 }

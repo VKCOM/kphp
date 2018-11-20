@@ -205,7 +205,7 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
   bool auto_require = info.kphp_required
                       || function->type() == FunctionData::func_global
                       || function->type() == FunctionData::func_extern
-                      || function->is_instance_function();
+                      || (function->is_instance_function() && !function->is_lambda());
 
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
     if (f == UNPARSED_BUT_REQUIRED_FUNC_PTR) {

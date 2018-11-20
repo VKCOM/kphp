@@ -55,6 +55,7 @@ public:
   FunctionPtr get_template_of_invoke_function() const;
 
   bool is_lambda_class() const;
+  void infer_uses_assumptions(FunctionPtr parent_function);
 
   void set_name_and_src_name(const string &name);
 

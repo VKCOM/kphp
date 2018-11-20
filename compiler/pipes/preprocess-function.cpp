@@ -63,6 +63,7 @@ private:
           if (f_inst) {
             instance_of_template_invoke = f_inst;
             f_inst->is_callback = true;
+            f_inst->require_all_lambdas_inside(instance_of_function_template_stream);
           }
         });
       } else {
@@ -92,7 +93,13 @@ private:
       if (auto param = func_args[i].as<op_func_param>()) {
         if (param->template_type_id >= 0) {
           ClassPtr class_corresponding_to_parameter{nullptr};
-          VertexPtr call_arg = i < call->args().size() ? call->args()[i] : param->default_value();
+          VertexPtr call_arg;
+          if (i < call->args().size()) {
+            call_arg = call->args()[i];
+          } else {
+            kphp_error_act(param->has_default_value(), format("missed %dth argument in function call: %s", i, call->get_string().c_str()), return call);
+            call_arg = param->default_value();
+          }
 
           AssumType assum = infer_class_of_expr(stage::get_function(), call_arg, class_corresponding_to_parameter);
 
@@ -134,7 +141,7 @@ private:
     call->set_func_id({});
 
     G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
-      if (!f_inst) {
+      if (!f_inst || f_inst->is_template) {
         f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
         if (f_inst) {
           f_inst->is_required = true;
@@ -149,6 +156,8 @@ private:
       }
 
       if (f_inst) {
+        kphp_assert_msg(!f_inst->is_template, "instance of template function must be non template");
+        f_inst->require_all_lambdas_inside(instance_of_function_template_stream);
         set_func_id(call, f_inst);
       }
     });
@@ -267,6 +276,14 @@ private:
    */
   VertexPtr try_set_func_id(VertexPtr call) {
     if (call->get_func_id()) {
+      if (call->get_func_id()->is_lambda_with_uses()) {
+        kphp_assert(call->type() == op_constructor_call);
+        call->get_func_id()->class_id->infer_uses_assumptions(current_function); // instance_of_function_template_stream << call->get_func_id();
+        call->location.function = current_function;
+        call->get_func_id()->is_template = false;
+        instance_of_function_template_stream << call->get_func_id();
+      }
+
       return call;
     }
 

@@ -176,3 +176,11 @@ FunctionPtr ClassData::get_template_of_invoke_function() const {
 bool ClassData::is_lambda_class() const {
   return vk::string_view(name).starts_with(FunctionData::get_lambda_namespace());
 }
+
+void ClassData::infer_uses_assumptions(FunctionPtr parent_function) {
+  members.for_each([=](const ClassMemberInstanceField &field) {
+    ClassPtr inferred_class;
+    auto assum = calc_assumption_for_var(parent_function, field.local_name(), inferred_class);
+    assumptions_for_vars.emplace_back(assum, field.local_name(), inferred_class);
+  });
+}

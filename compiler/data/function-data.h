@@ -6,6 +6,7 @@
 #include "compiler/data/function-info.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData {
@@ -94,6 +95,8 @@ public:
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
 
+  void require_all_lambdas_inside(DataStream<FunctionPtr> &os) const;
+
   static ClassPtr is_lambda(VertexPtr v);
 
   static const std::string &get_lambda_namespace() {
@@ -112,7 +115,7 @@ public:
   }
 
   ClassPtr get_outer_class() const {
-    return is_lambda() ? function_in_which_lambda_was_created->class_id : class_id;
+    return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->class_id : class_id;
   }
 
   const std::string &get_outer_class_context_name() const {
