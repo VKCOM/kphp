@@ -19,18 +19,18 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
       size_t pos = name.find("$$");
 
       kphp_error(member->access_type != access_nonmember,
-                 dl_pstr("Field wasn't declared: %s", member->local_name().c_str()));
+                 format("Field wasn't declared: %s", member->local_name().c_str()));
       kphp_error(member->access_type != access_static_private ||
                  (class_id && replace_backslashes(class_id->name) == name.substr(0, pos)),
-                 dl_pstr("Can't access private field %s", member->local_name().c_str()));
+                 format("Can't access private field %s", member->local_name().c_str()));
       if (member->access_type == access_static_protected) {
-        kphp_error_act(class_id, dl_pstr("Can't access protected field %s", member->local_name().c_str()), return root);
+        kphp_error_act(class_id, format("Can't access protected field %s", member->local_name().c_str()), return root);
         ClassPtr var_class = var_id->class_id;
         ClassPtr klass = G->get_class(class_id->name);      // это не class_id! из-за множественного парсинга одного файла
         while (klass && var_class != klass) {
           klass = klass->parent_class;
         }
-        kphp_error(klass, dl_pstr("Can't access protected field %s", member->local_name().c_str()));
+        kphp_error(klass, format("Can't access protected field %s", member->local_name().c_str()));
       }
     }
   } else if (root->type() == op_func_call) {
@@ -41,7 +41,7 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
       kphp_assert(pos != string::npos);
       kphp_error(func_id->access_type != access_static_private ||
                  (class_id && replace_backslashes(class_id->name) == name.substr(0, pos)),
-                 dl_pstr("Can't access private function %s", name.c_str()));
+                 format("Can't access private function %s", name.c_str()));
       // TODO: check protected
     }
   }

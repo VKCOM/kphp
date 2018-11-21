@@ -16,7 +16,7 @@ VertexPtr CheckInstancePropsPass::on_enter_vertex(VertexPtr v, LocalT *) {
         v->set_var_id(m->var);
         init_class_instance_var(v, m, klass);
       } else {
-        kphp_error(0, dl_pstr("Invalid property access ...->%s: does not exist in class %s", v->get_c_string(), klass->name.c_str()));
+        kphp_error(0, format("Invalid property access ...->%s: does not exist in class %s", v->get_c_string(), klass->name.c_str()));
       }
     }
   }
@@ -39,7 +39,7 @@ void CheckInstancePropsPass::init_class_instance_var(VertexPtr v, const ClassMem
     if (PhpDocTypeRuleParser::find_tag_in_phpdoc(field->phpdoc_token->str_val, php_doc_tag::var, var_name, type_str)) {
       VertexPtr doc_type = phpdoc_parse_type(type_str, klass->init_function);
       if (!kphp_error(doc_type,
-                      dl_pstr("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), field->local_name().c_str()))) {
+                      format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), field->local_name().c_str()))) {
         doc_type->location = field->root->location;
         v->type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
       }

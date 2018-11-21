@@ -64,7 +64,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
 
   if (root->type() == op_func_call && root->get_string() == "call_user_func_array") {
     VertexRange args = root.as<op_func_call>()->args();
-    kphp_error ((int)args.size() == 2, dl_pstr("Call_user_func_array expected 2 arguments, got %d", (int)root->size()));
+    kphp_error ((int)args.size() == 2, format("Call_user_func_array expected 2 arguments, got %d", (int)root->size()));
     kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
     auto arg = VertexAdaptor<op_varg>::create(args[1]);
     ::set_location(arg, args[1]->get_location());

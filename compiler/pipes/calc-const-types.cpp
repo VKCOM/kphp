@@ -25,7 +25,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *local) {
       v->const_type = cnst_not_val;
       break;
     default:
-      kphp_error (0, dl_pstr("Unknown cnst-type for [op = %d]", v->type()));
+      kphp_error (0, format("Unknown cnst-type for [op = %d]", v->type()));
       kphp_fail();
       break;
   }

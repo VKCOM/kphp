@@ -24,7 +24,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     // запрещаем '$s[] = ...' для не-массивов; для массивов превращаем в push_back
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
     kphp_error (a_ptype == tp_array || a_ptype == tp_var,
-                dl_pstr("Can not use [] for %s", type_out(tinf::get_type(a)).c_str()));
+                format("Can not use [] for %s", type_out(tinf::get_type(a)).c_str()));
 
     if (set_op->rl_type == val_none) {
       result = VertexAdaptor<op_push_back>::create(a, c);

@@ -6,8 +6,8 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/debug.h"
-#include "compiler/name-gen.h"
 #include "compiler/inferring/public.h"
+#include "compiler/name-gen.h"
 #include "compiler/vertex.h"
 
 const string &ClassMemberStaticMethod::global_name() const {
@@ -81,7 +81,7 @@ template <class MemberT>
 void ClassMembersContainer::append_member(const string &hash_name, const MemberT &member) {
   unsigned long long hash_num = hash_ll(hash_name);
   kphp_error(names_hashes.insert(hash_num).second,
-             dl_pstr("Redeclaration of %s :: %s", klass->name.c_str(), hash_name.c_str()));
+             format("Redeclaration of %s :: %s", klass->name.c_str(), hash_name.c_str()));
   get_all_of<MemberT>().push_back(member);
   //printf("append %s :: %s\n", klass->name.c_str(), hash_name.c_str());
 }

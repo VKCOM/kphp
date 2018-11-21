@@ -42,7 +42,7 @@ inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
     }
 
     kphp_error(has_default_value || allow_no_default_value,
-               dl_pstr("static %s::$%s is not inited at declaration (inferred %s)",
+               format("static %s::$%s is not inited at declaration (inferred %s)",
                        klass->name.c_str(), f.local_name().c_str(), type_out(f.get_inferred_type()).c_str()));
   });
 }
@@ -52,6 +52,6 @@ inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_Unknown,
-               dl_pstr("var %s::$%s is declared but never written", klass->name.c_str(), f.local_name().c_str()));
+               format("var %s::$%s is declared but never written", klass->name.c_str(), f.local_name().c_str()));
   });
 }

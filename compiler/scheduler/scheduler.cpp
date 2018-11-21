@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include "drinkless/dl-utils-lite.h"
-
 #include "compiler/scheduler/task.h"
 #include "compiler/threading/thread-id.h"
 #include "compiler/threading/tls.h"
@@ -17,8 +15,6 @@ public:
 
   Node *node;
   bool run_flag;
-  double started;
-  double finished;
 };
 
 
@@ -106,7 +102,6 @@ bool Scheduler::thread_process_node(Node *node) {
 }
 
 void Scheduler::thread_execute(ThreadContext *tls) {
-  tls->started = dl_time();
   set_thread_id(tls->thread_id);
 
   while (tls->run_flag) {
@@ -122,7 +117,4 @@ void Scheduler::thread_execute(ThreadContext *tls) {
     }
     usleep(250);
   }
-
-  tls->finished = dl_time();
-  //fprintf (stderr, "%lf\n", tls->worked / (tls->finished - tls->started));
 }

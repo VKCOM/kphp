@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler/operation.h"
+#include "compiler/threading/format.h"
 
 template<Operation Op>
 class vertex_inner;
@@ -28,13 +29,13 @@ public:
   template<Operation FromOp>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) :
     impl(dynamic_cast <vertex_inner<Op> *> (from.impl)) {
-    dl_assert(impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
+    dl_assert(impl != nullptr, format("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
   }
 
   template<Operation FromOp>
   VertexAdaptor &operator=(const VertexAdaptor<FromOp> &from) {
     impl = dynamic_cast <vertex_inner<Op> *> (from.impl);
-    dl_assert(from.impl == nullptr || impl != nullptr, dl_pstr("Can't cast VertexAdaptor<%d> (real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
+    dl_assert(from.impl == nullptr || impl != nullptr, format("Can't cast VertexAdaptor<%d> (real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
     return *this;
   }
 

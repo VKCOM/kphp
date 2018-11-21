@@ -12,7 +12,7 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
     VarPtr old_var = it.first->second;
     kphp_error (
       old_var == var,
-      dl_pstr("conflict in variable names [%s]", old_var->name.c_str())
+      format("conflict in variable names [%s]", old_var->name.c_str())
     );
   } else {
     if (in_param_list > 0) {
@@ -81,7 +81,7 @@ void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex
     kphp_assert(var->is_function_static_var());
   }
   if (default_value) {
-    if (!kphp_error(is_const(default_value), dl_pstr("Default value of [%s] is not constant", name.c_str()))) {
+    if (!kphp_error(is_const(default_value), format("Default value of [%s] is not constant", name.c_str()))) {
       var->init_val = default_value;
     }
   }
@@ -95,7 +95,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex,
   if (default_value) {
     if (!kphp_error (
       is_const(default_value) || is_global_var(default_value),
-      dl_pstr("Default value of [%s] is not constant", name.c_str()))) {
+      format("Default value of [%s] is not constant", name.c_str()))) {
       var->init_val = default_value;
     }
   }
@@ -117,7 +117,7 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
       while (klass && !klass->members.has_field(var_name)) {
         klass = klass->parent_class;
       }
-      if (kphp_error(klass, dl_pstr("static field not found: %s", name.c_str()))) {
+      if (kphp_error(klass, format("static field not found: %s", name.c_str()))) {
         return;
       }
       name = replace_backslashes(klass->name) + "$$" + var_name;

@@ -99,7 +99,7 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
       recalc_ptype<tp_Error>();
     }
   } else {
-    kphp_error (0, dl_pstr("unknown type_rule function [%s]", func_type_rule->str_val.c_str()));
+    kphp_error (0, format("unknown type_rule function [%s]", func_type_rule->str_val.c_str()));
     recalc_ptype<tp_Error>();
   }
 }

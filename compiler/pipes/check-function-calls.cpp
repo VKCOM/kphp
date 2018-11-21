@@ -5,7 +5,7 @@
 void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   FunctionPtr f = call->get_func_id();
   kphp_assert(f);
-  kphp_error_return(f->root, dl_pstr("Function [%s] undeclared", f->get_human_readable_name().c_str()));
+  kphp_error_return(f->root, format("Function [%s] undeclared", f->get_human_readable_name().c_str()));
 
   if (call->type() == op_func_ptr || f->varg_flag) {
     return;
@@ -18,18 +18,18 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   int call_params_n = static_cast<int>(call_params.size());
 
   kphp_error_return(call_params_n >= f->min_argn,
-                    dl_pstr("Not enough arguments in function [%s : %s] [found %d] [expected at least %d]",
+                    format("Not enough arguments in function [%s : %s] [found %d] [expected at least %d]",
                             f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, f->min_argn)
   );
 
   kphp_error(call_params.begin() == call_params.end() || call_params[0]->type() != op_varg,
-             dl_pstr("call_user_func_array is used for function [%s : %s]",
+             format("call_user_func_array is used for function [%s : %s]",
                      f->file_id->file_name.c_str(), f->get_human_readable_name().c_str()
              )
   );
 
   kphp_error_return(func_params_n >= call_params_n,
-                    dl_pstr("Too much arguments in function [%s : %s] [found %d] [expected %d]",
+                    format("Too much arguments in function [%s : %s] [found %d] [expected %d]",
                             f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, func_params_n
                     )
   );
@@ -37,7 +37,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   for (int i = 0; i < call_params.size(); i++) {
     if (func_params[i]->type() == op_func_param_callback) {
       kphp_error_return(call_params[i]->type() == op_func_ptr,
-                        dl_pstr("Argument '%s' should be function pointer, but %s found [%s : %s]",
+                        format("Argument '%s' should be function pointer, but %s found [%s : %s]",
                                 func_params[i].as<op_func_param_callback>()->var()->get_c_string(),
                                 OpInfo::str(call_params[i]->type()).c_str(),
                                 f->file_id->file_name.c_str(), f->get_human_readable_name().c_str()

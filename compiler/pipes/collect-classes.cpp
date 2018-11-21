@@ -18,7 +18,7 @@ void CollectClassF::execute(FunctionPtr data, DataStream<FunctionPtr> &os) {
       klass->parent_class = G->get_class(extends_full_classname);
       kphp_assert(klass->parent_class);
       kphp_error(!klass->members.has_constructor() && !klass->parent_class->members.has_constructor(),
-                 dl_pstr("Invalid class extends %s and %s: extends is available only if classes are only-static",
+                 format("Invalid class extends %s and %s: extends is available only if classes are only-static",
                          klass->name.c_str(), klass->parent_class->name.c_str()));
     }
   }

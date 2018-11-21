@@ -37,7 +37,7 @@ template<class IndexType>
 DataType &IdMap<DataType>::operator[](const IndexType &i) {
   int index = get_index(i);
   assert(index >= 0);
-  dl_assert(index < (int)data.size(), dl_pstr("%d of %d\n", index, (int)data.size()));
+  dl_assert(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
   return data[index];
 }
 
@@ -46,7 +46,7 @@ template<class IndexType>
 const DataType &IdMap<DataType>::operator[](const IndexType &i) const {
   int index = get_index(i);
   assert(index >= 0);
-  dl_assert(index < (int)data.size(), dl_pstr("%d of %d\n", index, (int)data.size()));
+  dl_assert(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
   return data[index];
 }
 

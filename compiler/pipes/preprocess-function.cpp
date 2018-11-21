@@ -286,13 +286,13 @@ private:
 
   void print_why_cant_set_func_id_error(VertexPtr call, std::string unexisting_func_name) {
     if (call->type() == op_constructor_call) {
-      kphp_error(0, dl_pstr("Calling 'new %s()', but this class is fully static", call->get_string().c_str()));
+      kphp_error(0, format("Calling 'new %s()', but this class is fully static", call->get_string().c_str()));
     } else if (call->type() == op_func_call && call->extra_type == op_ex_func_member) {
       ClassPtr klass;
       infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
-      kphp_error(0, dl_pstr("Unknown function ->%s() of %s\n", call->get_c_string(), klass ? klass->name.c_str() : "Unknown class"));
+      kphp_error(0, format("Unknown function ->%s() of %s\n", call->get_c_string(), klass ? klass->name.c_str() : "Unknown class"));
     } else {
-      kphp_error(0, dl_pstr("Unknown function %s()\n", unexisting_func_name.c_str()));
+      kphp_error(0, format("Unknown function %s()\n", unexisting_func_name.c_str()));
     }
   }
 };

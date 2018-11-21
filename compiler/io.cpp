@@ -9,9 +9,9 @@
 
 #include "common/crc32.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
-#include "compiler/compiler-core.h"
 
 WriterData::WriterData(bool compile_with_debug_info_flag) :
   lines(),
@@ -46,7 +46,7 @@ void WriterData::add_location(SrcFilePtr file, int line) {
   }
   kphp_error (
     !lines.back().file || lines.back().file == file,
-    dl_pstr("%s|%s", file->file_name.c_str(), lines.back().file->file_name.c_str())
+    format("%s|%s", file->file_name.c_str(), lines.back().file->file_name.c_str())
   );
   lines.back().file = file;
   if (line != -1) {
@@ -111,7 +111,7 @@ void WriterData::dump(string &dest_str, const T &begin, const T &end, SrcFilePtr
           while (cur_id < id) {
             cur_id++;
             if (cur_id + 10 > id) {
-              dest_str += dl_pstr("//%d: ", cur_id);
+              dest_str += format("//%d: ", cur_id);
               vk::string_view comment = file->get_line(cur_id);
               char last_printed = ':';
               for (char c : comment) {

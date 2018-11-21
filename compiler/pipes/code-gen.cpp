@@ -1892,7 +1892,7 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
 
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
-  kphp_error_return (OpInfo::str(root->type())[0] != '@', dl_pstr("Unexpected %s\n", OpInfo::str(root->type()).c_str() + 1));
+  kphp_error_return (OpInfo::str(root->type())[0] != '@', format("Unexpected %s\n", OpInfo::str(root->type()).c_str() + 1));
 
   VertexPtr lhs = root->lhs();
   VertexPtr rhs = root->rhs();
@@ -2249,7 +2249,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   PrimitiveType ptype = type_data->get_real_ptype();
 
   if (vk::none_of_equal(ptype, tp_array, tp_var)) {
-    kphp_error_return(false, dl_pstr("%s (%s)", "Invalid argument supplied for foreach()", ptype_name(ptype)));
+    kphp_error_return(false, format("%s (%s)", "Invalid argument supplied for foreach()", ptype_name(ptype)));
   }
 
   W << BEGIN;
@@ -2444,7 +2444,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
         string str = val.as<op_int_const>()->str_val;
         W << str;
         kphp_error (!used.count(str),
-                    dl_pstr("Switch: repeated cases found [%s]", str.c_str()));
+                    format("Switch: repeated cases found [%s]", str.c_str()));
         used.insert(str);
       } else {
         compile_vertex(val, W);
@@ -2756,7 +2756,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
 
     int value_length = type_strlen(type);
     if (value_length == STRLEN_ERROR) {
-      kphp_error (0, dl_pstr("Cannot convert type [%s] to string", type_out(type).c_str()));
+      kphp_error (0, format("Cannot convert type [%s] to string", type_out(type).c_str()));
       ok = false;
       ii++;
       continue;
@@ -2775,7 +2775,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       } else {
         if (value_length & STRLEN_WARNING_FLAG) {
           value_length &= ~STRLEN_WARNING_FLAG;
-          kphp_warning (dl_pstr("Suspicious convertion of type [%s] to string", type_out(type).c_str()));
+          kphp_warning (format("Suspicious convertion of type [%s] to string", type_out(type).c_str()));
         }
 
         kphp_assert (value_length >= 0);
@@ -3187,7 +3187,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
   } else {
     func = root->get_func_id();
     if (state != 1 && state != 2 && W.get_context().resumable_flag && func->root->resumable_flag) {
-      kphp_error (0, dl_pstr("Can't compile resumable function [%s] without async\n"
+      kphp_error (0, format("Can't compile resumable function [%s] without async\n"
                              "Function is resumable because of calls chain:\n%s\n", func->get_human_readable_name().c_str(), func->get_resumable_path().c_str()));
     }
 
@@ -3346,7 +3346,7 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       TypeName(tinf::get_type(index->key())) <<
       ")";
   } else {
-    kphp_error (0, dl_pstr("Safe version of [%s] is not supported", OpInfo::str(root->type()).c_str()));
+    kphp_error (0, format("Safe version of [%s] is not supported", OpInfo::str(root->type()).c_str()));
     kphp_fail();
   }
 

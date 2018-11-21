@@ -66,7 +66,7 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &v
   for (const auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
       kphp_error(a.assum_type == assum && a.klass == klass,
-                 dl_pstr("%s()::$%s is both %s and %s\n", f->get_human_readable_name().c_str(), var_name.c_str(),
+                 format("%s()::$%s is both %s and %s\n", f->get_human_readable_name().c_str(), var_name.c_str(),
                          a.klass ? a.klass->name.c_str() : "[primitive]",
                          klass ? klass->name.c_str() : "[primitive]"));
       exists = true;
@@ -84,7 +84,7 @@ void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
 
   if (a.assum_type != assum_unknown) {
     kphp_error(a.assum_type == assum && a.klass == klass,
-               dl_pstr("%s() returns both %s and %s\n", f->get_human_readable_name().c_str(),
+               format("%s() returns both %s and %s\n", f->get_human_readable_name().c_str(),
                        a.klass ? a.klass->name.c_str() : "[primitive]",
                        klass ? klass->name.c_str() : "[primitive]"));
   }
@@ -99,7 +99,7 @@ void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_
   for (const auto &a : c->assumptions_for_vars) {
     if (a.var_name == var_name) {
       kphp_error(a.assum_type == assum && a.klass == klass,
-                 dl_pstr("%s::$%s is both %s and %s\n", var_name.c_str(), c->name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
+                 format("%s::$%s is both %s and %s\n", var_name.c_str(), c->name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
       exists = true;
     }
   }
@@ -314,7 +314,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     VertexAdaptor<op_func_param> param = i;
     if (!param->type_declaration.empty()) {
       ClassPtr klass = G->get_class(resolve_uses(f, param->type_declaration, '\\'));
-      kphp_error(klass, dl_pstr("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
+      kphp_error(klass, format("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
       assumption_add_for_var(f, assum_instance, param->var()->get_string(), klass);
     }
   }
@@ -518,13 +518,13 @@ inline AssumType infer_from_call(FunctionPtr f,
                              ? resolve_instance_func_name(f, call)
                              : get_full_static_member_name(f, call->str_val);
 
-  const FunctionSetPtr &ptr = G->get_function_set(fs_function, fname, false);
-  if (!ptr || !ptr->size()) {
-    kphp_error(ptr && ptr->size() > 0, dl_pstr("%s() is undefined, can not infer class", fname.c_str()));
+  const FunctionPtr ptr = G->get_function(fname);
+  if (!ptr) {
+    kphp_error(0, format("%s() is undefined, can not infer class", fname.c_str()));
     return assum_unknown;
   }
 
-  return calc_assumption_for_return(ptr[0], out_class);
+  return calc_assumption_for_return(ptr, out_class);
 }
 
 inline AssumType infer_from_array(FunctionPtr f,

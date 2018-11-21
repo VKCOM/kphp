@@ -28,12 +28,12 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
     if (file->crc64 == (unsigned long long)-1) {
       FILE *old_file = fopen(full_file_name.c_str(), "r");
       dl_passert (old_file != nullptr,
-                  dl_pstr("Failed to open [%s]", full_file_name.c_str()));
+                  format("Failed to open [%s]", full_file_name.c_str()));
       unsigned long long old_crc = 0;
       unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
 
       if (fscanf(old_file, "//crc64:%Lx", &old_crc) != 1) {
-        kphp_warning (dl_pstr("can't read crc64 from [%s]\n", full_file_name.c_str()));
+        kphp_warning (format("can't read crc64 from [%s]\n", full_file_name.c_str()));
         old_crc = static_cast<unsigned long long>(-1);
       } else {
         if (fscanf(old_file, " //crc64_with_comments:%Lx", &old_crc_with_comments) != 1) {
@@ -81,11 +81,11 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
     }
     if (need_del) {
       int err = unlink(full_file_name.c_str());
-      dl_passert (err == 0, dl_pstr("Failed to unlink [%s]", full_file_name.c_str()));
+      dl_passert (err == 0, format("Failed to unlink [%s]", full_file_name.c_str()));
     }
     FILE *dest_file = fopen(full_file_name.c_str(), "w");
     dl_passert (dest_file != nullptr,
-                dl_pstr("Failed to open [%s] for write\n", full_file_name.c_str()));
+                format("Failed to open [%s] for write\n", full_file_name.c_str()));
 
     dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", ~crc));
     dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));

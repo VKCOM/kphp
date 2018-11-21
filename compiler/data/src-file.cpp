@@ -29,24 +29,24 @@ bool SrcFile::load() {
   int err;
 
   int fid = open(file_name.c_str(), O_RDONLY);
-  dl_passert (fid >= 0, dl_pstr("failed to open file [%s]", file_name.c_str()));
+  dl_passert (fid >= 0, format("failed to open file [%s]", file_name.c_str()));
 
   struct stat buf;
   err = fstat(fid, &buf);
   dl_passert (err >= 0, "fstat failed");
 
-  dl_assert (buf.st_size < 100000000, dl_pstr("file [%s] is too big [%lu]\n", file_name.c_str(), buf.st_size));
+  dl_assert (buf.st_size < 100000000, format("file [%s] is too big [%lu]\n", file_name.c_str(), buf.st_size));
   int file_size = (int)buf.st_size;
   int prefix_size = (int)prefix.size();
   int text_size = file_size + prefix_size;
   text = string(text_size, ' ');
   std::copy(prefix.begin(), prefix.end(), text.begin());
   err = (int)read(fid, &text[0] + prefix_size, file_size);
-  dl_assert (err >= 0, dl_pstr("Can't read file [%s]: %m", file_name.c_str()));
+  dl_assert (err >= 0, format("Can't read file [%s]: %m", file_name.c_str()));
 
   for (int i = 0; i < text_size; i++) {
     if (unlikely (text[i] == 0)) {
-      kphp_warning(dl_pstr("symbol with code zero was replaced by space in file [%s] at [%d]", file_name.c_str(), i - prefix_size));
+      kphp_warning(format("symbol with code zero was replaced by space in file [%s] at [%d]", file_name.c_str(), i - prefix_size));
       text[i] = ' ';
     }
   }

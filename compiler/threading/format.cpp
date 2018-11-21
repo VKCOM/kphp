@@ -5,11 +5,11 @@
 
 #include "compiler/threading/tls.h"
 
-typedef char pstr_buff_t[5000];
-TLS<pstr_buff_t> pstr_buff;
+typedef char format_buff_t[5000];
+TLS<format_buff_t> format_buff;
 
-char *bicycle_dl_pstr(char const *msg, ...) {
-  pstr_buff_t &s = *pstr_buff;
+char *format(char const *msg, ...) {
+  format_buff_t &s = *format_buff;
   va_list args;
 
   va_start (args, msg);

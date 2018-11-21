@@ -30,7 +30,7 @@ LValue as_lvalue(VertexPtr v) {
   } else if (v->type() == op_instance_prop) {       // при $a->arr[] = 1; когда не работает верхнее условие
     value = tinf::get_tinf_node(v->get_var_id());
   } else {
-    kphp_error (0, dl_pstr("Bug in compiler: Trying to use [%s] as lvalue", OpInfo::str(v->type()).c_str()));
+    kphp_error (0, format("Bug in compiler: Trying to use [%s] as lvalue", OpInfo::str(v->type()).c_str()));
     kphp_fail();
   }
 

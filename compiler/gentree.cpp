@@ -160,7 +160,7 @@ bool GenTree::test_expect(TokenType tp) {
 
 #define expect(tp, msg) ({ \
   bool res__;\
-  if (kphp_error (test_expect (tp), dl_pstr ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : (*cur)->to_str().c_str()))) {\
+  if (kphp_error (test_expect (tp), format ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : (*cur)->to_str().c_str()))) {\
     res__ = false;\
   } else {\
     next_cur();\
@@ -170,7 +170,7 @@ bool GenTree::test_expect(TokenType tp) {
 })
 
 #define expect2(tp1, tp2, msg) ({ \
-  kphp_error (test_expect (tp1) || test_expect (tp2), dl_pstr ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : (*cur)->to_str().c_str())); \
+  kphp_error (test_expect (tp1) || test_expect (tp2), format ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : (*cur)->to_str().c_str())); \
   if (cur != end) {next_cur();} \
   1;\
 })
@@ -784,7 +784,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
                       : get_binary_op(op_priority_cur + left_to_right,
                                       till_ternary && op_priority_cur >= OpInfo::ternaryP);
     if (!right && !ternary) {
-      kphp_error (0, dl_pstr("Failed to parse second argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
+      kphp_error (0, format("Failed to parse second argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
       return VertexPtr();
     }
 
@@ -793,7 +793,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
       CE (expect(tok_colon, "':'"));
       third = get_expression_impl(true);
       if (!third) {
-        kphp_error (0, dl_pstr("Failed to parse third argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
+        kphp_error (0, format("Failed to parse third argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
         return VertexPtr();
       }
       if (right) {
@@ -1783,10 +1783,10 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   if (in_namespace()) {
     string expected_name = processing_file->short_file_name;
     kphp_error (name_str == expected_name,
-                dl_pstr("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
+                format("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
   }
   if (!is_class_name_allowed(name_str)) {
-    kphp_error (false, dl_pstr("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
+    kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
   }
   if (class_context.empty()) {
     class_context = full_class_name;
@@ -1942,7 +1942,7 @@ VertexPtr GenTree::get_namespace_class() {
   string expected_namespace_name = replace_characters(processing_file->unified_dir_name, '/', '\\');
 
   kphp_error (namespace_name == expected_namespace_name,
-              dl_pstr("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
+              format("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
   processing_file->namespace_name = namespace_name;
   next_cur();
   expect (tok_semicolon, "';'");

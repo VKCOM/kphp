@@ -13,7 +13,7 @@
 bool is_dir(const string &path) {
   struct stat s;
   int err = stat(path.c_str(), &s);
-  dl_passert (err == 0, dl_pstr("Failed to stat [%s]", path.c_str()));
+  dl_passert (err == 0, format("Failed to stat [%s]", path.c_str()));
   return S_ISDIR (s.st_mode);
 }
 
@@ -50,7 +50,7 @@ void File::set_mtime(long long mtime_value) {
   times[1].tv_sec = mtime_value / 1000000000ll;
   times[1].tv_nsec = mtime_value % 1000000000ll;
   if (utimensat(AT_FDCWD, path.c_str(), times, 0) < 0) {
-    kphp_warning(dl_pstr("Can't set mtime for %s with error %m", path.c_str()));
+    kphp_warning(format("Can't set mtime for %s with error %m", path.c_str()));
   }
 }
 
@@ -85,12 +85,12 @@ void File::unlink() {
 
 void Index::set_dir(const string &new_dir) {
   bool res_mkdir = mkdir_recursive(new_dir.c_str(), 0777);
-  dl_assert(res_mkdir, dl_pstr("Failed to mkdir [%s] (%s)", new_dir.c_str(), strerror(errno)));
+  dl_assert(res_mkdir, format("Failed to mkdir [%s] (%s)", new_dir.c_str(), strerror(errno)));
 
   dir = get_full_path(new_dir);
   kphp_assert (!dir.empty());
   if (!is_dir(dir)) {
-    kphp_error (0, dl_pstr("[%s] is not a directory", dir.c_str()));
+    kphp_error (0, format("[%s] is not a directory", dir.c_str()));
     kphp_fail();
   }
   if (dir[dir.size() - 1] != '/') {
@@ -119,7 +119,7 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
     }
     f->mtime = new_mtime;
   } else {
-    kphp_error (0, dl_pstr("Failed to scan directory [fpath=%s]\n", fpath));
+    kphp_error (0, format("Failed to scan directory [fpath=%s]\n", fpath));
     kphp_fail();
   }
   return 0;
@@ -132,7 +132,7 @@ void Index::sync_with_dir(const string &new_dir) {
   }
   current_index = this;
   int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
-  dl_passert (err == 0, dl_pstr("ftw [%s] failed", dir.c_str()));
+  dl_passert (err == 0, format("ftw [%s] failed", dir.c_str()));
   vector<string> to_del;
   for (const auto &path_and_file : files) {
     if (!path_and_file.second->on_disk) {
@@ -155,7 +155,7 @@ void Index::del_extra_files() {
         }
         int err = unlink(file->path.c_str());
         if (err != 0) {
-          kphp_error (0, dl_pstr("Failed to unlink file %s: %m", file->path.c_str()));
+          kphp_error (0, format("Failed to unlink file %s: %m", file->path.c_str()));
           kphp_fail();
         }
       }
@@ -184,7 +184,7 @@ void Index::create_subdir(const string &subdir) {
   int ret = mkdir(full_path.c_str(), 0777);
   dl_passert (ret != -1 || errno == EEXIST, full_path.c_str());
   if (errno == EEXIST && !is_dir(full_path)) {
-    kphp_error (0, dl_pstr("[%s] is not a directory", full_path.c_str()));
+    kphp_error (0, format("[%s] is not a directory", full_path.c_str()));
     kphp_fail();
   }
 }

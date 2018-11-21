@@ -12,19 +12,19 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
   kphp_assert (root && header);
   kphp_error_return (
     !func->header,
-    dl_pstr("Function [%s]: multiple headers", func->get_human_readable_name().c_str())
+    format("Function [%s]: multiple headers", func->get_human_readable_name().c_str())
   );
   func->header = header;
 
   kphp_error_return (
     !root->type_rule,
-    dl_pstr("Function [%s]: type_rule is overided by header", func->get_human_readable_name().c_str())
+    format("Function [%s]: type_rule is overided by header", func->get_human_readable_name().c_str())
   );
   root->type_rule = header->type_rule;
 
   kphp_error_return (
     !(!header->varg_flag && func->varg_flag),
-    dl_pstr("Function [%s]: varg_flag mismatch with header", func->get_human_readable_name().c_str())
+    format("Function [%s]: varg_flag mismatch with header", func->get_human_readable_name().c_str())
   );
   func->varg_flag = header->varg_flag;
 
@@ -36,20 +36,20 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
 
     kphp_error (
       root_params.size() == header_params.size(),
-      dl_pstr("Bad header for function [%s]", func->get_human_readable_name().c_str())
+      format("Bad header for function [%s]", func->get_human_readable_name().c_str())
     );
     int params_n = (int)root_params.size();
     for (int i = 0; i < params_n; i++) {
       kphp_error (
         root_params[i]->size() == header_params[i]->size(),
-        dl_pstr(
+        format(
           "Function [%s]: %dth param has problem with default value",
           func->get_human_readable_name().c_str(), i + 1
         )
       );
       kphp_error (
         root_params[i]->type_help == tp_Unknown,
-        dl_pstr("Function [%s]: type_help is overrided by header", func->get_human_readable_name().c_str())
+        format("Function [%s]: type_help is overrided by header", func->get_human_readable_name().c_str())
       );
       root_params[i]->type_help = header_params[i]->type_help;
     }
@@ -84,11 +84,11 @@ static void prepare_function_misc(FunctionPtr func) {
       }
       if (func->type() == FunctionData::func_local) {
         kphp_error (!param->var()->ref_flag,
-                    dl_pstr("Default value in reference function argument [function = %s]", func->get_human_readable_name().c_str()));
+                    format("Default value in reference function argument [function = %s]", func->get_human_readable_name().c_str()));
       }
     } else {
       kphp_error (!was_default,
-                  dl_pstr("Default value expected [function = %s] [param_i = %d]", func->get_human_readable_name().c_str(), i));
+                  format("Default value expected [function = %s] [param_i = %d]", func->get_human_readable_name().c_str(), i));
     }
   }
 }
@@ -140,7 +140,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           } else if (token == "cast") {
             infer_type |= 4;
           } else {
-            kphp_error(0, dl_pstr("Unknown kphp-infer tag type '%s'", token.c_str()));
+            kphp_error(0, format("Unknown kphp-infer tag type '%s'", token.c_str()));
           }
         }
         break;
@@ -151,7 +151,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         string token;
         while (is >> token) {
           if (!f->disabled_warnings.insert(token).second) {
-            kphp_warning(dl_pstr("Warning '%s' has been disabled twice", token.c_str()));
+            kphp_warning(format("Warning '%s' has been disabled twice", token.c_str()));
           }
         }
         break;
@@ -176,7 +176,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           is_first_time = false;
 
           auto func_param_it = name_to_function_param.find(var_name);
-          kphp_error_return(func_param_it != name_to_function_param.end(), dl_pstr("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
+          kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
 
           VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
           name_to_function_param.erase(func_param_it);
@@ -205,7 +205,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           kphp_error(is >> var_name, "Failed to parse @param tag");
 
           auto func_param_it = name_to_function_param.find(var_name);
-          kphp_error_return(func_param_it != name_to_function_param.end(), dl_pstr("@param tag var name mismatch. found %s.", var_name.c_str()));
+          kphp_error_return(func_param_it != name_to_function_param.end(), format("@param tag var name mismatch. found %s.", var_name.c_str()));
 
           VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
           VertexAdaptor<op_var> var = cur_func_param->var().as<op_var>();
@@ -219,7 +219,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
 
           VertexPtr doc_type = phpdoc_parse_type(type_help, f);
-          kphp_error(doc_type, dl_pstr("Failed to parse type '%s'", type_help.c_str()));
+          kphp_error(doc_type, format("Failed to parse type '%s'", type_help.c_str()));
 
           if (infer_type & 1) {
             auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
@@ -239,9 +239,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
           if (infer_type & 4) {
             kphp_error(doc_type->type() == op_type_rule && doc_type.as<op_type_rule>()->args().empty(),
-                       dl_pstr("Too hard rule '%s' for cast", type_help.c_str()));
+                       format("Too hard rule '%s' for cast", type_help.c_str()));
             kphp_error(cur_func_param->type_help == tp_Unknown,
-                       dl_pstr("Duplicate type rule for argument '%s'", var_name.c_str()));
+                       format("Duplicate type rule for argument '%s'", var_name.c_str()));
             cur_func_param->type_help = doc_type.as<op_type_rule>()->type_help;
           }
 

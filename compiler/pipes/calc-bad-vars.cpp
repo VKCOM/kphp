@@ -333,7 +333,7 @@ private:
     }
     for (const auto &func : call_graph.functions) {
       if (func->root->resumable_flag && func->should_be_sync) {
-        kphp_error (0, dl_pstr("Function [%s] marked with @kphp-sync, but turn up to be resumable\n"
+        kphp_error (0, format("Function [%s] marked with @kphp-sync, but turn up to be resumable\n"
                                "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
       }
     }

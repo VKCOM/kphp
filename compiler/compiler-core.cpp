@@ -56,7 +56,7 @@ FunctionPtr CompilerCore::get_function(const string &name) {
   }
 
   FunctionPtr f = node->data;
-  kphp_assert_msg(f->name == name, dl_pstr("Bug in compiler: hash collision: `%s' and `%s`", f->name.c_str(), name.c_str()));
+  kphp_assert_msg(f->name == name, format("Bug in compiler: hash collision: `%s' and `%s`", f->name.c_str(), name.c_str()));
   return f;
 }
 
@@ -70,7 +70,7 @@ void CompilerCore::save_extern_func_header(const string &name, VertexPtr header)
   AutoLocker<Lockable *> locker(node);
   kphp_error_return (
     !node->data,
-    dl_pstr("Several headers for one function [%s] are found", name.c_str())
+    format("Several headers for one function [%s] are found", name.c_str())
   );
   node->data = header;
 }
@@ -136,7 +136,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, const string &co
 
   kphp_error_act (
     !full_file_name.empty(),
-    dl_pstr("Cannot load file [%s]", file_name.c_str()),
+    format("Cannot load file [%s]", file_name.c_str()),
     return SrcFilePtr()
   );
 
@@ -212,7 +212,7 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
       auto_require = true;
     }
     kphp_error(!f || f == UNPARSED_BUT_REQUIRED_FUNC_PTR,
-               dl_pstr("Redeclaration of function %s(), the previous declaration was in [%s]",
+               format("Redeclaration of function %s(), the previous declaration was in [%s]",
                        function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
     f = function;
   });
@@ -237,7 +237,7 @@ ClassPtr CompilerCore::register_class(ClassPtr cur_class) {
   AutoLocker<Lockable *> locker(node);
   kphp_error_act (
     !node->data,
-    dl_pstr("Redeclaration of class [%s], the previous declaration was in [%s]",
+    format("Redeclaration of class [%s], the previous declaration was in [%s]",
             cur_class->name.c_str(), node->data->file_id->file_name.c_str()),
     return ClassPtr()
   );
@@ -278,7 +278,7 @@ bool CompilerCore::register_define(DefinePtr def_id) {
 
   kphp_error_act (
     !node->data,
-    dl_pstr("Redeclaration of define [%s], the previous declaration was in [%s]",
+    format("Redeclaration of define [%s], the previous declaration was in [%s]",
             def_id->name.c_str(), node->data->file_id->file_name.c_str()),
     return false
   );
@@ -584,7 +584,7 @@ void CompilerCore::make() {
       if (err == -1) {
         perror("system failed");
       }
-      kphp_error (0, dl_pstr("Failed [%s]", cmd.c_str()));
+      kphp_error (0, format("Failed [%s]", cmd.c_str()));
       stage::die_if_global_errors();
     }
   }

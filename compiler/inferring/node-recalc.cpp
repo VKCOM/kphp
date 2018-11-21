@@ -20,25 +20,25 @@ static void print_why_tinf_occured_error(
   std::string desc2 = node2 ? node2->get_description() : "unknown";
 
   if (mix_class && mix_class2 && mix_class != mix_class2) {
-    kphp_error(0, dl_pstr("Type Error: mix classes %s and %s: %s and %s\n",
+    kphp_error(0, format("Type Error: mix classes %s and %s: %s and %s\n",
                           mix_class->name.c_str(), mix_class2->name.c_str(),
                           desc1.c_str(), desc2.c_str()));
 
   } else if (mix_class || mix_class2) {
-    kphp_error(0, dl_pstr("Type Error: mix class %s with non-class: %s and %s\n",
+    kphp_error(0, format("Type Error: mix class %s with non-class: %s and %s\n",
                           mix_class ? mix_class->name.c_str() : mix_class2->name.c_str(),
                           desc1.c_str(), desc2.c_str()));
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
-    kphp_error(0, dl_pstr("Type Error: inconsistent tuples %s and %s\n",
+    kphp_error(0, format("Type Error: inconsistent tuples %s and %s\n",
                           desc1.c_str(), desc2.c_str()));
 
   } else if (ptype_before_error != tp_tuple && because_of_type->ptype() == tp_tuple) {
-    kphp_error(0, dl_pstr("Type Error: tuples are read-only (tuple %s)\n",
+    kphp_error(0, format("Type Error: tuples are read-only (tuple %s)\n",
                           desc1.c_str()));
 
   } else {
-    kphp_error (0, dl_pstr("Type Error [%s] updated by [%s]\n", desc1.c_str(), desc2.c_str()));
+    kphp_error (0, format("Type Error [%s] updated by [%s]\n", desc1.c_str(), desc2.c_str()));
   }
 }
 

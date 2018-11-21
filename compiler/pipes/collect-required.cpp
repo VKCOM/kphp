@@ -21,7 +21,7 @@ private:
 
   void require_class(const string &class_name, const string &context_name) {
     pair<SrcFilePtr, bool> res = require_file(class_name + ".php", context_name);
-    kphp_error(res.first, dl_pstr("Class %s not found", class_name.c_str()));
+    kphp_error(res.first, format("Class %s not found", class_name.c_str()));
   }
 
   string get_class_name_for(const string &name, char delim = '$') {
@@ -108,7 +108,7 @@ public:
           call->str_val = file->main_func_name;
           cur = call;
         } else {
-          kphp_error (0, dl_pstr("Cannot require [%s]\n", cur->get_string().c_str()));
+          kphp_error (0, format("Cannot require [%s]\n", cur->get_string().c_str()));
         }
       }
     }

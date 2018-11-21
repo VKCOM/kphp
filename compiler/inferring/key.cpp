@@ -3,6 +3,7 @@
 #include <string>
 
 #include "compiler/common.h"
+#include "compiler/threading/format.h"
 #include "compiler/threading/hash-table.h"
 
 static TSHashTable<Key *> int_keys_ht;
@@ -52,10 +53,10 @@ Key Key::int_key(int key) {
 
 string Key::to_string() const {
   if (is_int_key()) {
-    return dl_pstr("%d", (id - 1) / 2);
+    return format("%d", (id - 1) / 2);
   }
   if (is_string_key()) {
-    return dl_pstr("%s", string_key_names_ht.at(id)->data->c_str());
+    return *string_key_names_ht.at(id)->data;
   }
   if (is_any_key()) {
     return "Any";

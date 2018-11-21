@@ -145,7 +145,7 @@ template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag(bool f) {
   bool old_f = get_flag<FLAG>();
   if (old_f) {
-    dl_assert (f, dl_pstr("It is forbidden to remove flag %d", FLAG));
+    dl_assert (f, format("It is forbidden to remove flag %d", FLAG));
   } else if (f) {
     flags_ |= FLAG;
     on_changed();
