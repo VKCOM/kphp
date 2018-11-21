@@ -156,11 +156,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_triple_gt] = "tok_triple_gt";
   TOKEN_TYPE_NAMES[tok_triple_lt] = "tok_triple_lt";
   TOKEN_TYPE_NAMES[tok_triple_eq] = "tok_triple_eq";
-  TOKEN_TYPE_NAMES[tok_triple_colon_begin] = "tok_triple_colon_begin";
-  TOKEN_TYPE_NAMES[tok_triple_gt_begin] = "tok_triple_gt_begin";
-  TOKEN_TYPE_NAMES[tok_triple_lt_begin] = "tok_triple_lt_begin";
-  TOKEN_TYPE_NAMES[tok_triple_eq_begin] = "tok_triple_eq_begin";
-  TOKEN_TYPE_NAMES[tok_triple_colon_end] = "tok_triple_colon_end";
   TOKEN_TYPE_NAMES[tok_throw] = "tok_throw";
   TOKEN_TYPE_NAMES[tok_new] = "tok_new";
   TOKEN_TYPE_NAMES[tok_Exception] = "tok_Exception";

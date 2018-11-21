@@ -805,17 +805,17 @@ int TokenLexerTypeHint::parse(LexerData *lexer_data) const {
   {
     TokenType type;
     switch (s[3]) {
-      case ':' :
-        type = tok_triple_colon_begin;
+      case ':' :    /*:: это ::: */
+        type = tok_triple_colon;
         break;
-      case '=' :
-        type = tok_triple_eq_begin;
+      case '=' :    /*:= это :==: */
+        type = tok_triple_eq;
         break;
-      case '>' :
-        type = tok_triple_gt_begin;
+      case '>' :    /*:> это :>=: */
+        type = tok_triple_gt;
         break;
-      case '<' :
-        type = tok_triple_lt_begin;
+      case '<' :    /*:< это :<=: */
+        type = tok_triple_lt;
         break;
       default:
         return TokenLexerError("Unknow tipe-hint comment type").parse(lexer_data);
@@ -827,7 +827,7 @@ int TokenLexerTypeHint::parse(LexerData *lexer_data) const {
     const char *s = lexer_data->get_code();
 
     if (!strncmp(s, "*/", 2)) {
-      lexer_data->add_token(new Token(tok_triple_colon_end), 2);
+      lexer_data->pass_raw(2);
       return 0;
     }
 

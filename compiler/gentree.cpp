@@ -873,7 +873,7 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
 
   PrimitiveType tp = tp_Unknown;
   VertexPtr type_rule;
-  if (!from_callback && ((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin)) {
+  if (!from_callback && (*cur)->type() == tok_triple_colon) {
     tp = get_func_param_type_help();    // запишется в param->type_help, и при вызове будет неявный cast
   } else {
     type_rule = get_type_rule();
@@ -1063,19 +1063,11 @@ PrimitiveType GenTree::get_ptype() {
 }
 
 PrimitiveType GenTree::get_func_param_type_help() {
-  kphp_assert((*cur)->type() == tok_triple_colon || (*cur)->type() == tok_triple_colon_begin);
+  kphp_assert((*cur)->type() == tok_triple_colon);
 
-  bool should_end = (*cur)->type() == tok_triple_colon_begin;   // e.g. function f($port /*:: int*/)
   next_cur();
   PrimitiveType res = get_ptype();
   kphp_error (res != tp_Error, "Cannot parse type");
-  if (should_end) {
-    if ((*cur)->type() == tok_triple_colon_end) {
-      next_cur();
-    } else {
-      kphp_error(false, "Unfinished type hint comment");
-    }
-  }
 
   return res;
 }
@@ -1134,24 +1126,16 @@ VertexPtr GenTree::get_type_rule_() {
         res->extra_type = op_ex_rule_const;
       }
     } else {
-      string error_msg = "Can't parse type_rule. Unknown string [" + static_cast<string>((*cur)->str_val) + "]";
-      kphp_error (
-        0,
-        error_msg.c_str()
-      );
+      kphp_error(0, dl_pstr("Can't parse type_rule. Unknown string [%s]", string((*cur)->str_val).c_str()));
     }
   } else if (tok == tok_xor) {
     next_cur();
     if (kphp_error (test_expect(tok_int_const), "Int expected")) {
       return VertexPtr();
     }
-    int cnt = 0;
-    for (const char *s = (*cur)->str_val.begin(), *t = (*cur)->str_val.end(); s != t; s++) {
-      cnt = cnt * 10 + *s - '0';
-    }
     auto v = VertexAdaptor<op_arg_ref>::create();
     set_location(v, AutoLocation(this));
-    v->int_val = cnt;
+    v->int_val = std::atoi(std::string((*cur)->str_val).c_str());
     res = v;
     next_cur();
     while (test_expect(tok_opbrk)) {
@@ -1180,32 +1164,13 @@ VertexPtr GenTree::get_type_rule() {
   VertexPtr res, first;
 
   TokenType tp = (*cur)->type();
-  if (tp == tok_triple_colon || tp == tok_triple_eq ||
-      tp == tok_triple_lt || tp == tok_triple_gt ||
-      tp == tok_triple_colon_begin || tp == tok_triple_eq_begin ||
-      tp == tok_triple_lt_begin || tp == tok_triple_gt_begin) {
+  if (vk::any_of_equal(tp, tok_triple_colon, tok_triple_eq, tok_triple_lt, tok_triple_gt)) {
     AutoLocation rule_location(this);
-    bool should_end = tp == tok_triple_colon_begin || tp == tok_triple_eq_begin ||
-                      tp == tok_triple_lt_begin || tp == tok_triple_gt_begin;
     next_cur();
     first = get_type_rule_();
-
-    kphp_error_act (
-      first,
-      "Cannot parse type rule",
-      return VertexPtr()
-    );
+    CE(!kphp_error(first, "Cannot parse type rule"));
 
     VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], first);
-
-    if (should_end) {
-      if ((*cur)->type() == tok_triple_colon_end) {
-        next_cur();
-      } else {
-        kphp_error (false, "Unfinished type hint comment");
-      }
-    }
-
     set_location(rule, rule_location);
     res = rule;
   }
