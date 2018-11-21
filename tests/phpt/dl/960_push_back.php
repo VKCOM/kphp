@@ -42,7 +42,7 @@ $x = "test";
 g($x);
 $x = array();
 
-define (A, 123 + 432);
+define ('A', 123 + 432);
 
 function f() {
   print A;

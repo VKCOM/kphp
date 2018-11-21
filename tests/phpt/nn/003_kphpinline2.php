@@ -2,7 +2,7 @@
 <?php
 
 
-define(TIME, 12 * 15 * 16);
+define('TIME', 12 * 15 * 16);
 
 /** @kphp-inline */
 function net($x) {

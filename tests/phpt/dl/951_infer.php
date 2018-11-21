@@ -1,7 +1,7 @@
 @ok
 <?php
-define (A, 1);
-define (B, A + 1);
+define ('A', 1);
+define ('B', A + 1);
 
 #main test for type inference and cfg
 

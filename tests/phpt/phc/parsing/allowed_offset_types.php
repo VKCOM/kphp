@@ -48,7 +48,7 @@
 	$x = array (@$z => 19);
 	var_dump ($x);
 
-  define (FOObar, 123124);
+  define ('FOObar', 123124);
 
 	// constant
 	$x = array (FOObar => 20);
