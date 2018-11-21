@@ -16,9 +16,10 @@ static inline int mymin(int a, int b) {
 #define HLL_PACK_CHAR '!'
 #define HLL_PACK_CHAR_V2 '$'
 #define TO_HALF_BYTE(c) ((int)(((c > '9') ? (c - 7) : c) - '0'))
-#define HLL_BUFF_SIZE (1 << 14)
+#define MAX_HLL_SIZE (1 << 14)
+#define HLL_BUF_SIZE (MAX_HLL_SIZE + 1000)
 
-static char hll_buf[HLL_BUFF_SIZE];
+static char hll_buf[HLL_BUF_SIZE];
 
 // Merges std deviations of two sets
 // n1, n2 - number of elements
@@ -376,11 +377,59 @@ OrFalse<string> f$vk_stats_hll_create(const array<var> &a, int size) {
   return f$vk_stats_hll_add(string((string::size_type)size, (char)HLL_FIRST_RANK_CHAR), a);
 }
 
-OrFalse<double> f$vk_stats_hll_count(const string &s) {
-  int size = get_hll_size(s);
+OrFalse<double> f$vk_stats_hll_count(const string &hll) {
+  int size = get_hll_size(hll);
   if (size == (1 << 8) || size == (1 << 14)) {
-    return hll_count(s, size);
+    return hll_count(hll, size);
   } else {
     return false;
   }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ copypaste from common/statistics.c
+string hll_pack(const string &s, int len) {
+  if (len > MAX_HLL_SIZE || len == 0 || s[0] == HLL_PACK_CHAR || s[0] == HLL_PACK_CHAR_V2) {
+    return s;
+  }
+  unsigned char buf[HLL_BUF_SIZE];
+  int p = 0;
+  buf[p++] = HLL_PACK_CHAR_V2;
+  buf[p++] = (unsigned char)('0' + (unsigned char)(__builtin_ctz(len)));
+  assert (__builtin_popcount(len) == 1);
+  for (int i = 0; i < len; i++) {
+    if (s[i] > HLL_FIRST_RANK_CHAR) {
+      if (p + 2 >= len) {
+        return s;
+      }
+      buf[p++] = (unsigned char)((i & 0x7f) + 1);
+      buf[p++] = (unsigned char)((i >> 7) + 1);
+      buf[p++] = (unsigned char)s[i];
+    }
+    assert (p < HLL_BUF_SIZE);
+  }
+  return string((char*) buf, p);
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+OrFalse<string> f$vk_stats_hll_pack(const string &hll) {
+  if (!is_hll_unpacked(hll)) {
+    return false;
+  }
+  return hll_pack(hll, hll.size());
+}
+
+OrFalse<string> f$vk_stats_hll_unpack(const string &hll) {
+  if (is_hll_unpacked(hll)) {
+    return false;
+  }
+  char res[MAX_HLL_SIZE];
+  int m = unpack_hll(hll, res);
+  if (m == -1) {
+    return false;
+  }
+  return string(res, m);
+}
+
+bool f$vk_stats_hll_is_packed(const string &hll) {
+  return !is_hll_unpacked(hll);
 }

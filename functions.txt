@@ -571,10 +571,14 @@ function vk_stats_add_deviation($count ::: int, $sum ::: Long, $nsigma2 ::: floa
 function vk_stats_decompress_sample($sample ::: string) ::: OrFalse<string>;
 function vk_stats_merge_samples($samples ::: array) ::: OrFalse<string>;
 function vk_stats_parse_sample($sample ::: string) ::: OrFalse< array<int> >;
+
 function vk_stats_hll_merge($str ::: var) ::: OrFalse<string>;
-function vk_stats_hll_count($str ::: string) ::: OrFalse<float>;
+function vk_stats_hll_count($hll ::: string) ::: OrFalse<float>;
 function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: OrFalse<string>;
-function vk_stats_hll_add($str ::: string, $a ::: array) ::: OrFalse<string>;
+function vk_stats_hll_add($hll ::: string, $a ::: array) ::: OrFalse<string>;
+function vk_stats_hll_pack($hll ::: string) ::: OrFalse<string>;
+function vk_stats_hll_unpack($hll ::: string) ::: OrFalse<string>;
+function vk_stats_hll_is_packed($hll ::: string) ::: bool;
 
 function vk_dot_product auto ($a ::: array, $b ::: array) ::: lca<^1[], ^2[]>;
 
