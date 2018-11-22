@@ -22,7 +22,7 @@
 
 #include "drinkless/dl-utils-lite.h"
 
-#define dl_pstr don_t_use_format_use_format
+#define dl_pstr don_t_use_dl_pstr_use_format
 
 #include "common-php-functions.h"
 

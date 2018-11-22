@@ -8,9 +8,7 @@ VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
     VertexPtr name = define->name();
     VertexPtr val = define->value();
 
-    kphp_error_act(name->type() == op_string,
-                   dl_pstr("Define name should be a valid string"),
-                   return root);
+    kphp_error_act(name->type() == op_string, "Define name should be a valid string", return root);
 
     DefineData *data = new DefineData(val, DefineData::def_unknown);
     data->name = name->get_string();

@@ -85,5 +85,5 @@ void CalcRealDefinesValuesF::print_error_infinite_define(DefinePtr cur_def) {
     stream << *stack[i] << " -> ";
   }
   stream << cur_def->name;
-  kphp_error(0, dl_pstr("Recursive define dependency:\n%s\n", stream.str().c_str()));
+  kphp_error(0, format("Recursive define dependency:\n%s\n", stream.str().c_str()));
 }

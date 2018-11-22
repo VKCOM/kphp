@@ -1126,7 +1126,7 @@ VertexPtr GenTree::get_type_rule_() {
         res->extra_type = op_ex_rule_const;
       }
     } else {
-      kphp_error(0, dl_pstr("Can't parse type_rule. Unknown string [%s]", string((*cur)->str_val).c_str()));
+      kphp_error(0, format("Can't parse type_rule. Unknown string [%s]", string((*cur)->str_val).c_str()));
     }
   } else if (tok == tok_xor) {
     next_cur();
