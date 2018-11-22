@@ -42,10 +42,6 @@ public:
 private:
   void instantiate_lambda(VertexAdaptor<op_func_call> call, VertexPtr &call_arg) {
     if (ClassPtr lambda_class = FunctionData::is_lambda(call_arg)) {
-      //if (lambda_class->get_invoke_function_for_extern_function(call, current_function)) {
-      //  return;
-      //}
-
       FunctionPtr instance_of_template_invoke;
       std::string invoke_name;
 

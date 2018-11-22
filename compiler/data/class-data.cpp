@@ -161,20 +161,6 @@ std::string ClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_f
   return invoke_method_name;
 }
 
-FunctionPtr ClassData::get_invoke_function_for_extern_function(VertexAdaptor<op_func_call> extern_function_call, FunctionPtr function_context) const {
-  /**
-   * Will be rewritten in future
-   * need finding `invoke` method which conforms to parameters types of extern_function
-   */
-  kphp_assert(extern_function_call->get_func_id()->is_extern);
-  std::string invoke_method_name = get_name_of_invoke_function_for_extern(extern_function_call, function_context);
-  auto found_method = members.find_member([&](const ClassMemberInstanceMethod &f) {
-    return f.global_name() == invoke_method_name;
-  });
-
-  return found_method ? found_method->function : FunctionPtr();
-}
-
 FunctionPtr ClassData::get_template_of_invoke_function() const {
   kphp_assert(is_lambda_class());
   auto found_method = members.get_instance_method("__invoke");
