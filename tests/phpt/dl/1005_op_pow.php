@@ -1,7 +1,7 @@
 @ok
 <?php
 
-define (TWO, 2);
+define ('TWO', 2);
 
 function test_integer() {
     echo $x_int = 3 ** TWO, "\n";
