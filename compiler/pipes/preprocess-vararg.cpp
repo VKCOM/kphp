@@ -29,53 +29,51 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     return root;
   }
   if (root->type() == op_function) {
-    VertexPtr old_params = root.as<op_function>()->params();
-    vector<VertexPtr> params_varg;
+    // у инстанс-функций есть неявный $this, который сейчас old_params[0]
+    // тогда f конвертируем не в f($VA_LIST), а f($this, $VA_LIST); обычные функции — f($VA_LIST)
+    vector<VertexPtr> old_params = root.as<op_function>()->params()->get_next();
+    vector<VertexPtr> new_params;
+
+    int rest_start_pos = current_function->has_implicit_this_arg() ? 1 : 0;
+    new_params.insert(new_params.begin(), old_params.begin(), old_params.begin() + rest_start_pos);
+
     VertexPtr va_list_var = create_va_list_var(root->location);
-    auto va_list_param = VertexAdaptor<op_func_param>::create(va_list_var);
-    params_varg.push_back(va_list_param);
-    auto params_new = VertexAdaptor<op_func_param_list>::create(params_varg);
+    new_params.emplace_back(VertexAdaptor<op_func_param>::create(va_list_var));
 
-    root.as<op_function>()->params() = params_new;
+    root.as<op_function>()->params() = VertexAdaptor<op_func_param_list>::create(new_params);
 
+    // если функция объявлена f($first) и использует func_get_args(), то она превратилась в f($VA_LIST)
+    // и тут делаем { $first = isset($VA_LIST[0]) ? $VA_LIST[0] : null; } в начало тела f
     vector<VertexPtr> params_init;
-    int ii = 0;
-    for (auto i : *old_params) {
-      VertexAdaptor<op_func_param> arg = i;
+    for (int i = rest_start_pos; i < old_params.size(); ++i) {
+      VertexAdaptor<op_func_param> arg = old_params[i];
       kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
       VertexPtr var = arg->var();
       VertexPtr def;
       if (arg->has_default_value() && arg->default_value()) {
         def = arg->default_value();
       } else {
-        auto null = VertexAdaptor<op_null>::create();
-        def = null;
+        def = VertexAdaptor<op_null>::create();
       }
 
       auto id0 = VertexAdaptor<op_int_const>::create();
-      id0->str_val = int_to_str(ii);
+      id0->str_val = int_to_str(i - rest_start_pos);
       auto isset_value = VertexAdaptor<op_index>::create(create_va_list_var(root->location), id0);
       auto isset = VertexAdaptor<op_isset>::create(isset_value);
 
       auto id1 = VertexAdaptor<op_int_const>::create();
-      id1->str_val = int_to_str(ii);
+      id1->str_val = int_to_str(i - rest_start_pos);
       auto result_value = VertexAdaptor<op_index>::create(create_va_list_var(root->location), id1);
-
 
       auto expr = VertexAdaptor<op_ternary>::create(isset, result_value, def);
       auto set = VertexAdaptor<op_set>::create(var, expr);
       params_init.push_back(set);
-      ii++;
     }
 
     if (!params_init.empty()) {
       VertexPtr seq = root.as<op_function>()->cmd();
-      kphp_assert(seq->type() == op_seq);
-      for (auto i : *seq) {
-        params_init.push_back(i);
-      }
-      auto new_seq = VertexAdaptor<op_seq>::create(params_init);
-      root.as<op_function>()->cmd() = new_seq;
+      params_init.insert(params_init.end(), seq->begin(), seq->end());
+      root.as<op_function>()->cmd() = VertexAdaptor<op_seq>::create(params_init);
     }
   }
   return root;

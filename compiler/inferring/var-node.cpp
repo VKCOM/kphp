@@ -57,9 +57,8 @@ string tinf::VarNode::get_function_name() {
 }
 
 string tinf::VarNode::get_var_as_argument_name() {
-  int actual_num = (function_ && function_->is_instance_function() && !function_->is_constructor()
-                    ? param_i - 1 : param_i);
-  return (actual_num < 0 ? "implicit arg" : "arg #" + int_to_str(actual_num)) + " (" + get_var_name() + ")";
+  int actual_num = (function_ && function_->has_implicit_this_arg() ? param_i - 1 : param_i);
+  return "arg #" + int_to_str(actual_num) + " (" + get_var_name() + ")";
 }
 
 string tinf::VarNode::get_description() {

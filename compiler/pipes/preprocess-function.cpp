@@ -198,16 +198,22 @@ private:
           return VertexPtr()
         );
       }
-      VertexPtr args;
-      if (call_args_n == 1 && call_args[0]->type() == op_varg) {
-        args = call_args[0].as<op_varg>()->array();
+      vector<VertexPtr> new_call_args;
+      if (call_args_n == 1 && call_args[0]->type() == op_varg) {    // для call_user_func_array
+        new_call_args.emplace_back(GenTree::conv_to<tp_array>(call_args[0].as<op_varg>()->array()));
       } else {
-        auto new_args = VertexAdaptor<op_array>::create(call->get_next());
-        new_args->location = call->get_location();
-        args = new_args;
+        // вызов f(1,2,3) для vararg-функций превращаем в f([1,2,3]), т.к. f($VA_LIST)
+        // если f инстанс-фукнция, то вызов f(v$this,1,2,3) делаем f(v$this,[1,2,3])
+        const vector<VertexPtr> &cur_call_args = call->get_next();
+        int rest_start_pos = func->has_implicit_this_arg() ? 1 : 0;
+        new_call_args.insert(new_call_args.begin(), cur_call_args.begin(), cur_call_args.begin() + rest_start_pos);
+        vector<VertexPtr> remaining_args(cur_call_args.begin() + rest_start_pos, cur_call_args.end());
+
+        auto rest_args_v = VertexAdaptor<op_array>::create(remaining_args);
+        rest_args_v->location = call->get_location();
+        new_call_args.emplace_back(GenTree::conv_to<tp_array>(rest_args_v));
       }
-      vector<VertexPtr> tmp(1, GenTree::conv_to<tp_array>(args));
-      auto new_call = VertexAdaptor<op_func_call>::create(tmp);
+      auto new_call = VertexAdaptor<op_func_call>::create(new_call_args);
       new_call->copy_location_and_flags(*call);
       new_call->set_func_id(func);
       new_call->str_val = call.as<op_func_call>()->str_val;

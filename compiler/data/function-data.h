@@ -82,6 +82,10 @@ public:
     return access_type == access_static_public || access_type == access_static_protected || access_type == access_static_private;
   }
 
+  inline bool has_implicit_this_arg() const {
+    return is_instance_function() && !is_constructor();
+  }
+
   bool is_constructor() const;
 
   static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,

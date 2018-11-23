@@ -253,7 +253,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     }
   }
 
-  size_t cnt_left_params_without_tag = f->is_instance_function() && !f->is_constructor() ? 1 : 0;  // пропускаем неявный this
+  size_t cnt_left_params_without_tag = f->has_implicit_this_arg() ? 1 : 0;  // пропускаем неявный this
   if (infer_type && name_to_function_param.size() != cnt_left_params_without_tag) {
     std::string err_msg = "Not enough @param tags. Need tags for function arguments:\n";
     for (auto name_and_function_param : name_to_function_param) {

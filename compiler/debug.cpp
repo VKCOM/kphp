@@ -201,6 +201,8 @@ std::string debugVertexMore(VertexPtr v) {
     case op_func_call:
     case op_func_name:
       return v->get_string() + "()";
+    case op_function:
+      return v.as<meta_op_function>()->name()->get_string() + "()";
     case op_var:
       return "$" + v->get_string();
     case op_instance_prop:
@@ -214,6 +216,8 @@ std::string debugVertexMore(VertexPtr v) {
              ? v.as<op_class_type_rule>()->class_ptr->name : "class_ptr = null";
     case op_type_rule:
       return ptype_name(v->type_help);
+    case op_seq:
+      return int_to_str(v->size()) + " seq items";
     default:
       return "";
   }
