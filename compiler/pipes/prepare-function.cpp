@@ -70,7 +70,7 @@ static void prepare_function_misc(FunctionPtr func) {
     }
 
     if (!param->type_declaration.empty()) {
-      if (param->type_declaration == "Callable" || param->type_declaration == "callable") {
+      if (param->type_declaration == "callable") {
         param->template_type_id = param_n + i;
         param->type_declaration.clear();
         func->is_template = true;
@@ -211,7 +211,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           VertexAdaptor<op_var> var = cur_func_param->var().as<op_var>();
           name_to_function_param.erase(func_param_it);
 
-          if (type_help == "callable" || type_help == "Callable") {
+          if (type_help == "callable") {
             f->is_template = true;
             cur_func_param->template_type_id = id_of_kphp_template;
             id_of_kphp_template++;

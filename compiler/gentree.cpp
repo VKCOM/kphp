@@ -1831,7 +1831,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
 
   FunctionInfo func_info({}, FunctionData::get_lambda_namespace(), anon_class->name, true, access_public);
 
-  auto register_fun = [&](VertexAdaptor<op_function> fun) {
+  auto register_invoke = [&](VertexAdaptor<op_function> fun) {
     func_info.root = fun;
     std::string s = fun->name()->get_string();
     fun->name()->set_string(concat_namespace_class_function_names(func_info.namespace_name, lambda_name->get_string(), s));
@@ -1851,7 +1851,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
     return registered_function;
   };
 
-  register_fun(generate__invoke_method(anon_class, function));
+  register_invoke(generate__invoke_method(anon_class, function));
 
   create_default_constructor(anon_class->name, anon_class, AutoLocation(function->location.line));
   anon_class->new_function->namespace_name = FunctionData::get_lambda_namespace();
