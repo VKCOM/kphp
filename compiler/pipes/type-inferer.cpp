@@ -169,29 +169,28 @@ private:
 
     kphp_assert(callback_function);
 
-    // not now
     // // restriction on return type
-    // bool is_any = false;
-    // if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
-    //   if (auto son = rule->rule().try_as<op_type_rule>()) {
-    //     is_any = son->type_help == tp_Any;
-    //
-    //     if (!is_any && callback_function && callback_function->is_extern) {
-    //       if (auto rule_of_callback = callback_function->root->type_rule.try_as<op_common_type_rule>()) {
-    //         if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_rule>()) {
-    //           is_any = son_of_callback_rule->type_help == son->type_help;
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+    bool is_any = false;
+    if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
+      if (auto son = rule->rule().try_as<op_type_rule>()) {
+        is_any = son->type_help == tp_Any;
 
-    // if (!is_any) {
-    //   auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
-    //   fake_func_call->type_rule = callback_param->type_rule;
-    //   fake_func_call->set_func_id(call_function);
-    //   create_less(as_rvalue(callback_function, -1), fake_func_call);
-    // }
+        if (!is_any && callback_function && callback_function->is_extern) {
+          if (auto rule_of_callback = callback_function->root->type_rule.try_as<op_common_type_rule>()) {
+            if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_rule>()) {
+              is_any = son_of_callback_rule->type_help == son->type_help;
+            }
+          }
+        }
+      }
+    }
+
+    if (!is_any) {
+      auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
+      fake_func_call->type_rule = callback_param->type_rule;
+      fake_func_call->set_func_id(call_function);
+      create_less(as_rvalue(callback_function, -1), fake_func_call);
+    }
 
     VertexRange callback_args = get_function_params(callback_param);
     for (int i = 0; i < callback_args.size(); ++i) {

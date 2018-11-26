@@ -1350,9 +1350,7 @@ void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
   AUTO_PROF (CFG_End);
   stage::set_name("Control flow graph. End");
   stage::set_function(data.function);
-  if (G->env().get_warnings_level() >= 1) {
-    data.data->check_uninited();
-  }
+  data.data->check_uninited();
   data.data->merge_same_type();
   delete data.data;
 
