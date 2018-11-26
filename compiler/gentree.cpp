@@ -1049,6 +1049,9 @@ PrimitiveType GenTree::get_ptype() {
     case tok_Exception:
       tp = tp_Exception;
       break;
+    case tok_tuple:
+      tp = tp_tuple;
+      break;
     case tok_func_name:
       tp = get_ptype_by_name(static_cast<string>((*cur)->str_val));
       break;
@@ -1095,20 +1098,18 @@ VertexPtr GenTree::get_type_rule_() {
   if (tp != tp_Error) {
     AutoLocation arr_location(this);
 
-    VertexPtr first;
-    if (tp == tp_array && tok == tok_lt) {
-      next_cur();
-      first = get_type_rule_();
-      if (kphp_error (first, "Cannot parse type_rule (1)")) {
-        return VertexPtr();
-      }
+    vector<VertexPtr> next;
+    if (tok == tok_lt) {        // array<...>, tuple<...,...>
+      kphp_error(tp == tp_array || tp == tp_tuple, "Cannot parse type_rule");
+      bool allow_comma_sep = tp == tp_tuple;
+      do {
+        next_cur();
+        next.push_back(get_type_rule_());
+        CE (!kphp_error(next.back(), "Cannot parse type_rule (1)"));
+      } while (allow_comma_sep && test_expect(tok_comma));
       CE (expect(tok_gt, "'>'"));
     }
 
-    vector<VertexPtr> next;
-    if (first) {
-      next.push_back(first);
-    }
     auto arr = VertexAdaptor<op_type_rule>::create(next);
     arr->type_help = tp;
     set_location(arr, arr_location);

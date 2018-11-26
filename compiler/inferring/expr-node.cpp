@@ -107,11 +107,29 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
 void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, VertexPtr expr) {
   set_lca(rule->type_help);
   if (!rule->empty()) {
-    push_type();
-    apply_type_rule(rule->args()[0], expr);
-    TypeData *tmp = pop_type();
-    set_lca_at(&MultiKey::any_key(1), as_rvalue(tmp));
-    delete tmp;
+    switch (rule->type_help) {
+      case tp_array: {
+        push_type();
+        apply_type_rule(rule->args()[0], expr);
+        TypeData *tmp = pop_type();
+        set_lca_at(&MultiKey::any_key(1), as_rvalue(tmp));
+        delete tmp;
+        break;
+      }
+      case tp_tuple: {
+        for (int int_index = 0; int_index < rule->size(); ++int_index) {
+          push_type();
+          apply_type_rule(rule->args()[int_index], expr);
+          TypeData *tmp = pop_type();
+          MultiKey key({Key::int_key(int_index)});
+          set_lca_at(&key, as_rvalue(tmp));
+          delete tmp;
+        }
+        break;
+      }
+      default:
+        kphp_fail();
+    }
   }
 }
 
