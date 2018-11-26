@@ -72,6 +72,8 @@ public:
   bool resume(int resumable_id, Storage *input);
 
   static void update_output();
+
+  void* get_stack_ptr() { return pos__; }
 };
 
 
@@ -118,6 +120,7 @@ Storage *get_forked_storage(int resumable_id);
 
 Resumable *get_forked_resumable(int resumable_id);
 
+int get_resumable_stack(void **buffer, int limit);
 
 int f$wait_queue_create();
 int f$wait_queue_create(const var &request_ids);

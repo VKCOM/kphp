@@ -315,6 +315,11 @@ Resumable *get_forked_resumable(int resumable_id) {
   return get_forked_resumable_info(resumable_id)->continuation;
 }
 
+Resumable *get_started_resumable(int resumable_id) {
+  return get_started_resumable_info(resumable_id)->continuation;
+}
+
+
 static void add_resumable_to_queue(int resumable_id, forked_resumable_info *resumable) {
   int queue_id = resumable->queue_id;
   wait_queue *q = get_wait_queue(queue_id);
@@ -493,9 +498,12 @@ void resumable_run_ready(int resumable_id) {
   }
 }
 
+void run_scheduler(double timeout) __attribute__((section("run_scheduler_section")));
 
-void run_scheduller(double timeout) {
-//  fprintf (stderr, "!!! run scheduller %d\n", finished_resumables_count);
+static int scheduled_resumable_id = 0;
+
+void run_scheduler(double timeout) {
+//  fprintf (stderr, "!!! run scheduler %d\n", finished_resumables_count);
   int left_resumables = 1000;
   int force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
@@ -515,7 +523,7 @@ void run_scheduller(double timeout) {
     started_resumable_info *res = get_started_resumable_info(resumable_id);
     php_assert (res->continuation == nullptr);
 
-//    fprintf (stderr, "!!! process %d(%d) with parent %d in scheduller\n", resumable_id, is_long, res->parent_id);
+//    fprintf (stderr, "!!! process %d(%d) with parent %d in scheduler\n", resumable_id, is_long, res->parent_id);
     int parent_id = res->parent_id;
     if (parent_id == 0) {
       res->parent_id = -1;
@@ -523,6 +531,7 @@ void run_scheduller(double timeout) {
     }
 
     php_assert (parent_id > 0);
+    scheduled_resumable_id = parent_id;
     if (parent_id < 1000000000) {
       started_resumable_info *parent = get_started_resumable_info(parent_id);
       if (parent->continuation == nullptr || parent->son != resumable_id) {
@@ -553,6 +562,7 @@ void run_scheduller(double timeout) {
         finish_forked_resumable(parent_id);
       }
     }
+    scheduled_resumable_id = 0;
 
     unregister_started_resumable_debug_hack(resumable_id);
   }
@@ -607,9 +617,9 @@ static bool wait_forked_resumable(int resumable_id, double timeout) {
       return true;
     }
 
-    run_scheduller(timeout);
+    run_scheduler(timeout);
 
-    resumable = get_forked_resumable_info(resumable_id);//can change in scheduller
+    resumable = get_forked_resumable_info(resumable_id);//can change in scheduler
     if (resumable->queue_id < 0) {
       return true;
     }
@@ -637,9 +647,9 @@ bool wait_started_resumable(int resumable_id) {
   do {
     php_assert (resumable->parent_id == 0);
 
-    run_scheduller(get_precise_now() + MAX_TIMEOUT);
+    run_scheduler(get_precise_now() + MAX_TIMEOUT);
 
-    resumable = get_started_resumable_info(resumable_id);//can change in scheduller
+    resumable = get_started_resumable_info(resumable_id);//can change in scheduler
     if (resumable->parent_id == -1) {
       return true;
     }
@@ -1018,9 +1028,9 @@ static void wait_queue_next(int queue_id, double timeout) {
       return;
     }
 
-    run_scheduller(timeout);
+    run_scheduler(timeout);
 
-    q = get_wait_queue(queue_id);//can change in scheduller
+    q = get_wait_queue(queue_id);//can change in scheduler
     wait_queue_skip_gotten(q);
     if (q->first_finished_function != -2 || q->left_functions == 0) {
       return;
@@ -1146,7 +1156,7 @@ int f$wait_queue_next(int queue_id, double timeout) {
   if (in_main_thread()) {
     wait_queue_next(queue_id, timeout);
 
-    q = get_wait_queue(queue_id);//can change in scheduller
+    q = get_wait_queue(queue_id);//can change in scheduler
     return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
   }
 
@@ -1238,4 +1248,29 @@ void resumable_init_static() {
   new(&gotten_forked_resumable_info.output) Storage;
   gotten_forked_resumable_info.queue_id = -1;
   gotten_forked_resumable_info.continuation = nullptr;
+}
+
+int get_resumable_stack(void ** buffer, int limit) {
+  if (!scheduled_resumable_id) {
+    return 0;
+  }
+  int resumable_id = scheduled_resumable_id;
+  if (is_forked_resumable_id(resumable_id)) {
+    return 0;
+  }
+  for (int it = 0; it < limit; it++) {
+    started_resumable_info *my = get_started_resumable_info(resumable_id);
+    int parent_id = my->parent_id;
+    if (is_forked_resumable_id(parent_id)) {
+      buffer[it] = get_forked_resumable(parent_id)->get_stack_ptr();
+      return it + 1;
+    } else if (is_started_resumable_id(parent_id)){
+      buffer[it] = get_started_resumable(parent_id)->get_stack_ptr();
+      resumable_id = parent_id;
+    } else {
+      fprintf(stderr, "Failed to parse resumable stack: strange parent_id %d\n", parent_id);
+      return it;
+    }
+  }
+  return limit;
 }

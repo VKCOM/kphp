@@ -436,12 +436,6 @@ void sigalrm_handler(int signum) {
   }
   dl::pending_signals = 0;
 
-  if (false) {
-    void *buffer[64];
-    int nptrs = backtrace(buffer, 64);
-    backtrace_symbols_fd(buffer, nptrs, 2);
-  }
-
   kwrite_str(2, "in sigalrm_handler\n");
   PHPScriptBase::tl_flag = true;
   if (PHPScriptBase::is_running) {
