@@ -1,5 +1,7 @@
 #include "compiler/enviroment.h"
 
+#include "common/version-string.h"
+
 #include "compiler/utils/string-utils.h"
 
 /*** Enviroment ***/
@@ -316,6 +318,11 @@ const string &KphpEnviroment::get_debug_level() const {
   return debug_level;
 }
 
+const string &KphpEnviroment::get_version() const {
+  return version;
+}
+
+
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd(tmp, PATH_MAX);
@@ -406,6 +413,7 @@ bool KphpEnviroment::init() {
   init_env_var(&dest_dir_, "KPHP_DEST_DIR", get_path() + "PHP/tests/kphp_tmp/default/");
   as_dir(&dest_dir_);
   init_env_var(&use_auto_dest_, "KPHP_AUTO_DEST", "0");
+  init_env_var(&version, "KPHP_VERSION_OVERRIDE", get_version_string());
   env_str2bool(&use_auto_dest_bool_, use_auto_dest_);
 
   return true;

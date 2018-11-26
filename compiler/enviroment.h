@@ -55,6 +55,7 @@ private:
   FILE *stats_file;
   int warnings_level;
   string debug_level;
+  string version;
 
 public:
   KphpEnviroment();
@@ -130,6 +131,8 @@ public:
   const string &get_cxx_flags() const;
   const string &get_ld() const;
   const string &get_ld_flags() const;
+
+  const string &get_version() const;
 
   bool init();
   void debug() const;

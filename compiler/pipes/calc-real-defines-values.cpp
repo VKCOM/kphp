@@ -1,11 +1,12 @@
 #include "compiler/pipes/calc-real-defines-values.h"
+
 #include "common/version-string.h"
 
 CalcRealDefinesValuesF::CalcRealDefinesValuesF() {
   all_fun.set_sink(true);
 
   auto val = VertexAdaptor<op_string>::create();
-  val->set_string(get_version_string());
+  val->set_string(G->env().get_version());
   DefineData *data = new DefineData(val, DefineData::def_const);
   data->name = "KPHP_COMPILER_VERSION";
   G->register_define(DefinePtr(data));
