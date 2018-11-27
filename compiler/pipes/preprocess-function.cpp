@@ -100,18 +100,22 @@ private:
           kphp_assert(assum != assum_unknown);
           auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
           if (!insertion_result.second) {
-            const std::pair <AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
-            auto wrap_if_array = [](const std::string &s, AssumType assum) {
-              return assum == assum_instance_array ? s + "[]" : s;
+            const std::pair<AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
+            auto wrap_if_array = [](ClassPtr c, AssumType assum) {
+              if (assum == assum_instance_array) return c->name + "[]";
+
+              return assum == assum_instance ? c->name : "not instance";
             };
 
-            std::string error_msg =
-              "argument $" + param->var()->get_string() + " of " + func->name +
-              " has a type: `" + wrap_if_array(class_corresponding_to_parameter->name, assum) +
-              "` but expected type: `" + wrap_if_array(previous_assum_and_class.second->name, previous_assum_and_class.first) + "`";
+            auto prev_name = wrap_if_array(previous_assum_and_class.second, previous_assum_and_class.first);
+            auto new_name = wrap_if_array(class_corresponding_to_parameter, assum);
+            if (previous_assum_and_class.first != assum || prev_name != new_name) {
+              std::string error_msg =
+                "argument $" + param->var()->get_string() + " of " + func->name +
+                " has a type: `" + prev_name + "` but expected type: `" + new_name + "`";
 
-            kphp_error_act(previous_assum_and_class.second->name == class_corresponding_to_parameter->name, error_msg.c_str(), return {});
-            kphp_error_act(previous_assum_and_class.first == assum, error_msg.c_str(), return {});
+              kphp_error_act(false, error_msg.c_str(), return call);
+            }
           }
 
           if (assum == assum_instance_array) {
