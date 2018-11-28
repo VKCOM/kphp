@@ -107,6 +107,7 @@ function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = 
                 ::: lca <^1, ^2, ^3, ^4, ^5, ^6, ^7, ^8, ^9, ^10, ^11, ^12>;
 function array_intersect_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 function array_intersect ($a1 ::: array, $a2 ::: array) ::: ^1;
+function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
