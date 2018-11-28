@@ -109,6 +109,7 @@ function array_intersect_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 function array_intersect ($a1 ::: array, $a2 ::: array) ::: ^1;
 function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
 function array_shift (&$a ::: array) ::: ^1[];
 function array_unshift (&$a ::: array, $val ::: Any) ::: int;

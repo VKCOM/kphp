@@ -66,9 +66,14 @@ array<T> f$array_diff(const array<T> &a1, const array<T1> &a2);
 template<class T, class T1, class T2>
 array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3);
 
+template<class T, class T1>
+array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2);
+
+template<class T, class T1, class T2>
+array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3);
+
 template<class T>
 array<T> f$array_reverse(const array<T> &a, bool preserve_keys = false);
-
 
 template<class T>
 T f$array_shift(array<T> &a);
@@ -605,6 +610,28 @@ array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) {
 template<class T, class T1, class T2>
 array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
   return f$array_diff(f$array_diff(a1, a2), a3);
+}
+
+template<class T, class T1>
+array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2) {
+  array<T> result;
+  if (a2.empty()) {
+    result = a1;
+  } else {
+    result = array<T>(a1.size());
+    for (auto it = a1.begin(); it != a1.end(); ++it) {
+      auto key1 = it.get_key();
+      if (!a2.has_key(key1) || f$strval(a2.get_var(key1)) != f$strval(it.get_value())) {
+        result.set_value(it);
+      }
+    }
+  }
+  return result;
+}
+
+template<class T, class T1, class T2>
+array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
+  return f$array_diff_assoc(f$array_diff_assoc(a1, a2), a3);
 }
 
 template<class T>
