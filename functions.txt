@@ -132,6 +132,7 @@ function array_pop (&$a ::: array) ::: ^1[];
 function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 function array_pad ($a ::: array, $size ::: int, $value ::: Any) auto ::: array< lca< ^1[], ^3 > >;
+function array_column ($a ::: array, $column_key, $index_key = null) ::: OrFalse < array<var> >;
 
 define('ARRAY_FILTER_USE_KEY', 1);
 

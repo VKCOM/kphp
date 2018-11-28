@@ -1,4 +1,4 @@
-@ok this
+@ok
 <?php
 
 function basic_test() {

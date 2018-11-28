@@ -129,8 +129,12 @@ function test_false() {
 function test_or_false() {
     $x1_int_or_false = 1 ? 2 : false;
     echo $x1_int_or_false **= 2, "\n";
-    echo $y_int = $x1_int_or_false ** 2, "\n";
-    echo $y_var = 2 ** $x1_int_or_false, "\n";
+
+    $y_int = $x1_int_or_false ** 2;
+    echo $y_int, "\n";
+
+    $y_var = 2 ** $x1_int_or_false;
+    echo $y_var, "\n";
     echo $y_var = 2.1 ** $x1_int_or_false, "\n";
 
     $x2_int_or_false = 0 ? 2 : false;
@@ -146,7 +150,6 @@ function test_or_false() {
     $x1_int_or_false /*:= OrFalse<int> */;
     $x2_int_or_false /*:= OrFalse<int> */;
     $y_int /*:= int */;
-    $y_var /*:= var */;
     $y_var /*:= var */;
 }
 

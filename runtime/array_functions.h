@@ -33,6 +33,9 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
 template<class ReturnT, class DefaultValueT>
 ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value);
 
+template<typename T>
+OrFalse<array<var>> f$array_column(const array<T> &a, var column_key, var index_key = var());
+
 template<class T>
 array<T> f$array_filter(const array<T> &a);
 
@@ -470,6 +473,62 @@ ReturnT f$array_pad(const array<Unknown> &, int size, const DefaultValueT &defau
   }
 
   return f$array_fill(0, std::abs(size), default_value);
+}
+
+template<typename T>
+inline void extract_array_column(array<var> &, const T &, const var &, const var &) {
+}
+
+template<typename S>
+inline void extract_array_column(array<var> &dest, const array<S> &source, const var &column_key, const var &index_key) {
+  if (!source.has_key(column_key)) {
+    return;
+  }
+  const var column = source.get_var(column_key);
+  if (!index_key.is_null() && source.has_key(index_key)) {
+    const var index = source.get_var(index_key);
+    if (index.is_string() || index.is_int() || (index.is_float() && index.to_int() == index.to_float())) {
+      dest.set_value(index, column);
+      return;
+    }
+  }
+  dest.push_back(column);
+}
+
+template<typename S>
+inline void extract_array_column(array<var> &dest, const OrFalse<S> &source, const var &column_key, const var &index_key) {
+  if (source.bool_value) {
+    extract_array_column(dest, source.val(), column_key, index_key);
+  }
+}
+
+inline void extract_array_column(array<var> &dest, const var &source, const var &column_key, const var &index_key) {
+  if (source.is_array()) {
+    extract_array_column(dest, source.as_array(), column_key, index_key);
+  }
+}
+
+template<typename T>
+OrFalse<array<var>> f$array_column(const array<T> &a, var column_key, var index_key) {
+  if (!column_key.is_string() && !column_key.is_numeric()) {
+    php_warning("Parameter column_key must be string or number");
+    return false;
+  }
+  if (!index_key.is_null() && !index_key.is_string() && !index_key.is_numeric()) {
+    php_warning("Parameter index_key must be string or number or null");
+    return false;
+  }
+  if (column_key.is_float()) {
+    column_key.convert_to_int();
+  }
+  if (index_key.is_float()) {
+    index_key.convert_to_int();
+  }
+  array<var> result;
+  for (auto it = a.begin(); it != a.end(); ++it) {
+    extract_array_column(result, it.get_value(), column_key, index_key);
+  }
+  return result;
 }
 
 template<class T>
