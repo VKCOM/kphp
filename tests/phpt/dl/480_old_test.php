@@ -345,7 +345,7 @@
   var_dump ($a);
 
   function odd ($x) {
-    return $x & 1;
+    return (bool)($x & 1);
   }
 
   function even ($x) {

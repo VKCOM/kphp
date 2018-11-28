@@ -43,7 +43,7 @@ $text = preg_replace_callback('/'.RE_URL_PATTERN.'/', 'prcConvertHyperref', $tex
  * @kphp-required
  */
 function prcConvertHyperref($matches) {
-  return preg_match('/\.([a-zA-ZğôóêĞÔÓÊ\-0-9]+)$/', $matches[2], $match);
+  return (string)preg_match('/\.([a-zA-ZğôóêĞÔÓÊ\-0-9]+)$/', $matches[2], $match);
 }
 
 $string = 'April 15, 2003';
@@ -409,7 +409,7 @@ $input = "plain [indent] deep [indent] [abcd]deeper[/abcd] [/indent] deep [/inde
 
 function parseTagsRecursive($input)
 {
-    
+	global $count; 
     $regex = '#\[indent]((?:[^[]|\[(?!/?indent])|(?R))+)\[/indent]#';
 
     if (is_array($input)) {
@@ -419,7 +419,7 @@ function parseTagsRecursive($input)
 
     $res = preg_replace_callback($regex, 'parseTagsRecursive', $input, -1, $count);
     var_dump ($count);
-    return $res;
+    return (string)$res;
 
 }
 
