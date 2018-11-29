@@ -1845,6 +1845,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function)
     );
     registered_function->is_required = true;
     registered_function->kphp_required = true;
+    registered_function->root->inline_flag = true;
     registered_function->function_in_which_lambda_was_created = function->get_func_id();
 
     return registered_function;
