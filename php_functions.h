@@ -1,4 +1,8 @@
-#pragma once
+// use #ifndef guard instead of #pragma once,
+// because this header is used as precompiled,
+// and gcc fires the warning: #pragma once in main file
+#ifndef PHP_FUNCTONS_H
+#define PHP_FUNCTONS_H
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
@@ -25,3 +29,4 @@
 #include "runtime/vkext_stats.h"
 #include "runtime/zlib.h"
 
+#endif // PHP_FUNCTIONS_H

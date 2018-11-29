@@ -1964,6 +1964,7 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   W << CloseFile();
 
   W << OpenFile("dfs." + main_func->src_name, "", false);
+  W << ExternInclude("php_functions.h");
   compile_dfs_init_func(main_func, used_functions, true, header_names, W);
   W << CloseFile();
 }
@@ -2043,6 +2044,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
     return;
   }
   W << OpenFile(function->src_name, function->subdir);
+  W << ExternInclude("php_functions.h");
   W << Include(function->header_full_name);
 
   stage::set_function(function);

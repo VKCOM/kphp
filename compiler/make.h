@@ -95,6 +95,8 @@ public:
   const string &get_ld_flags() const;
   const string &get_ar() const;
   const string &get_debug_level() const;
+
+  void add_gch_dir(const std::string &gch_dir);
 };
 
 class KphpTarget : public Target {
@@ -155,5 +157,6 @@ public:
   KphpTarget *create_objs2bin_target(const vector<File *> &objs, File *bin);
   KphpTarget *create_objs2static_lib_target(const vector<File *> &objs, File *lib);
   void init_env(const KphpEnviroment &kphp_env);
+  void add_gch_dir(const std::string &gch_dir) { env.add_gch_dir(gch_dir); }
   bool make_target(File *bin, int jobs_count = 32);
 };

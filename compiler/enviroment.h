@@ -16,24 +16,25 @@ private:
   string static_lib_name_;
 
   string use_safe_integer_arithmetic_;
-  bool use_safe_integer_arithmetic_bool_;
+  bool use_safe_integer_arithmetic_bool_{false};
   string base_dir_;
   string index_;
   vector<string> includes_;
   string jobs_count_;
-  int jobs_count_int_;
+  int jobs_count_int_{0};
   string use_make_;
-  bool use_make_bool_;
+  bool use_make_bool_{false};
   string make_force_;
-  bool make_force_bool_;
+  bool make_force_bool_{false};
   string threads_count_;
-  int threads_count_int_;
+  int threads_count_int_{0};
   string verbosity_;
-  int verbosity_int_;
+  int verbosity_int_{0};
   vector<string> main_files_;
-  int print_resumable_graph_;
-  int enable_profiler_;
+  int print_resumable_graph_{0};
+  int enable_profiler_{0};
   string tl_schema_file_;
+  bool no_pch_{false};
 
   string cxx_;
   string cxx_flags_;
@@ -43,24 +44,27 @@ private:
 
   string dest_dir_;
   string use_auto_dest_;
-  bool use_auto_dest_bool_;
+  bool use_auto_dest_bool_{false};
   string dest_cpp_dir_;
   string dest_objs_dir_;
   string binary_path_;
   string user_binary_path_;
-  bool error_on_warns;
+  bool error_on_warns_{false};
 
-  string warnings_filename;
-  FILE *warnings_file;
+  string warnings_filename_;
+  FILE *warnings_file_{nullptr};
 
-  string stats_filename;
-  FILE *stats_file;
-  int warnings_level;
-  string debug_level;
-  string version;
+  string stats_filename_;
+  FILE *stats_file_{nullptr};
+  int warnings_level_{0};
+  string debug_level_;
+  string version_;
+
+  string cxx_flags_sha256_;
+
+  void update_cxx_flags_sha256();
 
 public:
-  KphpEnviroment();
   const string &get_home() const;
   void set_use_safe_integer_arithmetic(const string &flag);
   bool get_use_safe_integer_arithmetic() const;
@@ -99,6 +103,7 @@ public:
   void set_runtime_sha256_file(string &&file_name);
   const string &get_runtime_sha256_file() const;
   const string &get_runtime_sha256() const;
+  const string &get_cxx_flags_sha256() const;
   void inc_verbosity();
   int get_verbosity() const;
   void set_print_resumable_graph();
@@ -109,6 +114,8 @@ public:
   bool get_error_on_warns() const;
   void set_tl_schema_file(const string &tl_schema_file);
   string get_tl_schema_file() const;
+  void set_no_pch();
+  bool get_no_pch() const;
   void add_main_file(const string &main_file);
   const vector<string> &get_main_files() const;
 

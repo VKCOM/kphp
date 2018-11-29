@@ -1,6 +1,7 @@
 #include "compiler/enviroment.h"
 
 #include <fstream>
+#include <openssl/sha.h>
 
 #include "common/version-string.h"
 
@@ -25,21 +26,6 @@ static void as_dir(string *s) {
 static void as_file(string *s __attribute__((unused))) {
   return;
 }
-
-KphpEnviroment::KphpEnviroment() :
-  use_safe_integer_arithmetic_bool_(false),
-  jobs_count_int_(0),
-  use_make_bool_(false),
-  make_force_bool_(false),
-  threads_count_int_(0),
-  verbosity_int_(0),
-  print_resumable_graph_(0),
-  enable_profiler_(0),
-  use_auto_dest_bool_(false),
-  error_on_warns(false),
-  warnings_file(nullptr),
-  stats_file(nullptr),
-  warnings_level(0) {}
 
 static void init_env_var(string *str, const string &var_name, const string &default_value) {
   if (!str->empty()) {
@@ -223,6 +209,10 @@ const string &KphpEnviroment::get_runtime_sha256() const {
   return runtime_sha256_;
 }
 
+const string &KphpEnviroment::get_cxx_flags_sha256() const {
+  return cxx_flags_sha256_;
+}
+
 void KphpEnviroment::inc_verbosity() {
   verbosity_int_++;
 }
@@ -245,6 +235,14 @@ void KphpEnviroment::set_enable_profiler() {
 
 int KphpEnviroment::get_enable_profiler() const {
   return enable_profiler_;
+}
+
+void KphpEnviroment::set_no_pch() {
+  no_pch_ = true;
+}
+
+bool KphpEnviroment::get_no_pch() const {
+  return no_pch_;
 }
 
 void KphpEnviroment::add_main_file(const string &main_file) {
@@ -288,65 +286,81 @@ bool KphpEnviroment::is_static_lib_mode() const {
 }
 
 void KphpEnviroment::set_error_on_warns() {
-  error_on_warns = true;
+  error_on_warns_ = true;
 }
 
 bool KphpEnviroment::get_error_on_warns() const {
-  return error_on_warns;
+  return error_on_warns_;
 }
 
 void KphpEnviroment::set_warnings_filename(const string &path) {
-  warnings_filename = path;
+  warnings_filename_ = path;
 }
 
 void KphpEnviroment::set_stats_filename(const string &path) {
-  stats_filename = path;
+  stats_filename_ = path;
 }
 
 const string &KphpEnviroment::get_warnings_filename() const {
-  return warnings_filename;
+  return warnings_filename_;
 }
 
 const string &KphpEnviroment::get_stats_filename() const {
-  return stats_filename;
+  return stats_filename_;
 }
 
 FILE *KphpEnviroment::get_stats_file() const {
-  return stats_file;
+  return stats_file_;
 }
 
 void KphpEnviroment::set_stats_file(FILE *file) {
-  stats_file = file;
+  stats_file_ = file;
 }
 
 FILE *KphpEnviroment::get_warnings_file() const {
-  return warnings_file;
+  return warnings_file_;
 }
 
 void KphpEnviroment::set_warnings_file(FILE *file) {
-  warnings_file = file;
+  warnings_file_ = file;
 }
 
 void KphpEnviroment::set_warnings_level(int level) {
-  warnings_level = level;
+  warnings_level_ = level;
 }
 
 int KphpEnviroment::get_warnings_level() const {
-  return warnings_level;
+  return warnings_level_;
 }
 
 void KphpEnviroment::set_debug_level(const string &level) {
-  debug_level = level;
+  debug_level_ = level;
 }
 
 const string &KphpEnviroment::get_debug_level() const {
-  return debug_level;
+  return debug_level_;
 }
 
 const string &KphpEnviroment::get_version() const {
-  return version;
+  return version_;
 }
 
+void KphpEnviroment::update_cxx_flags_sha256() {
+  SHA256_CTX sha256;
+  SHA256_Init(&sha256);
+
+  auto cxx_flags_full = cxx_ + cxx_flags_;
+  SHA256_Update(&sha256, cxx_flags_full.c_str(), cxx_flags_full.size());
+
+  unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
+  SHA256_Final(hash, &sha256);
+
+  char hash_str[SHA256_DIGEST_LENGTH * 2 + 1] = {0};
+  for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    sprintf(hash_str + (i * 2), "%02x", hash[i]);
+  }
+  cxx_flags_sha256_.assign(hash_str, SHA256_DIGEST_LENGTH);
+}
 
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
@@ -424,6 +438,12 @@ bool KphpEnviroment::init() {
   init_env_var(&index_, "", "");
   as_file(&index_);
 
+  if (!no_pch_) {
+    std::string no_pch;
+    init_env_var(&no_pch, "KPHP_NO_PCH", "0");
+    env_str2bool(&no_pch_, no_pch);
+  }
+
   init_env_var(&jobs_count_, "KPHP_JOBS_COUNT", "100");
   env_str2int(&jobs_count_int_, jobs_count_);
   if (jobs_count_int_ <= 0) {
@@ -457,13 +477,16 @@ bool KphpEnviroment::init() {
   init_env_var(&cxx_, "CXX", "g++");
   stringstream ss;
   ss << user_cxx_flags;
-  ss << " -iquote" << get_path() <<
-     " -iquote" << get_path() << "PHP/";
-  ss << " -Wall -Wno-parentheses -Wno-trigraphs -fno-exceptions" <<
-     " -fno-strict-aliasing -fwrapv" <<
-     " -fno-omit-frame-pointer";
+  ss << " -iquote" << get_path() << " -iquote" << get_path() << "PHP/";
+  ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
+  ss << " -fno-exceptions -fno-strict-aliasing -fno-omit-frame-pointer";
+  if (!no_pch_) {
+    ss << " -Winvalid-pch -fpch-preprocess";
+  }
+
   cxx_flags_ = ss.str();
 
+  update_cxx_flags_sha256();
   runtime_sha256_ = read_runtime_sha256_file(get_runtime_sha256_file());
 
   init_env_var(&ld_, "LD", "ld");
@@ -477,7 +500,7 @@ bool KphpEnviroment::init() {
   init_env_var(&dest_dir_, "KPHP_DEST_DIR", get_path() + "PHP/tests/kphp_tmp/default/");
   as_dir(&dest_dir_);
   init_env_var(&use_auto_dest_, "KPHP_AUTO_DEST", "0");
-  init_env_var(&version, "KPHP_VERSION_OVERRIDE", get_version_string());
+  init_env_var(&version_, "KPHP_VERSION_OVERRIDE", get_version_string());
   env_str2bool(&use_auto_dest_bool_, use_auto_dest_);
 
   return true;
@@ -518,6 +541,7 @@ void KphpEnviroment::debug() const {
             "KPHP_RUNTIME_SHA256_FILE=[" << get_runtime_sha256_file() << "]\n" <<
             "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
+            "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
             "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
@@ -530,7 +554,9 @@ void KphpEnviroment::debug() const {
 
   std::cerr << "CXX=[" << get_cxx() << "]\n" <<
             "CXX_FLAGS=[" << get_cxx_flags() << "]\n" <<
-            "LD_FLAGS=[" << get_ld_flags() << "]\n";
+            "LD=[" << get_ld() << "]\n" <<
+            "LD_FLAGS=[" << get_ld_flags() << "]\n" <<
+            "AR=[" << get_ar() << "]\n";
   std::cerr << "KPHP_INCLUDES=[";
   bool is_first = true;
   for (const auto &include : get_includes()) {

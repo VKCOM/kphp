@@ -360,6 +360,10 @@ const string &KphpMakeEnv::get_debug_level() const {
   return debug_level;
 }
 
+void KphpMakeEnv::add_gch_dir(const std::string &gch_dir) {
+  cxx_flags.insert(0, "-iquote" + gch_dir + " ");
+}
+
 /*** KphpTarget ***/
 KphpTarget::KphpTarget() :
   Target(),

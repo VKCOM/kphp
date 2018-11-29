@@ -1,7 +1,6 @@
-#include "compiler/compiler-core.h"
-
 #include <fstream>
 #include <numeric>
+#include <sys/sendfile.h>
 #include <unordered_map>
 
 #include "compiler/compiler-core.h"
@@ -13,6 +12,7 @@
 #include "compiler/gentree.h"
 #include "compiler/make.h"
 #include "compiler/threading/hash-table.h"
+#include "common/wrappers/mkdir_recursive.h"
 
 static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
@@ -446,6 +446,92 @@ long long get_imported_header_mtime(const std::string &header_path, const std::f
   return 0;
 }
 
+void hard_link_or_copy_impl(const std::string &from, const std::string &to, bool replace, bool allow_copy) noexcept {
+  if (!link(from.c_str(), to.c_str())) {
+    return;
+  }
+
+  if (errno == EEXIST) {
+    if (replace) {
+      kphp_error_return(!unlink(to.c_str()),
+                        format("Can't remove file '%s': %s", to.c_str(), strerror(errno)));
+      hard_link_or_copy_impl(from, to, false, allow_copy);
+    }
+    return;
+  }
+
+  // the file is placed on other device, therefore we need to copy it
+  if (errno == EXDEV && allow_copy) {
+    struct stat file_stat;
+    kphp_error_return (!stat(from.c_str(), &file_stat),
+                       format("Can't get file stat '%s': %s", from.c_str(), strerror(errno)));
+
+    std::string tmp_file = to + ".XXXXXX";
+    int tmp_fd = mkstemp(&tmp_file[0]);
+    kphp_error_return(tmp_fd != -1,
+                      format("Can't create tmp file '%s': %s", tmp_file.c_str(), strerror(errno)));
+    kphp_error_return(fchmod(tmp_fd, file_stat.st_mode) != -1,
+                      format("Can't change permissions of tmp file '%s': %s", tmp_file.c_str(), strerror(errno)));
+    int from_fd = open(from.c_str(), O_RDONLY);
+    const ssize_t s = sendfile(tmp_fd, from_fd, nullptr, file_stat.st_size);
+    close(from_fd);
+    close(tmp_fd);
+    kphp_error_return(s != -1, format("Can't copy file from '%s' to '%s': %s", from.c_str(), tmp_file.c_str(), strerror(errno)));
+    kphp_assert(s == file_stat.st_size);
+    hard_link_or_copy_impl(tmp_file, to, replace, false);
+    unlink(tmp_file.c_str());
+    return;
+  }
+
+  kphp_error(0, format("Can't copy file from '%s' to '%s': %s", from.c_str(), to.c_str(), strerror(errno)));
+}
+
+void hard_link_or_copy(const std::string &from, const std::string &to, bool replace = true) {
+  hard_link_or_copy_impl(from, to, replace, true);
+  stage::die_if_global_errors();
+}
+
+std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviroment &kphp_env) {
+  std::string gch_dir = "/tmp/kphp_gch/";
+  gch_dir.append(kphp_env.get_runtime_sha256()).append(1, '/');
+  gch_dir.append(kphp_env.get_cxx_flags_sha256()).append(1, '/');
+
+  const std::string header_filename = "php_functions.h";
+  const std::string gch_filename = header_filename + ".gch";
+  const std::string gch_path = gch_dir + gch_filename;
+  if (access(gch_path.c_str(), F_OK) != -1) {
+    return gch_dir;
+  }
+
+  KphpMake make;
+  File php_functions_h(kphp_env.get_path() + "PHP/" + header_filename);
+  kphp_error_act(php_functions_h.upd_mtime() > 0,
+                 format("Can't read mtime of '%s'", php_functions_h.path.c_str()),
+                 return {});
+
+  File *php_functions_h_gch = obj_dir->insert_file(kphp_env.get_dest_objs_dir() + gch_filename);
+  make.create_cpp2obj_target(&php_functions_h, php_functions_h_gch);
+  File sha256_version_file(kphp_env.get_runtime_sha256_file());
+  kphp_assert(sha256_version_file.upd_mtime() > 0);
+  php_functions_h.target->force_changed(sha256_version_file.mtime);
+  make.init_env(kphp_env);
+  if (!make.make_target(php_functions_h_gch, 1)) {
+    return {};
+  }
+
+  const mode_t old_mask = umask(0);
+  const bool dir_created = mkdir_recursive(gch_dir.c_str(), 0777);
+  umask(old_mask);
+  kphp_error_act(dir_created,
+                 format("Can't create tmp dir '%s': %s", gch_dir.c_str(), strerror(errno)),
+                 return {});
+
+  hard_link_or_copy(php_functions_h.path, gch_dir + header_filename, false);
+  hard_link_or_copy(php_functions_h_gch->path, gch_path, false);
+  php_functions_h_gch->unlink();
+  return gch_dir;
+}
+
 std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_dir, const std::forward_list<Index> &imported_headers) {
   std::unordered_map<File *, long long> dep_mtime;
   std::priority_queue<std::pair<long long, File *>> mtime_queue;
@@ -544,7 +630,8 @@ std::vector<File *> create_obj_files(KphpMake *make, Index &obj_dir, const Index
 }
 
 bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
-               const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env) {
+               const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
+               const std::string &gch_dir) {
   KphpMake make;
   std::vector<File *> lib_objs;
   for (File &link_file: imported_libs) {
@@ -555,54 +642,43 @@ bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_lis
   std::copy(lib_objs.begin(), lib_objs.end(), std::back_inserter(objs));
   make.create_objs2bin_target(objs, &bin);
   make.init_env(kphp_env);
+  if (!gch_dir.empty()) {
+    make.add_gch_dir(gch_dir);
+  }
   return make.make_target(&bin, kphp_env.get_jobs_count());
 }
 
 bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
-                          const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env) {
+                          const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
+                          const std::string &gch_dir) {
   KphpMake make;
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   make.create_objs2static_lib_target(objs, &static_lib);
   make.init_env(kphp_env);
+  if (!gch_dir.empty()) {
+    make.add_gch_dir(gch_dir);
+  }
   return make.make_target(&static_lib, kphp_env.get_jobs_count());
 }
 
-void copy_file(const File &source_file, const string &destination, bool show_cmd) {
-  File destination_file(destination);
-  kphp_assert (destination_file.upd_mtime() >= 0);
-  const string cmd = "ln --force " + source_file.path + " " + destination_file.path + " 2> /dev/null"
-                     + "||  cp " + source_file.path + " " + destination_file.path;
-  const int err = system(cmd.c_str());
-  if (show_cmd) {
-    fprintf(stderr, "[%s]: %d %d\n", cmd.c_str(), err, WEXITSTATUS (err));
-  }
-  if (err == -1 || !WIFEXITED (err) || WEXITSTATUS (err)) {
-    if (err == -1) {
-      perror("system failed");
-    }
-    kphp_error (0, format("Failed [%s]", cmd.c_str()));
-    stage::die_if_global_errors();
-  }
-}
-
-void CompilerCore::copy_static_lib_to_out_dir(File &&static_archive, bool show_copy_cmd) const {
+void CompilerCore::copy_static_lib_to_out_dir(File &&static_archive) const {
   Index out_dir;
   out_dir.set_dir(env().get_static_lib_out_dir());
   out_dir.del_extra_files();
 
   // copy static archive
   LibData out_lib(env().get_static_lib_name(), out_dir.get_dir());
-  copy_file(static_archive, out_lib.static_archive_path(), show_copy_cmd);
+  hard_link_or_copy(static_archive.path, out_lib.static_archive_path());
   static_archive.unlink();
 
   // copy functions.txt of this static archive
   File functions_txt_tmp(env().get_dest_cpp_dir() + LibData::functions_txt_tmp_file());
-  copy_file(functions_txt_tmp, out_lib.functions_txt_file(), show_copy_cmd);
-  functions_txt_tmp.unlink();
+  hard_link_or_copy(functions_txt_tmp.path, out_lib.functions_txt_file());
+  static_archive.unlink();
 
   // copy runtime lib sha256 of this static archive
   File runtime_lib_sha256(env().get_runtime_sha256_file());
-  copy_file(runtime_lib_sha256, out_lib.runtime_lib_sha256_file(), show_copy_cmd);
+  hard_link_or_copy(runtime_lib_sha256.path, out_lib.runtime_lib_sha256_file());
 
   Index headers_tmp_dir;
   headers_tmp_dir.sync_with_dir(env().get_dest_cpp_dir() + LibData::headers_tmp_dir());
@@ -610,8 +686,8 @@ void CompilerCore::copy_static_lib_to_out_dir(File &&static_archive, bool show_c
   out_headers_dir.set_dir(out_lib.headers_dir());
   // copy cpp header files of this static archive
   for (File *header_file: headers_tmp_dir.get_files()) {
-    copy_file(*header_file, out_headers_dir.get_dir() + header_file->name, show_copy_cmd);
-    header_file->unlink();
+    hard_link_or_copy(header_file->path, out_headers_dir.get_dir() + header_file->name);
+    static_archive.unlink();
   }
 }
 
@@ -671,22 +747,30 @@ void CompilerCore::make() {
     bin_file.unlink();
   }
 
-  auto lib_header_dirs = collect_imported_headers();
-  const bool ok =
-    env().is_static_lib_mode()
-    ? kphp_make_static_lib(bin_file, obj_index, cpp_index, lib_header_dirs, env())
-    : kphp_make(bin_file, obj_index, cpp_index, collect_imported_libs(), lib_header_dirs, env());
+  std::string gch_dir;
+  bool ok = true;
+  const bool pch_allowed = !env().get_no_pch();
+  if (pch_allowed) {
+    gch_dir = kphp_make_precompiled_header(&obj_index, env());
+    ok = !gch_dir.empty();
+    kphp_error (ok, "Make precompiled header failed");
+  }
+  if (ok) {
+    auto lib_header_dirs = collect_imported_headers();
+    ok = env().is_static_lib_mode()
+         ? kphp_make_static_lib(bin_file, obj_index, cpp_index, lib_header_dirs, env(), gch_dir)
+         : kphp_make(bin_file, obj_index, cpp_index, collect_imported_libs(), lib_header_dirs, env(), gch_dir);
+    kphp_error (ok, "Make failed");
+  }
 
-  kphp_error (ok, "Make failed");
   stage::die_if_global_errors();
   obj_index.del_extra_files();
 
-  const bool show_copy_cmd = env().get_verbosity() >= 3;
   if (!env().get_user_binary_path().empty()) {
-    copy_file(bin_file, env().get_user_binary_path(), show_copy_cmd);
+    hard_link_or_copy(bin_file.path, env().get_user_binary_path());
   }
   if (env().is_static_lib_mode()) {
-    copy_static_lib_to_out_dir(std::move(bin_file), show_copy_cmd);
+    copy_static_lib_to_out_dir(std::move(bin_file));
   }
 }
 bool CompilerCore::try_require_file(SrcFilePtr file) {
