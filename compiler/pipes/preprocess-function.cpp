@@ -40,6 +40,42 @@ public:
   }
 
 private:
+  FunctionPtr generate_instance_template_function_by_name(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
+                                                          FunctionPtr func,
+                                                          const std::string &name_of_function_instance) {
+    FunctionPtr instance;
+    G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
+      if (!f_inst || f_inst->is_template) {
+        f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
+        if (f_inst) {
+          f_inst->is_required = true;
+          ClassPtr klass = f_inst->class_id;
+          if (klass) {
+            AutoLocker<Lockable *> locker(&(*klass));
+            if (klass->members.get_instance_method(get_local_name_from_global_$$(f_inst->name))) {
+              klass->members.for_each([&](ClassMemberInstanceMethod &m) {
+                if (m.global_name() == f_inst->name) {
+                  m.function = f_inst;
+                }
+              });
+            } else {
+              klass->members.add_instance_method(f_inst, f_inst->access_type);
+            }
+          }
+
+          instance_of_function_template_stream << f_inst;
+        }
+      }
+
+      if (f_inst) {
+        kphp_assert_msg(!f_inst->is_template, "instance of template function must be non template");
+        instance = f_inst;
+      }
+    });
+
+    return instance;
+  }
+
   void instantiate_lambda(VertexAdaptor<op_func_call> call, VertexPtr &call_arg) {
     if (ClassPtr lambda_class = FunctionData::is_lambda(call_arg)) {
       FunctionPtr instance_of_template_invoke;
@@ -49,23 +85,10 @@ private:
         std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
         invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, &template_of_invoke_method);
 
-        G->operate_on_function_locking(invoke_name, [&](FunctionPtr &f_inst) {
-          if (!f_inst) {
-            f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
-            if (f_inst) {
-              f_inst->is_required = true;
-              instance_of_function_template_stream << f_inst;
-              AutoLocker<Lockable *> locker(&(*lambda_class));
-              lambda_class->members.add_instance_method(f_inst, access_public);
-            }
-          }
-
-          if (f_inst) {
-            instance_of_template_invoke = f_inst;
-            f_inst->is_callback = true;
-            f_inst->require_all_lambdas_inside(instance_of_function_template_stream);
-          }
-        });
+        instance_of_template_invoke = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
+        if (instance_of_template_invoke) {
+          instance_of_template_invoke->is_callback = true;
+        }
       } else {
         kphp_assert(lambda_class->members.has_any_instance_method());
         instance_of_template_invoke = lambda_class->members.get_instance_method("__invoke")->function;
@@ -139,28 +162,9 @@ private:
 
     call->set_string(name_of_function_instance);
     call->set_func_id({});
-
-    G->operate_on_function_locking(name_of_function_instance, [&](FunctionPtr &f_inst) {
-      if (!f_inst || f_inst->is_template) {
-        f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
-        if (f_inst) {
-          f_inst->is_required = true;
-          ClassPtr klass = f_inst->class_id;
-          if (klass) {
-            AutoLocker<Lockable *> locker(&(*klass));
-            klass->members.add_instance_method(f_inst, f_inst->access_type);
-          }
-
-          instance_of_function_template_stream << f_inst;
-        }
-      }
-
-      if (f_inst) {
-        kphp_assert_msg(!f_inst->is_template, "instance of template function must be non template");
-        f_inst->require_all_lambdas_inside(instance_of_function_template_stream);
-        set_func_id(call, f_inst);
-      }
-    });
+    if (auto instance = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, func, name_of_function_instance)) {
+      set_func_id(call, instance);
+    }
 
     return call;
   }
