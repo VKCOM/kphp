@@ -167,7 +167,10 @@ public:
   static void add_this_to_captured_variables_in_lambda_body(VertexPtr &cmd, ClassPtr lambda_class);
   static VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, const VertexAdaptor<op_function> &function);
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
-  static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function, GenTreeCallback *callback, std::vector<VertexPtr> &&uses_of_lambda);
+  static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
+                                            GenTreeCallback *callback,
+                                            AccessType cur_access_type,
+                                            std::vector<VertexPtr> &&uses_of_lambda);
 
   VertexPtr get_class(Token *phpdoc_token);
 
@@ -214,6 +217,7 @@ private:
   vector<Token *>::const_iterator cur, end;
   vector<ClassPtr> class_stack;
   std::vector<FunctionPtr> *functions_stack = nullptr;
+  AccessType cur_acccess_type = AccessType::access_nonmember;
   ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
   SrcFilePtr processing_file;
   string class_context;

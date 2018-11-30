@@ -1649,7 +1649,7 @@ VertexPtr GenTree::get_anonymous_function() {
   SetFunctionsStackGuard fun_stack_g(this);
   VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
   if (auto anon_function = f.try_as<op_function>()) {
-    auto anon_constructor_call = generate_anonymous_class(anon_function, callback, std::move(uses_of_lambda));
+    auto anon_constructor_call = generate_anonymous_class(anon_function, callback, cur_acccess_type, std::move(uses_of_lambda));
     auto &members_of_anon_class = anon_constructor_call->get_func_id()->class_id->members;
 
     if (fun_stack_g.prev_functions_stack) {
@@ -1683,7 +1683,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
     name->str_val = static_cast<string>((*std::prev(cur))->str_val);
   }
 
-  bool is_instance_method = vk::any_of_equal(access_type, access_private, access_protected, access_public);
+  bool is_instance_method = FunctionData::is_instance_function(access_type);
   is_constructor = is_instance_method && name->str_val == "__construct";
 
   CE(expect(tok_oppar, "'('"));
@@ -1864,19 +1864,20 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
 }
 
 void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) {
-  switch (root->type()) {
-    case op_var: {
-      if (lambda_class->members.get_instance_field(root->get_string())) {
-        auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(AutoLocation(-1), ClassPtr()));
-        inst_prop->location = root->location;
-        inst_prop->str_val = root->get_string();
-        root = inst_prop;
-      }
-      break;
+  if (root->type() == op_var) {
+    if (lambda_class->members.get_instance_field(root->get_string())) {
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(AutoLocation(-1), ClassPtr()));
+      inst_prop->location = root->location;
+      inst_prop->str_val = root->get_string();
+      root = inst_prop;
+    } else if (root->get_string() == "this") {
+      // replace `$this` with `$this->parent$this`
+      auto new_root = VertexAdaptor<op_instance_prop>::create(root);
+      new_root->set_string("parent$this");
+      ::set_location(new_root, root->location);
+      root = new_root;
     }
-
-    default:
-      break;
+    return;
   }
 
   for (auto &v : *root) {
@@ -1924,10 +1925,15 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
 
 VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
   std::vector<VertexPtr> args;
-  cur_class->members.for_each([&args, &cur_class](const ClassMemberInstanceField &field) {
-    args.emplace_back(VertexAdaptor<op_var>::create());
-    args.back()->set_string(field.root->get_string());
-    args.back()->location = field.root->location;
+  cur_class->members.for_each([&](const ClassMemberInstanceField &field) {
+    VertexPtr res = VertexAdaptor<op_var>::create();
+    if (field.root->get_string() == "parent$this") {
+      res->set_string("this");
+    } else {
+      res->set_string(field.root->get_string());
+    }
+    res->location = field.root->location;
+    args.emplace_back(res);
   });
 
   auto constructor_call = VertexAdaptor<op_constructor_call>::create(args);
@@ -1937,7 +1943,10 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
   return constructor_call;
 }
 
-VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function, GenTreeCallback *callback, std::vector<VertexPtr> &&uses_of_lambda) {
+VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
+                                            GenTreeCallback *callback,
+                                            AccessType cur_access_type,
+                                            std::vector<VertexPtr> &&uses_of_lambda) {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
   lambda_class_name->str_val = gen_anonymous_function_name();
   lambda_class_name->location.line = function->name()->location.line;
@@ -1947,6 +1956,16 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   ClassPtr anon_class(new ClassData());
   anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_class_name->get_string());
   anon_class->root = class_vertex;
+
+  if (FunctionData::is_instance_function(cur_access_type)) {
+    auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
+    implicit_captured_var_parent_this->set_string("parent$this");
+    ::set_location(implicit_captured_var_parent_this, lambda_class_name->location);
+    auto func_param = VertexAdaptor<op_func_param>::create(implicit_captured_var_parent_this);
+    ::set_location(func_param, lambda_class_name->location);
+
+    uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
+  }
 
   for (auto one_use : uses_of_lambda) {
     if (auto param_as_use = one_use.try_as<op_func_param>()) {
@@ -2220,7 +2239,10 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
 
       // не статическая функция (public function ...)
       if (cur_tok == tok_function) {
-        return get_function(phpdoc_token, access_type);
+        cur_acccess_type = access_type;
+        auto res = get_function(phpdoc_token, access_type);
+        cur_acccess_type = AccessType::access_nonmember;
+        return res;
       }
       // статическая функция (public static function ...)
       if (next_tok == tok_function) {

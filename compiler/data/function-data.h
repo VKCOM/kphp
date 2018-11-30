@@ -77,12 +77,16 @@ public:
   string get_resumable_path() const;
   string get_human_readable_name() const;
 
+  inline static bool is_instance_function(AccessType access_type) {
+    return vk::any_of_equal(access_type, access_public, access_protected, access_private);
+  }
+
   inline bool is_instance_function() const {
-    return access_type == access_public || access_type == access_protected || access_type == access_private;
+    return is_instance_function(access_type);
   }
 
   inline bool is_static_function() const {
-    return access_type == access_static_public || access_type == access_static_protected || access_type == access_static_private;
+    return vk::any_of_equal(access_type, access_static_public, access_static_protected, access_static_private);
   }
 
   inline bool has_implicit_this_arg() const {

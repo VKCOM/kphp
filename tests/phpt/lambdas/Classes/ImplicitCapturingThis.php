@@ -4,6 +4,14 @@ namespace Classes;
 
 class ImplicitCapturingThis
 {
+    public function before_any_field() {
+        $f = function() {
+            var_dump($this->a);
+        };
+
+        $f();
+    }
+
     var $a;
 
     public function __construct($a = 0) {
@@ -25,6 +33,20 @@ class ImplicitCapturingThis
             };
 
             return $f2();
+        };
+
+        var_dump($f());
+    }
+
+    public function capturing_in_internal_functions() {
+        $a = [1, 2, 3, 4];
+        $a = array_filter($a, function($x) { return $x > $this->a; });
+        var_dump($a);
+    }
+
+    public static function static_inside_non_static_class() {
+        $f = function() {
+            return 10;
         };
 
         var_dump($f());

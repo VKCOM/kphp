@@ -179,8 +179,19 @@ bool ClassData::is_lambda_class() const {
 
 void ClassData::infer_uses_assumptions(FunctionPtr parent_function) {
   members.for_each([=](const ClassMemberInstanceField &field) {
+    AssumType assum = AssumType::assum_unknown;
     ClassPtr inferred_class;
-    auto assum = calc_assumption_for_var(parent_function, field.local_name(), inferred_class);
+    std::string local_name = field.local_name();
+    if (local_name == "parent$this") {
+      if (parent_function->is_lambda()) {
+        assum = assumption_get_for_var(parent_function->class_id, "parent$this", inferred_class);
+      } else {
+        local_name = "this";
+      }
+    }
+    if (assum == AssumType::assum_unknown) {
+      assum = calc_assumption_for_var(parent_function, local_name, inferred_class);
+    }
     assumptions_for_vars.emplace_back(assum, field.local_name(), inferred_class);
   });
 }

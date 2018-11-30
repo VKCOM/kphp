@@ -99,6 +99,7 @@ private:
         VertexAdaptor<op_func_ptr> new_call_arg = VertexAdaptor<op_func_ptr>::create(call_arg);
         new_call_arg->set_func_id(instance_of_template_invoke);
         new_call_arg->set_string(invoke_name);
+        ::set_location(new_call_arg, call_arg->location);
         call_arg = new_call_arg;
       }
     }
@@ -281,11 +282,15 @@ private:
   VertexPtr try_set_func_id(VertexPtr call) {
     if (call->get_func_id()) {
       if (call->get_func_id()->is_lambda_with_uses()) {
-        kphp_assert(call->type() == op_constructor_call);
-        call->get_func_id()->class_id->infer_uses_assumptions(current_function); // instance_of_function_template_stream << call->get_func_id();
-        call->location.function = current_function;
-        call->get_func_id()->is_template = false;
-        instance_of_function_template_stream << call->get_func_id();
+        auto new_call = call;
+        if (auto lambda_func_ptr = new_call.try_as<op_func_ptr>()) {
+          new_call = lambda_func_ptr->bound_class();
+        }
+        kphp_assert(new_call->type() == op_constructor_call);
+        new_call->get_func_id()->class_id->infer_uses_assumptions(current_function); // instance_of_function_template_stream << call->get_func_id();
+        new_call->location.function = current_function;
+        new_call->get_func_id()->is_template = false;
+        instance_of_function_template_stream << new_call->get_func_id();
       }
 
       return call;
