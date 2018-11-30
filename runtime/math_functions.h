@@ -60,6 +60,15 @@ const int PHP_ROUND_HALF_ODD = 123423146;
 
 var f$abs(const var &v);
 
+int f$abs(int v);
+
+double f$abs(double v);
+
+int f$abs(const OrFalse<int> &v);
+
+double f$abs(const OrFalse<double> &v);
+
+
 inline double f$acos(double v);
 
 inline double f$atan(double v);

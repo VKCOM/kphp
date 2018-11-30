@@ -321,7 +321,7 @@ function parse_url ($str ::: string, $component ::: int = -1) ::: var;
 
 define('M_PI', 3.1415926535897932384626433832795);
 
-function abs ($v);//TODO
+function abs ($v ::: Any) ::: CONST lca<^1, int>;
 function acos ($v ::: float) ::: CONST float;
 function atan ($v ::: float) ::: CONST float;
 function atan2 ($y ::: float, $x ::: float) ::: CONST float;

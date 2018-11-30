@@ -197,6 +197,24 @@ var f$abs(const var &v) {
   return fabs(num.to_float());
 }
 
+int f$abs(int v) {
+  return std::abs(v);
+}
+
+double f$abs(double v) {
+  return std::abs(v);
+}
+
+int f$abs(const OrFalse<int> &v) {
+  return f$abs(val(v));
+}
+
+double f$abs(const OrFalse<double> &v) {
+  return f$abs(val(v));
+}
+
+
+
 string f$base_convert(const string &number, int frombase, int tobase) {
   if (frombase < 2 || frombase > 36) {
     php_warning("Wrong parameter frombase (%d) in function base_convert", frombase);
