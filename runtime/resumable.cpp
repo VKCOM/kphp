@@ -1268,7 +1268,6 @@ int get_resumable_stack(void ** buffer, int limit) {
       buffer[it] = get_started_resumable(parent_id)->get_stack_ptr();
       resumable_id = parent_id;
     } else {
-      fprintf(stderr, "Failed to parse resumable stack: strange parent_id %d\n", parent_id);
       return it;
     }
   }

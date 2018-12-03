@@ -3725,7 +3725,6 @@ int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size) {
     case ID_MAYBE_FALSE:
     case ID_BOOL_FALSE: {
       IP[l++] = (void *)tlcomb_fetch_false;
-      IP[l++] = (void *)tlcomb_fetch_int;
       break;
     }
     case ID_BOOL_TRUE: {
