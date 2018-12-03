@@ -153,7 +153,9 @@ std::string ClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_f
         if (template_type_id_to_ClassPtr) {
           auto template_invoke_params = (*template_of_invoke_method)->get_params();
           auto type_id = template_invoke_params[i + 1].as<op_func_param>()->template_type_id;
-          template_type_id_to_ClassPtr->emplace(type_id, std::make_pair(assum_instance, klass_assumed));
+          if (type_id > -1) {
+            template_type_id_to_ClassPtr->emplace(type_id, std::make_pair(assum_instance, klass_assumed));
+          }
         }
         break;
       }
