@@ -4,6 +4,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/phpdoc.h"
+#include "compiler/data/class-data.h"
 
 static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_function> header) {
   VertexAdaptor<meta_op_function> root = func->root;
@@ -56,7 +57,19 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
   }
 }
 
+static void check_template_function(FunctionPtr func) {
+  if (!func->is_template) return;
+
+  for (auto l : func->lambdas_inside) {
+    const auto &prev_location = stage::get_location();
+    stage::set_location(l->class_id->new_function->root->location);
+    kphp_error(!l->is_lambda_with_uses(), "it's not allowed lambda with uses inside template function(or another lambda)");
+    stage::set_location(prev_location);
+  }
+}
+
 static void prepare_function_misc(FunctionPtr func) {
+  check_template_function(func);
   VertexRange params = get_function_params(func->root.as<meta_op_function>());
   int param_n = (int)params.size();
   bool was_default = false;

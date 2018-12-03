@@ -28,11 +28,11 @@ class ImplicitCapturingThis
 
     public function capturing_in_lambda_inside_lambda() {
         $f = function () {
-            $f2 = function () {
+            // $f2 = function () {
                 return $this->a;
-            };
+            // };
 
-            return $f2();
+            // return $f2();
         };
 
         var_dump($f());

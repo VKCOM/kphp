@@ -3,6 +3,8 @@
 
 require_once("Classes/autoload.php");
 
+$x = new \Classes\IntHolder(10);
+
 $fun = function (Classes\IntHolder $a) {
     return $a->a + 100;
 };
