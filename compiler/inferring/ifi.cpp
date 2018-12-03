@@ -51,7 +51,7 @@ is_func_id_t get_ifi_id(VertexPtr v) {
       if (name == "is_bool") {
         return ifi_is_bool;
       }
-      if (name == "is_integer" || name == "is_int") {
+      if (name == "is_integer"/* || name == "is_int" */) { // disabled, because we love ads code!
         return ifi_is_integer;
       }
       if (name == "is_long") {
