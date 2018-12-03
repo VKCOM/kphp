@@ -13,11 +13,9 @@ enum is_func_id_t {
   ifi_is_integer = 1 << 6,
   ifi_is_long = 1 << 7,
   ifi_is_float = 1 << 8,
-  ifi_is_double = 1 << 9,
-  ifi_is_real = 1 << 10,
-  ifi_is_string = 1 << 11,
-  ifi_is_array = 1 << 12,
-  ifi_is_object = 1 << 13
+  ifi_is_string = 1 << 9,
+  ifi_is_array = 1 << 10,
+  ifi_is_object = 1 << 11
 };
 
 is_func_id_t get_ifi_id(VertexPtr v);

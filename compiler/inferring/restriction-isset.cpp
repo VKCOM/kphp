@@ -73,7 +73,7 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
       break;
     }
     case tp_float: {
-      check_mask = ifi_is_scalar | ifi_is_numeric | ifi_is_float | ifi_is_double | ifi_is_real;
+      check_mask = ifi_is_scalar | ifi_is_numeric | ifi_is_float;
       break;
     }
     case tp_string: {
