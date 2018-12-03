@@ -1,7 +1,5 @@
 #include "compiler/inferring/restriction-isset.h"
 
-#include <ldap.h>
-
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
