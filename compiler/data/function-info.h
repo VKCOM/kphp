@@ -10,7 +10,7 @@ class FunctionInfo {
 public:
   VertexAdaptor<meta_op_function> root;
   std::string namespace_name;
-  std::string class_context;
+  ClassPtr context_class;
   bool kphp_required;
   AccessType access_type;
 
@@ -18,11 +18,11 @@ public:
     kphp_required(false),
     access_type(access_nonmember) {}
 
-  FunctionInfo(VertexAdaptor<meta_op_function> root, string namespace_name, string class_context,
+  FunctionInfo(VertexAdaptor<meta_op_function> root, string namespace_name, ClassPtr context_class,
                bool kphp_required, AccessType access_type) :
     root(root),
     namespace_name(std::move(namespace_name)),
-    class_context(std::move(class_context)),
+    context_class(context_class),
     kphp_required(kphp_required),
     access_type(access_type) {}
 };

@@ -61,7 +61,7 @@ public:
   bool kphp_lib_export;
   bool is_template;
   string namespace_name;
-  string class_context_name;
+  ClassPtr context_class;
   AccessType access_type;
   set<string> disabled_warnings;
   map<long long, int> name_gen_map;
@@ -131,8 +131,8 @@ public:
     return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->class_id : class_id;
   }
 
-  const std::string &get_outer_class_context_name() const {
-    return get_or_default_field(&FunctionData::class_context_name);
+  ClassPtr get_outer_context_class() const {
+    return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->context_class : context_class;
   }
 
   VertexRange get_params();

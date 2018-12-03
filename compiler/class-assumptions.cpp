@@ -499,11 +499,9 @@ inline AssumType infer_from_ctor(FunctionPtr f,
                                  VertexAdaptor<op_constructor_call> call,
                                  ClassPtr &out_class) {
   if (likely(!call->type_help)) {
-    std::string class_name = call->get_string();
-    if (call->get_func_id()) {
-      class_name = "\\" + call->get_func_id()->class_context_name;
-    }
-    out_class = G->get_class(resolve_uses(f, class_name, '\\'));
+    out_class = call->get_func_id()
+                ? call->get_func_id()->context_class
+                : G->get_class(resolve_uses(f, call->get_string(), '\\'));
     return assum_instance;
   }
 

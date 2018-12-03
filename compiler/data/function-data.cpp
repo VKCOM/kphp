@@ -63,7 +63,7 @@ FunctionPtr FunctionData::create_function(const FunctionInfo &info) {
   function->name = function_name;
   function->root = function_root;
   function->namespace_name = info.namespace_name;
-  function->class_context_name = info.class_context;
+  function->context_class = info.context_class;
   function->access_type = info.access_type;
   function_root->set_func_id(function);
   function->file_id = stage::get_file();
@@ -140,7 +140,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->is_extern = func->is_extern;
   new_function->used_in_source = func->used_in_source;
   new_function->namespace_name = func->namespace_name;
-  new_function->class_context_name = func->class_context_name;
+  new_function->context_class = func->context_class;
   new_function->access_type = func->access_type;
   new_function->body_seq = func->body_seq;
   new_function->is_template = false;

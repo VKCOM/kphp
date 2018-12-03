@@ -104,8 +104,8 @@ public:
   static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
   static VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
-  void create_default_constructor(const string &class_context, ClassPtr cur_class, AutoLocation location) const;
-  static void create_constructor_with_args(const string &class_context, ClassPtr cur_class,
+  void create_default_constructor(ClassPtr context_class, ClassPtr cur_class, AutoLocation location) const;
+  static void create_constructor_with_args(ClassPtr context_class, ClassPtr cur_class,
                                            AutoLocation location, VertexAdaptor<op_func_param_list> params,
                                            GenTreeCallback *callback);
 
@@ -192,8 +192,8 @@ private:
   VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, VertexRange params_next);
   string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &class_local_name, const string &function_local_name);
 
-  static void add_namespace_and_context_to_function_name(std::string full_class_name,
-                                                         const std::string &class_context,
+  static void add_namespace_and_context_to_function_name(ClassPtr cur_class,
+                                                         ClassPtr context_class,
                                                          std::string &function_name);
 
   /**
@@ -220,7 +220,7 @@ private:
   AccessType cur_acccess_type = AccessType::access_nonmember;
   ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
   SrcFilePtr processing_file;
-  string class_context;
+  ClassPtr context_class;
 };
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, GenTreeCallback &callback);

@@ -10,14 +10,14 @@ SrcFile::SrcFile() :
   loaded(false),
   is_required(false) {}
 
-SrcFile::SrcFile(const string &file_name, const string &short_file_name, const string &class_context, LibPtr owner_lib_id) :
+SrcFile::SrcFile(const string &file_name, const string &short_file_name, ClassPtr context_class, LibPtr owner_lib_id) :
   id(0),
   file_name(file_name),
   short_file_name(short_file_name),
   loaded(false),
   is_required(false),
   owner_lib(owner_lib_id),
-  class_context(class_context) {}
+  context_class(context_class) {}
 
 void SrcFile::add_prefix(const string &new_prefix) {
   prefix = new_prefix;

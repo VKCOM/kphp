@@ -11,16 +11,16 @@ private:
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
 
-  pair<SrcFilePtr, bool> require_file(const string &file_name, const string &class_context) {
-    return G->require_file(file_name, class_context, current_function->file_id->owner_lib, file_stream);
+  pair<SrcFilePtr, bool> require_file(const string &file_name, ClassPtr context_class) {
+    return G->require_file(file_name, context_class, current_function->file_id->owner_lib, file_stream);
   }
 
   void require_function(const string &name) {
     G->require_function(name, function_stream);
   }
 
-  void require_class(const string &class_name, const string &context_name) {
-    pair<SrcFilePtr, bool> res = require_file(class_name + ".php", context_name);
+  void require_class(const string &class_name, ClassPtr context_class) {
+    pair<SrcFilePtr, bool> res = require_file(class_name + ".php", context_class);
     kphp_error(res.first, format("Class %s not found", class_name.c_str()));
   }
 
@@ -53,8 +53,8 @@ public:
     if (function->type() == FunctionData::func_global && function->class_id) {
       for (const auto &dep : function->class_id->str_dependents) {
         const string &path_classname = resolve_uses(function, dep.class_name, '/');
-        require_class(path_classname, function->class_context_name);
-        require_class(path_classname, "");  
+        require_class(path_classname, function->context_class);
+        require_class(path_classname, ClassPtr());
       }
     }
     return true;
@@ -72,7 +72,7 @@ public:
       const string &name = root->get_string();
       const string &class_name = get_class_name_for(name, '/');
       if (!class_name.empty()) {
-        require_class(class_name, "");
+        require_class(class_name, ClassPtr());
         string member_name = get_full_static_member_name(current_function, name, root->type() == op_func_call);
         root->set_string(member_name);
       }
@@ -81,7 +81,7 @@ public:
       bool is_lambda = root->get_func_id() && root->get_func_id()->is_lambda();
       if (!is_lambda && likely(!root->type_help)) {     // type_help <=> Memcache | Exception
         const string &class_name = resolve_uses(current_function, root->get_string(), '/');
-        require_class(class_name, "");
+        require_class(class_name, ClassPtr());
       }
     }
 
@@ -97,7 +97,7 @@ public:
 
   VertexAdaptor<op_func_call> make_require_call(VertexPtr v) {
     kphp_error_act (v->type() == op_string, "Not a string in 'require' arguments", return {});
-    if (SrcFilePtr file = require_file(v->get_string(), "").first) {
+    if (SrcFilePtr file = require_file(v->get_string(), ClassPtr()).first) {
       auto call = VertexAdaptor<op_func_call>::create();
       call->str_val = file->main_func_name;
       return call;
@@ -128,8 +128,7 @@ void CollectRequiredF::execute(FunctionPtr function, CollectRequiredF::OStreamT 
     return;
   }
 
-  if (function->type() == FunctionData::func_global && function->class_id &&
-      function->class_id->name != function->class_context_name) {
+  if (function->type() == FunctionData::func_global && function->class_id && function->class_id != function->context_class) {
     return;
   }
   ready_function_stream << function;

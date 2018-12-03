@@ -25,7 +25,7 @@ static inline string gen_unique_name_inside_file(const std::string &prefix, vola
   AUTO_PROF (next_name);
   AutoLocker<volatile int *> locker(&x);
   SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll(file->unified_file_name + file->class_context);
+  unsigned long long h = hash_ll(file->context_class ? file->unified_file_name + file->context_class->name : file->unified_file_name);
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
   char tmp[50];
@@ -110,7 +110,7 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
         kphp_assert(extends_it != class_id->str_dependents.end());
         class_name = resolve_uses(current_function, extends_it->class_name, delim);
       } else if (class_name == "static") {
-        class_name = current_function->get_outer_class_context_name();
+        class_name = current_function->get_outer_context_class()->name;
       } else {
         class_name = current_function->get_outer_class()->name;
       }
@@ -270,7 +270,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
 
 string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim) {
   if (class_name == "static" || class_name == "self" || class_name == "parent") {
-    return resolve_uses(function, "\\" + function->get_outer_class_context_name(), delim);
+    return resolve_uses(function, "\\" + function->get_outer_context_class()->name, delim);
   }
   return resolve_uses(function, class_name, delim);
 }
