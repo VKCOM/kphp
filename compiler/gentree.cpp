@@ -1784,7 +1784,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   }
 
   if (cur_class && processing_file->context_class) {
-    add_parent_function_to_descendants_with_context(info, access_type, params->params());
+    add_parent_function_to_child_class_with_context(info.root, cur_class, context_class, access_type, callback);
   }
 
   if (registered_fun) {
@@ -2517,60 +2517,32 @@ void GenTree::set_extra_type(VertexPtr vertex, AccessType access_type) const {
   }
 }
 
-void GenTree::add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, VertexRange params_next) {
-  ClassPtr cur_class = context_class;
+void GenTree::add_parent_function_to_child_class_with_context(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, AccessType access_type, GenTreeCallback *callback) {
+  string function_local_name = get_real_name_from_full_method_name(root->name()->get_string());
+  string child_function_name = replace_backslashes(child_class->name) + "$$" + function_local_name;
 
-  kphp_assert(info.root->type() == op_function || info.root->type() == op_extern_func || info.root->type() == op_func_decl);
-  string full_base_class_name = info.root.as<meta_op_function>()->name()->get_string();
-  string real_function_name = get_real_name_from_full_method_name(full_base_class_name);
-
-  while (cur_class) {
-    size_t pos = cur_class->name.rfind('\\');
-    info.namespace_name = cur_class->name.substr(0, pos);
-    string class_local_name = cur_class->name.substr(pos + 1);
-
-    auto extends_it = std::find_if(cur_class->str_dependents.begin(), cur_class->str_dependents.end(),
-                                   [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
-    if (extends_it == cur_class->str_dependents.end()) {
-      break;
+  if (!G->get_function(child_function_name)) {
+    VertexPtr func = generate_function_with_parent_call(root, parent_class, child_class, function_local_name);
+    if (stage::has_error()) {
+      return;
     }
 
-    string new_function_name = get_name_for_new_function_with_parent_call(info, class_local_name, real_function_name);
-
-    if (!G->get_function(new_function_name)) {
-      VertexPtr func = generate_function_with_parent_call(info, class_local_name, real_function_name, params_next);
-      if (stage::has_error()) {
-        return;
-      }
-
-      Token *phpdoc_token = info.root->get_func_id()->phpdoc_token;
-      info.root = func;
-      FunctionPtr registered_function = register_function(info, GenTree::cur_class, callback);
-      if (registered_function) {
-        registered_function->access_type = access_type;
-        registered_function->phpdoc_token = phpdoc_token;
-      }
+    string namespace_name = child_class->name.substr(0, child_class->name.rfind('\\'));
+    FunctionInfo info(func, namespace_name, child_class, false, access_type);
+    FunctionPtr registered_function = register_function(info, parent_class, callback);
+    if (registered_function) {
+      registered_function->phpdoc_token = root->get_func_id()->phpdoc_token;
     }
-
-    string parent_class_name = extends_it->class_name;
-    if (parent_class_name[0] == '\\') {
-      parent_class_name.erase(0, 1);
-    }
-
-    if (replace_backslashes(parent_class_name) == full_base_class_name) {
-      break;
-    }
-
-    cur_class = G->get_class(parent_class_name);
   }
 }
 
-VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, VertexRange params_next) {
+
+VertexPtr GenTree::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &function_local_name) {
   auto new_name = VertexAdaptor<op_func_name>::create();
-  new_name->set_string(get_name_for_new_function_with_parent_call(info, class_local_name, function_local_name));
+  new_name->set_string(replace_backslashes(child_class->name) + "$$" + function_local_name);
   vector<VertexPtr> new_params_next;
   vector<VertexPtr> new_params_call;
-  for (const auto &parameter : params_next) {
+  for (const auto &parameter : *root->params()) {
     if (parameter->type() == op_func_param) {
       new_params_call.push_back(parameter.as<op_func_param>()->var().as<op_var>().clone());
       new_params_next.push_back(parameter.clone());
@@ -2583,7 +2555,7 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
 
   auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
 
-  string parent_function_name = replace_backslashes(cur_class->name) + "$$" + function_local_name + "$$" + replace_backslashes(context_class->name);
+  string parent_function_name = replace_backslashes(parent_class->name) + "$$" + function_local_name + "$$" + replace_backslashes(child_class->name);
   // it's equivalent to new_func_call->set_string("parent::" + function_local_name);
   new_func_call->set_string(parent_function_name);
 
@@ -2591,7 +2563,7 @@ VertexPtr GenTree::generate_function_with_parent_call(FunctionInfo info, const s
   auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
   auto new_params = VertexAdaptor<op_func_param_list>::create(new_params_next);
   auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
-  func->copy_location_and_flags(*info.root);
+  func->copy_location_and_flags(*root);
   func_force_return(func);
   func->inline_flag = true;
 
@@ -2630,15 +2602,6 @@ std::string GenTree::get_real_name_from_full_method_name(const std::string &full
   }
 
   return full_name.substr(first_dollars_pos, second_dollars_pos - first_dollars_pos);
-}
-
-string GenTree::get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &class_local_name, const string &function_local_name) {
-  string target_class = replace_backslashes(info.namespace_name + "\\" + class_local_name);
-  if (target_class == replace_backslashes(info.context_class->name)) {
-    return target_class + "$$" + function_local_name;
-  } else {
-    return target_class + "$$" + function_local_name + "$$" + replace_backslashes(info.context_class->name);
-  }
 }
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, GenTreeCallback &callback) {

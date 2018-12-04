@@ -188,13 +188,10 @@ private:
 
   VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
   void set_extra_type(VertexPtr vertex, AccessType access_type) const;
-  void add_parent_function_to_descendants_with_context(FunctionInfo info, AccessType access_type, VertexRange params_next);
-  VertexPtr generate_function_with_parent_call(FunctionInfo info, const string &class_local_name, const string &function_local_name, VertexRange params_next);
-  string get_name_for_new_function_with_parent_call(const FunctionInfo &info, const string &class_local_name, const string &function_local_name);
 
-  static void add_namespace_and_context_to_function_name(ClassPtr cur_class,
-                                                         ClassPtr context_class,
-                                                         std::string &function_name);
+  static void add_parent_function_to_child_class_with_context(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, AccessType access_type, GenTreeCallback *callback);
+  static VertexPtr generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &function_local_name);
+  static void add_namespace_and_context_to_function_name(ClassPtr cur_class, ClassPtr context_class, std::string &function_name);
 
   /**
    * @param full_name full method name including namespace and context encoded
