@@ -98,7 +98,7 @@
   },
   {
     "name": "meta_op_require",
-    "base_name": "meta_op_varg",
+    "base_name": "meta_op_base",
     "props": {
       "cnst": "cnst_not_func",
       "type": "common_op"

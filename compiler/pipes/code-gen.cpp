@@ -2041,28 +2041,17 @@ void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
 
 
 void compile_require(VertexPtr root, CodeGenerator &W) {
-  bool first = true;
-  for (auto i : *root) {
-    if (first) {
-      first = false;
-    } else {
-      W << "," << NL;
-    }
-
-    if (root->type() == op_require) {
-      W << "require (";
-    } else if (root->type() == op_require_once) {
-      W << "require_once (";
-    } else {
-      kphp_fail();
-    }
-
-    VertexAdaptor<op_func_call> func = i;
-    W << FunctionCallFlag(func->get_func_id()) <<
-      ", " <<
-      func <<
-      ")";
+  if (root->type() == op_require) {
+    W << "require (";
+  } else if (root->type() == op_require_once) {
+    W << "require_once (";
+  } else {
+    kphp_fail();
   }
+
+  kphp_assert_msg(root->size() == 1, "Only one child possible for require vertex");
+  VertexAdaptor<op_func_call> func = root->back();
+  W << FunctionCallFlag(func->get_func_id()) << ", " << func << ")";
 }
 
 
@@ -3815,6 +3804,9 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vector<FunctionPtr> source_functions;
   for (int i = 0; i < (int)xall.size(); i++) {
     FunctionPtr function = xall[i];
+    if (function->body_seq == FunctionData::body_value::empty) {
+      continue;
+    }
     if (function->used_in_source) {
       source_functions.push_back(function);
     }

@@ -292,18 +292,35 @@ VertexPtr GenTree::get_varg_call() {
   return call;
 }
 
-template<Operation Op>
 VertexPtr GenTree::get_require() {
   AutoLocation require_location(this);
   next_cur();
-  bool is_opened = open_parent();
-  vector<VertexPtr> next;
-  bool ok_next = gen_list<op_err>(&next, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_next, "get_require_list failed"));
+  const bool is_opened = open_parent();
+  auto require = VertexAdaptor<op_require>::create(GenTree::get_expression());
   close_parent (is_opened);
-  auto require = VertexAdaptor<Op>::create(next);
   set_location(require, require_location);
   return require;
+}
+
+VertexPtr GenTree::get_require_once() {
+  AutoLocation require_location(this);
+  next_cur();
+  bool is_opened = open_parent();
+  vector<VertexPtr> requires;
+  bool ok_next = gen_list<op_err>(&requires, &GenTree::get_expression, tok_comma);
+  CE (!kphp_error(ok_next, "get_require_list for require_once failed"));
+  close_parent (is_opened);
+  VertexPtr require_once_seq;
+  if (requires.size() == 1) {
+    require_once_seq = VertexAdaptor<op_require_once>::create(requires.back());
+  } else {
+    for (auto &require: requires) {
+      require = VertexAdaptor<op_require_once>::create(require);
+    }
+    require_once_seq = VertexAdaptor<op_seq>::create(std::move(requires));
+  }
+  set_location(require_once_seq, require_location);
+  return require_once_seq;
 }
 
 template<Operation Op, Operation EmptyOp>
@@ -611,10 +628,10 @@ VertexPtr GenTree::get_expr_top() {
       res = get_exit();
       break;
     case tok_require:
-      res = get_require<op_require>();
+      res = get_require();
       break;
     case tok_require_once:
-      res = get_require<op_require_once>();
+      res = get_require_once();
       break;
 
     case tok_constructor_call:

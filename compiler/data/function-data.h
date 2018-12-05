@@ -67,6 +67,12 @@ public:
   FunctionPtr function_in_which_lambda_was_created;
   std::vector<FunctionPtr> lambdas_inside;
 
+  enum class body_value {
+    empty,
+    non_empty,
+    unknown,
+  } body_seq;
+
   FunctionData();
   explicit FunctionData(VertexPtr root);
   static FunctionPtr create_function(const FunctionInfo &info);

@@ -136,8 +136,8 @@ public:
   VertexPtr get_conv();
   template<Operation Op>
   VertexPtr get_varg_call();
-  template<Operation Op>
   VertexPtr get_require();
+  VertexPtr get_require_once();
   template<Operation Op, Operation EmptyOp>
   VertexPtr get_func_call();
   VertexPtr get_short_array();

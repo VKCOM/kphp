@@ -95,24 +95,22 @@ public:
     return root;
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
-    if (root->type() == op_require || root->type() == op_require_once) {
-      VertexAdaptor<meta_op_require> require = root;
-      for (auto &cur : require->args()) {
-        kphp_error_act (cur->type() == op_string, "Not a string in 'require' arguments", continue);
-        pair<SrcFilePtr, bool> tmp = require_file(cur->get_string(), "");
-        SrcFilePtr file = tmp.first;
-
-        auto call = VertexAdaptor<op_func_call>::create();
-        if (file) {
-          call->str_val = file->main_func_name;
-          cur = call;
-        } else {
-          kphp_error (0, format("Cannot require [%s]\n", cur->get_string().c_str()));
-        }
-      }
+  VertexAdaptor<op_func_call> make_require_call(VertexPtr v) {
+    kphp_error_act (v->type() == op_string, "Not a string in 'require' arguments", return {});
+    if (SrcFilePtr file = require_file(v->get_string(), "").first) {
+      auto call = VertexAdaptor<op_func_call>::create();
+      call->str_val = file->main_func_name;
+      return call;
     }
+    kphp_error (0, format("Cannot require [%s]\n", v->get_string().c_str()));
+    return {};
+  }
 
+  VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
+    if (root->type() == op_require_once || root->type() == op_require) {
+      kphp_assert_msg(root->size() == 1, "Only one child possible for require vertex");
+      root->back() = make_require_call(root->back());
+    }
     return root;
   }
 };

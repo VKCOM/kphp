@@ -27,6 +27,7 @@
 #include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
+#include "compiler/pipes/calc-empty-functions.h"
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
@@ -64,6 +65,7 @@
 #include "compiler/pipes/preprocess-vararg.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-variables.h"
+#include "compiler/pipes/remove-empty-function-calls.h"
 #include "compiler/pipes/split-switch.h"
 #include "compiler/pipes/type-inferer-end.h"
 #include "compiler/pipes/type-inferer.h"
@@ -240,8 +242,10 @@ bool compiler_execute(KphpEnviroment *env) {
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<0>{}
+    >> PipeC<CalcEmptyFunctions>{}
     >> PipeC<CalcActualCallsEdgesF>{}
     >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
+    >> PassC<RemoveEmptyFunctionCalls>{}
     >> PassC<PreprocessBreakPass>{}
     >> PassC<CalcConstTypePass>{}
     >> PassC<CollectConstVarsPass>{}

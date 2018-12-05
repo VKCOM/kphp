@@ -82,7 +82,7 @@ public:
   F (collect_const_vars)\
   F (calc_actual_calls_edges)\
   F (calc_actual_calls)\
-  F (calc_throws)\
+  F (calc_throws_and_body_value)\
   F (check_function_calls)\
   F (calc_rl)\
   F (CFG)\
