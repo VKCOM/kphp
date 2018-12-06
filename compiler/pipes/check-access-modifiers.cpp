@@ -11,8 +11,8 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   return true;
 }
 VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  if (root->type() == op_var) {
-    VarPtr var_id = root.as<op_var>()->get_var_id();
+  if (vk::any_of_equal(root->type(), op_var, op_instance_prop)) {
+    VarPtr var_id = root->get_var_id();
     if (var_id->is_class_static_var()) {
       auto member = var_id->as_class_static_field();
       string name = var_id->name;
@@ -32,6 +32,15 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
         }
         kphp_error(klass, format("Can't access protected field %s", member->local_name().c_str()));
       }
+    } else if (var_id->is_class_instance_var()) {
+      auto member = var_id->as_class_instance_field();
+
+      bool has_access = member->access_type != access_private ||
+                        vk::any_of_equal(member->var->class_id,
+                                         current_function->class_id,
+                                         current_function->get_this_or_topmost_if_lambda()->class_id);
+
+      kphp_error(has_access, format("Can't access private field %s", member->local_name().c_str()));
     }
   } else if (root->type() == op_func_call) {
     FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
