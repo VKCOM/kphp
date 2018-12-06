@@ -1908,7 +1908,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
       auto variable_in_use = VertexAdaptor<op_class_var>::create();
       variable_in_use->str_val = param_as_use->var()->get_string();
       ::set_location(variable_in_use, param_as_use->location);
-      anon_class->members.add_instance_field(variable_in_use, access_public);
+      anon_class->members.add_instance_field(variable_in_use, access_private);
     }
   }
 
