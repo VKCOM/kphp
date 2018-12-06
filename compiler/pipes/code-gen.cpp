@@ -3304,9 +3304,9 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
     W << "SAFE_SET_VALUE (" <<
       set_value->array() << ", " <<
       set_value->key() << ", " <<
-      TypeName(tinf::get_type(set_value->key())) << ", " <<
+      TypeNameInsideMacro(tinf::get_type(set_value->key())) << ", " <<
       set_value->value() << ", " <<
-      TypeName(tinf::get_type(set_value->value())) <<
+      TypeNameInsideMacro(tinf::get_type(set_value->value())) <<
       ")";
   } else if (OpInfo::rl(root->type()) == rl_set) {
     VertexAdaptor<meta_op_binary> op = root;
@@ -3320,21 +3320,21 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
     W << op->lhs() << ", " <<
       OpInfo::str(root->type()) << ", " <<
       op->rhs() << ", " <<
-      TypeName(tinf::get_type(op->rhs())) <<
+      TypeNameInsideMacro(tinf::get_type(op->rhs())) <<
       ")";
   } else if (root->type() == op_push_back) {
     VertexAdaptor<op_push_back> pb = root;
     W << "SAFE_PUSH_BACK (" <<
       pb->array() << ", " <<
       pb->value() << ", " <<
-      TypeName(tinf::get_type(pb->value())) <<
+      TypeNameInsideMacro(tinf::get_type(pb->value())) <<
       ")";
   } else if (root->type() == op_push_back_return) {
     VertexAdaptor<op_push_back_return> pb = root;
     W << "SAFE_PUSH_BACK_RETURN (" <<
       pb->array() << ", " <<
       pb->value() << ", " <<
-      TypeName(tinf::get_type(pb->value())) <<
+      TypeNameInsideMacro(tinf::get_type(pb->value())) <<
       ")";
   } else if (root->type() == op_array) {
     compile_array(root, W);
@@ -3345,7 +3345,7 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
     W << "SAFE_INDEX (" <<
       index->array() << ", " <<
       index->key() << ", " <<
-      TypeName(tinf::get_type(index->key())) <<
+      TypeNameInsideMacro(tinf::get_type(index->key())) <<
       ")";
   } else {
     kphp_error (0, format("Safe version of [%s] is not supported", OpInfo::str(root->type()).c_str()));
