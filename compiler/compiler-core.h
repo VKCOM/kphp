@@ -11,7 +11,6 @@
 
 #include "compiler/compiler.h"
 #include "compiler/data/data_ptr.h"
-#include "compiler/data/function-info.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
@@ -71,7 +70,7 @@ public:
     callback(node->data);
   }
 
-  FunctionPtr register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os);
+  bool register_function(FunctionPtr function);
   ClassPtr register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
 

@@ -88,7 +88,7 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
       recalc_ptype<tp_Error>();
     }
     const FunctionPtr called_function = expr->get_func_id();
-    kphp_assert(called_function->is_extern && called_function->get_params()[callback_arg_id - 1]->type() == op_func_param_callback);
+    kphp_assert(called_function->is_extern() && called_function->get_params()[callback_arg_id - 1]->type() == op_func_param_callback);
 
     VertexRange call_args = expr.as<op_func_call>()->args();
     VertexPtr callback_arg = call_args[callback_arg_id - 1];

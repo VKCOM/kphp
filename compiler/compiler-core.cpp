@@ -192,30 +192,12 @@ void CompilerCore::require_function(const string &name, DataStream<FunctionPtr> 
   });
 }
 
-FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream<FunctionPtr> &os) {
-  const VertexPtr &root = info.root;
-  if (!root) {
-    return FunctionPtr();
-  }
-  FunctionPtr function;
-  if (root->type() == op_function || root->type() == op_func_decl) {
-    function = root->get_func_id() ?: FunctionData::create_function(info);
-  } else if (root->type() == op_extern_func) {
-    string function_name = root.as<meta_op_function>()->name()->get_string();
-    save_extern_func_header(function_name, root);
-    return FunctionPtr();
-  } else {
-    kphp_fail();
-  }
-
-  bool auto_require = info.kphp_required
-                      || function->type() == FunctionData::func_global
-                      || function->type() == FunctionData::func_extern
-                      || (function->is_instance_function() && !function->is_lambda());
+bool CompilerCore::register_function(FunctionPtr function) {
+  bool force_add_to_os = false;
 
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
     if (f == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
-      auto_require = true;
+      force_add_to_os = true;
     }
     kphp_error(!f || f == UNPARSED_BUT_REQUIRED_FUNC_PTR,
                format("Redeclaration of function %s(), the previous declaration was in [%s]",
@@ -223,12 +205,7 @@ FunctionPtr CompilerCore::register_function(const FunctionInfo &info, DataStream
     f = function;
   });
 
-  if (auto_require) {
-    function->is_required = true;
-    os << function;
-  }
-
-  return function;
+  return force_add_to_os;
 }
 
 ClassPtr CompilerCore::register_class(ClassPtr cur_class) {

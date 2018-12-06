@@ -22,7 +22,6 @@ FunctionData::FunctionData() :
   const_data(nullptr),
   phpdoc_token(),
   min_argn(0),
-  is_extern(false),
   used_in_source(false),
   is_callback(false),
   should_be_sync(),
@@ -45,7 +44,6 @@ FunctionData::FunctionData(VertexPtr root) :
   const_data(nullptr),
   phpdoc_token(),
   min_argn(0),
-  is_extern(false),
   used_in_source(false),
   is_callback(false),
   should_be_sync(),
@@ -54,43 +52,18 @@ FunctionData::FunctionData(VertexPtr root) :
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
-FunctionPtr FunctionData::create_function(const FunctionInfo &info) {
-  VertexAdaptor<meta_op_function> function_root = info.root;
+FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, func_type_t type) {
   AUTO_PROF (create_function);
-  string function_name = function_root->name().as<op_func_name>()->str_val;
   FunctionPtr function = FunctionPtr(new FunctionData());
+  root->set_func_id(function);
 
-  function->name = function_name;
-  function->root = function_root;
-  function->namespace_name = info.namespace_name;
-  function->context_class = info.context_class;
-  function->access_type = info.access_type;
-  function_root->set_func_id(function);
+  function->name = root->name().as<op_func_name>()->str_val;
+  function->root = root;
   function->file_id = stage::get_file();
-  function->kphp_required = info.kphp_required;
-  function->function_in_which_lambda_was_created = function_root->get_func_id()->function_in_which_lambda_was_created;
+  function->type() = type;
 
-  if (function_root->type() == op_func_decl) {
-    function->is_extern = true;
-    function->type() = FunctionData::func_extern;
-  } else {
-    switch (function_root->extra_type) {
-      case op_ex_func_switch:
-        function->type() = FunctionData::func_switch;
-        break;
-      case op_ex_func_global:
-        function->type() = FunctionData::func_global;
-        break;
-      default:
-        function->type() = FunctionData::func_local;
-        break;
-    }
-  }
-
-  if (function->type() == FunctionData::func_global) {
-    if (stage::get_file()->main_func_name == function->name) {
-      stage::get_file()->main_function = function;
-    }
+  if (type == FunctionData::func_global && stage::get_file()->main_func_name == function->name) {
+    stage::get_file()->main_function = function;
   }
 
   return function;
@@ -137,7 +110,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->const_data = func->const_data;
   new_function->phpdoc_token = func->phpdoc_token;
   new_function->min_argn = func->min_argn;
-  new_function->is_extern = func->is_extern;
   new_function->used_in_source = func->used_in_source;
   new_function->namespace_name = func->namespace_name;
   new_function->context_class = func->context_class;

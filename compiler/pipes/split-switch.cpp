@@ -117,7 +117,6 @@ public:
       auto case_state_param = VertexAdaptor<op_func_param>::create(case_state);
       auto func_params = VertexAdaptor<op_func_param_list>::create(case_state_param);
       auto func = VertexAdaptor<op_function>::create(func_name, func_params, seq);
-      func->extra_type = op_ex_func_switch;
       func = prepare_switch_func(func, case_state_name, 1);
       GenTree::func_force_return(func);
       new_functions.push_back(func);
@@ -185,9 +184,10 @@ void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   SplitSwitchPass split_switch;
   run_function_pass(function, &split_switch);
 
-  for (VertexPtr new_function : split_switch.get_new_functions()) {
-    G->register_function(FunctionInfo(new_function, function->file_id->namespace_name,
-                                      ClassPtr(), false, access_nonmember), os);
+  for (VertexPtr new_func_root : split_switch.get_new_functions()) {
+    FunctionPtr function = FunctionData::create_function(new_func_root, FunctionData::func_switch);
+    G->register_function(function);
+    G->require_function(function->name, os);
   }
 
   if (stage::has_error()) {

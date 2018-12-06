@@ -8,6 +8,5 @@ void ParseF::execute(FileAndTokens file_and_tokens, DataStream<FunctionPtr> &os)
   stage::set_file(file_and_tokens.file);
   kphp_assert(file_and_tokens.file);
 
-  GenTreeCallback callback(os);
-  php_gen_tree(file_and_tokens.tokens, file_and_tokens.file, callback);
+  php_gen_tree(file_and_tokens.tokens, file_and_tokens.file, os);
 }

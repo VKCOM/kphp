@@ -175,7 +175,7 @@ private:
       if (auto son = rule->rule().try_as<op_type_rule>()) {
         is_any = son->type_help == tp_Any;
 
-        if (!is_any && callback_function && callback_function->is_extern) {
+        if (!is_any && callback_function && callback_function->is_extern()) {
           if (auto rule_of_callback = callback_function->root->type_rule.try_as<op_common_type_rule>()) {
             if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_rule>()) {
               is_any = son_of_callback_rule->type_help == son->type_help;
@@ -226,7 +226,7 @@ private:
     }
 
 
-    if (!(function->varg_flag && function->is_extern)) {
+    if (!(function->varg_flag && function->is_extern())) {
       for (int i = 0; i < call->args().size(); ++i) {
         VertexPtr arg = call->args()[i];
         VertexAdaptor<meta_op_func_param> param = function_params[i];
@@ -234,7 +234,7 @@ private:
         if (param->type() == op_func_param_callback) {
           on_func_param_callback(call, i);
         } else {
-          if (!function->is_extern) {
+          if (!function->is_extern()) {
             create_set(as_lvalue(function, i), arg);
           }
 
@@ -361,7 +361,7 @@ private:
       require_node(as_rvalue(function, i));
     }
 
-    if (function->is_extern) {
+    if (function->is_extern()) {
       PrimitiveType ret_type = function->root->type_help;
       if (ret_type == tp_Unknown) {
         ret_type = tp_var;

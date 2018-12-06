@@ -1,9 +1,9 @@
 #pragma once
 
+#include "auto/compiler/vertex/vertex-meta_op_function.h"
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
-#include "compiler/data/function-info.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/stage.h"
 #include "compiler/threading/data-stream.h"
@@ -53,7 +53,6 @@ public:
   Token *phpdoc_token;
 
   int min_argn;
-  bool is_extern;
   bool used_in_source;    // это только для костыля extern_function, потом должно уйти
   bool is_callback;
   bool should_be_sync;
@@ -76,7 +75,7 @@ public:
 
   FunctionData();
   explicit FunctionData(VertexPtr root);
-  static FunctionPtr create_function(const FunctionInfo &info);
+  static FunctionPtr create_function(VertexAdaptor<meta_op_function> root, func_type_t type);
 
   inline func_type_t &type() { return type_; }
 
@@ -84,20 +83,28 @@ public:
   string get_resumable_path() const;
   string get_human_readable_name() const;
 
-  inline static bool is_instance_function(AccessType access_type) {
+  inline static bool is_instance_access_type(AccessType access_type) {
     return vk::any_of_equal(access_type, access_public, access_protected, access_private);
   }
 
+  inline static bool is_static_access_type(AccessType access_type) {
+    return vk::any_of_equal(access_type, access_static_public, access_static_protected, access_static_private);
+  }
+
   inline bool is_instance_function() const {
-    return is_instance_function(access_type);
+    return is_instance_access_type(access_type);
   }
 
   inline bool is_static_function() const {
-    return vk::any_of_equal(access_type, access_static_public, access_static_protected, access_static_private);
+    return is_static_access_type(access_type);
   }
 
   inline bool has_implicit_this_arg() const {
     return is_instance_function() && !is_constructor();
+  }
+
+  inline bool is_extern() const {
+    return type_ == func_extern;
   }
 
   bool is_constructor() const;

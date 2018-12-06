@@ -96,6 +96,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function, AccessType a
   append_member(hash_name, ClassMemberStaticMethod(function, access_type));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
+  function->access_type = access_type;
   function->class_id = klass;
 }
 
@@ -104,14 +105,12 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   append_member(hash_name, ClassMemberInstanceMethod(function, access_type));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
+  function->access_type = access_type;
   function->class_id = klass;
-}
 
-void ClassMembersContainer::add_constructor(FunctionPtr function, AccessType access_type) {
-  kphp_assert(function->name.find("__construct") == function->name.size() - 11);
-  add_instance_method(function, access_type);
-
-  klass->new_function = function;
+  if (vk::string_view(function->name).ends_with("__construct")) {
+    klass->new_function = function;
+  }
 }
 
 void ClassMembersContainer::add_static_field(VertexAdaptor<op_static> root, const string &name, AccessType access_type) {

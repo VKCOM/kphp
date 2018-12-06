@@ -165,7 +165,6 @@ public:
 
   void add_static_method(FunctionPtr function, AccessType access_type);
   void add_instance_method(FunctionPtr function, AccessType access_type);
-  void add_constructor(FunctionPtr function, AccessType access_type);
   void add_static_field(VertexAdaptor<op_static> root, const string &name, AccessType access_type);
   void add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type);
   void add_constant(VertexAdaptor<op_define> root);

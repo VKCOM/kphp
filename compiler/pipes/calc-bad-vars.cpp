@@ -154,7 +154,7 @@ public:
       VertexAdaptor<op_func_call> call = vertex;
       FunctionPtr other_function = call->get_func_id();
       data.dep.push_back(other_function);
-      if (other_function->is_extern) {
+      if (other_function->is_extern()) {
         local->extern_func_call = vertex.as<op_func_call>();
         return vertex;
       }

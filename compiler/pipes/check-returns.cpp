@@ -41,7 +41,7 @@ VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   return root;
 }
 void CheckReturnsPass::on_finish() {
-  if (!have_not_void && !stage::get_function()->is_extern) {
+  if (!have_not_void && !stage::get_function()->is_extern()) {
     stage::get_function()->root->void_flag = true;
   }
 }

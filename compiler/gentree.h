@@ -10,30 +10,6 @@ class GenTree;
 typedef VertexPtr (GenTree::*GetFunc)();
 
 
-class GenTreeCallback {
-  DataStream<FunctionPtr> &os;
-public:
-  explicit GenTreeCallback(DataStream<FunctionPtr> &os) :
-    os(os) {}
-
-  FunctionPtr register_function(const FunctionInfo &info) {
-    return G->register_function(info, os);
-  }
-
-  void require_function(FunctionPtr f_ptr) {
-    G->require_function(f_ptr->name, os);
-  }
-
-  void require_lambdas_inside(FunctionPtr f_ptr) {
-    f_ptr->require_all_lambdas_inside(os);
-  }
-
-  ClassPtr register_class(ClassPtr cur_class) {
-    return G->register_class(cur_class);
-  }
-};
-
-
 class GenTree {
 private:
   class SetFunctionsStackGuard {
@@ -71,10 +47,16 @@ public:
 
   static inline void set_location(VertexPtr v, const AutoLocation &location);
 
-  GenTree();
+  GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
-  void init(const vector<Token *> *tokens_new, SrcFilePtr file, GenTreeCallback &callback_new);
-  static FunctionPtr register_function(FunctionInfo info, ClassPtr cur_class, GenTreeCallback *callback);
+  static FunctionPtr create_and_register_function(
+    VertexPtr root,
+    const std::string &namespace_name,
+    ClassPtr context_class,
+    AccessType access_type,
+    FunctionData::func_type_t type,
+    DataStream<FunctionPtr> &os);
+  
   VertexPtr generate_constant_field_class(VertexPtr root);
   void exit_and_register_class(VertexPtr root);
   void enter_function();
@@ -107,7 +89,7 @@ public:
   void create_default_constructor(ClassPtr context_class, ClassPtr cur_class, AutoLocation location) const;
   static void create_constructor_with_args(ClassPtr context_class, ClassPtr cur_class,
                                            AutoLocation location, VertexAdaptor<op_func_param_list> params,
-                                           GenTreeCallback *callback);
+                                           DataStream<FunctionPtr> &os);
 
   VertexPtr get_func_param_without_callbacks(bool from_callback = false);
   VertexPtr get_func_param_from_callback();
@@ -168,7 +150,7 @@ public:
   static VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, const VertexAdaptor<op_function> &function);
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
-                                            GenTreeCallback *callback,
+                                            DataStream<FunctionPtr> &os,
                                             AccessType cur_access_type,
                                             std::vector<VertexPtr> &&uses_of_lambda);
 
@@ -187,9 +169,8 @@ private:
                                        bool &is_constructor);
 
   VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
-  void set_extra_type(VertexPtr vertex, AccessType access_type) const;
 
-  static void add_parent_function_to_child_class_with_context(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, AccessType access_type, GenTreeCallback *callback);
+  static void add_parent_function_to_child_class_with_context(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, AccessType access_type, DataStream<FunctionPtr> &os);
   static VertexPtr generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &function_local_name);
   static void add_namespace_and_context_to_function_name(ClassPtr cur_class, ClassPtr context_class, std::string &function_name);
 
@@ -208,7 +189,7 @@ public:
 
 private:
   const vector<Token *> *tokens;
-  GenTreeCallback *callback;
+  DataStream<FunctionPtr> &parsed_os;
   int in_func_cnt_;
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
@@ -220,7 +201,7 @@ private:
   ClassPtr context_class;
 };
 
-void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, GenTreeCallback &callback);
+void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
 template<PrimitiveType ToT>
 VertexPtr GenTree::conv_to_lval(VertexPtr x) {
