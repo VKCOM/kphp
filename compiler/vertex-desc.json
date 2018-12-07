@@ -143,6 +143,10 @@
       },
       "type_declaration": {
         "type": "std::string"
+      },
+      "is_callable": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },

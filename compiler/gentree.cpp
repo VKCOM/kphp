@@ -1841,7 +1841,10 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
   // every parameter (excluding $this) could be any class_instance
   for (size_t i = 1, id = 0; i < func_parameters.size(); ++i) {
     auto param = func_parameters[i].as<op_func_param>();
-    if (param->type_declaration.empty()) {
+    if (param->type_declaration == "callable") {
+      param->template_type_id = id++;
+      param->is_callable = true;
+    } else if (param->type_declaration.empty()) {
       param->template_type_id = id++;
     }
   }

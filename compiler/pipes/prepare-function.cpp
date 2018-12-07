@@ -82,12 +82,11 @@ static void prepare_function_misc(FunctionPtr func) {
                   "Reference arguments are not supported in varg functions");
     }
 
-    if (!param->type_declaration.empty()) {
-      if (param->type_declaration == "callable") {
-        param->template_type_id = param_n + i;
-        param->type_declaration.clear();
-        func->is_template = true;
-      }
+    if (param->type_declaration == "callable") {
+      param->is_callable = true;
+      param->template_type_id = param_n + i;
+      param->type_declaration.clear();
+      func->is_template = true;
     }
 
     if (param->has_default_value() && param->default_value()) {
@@ -233,6 +232,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           if (type_help == "callable") {
             f->is_template = true;
             cur_func_param->template_type_id = id_of_kphp_template;
+            cur_func_param->is_callable = true;
             id_of_kphp_template++;
             continue;
           }
