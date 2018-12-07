@@ -311,6 +311,10 @@ inline int int_power(int base, int exp) {
   return res;
 }
 
+inline double float_power(double base, int exp) {
+  return std::pow(base, exp);
+}
+
 inline var var_power(const var &base, const var &exp) {
   if (base.is_int() && exp.is_int() && exp.to_int() >= 0) {
     return int_power(base.to_int(), exp.to_int());
@@ -335,6 +339,10 @@ inline var var_power(const var &base, const var &exp) {
 
 inline int &power_self(int &base, int exp) {
   return base = int_power(base, exp);
+}
+
+inline double &power_self(double &base, int exp) {
+  return base = float_power(base, exp);
 }
 
 inline var &power_self(var &base, const var &exp) {

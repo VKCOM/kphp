@@ -53,24 +53,25 @@ function test_double() {
 
 function test_integer_double() {
     echo $x_var1 = -3 ** 2.1, "\n";
-    echo $x_var1 = -2.2 ** 2, "\n";
     echo $x_var1 = -2.3 ** 2 ** 1.5, "\n";
+    echo $x_float1 = -2.2 ** 2, "\n";
+    echo $x_float1 = -2.2 ** 2 ** 3, "\n";
 
     $x_var2 = 2;
     $x_var3 = 5;
-    $x_var4 = 2.2;
+    $x_float1 = 2.2;
     $x_var5 = 0.5;
 
     echo $y_var = $x_var2 **= 0.5, "\n";
     echo $y_var = $x_var3 **= $x_var2 ** 1.5, "\n";
 
-    echo $y_var = $x_var4 **= 2, "\n";
-    echo $y_var = $x_var5 **= $x_var4 ** 2, "\n";
+    echo $y_var = $x_float1 **= 2, "\n";
+    echo $y_var = $x_var5 **= $x_float1 ** 2, "\n";
 
     $x_var1 /*:= var */;
     $x_var2 /*:= var */;
     $x_var3 /*:= var */;
-    $x_var4 /*:= var */;
+    $x_float1 /*:= float */;
     $x_var5 /*:= var */;
     $y_var /*:= var */;
 }

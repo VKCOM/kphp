@@ -336,10 +336,10 @@ void ExprNodeRecalc::recalc_define_val(VertexAdaptor<op_define_val> define_val) 
 void ExprNodeRecalc::recalc_power(VertexAdaptor<op_pow> expr) {
   VertexPtr base = expr->lhs();
   add_dependency(as_rvalue(base));
-  const PrimitiveType base_ptype = tinf::get_type(base)->get_real_ptype();
   VertexPtr exponent = expr->rhs();
-  if (tp_int == type_lca(base_ptype, tp_int) && is_positive_constexpr_int(exponent)) {
+  if (is_positive_constexpr_int(exponent)) {
     recalc_ptype<tp_int>();
+    set_lca(drop_or_false(as_rvalue(base)));
   } else {
     recalc_ptype<tp_var>();
   }
