@@ -2,8 +2,8 @@
 
 #include <sys/time.h>
 
-#include "auto/flex/vkext_flex_auto.h"
 #include "common/string-processing.h"
+#include "flex/vk-flex-data.h"
 
 #include "runtime/misc.h"
 
