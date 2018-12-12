@@ -120,7 +120,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     hint = 0b010,
     cast = 0b100
   };
-  vector<VertexPtr> prepend_cmd;
   VertexPtr func_params = f->root.as<op_function>()->params();
   const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_token->str_val);
 
@@ -211,19 +210,38 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     }
   }
 
+  vector<VertexPtr> prologue_cmd;
   if (infer_type) {             // при наличии @kphp-infer парсим все @param'ы
     for (auto &tag : tags) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
       stage::set_line(tag.line_num);
       switch (tag.type) {
+        case php_doc_tag::returns: {
+          kphp_error_return(!f->doc_check_return_type && !f->doc_hint_return_type, "Too many @return/@returns tags");
+          std::istringstream is(tag.value);
+          std::string type_help;
+          kphp_error(is >> type_help, "Failed to parse @return/@returns tag");
+          VertexPtr doc_type = phpdoc_parse_type(type_help, f);
+          kphp_error_act(doc_type, format("Failed to parse type '%s'", type_help.c_str()), break);
+          if (infer_type & infer_mask::check) {
+            f->doc_check_return_type = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+            set_location(f->doc_check_return_type, f->root->location);
+          }
+          if ((infer_type & infer_mask::hint) && !doc_type->void_flag) {
+            f->doc_hint_return_type = VertexAdaptor<op_common_type_rule>::create(doc_type);
+            set_location(f->doc_hint_return_type, f->root->location);
+          }
+          break;
+        }
         case php_doc_tag::param: {
           kphp_error_return(!name_to_function_param.empty(), "Too many @param tags");
           std::istringstream is(tag.value);
-          string type_help, var_name;
+          std::string type_help, var_name;
           kphp_error(is >> type_help, "Failed to parse @param tag");
           kphp_error(is >> var_name, "Failed to parse @param tag");
 
           auto func_param_it = name_to_function_param.find(var_name);
-          kphp_error_return(func_param_it != name_to_function_param.end(), format("@param tag var name mismatch. found %s.", var_name.c_str()));
+          kphp_error_return(func_param_it != name_to_function_param.end(),
+            format("@param tag var name mismatch. found %s.", var_name.c_str()));
 
           VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
           VertexAdaptor<op_var> var = cur_func_param->var().as<op_var>();
@@ -246,15 +264,15 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             doc_rule_var->str_val = var->str_val;
             doc_rule_var->type_rule = doc_type_check;
             set_location(doc_rule_var, f->root->location);
-            prepend_cmd.push_back(doc_rule_var);
+            prologue_cmd.push_back(doc_rule_var);
           }
           if (infer_type & infer_mask::hint) {
-            auto doc_type_check = VertexAdaptor<op_common_type_rule>::create(doc_type);
+            auto doc_type_hint = VertexAdaptor<op_common_type_rule>::create(doc_type);
             auto doc_rule_var = VertexAdaptor<op_var>::create();
             doc_rule_var->str_val = var->str_val;
-            doc_rule_var->type_rule = doc_type_check;
+            doc_rule_var->type_rule = doc_type_hint;
             set_location(doc_rule_var, f->root->location);
-            prepend_cmd.push_back(doc_rule_var);
+            prologue_cmd.push_back(doc_rule_var);
           }
           if (infer_type & infer_mask::cast) {
             kphp_error(doc_type->type() == op_type_rule && doc_type.as<op_type_rule>()->args().empty(),
@@ -283,12 +301,12 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     kphp_error(false, err_msg.c_str());
   }
 
-  // из { cmd } делаем { prepend_cmd; cmd }
-  if (!prepend_cmd.empty()) {
+  // из { cmd } делаем { prologue_cmd; cmd }
+  if (!prologue_cmd.empty()) {
     for (auto i : *f->root.as<op_function>()->cmd()) {
-      prepend_cmd.push_back(i);
+      prologue_cmd.push_back(i);
     }
-    auto new_cmd = VertexAdaptor<op_seq>::create(prepend_cmd);
+    auto new_cmd = VertexAdaptor<op_seq>::create(prologue_cmd);
     ::set_location(new_cmd, f->root->location);
     f->root.as<op_function>()->cmd() = new_cmd;
   }

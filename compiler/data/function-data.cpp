@@ -132,6 +132,8 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->is_template = false;
   new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
+  new_function->doc_check_return_type = func->doc_check_return_type;
+  new_function->doc_hint_return_type = func->doc_hint_return_type;
 
   // TODO: need copy all lambdas inside template funciton
   //for (auto f : func->lambdas_inside) {

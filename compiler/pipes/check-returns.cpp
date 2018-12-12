@@ -8,7 +8,8 @@ class CheckReturnsPass : public FunctionPassBase {
 private:
   bool have_void;
   bool have_not_void;
-  bool errored;
+  bool warn_fired;
+  bool error_fired;
 public:
   string get_description() {
     return "Check returns";
@@ -28,12 +29,20 @@ VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
     } else {
       have_not_void = true;
     }
-    if (have_void && have_not_void && !errored) {
-      errored = true;
+    if (have_void && have_not_void && !warn_fired) {
+      warn_fired = true;
       FunctionPtr fun = stage::get_function();
       if (fun->type() != FunctionData::func_switch && fun->name != fun->file_id->main_func_name) {
         kphp_typed_warning("return", "Mixing void and not void returns in one function");
       }
+    }
+    if (have_not_void && current_function->doc_check_return_type && !error_fired) {
+      bool allow_non_void = false;
+      for (VertexPtr type_rule: *current_function->doc_check_return_type) {
+        allow_non_void = allow_non_void || !type_rule->void_flag;
+      }
+      error_fired = !allow_non_void;
+      kphp_error(allow_non_void, "Expected only void return");
     }
   }
 
@@ -45,7 +54,7 @@ void CheckReturnsPass::on_finish() {
   }
 }
 void CheckReturnsPass::init() {
-  have_void = have_not_void = errored = false;
+  have_void = have_not_void = warn_fired = error_fired = false;
 }
 void CheckReturnsF::execute(FunctionAndCFG function_and_cfg, DataStream<FunctionAndCFG> &os) {
   CheckReturnsPass pass;

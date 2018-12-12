@@ -5,67 +5,38 @@
 
 void rl_calc(VertexPtr root, RLValueType expected_rl_type);
 
-void rl_none_calc(VertexPtr root, int except) {
+template <RLValueType type, RLValueType except_type>
+void rl_calc_all(VertexPtr root, int except) {
   int ii = 0;
-  for (auto i : *root) {
-    if (ii != except) {
-      rl_calc(i, val_none);
+  for (auto v : *root) {
+    if (ii == except) {
+      rl_calc(v, except_type);
     } else {
-      rl_calc(i, val_r);
+      rl_calc(v, type);
     }
     ii++;
   }
 }
 
-void rl_r_calc(VertexPtr root, int except) {
-  int ii = 0;
-  for (auto i : *root) {
-    if (ii != except) {
-      rl_calc(i, val_r);
-    } else {
-      rl_calc(i, val_l);
-    }
-    ii++;
+template <RLValueType type>
+void rl_calc_all(VertexPtr root) {
+  for (auto v: *root) {
+    rl_calc(v, type);
   }
 }
-
-void rl_l_calc(VertexPtr root, int except) {
-  int ii = 0;
-  for (auto i : *root) {
-    if (ii != except) {
-      rl_calc(i, val_l);
-    } else {
-      rl_calc(i, val_r);
-    }
-    ii++;
-  }
-}
-
-void rl_l_none_calc(VertexPtr root, int except) {
-  int ii = 0;
-  for (auto i : *root) {
-    if (ii != except) {
-      rl_calc(i, val_l);
-    } else {
-      rl_calc(i, val_none);
-    }
-    ii++;
-  }
-}
-
 
 void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
   kphp_error (expected_rl_type != val_l, "Function result cannot be used as lvalue");
   switch (root->type()) {
     case op_list:
-      rl_l_calc(root, root->size() - 1);
+      rl_calc_all<val_l, val_r>(root, root->size() - 1);
       return;
     case op_seq_comma:
     case op_seq_rval:
-      rl_none_calc(root, root->size() - 1);
+      rl_calc_all<val_none, val_r>(root, root->size() - 1);
       return;
     case op_fork:
-      rl_none_calc(root, -1);
+      rl_calc_all<val_none>(root);
       return;
     case op_array: //TODO: in fact it is wrong
     case op_tuple:
@@ -74,7 +45,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_max:
     case op_defined:
     case op_require:
-      rl_r_calc(root, -1);
+      rl_calc_all<val_r>(root);
       return;
     case op_func_call:
     case op_constructor_call:
@@ -85,7 +56,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
   }
   FunctionPtr f = root->get_func_id();
   if (f->varg_flag) {
-    rl_r_calc(root, -1);
+    rl_calc_all<val_r>(root);
     return;
   }
   VertexRange params = f->root.as<meta_op_function>()->params().
@@ -110,7 +81,7 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
   switch (root->type()) {
     case op_conv_array_l:
     case op_conv_int_l:
-      rl_l_calc(root, -1);
+      rl_calc_all<val_l>(root);
       break;
     case op_noerr:
       rl_calc(root.as<op_noerr>()->expr(), expected_rl_type);
@@ -129,7 +100,7 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_while:
     case op_switch:
     case op_case:
-      rl_none_calc(root, 0);
+      rl_calc_all<val_none, val_r>(root, 0);
       break;
     case op_require:
     case op_require_once:
@@ -140,20 +111,20 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_echo:
     case op_throw:
     case op_var_dump:
-      rl_r_calc(root, -1);
+      rl_calc_all<val_r>(root);
       break;
     case op_unset: //TODO: fix it (???)
-      rl_l_calc(root, -1);
+      rl_calc_all<val_l>(root);
       break;
     case op_try:
     case op_seq:
     case op_foreach:
     case op_default:
-      rl_none_calc(root, -1);
+      rl_calc_all<val_none>(root);
       break;
     case op_for:
       //TODO: it may be untrue
-      rl_none_calc(root, 1);
+      rl_calc_all<val_none, val_r>(root, 1);
       break;
     case op_global:
     case op_static:
@@ -163,9 +134,9 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
     case op_foreach_param:
       if (root.as<op_foreach_param>()->x()->ref_flag) {
-        rl_l_none_calc(root, 2);
+        rl_calc_all<val_l, val_none>(root, 2);
       } else {
-        rl_l_calc(root, 0);
+        rl_calc_all<val_l, val_r>(root, 0);
       }
       break;
     case op_function:
@@ -261,7 +232,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          rl_r_calc(root, -1);
+          rl_calc_all<val_r>(root);
           break;
         default:
           assert (0);
@@ -317,7 +288,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
       rl_func_call_calc(root, expected_rl_type);
       break;
     case rl_mem_func:
-      rl_r_calc(root, -1);
+      rl_calc_all<val_r>(root);
       break;
     case rl_common:
       rl_common_calc(root, expected_rl_type);

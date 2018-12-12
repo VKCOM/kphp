@@ -255,6 +255,10 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
         pos += 4;
         return create_type_help_vertex(tp_bool);
       }
+      if (s.substr(pos, 5) == "tuple") {
+        pos += 5;
+        return parse_type_tuple(s, pos);
+      }
       break;
     }
     case 'a': {
@@ -263,6 +267,15 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
         auto res = VertexAdaptor<op_type_rule>::create(create_type_help_vertex(tp_var));
         res->type_help = tp_array;
         return res;
+      }
+      break;
+    }
+    case 'v': {
+      if (s.substr(pos, 4) == "void") {
+        pos += 4;
+        VertexPtr v = create_type_help_vertex(tp_var);
+        v->void_flag = true;
+        return v;
       }
       break;
     }
@@ -283,7 +296,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
 
 VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_t &pos) {
   VertexPtr res = parse_simple_type(s, pos);
-  if (!res) {
+  if (!res || res->void_flag) {
     return res;
   }
   while (pos < s.size() && s[pos] == '[') {
@@ -295,6 +308,31 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_
   }
   return res;
 }
+
+VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_t &pos) {
+  CHECK(pos < s.size() && s[pos] == '<', "Failed to parse phpdoc type: expected '<' for tuple");
+  ++pos;
+  std::vector<VertexPtr> sub_types;
+  while (true) {
+    VertexPtr v = parse_type_expression(s, pos);
+    if (!v) {
+      return v;
+    }
+    sub_types.emplace_back(v);
+    CHECK(pos < s.size(), "Failed to parse phpdoc type: unexpected end");
+    if (s[pos] == '>') {
+      ++pos;
+      break;
+    }
+    CHECK(s[pos] == ',', "Failed to parse phpdoc type: expected ',' for tuple");
+    ++pos;
+  }
+  auto type_rule = VertexAdaptor<op_type_rule>::create(sub_types);
+  type_rule->type_help = tp_tuple;
+  return type_rule;
+}
+
+
 
 VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, size_t &pos) {
   VertexPtr res = parse_type_array(s, pos);

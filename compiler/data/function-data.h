@@ -54,6 +54,8 @@ public:
 
   VertexPtr const_data;
   Token *phpdoc_token;
+  VertexPtr doc_check_return_type;
+  VertexPtr doc_hint_return_type;
 
   int min_argn;
   bool used_in_source;    // это только для костыля extern_function, потом должно уйти

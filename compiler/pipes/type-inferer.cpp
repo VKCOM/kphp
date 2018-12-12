@@ -421,6 +421,12 @@ private:
         create_less(as_rvalue(function, -1), tp);
         create_set(as_lvalue(function, -1), tp);
       }
+      if (function->doc_check_return_type) {
+        create_less(as_rvalue(function, -1), function->doc_check_return_type);
+      }
+      if (function->doc_hint_return_type) {
+        create_set(as_lvalue(function, -1), function->doc_hint_return_type);
+      }
     }
   }
 
