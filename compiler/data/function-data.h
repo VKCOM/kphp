@@ -111,6 +111,7 @@ public:
 
   bool is_constructor() const;
 
+  void update_location_in_body();
   static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);

@@ -8,6 +8,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
 #include "compiler/io.h"
+#include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
 
 FunctionData::FunctionData() :
@@ -67,6 +68,20 @@ FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, 
   return function;
 }
 
+bool FunctionData::is_constructor() const {
+  return class_id && class_id->construct_function && &*(class_id->construct_function) == this;
+}
+
+void FunctionData::update_location_in_body() {
+  if (!root) return;
+
+  std::function<void(VertexPtr)> update_location = [&](VertexPtr root) {
+    root->location.function = FunctionPtr{this};
+    std::for_each(root->begin(), root->end(), update_location);
+  };
+  update_location(root);
+}
+
 FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
@@ -120,13 +135,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     f->function_in_which_lambda_was_created = new_function;
   }
 
-  std::function<void(VertexPtr, FunctionPtr)> set_location_for_all = [&set_location_for_all](VertexPtr root, FunctionPtr function_location) {
-    root->location.function = function_location;
-    for (VertexPtr &v : *root) {
-      set_location_for_all(v, function_location);
-    }
-  };
-  set_location_for_all(new_func_root, new_function);
+  new_function->update_location_in_body();
 
   return new_function;
 }
@@ -226,10 +235,6 @@ bool FunctionData::is_imported_from_static_lib() const {
 
 VertexRange FunctionData::get_params() {
   return ::get_function_params(root.as<meta_op_function>());
-}
-
-bool FunctionData::is_constructor() const {
-  return class_id && class_id->construct_function && &*(class_id->construct_function) == this;
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {
