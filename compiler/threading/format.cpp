@@ -6,7 +6,7 @@
 #include "compiler/threading/tls.h"
 
 typedef char format_buff_t[5000];
-TLS<format_buff_t> format_buff;
+static TLS<format_buff_t> format_buff;
 
 char *format(char const *msg, ...) {
   format_buff_t &s = *format_buff;

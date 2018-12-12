@@ -12,7 +12,7 @@
 #include "compiler/make.h"
 #include "compiler/threading/hash-table.h"
 
-FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
+static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
 CompilerCore::CompilerCore() :
   env_(nullptr) {
