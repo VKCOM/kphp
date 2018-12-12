@@ -111,5 +111,5 @@ extern CompilerCore *G;
 /*** Misc functions ***/
 bool try_optimize_var(VarPtr var);
 string conv_to_func_ptr_name(VertexPtr call);
-VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function);
+VertexPtr conv_to_func_ptr(VertexPtr call);
 

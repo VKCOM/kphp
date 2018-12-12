@@ -685,37 +685,49 @@ bool try_optimize_var(VarPtr var) {
   return __sync_bool_compare_and_swap(&var->optimize_flag, false, true);
 }
 
+/**
+ * If argument is array of twos -> concatenate elements with `$$`
+ * If argument is string -> replace `:` with '$'
+ * replaces '\' with `$` in result
+ *
+ * This function doesn't resolve uses, `parent`, `self` etc
+ * In php, when you pass callback as string or array you should
+ * write full qualified namespace and function name, only in rare cases
+ * you can specify `parent` but in another cases you can't e.g.:
+ *
+ * array_map(['\Namespace\Name::ClassName', 'parent::fun_name'], [1, 2, 3]); - it's ok in php
+ *
+ * function fun(callable $callback, $x) { $callback($x); }
+ * fun(['\Namespace\Name::ClassName', 'parent::fun_name'], 1); - it's `PHP Fatal error`
+ *
+ * If you need `parent`, please specify manually full parent name.
+ */
 string conv_to_func_ptr_name(VertexPtr call) {
   VertexPtr name_v = GenTree::get_actual_value(call);
+  std::string res;
 
-  switch (name_v->type()) {
-    case op_string:
-      return name_v->get_string();
+  if (name_v->type() == op_string) {
+    res = replace_characters(name_v->get_string(), ':', '$');
+  } else if (name_v->type() == op_array && name_v->size() == 2) {
+    VertexPtr class_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[0]);
+    VertexPtr fun_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[1]);
 
-    case op_array: {
-      if (name_v->size() == 2) {
-        VertexPtr class_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[0]);
-        VertexPtr fun_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[1]);
-
-        if (class_name->type() == op_string && fun_name->type() == op_string) {
-          return class_name->get_string() + "::" + fun_name->get_string();
-        }
-      }
-      break;
+    if (class_name->type() == op_string && fun_name->type() == op_string) {
+      res = class_name->get_string() + "$$" + fun_name->get_string();
     }
-
-    default:
-      break;
   }
 
-  return "";
+  if (!res.empty() && res[0] == '\\') {
+    res.erase(res.begin());
+  }
+
+  return replace_backslashes(res);
 }
 
-VertexPtr conv_to_func_ptr(VertexPtr call, FunctionPtr current_function) {
+VertexPtr conv_to_func_ptr(VertexPtr call) {
   if (call->type() != op_func_ptr) {
     string name = conv_to_func_ptr_name(call);
     if (!name.empty()) {
-      name = get_full_static_member_name(current_function, name, true);
       auto new_call = VertexAdaptor<op_func_ptr>::create();
       new_call->str_val = name;
       set_location(new_call, call->get_location());

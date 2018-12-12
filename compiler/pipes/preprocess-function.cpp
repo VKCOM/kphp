@@ -255,7 +255,7 @@ private:
         }
 
         case op_func_param_callback: {
-          call_args[i] = conv_to_func_ptr(call_args[i], stage::get_function());
+          call_args[i] = conv_to_func_ptr(call_args[i]);
           instantiate_lambda(call.as<op_func_call>(), call_args[i]);
           break;
         }

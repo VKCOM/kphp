@@ -92,17 +92,15 @@ string gen_unique_name(string prefix, bool flag) {
 
 inline string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
   if (class_name[0] != '\\') {
-    if (class_name == "static" || class_name == "self" || class_name == "parent") {
-      if (class_name == "parent") {
-        // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов
-        const std::string *parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name();
-        kphp_error(parent_class_name != nullptr, "Using parent:: in class that extends nothing");
-        class_name = *parent_class_name;
-      } else if (class_name == "static") {
-        class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
-      } else {
-        class_name = current_function->get_this_or_topmost_if_lambda()->class_id->name;
-      }
+    if (class_name == "parent") {
+      // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов
+      const std::string *parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name();
+      kphp_error(parent_class_name != nullptr, "Using parent:: in class that extends nothing");
+      class_name = *parent_class_name;
+    } else if (class_name == "static") {
+      class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
+    } else if (class_name == "self"){
+      class_name = current_function->get_this_or_topmost_if_lambda()->class_id->name;
     } else {
       size_t slash_pos = class_name.find('\\');
       if (slash_pos == string::npos) {
