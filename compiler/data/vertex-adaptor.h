@@ -96,4 +96,8 @@ public:
   bool operator==(VertexPtr other) {
     return static_cast<vertex_inner<meta_op_base> *>(impl) == other.impl;
   }
+
+  bool operator!=(VertexPtr other) {
+    return !(*this == other);
+  }
 };

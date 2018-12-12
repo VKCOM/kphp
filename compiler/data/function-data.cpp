@@ -200,19 +200,20 @@ string FunctionData::get_resumable_path() const {
   return res.str();
 }
 
-string FunctionData::get_human_readable_name() const {
-  if (this->access_type == access_nonmember) {
-    return this->name;
-  }
+std::string FunctionData::get_human_readable_name(const std::string &name) {
   std::smatch matched;
-  if (std::regex_match(this->name, matched, std::regex("(.+)\\$\\$(.+)\\$\\$(.+)"))) {
+  if (std::regex_match(name, matched, std::regex(R"((.+)\$\$(.+)\$\$(.+))"))) {
     string base_class = matched[1].str(), actual_class = matched[3].str();
     base_class = replace_characters(base_class, '$', '\\');
     actual_class = replace_characters(actual_class, '$', '\\');
     return actual_class + " :: " + matched[2].str() + " (" + "inherited from " + base_class + ")";
   }
   //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
-  return std::regex_replace(std::regex_replace(this->name, std::regex("\\$\\$"), " :: "), std::regex("\\$"), "\\");
+  return std::regex_replace(std::regex_replace(name, std::regex(R"(\$\$)"), " :: "), std::regex("\\$"), "\\");
+}
+
+string FunctionData::get_human_readable_name() const {
+  return access_type == access_nonmember ? name : get_human_readable_name(name);
 }
 
 bool FunctionData::is_lambda_with_uses() const {

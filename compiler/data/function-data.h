@@ -82,6 +82,7 @@ public:
 
   bool is_static_init_empty_body() const;
   string get_resumable_path() const;
+  static string get_human_readable_name(const std::string &name);
   string get_human_readable_name() const;
 
   inline static bool is_instance_access_type(AccessType access_type) {
