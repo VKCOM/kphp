@@ -2,6 +2,7 @@
 
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
+#include "compiler/location.h"
 #include "compiler/threading/locks.h"
 
 enum ClassType {
@@ -46,6 +47,8 @@ public:
   ClassMembersContainer members;
 
   ClassData();
+
+  static ClassPtr gen_lambda_class(std::string name, Location location);
 
   std::string get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
                                                      FunctionPtr function_context,

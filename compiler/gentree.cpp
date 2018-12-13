@@ -1886,22 +1886,17 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
                                             std::vector<VertexPtr> &&uses_of_lambda) {
-  VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->str_val = gen_anonymous_function_name(cur_function);
-  lambda_class_name->location.line = function->name()->location.line;
-
-  VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
-
-  ClassPtr anon_class(new ClassData());
-  anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_class_name->get_string());
-  anon_class->root = class_vertex;
+  auto anon_name = gen_anonymous_function_name(cur_function);
+  Location anon_location;
+  anon_location.set_line(function->name()->location.line);
+  auto anon_class = ClassData::gen_lambda_class(anon_name, anon_location);
 
   if (cur_function->is_instance_function()) {
     auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
     implicit_captured_var_parent_this->set_string("parent$this");
-    ::set_location(implicit_captured_var_parent_this, lambda_class_name->location);
+    ::set_location(implicit_captured_var_parent_this, anon_location);
     auto func_param = VertexAdaptor<op_func_param>::create(implicit_captured_var_parent_this);
-    ::set_location(func_param, lambda_class_name->location);
+    ::set_location(func_param, anon_location);
 
     uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
   }
@@ -1937,14 +1932,14 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   register_invoke(generate__invoke_method(anon_class, function), function->get_func_id());
 
   auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses_of_lambda);
-  ::set_location(constructor_params, lambda_class_name->location);
+  ::set_location(constructor_params, anon_location);
   create_constructor_with_args(anon_class, AutoLocation(function->location.line), constructor_params, os);
   anon_class->construct_function->is_template = !uses_of_lambda.empty();
   anon_class->construct_function->function_in_which_lambda_was_created = cur_function;
   G->register_class(anon_class);
 
   auto constructor_call = generate_constructor_call(anon_class);
-  constructor_call->location = lambda_class_name->location;
+  constructor_call->location = anon_location;
   return constructor_call;
 }
 

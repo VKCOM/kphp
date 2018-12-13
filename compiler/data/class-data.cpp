@@ -14,6 +14,20 @@ ClassData::ClassData() :
   members(this) {
 }
 
+ClassPtr ClassData::gen_lambda_class(std::string name, Location location) {
+  VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
+  lambda_class_name->set_string(name);
+  lambda_class_name->location = std::move(location);
+
+  VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
+
+  ClassPtr anon_class(new ClassData());
+  anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + name);
+  anon_class->root = class_vertex;
+
+  return anon_class;
+}
+
 void ClassData::set_name_and_src_name(const string &name) {
   this->name = name;
   this->src_name = std::string("C$").append(replace_backslashes(name));
