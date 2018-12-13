@@ -32,6 +32,7 @@
 #include "common/server/signals.h"
 #include "common/server/sockets.h"
 #include "db-proxy/passwd.h"
+#include "drinkless/dl-utils-lite.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
@@ -46,12 +47,11 @@
 #include "net/net-socket.h"
 
 #include "PHP/php-engine-vars.h"
+#include "PHP/php-lease.h"
 #include "PHP/php-master.h"
 #include "PHP/php-queries.h"
 #include "PHP/php-runner.h"
-
-/** drinkless headers **/
-#include "drinkless/dl-utils-lite.h"
+#include "PHP/php-worker.h"
 
 static void turn_sigterm_on(void);
 
@@ -196,27 +196,6 @@ int get_target_by_pid(int ip, int port, conn_target_t *ct) {
   ct->endpoint = make_inet_sockaddr_storage(ip, port);
 
   return get_target_impl(ct);
-}
-
-int cur_lease_target_ip = -1;
-int cur_lease_target_port = -1;
-conn_target_t *cur_lease_target_ct = NULL;
-int cur_lease_target = -1;
-
-int get_lease_target_by_pid(int ip, int port, conn_target_t *ct) {
-  if (ip == cur_lease_target_ip && port == cur_lease_target_port && ct == cur_lease_target_ct) {
-    return cur_lease_target;
-  }
-  if (cur_lease_target != -1) {
-    conn_target_t *old_target = &Targets[cur_lease_target];
-    destroy_target(old_target);
-  }
-  cur_lease_target_ip = ip;
-  cur_lease_target_port = port;
-  cur_lease_target_ct = ct;
-  cur_lease_target = get_target_by_pid(ip, port, ct);
-
-  return cur_lease_target;
 }
 
 int get_target(const char *host, int port, conn_target_t *ct) {
@@ -381,71 +360,11 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 
 /** php-script **/
 
-int rpc_main_target = -1;
-int rpc_lease_target = -1;
-double rpc_lease_timeout = -1;
-process_id_t lease_pid;
-
-double lease_stats_start_time;
-double lease_stats_time;
-long long lease_stats_cnt;
-
-typedef enum {
-  lst_off,
-  lst_start,
-  lst_on,
-  lst_finish
-} lease_state_t;
-lease_state_t lease_state = lst_off;
-int lease_ready_flag = 0;
-
-void lease_change_state(lease_state_t new_state) {
-  if (lease_state != new_state) {
-    lease_state = new_state;
-    lease_ready_flag = 0;
-  }
-}
-
 #define run_once_count 1
 int queries_to_recreate_script = 100;
 
 void *php_script;
-typedef enum {
-  http_worker,
-  rpc_worker,
-  once_worker
-} php_worker_mode_t;
-typedef enum {
-  phpq_try_start,
-  phpq_init_script,
-  phpq_run,
-  phpq_free_script,
-  phpq_finish
-} php_worker_state_t;
-typedef struct {
-  struct connection *conn;
 
-  php_query_data *data;
-
-  int paused;
-  int terminate_flag;
-  const char *error_message;
-
-  //for wait query
-  int waiting;
-  int wakeup_flag;
-  double wakeup_time;
-
-  double init_time;
-  double start_time;
-  double finish_time;
-
-  php_worker_state_t state;
-  php_worker_mode_t mode;
-
-  long long req_id;
-  int target_fd;
-} php_worker;
 php_worker *active_worker = NULL;
 
 php_worker *php_worker_create(php_worker_mode_t mode, struct connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id) {
@@ -1258,12 +1177,7 @@ int get_current_target(void);
 
 void php_worker_finish(php_worker *worker) {
   vkprintf (2, "free php script [req_id = %016llx]\n", worker->req_id);
-  if ((lease_state == lst_on || lease_state == lst_finish) && worker->target_fd == rpc_lease_target) {
-    double worked = precise_now - worker->start_time;
-    lease_stats_time += worked;
-    lease_stats_cnt++;
-  }
-
+  lease_on_worker_finish(worker);
   php_worker_free(worker);
 }
 
@@ -1698,233 +1612,6 @@ conn_target_t rpc_client_ct = {
 
 
 void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsize);
-int ready_cnt = 0;
-
-void rpc_send_ready(struct connection *c) {
-  int q[100], qn = 0;
-  qn += 2;
-  q[qn++] = -1;
-  q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
-  q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
-  q[qn++] = pid; // pid
-  q[qn++] = now - get_uptime(); // start_time
-  q[qn++] = worker_id; // id
-  q[qn++] = ready_cnt++; // ready_cnt
-  qn++;
-  send_rpc_query(c, RPC_READY, -1, q, qn * 4);
-}
-
-void rpc_send_stopped(struct connection *c) {
-  int q[100], qn = 0;
-  qn += 2;
-  q[qn++] = -1;
-  q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
-  q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
-  q[qn++] = pid; // pid
-  q[qn++] = now - get_uptime(); // start_time
-  q[qn++] = worker_id; // id
-  q[qn++] = ready_cnt++; // ready_cnt
-  qn++;
-  send_rpc_query(c, RPC_STOP_READY, -1, q, qn * 4);
-}
-
-void rpc_send_lease_stats(struct connection *c) {
-  int q[100], qn = 0;
-  qn += 2;
-  q[qn++] = -1;
-  *(process_id_t *)(q + qn) = lease_pid;
-  assert (sizeof(lease_pid) == 12);
-  qn += 3;
-  *(double *)(q + qn) = precise_now - lease_stats_start_time;
-  qn += 2;
-  *(double *)(q + qn) = lease_stats_time;
-  qn += 2;
-  q[qn++] = lease_stats_cnt;
-  qn++;
-
-  send_rpc_query(c, TL_KPHP_LEASE_STATS, -1, q, qn * 4);
-}
-
-int rpct_ready(int target_fd) {
-  if (target_fd == -1) {
-    return -1;
-  }
-  conn_target_t *target = &Targets[target_fd];
-  struct connection *conn = get_target_connection(target, 0);
-  if (conn == NULL) {
-    return -2;
-  }
-  rpc_send_ready(conn);
-  return 0;
-}
-
-void rpct_stop_ready(int target_fd) {
-  if (target_fd == -1) {
-    return;
-  }
-  conn_target_t *target = &Targets[target_fd];
-  struct connection *conn = get_target_connection(target, 0);
-  if (conn != NULL) {
-    rpc_send_stopped(conn);
-  }
-}
-
-void rpct_lease_stats(int target_fd) {
-  if (target_fd == -1) {
-    return;
-  }
-  conn_target_t *target = &Targets[target_fd];
-  struct connection *conn = get_target_connection(target, 0);
-  if (conn != NULL) {
-    rpc_send_lease_stats(conn);
-  }
-}
-
-int get_current_target(void) {
-  if (lease_state == lst_off) {
-    return rpc_main_target;
-  }
-  if (lease_state == lst_on) {
-    return rpc_lease_target;
-  }
-  return -1;
-}
-
-int lease_off(void) {
-  assert (lease_state == lst_off);
-  if (!lease_ready_flag) {
-    return 0;
-  }
-  if (has_pending_scripts()) {
-    return 0;
-  }
-  if (rpct_ready(rpc_main_target) >= 0) {
-    lease_ready_flag = 0;
-    return 1;
-  }
-  return 0;
-}
-
-int lease_on(void) {
-  assert (lease_state == lst_on);
-  if (!lease_ready_flag) {
-    return 0;
-  }
-  if (has_pending_scripts()) {
-    return 0;
-  }
-  if (rpct_ready(rpc_lease_target) >= 0) {
-    lease_ready_flag = 0;
-    return 1;
-  }
-  return 0;
-}
-
-int lease_start(void) {
-  assert (lease_state == lst_start);
-  if (has_pending_scripts()) {
-    return 0;
-  }
-  lease_change_state(lst_on);
-  lease_ready_flag = 1;
-  if (rpc_stopped) {
-    lease_change_state(lst_finish);
-  }
-  return 1;
-}
-
-int lease_finish(void) {
-  assert (lease_state == lst_finish);
-  if (has_pending_scripts()) {
-    return 0;
-  }
-  rpct_stop_ready(rpc_lease_target);
-  rpct_lease_stats(rpc_main_target);
-  lease_change_state(lst_off);
-  lease_ready_flag = 1;
-  return 1;
-}
-
-void run_rpc_lease(void) {
-  int run_flag = 1;
-  while (run_flag) {
-    run_flag = 0;
-    switch (lease_state) {
-      case lst_off:
-        run_flag = lease_off();
-        break;
-      case lst_start:
-        run_flag = lease_start();
-        break;
-      case lst_on:
-        run_flag = lease_on();
-        break;
-      case lst_finish:
-        run_flag = lease_finish();
-        break;
-      default:
-        assert (0);
-    }
-  }
-}
-
-void lease_cron(void) {
-  int need = 0;
-
-  if (lease_state == lst_on && rpc_lease_timeout < precise_now) {
-    lease_change_state(lst_finish);
-    need = 1;
-  }
-  if (lease_ready_flag) {
-    need = 1;
-  }
-  if (need) {
-    run_rpc_lease();
-  }
-}
-
-
-void do_rpc_stop_lease(void) {
-  if (lease_state != lst_on) {
-    return;
-  }
-  lease_change_state(lst_finish);
-  run_rpc_lease();
-}
-
-int do_rpc_start_lease(process_id_t pid, double timeout) {
-  if (rpc_main_target == -1) {
-    return -1;
-  }
-
-  if (lease_state != lst_off) {
-    return -1;
-  }
-  int target_fd = get_lease_target_by_pid(pid.ip, pid.port, &rpc_client_ct);
-  if (target_fd == -1) {
-    return -1;
-  }
-  if (target_fd == rpc_main_target) {
-    vkprintf (0, "can't lease to itself\n");
-    return -1;
-  }
-  if (rpc_stopped) {
-    return -1;
-  }
-
-  rpc_lease_target = target_fd;
-  rpc_lease_timeout = timeout;
-  lease_pid = pid;
-
-  lease_stats_cnt = 0;
-  lease_stats_start_time = precise_now;
-  lease_stats_time = 0;
-
-  lease_change_state(lst_start);
-  run_rpc_lease();
-
-  return 0;
-}
 
 int rpcc_func_ready(struct connection *c) {
   c->last_query_sent_time = precise_now;
@@ -1932,7 +1619,7 @@ int rpcc_func_ready(struct connection *c) {
 
   int target_fd = c->target - Targets;
   if (target_fd == get_current_target() && !has_pending_scripts()) {
-    lease_ready_flag = 1;
+    lease_set_ready();
     run_rpc_lease();
   }
   return 0;
@@ -1940,14 +1627,7 @@ int rpcc_func_ready(struct connection *c) {
 
 
 void rpcc_stop(void) {
-  if (rpc_client_target != -1) {
-    conn_target_t *target = &Targets[rpc_client_target];
-    struct connection *conn = get_target_connection(target, 0);
-    if (conn != NULL) {
-      rpc_send_stopped(conn);
-    }
-    do_rpc_stop_lease();
-  }
+  lease_on_stop();
   rpc_stopped = 1;
   sigterm_time = precise_now + SIGTERM_WAIT_TIMEOUT;
 }
@@ -1961,7 +1641,7 @@ void rpcx_at_query_end(struct connection *c) {
   D->extra = NULL;
 
   if (!has_pending_scripts()) {
-    lease_ready_flag = 1;
+    lease_set_ready();
     run_rpc_lease();
   }
   c->flags |= C_REPARSE;
@@ -1997,7 +1677,7 @@ int rpcx_func_close(struct connection *c, int who __attribute__((unused))) {
     assert ("worker is unfinished after closing connection" && timeout == 0);
 
     if (!has_pending_scripts()) {
-      lease_ready_flag = 1;
+      lease_set_ready();
       run_rpc_lease();
     }
   }
@@ -3148,8 +2828,7 @@ void start_server(void) {
   }
   if (rpc_client_host != NULL && rpc_client_port != -1) {
     vkprintf (-1, "create rpc client target: %s:%d\n", rpc_client_host, rpc_client_port);
-    rpc_client_target = get_target(rpc_client_host, rpc_client_port, &rpc_client_ct);
-    rpc_main_target = rpc_client_target;
+    set_main_target(get_target(rpc_client_host, rpc_client_port, &rpc_client_ct));
   }
 
   if (run_once) {

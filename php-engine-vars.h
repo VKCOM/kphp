@@ -66,7 +66,6 @@ extern int rpc_port;
 extern int rpc_sfd;
 extern int rpc_client_port;
 extern const char *rpc_client_host;
-extern int rpc_client_target;
 
 /** master **/
 extern const char *cluster_name;

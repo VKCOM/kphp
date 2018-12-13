@@ -40,7 +40,6 @@ int rpc_port = -1;
 int rpc_sfd = -1;
 int rpc_client_port = -1;
 const char *rpc_client_host = NULL;
-int rpc_client_target = -1;
 
 /** sigterm **/
 double sigterm_time = 0;
