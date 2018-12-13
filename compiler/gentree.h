@@ -69,7 +69,6 @@ public:
   static bool has_return(VertexPtr v);
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
-  static VertexPtr create_vertex_this(const AutoLocation &location, ClassPtr cur_class, bool with_type_rule = false);
   static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
@@ -136,7 +135,6 @@ public:
 
   static void add_this_to_captured_variables_in_lambda_body(VertexPtr &cmd, ClassPtr lambda_class);
   static VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, const VertexAdaptor<op_function> &function);
-  static VertexPtr generate_constructor_call(ClassPtr cur_class);
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,

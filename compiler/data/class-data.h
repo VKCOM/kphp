@@ -3,6 +3,7 @@
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/location.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
 
 enum ClassType {
@@ -48,26 +49,27 @@ public:
 
   ClassData();
 
-  static ClassPtr gen_lambda_class(std::string name, Location location);
+  VertexPtr gen_constructor_call_pass_fields_as_args() const;
+  VertexAdaptor<op_constructor_call> gen_constructor_call_with_args(std::vector<VertexPtr> args) const;
 
-  std::string get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
-                                                     FunctionPtr function_context,
-                                                     std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr = nullptr,
-                                                     FunctionPtr *template_of_invoke_method = nullptr) const;
-  FunctionPtr get_template_of_invoke_function() const;
+  static VertexAdaptor<op_var> gen_vertex_this(int location_line_num) ;
+  VertexAdaptor<op_var> gen_vertex_this_with_type_rule(int location_line_num);
 
-  bool is_lambda_class() const;
-  void infer_uses_assumptions(FunctionPtr parent_function);
+  // function fname(args) => function fname($this ::: class_instance, args)
+  void patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num);
+
+  virtual bool is_lambda_class() const {
+    return false;
+  }
 
   void set_name_and_src_name(const string &name);
 
   void debugPrint();
 
-  const std::string &get_subdir() const {
-    static std::string lambda_subdir("cl_l");
-    static std::string common_subdir("cl");
+  virtual std::string get_namespace() const;
 
-    return is_lambda_class() ? lambda_subdir : common_subdir;
+  virtual std::string get_subdir() const {
+    return "cl";
   }
 
   const std::string *get_parent_class_name() const {

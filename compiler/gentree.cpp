@@ -8,13 +8,16 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/debug.h"
+#include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
 #include "compiler/vertex.h"
+#include "common/algorithms/find.h"
 
 #define CE(x) if (!(x)) {return VertexPtr();}
 
@@ -1123,38 +1126,18 @@ void GenTree::func_force_return(VertexPtr root, VertexPtr val) {
   func->cmd() = seq;
 }
 
-VertexPtr GenTree::create_vertex_this(const AutoLocation &location, ClassPtr cur_class, bool with_type_rule) {
-  auto this_var = VertexAdaptor<op_var>::create();
-  this_var->str_val = "this";
-  this_var->extra_type = op_ex_var_this;
-  this_var->const_type = cnst_const_val;
-  set_location(this_var, location);
-
-  if (with_type_rule) {
-    kphp_assert(cur_class);
-
-    auto rule_this_var = VertexAdaptor<op_class_type_rule>::create();
-    rule_this_var->type_help = tp_Class;
-    rule_this_var->class_ptr = cur_class;
-
-    this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
-  }
-
-  return this_var;
-}
-
 // __construct(args) { body } => __construct(args) { $this ::: tp_Class; def vars init; body; return $this; }
 void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location) {
-  auto return_node = VertexAdaptor<op_return>::create(create_vertex_this(location, cur_class));
+  auto return_node = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(location.line_num));
   set_location(return_node, location);
 
   std::vector<VertexPtr> next = func->cmd()->get_next();
-  next.insert(next.begin(), create_vertex_this(location, cur_class, true));
+  next.insert(next.begin(), cur_class->gen_vertex_this_with_type_rule(location.line_num));
 
   // выносим "$var = 0" в начало конструктора; переменные класса — в порядке, обратном объявлению, это не страшно
   cur_class->members.for_each([&](ClassMemberInstanceField &f) {
     if (f.root->has_def_val()) {
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(location, ClassPtr()));
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(location.line_num));
       set_location(inst_prop, location);
       inst_prop->str_val = f.root->get_string();
 
@@ -1167,10 +1150,6 @@ void GenTree::patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr c
   func->cmd() = VertexAdaptor<op_seq>::create(next);
 }
 
-// function fname(args) => function fname($this ::: class_instance, args)
-void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class) {
-  params_next.emplace_back(VertexAdaptor<op_func_param>::create(create_vertex_this(func_location, cur_class, true)));
-}
 
 void GenTree::create_default_constructor(ClassPtr cur_class, AutoLocation location) const {
   create_constructor_with_args(cur_class, location, VertexAdaptor<op_func_param_list>::create(), parsed_os);
@@ -1185,7 +1164,7 @@ void GenTree::create_constructor_with_args(ClassPtr cur_class,
   std::vector<VertexPtr> fields_initializers;
   for (auto param : params->params()) {
     param = param.as<op_func_param>()->var();
-    auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(location, ClassPtr()));
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(location.line_num));
     set_location(inst_prop, location);
     inst_prop->str_val = param->get_string();
 
@@ -1618,7 +1597,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
   vector<VertexPtr> params_next;
 
   if (is_instance_method && !is_constructor) {
-    patch_func_add_this(params_next, func_location, cur_class);
+    cur_class->patch_func_add_this(params_next, func_location.line_num);
   }
 
   if (test_expect(tok_varg)) {
@@ -1802,7 +1781,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
 void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) {
   if (root->type() == op_var) {
     if (lambda_class->members.get_instance_field(root->get_string())) {
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(create_vertex_this(AutoLocation(-1), ClassPtr()));
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(-1));
       inst_prop->location = root->location;
       inst_prop->str_val = root->get_string();
       root = inst_prop;
@@ -1828,7 +1807,7 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
 
   // TODO: add parent $this as argument, for implicit capturing parent class
   std::vector<VertexPtr> func_parameters;
-  patch_func_add_this(func_parameters, AutoLocation(function->location.line), cur_class);
+  cur_class->patch_func_add_this(func_parameters, function->location.line);
   auto range = function->params().as<op_func_param_list>()->args();
   if (function->get_func_id()->function_in_which_lambda_was_created || function->get_func_id()->is_lambda()) {
     kphp_assert(range.size() > 0);
@@ -1862,25 +1841,6 @@ VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, 
   return res;
 }
 
-VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
-  std::vector<VertexPtr> args;
-  cur_class->members.for_each([&](const ClassMemberInstanceField &field) {
-    VertexPtr res = VertexAdaptor<op_var>::create();
-    if (field.root->get_string() == "parent$this") {
-      res->set_string("this");
-    } else {
-      res->set_string(field.root->get_string());
-    }
-    res->location = field.root->location;
-    args.emplace_back(res);
-  });
-
-  auto constructor_call = VertexAdaptor<op_constructor_call>::create(args);
-  constructor_call->set_string(cur_class->name);
-  constructor_call->set_func_id(cur_class->construct_function);
-
-  return constructor_call;
-}
 
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
@@ -1889,7 +1849,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   auto anon_name = gen_anonymous_function_name(cur_function);
   Location anon_location;
   anon_location.set_line(function->name()->location.line);
-  auto anon_class = ClassData::gen_lambda_class(anon_name, anon_location);
+  auto anon_class = LambdaClassData::create(anon_name, anon_location);
 
   if (cur_function->is_instance_function()) {
     auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
@@ -1938,7 +1898,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   anon_class->construct_function->function_in_which_lambda_was_created = cur_function;
   G->register_class(anon_class);
 
-  auto constructor_call = generate_constructor_call(anon_class);
+  auto constructor_call = anon_class->gen_constructor_call_pass_fields_as_args();
   constructor_call->location = anon_location;
   return constructor_call;
 }

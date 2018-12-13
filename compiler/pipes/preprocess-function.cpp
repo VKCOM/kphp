@@ -1,6 +1,7 @@
 #include "compiler/pipes/preprocess-function.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
@@ -75,7 +76,7 @@ private:
   }
 
   void instantiate_lambda(VertexAdaptor<op_func_call> call, VertexPtr &call_arg) {
-    if (ClassPtr lambda_class = FunctionData::is_lambda(call_arg)) {
+    if (auto lambda_class = LambdaClassData::get_from(call_arg)) {
       FunctionPtr instance_of_template_invoke;
       std::string invoke_name;
 
@@ -290,7 +291,7 @@ private:
         AssumType assum = infer_class_of_expr(current_function, new_call, lambda_class);
         kphp_assert(assum == assum_instance && lambda_class);
 
-        lambda_class->infer_uses_assumptions(current_function);
+        lambda_class.as<LambdaClassData>()->infer_uses_assumptions(current_function);
         new_call->location.function = current_function;
         call->location.function = current_function;
         lambda_class->construct_function->is_template = false;

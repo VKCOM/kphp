@@ -1,0 +1,39 @@
+#pragma once
+
+#include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
+
+class LambdaClassData final : public ClassData {
+public:
+  LambdaClassData() = default;
+
+  static LambdaPtr get_from(VertexPtr v);
+
+  static LambdaPtr create(std::string name, Location location);
+
+  void infer_uses_assumptions(FunctionPtr parent_function);
+
+  FunctionPtr get_template_of_invoke_function() const;
+
+  std::string get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
+                                                     FunctionPtr function_context,
+                                                     std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr = nullptr,
+                                                     FunctionPtr *template_of_invoke_method = nullptr) const;
+
+  static const std::string &get_lambda_namespace() {
+    static std::string lambda_namespace("$L");
+    return lambda_namespace;
+  }
+
+  std::string get_namespace() const override {
+    return get_lambda_namespace();
+  }
+
+  bool is_lambda_class() const override {
+    return true;
+  }
+
+  std::string get_subdir() const override {
+    return "cl_l";
+  }
+};

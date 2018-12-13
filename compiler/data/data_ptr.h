@@ -114,6 +114,7 @@ void set_index(Id<T> &d, int index) {
 
 class VarData;
 class ClassData;
+class LambdaClassData;
 class DefineData;
 class FunctionData;
 class LibData;
@@ -121,6 +122,7 @@ class SrcFile;
 
 typedef Id<VarData> VarPtr;
 typedef Id<ClassData> ClassPtr;
+typedef Id<LambdaClassData> LambdaPtr;
 typedef Id<DefineData> DefinePtr;
 typedef Id<FunctionData> FunctionPtr;
 typedef Id<LibData> LibPtr;

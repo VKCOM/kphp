@@ -1,7 +1,9 @@
 #include "compiler/data/class-data.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -14,19 +16,6 @@ ClassData::ClassData() :
   members(this) {
 }
 
-ClassPtr ClassData::gen_lambda_class(std::string name, Location location) {
-  VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->set_string(name);
-  lambda_class_name->location = std::move(location);
-
-  VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
-
-  ClassPtr anon_class(new ClassData());
-  anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + name);
-  anon_class->root = class_vertex;
-
-  return anon_class;
-}
 
 void ClassData::set_name_and_src_name(const string &name) {
   this->name = name;
@@ -64,153 +53,56 @@ void ClassData::debugPrint() {
   });
 }
 
-PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexRange call_params, FunctionPtr function_context, VertexRange extern_func_params,
-                                         AssumType &assum, ClassPtr &klass_assumed) {
+std::string ClassData::get_namespace() const {
+  return file_id->namespace_name;
+}
 
-  if (auto func_rule = type_rule.try_as<op_type_rule_func>()) {
-    if (func_rule->get_string() == "OrFalse") {
-      // TODO:
-      return infer_type_of_callback_arg(func_rule->args()[0], call_params, function_context, extern_func_params, assum, klass_assumed);
-    } else if (func_rule->get_string() == "lca") {
-      PrimitiveType result_pt = tp_Unknown;
-      for (auto v : func_rule->args()) {
-        PrimitiveType pt = infer_type_of_callback_arg(v, call_params, function_context, extern_func_params, assum, klass_assumed);
-        if (klass_assumed) {
-          return pt;
-        }
-
-        if (result_pt == tp_Unknown) {
-          result_pt = pt;
-        }
-      }
-
-      return result_pt != tp_Unknown ? result_pt : tp_Any;
-    } else if (func_rule->get_string() == "callback_call") {
-      int id_of_call_parameter = func_rule->args()[0].as<op_arg_ref>()->int_val - 1;
-      kphp_assert(id_of_call_parameter >= 0 && id_of_call_parameter < static_cast<int>(call_params.size()));
-      VertexPtr param = call_params[id_of_call_parameter];
-      if (auto lambda_class = FunctionData::is_lambda(param)) {
-        FunctionPtr template_invoke = lambda_class->get_template_of_invoke_function();
-        assum = calc_assumption_for_return(template_invoke, klass_assumed);
-      }
-
-      return tp_Unknown;
+VertexPtr ClassData::gen_constructor_call_pass_fields_as_args() const {
+  std::vector<VertexPtr> args;
+  members.for_each([&](const ClassMemberInstanceField &field) {
+    VertexPtr res = VertexAdaptor<op_var>::create();
+    if (field.local_name() == "parent$this") {
+      res->set_string("this");
     } else {
-      kphp_assert(false);
+      res->set_string(field.root->get_string());
     }
-  } else if (auto index_rule = type_rule.try_as<op_index>()) {
-    PrimitiveType pt = infer_type_of_callback_arg(index_rule->array(), call_params, function_context, extern_func_params, assum, klass_assumed);
-    if (assum == assum_instance_array) {
-      assum = assum_instance;
-    }
-    return pt;
-  } else if (auto arg_ref = type_rule.try_as<op_arg_ref>()) {
-    int id_of_call_parameter = arg_ref->int_val - 1;
-    kphp_assert(id_of_call_parameter >= 0 && id_of_call_parameter < static_cast<int>(call_params.size()));
-    assum = infer_class_of_expr(function_context, call_params[id_of_call_parameter], klass_assumed);
-    return extern_func_params[id_of_call_parameter]->type_help;
-  } else if (auto rule = type_rule.try_as<op_type_rule>()) {
-    return rule->type_help;
-  } else {
-    kphp_assert(false);
-  }
-
-  return tp_Unknown;
-}
-
-std::string ClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
-                                                              FunctionPtr function_context,
-                                                              std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr /*= nullptr*/,
-                                                              FunctionPtr *template_of_invoke_method /*= nullptr*/) const {
-  std::string invoke_method_name = replace_backslashes(construct_function->class_id->name) + "$$__invoke";
-
-  VertexRange call_params = extern_function_call->args();
-  //int call_params_n = static_cast<int>(call_params.size());
-
-  VertexRange extern_func_params = extern_function_call->get_func_id()->get_params();
-  auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p->type() == op_func_param_callback; });
-  kphp_assert(callback_it != extern_func_params.end());
-  size_t callback_pos = static_cast<size_t>(std::distance(extern_func_params.begin(), callback_it));
-  if (auto call_func_ptr = call_params[callback_pos].try_as<op_func_ptr>()) {
-    if (call_func_ptr->has_bound_class()) {
-      return call_func_ptr->get_string();
-    }
-  }
-
-  auto func_param_callback = callback_it->as<op_func_param_callback>();
-  VertexRange callback_params = get_function_params(func_param_callback);
-  for (int i = 0; i < callback_params.size(); ++i) {
-    auto callback_param = callback_params[i];
-
-    AssumType assum = assum_not_instance;
-    ClassPtr klass_assumed;
-    if (auto type_rule = callback_param->type_rule) {
-      kphp_assert(type_rule->type() == op_common_type_rule);
-      callback_param->type_help =
-        infer_type_of_callback_arg(type_rule.as<op_common_type_rule>()->rule(), call_params, function_context, extern_func_params, assum, klass_assumed);
-    }
-
-    switch (assum) {
-      case assum_unknown:
-      case assum_not_instance: {
-        kphp_assert(callback_param->type_help != tp_Unknown);
-        invoke_method_name += "$" + std::to_string(i + 1) + "not_instance";
-        if (template_type_id_to_ClassPtr) {
-          auto template_invoke_params = (*template_of_invoke_method)->get_params();
-          template_invoke_params[i + 1].as<op_func_param>()->template_type_id = -1;
-        }
-        break;
-      }
-
-      case assum_instance_array:
-        invoke_method_name += "$arr";
-        /* fallthrough */
-      case assum_instance: {
-        invoke_method_name += "$" + replace_backslashes(klass_assumed->name);
-        if (template_type_id_to_ClassPtr) {
-          auto template_invoke_params = (*template_of_invoke_method)->get_params();
-          auto type_id = template_invoke_params[i + 1].as<op_func_param>()->template_type_id;
-          if (type_id > -1) {
-            template_type_id_to_ClassPtr->emplace(type_id, std::make_pair(assum_instance, klass_assumed));
-          }
-        }
-        break;
-      }
-
-      default:
-        break;
-    }
-  }
-
-  return invoke_method_name;
-}
-
-FunctionPtr ClassData::get_template_of_invoke_function() const {
-  kphp_assert(is_lambda_class());
-  auto found_method = members.get_instance_method("__invoke");
-
-  return (found_method && found_method->function->is_template) ? found_method->function : FunctionPtr();
-}
-
-bool ClassData::is_lambda_class() const {
-  return vk::string_view(name).starts_with(FunctionData::get_lambda_namespace());
-}
-
-void ClassData::infer_uses_assumptions(FunctionPtr parent_function) {
-  members.for_each([=](const ClassMemberInstanceField &field) {
-    AssumType assum = AssumType::assum_unknown;
-    ClassPtr inferred_class;
-    std::string local_name = field.local_name();
-    if (local_name == "parent$this") {
-      if (parent_function->is_lambda()) {
-        assum = assumption_get_for_var(parent_function->class_id, "parent$this", inferred_class);
-      } else {
-        local_name = "this";
-      }
-    }
-    if (assum == AssumType::assum_unknown) {
-      assum = calc_assumption_for_var(parent_function, local_name, inferred_class);
-    }
-    assumptions_for_vars.emplace_back(assum, field.local_name(), inferred_class);
+    res->location = field.root->location;
+    args.emplace_back(res);
   });
+
+  return gen_constructor_call_with_args(std::move(args));
+}
+
+VertexAdaptor<op_constructor_call> ClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) const {
+  auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
+  constructor_call->set_string(name);
+  constructor_call->set_func_id(construct_function);
+
+  return constructor_call;
+}
+
+VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(int location_line_num) {
+  auto this_var = gen_vertex_this(location_line_num);
+  auto rule_this_var = VertexAdaptor<op_class_type_rule>::create();
+  rule_this_var->type_help = tp_Class;
+  rule_this_var->class_ptr = ClassPtr{this};
+
+  this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
+  return this_var;
+}
+
+void ClassData::patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num) {
+  auto vertex_this = gen_vertex_this_with_type_rule(location_line_num);
+  auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
+  params_next.emplace(params_next.begin(), param_this);
+}
+
+VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
+  auto this_var = VertexAdaptor<op_var>::create();
+  this_var->str_val = "this";
+  this_var->extra_type = op_ex_var_this;
+  this_var->const_type = cnst_const_val;
+  this_var->location.line = location_line_num;
+
+  return this_var;
 }

@@ -5,6 +5,7 @@
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/stage.h"
 #include "compiler/threading/data-stream.h"
@@ -115,13 +116,6 @@ public:
   static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
-
-  static ClassPtr is_lambda(VertexPtr v);
-
-  static const std::string &get_lambda_namespace() {
-    static std::string lambda_namespace("$L");
-    return lambda_namespace;
-  }
 
   bool is_lambda() const {
     return static_cast<bool>(function_in_which_lambda_was_created);

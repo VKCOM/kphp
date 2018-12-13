@@ -4,9 +4,11 @@
 #include <numeric>
 #include <unordered_map>
 
+#include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/make.h"

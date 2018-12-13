@@ -1,9 +1,9 @@
-#include "compiler/pipes/final-check.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/pipes/final-check.h"
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->type() == FunctionData::func_extern) {
@@ -179,7 +179,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       continue;
     }
 
-    ClassPtr lambda_class = FunctionData::is_lambda(call_params[i]);
+    auto lambda_class = LambdaClassData::get_from(call_params[i]);
     kphp_error_act(call_params[i]->type() == op_func_ptr || lambda_class, "Callable object expected", continue);
 
     FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();

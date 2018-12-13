@@ -4,6 +4,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
@@ -60,10 +61,11 @@ FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, 
   FunctionPtr function = FunctionPtr(new FunctionData());
   root->set_func_id(function);
 
-  function->name = root->name().as<op_func_name>()->str_val;
+  function->name = root->name()->get_string();
   function->root = root;
   function->file_id = stage::get_file();
   function->type() = type;
+  //function->function_in_which_lambda_was_created = function_root->get_func_id()->function_in_which_lambda_was_created;
 
   return function;
 }
@@ -138,44 +140,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->update_location_in_body();
 
   return new_function;
-}
-
-ClassPtr FunctionData::is_lambda(VertexPtr v) {
-  if (v->type() == op_func_ptr && v->get_func_id()) {
-    return is_lambda(v->get_func_id()->root);
-  }
-
-  if (tinf::Node *tinf_node = tinf::get_tinf_node(v)) {
-    if (tinf_node->get_type()->ptype() != tp_Unknown) {
-      if (ClassPtr klass = tinf_node->get_type()->class_type()) {
-        return klass->is_lambda_class() ? klass : ClassPtr{};
-      }
-      return ClassPtr{};
-    }
-  }
-
-  switch (v->type()) {
-    case op_function:
-    case op_constructor_call: {
-      if (v->get_func_id()->is_lambda()) {
-        return v->get_func_id()->class_id;
-      }
-      return {};
-    }
-
-    case op_func_call:
-    case op_var: {
-      ClassPtr c;
-      AssumType assum = infer_class_of_expr(stage::get_function(), v, c);
-      if (assum == assum_instance && c->is_lambda_class()) {
-        return c;
-      }
-      return {};
-    }
-
-    default:
-      return {};
-  }
 }
 
 bool FunctionData::is_static_init_empty_body() const {
