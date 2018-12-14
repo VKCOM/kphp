@@ -172,6 +172,7 @@ public:
   bool has_constant(const string &local_name) const;
   bool has_field(const string &local_name) const;
   bool has_instance_method(const string &local_name) const;
+  bool has_static_method(const string &local_name) const;
 
   bool has_any_instance_var() const;
   bool has_any_instance_method() const;

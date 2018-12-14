@@ -117,18 +117,17 @@ void GenTree::exit_and_register_class(VertexPtr root) {
   main->throws_flag = false;
   main->resumable_flag = false;
 
-  kphp_assert(create_and_register_function(main, processing_file->namespace_name, context_class, access_nonmember, FunctionData::func_global, parsed_os));
-
   if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) &&
       !cur_class->members.has_constructor()) {
     create_default_constructor(context_class, cur_class, AutoLocation(this));
   }
 
+  FunctionPtr class_wrapper_f = create_and_register_function(main, processing_file->namespace_name, context_class, access_nonmember, FunctionData::func_global, parsed_os);
+  class_wrapper_f->class_id = cur_class;
   if (cur_class == context_class) {
-    kphp_assert(G->register_class(cur_class));
-  } else {
-    G->get_function(processing_file->main_func_name)->class_id = cur_class;
+    cur_class->init_function = class_wrapper_f;
   }
+
   class_stack.pop_back();
   cur_class = class_stack.empty() ? ClassPtr() : class_stack.back();
 }
@@ -1800,7 +1799,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   }
 
   if (cur_class && processing_file->context_class && access_type != access_nonmember) {
-    add_parent_function_to_child_class_with_context(registered_fun->root, cur_class, context_class, access_type, parsed_os);
+    //add_parent_function_to_child_class_with_context(registered_fun->root, cur_class, context_class, access_type, parsed_os);
   }
 
   if (registered_fun) {
@@ -1981,9 +1980,10 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             AccessType cur_access_type,
-                                            std::vector<VertexPtr> &&uses_of_lambda) {
+                                            std::vector<VertexPtr> &&uses_of_lambda,
+                                            const std::string &kostyl_explicit_name) {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->str_val = gen_anonymous_function_name();
+  lambda_class_name->str_val = !kostyl_explicit_name.empty() ? kostyl_explicit_name : gen_anonymous_function_name();
   lambda_class_name->location.line = function->name()->location.line;
 
   VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
@@ -2609,6 +2609,9 @@ std::string GenTree::get_real_name_from_full_method_name(const std::string &full
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) {
   GenTree gen(tokens, file, os);
+  if (file->context_class) {        // вот ради этого затевался коммит
+    return;
+  }
   gen.run();
 }
 

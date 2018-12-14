@@ -15,7 +15,7 @@ public:
   // описание extends / implements / use trait в строковом виде (class_name)
   struct StrDependence {
     ClassType type;
-    string class_name;
+    string class_name;    // todo (чуть позже) хранить полное имя класса, чтоб resolve_uses не нужно было делать
 
     StrDependence(ClassType type, string class_name) :
       type(type),

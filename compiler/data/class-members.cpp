@@ -146,6 +146,11 @@ bool ClassMembersContainer::has_instance_method(const string &local_name) const 
   return member_exists(hash_name);          // либо static, либо instance method — не может быть двух с одним именем
 }
 
+bool ClassMembersContainer::has_static_method(const string &local_name) const {
+  string hash_name = replace_backslashes(klass->name) + "$$" + local_name + "()";
+  return member_exists(hash_name);
+}
+
 bool ClassMembersContainer::has_any_instance_var() const {
   return !instance_fields.empty();
 }

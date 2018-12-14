@@ -68,6 +68,7 @@ public:
   F (create_switch_vars)\
   F (collect_required)\
   F (calc_locations)\
+  F (resolve_self_static_parent)\
   F (register_defines)\
   F (calc_real_defines_values)\
   F (erase_defines_declarations)\

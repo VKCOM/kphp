@@ -208,24 +208,13 @@ bool CompilerCore::register_function(FunctionPtr function) {
   return force_add_to_os;
 }
 
-ClassPtr CompilerCore::register_class(ClassPtr cur_class) {
-  vk::string_view sv{cur_class->name};
-  if (!sv.starts_with(FunctionData::get_lambda_namespace())) {
-    string init_function_name_str = stage::get_file()->main_func_name;
-    cur_class->init_function = get_function(init_function_name_str);
-    cur_class->init_function->class_id = cur_class;
-  }
-
+void CompilerCore::register_class(ClassPtr cur_class) {
   TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(cur_class->name));
   AutoLocker<Lockable *> locker(node);
-  kphp_error_act (
-    !node->data,
-    format("Redeclaration of class [%s], the previous declaration was in [%s]",
-            cur_class->name.c_str(), node->data->file_id->file_name.c_str()),
-    return ClassPtr()
-  );
+  kphp_error (!node->data,
+              format("Redeclaration of class [%s], the previous declaration was in [%s]",
+                     cur_class->name.c_str(), node->data->file_id->file_name.c_str()));
   node->data = cur_class;
-  return cur_class;
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {

@@ -1,8 +1,9 @@
+#include "compiler/data/function-data.h"
+
 #include <regex>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
@@ -28,6 +29,7 @@ FunctionData::FunctionData() :
   kphp_required(false),
   kphp_lib_export(false),
   is_template(false),
+  kostyl_was_inherited(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -49,6 +51,7 @@ FunctionData::FunctionData(VertexPtr root) :
   should_be_sync(),
   kphp_required(false),
   is_template(false),
+  kostyl_was_inherited(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 

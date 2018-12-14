@@ -29,6 +29,7 @@
 #include "compiler/pipes/calc-const-types.h"
 #include "compiler/pipes/calc-empty-functions.h"
 #include "compiler/pipes/calc-locations.h"
+#include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg.h"
@@ -41,12 +42,11 @@
 #include "compiler/pipes/check-returns.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/code-gen.h"
-#include "compiler/pipes/collect-classes.h"
 #include "compiler/pipes/collect-const-vars.h"
-#include "compiler/pipes/collect-defines.h"
-#include "compiler/pipes/collect-required.h"
+#include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/create-switch-foreach-vars.h"
+#include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
 #include "compiler/pipes/file-and-token.h"
@@ -54,18 +54,19 @@
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
+#include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
 #include "compiler/pipes/parse.h"
 #include "compiler/pipes/prepare-function.h"
 #include "compiler/pipes/preprocess-break.h"
-#include "compiler/pipes/preprocess-defines.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/preprocess-vararg.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/pipes/remove-empty-function-calls.h"
+#include "compiler/pipes/resolve-self-static-parent.h"
 #include "compiler/pipes/split-switch.h"
 #include "compiler/pipes/type-inferer-end.h"
 #include "compiler/pipes/type-inferer.h"
@@ -225,19 +226,19 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<ParseF>{}
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
-    >> PassC<CreateSwitchForeachVarsF>{}
-    >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<0>{}
+    >> PassC<CreateSwitchForeachVarsPass>{}
+    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> sync_node_tag{}
-    >> PipeC<CollectClassF>{}
     >> PassC<CalcLocationsPass>{}
-    >> SyncC<PreprocessDefinesF>{}
-    >> PassC<CollectDefinesPass>{}
-    >> sync_node_tag{}
-    >> PipeC<PrepareFunctionF>{}
-    >> sync_node_tag{}
+    >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}
+    >> SyncC<CalcRealDefinesValuesF>{}
+    >> PassC<EraseDefinesDeclarationsPass>{}
+    >> PipeC<PrepareFunctionF>{}
+    >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
+    >> sync_node_tag{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
@@ -276,11 +277,11 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<WriteFilesF, false>{};
 
   SchedulerConstructor{scheduler}
-    >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<1>{}
+    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<1>{}
     >> PipeC<LoadFileF>{};
 
   SchedulerConstructor{scheduler}
-    >> PipeC<CollectRequiredF>{} >> use_nth_output_tag<2>{}
+    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<2>{}
     >> PassC<GenTreePostprocessPass>{};
 
   get_scheduler()->execute();

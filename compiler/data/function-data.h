@@ -1,6 +1,7 @@
 #pragma once
 
 #include "auto/compiler/vertex/vertex-meta_op_function.h"
+
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
@@ -59,6 +60,7 @@ public:
   bool kphp_required;
   bool kphp_lib_export;
   bool is_template;
+  bool kostyl_was_inherited;
   string namespace_name;
   ClassPtr context_class;
   AccessType access_type;

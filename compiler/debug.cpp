@@ -199,8 +199,9 @@ std::string debugVertexMore(VertexPtr v) {
     case op_constructor_call:
       return "new " + v->get_string();
     case op_func_call:
+      return string(v->extra_type == op_ex_func_member ? "->" : "") + v->get_string() + "()";
     case op_func_name:
-      return v->get_string() + "()";
+      return v->get_string();
     case op_function:
       return v.as<meta_op_function>()->name()->get_string() + "()";
     case op_var:
@@ -217,7 +218,7 @@ std::string debugVertexMore(VertexPtr v) {
     case op_type_rule:
       return ptype_name(v->type_help);
     case op_seq:
-      return int_to_str(v->size()) + " seq items";
+      return int_to_str(v->size());
     default:
       return "";
   }

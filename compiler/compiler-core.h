@@ -71,7 +71,7 @@ public:
   }
 
   bool register_function(FunctionPtr function);
-  ClassPtr register_class(ClassPtr cur_class);
+  void register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
 
   FunctionPtr get_function(const string &name);
