@@ -3190,7 +3190,7 @@ void parse_main_args_end(int argc, char *argv[]) {
 
 void parse_main_args(int argc, char *argv[]) {
   usage_set_other_args_desc("");
-  option_section_t sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOSITY, OPT_ARRAY_END};
+  option_section_t sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOSITY, OPT_ENGINE_CUSTOM, OPT_ARRAY_END};
   init_parse_options(sections);
 
   remove_parse_option("log");

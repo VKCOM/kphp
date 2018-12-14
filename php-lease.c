@@ -1,5 +1,6 @@
 #include "PHP/php-lease.h"
 
+#include "common/options.h"
 #include "common/precise-time.h"
 #include "common/rpc-const.h"
 #include "net/net-connections.h"
@@ -7,6 +8,7 @@
 
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-engine.h"
+#include "PHP/php-ready.h"
 #include "PHP/php-worker.h"
 
 static int rpc_main_target = -1;
@@ -26,13 +28,13 @@ static long long lease_stats_cnt;
 static int ready_cnt = 0;
 
 typedef enum {
-  lst_off,
-  lst_start,
-  lst_on,
-  lst_finish
+  lst_off,            // connect to rpc-proxy, wait kphp.startLease from it, connect to target
+  lst_start,          // if !has_pending_scripts -> change state to lst_on, wait for connection to target ready, do lease_set_ready() && run_rpc_lease();
+  lst_on,             // connecting to target, send RPC_READY, doing work, if too much time doing work -> change state to lst_finish
+  lst_finish          // wait finishing current task, send RPC_STOP to target, send TL_KPHP_LEASE_STATS to rpc-proxy, change state to lst_off
 } lease_state_t;
 static lease_state_t lease_state = lst_off;
-static int lease_ready_flag = 0;
+static int lease_ready_flag = 0; // waiting for something -> equal 0
 
 
 static int get_lease_target_by_pid(int ip, int port, conn_target_t *ct) {
@@ -77,7 +79,7 @@ static void rpc_send_stopped(struct connection *c) {
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
-  send_rpc_query(c, RPC_STOP_READY, -1, q, qn * 4);
+  send_rpc_query(c, TL_KPHP_STOP_READY, -1, q, qn * 4);
 }
 
 static void rpc_send_lease_stats(struct connection *c) {
@@ -97,10 +99,16 @@ static void rpc_send_lease_stats(struct connection *c) {
   send_rpc_query(c, TL_KPHP_LEASE_STATS, -1, q, qn * 4);
 }
 
+static int is_staging;
+FLAG_OPTION_PARSER(OPT_ENGINE_CUSTOM, "staging", is_staging, "kphp sends this info to tasks if running as worker");
 
 static void rpc_send_ready(struct connection *c) {
   int q[100], qn = 0;
   qn += 2;
+  bool use_ready_v2 = (is_staging != 0);
+  if (use_ready_v2) {
+    q[qn++] = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;
+  }
   q[qn++] = -1;
   q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
   q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
@@ -109,7 +117,7 @@ static void rpc_send_ready(struct connection *c) {
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
-  send_rpc_query(c, RPC_READY, -1, q, qn * 4);
+  send_rpc_query(c, use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY, -1, q, qn * 4);
 }
 
 
