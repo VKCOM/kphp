@@ -126,8 +126,10 @@ private:
           }
 
           AssumType assum = infer_class_of_expr(stage::get_function(), call_arg, class_corresponding_to_parameter);
+          if (assum == assum_unknown) {
+            assum = assum_not_instance;
+          }
 
-          kphp_assert(assum != assum_unknown);
           auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
           if (!insertion_result.second) {
             const std::pair<AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;

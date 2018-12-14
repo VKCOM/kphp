@@ -51,4 +51,8 @@ class ImplicitCapturingThis
 
         var_dump($f());
     }
+
+    public function pass_field_as_argument_of_lambda(callable $callback) {
+        $callback($this->a);
+    }
 }
