@@ -288,11 +288,15 @@ private:
         if (auto lambda_func_ptr = new_call.try_as<op_func_ptr>()) {
           new_call = lambda_func_ptr->bound_class();
         }
-        kphp_assert(new_call->type() == op_constructor_call);
-        new_call->get_func_id()->class_id->infer_uses_assumptions(current_function); // instance_of_function_template_stream << call->get_func_id();
+        ClassPtr lambda_class;
+        AssumType assum = infer_class_of_expr(current_function, new_call, lambda_class);
+        kphp_assert(assum == assum_instance && lambda_class);
+
+        lambda_class->infer_uses_assumptions(current_function);
         new_call->location.function = current_function;
-        new_call->get_func_id()->is_template = false;
-        instance_of_function_template_stream << new_call->get_func_id();
+        call->location.function = current_function;
+        lambda_class->new_function->is_template = false;
+        instance_of_function_template_stream << lambda_class->new_function;
       }
 
       return call;
