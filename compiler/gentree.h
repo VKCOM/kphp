@@ -69,13 +69,7 @@ public:
   static bool has_return(VertexPtr v);
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
-  static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
-  static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
-  void create_default_constructor(ClassPtr cur_class, AutoLocation location) const;
-  static void create_constructor_with_args(ClassPtr cur_class,
-                                           AutoLocation location, VertexAdaptor<op_func_param_list> params,
-                                           DataStream<FunctionPtr> &os);
 
   VertexPtr get_func_param_without_callbacks(bool from_callback = false);
   VertexPtr get_func_param_from_callback();

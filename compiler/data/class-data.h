@@ -5,6 +5,7 @@
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
+#include "compiler/threading/data-stream.h"
 
 enum ClassType {
   ctype_class,
@@ -54,6 +55,12 @@ public:
 
   static VertexAdaptor<op_var> gen_vertex_this(int location_line_num) ;
   VertexAdaptor<op_var> gen_vertex_this_with_type_rule(int location_line_num);
+
+  // __construct(args) { body } => __construct(args) { $this ::: tp_Class; def vars init; body; return $this; }
+  void patch_func_constructor(VertexAdaptor<op_function> func, int location_line_num);
+
+  void create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os);
+  void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os);
 
   // function fname(args) => function fname($this ::: class_instance, args)
   void patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num);

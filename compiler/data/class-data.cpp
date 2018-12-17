@@ -6,6 +6,7 @@
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "compiler/compiler-core.h"
 
 ClassData::ClassData() :
   id(0),
@@ -89,6 +90,60 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(int location_lin
 
   this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
   return this_var;
+}
+
+void ClassData::patch_func_constructor(VertexAdaptor<op_function> func, int location_line_num) {
+  auto return_node = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(location_line_num));
+  return_node->location.set_line(location_line_num);
+
+  std::vector<VertexPtr> next = func->cmd()->get_next();
+  next.insert(next.begin(), gen_vertex_this_with_type_rule(location_line_num));
+
+  // выносим "$var = 0" в начало конструктора; переменные класса — в порядке, обратном объявлению, это не страшно
+  members.for_each([&](ClassMemberInstanceField &f) {
+    if (f.root->has_def_val()) {
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(location_line_num));
+      inst_prop->location.set_line(location_line_num);
+      inst_prop->str_val = f.root->get_string();
+
+      next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f.root->def_val()));
+    }
+  });
+
+  next.emplace_back(return_node);
+
+  func->cmd() = VertexAdaptor<op_seq>::create(next);
+}
+
+void ClassData::create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os) {
+  create_constructor_with_args(location_line_num, VertexAdaptor<op_func_param_list>::create(), os);
+}
+
+void ClassData::create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os) {
+  auto func_name = VertexAdaptor<op_func_name>::create();
+  func_name->str_val = replace_backslashes(name) + "$$__construct";
+
+  std::vector<VertexPtr> fields_initializers;
+  for (auto param : params->params()) {
+    param = param.as<op_func_param>()->var();
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(gen_vertex_this(location_line_num));
+    inst_prop->location.set_line(location_line_num);
+    inst_prop->str_val = param->get_string();
+
+    fields_initializers.emplace_back(VertexAdaptor<op_set>::create(inst_prop, param.clone()));
+  }
+  auto func_root = VertexAdaptor<op_seq>::create(fields_initializers);
+
+  auto func = VertexAdaptor<op_function>::create(func_name, params, func_root);
+  func->inline_flag = true;
+  func->location.set_line(location_line_num);
+
+  patch_func_constructor(func, location_line_num);
+
+
+  auto ctor_function = FunctionData::create_function(func, FunctionData::func_local);
+  members.add_instance_method(ctor_function, access_public);
+  G->register_and_require_function(ctor_function, os, true);
 }
 
 void ClassData::patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num) {
