@@ -30,6 +30,7 @@ FunctionData::FunctionData() :
   kphp_lib_export(false),
   is_template(false),
   kostyl_was_inherited(false),
+  kostyl_is_lambda(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -52,6 +53,7 @@ FunctionData::FunctionData(VertexPtr root) :
   kphp_required(false),
   is_template(false),
   kostyl_was_inherited(false),
+  kostyl_is_lambda(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -114,7 +116,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->phpdoc_token = func->phpdoc_token;
   new_function->min_argn = func->min_argn;
   new_function->used_in_source = func->used_in_source;
-  new_function->namespace_name = func->namespace_name;
   new_function->context_class = func->context_class;
   new_function->access_type = func->access_type;
   new_function->body_seq = func->body_seq;

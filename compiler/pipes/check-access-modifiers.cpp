@@ -7,7 +7,7 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
   }
-  class_id = function->class_id ? function->get_outer_class() : ClassPtr();
+  class_id = function->get_this_or_topmost_if_lambda()->class_id;
   return true;
 }
 VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {

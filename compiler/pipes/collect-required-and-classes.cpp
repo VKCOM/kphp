@@ -170,10 +170,8 @@ void CollectRequiredAndClassesF::inherit_method_from_parent_class(ClassPtr child
 
   if (!child_class->members.has_static_method(local_name)) {
     VertexPtr child_root = GenTree::generate_function_with_parent_call(parent_f->root, parent_class, child_class, local_name);
-    string namespace_name = child_class->name.substr(0, child_class->name.rfind('\\'));
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
-    child_function->namespace_name = namespace_name;
     child_function->context_class = child_class;
     child_function->access_type = access_static_public;
     child_function->file_id = parent_f->file_id;
@@ -193,7 +191,6 @@ void CollectRequiredAndClassesF::inherit_method_from_parent_class(ClassPtr child
     VertexAdaptor<op_function> child_ctx_root = clone_vertex(parent_f->root);
     child_ctx_root->name()->set_string(ctx_f_name);
     FunctionPtr child_ctx_f = FunctionData::create_function(child_ctx_root, FunctionData::func_local);
-    child_ctx_f->namespace_name = parent_f->namespace_name;
     child_ctx_f->context_class = child_class;
     child_ctx_f->access_type = parent_f->access_type;
     child_ctx_f->file_id = parent_f->file_id;
@@ -240,7 +237,7 @@ bool CollectRequiredAndClassesF::is_class_ready(ClassPtr klass) {
 
 // упомянуть про гарантию 1 вызова  
 void CollectRequiredAndClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream) {
-  kphp_assert(klass->init_function->get_outer_class() == klass);
+  kphp_assert(klass->init_function->class_id == klass);
 
   for (const auto &dep : klass->str_dependents) {
     ClassPtr dep_class = G->get_class(resolve_uses(klass->init_function, dep.class_name, '\\'));

@@ -61,7 +61,7 @@ public:
   bool kphp_lib_export;
   bool is_template;
   bool kostyl_was_inherited;
-  string namespace_name;
+  bool kostyl_is_lambda;      // уйдёт, когда function_in_which_lambda_was_created будет ставиться сразу
   ClassPtr context_class;
   AccessType access_type;
   set<string> disabled_warnings;
@@ -125,36 +125,20 @@ public:
   }
 
   bool is_lambda() const {
-    return namespace_name == get_lambda_namespace();
+    // потом заменится на return function_in_which_lambda_was_created (когда gentree будет создавать функции по ходу)
+    return kostyl_is_lambda;
   }
 
   bool is_lambda_with_uses() const;
 
-  const std::string get_outer_namespace_name() const {
-    return get_or_default_field(&FunctionData::namespace_name);
-  }
-
   bool is_imported_from_static_lib() const;
 
-  ClassPtr get_outer_class() const {
-    return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->class_id : class_id;
-  }
-
-  ClassPtr get_outer_context_class() const {
-    return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->context_class : context_class;
+  const FunctionData *get_this_or_topmost_if_lambda() const {
+    return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->get_this_or_topmost_if_lambda() : this;
   }
 
   VertexRange get_params();
 
 private:
-  const std::string &get_or_default_field(std::string (FunctionData::*field)) const {
-    if (is_lambda()) {
-      kphp_assert(function_in_which_lambda_was_created);
-      return function_in_which_lambda_was_created->get_or_default_field(field);
-    }
-
-    return this->*field;
-  }
-
   DISALLOW_COPY_AND_ASSIGN (FunctionData);
 };

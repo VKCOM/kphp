@@ -103,16 +103,16 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       if (class_name == "parent") {
-        ClassPtr class_id = current_function->get_outer_class();
+        ClassPtr class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
         // тут (пока что?) именно extends как строка, т.к. parent_class присваивается позже, чем может вызываться resolve_uses()
         auto extends_it = std::find_if(class_id->str_dependents.begin(), class_id->str_dependents.end(),
                                        [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
         kphp_assert(extends_it != class_id->str_dependents.end());
         class_name = resolve_uses(current_function, extends_it->class_name, delim);
       } else if (class_name == "static") {
-        class_name = current_function->get_outer_context_class()->name;
+        class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
       } else {
-        class_name = current_function->get_outer_class()->name;
+        class_name = current_function->get_this_or_topmost_if_lambda()->class_id->name;
       }
     } else {
       size_t slash_pos = class_name.find('\\');
@@ -270,7 +270,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
 
 string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim) {
   if (class_name == "static" || class_name == "self" || class_name == "parent") {
-    return resolve_uses(function, "\\" + function->get_outer_context_class()->name, delim);
+    return resolve_uses(function, "\\" + function->get_this_or_topmost_if_lambda()->context_class->name, delim);
   }
   return resolve_uses(function, class_name, delim);
 }

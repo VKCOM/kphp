@@ -51,11 +51,11 @@ public:
 
   static FunctionPtr create_and_register_function(
     VertexPtr root,
-    const std::string &namespace_name,
     ClassPtr context_class,
     AccessType access_type,
     FunctionData::func_type_t type,
-    DataStream<FunctionPtr> &os);
+    DataStream<FunctionPtr> &os,
+    bool kostyl_is_lambda = false);
   
   VertexPtr generate_constant_field_class(VertexPtr root);
   void exit_and_register_class(VertexPtr root);
