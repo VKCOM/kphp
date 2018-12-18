@@ -3,6 +3,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/gentree.h"
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->type() == FunctionData::func_extern) {
@@ -81,9 +82,21 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at(Key::any_key());
-      if (valueType->get_real_ptype() == tp_Unknown) {
-        kphp_error (0, "Can not compile list with array of Unknown type");
-      }
+      kphp_error (valueType->get_real_ptype() != tp_Unknown, "Can not compile list with array of Unknown type");
+    } else if (arrayType->ptype() == tp_tuple) {
+      size_t list_size = vertex.as<op_list>()->list().size();
+      size_t tuple_size = arrayType->get_tuple_max_index();
+      kphp_error (list_size <= tuple_size, format("Can't assign tuple of length %zd to list of length %zd", tuple_size, list_size));
+    }
+  }
+  if (vertex->type() == op_index && vertex.as<op_index>()->has_key()) {
+    VertexPtr arr = vertex.as<op_index>()->array();
+    VertexPtr key = vertex.as<op_index>()->key();
+    const TypeData *arrayType = tinf::get_type(arr);
+    if (arrayType->ptype() == tp_tuple) {
+      long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
+      size_t tuple_size = arrayType->get_tuple_max_index();
+      kphp_error (0 <= index && index < tuple_size, format("Can't get element %ld of tuple of length %zd", index, tuple_size));
     }
   }
   if (vertex->type() == op_unset || vertex->type() == op_isset) {

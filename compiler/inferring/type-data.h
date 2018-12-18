@@ -124,6 +124,8 @@ public:
   void fix_inf_array();
   bool should_proxy_error_flag_to_parent() const;
 
+  size_t get_tuple_max_index() const;
+
   static void init_static();
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);

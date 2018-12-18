@@ -697,3 +697,8 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
   }
   return type1->ptype() == type2->ptype();
 }
+
+size_t TypeData::get_tuple_max_index() const {
+  kphp_assert(ptype() == tp_tuple);
+  return subkeys_values.size();
+}
