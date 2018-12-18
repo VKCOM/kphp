@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/data_ptr.h"
 #include "compiler/location.h"
 
 #define compiler_assert(x, y, level)  ({\
@@ -72,8 +73,6 @@ void print_file(FILE *f);
 void print_function(FILE *f);
 void print_line(FILE *f);
 void print_comment(FILE *f);
-void get_function_history(stringstream &ss, FunctionPtr function);
-string get_function_history();
 
 void set_name(const string &name);
 const string &get_name();

@@ -16,24 +16,58 @@ public:
 public:
   Id():
     ptr(nullptr) {}
+
   explicit Id(IdData *ptr):
     ptr(ptr) {}
+
   Id(const Id &id):
     ptr(id.ptr) {}
-  Id &operator=(const Id &id) {
-    ptr = id.ptr;
+
+  Id(Id &&id):
+    ptr(id.ptr) {
+    id.ptr = nullptr;
+  }
+
+  template<class DerivedIdData>
+  Id(const Id<DerivedIdData> &derived)
+    : ptr(derived.ptr)
+  {}
+
+  Id &operator=(Id id) {
+    std::swap(ptr, id.ptr);
     return *this;
   }
+
+  template<class DerivedIdData>
+  Id &operator=(const Id<DerivedIdData> &derived) {
+    ptr = derived.ptr;
+    return *this;
+  }
+
   IdData &operator*() const {
     assert (ptr != nullptr);
     return *ptr;
   }
+
   explicit operator bool() const {
     return ptr != nullptr;
   }
+
   void clear() {
     delete ptr; //TODO: be very-very carefull with it
     ptr = nullptr;
+  }
+
+  template<class AnotherIdData>
+  Id<AnotherIdData> try_as() const {
+    return Id<AnotherIdData>{dynamic_cast<AnotherIdData *>(ptr)};
+  }
+
+  template<class AnotherIdData>
+  Id<AnotherIdData> as() const {
+    auto res = try_as<AnotherIdData>();
+    assert(res);
+    return res;
   }
 
   IdData *operator->() const {
@@ -42,15 +76,19 @@ public:
   }
 
   bool operator==(const Id<IdData> &other) const {
-    return (unsigned long)ptr == (unsigned long)other.ptr;
+    return ptr == other.ptr;
   }
+
   bool operator!=(const Id<IdData> &other) const {
-    return (unsigned long)ptr != (unsigned long)other.ptr;
+    return !(*this == other);
   }
 
   string &str() {
     return ptr->str_val;
   }
+
+  template<class AnotherIdData>
+  friend class Id;
 };
 
 template<class T>
