@@ -84,9 +84,6 @@ int parse_args_f(int i) {
     case 'S':
       env->set_use_auto_dest("1");
       break;
-    case 'V':
-      env->set_lib_version(optarg);
-      break;
     case 'v':
       env->inc_verbosity();
       break;
@@ -159,7 +156,6 @@ int main(int argc, char *argv[]) {
   parse_option("tl-schema", required_argument, 'T', "Add builtin tl schema to kphp binary. Incompatible with <mode> == lib");
   parse_option("auto-dest-dir", no_argument, 'S', "Automatic destination dir");
   parse_option("source-path", required_argument, 's', "Path to kphp source. Equals to $KPHP_PATH. ~/engine is used by default");
-  parse_option("version-file", required_argument, 'V', "<file> will be use as kphp library version. Equals to $KPHP_LIB_VERSION. $KPHP_PATH/objs/PHP/php_lib_version.o is used by default");
   parse_option("verbosity", no_argument, 'v', "Verbosity");
   parse_option("Werror", no_argument, 'W', "All compile time warnings will be errors");
   parse_option("warnings-file", required_argument, 2000, "Print all warnings to <file>, otherwise warnings are printed to stderr");

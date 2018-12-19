@@ -10,8 +10,8 @@ private:
   string functions_;
   string mode_;
   string link_file_;
-  string lib_version_;
   string runtime_sha256_filename_;
+  string runtime_sha256_;
   string static_lib_out_dir_;
   string static_lib_name_;
 
@@ -96,10 +96,9 @@ public:
   int get_threads_count() const;
   void set_path(const string &path);
   const string &get_path() const;
-  void set_lib_version(const string &lib_version);
-  const string &get_lib_version() const;
   void set_runtime_sha256_file(string &&file_name);
   const string &get_runtime_sha256_file() const;
+  const string &get_runtime_sha256() const;
   void inc_verbosity();
   int get_verbosity() const;
   void set_print_resumable_graph();
@@ -144,5 +143,8 @@ public:
 
   bool init();
   void debug() const;
+
+  static std::string read_runtime_sha256_file(const std::string &filename);
+
 };
 

@@ -1,7 +1,11 @@
 #include "compiler/enviroment.h"
 
+#include <fstream>
+
 #include "common/version-string.h"
 
+#include "compiler/stage.h"
+#include "compiler/threading/format.h"
 #include "compiler/utils/string-utils.h"
 
 /*** Enviroment ***/
@@ -207,20 +211,16 @@ const string &KphpEnviroment::get_path() const {
   return path_;
 }
 
-void KphpEnviroment::set_lib_version(const string &lib_version) {
-  lib_version_ = lib_version;
-}
-
-const string &KphpEnviroment::get_lib_version() const {
-  return lib_version_;
-}
-
 void KphpEnviroment::set_runtime_sha256_file(string &&file_name) {
   runtime_sha256_filename_ = std::move(file_name);
 }
 
 const string &KphpEnviroment::get_runtime_sha256_file() const {
   return runtime_sha256_filename_;
+}
+
+const string &KphpEnviroment::get_runtime_sha256() const {
+  return runtime_sha256_;
 }
 
 void KphpEnviroment::inc_verbosity() {
@@ -411,8 +411,6 @@ bool KphpEnviroment::init() {
     init_env_var(&link_file_, "KPHP_LINK_FILE", get_path() + "objs/PHP/" + link_file_name);
     as_file(&link_file_);
   }
-  init_env_var(&lib_version_, "KPHP_LIB_VERSION", get_path() + "objs/PHP/php_lib_version.o");
-  as_file(&lib_version_);
 
   init_env_var(&runtime_sha256_filename_, "KPHP_RUNTIME_SHA256", get_path() + "objs/PHP/php_lib_version.sha256");
   as_file(&runtime_sha256_filename_);
@@ -466,6 +464,8 @@ bool KphpEnviroment::init() {
      " -fno-omit-frame-pointer";
   cxx_flags_ = ss.str();
 
+  runtime_sha256_ = read_runtime_sha256_file(get_runtime_sha256_file());
+
   init_env_var(&ld_, "LD", "ld");
   string user_ld_flags;
   init_env_var(&user_ld_flags, "LDFLAGS", "-ggdb");
@@ -515,8 +515,8 @@ void KphpEnviroment::debug() const {
             "KPHP_THREADS_COUNT=[" << get_threads_count() << "]\n" <<
             "KPHP_PATH=[" << get_path() << "]\n" <<
             "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<
-            "KPHP_LIB_VERSION=[" << get_lib_version() << "]\n" <<
-            "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256_file() << "]\n" <<
+            "KPHP_RUNTIME_SHA256_FILE=[" << get_runtime_sha256_file() << "]\n" <<
+            "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
@@ -553,4 +553,17 @@ void KphpEnviroment::debug() const {
     std::cerr << main_file;
   }
   std::cerr << "]\n";
+}
+
+std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename) {
+  std::ifstream runtime_sha256_file(filename.c_str());
+  kphp_error(runtime_sha256_file,
+             format("Can't open runtime sha256 file '%s'", filename.c_str()));
+
+  constexpr std::streamsize SHA256_LEN = 64;
+  char runtime_sha256[SHA256_LEN] = {0};
+  runtime_sha256_file.read(runtime_sha256, SHA256_LEN);
+  kphp_error(runtime_sha256_file.gcount() == SHA256_LEN,
+             format("Can't read runtime sha256 from file '%s'", filename.c_str()));
+  return std::string(runtime_sha256, runtime_sha256 + SHA256_LEN);
 }

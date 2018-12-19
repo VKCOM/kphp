@@ -14,6 +14,7 @@ class CodeGenF {
   void recalc_hash_of_subdirectory(const string &subdir, const string &file_name);
   void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W);
   void write_tl_schema(CodeGenerator &W);
+  void write_lib_version(CodeGenerator &W);
   int calc_count_of_parts(size_t cnt_global_vars);
 
 public:

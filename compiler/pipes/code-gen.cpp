@@ -4136,6 +4136,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   write_hashes_of_subdirs_to_dep_files(W);
 
   write_tl_schema(W);
+  write_lib_version(W);
 }
 
 void CodeGenF::prepare_generate_function(FunctionPtr func) {
@@ -4211,6 +4212,12 @@ void CodeGenF::write_tl_schema(CodeGenerator &W) {
     W << END;
     W << CloseFile();
   }
+}
+
+void CodeGenF::write_lib_version(CodeGenerator &W) {
+  W << OpenFile("_lib_version.h");
+  W << "//" << G->env().get_runtime_sha256() << NL;
+  W << CloseFile();
 }
 
 void CodeGenF::prepare_generate_class(ClassPtr) {
