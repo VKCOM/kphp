@@ -1799,10 +1799,6 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     G->require_function(registered_fun->name, parsed_os);
   }
 
-  if (cur_class && processing_file->context_class && access_type != access_nonmember) {
-    //add_parent_function_to_child_class_with_context(registered_fun->root, cur_class, context_class, access_type, parsed_os);
-  }
-
   if (registered_fun) {
     registered_fun->lambdas_inside = std::move(*functions_stack);
     for (auto &l : registered_fun->lambdas_inside) {
@@ -2522,58 +2518,6 @@ VertexPtr GenTree::create_function_vertex_with_flags(VertexPtr name, VertexPtr p
   return res;
 }
 
-void GenTree::add_parent_function_to_child_class_with_context(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, AccessType access_type, DataStream<FunctionPtr> &os) {
-  string function_local_name = get_real_name_from_full_method_name(root->name()->get_string());
-  string child_function_name = replace_backslashes(child_class->name) + "$$" + function_local_name;
-
-  if (!G->get_function(child_function_name)) {
-    VertexPtr child_root = generate_function_with_parent_call(root, parent_class, child_class, function_local_name);
-    if (stage::has_error()) {
-      return;
-    }
-
-    string namespace_name = child_class->name.substr(0, child_class->name.rfind('\\'));
-    FunctionPtr child_function = create_and_register_function(child_root, child_class, child_class, access_nonmember, FunctionData::func_local, os, false);
-    child_function->phpdoc_token = root->get_func_id()->phpdoc_token;
-
-    child_class->members.add_static_method(child_function, access_type);    // пока наследование только статическое
-  }
-}
-
-
-VertexPtr GenTree::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &function_local_name) {
-  auto new_name = VertexAdaptor<op_func_name>::create();
-  new_name->set_string(replace_backslashes(child_class->name) + "$$" + function_local_name);
-  vector<VertexPtr> new_params_next;
-  vector<VertexPtr> new_params_call;
-  for (const auto &parameter : *root->params()) {
-    if (parameter->type() == op_func_param) {
-      new_params_call.push_back(parameter.as<op_func_param>()->var().as<op_var>().clone());
-      new_params_next.push_back(parameter.clone());
-    } else if (parameter->type() == op_func_param_callback) {
-      if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
-        return VertexPtr();
-      }
-    }
-  }
-
-  auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
-
-  string parent_function_name = replace_backslashes(parent_class->name) + "$$" + function_local_name + "$$" + replace_backslashes(child_class->name);
-  // it's equivalent to new_func_call->set_string("parent::" + function_local_name);
-  new_func_call->set_string(parent_function_name);
-
-  auto new_return = VertexAdaptor<op_return>::create(new_func_call);
-  auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
-  auto new_params = VertexAdaptor<op_func_param_list>::create(new_params_next);
-  auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
-  func->copy_location_and_flags(*root);
-  func_force_return(func);
-  func->inline_flag = true;
-
-  return func;
-}
-
 std::string GenTree::concat_namespace_class_function_names(const std::string &namespace_name,
                                                            const std::string &class_name,
                                                            const std::string &function_name) {
@@ -2591,21 +2535,6 @@ void GenTree::add_namespace_and_context_to_function_name(ClassPtr cur_class,
   if (cur_class != context_class) {
     function_name += "$$" + full_context_name;
   }
-}
-
-std::string GenTree::get_real_name_from_full_method_name(const std::string &full_name) {
-  size_t first_dollars_pos = full_name.find("$$");
-  if (first_dollars_pos == string::npos) {
-    return full_name;
-  }
-  first_dollars_pos += 2;
-
-  size_t second_dollars_pos = full_name.find("$$", first_dollars_pos);
-  if (second_dollars_pos == string::npos) {
-    second_dollars_pos = full_name.size();
-  }
-
-  return full_name.substr(first_dollars_pos, second_dollars_pos - first_dollars_pos);
 }
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) {

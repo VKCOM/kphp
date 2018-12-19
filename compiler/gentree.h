@@ -162,16 +162,7 @@ public:
                                                            const std::string &class_name,
                                                            const std::string &function_name);
 
-
-  static void add_parent_function_to_child_class_with_context(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, AccessType access_type, DataStream<FunctionPtr> &os);
-  static VertexPtr generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &function_local_name);
   static void add_namespace_and_context_to_function_name(ClassPtr cur_class, ClassPtr context_class, std::string &function_name);
-  /**
-   * @param full_name full method name including namespace and context encoded
-   * @return `method_name` if `Namespace$ClassName$$method_name$$Context` was passed
-   */
-  static std::string get_real_name_from_full_method_name(const std::string &full_name);
-
 
 private:
   VertexPtr parse_function_declaration(AccessType access_type,

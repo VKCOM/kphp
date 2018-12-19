@@ -5,7 +5,6 @@
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
-#include "compiler/pipes/gen-tree-postprocess.h"
 
 class CollectRequiredPass : public FunctionPassBase {
 private:
@@ -94,57 +93,38 @@ public:
   }
 };
 
-class PatchInheritedMethodPass : public FunctionPassBase {
-  DataStream<FunctionPtr> &function_stream;
-public:
-  explicit PatchInheritedMethodPass(DataStream<FunctionPtr> &function_stream) :
-    function_stream(function_stream) {}
-
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
-    // временно! потом уйдёт!
-    // для того, чтобы не было codegen diff относительно раньше: заменяем имена переменных из ?:
-    if (root->type() == op_var) {
-      string var_name = root->get_string();
-      if (vk::string_view(var_name).starts_with("shorthand_ternary_cond")) {
-        string emulated_file_concat = current_function->file_id->unified_file_name + current_function->context_class->name;
-        unsigned long long h = hash_ll(emulated_file_concat), cur_h;
-        int cur_i;
-        char tmp[50];
-        sscanf(var_name.c_str(), "shorthand_ternary_cond$ut%llx_%d", &cur_h, &cur_i);
-        sprintf(tmp, "shorthand_ternary_cond$ut%llx_%d", h, cur_i);
-        root->set_string(std::string(tmp));
+// делаем функцию childclassname$$localname, которая выглядит как
+// function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
+VertexPtr CollectRequiredAndClassesF::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name) {
+  auto new_name = VertexAdaptor<op_func_name>::create();
+  new_name->set_string(replace_backslashes(child_class->name) + "$$" + local_name);
+  vector<VertexPtr> new_params_next;
+  vector<VertexPtr> new_params_call;
+  for (const auto &parameter : *root->params()) {
+    if (parameter->type() == op_func_param) {
+      new_params_call.push_back(parameter.as<op_func_param>()->var().as<op_var>().clone());
+      new_params_next.push_back(parameter.clone());
+    } else if (parameter->type() == op_func_param_callback) {
+      if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
+        return VertexPtr();
       }
     }
-
-    if (root->type() == op_constructor_call && root->get_func_id() && root->get_func_id()->is_lambda()) {
-      ClassPtr lambda_class = root->get_func_id()->class_id;
-      FunctionPtr invoke_method = lambda_class->members.get_instance_method("__invoke")->function;
-
-      // временно! потом уйдёт!
-      // для того, чтобы не было codegen diff относительно раньше, генерируем строгое имя для лямбда-классов при копировании
-      string emulated_file_concat = current_function->file_id->unified_file_name + current_function->context_class->name;
-      unsigned long long h = hash_ll(emulated_file_concat), cur_h;
-      int cur_i;
-      char tmp[50];
-      sscanf(lambda_class->name.c_str(), "$L\\anon$ut%llx_%d", &cur_h, &cur_i);
-      sprintf(tmp, "anon$ut%llx_%d", h, cur_i);
-      std::string kostyl_explicit_name = tmp;
-
-      vector<VertexPtr> uses_of_lambda;
-      auto anon_constructor_call = GenTree::generate_anonymous_class(invoke_method->root, function_stream, access_static_public, std::move(uses_of_lambda), kostyl_explicit_name);
-      ClassPtr new_anon_class = anon_constructor_call->get_func_id()->class_id;
-      new_anon_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-        m.function->function_in_which_lambda_was_created = current_function;
-        G->require_function(m.global_name(), function_stream);
-      });
-      FunctionPtr new_invoke_method = new_anon_class->members.get_instance_method("__invoke")->function;
-      current_function->lambdas_inside.push_back(new_invoke_method);
-      return anon_constructor_call;
-    }
-
-    return root;
   }
-};
+
+  string parent_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
+  // it's equivalent to new_func_call->set_string("parent::" + local_name);
+  auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
+  new_func_call->set_string(parent_function_name);
+
+  auto new_return = VertexAdaptor<op_return>::create(new_func_call);
+  auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
+  auto new_params = VertexAdaptor<op_func_param_list>::create(new_params_next);
+  auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
+  func->copy_location_and_flags(*root);
+  func->inline_flag = true;
+
+  return func;
+}
 
 void CollectRequiredAndClassesF::inherit_static_method_from_parent(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream) {
   FunctionPtr parent_f = parent_class->members.get_static_method(local_name)->function;
@@ -153,14 +133,13 @@ void CollectRequiredAndClassesF::inherit_static_method_from_parent(ClassPtr chil
   }                                       // (чтобы B::f$$C не считать required)
 
   if (!child_class->members.has_static_method(local_name)) {
-    VertexPtr child_root = GenTree::generate_function_with_parent_call(parent_f->root, parent_class, child_class, local_name);
+    VertexPtr child_root = generate_function_with_parent_call(parent_f->root, parent_class, child_class, local_name);
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
     child_function->context_class = child_class;
     child_function->file_id = parent_f->file_id;
     child_function->phpdoc_token = parent_f->phpdoc_token;
     child_function->is_auto_inherited = true;
-    child_function->root->inline_flag = true;
 
     if (G->register_function(child_function)) {
       G->require_function(child_function->name, function_stream);
@@ -269,7 +248,6 @@ void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAn
   auto &function_stream = *os.template project_to_nth_data_stream<2>();
 
   CollectRequiredPass pass(file_stream, function_stream);
-
   run_function_pass(function, &pass);
 
   if (stage::has_error()) {
