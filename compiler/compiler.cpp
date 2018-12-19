@@ -41,6 +41,7 @@
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-returns.h"
 #include "compiler/pipes/check-ub.h"
+#include "compiler/pipes/clone-parent-method-with-context.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
 #include "compiler/pipes/collect-required-and-classes.h"
@@ -224,6 +225,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<LoadFileF>{}
     >> PipeC<FileToTokensF>{}
     >> PipeC<ParseF>{}
+    >> PipeC<CloneParentMethodWithContextF>{}
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
     >> PassC<CreateSwitchForeachVarsPass>{}
@@ -282,7 +284,7 @@ bool compiler_execute(KphpEnviroment *env) {
 
   SchedulerConstructor{scheduler}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<2>{}
-    >> PassC<GenTreePostprocessPass>{};
+    >> PipeC<CloneParentMethodWithContextF>{};
 
   get_scheduler()->execute();
 

@@ -124,6 +124,13 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     return process_require_lib(root);
   }
 
+  if (root->type() == op_func_call) {
+    const string &name = root->get_string();
+    if (name[0] == 'f' && (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args")) {
+      current_function->varg_flag = true;
+    }
+  }
+
   return root;
 }
 

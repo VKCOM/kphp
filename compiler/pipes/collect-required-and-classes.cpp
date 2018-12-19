@@ -26,17 +26,6 @@ private:
     kphp_error(res.first, format("Class %s not found", class_name.c_str()));
   }
 
-  string get_class_name_for(const string &name, char delim = '$') {
-    size_t pos$$ = name.find("::");
-    if (pos$$ == string::npos) {
-      return "";
-    }
-
-    string class_name = name.substr(0, pos$$);
-    kphp_assert(!class_name.empty());
-    return resolve_uses(current_function, class_name, delim);
-  }
-
 public:
   CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
     file_stream(file_stream),
@@ -68,22 +57,17 @@ public:
     }
 
     if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
-      const string &class_name = get_class_name_for(root->get_string(), '/');
-      if (!class_name.empty()) {
-        require_class(class_name, ClassPtr());
+      size_t pos$$ = root->get_string().find("::");
+      if (pos$$ != string::npos) {
+        const string &class_name = root->get_string().substr(0, pos$$);
+        require_class(resolve_uses(current_function, class_name, '/'), ClassPtr());
       }
     }
+
     if (root->type() == op_constructor_call) {
       bool is_lambda = root->get_func_id() && root->get_func_id()->is_lambda();
       if (!is_lambda && likely(!root->type_help)) {     // type_help <=> Memcache | Exception
         require_class(resolve_uses(current_function, root->get_string(), '/'), ClassPtr());
-      }
-    }
-
-    if (root->type() == op_func_call) {
-      const string &name = root->get_string();
-      if (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args") {
-        current_function->varg_flag = true;
       }
     }
 
@@ -162,47 +146,46 @@ public:
   }
 };
 
-void CollectRequiredAndClassesF::inherit_method_from_parent_class(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream) {
+void CollectRequiredAndClassesF::inherit_static_method_from_parent(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream) {
   FunctionPtr parent_f = parent_class->members.get_static_method(local_name)->function;
-  if (parent_f->kostyl_was_inherited) {     // A::f() -> B -> C; при A->B сделался A::f$$B
-    return;                                 // но при B->C должно быть A::f$$C, а не B::f$$C
-  }
+  if (parent_f->is_auto_inherited) {      // A::f() -> B -> C; при A->B сделался A::f$$B
+    return;                               // но при B->C должно быть A::f$$C, а не B::f$$C
+  }                                       // (чтобы B::f$$C не считать required)
 
   if (!child_class->members.has_static_method(local_name)) {
     VertexPtr child_root = GenTree::generate_function_with_parent_call(parent_f->root, parent_class, child_class, local_name);
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
     child_function->context_class = child_class;
-    child_function->access_type = access_static_public;
     child_function->file_id = parent_f->file_id;
     child_function->phpdoc_token = parent_f->phpdoc_token;
-    child_function->kostyl_was_inherited = true;
+    child_function->is_auto_inherited = true;
     child_function->root->inline_flag = true;
 
     if (G->register_function(child_function)) {
       G->require_function(child_function->name, function_stream);
     }
 
-    child_class->members.add_static_method(child_function, access_static_public);    // пока наследование только статическое
+    child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
   }
 
   string ctx_f_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
-  if (!G->get_function(ctx_f_name)) {
-    VertexAdaptor<op_function> child_ctx_root = clone_vertex(parent_f->root);
-    child_ctx_root->name()->set_string(ctx_f_name);
-    FunctionPtr child_ctx_f = FunctionData::create_function(child_ctx_root, FunctionData::func_local);
-    child_ctx_f->context_class = child_class;
-    child_ctx_f->access_type = parent_f->access_type;
-    child_ctx_f->file_id = parent_f->file_id;
-    child_ctx_f->class_id = parent_class;   // self:: это он, а parent:: это его parent (если есть)
-    child_ctx_f->phpdoc_token = parent_f->phpdoc_token;
+  // создаём функцию baseclassname$$fname$$contextclassname — это клон baseclassname$$fname
+  // но! клонируем не здесь, а в отдельном пайпе — тот пайп сделан для мультипоточности, т.к. тут mutex
+  // так что создаём пустую функцию и отправляем по pipeline — она обработается в CloneParentMethodWithContextF::execute()
+  VertexPtr dummy_name = VertexAdaptor<op_func_name>::create();
+  dummy_name->set_string(ctx_f_name);
+  VertexPtr dummy_root = VertexAdaptor<op_function>::create(dummy_name);
 
-    PatchInheritedMethodPass pass(function_stream);
-    run_function_pass(child_ctx_f, &pass);
+  FunctionPtr context_function = FunctionData::create_function(dummy_root, FunctionData::func_local);
+  context_function->context_class = child_class;
+  context_function->access_type = parent_f->access_type;
+  context_function->file_id = parent_f->file_id;
+  context_function->class_id = parent_class;   // self:: это он, а parent:: это его parent (если есть)
+  context_function->phpdoc_token = parent_f->phpdoc_token;
 
-    if (G->register_function(child_ctx_f)) {
-      G->require_function(child_ctx_f->name, function_stream);
-    }
+  if (G->register_function(context_function)) {
+    G->require_function(context_function->name, function_stream);
   }
 }
 
@@ -215,11 +198,10 @@ void CollectRequiredAndClassesF::inherit_child_class_from_parent(ClassPtr child_
              format("Invalid class extends %s and %s: extends is available only if classes are only-static",
                     child_class->name.c_str(), child_class->parent_class->name.c_str()));
 
-  // пока мы не копируем сами деревья функция (для отсутствия code diff), обрабатываем следующее:
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
     parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
-      inherit_method_from_parent_class(child_class, parent_class, m.local_name(), function_stream);
+      inherit_static_method_from_parent(child_class, parent_class, m.local_name(), function_stream);
     });
   }
 }
@@ -295,6 +277,7 @@ void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAn
   }
 
   if (function->type() == FunctionData::func_global && function->class_id && function->class_id != function->context_class) {
+    kphp_assert(0);
     return;
   }
 

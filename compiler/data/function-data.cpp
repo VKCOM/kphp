@@ -29,7 +29,7 @@ FunctionData::FunctionData() :
   kphp_required(false),
   kphp_lib_export(false),
   is_template(false),
-  kostyl_was_inherited(false),
+  is_auto_inherited(false),
   kostyl_is_lambda(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
@@ -52,7 +52,7 @@ FunctionData::FunctionData(VertexPtr root) :
   should_be_sync(),
   kphp_required(false),
   is_template(false),
-  kostyl_was_inherited(false),
+  is_auto_inherited(false),
   kostyl_is_lambda(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}

@@ -16,7 +16,7 @@ class CollectRequiredAndClassesF {
   void on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream);
 
   void inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream);
-  void inherit_method_from_parent_class(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream);
+  void inherit_static_method_from_parent(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream);
 
 public:
   using ReadyFunctionPtr = FunctionPtr;

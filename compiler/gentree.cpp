@@ -44,6 +44,7 @@ inline bool GenTree::in_namespace() const {
 // todo на момент окончания коммита это кажется некрасивым, но потом будет ясно, зачем такой промежуточный шаг
 FunctionPtr GenTree::create_and_register_function(
   VertexPtr root,
+  ClassPtr class_id,
   ClassPtr context_class,
   AccessType access_type,
   FunctionData::func_type_t type,
@@ -52,6 +53,7 @@ FunctionPtr GenTree::create_and_register_function(
 
   FunctionPtr function = FunctionData::create_function(root, type);
 
+  function->class_id = class_id;
   function->context_class = context_class;
   function->access_type = access_type;
   function->kostyl_is_lambda = kostyl_is_lambda;
@@ -122,8 +124,7 @@ void GenTree::exit_and_register_class(VertexPtr root) {
     create_default_constructor(context_class, cur_class, AutoLocation(this));
   }
 
-  FunctionPtr class_wrapper_f = create_and_register_function(main, context_class, access_nonmember, FunctionData::func_global, parsed_os, false);
-  class_wrapper_f->class_id = cur_class;
+  FunctionPtr class_wrapper_f = create_and_register_function(main, cur_class, context_class, access_nonmember, FunctionData::func_global, parsed_os, false);
   if (cur_class == context_class) {
     cur_class->init_function = class_wrapper_f;
   }
@@ -1287,7 +1288,7 @@ void GenTree::create_constructor_with_args(ClassPtr context_class, ClassPtr cur_
 
   patch_func_constructor(func, cur_class, location);
 
-  FunctionPtr ctor_function = create_and_register_function(func, context_class, access_public, FunctionData::func_local, os, context_class->is_lambda_class());
+  FunctionPtr ctor_function = create_and_register_function(func, cur_class, context_class, access_public, FunctionData::func_local, os, context_class->is_lambda_class());
   cur_class->members.add_instance_method(ctor_function, access_public);
 }
 
@@ -1784,7 +1785,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     in_func_cnt_ == 0 && !in_namespace() ? FunctionData::func_global :
     FunctionData::func_local;
 
-  FunctionPtr registered_fun = create_and_register_function(root, context_class, access_type, func_type, parsed_os, false);
+  FunctionPtr registered_fun = create_and_register_function(root, cur_class, context_class, access_type, func_type, parsed_os, false);
   registered_fun->phpdoc_token = phpdoc_token;
 
   if (cur_class && vk::any_of_equal(access_type, access_public, access_protected, access_private)) {
@@ -2014,7 +2015,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   auto register_invoke = [&](VertexAdaptor<op_function> fun, FunctionPtr previous_lambda) {
     std::string s = fun->name()->get_string();
     fun->name()->set_string(concat_namespace_class_function_names(FunctionData::get_lambda_namespace(), lambda_class_name->get_string(), s));
-    FunctionPtr invoke_function = create_and_register_function(fun, anon_class, access_public, FunctionData::func_local, os, true);
+    FunctionPtr invoke_function = create_and_register_function(fun, anon_class, anon_class, access_public, FunctionData::func_local, os, true);
     anon_class->members.add_instance_method(invoke_function, access_public);
     fun->name()->set_string(s);
 
@@ -2532,7 +2533,7 @@ void GenTree::add_parent_function_to_child_class_with_context(VertexAdaptor<op_f
     }
 
     string namespace_name = child_class->name.substr(0, child_class->name.rfind('\\'));
-    FunctionPtr child_function = create_and_register_function(child_root, child_class, access_nonmember, FunctionData::func_local, os, false);
+    FunctionPtr child_function = create_and_register_function(child_root, child_class, child_class, access_nonmember, FunctionData::func_local, os, false);
     child_function->phpdoc_token = root->get_func_id()->phpdoc_token;
 
     child_class->members.add_static_method(child_function, access_type);    // пока наследование только статическое

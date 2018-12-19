@@ -60,7 +60,7 @@ public:
   bool kphp_required;
   bool kphp_lib_export;
   bool is_template;
-  bool kostyl_was_inherited;
+  bool is_auto_inherited;
   bool kostyl_is_lambda;      // уйдёт, когда function_in_which_lambda_was_created будет ставиться сразу
   ClassPtr context_class;
   AccessType access_type;

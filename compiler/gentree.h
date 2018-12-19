@@ -51,6 +51,7 @@ public:
 
   static FunctionPtr create_and_register_function(
     VertexPtr root,
+    ClassPtr class_id,
     ClassPtr context_class,
     AccessType access_type,
     FunctionData::func_type_t type,
