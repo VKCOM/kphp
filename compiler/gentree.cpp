@@ -26,9 +26,8 @@ GenTree::GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<Func
   is_top_of_the_function_(false),
   cur(tokens->begin()),
   end(tokens->end()),
-  processing_file(file),                  // = stage::get_file()
-  context_class(file->context_class) {
-  
+  processing_file(file) {                  // = stage::get_file()
+
   kphp_assert (cur != end);
   end--;
   kphp_assert ((*end)->type() == tok_end);
@@ -45,7 +44,6 @@ inline bool GenTree::in_namespace() const {
 FunctionPtr GenTree::create_and_register_function(
   VertexPtr root,
   ClassPtr class_id,
-  ClassPtr context_class,
   AccessType access_type,
   FunctionData::func_type_t type,
   DataStream<FunctionPtr> &os,
@@ -54,7 +52,7 @@ FunctionPtr GenTree::create_and_register_function(
   FunctionPtr function = FunctionData::create_function(root, type);
 
   function->class_id = class_id;
-  function->context_class = context_class;
+  function->context_class = class_id;
   function->access_type = access_type;
   function->kostyl_is_lambda = kostyl_is_lambda;
 
@@ -121,13 +119,11 @@ void GenTree::exit_and_register_class(VertexPtr root) {
 
   if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) &&
       !cur_class->members.has_constructor()) {
-    create_default_constructor(context_class, cur_class, AutoLocation(this));
+    create_default_constructor(cur_class, AutoLocation(this));
   }
 
-  FunctionPtr class_wrapper_f = create_and_register_function(main, cur_class, context_class, access_nonmember, FunctionData::func_global, parsed_os, false);
-  if (cur_class == context_class) {
-    cur_class->init_function = class_wrapper_f;
-  }
+  FunctionPtr class_wrapper_f = create_and_register_function(main, cur_class, access_nonmember, FunctionData::func_global, parsed_os, false);
+  cur_class->init_function = class_wrapper_f;
 
   class_stack.pop_back();
   cur_class = class_stack.empty() ? ClassPtr() : class_stack.back();
@@ -1260,15 +1256,15 @@ void GenTree::patch_func_add_this(vector<VertexPtr> &params_next, const AutoLoca
   params_next.emplace_back(VertexAdaptor<op_func_param>::create(create_vertex_this(func_location, cur_class, true)));
 }
 
-void GenTree::create_default_constructor(ClassPtr context_class, ClassPtr cur_class, AutoLocation location) const {
-  create_constructor_with_args(context_class, cur_class, location, VertexAdaptor<op_func_param_list>::create(), parsed_os);
+void GenTree::create_default_constructor(ClassPtr cur_class, AutoLocation location) const {
+  create_constructor_with_args(cur_class, location, VertexAdaptor<op_func_param_list>::create(), parsed_os);
 }
 
-void GenTree::create_constructor_with_args(ClassPtr context_class, ClassPtr cur_class,
+void GenTree::create_constructor_with_args(ClassPtr cur_class,
                                            AutoLocation location, VertexAdaptor<op_func_param_list> params,
                                            DataStream<FunctionPtr> &os) {
   auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = replace_backslashes(context_class->name) + "$$" + "__construct";
+  func_name->str_val = replace_backslashes(cur_class->name) + "$$" + "__construct";
 
   std::vector<VertexPtr> fields_initializers;
   for (auto param : params->params()) {
@@ -1288,7 +1284,7 @@ void GenTree::create_constructor_with_args(ClassPtr context_class, ClassPtr cur_
 
   patch_func_constructor(func, cur_class, location);
 
-  FunctionPtr ctor_function = create_and_register_function(func, cur_class, context_class, access_public, FunctionData::func_local, os, context_class->is_lambda_class());
+  FunctionPtr ctor_function = create_and_register_function(func, cur_class, access_public, FunctionData::func_local, os, cur_class->is_lambda_class());
   cur_class->members.add_instance_method(ctor_function, access_public);
 }
 
@@ -1696,10 +1692,13 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
     name->str_val = static_cast<string>((*std::prev(cur))->str_val);
+    if (cur_class) {        // fname внутри класса — это full$class$name$$fname
+      name->str_val = replace_backslashes(cur_class->name) + "$$" + name->str_val;
+    }
   }
 
   bool is_instance_method = FunctionData::is_instance_access_type(access_type);
-  is_constructor = is_instance_method && name->str_val == "__construct";
+  is_constructor = is_instance_method && vk::string_view(name->str_val).ends_with("$$__construct");
 
   CE(expect(tok_oppar, "'('"));
 
@@ -1729,10 +1728,6 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
     "arguments and captured variables(in `use` clause) must have different names");
 
   flags->type_rule = get_type_rule();
-
-  if (cur_class && !uses_of_lambda) {
-    add_namespace_and_context_to_function_name(cur_class, context_class, name->str_val);
-  }
 
   return name;
 }
@@ -1785,7 +1780,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     in_func_cnt_ == 0 && !in_namespace() ? FunctionData::func_global :
     FunctionData::func_local;
 
-  FunctionPtr registered_fun = create_and_register_function(root, cur_class, context_class, access_type, func_type, parsed_os, false);
+  FunctionPtr registered_fun = create_and_register_function(root, cur_class, access_type, func_type, parsed_os, false);
   registered_fun->phpdoc_token = phpdoc_token;
 
   if (cur_class && vk::any_of_equal(access_type, access_public, access_protected, access_private)) {
@@ -1862,9 +1857,6 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   }
   if (!is_class_name_allowed(name_str)) {
     kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
-  }
-  if (!context_class) {
-    context_class = cur_class;
   }
 
   next_cur();
@@ -2011,7 +2003,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   auto register_invoke = [&](VertexAdaptor<op_function> fun, FunctionPtr previous_lambda) {
     std::string s = fun->name()->get_string();
     fun->name()->set_string(concat_namespace_class_function_names(FunctionData::get_lambda_namespace(), lambda_class_name->get_string(), s));
-    FunctionPtr invoke_function = create_and_register_function(fun, anon_class, anon_class, access_public, FunctionData::func_local, os, true);
+    FunctionPtr invoke_function = create_and_register_function(fun, anon_class, access_public, FunctionData::func_local, os, true);
     anon_class->members.add_instance_method(invoke_function, access_public);
     fun->name()->set_string(s);
 
@@ -2031,7 +2023,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
 
   auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses_of_lambda);
   ::set_location(constructor_params, lambda_class_name->location);
-  create_constructor_with_args(anon_class, anon_class, AutoLocation(function->location.line), constructor_params, os);
+  create_constructor_with_args(anon_class, AutoLocation(function->location.line), constructor_params, os);
   anon_class->new_function->is_template = !uses_of_lambda.empty();
 
   G->register_class(anon_class);
@@ -2525,23 +2517,8 @@ std::string GenTree::concat_namespace_class_function_names(const std::string &na
   return full_class_name + "$$" + function_name;
 }
 
-void GenTree::add_namespace_and_context_to_function_name(ClassPtr cur_class,
-                                                         ClassPtr context_class,
-                                                         std::string &function_name) {
-  std::string full_class_name = replace_backslashes(cur_class->name);
-  std::string full_context_name = replace_backslashes(context_class->name);
-  function_name = full_class_name + "$$" + function_name;
-
-  if (cur_class != context_class) {
-    function_name += "$$" + full_context_name;
-  }
-}
-
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) {
   GenTree gen(tokens, file, os);
-  if (file->context_class) {        // вот ради этого затевался коммит
-    return;
-  }
   gen.run();
 }
 

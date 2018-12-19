@@ -25,7 +25,7 @@ static inline string gen_unique_name_inside_file(const std::string &prefix, vola
   AUTO_PROF (next_name);
   AutoLocker<volatile int *> locker(&x);
   SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll(file->context_class ? file->unified_file_name + file->context_class->name : file->unified_file_name);
+  unsigned long long h = hash_ll(file->unified_file_name);
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
   char tmp[50];

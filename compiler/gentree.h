@@ -52,7 +52,6 @@ public:
   static FunctionPtr create_and_register_function(
     VertexPtr root,
     ClassPtr class_id,
-    ClassPtr context_class,
     AccessType access_type,
     FunctionData::func_type_t type,
     DataStream<FunctionPtr> &os,
@@ -87,8 +86,8 @@ public:
   static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
   static VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
-  void create_default_constructor(ClassPtr context_class, ClassPtr cur_class, AutoLocation location) const;
-  static void create_constructor_with_args(ClassPtr context_class, ClassPtr cur_class,
+  void create_default_constructor(ClassPtr cur_class, AutoLocation location) const;
+  static void create_constructor_with_args(ClassPtr cur_class,
                                            AutoLocation location, VertexAdaptor<op_func_param_list> params,
                                            DataStream<FunctionPtr> &os);
 
@@ -162,8 +161,6 @@ public:
                                                            const std::string &class_name,
                                                            const std::string &function_name);
 
-  static void add_namespace_and_context_to_function_name(ClassPtr cur_class, ClassPtr context_class, std::string &function_name);
-
 private:
   VertexPtr parse_function_declaration(AccessType access_type,
                                        std::vector<VertexPtr> *uses_of_lambda,
@@ -191,7 +188,6 @@ private:
   AccessType cur_acccess_type = AccessType::access_nonmember;
   ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
   SrcFilePtr processing_file;
-  ClassPtr context_class;
 };
 
 void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);

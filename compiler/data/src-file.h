@@ -22,10 +22,9 @@ public:
 
   string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
   map<string, string> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
-  ClassPtr context_class;
 
   SrcFile();
-  SrcFile(const string &file_name, const string &short_file_name, ClassPtr context_class, LibPtr owner_lib_id);
+  SrcFile(const string &file_name, const string &short_file_name, LibPtr owner_lib_id);
   void add_prefix(const string &s);
   bool load();
 

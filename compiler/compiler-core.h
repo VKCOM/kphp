@@ -53,11 +53,11 @@ public:
   const KphpEnviroment &env() const;
   const string &get_global_namespace() const;
   string unify_file_name(const string &file_name);
-  SrcFilePtr register_file(const string &file_name, ClassPtr context_class, LibPtr owner_lib);
+  SrcFilePtr register_file(const string &file_name, LibPtr owner_lib);
 
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
-  pair<SrcFilePtr, bool> require_file(const string &file_name, ClassPtr context_class, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
+  pair<SrcFilePtr, bool> require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
 
   void require_function(const string &name, DataStream<FunctionPtr> &os);
 

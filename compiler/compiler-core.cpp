@@ -104,7 +104,7 @@ string CompilerCore::unify_file_name(const string &file_name) {
   return file_name.substr(base_dir.size());
 }
 
-SrcFilePtr CompilerCore::register_file(const string &file_name, ClassPtr context_class, LibPtr owner_lib) {
+SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib) {
   if (file_name.empty()) {
     return SrcFilePtr();
   }
@@ -161,14 +161,13 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, ClassPtr context
   }
 
   //register file if needed
-  const std::string &context_str = context_class ? context_class->name : string();
-  TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(hash_ll(full_file_name + context_str));
+  TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(hash_ll(full_file_name));
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
-      SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, context_class, owner_lib));
+      SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       char tmp[50];
-      sprintf(tmp, "%x", hash(full_file_name + context_str));
+      sprintf(tmp, "%x", hash(full_file_name));
       string func_name = gen_unique_name("src_" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name(new_file->file_name);
@@ -227,7 +226,7 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFilePtr> &os) {
-  SrcFilePtr res = register_file(file_name, ClassPtr(), LibPtr{});
+  SrcFilePtr res = register_file(file_name, LibPtr{});
   kphp_error (file_name.empty() || res, format("Cannot load main file [%s]", file_name.c_str()));
 
   if (res && try_require_file(res)) {
@@ -240,9 +239,8 @@ void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFil
   }
 }
 
-pair<SrcFilePtr, bool> CompilerCore::require_file(const string &file_name, ClassPtr context_class,
-                                                  LibPtr owner_lib, DataStream<SrcFilePtr> &os) {
-  SrcFilePtr file = register_file(file_name, context_class, owner_lib);
+pair<SrcFilePtr, bool> CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os) {
+  SrcFilePtr file = register_file(file_name, owner_lib);
   kphp_error (file_name.empty() || file, format("Cannot load file [%s]", file_name.c_str()));
   bool required = false;
   if (file && try_require_file(file)) {

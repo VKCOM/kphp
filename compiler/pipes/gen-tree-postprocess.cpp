@@ -28,14 +28,14 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   LibPtr registered_lib = G->register_lib(lib);
 
   VertexPtr new_vertex;
-  if (SrcFilePtr header_file = G->register_file(lib_require_name + "/lib/functions.txt", "", registered_lib)) {
+  if (SrcFilePtr header_file = G->register_file(lib_require_name + "/lib/functions.txt", registered_lib)) {
     lib->update_lib_main_file(header_file->file_name, header_file->unified_dir_name);
     auto req_header_txt = make_require_once_call(header_file, require_lib_call);
     auto lib_run_global_call = VertexAdaptor<op_func_call>::create();
     lib_run_global_call->set_string(lib->run_global_function_name());
     new_vertex = VertexAdaptor<op_seq>::create(req_header_txt, lib_run_global_call);
     set_location(new_vertex, require_lib_call->get_location());
-  } else if (SrcFilePtr lib_index_file = G->register_file(lib_require_name + "/php/index.php", "", registered_lib)) {
+  } else if (SrcFilePtr lib_index_file = G->register_file(lib_require_name + "/php/index.php", registered_lib)) {
     lib->update_lib_main_file(lib_index_file->file_name, lib_index_file->unified_dir_name);
     new_vertex = make_require_once_call(lib_index_file, require_lib_call);
   }
