@@ -345,12 +345,31 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       int param_i = 0;
       std::string template_type_of_arg;
       std::string template_arg_name;
-      while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::kphp_template, template_arg_name, template_type_of_arg, param_i++)) {
-        if (!template_arg_name.empty() && !template_type_of_arg.empty() && template_type_of_arg == type_str) {
-          ClassPtr klass;
-          AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
-          assumption_add_for_return(f, assum, klass);
-          return;
+      while (true) {
+        bool kphp_template_found = PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::kphp_template,
+                                                                            template_arg_name, template_type_of_arg, param_i++);
+        if (!kphp_template_found) {
+          break;
+        }
+
+        if (!template_arg_name.empty() && !template_type_of_arg.empty()) {
+          bool return_type_eq_arg_type = template_type_of_arg == type_str;
+          bool return_type_arr_of_arg_type = (template_type_of_arg + "[]") == type_str;
+          bool return_type_element_of_arg_type = template_type_of_arg == (type_str + "[]");
+
+          if (return_type_eq_arg_type || return_type_arr_of_arg_type || return_type_element_of_arg_type) {
+            ClassPtr klass;
+            AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
+
+            if (assum == assum_instance && return_type_arr_of_arg_type) {
+              assumption_add_for_return(f, assum_instance_array, klass);
+            } else if (assum == assum_instance_array && return_type_element_of_arg_type) {
+              assumption_add_for_return(f, assum_instance, klass);
+            } else {
+              assumption_add_for_return(f, assum, klass);
+            }
+            return;
+          }
         }
       }
       kphp_error_return(false, "wrong kphp-return argument supplied");
