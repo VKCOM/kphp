@@ -15,17 +15,17 @@ private:
   class SetFunctionsStackGuard {
   public:
     SetFunctionsStackGuard(GenTree *g) :
-      prev_functions_stack(g->functions_stack),
+      prev_functions_stack(g->functions_stack_old),
       g(g) {
-      g->functions_stack = &new_functions_stack;
+      g->functions_stack_old = &new_functions_stack;
     }
 
     void reset() {
-      g->functions_stack = prev_functions_stack;
+      g->functions_stack_old = prev_functions_stack;
     }
 
     ~SetFunctionsStackGuard() {
-      g->functions_stack = prev_functions_stack;
+      g->functions_stack_old = prev_functions_stack;
     }
 
     std::vector<FunctionPtr> *prev_functions_stack = nullptr;
@@ -49,16 +49,7 @@ public:
 
   GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
-  static FunctionPtr create_and_register_function(
-    VertexPtr root,
-    ClassPtr class_id,
-    AccessType access_type,
-    FunctionData::func_type_t type,
-    DataStream<FunctionPtr> &os,
-    bool kostyl_is_lambda = false);
-  
   VertexPtr generate_constant_field_class(VertexPtr root);
-  void exit_and_register_class(VertexPtr root);
   void enter_function();
   void exit_function();
 
@@ -157,18 +148,12 @@ public:
 
   VertexPtr get_class(Token *phpdoc_token);
 
-  static std::string concat_namespace_class_function_names(const std::string &namespace_name,
-                                                           const std::string &class_name,
-                                                           const std::string &function_name);
-
 private:
   VertexPtr parse_function_declaration(AccessType access_type,
                                        std::vector<VertexPtr> *uses_of_lambda,
                                        VertexAdaptor<op_func_param_list> &params,
                                        VertexPtr &flags,
                                        bool &is_constructor);
-
-  VertexPtr create_function_vertex_with_flags(VertexPtr name, VertexPtr params, VertexPtr flags, TokenType type, VertexPtr cmd, bool is_constructor);
 
   bool in_namespace() const;
 
@@ -184,9 +169,11 @@ private:
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
   vector<ClassPtr> class_stack;
-  std::vector<FunctionPtr> *functions_stack = nullptr;
+  std::vector<FunctionPtr> *functions_stack_old = nullptr;
   AccessType cur_acccess_type = AccessType::access_nonmember;
   ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
+  vector<FunctionPtr> functions_stack;
+  FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
 };
 

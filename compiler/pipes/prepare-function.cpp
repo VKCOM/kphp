@@ -177,13 +177,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
       case php_doc_tag::kphp_lib_export: {
         f->kphp_lib_export = true;
-        f->kphp_required = true;
         infer_type |= (infer_mask::check | infer_mask::hint);
-        break;
-      }
-
-      case php_doc_tag::kphp_required: {
-        f->kphp_required = true;
         break;
       }
 

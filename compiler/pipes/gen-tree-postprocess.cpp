@@ -160,7 +160,7 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
 
       auto new_root = VertexAdaptor<op_func_call>::create(new_next);
       ::set_location(new_root, root->get_location());
-      new_root->extra_type = op_ex_func_member;
+      new_root->extra_type = op_ex_func_call_arrow;
       new_root->str_val = rhs->get_string();
 
       return new_root;

@@ -191,7 +191,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
   // тут всего 2 варианта типа v:
   // 1) lhs->f(...args), что заменилось на f(lhs,...args)
   // 2) lhs->propname
-  kphp_assert((v->type() == op_func_call && v->extra_type == op_ex_func_member) || v->type() == op_instance_prop);
+  kphp_assert((v->type() == op_func_call && v->extra_type == op_ex_func_call_arrow) || v->type() == op_instance_prop);
 
   VertexPtr lhs = v->type() == op_instance_prop ?
                   v.as<op_instance_prop>()->instance() :

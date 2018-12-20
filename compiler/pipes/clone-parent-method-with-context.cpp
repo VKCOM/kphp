@@ -88,7 +88,7 @@ void CloneParentMethodWithContextF::execute(FunctionPtr function, DataStream <Fu
   // сюда прокидываются такие функции из collect required — этот пайп сделан специально,
   // чтобы работать в несколько потоков
   // причём это нужно до gen tree postprocess, т.к. родительские могут быть не required (и не прошли пайпы)
-  if (function->type() == FunctionData::func_local && function->context_class != function->class_id) {
+  if (function->context_class && function->context_class != function->class_id) {
     create_ast_of_function_with_context(function, os);
   }
 

@@ -191,20 +191,19 @@ void CompilerCore::require_function(const string &name, DataStream<FunctionPtr> 
   });
 }
 
-bool CompilerCore::register_function(FunctionPtr function) {
-  bool force_add_to_os = false;
-
+void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require_to_os) {
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
-    if (f == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
-      force_add_to_os = true;
-    }
-    kphp_error(!f || f == UNPARSED_BUT_REQUIRED_FUNC_PTR,
+    bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
+    kphp_error(!f || was_previously_required,
                format("Redeclaration of function %s(), the previous declaration was in [%s]",
                        function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
     f = function;
-  });
 
-  return force_add_to_os;
+    if ((was_previously_required || force_require_to_os) && !f->is_required) {
+      f->is_required = true;      // этот флаг прежде всего нужен, чтоб в output отправить только раз
+      os << f;
+    }
+  });
 }
 
 void CompilerCore::register_class(ClassPtr cur_class) {

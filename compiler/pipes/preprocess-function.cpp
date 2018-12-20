@@ -306,7 +306,7 @@ private:
     const string &name =
       call->type() == op_constructor_call
       ? resolve_constructor_func_name(current_function, call)
-      : call->type() == op_func_call && call->extra_type == op_ex_func_member
+      : call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow
         ? resolve_instance_func_name(current_function, call)
         : call->get_string();
 
@@ -324,7 +324,7 @@ private:
   void print_why_cant_set_func_id_error(VertexPtr call, std::string unexisting_func_name) {
     if (call->type() == op_constructor_call) {
       kphp_error(0, format("Calling 'new %s()', but this class is fully static", call->get_string().c_str()));
-    } else if (call->type() == op_func_call && call->extra_type == op_ex_func_member) {
+    } else if (call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow) {
       ClassPtr klass;
       infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
       kphp_error(0, format("Unknown function ->%s() of %s\n", call->get_c_string(), klass ? klass->name.c_str() : "Unknown class"));

@@ -186,8 +186,7 @@ void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
 
   for (VertexPtr new_func_root : split_switch.get_new_functions()) {
     FunctionPtr function = FunctionData::create_function(new_func_root, FunctionData::func_switch);
-    G->register_function(function);
-    G->require_function(function->name, os);
+    G->register_and_require_function(function, os, true);   // switch-функции всегда require
   }
 
   if (stage::has_error()) {

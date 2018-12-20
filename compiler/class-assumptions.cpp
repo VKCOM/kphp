@@ -527,7 +527,7 @@ inline AssumType infer_from_var(FunctionPtr f,
 inline AssumType infer_from_call(FunctionPtr f,
                                  VertexAdaptor<op_func_call> call,
                                  ClassPtr &out_class) {
-  const std::string &fname = call->extra_type == op_ex_func_member
+  const std::string &fname = call->extra_type == op_ex_func_call_arrow
                              ? resolve_instance_func_name(f, call)
                              : get_full_static_member_name(f, call->str_val);
 

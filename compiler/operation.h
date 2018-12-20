@@ -7,7 +7,7 @@
 
 enum OperationExtra {
   op_ex_none = 0,
-  op_ex_func_member,
+  op_ex_func_call_arrow,
   op_ex_var_const,
   op_ex_var_superglobal,
   op_ex_var_superlocal,

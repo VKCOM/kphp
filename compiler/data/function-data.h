@@ -57,7 +57,6 @@ public:
   bool used_in_source;    // это только для костыля extern_function, потом должно уйти
   bool is_callback;
   bool should_be_sync;
-  bool kphp_required;
   bool kphp_lib_export;
   bool is_template;
   bool is_auto_inherited;

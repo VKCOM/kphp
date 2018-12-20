@@ -199,7 +199,7 @@ std::string debugVertexMore(VertexPtr v) {
     case op_constructor_call:
       return "new " + v->get_string();
     case op_func_call:
-      return string(v->extra_type == op_ex_func_member ? "->" : "") + v->get_string() + "()";
+      return string(v->extra_type == op_ex_func_call_arrow ? "->" : "") + v->get_string() + "()";
     case op_func_name:
       return v->get_string();
     case op_function:

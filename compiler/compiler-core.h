@@ -70,7 +70,7 @@ public:
     callback(node->data);
   }
 
-  bool register_function(FunctionPtr function);
+  void register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require_to_os = false);
   void register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
 

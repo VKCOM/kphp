@@ -49,7 +49,7 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
-    if (root->type() == op_func_call && root->extra_type != op_ex_func_member) {
+    if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
       require_function(get_full_static_member_name(current_function, root->get_string(), true));
     }
 
@@ -134,16 +134,13 @@ void CollectRequiredAndClassesF::inherit_static_method_from_parent(ClassPtr chil
     VertexPtr child_root = generate_function_with_parent_call(parent_f->root, parent_class, child_class, local_name);
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
-    child_function->context_class = child_class;
     child_function->file_id = parent_f->file_id;
     child_function->phpdoc_token = parent_f->phpdoc_token;
     child_function->is_auto_inherited = true;
 
-    if (G->register_function(child_function)) {
-      G->require_function(child_function->name, function_stream);
-    }
-
     child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
+
+    G->register_and_require_function(child_function, function_stream);
   }
 
   string ctx_f_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
@@ -161,9 +158,7 @@ void CollectRequiredAndClassesF::inherit_static_method_from_parent(ClassPtr chil
   context_function->class_id = parent_class;   // self:: это он, а parent:: это его parent (если есть)
   context_function->phpdoc_token = parent_f->phpdoc_token;
 
-  if (G->register_function(context_function)) {
-    G->require_function(context_function->name, function_stream);
-  }
+  G->register_and_require_function(context_function, function_stream);
 }
 
 
