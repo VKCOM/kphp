@@ -643,7 +643,7 @@ VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, Ver
     return VertexAdaptor<op_ternary>::create(left, right, third);
   }
 
-  string left_name = gen_shorthand_ternary_name();
+  string left_name = gen_shorthand_ternary_name(stage::get_file());
   auto left_var = VertexAdaptor<op_var>::create();
   left_var->str_val = left_name;
   left_var->extra_type = op_ex_var_superlocal;
@@ -1587,7 +1587,7 @@ VertexPtr GenTree::get_anonymous_function() {
 
   if (auto anon_function = f.try_as<op_function>()) {
     // это constructor call
-    return generate_anonymous_class(anon_function, parsed_os, cur_function, std::move(uses_of_lambda));
+    return generate_anonymous_class(anon_function, parsed_os, cur_function, std::move(uses_of_lambda), processing_file);
   }
 
   return {};
@@ -1608,7 +1608,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
   set_location(name, func_location);
 
   if (uses_of_lambda != nullptr) {
-    name->str_val = gen_anonymous_function_name();
+    name->str_val = gen_anonymous_function_name(processing_file);
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
     name->str_val = static_cast<string>((*std::prev(cur))->str_val);
@@ -1680,7 +1680,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
                    : (VertexPtr)VertexAdaptor<op_function>::create(name, params, VertexPtr{});
   root->copy_location_and_flags(*flags);
 
-  FunctionsStackPushPop alive(this, FunctionData::create_function(root, func_type));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, func_type));
 
   cur_function->phpdoc_token = phpdoc_token;
 
@@ -1765,8 +1765,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
 
-  FunctionsStackPushPop alive(this, FunctionData::create_function(func_root, FunctionData::func_global));
-  ClassStackPushPop alive2(this, ClassPtr(new ClassData()));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_global));
+  StackPushPop<ClassPtr> c_alive(class_stack, cur_class, ClassPtr(new ClassData()));
 
   cur_function->class_id = cur_class;
   cur_class->init_function = cur_function;
@@ -1913,9 +1913,9 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr function_in_which_lambda_was_created,
                                             std::vector<VertexPtr> &&uses_of_lambda,
-                                            const std::string &kostyl_explicit_name) {
+                                            SrcFilePtr file_id) {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->str_val = !kostyl_explicit_name.empty() ? kostyl_explicit_name : gen_anonymous_function_name();
+  lambda_class_name->str_val = gen_anonymous_function_name(file_id);
   lambda_class_name->location.line = function->name()->location.line;
 
   VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);

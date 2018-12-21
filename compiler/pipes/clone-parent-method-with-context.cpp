@@ -23,19 +23,9 @@ public:
     if (root->type() == op_constructor_call && root->get_func_id() && root->get_func_id()->is_lambda()) {
       ClassPtr lambda_class = root->get_func_id()->class_id;
       FunctionPtr invoke_method = lambda_class->members.get_instance_method("__invoke")->function;
-
-      // временно! потом уйдёт!
-      // для того, чтобы не было codegen diff относительно раньше, генерируем строгое имя для лямбда-классов при копировании
-      string emulated_file_concat = current_function->file_id->unified_file_name + current_function->context_class->name;
-      unsigned long long h = hash_ll(emulated_file_concat), cur_h;
-      int cur_i;
-      char tmp[50];
-      sscanf(lambda_class->name.c_str(), "$L\\anon$ut%llx_%d", &cur_h, &cur_i);
-      sprintf(tmp, "anon$ut%llx_%d", h, cur_i);
-      std::string kostyl_explicit_name = tmp;
-
       vector<VertexPtr> uses_of_lambda;
-      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda), kostyl_explicit_name);
+
+      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda), current_function->file_id);
     }
 
     return root;

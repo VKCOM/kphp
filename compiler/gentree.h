@@ -12,33 +12,22 @@ typedef VertexPtr (GenTree::*GetFunc)();
 
 class GenTree {
 
-  class FunctionsStackPushPop {
-    GenTree *g;
+  template<class T>
+  class StackPushPop {
+    std::vector<T> &stack;
+    T &top_element;
+
   public:
-    FunctionsStackPushPop(GenTree *g, FunctionPtr cur_function) :
-      g(g) {
-      g->functions_stack.emplace_back(cur_function);
-      g->cur_function = cur_function;
+    StackPushPop(std::vector<T> &stack, T &top_element, T elem_to_push) :
+      stack(stack),
+      top_element(top_element) {
+      stack.emplace_back(elem_to_push);
+      top_element = elem_to_push;
     }
 
-    ~FunctionsStackPushPop() {
-      g->functions_stack.pop_back();
-      g->cur_function = g->functions_stack.empty() ? FunctionPtr() : g->functions_stack.back();
-    }
-  };
-
-  class ClassStackPushPop {
-    GenTree *g;
-  public:
-    ClassStackPushPop(GenTree *g, ClassPtr cur_class) :
-    g(g) {
-      g->class_stack.emplace_back(cur_class);
-      g->cur_class = cur_class;
-    }
-
-    ~ClassStackPushPop() {
-      g->class_stack.pop_back();
-      g->cur_class = g->class_stack.empty() ? ClassPtr() : g->class_stack.back();
+    ~StackPushPop() {
+      stack.pop_back();
+      top_element = stack.empty() ? T() : stack.back();
     }
   };
 
@@ -153,7 +142,7 @@ public:
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr function_in_which_lambda_was_created,
                                             std::vector<VertexPtr> &&uses_of_lambda,
-                                            const std::string &kostyl_explicit_name = "");
+                                            SrcFilePtr file_id);
 
   VertexPtr get_class(Token *phpdoc_token);
 

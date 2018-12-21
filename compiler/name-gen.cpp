@@ -21,11 +21,10 @@ string register_unique_name(const string &prefix) {
   return prefix;
 }
 
-static inline string gen_unique_name_inside_file(const std::string &prefix, volatile int &x, map<unsigned long long, int> &name_map) {
+static inline string gen_unique_name_inside_file(SrcFilePtr file_id, const std::string &prefix, volatile int &x, map<unsigned long long, int> &name_map) {
   AUTO_PROF (next_name);
   AutoLocker<volatile int *> locker(&x);
-  SrcFilePtr file = stage::get_file();
-  unsigned long long h = hash_ll(file->unified_file_name);
+  unsigned long long h = hash_ll(file_id->unified_file_name);
   int *i = &(name_map[h]);
   int cur_i = (*i)++;
   char tmp[50];
@@ -34,18 +33,18 @@ static inline string gen_unique_name_inside_file(const std::string &prefix, vola
   return prefix + "$ut" + tmp;
 }
 
-string gen_shorthand_ternary_name() {
+string gen_shorthand_ternary_name(SrcFilePtr file_id) {
   static volatile int x = 0;
   static map<unsigned long long, int> name_map;
 
-  return gen_unique_name_inside_file("shorthand_ternary_cond", x, name_map);
+  return gen_unique_name_inside_file(file_id, "shorthand_ternary_cond", x, name_map);
 }
 
-string gen_anonymous_function_name() {
+string gen_anonymous_function_name(SrcFilePtr file_id) {
   static volatile int x = 0;
   static map<unsigned long long, int> name_map;
 
-  return gen_unique_name_inside_file("anon", x, name_map);
+  return gen_unique_name_inside_file(file_id, "anon", x, name_map);
 }
 
 
