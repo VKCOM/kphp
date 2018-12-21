@@ -11,6 +11,37 @@ typedef VertexPtr (GenTree::*GetFunc)();
 
 
 class GenTree {
+
+  class FunctionsStackPushPop {
+    GenTree *g;
+  public:
+    FunctionsStackPushPop(GenTree *g, FunctionPtr cur_function) :
+      g(g) {
+      g->functions_stack.emplace_back(cur_function);
+      g->cur_function = cur_function;
+    }
+
+    ~FunctionsStackPushPop() {
+      g->functions_stack.pop_back();
+      g->cur_function = g->functions_stack.empty() ? FunctionPtr() : g->functions_stack.back();
+    }
+  };
+
+  class ClassStackPushPop {
+    GenTree *g;
+  public:
+    ClassStackPushPop(GenTree *g, ClassPtr cur_class) :
+    g(g) {
+      g->class_stack.emplace_back(cur_class);
+      g->cur_class = cur_class;
+    }
+
+    ~ClassStackPushPop() {
+      g->class_stack.pop_back();
+      g->cur_class = g->class_stack.empty() ? ClassPtr() : g->class_stack.back();
+    }
+  };
+
 public:
   struct AutoLocation {
     int line_num;

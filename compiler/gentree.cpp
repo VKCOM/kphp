@@ -1680,8 +1680,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
                    : (VertexPtr)VertexAdaptor<op_function>::create(name, params, VertexPtr{});
   root->copy_location_and_flags(*flags);
 
-  cur_function = FunctionData::create_function(root, func_type);
-  functions_stack.emplace_back(cur_function);
+  FunctionsStackPushPop alive(this, FunctionData::create_function(root, func_type));
 
   cur_function->phpdoc_token = phpdoc_token;
 
@@ -1716,9 +1715,6 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
                       || cur_function->is_instance_function()
                       || kphp_required_flag;
   G->register_and_require_function(cur_function, parsed_os, auto_require);
-
-  functions_stack.pop_back();
-  cur_function = functions_stack.empty() ? FunctionPtr() : functions_stack.back();
 
   if (uses_of_lambda != nullptr && !stage::has_error()) {
     return root;
@@ -1769,11 +1765,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
 
-  cur_function = FunctionData::create_function(func_root, FunctionData::func_global);
-  functions_stack.emplace_back(cur_function);
-
-  cur_class = ClassPtr(new ClassData());
-  class_stack.emplace_back(cur_class);
+  FunctionsStackPushPop alive(this, FunctionData::create_function(func_root, FunctionData::func_global));
+  ClassStackPushPop alive2(this, ClassPtr(new ClassData()));
 
   cur_function->class_id = cur_class;
   cur_class->init_function = cur_function;
@@ -1831,13 +1824,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   cur_function->root.as<op_function>()->cmd() = VertexAdaptor<op_seq>::create(seq);
   func_force_return(cur_function->root);
 
-  class_stack.pop_back();
-  cur_class = class_stack.empty() ? ClassPtr() : class_stack.back();
-
   G->register_and_require_function(cur_function, parsed_os, true);  // global-функции всегда require
-
-  functions_stack.pop_back();
-  cur_function = functions_stack.empty() ? FunctionPtr() : functions_stack.back();
 
   return VertexPtr();
 }
