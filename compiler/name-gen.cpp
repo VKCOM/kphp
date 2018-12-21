@@ -103,11 +103,11 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       if (class_name == "parent") {
         ClassPtr class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
-        // тут (пока что?) именно extends как строка, т.к. parent_class присваивается позже, чем может вызываться resolve_uses()
+        // тут именно extends как строка, т.к. parent_class присваивается позже, чем может вызываться resolve_uses()
         auto extends_it = std::find_if(class_id->str_dependents.begin(), class_id->str_dependents.end(),
                                        [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
-        kphp_assert(extends_it != class_id->str_dependents.end());
-        class_name = resolve_uses(current_function, extends_it->class_name, delim);
+        kphp_error(extends_it != class_id->str_dependents.end(), "Using parent:: in class that does not extend anything");
+        class_name = extends_it->class_name;
       } else if (class_name == "static") {
         class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
       } else {

@@ -1786,7 +1786,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   if (test_expect(tok_extends)) {
     next_cur();
     CE (!kphp_error(test_expect(tok_func_name), "Class name expected after 'extends'"));
-    cur_class->str_dependents.emplace_back(ctype_class, static_cast<string>((*cur)->str_val));
+    string full_extends_class_name = resolve_uses(cur_function, static_cast<string>((*cur)->str_val), '\\');
+    cur_class->str_dependents.emplace_back(ctype_class, full_extends_class_name);
     next_cur();
   }
 

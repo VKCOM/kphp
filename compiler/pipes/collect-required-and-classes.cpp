@@ -42,7 +42,7 @@ public:
 
     if (function->type() == FunctionData::func_global && function->class_id) {
       for (const auto &dep : function->class_id->str_dependents) {
-        require_class(resolve_uses(function, dep.class_name, '/'));
+        require_class(replace_characters(dep.class_name, '\\', '/'));
       }
     }
     return true;
@@ -180,8 +180,7 @@ void CollectRequiredAndClassesF::inherit_child_class_from_parent(ClassPtr child_
 
 bool CollectRequiredAndClassesF::is_class_ready(ClassPtr klass) {
   for (const auto &dep : klass->str_dependents) {
-    std::string dep_class_name = resolve_uses(klass->init_function, dep.class_name, '\\');
-    ClassPtr dep_class_if_exists = G->get_class(dep_class_name);
+    ClassPtr dep_class_if_exists = G->get_class(dep.class_name);
     if (!dep_class_if_exists || !is_class_ready(dep_class_if_exists)) {
       return false;
     }
@@ -189,20 +188,31 @@ bool CollectRequiredAndClassesF::is_class_ready(ClassPtr klass) {
   return true;
 }
 
-// упомянуть про гарантию 1 вызова  
+/**
+ * Каждый класс поступает сюда один и ровно один раз — когда он и все его dependents
+ * (родители, трейты, интерфейсы) тоже готовы.
+ */
 void CollectRequiredAndClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream) {
   kphp_assert(klass->init_function->class_id == klass);
 
   for (const auto &dep : klass->str_dependents) {
-    ClassPtr dep_class = G->get_class(resolve_uses(klass->init_function, dep.class_name, '\\'));
+    ClassPtr dep_class = G->get_class(dep.class_name);
     auto pos = std::find(classes_waiting.begin(), classes_waiting.end(), dep_class);
     if (pos != classes_waiting.end()) {
       classes_waiting.erase(pos);
       on_class_ready(dep_class, function_stream);
     }
 
-    if (dep.type == ctype_class) {
-      inherit_child_class_from_parent(klass, dep_class, function_stream);
+    switch (dep.type) {
+      case ctype_class:
+        inherit_child_class_from_parent(klass, dep_class, function_stream);
+        break;
+      case ctype_interface:
+        kphp_assert(0 && "implementing interfaces is not supported yet");
+        break;
+      case ctype_trait:
+        kphp_assert(0 && "mixin traits is not supported yet");
+        break;
     }
   }
 }
@@ -218,10 +228,6 @@ void CollectRequiredAndClassesF::on_class_executing(ClassPtr klass, DataStream<F
     return;
   }
 
-  auto pos = std::find(classes_waiting.begin(), classes_waiting.end(), klass);
-  if (pos != classes_waiting.end()) {
-    classes_waiting.erase(pos);
-  }
   on_class_ready(klass, function_stream);
 
   for (auto it = classes_waiting.begin(); it != classes_waiting.end();) {
