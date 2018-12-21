@@ -11,28 +11,6 @@ typedef VertexPtr (GenTree::*GetFunc)();
 
 
 class GenTree {
-private:
-  class SetFunctionsStackGuard {
-  public:
-    SetFunctionsStackGuard(GenTree *g) :
-      prev_functions_stack(g->functions_stack_old),
-      g(g) {
-      g->functions_stack_old = &new_functions_stack;
-    }
-
-    void reset() {
-      g->functions_stack_old = prev_functions_stack;
-    }
-
-    ~SetFunctionsStackGuard() {
-      g->functions_stack_old = prev_functions_stack;
-    }
-
-    std::vector<FunctionPtr> *prev_functions_stack = nullptr;
-    std::vector<FunctionPtr> new_functions_stack;
-  private:
-    GenTree *g;
-  };
 public:
   struct AutoLocation {
     int line_num;
@@ -142,7 +120,7 @@ public:
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
-                                            AccessType cur_access_type,
+                                            FunctionPtr function_in_which_lambda_was_created,
                                             std::vector<VertexPtr> &&uses_of_lambda,
                                             const std::string &kostyl_explicit_name = "");
 
@@ -169,9 +147,7 @@ private:
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
   vector<ClassPtr> class_stack;
-  std::vector<FunctionPtr> *functions_stack_old = nullptr;
-  AccessType cur_acccess_type = AccessType::access_nonmember;
-  ClassPtr cur_class;               // = class_stack.back(), просто обращений очень много
+  ClassPtr cur_class;               // = class_stack.back()
   vector<FunctionPtr> functions_stack;
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;

@@ -60,7 +60,6 @@ public:
   bool kphp_lib_export;
   bool is_template;
   bool is_auto_inherited;
-  bool kostyl_is_lambda;      // уйдёт, когда function_in_which_lambda_was_created будет ставиться сразу
   ClassPtr context_class;
   AccessType access_type;
   set<string> disabled_warnings;
@@ -114,8 +113,6 @@ public:
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
 
-  void require_all_lambdas_inside(DataStream<FunctionPtr> &os) const;
-
   static ClassPtr is_lambda(VertexPtr v);
 
   static const std::string &get_lambda_namespace() {
@@ -124,8 +121,7 @@ public:
   }
 
   bool is_lambda() const {
-    // потом заменится на return function_in_which_lambda_was_created (когда gentree будет создавать функции по ходу)
-    return kostyl_is_lambda;
+    return (bool)function_in_which_lambda_was_created;
   }
 
   bool is_lambda_with_uses() const;

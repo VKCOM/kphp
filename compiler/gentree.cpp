@@ -1208,7 +1208,6 @@ void GenTree::create_constructor_with_args(ClassPtr cur_class,
   patch_func_constructor(func, cur_class, location);
 
   FunctionPtr ctor_function = FunctionData::create_function(func, FunctionData::func_local);
-  ctor_function->kostyl_is_lambda = cur_class->is_lambda_class();
 
   cur_class->members.add_instance_method(ctor_function, access_public);
 
@@ -1584,17 +1583,11 @@ bool GenTree::check_uses_and_args_are_not_intersect(const std::vector<VertexPtr>
 
 VertexPtr GenTree::get_anonymous_function() {
   std::vector<VertexPtr> uses_of_lambda;
-  SetFunctionsStackGuard fun_stack_g(this);
   VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
+
   if (auto anon_function = f.try_as<op_function>()) {
-    auto anon_constructor_call = generate_anonymous_class(anon_function, parsed_os, cur_acccess_type, std::move(uses_of_lambda));
-    auto &members_of_anon_class = anon_constructor_call->get_func_id()->class_id->members;
-
-    if (fun_stack_g.prev_functions_stack) {
-      fun_stack_g.prev_functions_stack->emplace_back(members_of_anon_class.get_instance_method("__invoke")->function);
-    }
-
-    return anon_constructor_call;
+    // это constructor call
+    return generate_anonymous_class(anon_function, parsed_os, cur_function, std::move(uses_of_lambda));
   }
 
   return {};
@@ -1692,9 +1685,14 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
 
   cur_function->phpdoc_token = phpdoc_token;
 
-  SetFunctionsStackGuard fun_stack_g(this);
-  if (uses_of_lambda) {
-    fun_stack_g.reset();
+  const bool kphp_required_flag = phpdoc_token &&
+                                  (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
+                                   phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
+
+  if (cur_class && FunctionData::is_instance_access_type(access_type)) {
+    cur_class->members.add_instance_method(cur_function, access_type);
+  } else if (cur_class && FunctionData::is_static_access_type(access_type)) {
+    cur_class->members.add_static_method(cur_function, access_type);
   }
 
   if (test_expect(tok_opbrc)) {
@@ -1713,27 +1711,11 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     CE (expect(tok_semicolon, "';'"));
   }
 
-  const bool kphp_required_flag = phpdoc_token &&
-                                  (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
-                                   phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
-
-  if (cur_class && FunctionData::is_instance_access_type(access_type)) {
-    cur_class->members.add_instance_method(cur_function, access_type);
-  } else if (cur_class && FunctionData::is_static_access_type(access_type)) {
-    cur_class->members.add_static_method(cur_function, access_type);
-  }
-
   bool auto_require = cur_function->type() == FunctionData::func_global
                       || cur_function->type() == FunctionData::func_extern
                       || cur_function->is_instance_function()
                       || kphp_required_flag;
   G->register_and_require_function(cur_function, parsed_os, auto_require);
-
-  cur_function->lambdas_inside = std::move(*functions_stack_old);
-  for (auto &l : cur_function->lambdas_inside) {
-    l->function_in_which_lambda_was_created = cur_function;
-  }
-  cur_function->require_all_lambdas_inside(parsed_os);
 
   functions_stack.pop_back();
   cur_function = functions_stack.empty() ? FunctionPtr() : functions_stack.back();
@@ -1942,7 +1924,7 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
 
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
-                                            AccessType cur_access_type,
+                                            FunctionPtr function_in_which_lambda_was_created,
                                             std::vector<VertexPtr> &&uses_of_lambda,
                                             const std::string &kostyl_explicit_name) {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
@@ -1955,7 +1937,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_class_name->get_string());
   anon_class->root = class_vertex;
 
-  if (FunctionData::is_instance_access_type(cur_access_type)) {
+  if (function_in_which_lambda_was_created->is_instance_function()) {
     auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
     implicit_captured_var_parent_this->set_string("parent$this");
     ::set_location(implicit_captured_var_parent_this, lambda_class_name->location);
@@ -1978,7 +1960,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     std::string s = fun->name()->get_string();
     fun->name()->set_string(replace_backslashes(anon_class->name) + "$$" + s);
     FunctionPtr invoke_function = FunctionData::create_function(fun, FunctionData::func_local);
-    invoke_function->kostyl_is_lambda = true;
+    invoke_function->function_in_which_lambda_was_created = function_in_which_lambda_was_created;
     anon_class->members.add_instance_method(invoke_function, access_public);
     G->register_and_require_function(invoke_function, os, true);    // instance-методы force require
 
@@ -2000,6 +1982,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   ::set_location(constructor_params, lambda_class_name->location);
   create_constructor_with_args(anon_class, AutoLocation(function->location.line), constructor_params, os);
   anon_class->new_function->is_template = !uses_of_lambda.empty();
+  anon_class->new_function->function_in_which_lambda_was_created = function_in_which_lambda_was_created;
 
   G->register_class(anon_class);
   anon_class->init_function = FunctionPtr(new FunctionData());
@@ -2242,10 +2225,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
 
       // не статическая функция (public function ...)
       if (cur_tok == tok_function) {
-        cur_acccess_type = access_type;
-        auto res = get_function(phpdoc_token, access_type);
-        cur_acccess_type = AccessType::access_nonmember;
-        return res;
+        return get_function(phpdoc_token, access_type);
       }
       // статическая функция (public static function ...)
       if (next_tok == tok_function) {

@@ -50,15 +50,7 @@ public:
       std::string kostyl_explicit_name = tmp;
 
       vector<VertexPtr> uses_of_lambda;
-      auto anon_constructor_call = GenTree::generate_anonymous_class(invoke_method->root, function_stream, access_static_public, std::move(uses_of_lambda), kostyl_explicit_name);
-      ClassPtr new_anon_class = anon_constructor_call->get_func_id()->class_id;
-      new_anon_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-        m.function->function_in_which_lambda_was_created = current_function;
-        G->require_function(m.global_name(), function_stream);
-      });
-      FunctionPtr new_invoke_method = new_anon_class->members.get_instance_method("__invoke")->function;
-      current_function->lambdas_inside.push_back(new_invoke_method);
-      return anon_constructor_call;
+      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda), kostyl_explicit_name);
     }
 
     return root;

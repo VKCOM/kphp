@@ -29,7 +29,6 @@ FunctionData::FunctionData() :
   kphp_lib_export(false),
   is_template(false),
   is_auto_inherited(false),
-  kostyl_is_lambda(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -51,7 +50,6 @@ FunctionData::FunctionData(VertexPtr root) :
   should_be_sync(),
   is_template(false),
   is_auto_inherited(false),
-  kostyl_is_lambda(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -134,15 +132,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   set_location_for_all(new_func_root, new_function);
 
   return new_function;
-}
-
-void FunctionData::require_all_lambdas_inside(DataStream<FunctionPtr> &os) const {
-  for (auto l : lambdas_inside) {
-    kphp_error(!(l->is_lambda_with_uses() && is_template), "it's not allowed lambda with uses inside template function(or another lambda)");
-    l->class_id->members.for_each([&os](const ClassMemberInstanceMethod &m) {
-      G->require_function(m.global_name(), os);
-    });
-  }
 }
 
 ClassPtr FunctionData::is_lambda(VertexPtr v) {
