@@ -68,6 +68,7 @@ public:
   F (split_switch)\
   F (create_switch_vars)\
   F (collect_required)\
+  F (sort_and_inherit_classes)\
   F (calc_locations)\
   F (resolve_self_static_parent)\
   F (register_defines)\

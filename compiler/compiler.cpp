@@ -68,6 +68,7 @@
 #include "compiler/pipes/register-variables.h"
 #include "compiler/pipes/remove-empty-function-calls.h"
 #include "compiler/pipes/resolve-self-static-parent.h"
+#include "compiler/pipes/sort-and-inherit-classes.h"
 #include "compiler/pipes/split-switch.h"
 #include "compiler/pipes/type-inferer-end.h"
 #include "compiler/pipes/type-inferer.h"
@@ -284,6 +285,13 @@ bool compiler_execute(KphpEnviroment *env) {
 
   SchedulerConstructor{scheduler}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<2>{}
+    >> PipeC<CloneParentMethodWithContextF>{};
+
+  SchedulerConstructor{scheduler}
+    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<3>{}
+    // output 1 is used to restart class processing
+    >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<1>{}
+    >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PipeC<CloneParentMethodWithContextF>{};
 
   get_scheduler()->execute();

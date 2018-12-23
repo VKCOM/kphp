@@ -1,11 +1,11 @@
 #include "compiler/pipes/clone-parent-method-with-context.h"
 
-#include "compiler/data/function-data.h"
-#include "compiler/data/class-data.h"
-#include "compiler/data/src-file.h"
-#include "compiler/name-gen.h"
-#include "compiler/gentree.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
+#include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 
 /**
  * Через этот pass проходят функции вида

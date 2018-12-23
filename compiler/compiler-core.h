@@ -2,12 +2,12 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <forward_list>
 #include <ftw.h>
 #include <functional>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <forward_list>
 
 #include "compiler/compiler.h"
 #include "compiler/data/data_ptr.h"
@@ -57,7 +57,7 @@ public:
 
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
-  pair<SrcFilePtr, bool> require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
+  SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
 
   void require_function(const string &name, DataStream<FunctionPtr> &os);
 

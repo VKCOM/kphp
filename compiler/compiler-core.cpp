@@ -238,15 +238,13 @@ void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFil
   }
 }
 
-pair<SrcFilePtr, bool> CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os) {
+SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os) {
   SrcFilePtr file = register_file(file_name, owner_lib);
   kphp_error (file_name.empty() || file, format("Cannot load file [%s]", file_name.c_str()));
-  bool required = false;
   if (file && try_require_file(file)) {
-    required = true;
     os << file;
   }
-  return {file, required};
+  return file;
 }
 
 
