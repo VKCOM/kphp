@@ -1826,6 +1826,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   func_force_return(cur_function->root);
 
   G->register_and_require_function(cur_function, parsed_os, true);  // global-функции всегда require
+  G->register_class(cur_class);
 
   return VertexPtr();
 }

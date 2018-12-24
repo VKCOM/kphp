@@ -42,7 +42,6 @@ public:
 
     if (function->type() == FunctionData::func_global && function->class_id) {
       for (const auto &dep : function->class_id->str_dependents) {
-        // TODO: shouldn't resolve uses here?
         require_class(replace_characters(dep.class_name, '\\', '/'));
       }
     }
