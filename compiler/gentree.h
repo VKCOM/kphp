@@ -48,8 +48,6 @@ public:
   GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
   VertexPtr generate_constant_field_class(VertexPtr root);
-  void enter_function();
-  void exit_function();
 
   bool test_expect(TokenType tp);
 
@@ -153,8 +151,6 @@ private:
                                        VertexPtr &flags,
                                        bool &is_constructor);
 
-  bool in_namespace() const;
-
   VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
 
 public:
@@ -163,7 +159,6 @@ public:
 private:
   const vector<Token *> *tokens;
   DataStream<FunctionPtr> &parsed_os;
-  int in_func_cnt_;
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
   vector<ClassPtr> class_stack;

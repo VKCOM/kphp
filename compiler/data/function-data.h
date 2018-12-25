@@ -121,7 +121,7 @@ public:
   }
 
   bool is_lambda() const {
-    return (bool)function_in_which_lambda_was_created;
+    return static_cast<bool>(function_in_which_lambda_was_created);
   }
 
   bool is_lambda_with_uses() const;
@@ -129,7 +129,7 @@ public:
   bool is_imported_from_static_lib() const;
 
   const FunctionData *get_this_or_topmost_if_lambda() const {
-    return function_in_which_lambda_was_created ? function_in_which_lambda_was_created->get_this_or_topmost_if_lambda() : this;
+    return is_lambda() ? function_in_which_lambda_was_created->get_this_or_topmost_if_lambda() : this;
   }
 
   VertexRange get_params();

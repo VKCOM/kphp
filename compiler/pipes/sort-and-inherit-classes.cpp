@@ -173,7 +173,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   if (!to_wait_classname_if_not_ready.empty()) {
     auto node = ht.at(hash_ll(to_wait_classname_if_not_ready));
     AutoLocker<Lockable*> locker(node);
-    if (node->data.done) {              // вдруг между вызовом ˚ready и этим моментом стало done
+    if (node->data.done) {              // вдруг между вызовом ready и этим моментом стало done
       restart_class_stream << klass;
       return;
     }

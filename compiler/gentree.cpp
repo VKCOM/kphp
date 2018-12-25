@@ -22,7 +22,6 @@ GenTree::GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<Func
   line_num(0),
   tokens(tokens),
   parsed_os(os),
-  in_func_cnt_(0),
   is_top_of_the_function_(false),
   cur(tokens->begin()),
   end(tokens->end()),
@@ -36,10 +35,6 @@ GenTree::GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<Func
   stage::set_line(line_num);
 }
 
-inline bool GenTree::in_namespace() const {
-  return !processing_file->namespace_name.empty();
-}
-
 VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
   auto name_of_const_field_class = VertexAdaptor<op_string>::create();
   name_of_const_field_class->str_val = "c#" + replace_backslashes(cur_class->name) + "$$class";
@@ -51,14 +46,6 @@ VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
   def->location = root->location;
 
   return def;
-}
-
-void GenTree::enter_function() {
-  in_func_cnt_++;
-}
-
-void GenTree::exit_function() {
-  in_func_cnt_--;
 }
 
 void GenTree::next_cur() {
@@ -1188,7 +1175,7 @@ void GenTree::create_constructor_with_args(ClassPtr cur_class,
                                            AutoLocation location, VertexAdaptor<op_func_param_list> params,
                                            DataStream<FunctionPtr> &os) {
   auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = replace_backslashes(cur_class->name) + "$$" + "__construct";
+  func_name->str_val = replace_backslashes(cur_class->name) + "$$__construct";
 
   std::vector<VertexPtr> fields_initializers;
   for (auto param : params->params()) {
@@ -1670,10 +1657,12 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     return {};
   }
 
-  FunctionData::func_type_t func_type =
-    test_expect(tok_semicolon) ? FunctionData::func_extern :
-    in_func_cnt_ == 0 && !in_namespace() ? FunctionData::func_global :
-    FunctionData::func_local;
+  auto func_type = FunctionData::func_local;
+  if (test_expect(tok_semicolon)) {
+    func_type = FunctionData::func_extern;
+  } else if (functions_stack.empty()) {
+    func_type = FunctionData::func_global;
+  }
 
   VertexPtr root = func_type == FunctionData::func_extern
                    ? (VertexPtr)VertexAdaptor<op_func_decl>::create(name, params)
@@ -1695,10 +1684,8 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   }
 
   if (test_expect(tok_opbrc)) {
-    enter_function();
-    is_top_of_the_function_ = in_func_cnt_ > 1;
+    is_top_of_the_function_ = true;
     root.as<op_function>()->cmd() = get_statement();
-    exit_function();
     CE(!kphp_error(root.as<op_function>()->cmd(), "Failed to parse function body"));
 
     if (is_constructor) {
@@ -1773,7 +1760,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
 
   string name_str = static_cast<string>((*cur)->str_val);
   string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
-  if (in_namespace()) {
+  if (!processing_file->namespace_name.empty()) {
     string expected_name = processing_file->short_file_name;
     kphp_error (name_str == expected_name,
                 format("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
@@ -1951,7 +1938,6 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     FunctionPtr invoke_function = FunctionData::create_function(fun, FunctionData::func_local);
     invoke_function->function_in_which_lambda_was_created = function_in_which_lambda_was_created;
     anon_class->members.add_instance_method(invoke_function, access_public);
-    G->register_and_require_function(invoke_function, os, true);    // instance-методы force require
 
     auto params = fun->params().as<op_func_param_list>()->args();
     invoke_function->is_template = !uses_of_lambda.empty() || params.size() > 1;
@@ -1962,7 +1948,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
       l->function_in_which_lambda_was_created = invoke_function;
     }
 
-    return invoke_function;
+    G->register_and_require_function(invoke_function, os, true);    // instance-методы force require
   };
 
   register_invoke(generate__invoke_method(anon_class, function), function->get_func_id());
@@ -1973,8 +1959,8 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   anon_class->new_function->is_template = !uses_of_lambda.empty();
   anon_class->new_function->function_in_which_lambda_was_created = function_in_which_lambda_was_created;
 
-  G->register_class(anon_class);
   anon_class->init_function = FunctionPtr(new FunctionData());
+  G->register_class(anon_class);
 
   auto constructor_call = generate_constructor_call(anon_class);
   constructor_call->location = lambda_class_name->location;
@@ -2137,7 +2123,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (check_statement_end());
       return res;
     case tok_global:
-      if (G->env().get_warnings_level() >= 2 && in_func_cnt_ > 1 && !is_top_of_the_function_) {
+      if (G->env().get_warnings_level() >= 2 && cur_function && cur_function->type() == FunctionData::func_local && !is_top_of_the_function_) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
       }
       res = get_multi_call<op_global>(&GenTree::get_var_name);
@@ -2285,8 +2271,8 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       next_cur();
 
       bool has_access_modifier = std::distance(tokens->begin(), cur) > 1 && vk::any_of_equal((*std::prev(cur, 2))->type(), tok_public, tok_private, tok_protected);
-      bool const_in_global_scope = in_func_cnt_ == 1 && !cur_class && processing_file->namespace_name.empty();
-      bool const_in_class = in_func_cnt_ == 0 && cur_class;
+      bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
+      bool const_in_class = !!cur_class;
 
       CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
@@ -2318,7 +2304,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
     }
     case tok_use: {
       AutoLocation const_location(this);
-      CE (!kphp_error(!cur_class && in_func_cnt_ == 1, "'use' can be declared only in global scope"));
+      kphp_error(!cur_class && cur_function && cur_function->type() == FunctionData::func_global, "'use' can be declared only in global scope");
       get_use();
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
