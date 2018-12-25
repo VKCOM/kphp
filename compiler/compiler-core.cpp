@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <numeric>
+#include <unordered_map>
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
@@ -394,7 +395,7 @@ void CompilerCore::save_index() {
 }
 
 File *CompilerCore::get_file_info(const string &file_name) {
-  return cpp_index.get_file(file_name, true);
+  return cpp_index.insert_file(file_name);
 }
 
 void CompilerCore::del_extra_files() {
@@ -433,12 +434,12 @@ bool compare_mtime(File *f, File *g) {
   return f->path < g->path;
 }
 
-std::map<File *, long long> create_dep_mtime(Index *cpp_dir) {
-  std::map<File *, long long> dep_mtime;
-  std::priority_queue<pair<long long, File *>> mtime_queue;
-  std::map<File *, vector<File *>> reverse_includes;
+std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_dir, const std::forward_list<Index> &imported_headers) {
+  std::unordered_map<File *, long long> dep_mtime;
+  std::priority_queue<std::pair<long long, File *>> mtime_queue;
+  std::unordered_map<File *, vector<File *>> reverse_includes;
 
-  std::vector<File *> files = cpp_dir->get_files();
+  std::vector<File *> files = cpp_dir.get_files();
 
   auto lib_version_it = std::find_if(files.begin(), files.end(), [](File *file) { return file->name == "_lib_version.h"; });
   kphp_assert(lib_version_it != files.end());
@@ -446,13 +447,25 @@ std::map<File *, long long> create_dep_mtime(Index *cpp_dir) {
 
   for (const auto &file : files) {
     for (const auto &include : file->includes) {
-      File *header = cpp_dir->get_file(include, false);
+      File *header = cpp_dir.get_file(include);
       kphp_assert (header != nullptr);
       kphp_assert (header->on_disk);
       reverse_includes[header].push_back(file);
     }
-    dep_mtime[file] = std::max(file->mtime, lib_version->mtime);
-    mtime_queue.emplace(dep_mtime[file], file);
+
+    long long max_lib_mtime = lib_version->mtime;
+    for (const auto &lib_include : file->lib_includes) {
+      File *header = nullptr;
+      for (auto lib_it = imported_headers.begin(); lib_it != imported_headers.end() && !header; ++lib_it) {
+        header = lib_it->get_file(lib_include);
+      }
+      kphp_error_act(header, format("Can't file lib header file '%s'", lib_include.c_str()), continue);
+      max_lib_mtime = std::max(max_lib_mtime, header->mtime);
+    }
+
+    long long &mtime = dep_mtime[file];
+    mtime = std::max({file->mtime, lib_version->mtime, max_lib_mtime});
+    mtime_queue.emplace(mtime, file);
   }
 
   while (!mtime_queue.empty()) {
@@ -461,11 +474,16 @@ std::map<File *, long long> create_dep_mtime(Index *cpp_dir) {
     std::tie(mtime, file) = mtime_queue.top();
     mtime_queue.pop();
 
-    if (dep_mtime[file] != mtime || !reverse_includes.count(file)) {
+    if (dep_mtime[file] != mtime) {
       continue;
     }
 
-    for (auto including_file: reverse_includes[file]) {
+    auto file_includes_it = reverse_includes.find(file);
+    if (file_includes_it == reverse_includes.end()) {
+      continue;
+    }
+
+    for (auto including_file: file_includes_it->second) {
       auto &including_file_mtime = dep_mtime[including_file];
       if (including_file_mtime < mtime) {
         including_file_mtime = mtime;
@@ -476,14 +494,15 @@ std::map<File *, long long> create_dep_mtime(Index *cpp_dir) {
   return dep_mtime;
 }
 
-std::vector<File *> create_obj_files(KphpMake *make, Index *obj_dir, Index *cpp_dir) {
-  std::vector<File *> files = cpp_dir->get_files();
-  std::map<File *, long long> dep_mtime = create_dep_mtime(cpp_dir);
+std::vector<File *> create_obj_files(KphpMake *make, Index &obj_dir, const Index &cpp_dir,
+                                     const std::forward_list<Index> &imported_headers) {
+  std::vector<File *> files = cpp_dir.get_files();
+  std::unordered_map<File *, long long> dep_mtime = create_dep_mtime(cpp_dir, imported_headers);
 
   std::vector<File *> objs;
   for (auto cpp_file : files) {
     if (cpp_file->ext == ".cpp") {
-      File *obj_file = obj_dir->get_file(cpp_file->name_without_ext + ".o", true);
+      File *obj_file = obj_dir.insert_file(cpp_file->name_without_ext + ".o");
       obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
       make->create_cpp2obj_target(cpp_file, obj_file);
       Target *cpp_target = cpp_file->target;
@@ -510,7 +529,7 @@ std::vector<File *> create_obj_files(KphpMake *make, Index *obj_dir, Index *cpp_
 
   objs = std::move(tmp_objs);
   for (const auto &name_and_files : subdirs) {
-    File *obj_file = obj_dir->get_file(name_and_files.first, true);
+    File *obj_file = obj_dir.insert_file(name_and_files.first);
     make->create_objs2obj_target(name_and_files.second, obj_file);
     objs.push_back(obj_file);
   }
@@ -518,30 +537,28 @@ std::vector<File *> create_obj_files(KphpMake *make, Index *obj_dir, Index *cpp_
   return objs;
 }
 
-bool kphp_make(File *bin, Index *obj_dir, Index *cpp_dir, std::forward_list<File> external_libs, const KphpEnviroment &kphp_env) {
+bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
+               const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env) {
   KphpMake make;
   std::vector<File *> lib_objs;
-  for (File &link_file: external_libs) {
-    if (link_file.mtime == 0) {
-      fprintf(stdout, "Can't read mtime of link_file [%s]\n", link_file.path.c_str());
-      return false;
-    }
+  for (File &link_file: imported_libs) {
     make.create_cpp_target(&link_file);
     lib_objs.emplace_back(&link_file);
   }
-  std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir);
+  std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   std::copy(lib_objs.begin(), lib_objs.end(), std::back_inserter(objs));
-  make.create_objs2bin_target(objs, bin);
+  make.create_objs2bin_target(objs, &bin);
   make.init_env(kphp_env);
-  return make.make_target(bin, kphp_env.get_jobs_count());
+  return make.make_target(&bin, kphp_env.get_jobs_count());
 }
 
-bool kphp_make_static_lib(File *static_lib, Index *obj_dir, Index *cpp_dir, const KphpEnviroment &kphp_env) {
+bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
+                          const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env) {
   KphpMake make;
-  std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir);
-  make.create_objs2static_lib_target(objs, static_lib);
+  std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
+  make.create_objs2static_lib_target(objs, &static_lib);
   make.init_env(kphp_env);
-  return make.make_target(static_lib, kphp_env.get_jobs_count());
+  return make.make_target(&static_lib, kphp_env.get_jobs_count());
 }
 
 void copy_file(const File &source_file, const string &destination, bool show_cmd) {
@@ -589,12 +606,12 @@ void CompilerCore::copy_static_lib_to_out_dir(const File &static_archive, bool s
   }
 }
 
-std::forward_list<File> CompilerCore::collect_external_libs() {
+std::forward_list<File> CompilerCore::collect_imported_libs() {
   const string &binary_runtime_sha256 = env().get_runtime_sha256();
   stage::die_if_global_errors();
 
-  std::forward_list<File> external_libs;
-  external_libs.emplace_front(env().get_link_file());
+  std::forward_list<File> imported_libs;
+  imported_libs.emplace_front(env().get_link_file());
   for (const auto &lib: get_libs()) {
     if (lib && !lib->is_raw_php()) {
       std::string lib_runtime_sha256 = KphpEnviroment::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
@@ -603,19 +620,30 @@ std::forward_list<File> CompilerCore::collect_external_libs() {
                      format("Mismatching between sha256 of binary runtime '%s' and lib runtime '%s'",
                             env().get_runtime_sha256_file().c_str(), lib->runtime_lib_sha256_file().c_str()),
                      continue);
-      external_libs.emplace_front(lib->static_archive_path());
+      imported_libs.emplace_front(lib->static_archive_path());
     }
   }
 
-  for (File &file: external_libs) {
-    kphp_assert (file.upd_mtime() >= 0);
+  for (File &file: imported_libs) {
+    kphp_error_act(file.upd_mtime() > 0, format("Can't read mtime of link_file [%s]", file.path.c_str()), continue);
     if (env().get_verbosity() >= 1) {
       fprintf(stderr, "Use static lib [%s]\n", file.path.c_str());
     }
   }
 
   stage::die_if_global_errors();
-  return external_libs;
+  return imported_libs;
+}
+
+std::forward_list<Index> CompilerCore::collect_imported_headers() {
+  std::forward_list<Index> imported_headers;
+  for (const auto &lib: get_libs()) {
+    if (lib && !lib->is_raw_php()) {
+      imported_headers.emplace_front();
+      imported_headers.front().sync_with_dir(lib->lib_dir());
+    }
+  }
+  return imported_headers;
 }
 
 void CompilerCore::make() {
@@ -634,10 +662,11 @@ void CompilerCore::make() {
     bin_file.unlink();
   }
 
+  auto lib_header_dirs = collect_imported_headers();
   const bool ok =
     env().is_static_lib_mode()
-    ? kphp_make_static_lib(&bin_file, &obj_index, &cpp_index, env())
-    : kphp_make(&bin_file, &obj_index, &cpp_index, collect_external_libs(), env());
+    ? kphp_make_static_lib(bin_file, obj_index, cpp_index, lib_header_dirs, env())
+    : kphp_make(bin_file, obj_index, cpp_index, collect_imported_libs(), lib_header_dirs, env());
 
   kphp_error (ok, "Make failed");
   stage::die_if_global_errors();

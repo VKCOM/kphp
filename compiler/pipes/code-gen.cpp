@@ -210,14 +210,23 @@ struct CloseNamespace {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct Include {
-  const PlainCode &plain_code;
-  bool is_extern;
-  Include(const PlainCode &plain_code, bool is_extern = false);
+struct ExternInclude {
+  inline explicit ExternInclude(const PlainCode &plain_code);
+  inline void compile(CodeGenerator &W) const;
+
+protected:
+  const PlainCode &plain_code_;
+};
+
+struct Include : private ExternInclude {
+  using ExternInclude::ExternInclude;
   inline void compile(CodeGenerator &W) const;
 };
 
-Include ExternInclude(const PlainCode &plain_code);
+struct LibInclude : private ExternInclude {
+  using ExternInclude::ExternInclude;
+  inline void compile(CodeGenerator &W) const;
+};
 
 struct IncludeClass {
   vector<ClassPtr> klasses;
@@ -754,20 +763,22 @@ inline void CloseNamespace::compile(CodeGenerator &W) const {
   }
 }
 
-inline Include::Include(const PlainCode &plain_code, bool is_extern) :
-  plain_code(plain_code),
-  is_extern(is_extern) {
+inline ExternInclude::ExternInclude(const PlainCode &plain_code) :
+  plain_code_(plain_code) {
+}
+
+inline void ExternInclude::compile(CodeGenerator &W) const {
+  W << "#include \"" << plain_code_ << "\"" << NL;
 }
 
 inline void Include::compile(CodeGenerator &W) const {
-  if (!is_extern) {
-    W.get_writer().add_include(static_cast<string>(plain_code.str));
-  }
-  W << "#include \"" << plain_code << "\"" << NL;
+  W.get_writer().add_include(static_cast<string>(plain_code_.str));
+  ExternInclude::compile(W);
 }
 
-Include ExternInclude(const PlainCode &plain_code) {
-  return Include(plain_code, true);
+inline void LibInclude::compile(CodeGenerator &W) const {
+  W.get_writer().add_lib_include(static_cast<string>(plain_code_.str));
+  ExternInclude::compile(W);
 }
 
 inline IncludeClass::IncludeClass(const TypeData *type) {
@@ -1935,7 +1946,7 @@ static inline void include_dependent_headers(FunctionPtr function, CodeGenerator
       continue;
     }
     if (to_include->is_imported_from_static_lib()) {
-      W << ExternInclude(to_include->header_full_name);
+      W << LibInclude(to_include->header_full_name);
     } else if (to_include->type() != FunctionData::func_extern) {
       W << Include(to_include->header_full_name);
     }

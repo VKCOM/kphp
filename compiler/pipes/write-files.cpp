@@ -22,6 +22,8 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   File *file = G->get_file_info(full_file_name);
   file->needed = true;
   file->includes = data->get_includes();
+  file->lib_includes = data->get_lib_includes();
+
   file->compile_with_debug_info_flag = data->compile_with_debug_info();
 
   if (file->on_disk && data->compile_with_crc()) {

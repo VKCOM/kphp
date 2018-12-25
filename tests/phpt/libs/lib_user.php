@@ -20,6 +20,9 @@ function call_example1_lib_functions() {
     return 1;
 }
 
+echo "lib_user: var_dump(get_str())\n";
+var_dump(get_str());
+
 echo "lib_user: Classes\A::some_function(): ", Classes\A::some_function(), "\n";
 
 echo "lib_user: dev_global = call_example1_lib_functions();\n";

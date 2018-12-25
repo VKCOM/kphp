@@ -33,6 +33,7 @@ private:
   unsigned long long crc;
 
   vector<string> includes;
+  vector<string> lib_includes;
   bool compile_with_debug_info_flag;
   bool compile_with_crc_flag;
 
@@ -62,8 +63,12 @@ public:
   void end_line();
   void brk();
   void add_location(SrcFilePtr file, int line);
+
   void add_include(const string &s);
-  const vector<string> &get_includes();
+  const vector<string> &get_includes() const;
+
+  void add_lib_include(const string &s);
+  const vector<string> &get_lib_includes() const;
 
   unsigned long long calc_crc();
   void dump(string &dest_str);
@@ -146,6 +151,7 @@ public:
   void unlock_comments();
   bool is_comments_locked();
   void add_include(const string &s);
+  void add_lib_include(const string &s);
 private:
   DISALLOW_COPY_AND_ASSIGN (Writer);
 };

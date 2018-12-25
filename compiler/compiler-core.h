@@ -102,7 +102,8 @@ public:
 
 private:
   void copy_static_lib_to_out_dir(const File &static_archive, bool show_copy_cmd) const;
-  std::forward_list<File> collect_external_libs();
+  std::forward_list<File> collect_imported_libs();
+  std::forward_list<Index> collect_imported_headers();
 };
 
 extern CompilerCore *G;

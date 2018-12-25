@@ -59,8 +59,16 @@ void WriterData::add_include(const string &s) {
   includes.push_back(s);
 }
 
-const vector<string> &WriterData::get_includes() {
+const vector<string> &WriterData::get_includes() const {
   return includes;
+}
+
+void WriterData::add_lib_include(const string &s) {
+  lib_includes.push_back(s);
+}
+
+const vector<string> &WriterData::get_lib_includes() const {
+  return lib_includes;
 }
 
 unsigned long long WriterData::calc_crc() {
@@ -195,6 +203,7 @@ void WriterData::swap(WriterData &other) {
   std::swap(file_name, other.file_name);
   std::swap(subdir, other.subdir);
   std::swap(includes, other.includes);
+  std::swap(lib_includes, other.lib_includes);
   std::swap(compile_with_debug_info_flag, other.compile_with_debug_info_flag);
   std::swap(compile_with_crc_flag, other.compile_with_crc_flag);
 }
@@ -300,4 +309,7 @@ void Writer::add_include(const string &s) {
   data.add_include(s);
 }
 
+void Writer::add_lib_include(const string &s) {
+  data.add_lib_include(s);
+}
 

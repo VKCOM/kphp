@@ -9,6 +9,13 @@ require_once "srcfile.php";
 
 /**
  * @kphp-lib-export
+ */
+function get_str() {
+    return "hello world";
+}
+
+/**
+ * @kphp-lib-export
  * @param int $x
  * @param int $y
  */

@@ -109,7 +109,7 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
   if (typeflag == FTW_D) {
     //skip
   } else if (typeflag == FTW_F) {
-    File *f = current_index->get_file(fpath, true);
+    File *f = current_index->insert_file(fpath);
     f->on_disk = true;
     long long new_mtime = sb->st_mtime * 1000000000ll + sb->st_mtim.tv_nsec;
     //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
@@ -189,20 +189,22 @@ void Index::create_subdir(const string &subdir) {
   }
 }
 
-File *Index::get_file(string path, bool force/* = false*/) {
+void Index::fix_path(std::string &path) const {
+  kphp_assert(!path.empty());
   if (path[0] != '/') {
-    path = get_dir() + path;
+    path.insert(0, get_dir());
   }
   kphp_assert (path[0] == '/');
+}
 
-  if (!force) {
-    map<string, File *>::iterator it = files.find(path);
-    if (it == files.end()) {
-      return nullptr;
-    }
-    return it->second;
-  }
+File *Index::get_file(std::string path) const {
+  fix_path(path);
+  auto it = files.find(path);
+  return it == files.end() ? nullptr : it->second;
+}
 
+File *Index::insert_file(std::string path) {
+  fix_path(path);
   File *&f = files[path];
   if (f == nullptr) {
     f = new File();
@@ -228,7 +230,7 @@ File *Index::get_file(string path, bool force/* = false*/) {
   return f;
 }
 
-vector<File *> Index::get_files() {
+vector<File *> Index::get_files() const {
   return get_map_values(files);
 }
 
@@ -253,7 +255,7 @@ void Index::load(FILE *f) {
     unsigned long long crc64_with_comments;
     int err = fscanf(f, "%500s %llu %llu", tmp, &crc64, &crc64_with_comments);
     dl_passert (err == 3, "Failed to load index");
-    File *file = get_file(tmp, true);
+    File *file = insert_file(tmp);
     file->crc64 = crc64;
     file->crc64_with_comments = crc64_with_comments;
   }
