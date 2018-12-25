@@ -23,7 +23,7 @@ public:
       FunctionPtr invoke_method = lambda_class->members.get_instance_method("__invoke")->function;
       vector<VertexPtr> uses_of_lambda;
 
-      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda), current_function->file_id);
+      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda));
     }
 
     return root;

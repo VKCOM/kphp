@@ -630,7 +630,7 @@ VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, Ver
     return VertexAdaptor<op_ternary>::create(left, right, third);
   }
 
-  string left_name = gen_shorthand_ternary_name(stage::get_file());
+  string left_name = gen_shorthand_ternary_name(cur_function);
   auto left_var = VertexAdaptor<op_var>::create();
   left_var->str_val = left_name;
   left_var->extra_type = op_ex_var_superlocal;
@@ -1574,7 +1574,7 @@ VertexPtr GenTree::get_anonymous_function() {
 
   if (auto anon_function = f.try_as<op_function>()) {
     // это constructor call
-    return generate_anonymous_class(anon_function, parsed_os, cur_function, std::move(uses_of_lambda), processing_file);
+    return generate_anonymous_class(anon_function, parsed_os, cur_function, std::move(uses_of_lambda));
   }
 
   return {};
@@ -1595,7 +1595,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
   set_location(name, func_location);
 
   if (uses_of_lambda != nullptr) {
-    name->str_val = gen_anonymous_function_name(processing_file);
+    name->str_val = gen_anonymous_function_name(cur_function);
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
     name->str_val = static_cast<string>((*std::prev(cur))->str_val);
@@ -1900,11 +1900,10 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
 
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
-                                            FunctionPtr function_in_which_lambda_was_created,
-                                            std::vector<VertexPtr> &&uses_of_lambda,
-                                            SrcFilePtr file_id) {
+                                            FunctionPtr cur_function,
+                                            std::vector<VertexPtr> &&uses_of_lambda) {
   VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->str_val = gen_anonymous_function_name(file_id);
+  lambda_class_name->str_val = gen_anonymous_function_name(cur_function);
   lambda_class_name->location.line = function->name()->location.line;
 
   VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
@@ -1913,7 +1912,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   anon_class->set_name_and_src_name(FunctionData::get_lambda_namespace() + "\\" + lambda_class_name->get_string());
   anon_class->root = class_vertex;
 
-  if (function_in_which_lambda_was_created->is_instance_function()) {
+  if (cur_function->is_instance_function()) {
     auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
     implicit_captured_var_parent_this->set_string("parent$this");
     ::set_location(implicit_captured_var_parent_this, lambda_class_name->location);
@@ -1936,7 +1935,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     std::string s = fun->name()->get_string();
     fun->name()->set_string(replace_backslashes(anon_class->name) + "$$" + s);
     FunctionPtr invoke_function = FunctionData::create_function(fun, FunctionData::func_local);
-    invoke_function->function_in_which_lambda_was_created = function_in_which_lambda_was_created;
+    invoke_function->function_in_which_lambda_was_created = cur_function;
     anon_class->members.add_instance_method(invoke_function, access_public);
 
     auto params = fun->params().as<op_func_param_list>()->args();
@@ -1957,7 +1956,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   ::set_location(constructor_params, lambda_class_name->location);
   create_constructor_with_args(anon_class, AutoLocation(function->location.line), constructor_params, os);
   anon_class->new_function->is_template = !uses_of_lambda.empty();
-  anon_class->new_function->function_in_which_lambda_was_created = function_in_which_lambda_was_created;
+  anon_class->new_function->function_in_which_lambda_was_created = cur_function;
 
   anon_class->init_function = FunctionPtr(new FunctionData());
   G->register_class(anon_class);

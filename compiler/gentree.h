@@ -72,7 +72,7 @@ public:
   static VertexPtr create_vertex_this(const AutoLocation &location, ClassPtr cur_class, bool with_type_rule = false);
   static void patch_func_constructor(VertexAdaptor<op_function> func, ClassPtr cur_class, AutoLocation location);
   static void patch_func_add_this(vector<VertexPtr> &params_next, const AutoLocation &func_location, ClassPtr cur_class);
-  static VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
+  VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   void create_default_constructor(ClassPtr cur_class, AutoLocation location) const;
   static void create_constructor_with_args(ClassPtr cur_class,
                                            AutoLocation location, VertexAdaptor<op_func_param_list> params,
@@ -138,9 +138,8 @@ public:
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
-                                            FunctionPtr function_in_which_lambda_was_created,
-                                            std::vector<VertexPtr> &&uses_of_lambda,
-                                            SrcFilePtr file_id);
+                                            FunctionPtr cur_function,
+                                            std::vector<VertexPtr> &&uses_of_lambda);
 
   VertexPtr get_class(Token *phpdoc_token);
 
