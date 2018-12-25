@@ -23,6 +23,16 @@ public:
       FunctionPtr invoke_method = lambda_class->members.get_instance_method("__invoke")->function;
       vector<VertexPtr> uses_of_lambda;
 
+      lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
+        auto new_var_use = VertexAdaptor<op_var>::create();
+        new_var_use->set_string(f.local_name());
+        set_location(new_var_use, f.root->location);
+        auto func_param = VertexAdaptor<op_func_param>::create(new_var_use);
+        set_location(func_param, f.root->location);
+
+        uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
+      });
+
       return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda));
     }
 
