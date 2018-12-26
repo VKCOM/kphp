@@ -427,17 +427,20 @@ std::string CompilerCore::get_subdir_name() const {
   return ss.str();
 }
 
-bool compare_mtime(File *f, File *g) {
-  if (f->mtime != g->mtime) {
-    return f->mtime > g->mtime;
+long long get_imported_header_mtime(const std::string &header_path, const std::forward_list<Index> &imported_headers) {
+  for (const Index &lib_headers_dir: imported_headers) {
+    if (File *header = lib_headers_dir.get_file(header_path)) {
+      return header->mtime;
+    }
   }
-  return f->path < g->path;
+  kphp_error(false, format("Can't file lib header file '%s'", header_path.c_str()));
+  return 0;
 }
 
 std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_dir, const std::forward_list<Index> &imported_headers) {
   std::unordered_map<File *, long long> dep_mtime;
   std::priority_queue<std::pair<long long, File *>> mtime_queue;
-  std::unordered_map<File *, vector<File *>> reverse_includes;
+  std::unordered_map<File *, std::vector<File *>> reverse_includes;
 
   std::vector<File *> files = cpp_dir.get_files();
 
@@ -453,19 +456,13 @@ std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_dir, con
       reverse_includes[header].push_back(file);
     }
 
-    long long max_lib_mtime = lib_version->mtime;
+    long long max_mtime = std::max(file->mtime, lib_version->mtime);
     for (const auto &lib_include : file->lib_includes) {
-      File *header = nullptr;
-      for (auto lib_it = imported_headers.begin(); lib_it != imported_headers.end() && !header; ++lib_it) {
-        header = lib_it->get_file(lib_include);
-      }
-      kphp_error_act(header, format("Can't file lib header file '%s'", lib_include.c_str()), continue);
-      max_lib_mtime = std::max(max_lib_mtime, header->mtime);
+      max_mtime = std::max(max_mtime, get_imported_header_mtime(lib_include, imported_headers));
     }
 
-    long long &mtime = dep_mtime[file];
-    mtime = std::max({file->mtime, lib_version->mtime, max_lib_mtime});
-    mtime_queue.emplace(mtime, file);
+    dep_mtime[file] = max_mtime;
+    mtime_queue.emplace(max_mtime, file);
   }
 
   while (!mtime_queue.empty()) {
