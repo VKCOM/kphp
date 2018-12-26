@@ -69,8 +69,8 @@ protected:
     set_children(shift + 1, std::forward<Args>(args)...);
   }
 
-  template<class... Args>
-  void set_children(int shift, const std::vector<VertexPtr> &arg, Args &&... args) {
+  template<Operation op, class... Args>
+  void set_children(int shift, const std::vector<VertexAdaptor<op>> &arg, Args &&... args) {
     for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
       ith(shift + i) = arg[i];
     }
@@ -86,8 +86,8 @@ protected:
     return 1 + get_children_size(std::forward<Args>(args)...);
   }
 
-  template<class... Args>
-  static int get_children_size(const std::vector<VertexPtr> &arg, Args &&... args) {
+  template<Operation op, class... Args>
+  static int get_children_size(const std::vector<VertexAdaptor<op>> &arg, Args &&... args) {
     return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
   }
 
