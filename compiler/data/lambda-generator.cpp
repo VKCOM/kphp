@@ -63,6 +63,29 @@ LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
   return *this;
 }
 
+LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(FunctionPtr called_function) {
+  std::vector<VertexAdaptor<op_var>> lambda_params;
+  for (auto &param : called_function->get_params()) {
+    auto new_param = VertexAdaptor<op_var>::create();
+    new_param->set_string(param.as<op_func_param>()->var()->get_string());
+    set_location(new_param, created_location);
+    lambda_params.emplace_back(new_param);
+  }
+
+  auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
+  call_function->set_string(called_function->name);
+  call_function->set_func_id(called_function);
+  auto return_call = VertexAdaptor<op_return>::create(call_function);
+  auto lambda_body = VertexAdaptor<op_seq>::create(return_call);
+
+  set_location(created_location, call_function, return_call, lambda_body);
+
+  auto fun = VertexAdaptor<op_function>::create(generated_lambda->root->name(), called_function->root->params(), lambda_body);
+  add_invoke_method(fun);
+
+  return *this;
+}
+
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
   auto lambda_class = generate(std::move(parent_function));
   lambda_class->members.for_each([&os](const ClassMemberInstanceMethod &m) {

@@ -8,6 +8,7 @@ public:
 
   LambdaGenerator &add_uses(std::vector<VertexPtr> uses, bool implicit_capture_this = false);
   LambdaGenerator &add_invoke_method(const VertexAdaptor<op_function> &function);
+  LambdaGenerator &add_invoke_method_which_call_function(FunctionPtr called_function);
   LambdaGenerator &add_constructor_from_uses();
 
   LambdaPtr generate(FunctionPtr parent_function);
