@@ -1859,7 +1859,7 @@ void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
     VarPtr var_id = *begin;
     int var_hash;
     if (var_id->class_id) {
-      var_hash = hash(var_id->class_id->init_function->name);
+      var_hash = hash(var_id->class_id->file_id->main_func_name);
     } else {
       var_hash = hash(var_id->name);
     }
@@ -1905,8 +1905,8 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
   vector<ClassPtr> classes = G->get_classes();
   for (auto ci : classes) {
-    if (ci) {
-      collect_used_funcs_and_vars(ci->init_function, &used_functions, used_vars, parts_n);
+    if (ci && ci->file_id) {
+      collect_used_funcs_and_vars(ci->file_id->main_function, &used_functions, used_vars, parts_n);
     }
   }
 
@@ -4088,7 +4088,9 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
 
   //TODO: parallelize;
   for (const auto &fun : xall) {
-    prepare_generate_function(fun);
+    if (fun->type() != FunctionData::func_class_wrapper) {
+      prepare_generate_function(fun);
+    }
   }
   for (const auto &c : all_classes) {
     if (c && c->was_constructor_invoked) {
@@ -4100,15 +4102,14 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vector<FunctionPtr> all_functions;
   vector<FunctionPtr> source_functions;
   vector<FunctionPtr> exported_functions;
-  for (int i = 0; i < (int)xall.size(); i++) {
-    FunctionPtr function = xall[i];
+  for (const auto &function : xall) {
     if (function->body_seq == FunctionData::body_value::empty) {
       continue;
     }
     if (function->used_in_source) {
       source_functions.push_back(function);
     }
-    if (function->type() == FunctionData::func_extern) {
+    if (function->type() == FunctionData::func_extern || function->type() == FunctionData::func_class_wrapper) {
       continue;
     }
     all_functions.push_back(function);

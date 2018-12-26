@@ -386,7 +386,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
     } else if (tp == tok_arrow) {
       AutoLocation location(this);
       next_cur();
-      VertexPtr i = get_expr_top();
+      VertexPtr i = get_expr_top(true);
       CE (!kphp_error(i, "Failed to parse right argument of '->'"));
       auto v = VertexAdaptor<op_arrow>::create(res, i);
       res = v;
@@ -416,7 +416,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
   return res;
 }
 
-VertexPtr GenTree::get_expr_top() {
+VertexPtr GenTree::get_expr_top(bool was_arrow) {
   vector<Token *>::const_iterator op = cur;
 
   VertexPtr res, first_node;
@@ -543,7 +543,6 @@ VertexPtr GenTree::get_expr_top() {
       res = get_func_call<op_constructor_call, op_none>();
       break;
     case tok_func_name: {
-      bool was_arrow = (*(cur - 1))->type() == tok_arrow;
       cur++;
       if (!test_expect(tok_oppar)) {
         cur--;
@@ -669,7 +668,7 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
 VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
   op_priority_cur = std::min(op_priority_cur, OpInfo::op_priority_end);
   if (op_priority_cur == OpInfo::op_priority_end) {
-    return get_expr_top();
+    return get_expr_top(false);
   }
 
   if (cur != end) {
@@ -1657,12 +1656,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     return {};
   }
 
-  auto func_type = FunctionData::func_local;
-  if (test_expect(tok_semicolon)) {
-    func_type = FunctionData::func_extern;
-  } else if (functions_stack.empty()) {
-    func_type = FunctionData::func_global;
-  }
+  auto func_type = test_expect(tok_semicolon) ? FunctionData::func_extern : FunctionData::func_local;
 
   VertexPtr root = func_type == FunctionData::func_extern
                    ? (VertexPtr)VertexAdaptor<op_func_decl>::create(name, params)
@@ -1697,8 +1691,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     CE (expect(tok_semicolon, "';'"));
   }
 
-  bool auto_require = cur_function->type() == FunctionData::func_global
-                      || cur_function->type() == FunctionData::func_extern
+  bool auto_require = cur_function->type() == FunctionData::func_extern
                       || cur_function->is_instance_function()
                       || kphp_required_flag;
   G->register_and_require_function(cur_function, parsed_os, auto_require);
@@ -1741,30 +1734,43 @@ static inline bool is_class_name_allowed(const string &name) {
   return disallowed_names.find(name) == disallowed_names.end();
 }
 
+// выражение [self::CC+2] превращаем в [classname$$CC+2]
+void GenTree::replace_self_parent_in_class_const_val(VertexPtr v, ClassPtr cur_class) {
+  if (v->type() == op_func_name && v->get_string().find("::") != std::string::npos) {
+    const std::string &initv = v->get_string();
+
+    if (vk::string_view(initv).starts_with("self::")) {
+      v->set_string(replace_backslashes(cur_class->name) + "$$" + initv.substr(6));
+    } else if (vk::string_view(initv).starts_with("parent::")) {
+      v->set_string(replace_backslashes(*cur_class->get_parent_class_name()) + "$$" + initv.substr(8));
+    } else if (vk::string_view(initv).starts_with("static::")) {
+      kphp_error(0, "static:: can not be used in field/constant initialization");
+    }
+  }
+
+  for (auto child : *v) {
+    replace_self_parent_in_class_const_val(child, cur_class);
+  }
+}
+
 VertexPtr GenTree::get_class(Token *phpdoc_token) {
   AutoLocation class_location(this);
   CE (expect(tok_class, "'class'"));
   CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
 
+  string name_str = static_cast<string>((*cur)->str_val);
+  string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
+
   auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = processing_file->main_func_name;     // пока что класс == global-функция файла
+  func_name->str_val = "W$" + full_class_name;  // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_global));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_class_wrapper));
   StackPushPop<ClassPtr> c_alive(class_stack, cur_class, ClassPtr(new ClassData()));
-
   cur_function->class_id = cur_class;
-  cur_class->init_function = cur_function;
 
-  string name_str = static_cast<string>((*cur)->str_val);
-  string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
-  if (!processing_file->namespace_name.empty()) {
-    string expected_name = processing_file->short_file_name;
-    kphp_error (name_str == expected_name,
-                format("Expected class name %s, found %s", expected_name.c_str(), name_str.c_str()));
-  }
   if (!is_class_name_allowed(name_str)) {
     kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
   }
@@ -1809,13 +1815,10 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
     seq.emplace_back(f.root);
   });
 
-  cur_function->root.as<op_function>()->cmd() = VertexAdaptor<op_seq>::create(seq);
-  func_force_return(cur_function->root);
-
-  G->register_and_require_function(cur_function, parsed_os, true);  // global-функции всегда require
+  G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
   G->register_class(cur_class);
 
-  return VertexPtr();
+  return VertexAdaptor<op_seq>::create(seq);
 }
 
 void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) {
@@ -1893,7 +1896,7 @@ VertexPtr GenTree::generate_constructor_call(ClassPtr cur_class) {
 
   auto constructor_call = VertexAdaptor<op_constructor_call>::create(args);
   constructor_call->set_string(cur_class->name);
-  constructor_call->set_func_id(cur_class->new_function);
+  constructor_call->set_func_id(cur_class->construct_function);
 
   return constructor_call;
 }
@@ -1955,10 +1958,8 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
   auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses_of_lambda);
   ::set_location(constructor_params, lambda_class_name->location);
   create_constructor_with_args(anon_class, AutoLocation(function->location.line), constructor_params, os);
-  anon_class->new_function->is_template = !uses_of_lambda.empty();
-  anon_class->new_function->function_in_which_lambda_was_created = cur_function;
-
-  anon_class->init_function = FunctionPtr(new FunctionData());
+  anon_class->construct_function->is_template = !uses_of_lambda.empty();
+  anon_class->construct_function->function_in_which_lambda_was_created = cur_function;
   G->register_class(anon_class);
 
   auto constructor_call = generate_constructor_call(anon_class);
@@ -2001,12 +2002,13 @@ VertexPtr GenTree::get_use() {
   return VertexPtr();
 }
 
-VertexPtr GenTree::get_namespace_class() {
+void GenTree::parse_namespace_and_uses_at_top_of_file() {
   kphp_assert (test_expect(tok_namespace));
   kphp_assert (processing_file->namespace_name.empty());
+
   next_cur();
   kphp_error (test_expect(tok_func_name), "Namespace name expected");
-  string namespace_name{(*cur)->str_val};
+  processing_file->namespace_name = static_cast<string>((*cur)->str_val);
   std::string real_unified_dir = processing_file->unified_dir_name;
   if (processing_file->owner_lib) {
     vk::string_view current_file_unified_dir = real_unified_dir;
@@ -2015,29 +2017,20 @@ VertexPtr GenTree::get_namespace_class() {
     real_unified_dir.erase(0, lib_unified_dir.size() + 1);
   }
   string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
-  kphp_error (namespace_name == expected_namespace_name,
+  kphp_error (processing_file->namespace_name == expected_namespace_name,
               format("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
-  processing_file->namespace_name = namespace_name;
+
   next_cur();
   expect (tok_semicolon, "';'");
+
   if (stage::has_error()) {
     while (cur != end) {
       ++cur;
     }
-    return VertexPtr();
   }
   while (test_expect(tok_use)) {
     get_use();
   }
-
-  Token *phpdoc_token = nullptr;
-  if ((*cur)->type() == tok_phpdoc || (*cur)->type() == tok_phpdoc_kphp) {
-    phpdoc_token = *cur;
-    next_cur();
-  }
-  VertexPtr cv = get_class(phpdoc_token);
-  CE (check_statement_end());
-  return cv;
 }
 
 AccessType convert_token_type_to_access_type(TokenType access_token, bool is_static) {
@@ -2052,15 +2045,9 @@ VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unu
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);  // cur сразу перед $field_name
   CE (check_statement_end());
 
-  const OperationExtra extra_type =
-    access_type == access_static_private ? op_ex_static_private :
-    access_type == access_static_public ? op_ex_static_public : op_ex_static_protected;
-
   // с учётом переделок, это можно удалить: оно по факту нужно лишь чтобы достать local_name
-  for (auto e : *v) {
-    kphp_assert(e->type() == op_static);
-    e->extra_type = extra_type;
-    VertexAdaptor<op_static> seq = e;
+  for (VertexAdaptor<op_static> seq : *v) {
+    seq->class_id = cur_class;
     for (auto node : seq->args()) {
       VertexAdaptor<op_var> var;
       if (node->type() == op_var) {
@@ -2068,6 +2055,7 @@ VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unu
       } else if (node->type() == op_set) {
         VertexAdaptor<op_set> set_expr = node;
         var = set_expr->lhs();
+        replace_self_parent_in_class_const_val(set_expr->rhs(), cur_class);
         kphp_error_act (
           var->type() == op_var,
           "unexpected expression in 'static'",
@@ -2076,7 +2064,7 @@ VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unu
       } else {
         kphp_error_act (0, "unexpected expression in 'static'", continue);
       }
-      cur_class->members.add_static_field(e, var->str_val, access_type);
+      cur_class->members.add_static_field(seq, var->str_val, access_type);
     }
   }
 
@@ -2093,7 +2081,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
   switch (type) {
     case tok_class:
       res = get_class(phpdoc_token);
-      return VertexPtr();
+      return res;
     case tok_opbrc:
       next_cur();
       res = get_seq();
@@ -2294,6 +2282,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (check_statement_end());
 
       if (const_in_class) {
+        replace_self_parent_in_class_const_val(v, cur_class);
         cur_class->members.add_constant(def);
         auto empty = VertexAdaptor<op_empty>::create();
         return empty;
@@ -2369,7 +2358,7 @@ VertexPtr GenTree::get_instance_var_list(Token *phpdoc_token, AccessType access_
   return VertexPtr();
 }
 
-VertexPtr GenTree::get_seq() {
+VertexPtr GenTree::get_seq(bool add_force_func_return) {
   vector<VertexPtr> seq_next;
   AutoLocation seq_location(this);
 
@@ -2380,6 +2369,13 @@ VertexPtr GenTree::get_seq() {
     }
     seq_next.push_back(cur_node);
   }
+
+  if (add_force_func_return) {
+    auto return_node = VertexAdaptor<op_return>::create(VertexAdaptor<op_null>::create());
+    return_node->void_flag = true;
+    seq_next.push_back(return_node);
+  }
+
   auto seq = VertexAdaptor<op_seq>::create(seq_next);
   set_location(seq, seq_location);
 
@@ -2390,20 +2386,26 @@ bool GenTree::has_return(VertexPtr v) {
   return v->type() == op_return || std::any_of(v->begin(), v->end(), has_return);
 }
 
-VertexPtr GenTree::run() {
-  VertexPtr res;
+void GenTree::run() {
+  auto v_func_name = VertexAdaptor<op_func_name>::create();
+  v_func_name->set_string(processing_file->main_func_name);
+  auto v_func_params = VertexAdaptor<op_func_param_list>::create();
+  auto root = VertexAdaptor<op_function>::create(v_func_name, v_func_params, VertexPtr{});
+
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, FunctionData::func_global));
+  processing_file->main_function = cur_function;
+
   if (test_expect(tok_namespace)) {
-    res = get_namespace_class();
-  } else {
-    res = get_statement();
+    parse_namespace_and_uses_at_top_of_file();
   }
-  kphp_assert (!res);
+
+  cur_function->root.as<op_function>()->cmd() = get_seq(true);
+  G->register_and_require_function(cur_function, parsed_os, true);  // global функция — поэтому required
+
   if (cur != end) {
     fprintf(stderr, "line %d: something wrong\n", line_num);
     kphp_error (0, "Cannot compile (probably problems with brace balance)");
   }
-
-  return res;
 }
 
 void GenTree::for_each(VertexPtr root, void (*callback)(VertexPtr)) {

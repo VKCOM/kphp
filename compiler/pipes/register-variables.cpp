@@ -61,21 +61,17 @@ bool RegisterVariablesPass::is_const(VertexPtr v) {
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
   return v->type() == op_var && v->get_var_id()->is_in_global_scope();
 }
-void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value, OperationExtra extra_type) {
-  kphp_error_return (!global_function_flag || extra_type == op_ex_static_private || extra_type == op_ex_static_public
-                     || extra_type == op_ex_static_protected,
-                     "Keyword 'static' used in global function");
-
+void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex, ClassPtr class_id, VertexPtr default_value) {
   VarPtr var;
   string name;
-  if (global_function_flag) {
+  if (class_id) {   // static variable класса
     kphp_assert(!current_function->is_lambda());
-    name = replace_backslashes(current_function->class_id->name) + "$$" + var_vertex->str_val;
+    name = replace_backslashes(class_id->name) + "$$" + var_vertex->str_val;
     var = get_global_var(name);
-    var->class_id = current_function->class_id;
+    var->class_id = class_id;
     kphp_assert(var->is_class_static_var());
-  } else {
-    kphp_assert(extra_type == op_ex_none);
+  } else {          // static переменная функции
+    kphp_error(current_function->type() == FunctionData::func_local, "keyword 'static' used in global function");
     name = var_vertex->str_val;
     var = create_local_var(name, VarData::var_static_t, true);
     kphp_assert(var->is_function_static_var());
@@ -165,7 +161,7 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
       kphp_error_act (0, "unexpected expression in 'static'", continue);
     }
 
-    register_static_var(var, default_value, stat->extra_type);
+    register_static_var(var, stat->class_id, default_value);
   }
 }
 void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {

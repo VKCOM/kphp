@@ -15,10 +15,7 @@ void FileToTokensF::execute(SrcFilePtr file, DataStream<FileAndTokens> &os) {
   FileAndTokens res;
   res.file = file;
   res.tokens = new vector<Token *>();
-  php_text_to_tokens(
-    &file->text[0], (int)file->text.length(),
-    file->main_func_name, res.tokens
-  );
+  php_text_to_tokens(&file->text[0], (int)file->text.length(), res.tokens);
 
   if (stage::has_error()) {
     return;

@@ -83,12 +83,10 @@ void CompilerCore::save_extern_func_header(const string &name, VertexPtr header)
 void CompilerCore::create_builtin_classes() {
   ClassPtr exception = ClassPtr(new ClassData());
   exception->name = "Exception";
-  exception->init_function = FunctionPtr(new FunctionData());
   classes_ht.at(hash_ll(exception->name))->data = exception;
 
   ClassPtr memcache = ClassPtr(new ClassData());
   memcache->name = "Memcache";
-  memcache->init_function = FunctionPtr(new FunctionData());
   classes_ht.at(hash_ll(memcache->name))->data = memcache;
 }
 

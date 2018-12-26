@@ -43,10 +43,6 @@ void ClassData::debugPrint() {
   });
 }
 
-std::string ClassData::get_namespace() const {
-  return is_lambda_class() ? FunctionData::get_lambda_namespace() : file_id->namespace_name;
-}
-
 PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexRange call_params, FunctionPtr function_context, VertexRange extern_func_params,
                                          AssumType &assum, ClassPtr &klass_assumed) {
 
@@ -105,7 +101,7 @@ std::string ClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_f
                                                               FunctionPtr function_context,
                                                               std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr /*= nullptr*/,
                                                               FunctionPtr *template_of_invoke_method /*= nullptr*/) const {
-  std::string invoke_method_name = replace_backslashes(new_function->class_id->name) + "$$__invoke";
+  std::string invoke_method_name = replace_backslashes(construct_function->class_id->name) + "$$__invoke";
 
   VertexRange call_params = extern_function_call->args();
   //int call_params_n = static_cast<int>(call_params.size());

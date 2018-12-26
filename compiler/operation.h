@@ -16,9 +16,6 @@ enum OperationExtra {
   op_ex_rule_const,
   op_ex_internal_func,
   op_ex_safe_version,
-  op_ex_static_public,
-  op_ex_static_private,
-  op_ex_static_protected
 };
 
 enum RLValueType {

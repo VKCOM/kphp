@@ -24,7 +24,7 @@ private:
   void register_global_var(VertexAdaptor<op_var> var_vertex);
   bool is_const(VertexPtr v);
   bool is_global_var(VertexPtr v);
-  void register_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value, OperationExtra extra_type);
+  void register_static_var(VertexAdaptor<op_var> var_vertex, ClassPtr class_id, VertexPtr default_value);
   void register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value);
   void register_var(VertexAdaptor<op_var> var_vertex);
   void visit_global_vertex(VertexAdaptor<op_global> global);

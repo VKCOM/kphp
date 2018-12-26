@@ -295,8 +295,8 @@ private:
         lambda_class->infer_uses_assumptions(current_function);
         new_call->location.function = current_function;
         call->location.function = current_function;
-        lambda_class->new_function->is_template = false;
-        instance_of_function_template_stream << lambda_class->new_function;
+        lambda_class->construct_function->is_template = false;
+        instance_of_function_template_stream << lambda_class->construct_function;
       }
 
       return call;

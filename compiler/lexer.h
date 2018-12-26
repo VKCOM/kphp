@@ -18,7 +18,7 @@ struct LexerData {
   void start_str();
   void append_char(int c);
   void flush_str();
-  void post_process(const string &main_func_name = string());
+  void post_process();
 
 
   void move_tokens(vector<Token *> *dest);
@@ -182,4 +182,4 @@ struct TokenLexerGlobal : TokenLexer {
 };
 
 void lexer_init();
-int php_text_to_tokens(char *text, int text_length, const string &main_func_name, vector<Token *> *result);
+int php_text_to_tokens(char *text, int text_length, vector<Token *> *result);

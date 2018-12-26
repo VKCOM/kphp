@@ -98,12 +98,10 @@ inline string resolve_uses(FunctionPtr current_function, string class_name, char
   if (class_name[0] != '\\') {
     if (class_name == "static" || class_name == "self" || class_name == "parent") {
       if (class_name == "parent") {
-        ClassPtr class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
-        // тут именно extends как строка, т.к. parent_class присваивается позже, чем может вызываться resolve_uses()
-        auto extends_it = std::find_if(class_id->str_dependents.begin(), class_id->str_dependents.end(),
-                                       [](ClassData::StrDependence &dep) { return dep.type == ctype_class; });
-        kphp_error(extends_it != class_id->str_dependents.end(), "Using parent:: in class that does not extend anything");
-        class_name = extends_it->class_name;
+        // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов
+        const std::string *parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name();
+        kphp_error(parent_class_name != nullptr, "Using parent:: in class that extends nothing");
+        class_name = *parent_class_name;
       } else if (class_name == "static") {
         class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
       } else {
@@ -161,7 +159,7 @@ string resolve_constructor_func_name(FunctionPtr function, VertexAdaptor<op_cons
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
 
-  if (likely(klass && klass->new_function)) {
+  if (likely(klass && klass->construct_function)) {
     return replace_backslashes(klass->name) + "$$" + arrow_call->get_string();
   }
 

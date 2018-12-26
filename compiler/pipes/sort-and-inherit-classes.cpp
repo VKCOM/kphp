@@ -154,8 +154,6 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
  * (родители, трейты, интерфейсы) тоже готовы.
  */
 void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream) {
-  kphp_assert(klass->init_function->class_id == klass);
-
   for (const auto &dep : klass->str_dependents) {
     ClassPtr dep_class = G->get_class(dep.class_name);
 

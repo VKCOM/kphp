@@ -32,8 +32,7 @@ public:
   vector<ClassPtr> implements;          // на будущее
   vector<ClassPtr> traits_uses;         // на будущее
 
-  FunctionPtr init_function;
-  FunctionPtr new_function;
+  FunctionPtr construct_function;
   Token *phpdoc_token;
 
   std::vector<Assumption> assumptions_for_vars;
@@ -51,7 +50,6 @@ public:
                                                      FunctionPtr function_context,
                                                      std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr = nullptr,
                                                      FunctionPtr *template_of_invoke_method = nullptr) const;
-  FunctionPtr get_invoke_function_for_extern_function(VertexAdaptor<op_func_call> extern_function_call, FunctionPtr function_context) const;
   FunctionPtr get_template_of_invoke_function() const;
 
   bool is_lambda_class() const;
@@ -61,12 +59,19 @@ public:
 
   void debugPrint();
 
-  std::string get_namespace() const;
-
   const std::string &get_subdir() const {
     static std::string lambda_subdir("cl_l");
     static std::string common_subdir("cl");
 
     return is_lambda_class() ? lambda_subdir : common_subdir;
+  }
+
+  const std::string *get_parent_class_name() const {
+    for (const auto &dep : str_dependents) {    // именно когда нужно строковое имя extends,
+      if (dep.type == ctype_class) {            // до связки классов, т.е. parent_class ещё не определёнs
+        return &dep.class_name;
+      }
+    }
+    return nullptr;
   }
 };

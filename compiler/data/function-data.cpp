@@ -63,10 +63,6 @@ FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, 
   function->file_id = stage::get_file();
   function->type() = type;
 
-  if (type == FunctionData::func_global && stage::get_file()->main_func_name == function->name) {
-    stage::get_file()->main_function = function;
-  }
-
   return function;
 }
 
@@ -231,7 +227,7 @@ VertexRange FunctionData::get_params() {
 }
 
 bool FunctionData::is_constructor() const {
-  return class_id && class_id->new_function && &*(class_id->new_function) == this;
+  return class_id && class_id->construct_function && &*(class_id->construct_function) == this;
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {

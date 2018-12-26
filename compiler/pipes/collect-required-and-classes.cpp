@@ -21,8 +21,10 @@ private:
   }
 
   void require_class(const string &class_name) {
-    SrcFilePtr res = require_file(class_name + ".php");
-    kphp_error(res, format("Class %s not found", class_name.c_str()));
+    if (!G->get_class(class_name)) {
+      SrcFilePtr res = require_file(class_name + ".php");
+      kphp_error(res, format("Class %s not found", class_name.c_str()));
+    }
   }
 
 public:
@@ -40,7 +42,7 @@ public:
       return false;
     }
 
-    if (function->type() == FunctionData::func_global && function->class_id) {
+    if (function->type() == FunctionData::func_class_wrapper) {
       for (const auto &dep : function->class_id->str_dependents) {
         require_class(replace_characters(dep.class_name, '\\', '/'));
       }
@@ -105,7 +107,7 @@ void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAn
     return;
   }
 
-  if (function->class_id && function->class_id->init_function == function) {
+  if (function->type() == FunctionData::func_class_wrapper) {
     class_stream << function->class_id;
   }
 

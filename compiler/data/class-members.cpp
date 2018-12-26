@@ -111,7 +111,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   function->context_class = klass;
 
   if (vk::string_view(function->name).ends_with("__construct")) {
-    klass->new_function = function;
+    klass->construct_function = function;
   }
 }
 

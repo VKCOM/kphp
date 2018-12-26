@@ -23,7 +23,8 @@ public:
     func_global,
     func_local,
     func_switch,
-    func_extern
+    func_extern,
+    func_class_wrapper
   };
   func_type_t type_;
 

@@ -1,6 +1,7 @@
 #include "compiler/pipes/check-instance-props.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
@@ -37,7 +38,7 @@ void CheckInstancePropsPass::init_class_instance_var(VertexPtr v, const ClassMem
   if (field->phpdoc_token) {
     std::string var_name, type_str;
     if (PhpDocTypeRuleParser::find_tag_in_phpdoc(field->phpdoc_token->str_val, php_doc_tag::var, var_name, type_str)) {
-      VertexPtr doc_type = phpdoc_parse_type(type_str, klass->init_function);
+      VertexPtr doc_type = phpdoc_parse_type(type_str, klass->file_id->main_function);
       if (!kphp_error(doc_type,
                       format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), field->local_name().c_str()))) {
         doc_type->location = field->root->location;

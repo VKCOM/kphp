@@ -23,6 +23,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/phpdoc.h"
 
 AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
@@ -179,7 +180,7 @@ void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const Tok
   std::string type_str, param_var_name;
   ClassPtr klass;
   if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str)) {
-    AssumType assum = parse_phpdoc_classname(type_str, klass, c->init_function);
+    AssumType assum = parse_phpdoc_classname(type_str, klass, c->file_id->main_function);
 
     if (klass && (param_var_name.empty() || var_name == param_var_name)) {
       assumption_add_for_var(c, assum, var_name, klass);

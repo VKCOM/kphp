@@ -147,28 +147,12 @@ static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, 
          tokens[pos + 3]->type() == type3;
 }
 
-void LexerData::post_process(const string &main_func_name) {
+void LexerData::post_process() {
   vector<Token *> oldtokens;
   oldtokens.swap(tokens);
   int n = (int)oldtokens.size();
 
   int i = 0;
-  bool is_namespace = !oldtokens.empty() && oldtokens[0]->type() == tok_namespace;
-  if (is_namespace) {
-    for (; i < 3 && i < n; i++) {
-      tokens.push_back(oldtokens[i]); // namespace <name>;
-    }
-  } else {
-
-    if (!main_func_name.empty()) {
-      tokens.push_back(new Token(tok_function));
-      tokens.push_back(new Token(tok_func_name, string_view_dup(main_func_name)));
-      tokens.push_back(new Token(tok_oppar));
-      tokens.push_back(new Token(tok_clpar));
-    }
-
-    tokens.push_back(new Token(tok_opbrc));
-  }
   while (i < n) {
     TokenType tp = tok_empty;
     if (i + 2 < n && oldtokens[i]->type() == tok_oppar && oldtokens[i + 2]->type() == tok_clpar) {
@@ -371,9 +355,6 @@ void LexerData::post_process(const string &main_func_name) {
     }
   }
 
-  if (!is_namespace) {
-    tokens.push_back(new Token(tok_clbrc));
-  }
   tokens.push_back(new Token(tok_end));
 }
 
@@ -1316,7 +1297,7 @@ void lexer_init() {
   config_func();
 }
 
-int php_text_to_tokens(char *text, int text_length, const string &main_func_name, vector<Token *> *result) {
+int php_text_to_tokens(char *text, int text_length, vector<Token *> *result) {
   static TokenLexerGlobal lexer;
 
   LexerData lexer_data;
@@ -1331,7 +1312,7 @@ int php_text_to_tokens(char *text, int text_length, const string &main_func_name
     kphp_error_act (ret == 0, "failed to parse", return ret);
   }
 
-  lexer_data.post_process(main_func_name);
+  lexer_data.post_process();
   lexer_data.move_tokens(result);
   return 0;
 }

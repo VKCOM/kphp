@@ -62,7 +62,7 @@ static void check_template_function(FunctionPtr func) {
 
   for (auto l : func->lambdas_inside) {
     const auto &prev_location = stage::get_location();
-    stage::set_location(l->class_id->new_function->root->location);
+    stage::set_location(l->class_id->construct_function->root->location);
     kphp_error(!l->is_lambda_with_uses(), "it's not allowed lambda with uses inside template function(or another lambda)");
     stage::set_location(prev_location);
   }

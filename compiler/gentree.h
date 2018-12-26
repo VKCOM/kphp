@@ -84,7 +84,7 @@ public:
   VertexPtr get_foreach_param();
   VertexPtr get_var_name();
   VertexPtr get_var_name_ref();
-  VertexPtr get_expr_top();
+  VertexPtr get_expr_top(bool was_arrow);
   VertexPtr get_postfix_expression(VertexPtr res);
   VertexPtr get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary);
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
@@ -92,12 +92,13 @@ public:
   VertexPtr get_expression();
   VertexPtr get_statement(Token *phpdoc_token = nullptr);
   VertexPtr get_instance_var_list(Token *phpdoc_token, AccessType access_type);
-  VertexPtr get_namespace_class();
   VertexPtr get_use();
-  VertexPtr get_seq();
+  VertexPtr get_seq(bool add_force_func_return = false);
+
+  void parse_namespace_and_uses_at_top_of_file();
   bool check_seq_end();
   bool check_statement_end();
-  VertexPtr run();
+  void run();
 
   template<Operation EmptyOp>
   bool gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim);
@@ -133,6 +134,7 @@ public:
   VertexPtr get_anonymous_function();
   VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, std::vector<VertexPtr> *uses_of_lambda = nullptr);
 
+  static void replace_self_parent_in_class_const_val(VertexPtr v, ClassPtr cur_class);
   static void add_this_to_captured_variables_in_lambda_body(VertexPtr &cmd, ClassPtr lambda_class);
   static VertexAdaptor<op_function> generate__invoke_method(ClassPtr cur_class, const VertexAdaptor<op_function> &function);
   static VertexPtr generate_constructor_call(ClassPtr cur_class);
