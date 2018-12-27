@@ -50,18 +50,15 @@ struct ClassMemberInstanceMethod {
 };
 
 struct ClassMemberStaticField {
-  // тут мне не нравится, но пока что для совместимости с ClassInfo; потом name можно удалить, реализовать global_name/local_name
   AccessType access_type;
-  VertexAdaptor<op_static> root;
   string full_name;
+  VertexAdaptor<op_var> root;
+  VertexPtr init_val;          // op_empty в случае отсутствия значения, или какое-то выражение
 
-  ClassMemberStaticField(VertexAdaptor<op_static> root, AccessType access_type, string full_name) :
-    access_type(access_type),
-    root(root),
-    full_name(std::move(full_name)) {}
+  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type);
 
   const string &global_name() const;
-  string local_name() const;
+  const string &local_name() const;
   const TypeData *get_inferred_type() const;
 };
 
@@ -165,7 +162,7 @@ public:
 
   void add_static_method(FunctionPtr function, AccessType access_type);
   void add_instance_method(FunctionPtr function, AccessType access_type);
-  void add_static_field(VertexAdaptor<op_static> root, const string &name, AccessType access_type);
+  void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type);
   void add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type);
   void add_constant(string const_name, VertexPtr value);
 

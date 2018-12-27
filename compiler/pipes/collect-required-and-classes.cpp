@@ -35,6 +35,9 @@ private:
     cur_class->members.for_each([&](ClassMemberConstant &c) {
       c.value = run_function_pass(c.value, this, nullptr);
     });
+    cur_class->members.for_each([&](ClassMemberStaticField &f) {
+      f.init_val = run_function_pass(f.init_val, this, nullptr);
+    });
   }
 
 public:

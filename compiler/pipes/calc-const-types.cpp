@@ -1,5 +1,22 @@
 #include "compiler/pipes/calc-const-types.h"
 
+#include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
+
+bool CalcConstTypePass::on_start(FunctionPtr function) {
+  if (!FunctionPassBase::on_start(function)) {
+    return false;
+  }
+
+  if (current_function->type() == FunctionData::func_class_wrapper) {
+    current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
+      LocalT local;
+      f.init_val = run_function_pass(f.init_val, this, &local);
+    });
+  }
+  return true;
+}
+
 void CalcConstTypePass::on_exit_edge(VertexPtr, LocalT *v_local, VertexPtr from, LocalT *) {
   v_local->has_nonconst |= from->const_type == cnst_nonconst_val;
 }

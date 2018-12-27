@@ -15,6 +15,8 @@ public:
     }
   };
 
+  bool on_start(FunctionPtr function);
+
   string get_description() {
     return "Calc const types";
   }

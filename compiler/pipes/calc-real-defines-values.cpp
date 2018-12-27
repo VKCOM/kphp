@@ -66,6 +66,7 @@ void CalcRealDefinesValuesF::process_define(DefinePtr def) {
   if (check_const.is_const(def->val)) {
     def->type() = DefineData::def_const;
     def->val = make_const.make_const(def->val);
+    def->val->const_type = cnst_const_val;
   } else {
     def->type() = DefineData::def_var;
   }

@@ -28,24 +28,22 @@ string ClassMemberInstanceMethod::local_name() const {
 }
 
 
+inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type) :
+  access_type(access_type),
+  full_name(replace_backslashes(klass->name) + "$$" + root->get_string()),
+  root(root),
+  init_val(init_val) {}
+
 const string &ClassMemberStaticField::global_name() const {
   return full_name;
 }
 
-string ClassMemberStaticField::local_name() const {
-  return get_local_name_from_global_$$(full_name);
+const string &ClassMemberStaticField::local_name() const {
+  return root->str_val;
 }
 
 const TypeData *ClassMemberStaticField::get_inferred_type() const {
-  const VertexPtr child = root->args()[0];
-  switch (child->type()) {
-    case op_var:
-      return tinf::get_type(child->get_var_id());
-    case op_set:
-      return tinf::get_type(child.as<op_set>()->lhs()->get_var_id());
-    default:
-      return nullptr;
-  }
+  return tinf::get_type(root->get_var_id());
 }
 
 
@@ -120,11 +118,9 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   }
 }
 
-void ClassMembersContainer::add_static_field(VertexAdaptor<op_static> root, const string &name, AccessType access_type) {
-  // мне не нравится, что тут op_static со странными вложенностями внутри, но это исправим на второй итерации
-  string hash_name = "$" + name;
-  string global_name = replace_backslashes(klass->name) + "$$" + name;
-  append_member(hash_name, ClassMemberStaticField(root, access_type, global_name));
+void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type) {
+  string hash_name = "$" + root->str_val;
+  append_member(hash_name, ClassMemberStaticField(klass, root, init_val, access_type));
 }
 
 void ClassMembersContainer::add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type) {

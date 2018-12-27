@@ -1,6 +1,7 @@
 #include "compiler/pipes/inline-defines-usages.h"
 
 #include "compiler/data/define-data.h"
+#include "compiler/data/class-data.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   // defined('NAME') заменяем на true или false 
@@ -39,4 +40,18 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
     }
   }
   return root;
+}
+
+bool InlineDefinesUsagesPass::on_start(FunctionPtr function) {
+  if (!FunctionPassBase::on_start(function)) {
+    return false;
+  }
+
+  if (function->type() == FunctionData::func_class_wrapper) {
+    current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
+      f.init_val = run_function_pass(f.init_val, this, nullptr);
+    });
+  }
+
+  return true;
 }

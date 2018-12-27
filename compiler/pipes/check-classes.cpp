@@ -33,17 +33,15 @@ inline void CheckClassesF::analyze_class(ClassPtr klass) {
  */
 inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberStaticField &f) {
-    // f.root это op_static с содержимым: либо op_set(op_var, ...), либо op_var (если нет дефолтного значения)
-    bool has_default_value = f.root->args()[0]->type() == op_set;
     bool allow_no_default_value = false;
     // если дефолтного значения нет — а вдруг оно не обязательно? для инстансов например
-    if (!has_default_value) {
+    if (!f.init_val) {
       allow_no_default_value = vk::any_of_equal(f.get_inferred_type()->ptype(), tp_Class, tp_MC);
     }
 
-    kphp_error(has_default_value || allow_no_default_value,
+    kphp_error(f.init_val || allow_no_default_value,
                format("static %s::$%s is not inited at declaration (inferred %s)",
-                       klass->name.c_str(), f.local_name().c_str(), type_out(f.get_inferred_type()).c_str()));
+                       klass->name.c_str(), f.local_name().c_str(), colored_type_out(f.get_inferred_type()).c_str()));
   });
 }
 

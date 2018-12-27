@@ -1739,25 +1739,6 @@ static inline bool is_class_name_allowed(const string &name) {
   return disallowed_names.find(name) == disallowed_names.end();
 }
 
-// выражение [self::CC+2] превращаем в [classname$$CC+2]
-void GenTree::replace_self_parent_in_class_const_val(VertexPtr v, ClassPtr cur_class) {
-  if (v->type() == op_func_name && v->get_string().find("::") != std::string::npos) {
-    const std::string &initv = v->get_string();
-
-    if (vk::string_view(initv).starts_with("self::")) {
-      v->set_string(replace_backslashes(cur_class->name) + "$$" + initv.substr(6));
-    } else if (vk::string_view(initv).starts_with("parent::")) {
-      v->set_string(replace_backslashes(*cur_class->get_parent_class_name()) + "$$" + initv.substr(8));
-    } else if (vk::string_view(initv).starts_with("static::")) {
-      kphp_error(0, "static:: can not be used in field/constant initialization");
-    }
-  }
-
-  for (auto child : *v) {
-    replace_self_parent_in_class_const_val(child, cur_class);
-  }
-}
-
 VertexPtr GenTree::get_class(Token *phpdoc_token) {
   AutoLocation class_location(this);
   CE (expect(tok_class, "'class'"));
@@ -1801,7 +1782,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   cur_class->phpdoc_token = phpdoc_token;
   cur_class->root = class_vertex;
 
-  VertexPtr body_vertex = get_statement();
+  VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
   cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
@@ -1811,15 +1792,10 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
     create_default_constructor(cur_class, AutoLocation(this));
   }
 
-  vector<VertexPtr> seq;
-  cur_class->members.for_each([&seq](ClassMemberStaticField &f) {
-    seq.emplace_back(f.root);
-  });
-
   G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
   G->register_class(cur_class);
 
-  return VertexAdaptor<op_seq>::create(seq);
+  return {};
 }
 
 void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) {
@@ -2046,26 +2022,22 @@ VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unu
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);  // cur сразу перед $field_name
   CE (check_statement_end());
 
-  // с учётом переделок, это можно удалить: оно по факту нужно лишь чтобы достать local_name
   for (VertexAdaptor<op_static> seq : *v) {
-    seq->class_id = cur_class;
-    for (auto node : seq->args()) {
-      VertexAdaptor<op_var> var;
-      if (node->type() == op_var) {
-        var = node;
-      } else if (node->type() == op_set) {
-        VertexAdaptor<op_set> set_expr = node;
-        var = set_expr->lhs();
-        replace_self_parent_in_class_const_val(set_expr->rhs(), cur_class);
-        kphp_error_act (
-          var->type() == op_var,
-          "unexpected expression in 'static'",
-          continue
-        );
-      } else {
-        kphp_error_act (0, "unexpected expression in 'static'", continue);
+    // node это либо op_var $a (когда нет дефолтного значения), либо op_set(op_var $a, init_val)
+    VertexPtr node = seq->args()[0];
+    switch (node->type()) {
+      case op_var: {
+        cur_class->members.add_static_field(node, VertexAdaptor<op_empty>::create(), access_type);
+        break;
       }
-      cur_class->members.add_static_field(seq, var->str_val, access_type);
+      case op_set: {
+        VertexAdaptor<op_set> set_expr = node;
+        kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
+        cur_class->members.add_static_field(set_expr->lhs(), set_expr->rhs(), access_type);
+        break;
+      }
+      default:
+        kphp_error(0, "unexpected expression in 'static'");
     }
   }
 

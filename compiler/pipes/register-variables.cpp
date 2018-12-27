@@ -61,21 +61,13 @@ bool RegisterVariablesPass::is_const(VertexPtr v) {
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
   return v->type() == op_var && v->get_var_id()->is_in_global_scope();
 }
-void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex, ClassPtr class_id, VertexPtr default_value) {
-  VarPtr var;
-  string name;
-  if (class_id) {   // static variable класса
-    kphp_assert(!current_function->is_lambda());
-    name = replace_backslashes(class_id->name) + "$$" + var_vertex->str_val;
-    var = get_global_var(name);
-    var->class_id = class_id;
-    kphp_assert(var->is_class_static_var());
-  } else {          // static переменная функции
-    kphp_error(current_function->type() == FunctionData::func_local, "keyword 'static' used in global function");
-    name = var_vertex->str_val;
-    var = create_local_var(name, VarData::var_static_t, true);
-    kphp_assert(var->is_function_static_var());
-  }
+void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
+  kphp_error(current_function->type() == FunctionData::func_local, "keyword 'static' used in global function");
+
+  string name = var_vertex->str_val;
+  VarPtr var = create_local_var(name, VarData::var_static_t, true);
+  kphp_assert(var->is_function_static_var());
+
   if (default_value) {
     if (!kphp_error(is_const(default_value), format("Default value of [%s] is not constant", name.c_str()))) {
       var->init_val = default_value;
@@ -83,6 +75,20 @@ void RegisterVariablesPass::register_static_var(VertexAdaptor<op_var> var_vertex
   }
   var_vertex->set_var_id(var);
 }
+
+void RegisterVariablesPass::register_class_static_var(ClassPtr class_id, ClassMemberStaticField &f) {
+  VarPtr var = get_global_var(f.global_name());
+  var->class_id = class_id;
+  kphp_assert(var->is_class_static_var());
+
+  if (f.init_val->type() != op_empty) {
+    if (!kphp_error(is_const(f.init_val), format("Default value of %s::$%s is not constant", class_id->name.c_str(), f.local_name().c_str()))) {
+      var->init_val = f.init_val;
+    }
+  }
+  f.root->set_var_id(var);
+}
+
 void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
@@ -161,7 +167,7 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
       kphp_error_act (0, "unexpected expression in 'static'", continue);
     }
 
-    register_static_var(var, stat->class_id, default_value);
+    register_function_static_var(var, default_value);
   }
 }
 void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
@@ -196,4 +202,10 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariabl
     local->need_recursion_flag = false;
   }
   return root;
+}
+
+void RegisterVariablesPass::visit_class(ClassPtr klass) {
+  klass->members.for_each([&](ClassMemberStaticField &f) {
+    register_class_static_var(klass, f);
+  });
 }

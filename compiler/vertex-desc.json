@@ -798,11 +798,6 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "static"
-    },
-    "extra_fields": {
-      "class_id": {
-        "type": "ClassPtr"
-      }
     }
   },
   {
