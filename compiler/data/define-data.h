@@ -20,7 +20,7 @@ public:
   SrcFilePtr file_id;
 
   DefineData();
-  DefineData(VertexPtr val, DefineType type_);
+  DefineData(std::string name, VertexPtr val, DefineType type_);
 
   inline DefineType &type() { return type_; }
 

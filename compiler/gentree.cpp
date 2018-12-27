@@ -35,17 +35,10 @@ GenTree::GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<Func
   stage::set_line(line_num);
 }
 
-VertexPtr GenTree::generate_constant_field_class(VertexPtr root) {
-  auto name_of_const_field_class = VertexAdaptor<op_string>::create();
-  name_of_const_field_class->str_val = "c#" + replace_backslashes(cur_class->name) + "$$class";
-
+VertexPtr GenTree::generate_constant_field_class_value() {
   auto value_of_const_field_class = VertexAdaptor<op_string>::create();
   value_of_const_field_class->set_string(cur_class->name);
-
-  auto def = VertexAdaptor<op_define>::create(name_of_const_field_class, value_of_const_field_class);
-  def->location = root->location;
-
-  return def;
+  return value_of_const_field_class;
 }
 
 void GenTree::next_cur() {
@@ -662,6 +655,18 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
   }
   VertexPtr expr = create_vertex(unary_op_tp, left);
   set_location(expr, expr_location);
+
+  if (expr->type() == op_minus || expr->type() == op_plus) {
+    VertexAdaptor<meta_op_unary> minus = expr;
+    VertexPtr maybe_num = minus->expr();
+    if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
+      VertexAdaptor<meta_op_num> num = maybe_num;
+      num->str_val = expr->type() == op_minus ? "-" + num->str_val : num->str_val;
+      minus->expr() = VertexPtr();
+      return num;
+    }
+  }
+
   return expr;
 }
 
@@ -1799,8 +1804,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   VertexPtr body_vertex = get_statement();
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
-  VertexPtr constant_field_class = generate_constant_field_class(class_vertex);
-  cur_class->members.add_constant(constant_field_class);    // A::class это константа на самом деле
+  cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
 
   if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) &&
       !cur_class->members.has_constructor()) {
@@ -1808,9 +1812,6 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   }
 
   vector<VertexPtr> seq;
-  cur_class->members.for_each([&seq](ClassMemberConstant &f) {
-    seq.emplace_back(f.root);
-  });
   cur_class->members.for_each([&seq](ClassMemberStaticField &f) {
     seq.emplace_back(f.root);
   });
@@ -2260,33 +2261,26 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       bool has_access_modifier = std::distance(tokens->begin(), cur) > 1 && vk::any_of_equal((*std::prev(cur, 2))->type(), tok_public, tok_private, tok_protected);
       bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
       bool const_in_class = !!cur_class;
+      string const_name{(*cur)->str_val};
 
       CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
       CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
       CE (!kphp_error(!has_access_modifier, "unexpected const after private/protected/public keyword"));
 
-      auto name = VertexAdaptor<op_string>::create();
-      string const_name{(*cur)->str_val};
-
-      if (const_in_class) {
-        name->str_val = "c#" + replace_backslashes(cur_class->name) + "$$" + const_name;
-      } else {
-        name->str_val = const_name;
-      }
-
       next_cur();
       CE (expect(tok_eq1, "'='"));
       VertexPtr v = get_expression();
-      auto def = VertexAdaptor<op_define>::create(name, v);
-      set_location(def, const_location);
       CE (check_statement_end());
 
       if (const_in_class) {
-        replace_self_parent_in_class_const_val(v, cur_class);
-        cur_class->members.add_constant(def);
-        auto empty = VertexAdaptor<op_empty>::create();
-        return empty;
+        cur_class->members.add_constant(const_name, v);
+        return VertexAdaptor<op_empty>::create();
       }
+
+      auto name = VertexAdaptor<op_string>::create();
+      name->str_val = const_name;
+      auto def = VertexAdaptor<op_define>::create(name, v);
+      set_location(def, const_location);
 
       return def;
     }

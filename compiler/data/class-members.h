@@ -78,10 +78,10 @@ struct ClassMemberInstanceField {
 };
 
 struct ClassMemberConstant {
-  VertexAdaptor<op_define> root;
+  string define_name;
+  VertexPtr value;
 
-  explicit ClassMemberConstant(VertexAdaptor<op_define> root) :
-    root(root) {}
+  ClassMemberConstant(ClassPtr klass, string const_name, VertexPtr value);
 
   const string &global_name() const;
   string local_name() const;
@@ -167,7 +167,7 @@ public:
   void add_instance_method(FunctionPtr function, AccessType access_type);
   void add_static_field(VertexAdaptor<op_static> root, const string &name, AccessType access_type);
   void add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type);
-  void add_constant(VertexAdaptor<op_define> root);
+  void add_constant(string const_name, VertexPtr value);
 
   bool has_constant(const string &local_name) const;
   bool has_field(const string &local_name) const;

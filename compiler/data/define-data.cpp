@@ -5,7 +5,8 @@ DefineData::DefineData() :
   type_(def_unknown),
   val(nullptr) {}
 
-DefineData::DefineData(VertexPtr val, DefineType type_) :
+DefineData::DefineData(std::string name, VertexPtr val, DefineType type_) :
   id(),
   type_(type_),
-  val(val) {}
+  val(val),
+  name(std::move(name)) {}

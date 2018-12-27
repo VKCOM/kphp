@@ -53,7 +53,7 @@ const string &ClassMemberInstanceField::local_name() const {
   return root->str_val;
 }
 
-ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_class_var> root, AccessType access_type) :
+inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_class_var> root, AccessType access_type) :
   access_type(access_type),
   root(root),
   phpdoc_token(root->phpdoc_token) {
@@ -68,12 +68,17 @@ const TypeData *ClassMemberInstanceField::get_inferred_type() const {
 }
 
 
+inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, string const_name, VertexPtr value) :
+  value(value) {
+  define_name = "c#" + replace_backslashes(klass->name) + "$$" + const_name;
+}
+
 const string &ClassMemberConstant::global_name() const {
-  return root->name()->get_string();
+  return define_name;
 }
 
 string ClassMemberConstant::local_name() const {
-  return get_local_name_from_global_$$(global_name());
+  return get_local_name_from_global_$$(define_name);
 }
 
 
@@ -127,9 +132,9 @@ void ClassMembersContainer::add_instance_field(VertexAdaptor<op_class_var> root,
   append_member(hash_name, ClassMemberInstanceField(klass, root, access_type));
 }
 
-void ClassMembersContainer::add_constant(VertexAdaptor<op_define> root) {
-  string hash_name = get_local_name_from_global_$$(root->name()->get_string());
-  append_member(hash_name, ClassMemberConstant(root));
+void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {
+  const string &hash_name = const_name;
+  append_member(hash_name, ClassMemberConstant(klass, const_name, value));
 }
 
 

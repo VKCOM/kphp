@@ -27,6 +27,16 @@ private:
     }
   }
 
+  inline void require_all_deps_of_class(ClassPtr cur_class) {
+    for (const auto &dep : cur_class->str_dependents) {
+      require_class(replace_characters(dep.class_name, '\\', '/'));
+    }
+    // значения констант класса могут содержать константы других классов, которым нужно require_class()
+    cur_class->members.for_each([&](ClassMemberConstant &c) {
+      c.value = run_function_pass(c.value, this, nullptr);
+    });
+  }
+
 public:
   CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
     file_stream(file_stream),
@@ -43,9 +53,7 @@ public:
     }
 
     if (function->type() == FunctionData::func_class_wrapper) {
-      for (const auto &dep : function->class_id->str_dependents) {
-        require_class(replace_characters(dep.class_name, '\\', '/'));
-      }
+      require_all_deps_of_class(function->class_id);
     }
     return true;
   }

@@ -83,18 +83,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     }
   }
 
-  if (root->type() == op_minus || root->type() == op_plus) {
-    VertexAdaptor<meta_op_unary> minus = root;
-    VertexPtr maybe_num = minus->expr();
-    if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
-      VertexAdaptor<meta_op_num> num = maybe_num;
-      string prefix = root->type() == op_minus ? "-" : "";
-      num->str_val = prefix + num->str_val;
-      minus->expr() = VertexPtr();
-      return num;
-    }
-  }
-
   if (root->type() == op_set) {
     VertexAdaptor<op_set> set_op = root;
     if (set_op->lhs()->type() == op_list_ce) {

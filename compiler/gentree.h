@@ -47,7 +47,7 @@ public:
 
   GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
-  VertexPtr generate_constant_field_class(VertexPtr root);
+  VertexPtr generate_constant_field_class_value();
 
   bool test_expect(TokenType tp);
 
