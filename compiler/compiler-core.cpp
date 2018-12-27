@@ -185,14 +185,26 @@ void CompilerCore::require_function(const string &name, DataStream<FunctionPtr> 
   operate_on_function_locking(name, [&](FunctionPtr &f) {
     if (!f) {
       f = UNPARSED_BUT_REQUIRED_FUNC_PTR;
-    } else if (f != UNPARSED_BUT_REQUIRED_FUNC_PTR && !f->is_required) {
-      f->is_required = true;      // этот флаг прежде всего нужен, чтоб в output отправить только раз
-      os << f;
+    } else if (f != UNPARSED_BUT_REQUIRED_FUNC_PTR) {
+      require_function(f, os);
     }
   });
 }
 
-void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require) {
+void CompilerCore::require_function(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  if (!function->is_required) {
+    function->is_required = true;
+    os << function;
+  }
+}
+
+void CompilerCore::register_function(FunctionPtr function) {
+  static DataStream<FunctionPtr> unused;
+  register_and_require_function(function, unused, false);
+  kphp_assert(!function->is_required);
+}
+
+void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require /*= false*/) {
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
     bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
     kphp_error(!f || was_previously_required,
@@ -200,9 +212,8 @@ void CompilerCore::register_and_require_function(FunctionPtr function, DataStrea
                        function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
     f = function;
 
-    if ((was_previously_required || force_require) && !f->is_required) {
-      f->is_required = true;      // этот флаг прежде всего нужен, чтоб в output отправить только раз
-      os << f;
+    if (was_previously_required || force_require) {
+      require_function(f, os);
     }
   });
 }

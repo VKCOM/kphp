@@ -60,6 +60,7 @@ public:
   SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
 
   void require_function(const string &name, DataStream<FunctionPtr> &os);
+  void require_function(FunctionPtr function, DataStream<FunctionPtr> &os);
 
   template <class CallbackT>
   void operate_on_function_locking(const string &name, CallbackT callback) {
@@ -70,6 +71,7 @@ public:
     callback(node->data);
   }
 
+  void register_function(FunctionPtr function);
   void register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require = false);
   void register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
