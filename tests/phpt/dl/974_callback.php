@@ -1,14 +1,15 @@
 @ok callback
 <?php
 
+/**
+ * @kphp-required
+ */
 function sq ($x) {
   return $x * $x;
 }
 
 echo "Callback test\n";
 $a = array(1,2,3);
-array_map (sq, $a);
-var_dump($a);
 
 array_map ('sq', $a);
 var_dump($a);

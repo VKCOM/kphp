@@ -199,6 +199,9 @@ function asrt($f) {
   }
 }
 
+/**
+ * @kphp-required
+ */
 function odd ($x) {
     return $x & 1;
 }
@@ -255,11 +258,11 @@ function test1() {
   
   
   
-  array_map (odd, $array);
+  array_map ('odd', $array);
 
 
 
-  $tt = array_map (odd, $array);
+  $tt = array_map ('odd', $array);
   $array = $tt;
 
 

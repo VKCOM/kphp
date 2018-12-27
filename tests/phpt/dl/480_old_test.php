@@ -6,20 +6,20 @@
 
 
   $a_filter = array (1, 2, "asd", null, "1 apple", " ", "-0.0", ".1", ".", false, true, 7.123123, array(1, 2), null);
-  var_dump (array_filter ($a_filter, is_scalar));
-  var_dump (array_filter ($a_filter, is_numeric));
-  var_dump (array_filter ($a_filter, is_null));
-  var_dump (array_filter ($a_filter, is_bool));
-  var_dump (array_filter ($a_filter, is_int));
-  var_dump (array_filter ($a_filter, is_integer));
-  var_dump (array_filter ($a_filter, is_long));
-  var_dump (array_filter ($a_filter, is_float));
-  var_dump (array_filter ($a_filter, is_double));
-  var_dump (array_filter ($a_filter, is_real));
-  var_dump (array_filter ($a_filter, is_string));
-  var_dump (array_filter ($a_filter, is_array));
-  var_dump (array_filter ($a_filter, is_object));
-  var_dump (array_filter ($a_filter, is_numeric));
+  var_dump (array_filter ($a_filter, 'is_scalar'));
+  var_dump (array_filter ($a_filter, 'is_numeric'));
+  var_dump (array_filter ($a_filter, 'is_null'));
+  var_dump (array_filter ($a_filter, 'is_bool'));
+  var_dump (array_filter ($a_filter, 'is_int'));
+  var_dump (array_filter ($a_filter, 'is_integer'));
+  var_dump (array_filter ($a_filter, 'is_long'));
+  var_dump (array_filter ($a_filter, 'is_float'));
+  var_dump (array_filter ($a_filter, 'is_double'));
+  var_dump (array_filter ($a_filter, 'is_real'));
+  var_dump (array_filter ($a_filter, 'is_string'));
+  var_dump (array_filter ($a_filter, 'is_array'));
+  var_dump (array_filter ($a_filter, 'is_object'));
+  var_dump (array_filter ($a_filter, 'is_numeric'));
   var_dump (array_filter ($a_filter, function($x) { return $x < 4; }));
 
 //  var_dump (explode ('', ',,,,,,,'));
@@ -344,10 +344,16 @@
 
   var_dump ($a);
 
+  /**
+   * @kphp-required
+   */
   function odd ($x) {
     return (bool)($x & 1);
   }
 
+  /**
+   * @kphp-required
+   */
   function even ($x) {
     return !($x & 1);
   }
@@ -397,11 +403,11 @@
   var_dump (array_fill_keys (array_fill (-2, 4, "pear"), "abac"));
   var_dump (array_fill_keys (array_flip ($array11), (string)"prqrq"));
 
-  var_dump (array_map (odd, $array11));
-  var_dump (array_map (strval, $array11));
+  var_dump (array_map ('odd', $array11));
+  var_dump (array_map ('strval', $array11));
   print_r (array_search (4, $array11));
 
-  var_dump (array_combine ($array11, array_map (odd, $array11)));
+  var_dump (array_combine ($array11, array_map ('odd', $array11)));
 
   $array12[] = 6;
   $array12[] = 7;
@@ -413,9 +419,9 @@
   $array12[] = 14;
 
   echo ("Odd :\n");
-  var_dump (array_filter ($array11, odd));
+  var_dump (array_filter ($array11, 'odd'));
   echo ("Even:\n");
-  var_dump (array_filter ($array12, even));
+  var_dump (array_filter ($array12, 'even'));
 
   for ($i = 0; $i < 100000; $i++) {
     $aa = array();

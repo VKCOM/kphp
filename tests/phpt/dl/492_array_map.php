@@ -10,12 +10,15 @@ function square ($n) {
   return $n * $n;
 }
 
+/**
+ * @kphp-required
+ */
 function sq ($n) {
   return $n * $n;
 }
 
 //var_dump(array_map(sq, array()));
-var_dump(array_map(sq, array(1)));
+var_dump(array_map('sq', array(1)));
 
 var_dump( array_map( 'square',
                      array("key1"=>1, "key2"=>2, "key3"=>3)

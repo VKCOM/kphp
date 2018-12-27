@@ -692,7 +692,6 @@ string conv_to_func_ptr_name(VertexPtr call) {
 
   switch (name_v->type()) {
     case op_string:
-    case op_func_name:
       return name_v->get_string();
 
     case op_array: {
