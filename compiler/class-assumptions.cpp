@@ -382,9 +382,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       VertexPtr expr = i.as<op_return>()->expr();
 
       if (expr->type() == op_constructor_call) {
-        ClassPtr klass = expr->get_func_id()
-                         ? expr->get_func_id()->class_id
-                         : G->get_class(resolve_uses(f, expr->get_string(), '\\'));
+        ClassPtr klass = G->get_class(expr->get_string());
         kphp_assert(klass);
         assumption_add_for_return(f, assum_instance, klass);        // return A
       } else if (expr->type() == op_var && expr->get_string() == "this" && f->is_instance_function()) {
@@ -496,13 +494,11 @@ AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name,
 // —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 
-inline AssumType infer_from_ctor(FunctionPtr f,
+inline AssumType infer_from_ctor(FunctionPtr f __attribute__ ((unused)),
                                  VertexAdaptor<op_constructor_call> call,
                                  ClassPtr &out_class) {
   if (likely(!call->type_help)) {
-    out_class = call->get_func_id()
-                ? call->get_func_id()->context_class
-                : G->get_class(resolve_uses(f, call->get_string(), '\\'));
+    out_class = G->get_class(call->get_string());   // call->get_string() это полное имя класса после new
     return assum_instance;
   }
 

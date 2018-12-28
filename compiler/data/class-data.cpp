@@ -17,6 +17,12 @@ void ClassData::set_name_and_src_name(const string &name) {
   this->name = name;
   this->src_name = std::string("C$").append(replace_backslashes(name));
   this->header_name = replace_characters(src_name + ".h", '$', '@');
+
+  size_t pos = name.find_last_of('\\');
+  std::string namespace_name = pos == std::string::npos ? "" : name.substr(0, pos);
+  std::string class_name = pos == std::string::npos ? name : name.substr(pos + 1);
+
+  this->can_be_php_autoloaded = file_id && namespace_name == file_id->namespace_name && class_name == file_id->short_file_name;
 }
 
 void ClassData::debugPrint() {

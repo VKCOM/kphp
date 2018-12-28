@@ -38,6 +38,7 @@ public:
   std::vector<Assumption> assumptions_for_vars;
   int assumptions_inited_vars;
   bool was_constructor_invoked;
+  bool can_be_php_autoloaded;
 
   SrcFilePtr file_id;
   string src_name, header_name;

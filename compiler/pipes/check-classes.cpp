@@ -2,6 +2,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/vertex.h"
 
@@ -24,6 +25,11 @@ inline void CheckClassesF::analyze_class(ClassPtr klass) {
   check_static_fields_inited(klass);
   if (klass->was_constructor_invoked) {
     check_instance_fields_inited(klass);
+  }
+  if (klass->can_be_php_autoloaded) {
+    kphp_error(klass->file_id->main_function->body_seq == FunctionData::body_value::empty,
+               format("class %s can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
+                      klass->name.c_str()));
   }
 }
 

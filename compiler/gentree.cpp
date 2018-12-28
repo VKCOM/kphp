@@ -1748,7 +1748,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
 
   auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = "W$" + full_class_name;  // function-wrapper for class
+  func_name->str_val = "$" + full_class_name;  // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
@@ -1777,10 +1777,10 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   auto class_vertex = VertexAdaptor<op_class>::create(name_vertex);
   set_location(class_vertex, class_location);
 
-  cur_class->set_name_and_src_name(full_class_name);    // с полным неймспейсом и слешами
   cur_class->file_id = processing_file;
   cur_class->phpdoc_token = phpdoc_token;
   cur_class->root = class_vertex;
+  cur_class->set_name_and_src_name(full_class_name);    // с полным неймспейсом и слешами
 
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));

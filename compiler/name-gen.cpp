@@ -21,7 +21,7 @@ string register_unique_name(const string &prefix) {
   return prefix;
 }
 
-static inline string gen_unique_name_inside_file(FunctionPtr function, const std::string &prefix, volatile int &x) {
+static inline string gen_unique_name_inside_function(FunctionPtr function, const std::string &prefix, volatile int &x) {
   AUTO_PROF (next_name);
   AutoLocker<volatile int *> locker(&x);
   unsigned long long h = hash_ll(function->name);
@@ -35,12 +35,12 @@ static inline string gen_unique_name_inside_file(FunctionPtr function, const std
 
 string gen_shorthand_ternary_name(FunctionPtr function) {
   static volatile int x = 0;
-  return gen_unique_name_inside_file(function, "shorthand_ternary_cond", x);
+  return gen_unique_name_inside_function(function, "shorthand_ternary_cond", x);
 }
 
 string gen_anonymous_function_name(FunctionPtr function) {
   static volatile int x = 0;
-  return gen_unique_name_inside_file(function, "anon", x);
+  return gen_unique_name_inside_function(function, "anon", x);
 }
 
 
@@ -143,9 +143,9 @@ static const char *_err_instance_access(VertexPtr v, const char *desc) {
 /*
  * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
  */
-string resolve_constructor_func_name(FunctionPtr function, VertexAdaptor<op_constructor_call> ctor_call) {
-  if (likely(!ctor_call->type_help)) {
-    return resolve_uses(function, ctor_call->get_string()) + "$$" + "__construct";
+string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused)), VertexAdaptor<op_constructor_call> ctor_call) {
+  if (likely(!ctor_call->type_help)) {    // ctor_call->get_string() это полное имя класса после new
+    return replace_backslashes(ctor_call->get_string()) + "$$" + "__construct";
   }
 
   return "new_" + ctor_call->get_string();   // Memcache, RpcMemcache, Exception, true_mc, test_mc, rich_mc
