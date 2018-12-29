@@ -657,12 +657,13 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
   set_location(expr, expr_location);
 
   if (expr->type() == op_minus || expr->type() == op_plus) {
-    VertexAdaptor<meta_op_unary> minus = expr;
-    VertexPtr maybe_num = minus->expr();
+    VertexPtr maybe_num = expr.as<meta_op_unary>()->expr();
     if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
       VertexAdaptor<meta_op_num> num = maybe_num;
-      num->str_val = expr->type() == op_minus ? "-" + num->str_val : num->str_val;
-      minus->expr() = VertexPtr();
+      // +N оставляем как "N", а -N делаем константу "-N" (но если N начинается с минуса, то "N", чтобы парсить `- - -7`)
+      if (expr->type() == op_minus) {
+        num->str_val = num->str_val[0] == '-' ? num->str_val.substr(1) : "-" + num->str_val;
+      }
       return num;
     }
   }
