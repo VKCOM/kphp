@@ -10,6 +10,7 @@ ClassData::ClassData() :
   class_type(ctype_class),
   assumptions_inited_vars(0),
   was_constructor_invoked(false),
+  can_be_php_autoloaded(false),
   members(this) {
 }
 

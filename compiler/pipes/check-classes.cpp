@@ -9,7 +9,7 @@
 void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Check classes");
 
-  if (function->type() == FunctionData::func_class_wrapper) {
+  if (function->type() == FunctionData::func_class_holder) {
     stage::set_function(function);
     analyze_class(function->class_id);
     if (stage::has_error()) {

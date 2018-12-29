@@ -4088,7 +4088,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
 
   //TODO: parallelize;
   for (const auto &fun : xall) {
-    if (fun->type() != FunctionData::func_class_wrapper) {
+    if (fun->type() != FunctionData::func_class_holder) {
       prepare_generate_function(fun);
     }
   }
@@ -4103,13 +4103,13 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vector<FunctionPtr> source_functions;
   vector<FunctionPtr> exported_functions;
   for (const auto &function : xall) {
-    if (function->body_seq == FunctionData::body_value::empty) {
+    if (function->body_seq == FunctionData::body_value::empty || function->type() == FunctionData::func_class_holder) {
       continue;
     }
     if (function->used_in_source) {
       source_functions.push_back(function);
     }
-    if (function->type() == FunctionData::func_extern || function->type() == FunctionData::func_class_wrapper) {
+    if (function->type() == FunctionData::func_extern) {
       continue;
     }
     all_functions.push_back(function);

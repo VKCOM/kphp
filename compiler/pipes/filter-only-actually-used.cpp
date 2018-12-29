@@ -72,7 +72,7 @@ void FilterOnlyActuallyUsedFunctionsF::calc_actually_used_having_call_edges(vect
   for (const auto &f_and_e : all) {
     const bool should_be_used_apriori =
       f_and_e.function->type() == FunctionData::func_global ||
-      f_and_e.function->type() == FunctionData::func_class_wrapper ||   // классы нужно прокинуть по пайплайну
+      f_and_e.function->type() == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
      (f_and_e.function->type() == FunctionData::func_extern && f_and_e.function->name == "wait") ||
       f_and_e.function->kphp_lib_export;
     if (should_be_used_apriori && !used[f_and_e.function]) {

@@ -1753,7 +1753,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_class_wrapper));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_class_holder));
   StackPushPop<ClassPtr> c_alive(class_stack, cur_class, ClassPtr(new ClassData()));
   cur_function->class_id = cur_class;
 
@@ -1792,8 +1792,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
     create_default_constructor(cur_class, AutoLocation(this));
   }
 
-  G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
   G->register_class(cur_class);
+  G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
 
   return {};
 }

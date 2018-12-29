@@ -24,7 +24,7 @@ public:
     func_local,
     func_switch,
     func_extern,
-    func_class_wrapper
+    func_class_holder
   };
   func_type_t type_;
 

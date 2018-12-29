@@ -78,7 +78,7 @@ public:
     }
     global_function_flag = function->type() == FunctionData::func_global ||
                            function->type() == FunctionData::func_switch;
-    if (current_function->type() == FunctionData::func_class_wrapper) {
+    if (current_function->type() == FunctionData::func_class_holder) {
       visit_class(current_function->class_id);
     }
     return true;
