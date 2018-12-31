@@ -45,22 +45,22 @@ extern Exception *CurException;
 #endif
 
 
-Exception f$new_Exception(const string &file, int line, const string &message = string(), int code = 0);
+Exception f$Exception$$__construct(const string &file, int line, const string &message = string(), int code = 0);
 
 Exception f$err(const string &file, int line, const string &code, const string &desc = string());
 
 
-string f$exception_getMessage(const Exception &e);
+string f$Exception$$getMessage(const Exception &e);
 
-int f$exception_getCode(const Exception &e);
+int f$Exception$$getCode(const Exception &e);
 
-string f$exception_getFile(const Exception &e);
+string f$Exception$$getFile(const Exception &e);
 
-int f$exception_getLine(const Exception &e);
+int f$Exception$$getLine(const Exception &e);
 
-array<array<string>> f$exception_getTrace(const Exception &e);
+array<array<string>> f$Exception$$getTrace(const Exception &e);
 
-string f$exception_getTraceAsString(const Exception &e);
+string f$Exception$$getTraceAsString(const Exception &e);
 
 
 bool f$boolval(const Exception &my_exception);

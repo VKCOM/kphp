@@ -129,6 +129,7 @@ public:
   static void init_static();
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);
+  static const TypeData *create_for_class(ClassPtr klass);
   //FIXME:??
   static void inc_generation();
   static generation_t current_generation();

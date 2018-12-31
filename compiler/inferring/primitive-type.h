@@ -19,7 +19,6 @@ enum PrimitiveType {
   tp_RPC,
   tp_tuple,
   tp_regexp,
-  tp_Exception,
   tp_Class,
   tp_void,
   tp_Error,

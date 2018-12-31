@@ -268,13 +268,6 @@ VertexPtr GenTree::get_func_call() {
     if (name == "true_mc" || name == "test_mc" || name == "RpcMemcache") {
       func_call->type_help = tp_MC;
     }
-    if (name.size() == 9 && name == "Exception") {
-      func_call->type_help = tp_Exception;
-    }
-    if (name.size() == 10 && name == "\\Exception") {
-      func_call->set_string("Exception");
-      func_call->type_help = tp_Exception;
-    }
   }
   return call;
 }
@@ -783,7 +776,7 @@ VertexPtr GenTree::get_def_value() {
 VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
   AutoLocation st_location(this);
   Token *tok_type_declaration = nullptr;
-  if ((*cur)->type() == tok_func_name || (*cur)->type() == tok_Exception) {
+  if ((*cur)->type() == tok_func_name) {
     tok_type_declaration = *cur;
     next_cur();
   }
@@ -812,7 +805,7 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
   set_location(v, st_location);
   if (tok_type_declaration != nullptr) {
     v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
-    v->type_help = tok_type_declaration->type() == tok_Exception ? tp_Exception : tp_Class;
+    v->type_help = tp_Class;
   }
 
   if (type_rule) {
@@ -971,9 +964,6 @@ PrimitiveType GenTree::get_ptype() {
     case tok_var:
       tp = tp_var;
       break;
-    case tok_Exception:
-      tp = tp_Exception;
-      break;
     case tok_tuple:
       tp = tp_tuple;
       break;
@@ -1043,6 +1033,7 @@ VertexPtr GenTree::get_type_rule_() {
     if ((*cur)->str_val == "lca" || (*cur)->str_val == "OrFalse") {
       res = get_type_rule_func();
     } else if ((*cur)->str_val == "self") {
+      //TODO: why no next_cur here?
       auto self = VertexAdaptor<op_self>::create();
       res = self;
     } else if ((*cur)->str_val == "CONST") {
@@ -1051,6 +1042,13 @@ VertexPtr GenTree::get_type_rule_() {
       if (res) {
         res->extra_type = op_ex_rule_const;
       }
+    } else if ((*cur)->str_val[0] == '\\' || ('A' <= (*cur)->str_val[0] && (*cur)->str_val[0] <= 'Z')) {
+      auto rule = VertexAdaptor<op_class_type_rule>::create();
+      rule->type_help = tp_Class;
+      rule->class_ptr = G->get_class(static_cast<std::string>((*cur)->str_val));
+      kphp_error(rule->class_ptr, format("Unknown class %s in type rule", string((*cur)->str_val).c_str()));
+      next_cur();
+      res = rule;
     } else {
       kphp_error(0, format("Can't parse type_rule. Unknown string [%s]", string((*cur)->str_val).c_str()));
     }
@@ -1597,10 +1595,16 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
                                   (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
                                    phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
 
-  if (cur_class && FunctionData::is_instance_access_type(access_type)) {
-    cur_class->members.add_instance_method(cur_function, access_type);
-  } else if (cur_class && FunctionData::is_static_access_type(access_type)) {
-    cur_class->members.add_static_method(cur_function, access_type);
+  if (FunctionData::is_instance_access_type(access_type)) {
+    if (!kphp_error(cur_class, "Function with access modifier not within class")) {
+      cur_class->members.add_instance_method(cur_function, access_type);
+    }
+  } else if (FunctionData::is_static_access_type(access_type)) {
+    if (!kphp_error(cur_class, "Static function with access modifier not within class")) {
+      cur_class->members.add_static_method(cur_function, access_type);
+    }
+  } else {
+    kphp_error(!cur_class || uses_of_lambda != nullptr, "Function without access modifier within class");
   }
 
   if (test_expect(tok_opbrc)) {
@@ -1654,7 +1658,7 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const string &name) {
-  static set<string> disallowed_names{"Exception", "RpcMemcache", "Memcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc",
+  static set<string> disallowed_names{"RpcMemcache", "Memcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc",
                                       "db_decl"};
 
   return disallowed_names.find(name) == disallowed_names.end();
@@ -1983,11 +1987,10 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (!kphp_error(first_node, "Cannot parse try block"));
       CE (expect(tok_catch, "'catch'"));
       CE (expect(tok_oppar, "'('"));
-      CE (expect(tok_Exception, "'Exception'"));
+      CE (expect(tok_func_name, "'Exception'"));
       second_node = get_expression();
       CE (!kphp_error(second_node, "Cannot parse catch ( ??? )"));
       CE (!kphp_error(second_node->type() == op_var, "Expected variable name in 'catch'"));
-      second_node->type_help = tp_Exception;
 
       CE (expect(tok_clpar, "')'"));
       third_node = get_statement();

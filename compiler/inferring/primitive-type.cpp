@@ -45,7 +45,6 @@ const char *ptype_name(PrimitiveType id) {
     case tp_RPC:        return "RPC";
     case tp_tuple:      return "tuple";
     case tp_regexp:     return "regexp";
-    case tp_Exception:  return "Exception";
     case tp_Class:      return "Class";
     case tp_void:       return "void";
     case tp_Error:      return "Error";
@@ -58,7 +57,7 @@ const char *ptype_name(PrimitiveType id) {
 
 bool can_store_bool(PrimitiveType tp) {
   return tp == tp_var || tp == tp_MC || tp == tp_DB || tp == tp_Class ||
-         tp == tp_Exception || tp == tp_RPC || tp == tp_bool ||
+         tp == tp_RPC || tp == tp_bool ||
          tp == tp_Any;
 }
 

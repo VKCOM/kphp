@@ -337,7 +337,7 @@ void PHPScriptBase::run(void) {
                               "Backtrace:\n%s",
                               engine_tag, (int)time(nullptr), engine_pid,
                               e.code, e.message.c_str(), e.file.c_str(), e.line,
-                              f$exception_getTraceAsString(e).c_str());
+                              f$Exception$$getTraceAsString(e).c_str());
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "-------------------------------\n\n");
     error(msg);

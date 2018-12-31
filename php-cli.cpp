@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     } catch (Exception &e) {
 #endif
     fprintf(stderr, "Unhandled Exception caught in file %s at line %d. Error %d: %s.\n", e.file.c_str(), e.line, e.code, e.message.c_str());
-    fprintf(stderr, "Backtrace:\n%s", f$exception_getTraceAsString(e).c_str());
+    fprintf(stderr, "Backtrace:\n%s", f$Exception$$getTraceAsString(e).c_str());
   }
   script->clear();
   return 0;

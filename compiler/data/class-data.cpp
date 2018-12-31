@@ -9,6 +9,7 @@
 #include "compiler/compiler-core.h"
 
 ClassData::ClassData() :
+  type_data(TypeData::create_for_class(ClassPtr(this))),
   id(0),
   class_type(ctype_class),
   assumptions_inited_vars(0),
@@ -28,6 +29,7 @@ void ClassData::set_name_and_src_name(const string &name) {
   std::string class_name = pos == std::string::npos ? name : name.substr(pos + 1);
 
   this->can_be_php_autoloaded = file_id && namespace_name == file_id->namespace_name && class_name == file_id->short_file_name;
+  this->can_be_php_autoloaded |= this->is_builtin();
 }
 
 void ClassData::debugPrint() {
@@ -142,4 +144,13 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
   this_var->location.line = location_line_num;
 
   return this_var;
+}
+
+bool ClassData::is_builtin() const {
+  // TODO: how can be !file_id?
+  return file_id && file_id->file_name == G->env().get_functions();
+}
+
+const TypeData* ClassData::get_type_data() const {
+  return type_data;
 }

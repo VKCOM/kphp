@@ -509,8 +509,6 @@ inline AssumType infer_from_ctor(FunctionPtr f __attribute__ ((unused)),
 
   if (call->type_help == tp_MC) {
     out_class = G->get_class("Memcache");
-  } else if (call->type_help == tp_Exception) {
-    out_class = G->get_class("Exception");
   } else {
     kphp_error(0, "Unknown type_help");
   }

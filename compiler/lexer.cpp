@@ -221,25 +221,22 @@ void LexerData::post_process() {
             tokens.back()->str_val = oldtokens[i + 1]->str_val;
             delete oldtokens[i + 1];
             oldtokens[i + 1] = nullptr;
-            if (i + 2 == n || oldtokens[i + 2]->type() != tok_oppar) {
+            if (!are_next_tokens(oldtokens, i + 1, tok_oppar)) {
               tokens.push_back(new Token(tok_oppar));
               tokens.push_back(new Token(tok_clpar));
+            } else {
+              if (tokens.back()->str_val == "Exception" || tokens.back()->str_val == "\\Exception") {
+                tokens.push_back(oldtokens[i + 2]);
+                tokens.push_back(new Token(tok_file_c));
+                tokens.push_back(new Token(tok_comma));
+                tokens.push_back(new Token(tok_line_c));
+                if (!are_next_tokens(oldtokens, i + 2, tok_clpar)) {
+                  tokens.push_back(new Token(tok_comma));
+                }
+                i += 1;
+              }
             }
             i += 2;
-          } else if (are_next_tokens(oldtokens, i, tok_Exception, tok_oppar)) {
-            // прямо на этапе генерации токенов заменяем new Exception() на new Exception(__FILE__, __LINE__)
-            tokens.push_back(oldtokens[i + 1]);
-            tokens.back()->type() = tok_constructor_call;
-            tokens.back()->str_val = oldtokens[i + 1]->str_val;
-            tokens.push_back(oldtokens[i + 2]);
-            tokens.push_back(new Token(tok_file_c));
-            tokens.push_back(new Token(tok_comma));
-            tokens.push_back(new Token(tok_line_c));
-            tokens.back()->line_num = oldtokens[i]->line_num;
-            if (i + 3 < n && oldtokens[i + 3]->type() != tok_clpar) {
-              tokens.push_back(new Token(tok_comma));
-            }
-            i += 3;
           }
           break;
         }

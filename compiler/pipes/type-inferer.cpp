@@ -1,5 +1,6 @@
 #include "compiler/pipes/type-inferer.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
@@ -312,8 +313,12 @@ private:
   }
 
   void on_throw(VertexAdaptor<op_throw> throw_op) {
-    create_less(tp_Exception, throw_op->exception());
-    create_less(throw_op->exception(), tp_Exception);
+    create_less(G->get_class("Exception"), throw_op->exception());
+    create_less(throw_op->exception(), G->get_class("Exception"));
+  }
+
+  void on_try(VertexAdaptor<op_try> try_op) {
+    create_set(try_op->exception(), G->get_class("Exception"));
   }
 
   void on_set_op(VertexPtr v) {
@@ -473,6 +478,9 @@ public:
         break;
       case op_fork:
         on_fork(v);
+        break;
+      case op_try:
+        on_try(v);
         break;
       default:
         break;

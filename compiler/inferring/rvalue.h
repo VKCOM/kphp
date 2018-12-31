@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/class-data.h"
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/public.h"
 
@@ -65,6 +66,10 @@ inline RValue as_rvalue(FunctionPtr function, int id) {
 
 inline RValue as_rvalue(VarPtr var) {
   return RValue(tinf::get_tinf_node(var));
+}
+
+inline RValue as_rvalue(ClassPtr klass) {
+  return RValue(klass->get_type_data());
 }
 
 inline RValue as_rvalue(const TypeData *type, const MultiKey *key = nullptr) {

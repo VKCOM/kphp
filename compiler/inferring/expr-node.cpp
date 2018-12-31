@@ -198,7 +198,7 @@ void ExprNodeRecalc::recalc_constructor_call(VertexAdaptor<op_constructor_call> 
   if (likely(static_cast<bool>(function->class_id))) {
     set_lca(function->class_id);
   } else {
-    if (call->type_help == tp_MC || call->type_help == tp_Exception) {
+    if (call->type_help == tp_MC) {
       set_lca(call->type_help);
     } else {
       kphp_error (0, "op_constructor_call has class_id nullptr");

@@ -791,7 +791,9 @@ inline IncludeClass::IncludeClass(const TypeData *type) {
 
 inline void IncludeClass::compile(CodeGenerator &W) const {
   for (auto klass: klasses) {
-    W << Include(klass->get_subdir() + "/" + klass->header_name);
+    if (!klass->is_builtin()) {
+      W << Include(klass->get_subdir() + "/" + klass->header_name);
+    }
   }
 }
 

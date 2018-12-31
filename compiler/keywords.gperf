@@ -1,5 +1,6 @@
 %{
 #include "compiler/token.h"
+
 typedef struct KeywordType_t KeywordType;
 %}
 struct KeywordType_t
@@ -75,8 +76,6 @@ DEFINE, tok_define
 defined, tok_defined
 new, tok_new
 throw, tok_throw
-Exception, tok_Exception
-\Exception, tok_Exception
 try, tok_try
 catch, tok_catch
 throws, tok_throws

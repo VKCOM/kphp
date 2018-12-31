@@ -8,6 +8,16 @@ if (0) {
   define('PHP_SAPI', php_sapi_name());//"Defined in source code"
 }
 
+class Exception {
+    public function __construct($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0);
+    public function getMessage () ::: string;
+    public function getCode () ::: int;
+    public function getFile () ::: string;
+    public function getLine () ::: int;
+    public function getTrace () ::: array < array < string > >;
+    public function getTraceAsString () ::: string;
+};
+
 $_SERVER ::: var;
 $_GET ::: var;
 $_POST ::: var;
@@ -590,13 +600,6 @@ function likely ($x ::: bool) ::: bool;
 function unlikely ($x ::: bool) ::: bool;
 
 /** exceptions **/
-function new_Exception ($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0) ::: Exception;
-function exception_getMessage ($e ::: Exception) ::: string;
-function exception_getCode ($e ::: Exception) ::: int;
-function exception_getFile ($e ::: Exception) ::: string;
-function exception_getLine ($e ::: Exception) ::: int;
-function exception_getTrace ($e ::: Exception) ::: array < array < string > >;
-function exception_getTraceAsString ($e ::: Exception) ::: string;
 function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
 
 /** rpc fetch **/

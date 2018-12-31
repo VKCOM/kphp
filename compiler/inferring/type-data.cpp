@@ -563,9 +563,13 @@ inline void get_cpp_style_type(const TypeData *type, string *res) {
       break;
     }
     case tp_Class: {
-      *res += "class_instance<";
-      *res += type->class_type()->src_name;
-      *res += ">";
+      if (!type->class_type()->is_builtin()) {
+        *res += "class_instance<";
+        *res += type->class_type()->src_name;
+        *res += ">";
+      } else {
+        *res += type->class_type()->name;
+      }
       break;
     }
     case tp_RPC: {
@@ -686,8 +690,6 @@ int type_strlen(const TypeData *type) {
       return STRLEN_DB;
     case tp_RPC:
       return STRLEN_RPC;
-    case tp_Exception:
-      return STRLEN_EXCEPTION;
     case tp_Class:
       return STRLEN_CLASS;
     case tp_void:
@@ -722,4 +724,9 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
 size_t TypeData::get_tuple_max_index() const {
   kphp_assert(ptype() == tp_tuple);
   return subkeys_values.size();
+}
+const TypeData *TypeData::create_for_class(ClassPtr klass) {
+  TypeData *result = new TypeData(tp_Class);
+  result->class_type_ = klass;
+  return result;
 }

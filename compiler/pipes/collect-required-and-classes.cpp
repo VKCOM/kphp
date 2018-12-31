@@ -20,6 +20,10 @@ private:
   }
 
   void require_class(const string &class_name) {
+    // TODO: remove hack
+    if (class_name == "Exception") {
+      return;
+    }
     if (!G->get_class(class_name)) {
       SrcFilePtr res = require_file(class_name + ".php");
       kphp_error(res, format("Class %s not found", class_name.c_str()));

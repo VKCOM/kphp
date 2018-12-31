@@ -110,27 +110,27 @@ Exception::Exception(const string &file, int line, const string &message, int co
   trace(f$debug_backtrace()) {
 }
 
-string f$exception_getMessage(const Exception &e) {
+string f$Exception$$getMessage(const Exception &e) {
   return e.message;
 }
 
-int f$exception_getCode(const Exception &e) {
+int f$Exception$$getCode(const Exception &e) {
   return e.code;
 }
 
-string f$exception_getFile(const Exception &e) {
+string f$Exception$$getFile(const Exception &e) {
   return e.file;
 }
 
-int f$exception_getLine(const Exception &e) {
+int f$Exception$$getLine(const Exception &e) {
   return e.line;
 }
 
-array<array<string>> f$exception_getTrace(const Exception &e) {
+array<array<string>> f$Exception$$getTrace(const Exception &e) {
   return e.trace;
 }
 
-Exception f$new_Exception(const string &file, int line, const string &message, int code) {
+Exception f$Exception$$__construct(const string &file, int line, const string &message, int code) {
   return Exception(file, line, message, code);
 }
 
@@ -160,7 +160,7 @@ bool equals(const Exception &my_exception, bool value) {
 }
 
 
-string f$exception_getTraceAsString(const Exception &e) {
+string f$Exception$$getTraceAsString(const Exception &e) {
   static_SB.clean();
   for (int i = 0; i < e.trace.count(); i++) {
     array<string> current = e.trace.get_value(i);
