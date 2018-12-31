@@ -326,7 +326,6 @@ void PHPScriptBase::run(void) {
   assert (run_main->run != nullptr);
 
 //  regex_ptr = nullptr;
-#ifdef FAST_EXCEPTIONS
   CurException = nullptr;
   run_main->run(data, run_mem, mem_size);
   if (!CurException) {
@@ -342,28 +341,6 @@ void PHPScriptBase::run(void) {
     fprintf(stderr, "-------------------------------\n\n");
     error(msg);
   }
-#else
-  //in fact it may lead to undefined behaviour
-  try {
-    run_main->run (data, run_mem, mem_size);
-    set_script_result (nullptr);
-  } catch (Exception &e) {
-    const char *msg = dl_pstr ("%s%d%sError %d: %s.\nUnhandled Exception caught in file %s at line %d.\n"
-                               "Backtrace:\n%s",
-                               engine_tag, (int)time (nullptr), engine_pid,
-                               e.code, e.message.c_str(), e.file.c_str(), e.line,
-                               f$exception_getTraceAsString (e).c_str());
-    fprintf (stderr, "%s", msg);
-    fprintf (stderr, "-------------------------------\n\n");
-    error (msg);
-  } catch (exception &e) {
-    const char *msg = dl_pstr ("unhandled stl exception caught [%s]\n", e.what());
-    fprintf (stderr, "%s", msg);
-    error (msg);
-  } catch (...) {
-    error ("unhandled unknown exception caught\n");
-  }
-#endif
 }
 
 double PHPScriptBase::get_net_time(void) const {

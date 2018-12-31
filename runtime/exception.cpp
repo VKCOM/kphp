@@ -81,9 +81,7 @@ array<array<string>> f$debug_backtrace() {
 }
 
 
-#ifdef FAST_EXCEPTIONS
 Exception *CurException;
-#endif
 
 Exception &Exception::operator=(bool value) {
   bool_value = value;
@@ -171,8 +169,6 @@ string f$Exception$$getTraceAsString(const Exception &e) {
 
 
 void exception_init_static() {
-#ifdef FAST_EXCEPTIONS
   CurException = nullptr;
-#endif
 }
 

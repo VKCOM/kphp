@@ -17,9 +17,6 @@ extern const char *last_wait_error;
       php_assert (0);\
       return false;\
 
-#ifndef FAST_EXCEPTIONS
-#  error C++ exceptions doesn''t supported
-#endif
 
 class Storage {
 private:

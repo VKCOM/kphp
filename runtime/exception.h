@@ -22,28 +22,19 @@ public:
   Exception(bool value);
 };
 
-#ifdef FAST_EXCEPTIONS
 extern Exception *CurException;
 
-#  define THROW_EXCEPTION(e) {Exception x_tmp___ = e; php_assert (!CurException); CurException = (Exception *)dl::allocate (sizeof (Exception)); new (CurException) Exception ((x_tmp___));}
-#  define TRY_CALL(CallT, ResT, call) ({CallT x_tmp___ = (call); if (CurException) return (ResT()); x_tmp___;})
-#  define TRY_CALL_VOID(ResT, call) ({(call); if (CurException) return (ResT()); void();})
+#define THROW_EXCEPTION(e) {Exception x_tmp___ = e; php_assert (!CurException); CurException = (Exception *)dl::allocate (sizeof (Exception)); new (CurException) Exception ((x_tmp___));}
+#define TRY_CALL(CallT, ResT, call) ({CallT x_tmp___ = (call); if (CurException) return (ResT()); x_tmp___;})
+#define TRY_CALL_VOID(ResT, call) ({(call); if (CurException) return (ResT()); void();})
 
-#  define TRY_CALL_(CallT, call, action) ({CallT x_tmp___ = (call); if (CurException) {action;} x_tmp___;})
-#  define TRY_CALL_VOID_(call, action) ({(call); if (CurException) {action;} void();})
-#  define CHECK_EXCEPTION(action) if (CurException) {action;}
+#define TRY_CALL_(CallT, call, action) ({CallT x_tmp___ = (call); if (CurException) {action;} x_tmp___;})
+#define TRY_CALL_VOID_(call, action) ({(call); if (CurException) {action;} void();})
+#define CHECK_EXCEPTION(action) if (CurException) {action;}
 
-#  define TRY_CALL_EXIT(CallT, message, call) ({CallT x_tmp___ = (call); if (CurException) {php_critical_error (message);} x_tmp___;})
-#  define TRY_CALL_VOID_EXIT(message, call) ({(call); if (CurException) {php_critical_error (message);} void();})
-#  define FREE_EXCEPTION php_assert (CurException != nullptr); CurException->~Exception(); dl::deallocate (CurException, sizeof (Exception)); CurException = nullptr
-#else
-#  define THROW_EXCEPTION(e) throw (e)
-#  define TRY_CALL(CallT, ResT, call) (call)
-#  define TRY_CALL_VOID(ResT, call) (call)
-#  define TRY_CALL_EXIT(CallT, message, call) ({ CallT x_tmp___ = CallT(); try { x_tmp___ = (call); } catch (Exception &e) { php_critical_error (message); } x_tmp___;})
-#  define TRY_CALL_VOID_EXIT(message, call) ({try { (call); } catch (Exception &e_tmp___) { php_critical_error (message); } void();})
-#endif
-
+#define TRY_CALL_EXIT(CallT, message, call) ({CallT x_tmp___ = (call); if (CurException) {php_critical_error (message);} x_tmp___;})
+#define TRY_CALL_VOID_EXIT(message, call) ({(call); if (CurException) {php_critical_error (message);} void();})
+#define FREE_EXCEPTION php_assert (CurException != nullptr); CurException->~Exception(); dl::deallocate (CurException, sizeof (Exception)); CurException = nullptr
 
 Exception f$Exception$$__construct(const string &file, int line, const string &message = string(), int code = 0);
 

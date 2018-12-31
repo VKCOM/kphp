@@ -535,11 +535,9 @@ inline void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W);
 inline void compile_require(VertexPtr root, CodeGenerator &W);
 inline void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W);
 inline void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W);
-inline void compile_throw_fast_action(CodeGenerator &W);
+inline void compile_throw_action(CodeGenerator &W);
 inline void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W);
-inline void compile_throw_fast(VertexAdaptor<op_throw> root, CodeGenerator &W);
 inline void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W);
-inline void compile_try_fast(VertexAdaptor<op_try> root, CodeGenerator &W);
 inline void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W);
 inline void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W);
 inline void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W);
@@ -2388,7 +2386,7 @@ void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
 }
 
 //TODO: some interface for context?
-void compile_throw_fast_action(CodeGenerator &W) {
+void compile_throw_action(CodeGenerator &W) {
   CGContext &context = W.get_context();
   if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
     const TypeData *tp = tinf::get_type(context.parent_func, -1);
@@ -2411,27 +2409,15 @@ void compile_throw_fast_action(CodeGenerator &W) {
 
 
 void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
-  W << "throw (" << root->exception() << ")";
-}
-
-
-void compile_throw_fast(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << BEGIN <<
     "THROW_EXCEPTION (" << root->exception() << ");" << NL;
-  compile_throw_fast_action(W);
+  compile_throw_action(W);
   W << ";" << NL <<
     END << NL;
 }
 
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
-  W << "try " << root->try_cmd() <<
-    " catch (Exception " << root->exception() << ")" <<
-    root->catch_cmd();
-}
-
-
-void compile_try_fast(VertexAdaptor<op_try> root, CodeGenerator &W) {
   CGContext &context = W.get_context();
 
   string catch_label = gen_unique_name("catch_label");
@@ -2477,14 +2463,12 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
       << TypeNameInsideMacro(tinf::get_type(func_call)) << ");";
   }
 
-#ifdef FAST_EXCEPTIONS
   if (func->root->throws_flag) {
     W << NL;
     W << "CHECK_EXCEPTION(";
-    compile_throw_fast_action(W);
+    compile_throw_action(W);
     W << ")";
   }
-#endif
 }
 
 void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
@@ -3443,7 +3427,7 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   W.get_context().catch_labels.pop_back();
 
   W << ", ";
-  compile_throw_fast_action(W);
+  compile_throw_action(W);
   W << ")";
 }
 
@@ -3882,11 +3866,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_echo(root, W);
       break;
     case op_throw:
-#ifdef FAST_EXCEPTIONS
-      compile_throw_fast(root, W);
-#else
-      compile_throw (root, W);
-#endif
+      compile_throw(root, W);
       break;
     case op_var_dump:
       compile_var_dump(root, W);
@@ -3903,11 +3883,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_break_continue(root, W);
       break;
     case op_try:
-#ifdef FAST_EXCEPTIONS
-      compile_try_fast(root, W);
-#else
-      compile_try (root, W);
-#endif
+      compile_try(root, W);
       break;
     case op_fork:
       compile_fork(root, W);
@@ -3920,11 +3896,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_func_call:
     case op_constructor_call:
-#ifdef FAST_EXCEPTIONS
       compile_func_call_fast(root, W);
-#else
-      compile_func_call (root, W);
-#endif
       break;
     case op_func_ptr:
       compile_func_ptr(root, W);

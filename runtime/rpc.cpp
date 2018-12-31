@@ -991,9 +991,7 @@ protected:
       }
 
       rpc_request res = input->load<rpc_request, rpc_request>();
-#ifdef FAST_EXCEPTIONS
       php_assert (CurException == nullptr);
-#endif
 
       if (res.resumable_id == -2) {
         last_rpc_error = res.error;
@@ -1054,9 +1052,7 @@ protected:
       }
 
       rpc_request res = input->load<rpc_request, rpc_request>();
-#ifdef FAST_EXCEPTIONS
       php_assert (CurException == nullptr);
-#endif
 
       if (res.resumable_id == -2) {
         last_rpc_error = res.error;
@@ -1642,19 +1638,11 @@ tl_tree *store_function(const var &tl_object) {
   tl_tree *res;
   last_arr_ptr = var_stack;
   //fprintf (stderr, "Before TLUNI_START in STORE\n");
-#ifdef FAST_EXCEPTIONS
   res = (tl_tree *)((*(function_ptr *)c->IP)(c->IP + 1, Data_stack, var_stack, vars));
   if (CurException) {
     res = nullptr;
     FREE_EXCEPTION;
   }
-#else
-  try {
-    res = (tl_tree *)TLUNI_START (c->IP, Data_stack, var_stack, vars);
-  } catch (Exception &e) {
-    res = nullptr;
-  }
-#endif
   //fprintf (stderr, "Before FREE in STORE\n");
   free_var_space(vars, c->var_count);
   free_arr_space();
@@ -1725,7 +1713,6 @@ array<var> fetch_function(tl_tree *T) {
 
   int x = 0;
 
-#ifdef FAST_EXCEPTIONS
   x = rpc_lookup_int();
   if (x == RPC_REQ_ERROR && !CurException) {
     php_assert (tl_parse_int() == RPC_REQ_ERROR);
@@ -1752,24 +1739,6 @@ array<var> fetch_function(tl_tree *T) {
     FREE_EXCEPTION;
     return result;
   }
-#else
-  try {
-    x = rpc_lookup_int (rpc_filename, __LINE__);
-    if (x == RPC_REQ_ERROR) {
-      T->destroy();
-
-      php_assert (tl_parse_int() == RPC_REQ_ERROR);
-      tl_parse_long();
-      int error_code = tl_parse_int();
-      string error = tl_parse_string();
-      return tl_fetch_error (error, error_code);
-    }
-  } catch (Exception &e) {
-    T->destroy();
-
-    return tl_fetch_error (e.message, TL_ERROR_SYNTAX);
-  }
-#endif
 
   tl_debug(__FUNCTION__, -2);
   Data_stack[0] = T;
@@ -1780,7 +1749,6 @@ array<var> fetch_function(tl_tree *T) {
   tl_tree *dbg_T = T->dup();
 
   //fprintf (stderr, "Before TLUNI_START in FETCH\n");
-#ifdef FAST_EXCEPTIONS
   res = (tl_tree *)((*(function_ptr *)tl_config.fetchIP)(tl_config.fetchIP + 1, Data_stack + 1, var_stack, vars_buffer + MAX_VARS));
   if (CurException) {
     free_arr_space();
@@ -1789,15 +1757,6 @@ array<var> fetch_function(tl_tree *T) {
     FREE_EXCEPTION;
     return result;
   }
-#else
-  try {
-    res = TLUNI_START (tl_config.fetchIP, Data_stack + 1, var_stack, vars_buffer + MAX_VARS);
-  } catch (Exception &e) {
-    free_arr_space();
-    var_stack[0] = var();
-    return tl_fetch_error (e.message, TL_ERROR_SYNTAX);
-  }
-#endif
   //fprintf (stderr, "After TLUNI_START in FETCH\n");
 
   if (res == TLUNI_OK) {

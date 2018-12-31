@@ -20,15 +20,9 @@ int main(int argc, char **argv) {
   static_init_scripts();
   init_scripts();
   script_t *script = get_script("#0");
-#ifdef FAST_EXCEPTIONS
   script->run(nullptr, memory_buffer, 1 << 29);
   if (CurException) {
     Exception e = *CurException;
-#else
-    try {
-      script->run (nullptr, memory_buffer, 1 << 29);
-    } catch (Exception &e) {
-#endif
     fprintf(stderr, "Unhandled Exception caught in file %s at line %d. Error %d: %s.\n", e.file.c_str(), e.line, e.code, e.message.c_str());
     fprintf(stderr, "Backtrace:\n%s", f$Exception$$getTraceAsString(e).c_str());
   }

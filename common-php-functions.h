@@ -3,8 +3,6 @@
 #include <climits>
 #include <cstring>
 
-#define FAST_EXCEPTIONS
-
 const int STRLEN_WARNING_FLAG = 1 << 30;
 const int STRLEN_OBJECT = -3;
 const int STRLEN_ERROR = -2;
