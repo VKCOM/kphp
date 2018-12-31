@@ -195,15 +195,8 @@ void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
 
 void ExprNodeRecalc::recalc_constructor_call(VertexAdaptor<op_constructor_call> call) {
   FunctionPtr function = call->get_func_id();
-  if (likely(static_cast<bool>(function->class_id))) {
-    set_lca(function->class_id);
-  } else {
-    if (call->type_help == tp_MC) {
-      set_lca(call->type_help);
-    } else {
-      kphp_error (0, "op_constructor_call has class_id nullptr");
-    }
-  }
+  kphp_error (function->class_id, "op_constructor_call has class_id nullptr");
+  set_lca(function->class_id);
 }
 
 void ExprNodeRecalc::recalc_var(VertexAdaptor<op_var> var) {

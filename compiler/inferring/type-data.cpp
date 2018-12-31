@@ -558,10 +558,6 @@ inline void get_cpp_style_type(const TypeData *type, string *res) {
       *res += "MyDB";
       break;
     }
-    case tp_MC: {
-      *res += "MyMemcache";
-      break;
-    }
     case tp_Class: {
       if (!type->class_type()->is_builtin()) {
         *res += "class_instance<";
@@ -684,8 +680,6 @@ int type_strlen(const TypeData *type) {
       return STRLEN_LONG;
     case tp_ULong:
       return STRLEN_ULONG;
-    case tp_MC:
-      return STRLEN_MC;
     case tp_DB:
       return STRLEN_DB;
     case tp_RPC:

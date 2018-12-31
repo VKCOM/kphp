@@ -40,7 +40,6 @@ const char *ptype_name(PrimitiveType id) {
     case tp_UInt:       return "UInt";
     case tp_Long:       return "Long";
     case tp_ULong:      return "ULong";
-    case tp_MC:         return "MC";
     case tp_DB:         return "DB";
     case tp_RPC:        return "RPC";
     case tp_tuple:      return "tuple";
@@ -56,9 +55,8 @@ const char *ptype_name(PrimitiveType id) {
 }
 
 bool can_store_bool(PrimitiveType tp) {
-  return tp == tp_var || tp == tp_MC || tp == tp_DB || tp == tp_Class ||
-         tp == tp_RPC || tp == tp_bool ||
-         tp == tp_Any;
+  return tp == tp_var || tp == tp_DB || tp == tp_Class ||
+         tp == tp_RPC || tp == tp_bool || tp == tp_Any;
 }
 
 
@@ -89,7 +87,7 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return b;
   }
 
-  if (b >= tp_MC && a >= tp_int) { // Memcache and e.t.c can store only bool
+  if (b >= tp_DB && a >= tp_int) { // Memcache and e.t.c can store only bool
     return tp_Error;
   }
 

@@ -18,6 +18,25 @@ class Exception {
     public function getTraceAsString () ::: string;
 };
 
+class Memcache {
+    public function __construct();
+    public function get ($key) throws ::: var;
+    public function delete ($key ::: string) throws ::: bool;
+    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
+    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
+    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
+    public function decrement ($key ::: string, $v ::: Any = 1) throws ::: var;
+    public function increment ($key ::: string, $v ::: Any = 1) throws ::: var;
+    public function getLastQueryTime () ::: var;
+    public function bufferNextLog () ::: void;
+    public function flushLogBuffer () ::: void;
+    public function clearLogBuffer () ::: void;
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = -1) ::: bool;
+    public function connect ($host ::: string, $port ::: int = 11211) ::: bool;
+    public function pconnect ($host ::: string, $port ::: int = 11211) ::: bool;
+    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+}
+
 $_SERVER ::: var;
 $_GET ::: var;
 $_POST ::: var;
@@ -28,8 +47,8 @@ $_ENV ::: var;
 $argc ::: var;
 $argv ::: var;
 
-$MC ::: MC;
-$MC_True ::: MC;
+$MC ::: Memcache;
+$MC_True ::: Memcache;
 $config ::: var;
 $Durov ::: var;
 $FullMCTime ::: var;
@@ -535,31 +554,13 @@ define('IMAGETYPE_JP2', 10);
 
 define('MEMCACHE_COMPRESSED', 2);
 
-function new_Memcache() ::: MC;
-function new_RpcMemcache($fake ::: bool = false) ::: MC;
-function new_true_mc ($MC ::: MC, $engine_tag ::: string = "", $engine_name ::: string = "", $is_debug ::: bool = false, $is_debug_empty ::: bool = false, $query_time_threshold ::: float = 0.0) ::: MC;
-function new_test_mc ($MC ::: MC, $engine_tag ::: string = "") ::: MC;
-function new_rich_mc ($MC ::: MC, $engine_tag ::: string = "") ::: MC;
+function new_RpcMemcache($fake ::: bool = false) ::: Memcache;
+function new_true_mc ($MC :<=: Memcache, $engine_tag ::: string = "", $engine_name ::: string = "", $is_debug ::: bool = false, $is_debug_empty ::: bool = false, $query_time_threshold ::: float = 0.0) ::: Memcache;
+function new_test_mc ($MC :<=: Memcache, $engine_tag ::: string = "") ::: Memcache;
+function new_rich_mc ($MC :<=: Memcache, $engine_tag ::: string = "") ::: Memcache;
 
-function memcached_get ($MC ::: MC, $key) throws ::: var;
-function memcached_delete ($MC ::: MC, $key ::: string) throws ::: bool;
-
-function memcached_add ($MC ::: MC, $key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
-function memcached_set ($MC ::: MC, $key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
-function memcached_replace ($MC ::: MC, $key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
-function memcached_decrement ($MC ::: MC, $key ::: string, $v ::: Any = 1) throws ::: var;
-function memcached_increment ($MC ::: MC, $key ::: string, $v ::: Any = 1) throws ::: var;
-function memcached_getLastQueryTime ($MC ::: MC) ::: var;
-function memcached_bufferNextLog ($MC ::: MC) ::: void;
-function memcached_flushLogBuffer ($MC ::: MC) ::: void;
-function memcached_clearLogBuffer ($MC ::: MC) ::: void;
-
-function memcached_addServer ($MC ::: MC, $host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = -1) ::: bool;
-function memcached_connect ($MC ::: MC, $host ::: string, $port ::: int = 11211) ::: bool;
-function memcached_pconnect ($MC ::: MC, $host ::: string, $port ::: int = 11211) ::: bool;
-function memcached_rpc_connect ($MC ::: MC, $host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
-function mcGetStats ($MC ::: MC) ::: array <int>;
-function mcGetClusterSize ($MC ::: MC) ::: int;
+function mcGetStats ($MC :<=: Memcache) ::: array <int>;
+function mcGetClusterSize ($MC :<=: Memcache) ::: int;
 
 /** vkext **/
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;

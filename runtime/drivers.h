@@ -56,7 +56,7 @@ public:
   virtual void flushLogBuffer() = 0;
 };
 
-class Memcache : public MC_object {
+class McMemcache : public MC_object {
 private:
   class host {
   public:
@@ -79,7 +79,7 @@ private:
   var run_increment(const string &key, const var &count);
 
 public:
-  Memcache();
+  McMemcache();
 
   bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
   bool connect(const string &host_name, int port = 11211, int timeout = 1);
@@ -207,101 +207,101 @@ public:
   void flushLogBuffer();
 };
 
-class MyMemcache {
+class Memcache {
 private:
   bool bool_value;
   MC_object *mc;
 
-  MyMemcache(MC_object *mc);
+  Memcache(MC_object *mc);
 public:
-  MyMemcache();
+  Memcache();
 
-  friend bool f$memcached_addServer(const MyMemcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms);
-  friend bool f$memcached_connect(const MyMemcache &mc, const string &host_name, int port, int timeout);
-  friend bool f$memcached_pconnect(const MyMemcache &mc, const string &host_name, int port, int timeout);
-  friend bool f$memcached_rpc_connect(const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout);
+  friend bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms);
+  friend bool f$Memcache$$connect(const Memcache &mc, const string &host_name, int port, int timeout);
+  friend bool f$Memcache$$pconnect(const Memcache &mc, const string &host_name, int port, int timeout);
+  friend bool f$Memcache$$rpc_connect(const Memcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout);
 
-  friend bool f$memcached_add(const MyMemcache &mc, const string &key, const var &value, int flags, int expire);
-  friend bool f$memcached_set(const MyMemcache &mc, const string &key, const var &value, int flags, int expire);
-  friend bool f$memcached_replace(const MyMemcache &mc, const string &key, const var &value, int flags, int expire);
+  friend bool f$Memcache$$add(const Memcache &mc, const string &key, const var &value, int flags, int expire);
+  friend bool f$Memcache$$set(const Memcache &mc, const string &key, const var &value, int flags, int expire);
+  friend bool f$Memcache$$replace(const Memcache &mc, const string &key, const var &value, int flags, int expire);
 
-  friend var f$memcached_get(const MyMemcache &mc, const var &key_var);
+  friend var f$Memcache$$get(const Memcache &mc, const var &key_var);
 
-  friend bool f$memcached_delete(const MyMemcache &mc, const string &key);
+  friend bool f$Memcache$$delete(const Memcache &mc, const string &key);
 
-  friend var f$memcached_decrement(const MyMemcache &mc, const string &key, const var &v);
-  friend var f$memcached_increment(const MyMemcache &mc, const string &key, const var &v);
+  friend var f$Memcache$$decrement(const Memcache &mc, const string &key, const var &v);
+  friend var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v);
 
-  friend var f$memcached_getVersion(const MyMemcache &mc);
+  friend var f$Memcache$$getVersion(const Memcache &mc);
 
-  friend var f$memcached_getTag(const MyMemcache &mc);
-  friend var f$memcached_getLastQueryTime(const MyMemcache &mc);
+  friend var f$Memcache$$getTag(const Memcache &mc);
+  friend var f$Memcache$$getLastQueryTime(const Memcache &mc);
 
-  friend void f$memcached_bufferNextLog(const MyMemcache &mc);
-  friend void f$memcached_clearLogBuffer(const MyMemcache &mc);
-  friend void f$memcached_flushLogBuffer(const MyMemcache &mc);
+  friend void f$Memcache$$bufferNextLog(const Memcache &mc);
+  friend void f$Memcache$$clearLogBuffer(const Memcache &mc);
+  friend void f$Memcache$$flushLogBuffer(const Memcache &mc);
 
-  friend bool f$boolval(const MyMemcache &my_mc);
-  friend bool eq2(const MyMemcache &my_mc, bool value);
-  friend bool eq2(bool value, const MyMemcache &my_mc);
-  friend bool equals(bool value, const MyMemcache &my_mc);
-  friend bool equals(const MyMemcache &my_mc, bool value);
+  friend bool f$boolval(const Memcache &my_mc);
+  friend bool eq2(const Memcache &my_mc, bool value);
+  friend bool eq2(bool value, const Memcache &my_mc);
+  friend bool equals(bool value, const Memcache &my_mc);
+  friend bool equals(const Memcache &my_mc, bool value);
 
-  MyMemcache &operator=(bool value);
-  MyMemcache(bool value);
+  Memcache &operator=(bool value);
+  Memcache(bool value);
 
-  friend array<string> f$mcGetStats(const MyMemcache &MC);
+  friend array<string> f$mcGetStats(const Memcache &MC);
 
-  friend int f$mcGetClusterSize(const MyMemcache &MC);
+  friend int f$mcGetClusterSize(const Memcache &MC);
 
 
-  friend MyMemcache f$new_Memcache();
-  friend MyMemcache f$new_RpcMemcache(bool fake);
-  friend MyMemcache f$new_true_mc(const MyMemcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold);
-  friend MyMemcache f$new_test_mc(const MyMemcache &mc, const string &engine_tag);
-  friend MyMemcache f$new_rich_mc(const MyMemcache &mc, const string &engine_tag);
+  friend Memcache f$Memcache$$__construct();
+  friend Memcache f$new_RpcMemcache(bool fake);
+  friend Memcache f$new_true_mc(const Memcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold);
+  friend Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag);
+  friend Memcache f$new_rich_mc(const Memcache &mc, const string &engine_tag);
 };
 
-bool f$memcached_addServer(const MyMemcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
-bool f$memcached_connect(const MyMemcache &mc, const string &host_name, int port = 11211, int timeout = 1);
-bool f$memcached_pconnect(const MyMemcache &mc, const string &host_name, int port = 11211, int timeout = 1);
-bool f$memcached_rpc_connect(const MyMemcache &mc, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
+bool f$Memcache$$connect(const Memcache &mc, const string &host_name, int port = 11211, int timeout = 1);
+bool f$Memcache$$pconnect(const Memcache &mc, const string &host_name, int port = 11211, int timeout = 1);
+bool f$Memcache$$rpc_connect(const Memcache &mc, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
-bool f$memcached_add(const MyMemcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$memcached_set(const MyMemcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$memcached_replace(const MyMemcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$Memcache$$add(const Memcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$Memcache$$set(const Memcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$Memcache$$replace(const Memcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
 
-var f$memcached_get(const MyMemcache &mc, const var &key_var);
+var f$Memcache$$get(const Memcache &mc, const var &key_var);
 
-bool f$memcached_delete(const MyMemcache &mc, const string &key);
+bool f$Memcache$$delete(const Memcache &mc, const string &key);
 
-var f$memcached_decrement(const MyMemcache &mc, const string &key, const var &v = 1);
-var f$memcached_increment(const MyMemcache &mc, const string &key, const var &v = 1);
+var f$Memcache$$decrement(const Memcache &mc, const string &key, const var &v = 1);
+var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v = 1);
 
-var f$memcached_getVersion(const MyMemcache &mc);
+var f$Memcache$$getVersion(const Memcache &mc);
 
-var f$memcached_getTag(const MyMemcache &mc);
-var f$memcached_getLastQueryTime(const MyMemcache &mc);
+var f$Memcache$$getTag(const Memcache &mc);
+var f$Memcache$$getLastQueryTime(const Memcache &mc);
 
-void f$memcached_bufferNextLog(const MyMemcache &mc);
-void f$memcached_clearLogBuffer(const MyMemcache &mc);
-void f$memcached_flushLogBuffer(const MyMemcache &mc);
+void f$Memcache$$bufferNextLog(const Memcache &mc);
+void f$Memcache$$clearLogBuffer(const Memcache &mc);
+void f$Memcache$$flushLogBuffer(const Memcache &mc);
 
-bool f$boolval(const MyMemcache &my_mc);
-bool eq2(const MyMemcache &my_mc, bool value);
-bool eq2(bool value, const MyMemcache &my_mc);
-bool equals(bool value, const MyMemcache &my_mc);
-bool equals(const MyMemcache &my_mc, bool value);
+bool f$boolval(const Memcache &my_mc);
+bool eq2(const Memcache &my_mc, bool value);
+bool eq2(bool value, const Memcache &my_mc);
+bool equals(bool value, const Memcache &my_mc);
+bool equals(const Memcache &my_mc, bool value);
 
-array<string> f$mcGetStats(const MyMemcache &MC);
+array<string> f$mcGetStats(const Memcache &MC);
 
-int f$mcGetClusterSize(const MyMemcache &MC);
+int f$mcGetClusterSize(const Memcache &MC);
 
-MyMemcache f$new_Memcache();
-MyMemcache f$new_RpcMemcache(bool fake = false);
-MyMemcache f$new_true_mc(const MyMemcache &mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
-MyMemcache f$new_test_mc(const MyMemcache &mc, const string &engine_tag = string());
-MyMemcache f$new_rich_mc(const MyMemcache &mc, const string &engine_tag = string());
+Memcache f$Memcache$$__construct();
+Memcache f$new_RpcMemcache(bool fake = false);
+Memcache f$new_true_mc(const Memcache &mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
+Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag = string());
+Memcache f$new_rich_mc(const Memcache &mc, const string &engine_tag = string());
 
 
 var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);

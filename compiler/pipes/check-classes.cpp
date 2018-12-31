@@ -43,7 +43,7 @@ inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
     bool allow_no_default_value = false;
     // если дефолтного значения нет — а вдруг оно не обязательно? для инстансов например
     if (!f.init_val) {
-      allow_no_default_value = vk::any_of_equal(f.get_inferred_type()->ptype(), tp_Class, tp_MC);
+      allow_no_default_value = vk::any_of_equal(f.get_inferred_type()->ptype(), tp_Class);
     }
 
     kphp_error(f.init_val || allow_no_default_value,

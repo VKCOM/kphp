@@ -138,11 +138,7 @@ static const char *_err_instance_access(VertexPtr v, const char *desc) {
  * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
  */
 string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused)), VertexAdaptor<op_constructor_call> ctor_call) {
-  if (likely(!ctor_call->type_help)) {    // ctor_call->get_string() это полное имя класса после new
-    return replace_backslashes(ctor_call->get_string()) + "$$" + "__construct";
-  }
-
-  return "new_" + ctor_call->get_string();   // Memcache, RpcMemcache, Exception, true_mc, test_mc, rich_mc
+  return replace_backslashes(ctor_call->get_string()) + "$$" + "__construct";
 }
 
 /*
@@ -155,14 +151,6 @@ string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_ca
 
   if (likely(klass && klass->construct_function)) {
     return replace_backslashes(klass->name) + "$$" + arrow_call->get_string();
-  }
-
-  // особый кейс зарезервированных классов: $mc->get() это memcached_get($mc) и пр.
-  if (klass && klass->name == "Exception") {
-    return "exception_" + arrow_call->get_string();
-  }
-  if (klass && klass->name == "Memcache") {
-    return "memcached_" + arrow_call->get_string();
   }
 
   return std::string();

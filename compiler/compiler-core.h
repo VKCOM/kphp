@@ -38,7 +38,6 @@ private:
   // это костыль, который должен уйти, когда мы перепишем часть php-кода
   TSHashTable<VertexPtr> extern_func_headers_ht;
 
-  void create_builtin_classes();
 
   inline bool try_require_file(SrcFilePtr file);
 

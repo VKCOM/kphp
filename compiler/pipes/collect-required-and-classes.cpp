@@ -21,7 +21,7 @@ private:
 
   void require_class(const string &class_name) {
     // TODO: remove hack
-    if (class_name == "Exception") {
+    if (class_name == "Exception" || class_name == "Memcache") {
       return;
     }
     if (!G->get_class(class_name)) {

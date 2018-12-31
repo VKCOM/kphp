@@ -249,7 +249,7 @@ VertexPtr GenTree::get_func_call() {
     return left;
   }
 
-  auto call = VertexAdaptor<Op>::create(next);
+  VertexPtr call = VertexAdaptor<Op>::create(next);
   set_location(call, call_location);
 
   //hack..
@@ -261,12 +261,10 @@ VertexPtr GenTree::get_func_call() {
     VertexAdaptor<op_constructor_call> func_call = call;
     func_call->set_string(name);
 
-    // todo optimize
-    if (name.size() == 8 && name == "Memcache") {
-      func_call->type_help = tp_MC;
-    }
-    if (name == "true_mc" || name == "test_mc" || name == "RpcMemcache") {
-      func_call->type_help = tp_MC;
+    // Hack for several classes inherited from Memcache
+    if (name == "true_mc" || name == "test_mc" || name == "RpcMemcache" || name == "reach_mc") {
+      call = VertexAdaptor<op_func_call>::create(call->get_next());
+      call->set_string("new_" + name);
     }
   }
   return call;
@@ -1658,8 +1656,7 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const string &name) {
-  static set<string> disallowed_names{"RpcMemcache", "Memcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc",
-                                      "db_decl"};
+  static set<string> disallowed_names{"RpcMemcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc", "db_decl"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }

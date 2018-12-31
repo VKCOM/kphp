@@ -39,13 +39,11 @@ void CheckInferredInstancesF::analyze_function_var(FunctionPtr function, VarPtr 
 
   if (assum == assum_instance) {
     const TypeData *t = var->tinf_node.get_type();
-    kphp_error((t->ptype() == tp_Class && klass == t->class_type())
-               || (t->ptype() == tp_MC)
-               || (t->use_or_false() && klass->name == "Memcache"),
+    kphp_error((t->ptype() == tp_Class && klass == t->class_type()),
                format("var $%s assumed to be %s, but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(t).c_str()));
   } else if (assum == assum_instance_array) {
     const TypeData *t = var->tinf_node.get_type()->lookup_at(Key::any_key());
-    kphp_error(t != nullptr && ((t->ptype() == tp_Class && klass == t->class_type()) || t->ptype() == tp_MC),
+    kphp_error(t != nullptr && (t->ptype() == tp_Class && klass == t->class_type()),
                format("var $%s assumed to be %s[], but inferred %s", var->name.c_str(), klass->name.c_str(), type_out(var->tinf_node.get_type()).c_str()));
   }
 }

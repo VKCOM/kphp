@@ -458,6 +458,12 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
  */
 AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
   if (f->type() == FunctionData::func_extern) {
+    if (f->root->type_rule) {
+      if (auto class_type_rule = f->root->type_rule.as<meta_op_type_rule>()->rule().try_as<op_class_type_rule>()) {
+        out_class = class_type_rule->class_ptr;
+        return assum_instance;
+      }
+    }
     return assum_unknown;
   }
 
@@ -502,16 +508,7 @@ AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name,
 inline AssumType infer_from_ctor(FunctionPtr f __attribute__ ((unused)),
                                  VertexAdaptor<op_constructor_call> call,
                                  ClassPtr &out_class) {
-  if (likely(!call->type_help)) {
-    out_class = G->get_class(call->get_string());   // call->get_string() это полное имя класса после new
-    return assum_instance;
-  }
-
-  if (call->type_help == tp_MC) {
-    out_class = G->get_class("Memcache");
-  } else {
-    kphp_error(0, "Unknown type_help");
-  }
+  out_class = G->get_class(call->get_string());   // call->get_string() это полное имя класса после new
   return assum_instance;
 }
 

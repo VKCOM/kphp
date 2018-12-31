@@ -23,7 +23,6 @@ CompilerCore::CompilerCore() :
 void CompilerCore::start() {
   get_profiler("total").start();
   stage::die_if_global_errors();
-  create_builtin_classes();
 }
 
 void CompilerCore::finish() {
@@ -80,12 +79,6 @@ void CompilerCore::save_extern_func_header(const string &name, VertexPtr header)
     format("Several headers for one function [%s] are found", name.c_str())
   );
   node->data = header;
-}
-
-void CompilerCore::create_builtin_classes() {
-  ClassPtr memcache = ClassPtr(new ClassData());
-  memcache->name = "Memcache";
-  classes_ht.at(hash_ll(memcache->name))->data = memcache;
 }
 
 string CompilerCore::unify_file_name(const string &file_name) {
