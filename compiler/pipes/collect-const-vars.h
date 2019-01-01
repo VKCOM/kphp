@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
 
 /*** Replace constant expressions with const variables ***/
@@ -34,4 +35,20 @@ public:
   bool need_recursion(VertexPtr root __attribute__((unused)), LocalT *local);
 
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *local __attribute__((unused)));
+
+  template<class VisitT>
+  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
+    if (v->type() == op_function) {
+      if (current_function->type() == FunctionData::func_class_holder) {
+        ClassPtr c = current_function->class_id;
+        c->members.for_each([&](ClassMemberStaticField &field) {
+          if (field.init_val) {
+            visit(field.init_val);
+          }
+        });
+      }
+    }
+    return false;
+  }
+
 };

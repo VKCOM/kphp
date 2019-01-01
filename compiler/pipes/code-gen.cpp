@@ -505,6 +505,7 @@ struct DfsInit {
     set<FunctionPtr> *visited_functions,
     set<VarPtr> *used_vars,
     int used_vars_cnt);
+  static inline void declare_extern_for_init_val(VertexPtr v, set<VarPtr>& externed_vars, CodeGenerator &W);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -1734,10 +1735,25 @@ DfsInit::DfsInit(SrcFilePtr main_file) :
   main_file(main_file) {
 }
 
+void DfsInit::declare_extern_for_init_val(VertexPtr v, set<VarPtr>& externed_vars, CodeGenerator &W) {
+  if (v->type() == op_var) {
+    VarPtr var = v->get_var_id();
+    if (externed_vars.insert(var).second) {
+      W << VarExternDeclaration(var);
+    }
+    return;
+  }
+  for (VertexPtr son : *v) {
+    declare_extern_for_init_val(son, externed_vars, W);
+  }
+}
+
 void DfsInit::compile_dfs_init_part(
   FunctionPtr func,
   const set<VarPtr> &used_vars, bool full_flag,
   int part_i, CodeGenerator &W) {
+
+  set<VarPtr> externed_vars;
 
   W << OpenNamespace();
   if (full_flag) {
@@ -1749,6 +1765,9 @@ void DfsInit::compile_dfs_init_part(
       }
 
       W << VarExternDeclaration(var);
+      if (var->init_val) {
+        declare_extern_for_init_val(var->init_val, externed_vars, W);
+      }
     }
   }
   W << "void " << FunctionName(func) << "$dfs_init" << int_to_str(part_i) << "()";
@@ -1757,7 +1776,7 @@ void DfsInit::compile_dfs_init_part(
     W << " " << BEGIN;
 
     for (auto var : used_vars) {
-      if (var->is_constant() || (G->env().is_static_lib_mode() && var->is_builtin_global())) {
+      if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
         continue;
       }
 
@@ -1784,7 +1803,7 @@ void DfsInit::compile_dfs_init_part(
     W << " " << BEGIN;
 
     for (auto var : used_vars) {
-      if (var->is_constant() || (G->env().is_static_lib_mode() && var->is_builtin_global())) {
+      if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
         continue;
       }
 
@@ -1880,19 +1899,9 @@ void DfsInit::collect_used_funcs_and_vars(
     }
   }
 
-  int func_hash = hash(func->name);
-  int bucket = func_hash % used_vars_cnt;
-
-  //used_vars[bucket].insert (func->global_var_ids.begin(), func->global_var_ids.end());
-  //used_vars[bucket].insert (func->header_global_var_ids.begin(), func->header_global_var_ids.end());
-  used_vars[bucket].insert(func->static_var_ids.begin(), func->static_var_ids.end());
-  used_vars[bucket].insert(func->const_var_ids.begin(), func->const_var_ids.end());
-  //used_vars[bucket].insert (func->header_const_var_ids.begin(), func->header_const_var_ids.end());
   collect_vars(used_vars, used_vars_cnt, func->global_var_ids.begin(), func->global_var_ids.end());
   collect_vars(used_vars, used_vars_cnt, func->header_global_var_ids.begin(), func->header_global_var_ids.end());
-  //collect_vars (used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
-  //collect_vars (used_vars, used_vars_cnt, func->const_var_ids.begin(), func->const_var_ids.end());
-  collect_vars(used_vars, used_vars_cnt, func->header_const_var_ids.begin(), func->header_const_var_ids.end());
+  collect_vars(used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
 }
 
 inline void DfsInit::compile(CodeGenerator &W) const {
@@ -1904,11 +1913,6 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   set<VarPtr> used_vars[parts_n];
   collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
   vector<ClassPtr> classes = G->get_classes();
-  for (auto ci : classes) {
-    if (ci && ci->file_id) {
-      collect_used_funcs_and_vars(ci->file_id->main_function, &used_functions, used_vars, parts_n);
-    }
-  }
 
   vector<string> header_names(parts_n);
   vector<string> src_names(parts_n);
