@@ -549,7 +549,6 @@ inline void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_function(VertexPtr root, CodeGenerator &W);
-inline void compile_string_build_raw(VertexAdaptor<op_string_build> root, CodeGenerator &W);
 inline void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W);
 inline void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W);
 inline void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W);
@@ -1246,7 +1245,6 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
       Include("dfs." + main_function->header_name);
   }
 
-  W << "extern string_buffer SB;" << NL;
   W << StaticInit(all_functions);
 
   if (G->env().is_static_lib_mode()) {
@@ -1451,10 +1449,6 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
   vector<VarPtr> const_array_vars;
   vector<VarPtr> const_regexp_vars;
   std::map<std::string, VertexPtr> dependent_vars;
-
-  if (!G->env().is_static_lib_mode() && file_num == 0) {
-    W << "string_buffer SB;" << NL;
-  }
 
   W << OpenNamespace();
   for (auto var : vars) {
@@ -1976,7 +1970,7 @@ static inline void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
 
 static inline void declare_static_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto static_var : function->static_var_ids) {
-    W << VarDeclaration(static_var) << NL;
+    W << VarExternDeclaration(static_var) << NL;
   }
 }
 
@@ -2013,6 +2007,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     stage::set_function(function);
     declare_global_vars(function, W);
     declare_const_vars(function, W);
+    declare_static_vars(function, W);
     W << CloseNamespace();
     include_dependent_headers(function, W);
     W << OpenNamespace();
@@ -2043,8 +2038,6 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   stage::set_function(function);
 
   include_dependent_headers(function, W);
-
-  W << "extern string_buffer SB;" << NL;
 
   W << OpenNamespace();
   declare_global_vars(function, W);
@@ -2989,24 +2982,6 @@ void compile_function(VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_string_build_raw(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
-  W << "(SB.clean()";
-  for (auto v : root->args()) {
-    W << "+";
-
-    if (v->type() != op_string) {
-      W << "(";
-    }
-
-    W << v;
-
-    if (v->type() != op_string) {
-      W << ")";
-    }
-  }
-  W << ")";
-}
-
 struct StrlenInfo {
   VertexPtr v;
   int len{0};
@@ -3232,7 +3207,6 @@ void compile_as_printable(VertexPtr root, CodeGenerator &W) {
   }
 
   if (root->type() == op_string_build) {
-    //compile_string_build_raw (root, W);
     compile_string_build_as_string(root, W);
     return;
   }
@@ -3732,9 +3706,6 @@ void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W) {
 
 
 void compile_string_build(VertexPtr root, CodeGenerator &W) {
-  //W << "(";
-  //compile_string_build_raw (root, W);
-  //W << ".str())";
   compile_string_build_as_string(root, W);
 }
 
@@ -4138,6 +4109,9 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   W << Async(InitScriptsCpp(/*std::move*/main_files, source_functions, all_functions));
 
   vector<VarPtr> vars = G->get_global_vars();
+  for (FunctionPtr fun: xall) {
+    vars.insert(vars.end(), fun->static_var_ids.begin(), fun->static_var_ids.end());
+  }
   int parts_cnt = calc_count_of_parts(vars.size());
   W << Async(VarsCpp(vars, parts_cnt));
 

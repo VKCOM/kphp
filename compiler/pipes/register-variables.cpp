@@ -187,12 +187,6 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariabl
     auto empty = VertexAdaptor<op_empty>::create();
     return empty;
   } else if (root->type() == op_static) {
-    if (stage::get_function()->root->inline_flag) {
-      kphp_error(stage::get_function()->is_lambda(), "Inline functions don't support static variables");
-      // TODO: allow static variables in `inline` functions
-      //  in lambdas we can change inline_flag without any performance penalty, but it's a hack.
-      stage::get_function()->root->inline_flag = false;
-    }
     visit_static_vertex(root);
     local->need_recursion_flag = false;
     auto empty = VertexAdaptor<op_empty>::create();
