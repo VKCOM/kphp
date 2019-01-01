@@ -9,13 +9,18 @@
 #include "compiler/compiler-core.h"
 
 ClassData::ClassData() :
-  type_data(TypeData::create_for_class(ClassPtr(this))),
   id(0),
   class_type(ctype_class),
   assumptions_inited_vars(0),
   was_constructor_invoked(false),
   can_be_php_autoloaded(false),
   members(this) {
+  type_data = TypeData::create_for_class(ClassPtr(this));
+  auto array_type = TypeData::create_array_type_data(type_data);
+  array_type_data = array_type;
+  array_type = array_type->clone();
+  array_type->set_or_false_flag(true);
+  or_false_array_type_data = array_type;
 }
 
 
@@ -153,4 +158,12 @@ bool ClassData::is_builtin() const {
 
 const TypeData* ClassData::get_type_data() const {
   return type_data;
+}
+
+const TypeData* ClassData::get_array_type_data() const {
+  return array_type_data;
+}
+
+const TypeData* ClassData::get_or_false_array_type_data() const {
+  return or_false_array_type_data;
 }

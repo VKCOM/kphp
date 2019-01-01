@@ -510,6 +510,15 @@ public:
     if (var->init_val) {
       create_set(var, var->init_val);
     }
+    ClassPtr cl;
+    AssumType assum = assumption_get_for_var(current_function, var->name, cl);
+    if (assum == assum_instance) {
+      create_less(var, cl->get_type_data());
+      create_less(cl->get_type_data(), var);
+    } else if (assum == assum_instance_array){
+      create_less(var, cl->get_or_false_array_type_data());
+      create_less(cl->get_array_type_data(), var);
+    }
   }
 
   void on_finish() {

@@ -62,8 +62,7 @@ void TypeData::init_static() {
   }
 
   for (int tp = 0; tp < ptype_size; tp++) {
-    array_types[tp] = new TypeData(tp_array);
-    array_types[tp]->set_lca_at (MultiKey::any_key (1), primitive_types[tp ==  tp_Any ? tp_CreateAny : tp]);
+    array_types[tp] = create_array_type_data(primitive_types[tp ==  tp_Any ? tp_CreateAny : tp]);
   }
 }
 
@@ -719,8 +718,13 @@ size_t TypeData::get_tuple_max_index() const {
   kphp_assert(ptype() == tp_tuple);
   return subkeys_values.size();
 }
-const TypeData *TypeData::create_for_class(ClassPtr klass) {
+TypeData *TypeData::create_for_class(ClassPtr klass) {
   TypeData *result = new TypeData(tp_Class);
   result->class_type_ = klass;
   return result;
+}
+TypeData *TypeData::create_array_type_data(const TypeData *element_type) {
+  TypeData *res = new TypeData(tp_array);
+  res->set_lca_at(MultiKey::any_key(1), element_type);
+  return res;
 }
