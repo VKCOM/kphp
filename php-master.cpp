@@ -25,6 +25,7 @@
 #include "common/crc32c.h"
 #include "common/kprintf.h"
 #include "common/precise-time.h"
+#include "common/server/limits.h"
 #include "common/server/signals.h"
 #include "drinkless/dl-utils-lite.h"
 #include "net/net-connections.h"
@@ -33,6 +34,7 @@
 #include "net/net-rpc-common.h"
 #include "net/net-rpc-server.h"
 #include "net/net-socket.h"
+#include "vv/vv-tl-act.h"
 #include "vv/vv-tl-parse.h"
 
 #include "PHP/php-engine-vars.h"
