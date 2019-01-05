@@ -5,6 +5,7 @@
 #include "compiler/debug.h"
 #include "compiler/stage.h"
 #include "compiler/threading/data-stream.h"
+#include "compiler/threading/profiler.h"
 #include "compiler/vertex.h"
 
 /*** Function Pass ***/
@@ -122,6 +123,8 @@ VertexPtr run_function_pass(VertexPtr vertex, FunctionPassT *pass, typename Func
 
 template<class FunctionPassT>
 bool run_function_pass(FunctionPtr function, FunctionPassT *pass) {
+  static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
+  AutoProfiler prof{*cache};
   pass->init();
   if (!pass->on_start(function)) {
     return false;
@@ -135,7 +138,7 @@ bool run_function_pass(FunctionPtr function, FunctionPassT *pass) {
 template<class FunctionPassT>
 class FunctionPassF {
 public:
-
+  using need_profiler = std::false_type;
   void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
     FunctionPassT pass;
     run_function_pass(function, &pass);

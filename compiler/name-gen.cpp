@@ -22,7 +22,6 @@ string register_unique_name(const string &prefix) {
 }
 
 static inline string gen_unique_name_inside_function(FunctionPtr function, const std::string &prefix, volatile int &x) {
-  AUTO_PROF (next_name);
   AutoLocker<volatile int *> locker(&x);
   unsigned long long h = hash_ll(function->name);
   int *i = &(function->name_gen_map[h]);
@@ -45,7 +44,6 @@ string gen_anonymous_function_name(FunctionPtr function) {
 
 
 string gen_const_string_name(const string &str) {
-  AUTO_PROF (next_const_string_name);
   unsigned long long h = hash_ll(str);
   char tmp[50];
   sprintf(tmp, "const_string$us%llx", h);
@@ -53,7 +51,6 @@ string gen_const_string_name(const string &str) {
 }
 
 string gen_const_regexp_name(const string &str) {
-  AUTO_PROF (next_const_string_name);
   unsigned long long h = hash_ll(str);
   char tmp[50];
   sprintf(tmp, "const_regexp$us%llx", h);
@@ -79,7 +76,6 @@ string gen_unique_name(string prefix, bool flag) {
     }
   }
   prefix += "$u";
-  AUTO_PROF (next_name);
   FunctionPtr function = stage::get_function();
   if (!function || flag) {
     return register_unique_name(prefix);

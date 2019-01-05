@@ -4,7 +4,6 @@
 
 class CheckFunctionCallsPass : public FunctionPassBase {
 private:
-  AUTO_PROF (check_function_calls);
   void check_func_call(VertexPtr call);
 public:
   string get_description() {

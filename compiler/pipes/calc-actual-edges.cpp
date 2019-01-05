@@ -1,6 +1,7 @@
+#include "compiler/pipes/calc-actual-edges.h"
+
 #include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
-#include "compiler/pipes/calc-actual-edges.h"
 
 class CalcActualCallsEdgesPass : public FunctionPassBase {
   vector<FunctionAndEdges::EdgeInfo> *edges = new vector<FunctionAndEdges::EdgeInfo>();   // деструктора нет намеренно
@@ -50,7 +51,6 @@ public:
 
 
 void CalcActualCallsEdgesF::execute(FunctionPtr function, DataStream<FunctionAndEdges> &os) {
-  AUTO_PROF (calc_actual_calls_edges);
   CalcActualCallsEdgesPass pass;
   run_function_pass(function, &pass);
 

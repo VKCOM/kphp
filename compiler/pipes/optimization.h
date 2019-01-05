@@ -5,8 +5,6 @@
 
 class OptimizationPass : public FunctionPassBase {
 private:
-  AUTO_PROF (optimization);
-
   VertexPtr optimize_set_push_back(VertexAdaptor<op_set> set_op);
   void collect_concat(VertexPtr root, vector<VertexPtr> *collected);
   VertexPtr optimize_string_building(VertexPtr root);

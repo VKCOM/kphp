@@ -2,8 +2,8 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
-#include "compiler/threading/profiler.h"
 #include "compiler/gentree.h"
+#include "compiler/threading/profiler.h"
 
 /**
  * Через этот pass проходят функции вида
@@ -173,7 +173,6 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
 
 
 void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os) {
-  AUTO_PROF(sort_and_inherit_classes);
   auto &function_stream = *os.template project_to_nth_data_stream<0>();
   auto &restart_class_stream = *os.template project_to_nth_data_stream<1>();
 

@@ -58,6 +58,8 @@ private:
   class SyncPipeF {
     StreamT tmp_stream;
   public:
+    using need_profiler = std::false_type;
+    using need_on_finish_profiler = std::false_type;
     SyncPipeF() { tmp_stream.set_sink(true); }
 
     void execute(typename StreamT::DataType input, StreamT &) { tmp_stream << input; }

@@ -194,7 +194,6 @@ bool compiler_execute(KphpEnviroment *env) {
   OpInfo::init_static();
   MultiKey::init_static();
   TypeData::init_static();
-  tinf::register_inferer(new tinf::TypeInferer());
 
 //  PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags(); return true;
 

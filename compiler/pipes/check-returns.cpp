@@ -9,7 +9,6 @@ private:
   bool have_void;
   bool have_not_void;
   bool errored;
-  AUTO_PROF (check_returns);
 public:
   string get_description() {
     return "Check returns";

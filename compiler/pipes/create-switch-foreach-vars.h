@@ -4,8 +4,6 @@
 
 class CreateSwitchForeachVarsPass : public FunctionPassBase {
 private:
-  AUTO_PROF (create_switch_vars);
-
   VertexPtr process_switch(VertexPtr v);
 
   VertexPtr process_foreach(VertexPtr v);

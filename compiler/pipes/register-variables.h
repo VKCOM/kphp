@@ -12,7 +12,6 @@
  */
 class RegisterVariablesPass : public FunctionPassBase {
 private:
-  AUTO_PROF (register_variables);
   map<string, VarPtr> registred_vars;
   bool global_function_flag;
   int in_param_list;

@@ -517,7 +517,6 @@ public:
 
 
 void TypeInfererF::execute(FunctionAndCFG input, DataStream<FunctionAndCFG> &os) {
-  AUTO_PROF (tinf_infer_gen_dep);
   CollectMainEdgesPass pass;
   run_function_pass(input.function, &pass);
   os << input;

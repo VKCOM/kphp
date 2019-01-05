@@ -6,8 +6,6 @@
 #include "compiler/gentree.h"
 
 class PreprocessFunctionPass : public FunctionPassBase {
-private:
-  AUTO_PROF (preprocess_function_c);
 public:
   DataStream<FunctionPtr> &instance_of_function_template_stream;
 

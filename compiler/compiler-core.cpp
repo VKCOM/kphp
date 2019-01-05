@@ -19,7 +19,7 @@ CompilerCore::CompilerCore() :
 }
 
 void CompilerCore::start() {
-  PROF (total).start();
+  get_profiler("total").start();
   stage::die_if_global_errors();
   create_builtin_classes();
 }
@@ -36,7 +36,7 @@ void CompilerCore::finish() {
   delete env_;
   env_ = nullptr;
 
-  PROF (total).finish();
+  get_profiler("total").finish();
 }
 
 void CompilerCore::register_env(KphpEnviroment *env) {
@@ -642,7 +642,7 @@ std::forward_list<Index> CompilerCore::collect_imported_headers() {
 }
 
 void CompilerCore::make() {
-  AUTO_PROF (make);
+  AutoProfiler profiler{get_profiler("make")};
   stage::set_name("Make");
   cpp_index.del_extra_files();
 

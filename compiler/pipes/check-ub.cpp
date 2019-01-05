@@ -269,7 +269,6 @@ void fix_undefined_behaviour(FunctionPtr function) {
 
 
 void CheckUBF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
-  AUTO_PROF (check_ub);
   stage::set_name("Check for undefined behaviour");
   stage::set_function(function);
 

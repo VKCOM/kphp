@@ -1,11 +1,9 @@
 #pragma once
 
-#include "compiler/function-pass.h"
 #include "compiler/data/define-data.h"
+#include "compiler/function-pass.h"
 
 class EraseDefinesDeclarationsPass : public FunctionPassBase {
-private:
-  AUTO_PROF (erase_defines_declarations);
 public:
   string get_description() {
     return "Erase defines declarations";

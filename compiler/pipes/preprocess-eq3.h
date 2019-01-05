@@ -4,8 +4,6 @@
 
 class PreprocessEq3Pass : public FunctionPassBase {
 private:
-  AUTO_PROF (preprocess_eq3);
-
   VertexPtr convert_eq3_null_to_isset(VertexPtr eq_op, VertexPtr not_null);
 public:
   string get_description() {

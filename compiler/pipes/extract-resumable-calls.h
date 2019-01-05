@@ -4,8 +4,6 @@
 
 class ExtractResumableCallsPass : public FunctionPassBase {
 private:
-  AUTO_PROF (extract_resumable_calls);
-
   void skip_conv_and_sets(VertexPtr *&replace);
 
 public:

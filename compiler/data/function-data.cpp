@@ -54,7 +54,8 @@ FunctionData::FunctionData(VertexPtr root) :
   body_seq(body_value::unknown) {}
 
 FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, func_type_t type) {
-  AUTO_PROF (create_function);
+  static CachedProfiler cache("create_function");
+  AutoProfiler prof{*cache};
   FunctionPtr function = FunctionPtr(new FunctionData());
   root->set_func_id(function);
 

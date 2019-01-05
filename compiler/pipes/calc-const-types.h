@@ -4,8 +4,6 @@
 
 /*** Calculate const_type for all nodes ***/
 class CalcConstTypePass : public FunctionPassBase {
-private:
-  AUTO_PROF (calc_const_type);
 public:
   struct LocalT : public FunctionPassBase::LocalT {
     bool has_nonconst;

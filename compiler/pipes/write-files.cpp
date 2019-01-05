@@ -5,7 +5,6 @@
 #include "compiler/compiler-core.h"
 
 void WriteFilesF::execute(WriterData *data, EmptyStream &) {
-  AUTO_PROF (end_write);
   stage::set_name("Write files");
   string dir = G->cpp_dir;
 

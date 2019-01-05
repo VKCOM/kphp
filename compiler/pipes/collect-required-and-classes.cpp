@@ -8,7 +8,6 @@
 
 class CollectRequiredPass : public FunctionPassBase {
 private:
-  AUTO_PROF (collect_required);
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
 

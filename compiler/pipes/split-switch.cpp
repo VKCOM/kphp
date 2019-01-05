@@ -7,7 +7,6 @@
 
 class SplitSwitchPass : public FunctionPassBase {
 private:
-  AUTO_PROF (split_switch);
   int depth;
   vector<VertexPtr> new_functions;
 

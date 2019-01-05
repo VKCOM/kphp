@@ -330,7 +330,6 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
 }
 
 void CalcRLF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
-  AUTO_PROF (calc_rl);
   stage::set_name("Calc RL");
   stage::set_function(function);
 

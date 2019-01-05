@@ -1,11 +1,9 @@
 #pragma once
 
-#include "compiler/function-pass.h"
 #include "compiler/data/define-data.h"
+#include "compiler/function-pass.h"
 
 class RegisterDefinesPass : public FunctionPassBase {
-  AUTO_PROF(register_defines);
-
 public:
   string get_description() {
     return "Register defines";

@@ -6,7 +6,6 @@
 #include "compiler/threading/profiler.h"
 
 void FileToTokensF::execute(SrcFilePtr file, DataStream<FileAndTokens> &os) {
-  AUTO_PROF(lexer);
   stage::set_name("Split file to tokens");
   stage::set_file(file);
   kphp_assert(file);

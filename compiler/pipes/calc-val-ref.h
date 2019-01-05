@@ -3,8 +3,6 @@
 #include "compiler/function-pass.h"
 
 class CalcValRefPass : public FunctionPassBase {
-private:
-  AUTO_PROF (calc_val_ref);
 public:
   string get_description() {
     return "Calc val ref";

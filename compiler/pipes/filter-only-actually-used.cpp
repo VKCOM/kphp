@@ -108,7 +108,6 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::set_name("Calc throws and body value");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
-  AUTO_PROF(calc_throws_and_body_value);
 
   // 1) set 'throws_flag' for functions which calls other functions with explicit throw
   // 2) calc 'body_seq' for functions with unknown body value which calls non empty functions
@@ -117,7 +116,6 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::set_name("Calc actual calls");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
-  AUTO_PROF(calc_actual_calls);
 
   // вычисляем реально достижимые функции, и по мере вычисления прокидываем в os
   // должен идти последним

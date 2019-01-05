@@ -1330,7 +1330,6 @@ void CFG::run(CFGData *new_data) {
 }
 
 void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
-  AUTO_PROF (CFG);
   stage::set_name("Calc control flow graph");
   stage::set_function(function);
 
@@ -1347,7 +1346,6 @@ void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
 }
 
 void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
-  AUTO_PROF (CFG_End);
   stage::set_name("Control flow graph. End");
   stage::set_function(data.function);
   data.data->check_uninited();

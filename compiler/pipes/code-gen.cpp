@@ -629,6 +629,11 @@ inline AsyncImpl<T>::AsyncImpl(const T &cmd) :
   cmd(cmd) {
 }
 
+static ProfilerRaw &get_code_gen_profiler() {
+  static CachedProfiler profiler{"writer"};
+  return *profiler;
+}
+
 template<class T>
 class CodeGenTask : public Task {
 private:
@@ -641,10 +646,9 @@ public:
   }
 
   void execute() {
-    PROF(writer).start();
+    AutoProfiler profler{get_code_gen_profiler()};
     stage::set_name("Async code generation");
     W << cmd;
-    PROF(writer).finish();
   }
 };
 
@@ -4038,8 +4042,6 @@ int CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
 }
 
 void CodeGenF::on_finish(DataStream<WriterData *> &os) {
-  AUTO_PROF (code_gen);
-
   stage::set_name("GenerateCode");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();

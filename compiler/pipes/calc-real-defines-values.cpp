@@ -16,7 +16,6 @@ void CalcRealDefinesValuesF::execute(FunctionPtr function, DataStream<FunctionPt
 }
 
 void CalcRealDefinesValuesF::on_finish(DataStream<FunctionPtr> &os) {
-  AUTO_PROF(calc_real_defines_values);
   stage::set_name("Calc real defines values");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();

@@ -38,7 +38,6 @@ void TypeInferer::add_restriction(RestrictionBase *restriction) {
 }
 
 void TypeInferer::check_restrictions() {
-  AUTO_PROF(tinf_check);
   for (int i = 0; i < restrictions.size(); i++) {
     for (RestrictionBase *r : *restrictions.get(i)) {
       if (r->check_broken_restriction()) {
@@ -50,6 +49,7 @@ void TypeInferer::check_restrictions() {
 
 
 class TypeInfererTask : public Task {
+  static CachedProfiler type_inferer_profiler;
 private:
   TypeInferer *inferer_;
   NodeQueue *queue_;
@@ -60,13 +60,15 @@ public:
   }
 
   void execute() {
-    AUTO_PROF(tinf_infer_infer);
+    AutoProfiler profiler{*type_inferer_profiler};
     stage::set_name("Infer types");
     stage::set_function(FunctionPtr());
     inferer_->run_queue(queue_);
     delete queue_;
   }
 };
+
+CachedProfiler TypeInfererTask::type_inferer_profiler{"type_inferring"};
 
 vector<Task *> TypeInferer::get_tasks() {
   vector<Task *> res;

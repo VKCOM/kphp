@@ -47,16 +47,9 @@ Node *get_tinf_node(VarPtr vertex) {
   return &vertex->tinf_node;
 }
 
-static TypeInferer *CI = nullptr;
-
-void register_inferer(TypeInferer *inferer) {
-  if (!__sync_bool_compare_and_swap(&CI, nullptr, inferer)) {
-    kphp_fail();
-  }
-}
-
 TypeInferer *get_inferer() {
-  return CI;
+  static TypeInferer inferer;
+  return &inferer;
 }
 
 inline const TypeData *get_type_impl(Node *node) {

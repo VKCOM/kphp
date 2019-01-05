@@ -5,7 +5,6 @@
 #include "compiler/threading/profiler.h"
 
 void LoadFileF::execute(SrcFilePtr file, DataStream<SrcFilePtr> &os) {
-  AUTO_PROF (load_files);
   stage::set_name("Load file");
   stage::set_file(file);
 

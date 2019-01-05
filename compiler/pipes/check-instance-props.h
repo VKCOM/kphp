@@ -8,8 +8,6 @@
  */
 class CheckInstancePropsPass : public FunctionPassBase {
 private:
-  AUTO_PROF (check_instance_props);
-
   void init_class_instance_var(VertexPtr v, const ClassMemberInstanceField *field, ClassPtr klass);
 
 public:

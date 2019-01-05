@@ -3,8 +3,6 @@
 #include "compiler/function-pass.h"
 
 class ExtractAsyncPass : public FunctionPassBase {
-private:
-  AUTO_PROF (extract_async);
 public:
   string get_description() {
     return "Extract async";

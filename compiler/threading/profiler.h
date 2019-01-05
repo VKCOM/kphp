@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <list>
+#include <string>
 
 #include "common/cycleclock.h"
 
@@ -16,12 +18,25 @@ private:
   size_t memory;
   int flag;
 public:
+  std::string name;
+  int print_id;
+
+  explicit ProfilerRaw(std::string name, int print_id) :
+    count(0),
+    ticks(0),
+    memory(0),
+    flag(0),
+    name(std::move(name)),
+    print_id(print_id) {
+
+  }
+
   void alloc_memory(size_t size) {
     count++;
     memory += size;
   }
 
-  size_t get_memory() {
+  size_t get_memory() const {
     return memory;
   }
 
@@ -40,115 +55,78 @@ public:
     }
   }
 
-  long long get_ticks() {
+  long long get_ticks() const {
     return ticks;
   }
 
-  long long get_count() {
+  long long get_count() const {
     return count;
   }
 
-  double get_time() {
+  double get_time() const {
     return get_ticks() * TACT_SPEED;
+  }
+
+  ProfilerRaw& operator+=(const ProfilerRaw& other) {
+    assert(name == other.name);
+    count += other.count;
+    ticks += other.ticks;
+    memory += other.memory;
+    print_id = std::min(print_id, other.print_id);
+    return *this;
   }
 };
 
-
-#define PROF_E_(x) prof_ ## x
-#define PROF_E(x) PROF_E_(x)
-#define FOREACH_PROF(F)\
-  F (next_name)\
-  F (next_const_string_name)\
-  F (create_function)\
-  F (load_files)\
-  F (lexer)\
-  F (gentree)\
-  F (gentree_postprocess)\
-  F (split_switch)\
-  F (create_switch_vars)\
-  F (collect_required)\
-  F (sort_and_inherit_classes)\
-  F (calc_locations)\
-  F (resolve_self_static_parent)\
-  F (register_defines)\
-  F (calc_real_defines_values)\
-  F (erase_defines_declarations)\
-  F (inline_defines_usages)\
-  F (check_returns)\
-  F (preprocess_eq3)\
-  F (preprocess_function_c)\
-  F (preprocess_break)\
-  F (register_variables)\
-  F (check_instance_props)\
-  F (calc_const_type)\
-  F (collect_const_vars)\
-  F (calc_actual_calls_edges)\
-  F (calc_actual_calls)\
-  F (calc_throws_and_body_value)\
-  F (check_function_calls)\
-  F (calc_rl)\
-  F (CFG)\
-  F (type_infence)\
-  F (tinf_infer)\
-  F (tinf_infer_gen_dep)\
-  F (tinf_infer_infer)\
-  F (tinf_find_isset)\
-  F (tinf_check)\
-  F (CFG_End)\
-  F (optimization)\
-  F (calc_val_ref)\
-  F (calc_func_dep)\
-  F (calc_bad_vars)\
-  F (check_ub)\
-  F (analizer)\
-  F (extract_resumable_calls)\
-  F (extract_async)\
-  F (check_access_modifiers)\
-  F (final_check)\
-  F (code_gen)\
-  F (writer)\
-  F (end_write)\
-  F (make)\
-  F (sync_with_dir)\
-  F (vertex_inner)\
-  F (vertex_inner_data)\
-  F (total)
-
-#define DECLARE_PROF_E(x) PROF_E(x),
-enum ProfilerId {
-  FOREACH_PROF (DECLARE_PROF_E)
-  ProfilerId_size
-};
-
-class Profiler {
-public:
-  ProfilerRaw raw[ProfilerId_size];
-  char dummy[4096];
-};
-
-extern TLS<Profiler> profiler;
-
-inline ProfilerRaw &get_profiler(ProfilerId id) {
-  return profiler->raw[id];
-}
-
-#define PROF(x) get_profiler (PROF_E (x))
+ProfilerRaw &get_profiler(const std::string &name);
 
 void profiler_print_all();
 
-template<ProfilerId Id>
+std::string demangle(const char *name);
+
+
+class CachedProfiler {
+  TLS<ProfilerRaw*> raws;
+  std::string name;
+public:
+
+
+  explicit CachedProfiler(const char *name) : name(name) {}
+  explicit CachedProfiler(std::string name) : name(std::move(name)) {}
+  CachedProfiler(const CachedProfiler&) = delete;
+  CachedProfiler(CachedProfiler&&) = delete;
+  CachedProfiler& operator=(const CachedProfiler&) = delete;
+  CachedProfiler& operator=(CachedProfiler&&) = delete;
+  ~CachedProfiler() = default;
+
+  ProfilerRaw& operator*() {
+    return *operator->();
+  }
+
+  ProfilerRaw* operator->() {
+    auto raw = *raws;
+    if (raw == nullptr) {
+      *raws = raw = &get_profiler(name);
+    }
+    return raw;
+  }
+};
+
 class AutoProfiler {
 private:
   ProfilerRaw &prof;
 public:
-  AutoProfiler() :
-    prof(get_profiler(Id)) {
+  explicit AutoProfiler(ProfilerRaw &prof) :
+    prof(prof) {
     prof.start();
   }
 
   ~AutoProfiler() {
     prof.finish();
   }
+
+  AutoProfiler(const AutoProfiler &) = delete;
+  AutoProfiler(AutoProfiler &&) = delete;
+  AutoProfiler& operator=(const AutoProfiler&) = delete;
+  AutoProfiler& operator=(AutoProfiler&&) = delete;
 };
 
-#define AUTO_PROF(x) AutoProfiler <PROF_E (x)> x ## _auto_prof

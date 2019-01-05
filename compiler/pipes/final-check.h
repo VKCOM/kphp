@@ -6,7 +6,6 @@
 
 class FinalCheckPass : public FunctionPassBase {
 private:
-  AUTO_PROF (final_check);
   int from_return;
 
   void check_static_var_inited(VarPtr static_var);

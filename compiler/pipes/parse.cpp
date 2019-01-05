@@ -3,7 +3,6 @@
 #include "compiler/gentree.h"
 
 void ParseF::execute(FileAndTokens file_and_tokens, DataStream<FunctionPtr> &os) {
-  AUTO_PROF(gentree);
   stage::set_name("Parse file");
   stage::set_file(file_and_tokens.file);
   kphp_assert(file_and_tokens.file);

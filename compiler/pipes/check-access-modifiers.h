@@ -4,7 +4,6 @@
 
 class CheckAccessModifiersPass : public FunctionPassBase {
 private:
-  AUTO_PROF (check_access_modifiers);
   string namespace_name;
   string class_name;
   ClassPtr class_id;

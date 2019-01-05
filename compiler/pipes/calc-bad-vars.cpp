@@ -103,7 +103,6 @@ inline void swap(DepData &a, DepData &b) {
 
 class CalcFuncDepPass : public FunctionPassBase {
 private:
-  AUTO_PROF (calc_func_dep);
   DepData data;
 public:
   struct LocalT : public FunctionPassBase::LocalT {
@@ -459,7 +458,6 @@ void CalcBadVarsF::execute(FunctionPtr function, DataStream<FunctionPtr> &) {
 void CalcBadVarsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
 
-  AUTO_PROF (calc_bad_vars);
   stage::set_name("Calc bad vars (for UB check)");
   vector<pair<FunctionPtr, DepData *>> tmp_vec = tmp_stream.get_as_vector();
   CalcBadVars{}.run(tmp_vec);

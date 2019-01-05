@@ -3,8 +3,6 @@
 #include "compiler/function-pass.h"
 
 class GenTreePostprocessPass : public FunctionPassBase {
-  AUTO_PROF(gentree_postprocess);
-
   struct builtin_fun {
     Operation op;
     int args;

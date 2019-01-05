@@ -6,7 +6,6 @@
 /*** Replace constant expressions with const variables ***/
 class CollectConstVarsPass : public FunctionPassBase {
 private:
-  AUTO_PROF (collect_const_vars);
   int in_param_list;
 
   int get_dependency_level(VertexPtr vertex);
