@@ -203,7 +203,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_var: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, format("$%s is not an instance", lhs->get_c_string())));
+                 _err_instance_access(v, format("$%s is not an instance or it can't be detected\nAdd phpdoc to variable or @return tag to function was used to initialize it.", lhs->get_c_string())));
       return klass;
     }
 
@@ -211,7 +211,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_func_call: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, format("%s() does not return instance", lhs->get_c_string())));
+                 _err_instance_access(v, format("%s() does not return instance or it can't be detected.\nAdd @return tag to function phpdoc", lhs->get_c_string())));
       return klass;
     }
 
@@ -219,7 +219,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
     case op_instance_prop: {
       AssumType assum = infer_class_of_expr(function, lhs, klass);
       kphp_error(assum == assum_instance,
-                 _err_instance_access(v, format("$%s->%s is not an instance", lhs.as<op_instance_prop>()->instance()->get_c_string(), lhs->get_c_string())));
+                 _err_instance_access(v, format("$%s->%s is not an instance or it can't be detected.\nAdd phpdoc to field declaration", lhs.as<op_instance_prop>()->instance()->get_c_string(), lhs->get_c_string())));
       return klass;
     }
 
@@ -232,21 +232,21 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
         if (array->type() == op_var) {
           AssumType assum = infer_class_of_expr(function, array, klass);
           kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, format("$%s is not an array of instances", array->get_c_string())));
+                     _err_instance_access(v, format("$%s is not an array of instances or it can't be detected.\nAdd phpdoc to variable or @return tag to function was used to initialize it.", array->get_c_string())));
           return klass;
         }
         // getArr()[$idx]->...
         if (array->type() == op_func_call) {
           AssumType assum = infer_class_of_expr(function, array, klass);
           kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, format("%s() does not return array of instances", array->get_c_string())));
+                     _err_instance_access(v, format("%s() does not return array of instances or it can't be detected.\nAdd @return tag to function phpdoc", array->get_c_string())));
           return klass;
         }
         // ...->arrOfInstances[$idx]->...
         if (array->type() == op_instance_prop) {
           AssumType assum = infer_class_of_expr(function, array, klass);
           kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, format("$%s->%s is not array of instances",
+                     _err_instance_access(v, format("$%s->%s is not array of instances or it can't be detected.\nAdd phpdoc to field declaration",
                                                      array.as<op_instance_prop>()->instance()->get_c_string(), array->get_c_string())));
           return klass;
         }
