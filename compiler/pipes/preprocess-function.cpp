@@ -234,30 +234,31 @@ private:
     }
 
     for (int i = 0; i < std::min(call_args_n, func_args_n); i++) {
+      auto &call_arg = call_args[i];
       switch (func_args[i]->type()) {
         case op_func_param: {
-          if (call_args[i]->type() == op_func_name) {
-            string msg = "Unexpected function pointer: " + call_args[i]->get_string();
+          if (call_arg->type() == op_func_name) {
+            string msg = "Unexpected function pointer: " + call_arg->get_string();
             kphp_error(false, msg.c_str());
             continue;
-          } else if (call_args[i]->type() == op_varg) {
+          } else if (call_arg->type() == op_varg) {
             string msg = "function: `" + func->name + "` must takes variable-length argument list";
             kphp_error_act(false, msg.c_str(), break);
           }
 
-          VertexAdaptor<op_func_param> param = func_args[i];
+          auto param = func_args[i].as<op_func_param>();
           if (param->type_rule) {
-            call_args[i]->type_rule = param->type_rule;
+            call_arg->type_rule = param->type_rule;
           } else if (param->type_help != tp_Unknown) {
-            call_args[i] = GenTree::conv_to(call_args[i], param->type_help, param->var()->ref_flag);
+            call_arg = GenTree::conv_to(call_arg, param->type_help, param->var()->ref_flag);
           }
 
           break;
         }
 
         case op_func_param_callback: {
-          call_args[i] = conv_to_func_ptr(call_args[i]);
-          instantiate_lambda(call.as<op_func_call>(), call_args[i]);
+          call_arg = conv_to_func_ptr(call_arg);
+          instantiate_lambda(call.as<op_func_call>(), call_arg);
           break;
         }
 
