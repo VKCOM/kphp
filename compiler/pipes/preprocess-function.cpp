@@ -2,9 +2,12 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/lambda-class-data.h"
+#include "compiler/data/lambda-generator.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
+#include "common/termformat/termformat.h"
 
 class PreprocessFunctionPass : public FunctionPassBase {
 public:
@@ -251,6 +254,25 @@ private:
             call_arg->type_rule = param->type_rule;
           } else if (param->type_help != tp_Unknown) {
             call_arg = GenTree::conv_to(call_arg, param->type_help, param->var()->ref_flag);
+          }
+
+          if (param->is_callable) {
+            auto name_of_fun_for_wrapping_into_lambda = conv_to_func_ptr_name(call_arg);
+            if (!name_of_fun_for_wrapping_into_lambda.empty()) {
+              FunctionPtr fun_for_wrapping= G->get_function(name_of_fun_for_wrapping_into_lambda);
+              if (!fun_for_wrapping) {
+                auto err_msg = "Maybe you have never used class: " +
+                               TermStringFormat::paint(FunctionData::get_human_readable_name(name_of_fun_for_wrapping_into_lambda), TermStringFormat::green);
+                kphp_error_act(fun_for_wrapping, err_msg.c_str(), return call);
+              }
+
+              auto anon_location = call->location;
+              call_arg = LambdaGenerator{gen_anonymous_function_name(current_function), anon_location}
+                .add_invoke_method_which_call_function(fun_for_wrapping)
+                .add_constructor_from_uses()
+                .generate_and_require(current_function, instance_of_function_template_stream)
+                ->gen_constructor_call_pass_fields_as_args();
+            }
           }
 
           break;
