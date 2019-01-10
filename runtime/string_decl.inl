@@ -59,6 +59,7 @@ private:
   inline void set_size(size_type new_size);
 
   inline static string_inner &empty_string();
+  inline static string_inner &single_char_str(char c);
 
   inline static char *create(const char *beg, const char *end);
   inline static char *create(size_type req, char c);

@@ -131,15 +131,33 @@ string::string_inner &string::empty_string() {
   return string_inner::empty_string();
 }
 
+string::string_inner &string::single_char_str(char c) {
+  struct single_char {
+    string_inner inner{1, 1, REF_CNT_FOR_CONST};
+    char data[2]{'\0', '\0'};
+
+    static std::array<single_char, 256> construct_chars() {
+      std::array<single_char, 256> chars;
+      for (std::size_t c = 0; c < chars.size(); ++c) {
+        chars[c].data[0] = static_cast<char>(c);
+      }
+      return chars;
+    }
+  };
+  static auto chars = single_char::construct_chars();
+  return chars[static_cast<std::uint8_t>(c)].inner;
+}
 
 char *string::create(const char *beg, const char *end) {
-  if (beg == end) {
+  const size_type dnew = static_cast<size_type>(end - beg);
+  if (dnew == 0) {
     return empty_string().ref_data();
   }
+  if (dnew == 1) {
+    return single_char_str(*beg).ref_data();
+  }
 
-  const size_type dnew = (size_type)(end - beg);
-
-  string_inner *r = string_inner::create(dnew, false);
+  string_inner *r = string_inner::create(dnew, 0);
   char *s = r->ref_data();
   memcpy(s, beg, dnew);
 
@@ -153,15 +171,13 @@ char *string::create(size_type n, char c) {
   if (n == 0) {
     return empty_string().ref_data();
   }
+  if (n == 1) {
+    return single_char_str(c).ref_data();
+  }
 
   string_inner *r = string_inner::create(n, 0);
   char *s = r->ref_data();
-  if (n == 1) {
-    *s = c;
-  } else {
-    memset(s, c, n);
-  }
-
+  memset(s, c, n);
   r->set_length_and_sharable(n);
   return s;
 }
