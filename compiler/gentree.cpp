@@ -9,9 +9,9 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
+#include "compiler/data/lambda-generator.h"
 #include "compiler/data/src-file.h"
 #include "compiler/debug.h"
-#include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
@@ -1719,129 +1719,20 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   return {};
 }
 
-void GenTree::add_this_to_captured_variables_in_lambda_body(VertexPtr &root, ClassPtr lambda_class) {
-  if (root->type() == op_var) {
-    if (lambda_class->members.get_instance_field(root->get_string())) {
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(-1));
-      inst_prop->location = root->location;
-      inst_prop->str_val = root->get_string();
-      root = inst_prop;
-    } else if (root->get_string() == "this") {
-      // replace `$this` with `$this->parent$this`
-      auto new_root = VertexAdaptor<op_instance_prop>::create(root);
-      new_root->set_string("parent$this");
-      ::set_location(new_root, root->location);
-      root = new_root;
-    }
-    return;
-  }
-
-  for (auto &v : *root) {
-    add_this_to_captured_variables_in_lambda_body(v, lambda_class);
-  }
-}
-
-VertexAdaptor<op_function> GenTree::generate__invoke_method(ClassPtr cur_class, const VertexAdaptor<op_function> &function) {
-  auto new_name = VertexAdaptor<op_func_name>::create();
-  new_name->set_string("__invoke");
-  ::set_location(new_name, function->name()->location);
-
-  // TODO: add parent $this as argument, for implicit capturing parent class
-  std::vector<VertexPtr> func_parameters;
-  cur_class->patch_func_add_this(func_parameters, function->location.line);
-  auto range = function->params().as<op_func_param_list>()->args();
-  if (function->get_func_id()->function_in_which_lambda_was_created || function->get_func_id()->is_lambda()) {
-    kphp_assert(range.size() > 0);
-    // skip $this parameter, which was added to `function` previously
-    func_parameters.insert(func_parameters.end(), range.begin() + 1, range.end());
-  } else {
-    func_parameters.insert(func_parameters.end(), range.begin(), range.end());
-  }
-
-  // every parameter (excluding $this) could be any class_instance
-  for (size_t i = 1, id = 0; i < func_parameters.size(); ++i) {
-    auto param = func_parameters[i].as<op_func_param>();
-    if (param->type_declaration == "callable") {
-      param->template_type_id = id++;
-      param->is_callable = true;
-    } else if (param->type_declaration.empty()) {
-      param->template_type_id = id++;
-    }
-  }
-
-  auto params = VertexAdaptor<op_func_param_list>::create(func_parameters);
-  params->location.line = function->params()->location.line;
-
-  auto new_cmd = function->cmd().clone();
-  if (!function->get_func_id()->function_in_which_lambda_was_created) {
-    add_this_to_captured_variables_in_lambda_body(new_cmd, cur_class);
-  }
-
-  auto res = VertexAdaptor<op_function>::create(new_name, params, new_cmd);
-  res->location = function->location;
-  return res;
-}
-
 
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
                                             std::vector<VertexPtr> &&uses_of_lambda) {
   auto anon_name = gen_anonymous_function_name(cur_function);
-  Location anon_location;
-  anon_location.set_line(function->name()->location.line);
-  auto anon_class = LambdaClassData::create(anon_name, anon_location);
+  auto anon_location = function->name()->location;
 
-  if (cur_function->is_instance_function()) {
-    auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
-    implicit_captured_var_parent_this->set_string("parent$this");
-    ::set_location(implicit_captured_var_parent_this, anon_location);
-    auto func_param = VertexAdaptor<op_func_param>::create(implicit_captured_var_parent_this);
-    ::set_location(func_param, anon_location);
-
-    uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
-  }
-
-  for (auto one_use : uses_of_lambda) {
-    if (auto param_as_use = one_use.try_as<op_func_param>()) {
-      auto variable_in_use = VertexAdaptor<op_class_var>::create();
-      variable_in_use->str_val = param_as_use->var()->get_string();
-      ::set_location(variable_in_use, param_as_use->location);
-      anon_class->members.add_instance_field(variable_in_use, access_private);
-    }
-  }
-
-  auto register_invoke = [&](VertexAdaptor<op_function> fun, FunctionPtr previous_lambda) {
-    std::string s = fun->name()->get_string();
-    fun->name()->set_string(replace_backslashes(anon_class->name) + "$$" + s);
-    FunctionPtr invoke_function = FunctionData::create_function(fun, FunctionData::func_local);
-    invoke_function->function_in_which_lambda_was_created = cur_function;
-    anon_class->members.add_instance_method(invoke_function, access_public);
-
-    auto params = fun->params().as<op_func_param_list>()->args();
-    invoke_function->is_template = !uses_of_lambda.empty() || params.size() > 1;
-    invoke_function->root->inline_flag = true;
-
-    invoke_function->lambdas_inside = std::move(previous_lambda->lambdas_inside);
-    for (auto &l : invoke_function->lambdas_inside) {
-      l->function_in_which_lambda_was_created = invoke_function;
-    }
-
-    G->register_and_require_function(invoke_function, os, true);    // instance-методы force require
-  };
-
-  register_invoke(generate__invoke_method(anon_class, function), function->get_func_id());
-
-  auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses_of_lambda);
-  ::set_location(constructor_params, anon_location);
-  anon_class->create_constructor_with_args(function->location.line, constructor_params, os);
-  anon_class->construct_function->is_template = !uses_of_lambda.empty();
-  anon_class->construct_function->function_in_which_lambda_was_created = cur_function;
-  G->register_class(anon_class);
-
-  auto constructor_call = anon_class->gen_constructor_call_pass_fields_as_args();
-  constructor_call->location = anon_location;
-  return constructor_call;
+  return LambdaGenerator{anon_name, anon_location}
+    .add_uses(uses_of_lambda, cur_function->is_instance_function())
+    .add_invoke_method(function)
+    .add_constructor_from_uses()
+    .generate_and_require(cur_function, os)
+    ->gen_constructor_call_pass_fields_as_args();
 }
 
 VertexPtr GenTree::get_use() {

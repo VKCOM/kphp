@@ -55,4 +55,14 @@ class ImplicitCapturingThis
     public function pass_field_as_argument_of_lambda(callable $callback) {
         $callback($this->a);
     }
+
+    /**
+     * @kphp-template $field
+     */
+    public function pass_template_fields(callable $callback, $field) {
+       $res = $callback();
+       $a = $field->a;
+       $b = $res->a;
+       var_dump($a + $b);
+    }
 }

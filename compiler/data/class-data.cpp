@@ -58,30 +58,6 @@ std::string ClassData::get_namespace() const {
   return file_id->namespace_name;
 }
 
-VertexPtr ClassData::gen_constructor_call_pass_fields_as_args() const {
-  std::vector<VertexPtr> args;
-  members.for_each([&](const ClassMemberInstanceField &field) {
-    VertexPtr res = VertexAdaptor<op_var>::create();
-    if (field.local_name() == "parent$this") {
-      res->set_string("this");
-    } else {
-      res->set_string(field.root->get_string());
-    }
-    res->location = field.root->location;
-    args.emplace_back(res);
-  });
-
-  return gen_constructor_call_with_args(std::move(args));
-}
-
-VertexAdaptor<op_constructor_call> ClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) const {
-  auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
-  constructor_call->set_string(name);
-  constructor_call->set_func_id(construct_function);
-
-  return constructor_call;
-}
-
 VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(int location_line_num) {
   auto this_var = gen_vertex_this(location_line_num);
   auto rule_this_var = VertexAdaptor<op_class_type_rule>::create();
@@ -119,7 +95,13 @@ void ClassData::create_default_constructor(int location_line_num, DataStream<Fun
   create_constructor_with_args(location_line_num, VertexAdaptor<op_func_param_list>::create(), os);
 }
 
-void ClassData::create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os) {
+void ClassData::create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params) {
+  static DataStream<FunctionPtr> unused;
+  create_constructor_with_args(location_line_num, params, unused, false);
+  kphp_assert(!construct_function->is_required);
+}
+
+void ClassData::create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os, bool auto_required) {
   auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = replace_backslashes(name) + "$$__construct";
 
@@ -140,10 +122,10 @@ void ClassData::create_constructor_with_args(int location_line_num, VertexAdapto
 
   patch_func_constructor(func, location_line_num);
 
-
   auto ctor_function = FunctionData::create_function(func, FunctionData::func_local);
+  ctor_function->update_location_in_body();
   members.add_instance_method(ctor_function, access_public);
-  G->register_and_require_function(ctor_function, os, true);
+  G->register_and_require_function(ctor_function, os, auto_required);
 }
 
 void ClassData::patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num) {

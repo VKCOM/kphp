@@ -9,8 +9,6 @@ public:
 
   static LambdaPtr get_from(VertexPtr v);
 
-  static LambdaPtr create(std::string name, Location location);
-
   void infer_uses_assumptions(FunctionPtr parent_function);
 
   FunctionPtr get_template_of_invoke_function() const;
@@ -19,6 +17,10 @@ public:
                                                      FunctionPtr function_context,
                                                      std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr = nullptr,
                                                      FunctionPtr *template_of_invoke_method = nullptr) const;
+
+  VertexPtr gen_constructor_call_pass_fields_as_args() const;
+  VertexAdaptor<op_constructor_call> gen_constructor_call_with_args(std::vector<VertexPtr> args) const;
+
 
   static const std::string &get_lambda_namespace() {
     static std::string lambda_namespace("$L");

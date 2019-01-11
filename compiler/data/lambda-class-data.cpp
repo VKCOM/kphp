@@ -30,20 +30,6 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
   return {};
 }
 
-LambdaPtr LambdaClassData::create(std::string name, Location location) {
-  VertexAdaptor<op_func_name> lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->str_val = name;
-  lambda_class_name->location = location;
-
-  VertexAdaptor<op_class> class_vertex = VertexAdaptor<op_class>::create(lambda_class_name);
-
-  LambdaPtr anon_class(new LambdaClassData());
-  anon_class->set_name_and_src_name(get_lambda_namespace() + "\\" + name);
-  anon_class->root = class_vertex;
-
-  return anon_class;
-}
-
 void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
   members.for_each([=](const ClassMemberInstanceField &field) {
     AssumType assum = AssumType::assum_unknown;
@@ -179,6 +165,32 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
 
   return invoke_method_name;
 }
+
+VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
+  std::vector<VertexPtr> args;
+  members.for_each([&](const ClassMemberInstanceField &field) {
+    VertexPtr res = VertexAdaptor<op_var>::create();
+    if (field.local_name() == "parent$this") {
+      res->set_string("this");
+    } else {
+      res->set_string(field.root->get_string());
+    }
+    res->location = field.root->location;
+    args.emplace_back(res);
+  });
+
+  return gen_constructor_call_with_args(std::move(args));
+}
+
+VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) const {
+  auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
+  constructor_call->set_string(name);
+  constructor_call->set_func_id(construct_function);
+  set_location(constructor_call, root->location);
+
+  return constructor_call;
+}
+
 
 FunctionPtr LambdaClassData::get_template_of_invoke_function() const {
   kphp_assert(is_lambda_class());

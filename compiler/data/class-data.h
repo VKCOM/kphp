@@ -50,9 +50,6 @@ public:
 
   ClassData();
 
-  VertexPtr gen_constructor_call_pass_fields_as_args() const;
-  VertexAdaptor<op_constructor_call> gen_constructor_call_with_args(std::vector<VertexPtr> args) const;
-
   static VertexAdaptor<op_var> gen_vertex_this(int location_line_num) ;
   VertexAdaptor<op_var> gen_vertex_this_with_type_rule(int location_line_num);
 
@@ -60,7 +57,8 @@ public:
   void patch_func_constructor(VertexAdaptor<op_function> func, int location_line_num);
 
   void create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os);
-  void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os);
+  void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params);
+  void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os, bool auto_required = true);
 
   // function fname(args) => function fname($this ::: class_instance, args)
   void patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num);

@@ -133,9 +133,10 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
 
-  for (auto f : func->lambdas_inside) {
-    f->function_in_which_lambda_was_created = new_function;
-  }
+  // TODO: need copy all lambdas inside template funciton
+  //for (auto f : func->lambdas_inside) {
+  //  f->function_in_which_lambda_was_created = new_function;
+  //}
 
   new_function->update_location_in_body();
 
@@ -198,7 +199,7 @@ bool FunctionData::is_imported_from_static_lib() const {
 }
 
 VertexRange FunctionData::get_params() {
-  return ::get_function_params(root.as<meta_op_function>());
+  return ::get_function_params(root);
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {
