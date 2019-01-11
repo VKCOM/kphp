@@ -26,11 +26,11 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
 VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type type, bool create_flag) {
   auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
-    kphp_error (!create_flag, "Redeclaration of local variable");
+    kphp_error (!create_flag, format("Redeclaration of local variable: %s", name.c_str()));
     return it->second;
   }
   VarPtr var = G->create_local_var(current_function, name, type);
-  kphp_error (registred_vars.insert(make_pair(name, var)).second == true, "Redeclaration of local variable");
+  kphp_error (registred_vars.insert(make_pair(name, var)).second, format("Redeclaration of local variable: %s", name.c_str()));
 
   return var;
 }
