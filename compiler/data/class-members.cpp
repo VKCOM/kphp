@@ -167,6 +167,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   function->is_virtual_method |= function->modifiers.is_abstract();
 
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
+    function->is_inline = true;
     klass->construct_function = function;
   }
 }

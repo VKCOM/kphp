@@ -58,6 +58,7 @@
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
+#include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
@@ -286,6 +287,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<ExtractResumableCallsPass>{}
     >> PassC<ExtractAsyncPass>{}
     >> PassC<CheckNestedForeachPass>{}
+    >> PassC<InlineSimpleFunctions>{}
     >> PassC<CommonAnalyzerPass>{}
     >> PassC<CheckTlClasses>{}
     >> PassC<CheckAccessModifiersPass>{}
