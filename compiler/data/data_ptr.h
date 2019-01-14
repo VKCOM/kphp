@@ -131,3 +131,13 @@ typedef Id<SrcFile> SrcFilePtr;
 bool operator<(FunctionPtr, FunctionPtr);
 bool operator<(VarPtr, VarPtr);
 
+namespace std {
+template<typename T>
+struct hash;
+
+template<>
+template<typename Data>
+struct hash<Id<Data>> : private Id<Data>::Hash {
+  using Id<Data>::Hash::operator();
+};
+} // namespace std

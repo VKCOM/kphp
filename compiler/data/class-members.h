@@ -98,12 +98,12 @@ struct ClassMemberConstant {
 class ClassMembersContainer {
   ClassPtr klass;
 
-  vector<ClassMemberStaticMethod> static_methods;
-  vector<ClassMemberInstanceMethod> instance_methods;
-  vector<ClassMemberStaticField> static_fields;
-  vector<ClassMemberInstanceField> instance_fields;
-  vector<ClassMemberConstant> contants;
-  set<uint64_t> names_hashes;
+  std::vector<ClassMemberStaticMethod> static_methods;
+  std::vector<ClassMemberInstanceMethod> instance_methods;
+  std::vector<ClassMemberStaticField> static_fields;
+  std::vector<ClassMemberInstanceField> instance_fields;
+  std::vector<ClassMemberConstant> contants;
+  std::set<uint64_t> names_hashes;
 
   template<class MemberT>
   void append_member(const string &hash_name, const MemberT &member);
@@ -124,7 +124,7 @@ class ClassMembersContainer {
   }
 
   template<class MemberT>
-  const vector<MemberT> &get_all_of() const { return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>(); }
+  const std::vector<MemberT> &get_all_of() const { return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>(); }
 
 public:
   explicit ClassMembersContainer(ClassData *klass) :
@@ -132,32 +132,33 @@ public:
 
   template<class CallbackT>
   inline void for_each(CallbackT callback) const {
-    for (const auto &it : get_all_of<typename arg_helper<CallbackT>::MemberT>()) {
-      callback(it);
-    }
+    const auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    std::for_each(container.cbegin(), container.cend(), std::move(callback));
   }
 
   template<class CallbackT>
   inline void for_each(CallbackT callback) {
-    for (auto &it : get_all_of<typename arg_helper<CallbackT>::MemberT>()) {
-      callback(it);
-    }
+    auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    std::for_each(container.begin(), container.end(), std::move(callback));
+  }
+
+  template<class CallbackT>
+  inline void remove_if(CallbackT callbackReturningBool) {
+    auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    auto end = std::remove_if(container.begin(), container.end(), std::move(callbackReturningBool));
+    container.erase(end, container.end());
   }
 
   template<class CallbackT>
   inline const typename arg_helper<CallbackT>::MemberT *find_member(CallbackT callbackReturningBool) const {
-    for (const auto &it : get_all_of<typename arg_helper<CallbackT>::MemberT>()) {
-      if (callbackReturningBool(it)) {
-        return &it;
-      }
-    }
-
-    return nullptr;
+    const auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    auto it = std::find_if(container.cbegin(), container.cend(), std::move(callbackReturningBool));
+    return it == container.cend() ? nullptr : &(*it);
   }
 
   template<class MemberT>
-  inline const MemberT* find_by_local_name(const string &local_name) const {
-    return find_member([&](const MemberT &f) { return f.local_name() == local_name; });
+  inline const MemberT *find_by_local_name(const std::string &local_name) const {
+    return find_member([&local_name](const MemberT &f) { return f.local_name() == local_name; });
   }
 
   void add_static_method(FunctionPtr function, AccessType access_type);
@@ -180,7 +181,6 @@ public:
   const ClassMemberStaticField *get_static_field(const string &local_name) const;
   const ClassMemberInstanceField *get_instance_field(const string &local_name) const;
   const ClassMemberConstant *get_constant(const string &local_name) const;
-
 };
 
 /*
