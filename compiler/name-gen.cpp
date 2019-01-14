@@ -90,7 +90,7 @@ string gen_unique_name(string prefix, bool flag) {
   return register_unique_name(prefix + tmp);
 }
 
-inline string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
+string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
   if (class_name[0] != '\\') {
     if (class_name == "parent") {
       // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов

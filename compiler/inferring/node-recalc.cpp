@@ -11,11 +11,8 @@ static void print_why_tinf_occured_error(
   tinf::Node *node1,
   tinf::Node *node2
 ) {
-  vector<ClassPtr> classes1, classes2;
-  errored_type->get_all_class_types_inside(classes1);
-  because_of_type->get_all_class_types_inside(classes2);
-  ClassPtr mix_class = classes1.empty() ? ClassPtr() : classes1[0];
-  ClassPtr mix_class2 = classes2.empty() ? ClassPtr() : classes2[0];
+  ClassPtr mix_class = errored_type->get_first_class_type_inside();
+  ClassPtr mix_class2 = because_of_type->get_first_class_type_inside();
   std::string desc1 = node1->get_description();
   std::string desc2 = node2 ? node2->get_description() : "unknown";
 

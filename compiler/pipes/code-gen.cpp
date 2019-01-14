@@ -228,10 +228,27 @@ struct LibInclude : private ExternInclude {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct IncludeClass {
-  vector<ClassPtr> klasses;
-  IncludeClass(const TypeData *type);
-  inline void compile(CodeGenerator &W) const;
+struct IncludesCollector {
+public:
+  void add_function_body_depends(const FunctionPtr &function);
+  void add_function_signature_depends(const FunctionPtr &function);
+  void add_var_signature_depends(const VarPtr &var);
+
+  void add_class_include(const ClassPtr &klass);
+
+  void compile(CodeGenerator &W) const;
+
+  void start_next_block();
+
+private:
+  void add_all_class_types(const TypeData &tinf_type);
+
+  std::unordered_set<ClassPtr> classes_;
+  std::set<std::string> internal_headers_;
+  std::set<std::string> lib_headers_;
+
+  std::unordered_set<ClassPtr> prev_classes_;
+  std::set<std::string> prev_headers_;
 };
 
 struct FunctionName {
@@ -541,7 +558,6 @@ inline void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W);
 inline void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W);
 inline void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W);
 inline void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W);
-struct CaseInfo;
 inline void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W);
@@ -560,7 +576,7 @@ inline void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W);
 inline void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W);
 inline void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W);
 inline void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W);
-inline void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int fix = 0, int state = 0);
+inline void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int state = 0);
 inline void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W);
 inline void compile_define_val(VertexPtr root, CodeGenerator &W);
 inline void compile_defined(VertexPtr root, CodeGenerator &W);
@@ -760,7 +776,7 @@ inline void OpenNamespace::compile(CodeGenerator &W) const {
 
 inline void CloseNamespace::compile(CodeGenerator &W) const {
   if (W.get_context().namespace_opened) {
-    W << "} " << NL << NL;
+    W << "}" << NL << NL;
     W.get_context().namespace_opened = false;
   }
 }
@@ -774,27 +790,84 @@ inline void ExternInclude::compile(CodeGenerator &W) const {
 }
 
 inline void Include::compile(CodeGenerator &W) const {
-  W.get_writer().add_include(static_cast<string>(plain_code_.str));
+  W.get_writer().add_include(static_cast<std::string>(plain_code_.str));
   ExternInclude::compile(W);
 }
 
 inline void LibInclude::compile(CodeGenerator &W) const {
-  W.get_writer().add_lib_include(static_cast<string>(plain_code_.str));
+  W.get_writer().add_lib_include(static_cast<std::string>(plain_code_.str));
   ExternInclude::compile(W);
 }
 
-inline IncludeClass::IncludeClass(const TypeData *type) {
-  type->get_all_class_types_inside(klasses);
+void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
+  for (auto to_include : function->dep) {
+    if (to_include == function) {
+      continue;
+    }
+    if (to_include->is_imported_from_static_lib()) {
+      lib_headers_.emplace(to_include->header_full_name);
+    } else if (to_include->type() != FunctionData::func_extern) {
+      internal_headers_.emplace(to_include->header_full_name);
+    }
+  }
+  for (auto global_var : function->global_var_ids) {
+    add_var_signature_depends(global_var);
+  }
 }
 
-inline void IncludeClass::compile(CodeGenerator &W) const {
-  for (auto klass: klasses) {
-    if (!klass->is_builtin()) {
-      W << Include(klass->get_subdir() + "/" + klass->header_name);
+void IncludesCollector::add_function_signature_depends(const FunctionPtr &function) {
+  for (const auto &tinf_node : function->tinf_nodes) {
+    add_all_class_types(*tinf_node.get_type());
+  }
+}
+
+void IncludesCollector::add_class_include(const ClassPtr &klass) {
+  classes_.emplace(klass);
+}
+
+void IncludesCollector::add_var_signature_depends(const VarPtr &var) {
+  add_all_class_types(*var->tinf_node.get_type());
+}
+
+void IncludesCollector::add_all_class_types(const TypeData &tinf_type) {
+  if (tinf_type.has_class_type_inside()) {
+    tinf_type.get_all_class_types_inside(classes_);
+  }
+}
+
+void IncludesCollector::compile(CodeGenerator &W) const {
+  for (auto lib_header : lib_headers_) {
+    if (!prev_headers_.count(lib_header)) {
+      W << LibInclude(lib_header);
+    }
+  }
+
+  std::set<std::string> class_headers;
+  for (const auto &klass : classes_) {
+    if (!prev_classes_.count(klass) && !klass->is_builtin()) {
+      class_headers.emplace(klass->get_subdir() + "/" + klass->header_name);
+    }
+  }
+  for (const auto &class_header : class_headers) {
+    W << Include(class_header);
+  }
+
+  for (const auto &internal_header : internal_headers_) {
+    if (!prev_headers_.count(internal_header)) {
+      W << Include(internal_header);
     }
   }
 }
 
+void IncludesCollector::start_next_block() {
+  prev_classes_.insert(classes_.cbegin(), classes_.cend());
+  classes_.clear();
+
+  prev_headers_.insert(internal_headers_.begin(), internal_headers_.end());
+  prev_headers_.insert(lib_headers_.begin(), lib_headers_.end());
+  internal_headers_.clear();
+  lib_headers_.clear();
+}
 
 inline FunctionName::FunctionName(FunctionPtr function) :
   function(function) {
@@ -964,7 +1037,6 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
   }
 }
 
-
 ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
@@ -973,11 +1045,16 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(klass->header_name, klass->get_subdir());
   W << "#pragma once" << NL;
 
-  klass->members.for_each([&](const ClassMemberInstanceField &f) {
-    if (f.var->tinf_node.get_type()->has_class_type_inside()) {
-      W << IncludeClass(f.var->tinf_node.get_type());
-    }
+  W << OpenNamespace()
+    << "struct " << klass->src_name << ";" << NL
+    << CloseNamespace();
+
+  IncludesCollector includes;
+  klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
+    includes.add_var_signature_depends(f.var);
   });
+
+  W << includes;
 
   W << OpenNamespace();
   W << NL << "struct " << klass->src_name << " " << BEGIN;
@@ -1011,9 +1088,7 @@ void VarDeclaration::compile(CodeGenerator &W) const {
     W << CloseNamespace();
   }
 
-  W << (extern_flag ? "extern " : "") <<
-    TypeName(type) << " " <<
-    VarName(var);
+  W << (extern_flag ? "extern " : "") << TypeName(type) << " " << VarName(var);
 
   if (defval_flag) {
     if (type->ptype() == tp_float || type->ptype() == tp_int) {
@@ -1028,8 +1103,7 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   }
   if (var->needs_const_iterator_flag) {
     W << (extern_flag ? "extern " : "") <<
-      "decltype(const_begin(" << VarName(var) << "))" << " " <<
-      VarName(var) << "$it;" << NL;
+      "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << "$it;" << NL;
   }
 
   if (var->is_builtin_global()) {
@@ -1149,14 +1223,14 @@ inline StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
 }
 
 inline void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
-    switch(style) {
-      case gen_out_style::cpp:
-        W << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
-        break;
-      case gen_out_style::txt:
-        W << "function " << LibData::run_global_function_name(G->get_global_namespace()) << "() ::: void";
-        break;
-    }
+  switch (style) {
+    case gen_out_style::cpp:
+      W << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
+      break;
+    case gen_out_style::txt:
+      W << "function " << LibData::run_global_function_name(G->get_global_namespace()) << "() ::: void";
+      break;
+  }
 }
 
 inline void StaticLibraryRunGlobalHeaderH::compile(CodeGenerator &W) const {
@@ -1454,15 +1528,18 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
   vector<VarPtr> const_regexp_vars;
   std::map<std::string, VertexPtr> dependent_vars;
 
+  IncludesCollector includes;
+  for (auto var : vars) {
+    if (!G->env().is_static_lib_mode() || !var->is_builtin_global()) {
+      includes.add_var_signature_depends(var);
+    }
+  }
+  W << includes;
+
   W << OpenNamespace();
   for (auto var : vars) {
     if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
-    }
-    if (var->tinf_node.get_type()->has_class_type_inside()) {
-      W << CloseNamespace()
-        << IncludeClass(var->tinf_node.get_type())
-        << OpenNamespace();
     }
 
     W << VarDeclaration(var);
@@ -1733,7 +1810,7 @@ DfsInit::DfsInit(SrcFilePtr main_file) :
   main_file(main_file) {
 }
 
-void DfsInit::declare_extern_for_init_val(VertexPtr v, set<VarPtr>& externed_vars, CodeGenerator &W) {
+void DfsInit::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr>& externed_vars, CodeGenerator &W) {
   if (v->type() == op_var) {
     VarPtr var = v->get_var_id();
     if (externed_vars.insert(var).second) {
@@ -1747,21 +1824,20 @@ void DfsInit::declare_extern_for_init_val(VertexPtr v, set<VarPtr>& externed_var
 }
 
 void DfsInit::compile_dfs_init_part(
-  FunctionPtr func,
-  const set<VarPtr> &used_vars, bool full_flag,
-  int part_i, CodeGenerator &W) {
+  FunctionPtr func, const set<VarPtr> &used_vars,
+  bool full_flag, int part_i, CodeGenerator &W) {
 
-  set<VarPtr> externed_vars;
-
+  if (full_flag) {
+    IncludesCollector includes;
+    for (auto var : used_vars) {
+      includes.add_var_signature_depends(var);
+    }
+    W << includes;
+  }
   W << OpenNamespace();
   if (full_flag) {
+  std::set<VarPtr> externed_vars;
     for (auto var : used_vars) {
-      if (var->tinf_node.get_type()->has_class_type_inside()) {
-        W << CloseNamespace()
-          << IncludeClass(var->tinf_node.get_type())
-          << OpenNamespace();
-      }
-
       W << VarExternDeclaration(var);
       if (var->init_val) {
         declare_extern_for_init_val(var->init_val, externed_vars, W);
@@ -1942,24 +2018,6 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-static inline void include_dependent_headers(FunctionPtr function, CodeGenerator &W) {
-  for (auto to_include : function->dep) {
-    if (to_include == function) {
-      continue;
-    }
-    if (to_include->is_imported_from_static_lib()) {
-      W << LibInclude(to_include->header_full_name);
-    } else if (to_include->type() != FunctionData::func_extern) {
-      W << Include(to_include->header_full_name);
-    }
-  }
-  for (auto global_var : function->global_var_ids) {
-    if (global_var->tinf_node.get_type()->has_class_type_inside()) {
-      W << IncludeClass(global_var->tinf_node.get_type());
-    }
-  }
-}
-
 static inline void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto global_var : function->global_var_ids) {
     W << VarExternDeclaration(global_var) << NL;
@@ -1987,11 +2045,9 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << "#pragma once" << NL <<
     ExternInclude("php_functions.h");
 
-  for (const auto &tinf_node : function->tinf_nodes) {
-    if (tinf_node.get_type()->has_class_type_inside()) {
-      W << IncludeClass(tinf_node.get_type());
-    }
-  }
+  IncludesCollector includes;
+  includes.add_function_signature_depends(function);
+  W << includes;
 
   W << OpenNamespace();
   for (auto global_var : function->header_global_var_ids) {
@@ -2013,7 +2069,9 @@ void FunctionH::compile(CodeGenerator &W) const {
     declare_const_vars(function, W);
     declare_static_vars(function, W);
     W << CloseNamespace();
-    include_dependent_headers(function, W);
+    includes.start_next_block();
+    includes.add_function_body_depends(function);
+    W << includes;
     W << OpenNamespace();
     W << UnlockComments();
     W << Function(function);
@@ -2041,7 +2099,9 @@ void FunctionCpp::compile(CodeGenerator &W) const {
 
   stage::set_function(function);
 
-  include_dependent_headers(function, W);
+  IncludesCollector includes;
+  includes.add_function_body_depends(function);
+  W << includes;
 
   W << OpenNamespace();
   declare_global_vars(function, W);
@@ -2134,7 +2194,7 @@ inline void AsSeq::compile(CodeGenerator &W) const {
   }
 
   for (auto i : *root) {
-    if (i->type() != op_var) {
+    if (vk::none_of_equal(i->type(), op_var, op_empty)) {
       W << i << ";" << NL;
     }
   }
@@ -2442,7 +2502,7 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
 }
 
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
-  compile_func_call(root->func_call(), W, 0, 2);
+  compile_func_call(root->func_call(), W, 2);
 }
 
 void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
@@ -2452,7 +2512,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
     kphp_error (lhs->type() == op_var, "Can't save result of async call into non-var");
     W << lhs << " = ";
   }
-  compile_func_call(func_call, W, 0, 1);
+  compile_func_call(func_call, W, 1);
   FunctionPtr func = func_call->get_func_id();
   W << ";" << NL;
   if (lhs->type() != op_empty) {
@@ -2938,7 +2998,6 @@ void compile_function_resumable(VertexPtr root, CodeGenerator &W) {
 }
 
 void compile_function(VertexPtr root, CodeGenerator &W) {
-
   VertexAdaptor<op_function> func_root = root;
   FunctionPtr func = func_root->get_func_id();
 
@@ -2954,8 +3013,7 @@ void compile_function(VertexPtr root, CodeGenerator &W) {
     W << "static inline ";
   }
 
-  W << FunctionDeclaration(func, false) << " " <<
-    BEGIN;
+  W << FunctionDeclaration(func, false) << " " << BEGIN;
 
   if (G->env().get_enable_profiler()) {
     W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
@@ -2967,10 +3025,8 @@ void compile_function(VertexPtr root, CodeGenerator &W) {
     }
   }
 
-  W << AsSeq(func_root->cmd()) << NL <<
-    END << NL;
+  W << AsSeq(func_root->cmd()) << END << NL;
 }
-
 
 struct StrlenInfo {
   VertexPtr v;
@@ -3431,8 +3487,7 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   W << ")";
 }
 
-//FIXME: remove int fix
-void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int fix, int state) {
+void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int state) {
   FunctionPtr func;
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
@@ -3456,9 +3511,6 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int f
   W << "(";
   auto i = root->args().begin();
   auto i_end = root->args().end();
-  if (fix && i != i_end) {
-    ++i;
-  }
   bool first = true;
   for (; i != i_end; ++i) {
     if (first) {

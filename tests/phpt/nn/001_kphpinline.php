@@ -34,6 +34,15 @@ function z() {
 
 z();
 
+
+/** @kphp-inline */
+function complex_default_arg($a = ["hello", "world"]) {
+  var_dump($a);
+}
+
+complex_default_arg();
+complex_default_arg([1, 2, 3]);
+
 ?>
 
 

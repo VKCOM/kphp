@@ -211,11 +211,9 @@ bool TypeData::has_class_type_inside() const {
   return false;
 }
 
-void TypeData::get_all_class_types_inside(vector<ClassPtr> &out) const {
+void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const {
   if (class_type()) {
-    if (std::find(out.begin(), out.end(), class_type()) == out.end()) {
-      out.push_back(class_type());
-    }
+    out.emplace(class_type());
   }
   if (anykey_value != nullptr) {
     anykey_value->get_all_class_types_inside(out);
@@ -223,6 +221,22 @@ void TypeData::get_all_class_types_inside(vector<ClassPtr> &out) const {
   for (auto &subkey : subkeys_values) {
     subkey.second->get_all_class_types_inside(out);
   }
+}
+
+ClassPtr TypeData::get_first_class_type_inside() const {
+  ClassPtr first_class_type = class_type();
+  if (!first_class_type && anykey_value) {
+    first_class_type = anykey_value->get_first_class_type_inside();
+  }
+  if (first_class_type) {
+    return first_class_type;
+  }
+  for (auto &subkey : subkeys_values) {
+    if (first_class_type = subkey.second->get_first_class_type_inside()) {
+      return first_class_type;
+    }
+  }
+  return first_class_type;
 }
 
 TypeData::flags_t TypeData::flags() const {

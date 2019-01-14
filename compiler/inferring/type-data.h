@@ -93,7 +93,8 @@ public:
   ClassPtr class_type() const;
   void set_class_type(ClassPtr new_class_type);
   bool has_class_type_inside() const;
-  void get_all_class_types_inside(vector<ClassPtr> &out) const;
+  void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
+  ClassPtr get_first_class_type_inside() const;
 
   bool or_false_flag() const;
   void set_or_false_flag(bool f);
