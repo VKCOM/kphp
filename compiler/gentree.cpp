@@ -262,7 +262,7 @@ VertexPtr GenTree::get_func_call() {
     func_call->set_string(name);
 
     // Hack for several classes inherited from Memcache
-    if (name == "true_mc" || name == "test_mc" || name == "RpcMemcache" || name == "reach_mc") {
+    if (name == "true_mc" || name == "test_mc" || name == "RpcMemcache") {
       call = VertexAdaptor<op_func_call>::create(call->get_next());
       call->set_string("new_" + name);
     }
@@ -1656,7 +1656,7 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const string &name) {
-  static set<string> disallowed_names{"RpcMemcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "rich_mc", "db_decl"};
+  static set<string> disallowed_names{"RpcMemcache", "rpc_connection", "Long", "ULong", "UInt", "true_mc", "test_mc", "db_decl"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }

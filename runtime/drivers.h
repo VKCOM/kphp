@@ -259,7 +259,6 @@ public:
   friend Memcache f$new_RpcMemcache(bool fake);
   friend Memcache f$new_true_mc(const Memcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold);
   friend Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag);
-  friend Memcache f$new_rich_mc(const Memcache &mc, const string &engine_tag);
 };
 
 bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
@@ -301,7 +300,6 @@ Memcache f$Memcache$$__construct();
 Memcache f$new_RpcMemcache(bool fake = false);
 Memcache f$new_true_mc(const Memcache &mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
 Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag = string());
-Memcache f$new_rich_mc(const Memcache &mc, const string &engine_tag = string());
 
 
 var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);

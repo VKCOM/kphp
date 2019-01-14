@@ -1529,11 +1529,6 @@ Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag) {
   return mc;
 }
 
-Memcache f$new_rich_mc(const Memcache &mc, const string &engine_tag __attribute__((unused))) {
-  php_warning("rich_mc doesn't supported");
-  return mc;
-}
-
 
 /*
  *

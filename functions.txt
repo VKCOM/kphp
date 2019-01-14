@@ -557,7 +557,6 @@ define('MEMCACHE_COMPRESSED', 2);
 function new_RpcMemcache($fake ::: bool = false) ::: Memcache;
 function new_true_mc ($MC :<=: Memcache, $engine_tag ::: string = "", $engine_name ::: string = "", $is_debug ::: bool = false, $is_debug_empty ::: bool = false, $query_time_threshold ::: float = 0.0) ::: Memcache;
 function new_test_mc ($MC :<=: Memcache, $engine_tag ::: string = "") ::: Memcache;
-function new_rich_mc ($MC :<=: Memcache, $engine_tag ::: string = "") ::: Memcache;
 
 function mcGetStats ($MC :<=: Memcache) ::: array <int>;
 function mcGetClusterSize ($MC :<=: Memcache) ::: int;
