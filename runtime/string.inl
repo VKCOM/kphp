@@ -132,9 +132,10 @@ string::string_inner &string::empty_string() {
 }
 
 string::string_inner &string::single_char_str(char c) {
+  constexpr std::size_t TAIL_SIZE = 4u;
   struct single_char {
     string_inner inner{1, 1, REF_CNT_FOR_CONST};
-    char data[2]{'\0', '\0'};
+    char data[TAIL_SIZE]{'\0'};
 
     static std::array<single_char, 256> construct_chars() {
       std::array<single_char, 256> chars;
@@ -144,6 +145,7 @@ string::string_inner &string::single_char_str(char c) {
       return chars;
     }
   };
+  static_assert(sizeof(single_char) == sizeof(string_inner) + TAIL_SIZE * sizeof(char), "Unexpected padding");
   static auto chars = single_char::construct_chars();
   return chars[static_cast<std::uint8_t>(c)].inner;
 }
