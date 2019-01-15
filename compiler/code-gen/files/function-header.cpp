@@ -26,7 +26,7 @@ void FunctionH::compile(CodeGenerator &W) const {
   }
 
   if (function->is_inline) {
-    W << "static inline ";
+    W << "inline ";
   }
   W << FunctionDeclaration(function, true);
   if (function->is_no_return) {

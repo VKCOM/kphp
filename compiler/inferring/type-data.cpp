@@ -248,6 +248,10 @@ ClassPtr TypeData::get_first_class_type_inside() const {
   return first_class;
 }
 
+bool TypeData::is_primitive_type() const {
+  return vk::any_of_equal(get_real_ptype(), tp_int, tp_bool, tp_float, tp_future, tp_future_queue);
+}
+
 TypeData::flags_t TypeData::flags() const {
   return flags_;
 }

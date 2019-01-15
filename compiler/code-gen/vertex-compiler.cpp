@@ -1043,10 +1043,6 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
     return;
   }
 
-  if (func->is_inline) {
-    W << "static inline ";
-  }
-
   W << FunctionDeclaration(func, false) << " " << BEGIN;
 
   compile_runtime_params_checker(func, W);

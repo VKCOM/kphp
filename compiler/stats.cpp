@@ -70,6 +70,7 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "types.const_params_mixed: " << cnt_const_mixed_params << std::endl;
   out << block_sep;
   out << indent << "functions.total: " << total_functions_ << std::endl;
+  out << indent << "functions.total_inline: " << total_inline_functions_ << std::endl;
   out << indent << "functions.total_throwing: " << total_throwing_functions_ << std::endl;
   out << indent << "functions.total_resumable: " << total_resumable_functions_ << std::endl;
   out << block_sep;
