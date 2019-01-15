@@ -138,99 +138,63 @@ var::var(var &&v) {
 }
 
 var &var::operator=(bool other) {
-  switch (type) {
-    case STRING_TYPE:
-      as_string().~string();
-      break;
-    case ARRAY_TYPE:
-      as_array().~array<var>();
-      break;
-    default: {
-    }
+  if (type != BOOLEAN_TYPE) {
+    destroy();
+    type = BOOLEAN_TYPE;
   }
-  type = BOOLEAN_TYPE;
   as_bool() = other;
   return *this;
 }
 
 var &var::operator=(int other) {
-  switch (type) {
-    case STRING_TYPE:
-      as_string().~string();
-      break;
-    case ARRAY_TYPE:
-      as_array().~array<var>();
-      break;
-    default: {
-    }
+  if (type != INTEGER_TYPE) {
+    destroy();
+    type = INTEGER_TYPE;
   }
-  type = INTEGER_TYPE;
   as_int() = other;
   return *this;
 }
 
 var &var::operator=(double other) {
-  switch (type) {
-    case STRING_TYPE:
-      as_string().~string();
-      break;
-    case ARRAY_TYPE:
-      as_array().~array<var>();
-      break;
-    default: {
-    }
+  if (type != FLOAT_TYPE) {
+    destroy();
+    type = FLOAT_TYPE;
   }
-  type = FLOAT_TYPE;
   as_double() = other;
   return *this;
 }
 
 var &var::operator=(const string &other) {
-  switch (type) {
-    case STRING_TYPE:
-      as_string() = other;
-      return *this;
-    case ARRAY_TYPE:
-      as_array().~array<var>();
-      break;
-    default: {
-    }
+  if (type == STRING_TYPE) {
+    as_string() = other;
+  } else {
+    destroy();
+    type = STRING_TYPE;
+    new(&as_string()) string(other);
   }
-  type = STRING_TYPE;
-  new(&as_string()) string(other);
   return *this;
 }
 
 var &var::assign(const char *other, int len) {
-  switch (type) {
-    case STRING_TYPE:
-      as_string().assign(other, len);
-      return *this;
-    case ARRAY_TYPE:
-      as_array().~array<var>();
-      break;
-    default: {
-    }
+  if (type == STRING_TYPE) {
+    as_string().assign(other, len);
+  } else {
+    destroy();
+    type = STRING_TYPE;
+    new(&as_string()) string(other, len);
   }
-  type = STRING_TYPE;
-  new(&as_string()) string(other, len);
   return *this;
 }
 
 template<class T, class>
 var &var::operator=(const array<T> &other) {
-  switch (type) {
-    case STRING_TYPE:
-      as_string().~string();
-      break;
-    case ARRAY_TYPE:
-      as_array() = other;
-      return *this;
-    default: {
-    }
+  if (type == ARRAY_TYPE) {
+    as_array() = other;
+  } else {
+    destroy();
+    type = ARRAY_TYPE;
+    new(&as_array()) array<var>(other);
   }
-  type = ARRAY_TYPE;
-  new(&as_array()) array<var>(other);
   return *this;
 }
 
