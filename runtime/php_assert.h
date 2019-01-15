@@ -16,12 +16,7 @@ extern int php_warning_level;
 
 void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
-inline void php_assert__(const char *msg, const char *file, int line) {
-  php_warning("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
-  raise(SIGUSR2);
-  fprintf(stderr, "_exiting in php_assert\n");
-  _exit(1);
-}
+void php_assert__(const char *msg, const char *file, int line) __attribute__((noreturn));
 
 #define php_assert(EX) do {                          \
   if (!(EX)) {                                       \
