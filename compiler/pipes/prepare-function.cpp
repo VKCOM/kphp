@@ -114,19 +114,16 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
   }
 
+  using infer_mask = FunctionData::InferHint::infer_mask;
+
   int infer_type = 0;
-  enum infer_mask {
-    check = 0b001,
-    hint = 0b010,
-    cast = 0b100
-  };
-  VertexPtr func_params = f->root.as<op_function>()->params();
+  VertexRange func_params = get_function_params(f->root);
   const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_token->str_val);
 
-  std::unordered_map<std::string, VertexAdaptor<op_func_param>> name_to_function_param;
-  for (auto param_ptr : *func_params) {
-    VertexAdaptor<op_func_param> param = param_ptr.as<op_func_param>();
-    name_to_function_param.emplace("$" + param->var()->get_string(), param);
+  std::unordered_map<std::string, int> name_to_function_param;
+  int param_i = 0;
+  for (VertexAdaptor<op_func_param> param : func_params) {
+    name_to_function_param.emplace("$" + param->var()->get_string(), param_i++);
   }
 
   std::size_t id_of_kphp_template = 0;
@@ -195,7 +192,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           auto func_param_it = name_to_function_param.find(var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
 
-          VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
+          VertexAdaptor<op_func_param> cur_func_param = func_params[func_param_it->second];
           name_to_function_param.erase(func_param_it);
 
           cur_func_param->template_type_id = id_of_kphp_template;
@@ -210,25 +207,25 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     }
   }
 
-  vector<VertexPtr> prologue_cmd;
   if (infer_type) {             // при наличии @kphp-infer парсим все @param'ы
     for (auto &tag : tags) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
       stage::set_line(tag.line_num);
       switch (tag.type) {
         case php_doc_tag::returns: {
-          kphp_error_return(!f->doc_check_return_type && !f->doc_hint_return_type, "Too many @return/@returns tags");
           std::istringstream is(tag.value);
           std::string type_help;
           kphp_error(is >> type_help, "Failed to parse @return/@returns tag");
           VertexPtr doc_type = phpdoc_parse_type(type_help, f);
           kphp_error_act(doc_type, format("Failed to parse type '%s'", type_help.c_str()), break);
+          
           if (infer_type & infer_mask::check) {
-            f->doc_check_return_type = VertexAdaptor<op_lt_type_rule>::create(doc_type);
-            set_location(f->doc_check_return_type, f->root->location);
+            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+            type_rule->void_flag = doc_type->void_flag;
+            f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
           }
-          if ((infer_type & infer_mask::hint) && !doc_type->void_flag) {
-            f->doc_hint_return_type = VertexAdaptor<op_common_type_rule>::create(doc_type);
-            set_location(f->doc_hint_return_type, f->root->location);
+          if (infer_type & infer_mask::hint) {
+            auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_type);
+            f->add_kphp_infer_hint(infer_mask::hint, -1, type_rule);
           }
           break;
         }
@@ -243,8 +240,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           kphp_error_return(func_param_it != name_to_function_param.end(),
             format("@param tag var name mismatch. found %s.", var_name.c_str()));
 
-          VertexAdaptor<op_func_param> cur_func_param = func_param_it->second;
-          VertexAdaptor<op_var> var = cur_func_param->var().as<op_var>();
+          VertexAdaptor<op_func_param> cur_func_param = func_params[func_param_it->second];
           name_to_function_param.erase(func_param_it);
 
           if (type_help == "callable") {
@@ -259,20 +255,12 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           kphp_error(doc_type, format("Failed to parse type '%s'", type_help.c_str()));
 
           if (infer_type & infer_mask::check) {
-            auto doc_type_check = VertexAdaptor<op_lt_type_rule>::create(doc_type);
-            auto doc_rule_var = VertexAdaptor<op_var>::create();
-            doc_rule_var->str_val = var->str_val;
-            doc_rule_var->type_rule = doc_type_check;
-            set_location(doc_rule_var, f->root->location);
-            prologue_cmd.push_back(doc_rule_var);
+            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+            f->add_kphp_infer_hint(infer_mask::check, func_param_it->second, type_rule);
           }
           if (infer_type & infer_mask::hint) {
-            auto doc_type_hint = VertexAdaptor<op_common_type_rule>::create(doc_type);
-            auto doc_rule_var = VertexAdaptor<op_var>::create();
-            doc_rule_var->str_val = var->str_val;
-            doc_rule_var->type_rule = doc_type_hint;
-            set_location(doc_rule_var, f->root->location);
-            prologue_cmd.push_back(doc_rule_var);
+            auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_type);
+            f->add_kphp_infer_hint(infer_mask::hint, func_param_it->second, type_rule);
           }
           if (infer_type & infer_mask::cast) {
             kphp_error(doc_type->type() == op_type_rule && doc_type.as<op_type_rule>()->args().empty(),
@@ -299,16 +287,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     }
     stage::set_location(f->root->get_location());
     kphp_error(false, err_msg.c_str());
-  }
-
-  // из { cmd } делаем { prologue_cmd; cmd }
-  if (!prologue_cmd.empty()) {
-    for (auto i : *f->root.as<op_function>()->cmd()) {
-      prologue_cmd.push_back(i);
-    }
-    auto new_cmd = VertexAdaptor<op_seq>::create(prologue_cmd);
-    ::set_location(new_cmd, f->root->location);
-    f->root.as<op_function>()->cmd() = new_cmd;
   }
 }
 

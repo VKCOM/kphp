@@ -36,13 +36,13 @@ VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
         kphp_typed_warning("return", "Mixing void and not void returns in one function");
       }
     }
-    if (have_not_void && current_function->doc_check_return_type && !error_fired) {
-      bool allow_non_void = false;
-      for (VertexPtr type_rule: *current_function->doc_check_return_type) {
-        allow_non_void = allow_non_void || !type_rule->void_flag;
+    if (have_not_void && !error_fired) {
+      for (const FunctionData::InferHint &hint : current_function->infer_hints) {
+        if (hint.param_i == -1 && hint.type_rule->void_flag) {
+          error_fired = true;
+          kphp_error(0, "Expected only void return");
+        }
       }
-      error_fired = !allow_non_void;
-      kphp_error(allow_non_void, "Expected only void return");
     }
   }
 

@@ -421,11 +421,19 @@ private:
         create_less(as_rvalue(function, -1), tp);
         create_set(as_lvalue(function, -1), tp);
       }
-      if (function->doc_check_return_type) {
-        create_less(as_rvalue(function, -1), function->doc_check_return_type);
-      }
-      if (function->doc_hint_return_type) {
-        create_set(as_lvalue(function, -1), function->doc_hint_return_type);
+      // @kphp-infer hint/check для @param/@return — это less/set на соответствующие tinf_nodes функции
+      for (const FunctionData::InferHint &hint : function->infer_hints) {
+        switch (hint.infer_type) {
+          case FunctionData::InferHint::infer_mask::check:
+            create_less(as_rvalue(function, hint.param_i), hint.type_rule);
+            break;
+          case FunctionData::InferHint::infer_mask::hint:
+            create_set(as_lvalue(function, hint.param_i), hint.type_rule);
+            break;
+          case FunctionData::InferHint::infer_mask::cast:
+            // ничего не делаем, т.к. там просто поставился type_help в parse_and_apply_function_kphp_phpdoc()
+            break;
+        }
       }
     }
   }

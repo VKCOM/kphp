@@ -13,6 +13,19 @@
 
 class FunctionData {
 public:
+  // при @kphp-infer hint/check над функцией — все необходимые type rule хранятся в векторе infer_hints
+  struct InferHint {
+    enum infer_mask {
+      check = 0b001,
+      hint = 0b010,
+      cast = 0b100
+    };
+
+    infer_mask infer_type;
+    int param_i;            // 0..N — аргументы, -1 return (как и для tinf)
+    VertexPtr type_rule;    // op_lt_type_rule / op_common_type_rule / etc
+  };
+
   int id;
 
   string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
@@ -51,11 +64,10 @@ public:
 
   int tinf_state;
   vector<tinf::VarNode> tinf_nodes;
+  vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
 
   VertexPtr const_data;
   Token *phpdoc_token;
-  VertexPtr doc_check_return_type;
-  VertexPtr doc_hint_return_type;
 
   int min_argn;
   bool used_in_source;    // это только для костыля extern_function, потом должно уйти
@@ -87,6 +99,7 @@ public:
   string get_resumable_path() const;
   static string get_human_readable_name(const std::string &name);
   string get_human_readable_name() const;
+  void add_kphp_infer_hint(InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule);
 
   inline static bool is_instance_access_type(AccessType access_type) {
     return vk::any_of_equal(access_type, access_public, access_protected, access_private);

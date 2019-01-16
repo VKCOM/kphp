@@ -132,8 +132,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->is_template = false;
   new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
-  new_function->doc_check_return_type = func->doc_check_return_type;
-  new_function->doc_hint_return_type = func->doc_hint_return_type;
+  new_function->infer_hints = func->infer_hints;
 
   // TODO: need copy all lambdas inside template funciton
   //for (auto f : func->lambdas_inside) {
@@ -190,6 +189,11 @@ std::string FunctionData::get_human_readable_name(const std::string &name) {
 
 string FunctionData::get_human_readable_name() const {
   return access_type == access_nonmember ? name : get_human_readable_name(name);
+}
+
+void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule) {
+  set_location(type_rule, root->location);
+  infer_hints.emplace_back(InferHint{infer_mask, param_i, type_rule});
 }
 
 bool FunctionData::is_lambda_with_uses() const {
