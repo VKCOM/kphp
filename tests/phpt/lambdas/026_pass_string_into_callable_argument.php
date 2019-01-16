@@ -20,10 +20,6 @@ function test_global_callbacks() {
     $php_ver = (int)phpversion();
 #endif
 
-    // $a = new Classes\IntHolder(10);
-    // unsupported now
-    // use_callback([$a, "f"], 1);
-
     use_callback('my_callback', -1);
 
     use_callback(['\Classes\IntHolder', "f_static"], 0);
@@ -40,16 +36,36 @@ function test_global_callbacks() {
     use_callback(function($x) { var_dump(1000 + $x); }, 1);
 }
  
-function test_callbacks_in_classes() {
+function test_callbacks_in_static_classes() {
     Classes\UseCallbacksAsString::run_static();
     Classes\UseCallbacksAsString::run_me_static();
+}
+
+/**
+ * @kphp-required
+ */
+function my_callback2() { 
+    return 100;
+}
+
+function test_callbacks_in_classes() {
+    $use_it = new Classes\UseCallbacksAsString();
+    $res = $use_it->use_callback(9000, [$use_it, 'get_aaa']);
+    var_dump($res);
+
+    $res = $use_it->use_callback(9000, [$use_it, 'get_bbb']);
+    var_dump($res);
+
+    $res = $use_it->use_callback(9000, 'my_callback2');
+    var_dump($res);
 }
 
 Classes\IntHolder::f_static(10);
 test_global_callbacks();
 
-test_callbacks_in_classes();
+test_callbacks_in_static_classes();
 
 Classes\NewClasses\A::f_print_static(10);
 Classes\UseCallbacksAsString::use_callback_static(['Classes\NewClasses\A', 'f_print_static']);
 
+test_callbacks_in_classes();

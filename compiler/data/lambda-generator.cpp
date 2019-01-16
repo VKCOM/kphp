@@ -34,6 +34,9 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexPtr> uses, bool imp
       variable_in_use->str_val = param_as_use->var()->get_string();
       set_location(variable_in_use, param_as_use->location);
       generated_lambda->members.add_instance_field(variable_in_use, access_private);
+    } else {
+      stage::set_location(one_use->get_location());
+      kphp_error(false, "it's not allowed using not variable in `use` clause");
     }
   }
 
@@ -62,6 +65,23 @@ LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
   generated_lambda->construct_function->is_template = !uses.empty();
 
   return *this;
+}
+
+LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPtr called_method) {
+  generated_lambda->members.add_instance_field(get_var_of_captured_array_arg<op_class_var>(), access_private);
+
+  add_uses_for_captured_class_from_array();
+  auto lambda_params = create_params_for_invoke_which_call_method(called_method);
+
+  auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
+  call_function->set_string(get_local_name_from_global_$$(called_method->name));
+  call_function->set_func_id(called_method);
+
+  auto params_of_called_method = called_method->get_params();
+  kphp_assert(!params_of_called_method.empty());
+  auto params_without_arg_of_captured_class = VertexRange(std::next(params_of_called_method.begin()), params_of_called_method.end());
+
+  return create_invoke_fun_returning_call(call_function, VertexAdaptor<op_func_param_list>::create(params_without_arg_of_captured_class));
 }
 
 LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(FunctionPtr called_function) {
@@ -169,6 +189,30 @@ void LambdaGenerator::add_this_to_captured_variables(VertexPtr &root) {
     set_location(new_root, root->location);
     root = new_root;
   }
+}
+
+template<Operation op>
+VertexAdaptor<op> LambdaGenerator::get_var_of_captured_array_arg() {
+  auto var_of_captured_array_arg = VertexAdaptor<op>::create();
+  var_of_captured_array_arg->set_string("captured_array_arg");
+  set_location(created_location, var_of_captured_array_arg);
+
+  return var_of_captured_array_arg;
+}
+
+void LambdaGenerator::add_uses_for_captured_class_from_array() {
+  auto captured_class_from_array = get_var_of_captured_array_arg();
+  auto func_param = VertexAdaptor<op_func_param>::create(captured_class_from_array);
+  set_location(created_location, func_param);
+  uses.emplace_back(func_param);
+}
+
+std::vector<VertexAdaptor<op_var>> LambdaGenerator::create_params_for_invoke_which_call_method(FunctionPtr called_method) {
+  auto captured_class_from_array = get_var_of_captured_array_arg();
+  auto lambda_params = get_params_as_vector_of_vars(std::move(called_method), 1);
+  lambda_params.insert(lambda_params.begin(), captured_class_from_array);
+
+  return lambda_params;
 }
 
 FunctionPtr LambdaGenerator::register_invoke_method(VertexAdaptor<op_function> fun) {

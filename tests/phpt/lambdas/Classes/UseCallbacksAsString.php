@@ -31,15 +31,21 @@ class UseCallbacksAsString
         var_dump($a);
     }
 
-    // public function get_aaa() {
-    //     return function ($x) { return $this->a + $x; };
-    // }
+    /**
+     * @kphp-required
+     */
+    public function get_aaa() {
+        return $this->a;
+    }
 
-    // public function get_bbb() {
-    //     return function ($x) { return 1000 + $this->a + $x; };
-    // }
+    /**
+     * @kphp-required
+     */
+    public function get_bbb() {
+        return 1000 + $this->a;
+    }
 
-    // public function use_callback($a, callable $callback) {
-    //     return $callback($a);
-    // }
+    public function use_callback($a, callable $callback) {
+        return $callback();
+    }
 }

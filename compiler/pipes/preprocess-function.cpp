@@ -263,7 +263,7 @@ private:
               if (!fun_for_wrapping) {
                 auto err_msg = "Maybe you have never used class: " +
                                TermStringFormat::paint(FunctionData::get_human_readable_name(name_of_fun_for_wrapping_into_lambda), TermStringFormat::green);
-                kphp_error_act(fun_for_wrapping, err_msg.c_str(), return call);
+                kphp_error_act(false, err_msg.c_str(), return call);
               }
 
               auto anon_location = call->location;
@@ -272,6 +272,27 @@ private:
                 .add_constructor_from_uses()
                 .generate_and_require(current_function, instance_of_function_template_stream)
                 ->gen_constructor_call_pass_fields_as_args();
+            } else if (auto array_arg = call_arg.try_as<op_array>()) {
+              if (array_arg->size() == 2 && array_arg->args()[1]->type() == op_string) {
+                ClassPtr captured_class;
+                AssumType assum = infer_class_of_expr(current_function, array_arg->args()[0], captured_class);
+                if (assum == AssumType::assum_instance) {
+                  auto anon_location = call->location;
+                  const auto &name_of_class_method = array_arg->args()[1]->get_string();
+                  auto called_method = captured_class->members.get_instance_method(name_of_class_method);
+                  if (!called_method) {
+                    auto err_msg = "Can't find instance method: " +
+                                   TermStringFormat::paint(FunctionData::get_human_readable_name(captured_class->name + "$$" + name_of_class_method), TermStringFormat::green);
+                    kphp_error_act(false, err_msg.c_str(), return call);
+                  }
+
+                  call_arg = LambdaGenerator{gen_anonymous_function_name(current_function), anon_location}
+                    .add_invoke_method_which_call_method(called_method->function)
+                    .add_constructor_from_uses()
+                    .generate_and_require(current_function, instance_of_function_template_stream)
+                    ->gen_constructor_call_with_args({array_arg->args()[0]});
+                }
+              }
             }
           }
 
