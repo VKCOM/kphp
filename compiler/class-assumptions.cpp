@@ -392,6 +392,14 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
         assumption_add_for_return(f, assum_instance, klass);        // return A
       } else if (expr->type() == op_var && expr->get_string() == "this" && f->is_instance_function()) {
         assumption_add_for_return(f, assum_instance, f->class_id);  // return this
+      } else if (expr->type() == op_func_call) {
+        if (auto fun = expr->get_func_id()) {
+          ClassPtr klass;
+          calc_assumption_for_return(fun, klass);
+          if (klass) {
+            assumption_add_for_return(f, assum_instance, klass);
+          }
+        }
       }
     }
   }
