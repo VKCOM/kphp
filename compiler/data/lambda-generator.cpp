@@ -1,4 +1,5 @@
 #include <functional>
+#include <algorithm>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
@@ -64,17 +65,12 @@ LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
 }
 
 LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(FunctionPtr called_function) {
-  std::vector<VertexAdaptor<op_var>> lambda_params;
-  for (auto &param : called_function->get_params()) {
-    auto new_param = VertexAdaptor<op_var>::create();
-    new_param->set_string(param.as<op_func_param>()->var()->get_string());
-    set_location(new_param, created_location);
-    lambda_params.emplace_back(new_param);
-  }
-
+  auto lambda_params = get_params_as_vector_of_vars(called_function);
   auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
+
   call_function->set_string(called_function->name);
   call_function->set_func_id(called_function);
+
   auto return_call = VertexAdaptor<op_return>::create(call_function);
   auto lambda_body = VertexAdaptor<op_seq>::create(return_call);
 
@@ -204,4 +200,20 @@ FunctionPtr LambdaGenerator::register_invoke_method(VertexAdaptor<op_function> f
   G->register_function(invoke_function);
 
   return invoke_function;
+}
+
+std::vector<VertexAdaptor<op_var>> LambdaGenerator::get_params_as_vector_of_vars(FunctionPtr function, int shift) {
+  auto func_params = function->get_params();
+  kphp_assert(func_params.size() >= shift);
+
+  std::vector<VertexAdaptor<op_var>> res_params(static_cast<size_t>(func_params.size() - shift));
+  std::transform(std::next(func_params.begin(), shift), func_params.end(), res_params.begin(),
+                 [](VertexAdaptor<op_func_param> param) {
+                   auto new_param = VertexAdaptor<op_var>::create();
+                   new_param->set_string(param->var()->get_string());
+                   return new_param;
+                 }
+  );
+
+  return res_params;
 }

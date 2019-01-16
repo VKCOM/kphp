@@ -22,6 +22,7 @@ private:
 
   void add_this_to_captured_variables(VertexPtr &root);
   FunctionPtr register_invoke_method(VertexAdaptor<op_function> fun);
+  static std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(FunctionPtr function, int shift = 0);
 
 private:
   const Location created_location;
