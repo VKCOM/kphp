@@ -77,6 +77,14 @@ protected:
     set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
   }
 
+  template<class... Args>
+  void set_children(int shift, const vk::iterator_range<vertex_inner<meta_op_base>::iterator> &arg, Args &&... args) {
+    for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
+      ith(shift + i) = arg[i];
+    }
+    set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
+  }
+
   void set_children(int shift) {
     dl_assert(shift == n, "???");
   }
@@ -88,6 +96,11 @@ protected:
 
   template<Operation op, class... Args>
   static int get_children_size(const std::vector<VertexAdaptor<op>> &arg, Args &&... args) {
+    return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
+  }
+
+  template<class... Args>
+  static int get_children_size(const vk::iterator_range<vertex_inner<meta_op_base>::iterator> &arg, Args &&... args) {
     return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
   }
 
