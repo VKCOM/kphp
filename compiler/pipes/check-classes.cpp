@@ -56,6 +56,6 @@ inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_Unknown,
-               format("var %s::$%s is declared but never written", klass->name.c_str(), f.local_name().c_str()));
+               format("var %s::$%s is declared but never written; maybe, it is used only in unreachable code?", klass->name.c_str(), f.local_name().c_str()));
   });
 }
