@@ -70,16 +70,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 
   call_function->set_string(called_function->name);
   call_function->set_func_id(called_function);
-
-  auto return_call = VertexAdaptor<op_return>::create(call_function);
-  auto lambda_body = VertexAdaptor<op_seq>::create(return_call);
-
-  set_location(created_location, call_function, return_call, lambda_body);
-
-  auto fun = VertexAdaptor<op_function>::create(generated_lambda->root->name(), called_function->root->params(), lambda_body);
-  add_invoke_method(fun);
-
-  return *this;
+  return create_invoke_fun_returning_call(call_function, called_function->root->params());
 }
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
@@ -200,6 +191,18 @@ FunctionPtr LambdaGenerator::register_invoke_method(VertexAdaptor<op_function> f
   G->register_function(invoke_function);
 
   return invoke_function;
+}
+
+LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params) {
+  auto return_call = VertexAdaptor<op_return>::create(call_function);
+  auto lambda_body = VertexAdaptor<op_seq>::create(return_call);
+
+  set_location(created_location, call_function, return_call, lambda_body);
+
+  auto fun = VertexAdaptor<op_function>::create(generated_lambda->root->name(), invoke_params, lambda_body);
+  add_invoke_method(fun);
+
+  return *this;
 }
 
 std::vector<VertexAdaptor<op_var>> LambdaGenerator::get_params_as_vector_of_vars(FunctionPtr function, int shift) {
