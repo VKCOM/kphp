@@ -6,7 +6,7 @@
 
 namespace {
 
-void calc_throws_dfs(FunctionPtr callee, const IdMap<vector<FunctionPtr>> &throws_graph) {
+void calc_throws_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &throws_graph) {
   for (const FunctionPtr &caller : throws_graph[callee]) {
     if (!caller->root->throws_flag) {
       caller->root->throws_flag = true;
@@ -15,7 +15,7 @@ void calc_throws_dfs(FunctionPtr callee, const IdMap<vector<FunctionPtr>> &throw
   }
 }
 
-void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<vector<FunctionPtr>> &non_empty_body_graph) {
+void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &non_empty_body_graph) {
   for (const FunctionPtr &caller : non_empty_body_graph[callee]) {
     kphp_assert_msg(caller->body_seq != FunctionData::body_value::empty, "Body can't be empty!");
     if (caller->body_seq == FunctionData::body_value::unknown) {
@@ -26,8 +26,8 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<vector<FunctionPtr>
 }
 
 void calc_throws_and_body_value_through_call_edges(const vector<FunctionAndEdges> &all) {
-  IdMap<vector<FunctionPtr>> throws_graph((int)all.size());
-  IdMap<vector<FunctionPtr>> non_empty_body_graph((int)all.size());
+  IdMap<std::vector<FunctionPtr>> throws_graph(static_cast<int>(all.size()));
+  IdMap<std::vector<FunctionPtr>> non_empty_body_graph(static_cast<int>(all.size()));
 
   for (const auto &f_and_e : all) {
     for (const auto &edge : *f_and_e.edges) {
@@ -57,14 +57,26 @@ void calc_throws_and_body_value_through_call_edges(const vector<FunctionAndEdges
   }
 }
 
-} // anonymous namespace
+void calc_actually_used_dfs(FunctionPtr from, IdMap<FunctionPtr> &used_functions,
+                            const IdMap<std::vector<FunctionAndEdges::EdgeInfo>> &call_graph) {
+  used_functions[from] = from;
 
-void FilterOnlyActuallyUsedFunctionsF::calc_actually_used_having_call_edges(const std::vector<FunctionAndEdges> &all) {
-  used_functions.reserve(all.size());
-  call_graph.reserve(all.size());
+  if (from->is_constructor()) {
+    from->class_id->was_constructor_invoked = true;
+  }
+  for (const auto &to : call_graph[from]) {
+    if (!used_functions[to.called_f]) {
+      calc_actually_used_dfs(to.called_f, used_functions, call_graph);
+    }
+  }
+}
+
+IdMap<FunctionPtr> calc_actually_used_having_call_edges(const std::vector<FunctionAndEdges> &all) {
+  IdMap<FunctionPtr> used_functions(static_cast<int>(all.size()));
+  IdMap<std::vector<FunctionAndEdges::EdgeInfo>> call_graph(static_cast<int>(all.size()));
 
   for (const auto &f_and_e : all) {
-    call_graph.emplace(f_and_e.function, std::move(*f_and_e.edges));
+    call_graph[f_and_e.function] = std::move(*f_and_e.edges);
     delete f_and_e.edges;
   }
 
@@ -74,48 +86,41 @@ void FilterOnlyActuallyUsedFunctionsF::calc_actually_used_having_call_edges(cons
       f_and_e.function->type() == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
      (f_and_e.function->type() == FunctionData::func_extern && f_and_e.function->name == "wait") ||
       f_and_e.function->kphp_lib_export;
-    if (should_be_used_apriori && !used_functions.count(f_and_e.function)) {
-      calc_actually_used_dfs(f_and_e.function);
+    if (should_be_used_apriori && !used_functions[f_and_e.function]) {
+      calc_actually_used_dfs(f_and_e.function, used_functions, call_graph);
     }
   }
+  return used_functions;
 }
 
-void FilterOnlyActuallyUsedFunctionsF::calc_actually_used_dfs(FunctionPtr from) {
-  actually_called_func_cnt++;
-  used_functions.emplace(from);
-
-  if (from->is_constructor()) {
-    from->class_id->was_constructor_invoked = true;
-  }
-  for (const auto &to : call_graph[from]) {
-    if (!used_functions.count(to.called_f)) {
-      calc_actually_used_dfs(to.called_f);
-    }
-  }
-}
-
-void FilterOnlyActuallyUsedFunctionsF::remove_unused_class_methods(const std::vector<FunctionAndEdges> &all) {
+void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const IdMap<FunctionPtr> &used_functions) {
   for (const auto &f_and_e : all) {
     if (f_and_e.function->type() == FunctionData::func_class_holder) {
       f_and_e.function->class_id->members.remove_if(
-        [this](const ClassMemberStaticMethod &m) {
-          return !used_functions.count(m.function);
+        [&used_functions](const ClassMemberStaticMethod &m) {
+          return get_index(m.function) == -1 || !used_functions[m.function];
         });
       f_and_e.function->class_id->members.remove_if(
-        [this](const ClassMemberInstanceMethod &m) {
-          return !used_functions.count(m.function);
+        [&used_functions](const ClassMemberInstanceMethod &m) {
+          return get_index(m.function) == -1 || !used_functions[m.function];
         });
     }
   }
 }
+
+} // anonymous namespace
 
 void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   std::vector<FunctionAndEdges> all = tmp_stream.get_as_vector();
 
   // присваиваем FunctionData::id
-  int cur_id = -1;
-  for (auto &i : all) {
-    set_index(i.function, ++cur_id);
+  for (int id = 0; id < all.size(); ++id) {
+    // TODO: this check needs for avoid of function duplications from all,
+    // TODO: but duplications is a bug, and should be fixed!
+    // TODO: after fix, here should be assert get_index(all[id].function) == -1
+    if (get_index(all[id].function) == -1) {
+      set_index(all[id].function, id);
+    }
   }
 
   stage::set_name("Calc throws and body value");
@@ -131,18 +136,18 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
 
   // вычисляем реально достижимые функции
-  calc_actually_used_having_call_edges(all);
+  auto used_functions = calc_actually_used_having_call_edges(all);
 
   // удаляем неиспользуемые методы классов
-  remove_unused_class_methods(all);
+  remove_unused_class_methods(all, used_functions);
   stage::die_if_global_errors();
 
   // прокидываем в os реально достижимые фукнции, должен идти последним
-  for (const FunctionPtr &f : used_functions) {
-    os << f;
+  for (const auto &f : used_functions) {
+    if (f) {
+      os << f;
+    }
   }
-  used_functions.clear();
-  call_graph.clear();
 }
 
 void FilterOnlyActuallyUsedFunctionsF::execute(FunctionAndEdges f, DataStream<FunctionPtr> &) {

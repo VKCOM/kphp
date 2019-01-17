@@ -13,7 +13,7 @@
 #include "compiler/vertex.h"
 
 FunctionData::FunctionData() :
-  id(0),
+  id(-1),
   root(nullptr),
   is_required(false),
   type_(func_local),
@@ -35,7 +35,7 @@ FunctionData::FunctionData() :
   body_seq(body_value::unknown) {}
 
 FunctionData::FunctionData(VertexPtr root) :
-  id(0),
+  id(-1),
   root(root),
   is_required(false),
   type_(func_local),

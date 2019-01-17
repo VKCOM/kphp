@@ -4,8 +4,6 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/utils/idmap.h"
 
-#include <unordered_map>
-
 /**
  * Имеет на входе FunctionAndEdges — какая функция какие вызывает —  делает следующее:
  * 1) присваивает FunctionData::id — это делается именно тут, когда известно количество функций
@@ -16,13 +14,6 @@
  */
 class FilterOnlyActuallyUsedFunctionsF {
   DataStream<FunctionAndEdges> tmp_stream;
-  int actually_called_func_cnt = 0;
-  std::unordered_set<FunctionPtr> used_functions;
-  std::unordered_map<FunctionPtr, std::vector<FunctionAndEdges::EdgeInfo>> call_graph;
-
-  void calc_actually_used_having_call_edges(const std::vector<FunctionAndEdges> &all);
-  void calc_actually_used_dfs(FunctionPtr from);
-  void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all);
 
 public:
   FilterOnlyActuallyUsedFunctionsF();
