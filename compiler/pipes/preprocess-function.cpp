@@ -256,12 +256,15 @@ private:
             call_arg = GenTree::conv_to(call_arg, param->type_help, param->var()->ref_flag);
           }
 
+          bool is_callable_ok = true;
+          std::string name_of_fun_for_wrapping_into_lambda;
           if (param->is_callable) {
-            auto name_of_fun_for_wrapping_into_lambda = conv_to_func_ptr_name(call_arg);
+            is_callable_ok = vk::none_of_equal(call_arg->type(), op_string, op_array);
+            name_of_fun_for_wrapping_into_lambda = conv_to_func_ptr_name(call_arg);
             if (!name_of_fun_for_wrapping_into_lambda.empty()) {
-              FunctionPtr fun_for_wrapping= G->get_function(name_of_fun_for_wrapping_into_lambda);
-              if (!fun_for_wrapping) {
-                auto err_msg = "Maybe you have never used class: " +
+              FunctionPtr fun_for_wrapping = G->get_function(name_of_fun_for_wrapping_into_lambda);
+              if (!fun_for_wrapping || !fun_for_wrapping->is_required) {
+                auto err_msg = "Maybe you have never used class or miss @kphp-required tag: " +
                                TermStringFormat::paint(FunctionData::get_human_readable_name(name_of_fun_for_wrapping_into_lambda), TermStringFormat::green);
                 kphp_error_act(false, err_msg.c_str(), return call);
               }
@@ -272,6 +275,7 @@ private:
                 .add_constructor_from_uses()
                 .generate_and_require(current_function, instance_of_function_template_stream)
                 ->gen_constructor_call_pass_fields_as_args();
+              is_callable_ok = true;
             } else if (auto array_arg = call_arg.try_as<op_array>()) {
               if (array_arg->size() == 2 && array_arg->args()[1]->type() == op_string) {
                 ClassPtr captured_class;
@@ -291,9 +295,23 @@ private:
                     .add_constructor_from_uses()
                     .generate_and_require(current_function, instance_of_function_template_stream)
                     ->gen_constructor_call_with_args({array_arg->args()[0]});
+                  is_callable_ok = true;
                 }
               }
             }
+          }
+
+          if (!is_callable_ok) {
+            std::string fun_name = name_of_fun_for_wrapping_into_lambda;
+            if (fun_name.empty() && call_arg->type() == op_array) {
+              auto arr = call_arg.as<op_array>();
+              if (arr->args().size() == 2 && arr->args()[1]->type() == op_string) {
+                fun_name = arr->args()[1]->get_string();
+              }
+            }
+
+            auto err_msg = "can't find function:" + TermStringFormat::paint(fun_name, TermStringFormat::green) + ", maybe you miss @kphp-required tag";
+            kphp_error_act(false, err_msg.c_str(), return call);
           }
 
           break;
