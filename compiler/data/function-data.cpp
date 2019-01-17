@@ -180,10 +180,10 @@ std::string FunctionData::get_human_readable_name(const std::string &name) {
     string base_class = matched[1].str(), actual_class = matched[3].str();
     base_class = replace_characters(base_class, '$', '\\');
     actual_class = replace_characters(actual_class, '$', '\\');
-    return actual_class + " :: " + matched[2].str() + " (" + "inherited from " + base_class + ")";
+    return actual_class + "::" + matched[2].str() + " (" + "inherited from " + base_class + ")";
   }
   //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
-  return std::regex_replace(std::regex_replace(name, std::regex(R"(\$\$)"), " :: "), std::regex("\\$"), "\\");
+  return std::regex_replace(std::regex_replace(name, std::regex(R"(\$\$)"), "::"), std::regex("\\$"), "\\");
 }
 
 string FunctionData::get_human_readable_name() const {
