@@ -136,10 +136,15 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
     return assum_not_instance;
   }
 
-  // phpdoc-тип в виде строки сейчас представлен в виде дерева vertex'ов; допускаем 'A', 'A[]', 'A|false'
+  // phpdoc-тип в виде строки сейчас представлен в виде дерева vertex'ов; допускаем 'A', 'A[]', 'A|false', 'false|\A'
   // другие, более сложные, по типу '(A|int)', не разбираем и считаем assum_not_instance
-  if (unlikely(type_rule->type() == op_type_rule_func && type_rule.as<op_type_rule_func>()->args()[1]->type_help == tp_False)) {
-    type_rule = type_rule.as<op_type_rule_func>()->args()[0];  // из 'A|false', 'A[]|false' достаём 'A' / 'A[]'
+  if (type_rule->type() == op_type_rule_func) {
+    VertexRange or_rules = type_rule.as<op_type_rule_func>()->args();
+    if (or_rules[1]->type_help == tp_False || or_rules[1]->type_help == tp_bool) {
+      type_rule = or_rules[0];      // из 'A|false', 'A[]|false', 'A|bool' достаём 'A' / 'A[]'
+    } else if (or_rules[0]->type_help == tp_False || or_rules[0]->type_help == tp_bool) {
+      type_rule = or_rules[1];      // аналогично, только false в начале
+    }
   }
 
   if (type_rule->type_help == tp_Class) {
