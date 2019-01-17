@@ -14,13 +14,8 @@ ClassData::ClassData() :
   assumptions_inited_vars(0),
   was_constructor_invoked(false),
   can_be_php_autoloaded(false),
-  members(this) {
-  type_data = TypeData::create_for_class(ClassPtr(this));
-  auto array_type = TypeData::create_array_type_data(type_data);
-  array_type_data = array_type;
-  array_type = array_type->clone();
-  array_type->set_or_false_flag(true);
-  or_false_array_type_data = array_type;
+  members(this),
+  type_data(TypeData::create_for_class(ClassPtr(this))) {
 }
 
 
@@ -154,16 +149,4 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
 bool ClassData::is_builtin() const {
   // TODO: how can be !file_id?
   return file_id && file_id->file_name == G->env().get_functions();
-}
-
-const TypeData* ClassData::get_type_data() const {
-  return type_data;
-}
-
-const TypeData* ClassData::get_array_type_data() const {
-  return array_type_data;
-}
-
-const TypeData* ClassData::get_or_false_array_type_data() const {
-  return or_false_array_type_data;
 }

@@ -502,7 +502,6 @@ public:
     if (var->tinf_flag) {
       return;
     }
-    //FIXME: use holder_function!!!
     if (!__sync_bool_compare_and_swap(&var->tinf_flag, false, true)) {
       return;
     }
@@ -510,14 +509,18 @@ public:
     if (var->init_val) {
       create_set(var, var->init_val);
     }
-    ClassPtr cl;
-    AssumType assum = assumption_get_for_var(current_function, var->name, cl);
-    if (assum == assum_instance) {
-      create_less(var, cl->get_type_data());
-      create_less(cl->get_type_data(), var);
-    } else if (assum == assum_instance_array){
-      create_less(var, cl->get_or_false_array_type_data());
-      create_less(cl->get_array_type_data(), var);
+
+    // для всех переменных-инстансов (локальные, параметры и т.п.) делаем restriction'ы, что классы те же что в phpdoc
+    if (!current_function->assumptions_for_vars.empty()) {
+      ClassPtr cl;
+      AssumType assum = assumption_get_for_var(current_function, var->name, cl);
+      if (assum == assum_instance) {                  // var == cl
+        create_less(var, cl->type_data);
+        create_less(cl->type_data, var);
+      } else if (assum == assum_instance_array) {     // cl[] <= var <= OrFalse<cl[]>
+        create_less(var, TypeData::create_array_type_data(cl->type_data, true));
+        create_less(TypeData::create_array_type_data(cl->type_data), var);
+      }
     }
   }
 

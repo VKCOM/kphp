@@ -14,9 +14,6 @@ enum ClassType {
 };
 
 class ClassData : public Lockable {
-  const TypeData *type_data;
-  const TypeData *array_type_data;
-  const TypeData *or_false_array_type_data;
 public:
   // описание extends / implements / use trait в строковом виде (class_name)
   struct StrDependence {
@@ -50,6 +47,8 @@ public:
   string src_name, header_name;
 
   ClassMembersContainer members;
+
+  const TypeData *const type_data;
 
   ClassData();
 
@@ -90,8 +89,4 @@ public:
   }
 
   bool is_builtin() const;
-
-  const TypeData *get_type_data() const;
-  const TypeData *get_array_type_data() const;
-  const TypeData *get_or_false_array_type_data() const;
 };

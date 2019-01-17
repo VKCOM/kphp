@@ -69,7 +69,7 @@ inline RValue as_rvalue(VarPtr var) {
 }
 
 inline RValue as_rvalue(ClassPtr klass) {
-  return RValue(klass->get_type_data());
+  return RValue(klass->type_data);
 }
 
 inline RValue as_rvalue(const TypeData *type, const MultiKey *key = nullptr) {

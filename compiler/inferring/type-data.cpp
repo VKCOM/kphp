@@ -723,8 +723,9 @@ TypeData *TypeData::create_for_class(ClassPtr klass) {
   result->class_type_ = klass;
   return result;
 }
-TypeData *TypeData::create_array_type_data(const TypeData *element_type) {
+TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool or_false_flag /* =false */) {
   TypeData *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
+  res->set_or_false_flag(or_false_flag);
   return res;
 }
