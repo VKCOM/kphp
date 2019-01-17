@@ -1667,6 +1667,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
 
   string name_str = static_cast<string>((*cur)->str_val);
   string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
+  kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
+             "Class name is the same as one of 'use' at the top of the file");
 
   auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = "$" + full_class_name;  // function-wrapper for class
@@ -1758,9 +1760,8 @@ VertexPtr GenTree::get_use() {
       alias = static_cast<string>((*cur)->str_val);
       next_cur();
     }
-    if (processing_file->namespace_uses.find(alias) == processing_file->namespace_uses.end()) {
-      processing_file->namespace_uses[alias] = name;
-    }
+    kphp_error(processing_file->namespace_uses.emplace(alias, name).second,
+               "Duplicate 'use' at the top of the file");
     if (!test_expect(tok_comma)) {
       break;
     }
