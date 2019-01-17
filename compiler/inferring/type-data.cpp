@@ -1,5 +1,7 @@
 #include "compiler/inferring/type-data.h"
 
+#include <regex>
+
 #include "common/termformat/termformat.h"
 
 #include "compiler/data/class-data.h"
@@ -636,6 +638,15 @@ string colored_type_out(const TypeData *type) {
   if (vk::string_view(type_str).starts_with("std::")) {
     type_str = type_str.substr(5);
   }
+
+  // заменяем class_instance<C$VK$A> на \VK\A для читаемости (при выводе в консольку)
+  std::regex class_instance_regex(R"(class_instance\s*<\s*C(.*?)\s*>)");
+  std::smatch matched;
+  while (std::regex_search(type_str, matched, class_instance_regex)) {
+    std::string class_name = replace_characters(matched[1].str(), '$', '\\');
+    type_str = type_str.replace(matched.position(), matched[0].length(), class_name);
+  }
+
   return TermStringFormat::paint(type_str, TermStringFormat::green);
 }
 
