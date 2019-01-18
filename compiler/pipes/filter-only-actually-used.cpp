@@ -115,12 +115,8 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
 
   // присваиваем FunctionData::id
   for (int id = 0; id < all.size(); ++id) {
-    // TODO: this check needs for avoid of function duplications from all,
-    // TODO: but duplications is a bug, and should be fixed!
-    // TODO: after fix, here should be assert get_index(all[id].function) == -1
-    if (get_index(all[id].function) == -1) {
-      set_index(all[id].function, id);
-    }
+    kphp_assert(get_index(all[id].function) == -1);
+    set_index(all[id].function, id);
   }
 
   stage::set_name("Calc throws and body value");
