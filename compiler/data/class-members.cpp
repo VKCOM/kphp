@@ -84,9 +84,9 @@ template <class MemberT>
 void ClassMembersContainer::append_member(const string &hash_name, const MemberT &member) {
   unsigned long long hash_num = hash_ll(hash_name);
   kphp_error(names_hashes.insert(hash_num).second,
-             format("Redeclaration of %s :: %s", klass->name.c_str(), hash_name.c_str()));
+             format("Redeclaration of %s::%s", klass->name.c_str(), hash_name.c_str()));
   get_all_of<MemberT>().push_back(member);
-  //printf("append %s :: %s\n", klass->name.c_str(), hash_name.c_str());
+  //printf("append %s::%s\n", klass->name.c_str(), hash_name.c_str());
 }
 
 inline bool ClassMembersContainer::member_exists(const string &hash_name) const {
