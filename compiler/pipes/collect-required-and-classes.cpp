@@ -11,8 +11,8 @@ private:
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
 
-  SrcFilePtr require_file(const string &file_name) {
-    return G->require_file(file_name, current_function->file_id->owner_lib, file_stream);
+  SrcFilePtr require_file(const string &file_name, bool error_if_not_exists) {
+    return G->require_file(file_name, current_function->file_id->owner_lib, file_stream, error_if_not_exists);
   }
 
   void require_function(const string &name) {
@@ -20,14 +20,9 @@ private:
   }
 
   void require_class(const string &class_name) {
-    // TODO: remove hack
-    if (class_name == "Exception" || class_name == "Memcache") {
-      return;
-    }
-    if (!G->get_class(class_name)) {
-      SrcFilePtr res = require_file(class_name + ".php");
-      kphp_error(res, format("Class %s not found", class_name.c_str()));
-    }
+    if (!G->get_class(class_name)) {              // при отсутствии php-файла не ругаемся:
+      require_file(class_name + ".php", false);   // ошибки об отсутствующих классах будут позже,
+    }                                             // а у built-in и не-autoloadable классов файлов и нет
   }
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {
@@ -89,7 +84,7 @@ public:
 
   VertexAdaptor<op_func_call> make_require_call(VertexPtr v) {
     kphp_error_act (v->type() == op_string, "Not a string in 'require' arguments", return {});
-    if (SrcFilePtr file = require_file(v->get_string())) {
+    if (SrcFilePtr file = require_file(v->get_string(), true)) {
       auto call = VertexAdaptor<op_func_call>::create();
       call->str_val = file->main_func_name;
       return call;

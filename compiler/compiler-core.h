@@ -56,7 +56,7 @@ public:
 
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
-  SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os);
+  SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true);
 
   void require_function(const string &name, DataStream<FunctionPtr> &os);
   void require_function(FunctionPtr function, DataStream<FunctionPtr> &os);

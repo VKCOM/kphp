@@ -381,7 +381,12 @@ private:
 
   void print_why_cant_set_func_id_error(VertexPtr call, std::string unexisting_func_name) {
     if (call->type() == op_constructor_call) {
-      kphp_error(0, format("Calling 'new %s()', but this class is fully static or does not exist", call->get_string().c_str()));
+      ClassPtr klass = G->get_class(call->get_string());
+      if (klass) {
+        kphp_error(0, format("Calling 'new %s()', but this class is fully static", call->get_c_string()));
+      } else {
+        kphp_error(0, format("Class %s does not exist", call->get_c_string()));
+      }
     } else if (call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow) {
       ClassPtr klass;
       infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
