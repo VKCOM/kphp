@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <unordered_set>
 
 #include "compiler/data/vertex-adaptor.h"
@@ -132,12 +133,10 @@ bool operator<(FunctionPtr, FunctionPtr);
 bool operator<(VarPtr, VarPtr);
 
 namespace std {
-template<typename T>
-struct hash;
-
-template<>
 template<typename Data>
 struct hash<Id<Data>> : private Id<Data>::Hash {
+  using argument_type = Id<Data>;
+  using result_type = std::size_t;
   using Id<Data>::Hash::operator();
 };
 } // namespace std
