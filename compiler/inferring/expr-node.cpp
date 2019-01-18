@@ -585,18 +585,7 @@ string tinf::ExprNode::get_description() {
 }
 
 string tinf::ExprNode::get_location_text() {
-  string location = stage::to_str(expr_->get_location());
-
-  //Убираем дублирование имени класса в пути до класса
-  std::smatch matched;
-  if (std::regex_match(location, matched, std::regex("(.+?): ((.*?)::.*)"))) {
-    string class_name = replace_characters(matched[3].str(), '\\', '/');
-    if (matched[1].str().find(class_name + ".php") == matched[1].str().length() - (class_name.length() + 4)) {
-      return matched[2].str();
-    }
-  }
-
-  return location;
+  return stage::to_str(expr_->get_location());
 }
 
 const Location &tinf::ExprNode::get_location() {

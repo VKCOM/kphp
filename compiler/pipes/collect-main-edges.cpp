@@ -17,7 +17,7 @@
 tinf::Node *CollectMainEdgesPass::node_from_rvalue(const RValue &rvalue) {
   if (rvalue.node == nullptr) {
     kphp_assert (rvalue.type != nullptr);
-    return new tinf::TypeNode(rvalue.type);
+    return new tinf::TypeNode(rvalue.type, stage::get_location());
   }
 
   return rvalue.node;

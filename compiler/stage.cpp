@@ -1,5 +1,7 @@
 #include "compiler/stage.h"
 
+#include <regex>
+
 #include "common/termformat/termformat.h"
 
 #include "compiler/common.h"
@@ -247,7 +249,18 @@ string stage::to_str(const Location &new_location) {
   FunctionPtr function = get_function();
   stringstream ss;
 
-  //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
+  // Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
   ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();
-  return ss.str();
+  std::string out = ss.str();
+
+  // Убираем дублирование имени класса в пути до класса
+  std::smatch matched;
+  if (std::regex_match(out, matched, std::regex("(.+?): ((.*?)::.*)"))) {
+    string class_name = replace_characters(matched[3].str(), '\\', '/');
+    if (matched[1].str().find(class_name + ".php") == matched[1].str().length() - (class_name.length() + 4)) {
+      return matched[2].str();
+    }
+  }
+
+  return out;
 }

@@ -69,7 +69,7 @@ vk::string_view SrcFile::get_line(int id) {
 string SrcFile::get_short_name() {
   string root_path = G->env().get_base_dir();
   if (vk::string_view(file_name).starts_with(root_path)) {
-    return string(".../") + file_name.substr(root_path.length());
+    return file_name.substr(root_path.length());
   }
   return file_name;
 }
