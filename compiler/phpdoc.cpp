@@ -279,6 +279,13 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
       }
       break;
     }
+    case '\\': {
+      if (s.substr(pos, 6) == "\\tuple") {
+        pos += 6;
+        return parse_type_tuple(s, pos);
+      }
+    }
+      /* fallthrough */
     default: {
       if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z')) {
         const vk::string_view &class_name = extract_classname_from_pos(s, pos);
