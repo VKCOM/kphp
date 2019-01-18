@@ -223,10 +223,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             type_rule->void_flag = doc_type->void_flag;
             f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
           }
-          if (infer_type & infer_mask::hint) {
-            auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_type);
-            f->add_kphp_infer_hint(infer_mask::hint, -1, type_rule);
-          }
+          // hint для return'а не делаем совсем, чтобы не грубить вывод типов, только check
           break;
         }
         case php_doc_tag::param: {
@@ -239,6 +236,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           auto func_param_it = name_to_function_param.find(var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(),
             format("@param tag var name mismatch. found %s.", var_name.c_str()));
+          int param_i = func_param_it->second;
 
           VertexAdaptor<op_func_param> cur_func_param = func_params[func_param_it->second];
           name_to_function_param.erase(func_param_it);
@@ -256,11 +254,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
           if (infer_type & infer_mask::check) {
             auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
-            f->add_kphp_infer_hint(infer_mask::check, func_param_it->second, type_rule);
+            f->add_kphp_infer_hint(infer_mask::check, param_i, type_rule);
           }
           if (infer_type & infer_mask::hint) {
             auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_type);
-            f->add_kphp_infer_hint(infer_mask::hint, func_param_it->second, type_rule);
+            f->add_kphp_infer_hint(infer_mask::hint, param_i, type_rule);
           }
           if (infer_type & infer_mask::cast) {
             kphp_error(doc_type->type() == op_type_rule && doc_type.as<op_type_rule>()->args().empty(),
