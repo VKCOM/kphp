@@ -74,6 +74,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPt
   auto lambda_params = create_params_for_invoke_which_call_method(called_method);
 
   auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
+  call_function->extra_type = op_ex_func_call_arrow;
   call_function->set_string(get_local_name_from_global_$$(called_method->name));
   call_function->set_func_id(called_method);
 
@@ -95,9 +96,16 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
   auto lambda_class = generate(std::move(parent_function));
-  lambda_class->members.for_each([&os](const ClassMemberInstanceMethod &m) {
-    G->require_function(m.function, os);
-  });
+
+  auto invoke_method = lambda_class->members.get_instance_method("__invoke");
+  kphp_assert(invoke_method && invoke_method->function && !invoke_method->function->is_required);
+  G->require_function(invoke_method->function, os);
+
+  auto constructor = lambda_class->construct_function;
+  kphp_assert(constructor && !constructor->is_required);
+  if (!constructor->is_lambda_with_uses()) {
+    G->require_function(constructor, os);
+  }
 
   return lambda_class;
 }

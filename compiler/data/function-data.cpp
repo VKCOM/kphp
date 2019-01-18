@@ -116,7 +116,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
 
   new_function->root = new_func_root;
   new_function->root->set_func_id(new_function);
-  new_function->is_required = true;
+  new_function->is_required = false;
   new_function->type() = func->type();
   new_function->file_id = func->file_id;
   new_function->class_id = func->class_id;

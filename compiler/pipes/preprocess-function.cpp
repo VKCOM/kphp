@@ -50,7 +50,6 @@ private:
       if (!f_inst || f_inst->is_template) {
         f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
         if (f_inst) {
-          f_inst->is_required = true;
           ClassPtr klass = f_inst->class_id;
           if (klass) {
             AutoLocker<Lockable *> locker(&(*klass));
@@ -65,7 +64,8 @@ private:
             }
           }
 
-          instance_of_function_template_stream << f_inst;
+          kphp_assert(!f_inst->is_required);
+          G->require_function(f_inst, instance_of_function_template_stream);
         }
       }
 
@@ -345,19 +345,17 @@ private:
   VertexPtr try_set_func_id(VertexPtr call) {
     if (call->get_func_id()) {
       if (call->get_func_id()->is_lambda_with_uses()) {
-        auto new_call = call;
-        if (auto lambda_func_ptr = new_call.try_as<op_func_ptr>()) {
-          new_call = lambda_func_ptr->bound_class();
+        LambdaPtr lambda_class = call->get_func_id()->class_id.as<LambdaClassData>();
+        if (!lambda_class->construct_function->is_template) {
+          return call;
         }
-        ClassPtr lambda_class;
-        AssumType assum = infer_class_of_expr(current_function, new_call, lambda_class);
-        kphp_assert(assum == assum_instance && lambda_class);
 
-        lambda_class.as<LambdaClassData>()->infer_uses_assumptions(current_function);
-        new_call->location.function = current_function;
+        kphp_assert(!lambda_class->construct_function->is_required);
+
+        lambda_class->infer_uses_assumptions(current_function);
         call->location.function = current_function;
         lambda_class->construct_function->is_template = false;
-        instance_of_function_template_stream << lambda_class->construct_function;
+        G->require_function(lambda_class->construct_function, instance_of_function_template_stream);
       }
 
       return call;
