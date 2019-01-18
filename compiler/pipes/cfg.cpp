@@ -35,15 +35,14 @@ public:
     for (int i = 0; i < parts_size; i++) {
       string new_name = var->name + "$v_" + int_to_str(i);
       VarPtr new_var = G->create_var(new_name, var->type());
+      new_var->holder_func = var->holder_func;
 
       for (int j = 0; j < (int)parts[i].size(); j++) {
         VertexPtr v = parts[i][j];
         v->set_var_id(new_var);
       }
 
-      VertexRange params = function->root.
-        as<meta_op_function>()->params().
-                                     as<op_func_param_list>()->args();
+      VertexRange params = get_function_params(function->root);
       if (var->type() == VarData::var_local_t) {
         new_var->type() = VarData::var_local_t;
         function->local_var_ids.push_back(new_var);
