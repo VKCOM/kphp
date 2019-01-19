@@ -43,7 +43,6 @@ public:
   func_type_t type_;
 
   vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, header_global_var_ids;
-  vector<VarPtr> tmp_vars;
   vector<VarPtr> *bad_vars;
   set<VarPtr> const_var_ids, header_const_var_ids;
   vector<VarPtr> param_ids;

@@ -112,12 +112,14 @@ struct FuncCallGraph {
 class CalcBadVars {
 private:
   class MergeBadVarsCallback : public MergeReachalbeCallback<FunctionPtr> {
+    IdMap<vector<VarPtr>> tmp_vars;
   public:
+    explicit MergeBadVarsCallback(IdMap<vector<VarPtr>> tmp_vars) : tmp_vars(std::move(tmp_vars)) {}
     void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
       std::unordered_set<VarPtr, typename VarPtr::Hash> bad_vars_uniq;
 
       for (FunctionPtr f : component) {
-        bad_vars_uniq.insert(f->tmp_vars.begin(), f->tmp_vars.end());
+        bad_vars_uniq.insert(tmp_vars[f].begin(), tmp_vars[f].end());
       }
 
       for (FunctionPtr f : edges) {
@@ -149,9 +151,11 @@ private:
       return;
     }
 
+    IdMap<std::vector<VarPtr>> tmp_vars(call_graph.n);
+
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr func = call_graph.functions[i];
-      func->tmp_vars = std::move(dep_datas[i].used_global_vars);
+      tmp_vars[func] = std::move(dep_datas[i].used_global_vars);
 
       if (func->root->resumable_flag) {
         if (G->env().get_verbosity() > 1) {
@@ -165,7 +169,7 @@ private:
       }
     }
 
-    MergeBadVarsCallback callback;
+    MergeBadVarsCallback callback(std::move(tmp_vars));
     MergeReachalbe<FunctionPtr> merge_bad_vars;
     merge_bad_vars.run(call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
   }
@@ -240,7 +244,7 @@ private:
   private:
     const IdMap<vector<VarPtr>> &to_merge_;
   public:
-    MergeRefVarsCallback(const IdMap<vector<VarPtr>> &to_merge) :
+    explicit MergeRefVarsCallback(const IdMap<vector<VarPtr>> &to_merge) :
       to_merge_(to_merge) {
     }
 
