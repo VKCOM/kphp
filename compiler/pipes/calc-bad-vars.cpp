@@ -81,26 +81,6 @@ public:
   }
 };
 
-struct DepData {
-  vector<FunctionPtr> dep;
-  vector<VarPtr> used_global_vars;
-
-  vector<VarPtr> used_ref_vars;
-  vector<std::pair<VarPtr, VarPtr>> ref_ref_edges;
-  vector<std::pair<VarPtr, VarPtr>> global_ref_edges;
-
-  vector<FunctionPtr> forks;
-};
-
-inline void swap(DepData &a, DepData &b) {
-  swap(a.dep, b.dep);
-  swap(a.used_global_vars, b.used_global_vars);
-  swap(a.used_ref_vars, b.used_ref_vars);
-  swap(a.ref_ref_edges, b.ref_ref_edges);
-  swap(a.global_ref_edges, b.global_ref_edges);
-  swap(a.forks, b.forks);
-}
-
 class CalcFuncDepPass : public FunctionPassBase {
 private:
   DepData data;
@@ -206,8 +186,8 @@ public:
     my_unique(&data.used_global_vars);
   }
 
-  DepData *get_data_ptr() {
-    return &data;
+  DepData &get_data() {
+    return data;
   }
 };
 
@@ -217,13 +197,11 @@ struct FuncCallGraph {
   IdMap<vector<FunctionPtr>> graph;
   IdMap<vector<FunctionPtr>> rev_graph;
 
-  FuncCallGraph(vector<FunctionPtr> &other_functions, const vector<DepData *> dep_datas) :
+  FuncCallGraph(vector<FunctionPtr> other_functions, vector<DepData> &dep_datas) :
     n((int)other_functions.size()),
-    functions(),
+    functions(std::move(other_functions)),
     graph(n),
     rev_graph(n) {
-
-    std::swap(functions, other_functions);
 
     for (int cur_id = 0, i = 0; i < n; i++, cur_id++) {
       set_index(functions[i], cur_id);
@@ -231,12 +209,12 @@ struct FuncCallGraph {
 
     for (int i = 0; i < n; i++) {
       FunctionPtr to = functions[i];
-      DepData *data = dep_datas[i];
+      DepData &data = dep_datas[i];
 
-      for (const auto &from : data->dep) {
+      for (const auto &from : data.dep) {
         rev_graph[from].push_back(to);
       }
-      std::swap(graph[to], data->dep);
+      graph[to] = std::move(data.dep);
     }
   }
 };
@@ -275,7 +253,7 @@ private:
     }
   }
 
-  void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData *> &dep_datas) {
+  void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData> &dep_datas) {
     FunctionPtr wait_func = G->get_function("wait");
     if (!wait_func) {     // когда functions.txt пустой или отключенный для dev
       return;
@@ -283,7 +261,7 @@ private:
 
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr func = call_graph.functions[i];
-      swap(func->tmp_vars, dep_datas[i]->used_global_vars);
+      func->tmp_vars = std::move(dep_datas[i].used_global_vars);
 
       if (func->root->resumable_flag) {
         if (G->env().get_verbosity() > 1) {
@@ -317,9 +295,9 @@ private:
   }
 
 
-  void calc_resumable(FuncCallGraph &call_graph, vector<DepData *> &dep_data) {
+  void calc_resumable(const FuncCallGraph &call_graph, const vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
-      for (const auto &fork : dep_data[i]->forks) {
+      for (const auto &fork : dep_data[i].forks) {
         fork->root->resumable_flag = true;
       }
     }
@@ -364,7 +342,7 @@ private:
   void save_func_dep(FuncCallGraph &call_graph) {
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr function = call_graph.functions[i];
-      std::swap(function->dep, call_graph.graph[function]);
+      function->dep = std::move(call_graph.graph[function]);
     }
   }
 
@@ -397,10 +375,10 @@ private:
     }
   };
 
-  void generate_ref_vars(vector<DepData *> &dep_datas) {
+  void generate_ref_vars(vector<DepData> &dep_datas) {
     vector<VarPtr> vars;
     for (auto data : dep_datas) {
-      vars.insert(vars.end(), data->used_ref_vars.begin(), data->used_ref_vars.end());
+      vars.insert(vars.end(), data.used_ref_vars.begin(), data.used_ref_vars.end());
     }
     int vars_n = (int)vars.size();
     my_unique(&vars);
@@ -411,10 +389,10 @@ private:
 
     IdMap<vector<VarPtr>> rev_graph(vars_n), graph(vars_n), ref_vars(vars_n);
     for (const auto &data : dep_datas) {
-      for (const auto &edge : data->global_ref_edges) {
+      for (const auto &edge : data.global_ref_edges) {
         ref_vars[edge.second].push_back(edge.first);
       }
-      for (const auto &edge : data->ref_ref_edges) {
+      for (const auto &edge : data.ref_ref_edges) {
         graph[edge.second].push_back(edge.first);
         rev_graph[edge.first].push_back(edge.second);
       }
@@ -423,21 +401,20 @@ private:
     MergeRefVarsCallback callback(ref_vars);
     MergeReachalbe<VarPtr> merge_ref_vars;
     merge_ref_vars.run(graph, rev_graph, vars, &callback);
-
   }
 
 public:
-  void run(const vector<pair<FunctionPtr, DepData *>> &tmp_vec) {
+  void run(std::vector<std::pair<FunctionPtr, DepData>> &tmp_vec) {
     int all_n = (int)tmp_vec.size();
-    vector<FunctionPtr> functions(all_n);
-    vector<DepData *> dep_datas(all_n);
+    std::vector<FunctionPtr> functions(all_n);
+    std::vector<DepData> dep_datas(all_n);
     for (int i = 0; i < all_n; i++) {
       functions[i] = tmp_vec[i].first;
-      dep_datas[i] = tmp_vec[i].second;
+      dep_datas[i] = std::move(tmp_vec[i].second);
     }
 
     {
-      FuncCallGraph call_graph(functions, dep_datas);
+      FuncCallGraph call_graph(std::move(functions), dep_datas);
       calc_resumable(call_graph, dep_datas);
       generate_bad_vars(call_graph, dep_datas);
       save_func_dep(call_graph);
@@ -450,19 +427,16 @@ public:
 void CalcBadVarsF::execute(FunctionPtr function, DataStream<FunctionPtr> &) {
   CalcFuncDepPass pass;
   run_function_pass(function, &pass);
-  DepData *data = new DepData();
-  swap(*data, *pass.get_data_ptr());
-  tmp_stream << std::make_pair(function, data);
+  tmp_stream << std::make_pair(function, std::move(pass.get_data()));
 }
 
 void CalcBadVarsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
 
   stage::set_name("Calc bad vars (for UB check)");
-  vector<pair<FunctionPtr, DepData *>> tmp_vec = tmp_stream.get_as_vector();
+  auto tmp_vec = tmp_stream.get_as_vector();
   CalcBadVars{}.run(tmp_vec);
   for (const auto &fun_dep : tmp_vec) {
-    delete fun_dep.second;
     os << fun_dep.first;
   }
 }
