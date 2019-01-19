@@ -245,7 +245,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<0>{}
     >> PipeC<CalcEmptyFunctions>{}
-    >> PipeC<CalcActualCallsEdgesF>{}
+    >> PassC<CalcActualCallsEdgesPass>{}
     >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
     >> PassC<RemoveEmptyFunctionCalls>{}
     >> PassC<PreprocessBreakPass>{}

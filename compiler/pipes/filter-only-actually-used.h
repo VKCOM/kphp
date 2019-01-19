@@ -1,6 +1,6 @@
 #pragma once
 
-#include "compiler/pipes/function-and-edges.h"
+#include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/utils/idmap.h"
 
@@ -13,6 +13,10 @@
  * 5) удаляет неиспользуемые методы классов
  */
 class FilterOnlyActuallyUsedFunctionsF {
+public:
+  using EdgeInfo = CalcActualCallsEdgesPass::EdgeInfo;
+  using FunctionAndEdges = std::pair<FunctionPtr, std::vector<EdgeInfo>>;
+private:
   DataStream<FunctionAndEdges> tmp_stream;
 
 public:
