@@ -1,9 +1,9 @@
 #pragma once
 
-#include "compiler/pipes/file-and-token.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/threading/data-stream.h"
 
 class ParseF {
 public:
-  void execute(FileAndTokens file_and_tokens, DataStream<FunctionPtr> &os);
+  void execute(std::pair<SrcFilePtr, std::vector<Token *>> file_and_tokens, DataStream<FunctionPtr> &os);
 };

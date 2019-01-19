@@ -14,8 +14,8 @@ public:
   }
 
   Task *get_task() override {
-    Maybe<Task *> x = stream.get();
-    if (x.empty()) {
+    Task *x;
+    if (!stream.get(x)) {
       return nullptr;
     }
     return x;

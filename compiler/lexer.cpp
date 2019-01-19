@@ -355,8 +355,8 @@ void LexerData::post_process() {
   tokens.push_back(new Token(tok_end));
 }
 
-void LexerData::move_tokens(vector<Token *> *dest) {
-  std::swap(tokens, *dest);
+void LexerData::move_tokens(vector<Token *> &dest) {
+  dest = std::move(tokens);
 }
 
 int LexerData::get_line_num() {
@@ -1294,7 +1294,7 @@ void lexer_init() {
   config_func();
 }
 
-int php_text_to_tokens(char *text, int text_length, vector<Token *> *result) {
+vector<Token*> php_text_to_tokens(char *text, int text_length) {
   static TokenLexerGlobal lexer;
 
   LexerData lexer_data;
@@ -1306,11 +1306,12 @@ int php_text_to_tokens(char *text, int text_length, vector<Token *> *result) {
       break;
     }
     int ret = lexer.parse(&lexer_data);
-    kphp_error_act (ret == 0, "failed to parse", return ret);
+    kphp_error_act (ret == 0, "failed to parse", return {});
   }
 
   lexer_data.post_process();
+  vector<Token *> result;
   lexer_data.move_tokens(result);
-  return 0;
+  return result;
 }
 

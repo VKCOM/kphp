@@ -21,7 +21,7 @@ struct LexerData {
   void post_process();
 
 
-  void move_tokens(vector<Token *> *dest);
+  void move_tokens(vector<Token *> &dest);
   int get_line_num();
 
 private:
@@ -182,4 +182,4 @@ struct TokenLexerGlobal : TokenLexer {
 };
 
 void lexer_init();
-int php_text_to_tokens(char *text, int text_length, vector<Token *> *result);
+vector<Token*> php_text_to_tokens(char *text, int text_length);

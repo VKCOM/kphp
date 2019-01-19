@@ -32,16 +32,16 @@ private:
 
 public:
   PipeTask(InputType input, PipeType *pipe_ptr) :
-    input(input),
+    input(std::move(input)),
     pipe_ptr(pipe_ptr) {
   }
 
   void execute() override {
     if (NeedProfiler<typename PipeType::PipeFunctionType>::value) {
       AutoProfiler prof{get_task_profiler()};
-      pipe_ptr->process_input(input);
+      pipe_ptr->process_input(std::move(input));
     } else {
-      pipe_ptr->process_input(input);
+      pipe_ptr->process_input(std::move(input));
     }
   }
 };
@@ -85,14 +85,14 @@ public:
 
   void set_input_stream(InputStreamType *is) { input_stream = is; }
 
-  void process_input(const InputType &input) { function.execute(input, *output_stream); }
+  void process_input(InputType input) { function.execute(std::move(input), *output_stream); }
 
   Task *get_task() override {
-    Maybe<InputType> x = input_stream->get();
-    if (x.empty()) {
+    InputType x{};
+    if (!input_stream->get(x)) {
       return nullptr;
     }
-    return new TaskType(x, this);
+    return new TaskType(std::move(x), this);
   }
 
   void on_finish(std::true_type) {

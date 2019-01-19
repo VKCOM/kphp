@@ -45,7 +45,7 @@ public:
 
   static inline void set_location(VertexPtr v, const AutoLocation &location);
 
-  GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
+  GenTree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
   VertexPtr generate_constant_field_class_value();
 
@@ -147,7 +147,7 @@ public:
   int line_num;
 
 private:
-  const vector<Token *> *tokens;
+  const vector<Token *> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_;
   vector<Token *>::const_iterator cur, end;
@@ -158,7 +158,7 @@ private:
   SrcFilePtr processing_file;
 };
 
-void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
+void php_gen_tree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
 template<PrimitiveType ToT>
 VertexPtr GenTree::conv_to_lval(VertexPtr x) {

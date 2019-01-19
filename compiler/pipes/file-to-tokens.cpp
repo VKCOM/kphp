@@ -5,20 +5,17 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
-void FileToTokensF::execute(SrcFilePtr file, DataStream<FileAndTokens> &os) {
+void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token *>>> &os) {
   stage::set_name("Split file to tokens");
   stage::set_file(file);
   kphp_assert(file);
 
   kphp_assert(file->loaded);
-  FileAndTokens res;
-  res.file = file;
-  res.tokens = new vector<Token *>();
-  php_text_to_tokens(&file->text[0], (int)file->text.length(), res.tokens);
+  auto tokens = php_text_to_tokens(&file->text[0], (int)file->text.length());
 
   if (stage::has_error()) {
     return;
   }
 
-  os << res;
+  os << make_pair(file, std::move(tokens));
 }

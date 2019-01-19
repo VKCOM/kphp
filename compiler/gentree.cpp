@@ -17,17 +17,16 @@
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
 #include "compiler/vertex.h"
-#include "common/algorithms/find.h"
 
 #define CE(x) if (!(x)) {return VertexPtr();}
 
-GenTree::GenTree(const vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
+GenTree::GenTree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
   line_num(0),
-  tokens(tokens),
+  tokens(std::move(tokens)),
   parsed_os(os),
   is_top_of_the_function_(false),
-  cur(tokens->begin()),
-  end(tokens->end()),
+  cur(this->tokens.begin()),
+  end(this->tokens.end()),
   processing_file(file) {                  // = stage::get_file()
 
   kphp_assert (cur != end);
@@ -2033,7 +2032,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       AutoLocation const_location(this);
       next_cur();
 
-      bool has_access_modifier = std::distance(tokens->begin(), cur) > 1 && vk::any_of_equal((*std::prev(cur, 2))->type(), tok_public, tok_private, tok_protected);
+      bool has_access_modifier = std::distance(tokens.begin(), cur) > 1 && vk::any_of_equal((*std::prev(cur, 2))->type(), tok_public, tok_private, tok_protected);
       bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
       bool const_in_class = !!cur_class;
       string const_name{(*cur)->str_val};
@@ -2185,7 +2184,7 @@ void GenTree::for_each(VertexPtr root, void (*callback)(VertexPtr)) {
   }
 }
 
-void php_gen_tree(vector<Token *> *tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) {
+void php_gen_tree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) {
   GenTree gen(tokens, file, os);
   gen.run();
 }

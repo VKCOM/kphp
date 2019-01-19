@@ -9,7 +9,6 @@
 
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/threading/locks.h"
-#include "compiler/threading/maybe.h"
 
 template<class DataT>
 class DataStream : Lockable {
@@ -39,7 +38,7 @@ public:
     return read_i == write_i;
   }
 
-  Maybe<DataT> get() {
+  bool get(DataT &result) {
     while (true) {
       int old_read_i = read_i;
       if (old_read_i < write_i) {
@@ -47,19 +46,17 @@ public:
           while (!ready[old_read_i]) {
             usleep(250);
           }
-          DataT result;
-          std::swap(result, data[old_read_i]);
-          return result;
+          result = std::move(data[old_read_i]);
+          return true;
         }
         usleep(250);
       } else {
-        return {};
+        return false;
       }
     }
   }
 
-  void operator<<(const DataType &input) {
-    //AutoLocker <Lockable *> (this);
+  void operator<<(DataType input) {
     if (!sink) {
       __sync_fetch_and_add(&tasks_before_sync_node, 1);
     }
@@ -67,7 +64,7 @@ public:
       int old_write_i = write_i;
       assert(old_write_i < MAX_STREAM_ELEMENTS);
       if (__sync_bool_compare_and_swap(&write_i, old_write_i, old_write_i + 1)) {
-        data[old_write_i] = input;
+        data[old_write_i] = std::move(input);
         __sync_synchronize();
         ready[old_write_i] = 1;
         return;
@@ -81,7 +78,7 @@ public:
   }
 
   std::vector<DataT> get_as_vector() {
-    return std::vector<DataT>(data + read_i, data + write_i);
+    return std::vector<DataT>(std::make_move_iterator(data + read_i), std::make_move_iterator(data + write_i));
   }
 
   void set_sink(bool new_sink) {
