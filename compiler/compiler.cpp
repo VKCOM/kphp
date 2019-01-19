@@ -265,6 +265,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<CheckClassesF>{}
     >> PassC<OptimizationPass>{}
     >> PassC<CalcValRefPass>{}
+    >> PassC<CalcFuncDepPass>{}
     >> SyncC<CalcBadVarsF>{}
     >> PipeC<CheckUBF>{}
     >> PassC<ExtractResumableCallsPass>{}

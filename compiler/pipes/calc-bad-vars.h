@@ -1,19 +1,8 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/pipes/calc-func-dep.h"
 #include "compiler/threading/data-stream.h"
-
-struct DepData {
-  vector<FunctionPtr> dep;
-  vector<VarPtr> used_global_vars;
-
-  vector<VarPtr> used_ref_vars;
-  vector<std::pair<VarPtr, VarPtr>> ref_ref_edges;
-  vector<std::pair<VarPtr, VarPtr>> global_ref_edges;
-
-  vector<FunctionPtr> forks;
-};
-
 
 class CalcBadVarsF {
 private:
@@ -24,8 +13,7 @@ public:
     tmp_stream.set_sink(true);
   }
 
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &);
-
+  void execute(std::pair<FunctionPtr, DepData> data, DataStream<FunctionPtr> &);
 
   void on_finish(DataStream<FunctionPtr> &os);
 };

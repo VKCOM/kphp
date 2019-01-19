@@ -44,8 +44,7 @@ public:
     return true;
   }
 
-  void on_finish() {
-  }
+  nullptr_t on_finish() { return nullptr; }
 
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local __attribute__((unused))) {
     return vertex;
@@ -121,31 +120,54 @@ VertexPtr run_function_pass(VertexPtr vertex, FunctionPassT *pass, typename Func
   return vertex;
 }
 
+template<typename FunctionPassT>
+class FunctionPassTraits {
+public:
+  using OnFinishReturnT = typename vk::function_traits<decltype(&FunctionPassT::on_finish)>::ResultType;
+  using IsNullPtr = std::is_same<OnFinishReturnT, nullptr_t>;
+  using OutType = typename std::conditional<
+    IsNullPtr::value,
+    FunctionPtr,
+    std::pair<FunctionPtr, OnFinishReturnT>
+    >::type;
+  static OutType create_out_type(FunctionPtr function, OnFinishReturnT &&ret) {
+    return create_out_type(function, std::forward<OnFinishReturnT>(ret), IsNullPtr{});
+  }
+private:
+  static OutType create_out_type(FunctionPtr function, OnFinishReturnT &&, std::true_type) {
+    return function;
+  }
+  static OutType create_out_type(FunctionPtr function, OnFinishReturnT &&ret, std::false_type) {
+    return {function, ret};
+  }
+};
+
 template<class FunctionPassT>
-bool run_function_pass(FunctionPtr function, FunctionPassT *pass) {
+typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT run_function_pass(FunctionPtr function, FunctionPassT *pass) {
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
   pass->init();
   if (!pass->on_start(function)) {
-    return false;
+    return typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT();
   }
   typename FunctionPassT::LocalT local;
   function->root = run_function_pass(function->root, pass, &local);
-  pass->on_finish();
-  return true;
+  return pass->on_finish();
 }
+
 
 template<class FunctionPassT>
 class FunctionPassF {
 public:
   using need_profiler = std::false_type;
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  using OutType = typename FunctionPassTraits<FunctionPassT>::OutType;
+  void execute(FunctionPtr function, DataStream<OutType> &os) {
     FunctionPassT pass;
-    run_function_pass(function, &pass);
+    auto x = run_function_pass(function, &pass);
     if (stage::has_error()) {
       return;
     }
-    os << function;
+    os << FunctionPassTraits<FunctionPassT>::create_out_type(function, std::move(x));
   }
 };
 

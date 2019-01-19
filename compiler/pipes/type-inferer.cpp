@@ -538,7 +538,7 @@ public:
     }
   }
 
-  void on_finish() {
+  nullptr_t on_finish() {
     call_on_var(current_function->local_var_ids);
     call_on_var(current_function->global_var_ids);
     call_on_var(current_function->static_var_ids);
@@ -546,6 +546,7 @@ public:
     call_on_var(current_function->const_var_ids);
     call_on_var(current_function->header_const_var_ids);
     call_on_var(current_function->param_ids);
+    return {};
   }
 };
 

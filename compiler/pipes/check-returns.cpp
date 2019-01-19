@@ -19,7 +19,7 @@ public:
 
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *local __attribute__((unused)));
 
-  void on_finish();
+  nullptr_t on_finish();
 };
 
 VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
@@ -48,10 +48,11 @@ VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
 
   return root;
 }
-void CheckReturnsPass::on_finish() {
+nullptr_t CheckReturnsPass::on_finish() {
   if (!have_not_void && !stage::get_function()->is_extern()) {
     stage::get_function()->root->void_flag = true;
   }
+  return {};
 }
 void CheckReturnsPass::init() {
   have_void = have_not_void = warn_fired = error_fired = false;
