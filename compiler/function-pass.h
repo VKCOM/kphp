@@ -13,6 +13,9 @@ class FunctionPassBase {
 protected:
   FunctionPtr current_function;
 public:
+
+  using ExecuteType = FunctionPtr;
+
   virtual ~FunctionPassBase() {
   }
 
@@ -125,21 +128,33 @@ class FunctionPassTraits {
 public:
   using OnFinishReturnT = typename vk::function_traits<decltype(&FunctionPassT::on_finish)>::ResultType;
   using IsNullPtr = std::is_same<OnFinishReturnT, nullptr_t>;
+  using ExecuteType = typename FunctionPassT::ExecuteType;
   using OutType = typename std::conditional<
     IsNullPtr::value,
-    FunctionPtr,
+    ExecuteType,
     std::pair<FunctionPtr, OnFinishReturnT>
     >::type;
-  static OutType create_out_type(FunctionPtr function, OnFinishReturnT &&ret) {
-    return create_out_type(function, std::forward<OnFinishReturnT>(ret), IsNullPtr{});
+  static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&ret) {
+    return create_out_type(std::forward<ExecuteType>(function), std::forward<OnFinishReturnT>(ret), IsNullPtr{});
   }
+  static FunctionPtr get_function(ExecuteType f) {
+    return get_function_impl(f);
+  }
+  static_assert(IsNullPtr::value || std::is_same<ExecuteType, FunctionPtr>::value,
+    "Can't have nontrivial both on_finish return type and execute type");
 private:
-  static OutType create_out_type(FunctionPtr function, OnFinishReturnT &&, std::true_type) {
+  static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&, std::true_type) {
     return function;
   }
-  static OutType create_out_type(FunctionPtr function, OnFinishReturnT &&ret, std::false_type) {
+  static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&ret, std::false_type) {
     return {function, ret};
   }
+
+  template<typename T>
+  static FunctionPtr get_function_impl(T f) { return f.function; }
+  template<typename T>
+  static FunctionPtr get_function_impl(std::pair<FunctionPtr, T> f) { return f.first; }
+  static FunctionPtr get_function_impl(FunctionPtr f) { return f; }
 };
 
 template<class FunctionPassT>
@@ -160,14 +175,15 @@ template<class FunctionPassT>
 class FunctionPassF {
 public:
   using need_profiler = std::false_type;
-  using OutType = typename FunctionPassTraits<FunctionPassT>::OutType;
-  void execute(FunctionPtr function, DataStream<OutType> &os) {
+  using Traits = FunctionPassTraits<FunctionPassT>;
+  using OutType = typename Traits::OutType;
+  void execute(typename Traits::ExecuteType function, DataStream<OutType> &os) {
     FunctionPassT pass;
-    auto x = run_function_pass(function, &pass);
+    auto x = run_function_pass(Traits::get_function(function), &pass);
     if (stage::has_error()) {
       return;
     }
-    os << FunctionPassTraits<FunctionPassT>::create_out_type(function, std::move(x));
+    os << Traits::create_out_type(std::move(function), std::move(x));
   }
 };
 
