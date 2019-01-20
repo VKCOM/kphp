@@ -355,8 +355,8 @@ void LexerData::post_process() {
   tokens.push_back(new Token(tok_end));
 }
 
-void LexerData::move_tokens(vector<Token *> &dest) {
-  dest = std::move(tokens);
+std::vector<Token *> &&LexerData::move_tokens() {
+  return std::move(tokens);
 }
 
 int LexerData::get_line_num() {
@@ -1310,8 +1310,6 @@ vector<Token*> php_text_to_tokens(char *text, int text_length) {
   }
 
   lexer_data.post_process();
-  vector<Token *> result;
-  lexer_data.move_tokens(result);
-  return result;
+  return lexer_data.move_tokens();
 }
 

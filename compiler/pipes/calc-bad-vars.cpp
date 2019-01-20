@@ -271,7 +271,7 @@ private:
 
   void generate_ref_vars(vector<DepData> &dep_datas) {
     vector<VarPtr> vars;
-    for (auto data : dep_datas) {
+    for (const auto &data : dep_datas) {
       vars.insert(vars.end(), data.used_ref_vars.begin(), data.used_ref_vars.end());
     }
     int vars_n = (int)vars.size();

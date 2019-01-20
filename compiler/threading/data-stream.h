@@ -12,15 +12,16 @@
 
 template<class DataT>
 class DataStream : Lockable {
+public:
+  using DataType = DataT;
 private:
   static const int MAX_STREAM_ELEMENTS = 200000;
-  DataT *data;
+  DataType *data;
   volatile int *ready;
   volatile int write_i, read_i;
   bool sink;
 public:
-  using DataType = DataT;
-  using StreamType = DataStream<DataT>;
+  using StreamType = DataStream<DataType>;
 
   template<size_t data_id>
   using NthDataType = DataType;
@@ -30,7 +31,7 @@ public:
     read_i(0),
     sink(false) {
     //FIXME
-    data = new DataT[MAX_STREAM_ELEMENTS]();
+    data = new DataType[MAX_STREAM_ELEMENTS]();
     ready = new int[MAX_STREAM_ELEMENTS]();
   }
 
@@ -38,7 +39,7 @@ public:
     return read_i == write_i;
   }
 
-  bool get(DataT &result) {
+  bool get(DataType &result) {
     while (true) {
       int old_read_i = read_i;
       if (old_read_i < write_i) {
@@ -77,8 +78,10 @@ public:
     return write_i - read_i;
   }
 
-  std::vector<DataT> get_as_vector() {
-    return std::vector<DataT>(std::make_move_iterator(data + read_i), std::make_move_iterator(data + write_i));
+  std::vector<DataType> get_as_vector() {
+    int old_read_i = read_i;
+    read_i = write_i;
+    return {std::make_move_iterator(data + old_read_i), std::make_move_iterator(data + write_i)};
   }
 
   void set_sink(bool new_sink) {

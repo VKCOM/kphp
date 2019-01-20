@@ -17,5 +17,5 @@ void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, st
     return;
   }
 
-  os << make_pair(file, std::move(tokens));
+  os << std::make_pair(file, std::move(tokens));
 }

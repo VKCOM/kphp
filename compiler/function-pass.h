@@ -132,29 +132,29 @@ public:
   using OutType = typename std::conditional<
     IsNullPtr::value,
     ExecuteType,
-    std::pair<FunctionPtr, OnFinishReturnT>
+    std::pair<ExecuteType, OnFinishReturnT>
     >::type;
   static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&ret) {
     return create_out_type(std::forward<ExecuteType>(function), std::forward<OnFinishReturnT>(ret), IsNullPtr{});
   }
-  static FunctionPtr get_function(ExecuteType f) {
+  static FunctionPtr get_function(const ExecuteType &f) {
     return get_function_impl(f);
   }
   static_assert(IsNullPtr::value || std::is_same<ExecuteType, FunctionPtr>::value,
     "Can't have nontrivial both on_finish return type and execute type");
 private:
   static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&, std::true_type) {
-    return function;
+    return std::forward<ExecuteType>(function);
   }
   static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&ret, std::false_type) {
-    return {function, ret};
+    return {std::forward<ExecuteType>(function), std::forward<OnFinishReturnT>(ret)};
   }
 
   template<typename T>
-  static FunctionPtr get_function_impl(T f) { return f.function; }
+  static FunctionPtr get_function_impl(const T &f) { return f.function; }
   template<typename T>
-  static FunctionPtr get_function_impl(std::pair<FunctionPtr, T> f) { return f.first; }
-  static FunctionPtr get_function_impl(FunctionPtr f) { return f; }
+  static FunctionPtr get_function_impl(const std::pair<FunctionPtr, T> &f) { return f.first; }
+  static FunctionPtr get_function_impl(const FunctionPtr &f) { return f; }
 };
 
 template<class FunctionPassT>

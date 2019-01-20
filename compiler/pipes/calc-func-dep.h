@@ -13,7 +13,19 @@ struct DepData {
   std::vector<std::pair<VarPtr, VarPtr>> global_ref_edges;
 
   std::vector<FunctionPtr> forks;
+
+  // copy of DepData is probably a bug
+  // feel free to remove it if not
+  DepData(const DepData&) = delete;
+  DepData& operator=(const DepData&) = delete;
+
+  DepData() = default;
+  ~DepData() = default;
+  DepData(DepData&&) = default;
+  DepData& operator=(DepData&&) = default;
 };
+
+static_assert(std::is_nothrow_move_constructible<DepData>::value, "aaa");
 
 class CalcFuncDepPass : public FunctionPassBase {
 private:

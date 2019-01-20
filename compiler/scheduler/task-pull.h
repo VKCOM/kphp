@@ -14,7 +14,7 @@ public:
   }
 
   Task *get_task() override {
-    Task *x;
+    Task *x = nullptr;
     if (!stream.get(x)) {
       return nullptr;
     }

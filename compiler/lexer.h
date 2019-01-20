@@ -21,7 +21,7 @@ struct LexerData {
   void post_process();
 
 
-  void move_tokens(vector<Token *> &dest);
+  std::vector<Token *>&& move_tokens();
   int get_line_num();
 
 private:
