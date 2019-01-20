@@ -203,3 +203,13 @@ void RegisterVariablesPass::visit_class(ClassPtr klass) {
     register_class_static_var(klass, f);
   });
 }
+
+bool RegisterVariablesPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<RegisterVariablesPass> &visit) {
+  if (v->type() == op_func_param_list) {
+    in_param_list++;
+    visit_func_param_list(v, visit);
+    in_param_list--;
+    return true;
+  }
+  return false;
+}

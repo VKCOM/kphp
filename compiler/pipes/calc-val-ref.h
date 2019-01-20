@@ -20,12 +20,5 @@ public:
 
   void on_enter_edge(VertexPtr vertex, LocalT *local, VertexPtr dest_vertex, LocalT *dest_local);
 
-  template<class VisitT>
-  bool user_recursion(VertexPtr v, LocalT *local, VisitT &visit) {
-    for (VertexPtr &child : *v) {
-      local->allowed = is_allowed_for_getting_val_or_ref(v->type(), &child == &v->back());
-      visit(child);
-    }
-    return true;
-  }
+  bool user_recursion(VertexPtr v, LocalT *local, VisitVertex<CalcValRefPass> &visit);
 };

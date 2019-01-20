@@ -1,9 +1,10 @@
+#include "compiler/pipes/final-check.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
-#include "compiler/pipes/final-check.h"
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->type() == FunctionData::func_extern) {
@@ -228,4 +229,41 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
     kphp_error(!tinf::get_type(p)->has_class_type_inside(),
                "Can not use class instance in param of @kphp-lib-export function");
   }
+}
+
+bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalCheckPass> &visit) {
+  if (v->type() == op_function) {
+    visit(v.as<op_function>()->cmd());
+    return true;
+  }
+
+  if (v->type() == op_func_call || v->type() == op_var ||
+      v->type() == op_index || v->type() == op_constructor_call) {
+    if (v->rl_type == val_r) {
+      const TypeData *type = tinf::get_type(v);
+      if (type->get_real_ptype() == tp_Unknown) {
+        string index_depth;
+        while (v->type() == op_index) {
+          v = v.as<op_index>()->array();
+          index_depth += "[.]";
+        }
+        string desc = "Using Unknown type : ";
+        if (v->type() == op_var) {
+          VarPtr var = v->get_var_id();
+          desc += "variable [$" + var->name + "]" + index_depth;
+        } else if (v->type() == op_func_call) {
+          desc += "function [" + v.as<op_func_call>()->get_func_id()->name + "]" + index_depth;
+        } else if (v->type() == op_constructor_call) {
+          desc += "constructor [" + v.as<op_constructor_call>()->get_func_id()->name + "]" + index_depth;
+        } else {
+          desc += "...";
+        }
+
+        kphp_error (0, desc.c_str());
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

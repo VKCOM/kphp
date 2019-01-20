@@ -85,16 +85,7 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *local);
 
-  template<class VisitT>
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
-    if (v->type() == op_func_param_list) {
-      in_param_list++;
-      visit_func_param_list(v, visit);
-      in_param_list--;
-      return true;
-    }
-    return false;
-  }
+  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<RegisterVariablesPass> &visit);
 
 
   bool need_recursion(VertexPtr root __attribute__((unused)), LocalT *local __attribute__((unused))) {

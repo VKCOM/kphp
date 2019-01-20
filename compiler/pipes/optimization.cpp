@@ -171,3 +171,16 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
   }
   return root;
 }
+
+bool OptimizationPass::user_recursion(VertexPtr root, LocalT *, VisitVertex<OptimizationPass> &visit) {
+  if (root->type() == op_var) {
+    VarPtr var = root->get_var_id();
+    kphp_assert (var);
+    if (var->init_val) {
+      if (try_optimize_var(var)) {
+        visit(var->init_val);
+      }
+    }
+  }
+  return false;
+}

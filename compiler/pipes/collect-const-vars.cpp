@@ -119,6 +119,21 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   var->set_var_id(var_id);
   return var;
 }
+
 bool CollectConstVarsPass::need_recursion(VertexPtr, LocalT *local) {
   return local->need_recursion_flag;
+}
+
+bool CollectConstVarsPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<CollectConstVarsPass> &visit) {
+  if (v->type() == op_function) {
+    if (current_function->type() == FunctionData::func_class_holder) {
+      ClassPtr c = current_function->class_id;
+      c->members.for_each([&](ClassMemberStaticField &field) {
+        if (field.init_val) {
+          visit(field.init_val);
+        }
+      });
+    }
+  }
+  return false;
 }

@@ -21,3 +21,15 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v, LocalT *) {
   }
   return v;
 }
+
+bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<CalcActualCallsEdgesPass> &visit) {
+  if (v->type() == op_try) {
+    VertexAdaptor<op_try> try_v = v.as<op_try>();
+    inside_try++;
+    visit(try_v->try_cmd());
+    inside_try--;
+    visit(try_v->catch_cmd());
+    return true;
+  }
+  return false;
+}

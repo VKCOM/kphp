@@ -71,3 +71,11 @@ void CalcValRefPass::on_enter_edge(VertexPtr, LocalT *local, VertexPtr dest_vert
     }
   }
 }
+
+bool CalcValRefPass::user_recursion(VertexPtr v, CalcValRefPass::LocalT *local, VisitVertex<CalcValRefPass> &visit) {
+  for (VertexPtr &child : *v) {
+    local->allowed = is_allowed_for_getting_val_or_ref(v->type(), &child == &v->back());
+    visit(child);
+  }
+  return true;
+}

@@ -25,18 +25,7 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__ ((unused)));
 
-  template<class VisitT>
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitT &visit) {
-    if (v->type() == op_try) {
-      VertexAdaptor<op_try> try_v = v.as<op_try>();
-      inside_try++;
-      visit(try_v->try_cmd());
-      inside_try--;
-      visit(try_v->catch_cmd());
-      return true;
-    }
-    return false;
-  }
+  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<CalcActualCallsEdgesPass> &visit);
 
   std::vector<EdgeInfo> on_finish() {
     return std::move(edges);

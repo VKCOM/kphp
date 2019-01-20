@@ -27,17 +27,5 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
 
-  template<class VisitT>
-  bool user_recursion(VertexPtr root, LocalT *local __attribute__((unused)), VisitT &visit) {
-    if (root->type() == op_var) {
-      VarPtr var = root->get_var_id();
-      kphp_assert (var);
-      if (var->init_val) {
-        if (try_optimize_var(var)) {
-          visit(var->init_val);
-        }
-      }
-    }
-    return false;
-  }
+  bool user_recursion(VertexPtr root, LocalT *local __attribute__((unused)), VisitVertex<OptimizationPass> &visit);
 };
