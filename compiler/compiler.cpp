@@ -257,7 +257,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CheckFunctionCallsPass>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
-    >> PipeC<CheckReturnsF>{}
+    >> PassC<CheckReturnsPass>{}
     >> sync_node_tag{}
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}

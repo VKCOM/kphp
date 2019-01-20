@@ -4,24 +4,6 @@
 #include "compiler/function-pass.h"
 #include "compiler/io.h"
 
-class CheckReturnsPass : public FunctionPassBase {
-private:
-  bool have_void;
-  bool have_not_void;
-  bool warn_fired;
-  bool error_fired;
-public:
-  string get_description() {
-    return "Check returns";
-  }
-
-  void init();
-
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local __attribute__((unused)));
-
-  nullptr_t on_finish();
-};
-
 VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_return) {
     if (root->void_flag) {
@@ -56,12 +38,4 @@ nullptr_t CheckReturnsPass::on_finish() {
 }
 void CheckReturnsPass::init() {
   have_void = have_not_void = warn_fired = error_fired = false;
-}
-void CheckReturnsF::execute(FunctionAndCFG function_and_cfg, DataStream<FunctionAndCFG> &os) {
-  CheckReturnsPass pass;
-  run_function_pass(function_and_cfg.function, &pass);
-  if (stage::has_error()) {
-    return;
-  }
-  os << function_and_cfg;
 }
