@@ -42,6 +42,7 @@
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
+#include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/create-switch-foreach-vars.h"
@@ -259,6 +260,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<CFGBeginF>{}
     >> PassC<CheckReturnsPass>{}
     >> sync_node_tag{}
+    >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
     >> PipeC<CFGEndF>{}
