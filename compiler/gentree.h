@@ -125,7 +125,7 @@ public:
   bool parse_function_uses(std::vector<VertexPtr> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersect(const std::vector<VertexPtr> &uses, const std::vector<VertexPtr> &params);
   VertexPtr get_anonymous_function();
-  VertexPtr get_function(Token *phpdoc_token = nullptr, AccessType access_type = access_nonmember, std::vector<VertexPtr> *uses_of_lambda = nullptr);
+  VertexPtr get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexPtr> *uses_of_lambda = nullptr);
 
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,

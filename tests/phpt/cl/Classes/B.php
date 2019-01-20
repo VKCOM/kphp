@@ -9,14 +9,14 @@ class B
   private $b2 = 2;
   var $b3 = 3;
 
-  public static $BBB = 'bbb';
+  static $BBB = 'bbb';
 
   public function __construct($b1Val = 1, $b2Val = 2) {
     $this->b1 = $b1Val;
     $this->b2 = $b2Val;
   }
 
-  public static function createB($b1Val = 1, $b2Val = 2) {
+  static function createB($b1Val = 1, $b2Val = 2) {
     return new B($b1Val, $b2Val);
   }
 

@@ -1601,8 +1601,6 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     if (!kphp_error(cur_class, "Static function with access modifier not within class")) {
       cur_class->members.add_static_method(cur_function, access_type);
     }
-  } else {
-    kphp_error(!cur_class || uses_of_lambda != nullptr, "Function without access modifier within class");
   }
 
   if (test_expect(tok_opbrc)) {
@@ -1902,15 +1900,25 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
           }
           // ошибочный синтаксис
           CE (!kphp_error(0, "Expected `function` or variable name after access modifier"));
-        } else if (vk::none_of_equal(next_tok, tok_function, tok_var_name)) {
+        } else if (next_tok == tok_function) {
+          CE (!kphp_error(cur_class, "'static' function outside of class"));
+          // static function ... (пропущено public)
           next_cur();
-          CE (!kphp_error(0, "Expected `function` or variable name after keyword `static`"));
+          return get_function(phpdoc_token, access_static_public);
+        } else if (next_tok == tok_var_name) {
+          // static $a ... (пропущено public) (переменная класса)
+          if (cur_function->type() == FunctionData::func_class_holder) {
+            return get_static_field_list(phpdoc_token, access_static_public);
+          }
+          // static $a ... (статическая переменная функции)
+          res = get_multi_call<op_static>(&GenTree::get_expression);    
+          CE (check_statement_end());
+          return res;
         }
       }
+      next_cur();
+      CE (!kphp_error(0, "Expected function or variable after keyword `static`"));
 
-      res = get_multi_call<op_static>(&GenTree::get_expression);    // static-переменные внутри функций
-      CE (check_statement_end());
-      return res;
     case tok_echo:
       res = get_multi_call<op_echo>(&GenTree::get_expression);
       CE (check_statement_end());
@@ -1975,7 +1983,10 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
     }
     case tok_ex_function:
     case tok_function:
-      return get_function(phpdoc_token);
+      if (cur_class) {      // пропущен access modifier — значит, public
+        return get_function(phpdoc_token, access_public);
+      }
+      return get_function(phpdoc_token, access_nonmember);
 
     case tok_try: {
       AutoLocation try_location(this);

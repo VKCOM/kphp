@@ -3,7 +3,7 @@
 namespace Classes;
 
 class TestFieldClass extends TestFieldClassParent {
-    public static function getParentClass() {
+    static function getParentClass() {
         return parent::class;
     }
 }

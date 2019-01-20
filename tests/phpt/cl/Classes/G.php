@@ -11,6 +11,7 @@ class G {
 
     static public $static_public = "static public";
     public static $public_static = "public static";
+    static $just_static          = "static";
 
     static private function static_private_func() {
         echo G::$static_private, "\n";
@@ -40,6 +41,10 @@ class G {
     }
 
     public static function public_static_func() {
+        G::static_public_func();
+    }
+
+    static function static_func() {
         G::static_public_func();
     }
 }

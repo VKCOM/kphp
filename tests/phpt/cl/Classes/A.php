@@ -6,7 +6,7 @@ class A
 {
   var $a = 0;
 
-  public function printA() {
+  function printA() {
     echo "this->a = ", $this->a, "\n";
   }
 
