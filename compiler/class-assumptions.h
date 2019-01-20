@@ -30,6 +30,7 @@ public:
 };
 
 
+void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass);
 AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class);
 AssumType assumption_get_for_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
 AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class, size_t depth = 0);

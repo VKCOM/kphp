@@ -32,10 +32,18 @@ public:
     }
     assert (parts_size > 1);
 
+    ClassPtr assumption_class;
+    AssumType assumption = assumption_get_for_var(function, var->name, assumption_class);
+
     for (int i = 0; i < parts_size; i++) {
-      string new_name = var->name + "$v_" + int_to_str(i);
+      // name$v1, name$v2 и т.п., но name (0-я копия) как есть
+      const string &new_name = i ? var->name + "$v" + int_to_str(i) : var->name;
       VarPtr new_var = G->create_var(new_name, var->type());
       new_var->holder_func = var->holder_func;
+
+      if (i && assumption != assum_unknown) {
+        assumption_add_for_var(function, assumption, new_name,  assumption_class);
+      }
 
       for (int j = 0; j < (int)parts[i].size(); j++) {
         VertexPtr v = parts[i][j];
@@ -161,8 +169,9 @@ public:
   };
 
   static bool cmp_merge_data(const MergeData &a, const MergeData &b) {
-    return type_out(tinf::get_type(a.var)) <
-           type_out(tinf::get_type(b.var));
+    // типы отличаются — сортируем по ним, иначе по имени (name$vN < name$vM при N<M, name < name$vN)
+    int eq = type_out(tinf::get_type(a.var)).compare(type_out(tinf::get_type(b.var)));
+    return eq == 0 ? a.var->name < b.var->name : eq < 0;
   }
 
   static bool eq_merge_data(const MergeData &a, const MergeData &b) {
@@ -183,21 +192,13 @@ public:
       sort(to_merge.begin(), to_merge.end(), cmp_merge_data);
 
       vector<int> ids;
-      int merge_id = 0;
       for (int i = 0; i <= n; i++) {
         if (i == n || (i > 0 && !eq_merge_data(to_merge[i - 1], to_merge[i]))) {
           vector<VarPtr> vars;
           for (int id : ids) {
             vars.push_back(parts[id][0]->get_var_id());
           }
-          string new_name = vars[0]->name;
-          int name_i = (int)new_name.size() - 1;
-          while (new_name[name_i] != '$') {
-            name_i--;
-          }
-          new_name.erase(name_i);
-          new_name += "$v";
-          new_name += int_to_str(merge_id++);
+          const string &new_name = vars[0]->name;   // либо name, либо name$vN
 
           VarPtr new_var = merge_vars(vars, new_name);
           for (int id : ids) {

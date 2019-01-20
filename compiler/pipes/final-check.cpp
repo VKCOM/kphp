@@ -133,6 +133,11 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     }
     check_op_func_call(vertex.as<op_func_call>());
   }
+  if (vertex->type() == op_instance_prop) {
+    const TypeData *lhs_type = tinf::get_type(vertex.as<op_instance_prop>()->instance());
+    kphp_error(lhs_type->ptype() == tp_Class,
+               format("Accessing ->property of non-instance %s", colored_type_out(lhs_type).c_str()));
+  }
 
   if (G->env().get_warnings_level() >= 2 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
     FunctionPtr function_where_require = stage::get_function();
