@@ -132,7 +132,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     stage::set_line(tag.line_num);
     switch (tag.type) {
       case php_doc_tag::kphp_inline: {
-        f->root->inline_flag = true;
+        f->is_inline = true;
         continue;
       }
 

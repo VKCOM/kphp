@@ -237,7 +237,7 @@ FunctionPtr LambdaGenerator::register_invoke_method(VertexAdaptor<op_function> f
 
   auto params = get_function_params(fun);
   invoke_function->is_template = generated_lambda->members.has_any_instance_var() || params.size() > 1;
-  invoke_function->root->inline_flag = true;
+  invoke_function->is_inline = true;
 
   //TODO: need set function_in_which_created for all lambdas inside
   //invoke_function->lambdas_inside = std::move(lambdas_inside);

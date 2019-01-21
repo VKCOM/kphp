@@ -972,7 +972,7 @@ inline FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bo
 }
 
 inline void FunctionForkDeclaration::compile(CodeGenerator &W) const {
-  kphp_error(!function->root->inline_flag, "you must not use @kphp-inline for functions which contain call of `fork`");
+  kphp_error(!function->is_inline, "you must not use @kphp-inline for functions which contain call of `fork`");
 
   W << "int " << FunctionForkName(function) <<
     "(" << FunctionParams(function, in_header) << ")";
@@ -1723,7 +1723,7 @@ void FunctionStaticInit::compile(CodeGenerator &W) const {
   if (function->is_static_init_empty_body()) {
     return;
   }
-  if (function->root->inline_flag) {
+  if (function->is_inline) {
     W << "static inline ";
   }
   W << "void " << FunctionName(function) << "$static_init()";
@@ -2073,7 +2073,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << "extern bool " << FunctionCallFlag(function) << ";" << NL;
   }
 
-  if (function->root->inline_flag) {
+  if (function->is_inline) {
     W << "static inline " << Function(function, true);
     stage::set_function(function);
     declare_global_vars(function, W);
@@ -2102,7 +2102,7 @@ inline FunctionCpp::FunctionCpp(FunctionPtr function) :
 }
 
 void FunctionCpp::compile(CodeGenerator &W) const {
-  if (function->root->inline_flag) {
+  if (function->is_inline) {
     return;
   }
   W << OpenFile(function->src_name, function->subdir);
@@ -3020,7 +3020,7 @@ void compile_function(VertexPtr root, CodeGenerator &W) {
     return;
   }
 
-  if (root->inline_flag) {
+  if (func->is_inline) {
     W << "static inline ";
   }
 
@@ -4202,7 +4202,7 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
 
   recalc_hash_of_subdirectory(func->subdir, func->header_name);
 
-  if (!func->root->inline_flag) {
+  if (!func->is_inline) {
     func->src_name = file_name + ".cpp";
     recalc_hash_of_subdirectory(func->subdir, func->src_name);
   }

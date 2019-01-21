@@ -131,13 +131,13 @@ void ClassData::create_constructor_with_args(int location_line_num, VertexAdapto
   auto func_root = VertexAdaptor<op_seq>::create(fields_initializers);
 
   auto func = VertexAdaptor<op_function>::create(func_name, params, func_root);
-  func->inline_flag = true;
   func->location.set_line(location_line_num);
 
   patch_func_constructor(func, location_line_num);
 
   auto ctor_function = FunctionData::create_function(func, FunctionData::func_local);
   ctor_function->update_location_in_body();
+  ctor_function->is_inline = true;
   members.add_instance_method(ctor_function, access_public);
   G->register_and_require_function(ctor_function, os, auto_required);
 }

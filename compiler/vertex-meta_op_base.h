@@ -41,7 +41,6 @@ public:
   };
   bool parent_flag : 1;
   bool needs_const_iterator_flag : 1;
-  bool inline_flag : 1;
   bool void_flag : 1;
 
 private:
@@ -129,7 +128,6 @@ public:
     resumable_flag(),
     parent_flag(),
     needs_const_iterator_flag(),
-    inline_flag(),
     void_flag() {
   }
 
@@ -152,7 +150,6 @@ public:
     resumable_flag(from.resumable_flag),
     parent_flag(from.parent_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
-    inline_flag(from.inline_flag),
     void_flag(from.void_flag) {
   }
 
@@ -170,7 +167,6 @@ public:
     resumable_flag = from.resumable_flag;
     parent_flag = from.parent_flag;
     needs_const_iterator_flag = from.needs_const_iterator_flag;
-    inline_flag = from.inline_flag;
     void_flag = from.void_flag;
   }
 

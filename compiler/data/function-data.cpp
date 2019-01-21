@@ -31,6 +31,7 @@ FunctionData::FunctionData() :
   kphp_lib_export(false),
   is_template(false),
   is_auto_inherited(false),
+  is_inline(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -52,6 +53,7 @@ FunctionData::FunctionData(VertexPtr root) :
   should_be_sync(),
   is_template(false),
   is_auto_inherited(false),
+  is_inline(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -130,6 +132,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->access_type = func->access_type;
   new_function->body_seq = func->body_seq;
   new_function->is_template = false;
+  new_function->is_inline = func->is_inline;
   new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
   new_function->infer_hints = func->infer_hints;

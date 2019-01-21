@@ -79,7 +79,6 @@ VertexPtr SortAndInheritClassesF::generate_function_with_parent_call(VertexAdapt
   auto new_params = VertexAdaptor<op_func_param_list>::create(new_params_next);
   auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
   func->copy_location_and_flags(*root);
-  func->inline_flag = true;
 
   return func;
 }
@@ -114,6 +113,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_function->file_id = parent_f->file_id;
     child_function->phpdoc_token = parent_f->phpdoc_token;
     child_function->is_auto_inherited = true;
+    child_function->is_inline = true;
 
     child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
 
