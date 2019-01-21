@@ -39,7 +39,6 @@ public:
     bool resumable_flag : 1;
     bool fork_flag : 1;
   };
-  bool parent_flag : 1;
   bool needs_const_iterator_flag : 1;
   bool void_flag : 1;
 
@@ -126,7 +125,6 @@ public:
     varg_flag(),
     throws_flag(),
     resumable_flag(),
-    parent_flag(),
     needs_const_iterator_flag(),
     void_flag() {
   }
@@ -148,7 +146,6 @@ public:
     varg_flag(from.varg_flag),
     throws_flag(from.throws_flag),
     resumable_flag(from.resumable_flag),
-    parent_flag(from.parent_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
     void_flag(from.void_flag) {
   }
@@ -165,7 +162,6 @@ public:
     varg_flag = from.varg_flag;
     throws_flag = from.throws_flag;
     resumable_flag = from.resumable_flag;
-    parent_flag = from.parent_flag;
     needs_const_iterator_flag = from.needs_const_iterator_flag;
     void_flag = from.void_flag;
   }

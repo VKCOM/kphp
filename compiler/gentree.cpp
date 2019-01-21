@@ -591,7 +591,6 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       res = get_expression();
       CE (!kphp_error(res, "Failed to parse expression after '('"));
-      res->parent_flag = true;
       CE (expect(tok_clpar, "')'"));
       return_flag = (*cur)->type() != tok_arrow;
       break;
