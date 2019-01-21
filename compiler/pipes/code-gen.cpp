@@ -1,6 +1,7 @@
 #include "compiler/pipes/code-gen.h"
 
 #include "common/algorithms/find.h"
+#include "common/mixin/not_copyable.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -488,14 +489,12 @@ struct FullCleanupFunction {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct VarsCppPart {
+struct VarsCppPart : private vk::not_copyable {
   int file_num;
   int max_dependency_level;
   const vector<VarPtr> &vars;
   inline VarsCppPart(int file_num, const vector<VarPtr> &vars, int max_dependency_level);
   inline void compile(CodeGenerator &W) const;
-private:
-  DISALLOW_COPY_AND_ASSIGN (VarsCppPart);
 };
 
 struct VarsCpp {

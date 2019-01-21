@@ -5,7 +5,7 @@
 #include "compiler/token.h"
 #include "compiler/utils/string-utils.h"
 
-struct LexerData {
+struct LexerData : private vk::not_copyable {
   LexerData();
   ~LexerData();
   void set_code(char *code, int code_len);
@@ -25,7 +25,6 @@ struct LexerData {
   int get_line_num();
 
 private:
-  DISALLOW_COPY_AND_ASSIGN (LexerData);
   int line_num;
   char *code;
   char *code_end;
@@ -37,13 +36,10 @@ private:
   char *str_cur;
 };
 
-struct TokenLexer {
+struct TokenLexer : private vk::not_copyable {
   virtual int parse(LexerData *lexer_data) const = 0;
   TokenLexer();
   virtual ~TokenLexer();
-
-private:
-  DISALLOW_COPY_AND_ASSIGN (TokenLexer);
 };
 
 //TODO ??

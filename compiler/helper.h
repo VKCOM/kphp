@@ -1,10 +1,12 @@
 #pragma once
 
+#include "common/mixin/not_copyable.h"
+
 #include "compiler/common.h"
 #include "compiler/utils/trie.h"
 
 template<typename T>
-struct Helper {
+struct Helper : private vk::not_copyable {
   Trie<T *> trie;
   T *on_fail;
 
@@ -13,9 +15,6 @@ struct Helper {
   void add_simple_rule(const string &rule_template, T *val);
   T *get_default();
   T *get_help(const char *s);
-
-private:
-  DISALLOW_COPY_AND_ASSIGN (Helper);
 };
 
 

@@ -1,9 +1,11 @@
 #pragma once
 
+#include "common/mixin/not_copyable.h"
+
 #include "compiler/common.h"
 
 template<typename T>
-struct Trie {
+struct Trie : private vk::not_copyable {
   Trie *next[256];
   int has_val;
   T val;
@@ -15,8 +17,6 @@ struct Trie {
   void clear();
   ~Trie();
 
-private:
-  DISALLOW_COPY_AND_ASSIGN(Trie);
 };
 
 template<typename T>

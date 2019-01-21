@@ -1,10 +1,11 @@
 #pragma once
 
 #include "common/algorithms/find.h"
+#include "common/mixin/not_copyable.h"
 
 #include "compiler/data/data_ptr.h"
 
-class DefineData {
+class DefineData : private vk::not_copyable {
 public:
   enum DefineType {
     def_unknown,
@@ -24,8 +25,6 @@ public:
 
   inline DefineType &type() { return type_; }
 
-private:
-  DISALLOW_COPY_AND_ASSIGN (DefineData);
 };
 
 // внутри некоторых операций не может существовать дефайнов, в них не заходим в FunctionPassBase рекурсивно

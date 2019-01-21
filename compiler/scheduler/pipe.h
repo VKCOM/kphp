@@ -31,7 +31,7 @@ private:
   }
 
 public:
-  PipeTask(InputType input, PipeType *pipe_ptr) :
+  PipeTask(InputType &&input, PipeType *pipe_ptr) :
     input(std::move(input)),
     pipe_ptr(pipe_ptr) {
   }
@@ -85,7 +85,7 @@ public:
 
   void set_input_stream(InputStreamType *is) { input_stream = is; }
 
-  void process_input(InputType input) { function.execute(std::move(input), *output_stream); }
+  void process_input(InputType &&input) { function.execute(std::move(input), *output_stream); }
 
   Task *get_task() override {
     InputType x{};

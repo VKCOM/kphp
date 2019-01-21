@@ -1,6 +1,7 @@
 #pragma once
 
 #include "auto/compiler/vertex/vertex-meta_op_function.h"
+#include "common/mixin/not_copyable.h"
 
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
@@ -11,7 +12,7 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
-class FunctionData {
+class FunctionData : private vk::not_copyable {
 public:
   // при @kphp-infer hint/check над функцией — все необходимые type rule хранятся в векторе infer_hints
   struct InferHint {
@@ -145,6 +146,4 @@ public:
 
   VertexRange get_params();
 
-private:
-  DISALLOW_COPY_AND_ASSIGN (FunctionData);
 };

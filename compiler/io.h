@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/mixin/not_copyable.h"
+
 #include "compiler/common.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/utils/string-utils.h"
@@ -86,7 +88,7 @@ public:
   virtual void on_end_write(WriterData *data) = 0;
 };
 
-class Writer {
+class Writer : private vk::not_copyable {
 private:
   enum state_t {
     w_stopped,
@@ -152,6 +154,4 @@ public:
   bool is_comments_locked();
   void add_include(const string &s);
   void add_lib_include(const string &s);
-private:
-  DISALLOW_COPY_AND_ASSIGN (Writer);
 };

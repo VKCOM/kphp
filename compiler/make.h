@@ -1,9 +1,11 @@
 #pragma once
 
+#include "common/mixin/not_copyable.h"
+
 #include "compiler/enviroment.h"
 #include "compiler/index.h"
 
-class Target {
+class Target : private vk::not_copyable {
   friend class Make;
 
 private:
@@ -15,8 +17,6 @@ private:
   bool is_required;
   bool is_waiting;
   bool is_ready;
-
-  DISALLOW_COPY_AND_ASSIGN (Target);
 protected:
   bool upd_mtime(long long new_mtime) __attribute__ ((warn_unused_result));
   void set_mtime(long long new_mtime);
@@ -47,7 +47,7 @@ public:
   }
 };
 
-class Make {
+class Make : private vk::not_copyable {
 private:
   int targets_waiting;
   int targets_left;
@@ -70,7 +70,6 @@ private:
   void wait_target(Target *target);
   void require_target(Target *target);
 
-  DISALLOW_COPY_AND_ASSIGN (Make);
 public:
   void register_target(Target *target, const vector<Target *> &deps = vector<Target *>());
   bool make_target(Target *target, int jobs_count = 32);
