@@ -12,6 +12,7 @@ struct php_doc_tag {
     kphp_inline,
     kphp_infer,
     kphp_disable_warnings,
+    kphp_extern_func_info,
     param,
     returns,
     var,

@@ -39,7 +39,6 @@ static, tok_static
 goto, tok_goto
 return, tok_return
 list, tok_list
-auto, tok_auto
 include, tok_require
 include_once, tok_require_once
 require, tok_require
@@ -78,8 +77,6 @@ new, tok_new
 throw, tok_throw
 try, tok_try
 catch, tok_catch
-throws, tok_throws
-resumable, tok_resumable
 namespace, tok_namespace
 public, tok_public
 private, tok_private

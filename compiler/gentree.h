@@ -121,7 +121,6 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  bool parse_function_specifiers(VertexPtr flags);
   bool parse_function_uses(std::vector<VertexPtr> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersect(const std::vector<VertexPtr> &uses, const std::vector<VertexPtr> &params);
   VertexPtr get_anonymous_function();

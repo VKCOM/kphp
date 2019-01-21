@@ -25,7 +25,7 @@
   //tmp_f();
 //}
 
-function my_pow ($x, $p = 5) resumable {
+function my_pow ($x, $p = 5) {
   if ($p == 0) {
     return 1.0;
   }

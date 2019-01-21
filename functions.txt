@@ -20,13 +20,22 @@ class Exception {
 
 class Memcache {
     public function __construct();
-    public function get ($key) throws ::: var;
-    public function delete ($key ::: string) throws ::: bool;
-    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
-    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
-    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) throws ::: bool;
-    public function decrement ($key ::: string, $v ::: Any = 1) throws ::: var;
-    public function increment ($key ::: string, $v ::: Any = 1) throws ::: var;
+
+    /** @kphp-extern-func-info can_throw */
+    public function get ($key) ::: var;
+    /** @kphp-extern-func-info can_throw */
+    public function delete ($key ::: string) ::: bool;
+    /** @kphp-extern-func-info can_throw */
+    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    /** @kphp-extern-func-info can_throw */
+    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    /** @kphp-extern-func-info can_throw */
+    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    /** @kphp-extern-func-info can_throw */
+    public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
+    /** @kphp-extern-func-info can_throw */
+    public function increment ($key ::: string, $v ::: Any = 1) ::: var;
+    
     public function getLastQueryTime () ::: var;
     public function bufferNextLog () ::: void;
     public function flushLogBuffer () ::: void;
@@ -129,10 +138,11 @@ function explode ($delimiter ::: string, $str ::: string, $limit ::: int = INT_M
 function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: array <^1>;
 
 function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
+/** @kphp-extern-func-info cpp_template_call */
 function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
             $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
             $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
-           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array()) auto
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
                 ::: lca <^1, ^2, ^3, ^4, ^5, ^6, ^7, ^8, ^9, ^10, ^11, ^12>;
 function array_intersect_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 function array_intersect ($a1 ::: array, $a2 ::: array) ::: ^1;
@@ -160,14 +170,16 @@ function array_push (&$a ::: array, $val2 ::: Any, $val3 ::: Any = TODO, $val4 :
 function array_pop (&$a ::: array) ::: ^1[];
 function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
-function array_pad ($a ::: array, $size ::: int, $value ::: Any) auto ::: array< lca< ^1[], ^3 > >;
+/** @kphp-extern-func-info cpp_template_call */
+function array_pad ($a ::: array, $size ::: int, $value ::: Any) ::: array< lca< ^1[], ^3 > >;
 function array_column ($a ::: array, $column_key, $index_key = null) ::: OrFalse < array<var> >;
 
 define('ARRAY_FILTER_USE_KEY', 1);
 
 function array_filter ($a ::: array, callback ($x ::: ^1[]) ::: bool = TODO) ::: ^1;
 function array_map (callback ($x ::: ^2[]) ::: Any, $a ::: array) ::: array <^1()>;
-function array_reduce ($a ::: array, callback($carry ::: lca<^3, ^2()>, $item ::: ^1[]) ::: Any, $initial ::: Any) auto ::: lca<^2(), ^3>;
+/** @kphp-extern-func-info cpp_template_call */
+function array_reduce ($a ::: array, callback($carry ::: lca<^3, ^2()>, $item ::: ^1[]) ::: Any, $initial ::: Any) ::: lca<^2(), ^3>;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
 function array_is_vector ($a ::: array) ::: bool;
 
@@ -566,7 +578,8 @@ function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error 
 function vk_win_to_utf8 ($text ::: string, $escape ::: bool = true) ::: string;
 function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;
 function vk_json_encode ($v ::: Any) ::: OrFalse<string>;
-function vk_json_encode_safe ($v ::: Any) throws ::: string;
+/** @kphp-extern-func-info can_throw */
+function vk_json_encode_safe ($v ::: Any) ::: string;
 function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
 function vk_sp_simplify ($str ::: string) ::: string;
 function vk_sp_full_simplify ($str ::: string) ::: string;
@@ -593,7 +606,8 @@ function vk_stats_hll_pack($hll ::: string) ::: OrFalse<string>;
 function vk_stats_hll_unpack($hll ::: string) ::: OrFalse<string>;
 function vk_stats_hll_is_packed($hll ::: string) ::: bool;
 
-function vk_dot_product ($a ::: array, $b ::: array) auto ::: lca<^1[], ^2[]>;
+/** @kphp-extern-func-info cpp_template_call */
+function vk_dot_product ($a ::: array, $b ::: array) ::: lca<^1[], ^2[]>;
 
 /** defined in kphp_core.h **/
 function likely ($x ::: bool) ::: bool;
@@ -603,23 +617,39 @@ function unlikely ($x ::: bool) ::: bool;
 function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
 
 /** rpc fetch **/
-function fetch_int () throws ::: int;
-function fetch_UInt () throws ::: UInt;
-function fetch_Long () throws ::: Long;
-function fetch_ULong () throws ::: ULong;
-function fetch_unsigned_int () throws ::: var;
-function fetch_long () throws ::: var;
-function fetch_unsigned_long () throws ::: var;
-function fetch_unsigned_int_hex () throws ::: string;
-function fetch_unsigned_long_hex () throws ::: string;
-function fetch_unsigned_int_str () throws ::: string;
-function fetch_unsigned_long_str () throws ::: string;
-function fetch_double () throws ::: float;
-function fetch_string () throws ::: string;
-function fetch_string_as_int () throws ::: int;
-function fetch_memcache_value () throws ::: var;
+/** @kphp-extern-func-info can_throw */
+function fetch_int () ::: int;
+/** @kphp-extern-func-info can_throw */
+function fetch_UInt () ::: UInt;
+/** @kphp-extern-func-info can_throw */
+function fetch_Long () ::: Long;
+/** @kphp-extern-func-info can_throw */
+function fetch_ULong () ::: ULong;
+/** @kphp-extern-func-info can_throw */
+function fetch_unsigned_int () ::: var;
+/** @kphp-extern-func-info can_throw */
+function fetch_long () ::: var;
+/** @kphp-extern-func-info can_throw */
+function fetch_unsigned_long () ::: var;
+/** @kphp-extern-func-info can_throw */
+function fetch_unsigned_int_hex () ::: string;
+/** @kphp-extern-func-info can_throw */
+function fetch_unsigned_long_hex () ::: string;
+/** @kphp-extern-func-info can_throw */
+function fetch_unsigned_int_str () ::: string;
+/** @kphp-extern-func-info can_throw */
+function fetch_unsigned_long_str () ::: string;
+/** @kphp-extern-func-info can_throw */
+function fetch_double () ::: float;
+/** @kphp-extern-func-info can_throw */
+function fetch_string () ::: string;
+/** @kphp-extern-func-info can_throw */
+function fetch_string_as_int () ::: int;
+/** @kphp-extern-func-info can_throw */
+function fetch_memcache_value () ::: var;
 function fetch_eof () ::: bool;
-function fetch_end () throws ::: bool;
+/** @kphp-extern-func-info can_throw */
+function fetch_end () ::: bool;
 function rpc_parse ($data) ::: bool;
 
 /** rpc store **/
@@ -649,39 +679,60 @@ function store_finish() ::: bool;
 function rpc_send ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
 function rpc_send_noflush ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
 function rpc_flush () ::: void;
-function rpc_get ($request_id ::: int) resumable ::: OrFalse <string>;
+/** @kphp-extern-func-info resumable */
+function rpc_get ($request_id ::: int) ::: OrFalse <string>;
 function rpc_get_synchronously ($request_id ::: int) ::: OrFalse <string>;
-function rpc_get_and_parse ($request_id ::: int) resumable ::: bool;
+/** @kphp-extern-func-info resumable */
+function rpc_get_and_parse ($request_id ::: int) ::: bool;
 function rpc_queue_create ($request_ids ::: Any = TODO) ::: int;
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
-function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;
-function rpc_mc_get ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) throws ::: var;
-function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) throws resumable ::: OrFalse <array <var> >;
-function rpc_mc_delete ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) throws ::: bool;
-function rpc_mc_add ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) throws ::: bool;
-function rpc_mc_set ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) throws ::: bool;
-function rpc_mc_replace ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) throws ::: bool;
-function rpc_mc_decrement ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) throws ::: var;
-function rpc_mc_increment ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) throws ::: var;
-function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) throws ::: bool;
+/** @kphp-extern-func-info resumable */
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int;
+
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_get ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: var;
+/** @kphp-extern-func-info can_throw resumable */
+function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: OrFalse <array <var> >;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_delete ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: bool;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_add ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_set ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_replace ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_decrement ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_increment ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
+/** @kphp-extern-func-info can_throw */
+function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
+
 function rpc_tl_query_one ($rpc_conn ::: RPC, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
 function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: array <int>;
-function rpc_tl_query_result_one ($query_id ::: int) resumable ::: array <var>;
-function rpc_tl_query_result ($query_ids ::: array) resumable ::: array <array <var> >;
+/** @kphp-extern-func-info resumable */
+function rpc_tl_query_result_one ($query_id ::: int) ::: array <var>;
+/** @kphp-extern-func-info resumable */
+function rpc_tl_query_result ($query_ids ::: array) ::: array <array <var> >;
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: array <array <var> >;
 function rpc_tl_pending_queries_count () ::: int;
 
-function wait ($id ::: int, $timeout ::: float = -1.0) resumable ::: bool;
-function wait_result ($id ::: int, $timeout ::: float = -1.0) throws resumable ::: var;
+/** @kphp-extern-func-info resumable */
+function wait ($id ::: int, $timeout ::: float = -1.0) ::: bool;
+/** @kphp-extern-func-info can_throw resumable */
+function wait_result ($id ::: int, $timeout ::: float = -1.0) ::: var;
 function wait_synchronously ($id ::: int) ::: bool;
-function wait_multiple ($id ::: int) resumable ::: bool;
+/** @kphp-extern-func-info resumable */
+function wait_multiple ($id ::: int) ::: bool;
 function wait_queue_create ($request_ids ::: Any = TODO) ::: int;
 function wait_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function wait_queue_empty ($queue_id ::: int) ::: bool;
-function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) resumable ::: int;
+/** @kphp-extern-func-info resumable */
+function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int;
 function wait_queue_next_synchronously ($queue_id ::: int) ::: int;
-function sched_yield() resumable ::: void;
+/** @kphp-extern-func-info resumable */
+function sched_yield() ::: void;
 function get_running_fork_id() ::: int;
 
 function query_x2 ($x ::: int) ::: int;

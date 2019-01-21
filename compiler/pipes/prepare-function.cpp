@@ -122,7 +122,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   std::unordered_map<std::string, int> name_to_function_param;
   int param_i = 0;
-  for (VertexAdaptor<op_func_param> param : func_params) {
+  for (VertexAdaptor<meta_op_func_param> param : func_params) {
     name_to_function_param.emplace("$" + param->var()->get_string(), param_i++);
   }
 
@@ -161,10 +161,28 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
       case php_doc_tag::kphp_disable_warnings: {
         std::istringstream is(tag.value);
-        string token;
+        std::string token;
         while (is >> token) {
           if (!f->disabled_warnings.insert(token).second) {
             kphp_warning(format("Warning '%s' has been disabled twice", token.c_str()));
+          }
+        }
+        break;
+      }
+
+      case php_doc_tag::kphp_extern_func_info: {
+        kphp_error(f->type() == FunctionData::func_extern, "@kphp-extern-func-info used for regular function");
+        std::istringstream is(tag.value);
+        std::string token;
+        while (is >> token) {
+          if (token == "can_throw") {
+            f->root->throws_flag = true;
+          } else if (token == "resumable") {
+            f->root->resumable_flag = true;
+          } else if (token == "cpp_template_call") {
+            f->root->auto_flag = true;
+          } else {
+            kphp_error(0, format("Unknown @kphp-extern-func-info %s", token.c_str()));
           }
         }
         break;

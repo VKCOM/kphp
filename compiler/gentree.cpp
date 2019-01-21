@@ -1424,39 +1424,6 @@ VertexPtr GenTree::get_switch() {
   return switch_vertex;
 }
 
-bool GenTree::parse_function_specifiers(VertexPtr flags) {
-  switch ((*cur)->type()) {
-    case tok_throws: {
-      flags->throws_flag = true;
-      if (!expect(tok_throws, "'throws'")) {
-        return false;
-      }
-      break;
-    }
-
-    case tok_resumable: {
-      flags->resumable_flag = true;
-      if (!expect(tok_resumable, "'resumable'")) {
-        return false;
-      }
-      break;
-    }
-
-    case tok_auto: {
-      flags->auto_flag = true;
-      if (!expect(tok_auto, "'auto'")) {
-        return false;
-      }
-      break;
-    }
-
-    default:
-      return true;
-  }
-
-  return parse_function_specifiers(flags);
-}
-
 bool GenTree::parse_function_uses(std::vector<VertexPtr> *uses_of_lambda) {
   if (test_expect(tok_use)) {
     kphp_error_act(uses_of_lambda, "Unexpected `use` token", return false);
@@ -1549,7 +1516,6 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
 
   CE(expect(tok_clpar, "')'"));
 
-  CE(parse_function_specifiers(flags));
   CE(parse_function_uses(uses_of_lambda));
   kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersect(*uses_of_lambda, params_next),
     "arguments and captured variables(in `use` clause) must have different names");

@@ -30,7 +30,6 @@ enum TokenType {
   tok_var_dump,
   tok_function,
   tok_ex_function,
-  tok_auto,
   tok_min,
   tok_max,
   tok_varg,
@@ -167,13 +166,10 @@ enum TokenType {
 
   tok_try,
   tok_catch,
-  tok_throws,
 
   tok_public,
   tok_private,
   tok_protected,
-
-  tok_resumable,
 
   tok_phpdoc_kphp,
   tok_phpdoc,

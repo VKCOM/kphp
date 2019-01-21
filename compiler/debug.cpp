@@ -37,7 +37,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_var_dump] = "tok_var_dump";
   TOKEN_TYPE_NAMES[tok_function] = "tok_function";
   TOKEN_TYPE_NAMES[tok_ex_function] = "tok_ex_function";
-  TOKEN_TYPE_NAMES[tok_auto] = "tok_auto";
   TOKEN_TYPE_NAMES[tok_min] = "tok_min";
   TOKEN_TYPE_NAMES[tok_max] = "tok_max";
   TOKEN_TYPE_NAMES[tok_varg] = "tok_varg";
@@ -160,11 +159,9 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_new] = "tok_new";
   TOKEN_TYPE_NAMES[tok_try] = "tok_try";
   TOKEN_TYPE_NAMES[tok_catch] = "tok_catch";
-  TOKEN_TYPE_NAMES[tok_throws] = "tok_throws";
   TOKEN_TYPE_NAMES[tok_public] = "tok_public";
   TOKEN_TYPE_NAMES[tok_private] = "tok_private";
   TOKEN_TYPE_NAMES[tok_protected] = "tok_protected";
-  TOKEN_TYPE_NAMES[tok_resumable] = "tok_resumable";
   TOKEN_TYPE_NAMES[tok_phpdoc_kphp] = "tok_phpdoc_kphp";
   TOKEN_TYPE_NAMES[tok_end] = "tok_end";
 }
