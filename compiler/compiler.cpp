@@ -201,6 +201,9 @@ bool compiler_execute(KphpEnviroment *env) {
   for (const auto &main_file : env->get_main_files()) {
     G->register_main_file(main_file, file_stream);
   }
+  if (!G->env().get_functions().empty()) {
+    G->require_file(G->env().get_functions(), LibPtr{}, file_stream);
+  }
 
   static lockf_wrapper unique_file_lock;
   if (!unique_file_lock.lock()) {

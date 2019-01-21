@@ -7,7 +7,6 @@
 class SrcFile {
 public:
   int id;
-  std::string prefix;
   std::string text, file_name, short_file_name;
   std::string unified_file_name;
   std::string unified_dir_name;
@@ -25,7 +24,6 @@ public:
 
   SrcFile();
   SrcFile(const string &file_name, const string &short_file_name, LibPtr owner_lib_id);
-  void add_prefix(const string &s);
   bool load();
 
   vk::string_view get_line(int id);

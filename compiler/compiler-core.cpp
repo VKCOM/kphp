@@ -230,10 +230,6 @@ void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFil
   kphp_error (file_name.empty() || res, format("Cannot load main file [%s]", file_name.c_str()));
 
   if (res && try_require_file(res)) {
-    if (!env().get_functions().empty()) {
-      string prefix = "<?php require_once (\"" + env().get_functions() + "\");?>";
-      res->add_prefix(prefix);
-    }
     main_files.push_back(res);
     os << res;
   }

@@ -18,9 +18,6 @@ SrcFile::SrcFile(const string &file_name, const string &short_file_name, LibPtr 
   is_required(false),
   owner_lib(owner_lib_id) {}
 
-void SrcFile::add_prefix(const string &new_prefix) {
-  prefix = new_prefix;
-}
 
 bool SrcFile::load() {
   if (loaded) {
@@ -37,21 +34,18 @@ bool SrcFile::load() {
 
   dl_assert (buf.st_size < 100000000, format("file [%s] is too big [%lu]\n", file_name.c_str(), buf.st_size));
   int file_size = (int)buf.st_size;
-  int prefix_size = (int)prefix.size();
-  int text_size = file_size + prefix_size;
-  text = string(text_size, ' ');
-  std::copy(prefix.begin(), prefix.end(), text.begin());
-  err = (int)read(fid, &text[0] + prefix_size, file_size);
+  text = string(file_size, ' ');
+  err = (int)read(fid, &text[0], file_size);
   dl_assert (err >= 0, format("Can't read file [%s]: %m", file_name.c_str()));
 
-  for (int i = 0; i < text_size; i++) {
+  for (int i = 0; i < file_size; i++) {
     if (unlikely (text[i] == 0)) {
-      kphp_warning(format("symbol with code zero was replaced by space in file [%s] at [%d]", file_name.c_str(), i - prefix_size));
+      kphp_warning(format("symbol with code zero was replaced by space in file [%s] at [%d]", file_name.c_str(), i));
       text[i] = ' ';
     }
   }
 
-  for (int i = prefix_size, prev_i = prefix_size; i <= text_size; i++) {
+  for (int i = 0, prev_i = 0; i <= file_size; i++) {
     if (text[i] == '\n') {
       lines.push_back(vk::string_view(&text[prev_i], &text[i]));
       prev_i = i + 1;
