@@ -311,7 +311,7 @@ class CFG {
   void add_edge(Node from, Node to);
   void collect_ref_vars(VertexPtr v, set<VarPtr> *ref);
   void find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars);
-  void collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *throws_flag);
+  void collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *can_throw);
   void create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish);
   void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish,
                   bool write_flag = false, bool weak_write_flag = false);
@@ -431,23 +431,23 @@ void CFG::find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars
                          splittable_vars->end());
 }
 
-void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *throws_flag) {
+void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *can_throw) {
   //TODO: a lot of problems
   //is_set, unset, reference arguments...
 
   if (tree_node->type() == op_throw) {
-    *throws_flag = true;
+    *can_throw = true;
   }
   //TODO: only if function has throws flag
   if (tree_node->type() == op_func_call) {
-    *throws_flag = tree_node->get_func_id()->root->throws_flag;
+    *can_throw = tree_node->get_func_id()->can_throw;
   }
 
   if (tree_node->type() == op_set) {
     VertexAdaptor<op_set> set_op = tree_node;
     if (set_op->lhs()->type() == op_var) {
       add_usage(writes, new_usage(usage_write_t, set_op->lhs()));
-      collect_vars_usage(set_op->rhs(), writes, reads, throws_flag);
+      collect_vars_usage(set_op->rhs(), writes, reads, can_throw);
       return;
     }
   }
@@ -455,7 +455,7 @@ void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool 
     add_usage(reads, new_usage(usage_read_t, tree_node));
   }
   for (auto i : *tree_node) {
-    collect_vars_usage(i, writes, reads, throws_flag);
+    collect_vars_usage(i, writes, reads, can_throw);
   }
 }
 
@@ -514,8 +514,8 @@ void CFG::create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish
     writes = new_node(),
     reads = new_node();
 
-  bool throws_flag = false;
-  collect_vars_usage(tree_node, writes, reads, &throws_flag);
+  bool can_throw = false;
+  collect_vars_usage(tree_node, writes, reads, &can_throw);
   compress_usages(&node_usages[writes]);
   compress_usages(&node_usages[reads]);
 
@@ -531,7 +531,7 @@ void CFG::create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish
 
   *res_start = start;
   *res_finish = finish;
-  if (throws_flag) {
+  if (can_throw) {
     create_cfg_register_exception(*res_finish);
   }
 }
@@ -682,8 +682,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       }
       *res_finish = start;
 
-      //if function has throws flag
-      if (func->root->throws_flag) {
+      if (func->can_throw) {
         create_cfg_register_exception(*res_finish);
       }
       break;

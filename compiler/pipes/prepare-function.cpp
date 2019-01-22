@@ -176,7 +176,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         std::string token;
         while (is >> token) {
           if (token == "can_throw") {
-            f->root->throws_flag = true;
+            f->can_throw = true;
           } else if (token == "resumable") {
             f->root->resumable_flag = true;
           } else if (token == "cpp_template_call") {

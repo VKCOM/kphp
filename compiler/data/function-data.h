@@ -77,6 +77,7 @@ public:
   bool is_template;
   bool is_auto_inherited;
   bool is_inline;
+  bool can_throw;
   ClassPtr context_class;
   AccessType access_type;
   set<string> disabled_warnings;

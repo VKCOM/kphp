@@ -11,8 +11,8 @@ using FunctionAndEdges = FilterOnlyActuallyUsedFunctionsF::FunctionAndEdges;
 
 void calc_throws_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &throws_graph) {
   for (const FunctionPtr &caller : throws_graph[callee]) {
-    if (!caller->root->throws_flag) {
-      caller->root->throws_flag = true;
+    if (!caller->can_throw) {
+      caller->can_throw = true;
       calc_throws_dfs(caller, throws_graph);
     }
   }
@@ -47,7 +47,7 @@ void calc_throws_and_body_value_through_call_edges(const std::vector<FunctionAnd
 
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
-    if (fun->root->throws_flag) {
+    if (fun->can_throw) {
       calc_throws_dfs(fun, throws_graph);
     }
     if (fun->body_seq == FunctionData::body_value::non_empty) {
@@ -131,7 +131,7 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
 
-  // 1) set 'throws_flag' for functions which calls other functions with explicit throw
+  // 1) set 'can_throw' for functions which calls other functions with explicit throw
   // 2) calc 'body_seq' for functions with unknown body value which calls non empty functions
   calc_throws_and_body_value_through_call_edges(all);
 

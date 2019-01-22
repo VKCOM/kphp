@@ -17,8 +17,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
     }
 
     // There are 117 callbacks was passed to internal functions which throw exception
-    //bool extern_func_throws_exception = local->extern_func_call->get_func_id()->root->throws_flag;
-    //bool callback_throws = !callback_passed_to_extern_func->root->throws_flag;
+    //bool extern_func_throws_exception = local->extern_func_call->get_func_id()->can_throw;
+    //bool callback_throws = !callback_passed_to_extern_func->can_throw;
     //if (callback_throws && !extern_func_throws_exception) {
     //  kphp_error(false, "It's not allowed to throw exception in callback which was passed to internal function");
     //}

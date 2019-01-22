@@ -34,7 +34,6 @@ public:
   bool ref_flag : 1;
   bool auto_flag : 1;
   bool varg_flag : 1;
-  bool throws_flag : 1;
   union {
     bool resumable_flag : 1;
     bool fork_flag : 1;
@@ -123,7 +122,6 @@ public:
     ref_flag(false),
     auto_flag(),
     varg_flag(),
-    throws_flag(),
     resumable_flag(),
     needs_const_iterator_flag(),
     void_flag() {
@@ -144,7 +142,6 @@ public:
     ref_flag(from.ref_flag),
     auto_flag(from.auto_flag),
     varg_flag(from.varg_flag),
-    throws_flag(from.throws_flag),
     resumable_flag(from.resumable_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
     void_flag(from.void_flag) {
@@ -160,7 +157,6 @@ public:
     ref_flag = from.ref_flag;
     auto_flag = from.auto_flag;
     varg_flag = from.varg_flag;
-    throws_flag = from.throws_flag;
     resumable_flag = from.resumable_flag;
     needs_const_iterator_flag = from.needs_const_iterator_flag;
     void_flag = from.void_flag;

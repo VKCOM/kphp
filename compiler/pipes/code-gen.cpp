@@ -2534,7 +2534,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
       << TypeNameInsideMacro(tinf::get_type(func_call)) << ");";
   }
 
-  if (func->root->throws_flag) {
+  if (func->can_throw) {
     W << NL;
     W << "CHECK_EXCEPTION(";
     compile_throw_action(W);
@@ -3476,7 +3476,7 @@ void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
-  if (!root->get_func_id()->root->throws_flag) {
+  if (!root->get_func_id()->can_throw) {
     compile_func_call(root, W);
     return;
   }
