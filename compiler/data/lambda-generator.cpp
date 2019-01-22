@@ -34,6 +34,9 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexPtr> uses, bool imp
       variable_in_use->str_val = param_as_use->var()->get_string();
       set_location(variable_in_use, param_as_use->location);
       generated_lambda->members.add_instance_field(variable_in_use, access_private);
+
+      auto field = generated_lambda->members.get_instance_field(variable_in_use->get_string());
+      field->var->marked_as_const = true;
     } else {
       stage::set_location(one_use->get_location());
       kphp_error(false, "it's not allowed using not variable in `use` clause");
