@@ -22,7 +22,6 @@ FunctionData::FunctionData() :
   assumptions_inited_return(),
   varg_flag(false),
   tinf_state(0),
-  const_data(nullptr),
   phpdoc_token(),
   min_argn(0),
   used_in_source(false),
@@ -48,7 +47,6 @@ FunctionData::FunctionData(VertexPtr root) :
   assumptions_inited_return(),
   varg_flag(false),
   tinf_state(0),
-  const_data(nullptr),
   phpdoc_token(),
   min_argn(0),
   used_in_source(false),
@@ -130,7 +128,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->class_id = func->class_id;
   new_function->varg_flag = func->varg_flag;
   new_function->tinf_state = func->tinf_state;
-  new_function->const_data = func->const_data;
   new_function->phpdoc_token = func->phpdoc_token;
   new_function->min_argn = func->min_argn;
   new_function->used_in_source = func->used_in_source;

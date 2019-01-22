@@ -66,7 +66,6 @@ public:
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
 
-  VertexPtr const_data;
   Token *phpdoc_token;
 
   int min_argn;
