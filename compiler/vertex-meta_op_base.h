@@ -32,7 +32,6 @@ public:
   RLValueType val_ref_flag : 2;
   ConstValueType const_type : 2;
   bool ref_flag : 1;
-  bool auto_flag : 1;
   bool varg_flag : 1;
   union {
     bool resumable_flag : 1;
@@ -120,7 +119,6 @@ public:
     val_ref_flag(val_none),
     const_type(cnst_error_),
     ref_flag(false),
-    auto_flag(),
     varg_flag(),
     resumable_flag(),
     needs_const_iterator_flag(),
@@ -140,7 +138,6 @@ public:
     val_ref_flag(from.val_ref_flag),
     const_type(from.const_type),
     ref_flag(from.ref_flag),
-    auto_flag(from.auto_flag),
     varg_flag(from.varg_flag),
     resumable_flag(from.resumable_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
@@ -155,7 +152,6 @@ public:
     val_ref_flag = from.val_ref_flag;
     const_type = from.const_type;
     ref_flag = from.ref_flag;
-    auto_flag = from.auto_flag;
     varg_flag = from.varg_flag;
     resumable_flag = from.resumable_flag;
     needs_const_iterator_flag = from.needs_const_iterator_flag;

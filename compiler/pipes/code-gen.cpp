@@ -3515,7 +3515,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int s
       W << FunctionName(func);
     }
   }
-  if (func && func->root->auto_flag) {
+  if (func && func->cpp_template_call) {
     const TypeData *tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }

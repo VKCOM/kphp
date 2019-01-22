@@ -180,7 +180,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           } else if (token == "resumable") {
             f->root->resumable_flag = true;
           } else if (token == "cpp_template_call") {
-            f->root->auto_flag = true;
+            f->cpp_template_call = true;
           } else {
             kphp_error(0, format("Unknown @kphp-extern-func-info %s", token.c_str()));
           }

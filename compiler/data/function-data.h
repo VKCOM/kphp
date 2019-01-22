@@ -78,6 +78,7 @@ public:
   bool is_auto_inherited;
   bool is_inline;
   bool can_throw;
+  bool cpp_template_call;
   ClassPtr context_class;
   AccessType access_type;
   set<string> disabled_warnings;

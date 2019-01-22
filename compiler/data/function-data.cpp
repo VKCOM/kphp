@@ -33,6 +33,7 @@ FunctionData::FunctionData() :
   is_auto_inherited(false),
   is_inline(false),
   can_throw(false),
+  cpp_template_call(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -56,6 +57,7 @@ FunctionData::FunctionData(VertexPtr root) :
   is_auto_inherited(false),
   is_inline(false),
   can_throw(false),
+  cpp_template_call(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
