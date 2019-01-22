@@ -34,6 +34,7 @@ FunctionData::FunctionData() :
   is_inline(false),
   can_throw(false),
   cpp_template_call(false),
+  is_resumable(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
@@ -58,6 +59,7 @@ FunctionData::FunctionData(VertexPtr root) :
   is_inline(false),
   can_throw(false),
   cpp_template_call(false),
+  is_resumable(false),
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 

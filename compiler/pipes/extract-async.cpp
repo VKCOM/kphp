@@ -2,7 +2,7 @@
 
 bool ExtractAsyncPass::check_function(FunctionPtr function) {
   return default_check_function(function) && function->type() != FunctionData::func_extern &&
-         function->root->resumable_flag;
+         function->is_resumable;
 }
 void ExtractAsyncPass::on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, ExtractAsyncPass::LocalT *dest_local) {
   dest_local->from_seq = vertex->type() == op_seq || vertex->type() == op_seq_rval;
@@ -27,7 +27,7 @@ VertexPtr ExtractAsyncPass::on_enter_vertex(VertexPtr vertex, ExtractAsyncPass::
     return vertex;
   }
   FunctionPtr func = func_call->get_func_id();
-  if (func->root->resumable_flag == false) {
+  if (!func->is_resumable) {
     return vertex;
   }
   if (!lhs) {

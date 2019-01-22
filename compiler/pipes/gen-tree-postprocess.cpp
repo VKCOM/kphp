@@ -74,9 +74,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     auto builtin = get_builtin_function(call->get_string());
     if (builtin.op != op_err && call->size() == builtin.args) {
       VertexRange args = call->args();
-      if (builtin.op == op_fork) {
-        args[0]->fork_flag = true;
-      }
       VertexPtr new_root = create_vertex(builtin.op, vector<VertexPtr>(args.begin(), args.end()));
       ::set_location(new_root, root->get_location());
       return new_root;

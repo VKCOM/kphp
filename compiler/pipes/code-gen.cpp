@@ -1138,7 +1138,7 @@ inline Function::Function(FunctionPtr function, bool in_header) :
 inline void Function::compile(CodeGenerator &W) const {
   if (in_header) {
     W << FunctionDeclaration(function, in_header) << ";";
-    if (function->root->resumable_flag) {
+    if (function->is_resumable) {
       W << NL << FunctionForkDeclaration(function, in_header) << ";";
     }
   } else {
@@ -3013,9 +3013,9 @@ void compile_function(VertexPtr root, CodeGenerator &W) {
   FunctionPtr func = func_root->get_func_id();
 
   W.get_context().parent_func = func;
-  W.get_context().resumable_flag = root->resumable_flag;
+  W.get_context().resumable_flag = func->is_resumable;
 
-  if (root->resumable_flag) {
+  if (func->is_resumable) {
     compile_function_resumable(root, W);
     return;
   }
@@ -3504,7 +3504,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int s
     W << root->str_val;
   } else {
     func = root->get_func_id();
-    if (state != 1 && state != 2 && W.get_context().resumable_flag && func->root->resumable_flag) {
+    if (state != 1 && state != 2 && W.get_context().resumable_flag && func->is_resumable) {
       kphp_error (0, format("Can't compile resumable function [%s] without async\n"
                              "Function is resumable because of calls chain:\n%s\n", func->get_human_readable_name().c_str(), func->get_resumable_path().c_str()));
     }

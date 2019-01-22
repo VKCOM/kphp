@@ -178,7 +178,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           if (token == "can_throw") {
             f->can_throw = true;
           } else if (token == "resumable") {
-            f->root->resumable_flag = true;
+            f->is_resumable = true;
           } else if (token == "cpp_template_call") {
             f->cpp_template_call = true;
           } else {

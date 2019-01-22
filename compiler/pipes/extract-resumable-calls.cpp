@@ -57,7 +57,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
   }
   func_call = *replace;
   FunctionPtr func = func_call->get_func_id();
-  if (func->root->resumable_flag == false) {
+  if (!func->is_resumable) {
     return vertex;
   }
   auto temp_var = VertexAdaptor<op_var>::create();
@@ -80,5 +80,5 @@ void ExtractResumableCallsPass::on_enter_edge(VertexPtr vertex, LocalT *, Vertex
 }
 bool ExtractResumableCallsPass::check_function(FunctionPtr function) {
   return default_check_function(function) && function->type() != FunctionData::func_extern &&
-         function->root->resumable_flag;
+         function->is_resumable;
 }

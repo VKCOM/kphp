@@ -79,6 +79,8 @@ public:
   bool is_inline;
   bool can_throw;
   bool cpp_template_call;
+  bool is_resumable;
+
   ClassPtr context_class;
   AccessType access_type;
   set<string> disabled_warnings;

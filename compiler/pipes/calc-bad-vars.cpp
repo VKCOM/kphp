@@ -157,7 +157,7 @@ private:
       FunctionPtr func = call_graph.functions[i];
       tmp_vars[func] = std::move(dep_datas[i].used_global_vars);
 
-      if (func->root->resumable_flag) {
+      if (func->is_resumable) {
         if (G->env().get_verbosity() > 1) {
           fprintf(stderr, "Resumable [%s]\n", func->name.c_str());
         }
@@ -192,7 +192,7 @@ private:
   void calc_resumable(const FuncCallGraph &call_graph, const vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
-        fork->root->resumable_flag = true;
+        fork->is_resumable = true;
       }
     }
     IdMap<char> from_resumable(call_graph.n);
@@ -200,31 +200,31 @@ private:
     IdMap<FunctionPtr> from_parents(call_graph.n);
     IdMap<FunctionPtr> to_parents(call_graph.n);
     for (const auto &func : call_graph.functions) {
-      if (func->root->resumable_flag) {
+      if (func->is_resumable) {
         mark(call_graph.graph, from_resumable, func, from_parents);
         mark(call_graph.rev_graph, into_resumable, func, to_parents);
       }
     }
     for (const auto &func : call_graph.functions) {
       if (from_resumable[func] && into_resumable[func]) {
-        func->root->resumable_flag = true;
+        func->is_resumable = true;
         func->fork_prev = from_parents[func];
         func->wait_prev = to_parents[func];
       }
     }
     for (const auto &func : call_graph.functions) {
-      if (func->root->resumable_flag && func->should_be_sync) {
+      if (func->is_resumable && func->should_be_sync) {
         kphp_error (0, format("Function [%s] marked with @kphp-sync, but turn up to be resumable\n"
                                "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
       }
     }
     if (G->env().get_print_resumable_graph()) {
       for (const auto &func : call_graph.functions) {
-        if (!func->root->resumable_flag) {
+        if (!func->is_resumable) {
           continue;
         }
         for (const auto &next : call_graph.graph[func]) {
-          if (!next->root->resumable_flag) {
+          if (!next->is_resumable) {
             continue;
           }
           fprintf(stderr, "%s -> %s\n", func->name.c_str(), next->name.c_str());

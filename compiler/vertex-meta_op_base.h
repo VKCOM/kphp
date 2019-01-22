@@ -33,10 +33,6 @@ public:
   ConstValueType const_type : 2;
   bool ref_flag : 1;
   bool varg_flag : 1;
-  union {
-    bool resumable_flag : 1;
-    bool fork_flag : 1;
-  };
   bool needs_const_iterator_flag : 1;
   bool void_flag : 1;
 
@@ -120,7 +116,6 @@ public:
     const_type(cnst_error_),
     ref_flag(false),
     varg_flag(),
-    resumable_flag(),
     needs_const_iterator_flag(),
     void_flag() {
   }
@@ -139,7 +134,6 @@ public:
     const_type(from.const_type),
     ref_flag(from.ref_flag),
     varg_flag(from.varg_flag),
-    resumable_flag(from.resumable_flag),
     needs_const_iterator_flag(from.needs_const_iterator_flag),
     void_flag(from.void_flag) {
   }
@@ -153,7 +147,6 @@ public:
     const_type = from.const_type;
     ref_flag = from.ref_flag;
     varg_flag = from.varg_flag;
-    resumable_flag = from.resumable_flag;
     needs_const_iterator_flag = from.needs_const_iterator_flag;
     void_flag = from.void_flag;
   }
