@@ -60,7 +60,6 @@ public:
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
   ClassPtr class_id;
-  bool varg_flag;
 
   int tinf_state;
   vector<tinf::VarNode> tinf_nodes;
@@ -71,6 +70,7 @@ public:
   int min_argn;
   bool used_in_source;    // это только для костыля extern_function, потом должно уйти
   bool is_callback;
+  bool is_vararg;
   bool should_be_sync;
   bool kphp_lib_export;
   bool is_template;

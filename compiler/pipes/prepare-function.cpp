@@ -23,13 +23,7 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
   );
   root->type_rule = header->type_rule;
 
-  kphp_error_return (
-    !(!header->varg_flag && func->varg_flag),
-    format("Function [%s]: varg_flag mismatch with header", func->get_human_readable_name().c_str())
-  );
-  func->varg_flag = header->varg_flag;
-
-  if (!func->varg_flag) {
+  if (!func->is_vararg) {
     VertexAdaptor<op_func_param_list> root_params_vertex = root->params();
     VertexAdaptor<op_func_param_list> header_params_vertex = header->params();
     VertexRange root_params = root_params_vertex->params();
@@ -77,7 +71,7 @@ static void prepare_function_misc(FunctionPtr func) {
   for (int i = 0; i < param_n; i++) {
     VertexAdaptor<meta_op_func_param> param = params[i].as<meta_op_func_param>();
 
-    if (func->varg_flag) {
+    if (func->is_vararg) {
       kphp_error (!param->var()->ref_flag,
                   "Reference arguments are not supported in varg functions");
     }
@@ -317,9 +311,6 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   VertexPtr header = G->get_extern_func_header(function->name);
   if (header) {
     function_apply_header(function, header);
-  }
-  if (function->root && function->root->varg_flag) {
-    function->varg_flag = true;
   }
 
   if (stage::has_error()) {

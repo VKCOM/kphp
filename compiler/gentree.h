@@ -138,7 +138,8 @@ private:
                                        std::vector<VertexPtr> *uses_of_lambda,
                                        VertexAdaptor<op_func_param_list> &params,
                                        VertexPtr &flags,
-                                       bool &is_constructor);
+                                       bool &is_constructor,
+                                       bool &is_varg);
 
   VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
 

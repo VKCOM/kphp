@@ -206,7 +206,7 @@ private:
     int func_args_n = (int)func_args.size();
 
     // TODO: why it is here???
-    if (func->varg_flag) {
+    if (func->is_vararg) {
       for (int i = 0; i < call_args_n; i++) {
         kphp_error_act (
           call_args[i]->type() != op_func_name,

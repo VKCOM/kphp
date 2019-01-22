@@ -55,7 +55,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
   }
   FunctionPtr f = root->get_func_id();
-  if (f->varg_flag) {
+  if (f->is_vararg) {
     rl_calc_all<val_r>(root);
     return;
   }

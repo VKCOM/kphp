@@ -34,7 +34,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
       return vertex;
     }
 
-    if (!other_function->varg_flag) {
+    if (!other_function->is_vararg) {
       int ii = 0;
       for (auto val : call->args()) {
         VarPtr to_var = other_function->param_ids[ii];

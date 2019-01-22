@@ -1470,7 +1470,8 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
                                               std::vector<VertexPtr> *uses_of_lambda,
                                               VertexAdaptor<op_func_param_list> &params,
                                               VertexPtr &flags,
-                                              bool &is_constructor) {
+                                              bool &is_constructor,
+                                              bool &is_varg) {
   AutoLocation func_location(this);
   set_location(flags, func_location);
 
@@ -1503,7 +1504,7 @@ VertexPtr GenTree::parse_function_declaration(AccessType access_type,
   }
 
   if (test_expect(tok_varg)) {
-    flags->varg_flag = true;
+    is_varg = true;
     next_cur();
   } else {
     bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
@@ -1531,7 +1532,8 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   VertexPtr flags(&flags_inner);
   VertexAdaptor<op_func_param_list> params;
   bool is_constructor = false;
-  VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor);
+  bool is_varg = false;
+  VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor, is_varg);
   CE(name);
 
   if (is_tok_ex_function) {
@@ -1552,6 +1554,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, func_type));
 
   cur_function->phpdoc_token = phpdoc_token;
+  cur_function->is_vararg = is_varg;
 
   const bool kphp_required_flag = phpdoc_token &&
                                   (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||

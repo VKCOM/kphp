@@ -20,13 +20,13 @@ FunctionData::FunctionData() :
   bad_vars(nullptr),
   assumptions_inited_args(),
   assumptions_inited_return(),
-  varg_flag(false),
   tinf_state(0),
   phpdoc_token(),
   min_argn(0),
   used_in_source(false),
   is_callback(false),
-  should_be_sync(),
+  is_vararg(false),
+  should_be_sync(false),
   kphp_lib_export(false),
   is_template(false),
   is_auto_inherited(false),
@@ -102,7 +102,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->type() = func->type();
   new_function->file_id = func->file_id;
   new_function->class_id = func->class_id;
-  new_function->varg_flag = func->varg_flag;
+  new_function->is_vararg = func->is_vararg;
   new_function->tinf_state = func->tinf_state;
   new_function->phpdoc_token = func->phpdoc_token;
   new_function->min_argn = func->min_argn;

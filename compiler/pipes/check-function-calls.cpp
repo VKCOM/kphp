@@ -16,7 +16,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
                       format("Called instance method %s() using :: (need to use ->)", f->get_human_readable_name().c_str()));
   }
 
-  if (call->type() == op_func_ptr || f->varg_flag) {
+  if (call->type() == op_func_ptr || f->is_vararg) {
     return;
   }
 
