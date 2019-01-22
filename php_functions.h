@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/curl.h"

@@ -3564,15 +3564,36 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
     W << "(bool (*) (const var &))";
   }
   if (root->get_func_id()->is_lambda()) {
+    /**
+     * KPHP code like this:
+     *   array_map(function ($x) { return $x; }, ['a', 'b']);
+     *
+     * Will be transformed to:
+     *   array_map(({
+     *     auto bound_class = anon$$__construct();
+     *     [bound_class] (string x) {
+     *       return anon$$__invoke(bound_class, std::move(x));
+     *     };
+     *   }), const_array);
+     */
     FunctionPtr invoke_method = root->get_func_id();
-    W << "std::bind(" << FunctionName(invoke_method) << ", ";
-
-    W << root->bound_class();
-    for (size_t param_id = 1; param_id < invoke_method->min_argn; ++param_id) {
-      W << ", std::placeholders::_" << std::to_string(param_id);
+    W << "(" << BEGIN;
+    {
+      W << "auto bound_class = " << root->bound_class() << ";" << NL;
+      VertexRange params = invoke_method->root->params().as<op_func_param_list>()->params();
+      kphp_assert(!params.empty());
+      VertexRange params_without_first(std::next(params.begin()), params.end());
+      W << "[bound_class] (" << FunctionParams(invoke_method, 1u, true) << ") " << BEGIN;
+      {
+        W << "return " << FunctionName(invoke_method) << "(bound_class";
+        for (auto param : params_without_first) {
+          W << ", std::move(" << VarName(param.as<op_func_param>()->var()->get_var_id()) << ")";
+        }
+        W << ");" << NL;
+      }
+      W << END << ";";
     }
-
-    W << ")";
+    W << END << ")" << NL;
   } else {
     W << FunctionName(root->get_func_id());
   }
