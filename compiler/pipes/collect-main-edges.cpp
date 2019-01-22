@@ -433,7 +433,7 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::L
   }
 
   switch (v->type()) {
-    //FIXME: is_vararg, is_callback
+    //FIXME: is_vararg
     case op_func_call:
       on_func_call(v);
       break;

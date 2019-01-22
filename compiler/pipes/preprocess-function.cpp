@@ -88,9 +88,6 @@ private:
         invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, &template_of_invoke_method);
 
         instance_of_template_invoke = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
-        if (instance_of_template_invoke) {
-          instance_of_template_invoke->is_callback = true;
-        }
       } else {
         kphp_assert(lambda_class->members.has_any_instance_method());
         instance_of_template_invoke = lambda_class->members.get_instance_method("__invoke")->function;
@@ -185,7 +182,6 @@ private:
 
     call->set_func_id(func);
     if (call->type() == op_func_ptr) {
-      func->is_callback = true;
       if (!func->is_required) {
         std::string err = "function: `" + func->name + "` need tag @kphp-required, because used only as string passed to internal functions";
         kphp_error_act(false, err.c_str(), return call);

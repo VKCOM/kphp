@@ -24,7 +24,6 @@ FunctionData::FunctionData() :
   phpdoc_token(),
   min_argn(0),
   used_in_source(false),
-  is_callback(false),
   is_vararg(false),
   should_be_sync(false),
   kphp_lib_export(false),
