@@ -319,10 +319,17 @@ struct FunctionForkDeclaration {
 
 struct FunctionParams {
   FunctionPtr function;
+  VertexRange params;
   bool in_header;
   gen_out_style style;
+  size_t shift;
+
   inline FunctionParams(FunctionPtr function, bool in_header = false,
                         gen_out_style style = gen_out_style::cpp);
+
+  inline FunctionParams(FunctionPtr function, size_t shift, bool in_header = false,
+                        gen_out_style style = gen_out_style::cpp);
+
   inline void compile(CodeGenerator &W) const;
 
 private:
@@ -973,9 +980,18 @@ inline void FunctionForkDeclaration::compile(CodeGenerator &W) const {
 
 
 inline FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_style style) :
+  FunctionParams(function, 0, in_header, style) {
+}
+
+inline FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_header, gen_out_style style) :
   function(function),
+  params(function->root->params().as<op_func_param_list>()->params()),
   in_header(in_header),
-  style(style) {
+  style(style),
+  shift(shift) {
+    if (shift > 0) {
+      params = {std::next(params.begin(), shift), params.end()};
+    }
 }
 
 inline void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const {
@@ -994,13 +1010,9 @@ inline void FunctionParams::declare_txt_param(CodeGenerator &W, VertexPtr var, c
 }
 
 inline void FunctionParams::compile(CodeGenerator &W) const {
-  VertexAdaptor<meta_op_function> root = function->root;
-  assert (root->type() == op_function);
-
   bool first = true;
-  int ii = 0;
-  VertexAdaptor<op_func_param_list> params = root->params();
-  for (auto i : params->params()) {
+  size_t ii = shift;
+  for (auto i : params) {
     if (i->type() == op_func_param) {
       assert ("functions with callback are not supported");
     }
