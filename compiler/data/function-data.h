@@ -84,7 +84,7 @@ public:
   set<string> disabled_warnings;
   map<long long, int> name_gen_map;
   FunctionPtr function_in_which_lambda_was_created;
-  std::vector<FunctionPtr> lambdas_inside;
+  //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
 
   enum class body_value {
     empty,
