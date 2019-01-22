@@ -1917,8 +1917,8 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
         }
       }
       next_cur();
-      CE (!kphp_error(0, "Expected function or variable after keyword `static`"));
-
+      kphp_error(0, "Expected function or variable after keyword `static`");
+      return {};
     case tok_echo:
       res = get_multi_call<op_echo>(&GenTree::get_expression);
       CE (check_statement_end());
