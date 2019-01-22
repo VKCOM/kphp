@@ -18,23 +18,23 @@ public:
     var_instance_t
   };
 
-  Type type_;
-  int id;
-  int param_i;
+  Type type_ = var_unknown_t;
+  int id = -1;
+  int param_i = 0;
   std::string name;
   tinf::VarNode tinf_node;
   VertexPtr init_val;
   FunctionPtr holder_func;
   ClassPtr class_id; // id of class if variable is static fields
-  vector<VarPtr> *bad_vars;
-  bool is_reference;
-  bool uninited_flag;
-  bool optimize_flag;
-  bool tinf_flag;
-  bool global_init_flag;
-  bool needs_const_iterator_flag;
-  bool marked_as_global;
-  int dependency_level;
+  vector<VarPtr> *bad_vars = nullptr;
+  bool is_reference = false;
+  bool uninited_flag = false;
+  bool optimize_flag = false;
+  bool tinf_flag = false;
+  bool global_init_flag = false;
+  bool needs_const_iterator_flag = false;
+  bool marked_as_global = false;
+  int dependency_level = 0;
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();

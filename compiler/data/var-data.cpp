@@ -5,19 +5,8 @@
 
 VarData::VarData(VarData::Type type_) :
   type_(type_),
-  id(-1),
-  param_i(),
-  tinf_node(VarPtr(this)),
-  init_val(nullptr),
-  bad_vars(nullptr),
-  is_reference(false),
-  uninited_flag(false),
-  optimize_flag(false),
-  tinf_flag(false),
-  global_init_flag(false),
-  needs_const_iterator_flag(false),
-  marked_as_global(false),
-  dependency_level(0) {}
+  tinf_node(VarPtr(this))
+{}
 
 void VarData::set_uninited_flag(bool f) {
   uninited_flag = f;

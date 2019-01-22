@@ -7,15 +7,17 @@
 
 class CFGData {
 private:
-  FunctionPtr function;
-
   vector<VertexPtr> uninited_vars;
   vector<VarPtr> todo_var;
   vector<vector<vector<VertexPtr>>> todo_parts;
+
 public:
-  void set_function(FunctionPtr new_function) {
-    function = new_function;
-  }
+  const FunctionPtr function;
+
+public:
+  explicit CFGData(FunctionPtr new_function)
+    : function(std::move(new_function))
+  {}
 
   void split_var(VarPtr var, vector<vector<VertexPtr>> &parts) {
     assert (var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
@@ -45,8 +47,7 @@ public:
         assumption_add_for_var(function, assumption, new_name,  assumption_class);
       }
 
-      for (int j = 0; j < (int)parts[i].size(); j++) {
-        VertexPtr v = parts[i][j];
+      for (auto v : parts[i]) {
         v->set_var_id(new_var);
       }
 
@@ -77,7 +78,7 @@ public:
     }
 
     if (var->type() == VarData::var_local_t) {
-      vector<VarPtr>::iterator tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
+      auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
       if (function->local_var_ids.end() != tmp) {
         function->local_var_ids.erase(tmp);
       } else {
@@ -87,15 +88,12 @@ public:
 
     todo_var.push_back(var);
 
-    //it could be simple std::move
-    todo_parts.push_back(vector<vector<VertexPtr>>());
-    std::swap(todo_parts.back(), parts);
+    todo_parts.emplace_back(std::move(parts));
   }
 
   void unused_vertices(vector<VertexPtr *> &v) {
     for (auto i: v) {
-      auto empty = VertexAdaptor<op_empty>::create();
-      *i = empty;
+      *i = VertexAdaptor<op_empty>::create();
     }
   }
 
@@ -111,8 +109,7 @@ public:
   }
 
   void check_uninited() {
-    for (int i = 0; i < (int)uninited_vars.size(); i++) {
-      VertexPtr v = uninited_vars[i];
+    for (auto v : uninited_vars) {
       VarPtr var = v->get_var_id();
       if (tinf::get_type(v)->ptype() == tp_var) {
         continue;
@@ -129,13 +126,13 @@ public:
     new_var->tinf_node.copy_type_from(tinf::get_type(vars[0]));
 
     int param_i = -1;
-    for (VarPtr var : vars) {
+    for (auto var : vars) {
       if (var->type() == VarData::var_param_t) {
         param_i = var->param_i;
       } else if (var->type() == VarData::var_local_t) {
         //FIXME: remember to remove all unused variables
         //func->local_var_ids.erase (*i);
-        vector<VarPtr>::iterator tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
+        auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
         if (function->local_var_ids.end() != tmp) {
           function->local_var_ids.erase(tmp);
         } else {
@@ -143,7 +140,7 @@ public:
         }
 
       } else {
-        assert (0 && "unreachable");
+        kphp_assert_msg(false, "unreachable");
       }
     }
     if (param_i != -1) {
@@ -164,7 +161,7 @@ public:
 
     MergeData(int id, VarPtr var) :
       id(id),
-      var(var) {
+      var(std::move(var)) {
     }
   };
 
@@ -184,17 +181,19 @@ public:
     for (int todo_i = 0; todo_i < todo_n; todo_i++) {
       vector<vector<VertexPtr>> &parts = todo_parts[todo_i];
 
-      int n = (int)parts.size();
+      auto n = parts.size();
       vector<MergeData> to_merge;
-      for (int i = 0; i < n; i++) {
-        to_merge.push_back(MergeData(i, parts[i][0]->get_var_id()));
+      to_merge.reserve(n);
+      for (size_t i = 0; i < n; i++) {
+        to_merge.emplace_back(i, parts[i][0]->get_var_id());
       }
       sort(to_merge.begin(), to_merge.end(), cmp_merge_data);
 
       vector<int> ids;
-      for (int i = 0; i <= n; i++) {
+      for (size_t i = 0; i <= n; i++) {
         if (i == n || (i > 0 && !eq_merge_data(to_merge[i - 1], to_merge[i]))) {
           vector<VarPtr> vars;
+          vars.reserve(ids.size());
           for (int id : ids) {
             vars.push_back(parts[id][0]->get_var_id());
           }
@@ -221,12 +220,10 @@ public:
 namespace cfg {
 //just simple int id type
 struct IdBase {
-  int id;
-  IdBase();
+  int id = -1;
 };
 
 typedef Id<IdBase> Node;
-typedef vector<Node> NodesList;
 
 enum UsageType {
   usage_write_t,
@@ -234,13 +231,17 @@ enum UsageType {
 };
 
 struct UsageData {
-  int id;
-  int part_id;
+  int id = -1;
+  int part_id = -1;
   UsageType type;
-  bool weak_write_flag;
+  bool weak_write_flag = false;
   VertexPtr v;
   Node node;
-  explicit UsageData(UsageType type, VertexPtr v);
+
+  explicit UsageData(UsageType type, VertexPtr v) :
+    type(type),
+    v(v) {
+  }
 };
 
 typedef Id<UsageData> UsagePtr;
@@ -248,39 +249,42 @@ typedef Id<UsageData> UsagePtr;
 struct SubTreeData {
   VertexPtr v;
   bool recursive_flag;
-  SubTreeData(VertexPtr v, bool recursive_flag);
+
+  SubTreeData(VertexPtr v, bool recursive_flag) :
+    v(v),
+    recursive_flag(recursive_flag) {
+  }
 };
 
 typedef Id<SubTreeData> SubTreePtr;
 
 struct VertexUsage {
-  bool used;
-  bool used_rec;
-  VertexUsage();
+  bool used = false;
+  bool used_rec = false;
 };
 
 struct VarSplitData {
-  int n;
+  int n = 0;
 
   IdGen<UsagePtr> usage_gen;
   IdMap<UsagePtr> parent;
 
-  VarSplitData();
+  VarSplitData() {
+    usage_gen.add_id_map(&parent);
+  }
 };
 
 typedef Id<VarSplitData> VarSplitPtr;
 
 class CFG {
-  CFGData *data;
-  FunctionPtr cur_function;
+  CFGData *data = nullptr;
   IdGen<Node> node_gen;
   IdMap<vector<Node>> node_next, node_prev;
   IdMap<vector<UsagePtr>> node_usages;
   IdMap<vector<SubTreePtr>> node_subtrees;
   IdMap<VertexUsage> vertex_usage;
-  int cur_dfs_mark;
+  int cur_dfs_mark = 0;
   Node current_start;
-  Node current_finish;
 
   IdMap<int> node_was;
   IdMap<UsagePtr> node_mark;
@@ -310,7 +314,7 @@ class CFG {
   void collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *throws_flag);
   void create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish);
   void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish,
-                  bool set_flag = false, bool weak_write_flag = false);
+                  bool write_flag = false, bool weak_write_flag = false);
   void create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false);
 
   void calc_used(Node v);
@@ -323,45 +327,15 @@ class CFG {
   void compress_usages(vector<UsagePtr> *usages);
   void dfs(Node v, UsagePtr usage);
   void process_var(VarPtr v);
-  void process_node(Node v);
   int register_vertices(VertexPtr v, int N);
   void process_function(FunctionPtr func);
 public:
   void run(CFGData *new_data);
 };
 
-//just simple int id type
-IdBase::IdBase() :
-  id(-1) {
-}
-
-UsageData::UsageData(UsageType type, VertexPtr v) :
-  id(-1),
-  part_id(-1),
-  type(type),
-  weak_write_flag(false),
-  v(v),
-  node() {
-}
-
-SubTreeData::SubTreeData(VertexPtr v, bool recursive_flag) :
-  v(v),
-  recursive_flag(recursive_flag) {
-}
-
-VertexUsage::VertexUsage() :
-  used(false),
-  used_rec(false) {
-}
-
-VarSplitData::VarSplitData() :
-  n(0) {
-  usage_gen.add_id_map(&parent);
-}
-
 VarSplitPtr CFG::get_var_split(VarPtr var, bool force) {
   if (get_index(var) < 0) {
-    return VarSplitPtr();
+    return {};
   }
   VarSplitPtr res = var_split_data[var];
   if (!res && force) {
@@ -382,7 +356,7 @@ UsagePtr CFG::new_usage(UsageType type, VertexPtr v) {
   kphp_assert (var);
   VarSplitPtr var_split = get_var_split(var, false);
   if (!var_split) {
-    return UsagePtr();
+    return {};
   }
   UsagePtr res = UsagePtr(new UsageData(type, v));
   var_split->usage_gen.init_id(&res);
@@ -403,8 +377,7 @@ void CFG::add_usage(Node node, UsagePtr usage) {
 }
 
 SubTreePtr CFG::new_subtree(VertexPtr v, bool recursive_flag) {
-  SubTreePtr res = SubTreePtr(new SubTreeData(v, recursive_flag));
-  return res;
+  return SubTreePtr{new SubTreeData(v, recursive_flag)};
 }
 
 void CFG::add_subtree(Node node, SubTreePtr subtree) {
@@ -432,10 +405,10 @@ void CFG::collect_ref_vars(VertexPtr v, set<VarPtr> *ref) {
 struct XPred {
   set<VarPtr> *ref;
 
-  XPred(set<VarPtr> *ref) :
+  explicit XPred(set<VarPtr> *ref) :
     ref(ref) {};
 
-  bool operator()(const VarPtr &x) { return ref->count(x); }
+  bool operator()(const VarPtr &x) { return ref->find(x) != ref->end(); }
 };
 
 void CFG::find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars) {
@@ -624,7 +597,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       VertexRange args = tree_node.as<meta_op_varg>()->args();
       create_cfg(args[0], res_start, &b);
       end = b;
-      for (int i = 1; i < (int)tree_node->size(); i++) {
+      for (int i = 1; i < tree_node->size(); i++) {
         create_cfg(args[i], &a, &b);
         add_edge(end, a);
         end = b;
@@ -642,7 +615,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_neq2: {
       VertexAdaptor<meta_op_binary> op = tree_node;
       if (op->rhs()->type() == op_false || op->rhs()->type() == op_null) {
-        Node first_start, first_finish, second_start;
+        Node first_finish, second_start;
         create_cfg(op->lhs(), res_start, &first_finish);
         create_cfg(op->rhs(), &second_start, res_finish);
         add_edge(first_finish, second_start);
@@ -694,8 +667,8 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         bool new_weak_write_flag = false;
 
         if (func && !func->varg_flag) {
-          auto params = func->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
-          if (params[ii]->type() == op_func_param && params[ii].as<op_func_param>()->var()->ref_flag) {
+          auto param = func->get_params()[ii].try_as<op_func_param>();
+          if (param && param->var()->ref_flag) {
             new_weak_write_flag = true;
           }
         }
@@ -1169,7 +1142,7 @@ UsagePtr CFG::search_uninited(Node v, VarPtr var) {
     }
   }
   if (return_flag) {
-    return UsagePtr();
+    return {};
   }
 
   for (Node i : node_next[v]) {
@@ -1181,7 +1154,7 @@ UsagePtr CFG::search_uninited(Node v, VarPtr var) {
     }
   }
 
-  return UsagePtr();
+  return {};
 }
 
 void CFG::process_var(VarPtr var) {
@@ -1207,12 +1180,12 @@ void CFG::process_var(VarPtr var) {
 
   //fprintf (stdout, "PROCESS:[%s][%d]\n", var->name.c_str(), var->id);
 
-  int parts_cnt = 0;
+  size_t parts_cnt = 0;
   for (UsagePtr i : var_split->usage_gen) {
     if (node_was[i->node]) {
       UsagePtr u = dsu_get(&var_split->parent, i);
       if (u->part_id == -1) {
-        u->part_id = parts_cnt++;
+        u->part_id = static_cast<int>(parts_cnt++);
       }
     }
   }
@@ -1311,7 +1284,6 @@ void CFG::process_function(FunctionPtr function) {
   Node start, finish;
   create_cfg(function->root, &start, &finish);
   current_start = start;
-  current_finish = finish;
 
   cur_dfs_mark++;
   calc_used(start);
@@ -1334,8 +1306,7 @@ void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
   stage::set_function(function);
 
   cfg::CFG cfg;
-  CFGData *data = new CFGData();
-  data->set_function(function);
+  auto data = new CFGData(function);
   cfg.run(data);
 
   if (stage::has_error()) {

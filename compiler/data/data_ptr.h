@@ -7,7 +7,7 @@
 
 template<class IdData>
 class Id {
-  IdData *ptr;
+  IdData *ptr = nullptr;
 public:
   struct Hash {
     size_t operator()(const Id<IdData> &arg) const noexcept {
@@ -15,17 +15,16 @@ public:
     }
   };
 public:
-  Id():
-    ptr(nullptr) {}
+  Id() = default;
 
   explicit Id(IdData *ptr):
     ptr(ptr) {}
 
-  Id(const Id &id):
-    ptr(id.ptr) {}
+  Id(const Id &id) = default;
 
-  Id(Id &&id):
-    ptr(id.ptr) {
+  Id(Id &&id) noexcept
+    : ptr(id.ptr)
+  {
     id.ptr = nullptr;
   }
 
@@ -34,7 +33,7 @@ public:
     : ptr(derived.ptr)
   {}
 
-  Id &operator=(Id id) {
+  Id &operator=(Id id) noexcept {
     std::swap(ptr, id.ptr);
     return *this;
   }
