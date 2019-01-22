@@ -62,7 +62,7 @@ public:
   VertexPtr get_type_rule_();
   VertexPtr get_type_rule();
 
-  static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, int ref_flag = 0);
+  static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag = 0);
   template<PrimitiveType ToT>
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);

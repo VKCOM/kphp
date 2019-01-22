@@ -96,7 +96,7 @@ public:
       func_name->str_val = func_name_str;
 
       auto case_state = VertexAdaptor<op_var>::create();
-      case_state->ref_flag = 1;
+      case_state->ref_flag = true;
       string case_state_name = gen_unique_name("switch_case_state");
       case_state->str_val = case_state_name;
 

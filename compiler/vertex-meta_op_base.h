@@ -31,7 +31,7 @@ public:
   RLValueType rl_type : 2;
   RLValueType val_ref_flag : 2;
   ConstValueType const_type : 2;
-  int ref_flag : 1;
+  bool ref_flag : 1;
   bool auto_flag : 1;
   bool varg_flag : 1;
   bool throws_flag : 1;
@@ -122,7 +122,7 @@ public:
     rl_type(val_error),
     val_ref_flag(val_none),
     const_type(cnst_error_),
-    ref_flag(0),
+    ref_flag(false),
     auto_flag(),
     varg_flag(),
     throws_flag(),

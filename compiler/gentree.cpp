@@ -90,17 +90,17 @@ VertexPtr GenTree::get_var_name() {
 }
 
 VertexPtr GenTree::get_var_name_ref() {
-  int ref_flag = 0;
+  bool ref_flag = false;
   if ((*cur)->type() == tok_and) {
     next_cur();
-    ref_flag = 1;
+    ref_flag = true;
   }
 
   VertexPtr name = get_var_name();
   if (name) {
     name->ref_flag = ref_flag;
   } else {
-    kphp_error (ref_flag == 0, "Expected var name");
+    kphp_error(!ref_flag, "Expected var name");
   }
   return name;
 }
@@ -887,7 +887,7 @@ VertexPtr GenTree::get_foreach_param() {
   return res;
 }
 
-VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, int ref_flag) {
+VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
   if (ref_flag) {
     switch (tp) {
       case tp_array:
