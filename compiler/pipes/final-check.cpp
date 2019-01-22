@@ -193,13 +193,19 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     VertexRange cur_params = func_ptr_of_callable->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
 
     int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
-    int expected_arguments_count = func_params[i].as<op_func_param_callback>()->params().as<op_func_param_list>()->params().size();
-    kphp_error_act(given_arguments_count == expected_arguments_count, "Wrong callback arguments count", continue);
+    for (auto arg : cur_params) {
+      auto param_arg = arg.try_as<op_func_param>();
+      kphp_error_return(param_arg, "Callback function with callback parameter");
+      kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
 
-    for (auto cur_param : cur_params) {
-      kphp_error_return(cur_param->type() == op_func_param, "Callback function with callback parameter");
-      kphp_error_return(cur_param.as<op_func_param>()->var()->ref_flag == 0, "Callback function with reference parameter");
+      if (param_arg->has_default_value()) {
+        given_arguments_count--;
+      }
     }
+
+    auto expected_arguments_count = func_params[i].as<op_func_param_callback>()->params().as<op_func_param_list>()->params().size();
+    kphp_error_act(given_arguments_count == expected_arguments_count,
+      format("Wrong callback arguments count; given: %d, expected: %ld", given_arguments_count, expected_arguments_count), continue);
   }
 }
 
