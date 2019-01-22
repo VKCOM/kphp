@@ -17,7 +17,6 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   if (function->kphp_lib_export) {
     check_lib_exported_function(function);
   }
-  stage::die_if_global_errors();
   return true;
 }
 
