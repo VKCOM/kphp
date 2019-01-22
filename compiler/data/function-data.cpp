@@ -37,30 +37,6 @@ FunctionData::FunctionData() :
   access_type(access_nonmember),
   body_seq(body_value::unknown) {}
 
-FunctionData::FunctionData(VertexPtr root) :
-  id(-1),
-  root(root),
-  is_required(false),
-  type_(func_local),
-  bad_vars(nullptr),
-  assumptions_inited_args(),
-  assumptions_inited_return(),
-  varg_flag(false),
-  tinf_state(0),
-  phpdoc_token(),
-  min_argn(0),
-  used_in_source(false),
-  is_callback(false),
-  should_be_sync(),
-  is_template(false),
-  is_auto_inherited(false),
-  is_inline(false),
-  can_throw(false),
-  cpp_template_call(false),
-  is_resumable(false),
-  access_type(access_nonmember),
-  body_seq(body_value::unknown) {}
-
 FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
   AutoProfiler prof{*cache};

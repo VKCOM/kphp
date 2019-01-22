@@ -94,7 +94,6 @@ public:
   } body_seq;
 
   FunctionData();
-  explicit FunctionData(VertexPtr root);
   static FunctionPtr create_function(VertexAdaptor<meta_op_function> root, func_type_t type);
 
   inline func_type_t &type() { return type_; }
