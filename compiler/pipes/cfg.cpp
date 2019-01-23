@@ -1039,8 +1039,8 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_start = try_start;
       *res_finish = finish;
 
-      add_subtree(*res_start, new_subtree(try_op->exception(), false));
-      add_subtree(*res_start, new_subtree(try_op->catch_cmd(), true));
+      add_subtree(exception_start, new_subtree(try_op->exception(), false));
+      add_subtree(catch_start, new_subtree(try_op->catch_cmd(), true));
       break;
     }
 
