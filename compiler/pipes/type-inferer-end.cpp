@@ -5,6 +5,7 @@
 void TypeInfererEndF::on_finish(DataStream<FunctionAndCFG> &os) {
   tinf::get_inferer()->check_restrictions();
   tinf::get_inferer()->finish();
+  stage::die_if_global_errors();
 
   for (auto &f_and_cfg : tmp_stream.get_as_vector()) {
     os << f_and_cfg;
