@@ -70,6 +70,18 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(int location_lin
   return this_var;
 }
 
+FunctionPtr ClassData::gen_holder_function(const std::string &name) {
+  auto func_name = VertexAdaptor<op_func_name>::create();
+  func_name->str_val = "$" + name;  // function-wrapper for class
+  auto func_params = VertexAdaptor<op_func_param_list>::create();
+  auto func_body = VertexAdaptor<op_seq>::create();
+  auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
+
+  auto res = FunctionData::create_function(func_root, FunctionData::func_class_holder);
+  res->class_id = ClassPtr{this};
+  return res;
+}
+
 void ClassData::patch_func_constructor(VertexAdaptor<op_function> func, int location_line_num) {
   auto return_node = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(location_line_num));
   return_node->location.set_line(location_line_num);

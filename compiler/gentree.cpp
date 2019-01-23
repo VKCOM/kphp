@@ -1634,15 +1634,8 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
              "Class name is the same as one of 'use' at the top of the file");
 
-  auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = "$" + full_class_name;  // function-wrapper for class
-  auto func_params = VertexAdaptor<op_func_param_list>::create();
-  auto func_body = VertexAdaptor<op_seq>::create();
-  auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
-
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_class_holder));
   StackPushPop<ClassPtr> c_alive(class_stack, cur_class, ClassPtr(new ClassData()));
-  cur_function->class_id = cur_class;
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
   if (!is_class_name_allowed(name_str)) {
     kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
