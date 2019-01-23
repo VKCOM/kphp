@@ -410,10 +410,7 @@ bool CollectMainEdgesPass::on_start(FunctionPtr function) {
     return false;
   }
   on_function(function);
-  if (function->type() == FunctionData::func_extern) {
-    return false;
-  }
-  return true;
+  return !function->is_extern();
 }
 
 VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {

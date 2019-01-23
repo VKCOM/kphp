@@ -812,7 +812,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     }
     if (to_include->is_imported_from_static_lib()) {
       lib_headers_.emplace(to_include->header_full_name);
-    } else if (to_include->type() != FunctionData::func_extern) {
+    } else if (!to_include->is_extern()) {
       internal_headers_.emplace(to_include->header_full_name);
     }
   }
@@ -1914,7 +1914,7 @@ void DfsInit::compile_dfs_init_func(
       W << Include(header_names[i]);
     }
     for (auto func : used_functions) {
-      if (func->type() == FunctionData::func_global) {
+      if (func->type == FunctionData::func_global) {
         W << Include(func->header_full_name);
       }
     }
@@ -1926,7 +1926,7 @@ void DfsInit::compile_dfs_init_func(
     W << " " << BEGIN;
 
     for (auto func : used_functions) {
-      if (func->type() == FunctionData::func_global) {
+      if (func->type == FunctionData::func_global) {
         W << FunctionCallFlag(func) << " = false;" << NL;
       }
     }
@@ -2069,7 +2069,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << VarExternDeclaration(const_var) << NL;
   }
 
-  if (function->type() == FunctionData::func_global) {
+  if (function->type == FunctionData::func_global) {
     W << "extern bool " << FunctionCallFlag(function) << ";" << NL;
   }
 
@@ -2119,7 +2119,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   declare_const_vars(function, W);
   declare_static_vars(function, W);
 
-  if (function->type() == FunctionData::func_global) {
+  if (function->type == FunctionData::func_global) {
     W << "bool " << FunctionCallFlag(function) << ";" << NL;
   }
 
@@ -3053,7 +3053,7 @@ static bool can_save_ref(VertexPtr v) {
   }
   if (v->type() == op_func_call) {
     FunctionPtr func = v.as<op_func_call>()->get_func_id();
-    if (func->type() == FunctionData::func_extern) {
+    if (func->is_extern()) {
       //todo
       return false;
     }
@@ -4127,7 +4127,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
 
   //TODO: parallelize;
   for (const auto &fun : xall) {
-    if (fun->type() != FunctionData::func_class_holder) {
+    if (fun->type != FunctionData::func_class_holder) {
       prepare_generate_function(fun);
     }
   }
@@ -4142,13 +4142,13 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vector<FunctionPtr> source_functions;
   vector<FunctionPtr> exported_functions;
   for (const auto &function : xall) {
-    if (function->body_seq == FunctionData::body_value::empty || function->type() == FunctionData::func_class_holder) {
+    if (function->body_seq == FunctionData::body_value::empty || function->type == FunctionData::func_class_holder) {
       continue;
     }
     if (function->used_in_source) {
       source_functions.push_back(function);
     }
-    if (function->type() == FunctionData::func_extern) {
+    if (function->is_extern()) {
       continue;
     }
     all_functions.push_back(function);

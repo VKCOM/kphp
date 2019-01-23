@@ -89,9 +89,9 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
     const bool should_be_used_apriori =
-      fun->type() == FunctionData::func_global ||
-      fun->type() == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
-     (fun->type() == FunctionData::func_extern && fun->name == "wait") ||
+      fun->type == FunctionData::func_global ||
+      fun->type == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
+     (fun->type == FunctionData::func_extern && fun->name == "wait") ||
       fun->kphp_lib_export;
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);
@@ -103,7 +103,7 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
 void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const IdMap<FunctionPtr> &used_functions) {
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
-    if (fun->type() == FunctionData::func_class_holder) {
+    if (fun->type == FunctionData::func_class_holder) {
       fun->class_id->members.remove_if(
         [&used_functions](const ClassMemberStaticMethod &m) {
           return get_index(m.function) == -1 || !used_functions[m.function];

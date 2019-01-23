@@ -1254,7 +1254,7 @@ void CFG::process_function(FunctionPtr function) {
   //vertex_usage
   //var_split_data
 
-  if (function->type() != FunctionData::func_local) {
+  if (function->type != FunctionData::func_local) {
     return;
   }
 

@@ -445,7 +445,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
 
   calc_assumptions_for_var_internal(f, var_name, f->root.as<op_function>()->cmd(), depth + 1);
 
-  if (f->type() == FunctionData::func_global || f->type() == FunctionData::func_switch) {
+  if (f->type == FunctionData::func_global || f->type == FunctionData::func_switch) {
     if ((var_name.size() == 2 && var_name == "MC") || (var_name.size() == 3 && var_name == "PMC")) {
       assumption_add_for_var(f, assum_instance, var_name, G->get_class("Memcache"));
     }
@@ -465,7 +465,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
  * Включает кеширование повторных вызовов и init на f при первом вызове.
  */
 AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
-  if (f->type() == FunctionData::func_extern) {
+  if (f->is_extern()) {
     if (f->root->type_rule) {
       if (auto class_type_rule = f->root->type_rule.as<meta_op_type_rule>()->rule().try_as<op_class_type_rule>()) {
         out_class = class_type_rule->class_ptr;

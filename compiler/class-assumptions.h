@@ -26,7 +26,7 @@ public:
   Assumption(AssumType type, std::string var_name, ClassPtr klass) :
     assum_type(type),
     var_name(std::move(var_name)),
-    klass(klass) {}
+    klass(std::move(klass)) {}
 };
 
 

@@ -49,9 +49,9 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
     return f->body_seq;
   }
 
-  if (f->type() == FunctionData::func_extern ||
-      f->type() == FunctionData::func_switch ||
-      f->type() == FunctionData::func_class_holder ||
+  if (f->type == FunctionData::func_extern ||
+      f->type == FunctionData::func_switch ||
+      f->type == FunctionData::func_class_holder ||
       f->root->type() != op_function ||
       !f->root.as<op_function>()->params()->empty()) {
     f->body_seq = FunctionData::body_value::non_empty;

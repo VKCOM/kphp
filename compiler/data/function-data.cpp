@@ -15,13 +15,13 @@
 FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
   AutoProfiler prof{*cache};
-  FunctionPtr function = FunctionPtr(new FunctionData());
+  FunctionPtr function(new FunctionData());
   root->set_func_id(function);
 
   function->name = root->name()->get_string();
   function->root = root;
   function->file_id = stage::get_file();
-  function->type() = type;
+  function->type = type;
   //function->function_in_which_lambda_was_created = function_root->get_func_id()->function_in_which_lambda_was_created;
 
   return function;
@@ -74,7 +74,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->root = new_func_root;
   new_function->root->set_func_id(new_function);
   new_function->is_required = false;
-  new_function->type() = func->type();
+  new_function->type = func->type;
   new_function->file_id = func->file_id;
   new_function->class_id = func->class_id;
   new_function->is_vararg = func->is_vararg;

@@ -8,7 +8,7 @@ bool CalcConstTypePass::on_start(FunctionPtr function) {
     return false;
   }
 
-  if (current_function->type() == FunctionData::func_class_holder) {
+  if (current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
       LocalT local;
       f.init_val = run_function_pass(f.init_val, this, &local);

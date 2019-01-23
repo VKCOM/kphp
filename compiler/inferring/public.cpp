@@ -8,14 +8,14 @@ static void init_functions_tinf_nodes(FunctionPtr function) {
   assert (function->tinf_state == 1);
   VertexRange params = function->get_params();
   function->tinf_nodes.resize(params.size() + 1);
-  if (function->type() != FunctionData::func_extern) {
+  if (!function->is_extern()) {
     kphp_assert_msg(function->param_ids.size() == params.size(),
       "This could happen due to wrong FunctionPtr set into Location inside vertex");
   }
   for (int i = 0; i < (int)function->tinf_nodes.size(); i++) {
     function->tinf_nodes[i].param_i = i - 1;
     function->tinf_nodes[i].function_ = function;
-    if (i && function->type() != FunctionData::func_extern) {
+    if (i && !function->is_extern()) {
       function->tinf_nodes[i].var_ = function->param_ids[i - 1];
     }
   }

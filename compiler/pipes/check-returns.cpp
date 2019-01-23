@@ -14,7 +14,7 @@ VertexPtr CheckReturnsPass::on_exit_vertex(VertexPtr root, LocalT *) {
     if (have_void && have_not_void && !warn_fired) {
       warn_fired = true;
       FunctionPtr fun = stage::get_function();
-      if (fun->type() != FunctionData::func_switch && fun->name != fun->file_id->main_func_name) {
+      if (fun->type != FunctionData::func_switch && fun->name != fun->file_id->main_func_name) {
         kphp_typed_warning("return", "Mixing void and not void returns in one function");
       }
     }

@@ -53,7 +53,7 @@ public:
       return false;
     }
 
-    if (function->type() == FunctionData::func_class_holder) {
+    if (function->type == FunctionData::func_class_holder) {
       require_all_deps_of_class(function->class_id);
     }
     return true;
@@ -116,7 +116,7 @@ void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAn
     return;
   }
 
-  if (function->type() == FunctionData::func_class_holder) {
+  if (function->type == FunctionData::func_class_holder) {
     class_stream << function->class_id;
   }
 

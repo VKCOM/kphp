@@ -7,7 +7,7 @@
 #include "compiler/gentree.h"
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function) || function->type() == FunctionData::func_extern) {
+  if (!FunctionPassBase::on_start(function) || function->is_extern()) {
     return false;
   }
   for (auto &static_var : function->static_var_ids) {
@@ -110,7 +110,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
           kphp_error(!var->is_reference, "Unset of reference variables is not supported");
           if (var->is_in_global_scope()) {
             FunctionPtr f = stage::get_function();
-            if (f->type() != FunctionData::func_global && f->type() != FunctionData::func_switch) {
+            if (f->type != FunctionData::func_global && f->type != FunctionData::func_switch) {
               kphp_error(0, "Unset of global variables in functions is not supported");
             }
           }
@@ -127,7 +127,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_func_call) {
     FunctionPtr fun = vertex.as<op_func_call>()->get_func_id();
     if (fun->root->void_flag && vertex->rl_type == val_r && from_return == 0) {
-      if (fun->type() != FunctionData::func_switch && fun->file_id->main_func_name != fun->name) {
+      if (fun->type != FunctionData::func_switch && fun->file_id->main_func_name != fun->name) {
         kphp_warning(format("Using result of void function %s\n", fun->get_human_readable_name().c_str()));
       }
     }
@@ -142,12 +142,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (G->env().get_warnings_level() >= 2 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
     FunctionPtr function_where_require = stage::get_function();
 
-    if (function_where_require && function_where_require->type() == FunctionData::func_local) {
+    if (function_where_require && function_where_require->type == FunctionData::func_local) {
       for (auto v : *vertex) {
         FunctionPtr function_which_required = v->get_func_id();
 
         kphp_assert(function_which_required);
-        kphp_assert(function_which_required->type() == FunctionData::func_global);
+        kphp_assert(function_which_required->type == FunctionData::func_global);
 
         for (VarPtr global_var : function_which_required->global_var_ids) {
           if (!global_var->marked_as_global) {

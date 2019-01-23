@@ -49,7 +49,7 @@ void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex
   var_vertex->set_var_id(create_global_var(name));
 
   FunctionPtr function_where_global_keyword_occured = var_vertex->location.get_function();
-  if (function_where_global_keyword_occured && function_where_global_keyword_occured->type() == FunctionData::func_global) {
+  if (function_where_global_keyword_occured && function_where_global_keyword_occured->type == FunctionData::func_global) {
     var_vertex->get_var_id()->marked_as_global = true;
   }
 }
@@ -62,7 +62,7 @@ bool RegisterVariablesPass::is_global_var(VertexPtr v) {
   return v->type() == op_var && v->get_var_id()->is_in_global_scope();
 }
 void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
-  kphp_error(current_function->type() == FunctionData::func_local, "keyword 'static' used in global function");
+  kphp_error(current_function->type == FunctionData::func_local, "keyword 'static' used in global function");
 
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_static_t, true);

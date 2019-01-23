@@ -13,6 +13,9 @@
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData : private vk::not_copyable {
+  // внешний код должен использовать FunctionData::create_function()
+  FunctionData() = default;
+
 public:
   // при @kphp-infer hint/check над функцией — все необходимые type rule хранятся в векторе infer_hints
   struct InferHint {
@@ -21,6 +24,8 @@ public:
       hint = 0b010,
       cast = 0b100
     };
+
+    InferHint() = delete;   // создать можно только определяя все 3 параметра
 
     infer_mask infer_type;
     int param_i;            // 0..N — аргументы, -1 return (как и для tinf)
@@ -41,13 +46,15 @@ public:
     func_extern,
     func_class_holder
   };
-  func_type_t type_;
+  func_type_t type = func_local;
 
   vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, header_global_var_ids;
-  vector<VarPtr> *bad_vars;
+  vector<VarPtr> *bad_vars = nullptr;
   set<VarPtr> const_var_ids, header_const_var_ids;
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
+  FunctionPtr function_in_which_lambda_was_created;
+  //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
 
   std::vector<Assumption> assumptions_for_vars;
   Assumption assumption_for_return;
@@ -57,15 +64,15 @@ public:
   string src_name, header_name;
   string subdir;
   string header_full_name;
+
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
-  ClassPtr class_id;
+  set<string> disabled_warnings;
+  map<long long, int> name_gen_map;
 
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
-
-  Token *phpdoc_token = nullptr;
 
   int min_argn = 0;
   bool used_in_source = false;    // это только для костыля extern_function, потом должно уйти
@@ -79,12 +86,11 @@ public:
   bool cpp_template_call = false;
   bool is_resumable = false;
 
+  ClassPtr class_id;
   ClassPtr context_class;
   AccessType access_type = access_nonmember;
-  set<string> disabled_warnings;
-  map<long long, int> name_gen_map;
-  FunctionPtr function_in_which_lambda_was_created;
-  //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
+  Token *phpdoc_token = nullptr;
+
 
   enum class body_value {
     empty,
@@ -93,8 +99,6 @@ public:
   } body_seq = body_value::unknown;
 
   static FunctionPtr create_function(VertexAdaptor<meta_op_function> root, func_type_t type);
-
-  inline func_type_t &type() { return type_; }
 
   bool is_static_init_empty_body() const;
   string get_resumable_path() const;
@@ -123,7 +127,7 @@ public:
   }
 
   inline bool is_extern() const {
-    return type_ == func_extern;
+    return type == func_extern;
   }
 
   bool is_constructor() const;

@@ -26,7 +26,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) {
-    return default_check_function(function) && function->type() != FunctionData::func_extern;
+    return default_check_function(function) && !function->is_extern();
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *local);

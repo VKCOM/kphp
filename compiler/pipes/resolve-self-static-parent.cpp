@@ -11,7 +11,7 @@ bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
   }
 
   // заменяем self::, parent:: и обращения к другим классам типа Classes\A::CONST внутри констант классов
-  if (function->type() == FunctionData::func_class_holder) {
+  if (function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberConstant &c) {
       c.value = run_function_pass(c.value, this, nullptr);
     });

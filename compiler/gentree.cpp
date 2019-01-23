@@ -1584,7 +1584,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     CE (expect(tok_semicolon, "';'"));
   }
 
-  bool auto_require = cur_function->type() == FunctionData::func_extern
+  bool auto_require = cur_function->is_extern()
                       || cur_function->is_instance_function()
                       || kphp_required_flag;
   G->register_and_require_function(cur_function, parsed_os, auto_require);
@@ -1834,7 +1834,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       CE (check_statement_end());
       return res;
     case tok_global:
-      if (G->env().get_warnings_level() >= 2 && cur_function && cur_function->type() == FunctionData::func_local && !is_top_of_the_function_) {
+      if (G->env().get_warnings_level() >= 2 && cur_function && cur_function->type == FunctionData::func_local && !is_top_of_the_function_) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
       }
       res = get_multi_call<op_global>(&GenTree::get_var_name);
@@ -1867,7 +1867,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
           return get_function(phpdoc_token, access_static_public);
         } else if (next_tok == tok_var_name) {
           // static $a ... (пропущено public) (переменная класса)
-          if (cur_function->type() == FunctionData::func_class_holder) {
+          if (cur_function->type == FunctionData::func_class_holder) {
             return get_static_field_list(phpdoc_token, access_static_public);
           }
           // static $a ... (статическая переменная функции)
@@ -2021,7 +2021,7 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
     }
     case tok_use: {
       AutoLocation const_location(this);
-      kphp_error(!cur_class && cur_function && cur_function->type() == FunctionData::func_global, "'use' can be declared only in global scope");
+      kphp_error(!cur_class && cur_function && cur_function->type == FunctionData::func_global, "'use' can be declared only in global scope");
       get_use();
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;

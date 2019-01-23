@@ -68,16 +68,16 @@ public:
   }
 
   bool check_function(FunctionPtr function) {
-    return default_check_function(function) && function->type() != FunctionData::func_extern;
+    return default_check_function(function) && !function->is_extern();
   }
 
   bool on_start(FunctionPtr function) {
     if (!FunctionPassBase::on_start(function)) {
       return false;
     }
-    global_function_flag = function->type() == FunctionData::func_global ||
-                           function->type() == FunctionData::func_switch;
-    if (current_function->type() == FunctionData::func_class_holder) {
+    global_function_flag = function->type == FunctionData::func_global ||
+                           function->type == FunctionData::func_switch;
+    if (current_function->type == FunctionData::func_class_holder) {
       visit_class(current_function->class_id);
     }
     return true;

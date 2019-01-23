@@ -88,7 +88,7 @@ static void prepare_function_misc(FunctionPtr func) {
         was_default = true;
         func->min_argn = i;
       }
-      if (func->type() == FunctionData::func_local) {
+      if (func->type == FunctionData::func_local) {
         kphp_error (!param->var()->ref_flag,
                     format("Default value in reference function argument [function = %s]", func->get_human_readable_name().c_str()));
       }
@@ -165,7 +165,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       }
 
       case php_doc_tag::kphp_extern_func_info: {
-        kphp_error(f->type() == FunctionData::func_extern, "@kphp-extern-func-info used for regular function");
+        kphp_error(f->is_extern(), "@kphp-extern-func-info used for regular function");
         std::istringstream is(tag.value);
         std::string token;
         while (is >> token) {

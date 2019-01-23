@@ -9,7 +9,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) {
-    return default_check_function(function) && function->type() != FunctionData::func_extern;
+    return default_check_function(function) && !function->is_extern();
   }
 
   bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last);
