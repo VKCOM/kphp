@@ -27,12 +27,12 @@ public:
     VertexPtr type_rule;    // op_lt_type_rule / op_common_type_rule / etc
   };
 
-  int id;
+  int id = -1;
 
   string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
   VertexAdaptor<meta_op_function> root;
   VertexPtr header;   // это только для костыля extern_function, потом должно уйти
-  bool is_required;
+  bool is_required = false;
 
   enum func_type_t {
     func_global,
@@ -51,8 +51,8 @@ public:
 
   std::vector<Assumption> assumptions_for_vars;
   Assumption assumption_for_return;
-  int assumptions_inited_args;
-  volatile int assumptions_inited_return;
+  int assumptions_inited_args = 0;
+  volatile int assumptions_inited_return = 0;
 
   string src_name, header_name;
   string subdir;
@@ -61,26 +61,26 @@ public:
   FunctionPtr fork_prev, wait_prev;
   ClassPtr class_id;
 
-  int tinf_state;
+  int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
 
-  Token *phpdoc_token;
+  Token *phpdoc_token = nullptr;
 
-  int min_argn;
-  bool used_in_source;    // это только для костыля extern_function, потом должно уйти
-  bool is_vararg;
-  bool should_be_sync;
-  bool kphp_lib_export;
-  bool is_template;
-  bool is_auto_inherited;
-  bool is_inline;
-  bool can_throw;
-  bool cpp_template_call;
-  bool is_resumable;
+  int min_argn = 0;
+  bool used_in_source = false;    // это только для костыля extern_function, потом должно уйти
+  bool is_vararg = false;
+  bool should_be_sync = false;
+  bool kphp_lib_export = false;
+  bool is_template = false;
+  bool is_auto_inherited = false;
+  bool is_inline = false;
+  bool can_throw = false;
+  bool cpp_template_call = false;
+  bool is_resumable = false;
 
   ClassPtr context_class;
-  AccessType access_type;
+  AccessType access_type = access_nonmember;
   set<string> disabled_warnings;
   map<long long, int> name_gen_map;
   FunctionPtr function_in_which_lambda_was_created;
@@ -90,9 +90,8 @@ public:
     empty,
     non_empty,
     unknown,
-  } body_seq;
+  } body_seq = body_value::unknown;
 
-  FunctionData();
   static FunctionPtr create_function(VertexAdaptor<meta_op_function> root, func_type_t type);
 
   inline func_type_t &type() { return type_; }

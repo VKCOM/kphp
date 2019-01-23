@@ -12,30 +12,6 @@
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
 
-FunctionData::FunctionData() :
-  id(-1),
-  root(nullptr),
-  is_required(false),
-  type_(func_local),
-  bad_vars(nullptr),
-  assumptions_inited_args(),
-  assumptions_inited_return(),
-  tinf_state(0),
-  phpdoc_token(),
-  min_argn(0),
-  used_in_source(false),
-  is_vararg(false),
-  should_be_sync(false),
-  kphp_lib_export(false),
-  is_template(false),
-  is_auto_inherited(false),
-  is_inline(false),
-  can_throw(false),
-  cpp_template_call(false),
-  is_resumable(false),
-  access_type(access_nonmember),
-  body_seq(body_value::unknown) {}
-
 FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
   AutoProfiler prof{*cache};
