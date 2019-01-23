@@ -93,7 +93,7 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
 }
 
 void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
-  kphp_assert (expected_rl_type == val_none);
+  kphp_error (expected_rl_type == val_none, "Invalid lvalue/rvalue operation");
   switch (root->type()) {
     case op_if:
     case op_do:
