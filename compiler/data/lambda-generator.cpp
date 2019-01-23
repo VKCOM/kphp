@@ -107,6 +107,8 @@ LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, Dat
     G->require_function(constructor, os);
   }
 
+  G->register_and_require_function(lambda_class->gen_holder_function(lambda_class->name), os, true);
+
   return lambda_class;
 }
 
