@@ -131,9 +131,6 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
                              : VarData::var_local_t;
     var = get_local_var(name, var_type);
   }
-  if (var_vertex->needs_const_iterator_flag) {
-    var->needs_const_iterator_flag = true;
-  }
   var_vertex->set_var_id(var);
   var->marked_as_global |= var_vertex->extra_type == op_ex_var_superglobal;
 }

@@ -32,7 +32,6 @@ public:
   RLValueType val_ref_flag : 2;
   ConstValueType const_type : 2;
   bool ref_flag : 1;
-  bool needs_const_iterator_flag : 1;
   bool void_flag : 1;
 
 private:
@@ -114,7 +113,6 @@ public:
     val_ref_flag(val_none),
     const_type(cnst_error_),
     ref_flag(false),
-    needs_const_iterator_flag(),
     void_flag() {
   }
 
@@ -131,7 +129,6 @@ public:
     val_ref_flag(from.val_ref_flag),
     const_type(from.const_type),
     ref_flag(from.ref_flag),
-    needs_const_iterator_flag(from.needs_const_iterator_flag),
     void_flag(from.void_flag) {
   }
 
@@ -143,7 +140,6 @@ public:
     val_ref_flag = from.val_ref_flag;
     const_type = from.const_type;
     ref_flag = from.ref_flag;
-    needs_const_iterator_flag = from.needs_const_iterator_flag;
     void_flag = from.void_flag;
   }
 

@@ -162,6 +162,11 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
     root = optimize_postfix_dec(root);
   } else if (root->type() == op_index) {
     root = optimize_index(root);
+  } else if (root->type() == op_foreach_param) {
+    VertexPtr temp_var = root.as<op_foreach_param>()->temp_var();
+    if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // см. CreateSwitchForeachVarsPass
+      temp_var->get_var_id()->needs_const_iterator_flag = true;
+    }
   }
 
   root = fix_int_const(root);

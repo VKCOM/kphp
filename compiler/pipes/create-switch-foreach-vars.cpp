@@ -42,7 +42,6 @@ VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexPtr v) {
     auto temp_var2 = VertexAdaptor<op_var>::create();
     temp_var2->str_val = gen_unique_name("tmp_expr");
     temp_var2->extra_type = op_ex_var_superlocal;
-    temp_var2->needs_const_iterator_flag = true;
     foreach_param->temp_var() = temp_var2;
 
     foreach_v->params() = foreach_param;
