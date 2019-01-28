@@ -210,7 +210,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     }
     case 'b': {
       if (s.substr(pos, 7) == "boolean") {
-        pos += 8;
+        pos += 7;
         return create_type_help_vertex(tp_bool);
       }
       if (s.substr(pos, 4) == "bool") {
@@ -265,7 +265,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 'a': {
       if (s.substr(pos, 5) == "array") {
         pos += 5;
-        auto res = VertexAdaptor<op_type_rule>::create(create_type_help_vertex(tp_var));
+        auto res = VertexAdaptor<op_type_rule>::create(create_type_help_vertex(tp_Unknown));
         res->type_help = tp_array;
         return res;
       }
@@ -344,19 +344,27 @@ VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_
 
 
 VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, size_t &pos) {
+  size_t old_pos = pos;
   VertexPtr res = parse_type_array(s, pos);
   if (!res) {
     return res;
   }
+  bool has_raw_bool = s.substr(old_pos, pos - old_pos) == "bool";
   while (pos < s.size() && s[pos] == '|') {
     pos++;
+    old_pos = pos;
     VertexPtr next = parse_type_array(s, pos);
     if (!next) {
       return next;
     }
+    has_raw_bool |= s.substr(old_pos, pos - old_pos) == "bool";
     auto rule = VertexAdaptor<op_type_rule_func>::create(res, next);
     rule->str_val = "lca";
     res = rule;
+  }
+  if (res->type() == op_type_rule_func && res->get_string() == "lca") {
+    // todo включить ошибку до следующего обновления, когда подправят генерацию api builders
+    //kphp_error(!has_raw_bool, format("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)"));
   }
   return res;
 }

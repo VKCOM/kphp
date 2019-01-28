@@ -311,6 +311,18 @@ TypeData *TypeData::clone() const {
   return new TypeData(*this);
 }
 
+void TypeData::convert_Unknown_to_Any() {
+  if (ptype_ == tp_Unknown) {
+    set_ptype(tp_Any);
+  }
+  if (anykey_value != nullptr) {
+    anykey_value->convert_Unknown_to_Any();
+  }
+  for (auto &subkey : subkeys_values) {
+    subkey.second->convert_Unknown_to_Any();
+  }
+}
+
 const TypeData *TypeData::const_read_at(const Key &key) const {
   if (ptype() == tp_var) {
     return get_type(tp_var);

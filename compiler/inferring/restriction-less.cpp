@@ -125,7 +125,7 @@ bool RestrictionLess::is_less(const TypeData *given, const TypeData *expected, c
   return type_out(type_of_to_node.get()) != type_out(expected);
 }
 
-void RestrictionLess::find_call_trace_with_error(tinf::Node *cur_node) {
+void RestrictionLess::find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type) {
   assert(cur_node != nullptr);
 
   stacktrace.clear();
@@ -134,7 +134,7 @@ void RestrictionLess::find_call_trace_with_error(tinf::Node *cur_node) {
   stacktrace.reserve(max_cnt_nodes_in_path);
   node_path_.reserve(max_cnt_nodes_in_path);
 
-  find_call_trace_with_error_impl(cur_node, expected_->get_type());
+  find_call_trace_with_error_impl(cur_node, expected_type);
 
   stacktrace.push_back(cur_node);
   std::reverse(stacktrace.begin(), stacktrace.end());
@@ -301,10 +301,11 @@ string RestrictionLess::get_stacktrace_text() {
 
 bool RestrictionLess::check_broken_restriction_impl() {
   const TypeData *actual_type = actual_->get_type();
-  const TypeData *expected_type = expected_->get_type();
+  TypeData * expected_type = expected_->get_type()->clone();
+  expected_type->convert_Unknown_to_Any();
 
   if (is_less(actual_type, expected_type)) {
-    find_call_trace_with_error(actual_);
+    find_call_trace_with_error(actual_, expected_type);
     desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
     desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
     desc += "Expected type:\t" + colored_type_out(expected_type) + "\nActual type:\t" + colored_type_out(actual_type) + "\n";

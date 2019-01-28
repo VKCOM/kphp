@@ -31,14 +31,13 @@ private:
   bool is_parent_node(tinf::Node const *node);
   bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected);
   static bool is_less(const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr);
-  void find_call_trace_with_error(tinf::Node *cur_node);
+  void find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type);
 
 public:
 
   RestrictionLess(tinf::Node *a, tinf::Node *b) :
     actual_(a),
     expected_(b) {
-
   }
 
   const char *get_description() override {

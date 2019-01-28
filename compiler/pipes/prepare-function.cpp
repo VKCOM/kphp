@@ -137,18 +137,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
       case php_doc_tag::kphp_infer: {
         kphp_error(infer_type == 0, "Double kphp-infer tag found");
-        std::istringstream is(tag.value);
-        string token;
-        while (is >> token) {
-          if (token == "check") {
-            infer_type |= infer_mask::check;
-          } else if (token == "hint") {
-            infer_type |= infer_mask::hint;
-          } else if (token == "cast") {
-            infer_type |= infer_mask::cast;
-          } else {
-            kphp_error(0, format("Unknown kphp-infer tag type '%s'", token.c_str()));
-          }
+        infer_type |= (infer_mask::check | infer_mask::hint);
+        if (tag.value.find("cast") != std::string::npos) {
+          infer_type |= infer_mask::cast;
         }
         break;
       }
@@ -262,7 +253,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
 
           VertexPtr doc_type = phpdoc_parse_type(type_help, f);
-          kphp_error(doc_type, format("Failed to parse type '%s'", type_help.c_str()));
+          kphp_error_act(doc_type, format("Failed to parse type '%s'", type_help.c_str()), continue);
 
           if (infer_type & infer_mask::check) {
             auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);

@@ -93,7 +93,7 @@ void ClassData::patch_func_constructor(VertexAdaptor<op_function> func, int loca
   members.for_each([&](ClassMemberInstanceField &f) {
     if (f.root->has_def_val()) {
       auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(location_line_num));
-      inst_prop->location.set_line(location_line_num);
+      inst_prop->location = f.root->location;
       inst_prop->str_val = f.root->get_string();
 
       next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f.root->def_val()));
