@@ -52,6 +52,15 @@ OrFalse<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = t
 
 var f$openssl_x509_checkpurpose(const string &data, int purpose);
 
+array<string> f$openssl_get_cipher_methods(bool aliases = false);
+
+OrFalse<int> f$openssl_cipher_iv_length(const string &method);
+
+OrFalse<string> f$openssl_encrypt(const string &data, const string &method,
+                                  const string &key, int options = 0, const string &iv = string());
+OrFalse<string> f$openssl_decrypt(const string &data, const string &method,
+                                  const string &key, int options = 0, const string &iv = string());
+
 void openssl_init_static_once();
 
 void openssl_init_static();

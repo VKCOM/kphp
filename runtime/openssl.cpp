@@ -311,7 +311,6 @@ static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passph
 }
 
 static EVP_PKEY *openssl_get_public_evp(const string &key, bool *from_cache) {
-
   if (EVP_PKEY *evp_pkey = public_keys.find_resource(key)) {
     *from_cache = true;
     return evp_pkey;
@@ -1350,4 +1349,191 @@ var f$openssl_x509_checkpurpose(const string &data, int purpose) {
   return X509_parser(data).check_purpose(purpose);
 }
 
+namespace {
+bool is_mode_allowed(const EVP_CIPHER *cipher_type) {
+  const unsigned long mode = EVP_CIPHER_mode(cipher_type);
+  return (mode != EVP_CIPH_GCM_MODE && mode != EVP_CIPH_CCM_MODE);
+}
 
+enum cipher_opts : int {
+  OPENSSL_RAW_DATA = 1,
+  OPENSSL_ZERO_PADDING = 2,
+  OPENSSL_DONT_ZERO_PAD_KEY = 4
+};
+
+struct CipherCtx {
+  enum cipher_action {
+    decrypt = 0,
+    encrypt = 1
+  };
+
+  CipherCtx(const string &method, int options, cipher_action action) :
+    options_(options),
+    action_(action) {
+    type_ = EVP_get_cipherbyname(method.c_str());
+    if (!type_ || !is_mode_allowed(type_)) {
+      php_warning("Unknown cipher algorithm '%s'", method.c_str());
+      return;
+    }
+    ctx_ = EVP_CIPHER_CTX_new();
+    if (!ctx_) {
+      php_warning("Failed to create cipher context");
+    }
+  }
+
+  string get_result() const {
+    if ((action_ == decrypt) || (options_ & OPENSSL_RAW_DATA)) {
+      return out_;
+    } else {
+      return f$base64_encode(out_);
+    }
+  };
+
+  explicit operator bool() const { return type_ && ctx_; }
+
+  bool init(string key, string iv) {
+    const size_t max_iv_len = static_cast<size_t>(EVP_CIPHER_iv_length(type_));
+    if (encrypt && iv.empty() && max_iv_len > 0) {
+      php_warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
+    }
+    align_iv(iv, max_iv_len);
+
+    if (!EVP_CipherInit_ex(ctx_, type_, nullptr, nullptr, nullptr, action_)) {
+      php_warning("Cipher init error:\n%s", ssl_get_error_string());
+      return false;
+    }
+
+    const int cipher_key_len = EVP_CIPHER_key_length(type_);
+    if (cipher_key_len > key.size()) {
+      if ((OPENSSL_DONT_ZERO_PAD_KEY & options_) && !EVP_CIPHER_CTX_set_key_length(ctx_, key.size())) {
+        php_warning("Key length cannot be set for the cipher method:\n%s", ssl_get_error_string());
+        return false;
+      }
+      key.append(cipher_key_len - key.size(), '\0');
+    } else if (key.size() > cipher_key_len && !EVP_CIPHER_CTX_set_key_length(ctx_, key.size())) {
+      php_warning("Key length cannot be set for the cipher method:\n%s", ssl_get_error_string());
+    }
+
+    if (!EVP_CipherInit_ex(ctx_, nullptr, nullptr,
+                           reinterpret_cast<const unsigned char *>(key.c_str()),
+                           reinterpret_cast<const unsigned char *>(iv.c_str()), action_)) {
+      php_warning("Cipher init error:\n%s", ssl_get_error_string());
+      return false;
+    }
+    if (options_ & OPENSSL_ZERO_PADDING) {
+      EVP_CIPHER_CTX_set_padding(ctx_, 0);
+    }
+    return true;
+  }
+
+  bool update(string data) {
+    if (action_ == decrypt && !(options_ & OPENSSL_RAW_DATA)) {
+      OrFalse<string> decoding_data = f$base64_decode(data, true);
+      if (!decoding_data.bool_value) {
+        php_warning("Failed to base64 decode the input");
+        return false;
+      }
+      data = std::move(decoding_data.val());
+    }
+
+    out_.assign(data.size() + EVP_CIPHER_block_size(type_), '\0');
+    if (!EVP_CipherUpdate(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()), &out_len_,
+                          reinterpret_cast<const unsigned char *>(data.c_str()), static_cast<int>(data.size()))) {
+      php_warning("Cipher update error:\n%s", ssl_get_error_string());
+      return false;
+    }
+    return true;
+  }
+
+  bool finalize() {
+    int i = 0;
+    const int is_ok = action_ == encrypt
+                      ? EVP_EncryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i)
+                      : EVP_DecryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i);
+    if (is_ok > 0) {
+      out_.shrink(i + out_len_);
+    } else {
+      php_warning("Cipher finalize error:\n%s", ssl_get_error_string());
+    }
+    return is_ok;
+  }
+
+  ~CipherCtx() {
+    if (ctx_) {
+      EVP_CIPHER_CTX_cleanup(ctx_);
+      EVP_CIPHER_CTX_free(ctx_);
+    }
+  }
+
+private:
+  void align_iv(string &iv, size_t iv_required_len) {
+    if (iv.empty()) {
+      iv.assign(static_cast<std::uint32_t>(iv_required_len), '\0');
+    } else if (iv.size() < iv_required_len) {
+      php_warning("IV passed is only %d bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0",
+                  iv.size(), iv_required_len);
+      iv.append(iv_required_len - iv.size(), '\0');
+    } else if (iv.size() > iv_required_len) {
+      php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
+                  iv.size(), iv_required_len);
+      iv.shrink(iv_required_len);
+    }
+  }
+
+  const EVP_CIPHER *type_{nullptr};
+  EVP_CIPHER_CTX *ctx_{nullptr};
+
+  string out_;
+  int out_len_{0};
+
+  const int options_{0};
+  cipher_action action_;
+};
+
+template<bool allow_alias>
+void openssl_add_method(const EVP_CIPHER *cipher_type, const char *from, const char *to, void *arg) {
+  const EVP_CIPHER *type = cipher_type ? cipher_type : reinterpret_cast<const EVP_CIPHER *>(to);
+  if (is_mode_allowed(type) && (allow_alias || cipher_type)) {
+    reinterpret_cast<array<string> *>(arg)->push_back(string(from));
+  }
+}
+
+OrFalse<string> eval_cipher(CipherCtx::cipher_action action, const string &data, const string &method,
+                            const string &key, int options, const string &iv) {
+  CipherCtx cipher{method, options, action};
+  if (cipher && cipher.init(key, iv) && cipher.update(data) && cipher.finalize()) {
+    return cipher.get_result();
+  }
+  return false;
+}
+} // anonymous namespace
+
+array<string> f$openssl_get_cipher_methods(bool aliases) {
+  array<string> return_value;
+  EVP_CIPHER_do_all_sorted(aliases
+                           ? openssl_add_method<true>
+                           : openssl_add_method<false>,
+                           &return_value);
+  return return_value;
+}
+
+OrFalse<int> f$openssl_cipher_iv_length(const string &method) {
+  if (method.empty()) {
+    php_warning("Unknown cipher algorithm");
+    return false;
+  }
+  const EVP_CIPHER *cipher_type = EVP_get_cipherbyname(method.c_str());
+  if (!cipher_type || !is_mode_allowed(cipher_type)) {
+    php_warning("Unknown cipher algorithm");
+    return false;
+  }
+  return EVP_CIPHER_iv_length(cipher_type);
+}
+
+OrFalse<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
+  return eval_cipher(CipherCtx::encrypt, data, method, key, options, iv);
+}
+
+OrFalse<string> f$openssl_decrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
+  return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv);
+}

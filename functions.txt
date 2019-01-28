@@ -324,14 +324,23 @@ define('OPENSSL_ALGO_SHA384',  8);
 define('OPENSSL_ALGO_SHA512',  9);
 define('OPENSSL_ALGO_RMD160', 10);
 
+define('OPENSSL_RAW_DATA', 1);
+define('OPENSSL_ZERO_PADDING', 2);
+define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
+
 function openssl_public_encrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
 function openssl_private_decrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
 function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: OrFalse <string>;
 function openssl_pkey_get_public ($key ::: string) ::: OrFalse <string>;
 function openssl_verify ($data ::: string, $signature ::: string, $key ::: string, $signature_alg ::: int = 1) ::: int;
-function openssl_random_pseudo_bytes ($length::: int) ::: OrFalse <string>;
+function openssl_random_pseudo_bytes ($length ::: int) ::: OrFalse <string>;
 function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: OrFalse< array<var> >;
 function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: var;
+
+function openssl_get_cipher_methods($aliases ::: bool = false) ::: array<string>;
+function openssl_cipher_iv_length($method ::: string) ::: OrFalse<int>;
+function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: OrFalse<string>;
+function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: OrFalse<string>;
 
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
