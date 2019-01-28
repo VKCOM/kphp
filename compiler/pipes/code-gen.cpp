@@ -3803,7 +3803,11 @@ void compile_conv_array_l(VertexAdaptor<op_conv_array_l> root, CodeGenerator &W)
   VertexPtr val = root->expr();
   PrimitiveType tp = tinf::get_type(val)->get_real_ptype();
   if (tp == tp_array || tp == tp_var) {
-    W << "arrayval_ref (" << val << ", \"unknown\", -1)";
+    std::string fun_name = "unknown";
+    if (auto cur_fun = stage::get_function()) {
+      fun_name = cur_fun->get_human_readable_name();
+    }
+    W << "arrayval_ref (" << val << ", R\"(" << fun_name << ")\", -1)";
   } else {
     kphp_error (0, "Trying to pass non-array as reference to array");
   }
