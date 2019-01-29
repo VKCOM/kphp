@@ -1,6 +1,7 @@
 #include "compiler/pipes/collect-const-vars.h"
 
 #include "compiler/gentree.h"
+#include "compiler/data/src-file.h"
 
 int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
   if (vertex->type() == op_var) {
@@ -110,10 +111,11 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
 
   var_id->global_init_flag = global_init_flag;
 
+  FunctionPtr where_f = current_function->type == FunctionData::func_class_holder ? current_function->file_id->main_function : current_function;
   if (in_param_list > 0) {
-    current_function->header_const_var_ids.insert(var_id);
+    where_f->header_const_var_ids.insert(var_id);
   } else {
-    current_function->const_var_ids.insert(var_id);
+    where_f->const_var_ids.insert(var_id);
   }
 
   var->set_var_id(var_id);

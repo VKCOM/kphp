@@ -4142,7 +4142,10 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vector<FunctionPtr> source_functions;
   vector<FunctionPtr> exported_functions;
   for (const auto &function : xall) {
-    if (function->body_seq == FunctionData::body_value::empty || function->type == FunctionData::func_class_holder) {
+    if (function->type == FunctionData::func_class_holder) {
+      continue;
+    }
+    if (function->body_seq == FunctionData::body_value::empty && function->is_static_init_empty_body()) {
       continue;
     }
     if (function->used_in_source) {
