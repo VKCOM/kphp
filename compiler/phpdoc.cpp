@@ -363,8 +363,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, 
     res = rule;
   }
   if (res->type() == op_type_rule_func && res->get_string() == "lca") {
-    // todo включить ошибку до следующего обновления, когда подправят генерацию api builders
-    //kphp_error(!has_raw_bool, format("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)"));
+    kphp_error(!has_raw_bool, format("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)"));
   }
   return res;
 }
