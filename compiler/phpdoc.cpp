@@ -318,7 +318,8 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_t &pos) {
-  CHECK(pos < s.size() && s[pos] == '<', "Failed to parse phpdoc type: expected '<' for tuple");
+  CHECK(pos < s.size() && (s[pos] == '<' || s[pos] == '('),
+    "Failed to parse phpdoc type: expected '<' or '(' for tuple");
   ++pos;
   std::vector<VertexPtr> sub_types;
   while (true) {
@@ -328,7 +329,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_
     }
     sub_types.emplace_back(v);
     CHECK(pos < s.size(), "Failed to parse phpdoc type: unexpected end");
-    if (s[pos] == '>') {
+    if (s[pos] == '>' || s[pos] == ')') {
       ++pos;
       break;
     }
