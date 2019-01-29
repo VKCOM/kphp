@@ -12,7 +12,7 @@ public:
     return default_check_function(function) &&
            function->root->type() == op_function &&
            !function->is_constructor() &&
-           function->type() != FunctionData::func_class_holder;
+           function->type != FunctionData::func_class_holder;
   }
 
   VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
