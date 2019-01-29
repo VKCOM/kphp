@@ -208,7 +208,6 @@ string RestrictionLess::get_actual_error_message() {
   tinf::ExprNode *as_expr_0 = nullptr;
   tinf::VarNode *as_var_0 = nullptr;
   tinf::VarNode *as_var_1 = nullptr;
-  tinf::VarNode *as_var_2 = nullptr;
   if (stacktrace.size() >= 2) {
     as_expr_0 = dynamic_cast<tinf::ExprNode *>(stacktrace[0]);
     as_var_0 = dynamic_cast<tinf::VarNode *>(stacktrace[0]);
@@ -218,13 +217,9 @@ string RestrictionLess::get_actual_error_message() {
       return string("Incorrect type of the following class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
     }
   }
-  if (stacktrace.size() >= 3) {
-    as_var_2 = dynamic_cast<tinf::VarNode *>(stacktrace[2]);
-    if ((!as_var_0 || as_var_0->is_variable() || as_var_0->is_return_value_from_function()) &&
-        (!as_var_1 || as_var_1->is_variable() || as_var_1->is_return_value_from_function()) &&
-        as_var_2 && !as_var_2->is_variable() && !as_var_2->is_return_value_from_function()) {
-      return string("Incorrect type of the ") + TermStringFormat::add_text_attribute(as_var_2->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_2
-        ->get_function_name() + "\n";
+  if (!stacktrace.empty()) {
+    if (as_var_0 && !as_var_0->is_variable() && !as_var_0->is_return_value_from_function()) {
+      return string("Incorrect type of the ") + TermStringFormat::add_text_attribute(as_var_0->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_0->get_function_name() + "\n";
     }
   }
   if (stacktrace.size() >= 3 && as_expr_0 && as_var_1 &&
