@@ -101,7 +101,6 @@ public:
 
   static FunctionPtr create_function(VertexAdaptor<meta_op_function> root, func_type_t type);
 
-  bool is_static_init_empty_body() const;
   string get_resumable_path() const;
   static string get_human_readable_name(const std::string &name);
   string get_human_readable_name() const;

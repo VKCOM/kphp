@@ -47,32 +47,18 @@ protected:
   virtual T on_non_const(VertexPtr) { return T(); }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
-    bool has_key = false;
-    bool no_key = false;
-
     VertexRange arr = v->args();
     for (size_t i = 0; i < arr.size(); ++i) {
       VertexPtr cur = arr[i];
       if (cur->type() == op_double_arrow) {
-        has_key = true;
-
         if (!on_array_double_arrow(cur)) {
           return on_non_const(v);
         }
-      } else {
-        no_key = true;
-
-        if (!on_array_value(v, i)) {
-          return on_non_const(v);
-        }
+      } else if (!on_array_value(v, i)) {
+        return on_non_const(v);
       }
     }
-
-    if (has_key && no_key) {
-      return on_non_const(v);
-    } else {
-      return on_array_finish(v.as<op_array>());
-    }
+    return on_array_finish(v.as<op_array>());
   }
 
 protected:

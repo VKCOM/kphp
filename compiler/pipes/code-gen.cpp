@@ -422,13 +422,6 @@ struct InitVar {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct FunctionStaticInit {
-  FunctionPtr function;
-  bool in_header;
-  inline FunctionStaticInit(FunctionPtr function, bool in_header = false);
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct StaticInit {
   const vector<FunctionPtr> &all_functions;
   inline StaticInit(const vector<FunctionPtr> &all_functions);
@@ -505,12 +498,10 @@ struct VarsCppPart : private vk::not_copyable {
 };
 
 struct VarsCpp {
-  vector<VarPtr> vars;
+  std::vector<VarPtr> vars;
   int parts_cnt;
-  inline VarsCpp(vector<VarPtr> &vars, int parts_cnt);
+  inline VarsCpp(std::vector<VarPtr> &&vars, int parts_cnt);
   inline void compile(CodeGenerator &W) const;
-//private:
-  //DISALLOW_COPY_AND_ASSIGN (VarsCpp);
 };
 
 struct DfsInit {
@@ -1536,10 +1527,11 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
 
   W << ExternInclude("php_functions.h");
 
-  vector<VarPtr> const_string_vars;
-  vector<VarPtr> const_array_vars;
-  vector<VarPtr> const_regexp_vars;
+  std::vector<VarPtr> const_string_vars;
+  std::vector<VarPtr> const_array_vars;
+  std::vector<VarPtr> const_regexp_vars;
   std::map<std::string, VertexPtr> dependent_vars;
+  std::vector<VarPtr> other_const_vars;
 
   IncludesCollector includes;
   for (auto var : vars) {
@@ -1556,7 +1548,7 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     }
 
     W << VarDeclaration(var);
-    if (var->is_constant() && var->global_init_flag) {
+    if (var->is_constant()) {
       switch (var->init_val->type()) {
         case op_string:
           const_string_vars.push_back(var);
@@ -1570,7 +1562,8 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
           break;
         }
         default:
-        kphp_fail();
+          other_const_vars.emplace_back(var);
+          break;
       }
     }
   }
@@ -1579,9 +1572,9 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     W << VarDeclaration(name_and_vertex.second->get_var_id(), true, true);
   }
 
-  string raw_data;
-  vector<int> const_string_shifts(const_string_vars.size());
-  vector<int> const_string_length(const_string_vars.size());
+  std::string raw_data;
+  std::vector<int> const_string_shifts(const_string_vars.size());
+  std::vector<int> const_string_length(const_string_vars.size());
   int ii = 0;
   for (auto var : const_string_vars) {
     int shift_to_align = (((int)raw_data.size() + 7) & -8) - (int)raw_data.size();
@@ -1605,8 +1598,8 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     W << ";" << NL;
   }
 
-  const vector<int> const_array_shifts = compile_arrays_raw_representation(const_array_vars, W);
-  assert(const_array_shifts.size() == const_array_vars.size());
+  const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_array_vars, W);
+  kphp_assert(const_array_shifts.size() == const_array_vars.size());
 
   for (int pr = 0; pr <= max_dependency_level; ++pr) {
     W << NL << "void const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(file_num) << "()";
@@ -1619,7 +1612,7 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
       }
     }
 
-    for (auto var : const_regexp_vars) {
+    for (const auto &var : const_regexp_vars) {
       if (var->dependency_level == pr) {
         W << InitVar(var);
       }
@@ -1627,9 +1620,18 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
 
     for (size_t array_id = 0; array_id < const_array_vars.size(); ++array_id) {
       VarPtr var = const_array_vars[array_id];
-
       if (var->dependency_level == pr) {
         compile_raw_array(W, var, const_array_shifts[array_id]);
+      }
+    }
+
+    for (const auto &var: other_const_vars) {
+      if (var->dependency_level == pr) {
+        W << InitVar(var);
+        PrimitiveType ptype = var->tinf_node.get_type()->ptype();
+        if (vk::any_of_equal(ptype, tp_array, tp_var, tp_string)) {
+          W << VarName(var) << ".set_reference_counter_to_const();" << NL;
+        }
       }
     }
     W << END << NL;
@@ -1639,15 +1641,14 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline VarsCpp::VarsCpp(vector<VarPtr> &new_vars, int parts_cnt) :
-  vars(),
+inline VarsCpp::VarsCpp(vector<VarPtr> &&new_vars, int parts_cnt) :
+  vars(std::move(new_vars)),
   parts_cnt(parts_cnt) {
-  std::swap(vars, new_vars);
 }
 
 inline void VarsCpp::compile(CodeGenerator &W) const {
   kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
-  vector<vector<VarPtr>> vcpp(parts_cnt);
+  std::vector<std::vector<VarPtr>> vcpp(parts_cnt);
 
   int max_dependency_level = 0;
   for (auto var : vars) {
@@ -1700,64 +1701,11 @@ inline void InitVar::compile(CodeGenerator &W) const {
   stage::set_location(save_location);
 }
 
-inline FunctionStaticInit::FunctionStaticInit(FunctionPtr function, bool in_header) :
-  function(function),
-  in_header(in_header) {
-}
-
-inline static void init_vars(const vector<VarPtr> &vars, CodeGenerator &W) {
-  for (auto var : vars) {
-    if (var->global_init_flag || !var->optimize_flag) {
-      continue;
-    }
-
-    W << InitVar(var);
-
-    PrimitiveType ptype = var->tinf_node.get_type()->ptype();
-
-    if (ptype == tp_array || ptype == tp_var || ptype == tp_string) {
-      W << VarName(var) << ".set_reference_counter_to_const();" << NL;
-    }
-  }
-}
-
-void FunctionStaticInit::compile(CodeGenerator &W) const {
-  if (function->is_static_init_empty_body()) {
-    return;
-  }
-  if (function->is_inline) {
-    W << "static inline ";
-  }
-  W << "void " << FunctionName(function) << "$static_init()";
-  if (in_header) {
-    W << ";" << NL;
-    return;
-  }
-
-  W << " " << BEGIN;
-
-  std::vector<VarPtr> ordered_vars;
-  ordered_vars.insert(ordered_vars.end(), function->const_var_ids.begin(), function->const_var_ids.end());
-  ordered_vars.insert(ordered_vars.end(), function->header_const_var_ids.begin(), function->header_const_var_ids.end());
-
-  std::sort(ordered_vars.begin(), ordered_vars.end());
-
-  init_vars(ordered_vars, W);
-
-  W << END << NL;
-}
-
 inline StaticInit::StaticInit(const vector<FunctionPtr> &all_functions) :
   all_functions(all_functions) {
 }
 
 inline void StaticInit::compile(CodeGenerator &W) const {
-  for (auto to : all_functions) {
-    if (!to->is_static_init_empty_body()) {
-      W << Include(to->header_full_name);
-    }
-  }
-
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace())
@@ -1782,11 +1730,6 @@ inline void StaticInit::compile(CodeGenerator &W) const {
   }
 
   W << "const_vars_init();" << NL;
-  for (auto to : all_functions) {
-    if (!to->is_static_init_empty_body()) {
-      W << FunctionName(to) << "$static_init();" << NL;
-    }
-  }
   if (!G->env().is_static_lib_mode()) {
     W << "dl::allocator_init (nullptr, 0);" << NL;
   }
@@ -2092,10 +2035,8 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << UnlockComments();
     W << Function(function);
     W << LockComments();
-    W << FunctionStaticInit(function);
   } else {
     W << Function(function, true);
-    W << FunctionStaticInit(function, true);
   }
 
   W << CloseNamespace();
@@ -2132,7 +2073,6 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << Function(function);
   W << LockComments();
 
-  W << FunctionStaticInit(function);
   W << CloseNamespace();
   W << CloseFile();
 }
@@ -4156,7 +4096,6 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     return fun->type != FunctionData::func_class_holder &&
            (
              fun->body_seq != FunctionData::body_value::empty ||
-             !fun->is_static_init_empty_body() ||
              main_functions.count(fun)
            );
   };
@@ -4207,12 +4146,12 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   }
   W << Async(InitScriptsCpp(/*std::move*/main_files, source_functions, all_functions));
 
-  vector<VarPtr> vars = G->get_global_vars();
+  std::vector<VarPtr> vars = G->get_global_vars();
   for (FunctionPtr fun: xall) {
     vars.insert(vars.end(), fun->static_var_ids.begin(), fun->static_var_ids.end());
   }
   int parts_cnt = calc_count_of_parts(vars.size());
-  W << Async(VarsCpp(vars, parts_cnt));
+  W << Async(VarsCpp(std::move(vars), parts_cnt));
 
   if (G->env().is_static_lib_mode()) {
     for (FunctionPtr exported_function: exported_functions) {

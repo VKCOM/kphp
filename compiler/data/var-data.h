@@ -31,7 +31,6 @@ public:
   bool uninited_flag = false;
   bool optimize_flag = false;
   bool tinf_flag = false;
-  bool global_init_flag = false;
   bool needs_const_iterator_flag = false;
   bool marked_as_global = false;
   bool marked_as_const = false;

@@ -78,7 +78,6 @@ bool CollectConstVarsPass::should_convert_to_const(VertexPtr root) {
 }
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
   string name;
-  bool global_init_flag = true;
 
   if (root->type() == op_string) {
     name = gen_const_string_name(root.as<op_string>()->str_val);
@@ -87,7 +86,6 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   } else if (is_array_suitable_for_hashing(root)) {
     name = gen_const_array_name(root.as<op_array>());
   } else {
-    global_init_flag = false;
     name = gen_unique_name("const_var");
   }
 
@@ -109,9 +107,9 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
     var_id->dependency_level = max_dep_level;
   }
 
-  var_id->global_init_flag = global_init_flag;
-
-  FunctionPtr where_f = current_function->type == FunctionData::func_class_holder ? current_function->file_id->main_function : current_function;
+  FunctionPtr where_f = current_function->type == FunctionData::func_class_holder
+                        ? current_function->file_id->main_function
+                        : current_function;
   if (in_param_list > 0) {
     where_f->header_const_var_ids.insert(var_id);
   } else {

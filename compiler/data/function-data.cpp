@@ -98,13 +98,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   return new_function;
 }
 
-bool FunctionData::is_static_init_empty_body() const {
-  auto global_init_flag_is_set = [](const VarPtr &v) { return v->global_init_flag; };
-
-  return std::all_of(const_var_ids.begin(), const_var_ids.end(), global_init_flag_is_set) &&
-         std::all_of(header_const_var_ids.begin(), header_const_var_ids.end(), global_init_flag_is_set);
-}
-
 string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;
