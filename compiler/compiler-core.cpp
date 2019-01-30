@@ -572,7 +572,7 @@ void copy_file(const File &source_file, const string &destination, bool show_cmd
   }
 }
 
-void CompilerCore::copy_static_lib_to_out_dir(const File &static_archive, bool show_copy_cmd) const {
+void CompilerCore::copy_static_lib_to_out_dir(File &&static_archive, bool show_copy_cmd) const {
   Index out_dir;
   out_dir.set_dir(env().get_static_lib_out_dir());
   out_dir.del_extra_files();
@@ -580,10 +580,12 @@ void CompilerCore::copy_static_lib_to_out_dir(const File &static_archive, bool s
   // copy static archive
   LibData out_lib(env().get_static_lib_name(), out_dir.get_dir());
   copy_file(static_archive, out_lib.static_archive_path(), show_copy_cmd);
+  static_archive.unlink();
 
   // copy functions.txt of this static archive
   File functions_txt_tmp(env().get_dest_cpp_dir() + LibData::functions_txt_tmp_file());
   copy_file(functions_txt_tmp, out_lib.functions_txt_file(), show_copy_cmd);
+  functions_txt_tmp.unlink();
 
   // copy runtime lib sha256 of this static archive
   File runtime_lib_sha256(env().get_runtime_sha256_file());
@@ -596,6 +598,7 @@ void CompilerCore::copy_static_lib_to_out_dir(const File &static_archive, bool s
   // copy cpp header files of this static archive
   for (File *header_file: headers_tmp_dir.get_files()) {
     copy_file(*header_file, out_headers_dir.get_dir() + header_file->name, show_copy_cmd);
+    header_file->unlink();
   }
 }
 
@@ -670,7 +673,7 @@ void CompilerCore::make() {
     copy_file(bin_file, env().get_user_binary_path(), show_copy_cmd);
   }
   if (env().is_static_lib_mode()) {
-    copy_static_lib_to_out_dir(bin_file, show_copy_cmd);
+    copy_static_lib_to_out_dir(std::move(bin_file), show_copy_cmd);
   }
 }
 bool CompilerCore::try_require_file(SrcFilePtr file) {

@@ -38,3 +38,10 @@ echo "lib_user: use_class_new();\n";
 use_class_new();
 
 echo "lib_user: pow2(): ", pow2(), "\n";
+
+function use_other_lib() {
+    require_lib('lib_examples/example2');
+    echo example2_sum(1, 2), "\n";
+}
+
+use_other_lib();

@@ -4138,6 +4138,11 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   }
 
   vector<SrcFilePtr> main_files = G->get_main_files();
+  std::unordered_set<FunctionPtr> main_functions(main_files.size());
+  for (const SrcFilePtr &main_file : main_files) {
+    main_functions.emplace(main_file->main_function);
+  }
+
   vector<FunctionPtr> all_functions;
   vector<FunctionPtr> source_functions;
   vector<FunctionPtr> exported_functions;
@@ -4145,7 +4150,9 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     if (function->type == FunctionData::func_class_holder) {
       continue;
     }
-    if (function->body_seq == FunctionData::body_value::empty && function->is_static_init_empty_body()) {
+    if (function->body_seq == FunctionData::body_value::empty &&
+        function->is_static_init_empty_body() &&
+        main_functions.count(function) == 0) {
       continue;
     }
     if (function->used_in_source) {
