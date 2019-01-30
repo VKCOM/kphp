@@ -304,76 +304,87 @@ protected:
 };
 
 struct ArrayHash
-  : ConstManipulations<long long> {
+  : ConstManipulations<void> {
   static long long calc_hash(VertexPtr v) {
-    static ArrayHash array_hash;
-    return array_hash.visit(GenTree::get_actual_value(v));
+    ArrayHash array_hash;
+    array_hash.visit(GenTree::get_actual_value(v));
+    return array_hash.cur_hash;
+  }
+
+  void feed_hash(long long val) {
+    cur_hash = cur_hash * HASH_MULT + val;
+  }
+
+  void feed_hash_string(const string &s) {
+    feed_hash(string_hash(s.c_str(), static_cast<int>(s.size())));
   }
 
 protected:
-  long long on_trivial(VertexPtr v) override {
+  void on_trivial(VertexPtr v) override {
     string s = OpInfo::str(v->type());
 
     if (v->has_get_string()) {
       s += v->get_string();
     }
 
-    return string_hash(s.c_str(), static_cast<int>(s.size()));
+    feed_hash_string(s);
   }
 
-  long long on_conv(VertexAdaptor<meta_op_unary> v) override {
+  void on_conv(VertexAdaptor<meta_op_unary> v) override {
     return visit(v->expr());
   }
 
-  long long on_unary(VertexAdaptor<meta_op_unary> v) override {
+  void on_unary(VertexAdaptor<meta_op_unary> v) override {
     string type_str = OpInfo::str(v->type());
-    long long hash_of_type = string_hash(type_str.c_str(), static_cast<int>(type_str.size()));
+    feed_hash_string(type_str);
 
-    return hash_of_type * HASH_MULT + visit(v->expr());
+    return visit(v->expr());
   }
 
-  long long on_define_val(VertexAdaptor<op_define_val> v) override {
+  void on_define_val(VertexAdaptor<op_define_val> v) override {
     return visit(GenTree::get_actual_value(v));
   }
 
-  long long on_binary(VertexAdaptor<meta_op_binary> v) override {
+  void on_binary(VertexAdaptor<meta_op_binary> v) override {
     VertexPtr key = v->lhs();
     VertexPtr value = v->rhs();
 
-    return (visit(key) * HASH_MULT + OpInfo::str(v->type())[0]) * HASH_MULT + visit(value);
+    visit(key);
+    feed_hash_string(OpInfo::str(v->type()));
+    visit(value);
   }
 
-  long long on_double_arrow(VertexAdaptor<op_double_arrow> v) override {
+  void on_double_arrow(VertexAdaptor<op_double_arrow> v) override {
     VertexPtr key = GenTree::get_actual_value(v->key());
     VertexPtr value = GenTree::get_actual_value(v->value());
 
-    return (visit(key) * HASH_MULT + '-') * HASH_MULT + visit(value);
+    visit(key);
+    feed_hash_string("=>");
+    visit(value);
   }
 
-  long long on_array(VertexAdaptor<op_array> v) override {
-    long long res_hash = v->args().size();
-    res_hash = res_hash * HASH_MULT + MAGIC1;
+  void on_array(VertexAdaptor<op_array> v) override {
+    feed_hash(v->args().size());
+    feed_hash(MAGIC1);
 
     for (auto it : *v) {
-      res_hash = res_hash * HASH_MULT + visit(GenTree::get_actual_value(it));
+      visit(GenTree::get_actual_value(it));
     }
 
-    res_hash = res_hash * HASH_MULT + MAGIC2;
-
-    return res_hash;
+    feed_hash(MAGIC2);
   }
 
-  long long on_var(VertexPtr v) override {
+  void on_var(VertexPtr v) override {
     return on_unary(GenTree::get_actual_value(v));
   }
 
-  long long on_non_const(VertexPtr v) override {
+  void on_non_const(VertexPtr v) override {
     string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
-    return 0;
   }
 
 private:
+  long long cur_hash = 0;
   static const long long HASH_MULT = 56235515617499LL;
   static const long long MAGIC1 = 536536536536960LL;
   static const long long MAGIC2 = 288288288288069LL;
