@@ -9,7 +9,7 @@ VertexPtr PreprocessVarargPass::create_va_list_var(Location loc) {
 VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_func_call) {
     VertexPtr call = root.as<op_func_call>();
-    string name = call->get_string();
+    const string &name = call->get_string();
     if (name == "func_get_args") {
       kphp_error(call->size() == 0, "Strange func_get_args with arguments");
       return create_va_list_var(call->location);

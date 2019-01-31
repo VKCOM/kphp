@@ -78,7 +78,7 @@ VertexPtr GenTree::get_var_name() {
   AutoLocation var_location(this);
 
   if ((*cur)->type() != tok_var_name) {
-    return VertexPtr();
+    return {};
   }
   auto var = VertexAdaptor<op_var>::create();
   var->str_val = static_cast<string>((*cur)->str_val);
@@ -779,7 +779,7 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
 
   VertexPtr name = get_var_name_ref();
   if (!name) {
-    return VertexPtr();
+    return {};
   }
 
   vector<VertexPtr> next;
