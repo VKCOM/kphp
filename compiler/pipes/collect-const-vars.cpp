@@ -10,10 +10,15 @@ int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
   }
 
   if (vertex->type() == op_double_arrow) {
-    int dep_key = get_dependency_level(vertex.as<op_double_arrow>()->key());
-    int dep_value = get_dependency_level(vertex.as<op_double_arrow>()->value());
-
+    const int dep_key = get_dependency_level(vertex.as<op_double_arrow>()->key());
+    const int dep_value = get_dependency_level(vertex.as<op_double_arrow>()->value());
     return std::max(dep_key, dep_value);
+  }
+
+  if (vertex->type() == op_index) {
+    const int dep_key = get_dependency_level(vertex.as<op_index>()->key());
+    const int dep_array = get_dependency_level(vertex.as<op_index>()->array());
+    return std::max(dep_key, dep_array);
   }
 
   return 0;
@@ -50,14 +55,7 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *local) {
   if (root->const_type == cnst_const_val) {
     if (root->type() == op_conv_regexp) {
       VertexPtr expr = GenTree::get_actual_value(root.as<op_conv_regexp>()->expr());
-
-      bool conv_to_const =
-        expr->type() == op_string ||
-        expr->type() == op_concat ||
-        expr->type() == op_string_build ||
-        should_convert_to_const(root);
-
-      if (conv_to_const) {
+      if (vk::any_of_equal(expr->type(), op_string, op_concat, op_string_build)) {
         return create_const_variable(root, root->location);
       }
     }
@@ -77,7 +75,7 @@ bool CollectConstVarsPass::should_convert_to_const(VertexPtr root) {
          root->type() == op_func_call;
 }
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
-  string name;
+  std::string name;
 
   if (root->type() == op_string) {
     name = gen_const_string_name(root.as<op_string>()->str_val);
@@ -107,13 +105,10 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
     var_id->dependency_level = max_dep_level;
   }
 
-  FunctionPtr where_f = current_function->type == FunctionData::func_class_holder
-                        ? current_function->file_id->main_function
-                        : current_function;
   if (in_param_list > 0) {
-    where_f->header_const_var_ids.insert(var_id);
+    current_function->header_const_var_ids.insert(var_id);
   } else {
-    where_f->const_var_ids.insert(var_id);
+    current_function->const_var_ids.insert(var_id);
   }
 
   var->set_var_id(var_id);

@@ -489,18 +489,10 @@ struct FullCleanupFunction {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct VarsCppPart : private vk::not_copyable {
-  int file_num;
-  int max_dependency_level;
-  const vector<VarPtr> &vars;
-  inline VarsCppPart(int file_num, const vector<VarPtr> &vars, int max_dependency_level);
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct VarsCpp {
   std::vector<VarPtr> vars;
-  int parts_cnt;
-  inline VarsCpp(std::vector<VarPtr> &&vars, int parts_cnt);
+  size_t parts_cnt;
+  inline VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -1368,36 +1360,28 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline VarsCppPart::VarsCppPart(int file_num, const vector<VarPtr> &vars, int max_dependency_level) :
-  file_num(file_num),
-  max_dependency_level(max_dependency_level),
-  vars(vars) {
-  kphp_assert(max_dependency_level >= 0);
-}
-
-
-inline static void add_dependent_declarations(VertexPtr vertex, std::map<std::string, VertexPtr> &dependent_vars) {
+inline static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &dependent_vars) {
   switch (vertex->type()) {
     case op_var:
-      dependent_vars[vertex->get_var_id()->name] = vertex;
+      dependent_vars.emplace(vertex->get_var_id());
       break;
-
     case op_double_arrow: {
-      VertexAdaptor<op_double_arrow> arrow = vertex.as<op_double_arrow>();
-      VertexPtr key = arrow->key();
-      VertexPtr value = arrow->value();
-
-      add_dependent_declarations(key, dependent_vars);
-      add_dependent_declarations(value, dependent_vars);
+      auto arrow = vertex.as<op_double_arrow>();
+      add_dependent_declarations(arrow->key(), dependent_vars);
+      add_dependent_declarations(arrow->value(), dependent_vars);
       break;
     }
-
     case op_array:
       for (auto array_el_it : *vertex) {
         add_dependent_declarations(array_el_it, dependent_vars);
       }
       break;
-
+    case op_index: {
+      auto index = vertex.as<op_index>();
+      add_dependent_declarations(index->key(), dependent_vars);
+      add_dependent_declarations(index->array(), dependent_vars);
+      break;
+    }
     default:
       return;
   }
@@ -1406,7 +1390,6 @@ inline static void add_dependent_declarations(VertexPtr vertex, std::map<std::st
 inline int array_len() {
   return (8 * sizeof(int)) / sizeof(double);
 }
-
 
 inline void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   if (shift == -1) {
@@ -1439,19 +1422,19 @@ static inline bool can_generate_raw_representation(VertexAdaptor<op_array> verte
   return true;
 }
 
-std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_array_vars, CodeGenerator &W) {
-  if (const_array_vars.empty()) {
+std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W) {
+  if (const_raw_array_vars.empty()) {
     return std::vector<int>();
   }
 
   std::vector<int> shifts;
-  shifts.reserve(const_array_vars.size());
+  shifts.reserve(const_raw_array_vars.size());
 
   int shift = 0;
 
   W << "static const union { struct { int a; int b; } is; double d; } raw_arrays[] = { ";
 
-  for (auto var_it : const_array_vars) {
+  for (auto var_it : const_raw_array_vars) {
     VertexAdaptor<op_array> vertex = var_it->init_val.as<op_array>();
 
     TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at(Key::any_key());
@@ -1521,17 +1504,16 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
   return shifts;
 }
 
-inline void VarsCppPart::compile(CodeGenerator &W) const {
-  string file_name = string("vars") + int_to_str(file_num) + ".cpp";
-  W << OpenFile(file_name, "", false);
+std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, std::size_t part) {
+  std::string file_name = "vars" + std::to_string(part) + ".cpp";
+  W << OpenFile(file_name, "o_vars", false);
 
   W << ExternInclude("php_functions.h");
 
-  std::vector<VarPtr> const_string_vars;
-  std::vector<VarPtr> const_array_vars;
-  std::vector<VarPtr> const_regexp_vars;
-  std::map<std::string, VertexPtr> dependent_vars;
+  std::vector<VarPtr> const_raw_string_vars;
+  std::vector<VarPtr> const_raw_array_vars;
   std::vector<VarPtr> other_const_vars;
+  std::set<VarPtr> dependent_vars;
 
   IncludesCollector includes;
   for (auto var : vars) {
@@ -1541,6 +1523,7 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
   }
   W << includes;
 
+  std::vector<bool> dep_mask;
   W << OpenNamespace();
   for (auto var : vars) {
     if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
@@ -1549,16 +1532,17 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
 
     W << VarDeclaration(var);
     if (var->is_constant()) {
+      if (dep_mask.size() <= var->dependency_level) {
+        dep_mask.resize(var->dependency_level + 1, false);
+        dep_mask[var->dependency_level] = true;
+      }
       switch (var->init_val->type()) {
         case op_string:
-          const_string_vars.push_back(var);
-          break;
-        case op_conv_regexp:
-          const_regexp_vars.push_back(var);
+          const_raw_string_vars.push_back(var);
           break;
         case op_array: {
           add_dependent_declarations(var->init_val, dependent_vars);
-          const_array_vars.push_back(var);
+          const_raw_array_vars.push_back(var);
           break;
         }
         default:
@@ -1568,15 +1552,18 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     }
   }
 
-  for (auto name_and_vertex : dependent_vars) {
-    W << VarDeclaration(name_and_vertex.second->get_var_id(), true, true);
+  std::vector<VarPtr> extern_depends;
+  std::set_difference(dependent_vars.begin(), dependent_vars.end(),
+                      vars.begin(), vars.end(), std::back_inserter(extern_depends));
+  for (auto var : extern_depends) {
+    W << VarDeclaration(var, true, true);
   }
 
   std::string raw_data;
-  std::vector<int> const_string_shifts(const_string_vars.size());
-  std::vector<int> const_string_length(const_string_vars.size());
+  std::vector<int> const_string_shifts(const_raw_string_vars.size());
+  std::vector<int> const_string_length(const_raw_string_vars.size());
   int ii = 0;
-  for (auto var : const_string_vars) {
+  for (auto var : const_raw_string_vars) {
     int shift_to_align = (((int)raw_data.size() + 7) & -8) - (int)raw_data.size();
     if (shift_to_align != 0) {
       raw_data.append(shift_to_align, 0);
@@ -1598,35 +1585,33 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
     W << ";" << NL;
   }
 
-  const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_array_vars, W);
-  kphp_assert(const_array_shifts.size() == const_array_vars.size());
+  const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
+  kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
-  for (int pr = 0; pr <= max_dependency_level; ++pr) {
-    W << NL << "void const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(file_num) << "()";
+  for (std::size_t dep_level = 0; dep_level < dep_mask.size(); ++dep_level) {
+    if (!dep_mask[dep_level]) {
+      continue;
+    }
+
+    W << NL << "void const_vars_init_priority_" << std::to_string(dep_level) << "_file_" << std::to_string(part) << "()";
     W << BEGIN;
 
-    for (size_t ii = 0; ii < const_string_vars.size(); ++ii) {
-      VarPtr var = const_string_vars[ii];
-      if (var->dependency_level == pr) {
-        W << VarName(var) << ".assign_raw (&raw[" << int_to_str(const_string_shifts[ii]) << "]);" << NL;
+    for (size_t ii = 0; ii < const_raw_string_vars.size(); ++ii) {
+      VarPtr var = const_raw_string_vars[ii];
+      if (var->dependency_level == dep_level) {
+        W << VarName(var) << ".assign_raw (&raw[" << std::to_string(const_string_shifts[ii]) << "]);" << NL;
       }
     }
 
-    for (const auto &var : const_regexp_vars) {
-      if (var->dependency_level == pr) {
-        W << InitVar(var);
-      }
-    }
-
-    for (size_t array_id = 0; array_id < const_array_vars.size(); ++array_id) {
-      VarPtr var = const_array_vars[array_id];
-      if (var->dependency_level == pr) {
+    for (size_t array_id = 0; array_id < const_raw_array_vars.size(); ++array_id) {
+      VarPtr var = const_raw_array_vars[array_id];
+      if (var->dependency_level == dep_level) {
         compile_raw_array(W, var, const_array_shifts[array_id]);
       }
     }
 
     for (const auto &var: other_const_vars) {
-      if (var->dependency_level == pr) {
+      if (var->dependency_level == dep_level) {
         W << InitVar(var);
         PrimitiveType ptype = var->tinf_node.get_type()->ptype();
         if (vk::any_of_equal(ptype, tp_array, tp_var, tp_string)) {
@@ -1639,44 +1624,52 @@ inline void VarsCppPart::compile(CodeGenerator &W) const {
 
   W << CloseNamespace();
   W << CloseFile();
+  return dep_mask;
 }
 
-inline VarsCpp::VarsCpp(vector<VarPtr> &&new_vars, int parts_cnt) :
+inline VarsCpp::VarsCpp(std::vector<VarPtr> &&new_vars, size_t parts_cnt) :
   vars(std::move(new_vars)),
   parts_cnt(parts_cnt) {
+  kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
+  std::sort(vars.begin(), vars.end());
 }
 
 inline void VarsCpp::compile(CodeGenerator &W) const {
-  kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
-  std::vector<std::vector<VarPtr>> vcpp(parts_cnt);
-
-  int max_dependency_level = 0;
-  for (auto var : vars) {
-    int vi = (unsigned)hash(var->name) % parts_cnt;
-    vcpp[vi].push_back(var);
-    max_dependency_level = std::max(max_dependency_level, var->dependency_level);
-  }
-
-  for (int i = 0; i < parts_cnt; i++) {
-    sort(vcpp[i].begin(), vcpp[i].end());
-    W << VarsCppPart(i, vcpp[i], max_dependency_level);
+  std::vector<VarPtr> vars_batch;
+  std::vector<std::vector<bool>> dep_masks(parts_cnt);
+  for (std::size_t part_id = 0; part_id < parts_cnt; ++part_id) {
+    for (std::size_t var_index = part_id; var_index < vars.size(); var_index += parts_cnt) {
+      vars_batch.emplace_back(vars[var_index]);
+    }
+    dep_masks[part_id] = compile_vars_part(W, vars_batch, part_id);
+    vars_batch.clear();
   }
 
   W << OpenFile("vars.cpp", "", false);
   W << OpenNamespace();
-  for (int pr = 0; pr <= max_dependency_level; ++pr) {
-    for (int i = 0; i < parts_cnt; i++) {
-      // function declaration
-      W << "void const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(i) << "();" << NL;
+
+  W << "void const_vars_init() " << BEGIN;
+
+  char init_fun[128] = {0};
+  const auto longest_dep_mask = std::max_element(
+    dep_masks.begin(), dep_masks.end(),
+    [](const std::vector<bool> &l, const std::vector<bool> &r) {
+      return l.size() < r.size();
+    });
+  for (int dep_level = 0; dep_level < longest_dep_mask->size(); ++dep_level) {
+    for (std::size_t part_id = 0; part_id < parts_cnt; ++part_id) {
+      if (dep_masks[part_id].size() > dep_level && dep_masks[part_id][dep_level]) {
+        const int s = snprintf(init_fun, sizeof(init_fun),
+                               "const_vars_init_priority_%d_file_%zu();", dep_level, part_id);
+        kphp_assert(s > 0 && s < sizeof(init_fun));
+        // function declaration
+        W << "void " << vk::string_view{init_fun, static_cast<std::size_t>(s)} << NL;
+        // function call
+        W << vk::string_view{init_fun, static_cast<std::size_t>(s)} << NL;
+      }
     }
   }
 
-  W << "void const_vars_init() " << BEGIN;
-  for (int pr = 0; pr <= max_dependency_level; ++pr) {
-    for (int i = 0; i < parts_cnt; i++) {
-      W << "const_vars_init_priority_" << int_to_str(pr) << "_file_" << int_to_str(i) << "();" << NL;
-    }
-  }
   W << END;
   W << CloseNamespace();
   W << CloseFile();
@@ -4060,8 +4053,8 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
   }
 }
 
-int CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
-  return cnt_global_vars > 1000 ? 64 : 1;
+std::size_t CodeGenF::calc_count_of_parts(std::size_t cnt_global_vars) {
+  return 1u + cnt_global_vars / 4096u;
 }
 
 void CodeGenF::on_finish(DataStream<WriterData *> &os) {
@@ -4150,7 +4143,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   for (FunctionPtr fun: xall) {
     vars.insert(vars.end(), fun->static_var_ids.begin(), fun->static_var_ids.end());
   }
-  int parts_cnt = calc_count_of_parts(vars.size());
+  std::size_t parts_cnt = calc_count_of_parts(vars.size());
   W << Async(VarsCpp(std::move(vars), parts_cnt));
 
   if (G->env().is_static_lib_mode()) {
