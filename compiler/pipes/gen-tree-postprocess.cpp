@@ -14,15 +14,15 @@ VertexAdaptor<op_require_once> make_require_once_call(SrcFilePtr lib_main_file, 
 }
 
 VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
-  kphp_error_act (!G->env().is_static_lib_mode(), "require_lib is forbidden to use for compiling libs", return {});
+  kphp_error_act (!G->env().is_static_lib_mode(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
   VertexRange args = require_lib_call->args();
-  kphp_error (args.size() == 1, format("require_lib expected 1 arguments, got %zu", args.size()));
+  kphp_error_act (args.size() == 1, format("require_lib expected 1 arguments, got %zu", args.size()), return require_lib_call);
   auto lib_name_node = args[0];
-  kphp_error_act (lib_name_node->type() == op_string, "First argument of require_lib must be a string", return {});
+  kphp_error_act (lib_name_node->type() == op_string, "First argument of require_lib must be a string", return require_lib_call);
 
   std::string lib_require_name = lib_name_node->get_string();
   kphp_error_act (!lib_require_name.empty() && lib_require_name.back() != '/',
-                  format("require_lib got bad lib name '%s'", lib_require_name.c_str()), return {});
+                  format("require_lib got bad lib name '%s'", lib_require_name.c_str()), return require_lib_call);
 
   LibPtr lib(new LibData(lib_require_name));
   LibPtr registered_lib = G->register_lib(lib);
@@ -42,7 +42,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   if (lib != registered_lib) {
     lib.clear();
   }
-  kphp_error (new_vertex, format("Can't find '%s' lib", lib_require_name.c_str()));
+  kphp_error_act (new_vertex, format("Can't find '%s' lib", lib_require_name.c_str()), return require_lib_call);
   return new_vertex;
 }
 } // anonymous namespace
