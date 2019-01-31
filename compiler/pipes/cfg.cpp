@@ -666,7 +666,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       for (auto cur : tree_node.as<op_func_call>()->args()) {
         bool new_weak_write_flag = false;
 
-        if (func && !func->is_vararg) {
+        if (func) {
           auto param = func->get_params()[ii].try_as<op_func_param>();
           if (param && param->var()->ref_flag) {
             new_weak_write_flag = true;

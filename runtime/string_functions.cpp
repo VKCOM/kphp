@@ -961,8 +961,8 @@ string f$prepare_search_query(const string &query) {
   return string(s, strlen(s));
 }
 
-int f$printf(const array<var> &a) {
-  string to_print = f$sprintf(a);
+int f$printf(const string &format, const array<var> &a) {
+  string to_print = f$sprintf(format, a);
   print(to_print);
   return to_print.size();
 }
@@ -994,214 +994,209 @@ OrFalse<string> f$setlocale(int category, const string &locale) {
   return string(res, (dl::size_type)strlen(res));
 }
 
-string f$sprintf(const array<var> &a) {
-  int n = a.count();
-  if (n == 0) {
-    php_warning("sprintf must take at least 1 argument");
-    return string();
-  }
-
+string f$sprintf(const string &format, const array<var> &a) {
   string result;
-  string format = a.get_value(0).to_string();
-  int cur_arg = 1;
+  result.reserve_at_least(format.size());
+  int cur_arg = 0;
   bool error_too_big = false;
   for (int i = 0; i < (int)format.size(); i++) {
     if (format[i] != '%') {
       result.push_back(format[i]);
-    } else {
-      i++;
-
-      int arg_num = 0, j;
-      for (j = i; '0' <= format[j] && format[j] <= '9'; j++) {
-        arg_num = arg_num * 10 + format[j] - '0';
-      }
-      if (format[j] == '$' && arg_num > 0) {
-        i = j + 1;
-      } else {
-        arg_num = 0;
-      }
-
-      char sign = 0;
-      if (format[i] == '+') {
-        sign = format[i++];
-      }
-
-      char filler = ' ';
-      if (format[i] == '0' || format[i] == ' ') {
-        filler = format[i++];
-      } else if (format[i] == '\'') {
-        i++;
-        filler = format[i++];
-      }
-
-      int pad_right = false;
-      if (format[i] == '-') {
-        pad_right = true;
-        i++;
-      }
-
-      int width = 0;
-      while ('0' <= format[i] && format[i] <= '9' && width < PHP_BUF_LEN) {
-        width = width * 10 + format[i++] - '0';
-      }
-
-      if (width >= PHP_BUF_LEN) {
-        error_too_big = true;
-        break;
-      }
-
-      int precision = -1;
-      if (format[i] == '.' && '0' <= format[i + 1] && format[i + 1] <= '9') {
-        precision = format[i + 1] - '0';
-        i += 2;
-        while ('0' <= format[i] && format[i] <= '9' && precision < PHP_BUF_LEN) {
-          precision = precision * 10 + format[i++] - '0';
-        }
-      }
-
-      if (precision >= PHP_BUF_LEN) {
-        error_too_big = true;
-        break;
-      }
-
-      string piece;
-      if (format[i] == '%') {
-        piece = PERCENT;
-      } else {
-        if (arg_num == 0) {
-          arg_num = cur_arg++;
-        }
-
-        if (arg_num >= a.count()) {
-          php_warning("Not enough parameters to call function sprintf with format \"%s\"", format.c_str());
-          return string();
-        }
-
-        if ((dl::size_type)arg_num == 0) {
-          php_warning("Wrong parameter number 0 specified in function sprintf with format \"%s\"", format.c_str());
-          return string();
-        }
-
-        const var &arg = a.get_value(arg_num);
-
-        if (arg.is_array()) {
-          php_warning("Argument %d of function sprintf is array", arg_num);
-          return string();
-        }
-
-        switch (format[i]) {
-          case 'b': {
-            unsigned int arg_int = arg.to_int();
-            int cur_pos = 70;
-            do {
-              php_buf[--cur_pos] = (char)((arg_int & 1) + '0');
-              arg_int >>= 1;
-            } while (arg_int > 0);
-            piece.assign(php_buf + cur_pos, 70 - cur_pos);
-            break;
-          }
-          case 'c': {
-            int arg_int = arg.to_int();
-            if (arg_int <= -128 || arg_int > 255) {
-              php_warning("Wrong parameter for specifier %%c in function sprintf with format \"%s\"", format.c_str());
-            }
-            piece.assign(1, (char)arg_int);
-            break;
-          }
-          case 'd': {
-            int arg_int = arg.to_int();
-            if (sign == '+' && arg_int >= 0) {
-              piece = (static_SB.clean() << "+" << arg_int).str();
-            } else {
-              piece = string(arg_int);
-            }
-            break;
-          }
-          case 'u': {
-            unsigned int arg_int = arg.to_int();
-            int cur_pos = 70;
-            do {
-              php_buf[--cur_pos] = (char)(arg_int % 10 + '0');
-              arg_int /= 10;
-            } while (arg_int > 0);
-            piece.assign(php_buf + cur_pos, 70 - cur_pos);
-            break;
-          }
-          case 'e':
-          case 'E':
-          case 'f':
-          case 'F':
-          case 'g':
-          case 'G': {
-            double arg_float = arg.to_float();
-
-            static_SB.clean() << '%';
-            if (sign) {
-              static_SB << sign;
-            }
-            if (precision >= 0) {
-              static_SB << '.' << precision;
-            }
-            static_SB << format[i];
-
-            int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
-            if (len >= PHP_BUF_LEN) {
-              error_too_big = true;
-              break;
-            }
-
-            piece.assign(php_buf, len);
-            break;
-          }
-          case 'o': {
-            unsigned int arg_int = arg.to_int();
-            int cur_pos = 70;
-            do {
-              php_buf[--cur_pos] = (char)((arg_int & 7) + '0');
-              arg_int >>= 3;
-            } while (arg_int > 0);
-            piece.assign(php_buf + cur_pos, 70 - cur_pos);
-            break;
-          }
-          case 's': {
-            string arg_string = arg.to_string();
-
-            static_SB.clean() << '%';
-            if (precision >= 0) {
-              static_SB << '.' << precision;
-            }
-            static_SB << 's';
-
-            int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_string.c_str());
-            if (len >= PHP_BUF_LEN) {
-              error_too_big = true;
-              break;
-            }
-
-            piece.assign(php_buf, len);
-            break;
-          }
-          case 'x':
-          case 'X': {
-            const char *hex_digits = (format[i] == 'x' ? lhex_digits : uhex_digits);
-            unsigned int arg_int = arg.to_int();
-
-            int cur_pos = 70;
-            do {
-              php_buf[--cur_pos] = hex_digits[arg_int & 15];
-              arg_int >>= 4;
-            } while (arg_int > 0);
-            piece.assign(php_buf + cur_pos, 70 - cur_pos);
-            break;
-          }
-          default:
-            php_warning("Unsupported specifier %%%c in sprintf with format \"%s\"", format[i], format.c_str());
-            return string();
-        }
-      }
-
-      result.append(f$str_pad(piece, width, string(1, filler), pad_right));
+      continue;
     }
+    i++;
+
+    int arg_num = -1, j;
+    for (j = i; '0' <= format[j] && format[j] <= '9'; j++) {
+      arg_num = arg_num * 10 + format[j] - '0';
+    }
+    if (format[j] == '$' && arg_num > 0) {
+      i = j + 1;
+      arg_num--;
+    } else {
+      arg_num = -1;
+    }
+
+    char sign = 0;
+    if (format[i] == '+') {
+      sign = format[i++];
+    }
+
+    char filler = ' ';
+    if (format[i] == '0' || format[i] == ' ') {
+      filler = format[i++];
+    } else if (format[i] == '\'') {
+      i++;
+      filler = format[i++];
+    }
+
+    int pad_right = false;
+    if (format[i] == '-') {
+      pad_right = true;
+      i++;
+    }
+
+    int width = 0;
+    while ('0' <= format[i] && format[i] <= '9' && width < PHP_BUF_LEN) {
+      width = width * 10 + format[i++] - '0';
+    }
+
+    if (width >= PHP_BUF_LEN) {
+      error_too_big = true;
+      break;
+    }
+
+    int precision = -1;
+    if (format[i] == '.' && '0' <= format[i + 1] && format[i + 1] <= '9') {
+      precision = format[i + 1] - '0';
+      i += 2;
+      while ('0' <= format[i] && format[i] <= '9' && precision < PHP_BUF_LEN) {
+        precision = precision * 10 + format[i++] - '0';
+      }
+    }
+
+    if (precision >= PHP_BUF_LEN) {
+      error_too_big = true;
+      break;
+    }
+
+    string piece;
+    if (format[i] == '%') {
+      piece = PERCENT;
+    } else {
+      if (arg_num == -1) {
+        arg_num = cur_arg++;
+      }
+
+      if (arg_num >= a.count()) {
+        php_warning("Not enough parameters to call function sprintf with format \"%s\"", format.c_str());
+        return string();
+      }
+
+      if ((dl::size_type)arg_num == -1) {
+        php_warning("Wrong parameter number 0 specified in function sprintf with format \"%s\"", format.c_str());
+        return string();
+      }
+
+      const var &arg = a.get_value(arg_num);
+
+      if (arg.is_array()) {
+        php_warning("Argument %d of function sprintf is array", arg_num);
+        return string();
+      }
+
+      switch (format[i]) {
+        case 'b': {
+          unsigned int arg_int = arg.to_int();
+          int cur_pos = 70;
+          do {
+            php_buf[--cur_pos] = (char)((arg_int & 1) + '0');
+            arg_int >>= 1;
+          } while (arg_int > 0);
+          piece.assign(php_buf + cur_pos, 70 - cur_pos);
+          break;
+        }
+        case 'c': {
+          int arg_int = arg.to_int();
+          if (arg_int <= -128 || arg_int > 255) {
+            php_warning("Wrong parameter for specifier %%c in function sprintf with format \"%s\"", format.c_str());
+          }
+          piece.assign(1, (char)arg_int);
+          break;
+        }
+        case 'd': {
+          int arg_int = arg.to_int();
+          if (sign == '+' && arg_int >= 0) {
+            piece = (static_SB.clean() << "+" << arg_int).str();
+          } else {
+            piece = string(arg_int);
+          }
+          break;
+        }
+        case 'u': {
+          unsigned int arg_int = arg.to_int();
+          int cur_pos = 70;
+          do {
+            php_buf[--cur_pos] = (char)(arg_int % 10 + '0');
+            arg_int /= 10;
+          } while (arg_int > 0);
+          piece.assign(php_buf + cur_pos, 70 - cur_pos);
+          break;
+        }
+        case 'e':
+        case 'E':
+        case 'f':
+        case 'F':
+        case 'g':
+        case 'G': {
+          double arg_float = arg.to_float();
+
+          static_SB.clean() << '%';
+          if (sign) {
+            static_SB << sign;
+          }
+          if (precision >= 0) {
+            static_SB << '.' << precision;
+          }
+          static_SB << format[i];
+
+          int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
+          if (len >= PHP_BUF_LEN) {
+            error_too_big = true;
+            break;
+          }
+
+          piece.assign(php_buf, len);
+          break;
+        }
+        case 'o': {
+          unsigned int arg_int = arg.to_int();
+          int cur_pos = 70;
+          do {
+            php_buf[--cur_pos] = (char)((arg_int & 7) + '0');
+            arg_int >>= 3;
+          } while (arg_int > 0);
+          piece.assign(php_buf + cur_pos, 70 - cur_pos);
+          break;
+        }
+        case 's': {
+          string arg_string = arg.to_string();
+
+          static_SB.clean() << '%';
+          if (precision >= 0) {
+            static_SB << '.' << precision;
+          }
+          static_SB << 's';
+
+          int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_string.c_str());
+          if (len >= PHP_BUF_LEN) {
+            error_too_big = true;
+            break;
+          }
+
+          piece.assign(php_buf, len);
+          break;
+        }
+        case 'x':
+        case 'X': {
+          const char *hex_digits = (format[i] == 'x' ? lhex_digits : uhex_digits);
+          unsigned int arg_int = arg.to_int();
+
+          int cur_pos = 70;
+          do {
+            php_buf[--cur_pos] = hex_digits[arg_int & 15];
+            arg_int >>= 4;
+          } while (arg_int > 0);
+          piece.assign(php_buf + cur_pos, 70 - cur_pos);
+          break;
+        }
+        default:
+          php_warning("Unsupported specifier %%%c in sprintf with format \"%s\"", format[i], format.c_str());
+          return string();
+      }
+    }
+
+    result.append(f$str_pad(piece, width, string(1, filler), pad_right));
   }
 
   if (error_too_big) {
@@ -2530,13 +2525,11 @@ array<var> f$unpack(const string &pattern, const string &data) {
 }
 
 int f$vprintf(const string &format, array<var> args) {
-  args.unshift(format);
-  return f$printf(args);
+  return f$printf(format, args);
 }
 
 string f$vsprintf(const string &format, array<var> args) {
-  args.unshift(format);
-  return f$sprintf(args);
+  return f$sprintf(format, args);
 }
 
 string f$wordwrap(const string &str, int width, string brk, bool cut) {

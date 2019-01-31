@@ -115,7 +115,6 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
     child_function->has_variadic_param = parent_f->has_variadic_param;
-    child_function->is_vararg = parent_f->is_vararg;
 
     child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
 

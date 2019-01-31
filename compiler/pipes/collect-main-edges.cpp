@@ -213,7 +213,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
   }
 
 
-  if (!(function->is_vararg && function->is_extern())) {
+  if (!(function->has_variadic_param && function->is_extern())) {
     for (int i = 0; i < call->args().size(); ++i) {
       VertexPtr arg = call->args()[i];
       VertexAdaptor<meta_op_func_param> param = function_params[i];
@@ -389,7 +389,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
           }
         } else {
           x = params[i]->type_help;
-          if (function->is_vararg && x == tp_Unknown) {
+          if (function->has_variadic_param && i == params_n - 1 && x == tp_Unknown) {
             x = tp_array;
           }
         }
@@ -446,7 +446,7 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::L
   }
 
   switch (v->type()) {
-    //FIXME: is_vararg
+    //FIXME: has_variadic_param
     case op_func_call:
       on_func_call(v);
       break;

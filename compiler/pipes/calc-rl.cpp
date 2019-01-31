@@ -60,26 +60,20 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
     kphp_fail();
       break;
   }
-  FunctionPtr f = root->get_func_id();
-  if (f->is_vararg) {
-    rl_calc_all<val_r>(root);
-    return;
-  }
-  VertexRange params = f->root.as<meta_op_function>()->params().
-    as<op_func_param_list>()->params();
-  auto params_it = params.begin();
 
-  assert (root->size() <= (int)params.size());
+  auto call = root.as<op_func_call>();
 
-  for (auto i : *root) {
-    if ((*params_it)->type() == op_func_param_callback) {
-    } else {
-      VertexAdaptor<op_func_param> param = *params_it;
+  VertexRange func_params = call->get_func_id()->get_params();
+  auto func_param_it = func_params.begin();
+
+  for (auto call_arg : call->args()) {
+    if ((*func_param_it)->type() != op_func_param_callback) {
+      VertexAdaptor<op_func_param> param = *func_param_it;
       RLValueType tp = param->var()->ref_flag ? val_l : val_r;
-      rl_calc(i, tp);
+      rl_calc(call_arg, tp);
     }
 
-    ++params_it;
+    ++func_param_it;
   }
 }
 

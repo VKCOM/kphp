@@ -93,7 +93,7 @@ public:
   void run();
 
   template<Operation EmptyOp>
-  bool gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim);
+  bool gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim, bool disable_kphp_error = false);
   template<Operation Op>
   VertexPtr get_conv();
   template<Operation Op>
@@ -138,7 +138,7 @@ private:
                                                          VertexAdaptor<op_func_param_list> &params,
                                                          VertexPtr &flags,
                                                          bool &is_constructor,
-                                                         bool &is_varg);
+                                                         bool &has_variadic_param);
 
   VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
 
@@ -149,10 +149,12 @@ private:
   const vector<Token *> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_;
-  vector<Token *>::const_iterator cur, end;
+  decltype(tokens)::const_iterator cur, end;
   vector<ClassPtr> class_stack;
   ClassPtr cur_class;               // = class_stack.back()
   vector<FunctionPtr> functions_stack;
+  vector<bool> in_parse_func_call_stack;
+  bool is_in_parse_func_call;
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
 };

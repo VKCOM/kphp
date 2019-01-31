@@ -125,7 +125,7 @@ inline void GenTree::skip_phpdoc_tokens() {
   }
 
 template<Operation EmptyOp>
-bool GenTree::gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim) {
+bool GenTree::gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim, bool disable_kphp_error /*= false*/) {
   //Do not clear res. Result must be appended to it.
   bool prev_delim = false;
   bool next_delim = true;
@@ -142,7 +142,7 @@ bool GenTree::gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim) {
         auto tmp = VertexAdaptor<EmptyOp>::create();
         v = tmp;
       } else if (prev_delim) {
-        kphp_error (0, "Expected something after ','");
+        kphp_error (disable_kphp_error, "Expected something after ','");
         return false;
       } else {
         break;
@@ -232,7 +232,11 @@ VertexPtr GenTree::get_func_call() {
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   vector<VertexPtr> next;
-  bool ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
+  bool ok_next = false;
+  {
+    StackPushPop<bool> stack_parse_func(in_parse_func_call_stack, is_in_parse_func_call, true);
+    ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
+  }
   CE (!kphp_error(ok_next, "get argument list failed"));
   CE (expect(tok_clpar, "')'"));
 
@@ -403,7 +407,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
 }
 
 VertexPtr GenTree::get_expr_top(bool was_arrow) {
-  vector<Token *>::const_iterator op = cur;
+  auto op = cur;
 
   VertexPtr res, first_node;
   TokenType type = (*op)->type();
@@ -473,6 +477,16 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_var_name: {
       res = get_var_name();
       return_flag = false;
+      break;
+    }
+    case tok_varg: {
+      bool good_prefix = cur != tokens.begin() && vk::any_of_equal((*std::prev(cur))->type(), tok_comma, tok_oppar);
+      CE (!kphp_error(is_in_parse_func_call && good_prefix, "It's not allowed using `...` in this place"));
+
+      next_cur();
+      res = get_expression();
+      CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_arrow, op_index, op_conv_array) , "It's not allowed using `...` in this place"));
+      res = VertexAdaptor<op_varg>::create(res).set_location(res);
       break;
     }
     case tok_str:
@@ -1467,7 +1481,7 @@ VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType acces
                                                                 VertexAdaptor<op_func_param_list> &params,
                                                                 VertexPtr &flags,
                                                                 bool &is_constructor,
-                                                                bool &is_varg) {
+                                                                bool &has_variadic_param) {
   AutoLocation func_location(this);
   set_location(flags, func_location);
 
@@ -1499,13 +1513,25 @@ VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType acces
     cur_class->patch_func_add_this(params_next, func_location.line_num);
   }
 
+  /*
+   * Удалим этот флаг когда уйдем от extern_function (сделаем, чтобы get_func_param сам умел в tok_varg и ставил флаг у cur_function)
+   * в данном месте нужно, чтобы FunctionData уже был создан
+   */
+  bool disable_kphp_error = true;
+  bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma, disable_kphp_error);
+
   if (test_expect(tok_varg)) {
-    is_varg = true;
     next_cur();
-  } else {
-    bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
-    CE(!kphp_error(ok_params_next, "Failed to parse function params"));
+    if (auto name_var_arg = get_var_name()) {
+      has_variadic_param = true;
+
+      auto func_param = VertexAdaptor<op_func_param>::create(name_var_arg);
+      ::set_location(name_var_arg->location, func_param);
+      params_next.emplace_back(func_param);
+      ok_params_next = true;
+    }
   }
+  CE(!kphp_error(ok_params_next, "Failed to parse function params"));
 
   params = VertexAdaptor<op_func_param_list>::create(params_next);
   set_location(params, params_location);
@@ -1528,8 +1554,8 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   VertexPtr flags(&flags_inner);
   VertexAdaptor<op_func_param_list> params;
   bool is_constructor = false;
-  bool is_varg = false;
-  VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor, is_varg);
+  bool has_variadic_param = false;
+  VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor, has_variadic_param);
   CE(name);
 
   if (is_tok_ex_function) {
@@ -1550,7 +1576,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, func_type));
 
   cur_function->phpdoc_token = phpdoc_token;
-  cur_function->is_vararg = is_varg;
+  cur_function->has_variadic_param = has_variadic_param;
 
   const bool kphp_required_flag = phpdoc_token &&
                                   (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||

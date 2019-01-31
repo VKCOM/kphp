@@ -75,7 +75,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->is_required = false;
   new_function->file_id = func->file_id;
   new_function->class_id = func->class_id;
-  new_function->is_vararg = func->is_vararg;
   new_function->has_variadic_param = func->has_variadic_param;
   new_function->tinf_state = func->tinf_state;
   new_function->phpdoc_token = func->phpdoc_token;

@@ -20,9 +20,9 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
     return;
   }
 
-  VertexRange func_params = f->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
-
+  VertexRange func_params = f->get_params();
   VertexRange call_params = call.as<op_func_call>()->args();
+
   int func_params_n = static_cast<int>(func_params.size());
   int call_params_n = static_cast<int>(call_params.size());
 

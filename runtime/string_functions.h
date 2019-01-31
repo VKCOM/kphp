@@ -82,13 +82,13 @@ string f$pack(const array<var> &a);
 
 string f$prepare_search_query(const string &query);
 
-int f$printf(const array<var> &a);
+int f$printf(const string &format, const array<var> &a);
 
 string f$rtrim(const string &s, const string &what = WHAT);
 
 OrFalse<string> f$setlocale(int category, const string &locale);
 
-string f$sprintf(const array<var> &a);
+string f$sprintf(const string &format, const array<var> &a);
 
 string f$stripslashes(const string &str);
 

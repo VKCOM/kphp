@@ -113,6 +113,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     const string &name = root->get_string();
     if (name[0] == 'f' && (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args")) {
       current_function->is_vararg = true;
+      current_function->has_variadic_param = true;
     }
   }
 

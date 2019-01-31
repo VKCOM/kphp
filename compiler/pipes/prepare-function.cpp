@@ -23,31 +23,33 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
   );
   root->type_rule = header->type_rule;
 
-  if (!func->is_vararg) {
-    VertexAdaptor<op_func_param_list> root_params_vertex = root->params();
-    VertexAdaptor<op_func_param_list> header_params_vertex = header->params();
-    VertexRange root_params = root_params_vertex->params();
-    VertexRange header_params = header_params_vertex->params();
+  if (func->has_variadic_param) {
+    return;
+  }
 
+  VertexAdaptor<op_func_param_list> root_params_vertex = root->params();
+  VertexAdaptor<op_func_param_list> header_params_vertex = header->params();
+  VertexRange root_params = root_params_vertex->params();
+  VertexRange header_params = header_params_vertex->params();
+
+  kphp_error (
+    root_params.size() == header_params.size(),
+    format("Bad header for function [%s]", func->get_human_readable_name().c_str())
+  );
+  int params_n = (int)root_params.size();
+  for (int i = 0; i < params_n; i++) {
     kphp_error (
-      root_params.size() == header_params.size(),
-      format("Bad header for function [%s]", func->get_human_readable_name().c_str())
+      root_params[i]->size() == header_params[i]->size(),
+      format(
+        "Function [%s]: %dth param has problem with default value",
+        func->get_human_readable_name().c_str(), i + 1
+      )
     );
-    int params_n = (int)root_params.size();
-    for (int i = 0; i < params_n; i++) {
-      kphp_error (
-        root_params[i]->size() == header_params[i]->size(),
-        format(
-          "Function [%s]: %dth param has problem with default value",
-          func->get_human_readable_name().c_str(), i + 1
-        )
-      );
-      kphp_error (
-        root_params[i]->type_help == tp_Unknown,
-        format("Function [%s]: type_help is overrided by header", func->get_human_readable_name().c_str())
-      );
-      root_params[i]->type_help = header_params[i]->type_help;
-    }
+    kphp_error (
+      root_params[i]->type_help == tp_Unknown,
+      format("Function [%s]: type_help is overrided by header", func->get_human_readable_name().c_str())
+    );
+    root_params[i]->type_help = header_params[i]->type_help;
   }
 }
 
@@ -70,11 +72,6 @@ static void prepare_function_misc(FunctionPtr func) {
   func->min_argn = param_n;
   for (int i = 0; i < param_n; i++) {
     VertexAdaptor<meta_op_func_param> param = params[i].as<meta_op_func_param>();
-
-    if (func->is_vararg) {
-      kphp_error (!param->var()->ref_flag,
-                  "Reference arguments are not supported in varg functions");
-    }
 
     if (param->type_declaration == "callable") {
       param->is_callable = true;

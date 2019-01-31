@@ -171,6 +171,87 @@ private:
     return call;
   }
 
+  VertexAdaptor<op_func_call> process_varargs(VertexAdaptor<op_func_call> call, FunctionPtr func) {
+    if (!func->has_variadic_param) {
+      return call;
+    }
+
+    int call_args_n = (int)call->args().size();
+    int func_args_n = (int)func->get_params().size();
+    for (int i = 0; i < call_args_n; i++) {
+      kphp_error_act(call->args()[i]->type() != op_func_name, "Unexpected function pointer", return {});
+    }
+
+    // calling function with variadic arguments involve some transformations:
+    // imagine that we have:
+    //   function fun($x, ...$args)
+    //
+    // transformations will be:
+    //   fun(1, 2, 3) -> fun(1, [2, 3])
+    //   fun(1, ...$arr) -> fun(1, $arr)
+    //   fun(1, 2, 3, ...$arr1, ...$arr2) -> fun(1, array_merge([2, 3], $arr1, $arr2))
+    //
+    // If this function is method of some class, than we need skip implicit $this argument
+    // just as ordinary positional argument:
+    //   $this->fun(1, 2, 3) -> fun($this, 1, [2, 3])
+
+    const std::vector<VertexPtr> &cur_call_args = call->get_next();
+    auto positional_args_start = cur_call_args.begin();
+
+    auto variadic_args_start = positional_args_start;
+    kphp_assert(func_args_n > 0);
+
+    kphp_error_act(func_args_n - 1 <= call_args_n,
+                   format("function takes: %d arguments; passed only %d", func_args_n, call_args_n),
+                   return {});
+    std::advance(variadic_args_start, func_args_n - 1);
+
+    auto unpacking_args_start = std::find_if(cur_call_args.begin(), cur_call_args.end(), [](const VertexPtr &ptr) { return ptr->type() == op_varg; });
+    kphp_error_act(std::distance(variadic_args_start, unpacking_args_start) >= 0,
+                   "It's prohibited to unpack arrays in places where positional arguments expected",
+                   return {});
+    std::vector<VertexPtr> new_call_args(positional_args_start, variadic_args_start);
+
+    // case when variadic params just have been forwarded
+    // e.g. fun(...$args) will be transformed to f($args) without any array_merge
+    if (variadic_args_start == unpacking_args_start && std::distance(unpacking_args_start, cur_call_args.end()) == 1) {
+      new_call_args.emplace_back(GenTree::conv_to<tp_array>(unpacking_args_start->as<op_varg>()->array()));
+    } else {
+      std::vector<VertexPtr> variadic_args_passed_as_positional(variadic_args_start, unpacking_args_start);
+      auto array_from_varargs_passed_as_positional = VertexAdaptor<op_array>::create(variadic_args_passed_as_positional);
+      array_from_varargs_passed_as_positional.set_location(call);
+
+      if (unpacking_args_start != cur_call_args.end()) {
+        std::vector<VertexPtr> unpacking_args_converted_to_array;
+        unpacking_args_converted_to_array.reserve(static_cast<size_t>(std::distance(unpacking_args_start, cur_call_args.end())));
+        for (auto unpack_arg_it = unpacking_args_start; unpack_arg_it != cur_call_args.end(); ++unpack_arg_it) {
+          if (auto unpack_as_varg = unpack_arg_it->try_as<op_varg>()) {
+            unpacking_args_converted_to_array.emplace_back(GenTree::conv_to<tp_array>(unpack_as_varg->array()));
+          } else {
+            const std::string &s = (*unpack_arg_it)->has_get_string() ? (*unpack_arg_it)->get_string() : "";
+            kphp_error_act(false, format("It's prohibited using something after argument unpacking: `%s`", s.c_str()), return {});
+          }
+        }
+        auto merge_arrays = VertexAdaptor<op_func_call>::create(array_from_varargs_passed_as_positional, unpacking_args_converted_to_array);
+        merge_arrays->set_string("array_merge");
+        merge_arrays.set_location(call);
+        merge_arrays->set_func_id(G->get_function("array_merge"));
+
+        new_call_args.emplace_back(merge_arrays);
+      } else {
+        new_call_args.emplace_back(array_from_varargs_passed_as_positional);
+      }
+    }
+
+    auto new_call = VertexAdaptor<op_func_call>::create(new_call_args);
+    new_call->copy_location_and_flags(*call);
+    new_call->extra_type = call->extra_type;
+    new_call->set_func_id(func);
+    new_call->str_val = call.as<op_func_call>()->str_val;
+
+    return new_call;
+  }
+
   VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
     kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
     kphp_assert (func);
@@ -194,44 +275,16 @@ private:
       return call;
     }
 
-    VertexAdaptor<meta_op_function> func_root = func->root;
-    VertexAdaptor<op_func_param_list> param_list = func_root->params();
+    if (auto new_call = process_varargs(call, func)) {
+      call = new_call;
+    } else {
+      return call;
+    }
+
     VertexRange call_args = call.as<op_func_call>()->args();
-    VertexRange func_args = param_list->params();
+    VertexRange func_args = func->get_params();
     int call_args_n = (int)call_args.size();
     int func_args_n = (int)func_args.size();
-
-    // TODO: why it is here???
-    if (func->is_vararg) {
-      for (int i = 0; i < call_args_n; i++) {
-        kphp_error_act (
-          call_args[i]->type() != op_func_name,
-          "Unexpected function pointer",
-          return VertexPtr()
-        );
-      }
-      vector<VertexPtr> new_call_args;
-      if (call_args_n == 1 && call_args[0]->type() == op_varg) {    // для call_user_func_array
-        new_call_args.emplace_back(GenTree::conv_to<tp_array>(call_args[0].as<op_varg>()->array()));
-      } else {
-        // вызов f(1,2,3) для vararg-функций превращаем в f([1,2,3]), т.к. f($VA_LIST)
-        // если f инстанс-фукнция, то вызов f(v$this,1,2,3) делаем f(v$this,[1,2,3])
-        const vector<VertexPtr> &cur_call_args = call->get_next();
-        int rest_start_pos = func->has_implicit_this_arg() ? 1 : 0;
-        new_call_args.insert(new_call_args.begin(), cur_call_args.begin(), cur_call_args.begin() + rest_start_pos);
-        vector<VertexPtr> remaining_args(cur_call_args.begin() + rest_start_pos, cur_call_args.end());
-
-        auto rest_args_v = VertexAdaptor<op_array>::create(remaining_args);
-        rest_args_v->location = call->get_location();
-        new_call_args.emplace_back(GenTree::conv_to<tp_array>(rest_args_v));
-      }
-      auto new_call = VertexAdaptor<op_func_call>::create(new_call_args);
-      new_call->copy_location_and_flags(*call);
-      new_call->extra_type = call->extra_type;
-      new_call->set_func_id(func);
-      new_call->str_val = call.as<op_func_call>()->str_val;
-      return new_call;
-    }
 
     for (int i = 0; i < std::min(call_args_n, func_args_n); i++) {
       auto &call_arg = call_args[i];

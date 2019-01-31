@@ -34,24 +34,23 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
       return vertex;
     }
 
-    if (!other_function->is_vararg) {
-      int ii = 0;
-      for (auto val : call->args()) {
-        VarPtr to_var = other_function->param_ids[ii];
-        if (to_var->is_reference) { //passed as reference
-          while (val->type() == op_index) {
-            val = val.as<op_index>()->array();
-          }
-          kphp_assert (val->type() == op_var || val->type() == op_instance_prop);
-          VarPtr from_var = val->get_var_id();
-          if (from_var->is_in_global_scope()) {
-            data.global_ref_edges.emplace_back(from_var, to_var);
-          } else if (from_var->is_reference) {
-            data.ref_ref_edges.emplace_back(from_var, to_var);
-          }
+    int cnt_func_params = other_function->param_ids.size() - other_function->has_variadic_param;
+    for (int ii = 0; ii < cnt_func_params; ++ii) {
+      auto val = call->args()[ii];
+      VarPtr to_var = other_function->param_ids[ii];
+      if (to_var->is_reference) { //passed as reference
+        while (val->type() == op_index) {
+          val = val.as<op_index>()->array();
         }
-        ii++;
+        kphp_assert (val->type() == op_var || val->type() == op_instance_prop);
+        VarPtr from_var = val->get_var_id();
+        if (from_var->is_in_global_scope()) {
+          data.global_ref_edges.emplace_back(from_var, to_var);
+        } else if (from_var->is_reference) {
+          data.ref_ref_edges.emplace_back(from_var, to_var);
+        }
       }
+      ii++;
     }
   } else if (vertex->type() == op_func_ptr) {
     data.dep.push_back(vertex.as<op_func_ptr>()->get_func_id());

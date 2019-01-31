@@ -608,7 +608,7 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
 #define RETURN_ERROR_FORMAT(dump_error_stack, error_no, format, ...) \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    array<var>::create(CONST_STRING(format), __VA_ARGS__));          \
+    CONST_STRING(format), array<var>::create(__VA_ARGS__));          \
   RETURN(dump_error_stack)
 
   if (timeout < 0) {

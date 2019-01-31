@@ -78,7 +78,7 @@ bool f$feof(const Stream &stream);
 
 bool f$fclose(const Stream &stream);
 
-OrFalse<int> f$fprintf(const array<var> &args);
+OrFalse<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args);
 
 OrFalse<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args);
 

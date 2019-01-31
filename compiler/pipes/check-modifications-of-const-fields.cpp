@@ -33,7 +33,7 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
     case op_func_call:
     case op_constructor_call: {
       FunctionPtr func = v->get_func_id();
-      if (!func || func->is_vararg) {
+      if (!func) {
         return;
       }
 
