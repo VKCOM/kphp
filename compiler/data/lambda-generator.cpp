@@ -55,7 +55,8 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
   auto invoke_function = VertexAdaptor<op_function>::create(name, params, cmd);
   set_location(invoke_function, created_location);
 
-  register_invoke_method(invoke_function);
+  auto invoke_fun = register_invoke_method(invoke_function);
+  invoke_fun->has_variadic_param = function->get_func_id() && function->get_func_id()->has_variadic_param;
 
   return *this;
 }

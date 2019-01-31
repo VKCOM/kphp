@@ -111,7 +111,7 @@ public:
     rl_type(val_error),
     val_ref_flag(val_none),
     const_type(cnst_error_),
-    ref_flag(false){
+    ref_flag(false) {
   }
 
   vertex_inner(const vertex_inner<meta_op_base> &from) :

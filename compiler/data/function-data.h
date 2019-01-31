@@ -77,6 +77,7 @@ public:
   int min_argn = 0;
   bool used_in_source = false;    // это только для костыля extern_function, потом должно уйти
   bool is_vararg = false;
+  bool has_variadic_param = false;
   bool should_be_sync = false;
   bool kphp_lib_export = false;
   bool is_template = false;

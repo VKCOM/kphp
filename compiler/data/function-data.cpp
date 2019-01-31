@@ -49,8 +49,10 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   VertexRange func_args = param_list->params();
   auto func_args_n = static_cast<size_t>(func_args.size());
 
-  FunctionPtr new_function(new FunctionData());
   auto new_func_root = func->root.as<op_function>().clone();
+  new_func_root->name()->set_string(name_of_function_instance);
+
+  auto new_function = FunctionData::create_function(new_func_root, func->type);
 
   for (size_t i = 0; i < func_args_n; ++i) {
     VertexAdaptor<op_func_param> param = new_func_root->params().as<op_func_param_list>()->params()[i].as<op_func_param>();
@@ -69,15 +71,12 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     new_function->assumptions_inited_args = 2;
   }
 
-  new_func_root->name()->set_string(name_of_function_instance);
-
   new_function->root = new_func_root;
-  new_function->root->set_func_id(new_function);
   new_function->is_required = false;
-  new_function->type = func->type;
   new_function->file_id = func->file_id;
   new_function->class_id = func->class_id;
   new_function->is_vararg = func->is_vararg;
+  new_function->has_variadic_param = func->has_variadic_param;
   new_function->tinf_state = func->tinf_state;
   new_function->phpdoc_token = func->phpdoc_token;
   new_function->min_argn = func->min_argn;
@@ -87,7 +86,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->body_seq = func->body_seq;
   new_function->is_template = false;
   new_function->is_inline = func->is_inline;
-  new_function->name = name_of_function_instance;
   new_function->function_in_which_lambda_was_created = func->function_in_which_lambda_was_created;
   new_function->infer_hints = func->infer_hints;
 
