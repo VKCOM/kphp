@@ -44,8 +44,14 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_min:
     case op_max:
     case op_defined:
-    case op_require:
       rl_calc_all<val_r>(root);
+      return;
+    case op_require:
+      if (expected_rl_type == val_r) {
+        rl_calc_all<val_r>(root);
+      } else {
+        rl_calc_all<val_none>(root);
+      }
       return;
     case op_func_call:
     case op_constructor_call:
@@ -102,8 +108,9 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_case:
       rl_calc_all<val_none, val_r>(root, 0);
       break;
-    case op_require:
     case op_require_once:
+      rl_calc_all<val_none>(root);
+      break;
     case op_return:
     case op_break:
     case op_continue:

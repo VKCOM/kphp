@@ -125,12 +125,6 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     }
   }
   if (vertex->type() == op_func_call) {
-    FunctionPtr fun = vertex.as<op_func_call>()->get_func_id();
-    if (fun->root->void_flag && vertex->rl_type == val_r && from_return == 0) {
-      if (fun->type != FunctionData::func_switch && fun->file_id->main_func_name != fun->name) {
-        kphp_warning(format("Using result of void function %s\n", fun->get_human_readable_name().c_str()));
-      }
-    }
     check_op_func_call(vertex.as<op_func_call>());
   }
   if (vertex->type() == op_instance_prop) {

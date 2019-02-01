@@ -3,8 +3,8 @@
 #include <unordered_map>
 
 #include "compiler/compiler-core.h"
-#include "compiler/phpdoc.h"
 #include "compiler/data/class-data.h"
+#include "compiler/phpdoc.h"
 
 static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_function> header) {
   VertexAdaptor<meta_op_function> root = func->root;
@@ -223,7 +223,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           
           if (infer_type & infer_mask::check) {
             auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
-            type_rule->void_flag = doc_type->void_flag;
             f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
           }
           // hint для return'а не делаем совсем, чтобы не грубить вывод типов, только check

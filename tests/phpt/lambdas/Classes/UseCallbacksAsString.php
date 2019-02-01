@@ -19,6 +19,7 @@ class UseCallbacksAsString
 
     public static function run_static() {
         self::use_callback_static(['\Classes\UseCallbacksAsString', 'f_print_static']);
+        return null;
     }
 
     public static function call_me_static($x) {

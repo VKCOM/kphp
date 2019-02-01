@@ -9,6 +9,7 @@ extern const char *last_wait_error;
 
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
+#define RETURN_VOID() output_->save_void (); return true;
 #define TRY_WAIT(labelName, a, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != nullptr); a = input_->load <T, T> (); }
 #define TRY_WAIT_DROP_RESULT(labelName, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != nullptr); input_->load <T, T> (); }
 #define RESUMABLE_BEGIN if (pos__ != nullptr) goto *pos__; do {
@@ -177,6 +178,11 @@ struct Storage::load_implementation_helper<X, Y, std::true_type> {
 template<>
 struct Storage::load_implementation_helper<void, void, std::true_type> {
   static void load(char *storage __attribute__((unused))) {}
+};
+
+template<>
+struct Storage::load_implementation_helper<void, var, std::false_type> {
+  static var load(char *storage __attribute__((unused))) { return var(); }
 };
 
 

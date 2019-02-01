@@ -274,8 +274,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 'v': {
       if (s.substr(pos, 4) == "void") {
         pos += 4;
-        VertexPtr v = create_type_help_vertex(tp_var);
-        v->void_flag = true;
+        VertexPtr v = create_type_help_vertex(tp_void);
         return v;
       }
       break;
@@ -304,7 +303,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
 
 VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_t &pos) {
   VertexPtr res = parse_simple_type(s, pos);
-  if (!res || res->void_flag) {
+  if (!res) {
     return res;
   }
   while (pos < s.size() && s[pos] == '[') {

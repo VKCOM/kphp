@@ -32,7 +32,6 @@ public:
   RLValueType val_ref_flag : 2;
   ConstValueType const_type : 2;
   bool ref_flag : 1;
-  bool void_flag : 1;
 
 private:
   VertexPtr *arr() const {
@@ -112,8 +111,7 @@ public:
     rl_type(val_error),
     val_ref_flag(val_none),
     const_type(cnst_error_),
-    ref_flag(false),
-    void_flag() {
+    ref_flag(false){
   }
 
   vertex_inner(const vertex_inner<meta_op_base> &from) :
@@ -128,8 +126,7 @@ public:
     rl_type(from.rl_type),
     val_ref_flag(from.val_ref_flag),
     const_type(from.const_type),
-    ref_flag(from.ref_flag),
-    void_flag(from.void_flag) {
+    ref_flag(from.ref_flag) {
   }
 
   virtual ~vertex_inner() {}
@@ -140,7 +137,6 @@ public:
     val_ref_flag = from.val_ref_flag;
     const_type = from.const_type;
     ref_flag = from.ref_flag;
-    void_flag = from.void_flag;
   }
 
   void raw_init(int real_n) {

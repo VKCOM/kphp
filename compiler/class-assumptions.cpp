@@ -383,7 +383,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
   }
 
   for (auto i : *root->cmd()) {
-    if (i->type() == op_return) {
+    if (i->type() == op_return && i.as<op_return>()->has_expr()) {
       VertexPtr expr = i.as<op_return>()->expr();
 
       if (expr->type() == op_constructor_call) {

@@ -91,10 +91,6 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return tp_Error;
   }
 
-  if (b == tp_void) { // void can't store anything (except void)
-    return tp_Error;
-  }
-
   if ((b == tp_UInt || b == tp_Long || b == tp_ULong) && a != tp_int) { // UInt, Long and ULong can store only int
     return tp_Error;
   }

@@ -808,7 +808,10 @@
     "name": "op_return",
     "base_name": "meta_op_base",
     "sons": {
-      "expr": 0
+      "expr": {
+        "id": 0,
+        "optional": true
+      }
     },
     "props": {
       "rl": "rl_common",

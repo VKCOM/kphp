@@ -24,5 +24,6 @@ class Photo {
 
       var_dump(self::DEFINES_NUMS_TO_DEFINES_A[0]);
       var_dump(self::DEFINES_NUMS_TO_DEFINES_A[self::DEFINE_0 + self::DEFINE_0 * self::DEFINE_1]);
+      return null;
   }
 }

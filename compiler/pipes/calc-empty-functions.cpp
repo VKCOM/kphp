@@ -17,9 +17,11 @@ FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
       return FunctionData::body_value::unknown;
     case op_return: {
       VertexAdaptor<op_return> return_vertex = vertex;
-      return return_vertex->expr()->type() == op_null
-             ? FunctionData::body_value::empty
-             : get_vertex_body_type(return_vertex->expr());
+      if (!return_vertex->has_expr() || return_vertex->expr()->type() == op_null) {
+        return FunctionData::body_value::empty;
+      } else {
+        return get_vertex_body_type(return_vertex->expr());
+      }
     }
     case op_seq:
       return calc_seq_body_type(vertex.as<op_seq>());

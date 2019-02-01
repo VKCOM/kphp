@@ -1106,14 +1106,13 @@ void GenTree::func_force_return(VertexPtr root, VertexPtr val) {
   VertexPtr cmd = func->cmd();
   assert (cmd->type() == op_seq);
 
-  bool no_result = !val;
-  if (no_result) {
-    auto return_val = VertexAdaptor<op_null>::create();
-    val = return_val;
+  VertexAdaptor<op_return> return_node;
+  if (val) {
+    return_node = VertexAdaptor<op_return>::create(val);
+  } else {
+    return_node = VertexAdaptor<op_return>::create();
   }
 
-  auto return_node = VertexAdaptor<op_return>::create(val);
-  return_node->void_flag = no_result;
   vector<VertexPtr> next = cmd->get_next();
   next.push_back(return_node);
   auto seq = VertexAdaptor<op_seq>::create(next);
@@ -1149,17 +1148,14 @@ VertexPtr GenTree::get_return() {
   next_cur();
   skip_phpdoc_tokens();
   VertexPtr return_val = get_expression();
-  bool no_result = false;
+  VertexAdaptor<op_return> ret;
   if (!return_val) {
-    auto tmp = VertexAdaptor<op_null>::create();
-    set_location(tmp, AutoLocation(this));
-    return_val = tmp;
-    no_result = true;
+    ret = VertexAdaptor<op_return>::create();
+  } else {
+    ret = VertexAdaptor<op_return>::create(return_val);
   }
-  auto ret = VertexAdaptor<op_return>::create(return_val);
   set_location(ret, ret_location);
   CE (expect(tok_semicolon, "';'"));
-  ret->void_flag = no_result;
   return ret;
 }
 
@@ -2100,8 +2096,7 @@ VertexPtr GenTree::get_seq(bool add_force_func_return) {
   }
 
   if (add_force_func_return) {
-    auto return_node = VertexAdaptor<op_return>::create(VertexAdaptor<op_null>::create());
-    return_node->void_flag = true;
+    auto return_node = VertexAdaptor<op_return>::create();
     seq_next.push_back(return_node);
   }
 
@@ -2109,10 +2104,6 @@ VertexPtr GenTree::get_seq(bool add_force_func_return) {
   set_location(seq, seq_location);
 
   return seq;
-}
-
-bool GenTree::has_return(VertexPtr v) {
-  return v->type() == op_return || std::any_of(v->begin(), v->end(), has_return);
 }
 
 void GenTree::run() {

@@ -32,7 +32,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
   VertexPtr *replace = nullptr;
   VertexAdaptor<op_func_call> func_call;
   Operation op = vertex->type();
-  if (op == op_return) {
+  if (op == op_return && vertex.as<op_return>()->has_expr()) {
     replace = &vertex.as<op_return>()->expr();
   } else if (vk::any_of_equal(
     op, op_set_add, op_set_sub, op_set_mul, op_set_div, op_set_mod, op_set_pow,

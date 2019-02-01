@@ -66,7 +66,6 @@ public:
   template<PrimitiveType ToT>
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);
-  static bool has_return(VertexPtr v);
   static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);

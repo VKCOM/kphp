@@ -6,7 +6,7 @@
 #include "runtime/kphp_core.h"
 
 extern string_buffer *coub;//TODO static
-using shutdown_function_type = std::function<var()>;
+using shutdown_function_type = std::function<void()>;
 
 
 void f$ob_clean();

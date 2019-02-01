@@ -9,6 +9,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/restriction-isset.h"
 #include "compiler/inferring/restriction-less.h"
+#include "compiler/inferring/restriction-non-void.h"
 #include "compiler/inferring/rvalue.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/scheduler/scheduler-base.h"
@@ -45,6 +46,13 @@ void CollectMainEdgesPass::create_less(const RValue &lhs, const RValue &rhs) {
   tinf::get_inferer()->add_node(b);
   tinf::get_inferer()->add_restriction(new RestrictionLess(a, b));
 }
+
+void CollectMainEdgesPass::create_non_void(const RValue &lhs) {
+  tinf::Node *a = node_from_rvalue(lhs);
+  tinf::get_inferer()->add_node(a);
+  tinf::get_inferer()->add_restriction(new RestrictionNonVoid(a));
+}
+
 
 void CollectMainEdgesPass::create_isset_check(const RValue &rvalue) {
   tinf::Node *a = node_from_rvalue(rvalue);
@@ -94,6 +102,12 @@ template<class A>
 void CollectMainEdgesPass::require_node(const A &a) {
   require_node(as_rvalue(a));
 }
+
+template<class A>
+void CollectMainEdgesPass::create_non_void(const A &a) {
+  create_non_void(as_rvalue(a));
+}
+
 
 void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
   if (v->type() == op_function ||
@@ -161,6 +175,8 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
     fake_func_call->type_rule = callback_param->type_rule;
     fake_func_call->set_func_id(call_function);
     create_less(as_rvalue(callback_function, -1), fake_func_call);
+  } else {
+    create_non_void(as_rvalue(callback_function, -1));
   }
 
   VertexRange callback_args = get_function_params(callback_param);
@@ -236,7 +252,12 @@ void CollectMainEdgesPass::on_constructor_call(VertexAdaptor<op_constructor_call
 }
 
 void CollectMainEdgesPass::on_return(VertexAdaptor<op_return> v) {
-  create_set(as_lvalue(stage::get_function(), -1), v->expr());
+  have_returns = true;
+  if (v->has_expr()) {
+    create_set(as_lvalue(stage::get_function(), -1), v->expr());
+  } else {
+    create_set(as_lvalue(stage::get_function(), -1), tp_void);
+  }
 }
 
 void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
@@ -383,11 +404,6 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
 
     }
 
-    if (function->root->void_flag) {
-      const TypeData *tp = TypeData::get_type(tp_var);
-      create_less(as_rvalue(function, -1), tp);
-      create_set(as_lvalue(function, -1), tp);
-    }
     // @kphp-infer hint/check для @param/@return — это less/set на соответствующие tinf_nodes функции
     for (const FunctionData::InferHint &hint : function->infer_hints) {
       switch (hint.infer_type) {
@@ -498,6 +514,10 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
 }
 
 nullptr_t CollectMainEdgesPass::on_finish() {
+  if (!have_returns) {
+    // hack to work well with functions which always throws
+    create_set(as_lvalue(current_function, -1), tp_void);
+  }
   call_on_var(current_function->local_var_ids);
   call_on_var(current_function->global_var_ids);
   call_on_var(current_function->static_var_ids);

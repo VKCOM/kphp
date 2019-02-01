@@ -10,6 +10,10 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#include "common/crc32.h"
+#include "common/type_traits/function_traits.h"
+#include "common/version-string.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/data_ptr.h"
@@ -35,7 +39,6 @@
 #include "compiler/pipes/check-instance-props.h"
 #include "compiler/pipes/check-modifications-of-const-fields.h"
 #include "compiler/pipes/check-nested-foreach.h"
-#include "compiler/pipes/check-returns.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
@@ -49,6 +52,7 @@
 #include "compiler/pipes/file-to-tokens.h"
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
+#include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
@@ -74,9 +78,6 @@
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
-#include "common/crc32.h"
-#include "common/type_traits/function_traits.h"
-#include "common/version-string.h"
 
 class lockf_wrapper {
   std::string locked_filename_;
@@ -259,12 +260,12 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CheckModificationsOfConstFields>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
-    >> PassC<CheckReturnsPass>{}
     >> sync_node_tag{}
     >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
     >> PipeC<CFGEndF>{}
+    >> PassC<FixReturnsPass>{}
     >> PipeC<CheckClassesF>{}
     >> PassC<OptimizationPass>{}
     >> PassC<CalcValRefPass>{}

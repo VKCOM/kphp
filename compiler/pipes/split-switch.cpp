@@ -117,7 +117,7 @@ public:
       auto func_params = VertexAdaptor<op_func_param_list>::create(case_state_param);
       auto func = VertexAdaptor<op_function>::create(func_name, func_params, seq);
       func = prepare_switch_func(func, case_state_name, 1);
-      GenTree::func_force_return(func);
+      GenTree::func_force_return(func, VertexAdaptor<op_null>::create());
       new_functions.push_back(func);
 
       auto func_call = VertexAdaptor<op_func_call>::create(case_state_0);

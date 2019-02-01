@@ -689,9 +689,12 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_return: {
       VertexAdaptor<op_return> return_op = tree_node;
-      Node tmp;
-
-      create_cfg(return_op->expr(), res_start, &tmp);
+      if (return_op->has_expr()) {
+        Node tmp;
+        create_cfg(return_op->expr(), res_start, &tmp);
+      } else {
+        *res_start = new_node();
+      }
       *res_finish = Node();
       break;
     }

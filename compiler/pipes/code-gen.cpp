@@ -1099,6 +1099,8 @@ void VarDeclaration::compile(CodeGenerator &W) const {
     W << CloseNamespace();
   }
 
+  kphp_assert(type->ptype() != tp_void);
+
   W << (extern_flag ? "extern " : "") << TypeName(type) << " " << VarName(var);
 
   if (defval_flag) {
@@ -2433,16 +2435,17 @@ void compile_require(VertexPtr root, CodeGenerator &W) {
 void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
   if (resumable_flag) {
-    W << "RETURN (";
+    if (root->has_expr()) {
+      W << "RETURN (";
+    } else {
+      W << "RETURN_VOID (";
+    }
   } else {
     W << "return ";
   }
 
-  VertexPtr val = root->expr();
-  if (val->type() == op_empty) {
-    W << "var()";
-  } else {
-    W << val;
+  if (root->has_expr()) {
+    W << root->expr();
   }
 
   if (resumable_flag) {
@@ -2460,12 +2463,17 @@ void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
 }
 
 //TODO: some interface for context?
+//TODO: it's copypasted to compile_return
 void compile_throw_action(CodeGenerator &W) {
   CGContext &context = W.get_context();
   if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
     const TypeData *tp = tinf::get_type(context.parent_func, -1);
     if (context.resumable_flag) {
-      W << "RETURN (";
+      if (tp->ptype() != tp_void) {
+        W << "RETURN (";
+      } else {
+        W << "RETURN_VOID (";
+      }
     } else {
       W << "return ";
     }
