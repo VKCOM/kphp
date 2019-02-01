@@ -9,7 +9,14 @@ class vertex_inner;
 template<Operation Op>
 class VertexAdaptor;
 
+class Location;
+
 typedef VertexAdaptor<meta_op_base> VertexPtr;
+
+template<Operation op>
+inline void set_location(const Location &location, VertexAdaptor<op> &v);
+
+inline const Location &get_location(const VertexPtr &v);
 
 VertexPtr clone_vertex(VertexPtr);
 
@@ -99,5 +106,15 @@ public:
 
   bool operator!=(VertexPtr other) {
     return !(*this == other);
+  }
+
+  VertexAdaptor &set_location(const Location &location) {
+    ::set_location(location, *this);
+    return *this;
+  }
+
+  VertexAdaptor &set_location(VertexPtr v) {
+    ::set_location(get_location(v), *this);
+    return *this;
   }
 };

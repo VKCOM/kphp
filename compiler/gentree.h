@@ -180,56 +180,37 @@ VertexPtr GenTree::conv_to_lval(VertexPtr x) {
 
 template<PrimitiveType ToT>
 VertexPtr GenTree::conv_to(VertexPtr x) {
-  VertexPtr res;
   switch (ToT) {
-    case tp_int: {
-      auto v = VertexAdaptor<op_conv_int>::create(x);
-      res = v;
-      break;
-    }
-    case tp_bool: {
-      auto v = VertexAdaptor<op_conv_bool>::create(x);
-      res = v;
-      break;
-    }
-    case tp_string: {
-      auto v = VertexAdaptor<op_conv_string>::create(x);
-      res = v;
-      break;
-    }
-    case tp_float: {
-      auto v = VertexAdaptor<op_conv_float>::create(x);
-      res = v;
-      break;
-    }
-    case tp_array: {
-      auto v = VertexAdaptor<op_conv_array>::create(x);
-      res = v;
-      break;
-    }
-    case tp_UInt: {
-      auto v = VertexAdaptor<op_conv_uint>::create(x);
-      res = v;
-      break;
-    }
-    case tp_Long: {
-      auto v = VertexAdaptor<op_conv_long>::create(x);
-      res = v;
-      break;
-    }
-    case tp_ULong: {
-      auto v = VertexAdaptor<op_conv_ulong>::create(x);
-      res = v;
-      break;
-    }
-    case tp_regexp: {
-      auto v = VertexAdaptor<op_conv_regexp>::create(x);
-      res = v;
-      break;
-    }
+    case tp_int:
+      return VertexAdaptor<op_conv_int>::create(x).set_location(x);
+
+    case tp_bool:
+      return VertexAdaptor<op_conv_bool>::create(x).set_location(x);
+
+    case tp_string:
+      return VertexAdaptor<op_conv_string>::create(x).set_location(x);
+
+    case tp_float:
+      return VertexAdaptor<op_conv_float>::create(x).set_location(x);
+
+    case tp_array:
+      return VertexAdaptor<op_conv_array>::create(x).set_location(x);
+
+    case tp_UInt:
+      return VertexAdaptor<op_conv_uint>::create(x).set_location(x);
+
+    case tp_Long:
+      return VertexAdaptor<op_conv_long>::create(x).set_location(x);
+
+    case tp_ULong:
+      return VertexAdaptor<op_conv_ulong>::create(x).set_location(x);
+
+    case tp_regexp:
+      return VertexAdaptor<op_conv_regexp>::create(x).set_location(x);
+
+    default:
+      return x;
   }
-  ::set_location(res, x->get_location());
-  return res;
 }
 
 inline void GenTree::set_location(VertexPtr v, const GenTree::AutoLocation &location) {

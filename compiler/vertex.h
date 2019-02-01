@@ -42,6 +42,10 @@ inline void set_location(const Location &location, VertexAdaptor<op> &v, VertexA
   set_location(location, vs...);
 }
 
+inline const Location &get_location(const VertexPtr &v) {
+  return v->get_location();
+}
+
 template<Operation Op>
 size_t vertex_inner_size(int args_n) {
   return sizeof(vertex_inner<Op>) + sizeof(VertexPtr) * args_n;

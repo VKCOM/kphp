@@ -171,7 +171,7 @@ public:
 
   const_iterator end() const { return const_iterator(arr() - size() + 1); }
 
-  const Location &get_location() { return location; }
+  const Location &get_location() const { return location; }
 
   void init() {}
 
