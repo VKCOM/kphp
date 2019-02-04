@@ -34,7 +34,7 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
 #define RETURN_ERROR_FORMAT(error_no, format, ...)                   \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    array <var> (CONST_STRING(format), __VA_ARGS__));                \
+    array<var>::create(CONST_STRING(format), __VA_ARGS__));          \
   RETURN
   if (timeout < 0) {
     timeout = DEFAULT_SOCKET_TIMEOUT;

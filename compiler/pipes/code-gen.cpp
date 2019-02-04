@@ -3433,8 +3433,8 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
       int_cnt++;
     }
   }
-  if (2 <= n && n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
-    W << TypeName(type) << " (" << AsList(root, ", ") << ")";
+  if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
+    W << TypeName(type) << "::create(" << AsList(root, ", ") << ")";
     return;
   }
 

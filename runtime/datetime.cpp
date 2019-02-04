@@ -458,7 +458,7 @@ array<var> f$localtime(int timestamp, bool is_associative) {
   localtime_r(&timestamp_t, &t);
 
   if (!is_associative) {
-    return array<var>(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
+    return array<var>::create(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
   }
 
   array<var> result(array_size(0, 9, false));

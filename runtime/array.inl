@@ -1150,14 +1150,6 @@ array<T>::array(const array_size &s) :
   p(array_inner::create(s.int_size, s.string_size, s.is_vector)) {
 }
 
-
-template<class T>
-template<class... Args, typename std::enable_if<sizeof...(Args) >= 2>::type *>
-inline array<T>::array(Args &&... args) :
-  p(array_inner::create(sizeof...(args), 0, true)) {
-  push_back_values(std::forward<Args>(args)...);
-}
-
 template<class T>
 template<class KeyT>
 inline array<T>::array(const std::initializer_list<std::pair<KeyT, T>> &list) :
@@ -1182,6 +1174,14 @@ template<class T>
 template<class T1, class>
 array<T>::array(const array<T1> &other) {
   copy_from(other);
+}
+
+template<class T>
+template<class... Args>
+inline array<T> array<T>::create(Args &&... args) {
+  array<T> res{array_size{sizeof...(args), 0, true}};
+  res.push_back_values(std::forward<Args>(args)...);
+  return res;
 }
 
 template<class T>

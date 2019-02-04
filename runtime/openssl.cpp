@@ -30,7 +30,7 @@
 #include "runtime/url.h"
 
 array<string> f$hash_algos() {
-  return array<string>(
+  return array<string>::create(
     string("sha1", 4),
     string("sha256", 6),
     string("md5", 3));
@@ -608,7 +608,7 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
 #define RETURN_ERROR_FORMAT(dump_error_stack, error_no, format, ...) \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    array <var> (CONST_STRING(format), __VA_ARGS__));                \
+    array<var>::create(CONST_STRING(format), __VA_ARGS__));          \
   RETURN(dump_error_stack)
 
   if (timeout < 0) {

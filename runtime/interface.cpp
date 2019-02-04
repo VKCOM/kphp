@@ -1239,7 +1239,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
 
     if (result.has_key(key)) {
       if (!f$is_array(result.get_value(key))) {
-        result.set_value(key, array<var>(result.get_value(key), value));
+        result.set_value(key, array<var>::create(result.get_value(key), value));
       } else {
         result[key].push_back(value);
       }

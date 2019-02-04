@@ -793,7 +793,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
   bool second_try = false;//set after matching an empty string
 
   int result = 0;
-  array<var> empty_match(string(), -1);
+  auto empty_match = array<var>::create(string(), -1);
   while (offset <= (int)subject.size()) {
     int count = exec(subject, offset, second_try);
 
@@ -815,7 +815,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
       for (int i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
         if (offset_capture && (fix_php_bugs || i < count)) {
-          array<var> match(match_str, submatch[i + i]);
+          auto match = array<var>::create(match_str, submatch[i + i]);
 
           if (named_subpatterns_count && subpattern_names[i].size()) {
             matches[subpattern_names[i]].push_back(match);
@@ -837,7 +837,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
-            preg_add_match(result_set, array<var>(match_str, submatch[i + i]), subpattern_names[i]);
+            preg_add_match(result_set, array<var>::create(match_str, submatch[i + i]), subpattern_names[i]);
           } else {
             preg_add_match(result_set, match_str, subpattern_names[i]);
           }
@@ -847,7 +847,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
-            result_set.push_back(array<var>(match_str, submatch[i + i]));
+            result_set.push_back(array<var>::create(match_str, submatch[i + i]));
           } else {
             result_set.push_back(match_str);
           }
@@ -936,7 +936,7 @@ OrFalse<array<var>> regexp::split(const string &subject, int limit, int flags) c
       string match_str(subject.c_str() + last_match, submatch[0] - last_match);
 
       if (offset_capture) {
-        result.push_back(array<var>(match_str, last_match));
+        result.push_back(array<var>::create(match_str, last_match));
       } else {
         result.push_back(match_str);
       }
@@ -952,7 +952,7 @@ OrFalse<array<var>> regexp::split(const string &subject, int limit, int flags) c
           string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
-            result.push_back(array<var>(match_str, submatch[i + i]));
+            result.push_back(array<var>::create(match_str, submatch[i + i]));
           } else {
             result.push_back(match_str);
           }
@@ -969,7 +969,7 @@ OrFalse<array<var>> regexp::split(const string &subject, int limit, int flags) c
     string match_str(subject.c_str() + last_match, subject.size() - last_match);
 
     if (offset_capture) {
-      result.push_back(array<var>(match_str, last_match));
+      result.push_back(array<var>::create(match_str, last_match));
     } else {
       result.push_back(match_str);
     }
