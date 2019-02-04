@@ -50,7 +50,7 @@ public:
 
   vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, header_global_var_ids;
   vector<VarPtr> *bad_vars = nullptr;
-  set<VarPtr> const_var_ids, header_const_var_ids;
+  set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
   FunctionPtr function_in_which_lambda_was_created;

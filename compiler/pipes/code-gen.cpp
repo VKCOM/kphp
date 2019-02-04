@@ -1977,7 +1977,7 @@ static inline void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
 }
 
 static inline void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto const_var : function->const_var_ids) {
+  for (auto const_var : function->explicit_const_var_ids) {
     W << VarExternDeclaration(const_var) << NL;
   }
 }
@@ -2006,7 +2006,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << VarExternDeclaration(global_var) << NL;
   }
 
-  for (auto const_var : function->header_const_var_ids) {
+  for (auto const_var : function->explicit_header_const_var_ids) {
     W << VarExternDeclaration(const_var) << NL;
   }
 

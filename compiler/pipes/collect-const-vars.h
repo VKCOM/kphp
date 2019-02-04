@@ -6,7 +6,8 @@
 /*** Replace constant expressions with const variables ***/
 class CollectConstVarsPass : public FunctionPassBase {
 private:
-  int in_param_list;
+  int in_param_list_{0};
+  int const_array_depth_{0};
 
   int get_dependency_level(VertexPtr vertex);
   bool should_convert_to_const(VertexPtr root);
@@ -16,10 +17,6 @@ public:
   struct LocalT : public FunctionPassBase::LocalT {
     bool need_recursion_flag;
   };
-
-  CollectConstVarsPass() :
-    in_param_list(0) {
-  }
 
   string get_description() {
     return "Collect constants";

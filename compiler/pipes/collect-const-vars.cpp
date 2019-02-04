@@ -34,21 +34,21 @@ VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   }
 
   if (root->const_type == cnst_const_val) {
+    const_array_depth_ -= root->type() == op_array;
     if (should_convert_to_const(root)) {
       res = create_const_variable(root, root->location);
     }
   }
 
-  in_param_list -= root->type() == op_func_param_list;
-
+  in_param_list_ -= root->type() == op_func_param_list;
   return res;
 }
 VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *local) {
-  in_param_list += root->type() == op_func_param_list;
+  in_param_list_ += root->type() == op_func_param_list;
 
   local->need_recursion_flag = false;
 
-  if (root->type() == op_defined || root->type() == op_require || root->type() == op_require_once) {
+  if (vk::any_of_equal(root->type(), op_defined, op_require, op_require_once)) {
     return root;
   }
 
@@ -59,21 +59,21 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *local) {
         return create_const_variable(root, root->location);
       }
     }
-    if (root->type() != op_string && root->type() != op_array) {
+    if (vk::none_of_equal(root->type(), op_string, op_array)) {
       if (should_convert_to_const(root)) {
         return create_const_variable(root, root->location);
       }
     }
+    const_array_depth_ += root->type() == op_array;
   }
   local->need_recursion_flag = true;
-
   return root;
 }
+
 bool CollectConstVarsPass::should_convert_to_const(VertexPtr root) {
-  return root->type() == op_string || root->type() == op_array ||
-         root->type() == op_concat || root->type() == op_string_build ||
-         root->type() == op_func_call;
+  return vk::any_of_equal(root->type(), op_string, op_array, op_concat, op_string_build, op_func_call);
 }
+
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
   std::string name;
 
@@ -105,10 +105,14 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
     var_id->dependency_level = max_dep_level;
   }
 
-  if (in_param_list > 0) {
-    current_function->header_const_var_ids.insert(var_id);
+  if (const_array_depth_ > 0) {
+    current_function->implicit_const_var_ids.insert(var_id);
   } else {
-    current_function->const_var_ids.insert(var_id);
+    if (in_param_list_ > 0) {
+      current_function->explicit_header_const_var_ids.insert(var_id);
+    } else {
+      current_function->explicit_const_var_ids.insert(var_id);
+    }
   }
 
   var->set_var_id(var_id);
