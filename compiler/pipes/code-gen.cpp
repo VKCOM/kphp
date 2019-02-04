@@ -490,10 +490,12 @@ struct FullCleanupFunction {
 };
 
 struct VarsCpp {
-  std::vector<VarPtr> vars;
-  size_t parts_cnt;
-  inline VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt);
+  inline VarsCpp(std::vector<VarPtr> &&vars, std::size_t parts_cnt);
   inline void compile(CodeGenerator &W) const;
+
+private:
+  std::vector<VarPtr> vars_;
+  std::size_t parts_cnt_;
 };
 
 struct DfsInit {
@@ -1627,22 +1629,27 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
   return dep_mask;
 }
 
-inline VarsCpp::VarsCpp(std::vector<VarPtr> &&new_vars, size_t parts_cnt) :
-  vars(std::move(new_vars)),
-  parts_cnt(parts_cnt) {
+inline VarsCpp::VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt) :
+  vars_(std::move(vars)),
+  parts_cnt_(parts_cnt) {
   kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
-  std::sort(vars.begin(), vars.end());
 }
 
 inline void VarsCpp::compile(CodeGenerator &W) const {
   std::vector<VarPtr> vars_batch;
-  std::vector<std::vector<bool>> dep_masks(parts_cnt);
-  for (std::size_t part_id = 0; part_id < parts_cnt; ++part_id) {
-    for (std::size_t var_index = part_id; var_index < vars.size(); var_index += parts_cnt) {
-      vars_batch.emplace_back(vars[var_index]);
+  std::vector<std::vector<bool>> dep_masks;
+  std::size_t remainder = vars_.size() % parts_cnt_;
+  const std::size_t elements_per_batch = vars_.size() / parts_cnt_;
+  for (auto first = vars_.cbegin(); first != vars_.cend();) {
+    auto last = std::next(first, elements_per_batch);
+    if (remainder) {
+      --remainder;
+      ++last;
     }
-    dep_masks[part_id] = compile_vars_part(W, vars_batch, part_id);
-    vars_batch.clear();
+    vars_batch.assign(first, last);
+    std::sort(vars_batch.begin(), vars_batch.end());
+    dep_masks.emplace_back(compile_vars_part(W, vars_batch, dep_masks.size()));
+    first = last;
   }
 
   W << OpenFile("vars.cpp", "", false);
@@ -1657,7 +1664,7 @@ inline void VarsCpp::compile(CodeGenerator &W) const {
       return l.size() < r.size();
     });
   for (int dep_level = 0; dep_level < longest_dep_mask->size(); ++dep_level) {
-    for (std::size_t part_id = 0; part_id < parts_cnt; ++part_id) {
+    for (std::size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
       if (dep_masks[part_id].size() > dep_level && dep_masks[part_id][dep_level]) {
         const int s = snprintf(init_fun, sizeof(init_fun),
                                "const_vars_init_priority_%d_file_%zu();", dep_level, part_id);
