@@ -1002,47 +1002,47 @@ string f$sprintf(const array<var> &a) {
   }
 
   string result;
-  string pattern = a.get_value(0).to_string();
+  string format = a.get_value(0).to_string();
   int cur_arg = 1;
   bool error_too_big = false;
-  for (int i = 0; i < (int)pattern.size(); i++) {
-    if (pattern[i] != '%') {
-      result.push_back(pattern[i]);
+  for (int i = 0; i < (int)format.size(); i++) {
+    if (format[i] != '%') {
+      result.push_back(format[i]);
     } else {
       i++;
 
       int arg_num = 0, j;
-      for (j = i; '0' <= pattern[j] && pattern[j] <= '9'; j++) {
-        arg_num = arg_num * 10 + pattern[j] - '0';
+      for (j = i; '0' <= format[j] && format[j] <= '9'; j++) {
+        arg_num = arg_num * 10 + format[j] - '0';
       }
-      if (pattern[j] == '$' && arg_num > 0) {
+      if (format[j] == '$' && arg_num > 0) {
         i = j + 1;
       } else {
         arg_num = 0;
       }
 
       char sign = 0;
-      if (pattern[i] == '+') {
-        sign = pattern[i++];
+      if (format[i] == '+') {
+        sign = format[i++];
       }
 
       char filler = ' ';
-      if (pattern[i] == '0' || pattern[i] == ' ') {
-        filler = pattern[i++];
-      } else if (pattern[i] == '\'') {
+      if (format[i] == '0' || format[i] == ' ') {
+        filler = format[i++];
+      } else if (format[i] == '\'') {
         i++;
-        filler = pattern[i++];
+        filler = format[i++];
       }
 
       int pad_right = false;
-      if (pattern[i] == '-') {
+      if (format[i] == '-') {
         pad_right = true;
         i++;
       }
 
       int width = 0;
-      while ('0' <= pattern[i] && pattern[i] <= '9' && width < PHP_BUF_LEN) {
-        width = width * 10 + pattern[i++] - '0';
+      while ('0' <= format[i] && format[i] <= '9' && width < PHP_BUF_LEN) {
+        width = width * 10 + format[i++] - '0';
       }
 
       if (width >= PHP_BUF_LEN) {
@@ -1051,11 +1051,11 @@ string f$sprintf(const array<var> &a) {
       }
 
       int precision = -1;
-      if (pattern[i] == '.' && '0' <= pattern[i + 1] && pattern[i + 1] <= '9') {
-        precision = pattern[i + 1] - '0';
+      if (format[i] == '.' && '0' <= format[i + 1] && format[i + 1] <= '9') {
+        precision = format[i + 1] - '0';
         i += 2;
-        while ('0' <= pattern[i] && pattern[i] <= '9' && precision < PHP_BUF_LEN) {
-          precision = precision * 10 + pattern[i++] - '0';
+        while ('0' <= format[i] && format[i] <= '9' && precision < PHP_BUF_LEN) {
+          precision = precision * 10 + format[i++] - '0';
         }
       }
 
@@ -1065,7 +1065,7 @@ string f$sprintf(const array<var> &a) {
       }
 
       string piece;
-      if (pattern[i] == '%') {
+      if (format[i] == '%') {
         piece = PERCENT;
       } else {
         if (arg_num == 0) {
@@ -1073,12 +1073,12 @@ string f$sprintf(const array<var> &a) {
         }
 
         if (arg_num >= a.count()) {
-          php_warning("Not enough parameters to call function sprintf with pattern \"%s\"", pattern.c_str());
+          php_warning("Not enough parameters to call function sprintf with format \"%s\"", format.c_str());
           return string();
         }
 
         if ((dl::size_type)arg_num == 0) {
-          php_warning("Wrong parameter number 0 specified in function sprintf with pattern \"%s\"", pattern.c_str());
+          php_warning("Wrong parameter number 0 specified in function sprintf with format \"%s\"", format.c_str());
           return string();
         }
 
@@ -1089,7 +1089,7 @@ string f$sprintf(const array<var> &a) {
           return string();
         }
 
-        switch (pattern[i]) {
+        switch (format[i]) {
           case 'b': {
             unsigned int arg_int = arg.to_int();
             int cur_pos = 70;
@@ -1103,7 +1103,7 @@ string f$sprintf(const array<var> &a) {
           case 'c': {
             int arg_int = arg.to_int();
             if (arg_int <= -128 || arg_int > 255) {
-              php_warning("Wrong parameter for specifier %%c in function sprintf with pattern \"%s\"", pattern.c_str());
+              php_warning("Wrong parameter for specifier %%c in function sprintf with format \"%s\"", format.c_str());
             }
             piece.assign(1, (char)arg_int);
             break;
@@ -1142,7 +1142,7 @@ string f$sprintf(const array<var> &a) {
             if (precision >= 0) {
               static_SB << '.' << precision;
             }
-            static_SB << pattern[i];
+            static_SB << format[i];
 
             int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
             if (len >= PHP_BUF_LEN) {
@@ -1183,7 +1183,7 @@ string f$sprintf(const array<var> &a) {
           }
           case 'x':
           case 'X': {
-            const char *hex_digits = (pattern[i] == 'x' ? lhex_digits : uhex_digits);
+            const char *hex_digits = (format[i] == 'x' ? lhex_digits : uhex_digits);
             unsigned int arg_int = arg.to_int();
 
             int cur_pos = 70;
@@ -1195,7 +1195,7 @@ string f$sprintf(const array<var> &a) {
             break;
           }
           default:
-            php_warning("Unsupported specifier %%%c in sprintf with pattern \"%s\"", pattern[i], pattern.c_str());
+            php_warning("Unsupported specifier %%%c in sprintf with format \"%s\"", format[i], format.c_str());
             return string();
         }
       }
