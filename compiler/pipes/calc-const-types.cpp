@@ -26,7 +26,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *local) {
     case cnst_func:
       if (v->get_func_id()) {
         VertexPtr root = v->get_func_id()->root;
-        if (!root || !root->type_rule || root->type_rule->extra_type != op_ex_rule_const) {
+        if (!root || !root->type_rule || root->type_rule.as<meta_op_type_rule>()->rule()->extra_type != op_ex_rule_const) {
           v->const_type = cnst_nonconst_val;
           break;
         }
