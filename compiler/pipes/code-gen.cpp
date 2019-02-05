@@ -1911,7 +1911,7 @@ void DfsInit::compile_dfs_init_func(
   int parts_n = (int)header_names.size();
   if (full_flag) {
     for (int i = 0; i < parts_n; i++) {
-      W << Include(header_names[i]);
+      W << Include("o_dfs/" + header_names[i]);
     }
     for (auto func : used_functions) {
       if (func->type == FunctionData::func_global) {
@@ -1997,24 +1997,27 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   const int parts_n = 32;
   set<VarPtr> used_vars[parts_n];
   collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
-  vector<ClassPtr> classes = G->get_classes();
 
-  vector<string> header_names(parts_n);
-  vector<string> src_names(parts_n);
-  for (int i = 0; i < parts_n; i++) {
+  auto last_part = std::remove_if(std::begin(used_vars), std::end(used_vars),
+                                  [](const std::set<VarPtr> &p) { return p.empty(); });
+  auto non_empty_parts = std::distance(std::begin(used_vars), last_part);
+
+  vector<string> header_names(non_empty_parts);
+  vector<string> src_names(non_empty_parts);
+  for (int i = 0; i < non_empty_parts; i++) {
     string prefix = string("dfs") + int_to_str(i) + ".";
     string header_name = prefix + main_func->header_name;
     string src_name = prefix + main_func->src_name;
-    header_names[i] = header_name;
-    src_names[i] = src_name;
+    header_names[i] = std::move(header_name);
+    src_names[i] = std::move(src_name);
   }
 
-  for (int i = 0; i < parts_n; i++) {
-    W << OpenFile(header_names[i], "", false);
+  for (int i = 0; i < non_empty_parts; i++) {
+    W << OpenFile(header_names[i], "o_dfs", false);
     compile_dfs_init_part(main_func, used_vars[i], false, i, W);
     W << CloseFile();
 
-    W << OpenFile(src_names[i], "", false);
+    W << OpenFile(src_names[i], "o_dfs", false);
     W << ExternInclude("php_functions.h");
     compile_dfs_init_part(main_func, used_vars[i], true, i, W);
     W << CloseFile();
