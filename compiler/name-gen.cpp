@@ -100,7 +100,9 @@ string resolve_uses(FunctionPtr current_function, string class_name, char delim)
     } else if (class_name == "static") {
       class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
     } else if (class_name == "self"){
-      class_name = current_function->get_this_or_topmost_if_lambda()->class_id->name;
+      auto class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
+      kphp_error_act(class_id, "Can't resolve self, there is no any class context", return {});
+      class_name = class_id->name;
     } else {
       size_t slash_pos = class_name.find('\\');
       if (slash_pos == string::npos) {

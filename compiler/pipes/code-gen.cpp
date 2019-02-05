@@ -1676,7 +1676,6 @@ inline void VarsCpp::compile(CodeGenerator &W) const {
       }
     }
   }
-
   W << END;
   W << CloseNamespace();
   W << CloseFile();
