@@ -490,12 +490,12 @@ struct FullCleanupFunction {
 };
 
 struct VarsCpp {
-  inline VarsCpp(std::vector<VarPtr> &&vars, std::size_t parts_cnt);
+  inline VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt);
   inline void compile(CodeGenerator &W) const;
 
 private:
   std::vector<VarPtr> vars_;
-  std::size_t parts_cnt_;
+  size_t parts_cnt_;
 };
 
 struct DfsInit {
@@ -1506,7 +1506,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
   return shifts;
 }
 
-std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, std::size_t part) {
+std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part) {
   std::string file_name = "vars" + std::to_string(part) + ".cpp";
   W << OpenFile(file_name, "o_vars", false);
 
@@ -1590,7 +1590,7 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
-  for (std::size_t dep_level = 0; dep_level < dep_mask.size(); ++dep_level) {
+  for (size_t dep_level = 0; dep_level < dep_mask.size(); ++dep_level) {
     if (!dep_mask[dep_level]) {
       continue;
     }
@@ -1636,20 +1636,16 @@ inline VarsCpp::VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt) :
 }
 
 inline void VarsCpp::compile(CodeGenerator &W) const {
+  std::vector<VarPtr> sorted_vars = vars_;
+  std::sort(sorted_vars.begin(), sorted_vars.end());
   std::vector<VarPtr> vars_batch;
-  std::vector<std::vector<bool>> dep_masks;
-  std::size_t remainder = vars_.size() % parts_cnt_;
-  const std::size_t elements_per_batch = vars_.size() / parts_cnt_;
-  for (auto first = vars_.cbegin(); first != vars_.cend();) {
-    auto last = std::next(first, elements_per_batch);
-    if (remainder) {
-      --remainder;
-      ++last;
+  std::vector<std::vector<bool>> dep_masks(parts_cnt_);
+  for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
+    for (size_t var_num = part_id; var_num < sorted_vars.size(); var_num += parts_cnt_) {
+      vars_batch.emplace_back(sorted_vars[var_num]);
     }
-    vars_batch.assign(first, last);
-    std::sort(vars_batch.begin(), vars_batch.end());
-    dep_masks.emplace_back(compile_vars_part(W, vars_batch, dep_masks.size()));
-    first = last;
+    dep_masks[part_id] = compile_vars_part(W, vars_batch, part_id);
+    vars_batch.clear();
   }
 
   W << OpenFile("vars.cpp", "", false);
@@ -1664,15 +1660,15 @@ inline void VarsCpp::compile(CodeGenerator &W) const {
       return l.size() < r.size();
     });
   for (int dep_level = 0; dep_level < longest_dep_mask->size(); ++dep_level) {
-    for (std::size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
+    for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
       if (dep_masks[part_id].size() > dep_level && dep_masks[part_id][dep_level]) {
         const int s = snprintf(init_fun, sizeof(init_fun),
                                "const_vars_init_priority_%d_file_%zu();", dep_level, part_id);
         kphp_assert(s > 0 && s < sizeof(init_fun));
         // function declaration
-        W << "void " << vk::string_view{init_fun, static_cast<std::size_t>(s)} << NL;
+        W << "void " << vk::string_view{init_fun, static_cast<size_t>(s)} << NL;
         // function call
-        W << vk::string_view{init_fun, static_cast<std::size_t>(s)} << NL;
+        W << vk::string_view{init_fun, static_cast<size_t>(s)} << NL;
       }
     }
   }
@@ -4059,7 +4055,7 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
   }
 }
 
-std::size_t CodeGenF::calc_count_of_parts(std::size_t cnt_global_vars) {
+size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / 4096u;
 }
 
@@ -4149,7 +4145,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   for (FunctionPtr fun: xall) {
     vars.insert(vars.end(), fun->static_var_ids.begin(), fun->static_var_ids.end());
   }
-  std::size_t parts_cnt = calc_count_of_parts(vars.size());
+  size_t parts_cnt = calc_count_of_parts(vars.size());
   W << Async(VarsCpp(std::move(vars), parts_cnt));
 
   if (G->env().is_static_lib_mode()) {

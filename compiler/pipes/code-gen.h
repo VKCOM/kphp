@@ -15,7 +15,7 @@ class CodeGenF {
   void write_hashes_of_subdirs_to_dep_files(CodeGenerator &W);
   void write_tl_schema(CodeGenerator &W);
   void write_lib_version(CodeGenerator &W);
-  std::size_t calc_count_of_parts(std::size_t cnt_global_vars);
+  size_t calc_count_of_parts(size_t cnt_global_vars);
 
 public:
   CodeGenF() {

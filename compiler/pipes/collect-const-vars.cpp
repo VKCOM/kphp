@@ -5,23 +5,13 @@
 
 int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
   if (vertex->type() == op_var) {
-    VertexAdaptor<op_var> var_adaptor = vertex.as<op_var>();
-    return var_adaptor->get_var_id()->dependency_level;
+    return vertex->get_var_id()->dependency_level;
   }
-
-  if (vertex->type() == op_double_arrow) {
-    const int dep_key = get_dependency_level(vertex.as<op_double_arrow>()->key());
-    const int dep_value = get_dependency_level(vertex.as<op_double_arrow>()->value());
-    return std::max(dep_key, dep_value);
+  int max_dependency_level = 0;
+  for (const auto &child: *vertex) {
+    max_dependency_level = std::max(max_dependency_level, get_dependency_level(child));
   }
-
-  if (vertex->type() == op_index) {
-    const int dep_key = get_dependency_level(vertex.as<op_index>()->key());
-    const int dep_array = get_dependency_level(vertex.as<op_index>()->array());
-    return std::max(dep_key, dep_array);
-  }
-
-  return 0;
+  return max_dependency_level;
 }
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   VertexPtr res = root;
