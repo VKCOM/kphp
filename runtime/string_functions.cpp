@@ -768,16 +768,9 @@ int f$ord(const string &s) {
   return (unsigned char)s[0];
 }
 
-string f$pack(const array<var> &a) {
-  int n = a.count();
-  if (n == 0) {
-    php_warning("pack must take at least 1 argument");
-    return string();
-  }
-
+string f$pack(const string &pattern, const array<var> &a) {
   static_SB.clean();
-  const string pattern = a.get_value(0).to_string();
-  int cur_arg = 1;
+  int cur_arg = 0;
   for (int i = 0; i < (int)pattern.size();) {
     if (pattern[i] == '*') {
       if (i > 0) {

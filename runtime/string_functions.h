@@ -78,7 +78,7 @@ inline string f$number_format(double number, int decimals, const var &dec_point,
 
 int f$ord(const string &s);
 
-string f$pack(const array<var> &a);
+string f$pack(const string &pattern, const array<var> &a);
 
 string f$prepare_search_query(const string &query);
 
