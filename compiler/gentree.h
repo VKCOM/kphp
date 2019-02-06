@@ -133,12 +133,12 @@ public:
   VertexPtr get_class(Token *phpdoc_token);
 
 private:
-  VertexPtr parse_function_declaration(AccessType access_type,
-                                       std::vector<VertexPtr> *uses_of_lambda,
-                                       VertexAdaptor<op_func_param_list> &params,
-                                       VertexPtr &flags,
-                                       bool &is_constructor,
-                                       bool &is_varg);
+  VertexAdaptor<op_func_name> parse_function_declaration(AccessType access_type,
+                                                         std::vector<VertexPtr> *uses_of_lambda,
+                                                         VertexAdaptor<op_func_param_list> &params,
+                                                         VertexPtr &flags,
+                                                         bool &is_constructor,
+                                                         bool &is_varg);
 
   VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
 

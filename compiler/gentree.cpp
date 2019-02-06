@@ -18,7 +18,7 @@
 #include "compiler/stage.h"
 #include "compiler/vertex.h"
 
-#define CE(x) if (!(x)) {return VertexPtr();}
+#define CE(x) if (!(x)) {return {};}
 
 GenTree::GenTree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
   line_num(0),
@@ -1462,12 +1462,12 @@ VertexPtr GenTree::get_anonymous_function() {
   return {};
 }
 
-VertexPtr GenTree::parse_function_declaration(AccessType access_type,
-                                              std::vector<VertexPtr> *uses_of_lambda,
-                                              VertexAdaptor<op_func_param_list> &params,
-                                              VertexPtr &flags,
-                                              bool &is_constructor,
-                                              bool &is_varg) {
+VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType access_type,
+                                                                std::vector<VertexPtr> *uses_of_lambda,
+                                                                VertexAdaptor<op_func_param_list> &params,
+                                                                VertexPtr &flags,
+                                                                bool &is_constructor,
+                                                                bool &is_varg) {
   AutoLocation func_location(this);
   set_location(flags, func_location);
 
