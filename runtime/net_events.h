@@ -27,4 +27,4 @@ void remove_event_timer(event_timer *et);
 int wait_net(int timeout_ms);
 
 
-void net_events_init_static();
+void init_net_events_lib();

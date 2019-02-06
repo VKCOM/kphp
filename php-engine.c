@@ -2938,9 +2938,13 @@ void arg_add(const char *value);
 
 void ini_set(const char *key, const char *value);
 
-void init_scripts(void);
+void init_php_scripts(void);
 
-void static_init_scripts(void);
+void global_init_php_scripts(void);
+
+void global_init_runtime_libs(void);
+
+void init_heap_allocator(void);
 
 void init_all(void) {
   srand48((long)cycleclock_now());
@@ -2955,13 +2959,15 @@ void init_all(void) {
     script_timeout = run_once ? 1e9 : DEFAULT_SCRIPT_TIMEOUT;
   }
 
-  //init php_script
-  static_init_scripts();
+  global_init_runtime_libs();
+  global_init_php_scripts();
+  init_heap_allocator();
+
   init_handlers();
 
   init_drivers();
 
-  init_scripts();
+  init_php_scripts();
   idle_server_status();
   custom_server_status("<none>", 6);
   server_status_rpc(0, 0, dl_time());

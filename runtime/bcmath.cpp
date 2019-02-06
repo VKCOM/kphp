@@ -1,6 +1,6 @@
 #include "runtime/bcmath.h"
 
-static int bc_scale;
+static int bc_scale{0};
 
 static const string ONE("1", 1);
 static const string ZERO("0", 1);
@@ -743,7 +743,6 @@ int f$bccomp(const string &lhs, const string &rhs, int scale) {
   return (1 - 2 * (lsign < 0)) * bc_comp(lhs.c_str(), lint, ldot, lfrac, lscale, rhs.c_str(), rint, rdot, rfrac, rscale, scale);
 }
 
-
-void bcmath_init_static() {
+void free_bcmath_lib() {
   bc_scale = 0;
 }

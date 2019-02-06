@@ -18,4 +18,4 @@ string f$bcmul(const string &lhs, const string &rhs, int scale = INT_MIN);
 
 int f$bccomp(const string &lhs, const string &rhs, int scale = INT_MIN);
 
-void bcmath_init_static();
+void free_bcmath_lib();

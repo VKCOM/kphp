@@ -13,7 +13,7 @@ void leave_critical_section();
 
 
 extern long long query_num;//engine query number. query_num == 0 before first query
-extern bool script_runned;//betwen init_static and free_static
+extern bool script_runned;//betwen init_static and free_runtime_libs
 extern bool use_script_allocator;//use script allocator instead of static heap allocator
 
 using size_type = unsigned int;

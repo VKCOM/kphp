@@ -36,12 +36,11 @@ extern var v$Durov;
 extern var v$FullMCTime;
 extern var v$KPHP_MC_WRITE_STAT_PROBABILITY;
 
-const char *mc_method;
-static const char *mc_last_key;
-static int mc_last_key_len;
-static char mc_res_storage[sizeof(var)];
-static var *mc_res;
-static bool mc_bool_res;
+const char *mc_method{nullptr};
+static const char *mc_last_key{nullptr};
+static int mc_last_key_len{0};
+static var mc_res;
+static bool mc_bool_res{false};
 
 static double mc_stats_time;
 static int mc_stats_port;
@@ -284,12 +283,12 @@ void mc_multiget_callback(const char *result, int result_len) {
         result_len -= (int)(new_result - result);
         php_assert (result_len >= 0);
         result = new_result;
-        mc_res->set_value(string(key, key_len), mc_get_value(value, value_len, flags));
+        mc_res.set_value(string(key, key_len), mc_get_value(value, value_len, flags));
         break;
       }
       case 'E':
         if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
-          mc_stats_do(*mc_res);
+          mc_stats_do(mc_res);
           return;
         }
         /* fallthrough */
@@ -326,12 +325,12 @@ void mc_get_callback(const char *result, int result_len) {
       result_len -= (int)(new_result - result);
       php_assert (result_len >= 0);
       result = new_result;
-      *mc_res = mc_get_value(value, value_len, flags);
+      mc_res = mc_get_value(value, value_len, flags);
     }
       /* fallthrough */
     case 'E':
       if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
-        mc_stats_do(*mc_res);
+        mc_stats_do(mc_res);
         return;
       }
       /* fallthrough */
@@ -364,15 +363,15 @@ void mc_increment_callback(const char *result, int result_len) {
   }
 
   if (!strcmp(result, "NOT_FOUND\r\n")) {
-    *mc_res = false;
+    mc_res = false;
   } else {
     if (result_len >= 2 && result[result_len - 2] == '\r' && result[result_len - 1] == '\n') {
-      mc_res->assign(result, result_len - 2);
+      mc_res.assign(result, result_len - 2);
     } else {
       php_warning("Wrong memcache response \"%s\" in Memcache::%sement with key %s", result, mc_method, mc_last_key);
     }
   }
-  mc_stats_do(*mc_res);
+  mc_stats_do(mc_res);
 }
 
 void mc_version_callback(const char *result, int result_len) {
@@ -385,7 +384,7 @@ void mc_version_callback(const char *result, int result_len) {
     case 'V': {
       if (!strncmp(result, "VERSION ", 8)) {
         if (result_len >= 10 && result[result_len - 2] == '\r' && result[result_len - 1] == '\n') {
-          mc_res->assign(result + 8, result_len - 10);
+          mc_res.assign(result + 8, result_len - 10);
           break;
         }
       }
@@ -394,7 +393,7 @@ void mc_version_callback(const char *result, int result_len) {
     default:
       php_warning("Wrong memcache response \"%s\" in Memcache::getVersion", result);
   }
-  mc_stats_do(*mc_res);
+  mc_stats_do(mc_res);
 }
 
 
@@ -508,7 +507,7 @@ var McMemcache::run_increment(const string &key, const var &count) {
   }
   drivers_SB << "\r\n";
 
-  *mc_res = false;
+  mc_res = false;
   host cur_host = get_host(real_key);
   if (mc_is_immediate_query(real_key)) {
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
@@ -518,7 +517,7 @@ var McMemcache::run_increment(const string &key, const var &count) {
     mc_last_key_len = (int)real_key.size();
     mc_stats_init(cur_host.host_port, mc_last_key);
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_increment_callback);
-    return *mc_res;
+    return mc_res;
   }
 }
 
@@ -597,7 +596,7 @@ var McMemcache::get(const var &key_var) {
     }
     drivers_SB << "\r\n";
 
-    *mc_res = array<var>(array_size(0, key_var.count(), false));
+    mc_res = array<var>(array_size(0, key_var.count(), false));
     host cur_host = get_host(string());
     if (is_immediate_query) {
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr); //TODO wrong if we have no mc_proxy
@@ -620,17 +619,17 @@ var McMemcache::get(const var &key_var) {
 
     host cur_host = get_host(real_key);
     if (mc_is_immediate_query(real_key)) {
-      *mc_res = true;
+      mc_res = true;
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     } else {
-      *mc_res = false;
+      mc_res = false;
       mc_last_key = real_key.c_str();
       mc_last_key_len = (int)real_key.size();
       mc_stats_init(cur_host.host_port, mc_last_key);
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_get_callback);
     }
   }
-  return *mc_res;
+  return mc_res;
 }
 
 bool McMemcache::delete_(const string &key) {
@@ -675,11 +674,11 @@ var McMemcache::getVersion() {
     return false;
   }
 
-  *mc_res = false;
+  mc_res = false;
   host cur_host = get_host(string());
   mc_run_query(cur_host.host_num, version_str, (int)strlen(version_str), cur_host.timeout_ms, 1, mc_version_callback);
 
-  return *mc_res;
+  return mc_res;
 }
 
 
@@ -2248,38 +2247,25 @@ var v$Durov __attribute__ ((weak));
 var v$FullMCTime __attribute__ ((weak));
 var v$KPHP_MC_WRITE_STAT_PROBABILITY __attribute__ ((weak));
 
-void drivers_init_static() {
-  INIT_VAR(Memcache, v$MC);
-  INIT_VAR(Memcache, v$MC_True);
-  INIT_VAR(var, v$config);
-  INIT_VAR(var, v$Durov);
-  INIT_VAR(var, v$FullMCTime);
-  INIT_VAR(var, v$KPHP_MC_WRITE_STAT_PROBABILITY);
-
-  INIT_VAR(MyDB, DB_Proxy);
-
-  INIT_VAR(const char *, mc_method);
-  INIT_VAR(bool, mc_bool_res);
-  INIT_VAR(var, *mc_res_storage);
-  mc_res = reinterpret_cast <var *> (mc_res_storage);
-
-  INIT_VAR(string, drivers_cpp_filename);
-  INIT_VAR(string, drivers_h_filename);
-
+void init_drivers_lib() {
   drivers_cpp_filename = string("drivers.cpp", 11);
   drivers_h_filename = string("drivers.h", 9);
 }
 
-void drivers_free_static() {
-  CLEAR_VAR(MyMemcache, v$MC);
-  CLEAR_VAR(MyMemcache, v$MC_True);
-  CLEAR_VAR(var, v$config);
-  CLEAR_VAR(var, v$Durov);
-  CLEAR_VAR(var, v$FullMCTime);
-  CLEAR_VAR(car, v$KPHP_MC_WRITE_STAT_PROBABILITY);
+void free_drivers_lib() {
+  hard_reset_var(v$MC);
+  hard_reset_var(v$MC_True);
+  hard_reset_var(v$config);
+  hard_reset_var(v$Durov);
+  hard_reset_var(v$FullMCTime);
+  hard_reset_var(v$KPHP_MC_WRITE_STAT_PROBABILITY);
 
-  CLEAR_VAR(MyDB, DB_Proxy);
+  hard_reset_var(DB_Proxy);
 
-  CLEAR_VAR(string, drivers_cpp_filename);
-  CLEAR_VAR(string, drivers_h_filename);
+  hard_reset_var(mc_method);
+  hard_reset_var(mc_bool_res);
+  hard_reset_var(mc_res);
+
+  hard_reset_var(drivers_cpp_filename);
+  hard_reset_var(drivers_h_filename);
 }

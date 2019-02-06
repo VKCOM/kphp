@@ -764,13 +764,7 @@ OrFalse<int> f$file_put_contents(const string &stream, const var &content_var, i
   STREAM_FUNCTION_BODY(file_put_contents, false)(url, content, flags);
 }
 
-
-void streams_init_static() {
-  INIT_VAR(var, error_number_dummy);
-  INIT_VAR(var, error_description_dummy);
-}
-
-void streams_free_static() {
-  CLEAR_VAR(var, error_number_dummy);
-  CLEAR_VAR(var, error_description_dummy);
+void free_streams_lib() {
+  hard_reset_var(error_number_dummy);
+  hard_reset_var(error_description_dummy);
 }

@@ -15,12 +15,12 @@ extern "C" {
 
 /** script_t **/
 typedef struct {
-  void (*run)(php_query_data *, void *mem, size_t mem_size);
+  void (*run)(void);
   void (*clear)(void);
 } script_t;
 
 script_t *get_script(const char *name);
-void set_script(const char *name, void (*run)(php_query_data *, void *, size_t), void (*clear)(void));
+void set_script(const char *name, void (*run)(void), void (*clear)(void));
 
 /** script result **/
 

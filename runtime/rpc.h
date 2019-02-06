@@ -192,11 +192,11 @@ array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids)
 int f$query_x2(int x);
 
 
-void rpc_init_static_once();
+void global_init_rpc_lib();
 
-void rpc_init_static();
+void init_rpc_lib();
 
-void rpc_free_static();
+void free_rpc_lib();
 
 /*
  *

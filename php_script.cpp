@@ -19,7 +19,7 @@ script_t *get_script(const char *name) {
   return nullptr;
 }
 
-void set_script(const char *name, void (*run)(php_query_data *, void *mem, size_t mem_size), void (*clear)()) {
+void set_script(const char *name, void (*run)(void), void (*clear)()) {
   static int cnt = 0;
 
   auto script = new script_t{run, clear};

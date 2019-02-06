@@ -1222,7 +1222,7 @@ void f$sched_yield() {
   yielded_resumables_push(id);
 }
 
-void resumable_init_static_once() {
+void global_init_resumable_lib() {
   php_assert (wait_timeout_wakeup_id == -1);
   php_assert (wait_queue_timeout_wakeup_id == -1);
 
@@ -1231,7 +1231,7 @@ void resumable_init_static_once() {
   yield_wakeup_id = register_wakeup_callback(&yielded_resumable_timeout);
 }
 
-void resumable_init_static() {
+void init_resumable_lib() {
   php_assert (wait_timeout_wakeup_id != -1);
   php_assert (wait_queue_timeout_wakeup_id != -1);
 

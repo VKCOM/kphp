@@ -63,8 +63,6 @@ OrFalse<array<string>> f$scandir(const string &directory);
 OrFalse<string> file_file_get_contents(const string &name);
 
 
-void files_init_static_once();
+void global_init_files_lib();
 
-void files_init_static();
-
-void files_free_static();
+void free_files_lib();

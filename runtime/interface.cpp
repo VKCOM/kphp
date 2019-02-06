@@ -1,6 +1,8 @@
 #include "runtime/interface.h"
 
 #include <arpa/inet.h>
+#include <cassert>
+#include <clocale>
 #include <functional>
 #include <getopt.h>
 #include <netdb.h>
@@ -434,7 +436,8 @@ void f$fastcgi_finish_request(int exit_code) {
 
       write_safe(1, oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size());
 
-      free_static();//TODO move to finish_script
+      //TODO move to finish_script
+      free_runtime_environment();
 
       break;
     }
@@ -1268,21 +1271,13 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
                               const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
   rpc_parse(serialized_data, serialized_data_len);
 
-  INIT_VAR(var, v$_SERVER);
-  INIT_VAR(var, v$_GET);
-  INIT_VAR(var, v$_POST);
-  INIT_VAR(var, v$_FILES);
-  INIT_VAR(var, v$_COOKIE);
-  INIT_VAR(var, v$_REQUEST);
-  INIT_VAR(var, v$_ENV);
-
-  v$_SERVER = array<var>();
-  v$_GET = array<var>();
-  v$_POST = array<var>();
-  v$_FILES = array<var>();
-  v$_COOKIE = array<var>();
-  v$_REQUEST = array<var>();
-  v$_ENV = array<var>();
+  hard_reset_var(v$_SERVER, array<var>());
+  hard_reset_var(v$_GET, array<var>());
+  hard_reset_var(v$_POST, array<var>());
+  hard_reset_var(v$_FILES, array<var>());
+  hard_reset_var(v$_COOKIE, array<var>());
+  hard_reset_var(v$_REQUEST, array<var>());
+  hard_reset_var(v$_ENV, array<var>());
 
   string uri_str;
   if (uri_len) {
@@ -1940,8 +1935,7 @@ static bool php_fclose(const Stream &stream) {
   return false;
 }
 
-
-static void interface_init_static_once() {
+static void global_init_interface_lib() {
   static stream_functions php_stream_functions;
 
   php_stream_functions.name = string("php", 3);
@@ -1968,37 +1962,33 @@ static void interface_init_static_once() {
   register_stream_functions(&php_stream_functions, false);
 }
 
-
-void init_static_once() {
-  files_init_static_once();
-  interface_init_static_once();
-  openssl_init_static_once();
-  regexp::init_static();
-  resumable_init_static_once();
-  rpc_init_static_once();
-  udp_init_static_once();
+void global_init_runtime_libs() {
+  global_init_files_lib();
+  global_init_interface_lib();
+  global_init_openssl_lib();
+  regexp::global_init();
+  global_init_resumable_lib();
+  global_init_rpc_lib();
+  global_init_udp_lib();
 }
-
-
-#include <clocale>
 
 dl::size_type string_buffer::MIN_BUFFER_LEN = 266175; //TODO: move to some better place
 dl::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24); //TODO: move to some better place
 
-void init_static() {
-  bcmath_init_static();
-  //curl_init_static();//lazy inited
-  datetime_init_static();
-  drivers_init_static();
-  exception_init_static();
-  files_init_static();
-  net_events_init_static();
-  openssl_init_static();
-  resumable_init_static();
-  rpc_init_static();
-  streams_init_static();
-  string_buffer_init_static(static_buffer_length_limit);
-  udp_init_static();
+void init_heap_allocator(void) {
+  dl::allocator_init(nullptr, 0);
+}
+
+void init_runtime_libs() {
+  // init_curl_lib() lazy called in runtime
+
+  init_drivers_lib();
+  int_datetime_lib();
+  init_net_events_lib();
+  init_resumable_lib();
+  init_rpc_lib();
+
+  init_string_buffer_lib(static_buffer_length_limit);
 
   shutdown_functions_count = 0;
   finished = false;
@@ -2018,8 +2008,6 @@ void init_static() {
 
   setlocale(LC_CTYPE, "ru_RU.CP1251");
 
-  INIT_VAR(string, http_status_line);
-
   //TODO
   header("HTTP/1.0 200 OK", 15);
   php_assert (http_return_code == 200);
@@ -2029,35 +2017,25 @@ void init_static() {
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
   header("Content-Type: text/html; charset=windows-1251", 45);
 
-  INIT_VAR(bool, empty_bool);
-  INIT_VAR(int, empty_int);
-  INIT_VAR(double, empty_float);
-  INIT_VAR(string, empty_string);
-  INIT_VAR(array<var>, *empty_array_var_storage);
-  INIT_VAR(var, empty_var);
-
-  INIT_VAR(var, v$argc);
-  INIT_VAR(var, v$argv);
-
-  INIT_VAR(string, v$d$PHP_SAPI);
-
-  dl::enter_critical_section();//OK
-  INIT_VAR(string, raw_post_data);
-  dl::leave_critical_section();
+  empty_bool = false;
+  empty_int = 0;
+  empty_float = 0.0;
 
   php_assert (dl::in_critical_section == 0);
 }
 
-void free_static() {
+void free_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
 
-  curl_free_static();
-  drivers_free_static();
-  files_free_static();
-  openssl_free_static();
-  rpc_free_static();
-  streams_free_static();
-  udp_free_static();
+  free_bcmath_lib();
+  free_exception_lib();
+  free_curl_lib();
+  free_drivers_lib();
+  free_files_lib();
+  free_openssl_lib();
+  free_rpc_lib();
+  free_streams_lib();
+  free_udp_lib();
 
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {
@@ -2068,20 +2046,33 @@ void free_static() {
     uploaded_files_last_query_num--;
   }
 
-  CLEAR_VAR(string, http_status_line);
+  hard_reset_var(http_status_line);
 
-  CLEAR_VAR(string, empty_string);
-  CLEAR_VAR(var, empty_var);
+  hard_reset_var(empty_string);
+  hard_reset_var(empty_var);
+  hard_reset_var(empty_array_var);
 
-  CLEAR_VAR(string, raw_post_data);
+  hard_reset_var(v$argc);
+  hard_reset_var(v$argv);
+
+  hard_reset_var(v$d$PHP_SAPI);
+
+  hard_reset_var(raw_post_data);
 
   dl::script_runned = false;
   php_assert (dl::use_script_allocator == false);
   dl::leave_critical_section();
 }
 
+void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size) {
+  dl::allocator_init(mem, mem_size);
+  init_runtime_libs();
+  init_superglobals(data);
+}
 
-#include <cassert>
+void free_runtime_environment() {
+  free_runtime_libs();
+}
 
 void read_engine_tag(const char *file_name) {
   assert (dl::query_num == 0);

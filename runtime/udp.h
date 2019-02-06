@@ -2,8 +2,6 @@
 
 #include "runtime/kphp_core.h"
 
-void udp_init_static_once();
+void global_init_udp_lib();
 
-void udp_init_static();
-
-void udp_free_static();
+void free_udp_lib();

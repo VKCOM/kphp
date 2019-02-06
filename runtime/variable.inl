@@ -13,9 +13,7 @@ int empty_int __attribute__ ((weak));
 double empty_float __attribute__ ((weak));
 string empty_string __attribute__ ((weak));
 
-char empty_array_var_storage[sizeof(array<var>)] __attribute__ ((weak));
-array<var> *empty_array_var __attribute__ ((weak)) = reinterpret_cast <array<var> *> (empty_array_var_storage);
-
+array<var> empty_array_var __attribute__ ((weak));
 var empty_var __attribute__ ((weak));
 
 void var::copy_from(const var &other) {
@@ -1277,8 +1275,8 @@ const array<var> &var::as_array(const char *function, int parameter_num) const {
       return as_array();
     default:
       php_warning("%s() expects parameter %d to be array, %s is given", function, parameter_num, get_type_c_str());
-      *empty_array_var = array<var>();
-      return *empty_array_var;
+      empty_array_var = array<var>();
+      return empty_array_var;
   }
 }
 
@@ -1350,8 +1348,8 @@ array<var> &var::as_array(const char *function, int parameter_num) {
       return as_array();
     default:
       php_warning("%s() expects parameter %d to be array, %s is given", function, parameter_num, get_type_c_str());
-      *empty_array_var = array<var>();
-      return *empty_array_var;
+      empty_array_var = array<var>();
+      return empty_array_var;
   }
 }
 

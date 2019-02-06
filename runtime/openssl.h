@@ -61,8 +61,6 @@ OrFalse<string> f$openssl_encrypt(const string &data, const string &method,
 OrFalse<string> f$openssl_decrypt(const string &data, const string &method,
                                   const string &key, int options = 0, const string &iv = string());
 
-void openssl_init_static_once();
+void global_init_openssl_lib();
 
-void openssl_init_static();
-
-void openssl_free_static();
+void free_openssl_lib();

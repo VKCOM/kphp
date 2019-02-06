@@ -141,11 +141,14 @@ OrFalse<string> f$ini_get(const string &s);
 
 OrFalse<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
 
-void init_static_once();
+extern "C" {
+void global_init_runtime_libs();
+void init_heap_allocator();
+}
 
-void init_static();
+void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);
 
-void free_static();
+void free_runtime_environment();
 
 /*
  *

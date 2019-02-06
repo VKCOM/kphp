@@ -17,7 +17,7 @@
 #  error Outdated libcurl
 #endif
 
-void curl_init_static();
+void init_curl_lib();
 
 
 const int LAST_ERROR_NO = CURL_LAST + CURL_FORMADD_LAST;
@@ -108,7 +108,7 @@ static int curl_info_header_out(CURL *cp __attribute__((unused)), curl_infotype 
 }
 
 curl f$curl_init(const string &url) {
-  curl_init_static();
+  init_curl_lib();
 
   dl::enter_critical_section();//OK
   CURL *cp = curl_easy_init();
@@ -1103,7 +1103,7 @@ static void *calloc_replace(size_t nmemb, size_t size) {
   return memset(res, 0, nmemb * size);
 }
 
-void curl_init_static() {
+void init_curl_lib() {
   if (dl::query_num != curl_last_query_num) {
     new(curl_handlers_storage) array<curl_handler *>();
 
@@ -1127,7 +1127,7 @@ void curl_init_static() {
   }
 }
 
-void curl_free_static() {
+void free_curl_lib() {
   dl::enter_critical_section();//OK
   if (dl::query_num == curl_last_query_num) {
     const array<curl_handler *> *const_curl_handlers = curl_handlers;

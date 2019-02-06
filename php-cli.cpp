@@ -6,8 +6,8 @@
 static char memory_buffer[1 << 29];
 
 extern "C" {
-void init_scripts(void);
-void static_init_scripts(void);
+void init_php_scripts(void);
+void global_init_php_scripts(void);
 }
 
 int main(int argc, char **argv) {
@@ -17,15 +17,19 @@ int main(int argc, char **argv) {
   }
 
   dl_set_default_handlers();
-  static_init_scripts();
-  init_scripts();
+  global_init_runtime_libs();
+  global_init_php_scripts();
+  init_heap_allocator();
+  init_php_scripts();
+  init_runtime_environment(nullptr, memory_buffer, 1 << 29);
   script_t *script = get_script("#0");
-  script->run(nullptr, memory_buffer, 1 << 29);
+  script->run();
   if (CurException) {
     Exception e = *CurException;
     fprintf(stderr, "Unhandled Exception caught in file %s at line %d. Error %d: %s.\n", e.file.c_str(), e.line, e.code, e.message.c_str());
     fprintf(stderr, "Backtrace:\n%s", f$Exception$$getTraceAsString(e).c_str());
   }
   script->clear();
+  free_runtime_environment();
   return 0;
 }

@@ -65,4 +65,4 @@ bool equals(bool value, const Exception &my_exception);
 bool equals(const Exception &my_exception, bool value);
 
 
-void exception_init_static();
+void free_exception_lib();

@@ -50,8 +50,15 @@ class UnknownType {
   }                                        \
 })
 
-#define INIT_VAR(type, x) new (&x) type()
-#define CLEAR_VAR(type, x) memset ((void*)&x, 0, sizeof (x))
+template<typename T, typename T1>
+void hard_reset_var(T &var, T1 &&init_value) noexcept {
+  new(&var) T(std::forward<T1>(init_value));
+}
+
+template<typename T>
+void hard_reset_var(T &var) noexcept {
+  new(&var) T();
+}
 
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})

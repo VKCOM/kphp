@@ -245,7 +245,7 @@ void string_buffer::reserve(int len) {
   reserve_at_least(len + 1);
 }
 
-inline void string_buffer_init_static(int max_length) {
+inline void init_string_buffer_lib(int max_length) {
   string_buffer::MIN_BUFFER_LEN = 266175;
   string_buffer::MAX_BUFFER_LEN = (1 << 24);
   if (max_length > 0) {

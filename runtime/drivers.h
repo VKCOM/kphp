@@ -6,8 +6,8 @@
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 
-void drivers_init_static();
-void drivers_free_static();
+void init_drivers_lib();
+void free_drivers_lib();
 
 extern var (*base128DecodeMixed_pointer)(var str);
 extern var (*debugServerLog_pointer)(array<var>);

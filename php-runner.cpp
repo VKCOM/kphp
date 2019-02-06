@@ -261,7 +261,7 @@ void PHPScriptBase::finish() {
 void PHPScriptBase::clear() {
   assert(state == rst_uncleared);
   run_main->clear();
-  free_static();
+  free_runtime_environment();
   state = rst_empty;
   if (use_madvise_dontneed) {
     if (dl::memory_get_total_usage() > memory_used_to_recreate_script) {
@@ -325,9 +325,9 @@ void PHPScriptBase::run(void) {
   }
   assert (run_main->run != nullptr);
 
-//  regex_ptr = nullptr;
+  init_runtime_environment(data, run_mem, mem_size);
   CurException = nullptr;
-  run_main->run(data, run_mem, mem_size);
+  run_main->run();
   if (!CurException) {
     set_script_result(nullptr);
   } else {

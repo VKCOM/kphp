@@ -116,6 +116,4 @@ int f$stream_set_read_buffer(const Stream &stream, int size);
 OrFalse<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec, int tv_usec = 0);
 
 
-void streams_init_static();
-
-void streams_free_static();
+void free_streams_lib();

@@ -1096,7 +1096,7 @@ static int ssl_get_fd(const Stream &stream) {
   return c->sock;
 }
 
-void openssl_init_static_once() {
+void global_init_openssl_lib() {
   static stream_functions ssl_stream_functions;
 
   ssl_stream_functions.name = string("ssl", 3);
@@ -1127,10 +1127,7 @@ void openssl_init_static_once() {
   OpenSSL_add_ssl_algorithms();
 }
 
-void openssl_init_static() {
-}
-
-void openssl_free_static() {
+void free_openssl_lib() {
   dl::enter_critical_section(); //OK
   public_keys.free_resources();
   private_keys.free_resources();

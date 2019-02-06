@@ -89,7 +89,7 @@ public:
 
   ~regexp();
 
-  static void init_static();
+  static void global_init();
 };
 
 

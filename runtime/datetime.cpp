@@ -804,7 +804,7 @@ int f$time() {
 }
 
 
-void datetime_init_static() {
+void int_datetime_lib() {
   dl::enter_critical_section();//OK
 
   setenv("TZ", "Etc/GMT-3", 1);

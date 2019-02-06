@@ -1048,7 +1048,7 @@ string f$preg_quote(const string &str, const string &delimiter) {
 }
 
 
-void regexp::init_static() {
+void regexp::global_init() {
   pcre_malloc = dl::malloc_replace;
   pcre_free = dl::free_replace;
 

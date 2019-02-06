@@ -186,8 +186,7 @@ int wait_net(int timeout_ms) {
   return finished_events;
 }
 
-
-void net_events_init_static() {
+void init_net_events_lib() {
   event_timers_heap_size = 0;
   event_timers_max_heap_size = 1023;
   event_timers_heap = static_cast <event_timer **> (dl::allocate(sizeof(event_timer *) * event_timers_max_heap_size));

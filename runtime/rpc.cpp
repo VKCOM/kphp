@@ -1589,9 +1589,9 @@ void free_arr_space() {
 }
 
 void clear_arr_space() {
-  while (last_arr_ptr >= var_stack) {
-    CLEAR_VAR(var, *last_arr_ptr);
-    last_arr_ptr--;
+  if (last_arr_ptr >= var_stack) {
+    std::memset(var_stack, 0, (last_arr_ptr - var_stack + 1) * sizeof(*last_arr_ptr));
+    last_arr_ptr = nullptr;
   }
 }
 
@@ -4049,22 +4049,18 @@ void read_tl_config(const char *file_name) {
 }
 
 
-void rpc_init_static_once() {
+void global_init_rpc_lib() {
   php_assert (timeout_wakeup_id == -1);
 
   timeout_wakeup_id = register_wakeup_callback(&process_rpc_timeout);
 }
 
-void rpc_init_static() {
+void init_rpc_lib() {
   php_assert (timeout_wakeup_id != -1);
 
-  INIT_VAR(string, rpc_filename);
-  INIT_VAR(string, rpc_data_copy);
-  INIT_VAR(string, rpc_data_copy_backup);
-  INIT_VAR(array<double>, rpc_request_need_timer);
-
   rpc_parse(nullptr, 0);
-  rpc_parse(nullptr, 0);//init backup
+  // init backup
+  rpc_parse(nullptr, 0);
 
   f$rpc_clean(false);
   rpc_stored = 0;
@@ -4076,11 +4072,11 @@ void rpc_init_static() {
   last_var_ptr = vars_buffer + MAX_VARS;
 }
 
-void rpc_free_static() {
-  CLEAR_VAR(string, rpc_filename);
-  CLEAR_VAR(string, rpc_data_copy);
-  CLEAR_VAR(string, rpc_data_copy_backup);
-  CLEAR_VAR(array<double>, rpc_request_need_timer);
+void free_rpc_lib() {
+  hard_reset_var(rpc_filename);
+  hard_reset_var(rpc_data_copy);
+  hard_reset_var(rpc_data_copy_backup);
+  hard_reset_var(rpc_request_need_timer);
 
   clear_arr_space();
 }

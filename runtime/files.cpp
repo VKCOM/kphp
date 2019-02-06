@@ -14,7 +14,7 @@
 #include "streams.h"
 #include "string_functions.h"//php_buf, TODO
 
-static int opened_fd;
+static int opened_fd{-1};
 
 const string LETTER_a("a", 1);
 
@@ -859,7 +859,7 @@ static OrFalse<int> file_file_put_contents(const string &name, const string &con
 }
 
 
-void files_init_static_once() {
+void global_init_files_lib() {
   static stream_functions file_stream_functions;
 
   file_stream_functions.name = string("file", 4);
@@ -886,11 +886,7 @@ void files_init_static_once() {
   register_stream_functions(&file_stream_functions, true);
 }
 
-void files_init_static() {
-  opened_fd = -1;
-}
-
-void files_free_static() {
+void free_files_lib() {
   dl::enter_critical_section();//OK
   if (dl::query_num == opened_files_last_query_num) {
     const array<FILE *> *const_opened_files = opened_files;
@@ -903,6 +899,7 @@ void files_free_static() {
   if (opened_fd != -1) {
     close_safe(opened_fd);
   }
+  opened_fd = -1;
   dl::leave_critical_section();
 }
 

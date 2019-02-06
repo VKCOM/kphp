@@ -428,9 +428,9 @@ struct StaticInit {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct StaticLibraryInit {
+struct LibGlobalVarsReset {
   const FunctionPtr &main_function;
-  inline StaticLibraryInit(const FunctionPtr &main_function);
+  inline LibGlobalVarsReset(const FunctionPtr &main_function);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -453,10 +453,6 @@ struct LibHeaderH {
 struct LibHeaderTxt {
   vector<FunctionPtr> exported_functions;
   inline LibHeaderTxt(vector<FunctionPtr> &&exported_functions);
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct InitScriptsH {
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -483,9 +479,9 @@ struct RunFunction {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct FullCleanupFunction {
+struct GlobalResetFunction {
   FunctionPtr function;
-  inline FullCleanupFunction(FunctionPtr function);
+  inline GlobalResetFunction(FunctionPtr function);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -498,23 +494,27 @@ private:
   size_t parts_cnt_;
 };
 
-struct DfsInit {
-  SrcFilePtr main_file;
-  inline DfsInit(SrcFilePtr main_file);
-  static inline void compile_dfs_init_part(
-    FunctionPtr func,
-    const set<VarPtr> &used_vars, bool full_flag,
-    int part_i, CodeGenerator &W);
-  static inline void compile_dfs_init_func(
+struct GlobalVarsReset {
+  inline GlobalVarsReset(SrcFilePtr main_file);
+
+  inline void compile(CodeGenerator &W) const;
+
+  static inline void compile_part(
+    FunctionPtr func, const std::set<VarPtr> &used_vars,
+    bool full_flag, int part_i, CodeGenerator &W);
+
+  static inline void compile_func(
     FunctionPtr func, const set<FunctionPtr> &used_functions,
     bool full_flag, const vector<string> &header_names, CodeGenerator &W);
+
   static inline void collect_used_funcs_and_vars(
-    FunctionPtr func,
-    set<FunctionPtr> *visited_functions,
-    set<VarPtr> *used_vars,
-    int used_vars_cnt);
-  static inline void declare_extern_for_init_val(VertexPtr v, set<VarPtr>& externed_vars, CodeGenerator &W);
-  inline void compile(CodeGenerator &W) const;
+    FunctionPtr func, std::set<FunctionPtr> *visited_functions,
+    std::set<VarPtr> *used_vars, int used_vars_cnt);
+
+  static inline void declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W);
+
+private:
+  SrcFilePtr main_file_;
 };
 
 
@@ -1160,7 +1160,7 @@ inline void InitFuncPtrs::compile(CodeGenerator &W) const {
     }
   }
 
-  W << "void init_func_ptrs () " << BEGIN;
+  W << "void init_func_ptrs() " << BEGIN;
 
   for (int i = 0; i < n; i++) {
     FunctionPtr f = ids[i];
@@ -1179,39 +1179,26 @@ inline RunFunction::RunFunction(FunctionPtr function) :
 }
 
 inline void RunFunction::compile(CodeGenerator &W) const {
-  W << "void " << FunctionName(function) << "$run (php_query_data *data, void *mem, size_t mem_size) "
-    << BEGIN
-    << "dl::allocator_init (mem, mem_size);" << NL
-    << "init_static();" << NL
-    << "drivers_init_static();" << NL;
-
-  for (LibPtr lib: G->get_libs()) {
-    if (lib && !lib->is_raw_php()) {
-      W << lib->lib_namespace() << "::init_lib_scripts();" << NL;
-    }
-  }
-
-  W << FunctionName(function) << "$dfs_init();" << NL
-    << "init_superglobals (data);" << NL
+  W << "void " << FunctionName(function) << "$run() " << BEGIN
     << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
     << "finish (0);" << NL
     << END;
   W << NL;
 }
 
-inline FullCleanupFunction::FullCleanupFunction(FunctionPtr function) :
+inline GlobalResetFunction::GlobalResetFunction(FunctionPtr function) :
   function(function) {
 }
 
-inline void FullCleanupFunction::compile(CodeGenerator &W) const {
-  W << "void " << FunctionName(function) << "$dfs_full_cleanup() " << BEGIN;
-  W << FunctionName(function) << "$dfs_clear();" << NL;
+inline void GlobalResetFunction::compile(CodeGenerator &W) const {
+  W << "void " << FunctionName(function) << "$global_reset() " << BEGIN;
+  W << FunctionName(function) << "$global_vars_reset();" << NL;
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      W << lib->lib_namespace() << "::clear_lib_scripts();" << NL;
+      W << lib->lib_namespace() << "::lib_global_vars_reset();" << NL;
     }
   }
-  W << END << NL << NL;
+  W << END << NL;
 }
 
 inline StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
@@ -1275,25 +1262,6 @@ inline void LibHeaderH::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline void InitScriptsH::compile(CodeGenerator &W) const {
-  W << OpenFile("init_scripts.h", "", false);
-
-  if (!G->env().is_static_lib_mode()) {
-    W << "#ifdef  __cplusplus" << NL <<
-      "  extern \"C\" {" << NL <<
-      "#endif" << NL;
-
-    W << "void static_init_scripts();" << NL;
-    W << "void init_scripts();" << NL;
-
-    W << "#ifdef  __cplusplus" << NL <<
-      "  }" << NL <<
-      "#endif" << NL;
-  }
-
-  W << CloseFile();
-}
-
 inline InitScriptsCpp::InitScriptsCpp(
   vector<SrcFilePtr> &new_main_file_ids,
   vector<FunctionPtr> &new_source_functions,
@@ -1307,24 +1275,31 @@ inline InitScriptsCpp::InitScriptsCpp(
 }
 
 inline void InitScriptsCpp::compile(CodeGenerator &W) const {
-  W << OpenFile("init_scripts.cpp", "", false);
+  W << OpenFile("init_php_scripts.cpp", "", false);
 
   W << ExternInclude("php_functions.h") <<
-    ExternInclude("php_script.h") <<
-    ExternInclude("init_scripts.h");
+    ExternInclude("php_script.h");
 
   for (auto i : main_file_ids) {
     FunctionPtr main_function = i->main_function;
     W << Include(main_function->header_full_name) <<
-      Include("dfs." + main_function->header_name);
+      Include("gvr." + main_function->header_name);
   }
 
-  W << StaticInit(all_functions);
+  if (!G->env().is_static_lib_mode()) {
+    W << NL
+      << "extern \"C\" " << BEGIN
+      << "void global_init_php_scripts();" << NL
+      << "void init_php_scripts();" << NL
+      << END << NL;
+  }
+
+  W << NL << StaticInit(all_functions) << NL;
 
   if (G->env().is_static_lib_mode()) {
     // only one main file is allowed for static lib mode
     kphp_assert(main_file_ids.size() == 1);
-    W << StaticLibraryInit(main_file_ids.back()->main_function);
+    W << LibGlobalVarsReset(main_file_ids.back()->main_function);
     W << CloseFile();
     return;
   }
@@ -1332,27 +1307,28 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace())
-        << "void init_lib_scripts();" << NL
-        << "void clear_lib_scripts();" << NL
+        << "void lib_global_vars_reset();" << NL
         << CloseNamespace();
     }
   }
 
   for (auto i : main_file_ids) {
-    W << RunFunction(i->main_function);
-    W << FullCleanupFunction(i->main_function);
+    W << RunFunction(i->main_function) << NL;
+    W << GlobalResetFunction(i->main_function) << NL;
   }
 
-  W << InitFuncPtrs(source_functions);
+  W << InitFuncPtrs(source_functions) << NL;
 
-  W << "void init_scripts()" << BEGIN <<
+  W << "void init_php_scripts() " << BEGIN <<
     "init_func_ptrs();" << NL;
 
   for (auto i : main_file_ids) {
+    W << FunctionName(i->main_function) << "$global_reset();" << NL;
+    
     W << "set_script (" <<
       "\"@" << i->short_file_name << "\", " <<
       FunctionName(i->main_function) << "$run, " <<
-      FunctionName(i->main_function) << "$dfs_full_cleanup);" << NL;
+      FunctionName(i->main_function) << "$global_reset);" << NL;
   }
 
   W << END;
@@ -1685,7 +1661,7 @@ inline void StaticInit::compile(CodeGenerator &W) const {
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace())
-        << "void static_init_lib_scripts();" << NL
+        << "void global_init_lib_scripts();" << NL
         << CloseNamespace();
     }
   }
@@ -1694,38 +1670,31 @@ inline void StaticInit::compile(CodeGenerator &W) const {
   W << "void const_vars_init();" << NL << NL;
 
   if (G->env().is_static_lib_mode()) {
-    W << "void static_init_lib_scripts() " << BEGIN;
+    W << "void global_init_lib_scripts() " << BEGIN;
   } else {
-    W << "void static_init_scripts() " << BEGIN;
-    W << "init_static_once();" << NL;
+    W << "void global_init_php_scripts() " << BEGIN;
     for (LibPtr lib: G->get_libs()) {
       if (lib && !lib->is_raw_php()) {
-        W << lib->lib_namespace() << "::static_init_lib_scripts();" << NL;
+        W << lib->lib_namespace() << "::global_init_lib_scripts();" << NL;
       }
     }
   }
 
   W << "const_vars_init();" << NL;
-  if (!G->env().is_static_lib_mode()) {
-    W << "dl::allocator_init (nullptr, 0);" << NL;
-  }
+
   W << END << NL;
   W << CloseNamespace();
 }
 
-inline StaticLibraryInit::StaticLibraryInit(const FunctionPtr &main_fn) :
+inline LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_fn) :
   main_function(main_fn) {
 }
 
-inline void StaticLibraryInit::compile(CodeGenerator &W) const {
+inline void LibGlobalVarsReset::compile(CodeGenerator &W) const {
   W << OpenNamespace();
-  W << "void init_lib_scripts() " << BEGIN
+  W << "void lib_global_vars_reset() " << BEGIN
     << FunctionCallFlag(main_function) << " = false;" << NL
-    << FunctionName(main_function) << "$dfs_init();" << NL
-    << END << NL << NL;
-
-  W << "void clear_lib_scripts() " << BEGIN
-    << FunctionName(main_function) << "$dfs_clear();" << NL
+    << FunctionName(main_function) << "$global_vars_reset();" << NL
     << END << NL << NL;
   W << CloseNamespace();
 
@@ -1738,11 +1707,11 @@ inline void StaticLibraryInit::compile(CodeGenerator &W) const {
 }
 
 
-DfsInit::DfsInit(SrcFilePtr main_file) :
-  main_file(main_file) {
+GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
+  main_file_(main_file) {
 }
 
-void DfsInit::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr>& externed_vars, CodeGenerator &W) {
+void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W) {
   if (v->type() == op_var) {
     VarPtr var = v->get_var_id();
     if (externed_vars.insert(var).second) {
@@ -1755,7 +1724,7 @@ void DfsInit::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr>& externe
   }
 }
 
-void DfsInit::compile_dfs_init_part(
+void GlobalVarsReset::compile_part(
   FunctionPtr func, const set<VarPtr> &used_vars,
   bool full_flag, int part_i, CodeGenerator &W) {
 
@@ -1776,7 +1745,7 @@ void DfsInit::compile_dfs_init_part(
       }
     }
   }
-  W << "void " << FunctionName(func) << "$dfs_init" << int_to_str(part_i) << "()";
+  W << "void " << FunctionName(func) << "$global_vars_reset" << int_to_str(part_i) << "()";
 
   if (full_flag) {
     W << " " << BEGIN;
@@ -1786,35 +1755,14 @@ void DfsInit::compile_dfs_init_part(
         continue;
       }
 
-      const TypeData *tp = tinf::get_type(var);
-
-      W << "INIT_VAR (" << TypeNameInsideMacro(tp) << ", " << VarName(var) << ");" << NL;
+      W << "hard_reset_var(" << VarName(var);
       //FIXME: brk and comments
       if (var->init_val) {
         W << UnlockComments();
-        W << VarName(var) << " = " << var->init_val << ";" << NL;
+        W << ", " << var->init_val;
         W << LockComments();
       }
-    }
-
-    W << END;
-  } else {
-    W << ";";
-  }
-  W << NL;
-
-
-  W << "void " << FunctionName(func) << "$dfs_clear" << int_to_str(part_i) << "()";
-  if (full_flag) {
-    W << " " << BEGIN;
-
-    for (auto var : used_vars) {
-      if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
-        continue;
-      }
-
-      const TypeData *type = tinf::get_type(var);
-      W << "CLEAR_VAR (" << TypeNameInsideMacro(type) << ", " << VarName(var) << ");" << NL;
+      W << ");" << NL;
     }
 
     W << END;
@@ -1825,14 +1773,14 @@ void DfsInit::compile_dfs_init_part(
   W << CloseNamespace();
 }
 
-void DfsInit::compile_dfs_init_func(
+void GlobalVarsReset::compile_func(
   FunctionPtr func, const set<FunctionPtr> &used_functions,
   bool full_flag, const vector<string> &header_names, CodeGenerator &W) {
 
   int parts_n = (int)header_names.size();
   if (full_flag) {
     for (int i = 0; i < parts_n; i++) {
-      W << Include("o_dfs/" + header_names[i]);
+      W << Include("o_gvr/" + header_names[i]);
     }
     for (auto func : used_functions) {
       if (func->type == FunctionData::func_global) {
@@ -1842,7 +1790,7 @@ void DfsInit::compile_dfs_init_func(
   }
 
   W << OpenNamespace();
-  W << "void " << FunctionName(func) << "$dfs_init()";
+  W << "void " << FunctionName(func) << "$global_vars_reset()";
   if (full_flag) {
     W << " " << BEGIN;
 
@@ -1853,21 +1801,7 @@ void DfsInit::compile_dfs_init_func(
     }
 
     for (int i = 0; i < parts_n; i++) {
-      W << FunctionName(func) << "$dfs_init" << int_to_str(i) << "();" << NL;
-    }
-
-    W << END;
-  } else {
-    W << ";";
-  }
-  W << NL;
-
-  W << "void " << FunctionName(func) << "$dfs_clear()";
-  if (full_flag) {
-    W << " " << BEGIN;
-
-    for (int i = 0; i < parts_n; i++) {
-      W << FunctionName(func) << "$dfs_clear" << int_to_str(i) << "();" << NL;
+      W << FunctionName(func) << "$global_vars_reset" << int_to_str(i) << "();" << NL;
     }
 
     W << END;
@@ -1893,11 +1827,9 @@ void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
   }
 }
 
-void DfsInit::collect_used_funcs_and_vars(
-  FunctionPtr func,
-  set<FunctionPtr> *visited_functions,
-  set<VarPtr> *used_vars,
-  int used_vars_cnt) {
+void GlobalVarsReset::collect_used_funcs_and_vars(
+  FunctionPtr func, std::set<FunctionPtr> *visited_functions,
+  std::set<VarPtr> *used_vars, int used_vars_cnt) {
   for (int i = 0, ni = (int)func->dep.size(); i < ni; i++) {
     FunctionPtr to = func->dep[i];
     if (visited_functions->insert(to).second) {
@@ -1910,23 +1842,23 @@ void DfsInit::collect_used_funcs_and_vars(
   collect_vars(used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
 }
 
-inline void DfsInit::compile(CodeGenerator &W) const {
-  FunctionPtr main_func = main_file->main_function;
+inline void GlobalVarsReset::compile(CodeGenerator &W) const {
+  FunctionPtr main_func = main_file_->main_function;
 
-  set<FunctionPtr> used_functions;
+  std::set<FunctionPtr> used_functions;
 
   const int parts_n = 32;
-  set<VarPtr> used_vars[parts_n];
+  std::set<VarPtr> used_vars[parts_n];
   collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
 
   auto last_part = std::remove_if(std::begin(used_vars), std::end(used_vars),
                                   [](const std::set<VarPtr> &p) { return p.empty(); });
   auto non_empty_parts = std::distance(std::begin(used_vars), last_part);
 
-  vector<string> header_names(non_empty_parts);
-  vector<string> src_names(non_empty_parts);
+  std::vector<std::string> header_names(non_empty_parts);
+  std::vector<std::string> src_names(non_empty_parts);
   for (int i = 0; i < non_empty_parts; i++) {
-    string prefix = string("dfs") + int_to_str(i) + ".";
+    string prefix = string("gvr") + int_to_str(i) + ".";
     string header_name = prefix + main_func->header_name;
     string src_name = prefix + main_func->src_name;
     header_names[i] = std::move(header_name);
@@ -1934,23 +1866,23 @@ inline void DfsInit::compile(CodeGenerator &W) const {
   }
 
   for (int i = 0; i < non_empty_parts; i++) {
-    W << OpenFile(header_names[i], "o_dfs", false);
-    compile_dfs_init_part(main_func, used_vars[i], false, i, W);
+    W << OpenFile(header_names[i], "o_gvr", false);
+    compile_part(main_func, used_vars[i], false, i, W);
     W << CloseFile();
 
-    W << OpenFile(src_names[i], "o_dfs", false);
+    W << OpenFile(src_names[i], "o_gvr", false);
     W << ExternInclude("php_functions.h");
-    compile_dfs_init_part(main_func, used_vars[i], true, i, W);
+    compile_part(main_func, used_vars[i], true, i, W);
     W << CloseFile();
   }
 
-  W << OpenFile("dfs." + main_func->header_name, "", false);
-  compile_dfs_init_func(main_func, used_functions, false, header_names, W);
+  W << OpenFile("gvr." + main_func->header_name, "", false);
+  compile_func(main_func, used_functions, false, header_names, W);
   W << CloseFile();
 
-  W << OpenFile("dfs." + main_func->src_name, "", false);
+  W << OpenFile("gvr." + main_func->src_name, "", false);
   W << ExternInclude("php_functions.h");
-  compile_dfs_init_func(main_func, used_functions, true, header_names, W);
+  compile_func(main_func, used_functions, true, header_names, W);
   W << CloseFile();
 }
 
@@ -4110,9 +4042,8 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     }
   }
 
-  W << Async(InitScriptsH());
   for (const auto &main_file : main_files) {
-    W << Async(DfsInit(main_file));
+    W << Async(GlobalVarsReset(main_file));
   }
   W << Async(InitScriptsCpp(/*std::move*/main_files, source_functions, all_functions));
 

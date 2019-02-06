@@ -57,7 +57,7 @@ public:
 
   inline ~string_buffer();
 
-  friend void string_buffer_init_static(int max_length);
+  friend void init_string_buffer_lib(int max_length);
 };
 
 string_buffer static_SB __attribute__ ((weak));
