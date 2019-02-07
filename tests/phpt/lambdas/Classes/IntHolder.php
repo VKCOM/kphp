@@ -15,5 +15,6 @@ class IntHolder
      */
     public static function f_static($x) { 
         var_dump("IntHolder::f_static: $x");
+        return $x;
     }
 }
