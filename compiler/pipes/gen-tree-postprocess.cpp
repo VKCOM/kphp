@@ -68,9 +68,7 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
 }
 
 VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  if (root->type() == op_func_call) {
-    VertexAdaptor<op_func_call> call = root;
-
+  if (auto call = root.try_as<op_func_call>()) {
     auto builtin = get_builtin_function(call->get_string());
     if (builtin.op != op_err && call->size() == builtin.args) {
       VertexRange args = call->args();
@@ -80,8 +78,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     }
   }
 
-  if (root->type() == op_set) {
-    VertexAdaptor<op_set> set_op = root;
+  if (auto set_op = root.try_as<op_set>()) {
     if (set_op->lhs()->type() == op_list_ce) {
       vector<VertexPtr> next;
       next = set_op->lhs()->get_next();
@@ -106,7 +103,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
   }
 
   if (root->type() == op_func_call && root->get_string() == "require_lib") {
-    return process_require_lib(root);
+    return process_require_lib(root.as<op_func_call>());
   }
 
   if (root->type() == op_func_call) {
@@ -127,8 +124,7 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
     }
   }
 
-  if (root->type() == op_arrow) {
-    VertexAdaptor<op_arrow> arrow = root;
+  if (auto arrow = root.try_as<op_arrow>()) {
     VertexPtr rhs = arrow->rhs();
 
     if (rhs->type() == op_func_name) {

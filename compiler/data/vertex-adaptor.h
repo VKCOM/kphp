@@ -1,5 +1,7 @@
 #pragma once
 
+#include "auto/compiler/vertex/is-base-of.h"
+
 #include "compiler/operation.h"
 #include "compiler/threading/format.h"
 
@@ -35,14 +37,14 @@ public:
 
   template<Operation FromOp>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) :
-    impl(dynamic_cast <vertex_inner<Op> *> (from.impl)) {
-    dl_assert(impl != nullptr, format("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
+    impl(static_cast<vertex_inner<Op> *>(from.impl)) {
+    static_assert(op_type_is_base_of(Op, FromOp), "Strange cast to not base vertex");
   }
 
   template<Operation FromOp>
   VertexAdaptor &operator=(const VertexAdaptor<FromOp> &from) {
-    impl = dynamic_cast <vertex_inner<Op> *> (from.impl);
-    dl_assert(from.impl == nullptr || impl != nullptr, format("Can't cast VertexAdaptor<%d> (real type %d) to VertexAdaptor<%d>", FromOp, from ? from->type() : -1, Op));
+    static_assert(op_type_is_base_of(Op, FromOp), "Strange assignment to not base vertex");
+    impl = static_cast<vertex_inner<Op> *> (from.impl);
     return *this;
   }
 
@@ -72,13 +74,22 @@ public:
 
   template<Operation to>
   VertexAdaptor<to> as() const {
-    return *this;
+    if (!impl) {
+      return {};
+    };
+    auto res = try_as<to>();
+    dl_assert(res, format("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", Op, impl ? impl->type() : -1, to));
+    return res;
   }
 
   template<Operation to>
   VertexAdaptor<to> try_as() const {
-    if (auto new_impl = dynamic_cast<vertex_inner<to> *>(impl)) {
-      return VertexAdaptor<to>{new_impl};
+    if (!impl) {
+      return {};
+    };
+    static_assert(op_type_is_base_of(Op, to), "Strange downcast to not derived vertex");
+    if (op_type_is_base_of(to, impl->type())) {
+      return VertexAdaptor<to>{static_cast<vertex_inner<to> *>(impl)};
     }
 
     return {};
@@ -94,7 +105,7 @@ public:
   }
 
   VertexAdaptor<Op> clone() const {
-    return VertexAdaptor<Op>(clone_vertex(*this));
+    return VertexAdaptor<Op>(clone_vertex(*this).template as<Op>());
   }
 
   template<Operation Op2>

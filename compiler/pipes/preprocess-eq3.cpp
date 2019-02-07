@@ -6,7 +6,7 @@
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_eq3 || root->type() == op_neq3) {
-    VertexAdaptor<meta_op_binary> eq_op = root;
+    auto eq_op = root.as<meta_op_binary>();
     VertexPtr a = eq_op->lhs();
     VertexPtr b = eq_op->rhs();
 

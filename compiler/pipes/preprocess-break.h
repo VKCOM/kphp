@@ -4,7 +4,7 @@
 
 class PreprocessBreakPass : public FunctionPassBase {
 private:
-  vector<VertexPtr> cycles;
+  vector<VertexAdaptor<meta_op_cycle>> cycles;
 
   int current_label_id;
 

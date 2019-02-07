@@ -17,12 +17,12 @@ int PreprocessBreakPass::get_label_id(VertexAdaptor<meta_op_cycle> cycle, Operat
 VertexPtr PreprocessBreakPass::on_enter_vertex(VertexPtr root, PreprocessBreakPass::LocalT *local) {
   local->is_cycle = OpInfo::type(root->type()) == cycle_op;
   if (local->is_cycle) {
-    cycles.push_back(root);
+    cycles.push_back(root.as<meta_op_cycle>());
   }
 
   if (root->type() == op_break || root->type() == op_continue) {
     int val;
-    VertexAdaptor<meta_op_goto> goto_op = root;
+    auto goto_op = root.as<meta_op_goto>();
     kphp_error_act (
       goto_op->level()->type() == op_int_const,
       "Break/continue parameter expected to be constant integer",

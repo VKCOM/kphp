@@ -27,8 +27,8 @@ static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_functi
     return;
   }
 
-  VertexAdaptor<op_func_param_list> root_params_vertex = root->params();
-  VertexAdaptor<op_func_param_list> header_params_vertex = header->params();
+  auto root_params_vertex = root->params().as<op_func_param_list>();
+  auto header_params_vertex = header->params().as<op_func_param_list>();
   VertexRange root_params = root_params_vertex->params();
   VertexRange header_params = header_params_vertex->params();
 
@@ -113,8 +113,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   std::unordered_map<std::string, int> name_to_function_param;
   int param_i = 0;
-  for (VertexAdaptor<meta_op_func_param> param : func_params) {
-    name_to_function_param.emplace("$" + param->var()->get_string(), param_i++);
+  for (auto param : func_params) {
+    name_to_function_param.emplace("$" + param.as<meta_op_func_param>()->var()->get_string(), param_i++);
   }
 
   std::size_t id_of_kphp_template = 0;
@@ -192,7 +192,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           auto func_param_it = name_to_function_param.find(var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
 
-          VertexAdaptor<op_func_param> cur_func_param = func_params[func_param_it->second];
+          auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
           name_to_function_param.erase(func_param_it);
 
           cur_func_param->template_type_id = id_of_kphp_template;
@@ -237,7 +237,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             format("@param tag var name mismatch. found %s.", var_name.c_str()));
           int param_i = func_param_it->second;
 
-          VertexAdaptor<op_func_param> cur_func_param = func_params[func_param_it->second];
+          auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
           name_to_function_param.erase(func_param_it);
 
           if (type_help == "callable") {
@@ -297,7 +297,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
 
   VertexPtr header = G->get_extern_func_header(function->name);
   if (header) {
-    function_apply_header(function, header);
+    function_apply_header(function, header.as<meta_op_function>());
   }
 
   if (stage::has_error()) {

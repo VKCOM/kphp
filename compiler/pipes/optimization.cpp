@@ -6,7 +6,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
   if (set_op->lhs()->type() != op_index) {
     return set_op;
   }
-  VertexAdaptor<op_index> index = set_op->lhs();
+  VertexAdaptor<op_index> index = set_op->lhs().as<op_index>();
   if (index->has_key() && set_op->rl_type != val_none) {
     return set_op;
   }
@@ -153,7 +153,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
   }
 
   if (root->type() == op_set) {
-    root = optimize_set_push_back(root);
+    root = optimize_set_push_back(root.as<op_set>());
   } else if (root->type() == op_string_build || root->type() == op_concat) {
     root = optimize_string_building(root);
   } else if (root->type() == op_postfix_inc) {
@@ -161,7 +161,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
   } else if (root->type() == op_postfix_dec) {
     root = optimize_postfix_dec(root);
   } else if (root->type() == op_index) {
-    root = optimize_index(root);
+    root = optimize_index(root.as<op_index>());
   } else if (root->type() == op_foreach_param) {
     VertexPtr temp_var = root.as<op_foreach_param>()->temp_var();
     if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // см. CreateSwitchForeachVarsPass

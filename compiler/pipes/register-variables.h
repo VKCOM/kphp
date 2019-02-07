@@ -37,8 +37,8 @@ private:
     for (auto i : list->params()) {
       kphp_assert (i);
       kphp_assert (i->type() == op_func_param);
-      VertexAdaptor<op_func_param> param = i;
-      VertexAdaptor<op_var> var = param->var();
+      auto param = i.as<op_func_param>();
+      auto var = param->var().as<op_var>();
       VertexPtr default_value;
       if (param->has_default_value() && param->default_value()) {
         default_value = param->default_value();

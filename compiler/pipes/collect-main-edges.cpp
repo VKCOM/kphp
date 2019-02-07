@@ -69,7 +69,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
       v->type() == op_prefix_dec ||
       v->type() == op_postfix_dec ||
       v->type() == op_postfix_inc) {
-    VertexAdaptor<meta_op_unary> unary = v;
+    auto unary = v.as<meta_op_unary>();
     auto one = VertexAdaptor<op_int_const>::create();
     auto res = VertexAdaptor<op_add>::create(unary->expr(), one);
     set_location(one, stage::get_location());
@@ -78,7 +78,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
   }
 
   if (OpInfo::arity(v->type()) == binary_opp) {
-    VertexAdaptor<meta_op_binary> binary = v;
+    auto binary = v.as<meta_op_binary>();
     VertexPtr res = create_vertex(OpInfo::base_op(v->type()), binary->lhs(), binary->rhs());
     set_location(res, stage::get_location());
     return as_rvalue(res);
@@ -145,7 +145,7 @@ void CollectMainEdgesPass::add_type_help(VertexPtr v) {
 void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> call, int id) {
   const FunctionPtr call_function = call->get_func_id();
   const VertexPtr ith_argument_of_call = call->args()[id];
-  VertexAdaptor<op_func_param_callback> callback_param = call_function->get_params()[id];
+  auto callback_param = call_function->get_params()[id].as<op_func_param_callback>();
 
   FunctionPtr callback_function;
   if (ith_argument_of_call->type() == op_func_ptr) {
@@ -181,7 +181,7 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
 
   VertexRange callback_args = get_function_params(callback_param);
   for (int i = 0; i < callback_args.size(); ++i) {
-    VertexAdaptor<op_func_param> callback_ith_arg = callback_args[i];
+    auto callback_ith_arg = callback_args[i].as<op_func_param>();
 
     if (VertexPtr type_rule = callback_ith_arg->type_rule) {
       auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
@@ -216,7 +216,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
   if (!(function->has_variadic_param && function->is_extern())) {
     for (int i = 0; i < call->args().size(); ++i) {
       VertexPtr arg = call->args()[i];
-      VertexAdaptor<meta_op_func_param> param = function_params[i];
+      auto param = function_params[i].as<meta_op_func_param>();
 
       if (param->type() == op_func_param_callback) {
         on_func_param_callback(call, i);
@@ -242,7 +242,7 @@ void CollectMainEdgesPass::on_constructor_call(VertexAdaptor<op_constructor_call
 
     create_set(as_lvalue(function, ii), arg);
 
-    VertexAdaptor<meta_op_func_param> param = function_params[ii];
+    auto param = function_params[ii].as<meta_op_func_param>();
     if (param->var()->ref_flag) {
       create_set(arg, as_rvalue(function, ii));
     }
@@ -261,7 +261,7 @@ void CollectMainEdgesPass::on_return(VertexAdaptor<op_return> v) {
 }
 
 void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
-  VertexAdaptor<op_foreach_param> params = foreach_op->params();
+  auto params = foreach_op->params().as<op_foreach_param>();
   VertexPtr xs, x, key, temp_var;
   xs = params->xs();
   x = params->x();
@@ -382,7 +382,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
         if (i == -1) {
           if (function->root->type_rule) {
             kphp_error_act (function->root->type_rule->type() == op_common_type_rule, "...", continue);
-            VertexAdaptor<op_common_type_rule> common_type_rule = function->root->type_rule;
+            auto common_type_rule = function->root->type_rule.as<op_common_type_rule>();
             VertexPtr rule = common_type_rule->rule();
             kphp_error_act (rule->type() == op_type_rule, "...", continue);
             x = rule->type_help;
@@ -448,28 +448,28 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::L
   switch (v->type()) {
     //FIXME: has_variadic_param
     case op_func_call:
-      on_func_call(v);
+      on_func_call(v.as<op_func_call>());
       break;
     case op_constructor_call:
-      on_constructor_call(v);
+      on_constructor_call(v.as<op_constructor_call>());
       break;
     case op_return:
-      on_return(v);
+      on_return(v.as<op_return>());
       break;
     case op_foreach:
-      on_foreach(v);
+      on_foreach(v.as<op_foreach>());
       break;
     case op_list:
-      on_list(v);
+      on_list(v.as<op_list>());
       break;
     case op_throw:
-      on_throw(v);
+      on_throw(v.as<op_throw>());
       break;
     case op_fork:
-      on_fork(v);
+      on_fork(v.as<op_fork>());
       break;
     case op_try:
-      on_try(v);
+      on_try(v.as<op_try>());
       break;
     default:
       break;

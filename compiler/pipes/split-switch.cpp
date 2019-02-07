@@ -8,7 +8,7 @@
 class SplitSwitchPass : public FunctionPassBase {
 private:
   int depth;
-  vector<VertexPtr> new_functions;
+  vector<VertexAdaptor<op_function>> new_functions;
 
   static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
                                       const string &state_name, int cycle_depth) {
@@ -48,7 +48,7 @@ private:
       return seq;
     }
     if ((root->type() == op_continue || root->type() == op_break)) {
-      return fix_break_continue(root, state_name, cycle_depth);
+      return fix_break_continue(root.as<meta_op_goto>(), state_name, cycle_depth);
     }
 
     for (auto &i : *root) {
@@ -79,14 +79,14 @@ public:
       return root;
     }
 
-    VertexAdaptor<op_switch> switch_v = root;
+    auto switch_v = root.as<op_switch>();
 
     for (auto cs : switch_v->cases()) {
       VertexAdaptor<op_seq> seq;
       if (cs->type() == op_case) {
-        seq = cs.as<op_case>()->cmd();
+        seq = cs.as<op_case>()->cmd().as<op_seq>();
       } else if (cs->type() == op_default) {
-        seq = cs.as<op_default>()->cmd();
+        seq = cs.as<op_default>()->cmd().as<op_seq>();
       } else {
         kphp_fail();
       }
@@ -116,7 +116,7 @@ public:
       auto case_state_param = VertexAdaptor<op_func_param>::create(case_state);
       auto func_params = VertexAdaptor<op_func_param_list>::create(case_state_param);
       auto func = VertexAdaptor<op_function>::create(func_name, func_params, seq);
-      func = prepare_switch_func(func, case_state_name, 1);
+      func = prepare_switch_func(func, case_state_name, 1).as<op_function>();
       GenTree::func_force_return(func, VertexAdaptor<op_null>::create());
       new_functions.push_back(func);
 
@@ -174,7 +174,7 @@ public:
     return root;
   }
 
-  const vector<VertexPtr> &get_new_functions() {
+  const vector<VertexAdaptor<op_function>> &get_new_functions() {
     return new_functions;
   }
 };
@@ -183,7 +183,7 @@ void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   SplitSwitchPass split_switch;
   run_function_pass(function, &split_switch);
 
-  for (VertexPtr new_func_root : split_switch.get_new_functions()) {
+  for (auto new_func_root : split_switch.get_new_functions()) {
     FunctionPtr function = FunctionData::create_function(new_func_root, FunctionData::func_switch);
     G->register_and_require_function(function, os, true);   // switch-функции всегда require
   }

@@ -16,7 +16,7 @@ class SortAndInheritClassesF {
 
   void on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream);
 
-  VertexPtr generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name);
+  VertexAdaptor<op_function> generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name);
   FunctionPtr create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name);
 
   void inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream);

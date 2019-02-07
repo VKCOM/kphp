@@ -1,9 +1,10 @@
-#include <functional>
+#include "compiler/data/lambda-generator.h"
+
 #include <algorithm>
+#include <functional>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/lambda-generator.h"
 #include "compiler/gentree.h"
 #include "compiler/vertex.h"
 
@@ -95,7 +96,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 
   call_function->set_string(called_function->name);
   call_function->set_func_id(called_function);
-  return create_invoke_fun_returning_call(call_function, called_function->root->params());
+  return create_invoke_fun_returning_call(call_function, called_function->root->params().as<op_func_param_list>());
 }
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
@@ -269,9 +270,9 @@ std::vector<VertexAdaptor<op_var>> LambdaGenerator::get_params_as_vector_of_vars
 
   std::vector<VertexAdaptor<op_var>> res_params(static_cast<size_t>(func_params.size() - shift));
   std::transform(std::next(func_params.begin(), shift), func_params.end(), res_params.begin(),
-                 [](VertexAdaptor<op_func_param> param) {
+                 [](VertexPtr param) {
                    auto new_param = VertexAdaptor<op_var>::create();
-                   new_param->set_string(param->var()->get_string());
+                   new_param->set_string(param.as<op_func_param>()->var()->get_string());
                    return new_param;
                  }
   );

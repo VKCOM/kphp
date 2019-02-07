@@ -81,7 +81,7 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
   } else if (func_type_rule->str_val == "callback_call") {
     kphp_assert(func_type_rule->size() == 1);
 
-    VertexAdaptor<op_arg_ref> arg = func_type_rule->args()[0];
+    auto arg = func_type_rule->args()[0].as<op_arg_ref>();
     int callback_arg_id = arg->int_val;
     if (!expr || callback_arg_id < 1 || expr->type() != op_func_call || callback_arg_id > (int)expr->get_func_id()->get_params().size()) {
       kphp_error (0, "error in type rule");
@@ -158,16 +158,16 @@ void ExprNodeRecalc::apply_index(VertexAdaptor<op_index> index, VertexPtr expr) 
 void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexPtr expr) {
   switch (rule->type()) {
     case op_type_rule_func:
-      apply_type_rule_func(rule, expr);
+      apply_type_rule_func(rule.as<op_type_rule_func>(), expr);
       break;
     case op_type_rule:
-      apply_type_rule_type(rule, expr);
+      apply_type_rule_type(rule.as<op_type_rule>(), expr);
       break;
     case op_arg_ref:
-      apply_arg_ref(rule, expr);
+      apply_arg_ref(rule.as<op_arg_ref>(), expr);
       break;
     case op_index:
-      apply_index(rule, expr);
+      apply_index(rule.as<op_index>(), expr);
       break;
     case op_class_type_rule:
       set_lca(rule.as<op_class_type_rule>()->class_ptr);
@@ -344,16 +344,16 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_expr(expr.as<op_move>()->expr());
       break;
     case op_require:
-      recalc_require(expr);
+      recalc_require(expr.as<op_require>());
       break;
     case op_ternary:
-      recalc_ternary(expr);
+      recalc_ternary(expr.as<op_ternary>());
       break;
     case op_func_call:
-      recalc_func_call(expr);
+      recalc_func_call(expr.as<op_func_call>());
       break;
     case op_constructor_call:
-      recalc_constructor_call(expr);
+      recalc_constructor_call(expr.as<op_constructor_call>());
       break;
     case op_common_type_rule:
     case op_gt_type_rule:
@@ -362,19 +362,19 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       apply_type_rule(expr.as<meta_op_type_rule>()->rule(), VertexPtr());
       break;
     case op_var:
-      recalc_var(expr);
+      recalc_var(expr.as<op_var>());
       break;
     case op_push_back_return:
-      recalc_push_back_return(expr);
+      recalc_push_back_return(expr.as<op_push_back_return>());
       break;
     case op_index:
-      recalc_index(expr);
+      recalc_index(expr.as<op_index>());
       break;
     case op_instance_prop:
-      recalc_instance_prop(expr);
+      recalc_instance_prop(expr.as<op_instance_prop>());
       break;
     case op_set:
-      recalc_set(expr);
+      recalc_set(expr.as<op_set>());
       break;
     case op_false:
       recalc_ptype<tp_False>();
@@ -442,28 +442,28 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     case op_double_arrow:
-      recalc_double_arrow(expr);
+      recalc_double_arrow(expr.as<op_double_arrow>());
       break;
 
     case op_foreach_param:
-      recalc_foreach_param(expr);
+      recalc_foreach_param(expr.as<op_foreach_param>());
       break;
 
     case op_conv_array:
     case op_conv_array_l:
-      recalc_conv_array(expr);
+      recalc_conv_array(expr.as<meta_op_unary>());
       break;
 
     case op_min:
     case op_max:
-      recalc_min_max(expr);
+      recalc_min_max(expr.as<meta_op_builtin_func>());
       break;
 
     case op_array:
-      recalc_array(expr);
+      recalc_array(expr.as<op_array>());
       break;
     case op_tuple:
-      recalc_tuple(expr);
+      recalc_tuple(expr.as<op_tuple>());
       break;
 
     case op_conv_var:
@@ -473,18 +473,18 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
 
     case op_plus:
     case op_minus:
-      recalc_plus_minus(expr);
+      recalc_plus_minus(expr.as<meta_op_unary>());
       break;
 
     case op_prefix_inc:
     case op_prefix_dec:
     case op_postfix_inc:
     case op_postfix_dec:
-      recalc_inc_dec(expr);
+      recalc_inc_dec(expr.as<meta_op_unary>());
       break;
 
     case op_noerr:
-      recalc_noerr(expr);
+      recalc_noerr(expr.as<op_noerr>());
       break;
 
     case op_sub:
@@ -492,15 +492,15 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_mul:
     case op_shl:
     case op_shr:
-      recalc_arithm(expr);
+      recalc_arithm(expr.as<meta_op_binary>());
       break;
 
     case op_pow:
-      recalc_power(expr);
+      recalc_power(expr.as<op_pow>());
       break;
 
     case op_define_val:
-      recalc_define_val(expr);
+      recalc_define_val(expr.as<op_define_val>());
       break;
 
     default:

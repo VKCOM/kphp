@@ -141,27 +141,26 @@ void RegisterVariablesPass::visit_global_vertex(VertexAdaptor<op_global> global)
       "unexpected expression in 'global'",
       continue
     );
-    register_global_var(var);
+    register_global_var(var.as<op_var>());
   }
 }
 void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
   for (auto node : stat->args()) {
-    VertexAdaptor<op_var> var;
     VertexPtr default_value;
 
-    if (node->type() == op_var) {
-      var = node;
-    } else if (node->type() == op_set) {
-      VertexAdaptor<op_set> set_expr = node;
-      var = set_expr->lhs();
-      kphp_error_act (
-        var->type() == op_var,
-        "unexpected expression in 'static'",
-        continue
-      );
-      default_value = set_expr->rhs();
-    } else {
-      kphp_error_act (0, "unexpected expression in 'static'", continue);
+    auto var = node.try_as<op_var>();
+    if (!var) {
+      if (auto set_expr = node.try_as<op_set>()) {
+        kphp_error_act (
+          set_expr->lhs()->type() == op_var,
+          "unexpected expression in 'static'",
+          continue
+        );
+        var = set_expr->lhs().as<op_var>();
+        default_value = set_expr->rhs();
+      } else {
+        kphp_error_act (0, "unexpected expression in 'static'", continue);
+      }
     }
 
     register_function_static_var(var, default_value);
@@ -179,17 +178,17 @@ void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
 VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariablesPass::LocalT *local) {
   kphp_assert (root);
   if (root->type() == op_global) {
-    visit_global_vertex(root);
+    visit_global_vertex(root.as<op_global>());
     local->need_recursion_flag = false;
     auto empty = VertexAdaptor<op_empty>::create();
     return empty;
   } else if (root->type() == op_static) {
-    visit_static_vertex(root);
+    visit_static_vertex(root.as<op_static>());
     local->need_recursion_flag = false;
     auto empty = VertexAdaptor<op_empty>::create();
     return empty;
   } else if (root->type() == op_var) {
-    visit_var(root);
+    visit_var(root.as<op_var>());
     local->need_recursion_flag = false;
   }
   return root;
@@ -204,7 +203,7 @@ void RegisterVariablesPass::visit_class(ClassPtr klass) {
 bool RegisterVariablesPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<RegisterVariablesPass> &visit) {
   if (v->type() == op_func_param_list) {
     in_param_list++;
-    visit_func_param_list(v, visit);
+    visit_func_param_list(v.as<op_func_param_list>(), visit);
     in_param_list--;
     return true;
   }

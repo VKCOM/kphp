@@ -4,11 +4,9 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 
-
 VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
   // дефайны — во-первых, это явное define('name',value)
-  if (root->type() == op_define) {
-    VertexAdaptor<op_define> define = root;
+  if (auto define = root.try_as<op_define>()) {
     VertexPtr name = define->name();
     VertexPtr val = define->value();
 

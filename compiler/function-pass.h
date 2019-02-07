@@ -166,7 +166,7 @@ typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT run_function_pass(Fu
     return typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT();
   }
   typename FunctionPassT::LocalT local;
-  function->root = run_function_pass(function->root, pass, &local);
+  function->root = run_function_pass(function->root, pass, &local).template as<meta_op_function>();
   return pass->on_finish();
 }
 

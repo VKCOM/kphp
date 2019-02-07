@@ -10,16 +10,14 @@ VertexPtr ExtractAsyncPass::on_enter_vertex(VertexPtr vertex, ExtractAsyncPass::
   if (local->from_seq == false) {
     return vertex;
   }
-  VertexAdaptor<op_func_call> func_call;
+  VertexAdaptor<op_func_call> func_call = vertex.try_as<op_func_call>();
   VertexPtr lhs;
-  if (vertex->type() == op_func_call) {
-    func_call = vertex;
-  } else if (vertex->type() == op_set) {
-    VertexAdaptor<op_set> set = vertex;
-    VertexPtr rhs = set->rhs();
-    if (rhs->type() == op_func_call) {
-      func_call = rhs;
-      lhs = set->lhs();
+  if (!func_call) {
+    if (auto set = vertex.try_as<op_set>()) {
+      if (auto rhs = set->rhs().try_as<op_func_call>()) {
+        func_call = rhs;
+        lhs = set->lhs();
+      }
     }
   }
   if (!func_call) {

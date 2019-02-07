@@ -1,5 +1,7 @@
 #include "compiler/pipes/preprocess-function.h"
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/data/class-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/lambda-generator.h"
@@ -7,7 +9,6 @@
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
-#include "common/termformat/termformat.h"
 
 class PreprocessFunctionPass : public FunctionPassBase {
 public:
@@ -275,7 +276,7 @@ private:
       return call;
     }
 
-    if (auto new_call = process_varargs(call, func)) {
+    if (auto new_call = process_varargs(call.as<op_func_call>(), func)) {
       call = new_call;
     } else {
       return call;
@@ -413,9 +414,9 @@ private:
 
     const string &name =
       call->type() == op_constructor_call
-      ? resolve_constructor_func_name(current_function, call)
+      ? resolve_constructor_func_name(current_function, call.as<op_constructor_call>())
       : call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow
-        ? resolve_instance_func_name(current_function, call)
+        ? resolve_instance_func_name(current_function, call.as<op_func_call>())
         : call->get_string();
 
     FunctionPtr f = G->get_function(name);

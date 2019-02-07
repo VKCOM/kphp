@@ -16,7 +16,7 @@ FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
     case op_func_call:
       return FunctionData::body_value::unknown;
     case op_return: {
-      VertexAdaptor<op_return> return_vertex = vertex;
+      auto return_vertex = vertex.as<op_return>();
       if (!return_vertex->has_expr() || return_vertex->expr()->type() == op_null) {
         return FunctionData::body_value::empty;
       } else {
@@ -58,7 +58,7 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
       !f->root.as<op_function>()->params()->empty()) {
     f->body_seq = FunctionData::body_value::non_empty;
   } else {
-    f->body_seq = calc_seq_body_type(f->root.as<op_function>()->cmd());
+    f->body_seq = calc_seq_body_type(f->root.as<op_function>()->cmd().as<op_seq>());
   }
   return f->body_seq;
 }

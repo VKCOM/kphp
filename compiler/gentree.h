@@ -66,7 +66,7 @@ public:
   template<PrimitiveType ToT>
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);
-  static void func_force_return(VertexPtr root, VertexPtr val = VertexPtr());
+  static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
 
@@ -246,7 +246,6 @@ static inline bool is_const_int(VertexPtr root) {
 }
 
 inline bool is_positive_constexpr_int(VertexPtr v) {
-  VertexPtr actual_value = GenTree::get_actual_value(v);
-  return actual_value->type() == op_int_const &&
-         parse_int_from_string(actual_value) >= 0;
+  auto actual_value = GenTree::get_actual_value(v).try_as<op_int_const>();
+  return actual_value && parse_int_from_string(actual_value) >= 0;
 }

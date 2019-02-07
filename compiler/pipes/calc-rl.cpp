@@ -68,7 +68,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
 
   for (auto call_arg : call->args()) {
     if ((*func_param_it)->type() != op_func_param_callback) {
-      VertexAdaptor<op_func_param> param = *func_param_it;
+      auto param = (*func_param_it).as<op_func_param>();
       RLValueType tp = param->var()->ref_flag ? val_l : val_r;
       rl_calc(call_arg, tp);
     }
@@ -165,7 +165,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
       switch (expected_rl_type) {
         case val_r:
         case val_none: {
-          VertexAdaptor<meta_op_binary> set_op = root;
+          auto set_op = root.as<meta_op_binary>();
           if (set_op->lhs()->extra_type != op_ex_var_superlocal_inplace) {
             rl_calc(set_op->lhs(), val_l);
           }
@@ -181,7 +181,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
       }
       break;
     case rl_index: {
-      VertexAdaptor<op_index> index = root;
+      auto index = root.as<op_index>();
       VertexPtr array = index->array();
       switch (expected_rl_type) {
         case val_l:

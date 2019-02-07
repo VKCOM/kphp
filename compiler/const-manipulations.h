@@ -51,7 +51,7 @@ protected:
     for (size_t i = 0; i < arr.size(); ++i) {
       VertexPtr cur = arr[i];
       if (cur->type() == op_double_arrow) {
-        if (!on_array_double_arrow(cur)) {
+        if (!on_array_double_arrow(cur.as<op_double_arrow>())) {
           return on_non_const(v);
         }
       } else if (!on_array_value(v, i)) {
@@ -361,7 +361,7 @@ protected:
   }
 
   void on_var(VertexPtr v) override {
-    return on_unary(GenTree::get_actual_value(v));
+    return visit(GenTree::get_actual_value(v));
   }
 
   void on_non_const(VertexPtr v) override {

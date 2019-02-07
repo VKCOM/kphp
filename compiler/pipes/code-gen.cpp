@@ -553,7 +553,7 @@ inline void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W);
 inline void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W);
-inline void compile_function(VertexPtr root, CodeGenerator &W);
+inline void compile_function(VertexAdaptor<op_function> root, CodeGenerator &W);
 inline void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W);
 inline void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W);
 inline void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W);
@@ -578,13 +578,13 @@ inline void compile_push_back_return(VertexAdaptor<op_push_back_return> root, Co
 void compile_string_raw(const string &str, CodeGenerator &W);
 inline void compile_string_raw(VertexAdaptor<op_string> root, CodeGenerator &W);
 inline void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W);
-inline void compile_string_build(VertexPtr root, CodeGenerator &W);
+inline void compile_string_build(VertexAdaptor<op_string_build> root, CodeGenerator &W);
 inline void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W);
 inline void compile_conv_array_l(VertexAdaptor<op_conv_array_l> root, CodeGenerator &W);
 inline void compile_conv_int_l(VertexAdaptor<op_conv_int_l> root, CodeGenerator &W);
 inline void compile_cycle_op(VertexPtr root, CodeGenerator &W);
 inline void compile_min_max(VertexPtr root, CodeGenerator &W);
-inline void compile_power(VertexAdaptor<op_pow> root, CodeGenerator &W);
+inline void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W);
 inline void compile_common_op(VertexPtr root, CodeGenerator &W);
 inline void compile(VertexPtr root, CodeGenerator &W);
 
@@ -1008,7 +1008,7 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
       W << ", ";
     }
 
-    VertexAdaptor<op_func_param> param = i;
+    auto param = i.as<op_func_param>();
     VertexPtr var = param->var();
     TypeName type_gen(tinf::get_type(function, ii), style);
     switch (style) {
@@ -2194,7 +2194,7 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
 
 void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   if (root->type() == op_pow) {
-    compile_power(root, W);
+    compile_power(root.as<op_pow>(), W);
   } else {
     W << OpInfo::str(root->type());
   }
@@ -2362,7 +2362,7 @@ void compile_require(VertexPtr root, CodeGenerator &W) {
   }
 
   kphp_assert_msg(root->size() == 1, "Only one child possible for require vertex");
-  VertexAdaptor<op_func_call> func = root->back();
+  auto func = root->back().as<op_func_call>();
   W << FunctionCallFlag(func->get_func_id()) << ", " << func << ")";
 }
 
@@ -2459,12 +2459,12 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
 }
 
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
-  compile_func_call(root->func_call(), W, 2);
+  compile_func_call(root->func_call().as<op_func_call>(), W, 2);
 }
 
 void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
   VertexPtr lhs = root->lhs();
-  VertexAdaptor<op_func_call> func_call = root->func_call();
+  auto func_call = root->func_call().as<op_func_call>();
   if (lhs->type() != op_empty) {
     kphp_error (lhs->type() == op_var, "Can't save result of async call into non-var");
     W << lhs << " = ";
@@ -2490,7 +2490,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
 
 void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
   kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
-  VertexAdaptor<op_foreach_param> params = root->params();
+  auto params = root->params().as<op_foreach_param>();
 
   //foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
@@ -2526,12 +2526,12 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
 }
 
 void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
-  VertexAdaptor<op_foreach_param> params = root->params();
+  auto params = root->params().as<op_foreach_param>();
   //foreach (xs as [key =>] x)
   VertexPtr x = params->x();
   VertexPtr xs = params->xs();
   VertexPtr key;
-  VertexAdaptor<op_var> temp_var = params->temp_var();
+  auto temp_var = params->temp_var().as<op_var>();
   if (params->has_key()) {
     key = params->key();
   }
@@ -2566,7 +2566,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
 }
 
 void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
-  VertexAdaptor<op_foreach_param> params = root->params();
+  auto params = root->params().as<op_foreach_param>();
   VertexPtr cmd = root->cmd();
 
   //foreach (xs as [key =>] x)
@@ -2611,10 +2611,10 @@ struct CaseInfo {
     v(root) {
     if (v->type() == op_default) {
       is_default = true;
-      cmd = VertexAdaptor<op_default>(v)->cmd();
+      cmd = v.as<op_default>()->cmd();
     } else {
       is_default = false;
-      VertexAdaptor<op_case> cs = v;
+      auto cs = v.as<op_case>();
 
       expr = cs->expr();
       cmd = cs->cmd();
@@ -2729,7 +2729,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     Operation tp = i->type();
     VertexPtr cmd;
     if (tp == op_case) {
-      VertexAdaptor<op_case> cs = i;
+      auto cs = i.as<op_case>();
       cmd = cs->cmd();
 
       VertexPtr val = GenTree::get_actual_value(cs->expr());
@@ -2746,7 +2746,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       }
     } else if (tp == op_default) {
       W << "default";
-      cmd = VertexAdaptor<op_default>(i)->cmd();
+      cmd = i.as<op_default>()->cmd();
     } else {
       kphp_fail();
     }
@@ -2772,11 +2772,11 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     VertexPtr expr;
     VertexPtr cmd;
     if (tp == op_case) {
-      VertexAdaptor<op_case> cs(i);
+      auto cs = i.as<op_case>();
       expr = cs->expr();
       cmd = cs->cmd();
     } else if (tp == op_default) {
-      cmd = VertexAdaptor<op_default>(i)->cmd();
+      cmd = i.as<op_default>()->cmd();
     } else {
       kphp_fail();
     }
@@ -2826,7 +2826,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     if (i->type() == op_default) {
       cnt_default++;
     } else {
-      VertexAdaptor<op_case> cs = i;
+      auto cs = i.as<op_case>();
       VertexPtr val = GenTree::get_actual_value(cs->expr());
       if (val->type() == op_int_const || is_const_int(val)) {
         cnt_int++;
@@ -2849,8 +2849,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   }
 }
 
-void compile_function_resumable(VertexPtr root, CodeGenerator &W) {
-  VertexAdaptor<op_function> func_root = root;
+void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   FunctionPtr func = func_root->get_func_id();
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
   W << "class " << FunctionClassName(func) << " : public Resumable " <<
@@ -2954,15 +2953,14 @@ void compile_function_resumable(VertexPtr root, CodeGenerator &W) {
 
 }
 
-void compile_function(VertexPtr root, CodeGenerator &W) {
-  VertexAdaptor<op_function> func_root = root;
+void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   FunctionPtr func = func_root->get_func_id();
 
   W.get_context().parent_func = func;
   W.get_context().resumable_flag = func->is_resumable;
 
   if (func->is_resumable) {
-    compile_function_resumable(root, W);
+    compile_function_resumable(func_root, W);
     return;
   }
 
@@ -3207,27 +3205,25 @@ void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
 }
 
 void compile_as_printable(VertexPtr root, CodeGenerator &W) {
-  if (root->type() == op_conv_string) {
-    VertexAdaptor<op_conv_string> conv = root;
+  if (auto conv = root.try_as<op_conv_string>()) {
     if (conv->expr()->type() == op_string) {
       root = conv->expr();
     }
   }
 
   if (root->type() == op_string) {
-    compile_string(root, W);
+    compile_string(root.as<op_string>(), W);
     return;
   }
 
   if (root->type() == op_string_build) {
-    compile_string_build_as_string(root, W);
+    compile_string_build_as_string(root.as<op_string_build>(), W);
     return;
   }
 
-  if (root->type() == op_conv_string) {
-    VertexAdaptor<op_conv_string> conv = root;
+  if (auto conv = root.try_as<op_conv_string>()) {
     if (conv->expr()->type() == op_string_build) {
-      compile_as_printable(conv->expr(), W);
+      compile_as_printable(conv->expr().as<op_string_build>(), W);
       return;
     }
   }
@@ -3302,8 +3298,7 @@ void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
       W << "(!f$is_null(" << arg << "))";
       continue;
     }
-    if (arg->type() == op_index) {
-      VertexAdaptor<op_index> index = arg;
+    if (auto index = arg.try_as<op_index>()) {
       kphp_assert (index->has_key());
       VertexPtr arr = index->array(), id = index->key();
       W << "(" << arr;
@@ -3354,8 +3349,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   bool has_double_arrow = false;
   int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
   for (auto i : root->args()) {
-    if (i->type() == op_double_arrow) {
-      VertexAdaptor<op_double_arrow> arrow = i;
+    if (auto arrow = i.try_as<op_double_arrow>()) {
       has_double_arrow = true;
       VertexPtr key = arrow->key();
       PrimitiveType tp = tinf::get_type(key)->ptype();
@@ -3400,8 +3394,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
 
   for (auto cur : root->args()) {
     W << arr_name;
-    if (cur->type() == op_double_arrow) {
-      VertexAdaptor<op_double_arrow> arrow = cur;
+    if (auto arrow = cur.try_as<op_double_arrow>()) {
       W << ".set_value (" << arrow->key() << ", " << arrow->value();
       int precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key());
       if (precomputed_hash) {
@@ -3589,8 +3582,7 @@ void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __
 
 
 void compile_safe_version(VertexPtr root, CodeGenerator &W) {
-  if (root->type() == op_set_value) {
-    VertexAdaptor<op_set_value> set_value = root;
+  if (auto set_value = root.try_as<op_set_value>()) {
     W << "SAFE_SET_VALUE (" <<
       set_value->array() << ", " <<
       set_value->key() << ", " <<
@@ -3599,7 +3591,7 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       TypeNameInsideMacro(tinf::get_type(set_value->value())) <<
       ")";
   } else if (OpInfo::rl(root->type()) == rl_set) {
-    VertexAdaptor<meta_op_binary> op = root;
+    auto op = root.as<meta_op_binary>();
     if (OpInfo::type(root->type()) == binary_func_op) {
       W << "SAFE_SET_FUNC_OP (";
     } else if (OpInfo::type(root->type()) == binary_op) {
@@ -3612,25 +3604,22 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       op->rhs() << ", " <<
       TypeNameInsideMacro(tinf::get_type(op->rhs())) <<
       ")";
-  } else if (root->type() == op_push_back) {
-    VertexAdaptor<op_push_back> pb = root;
+  } else if (auto pb = root.try_as<op_push_back>()) {
     W << "SAFE_PUSH_BACK (" <<
       pb->array() << ", " <<
       pb->value() << ", " <<
       TypeNameInsideMacro(tinf::get_type(pb->value())) <<
       ")";
-  } else if (root->type() == op_push_back_return) {
-    VertexAdaptor<op_push_back_return> pb = root;
+  } else if (auto pb = root.try_as<op_push_back_return>()) {
     W << "SAFE_PUSH_BACK_RETURN (" <<
       pb->array() << ", " <<
       pb->value() << ", " <<
       TypeNameInsideMacro(tinf::get_type(pb->value())) <<
       ")";
   } else if (root->type() == op_array) {
-    compile_array(root, W);
+    compile_array(root.as<op_array>(), W);
     return;
-  } else if (root->type() == op_index) {
-    VertexAdaptor<op_index> index = root;
+  } else if (auto index = root.try_as<op_index>()) {
     kphp_assert (index->has_key());
     W << "SAFE_INDEX (" <<
       index->array() << ", " <<
@@ -3735,7 +3724,7 @@ void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W) {
 }
 
 
-void compile_string_build(VertexPtr root, CodeGenerator &W) {
+void compile_string_build(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
   compile_string_build_as_string(root, W);
 }
 
@@ -3785,19 +3774,19 @@ void compile_cycle_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();
   switch (tp) {
     case op_while:
-      compile_while(root, W);
+      compile_while(root.as<op_while>(), W);
       break;
     case op_do:
-      compile_do(root, W);
+      compile_do(root.as<op_do>(), W);
       break;
     case op_for:
-      compile_for(root, W);
+      compile_for(root.as<op_for>(), W);
       break;
     case op_foreach:
-      compile_foreach(root, W);
+      compile_foreach(root.as<op_foreach>(), W);
       break;
     case op_switch:
-      compile_switch(root, W);
+      compile_switch(root.as<op_switch>(), W);
       break;
     default:
       assert (0);
@@ -3888,18 +3877,18 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << VarName(root->get_var_id());
       break;
     case op_string:
-      compile_string(root, W);
+      compile_string(root.as<op_string>(), W);
       break;
 
     case op_if:
-      compile_if(root, W);
+      compile_if(root.as<op_if>(), W);
       break;
     case op_require:
     case op_require_once:
       compile_require(root, W);
       break;
     case op_return:
-      compile_return(root, W);
+      compile_return(root.as<op_return>(), W);
       break;
     case op_global:
     case op_static:
@@ -3910,13 +3899,13 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_echo(root, W);
       break;
     case op_throw:
-      compile_throw(root, W);
+      compile_throw(root.as<op_throw>(), W);
       break;
     case op_var_dump:
       compile_var_dump(root, W);
       break;
     case op_print:
-      compile_print(root, W);
+      compile_print(root.as<op_print>(), W);
       break;
     case op_min:
     case op_max:
@@ -3924,78 +3913,78 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_continue:
     case op_break:
-      compile_break_continue(root, W);
+      compile_break_continue(root.as<meta_op_goto>(), W);
       break;
     case op_try:
-      compile_try(root, W);
+      compile_try(root.as<op_try>(), W);
       break;
     case op_fork:
-      compile_fork(root, W);
+      compile_fork(root.as<op_fork>(), W);
       break;
     case op_async:
-      compile_async(root, W);
+      compile_async(root.as<op_async>(), W);
       break;
     case op_function:
-      compile_function(root, W);
+      compile_function(root.as<op_function>(), W);
       break;
     case op_func_call:
     case op_constructor_call:
-      compile_func_call_fast(root, W);
+      compile_func_call_fast(root.as<op_func_call>(), W);
       break;
     case op_func_ptr:
-      compile_func_ptr(root, W);
+      compile_func_ptr(root.as<op_func_ptr>(), W);
       break;
     case op_string_build:
-      compile_string_build(root, W);
+      compile_string_build(root.as<op_string_build>(), W);
       break;
     case op_index:
-      compile_index(root, W);
+      compile_index(root.as<op_index>(), W);
       break;
     case op_instance_prop:
-      compile_instance_prop(root, W);
+      compile_instance_prop(root.as<op_instance_prop>(), W);
       break;
     case op_isset:
-      compile_xset(root, W);
+      compile_xset(root.as<meta_op_xset>(), W);
       break;
     case op_list:
-      compile_list(root, W);
+      compile_list(root.as<op_list>(), W);
       break;
     case op_array:
-      compile_array(root, W);
+      compile_array(root.as<op_array>(), W);
       break;
     case op_tuple:
-      compile_tuple(root, W);
+      compile_tuple(root.as<op_tuple>(), W);
       break;
     case op_unset:
-      compile_xset(root, W);
+      compile_xset(root.as<meta_op_xset>(), W);
       break;
     case op_empty:
       break;
     case op_define_val:
-      compile_define_val(root, W);
+      compile_define_val(root.as<op_define_val>(), W);
       break;
     case op_defined:
-      compile_defined(root, W);
+      compile_defined(root.as<op_defined>(), W);
       break;
     case op_extern_func:
       break;
     case op_conv_array_l:
-      compile_conv_array_l(root, W);
+      compile_conv_array_l(root.as<op_conv_array_l>(), W);
       break;
     case op_conv_int_l:
-      compile_conv_int_l(root, W);
+      compile_conv_int_l(root.as<op_conv_int_l>(), W);
       break;
     case op_set_value:
-      compile_set_value(root, W);
+      compile_set_value(root.as<op_set_value>(), W);
       break;
     case op_push_back:
-      compile_push_back(root, W);
+      compile_push_back(root.as<op_push_back>(), W);
       break;
     case op_push_back_return:
-      compile_push_back_return(root, W);
+      compile_push_back_return(root.as<op_push_back_return>(), W);
       break;
     case op_noerr:
-      compile_noerr(root, W);
+      compile_noerr(root.as<op_noerr>(), W);
       break;
     default:
     kphp_fail();
@@ -4022,17 +4011,17 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
   } else {
     switch (tp) {
       case prefix_op:
-        compile_prefix_op(root, W);
+        compile_prefix_op(root.as<meta_op_unary>(), W);
         break;
       case postfix_op:
-        compile_postfix_op(root, W);
+        compile_postfix_op(root.as<meta_op_unary>(), W);
         break;
       case binary_op:
       case binary_func_op:
-        compile_binary_op(root, W);
+        compile_binary_op(root.as<meta_op_binary>(), W);
         break;
       case ternary_op:
-        compile_ternary_op(root, W);
+        compile_ternary_op(root.as<op_ternary>(), W);
         break;
       case common_op:
         compile_common_op(root, W);
@@ -4041,7 +4030,7 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
         compile_cycle_op(root, W);
         break;
       case conv_op:
-        compile_conv_op(root, W);
+        compile_conv_op(root.as<meta_op_unary>(), W);
         break;
       default:
         printf("%d: %d\n", tp, root->type());

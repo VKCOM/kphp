@@ -33,7 +33,7 @@ public:
         uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
       });
 
-      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda));
+      return GenTree::generate_anonymous_class(invoke_method->root.as<op_function>(), function_stream, current_function, std::move(uses_of_lambda));
     }
 
     return root;
@@ -53,7 +53,7 @@ std::string SortAndInheritClassesF::is_class_ready(ClassPtr klass) {
 
 // делаем функцию childclassname$$localname, которая выглядит как
 // function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
-VertexPtr SortAndInheritClassesF::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name) {
+VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name) {
   auto new_name = VertexAdaptor<op_func_name>::create();
   new_name->set_string(replace_backslashes(child_class->name) + "$$" + local_name);
   vector<VertexPtr> new_params_next;
@@ -64,7 +64,7 @@ VertexPtr SortAndInheritClassesF::generate_function_with_parent_call(VertexAdapt
       new_params_next.push_back(parameter.clone());
     } else if (parameter->type() == op_func_param_callback) {
       if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
-        return VertexPtr();
+        return {};
       }
     }
   }
@@ -86,7 +86,7 @@ VertexPtr SortAndInheritClassesF::generate_function_with_parent_call(VertexAdapt
 // клонировать функцию baseclassname$$fname в контекстную baseclassname$$fname$$contextclassname
 // (контекстные нужны для реализации статического наследования)
 FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name) {
-  VertexAdaptor<op_function> root = clone_vertex(parent_f->root);
+  auto root = clone_vertex(parent_f->root).as<op_function>();
   root->name()->set_string(ctx_function_name);
 
   FunctionPtr context_function = FunctionData::create_function(root, FunctionData::func_local);
@@ -107,7 +107,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   }                                       // (чтобы B::f$$C не считать required)
 
   if (!child_class->members.has_static_method(local_name)) {
-    VertexPtr child_root = generate_function_with_parent_call(parent_f->root, parent_class, child_class, local_name);
+    auto child_root = generate_function_with_parent_call(parent_f->root.as<op_function>(), parent_class, child_class, local_name);
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
     child_function->file_id = parent_f->file_id;

@@ -2,9 +2,7 @@
 
 #include "compiler/name-gen.h"
 
-VertexPtr CreateSwitchForeachVarsPass::process_switch(VertexPtr v) {
-  VertexAdaptor<op_switch> switch_v = v;
-
+VertexPtr CreateSwitchForeachVarsPass::process_switch(VertexAdaptor<op_switch> switch_v) {
   auto root_ss = VertexAdaptor<op_var>::create();
   root_ss->str_val = gen_unique_name("ss");
   root_ss->extra_type = op_ex_var_superlocal;
@@ -31,11 +29,9 @@ VertexPtr CreateSwitchForeachVarsPass::process_switch(VertexPtr v) {
   return switch_v;
 }
 
-VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexPtr v) {
-
-  VertexAdaptor<op_foreach> foreach_v = v;
-  VertexAdaptor<op_foreach_param> foreach_param = foreach_v->params();
-  VertexAdaptor<op_var> x = foreach_param->x();
+VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexAdaptor<op_foreach> foreach_v) {
+  auto foreach_param = foreach_v->params().as<op_foreach_param>();
+  auto x = foreach_param->x().as<op_var>();
   //VertexPtr xs = foreach_param->xs();
 
   if (!x->ref_flag) {
@@ -51,10 +47,10 @@ VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexPtr v) {
 
 VertexPtr CreateSwitchForeachVarsPass::on_enter_vertex(VertexPtr v, LocalT *) {
   if (v->type() == op_switch) {
-    return process_switch(v);
+    return process_switch(v.as<op_switch>());
   }
   if (v->type() == op_foreach) {
-    return process_foreach(v);
+    return process_foreach(v.as<op_foreach>());
   }
 
   return v;

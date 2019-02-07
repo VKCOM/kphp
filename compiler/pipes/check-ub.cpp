@@ -178,9 +178,9 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
 
   *last_ub_error = VarPtr();
   if (v->type() == op_var) {
-    *data = UBMergeData::create_from_var(v, parent && parent->type() == op_index);
+    *data = UBMergeData::create_from_var(v.as<op_var>(), parent && parent->type() == op_index);
   } else if (v->type() == op_func_ptr) {
-    *data = UBMergeData::create_from_func_ptr(v);
+    *data = UBMergeData::create_from_func_ptr(v.as<op_func_ptr>());
   } else {
     Location save_location = stage::get_location();
 
@@ -226,9 +226,8 @@ void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
       v->type() == op_if || v->type() == op_else || v->type() == op_try ||
       v->type() == op_seq || v->type() == op_case || v->type() == op_default ||
       v->type() == op_noerr) {
-    if (v->type() == op_foreach) {
-      VertexAdaptor<op_foreach> foreach_v = v;
-      VertexAdaptor<op_foreach_param> params = foreach_v->params();
+    if (auto foreach_v = v.try_as<op_foreach>()) {
+      auto params = foreach_v->params().as<op_foreach_param>();
       VertexPtr x = params->x();
       if (x->ref_flag) {
         VertexPtr xs = params->xs();

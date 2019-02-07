@@ -10,9 +10,8 @@ void CheckNestedForeachPass::init() {
 VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedForeachPass::LocalT *local) {
   local->to_remove = 0;
   local->to_forbid = VarPtr();
-  if (vertex->type() == op_foreach) {
-    VertexAdaptor<op_foreach> foreach_v = vertex;
-    VertexAdaptor<op_foreach_param> params = foreach_v->params();
+  if (auto foreach_v = vertex.try_as<op_foreach>()) {
+    auto params = foreach_v->params().as<op_foreach_param>();
     VertexPtr xs = params->xs();
     while (xs->type() == op_index) {
       xs = xs.as<op_index>()->array();

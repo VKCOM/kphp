@@ -257,11 +257,11 @@ VertexPtr GenTree::get_func_call() {
 
   //hack..
   if (Op == op_func_call) {
-    VertexAdaptor<op_func_call> func_call = call;
+    auto func_call = call.as<op_func_call>();
     func_call->set_string(name);
   }
   if (Op == op_constructor_call) {
-    VertexAdaptor<op_constructor_call> func_call = call;
+    auto func_call = call.as<op_constructor_call>();
     func_call->set_string(name);
 
     // Hack for several classes inherited from Memcache
@@ -583,7 +583,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = get_func_call<op_defined, op_err>();
       break;
     case tok_min: {
-      VertexAdaptor<op_min> min_v = get_func_call<op_min, op_err>();
+      auto min_v = get_func_call<op_min, op_err>().as<op_min>();
       VertexRange args = min_v->args();
       if (args.size() == 1) {
         args[0] = GenTree::conv_to(args[0], tp_array);
@@ -592,7 +592,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     }
     case tok_max: {
-      VertexAdaptor<op_max> max_v = get_func_call<op_max, op_err>();
+      auto max_v = get_func_call<op_max, op_err>().as<op_max>();
       VertexRange args = max_v->args();
       if (args.size() == 1) {
         args[0] = GenTree::conv_to(args[0], tp_array);
@@ -664,8 +664,7 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
 
   if (expr->type() == op_minus || expr->type() == op_plus) {
     VertexPtr maybe_num = expr.as<meta_op_unary>()->expr();
-    if (maybe_num->type() == op_int_const || maybe_num->type() == op_float_const) {
-      VertexAdaptor<meta_op_num> num = maybe_num;
+    if (auto num = maybe_num.try_as<meta_op_num>()) {
       // +N оставляем как "N", а -N делаем константу "-N" (но если N начинается с минуса, то "N", чтобы парсить `- - -7`)
       if (expr->type() == op_minus) {
         num->str_val = num->str_val[0] == '-' ? num->str_val.substr(1) : "-" + num->str_val;
@@ -1111,12 +1110,7 @@ VertexPtr GenTree::get_type_rule() {
   return res;
 }
 
-void GenTree::func_force_return(VertexPtr root, VertexPtr val) {
-  if (root->type() != op_function) {
-    return;
-  }
-  VertexAdaptor<op_function> func = root;
-
+void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) {
   VertexPtr cmd = func->cmd();
   assert (cmd->type() == op_seq);
 
@@ -1573,7 +1567,7 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
                    : (VertexPtr)VertexAdaptor<op_function>::create(name, params, VertexPtr{});
   root->copy_location_and_flags(*flags);
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, func_type));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root.as<meta_op_function>(), func_type));
 
   cur_function->phpdoc_token = phpdoc_token;
   cur_function->has_variadic_param = has_variadic_param;
@@ -1594,13 +1588,14 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
 
   if (test_expect(tok_opbrc)) {
     is_top_of_the_function_ = true;
-    root.as<op_function>()->cmd() = get_statement();
-    CE(!kphp_error(root.as<op_function>()->cmd(), "Failed to parse function body"));
+    auto function = root.as<op_function>();
+    function->cmd() = get_statement();
+    CE(!kphp_error(function->cmd(), "Failed to parse function body"));
 
     if (is_constructor) {
-      cur_class->patch_func_constructor(root, line_num);
+      cur_class->patch_func_constructor(function, line_num);
     } else {
-      func_force_return(root);
+      func_force_return(function);
     }
   } else {
     CE (expect(tok_semicolon, "';'"));
@@ -1795,18 +1790,18 @@ VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unu
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);  // cur сразу перед $field_name
   CE (check_statement_end());
 
-  for (VertexAdaptor<op_static> seq : *v) {
+  for (auto seq : *v) {
     // node это либо op_var $a (когда нет дефолтного значения), либо op_set(op_var $a, init_val)
-    VertexPtr node = seq->args()[0];
+    VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node, VertexAdaptor<op_empty>::create(), access_type);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), access_type);
         break;
       }
       case op_set: {
-        VertexAdaptor<op_set> set_expr = node;
+        auto set_expr = node.as<op_set>();
         kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
-        cur_class->members.add_static_field(set_expr->lhs(), set_expr->rhs(), access_type);
+        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), access_type);
         break;
       }
       default:

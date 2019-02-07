@@ -414,9 +414,9 @@ struct XPred {
 void CFG::find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars) {
   splittable_vars->insert(splittable_vars->end(), func->local_var_ids.begin(), func->local_var_ids.end());
   VertexAdaptor<meta_op_function> func_root = func->root;
-  VertexAdaptor<op_func_param_list> params = func_root->params();
+  auto params = func_root->params().as<op_func_param_list>();
   for (VarPtr var : func->param_ids) {
-    VertexAdaptor<op_func_param> param = params->params()[var->param_i];
+    auto param = params->params()[var->param_i].as<op_func_param>();
     VertexPtr init = param->var();
     kphp_assert (init->type() == op_var);
     if (!init->ref_flag) {
@@ -443,8 +443,7 @@ void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool 
     *can_throw = tree_node->get_func_id()->can_throw;
   }
 
-  if (tree_node->type() == op_set) {
-    VertexAdaptor<op_set> set_op = tree_node;
+  if (auto set_op = tree_node.try_as<op_set>()) {
     if (set_op->lhs()->type() == op_var) {
       add_usage(writes, new_usage(usage_write_t, set_op->lhs()));
       collect_vars_usage(set_op->rhs(), writes, reads, can_throw);
@@ -549,7 +548,7 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
     case op_log_and:
     case op_log_or: {
       Node first_start, first_true, first_false, second_start, second_true, second_false;
-      VertexAdaptor<meta_op_binary> op = tree_node;
+      auto op = tree_node.as<meta_op_binary>();
       create_condition_cfg(op->lhs(), &first_start, &first_true, &first_false);
       create_condition_cfg(op->rhs(), &second_start, &second_true, &second_false);
       *res_start = first_start;
@@ -613,7 +612,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_eq3:
     case op_eq2:
     case op_neq2: {
-      VertexAdaptor<meta_op_binary> op = tree_node;
+      auto op = tree_node.as<meta_op_binary>();
       if (op->rhs()->type() == op_false || op->rhs()->type() == op_null) {
         Node first_finish, second_start;
         create_cfg(op->lhs(), res_start, &first_finish);
@@ -626,7 +625,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_index: {
       Node var_start, var_finish;
-      VertexAdaptor<op_index> index = tree_node;
+      auto index = tree_node.as<op_index>();
       create_cfg(index->array(), &var_start, &var_finish, false, write_flag || weak_write_flag);
       Node start = var_start;
       Node finish = var_finish;
@@ -643,7 +642,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_log_and:
     case op_log_or: {
       Node first_start, first_finish, second_start, second_finish;
-      VertexAdaptor<meta_op_binary> op = tree_node;
+      auto op = tree_node.as<meta_op_binary>();
       create_cfg(op->lhs(), &first_start, &first_finish);
       create_cfg(op->rhs(), &second_start, &second_finish);
       Node finish = new_node();
@@ -688,7 +687,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_return: {
-      VertexAdaptor<op_return> return_op = tree_node;
+      auto return_op = tree_node.as<op_return>();
       if (return_op->has_expr()) {
         Node tmp;
         create_cfg(return_op->expr(), res_start, &tmp);
@@ -699,7 +698,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_set: {
-      VertexAdaptor<op_set> set_op = tree_node;
+      auto set_op = tree_node.as<op_set>();
       Node a, b;
       create_cfg(set_op->rhs(), res_start, &a);
       create_cfg(set_op->lhs(), &b, res_finish, true);
@@ -718,7 +717,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_set_dot:
     case op_set_shr:
     case op_set_shl: {
-      VertexAdaptor<meta_op_binary> set_op = tree_node;
+      auto set_op = tree_node.as<meta_op_binary>();
       Node a, b;
       create_cfg(set_op->rhs(), res_start, &a);
       create_full_cfg(set_op->lhs(), &b, res_finish);
@@ -726,7 +725,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_list: {
-      VertexAdaptor<op_list> list = tree_node;
+      auto list = tree_node.as<op_list>();
       Node prev;
       create_cfg(list->array(), res_start, &prev);
       for (auto param : list->list().get_reversed_range()) {
@@ -749,7 +748,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_if: {
-      VertexAdaptor<op_if> if_op = tree_node;
+      auto if_op = tree_node.as<op_if>();
       Node finish = new_node();
       Node cond_true, cond_false, if_start, if_finish;
       create_condition_cfg(if_op->cond(), res_start, &cond_true, &cond_false);
@@ -769,7 +768,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_ternary: {
-      VertexAdaptor<op_ternary> ternary_op = tree_node;
+      auto ternary_op = tree_node.as<op_ternary>();
       Node finish = new_node();
       Node cond_true, cond_false;
 
@@ -788,7 +787,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_break: {
-      VertexAdaptor<op_break> break_op = tree_node;
+      auto break_op = tree_node.as<op_break>();
       recursive_flag = true;
       Node start = new_node(), finish = Node();
       create_cfg_add_break_node(start, atoi(break_op->level()->get_string().c_str()));
@@ -798,7 +797,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_continue: {
-      VertexAdaptor<op_continue> continue_op = tree_node;
+      auto continue_op = tree_node.as<op_continue>();
       recursive_flag = true;
       Node start = new_node(), finish = Node();
       create_cfg_add_continue_node(start, atoi(continue_op->level()->get_string().c_str()));
@@ -810,7 +809,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_for: {
       create_cfg_enter_cycle();
 
-      VertexAdaptor<op_for> for_op = tree_node;
+      auto for_op = tree_node.as<op_for>();
 
       Node init_start, init_finish;
       create_cfg(for_op->pre_cond(), &init_start, &init_finish);
@@ -844,12 +843,10 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       create_cfg_enter_cycle();
 
       VertexPtr cond, cmd;
-      if (tree_node->type() == op_do) {
-        VertexAdaptor<op_do> do_op = tree_node;
+      if (auto do_op = tree_node.try_as<op_do>()) {
         cond = do_op->cond();
         cmd = do_op->cmd();
-      } else if (tree_node->type() == op_while) {
-        VertexAdaptor<op_while> while_op = tree_node;
+      } else if (auto while_op = tree_node.try_as<op_while>()) {
         cond = while_op->cond();
         cmd = while_op->cmd();
       } else {
@@ -889,10 +886,9 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_foreach: {
       create_cfg_enter_cycle();
 
-      VertexAdaptor<op_foreach> foreach_op = tree_node;
+      auto foreach_op = tree_node.as<op_foreach>();
 
-      //foreach_param
-      VertexAdaptor<op_foreach_param> foreach_param = foreach_op->params();
+      auto foreach_param = foreach_op->params().as<op_foreach_param>();
       Node val_start, val_finish;
 
       create_cfg(foreach_param->xs(), &val_start, &val_finish);
@@ -936,7 +932,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_switch: {
       create_cfg_enter_cycle();
 
-      VertexAdaptor<op_switch> switch_op = tree_node;
+      auto switch_op = tree_node.as<op_switch>();
       Node cond_start, cond_finish;
       create_cfg(switch_op->expr(), &cond_start, &cond_finish);
 
@@ -960,13 +956,11 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       for (auto i : switch_op->cases()) {
         VertexPtr expr, cmd;
         bool is_default = false;
-        if (i->type() == op_case) {
-          VertexAdaptor<op_case> cs = i;
+        if (auto cs = i.try_as<op_case>()) {
           expr = cs->expr();
           cmd = cs->cmd();
-        } else if (i->type() == op_default) {
+        } else if (auto def = i.try_as<op_default>()) {
           is_default = true;
-          VertexAdaptor<op_default> def = i;
           cmd = def->cmd();
         } else {
           kphp_fail();
@@ -1009,7 +1003,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_throw: {
-      VertexAdaptor<op_throw> throw_op = tree_node;
+      auto throw_op = tree_node.as<op_throw>();
       Node throw_start, throw_finish;
       create_cfg(throw_op->exception(), &throw_start, &throw_finish);
       create_cfg_register_exception(throw_finish);
@@ -1020,7 +1014,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_try: {
-      VertexAdaptor<op_try> try_op = tree_node;
+      auto try_op = tree_node.as<op_try>();
       Node exception_start, exception_finish;
       create_cfg(try_op->exception(), &exception_start, &exception_finish, true);
 
@@ -1063,7 +1057,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_function: {
-      VertexAdaptor<op_function> function = tree_node;
+      auto function = tree_node.as<op_function>();
       Node a, b;
       create_cfg(function->params(), res_start, &a);
       create_cfg(function->cmd(), &b, res_finish);

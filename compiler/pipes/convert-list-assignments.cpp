@@ -27,7 +27,7 @@ VertexPtr ConvertListAssignmentsPass::process_list_assignment(VertexAdaptor<op_l
 VertexPtr ConvertListAssignmentsPass::on_exit_vertex(VertexPtr root, LocalT *local) {
   if (root->type() == op_list) {
     local->need_recursion_flag = false;
-    return process_list_assignment(root);
+    return process_list_assignment(root.as<op_list>());
   }
 
   return root;

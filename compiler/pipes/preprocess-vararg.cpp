@@ -46,7 +46,7 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     // и тут делаем { $first = isset($VA_LIST[0]) ? $VA_LIST[0] : null; } в начало тела f
     vector<VertexPtr> params_init;
     for (int i = rest_start_pos; i < old_params.size(); ++i) {
-      VertexAdaptor<op_func_param> arg = old_params[i];
+      auto arg = old_params[i].as<op_func_param>();
       kphp_error (!arg->ref_flag, "functions with reference arguments are not supported in vararg");
       VertexPtr var = arg->var();
       VertexPtr def;

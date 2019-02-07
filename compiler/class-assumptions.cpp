@@ -267,7 +267,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
     case op_try: {
       auto t = root.as<op_try>();
       if (t->exception()->type() == op_var && t->exception()->get_string() == var_name) {
-        analyze_catch_of_var(f, var_name, root);
+        analyze_catch_of_var(f, var_name, t);
       }
       break;    // внутрь try зайти чтоб
     }
@@ -275,7 +275,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
     case op_foreach_param: {
       auto foreach = root.as<op_foreach_param>();
       if (foreach->x()->type() == op_var && foreach->x()->get_string() == var_name) {
-        analyze_foreach(f, var_name, root);
+        analyze_foreach(f, var_name, foreach);
       }
       return;
     }
@@ -317,7 +317,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
 
   VertexRange params = root->params().as<op_func_param_list>()->args();
   for (auto i : params.get_reversed_range()) {
-    VertexAdaptor<op_func_param> param = i;
+    VertexAdaptor<op_func_param> param = i.as<op_func_param>();
     if (!param->type_declaration.empty()) {
       ClassPtr klass = G->get_class(resolve_uses(f, param->type_declaration, '\\'));
       kphp_error(klass, format("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
@@ -433,7 +433,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
   }
 
   if (f->assumptions_inited_args == 0) {
-    init_assumptions_for_arguments(f, f->root);
+    init_assumptions_for_arguments(f, f->root.as<op_function>());
     f->assumptions_inited_args = 2;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
   }
 
@@ -477,7 +477,7 @@ AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
 
   if (f->assumptions_inited_return == 0) {
     if (__sync_bool_compare_and_swap(&f->assumptions_inited_return, 0, 1)) {
-      init_assumptions_for_return(f, f->root);
+      init_assumptions_for_return(f, f->root.as<op_function>());
       __sync_synchronize();
       f->assumptions_inited_return = 2;
     }
@@ -594,13 +594,13 @@ AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class
   }
   switch (root->type()) {
     case op_constructor_call:
-      return infer_from_ctor(f, root, out_class);
+      return infer_from_ctor(f, root.as<op_constructor_call>(), out_class);
     case op_var:
-      return infer_from_var(f, root, out_class, depth);
+      return infer_from_var(f, root.as<op_var>(), out_class, depth);
     case op_instance_prop:
-      return infer_from_instance_prop(f, root, out_class, depth);
+      return infer_from_instance_prop(f, root.as<op_instance_prop>(), out_class, depth);
     case op_func_call:
-      return infer_from_call(f, root, out_class);
+      return infer_from_call(f, root.as<op_func_call>(), out_class);
     case op_index: {
       auto index = root.as<op_index>();
       if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class, depth)) {
@@ -610,7 +610,7 @@ AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class
       }
     }
     case op_array:
-      return infer_from_array(f, root, out_class);
+      return infer_from_array(f, root.as<op_array>(), out_class);
     case op_conv_array:
       return infer_class_of_expr(f, root.as<op_conv_array>()->expr(), out_class, depth);
 

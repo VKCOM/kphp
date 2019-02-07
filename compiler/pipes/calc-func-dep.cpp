@@ -25,8 +25,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
   }
 
   //NB: There is no user functions in default values of any kind.
-  if (vertex->type() == op_func_call) {
-    VertexAdaptor<op_func_call> call = vertex;
+  if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->get_func_id();
     data.dep.push_back(other_function);
     if (other_function->is_extern()) {

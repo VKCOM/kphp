@@ -1,12 +1,11 @@
 #include "compiler/pipes/inline-defines-usages.h"
 
-#include "compiler/data/define-data.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/define-data.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   // defined('NAME') заменяем на true или false 
-  if (root->type() == op_defined) {
-    VertexAdaptor<op_defined> defined = root;
+  if (auto defined = root.try_as<op_defined>()) {
 
     kphp_error_act (
       (int)root->size() == 1 && defined->expr()->type() == op_string,

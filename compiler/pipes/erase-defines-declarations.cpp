@@ -6,8 +6,7 @@
 VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   // define('NAME', 1) внутри функций превратить в ничто для константных дефайнов — они заинлайнятся
   // а define('NAME', f()) — превратить в d$NAME = f()
-  if (root->type() == op_define) {
-    VertexAdaptor<op_define> define_op = root;
+  if (auto define_op = root.try_as<op_define>()) {
     DefinePtr define = G->get_define(define_op->name()->get_string());
 
     if (define->type() == DefineData::def_var) {

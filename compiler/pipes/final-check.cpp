@@ -35,8 +35,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     kphp_error (0, "Getting references is unsupported");
   }
   if (vertex->type() == op_eq3) {
-    const TypeData *type_left = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->lhs());
-    const TypeData *type_right = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->rhs());
+    const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
+    const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_float && !type_left->or_false_flag()) ||
         (type_right->ptype() == tp_float && !type_right->or_false_flag())) {
       kphp_warning(format("Using === with float operand"));
@@ -49,8 +49,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     }
   }
   if (vertex->type() == op_add) {
-    const TypeData *type_left = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->lhs());
-    const TypeData *type_right = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->rhs());
+    const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
+    const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) ^ (type_right->ptype() == tp_array)) {
       if (type_left->ptype() != tp_var && type_right->ptype() != tp_var) {
         kphp_warning (format("%s + %s is strange operation",
@@ -60,8 +60,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     }
   }
   if (vk::any_of_equal(vertex->type(), op_sub, op_mul, op_div, op_mod, op_pow)) {
-    const TypeData *type_left = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->lhs());
-    const TypeData *type_right = tinf::get_type(VertexAdaptor<meta_op_binary>(vertex)->rhs());
+    const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
+    const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) || (type_right->ptype() == tp_array)) {
       kphp_warning (format("%s %s %s is strange operation",
                             OpInfo::str(vertex->type()).c_str(),
@@ -218,7 +218,7 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
              "Can not use class instance in return of @kphp-lib-export function");
 
   for (auto p: function->get_params()) {
-    VertexAdaptor<op_func_param> param = p;
+    auto param = p.as<op_func_param>();
     if (param->has_default_value() && param->default_value()) {
       VertexPtr default_value = GenTree::get_actual_value(param->default_value());
       kphp_error_act(vk::any_of_equal(default_value->type(), op_int_const, op_float_const),

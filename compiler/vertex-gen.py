@@ -259,6 +259,37 @@ def output_foreach_op(data):
 
         f.write("#undef FOREACH_OP\n")
 
+def check_is_base(base, derived, data):
+    while True:
+        if derived["name"] == base["name"]:
+            return True
+        if "base_name" not in derived:
+            return False
+        for i in data:
+            if i["name"] == derived["base_name"]:
+                derived = i
+                break
+
+def output_vertex_is_base_of(data):
+    with open_file("is-base-of.h") as f:
+        f.write('#include "vertex-types.h"\n')
+        f.write("constexpr bool op_type_is_base_of_data[Operation_size * Operation_size] = {\n")
+        for base in data:
+            for derived in data:
+                if check_is_base(base, derived, data):
+                    f.write("true, ")
+                else:
+                    f.write("false, ")
+            f.write("\n")
+        f.write("};\n")
+        f.write('''
+constexpr bool op_type_is_base_of(Operation Base, Operation Derived) {
+  // gcc doesn't support indexing of array by two enums in constexpr ¯\_(ツ)_/¯
+  return op_type_is_base_of_data[Base * Operation_size + Derived];
+}
+''')
+
+
 
 if __name__ == "__main__":
     print(DIR)
@@ -278,4 +309,5 @@ if __name__ == "__main__":
         output_vertex_type(vertex, schema)
 
     output_all(data)
+    output_vertex_is_base_of(data)
     output_foreach_op(data)

@@ -1,7 +1,8 @@
 #include "compiler/pipes/check-modifications-of-const-fields.h"
-#include "common/termformat/termformat.h"
-#include "compiler/data/var-data.h"
 
+#include "common/termformat/termformat.h"
+
+#include "compiler/data/var-data.h"
 
 VertexPtr CheckModificationsOfConstFields::on_enter_vertex(VertexPtr v, LocalT *) {
   check_modification_of_const_class_field(v);
@@ -23,7 +24,7 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
       return check_modification_of_const_class_field(v.as<meta_op_unary>()->expr(), true);
 
     case op_foreach: {
-      VertexAdaptor<op_foreach_param> foreach_param = v.as<op_foreach>()->params();
+      auto foreach_param = v.as<op_foreach>()->params().as<op_foreach_param>();
       if (foreach_param->x()->ref_flag) {
         check_modification_of_const_class_field(foreach_param->xs(), true);
       }
@@ -37,7 +38,7 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
         return;
       }
 
-      VertexAdaptor<op_func_call> func_call = v;
+      auto func_call = v.as<op_func_call>();
       auto cnt_params = func_call->args().size();
       for (int i = 0; i < cnt_params; ++i) {
         auto param = func->get_params()[i].try_as<op_func_param>();
