@@ -66,7 +66,7 @@ static void check_template_function(FunctionPtr func) {
 
 static void prepare_function_misc(FunctionPtr func) {
   check_template_function(func);
-  VertexRange params = get_function_params(func->root.as<meta_op_function>());
+  VertexRange params = get_function_params(func->root);
   int param_n = (int)params.size();
   bool was_default = false;
   func->min_argn = param_n;

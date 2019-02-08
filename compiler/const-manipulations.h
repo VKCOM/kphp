@@ -58,7 +58,7 @@ protected:
         return on_non_const(v);
       }
     }
-    return on_array_finish(v.as<op_array>());
+    return on_array_finish(v);
   }
 
 protected:

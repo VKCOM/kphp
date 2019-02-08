@@ -588,7 +588,10 @@
   },
   {
     "sons": {
-      "params": 0,
+      "params": {
+        "type": "op_foreach_param",
+        "id": 0
+      },
       "cmd": 1
     },
     "name": "op_foreach",

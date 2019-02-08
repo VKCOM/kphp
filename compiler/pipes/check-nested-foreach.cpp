@@ -11,7 +11,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
   local->to_remove = 0;
   local->to_forbid = VarPtr();
   if (auto foreach_v = vertex.try_as<op_foreach>()) {
-    auto params = foreach_v->params().as<op_foreach_param>();
+    auto params = foreach_v->params();
     VertexPtr xs = params->xs();
     while (xs->type() == op_index) {
       xs = xs.as<op_index>()->array();

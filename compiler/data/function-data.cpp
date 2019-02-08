@@ -45,7 +45,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
   kphp_assert_msg(func->is_template, "function must be template");
-  auto param_list = func->root.as<meta_op_function>()->params().as<op_func_param_list>();
+  auto param_list = func->root->params().as<op_func_param_list>();
   VertexRange func_args = param_list->params();
   auto func_args_n = static_cast<size_t>(func_args.size());
 

@@ -175,6 +175,7 @@ def output_sons(f, type_data):
             optional = "optional" in son_properties
             virtual = "virtual" if "virtual" in son_properties else ""
             override = "override" if "override" in son_properties else ""
+            type = son_properties["type"] if "type" in son_properties else None
 
             if son_id < 0:
                 son_id = "size() - " + str(-son_id)
@@ -185,9 +186,12 @@ def output_sons(f, type_data):
                 f.write("  {virtual} bool has_{son_name}() const {override} {{ return check_range({son_id}); }}\n"
                         .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override))
 
+            if type is not None:
+                f.write("  {virtual} VertexAdaptor<{type}> {son_name}() const {override} {{ return ith({son_id}).as<{type}>(); }}\n"
+                        .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override, type=type))
+                son_name += "_ref"
             f.write("  {virtual} VertexPtr &{son_name}() {override} {{ return ith({son_id}); }}\n"
                     .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override))
-
             f.write("  {virtual} const VertexPtr &{son_name}() const {override} {{ return ith({son_id}); }}\n"
                     .format(virtual=virtual, son_name=son_name, son_id=son_id, override=override))
 

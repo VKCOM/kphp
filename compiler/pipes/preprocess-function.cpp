@@ -248,7 +248,7 @@ private:
     new_call->copy_location_and_flags(*call);
     new_call->extra_type = call->extra_type;
     new_call->set_func_id(func);
-    new_call->str_val = call.as<op_func_call>()->str_val;
+    new_call->str_val = call->str_val;
 
     return new_call;
   }

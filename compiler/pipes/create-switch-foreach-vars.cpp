@@ -30,7 +30,7 @@ VertexPtr CreateSwitchForeachVarsPass::process_switch(VertexAdaptor<op_switch> s
 }
 
 VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexAdaptor<op_foreach> foreach_v) {
-  auto foreach_param = foreach_v->params().as<op_foreach_param>();
+  auto foreach_param = foreach_v->params();
   auto x = foreach_param->x().as<op_var>();
   //VertexPtr xs = foreach_param->xs();
 

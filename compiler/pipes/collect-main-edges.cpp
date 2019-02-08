@@ -261,7 +261,7 @@ void CollectMainEdgesPass::on_return(VertexAdaptor<op_return> v) {
 }
 
 void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
-  auto params = foreach_op->params().as<op_foreach_param>();
+  auto params = foreach_op->params();
   VertexPtr xs, x, key, temp_var;
   xs = params->xs();
   x = params->x();

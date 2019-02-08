@@ -227,7 +227,7 @@ void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
       v->type() == op_seq || v->type() == op_case || v->type() == op_default ||
       v->type() == op_noerr) {
     if (auto foreach_v = v.try_as<op_foreach>()) {
-      auto params = foreach_v->params().as<op_foreach_param>();
+      auto params = foreach_v->params();
       VertexPtr x = params->x();
       if (x->ref_flag) {
         VertexPtr xs = params->xs();

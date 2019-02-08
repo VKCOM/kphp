@@ -2490,7 +2490,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
 
 void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
   kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
-  auto params = root->params().as<op_foreach_param>();
+  auto params = root->params();
 
   //foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
@@ -2526,7 +2526,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
 }
 
 void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
-  auto params = root->params().as<op_foreach_param>();
+  auto params = root->params();
   //foreach (xs as [key =>] x)
   VertexPtr x = params->x();
   VertexPtr xs = params->xs();
@@ -2566,7 +2566,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
 }
 
 void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
-  auto params = root->params().as<op_foreach_param>();
+  auto params = root->params();
   VertexPtr cmd = root->cmd();
 
   //foreach (xs as [key =>] x)

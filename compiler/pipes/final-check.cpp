@@ -71,7 +71,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   }
 
   if (vertex->type() == op_foreach) {
-    VertexPtr arr = vertex.as<op_foreach>()->params().as<op_foreach_param>()->xs();
+    VertexPtr arr = vertex.as<op_foreach>()->params()->xs();
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at(Key::any_key());
@@ -164,7 +164,7 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
 
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr f = call->get_func_id();
-  VertexRange func_params = f->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
+  VertexRange func_params = f->root->params().as<op_func_param_list>()->params();
 
   VertexRange call_params = call->args();
   int call_params_n = static_cast<int>(call_params.size());
@@ -184,7 +184,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
 
     kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
-    VertexRange cur_params = func_ptr_of_callable->root.as<meta_op_function>()->params().as<op_func_param_list>()->params();
+    VertexRange cur_params = func_ptr_of_callable->root->params().as<op_func_param_list>()->params();
 
     int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
     for (auto arg : cur_params) {

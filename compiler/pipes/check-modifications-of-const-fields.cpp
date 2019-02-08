@@ -24,7 +24,7 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
       return check_modification_of_const_class_field(v.as<meta_op_unary>()->expr(), true);
 
     case op_foreach: {
-      auto foreach_param = v.as<op_foreach>()->params().as<op_foreach_param>();
+      auto foreach_param = v.as<op_foreach>()->params();
       if (foreach_param->x()->ref_flag) {
         check_modification_of_const_class_field(foreach_param->xs(), true);
       }

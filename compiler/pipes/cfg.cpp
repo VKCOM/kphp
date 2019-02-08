@@ -888,7 +888,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
 
       auto foreach_op = tree_node.as<op_foreach>();
 
-      auto foreach_param = foreach_op->params().as<op_foreach_param>();
+      auto foreach_param = foreach_op->params();
       Node val_start, val_finish;
 
       create_cfg(foreach_param->xs(), &val_start, &val_finish);

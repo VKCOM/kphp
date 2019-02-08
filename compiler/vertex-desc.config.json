@@ -129,6 +129,9 @@
                 },
                 "override": {
                   "enum": [true]
+                },
+                "type": {
+                  "type": "string"
                 }
               },
               "required": ["id"],
