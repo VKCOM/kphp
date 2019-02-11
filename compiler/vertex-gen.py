@@ -288,7 +288,7 @@ def output_vertex_is_base_of(data):
         f.write("};\n")
         f.write('''
 constexpr bool op_type_is_base_of(Operation Base, Operation Derived) {
-  // gcc doesn't support indexing of array by two enums in constexpr ¯\_(ツ)_/¯
+  // gcc doesn't support indexing of array by two enums in constexpr
   return op_type_is_base_of_data[Base * Operation_size + Derived];
 }
 ''')
