@@ -66,7 +66,13 @@ public:
       root = new_root;
     }
 
-    if (root->type() == op_func_call || root->type() == op_func_ptr || root->type() == op_constructor_call) {
+    if (auto instanceof = root.try_as<op_instanceof>()) {
+      auto str_repr_of_class = GenTree::get_actual_value(instanceof->rhs())->get_string();
+      instanceof->derived_class = G->get_class(str_repr_of_class);
+      kphp_error(instanceof->derived_class, format("Can't find class: %s", str_repr_of_class.c_str()));
+    }
+
+    if (vk::any_of_equal(root->type(), op_func_call, op_func_ptr, op_constructor_call)) {
       root = try_set_func_id(root);
     }
 
@@ -457,7 +463,7 @@ private:
     if (call->type() == op_constructor_call) {
       ClassPtr klass = G->get_class(call->get_string());
       if (klass) {
-        kphp_error(0, format("Calling 'new %s()', but this class is fully static", call->get_c_string()));
+        kphp_error(0, format("Calling 'new %s()', but this class is %s", call->get_c_string(), klass->is_interface() ? "interface" : "fully static"));
       } else {
         kphp_error(0, format("Class %s does not exist", call->get_c_string()));
       }

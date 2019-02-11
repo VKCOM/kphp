@@ -1,5 +1,7 @@
 #include "compiler/pipes/calc-func-dep.h"
 
+#include "compiler/inferring/public.h"
+
 #include "compiler/data/var-data.h"
 
 VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::LocalT *local) {
@@ -24,12 +26,22 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
     //}
   }
 
+  if (auto instanceof = vertex.try_as<op_instanceof>()) {
+    current_function->class_dep.insert(instanceof->derived_class);
+  }
+
   //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->get_func_id();
     data.dep.push_back(other_function);
     if (other_function->is_extern()) {
       local->extern_func_call = vertex.as<op_func_call>();
+      if (other_function->cpp_template_call) {
+        auto tp = tinf::get_type(call);
+        if (auto klass = tp->class_type()) {
+          current_function->class_dep.insert(klass);
+        }
+      }
       return vertex;
     }
 

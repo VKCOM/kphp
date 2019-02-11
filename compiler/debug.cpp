@@ -44,7 +44,9 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_case] = "tok_case";
   TOKEN_TYPE_NAMES[tok_switch] = "tok_switch";
   TOKEN_TYPE_NAMES[tok_class] = "tok_class";
+  TOKEN_TYPE_NAMES[tok_interface] = "tok_interface";
   TOKEN_TYPE_NAMES[tok_extends] = "tok_extends";
+  TOKEN_TYPE_NAMES[tok_implements] = "tok_implements";
   TOKEN_TYPE_NAMES[tok_namespace] = "tok_namespace";
   TOKEN_TYPE_NAMES[tok_use] = "tok_use";
   TOKEN_TYPE_NAMES[tok_const] = "tok_const";
@@ -162,6 +164,7 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_protected] = "tok_protected";
   TOKEN_TYPE_NAMES[tok_phpdoc_kphp] = "tok_phpdoc_kphp";
   TOKEN_TYPE_NAMES[tok_clone] = "tok_clone";
+  TOKEN_TYPE_NAMES[tok_instanceof] = "tok_instanceof";
   TOKEN_TYPE_NAMES[tok_end] = "tok_end";
 }
 

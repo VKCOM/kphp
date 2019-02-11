@@ -479,7 +479,9 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
     AssumType assum = assumption_get_for_var(current_function, var->name, cl);
     if (assum == assum_instance) {                  // var == cl
       create_less(var, cl->type_data);
-      create_less(cl->type_data, var);
+      // You could specify php-doc that some var is `Interface class` but always assign to that var only one class.
+      // In this situation we will infer that type of this var is concrete class not Interface
+      // create_less(cl->type_data, var);
     } else if (assum == assum_instance_array) {     // cl[] <= var <= OrFalse<cl[]>
       create_less(var, TypeData::create_array_type_data(cl->type_data, true));
       create_less(TypeData::create_array_type_data(cl->type_data), var);

@@ -299,6 +299,7 @@ extern "C" {
 template<typename I>
 bool f$instance_cache_store(const string &key, const I &instance, int ttl = 0) {
   static_assert(is_class_instance<I>::value, "class_instance<> type expected");
+  static_assert(!std::is_abstract<typename I::ClassType>::value, "instance_cache_store doesn't support interfaces");
   if (instance.is_null()) {
     return false;
   }

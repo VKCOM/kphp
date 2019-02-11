@@ -158,7 +158,7 @@ void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_arg_ref> arg, Verte
         if (klass->is_class() && klass->members.has_any_instance_method()) {
           set_lca(klass);
         } else {
-          err_msg = "class passed as type-string should be non-static";
+          err_msg = format("class passed as type-string may not be %s", (klass->is_interface() ? "interface" : "static"));
         }
       } else {
         err_msg = format("bad %d parameter: can't find class %s", arg->int_val, class_name->c_str());

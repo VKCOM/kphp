@@ -192,6 +192,8 @@ function is_real ($v ::: Any) ::: bool;
 function is_string ($v ::: Any) ::: bool;
 function is_array ($v ::: Any) ::: bool;
 function is_object ($v ::: Any) ::: bool;
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast($instance ::: Any, $to_type ::: string) ::: instance<^2>;
 function get_class ($v ::: Any) ::: string;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
@@ -412,7 +414,6 @@ function strip_tags ($str ::: string, $allow ::: string = "") ::: string;
 function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
 function strnatcmp ($str1 ::: string, $str2 ::: string) ::: int;
 function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
-
 
 function ip2long ($ip ::: string) ::: OrFalse <int>;
 function ip2ulong ($ip ::: string) ::: OrFalse <string>;

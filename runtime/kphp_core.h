@@ -619,6 +619,15 @@ inline bool f$is_double(const T &v);
 template<class T>
 inline bool f$is_real(const T &v);
 
+template<class Derived, class Base>
+inline bool f$is_a(const class_instance<Base> &base) {
+  return base.template is_a<Derived>();
+}
+
+template<class ClassInstanceDerived, class Base>
+inline ClassInstanceDerived f$instance_cast(const class_instance<Base> &base, const string &) {
+  return base.template cast_to<typename ClassInstanceDerived::ClassType>();
+}
 
 inline const char *get_type_c_str(const bool &v);
 inline const char *get_type_c_str(const int &v);
@@ -1876,7 +1885,6 @@ template<class T>
 bool f$is_real(const T &v) {
   return f$is_float(v);
 }
-
 
 const char *get_type_c_str(const bool &) {
   return "boolean";

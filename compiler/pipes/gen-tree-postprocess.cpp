@@ -89,6 +89,12 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     }
   }
 
+  if (auto instanceof = root.try_as<op_instanceof>()) {
+    kphp_error(instanceof->rhs()->type() == op_func_name, "right side of `instanceof` should be class name");
+    instanceof->rhs()->set_string(instanceof->rhs()->get_string() + "::class");
+    return root;
+  }
+
   if (auto call = root.try_as<op_func_call>()) {
     auto &name = call->get_string();
 

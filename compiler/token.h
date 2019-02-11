@@ -37,7 +37,9 @@ enum TokenType {
   tok_case,
   tok_switch,
   tok_class,
+  tok_interface,
   tok_extends,
+  tok_implements,
   tok_namespace,
   tok_use,
   tok_const,
@@ -175,6 +177,7 @@ enum TokenType {
   tok_phpdoc,
 
   tok_clone,
+  tok_instanceof,
 
   tok_end
 };

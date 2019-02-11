@@ -3,6 +3,15 @@
 
 #include "runtime/allocator.h"
 
+class abstract_refcountable_php_interface {
+public:
+  virtual ~abstract_refcountable_php_interface() = default;
+  virtual void add_ref() = 0;
+  virtual void release() = 0;
+  virtual uint32_t get_refcnt() = 0;
+  virtual void set_refcnt(uint32_t new_refcnt) = 0;
+};
+
 template<class Derived, class Base = void>
 class refcountable_php_classes : public Base {
 public:

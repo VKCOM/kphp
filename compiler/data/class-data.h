@@ -32,7 +32,8 @@ public:
 
   vector<StrDependence> str_dependents; // extends / implements / use trait на время парсинга, до связки ptr'ов
   ClassPtr parent_class;                // extends
-  vector<ClassPtr> implements;          // на будущее
+  vector<InterfacePtr> implements;      // на будущее
+  vector<ClassPtr> derived_classes;
   vector<ClassPtr> traits_uses;         // на будущее
 
   FunctionPtr construct_function;
@@ -70,8 +71,10 @@ public:
   bool is_trait() const { return class_type == ClassType::trait; }
   virtual bool is_lambda() const { return false; }
 
+  InterfacePtr get_common_interface(ClassPtr other) const;
+
   virtual bool is_fully_static() const {
-    return !construct_function;
+    return is_class() && !construct_function;
   }
 
   void set_name_and_src_name(const string &name);

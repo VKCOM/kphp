@@ -115,6 +115,9 @@ void OpInfo::init_static() {
   add_unary_op(curP, tok_and, op_addr);
   ++curP;
 
+  add_binary_op(curP, tok_instanceof, op_instanceof);
+  ++curP;
+
   add_unary_op(curP, tok_conv_int, op_conv_int);
   add_unary_op(curP, tok_conv_float, op_conv_float);
   add_unary_op(curP, tok_conv_uint, op_conv_uint);

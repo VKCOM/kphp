@@ -153,11 +153,14 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 
 
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
-  child_class->parent_class = parent_class;
+  kphp_error_return(parent_class->is_class() && child_class->is_class(),
+                    format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
 
-  kphp_error(!child_class->members.get_constructor() && !child_class->parent_class->members.get_constructor(),
-             format("Invalid class extends %s and %s: extends is available only if classes are only-static",
-                    child_class->name.c_str(), child_class->parent_class->name.c_str()));
+  kphp_error_return(!child_class->members.has_any_instance_method() && !parent_class->members.has_any_instance_method(),
+                    format("Invalid class extends %s and %s: extends is available only if classes are only-static",
+                           child_class->name.c_str(), parent_class->name.c_str()));
+
+  child_class->parent_class = parent_class;
 
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
@@ -165,6 +168,14 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
       inherit_static_method_from_parent(child_class, m, function_stream);
     });
   }
+}
+
+void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class) {
+  kphp_error(interface_class->is_interface(),
+             format("Error implements %s and %s", child_class->name.c_str(), interface_class->name.c_str()));
+  child_class->implements.emplace_back(interface_class);
+  AutoLocker<Lockable *> locker(&(*interface_class));
+  interface_class->derived_classes.emplace_back(child_class);
 }
 
 /**
@@ -180,7 +191,7 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         inherit_child_class_from_parent(klass, dep_class, function_stream);
         break;
       case ClassType::interface:
-        kphp_assert(0 && "implementing interfaces is not supported yet");
+        inherit_class_from_interface(klass, dep_class);
         break;
       case ClassType::trait:
         kphp_assert(0 && "mixin traits is not supported yet");
@@ -233,5 +244,10 @@ void SortAndInheritClassesF::check_on_finish() {
   for (auto c : G->get_classes()) {
     auto node = ht.at(vk::std_hash(c->name));
     kphp_error(node->data.done, format("class `%s` has unresolved dependencies", c->name.c_str()));
+
+    // For stable code generation of interface method body
+    if (c->is_interface()) {
+      std::sort(c->derived_classes.begin(), c->derived_classes.end());
+    }
   }
 }

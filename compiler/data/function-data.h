@@ -52,6 +52,7 @@ public:
   set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
+  std::set<ClassPtr> class_dep;
   FunctionPtr function_in_which_lambda_was_created;
   //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
 

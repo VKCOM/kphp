@@ -132,7 +132,8 @@ public:
                                             FunctionPtr cur_function,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
 
-  VertexPtr get_class(const Token *phpdoc_token);
+  VertexPtr get_class(const Token *phpdoc_token, ClassType class_type);
+  void parse_extends_implements();
 
 private:
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();

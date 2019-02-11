@@ -818,6 +818,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
 
   VertexPtr def_val = get_def_value();
   if (def_val) {
+    kphp_error(!(cur_class && cur_class->is_interface()), "Methods of interfaces may not include default values");
     next.push_back(def_val);
   }
   auto v = VertexAdaptor<op_func_param>::create(next);
@@ -1590,6 +1591,7 @@ VertexPtr GenTree::get_class_member(const Token *phpdoc_token) {
     return get_function(phpdoc_token, access_type, (mask & ClassMemberModifier::cm_final) != 0);
   }
   if (cur_tok == tok_var_name) {
+    kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
     return is_static ? get_static_field_list(phpdoc_token, access_type) : get_instance_var_list(phpdoc_token, access_type);
   }
 
@@ -1658,6 +1660,7 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
 
   // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
+    CE(!kphp_error(!(cur_class && cur_class->is_interface()), format("methods in interface must have empty body: %s", cur_class->name.c_str())));
     is_top_of_the_function_ = true;
     cur_function->root->cmd() = get_statement();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
@@ -1667,6 +1670,7 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
       func_force_return(cur_function->root);
     }
   } else {
+    CE(!kphp_error((cur_class && cur_class->is_interface()) || processing_file->is_builtin(), "function must have non-empty body"));
     CE (expect(tok_semicolon, "';'"));
     cur_function->type = FunctionData::func_extern;
     cur_function->root->cmd() = VertexAdaptor<op_seq>::create();
@@ -1721,12 +1725,34 @@ static inline bool is_class_name_allowed(const string &name) {
   return disallowed_names.find(name) == disallowed_names.end();
 }
 
-VertexPtr GenTree::get_class(const Token *phpdoc_token) {
+void GenTree::parse_extends_implements() {
+  if (test_expect(tok_extends)) {     // extends идёт раньше implements, менять местами нельзя
+    next_cur();                       // (в php тоже так)
+    kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
+    auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(cur->str_val), '\\');
+    cur_class->str_dependents.emplace_back(ClassType::klass, full_class_name);
+    next_cur();
+  }
+
+  if (test_expect(tok_implements)) {
+    next_cur();
+    kphp_error(test_expect(tok_func_name), "Class name expected after 'implements'");
+    string full_class_name = resolve_uses(cur_function, static_cast<std::string>(cur->str_val), '\\');
+    cur_class->str_dependents.emplace_back(ClassType::interface, full_class_name);
+    next_cur();
+  }
+}
+
+VertexPtr GenTree::get_class(const Token *phpdoc_token, ClassType class_type) {
   AutoLocation class_location(this);
-  CE (expect(tok_class, "'class'"));
+  CE(vk::any_of_equal(cur->type(), tok_class, tok_interface));
+  next_cur();
+
   CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
 
   string name_str = static_cast<string>(cur->str_val);
+  next_cur();
+
   string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
   kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
              "Class name is the same as one of 'use' at the top of the file");
@@ -1738,14 +1764,7 @@ VertexPtr GenTree::get_class(const Token *phpdoc_token) {
     kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
   }
 
-  next_cur();
-  if (test_expect(tok_extends)) {
-    next_cur();
-    CE (!kphp_error(test_expect(tok_func_name), "Class name expected after 'extends'"));
-    string full_extends_class_name = resolve_uses(cur_function, static_cast<string>(cur->str_val), '\\');
-    cur_class->str_dependents.emplace_back(ClassType::klass, full_extends_class_name);
-    next_cur();
-  }
+  parse_extends_implements();
 
   auto name_vertex = VertexAdaptor<op_func_name>::create();
   set_location(name_vertex, AutoLocation(this));
@@ -1754,6 +1773,7 @@ VertexPtr GenTree::get_class(const Token *phpdoc_token) {
   auto class_vertex = VertexAdaptor<op_class>::create(name_vertex);
   set_location(class_vertex, class_location);
 
+  cur_class->class_type = class_type;
   cur_class->file_id = processing_file;
   cur_class->phpdoc_token = phpdoc_token ? new Token(*phpdoc_token) : nullptr;
   cur_class->root = class_vertex;
@@ -1765,11 +1785,12 @@ VertexPtr GenTree::get_class(const Token *phpdoc_token) {
   cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
+    CE (!kphp_error(!cur_class->is_interface(), "constructor in interfaces have not been supported yet"));
     if (!cur_class->is_builtin()) {
       cur_class->patch_func_constructor(constructor_method->root);
     }
     G->register_and_require_function(constructor_method, parsed_os, true);
-  } else if (cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) {
+  } else if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) && !cur_class->is_interface()) {
     cur_class->create_default_constructor(line_num, parsed_os);
   }
 
@@ -1896,9 +1917,6 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
   is_top_of_the_function_ &= vk::any_of_equal(type, tok_global, tok_opbrc);
 
   switch (type) {
-    case tok_class:
-      res = get_class(phpdoc_token);
-      return res;
     case tok_opbrc:
       next_cur();
       res = get_seq();
@@ -2083,6 +2101,12 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
+    case tok_class:
+      res = get_class(phpdoc_token, ClassType::klass);
+      return res;
+    case tok_interface:
+      res = get_class(phpdoc_token, ClassType::interface);
+      return res;
     default:
       res = get_expression();
       if (!res) {

@@ -52,6 +52,7 @@
 #include "compiler/pipes/final-check.h"
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
+#include "compiler/pipes/generate-interface-methods.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
@@ -234,6 +235,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CreateSwitchForeachVarsPass>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
+    >> PipeC<GenerateInterfaceMethods>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}

@@ -1738,5 +1738,20 @@
       "type": "common_op",
       "str": "clone"
     }
+  },
+  {
+    "name": "op_instanceof",
+    "base_name": "meta_op_binary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "instanceof"
+    },
+    "extra_fields": {
+      "derived_class": {
+        "type": "ClassPtr"
+      }
+    }
   }
 ]

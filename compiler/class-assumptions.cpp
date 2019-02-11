@@ -67,12 +67,21 @@ std::string assumption_debug(const Assumption &assumption) {
 void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
   bool exists = false;
 
-  for (const auto &a : f->assumptions_for_vars) {
+  for (auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
-      kphp_error(a.assum_type == assum && a.klass == klass,
-                 format("%s()::$%s is both %s and %s\n", f->get_human_readable_name().c_str(), var_name.c_str(),
-                         a.klass ? a.klass->name.c_str() : "[primitive]",
-                         klass ? klass->name.c_str() : "[primitive]"));
+      bool ok = a.assum_type == assum;
+      if (ok && a.klass != klass) {
+        ok = false;
+        if (klass->is_interface() || a.klass->is_interface()) {
+          if (auto common_interface = klass->get_common_interface(a.klass)) {
+            a.klass = common_interface;
+            ok = true;
+          }
+        }
+      }
+      kphp_error(ok, format("%s()::$%s is both %s and %s\n", f->get_human_readable_name().c_str(), var_name.c_str(),
+                            a.klass ? a.klass->name.c_str() : "[primitive]",
+                            klass ? klass->name.c_str() : "[primitive]"));
       exists = true;
     }
   }

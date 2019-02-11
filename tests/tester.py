@@ -449,7 +449,8 @@ def get_all_tests(args):
         ["errors"],
         ["libs"],
         ["variadic_args"],
-        ["clone_keyword"]
+        ["clone_keyword"],
+        ["interfaces"]
     ]
 
     for tags in test_tags:

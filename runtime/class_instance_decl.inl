@@ -1,5 +1,7 @@
 #pragma once
+
 #include "common/smart_ptrs/intrusive_ptr.h"
+#include "common/type_traits/traits.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
@@ -69,6 +71,28 @@ public:
   bool is_null() const { return !static_cast<bool>(o); }
   inline string to_string() const;
   const char *get_class() const { return o ? o->get_class() : "null"; }
+
+  template<class D>
+  bool is_a() const {
+    return is_a_helper<D, T>();
+  }
+
+  template<class D, class CurType, class Derived = vk::enable_if_t<std::is_polymorphic<CurType>{}, D>, class dummy = void>
+  bool is_a_helper() const {
+    return dynamic_cast<Derived *>(o.get());
+  }
+
+  template<class D, class CurType, class Derived = vk::enable_if_t<!std::is_polymorphic<CurType>{}, D>>
+  bool is_a_helper() const {
+    return std::is_same<T, Derived>{};
+  }
+
+  template<class Derived>
+  class_instance<Derived> cast_to() const {
+    class_instance<Derived> res;
+    res.o = vk::dynamic_pointer_cast<Derived>(o);
+    return res;
+  }
 
   template<class T1>
   friend inline bool eq2(const class_instance<T1> &lhs, const class_instance<T1> &rhs);

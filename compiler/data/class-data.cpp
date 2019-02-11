@@ -146,6 +146,48 @@ void ClassData::patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &p
   params_next.emplace(params_next.begin(), param_this);
 }
 
+InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
+  if (!other) {
+    return {};
+  }
+
+  ClassPtr self{const_cast<ClassData *>(this)};
+  InterfacePtr result;
+
+  if (class_type == other->class_type) {
+    switch (class_type) {
+      case ClassType::klass: {
+        auto common_interface_it = std::find_first_of(implements.begin(), implements.end(), other->implements.begin(), other->implements.end());
+        if (common_interface_it != implements.end()) {
+          result = *common_interface_it;
+        }
+        break;
+      }
+      case ClassType::interface: {
+        if (self == other) {
+          result = other;
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  } else {
+    if (other->is_class()) {
+      std::swap(self, other);
+    }
+
+    if (self->is_class() && other->is_interface()) {
+      auto interface_it = std::find(self->implements.begin(), self->implements.end(), other);
+      if (interface_it != self->implements.end()) {
+        result = *interface_it;
+      }
+    }
+  }
+
+  return result;
+}
+
 VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
   auto this_var = VertexAdaptor<op_var>::create();
   this_var->str_val = "this";

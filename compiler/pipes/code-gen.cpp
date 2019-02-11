@@ -238,6 +238,7 @@ public:
   void add_var_signature_depends(const VarPtr &var);
 
   void add_class_include(const ClassPtr &klass);
+  void add_implements_include(const ClassPtr &klass);
 
   void compile(CodeGenerator &W) const;
 
@@ -339,10 +340,19 @@ private:
   inline void declare_txt_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const;
 };
 
+struct InterfaceDeclaration {
+  InterfacePtr interface;
+  inline InterfaceDeclaration(InterfacePtr interface);
+  inline void compile(CodeGenerator &W) const;
+};
+
 struct ClassDeclaration {
   ClassPtr klass;
   inline ClassDeclaration(ClassPtr klass);
   inline void compile(CodeGenerator &W) const;
+  static inline void compile_get_class(CodeGenerator &W, ClassPtr klass);
+private:
+  inline void compile_includes(CodeGenerator &W) const;
 };
 
 struct VarDeclaration {
@@ -799,6 +809,10 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     }
   }
 
+  for (auto to_include : function->class_dep) {
+    add_class_include(to_include);
+  }
+
   for (auto local_var : function->local_var_ids) {
     add_var_signature_depends(local_var);
   }
@@ -816,6 +830,14 @@ void IncludesCollector::add_function_signature_depends(const FunctionPtr &functi
 
 void IncludesCollector::add_class_include(const ClassPtr &klass) {
   classes_.emplace(klass);
+}
+
+void IncludesCollector::add_implements_include(const ClassPtr &klass) {
+  if (!klass->implements.empty()) {
+    for (auto &interface : klass->implements) {
+      classes_.emplace(interface);
+    }
+  }
 }
 
 void IncludesCollector::add_var_signature_depends(const VarPtr &var) {
@@ -1033,6 +1055,28 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
   }
 }
 
+InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
+  interface(interface) {
+}
+
+void InterfaceDeclaration::compile(CodeGenerator &W) const {
+  W << OpenFile(interface->header_name, interface->get_subdir());
+  W << "#pragma once" << NL;
+
+  W << OpenNamespace() << NL;
+
+  W << "struct " << interface->src_name << " : public abstract_refcountable_php_interface " << BEGIN;
+
+  W << "virtual ";
+  ClassDeclaration::compile_get_class(W, interface);
+
+  W << END << ";" << NL;
+
+  W << CloseNamespace();
+
+  W << CloseFile();
+}
+
 ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
@@ -1045,24 +1089,30 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     << "struct " << klass->src_name << ";" << NL
     << CloseNamespace();
 
-  IncludesCollector includes;
-  klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
-    includes.add_var_signature_depends(f.var);
-  });
-
-  W << includes;
+  compile_includes(W);
 
   W << OpenNamespace();
-  W << NL << "struct " << klass->src_name << " final : public refcountable_php_classes<" << klass->src_name << "> " << BEGIN << NL;
+
+  InterfacePtr interface;
+  if (!klass->implements.empty()) {
+    kphp_assert(klass->implements.size() == 1);
+    interface = klass->implements.front();
+  }
+
+  W << NL << "struct " << klass->src_name << " final : public refcountable_php_classes<" << klass->src_name;
+  if (interface) {
+    W << ", " << interface->src_name;
+  }
+  W << "> " << BEGIN;
+
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;
   });
 
   if (!klass->is_lambda()) {
-    W << NL << "inline const char *get_class() const " << BEGIN << "return ";
-    compile_string_raw(klass->name, W);
-    W << ";" << NL << END << NL << NL;
+    compile_get_class(W, klass);
 
+    W << NL;
     W << "template<class Visitor>" << NL
       << "static void accept(Visitor &visitor) " << BEGIN;
         klass->members.for_each([&](const ClassMemberInstanceField &f) {
@@ -1074,6 +1124,27 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << END << ";" << NL;
   W << CloseNamespace();
   W << CloseFile();
+}
+
+inline void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
+  W << "const char *get_class() const " << (klass->implements.empty() ? "" : "final") << BEGIN;
+  {
+    W << "return ";
+    compile_string_raw(klass->name, W);
+    W << ";" << NL;
+  }
+  W << END << NL;
+}
+
+void ClassDeclaration::compile_includes(CodeGenerator &W) const {
+  IncludesCollector includes;
+  klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
+    includes.add_var_signature_depends(f.var);
+  });
+
+  includes.add_implements_include(klass);
+
+  W << includes;
 }
 
 
@@ -2067,6 +2138,11 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   auto lhs_tp = tinf::get_type(lhs);
   auto rhs_tp = tinf::get_type(rhs);
 
+  if (auto instanceof = root.try_as<op_instanceof>()) {
+    W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
+    return;
+  }
+
   if (root->type() == op_add) {
     if (lhs_tp->ptype() == tp_array && rhs_tp->ptype() == tp_array && type_out(lhs_tp) != type_out(rhs_tp)) {
       const TypeData *res_tp = tinf::get_type(root)->const_read_at(Key::any_key());
@@ -2107,7 +2183,6 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
     " " << root_type_str << " " <<
     Operand(rhs, root->type(), false);
 }
-
 
 void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
   VertexPtr cond = root->cond();
@@ -3824,9 +3899,14 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_noerr:
       compile_noerr(root.as<op_noerr>(), W);
       break;
-    case op_clone:
+    case op_clone: {
+      auto tp = tinf::get_type(root);
+      if (auto klass = tp->class_type()) {
+        kphp_error_return(!klass->is_interface(), "cloning of interfaces have not been supported yet");
+      }
       W << root.as<op_clone>()->expr() << ".clone()";
       break;
+    }
     default:
     kphp_fail();
       break;
@@ -3956,8 +4036,22 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   }
 
   for (const auto &c : all_classes) {
-    if (ClassData::does_need_codegen(c)) {
-      W << Async(ClassDeclaration(c));
+    if (!ClassData::does_need_codegen(c)) {
+      continue;
+    }
+
+    switch (c->class_type) {
+      case ClassType::klass:
+        W << Async(ClassDeclaration(c));
+        break;
+      case ClassType::interface:
+        W << Async(InterfaceDeclaration(c));
+        break;
+
+      case ClassType::trait:
+        /* fallthrough */
+      default:
+        kphp_assert(false);
     }
   }
 

@@ -27,6 +27,7 @@ as, tok_as
 case, tok_case
 switch, tok_switch
 class, tok_class
+interface, tok_interface
 const, tok_const
 default, tok_default
 do, tok_do
@@ -85,3 +86,5 @@ protected, tok_protected
 use, tok_use
 extends, tok_extends
 clone, tok_clone
+implements, tok_implements
+instanceof, tok_instanceof
