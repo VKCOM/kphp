@@ -611,8 +611,13 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_str_begin:
       res = get_string_build();
       break;
+    case tok_clone: {
+      next_cur();
+      res = VertexAdaptor<op_clone>::create(get_expr_top(false));
+      break;
+    }
     default:
-      return VertexPtr();
+      return {};
   }
 
   if (return_flag) {

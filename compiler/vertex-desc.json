@@ -1791,5 +1791,15 @@
       "type": "common_op",
       "str": "class"
     }
+  },
+  {
+    "name": "op_clone",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "clone"
+    }
   }
 ]

@@ -25,6 +25,38 @@ public:
     return default_check_function(function) && !function->is_extern() && !function->is_template;
   }
 
+  VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
+    if (auto clone_root = root.try_as<op_clone>()) {
+      ClassPtr klass;
+      auto assum = infer_class_of_expr(stage::get_function(), clone_root, klass);
+      kphp_error_act(assum == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
+      kphp_error_act(!klass->is_builtin(), format("`%s` class is forbidden for clonning", klass->name.c_str()), return clone_root);
+
+      if (klass->members.has_instance_method("__clone")) {
+        auto location = clone_root->get_location();
+
+        auto tmp_var = VertexAdaptor<op_var>::create();
+        tmp_var->set_string(gen_unique_name("tmp_for_clone"));
+        tmp_var->extra_type = op_ex_var_superlocal_inplace;
+
+        assumption_add_for_var(stage::get_function(), assum_instance, tmp_var->get_string(), klass);
+
+        auto set_clone_to_tmp = VertexAdaptor<op_set>::create(tmp_var, clone_root);
+
+        auto call_of___clone = VertexAdaptor<op_func_call>::create(tmp_var);
+        call_of___clone->set_string("__clone");
+        call_of___clone->extra_type = op_ex_func_call_arrow;
+
+        call_of___clone = try_set_func_id(call_of___clone).as<op_func_call>();
+
+        root =  VertexAdaptor<op_seq_rval>::create(set_clone_to_tmp, call_of___clone, tmp_var);
+        set_location(location, tmp_var, set_clone_to_tmp, call_of___clone, root);
+      }
+    }
+
+    return root;
+  }
+
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
     if (root->type() == op_function_c) {
       auto new_root = VertexAdaptor<op_string>::create();

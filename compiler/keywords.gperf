@@ -83,3 +83,4 @@ private, tok_private
 protected, tok_protected
 use, tok_use
 extends, tok_extends
+clone, tok_clone

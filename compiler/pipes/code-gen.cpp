@@ -3986,6 +3986,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_noerr:
       compile_noerr(root.as<op_noerr>(), W);
       break;
+    case op_clone:
+      W << root.as<op_clone>()->expr() << ".clone()";
+      break;
     default:
     kphp_fail();
       break;

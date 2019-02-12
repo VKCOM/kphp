@@ -10,6 +10,12 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->is_extern()) {
     return false;
   }
+
+  if (function->is_instance_function() && get_local_name_from_global_$$(function->name) == "__clone") {
+    kphp_error_act(!function->is_resumable, "__clone method has to be not resumable", return false);
+    kphp_error_act(!function->can_throw, "__clone method should not throw exception", return false);
+  }
+
   for (auto &static_var : function->static_var_ids) {
     check_static_var_inited(static_var);
   }

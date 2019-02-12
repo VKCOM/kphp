@@ -448,7 +448,8 @@ def get_all_tests(args):
         ["lambdas"],
         ["errors"],
         ["libs"],
-        ["variadic_args"]
+        ["variadic_args"],
+        ["clone_keyword"]
     ]
 
     for tags in test_tags:

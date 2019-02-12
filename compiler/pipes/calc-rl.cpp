@@ -214,7 +214,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          kphp_error(vk::any_of_equal(lhs->type(), op_var, op_index, op_func_call, op_constructor_call, op_instance_prop),
+          kphp_error(vk::any_of_equal(lhs->type(), op_var, op_index, op_func_call, op_constructor_call, op_instance_prop, op_clone, op_seq_rval),
                      "op_instance_prop has to be used on lvalue");
           rl_calc(lhs, val_r);
           break;

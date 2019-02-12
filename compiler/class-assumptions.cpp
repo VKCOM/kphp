@@ -613,7 +613,10 @@ AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class
       return infer_from_array(f, root.as<op_array>(), out_class);
     case op_conv_array:
       return infer_class_of_expr(f, root.as<op_conv_array>()->expr(), out_class, depth);
-
+    case op_clone:
+      return infer_class_of_expr(f, root.as<op_clone>()->expr(), out_class, depth);
+    case op_seq_rval:
+      return infer_class_of_expr(f, root.as<op_seq_rval>()->back(), out_class, depth);
     default:
       return assum_not_instance;
   }

@@ -231,13 +231,23 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
           return klass;
         }
       }
+      break;
     }
 
-      /* fallthrough */
+    // (clone $expr)->...
+    case op_clone:
+      return resolve_class_of_arrow_access_helper(function, v, lhs.as<op_clone>()->expr());
+
+    // ({ $tmp = clone $expr; $tmp->clone(); $tmp })->...
+    case op_seq_rval:
+      return resolve_class_of_arrow_access_helper(function, v, lhs.as<op_seq_rval>()->back());
+
     default:
-      kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting"));
-      return klass;
+      break;
   }
+
+  kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting"));
+  return klass;
 }
 
 /*

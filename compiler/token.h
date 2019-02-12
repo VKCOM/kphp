@@ -174,6 +174,8 @@ enum TokenType {
   tok_phpdoc_kphp,
   tok_phpdoc,
 
+  tok_clone,
+
   tok_end
 };
 

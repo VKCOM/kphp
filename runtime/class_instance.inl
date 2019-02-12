@@ -39,6 +39,18 @@ class_instance<T> &class_instance<T>::operator=(bool value __attribute__((unused
 }
 
 template<class T>
+class_instance<T> class_instance<T>::clone() const {
+  class_instance<T> res;
+  if (o) {
+    res.alloc();
+    *res.o = *o;
+    res.o->ref_cnt = 0;
+  }
+
+  return res;
+}
+
+template<class T>
 void class_instance<T>::alloc() {
   php_assert(o == NULL);
   o = static_cast <T *> (dl::allocate(sizeof(T)));

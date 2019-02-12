@@ -503,6 +503,14 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_define_val(expr.as<op_define_val>());
       break;
 
+    case op_clone:
+      set_lca(expr.as<op_clone>()->expr());
+      break;
+
+    case op_seq_rval:
+      set_lca(expr.as<op_seq_rval>()->back());
+      break;
+
     default:
       recalc_ptype<tp_var>();
       break;
