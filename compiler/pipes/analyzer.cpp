@@ -76,9 +76,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT * local) 
   }
   if (local->from_seq) {
     if (OpInfo::P[vertex->type()].rl == rl_op && OpInfo::P[vertex->type()].cnst == cnst_const_func) {
-      if (vertex->type() != op_log_and && vertex->type() != op_log_or &&
-          vertex->type() != op_ternary && vertex->type() != op_log_and_let &&
-          vertex->type() != op_log_or_let && vertex->type() != op_unset) {
+      if (vk::none_of_equal(vertex->type(), op_log_and, op_log_or, op_ternary, op_log_and_let, op_log_or_let, op_unset)) {
         kphp_warning(format("Statement has no effect [op = %s]", OpInfo::P[vertex->type()].str.c_str()));
       }
     }
