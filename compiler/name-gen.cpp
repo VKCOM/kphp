@@ -158,6 +158,88 @@ string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_ca
   return std::string();
 }
 
+ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v, VertexPtr lhs) {
+  ClassPtr klass;
+  switch (lhs->type()) {
+    // (new A)->...
+    case op_constructor_call: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
+      kphp_assert(assum == assum_instance && klass);
+      return klass;
+    }
+
+    // $var->...
+    case op_var: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, format("$%s is not an instance or it can't be detected\n"
+                                                "Add phpdoc @var to variable or @return to function was used to initialize it.",
+                                                lhs->get_c_string())));
+      return klass;
+    }
+
+    // getInstance()->...
+    case op_func_call: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, format("%s() does not return instance or it can't be detected.\n"
+                                                "Add @return tag to function phpdoc",
+                                                lhs->get_c_string())));
+      return klass;
+    }
+
+    // ...->anotherInstance->...
+    case op_instance_prop: {
+      AssumType assum = infer_class_of_expr(function, lhs, klass);
+      kphp_error(assum == assum_instance,
+                 _err_instance_access(v, format("$%s->%s is not an instance or it can't be detected.\n"
+                                                "Add phpdoc @var to field declaration",
+                                                lhs.as<op_instance_prop>()->instance()->get_c_string(), lhs->get_c_string())));
+      return klass;
+    }
+
+    // ...[$idx]->...
+    case op_index: {
+      VertexAdaptor<op_index> index = lhs.as<op_index>();
+      VertexPtr array = index->array();
+      if (index->has_key()) {
+        // $var[$idx]->...
+        if (array->type() == op_var) {
+          AssumType assum = infer_class_of_expr(function, array, klass);
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, format("$%s is not an array of instances or it can't be detected.\n"
+                                                    "Add phpdoc to variable or @return tag to function was used to initialize it.",
+                                                    array->get_c_string())));
+          return klass;
+        }
+        // getArr()[$idx]->...
+        if (array->type() == op_func_call) {
+          AssumType assum = infer_class_of_expr(function, array, klass);
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, format("%s() does not return array of instances or it can't be detected.\n"
+                                                    "Add @return tag to function phpdoc",
+                                                    array->get_c_string())));
+          return klass;
+        }
+        // ...->arrOfInstances[$idx]->...
+        if (array->type() == op_instance_prop) {
+          AssumType assum = infer_class_of_expr(function, array, klass);
+          kphp_error(assum == assum_instance_array,
+                     _err_instance_access(v, format("$%s->%s is not array of instances or it can't be detected.\n"
+                                                    "Add phpdoc to field declaration",
+                                                    array.as<op_instance_prop>()->instance()->get_c_string(), array->get_c_string())));
+          return klass;
+        }
+      }
+    }
+
+      /* fallthrough */
+    default:
+      kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting"));
+      return klass;
+  }
+}
+
 /*
  * Когда есть любое выражение lhs перед стрелочкой ('$a->...', '(new A())->...', 'get()->nestedArr[0]->...'),
  * то слева ожидается инстанс какого-то класса.
@@ -173,75 +255,8 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
   VertexPtr lhs = v->type() == op_instance_prop ?
                   v.as<op_instance_prop>()->instance() :
                   v.as<op_func_call>()->args()[0];
-  ClassPtr klass;
 
-  switch (lhs->type()) {
-    // (new A)->...
-    case op_constructor_call: {
-      AssumType assum = infer_class_of_expr(function, lhs, klass);
-      kphp_assert(assum == assum_instance && klass);
-      return klass;
-    }
-
-      // $var->...
-    case op_var: {
-      AssumType assum = infer_class_of_expr(function, lhs, klass);
-      kphp_error(assum == assum_instance,
-                 _err_instance_access(v, format("$%s is not an instance or it can't be detected\nAdd phpdoc @var to variable or @return to function was used to initialize it.", lhs->get_c_string())));
-      return klass;
-    }
-
-      // getInstance()->...
-    case op_func_call: {
-      AssumType assum = infer_class_of_expr(function, lhs, klass);
-      kphp_error(assum == assum_instance,
-                 _err_instance_access(v, format("%s() does not return instance or it can't be detected.\nAdd @return tag to function phpdoc", lhs->get_c_string())));
-      return klass;
-    }
-
-      // ...->anotherInstance->...
-    case op_instance_prop: {
-      AssumType assum = infer_class_of_expr(function, lhs, klass);
-      kphp_error(assum == assum_instance,
-                 _err_instance_access(v, format("$%s->%s is not an instance or it can't be detected.\nAdd phpdoc @var to field declaration", lhs.as<op_instance_prop>()->instance()->get_c_string(), lhs->get_c_string())));
-      return klass;
-    }
-
-      // ...[$idx]->...
-    case op_index: {
-      VertexAdaptor<op_index> index = lhs.as<op_index>();
-      VertexPtr array = index->array();
-      if (index->has_key()) {
-        // $var[$idx]->...
-        if (array->type() == op_var) {
-          AssumType assum = infer_class_of_expr(function, array, klass);
-          kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, format("$%s is not an array of instances or it can't be detected.\nAdd phpdoc to variable or @return tag to function was used to initialize it.", array->get_c_string())));
-          return klass;
-        }
-        // getArr()[$idx]->...
-        if (array->type() == op_func_call) {
-          AssumType assum = infer_class_of_expr(function, array, klass);
-          kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, format("%s() does not return array of instances or it can't be detected.\nAdd @return tag to function phpdoc", array->get_c_string())));
-          return klass;
-        }
-        // ...->arrOfInstances[$idx]->...
-        if (array->type() == op_instance_prop) {
-          AssumType assum = infer_class_of_expr(function, array, klass);
-          kphp_error(assum == assum_instance_array,
-                     _err_instance_access(v, format("$%s->%s is not array of instances or it can't be detected.\nAdd phpdoc to field declaration",
-                                                     array.as<op_instance_prop>()->instance()->get_c_string(), array->get_c_string())));
-          return klass;
-        }
-      }
-    }
-
-      /* fallthrough */
-    default:
-      kphp_error(false, _err_instance_access(v, "Can not parse: maybe, too deep nesting"));
-      return klass;
-  }
+  return resolve_class_of_arrow_access_helper(function, v, lhs);
 }
 
 
