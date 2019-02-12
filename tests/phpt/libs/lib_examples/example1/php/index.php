@@ -6,12 +6,14 @@ echo "[example1] index: global run\n";
 
 echo "[example1] index: require_once 'srcfile.php'\n";
 require_once "srcfile.php";
+require_once "srcfile2.php";
 
 /**
  * @kphp-lib-export
  */
 function get_str() {
-    return "hello world";
+    static $x = "hello world";
+    return $x;
 }
 
 /**

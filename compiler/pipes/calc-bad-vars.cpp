@@ -2,6 +2,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/utils/idmap.h"
 
@@ -116,7 +117,7 @@ private:
   public:
     explicit MergeBadVarsCallback(IdMap<vector<VarPtr>> tmp_vars) : tmp_vars(std::move(tmp_vars)) {}
     void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
-      std::unordered_set<VarPtr, typename VarPtr::Hash> bad_vars_uniq;
+      std::unordered_set<VarPtr> bad_vars_uniq;
 
       for (FunctionPtr f : component) {
         bad_vars_uniq.insert(tmp_vars[f].begin(), tmp_vars[f].end());
@@ -133,17 +134,6 @@ private:
       }
     }
   };
-
-  void stupid_dfs(FunctionPtr function, set<FunctionPtr> *was, set<VarPtr> *vars) {
-    if (was->count(function)) {
-      return;
-    }
-    was->insert(function);
-    vars->insert(function->global_var_ids.begin(), function->global_var_ids.end());
-    for (int i = (int)function->dep.size() - 1; i >= 0; i--) {
-      stupid_dfs(function->dep[i], was, vars);
-    }
-  }
 
   void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData> &dep_datas) {
     FunctionPtr wait_func = G->get_function("wait");
@@ -238,6 +228,21 @@ private:
       FunctionPtr function = call_graph.functions[i];
       function->dep = std::move(call_graph.graph[function]);
     }
+
+    if (!G->env().is_static_lib_mode()) {
+      return;
+    }
+
+    auto &main_files = G->get_main_files();
+    kphp_assert(main_files.size() == 1u);
+    auto &main_dep = main_files.back()->main_function->dep;
+    for (int i = 0; i < call_graph.n; i++) {
+      FunctionPtr fun = call_graph.functions[i];
+      if (fun->kphp_lib_export) {
+        main_dep.emplace_back(fun);
+      }
+    }
+    my_unique(&main_dep);
   }
 
   class MergeRefVarsCallback : public MergeReachalbeCallback<VarPtr> {

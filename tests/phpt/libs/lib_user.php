@@ -41,7 +41,10 @@ echo "lib_user: pow2(): ", pow2(), "\n";
 
 function use_other_lib() {
     require_lib('lib_examples/example2');
-    echo example2_sum(1, 2), "\n";
+    return example2_sum(1, 2);
 }
 
-use_other_lib();
+echo "lib_user: use_other_lib(): ", use_other_lib(), "\n";
+
+echo "lib_user: get_static_array(): ";
+var_dump(get_static_array());
