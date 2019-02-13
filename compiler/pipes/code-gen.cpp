@@ -1636,16 +1636,14 @@ inline VarsCpp::VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt) :
 }
 
 inline void VarsCpp::compile(CodeGenerator &W) const {
-  std::vector<VarPtr> sorted_vars = vars_;
-  std::sort(sorted_vars.begin(), sorted_vars.end());
-  std::vector<VarPtr> vars_batch;
+  std::vector<std::vector<VarPtr>> vars_batches(parts_cnt_);
   std::vector<std::vector<bool>> dep_masks(parts_cnt_);
+  for (auto var : vars_) {
+    vars_batches[hash(var->name) % parts_cnt_].emplace_back(var);
+  }
   for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
-    for (size_t var_num = part_id; var_num < sorted_vars.size(); var_num += parts_cnt_) {
-      vars_batch.emplace_back(sorted_vars[var_num]);
-    }
-    dep_masks[part_id] = compile_vars_part(W, vars_batch, part_id);
-    vars_batch.clear();
+    std::sort(vars_batches[part_id].begin(), vars_batches[part_id].end());
+    dep_masks[part_id] = compile_vars_part(W, vars_batches[part_id], part_id);
   }
 
   W << OpenFile("vars.cpp", "", false);
