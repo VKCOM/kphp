@@ -194,49 +194,45 @@ void TypeData::set_class_type(ClassPtr new_class_type) {
   }
 }
 
-/**
- * Быстрый аналог !get_all_class_types_inside().empty()
- */
-bool TypeData::has_class_type_inside() const {
-  if (class_type()) {
+template<typename F>
+bool TypeData::for_each_deep(const F &visitor) const {
+  if (visitor(*this)) {
     return true;
   }
-  if (anykey_value != nullptr && anykey_value->has_class_type_inside()) {
+  if (anykey_value && anykey_value->for_each_deep(visitor)) {
     return true;
   }
-  if (!subkeys_values.empty()) {
-    return std::any_of(subkeys_values.begin(), subkeys_values.end(),
-                       [](const std::pair<Key, TypeData *> &p) { return p.second->has_class_type_inside(); });
+  for (const auto &sub_key: subkeys_values) {
+    if (sub_key.second->for_each_deep(visitor)) {
+      return true;
+    }
   }
   return false;
 }
 
+/**
+ * Быстрый аналог !get_all_class_types_inside().empty()
+ */
+bool TypeData::has_class_type_inside() const {
+  return for_each_deep(std::mem_fn(&TypeData::class_type));
+}
+
 void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const {
-  if (class_type()) {
-    out.emplace(class_type());
-  }
-  if (anykey_value != nullptr) {
-    anykey_value->get_all_class_types_inside(out);
-  }
-  for (auto &subkey : subkeys_values) {
-    subkey.second->get_all_class_types_inside(out);
-  }
+  for_each_deep([&out] (const TypeData &this_) {
+    if (this_.class_type()) {
+      out.emplace(this_.class_type());
+    }
+    return false;
+  });
 }
 
 ClassPtr TypeData::get_first_class_type_inside() const {
-  ClassPtr first_class_type = class_type();
-  if (!first_class_type && anykey_value) {
-    first_class_type = anykey_value->get_first_class_type_inside();
-  }
-  if (first_class_type) {
-    return first_class_type;
-  }
-  for (auto &subkey : subkeys_values) {
-    if (first_class_type = subkey.second->get_first_class_type_inside()) {
-      return first_class_type;
-    }
-  }
-  return first_class_type;
+  ClassPtr first_class;
+  for_each_deep([&first_class] (const TypeData &this_) {
+    first_class = this_.class_type();
+    return first_class;
+  });
+  return first_class;
 }
 
 TypeData::flags_t TypeData::flags() const {
@@ -580,8 +576,35 @@ bool operator==(const TypeData &a, const TypeData &b) {
   return cmp(&a, &b) == 0;
 }
 
-inline void get_cpp_style_type(const TypeData *type, string *res) {
+void append_class_name(const TypeData *type, type_out_style out_style, string *res) {
+  if (!type->class_type()->is_builtin()) {
+    if (out_style == type_out_style::cpp) {
+      *res += "class_instance<";
+    }
+    *res += type->class_type()->src_name;
+    if (out_style == type_out_style::cpp) {
+      *res += ">";
+    }
+  } else {
+    *res += type->class_type()->name;
+  }
+}
+
+void append_primitive_typename(const TypeData *type, type_out_style out_style, string *res) {
   const PrimitiveType tp = type->get_real_ptype();
+
+  if (out_style == type_out_style::txt) {
+    *res += ptype_name(tp);
+    return;
+  }
+  if (out_style == type_out_style::var_name) {
+    *res += ptype_name(tp);
+    if (tp == tp_Class) {
+      *res += "$";
+      append_class_name(type, out_style, res);
+    }
+    return;
+  }
 
   switch (tp) {
     case tp_DB: {
@@ -589,13 +612,7 @@ inline void get_cpp_style_type(const TypeData *type, string *res) {
       break;
     }
     case tp_Class: {
-      if (!type->class_type()->is_builtin()) {
-        *res += "class_instance<";
-        *res += type->class_type()->src_name;
-        *res += ">";
-      } else {
-        *res += type->class_type()->name;
-      }
+      append_class_name(type, out_style, res);
       break;
     }
     case tp_RPC: {
@@ -617,49 +634,45 @@ inline void get_cpp_style_type(const TypeData *type, string *res) {
   }
 }
 
-void type_out_impl(const TypeData *type, string *res, bool cpp_out) {
+void type_out_impl(const TypeData *type, string *res, type_out_style out_style) {
   const PrimitiveType tp = type->get_real_ptype();
   const bool or_false = type->use_or_false() && tp != tp_bool;
 
   if (or_false) {
-    *res += "OrFalse < ";
+    *res += out_style == type_out_style::var_name ? "or_false$" : "OrFalse < ";
   }
 
-  if (cpp_out) {
-    get_cpp_style_type(type, res);
-  } else {
-    *res += ptype_name(tp);
-  }
+  append_primitive_typename(type, out_style, res);
 
   const bool need_any_key = tp == tp_array;
   const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
   if (anykey_value) {
-    *res += "< ";
-    type_out_impl(anykey_value, res, cpp_out);
-    *res += " >";
+    *res += out_style == type_out_style::var_name ? "$" : "< ";
+    type_out_impl(anykey_value, res, out_style);
+    *res += out_style == type_out_style::var_name ? "$" : " >";
   }
 
   const bool need_all_subkeys = tp == tp_tuple;
   if (need_all_subkeys) {
-    *res += "<";
+    *res += out_style == type_out_style::var_name ? "$" : "<";
     for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
       if (subkey != type->lookup_begin()) {
-        *res += " , ";
+        *res += out_style == type_out_style::var_name ? "$" : " , ";
       }
       kphp_assert(subkey->first.is_int_key());
-      type_out_impl(type->const_read_at(subkey->first), res, cpp_out);
+      type_out_impl(type->const_read_at(subkey->first), res, out_style);
     }
-    *res += ">";
+    *res += out_style == type_out_style::var_name ? "$" : ">";
   }
 
   if (or_false) {
-    *res += " >";
+    *res += out_style == type_out_style::var_name ? "$" : " >";
   }
 }
 
-string type_out(const TypeData *type, bool cpp_out) {
+string type_out(const TypeData *type, type_out_style out_style) {
   string res;
-  type_out_impl(type, &res, cpp_out);
+  type_out_impl(type, &res, out_style);
   return res;
 }
 
@@ -743,6 +756,53 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
     return true;
   }
   return type1->ptype() == type2->ptype();
+}
+
+bool is_equal_types(const TypeData *type1, const TypeData *type2) {
+  if (type1 == nullptr) {
+    return type2 == nullptr;
+  }
+  if (type2 == nullptr) {
+    return false;
+  }
+
+  const PrimitiveType tp1 = type1->get_real_ptype();
+  const PrimitiveType tp2 = type2->get_real_ptype();
+  if (tp1 != tp2) {
+    return false;
+  }
+  const bool or_false1 = type1->use_or_false() && tp1 != tp_bool;
+  const bool or_false2 = type2->use_or_false() && tp2 != tp_bool;
+  if (or_false1 != or_false2) {
+    return false;
+  }
+
+  if (tp1 == tp_Class) {
+    return type1->class_type() == type2->class_type();
+  }
+
+  if (tp1 == tp_array) {
+    return is_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
+  }
+
+  if (tp1 == tp_tuple) {
+    auto it1 = type1->lookup_begin();
+    auto it2 = type2->lookup_begin();
+    auto type1_elements = std::distance(it1, type1->lookup_end());
+    auto type2_elements = std::distance(it2, type2->lookup_end());
+    if (type1_elements != type2_elements) {
+      return false;
+    }
+
+    for (; it1 != type1->lookup_end(); ++it1, ++it2) {
+      kphp_assert(it1->first.is_int_key());
+      kphp_assert(it2->first.is_int_key());
+      if (!is_equal_types(type1->const_read_at(it1->first), type2->const_read_at(it2->first))) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 size_t TypeData::get_tuple_max_index() const {

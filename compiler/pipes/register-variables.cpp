@@ -15,11 +15,8 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
       format("conflict in variable names [%s]", old_var->name.c_str())
     );
   } else {
-    if (in_param_list > 0) {
-      current_function->header_global_var_ids.push_back(var);
-    } else {
-      current_function->global_var_ids.push_back(var);
-    }
+    kphp_assert(in_param_list == 0);
+    current_function->global_var_ids.push_back(var);
   }
   return var;
 }

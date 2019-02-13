@@ -26,6 +26,7 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
 
   bool user_recursion(VertexPtr root, LocalT *local __attribute__((unused)), VisitVertex<OptimizationPass> &visit);
 };

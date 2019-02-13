@@ -521,7 +521,6 @@ nullptr_t CollectMainEdgesPass::on_finish() {
   call_on_var(current_function->local_var_ids);
   call_on_var(current_function->global_var_ids);
   call_on_var(current_function->static_var_ids);
-  call_on_var(current_function->header_global_var_ids);
   call_on_var(current_function->implicit_const_var_ids);
   call_on_var(current_function->explicit_const_var_ids);
   call_on_var(current_function->explicit_header_const_var_ids);

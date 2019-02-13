@@ -81,6 +81,9 @@ private:
 
   TypeData *write_at(const Key &key);
 
+  template<typename F>
+  bool for_each_deep(const F &visitor) const;
+
 public:
   TypeData(const TypeData &from);
   ~TypeData();
@@ -142,10 +145,17 @@ public:
 bool operator<(const TypeData &a, const TypeData &b);
 bool operator==(const TypeData &a, const TypeData &b);
 
-string type_out(const TypeData *type, bool cpp_out = true);
+
+enum class type_out_style {
+  cpp,
+  txt,
+  var_name
+};
+string type_out(const TypeData *type, type_out_style out_style = type_out_style::cpp);
 string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
+bool is_equal_types(const TypeData *type1, const TypeData *type2);
 
 template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag(bool f) {

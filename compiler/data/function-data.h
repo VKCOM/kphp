@@ -48,7 +48,7 @@ public:
   };
   func_type_t type = func_local;
 
-  vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, header_global_var_ids;
+  vector<VarPtr> local_var_ids, global_var_ids, static_var_ids;
   vector<VarPtr> *bad_vars = nullptr;
   set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
   vector<VarPtr> param_ids;

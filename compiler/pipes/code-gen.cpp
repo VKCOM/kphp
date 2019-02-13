@@ -277,15 +277,10 @@ struct VarName {
   inline void compile(CodeGenerator &W) const;
 };
 
-enum class gen_out_style {
-  cpp,
-  txt
-};
-
 struct TypeName {
   const TypeData *type;
-  gen_out_style style;
-  inline TypeName(const TypeData *type, gen_out_style style = gen_out_style::cpp);
+  type_out_style style;
+  inline TypeName(const TypeData *type, type_out_style style = type_out_style::cpp);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -304,9 +299,9 @@ struct FunctionCallFlag {
 struct FunctionDeclaration {
   FunctionPtr function;
   bool in_header;
-  gen_out_style style;
+  type_out_style style;
   inline FunctionDeclaration(FunctionPtr function, bool in_header = false,
-                             gen_out_style style = gen_out_style::cpp);
+                             type_out_style style = type_out_style::cpp);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -321,14 +316,14 @@ struct FunctionParams {
   FunctionPtr function;
   VertexRange params;
   bool in_header;
-  gen_out_style style;
+  type_out_style style;
   size_t shift;
 
   inline FunctionParams(FunctionPtr function, bool in_header = false,
-                        gen_out_style style = gen_out_style::cpp);
+                        type_out_style style = type_out_style::cpp);
 
   inline FunctionParams(FunctionPtr function, size_t shift, bool in_header = false,
-                        gen_out_style style = gen_out_style::cpp);
+                        type_out_style style = type_out_style::cpp);
 
   inline void compile(CodeGenerator &W) const;
 
@@ -435,8 +430,8 @@ struct LibGlobalVarsReset {
 };
 
 struct StaticLibraryRunGlobal {
-  gen_out_style style;
-  inline StaticLibraryRunGlobal(gen_out_style style);
+  type_out_style style;
+  inline StaticLibraryRunGlobal(type_out_style style);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -901,13 +896,13 @@ void VarName::compile(CodeGenerator &W) const {
   W << "v$" << var->name;
 }
 
-inline TypeName::TypeName(const TypeData *type, gen_out_style style) :
+inline TypeName::TypeName(const TypeData *type, type_out_style style) :
   type(type),
   style(style) {
 }
 
 inline void TypeName::compile(CodeGenerator &W) const {
-  W << type_out(type, style == gen_out_style::cpp);
+  W << type_out(type, style);
 }
 
 inline TypeNameInsideMacro::TypeNameInsideMacro(const TypeData *type) :
@@ -931,7 +926,7 @@ inline void FunctionCallFlag::compile(CodeGenerator &W) const {
   W << FunctionName(function) << "$called";
 }
 
-inline FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, gen_out_style style) :
+inline FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, type_out_style style) :
   function(function),
   in_header(in_header),
   style(style) {
@@ -942,12 +937,14 @@ inline void FunctionDeclaration::compile(CodeGenerator &W) const {
   FunctionParams params_gen(function, in_header, style);
 
   switch (style) {
-    case gen_out_style::cpp:
+    case type_out_style::cpp:
       W << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
       break;
-    case gen_out_style::txt:
+    case type_out_style::txt:
       W << "function " << function->name << "(" << params_gen << ") ::: " << ret_type_gen;
       break;
+    default:
+      kphp_assert(0);
   }
 }
 
@@ -962,11 +959,11 @@ inline void FunctionForkDeclaration::compile(CodeGenerator &W) const {
 }
 
 
-inline FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_style style) :
+inline FunctionParams::FunctionParams(FunctionPtr function, bool in_header, type_out_style style) :
   FunctionParams(function, 0, in_header, style) {
 }
 
-inline FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_header, gen_out_style style) :
+inline FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_header, type_out_style style) :
   function(function),
   params(function->root->params().as<op_func_param_list>()->params()),
   in_header(in_header),
@@ -1010,14 +1007,14 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
     VertexPtr var = param->var();
     TypeName type_gen(tinf::get_type(function, ii), style);
     switch (style) {
-      case gen_out_style::cpp: {
+      case type_out_style::cpp: {
         declare_cpp_param(W, var, type_gen);
         if (param->has_default_value() && param->default_value() && in_header) {
           W << " = " << param->default_value();
         }
         break;
       }
-      case gen_out_style::txt: {
+      case type_out_style::txt: {
         declare_txt_param(W, var, type_gen);
         if (param->has_default_value() && param->default_value() && in_header) {
           VertexPtr default_value = GenTree::get_actual_value(param->default_value());
@@ -1026,6 +1023,8 @@ inline void FunctionParams::compile(CodeGenerator &W) const {
         }
         break;
       }
+      default:
+        kphp_assert(0);
     }
     ii++;
   }
@@ -1201,18 +1200,20 @@ inline void GlobalResetFunction::compile(CodeGenerator &W) const {
   W << END << NL;
 }
 
-inline StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
+inline StaticLibraryRunGlobal::StaticLibraryRunGlobal(type_out_style style) :
   style(style) {
 }
 
 inline void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
   switch (style) {
-    case gen_out_style::cpp:
+    case type_out_style::cpp:
       W << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
       break;
-    case gen_out_style::txt:
+    case type_out_style::txt:
       W << "function " << LibData::run_global_function_name(G->get_global_namespace()) << "() ::: void";
       break;
+    default:
+      kphp_assert(0);
   }
 }
 
@@ -1223,7 +1224,7 @@ inline void StaticLibraryRunGlobalHeaderH::compile(CodeGenerator &W) const {
   W << OpenFile(header_path, "", false);
 
   W << "#pragma once" << NL << NL;
-  W << StaticLibraryRunGlobal(gen_out_style::cpp) << ";" << NL;
+  W << StaticLibraryRunGlobal(type_out_style::cpp) << ";" << NL;
   W << CloseFile();
 }
 
@@ -1235,10 +1236,10 @@ inline void LibHeaderTxt::compile(CodeGenerator &W) const {
   W << OpenFile(LibData::functions_txt_tmp_file(), "", false, false);
 
   W << "<?php" << NL << NL;
-  W << StaticLibraryRunGlobal(gen_out_style::txt) << ';' << NL << NL;
+  W << StaticLibraryRunGlobal(type_out_style::txt) << ';' << NL << NL;
 
   for (const auto &function: exported_functions) {
-    W << FunctionDeclaration(function, true, gen_out_style::txt) << ";" << NL;
+    W << FunctionDeclaration(function, true, type_out_style::txt) << ";" << NL;
   }
 
   W << CloseFile();
@@ -1255,7 +1256,7 @@ inline void LibHeaderH::compile(CodeGenerator &W) const {
   W << ExternInclude("php_functions.h") << NL;
 
   W << OpenNamespace()
-    << FunctionDeclaration(exported_function, true, gen_out_style::cpp) << ";" << NL
+    << FunctionDeclaration(exported_function, true, type_out_style::cpp) << ";" << NL
     << CloseNamespace();
 
   W << "using " << G->get_global_namespace() << "::" << FunctionName(exported_function) << ";" << NL;
@@ -1501,11 +1502,14 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
         case op_string:
           const_raw_string_vars.push_back(var);
           break;
-        case op_array: {
+        case op_array:
           add_dependent_declarations(var->init_val, dependent_vars);
           const_raw_array_vars.push_back(var);
           break;
-        }
+        case op_var:
+          add_dependent_declarations(var->init_val, dependent_vars);
+          other_const_vars.emplace_back(var);
+          break;
         default:
           other_const_vars.emplace_back(var);
           break;
@@ -1574,9 +1578,14 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
     for (const auto &var: other_const_vars) {
       if (var->dependency_level == dep_level) {
         W << InitVar(var);
-        PrimitiveType ptype = var->tinf_node.get_type()->ptype();
+        auto type_data = var->tinf_node.get_type();
+        PrimitiveType ptype = type_data->ptype();
         if (vk::any_of_equal(ptype, tp_array, tp_var, tp_string)) {
-          W << VarName(var) << ".set_reference_counter_to_const();" << NL;
+          W << VarName(var);
+          if (type_data->use_or_false()) {
+            W << ".val()";
+          }
+          W << ".set_reference_counter_to_const();" << NL;
         }
       }
     }
@@ -1698,7 +1707,7 @@ inline void LibGlobalVarsReset::compile(CodeGenerator &W) const {
     << END << NL << NL;
   W << CloseNamespace();
 
-  W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
+  W << StaticLibraryRunGlobal(type_out_style::cpp) << BEGIN
     << "using namespace " << G->get_global_namespace() << ";" << NL
     << "require_once ("
     << FunctionCallFlag(main_function) << ", "
@@ -1838,7 +1847,6 @@ void GlobalVarsReset::collect_used_funcs_and_vars(
   }
 
   collect_vars(used_vars, used_vars_cnt, func->global_var_ids.begin(), func->global_var_ids.end());
-  collect_vars(used_vars, used_vars_cnt, func->header_global_var_ids.begin(), func->header_global_var_ids.end());
   collect_vars(used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
 }
 
@@ -1918,10 +1926,6 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  for (auto global_var : function->header_global_var_ids) {
-    W << VarExternDeclaration(global_var) << NL;
-  }
-
   for (auto const_var : function->explicit_header_const_var_ids) {
     W << VarExternDeclaration(const_var) << NL;
   }
@@ -4089,7 +4093,6 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
 
   my_unique(&func->static_var_ids);
   my_unique(&func->global_var_ids);
-  my_unique(&func->header_global_var_ids);
   my_unique(&func->local_var_ids);
 }
 
