@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "common/algorithms/find.h"
+#include "common/type_traits/constexpr_if.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -74,7 +75,7 @@ bool GenTree::test_expect(TokenType tp) {
   1;\
 })
 
-VertexPtr GenTree::get_var_name() {
+VertexAdaptor<op_var> GenTree::get_var_name() {
   AutoLocation var_location(this);
 
   if ((*cur)->type() != tok_var_name) {
@@ -89,14 +90,14 @@ VertexPtr GenTree::get_var_name() {
   return var;
 }
 
-VertexPtr GenTree::get_var_name_ref() {
+VertexAdaptor<op_var> GenTree::get_var_name_ref() {
   bool ref_flag = false;
   if ((*cur)->type() == tok_and) {
     next_cur();
     ref_flag = true;
   }
 
-  VertexPtr name = get_var_name();
+  auto name = get_var_name();
   if (name) {
     name->ref_flag = ref_flag;
   } else {
@@ -124,14 +125,14 @@ inline void GenTree::skip_phpdoc_tokens() {
     CE (expect (tok_clpar, "')'"));\
   }
 
-template<Operation EmptyOp>
-bool GenTree::gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim, bool disable_kphp_error /*= false*/) {
+template<Operation EmptyOp, class FuncT, class ResultType>
+bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim, bool disable_kphp_error /*= false*/) {
   //Do not clear res. Result must be appended to it.
   bool prev_delim = false;
   bool next_delim = true;
 
   while (next_delim) {
-    VertexPtr v = (this->*f)();
+    ResultType v = (this->*f)();
     next_delim = (*cur)->type() == delim;
 
     if (!v) {
@@ -139,10 +140,12 @@ bool GenTree::gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim, bool 
         if (EmptyOp == op_none) {
           break;
         }
-        auto tmp = VertexAdaptor<EmptyOp>::create();
-        v = tmp;
+
+        v = vk::constexpr_if(std::integral_constant<bool, EmptyOp == op_none || EmptyOp == op_err>{},
+                             [&v] { return v; },
+                             [] { return VertexAdaptor<EmptyOp>::create(); });
       } else if (prev_delim) {
-        kphp_error (disable_kphp_error, "Expected something after ','");
+        kphp_error(disable_kphp_error, "Expected something after ','");
         return false;
       } else {
         break;
@@ -169,27 +172,6 @@ VertexPtr GenTree::get_conv() {
   auto conv = VertexAdaptor<Op>::create(first_node);
   set_location(conv, conv_location);
   return conv;
-}
-
-template<Operation Op>
-VertexPtr GenTree::get_varg_call() {
-  AutoLocation call_location(this);
-  next_cur();
-
-  CE (expect(tok_oppar, "'('"));
-
-  AutoLocation args_location(this);
-  vector<VertexPtr> args_next;
-  bool ok_args_next = gen_list<op_err>(&args_next, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_args_next, "get_varg_call failed"));
-  auto args = VertexAdaptor<op_array>::create(args_next);
-  set_location(args, args_location);
-
-  CE (expect(tok_clpar, "')'"));
-
-  auto call = VertexAdaptor<Op>::create(args);
-  set_location(call, call_location);
-  return call;
 }
 
 VertexPtr GenTree::get_require() {
@@ -787,7 +769,7 @@ VertexPtr GenTree::get_def_value() {
   return val;
 }
 
-VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
+VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   AutoLocation st_location(this);
   Token *tok_type_declaration = nullptr;
   if ((*cur)->type() == tok_func_name) {
@@ -795,13 +777,12 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
     next_cur();
   }
 
-  VertexPtr name = get_var_name_ref();
+  VertexAdaptor<op_var> name = get_var_name_ref();
   if (!name) {
     return {};
   }
 
-  vector<VertexPtr> next;
-  next.push_back(name);
+  vector<VertexPtr> next{name};
 
   PrimitiveType tp = tp_Unknown;
   VertexPtr type_rule;
@@ -831,11 +812,11 @@ VertexPtr GenTree::get_func_param_without_callbacks(bool from_callback) {
   return v;
 }
 
-VertexPtr GenTree::get_func_param_from_callback() {
+VertexAdaptor<op_func_param> GenTree::get_func_param_from_callback() {
   return get_func_param_without_callbacks(true);
 }
 
-VertexPtr GenTree::get_func_param() {
+VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
   AutoLocation st_location(this);
   if (test_expect(tok_func_name) && (*(cur + 1))->type() == tok_oppar) { // callback
     auto name = VertexAdaptor<op_func_name>::create();
@@ -845,7 +826,7 @@ VertexPtr GenTree::get_func_param() {
     next_cur();
 
     CE (expect(tok_oppar, "'('"));
-    std::vector<VertexPtr> callback_params;
+    std::vector<VertexAdaptor<op_func_param>> callback_params;
     bool ok_params_next = gen_list<op_err>(&callback_params, &GenTree::get_func_param_from_callback, tok_comma);
     CE (!kphp_error(ok_params_next, "Failed to parse callback params"));
     auto params = VertexAdaptor<op_func_param_list>::create(callback_params);
@@ -857,7 +838,7 @@ VertexPtr GenTree::get_func_param() {
     VertexPtr def_val = get_def_value();
     kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
 
-    VertexPtr v;
+    VertexAdaptor<op_func_param_callback> v;
     if (def_val) {
       v = VertexAdaptor<op_func_param_callback>::create(name, params, def_val);
     } else {
@@ -881,8 +862,9 @@ VertexPtr GenTree::get_foreach_param() {
   CE (expect(tok_as, "'as'"));
   skip_phpdoc_tokens();
 
-  VertexPtr x, key;
-  x = get_var_name_ref();
+  VertexAdaptor<op_var> key;
+  VertexAdaptor<op_var> x = get_var_name_ref();
+
   CE (!kphp_error(x, ""));
   if ((*cur)->type() == tok_double_arrow) {
     next_cur();
@@ -891,9 +873,7 @@ VertexPtr GenTree::get_foreach_param() {
     CE (!kphp_error(x, ""));
   }
 
-  vector<VertexPtr> next;
-  next.push_back(xs);
-  next.push_back(x);
+  vector<VertexPtr> next{xs, x};
   auto empty = VertexAdaptor<op_empty>::create();
   next.push_back(empty); // will be replaced
   if (key) {
@@ -1132,25 +1112,26 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
   func->cmd() = seq;
 }
 
-template<Operation Op>
-VertexPtr GenTree::get_multi_call(GetFunc f) {
+template<Operation Op, class FuncT, class ResultType>
+VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f) {
   TokenType type = (*cur)->type();
   AutoLocation seq_location(this);
   next_cur();
 
-  vector<VertexPtr> next;
+  std::vector<ResultType> next;
   bool ok_next = gen_list<op_err>(&next, f, tok_comma);
   CE (!kphp_error(ok_next, "Failed get_multi_call"));
 
-  for (size_t i = 0, ni = next.size(); i < ni; i++) {
+  std::vector<VertexAdaptor<Op>> new_next;
+  new_next.reserve(next.size());
+
+  for (VertexPtr next_elem : next) {
     if (type == tok_echo || type == tok_dbg_echo) {
-      next[i] = conv_to<tp_string>(next[i]);
+      next_elem = conv_to<tp_string>(next_elem);
     }
-    auto v = VertexAdaptor<Op>::create(next[i]);
-    ::set_location(v, next[i]->get_location());
-    next[i] = v;
+    new_next.emplace_back(VertexAdaptor<Op>::create(next_elem).set_location(next_elem));
   }
-  auto seq = VertexAdaptor<op_seq>::create(next);
+  auto seq = VertexAdaptor<op_seq>::create(new_next);
   set_location(seq, seq_location);
   return seq;
 }
@@ -1432,7 +1413,7 @@ VertexPtr GenTree::get_switch() {
   return switch_vertex;
 }
 
-bool GenTree::parse_function_uses(std::vector<VertexPtr> *uses_of_lambda) {
+bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
   if (test_expect(tok_use)) {
     kphp_error_act(uses_of_lambda, "Unexpected `use` token", return false);
 
@@ -1441,10 +1422,12 @@ bool GenTree::parse_function_uses(std::vector<VertexPtr> *uses_of_lambda) {
       return false;
     }
 
-    bool ok_params_next = gen_list<op_err>(uses_of_lambda, &GenTree::get_var_name_ref, tok_comma);
-    for (auto &v : *uses_of_lambda) {
+    std::vector<VertexAdaptor<op_var>> uses_as_vars;
+    bool ok_params_next = gen_list<op_err>(&uses_as_vars, &GenTree::get_var_name_ref, tok_comma);
+
+    for (auto &v : uses_as_vars) {
       kphp_error(!v->ref_flag, "references to variables in `use` block are forbidden in lambdas");
-      v = VertexAdaptor<op_func_param>::create(v);
+      uses_of_lambda->emplace_back(VertexAdaptor<op_func_param>::create(v));
     }
 
     return ok_params_next && expect(tok_clpar, "`)`");
@@ -1453,18 +1436,18 @@ bool GenTree::parse_function_uses(std::vector<VertexPtr> *uses_of_lambda) {
   return true;
 }
 
-bool GenTree::check_uses_and_args_are_not_intersect(const std::vector<VertexPtr> &uses, const std::vector<VertexPtr> &params) {
+bool GenTree::check_uses_and_args_are_not_intersect(const std::vector<VertexAdaptor<op_func_param>> &uses, const std::vector<VertexAdaptor<meta_op_func_param>> &params) {
   std::set<std::string> uniq_uses;
   std::transform(uses.begin(), uses.end(),
                  std::inserter(uniq_uses, uniq_uses.begin()),
-                 [](VertexPtr v) { return v.as<op_func_param>()->var()->get_string(); });
+                 [](VertexAdaptor<op_func_param> v) { return v->var()->get_string(); });
 
   return std::none_of(params.begin(), params.end(),
-    [&](VertexPtr p) { return uniq_uses.find(p.as<op_func_param>()->var()->get_string()) != uniq_uses.end(); });
+    [&](VertexAdaptor<meta_op_func_param> p) { return uniq_uses.find(p->var()->get_string()) != uniq_uses.end(); });
 }
 
 VertexPtr GenTree::get_anonymous_function() {
-  std::vector<VertexPtr> uses_of_lambda;
+  std::vector<VertexAdaptor<op_func_param>> uses_of_lambda;
   VertexPtr f = get_function(nullptr, access_nonmember, &uses_of_lambda);
 
   if (auto anon_function = f.try_as<op_function>()) {
@@ -1476,7 +1459,7 @@ VertexPtr GenTree::get_anonymous_function() {
 }
 
 VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType access_type,
-                                                                std::vector<VertexPtr> *uses_of_lambda,
+                                                                std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda,
                                                                 VertexAdaptor<op_func_param_list> &params,
                                                                 VertexPtr &flags,
                                                                 bool &is_constructor,
@@ -1506,7 +1489,7 @@ VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType acces
   CE(expect(tok_oppar, "'('"));
 
   AutoLocation params_location(this);
-  vector<VertexPtr> params_next;
+  vector<VertexAdaptor<meta_op_func_param>> params_next;
 
   if (is_instance_method && !is_constructor) {
     cur_class->patch_func_add_this(params_next, func_location.line_num);
@@ -1546,7 +1529,7 @@ VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType acces
   return name;
 }
 
-VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexPtr> *uses_of_lambda) {
+VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
   bool is_tok_ex_function = (*cur)->type() == tok_ex_function;  // extern_function debugServerLog (...); (костыль, который когда-нибудь уйдёт)
 
   vertex_inner<meta_op_base> flags_inner;
@@ -1706,7 +1689,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
-                                            std::vector<VertexPtr> &&uses_of_lambda) {
+                                            std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda) {
   auto anon_name = gen_anonymous_function_name(cur_function);
   auto anon_location = function->name()->location;
 

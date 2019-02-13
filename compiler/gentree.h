@@ -5,11 +5,6 @@
 #include "compiler/operation.h"
 #include "compiler/token.h"
 
-class GenTree;
-
-typedef VertexPtr (GenTree::*GetFunc)();
-
-
 class GenTree {
 
   template<class T>
@@ -70,12 +65,12 @@ public:
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
 
-  VertexPtr get_func_param_without_callbacks(bool from_callback = false);
-  VertexPtr get_func_param_from_callback();
-  VertexPtr get_func_param();
+  VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
+  VertexAdaptor<op_func_param> get_func_param_from_callback();
+  VertexAdaptor<meta_op_func_param> get_func_param();
   VertexPtr get_foreach_param();
-  VertexPtr get_var_name();
-  VertexPtr get_var_name_ref();
+  VertexAdaptor<op_var> get_var_name();
+  VertexAdaptor<op_var> get_var_name_ref();
   VertexPtr get_expr_top(bool was_arrow);
   VertexPtr get_postfix_expression(VertexPtr res);
   VertexPtr get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary);
@@ -92,12 +87,10 @@ public:
   bool check_statement_end();
   void run();
 
-  template<Operation EmptyOp>
-  bool gen_list(vector<VertexPtr> *res, GetFunc f, TokenType delim, bool disable_kphp_error = false);
+  template<Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
+  bool gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim, bool disable_kphp_error = false);
   template<Operation Op>
   VertexPtr get_conv();
-  template<Operation Op>
-  VertexPtr get_varg_call();
   VertexPtr get_require();
   VertexPtr get_require_once();
   template<Operation Op, Operation EmptyOp>
@@ -108,8 +101,8 @@ public:
   VertexPtr get_def_value();
   template<PrimitiveType ToT>
   static VertexPtr conv_to_lval(VertexPtr x);
-  template<Operation Op>
-  VertexPtr get_multi_call(GetFunc f);
+  template<Operation Op, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
+  VertexAdaptor<op_seq> get_multi_call(FuncT &&f);
   VertexPtr get_return();
   VertexPtr get_exit();
   template<Operation Op>
@@ -120,21 +113,21 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
-  bool parse_function_uses(std::vector<VertexPtr> *uses_of_lambda);
-  static bool check_uses_and_args_are_not_intersect(const std::vector<VertexPtr> &uses, const std::vector<VertexPtr> &params);
+  bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
+  static bool check_uses_and_args_are_not_intersect(const std::vector<VertexAdaptor<op_func_param>> &uses, const std::vector<VertexAdaptor<meta_op_func_param>> &params);
   VertexPtr get_anonymous_function();
-  VertexPtr get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexPtr> *uses_of_lambda = nullptr);
+  VertexPtr get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
-                                            std::vector<VertexPtr> &&uses_of_lambda);
+                                            std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
 
   VertexPtr get_class(Token *phpdoc_token);
 
 private:
   VertexAdaptor<op_func_name> parse_function_declaration(AccessType access_type,
-                                                         std::vector<VertexPtr> *uses_of_lambda,
+                                                         std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda,
                                                          VertexAdaptor<op_func_param_list> &params,
                                                          VertexPtr &flags,
                                                          bool &is_constructor,

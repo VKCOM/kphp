@@ -21,7 +21,7 @@ public:
     if (root->type() == op_constructor_call && root->get_func_id() && root->get_func_id()->is_lambda()) {
       ClassPtr lambda_class = root->get_func_id()->class_id;
       FunctionPtr invoke_method = lambda_class->members.get_instance_method("__invoke")->function;
-      vector<VertexPtr> uses_of_lambda;
+      vector<VertexAdaptor<op_func_param>> uses_of_lambda;
 
       lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
         auto new_var_use = VertexAdaptor<op_var>::create();

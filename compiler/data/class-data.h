@@ -64,7 +64,7 @@ public:
   void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os, bool auto_required = true);
 
   // function fname(args) => function fname($this ::: class_instance, args)
-  void patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num);
+  void patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num);
 
   virtual bool is_lambda_class() const {
     return false;

@@ -142,7 +142,7 @@ void ClassData::create_constructor_with_args(int location_line_num, VertexAdapto
   G->register_and_require_function(ctor_function, os, auto_required);
 }
 
-void ClassData::patch_func_add_this(vector<VertexPtr> &params_next, int location_line_num) {
+void ClassData::patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num) {
   auto vertex_this = gen_vertex_this_with_type_rule(location_line_num);
   auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
   params_next.emplace(params_next.begin(), param_this);
