@@ -17,7 +17,7 @@ struct event_timer {
   double wakeup_time;
 };
 
-int register_wakeup_callback(void (*wakeup)(int wakeup_extra));
+int register_wakeup_callback(void (*wakeup)(event_timer* timer));
 
 event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, int wakeup_extra);
 

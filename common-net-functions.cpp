@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 
 #include "drinkless/dl-utils-lite.h"
 
@@ -186,8 +187,8 @@ static slot_id_t rpc_send_query_default(int host_num __attribute__((unused)), ch
   critical_error (__FUNCTION__);
 }
 
-static void wait_net_events_default(int timeout_ms __attribute__((unused))) {
-  return;
+static void wait_net_events_default(int timeout_ms) {
+  usleep(timeout_ms * 1000);
 }
 
 static net_event_t *pop_net_event_default(void) {

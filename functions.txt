@@ -742,6 +742,8 @@ function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int;
 function wait_queue_next_synchronously ($queue_id ::: int) ::: int;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
+/** @kphp-extern-func-info resumable */
+function sched_yield_sleep($timeout ::: float) ::: void;
 function get_running_fork_id() ::: int;
 
 function query_x2 ($x ::: int) ::: int;

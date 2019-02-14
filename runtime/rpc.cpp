@@ -806,6 +806,10 @@ static void process_rpc_timeout(int request_id) {
   process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
 }
 
+static void process_rpc_timeout(event_timer* timer) {
+  return process_rpc_timeout(timer->wakeup_extra);
+}
+
 int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (unlikely (conn.host_num < 0)) {
     php_warning("Wrong rpc_connection specified");

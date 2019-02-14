@@ -98,6 +98,7 @@ bool f$wait_multiple(int resumable_id);
 var f$wait_result(int resumable_id, double timeout = -1.0);
 
 void f$sched_yield();
+void f$sched_yield_sleep(double timeout);
 
 
 bool in_main_thread();

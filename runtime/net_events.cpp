@@ -1,7 +1,6 @@
 #include "runtime/net_events.h"
 
 #include "PHP/common-net-functions.h"
-
 #include "runtime/allocator.h"
 #include "runtime/rpc.h"
 
@@ -57,10 +56,10 @@ static int process_net_events() {
 
 const int MAX_WAKEUP_CALLBACKS_EXP = 3;
 const int EVENT_TIMERS_HEAP_INDEX_MASK = ((1 << (31 - MAX_WAKEUP_CALLBACKS_EXP)) - 1);
-static void (*wakeup_callbacks[1 << MAX_WAKEUP_CALLBACKS_EXP ])(int wakeup_extra);
+static void (*wakeup_callbacks[1 << MAX_WAKEUP_CALLBACKS_EXP ])(event_timer *timer);
 static int wakeup_callbacks_size;
 
-int register_wakeup_callback(void (*wakeup)(int wakeup_extra)) {
+int register_wakeup_callback(void (*wakeup)(event_timer *timer)) {
   php_assert (dl::query_num == 0);
   php_assert (wakeup != nullptr);
   php_assert (wakeup_callbacks_size < (1 << MAX_WAKEUP_CALLBACKS_EXP));
@@ -146,7 +145,7 @@ int remove_expired_event_timers() {
   int expired_events = 0;
   while (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= precise_now) {
     event_timer *et = event_timers_heap[1];
-    wakeup_callbacks[et->heap_index >> (31 - MAX_WAKEUP_CALLBACKS_EXP)](et->wakeup_extra);
+    wakeup_callbacks[et->heap_index >> (31 - MAX_WAKEUP_CALLBACKS_EXP)](et);
     expired_events++;
   }
   return expired_events;

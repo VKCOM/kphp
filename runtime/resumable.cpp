@@ -736,7 +736,8 @@ public:
 };
 
 
-void process_wait_timeout(int wait_resumable_id) {
+void process_wait_timeout(event_timer *timer) {
+  int wait_resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(wait_resumable_id));
 
   resumable_run_ready(wait_resumable_id);
@@ -1109,7 +1110,8 @@ public:
   }
 };
 
-void process_wait_queue_timeout(int wait_queue_resumable_id) {
+void process_wait_queue_timeout(event_timer *timer) {
+  int wait_queue_resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(wait_queue_resumable_id));
 
   resumable_run_ready(wait_queue_resumable_id);
@@ -1182,6 +1184,29 @@ int f$wait_queue_next_synchronously(int queue_id) {
   return wait_queue_next_synchronously(queue_id);
 }
 
+static int yield_wakeup_id;
+
+void f$sched_yield_sleep(double timeout) {
+  if (in_main_thread()) {
+    resumable_finished = true;
+    return;
+  }
+
+  resumable_finished = false;
+  int id = register_started_resumable(nullptr);
+  allocate_event_timer(timeout + get_precise_now(), yield_wakeup_id, id);
+}
+
+void yielded_resumable_timeout(event_timer *timer) {
+  int resumable_id = timer->wakeup_extra;
+  php_assert (is_started_resumable_id(resumable_id));
+
+  get_started_storage(resumable_id)->save_void();
+
+  yielded_resumables_push(resumable_id);
+  remove_event_timer(timer);
+}
+
 void f$sched_yield() {
   if (in_main_thread()) {
     resumable_finished = true;
@@ -1203,6 +1228,7 @@ void resumable_init_static_once() {
 
   wait_timeout_wakeup_id = register_wakeup_callback(&process_wait_timeout);
   wait_queue_timeout_wakeup_id = register_wakeup_callback(&process_wait_queue_timeout);
+  yield_wakeup_id = register_wakeup_callback(&yielded_resumable_timeout);
 }
 
 void resumable_init_static() {
