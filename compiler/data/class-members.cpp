@@ -9,6 +9,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
+#include "compiler/compiler-core.h"
 
 const string &ClassMemberStaticMethod::global_name() const {
   return function->name;
@@ -58,9 +59,8 @@ inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, Vertex
   def_val(def_val),
   phpdoc_token(phpdoc_token) {
 
-  var = VarPtr(new VarData(VarData::var_instance_t));
+  var = G->create_var(local_name(), VarData::var_instance_t);
   var->class_id = klass;
-  var->name = local_name();
 }
 
 const TypeData *ClassMemberInstanceField::get_inferred_type() const {

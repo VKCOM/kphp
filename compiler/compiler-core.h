@@ -18,6 +18,7 @@
 #include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
+#include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 
@@ -103,6 +104,8 @@ public:
   void del_extra_files();
   void init_dest_dir();
   std::string get_subdir_name() const;
+
+  Stats stats;
 
 private:
   void copy_static_lib_to_out_dir(File &&static_archive) const;

@@ -284,6 +284,7 @@ DefinePtr CompilerCore::get_define(const string &name) {
 VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
   VarPtr var = VarPtr(new VarData(type));
   var->name = name;
+  stats.on_var_inserting(type);
   return var;
 }
 

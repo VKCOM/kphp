@@ -1680,6 +1680,7 @@ VertexPtr GenTree::get_class(Token *phpdoc_token) {
   }
 
   G->register_class(cur_class);
+  ++G->stats.total_classes;
   G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
 
   return {};

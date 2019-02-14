@@ -2592,7 +2592,7 @@ int array<T>::get_reference_counter() const {
 
 template<class T>
 void array<T>::set_reference_counter_to_const() {
-  // some const arrays are placed in code section and can't be modified
+  // some const arrays are placed in read only memory and can't be modified
   if (p->ref_cnt != REF_CNT_FOR_CONST) {
     p->ref_cnt = REF_CNT_FOR_CONST;
   }

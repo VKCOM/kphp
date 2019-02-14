@@ -124,7 +124,7 @@ LambdaPtr LambdaGenerator::generate(FunctionPtr parent_function) {
   });
 
   G->register_class(generated_lambda);
-
+  ++G->stats.total_lambdas;
   return std::move(generated_lambda);
 }
 

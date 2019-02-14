@@ -311,6 +311,7 @@ bool compiler_execute(KphpEnviroment *env) {
   G->finish();
   if (verbosity > 1) {
     profiler_print_all();
+    G->stats.write_to(std::cerr);
     double en = dl_time();
     double passed = en - st;
     fprintf(stderr, "PASSED: %lf\n", passed);
