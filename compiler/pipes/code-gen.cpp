@@ -957,8 +957,6 @@ inline FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bo
 }
 
 inline void FunctionForkDeclaration::compile(CodeGenerator &W) const {
-  kphp_error(!function->is_inline, "you must not use @kphp-inline for functions which contain call of `fork`");
-
   W << "int " << FunctionForkName(function) <<
     "(" << FunctionParams(function, in_header) << ")";
 }

@@ -203,9 +203,15 @@ private:
       }
     }
     for (const auto &func : call_graph.functions) {
-      if (func->is_resumable && func->should_be_sync) {
-        kphp_error (0, format("Function [%s] marked with @kphp-sync, but turn up to be resumable\n"
-                               "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
+      if (func->is_resumable) {
+        if (func->should_be_sync) {
+          kphp_error (0, format("Function [%s] marked with @kphp-sync, but turn up to be resumable\n"
+                                "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
+        }
+        if (func->is_inline) {
+          kphp_error(func->is_auto_inherited, format("you must not use @kphp-inline for resumable function %s", func->get_human_readable_name().c_str()));
+          func->is_inline = false;
+        }
       }
     }
     if (G->env().get_print_resumable_graph()) {
