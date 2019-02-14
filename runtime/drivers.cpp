@@ -2043,15 +2043,15 @@ bool db_driver::mysql_query(const string &query) {
   return true;
 }
 
-OrFalse<array<var>> db_driver::mysql_fetch_array(int query_id) {
+var db_driver::mysql_fetch_array(int query_id) {
   if (query_id <= 0 || query_id > biggest_query_id) {
-    return false;
+    return var();
   }
 
   array<array<var>> &query_result = query_results[query_id];
   int &cur = cur_pos[query_id];
   if (cur >= (int)query_result.count()) {
-    return false;
+    return var();
   }
   array<var> result = query_result[cur++];
   if (cur >= (int)query_result.count()) {
@@ -2105,10 +2105,10 @@ int db_get_insert_id(const MyDB &db) {
   return db.db->get_insert_id();
 }
 
-OrFalse<array<var>> db_fetch_array(const MyDB &db, int query_id) {
+var db_fetch_array(const MyDB &db, int query_id) {
   if (db.db == nullptr) {
     php_warning("DB object is NULL in DB->get_insert_id");
-    return false;
+    return var();
   }
   return db.db->mysql_fetch_array(query_id);
 }
@@ -2176,7 +2176,7 @@ int f$mysqli_affected_rows(const MyDB &dn) {
   return db_get_affected_rows(dn);
 }
 
-OrFalse<array<var>> f$mysqli_fetch_array(int query_id_var, int result_type) {
+var f$mysqli_fetch_array(int query_id_var, int result_type) {
   if (result_type != 1) {
     php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
   }

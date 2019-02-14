@@ -354,7 +354,7 @@ public:
 
   var mysql_query_update_last(const string &query_string);
 
-  OrFalse<array<var>> mysql_fetch_array(int query_id);
+  var mysql_fetch_array(int query_id);
 
 
   friend string f$mysqli_error(const MyDB &db);
@@ -383,7 +383,7 @@ public:
 
   friend int db_get_insert_id(const MyDB &db);
 
-  friend OrFalse<array<var>> db_fetch_array(const MyDB &db, int query_id);
+  friend var db_fetch_array(const MyDB &db, int query_id);
 
   friend bool f$boolval(const MyDB &my_db);
   friend bool eq2(const MyDB &my_db, bool value);
@@ -423,7 +423,7 @@ int f$mysqli_errno(const MyDB &db);
 
 int f$mysqli_affected_rows(const MyDB &dn);
 
-OrFalse<array<var>> f$mysqli_fetch_array(int query_id_var, int result_type);
+var f$mysqli_fetch_array(int query_id_var, int result_type);
 
 int f$mysqli_insert_id(const MyDB &dn);
 

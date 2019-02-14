@@ -520,7 +520,7 @@ function mysqli_error($dn ::: DB) ::: string;
 define('MYSQLI_ASSOC', 1);
 
 function mysqli_affected_rows($dn ::: DB) ::: int;
-function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: OrFalse <array <var> >;
+function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: var;
 function mysqli_insert_id($dn ::: DB) ::: int;
 function mysqli_num_rows($query_id ::: int) ::: int;
 function mysqli_query($dn ::: DB, $query ::: string) ::: var;
