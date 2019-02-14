@@ -15,6 +15,7 @@ class SortAndInheritClassesF {
   TSHashTable<wait_list> ht;
 
   void on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream);
+  void analyze_class_phpdoc(ClassPtr klass);
 
   VertexAdaptor<op_function> generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name);
   FunctionPtr create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name);

@@ -37,6 +37,7 @@ private:
   TSHashTable<ClassPtr> classes_ht;
   // это костыль, который должен уйти, когда мы перепишем часть php-кода
   TSHashTable<VertexPtr> extern_func_headers_ht;
+  ClassPtr memcache_class;
 
 
   inline bool try_require_file(SrcFilePtr file);
@@ -77,6 +78,8 @@ public:
 
   FunctionPtr get_function(const string &name);
   ClassPtr get_class(const string &name);
+  ClassPtr get_memcache_class();
+  void set_memcache_class(ClassPtr klass);
 
   VertexPtr get_extern_func_header(const string &name);
   void save_extern_func_header(const string &name, VertexPtr header);

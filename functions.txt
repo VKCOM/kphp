@@ -35,7 +35,8 @@ class Memcache {
     public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
     /** @kphp-extern-func-info can_throw */
     public function increment ($key ::: string, $v ::: Any = 1) ::: var;
-    
+
+    public function getVersion () ::: var;
     public function getLastQueryTime () ::: var;
     public function bufferNextLog () ::: void;
     public function flushLogBuffer () ::: void;
@@ -56,8 +57,6 @@ $_ENV ::: var;
 $argc ::: var;
 $argv ::: var;
 
-$MC ::: Memcache;
-$MC_True ::: Memcache;
 $config ::: var;
 $Durov ::: var;
 $FullMCTime ::: var;

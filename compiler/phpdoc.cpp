@@ -23,7 +23,8 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-disable-warnings", kphp_disable_warnings},
   {"@kphp-extern-func-info", kphp_extern_func_info},
   {"@kphp-template",         kphp_template},
-  {"@kphp-return",           kphp_return}
+  {"@kphp-return",           kphp_return},
+  {"@kphp-memcache-class",   kphp_memcache_class},
 };
 
 /*

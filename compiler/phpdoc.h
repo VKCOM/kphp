@@ -20,7 +20,8 @@ struct php_doc_tag {
     kphp_lib_export,
     kphp_sync,
     kphp_template,
-    kphp_return
+    kphp_return,
+    kphp_memcache_class,
   };
 
 public:

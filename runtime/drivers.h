@@ -244,8 +244,10 @@ public:
   friend bool f$boolval(const Memcache &my_mc);
   friend bool eq2(const Memcache &my_mc, bool value);
   friend bool eq2(bool value, const Memcache &my_mc);
+  friend bool eq2(const Memcache &mc1, const Memcache &mc2);
   friend bool equals(bool value, const Memcache &my_mc);
   friend bool equals(const Memcache &my_mc, bool value);
+  friend bool equals(const Memcache &mc1, const Memcache &mc2);
 
   Memcache &operator=(bool value);
   Memcache(bool value);

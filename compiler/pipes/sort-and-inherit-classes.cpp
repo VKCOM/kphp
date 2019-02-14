@@ -3,6 +3,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/gentree.h"
+#include "compiler/phpdoc.h"
 #include "compiler/threading/profiler.h"
 
 /**
@@ -168,6 +169,18 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
       case ctype_trait:
         kphp_assert(0 && "mixin traits is not supported yet");
         break;
+    }
+  }
+
+  if (klass->phpdoc_token) {
+    analyze_class_phpdoc(klass);
+  }
+}
+
+inline void SortAndInheritClassesF::analyze_class_phpdoc(ClassPtr klass) {
+  for (const auto &tag : parse_php_doc(klass->phpdoc_token->str_val)) {
+    if (tag.type == php_doc_tag::kphp_memcache_class) {
+      G->set_memcache_class(klass);
     }
   }
 }

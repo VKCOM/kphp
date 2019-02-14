@@ -249,6 +249,19 @@ ClassPtr CompilerCore::get_class(const string &name) {
   return classes_ht.at(hash_ll(name))->data;
 }
 
+ClassPtr CompilerCore::get_memcache_class() {
+  if (!memcache_class) {            // если нет специального
+    return get_class("Memcache");   // то берём из functions.txt
+  }
+  return memcache_class;
+}
+
+void CompilerCore::set_memcache_class(ClassPtr klass) {
+  kphp_error(!memcache_class || memcache_class == klass,
+             format("Duplicate Memcache realization %s and %s", memcache_class->name.c_str(), klass->name.c_str()));
+  memcache_class = klass;
+}
+
 bool CompilerCore::register_define(DefinePtr def_id) {
   TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(hash_ll(def_id->name));
   AutoLocker<Lockable *> locker(node);

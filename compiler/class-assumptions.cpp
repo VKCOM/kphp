@@ -233,10 +233,9 @@ void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAdaptor<o
  * Здесь зашиты global built-in переменные в нашем коде с заранее известными именами
  */
 void analyze_global_var(FunctionPtr f, const std::string &var_name) {
-  if (var_name == "MC" || var_name == "MC_Local" || var_name == "MC2" || var_name == "MC_Ads"
-      || var_name == "PMC" || var_name == "mc_fast" || var_name == "MC_Config" || var_name == "MC_Stats"
-      || var_name == "MC_Log") {
-    assumption_add_for_var(f, assum_instance, var_name, G->get_class("Memcache"));
+  if (var_name == "MC" || var_name == "MC_Local" || var_name == "MC_Ads" || var_name == "MC_Log"
+      || var_name == "PMC" || var_name == "mc_fast" || var_name == "MC_Config" || var_name == "MC_Stats") {
+    assumption_add_for_var(f, assum_instance, var_name, G->get_memcache_class());
   }
 }
 
@@ -479,7 +478,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
 
   if (f->type == FunctionData::func_global || f->type == FunctionData::func_switch) {
     if ((var_name.size() == 2 && var_name == "MC") || (var_name.size() == 3 && var_name == "PMC")) {
-      assumption_add_for_var(f, assum_instance, var_name, G->get_class("Memcache"));
+      analyze_global_var(f, var_name);
     }
   }
 

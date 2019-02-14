@@ -1430,12 +1430,20 @@ bool eq2(bool value, const Memcache &my_mc) {
   return value == my_mc.bool_value;
 }
 
+bool eq2(const Memcache &mc1, const Memcache &mc2) {
+  return mc1.bool_value == mc2.bool_value && mc1.mc == mc2.mc;
+}
+
 bool equals(bool value, const Memcache &my_mc) {
   return equals(value, my_mc.bool_value);
 }
 
 bool equals(const Memcache &my_mc, bool value) {
   return equals(my_mc.bool_value, value);
+}
+
+bool equals(const Memcache &mc1, const Memcache &mc2) {
+  return mc1.bool_value == mc2.bool_value && mc1.mc == mc2.mc;
 }
 
 
