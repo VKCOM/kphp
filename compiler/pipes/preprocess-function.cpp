@@ -182,15 +182,7 @@ private:
             }
           }
 
-          if (assum == assum_instance_array) {
-            name_of_function_instance += "$arr";
-          }
-
-          if (assum != assum_not_instance) {
-            name_of_function_instance += "$" + replace_backslashes(class_corresponding_to_parameter->name);
-          } else {
-            name_of_function_instance += "$" + std::to_string(i) + "not_instance";
-          }
+          name_of_function_instance += FunctionData::encode_template_arg_name(assum, i, class_corresponding_to_parameter);
         }
       }
     }

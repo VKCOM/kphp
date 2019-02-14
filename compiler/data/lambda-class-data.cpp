@@ -114,7 +114,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   VertexRange extern_func_params = extern_function_call->get_func_id()->get_params();
   auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p->type() == op_func_param_callback; });
   kphp_assert(callback_it != extern_func_params.end());
-  size_t callback_pos = static_cast<size_t>(std::distance(extern_func_params.begin(), callback_it));
+  auto callback_pos = static_cast<size_t>(std::distance(extern_func_params.begin(), callback_it));
   if (auto call_func_ptr = call_params[callback_pos].try_as<op_func_ptr>()) {
     if (call_func_ptr->has_bound_class()) {
       return call_func_ptr->get_string();
@@ -134,29 +134,25 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
         infer_type_of_callback_arg(type_rule.as<op_common_type_rule>()->rule(), call_params, function_context, extern_func_params, assum, klass_assumed);
     }
 
+    invoke_method_name += FunctionData::encode_template_arg_name(assum, i + 1, klass_assumed);
+    if (!template_type_id_to_ClassPtr) {
+      continue;
+    }
+
+    auto template_invoke_params = (*template_of_invoke_method)->get_params();
+    auto &type_id = template_invoke_params[i + 1].as<op_func_param>()->template_type_id;
     switch (assum) {
       case assum_unknown:
       case assum_not_instance: {
         kphp_assert(callback_param->type_help != tp_Unknown);
-        invoke_method_name += "$" + std::to_string(i + 1) + "not_instance";
-        if (template_type_id_to_ClassPtr) {
-          auto template_invoke_params = (*template_of_invoke_method)->get_params();
-          template_invoke_params[i + 1].as<op_func_param>()->template_type_id = -1;
-        }
+        type_id = -1;
         break;
       }
 
       case assum_instance_array:
-        invoke_method_name += "$arr";
-        /* fallthrough */
       case assum_instance: {
-        invoke_method_name += "$" + replace_backslashes(klass_assumed->name);
-        if (template_type_id_to_ClassPtr) {
-          auto template_invoke_params = (*template_of_invoke_method)->get_params();
-          auto type_id = template_invoke_params[i + 1].as<op_func_param>()->template_type_id;
-          if (type_id > -1) {
-            template_type_id_to_ClassPtr->emplace(type_id, std::make_pair(assum_instance, klass_assumed));
-          }
+        if (type_id > -1) {
+          template_type_id_to_ClassPtr->emplace(type_id, std::make_pair(assum, klass_assumed));
         }
         break;
       }

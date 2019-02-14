@@ -41,6 +41,23 @@ void FunctionData::update_location_in_body() {
   update_location(root);
 }
 
+std::string FunctionData::encode_template_arg_name(AssumType assum, int id, ClassPtr klass) {
+  switch (assum) {
+    case assum_not_instance:
+    case assum_unknown:
+      return "$" + std::to_string(id) + "not_instance";
+
+    case assum_instance_array:
+      return "$arr$" + replace_backslashes(klass->name);
+
+    case assum_instance:
+      return "$" + replace_backslashes(klass->name);
+      
+    default:
+      __builtin_unreachable();
+  }
+}
+
 FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
@@ -135,7 +152,11 @@ std::string FunctionData::get_human_readable_name(const std::string &name) {
 }
 
 string FunctionData::get_human_readable_name() const {
-  return access_type == access_nonmember ? name : get_human_readable_name(name);
+  if (access_type == access_nonmember) {
+    return name;
+  }
+
+  return is_lambda() ? "anonymous(...)" : get_human_readable_name(name);
 }
 
 void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule) {
@@ -151,7 +172,7 @@ bool FunctionData::is_imported_from_static_lib() const {
   return file_id->owner_lib && !file_id->owner_lib->is_raw_php() && &(*file_id->main_function) != this;
 }
 
-VertexRange FunctionData::get_params() {
+VertexRange FunctionData::get_params() const {
   return ::get_function_params(root);
 }
 
