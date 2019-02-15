@@ -26,6 +26,8 @@
 #include "compiler/data/src-file.h"
 #include "compiler/phpdoc.h"
 
+AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
+
 AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
   for (const auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
@@ -350,17 +352,32 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     }
 
     if (!template_arg_name.empty() && !template_type_of_arg.empty()) {
+      auto type_and_field_name = split_skipping_delimeters(type_str, ":");
+      kphp_error_act(vk::any_of_equal(type_and_field_name.size(), 1, 2), "wrong kphp-return supplied", return false);
+
+      type_str = std::move(type_and_field_name[0]);
+      std::string field_name = type_and_field_name.size() > 1 ? std::move(type_and_field_name.back()) : "";
+
       bool return_type_eq_arg_type = template_type_of_arg == type_str;
       bool return_type_arr_of_arg_type = (template_type_of_arg + "[]") == type_str;
       bool return_type_element_of_arg_type = template_type_of_arg == (type_str + "[]");
+      if (vk::string_view(field_name).ends_with("[]")) {
+        field_name.erase(std::prev(field_name.end(), 2), field_name.end());
+        return_type_arr_of_arg_type = true;
+      }
 
       if (return_type_eq_arg_type || return_type_arr_of_arg_type || return_type_element_of_arg_type) {
         ClassPtr klass;
         AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
 
+        if (!field_name.empty()) {
+          kphp_error_act(klass, format("try to get type of field(%s) of non-instance", field_name.c_str()), return false);
+          assum = calc_assumption_for_class_var(klass, field_name, klass);
+        }
+
         if (assum == assum_instance && return_type_arr_of_arg_type) {
           assumption_add_for_return(f, assum_instance_array, klass);
-        } else if (assum == assum_instance_array && return_type_element_of_arg_type) {
+        } else if (assum == assum_instance_array && return_type_element_of_arg_type && field_name.empty()) {
           assumption_add_for_return(f, assum_instance, klass);
         } else {
           assumption_add_for_return(f, assum, klass);
