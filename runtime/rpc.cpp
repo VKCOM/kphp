@@ -183,7 +183,7 @@ bool rpc_set_pos(int pos) {
 
 static inline void check_rpc_data_len(int len) {
   if (rpc_data_len < len) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
     return;
   }
   rpc_data_len -= len;
@@ -312,7 +312,7 @@ static inline const char *f$fetch_string_raw(int *string_len) {
     TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return nullptr);
     rpc_data += ((result_len + 7) >> 2);
   } else {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
     return nullptr;
   }
 
@@ -356,7 +356,7 @@ var f$fetch_memcache_value() {
     }
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
-      THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Wrong memcache.Value constructor", 24), -1));
+      THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Wrong memcache.Value constructor", 32), -1));
       return var();
     }
   }
@@ -368,7 +368,7 @@ bool f$fetch_eof() {
 
 bool f$fetch_end() {
   if (rpc_data_len) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Too much data to fetch", 22), -2));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Too much data to fetch", 22), -2));
     return false;
   }
   return true;
@@ -995,7 +995,7 @@ protected:
       }
 
       rpc_request res = input->load<rpc_request, rpc_request>();
-      php_assert (CurException == nullptr);
+      php_assert (CurException.is_null());
 
       if (res.resumable_id == -2) {
         last_rpc_error = res.error;
@@ -1056,7 +1056,7 @@ protected:
       }
 
       rpc_request res = input->load<rpc_request, rpc_request>();
-      php_assert (CurException == nullptr);
+      php_assert (CurException.is_null());
 
       if (res.resumable_id == -2) {
         last_rpc_error = res.error;
@@ -1654,9 +1654,9 @@ tl_tree *store_function(const var &tl_object) {
   last_arr_ptr = var_stack;
   //fprintf (stderr, "Before TLUNI_START in STORE\n");
   res = (tl_tree *)((*(function_ptr *)c->IP)(c->IP + 1, Data_stack, var_stack, vars));
-  if (CurException) {
+  if (!CurException.is_null()) {
     res = nullptr;
-    FREE_EXCEPTION;
+    CurException = false;
   }
   //fprintf (stderr, "Before FREE in STORE\n");
   free_var_space(vars, c->var_count);
@@ -1729,15 +1729,15 @@ array<var> fetch_function(tl_tree *T) {
   int x = 0;
 
   x = rpc_lookup_int();
-  if (x == RPC_REQ_ERROR && !CurException) {
+  if (x == RPC_REQ_ERROR && CurException.is_null()) {
     php_assert (tl_parse_int() == RPC_REQ_ERROR);
-    if (!CurException) {
+    if (CurException.is_null()) {
       tl_parse_long();
-      if (!CurException) {
+      if (CurException.is_null()) {
         int error_code = tl_parse_int();
-        if (!CurException) {
+        if (CurException.is_null()) {
           string error = tl_parse_string();
-          if (!CurException) {
+          if (CurException.is_null()) {
             T->destroy();
 
             return tl_fetch_error(error, error_code);
@@ -1747,11 +1747,11 @@ array<var> fetch_function(tl_tree *T) {
     }
   }
 
-  if (CurException) {
+  if (!CurException.is_null()) {
     T->destroy();
 
     array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
-    FREE_EXCEPTION;
+    CurException = false;
     return result;
   }
 
@@ -1765,11 +1765,11 @@ array<var> fetch_function(tl_tree *T) {
 
   //fprintf (stderr, "Before TLUNI_START in FETCH\n");
   res = (tl_tree *)((*(function_ptr *)tl_config.fetchIP)(tl_config.fetchIP + 1, Data_stack + 1, var_stack, vars_buffer + MAX_VARS));
-  if (CurException) {
+  if (!CurException.is_null()) {
     free_arr_space();
     array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
     var_stack[0] = var();
-    FREE_EXCEPTION;
+    CurException = false;
     return result;
   }
   //fprintf (stderr, "After TLUNI_START in FETCH\n");
@@ -1845,7 +1845,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
 
   int magic = TRY_CALL_ (int, f$fetch_int(), return false);
   if (magic != TL_DICTIONARY) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("Strange dictionary magic", 24), -1));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Strange dictionary magic", 24), -1));
     return false;
   };
 
@@ -1858,13 +1858,13 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   for (int j = 0; j < cnt; ++j) {
     string key = f$fetch_string();
 
-    if (CurException) {
+    if (!CurException.is_null()) {
       return false;
     }
 
     var value = f$fetch_memcache_value();
 
-    if (CurException) {
+    if (!CurException.is_null()) {
       return false;
     }
 
@@ -2456,7 +2456,7 @@ void *tlcomb_fetch_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("vector size is negative"), -1));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("vector size is negative"), -1));
     return nullptr;
   }
 
@@ -2492,7 +2492,7 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
     return nullptr;
   }
 
@@ -2525,7 +2525,7 @@ void *tlcomb_fetch_int_key_dictionary(void **IP, void **Data, var *arr, tl_tree 
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
     return nullptr;
   }
 
@@ -2558,7 +2558,7 @@ void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, var *arr, tl_tree
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
     return nullptr;
   }
 

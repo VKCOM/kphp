@@ -326,16 +326,16 @@ void PHPScriptBase::run(void) {
   assert (run_main->run != nullptr);
 
   init_runtime_environment(data, run_mem, mem_size);
-  CurException = nullptr;
+  CurException = false;
   run_main->run();
-  if (!CurException) {
+  if (CurException.is_null()) {
     set_script_result(nullptr);
   } else {
-    const Exception &e = *CurException;
+    const Exception &e = CurException;
     const char *msg = dl_pstr("%s%d%sError %d: %s.\nUnhandled Exception caught in file %s at line %d.\n"
                               "Backtrace:\n%s",
                               engine_tag, (int)time(nullptr), engine_pid,
-                              e.code, e.message.c_str(), e.file.c_str(), e.line,
+                              e->code, e->message.c_str(), e->file.c_str(), e->line,
                               f$Exception$$getTraceAsString(e).c_str());
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "-------------------------------\n\n");

@@ -585,7 +585,7 @@ inline void get_cpp_style_type(const TypeData *type, string &res) {
       break;
     }
     case tp_Class: {
-      if (!type->class_type()->is_builtin()) {
+      if (type->class_type()->name != "Memcache") {
         res += "class_instance<";
         res += type->class_type()->src_name;
         res += ">";

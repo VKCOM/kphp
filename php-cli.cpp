@@ -24,10 +24,11 @@ int main(int argc, char **argv) {
   init_runtime_environment(nullptr, memory_buffer, 1 << 29);
   script_t *script = get_script("#0");
   script->run();
-  if (CurException) {
-    Exception e = *CurException;
-    fprintf(stderr, "Unhandled Exception caught in file %s at line %d. Error %d: %s.\n", e.file.c_str(), e.line, e.code, e.message.c_str());
-    fprintf(stderr, "Backtrace:\n%s", f$Exception$$getTraceAsString(e).c_str());
+  if (!CurException.is_null()) {
+    fprintf(stderr, "Unhandled Exception caught in file %s at line %d. Error %d: %s.\n",
+      CurException->file.c_str(), CurException->line,
+      CurException->code, CurException->message.c_str());
+    fprintf(stderr, "Backtrace:\n%s", f$Exception$$getTraceAsString(CurException).c_str());
   }
   script->clear();
   free_runtime_environment();

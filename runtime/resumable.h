@@ -189,7 +189,7 @@ struct Storage::load_implementation_helper<void, var, std::false_type> {
 
 template<class T1, class T2>
 void Storage::save(const T2 &x, Getter getter) {
-  if (CurException) {
+  if (!CurException.is_null()) {
     save_exception();
   } else {
     if (sizeof(T1) <= sizeof(storage_)) {

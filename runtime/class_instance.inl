@@ -18,6 +18,12 @@ class_instance<T>::class_instance(const class_instance<T> &other) :
 }
 
 template<class T>
+class_instance<T>::class_instance(class_instance<T> &&other) noexcept :
+  o(other.o) {
+  other.o = nullptr;
+}
+
+template<class T>
 class_instance<T>::class_instance(bool value __attribute__((unused))) :
   o(NULL) {
 }
@@ -31,6 +37,17 @@ class_instance<T> &class_instance<T>::operator=(const class_instance<T> &other) 
   o = other.o;
   return *this;
 }
+
+template<class T>
+class_instance<T> &class_instance<T>::operator=(class_instance<T> &&other) noexcept {
+  if (this != &other) {
+    destroy();
+    o = other.o;
+    other.o = nullptr;
+  }
+  return *this;
+}
+
 
 template<class T>
 class_instance<T> &class_instance<T>::operator=(bool value __attribute__((unused))) {

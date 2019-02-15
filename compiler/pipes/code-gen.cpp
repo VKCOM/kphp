@@ -2286,8 +2286,7 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
       "if (0) " <<
       BEGIN <<
       catch_label << ":;" << NL << //TODO: Label (lable_id) ?
-      root->exception() << " = *CurException;" << NL <<
-      "FREE_EXCEPTION;" << NL <<
+      root->exception() << " = std::move(CurException);" << NL <<
       root->catch_cmd() << NL <<
       END << NL;
   }

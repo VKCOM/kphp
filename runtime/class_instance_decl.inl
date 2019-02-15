@@ -26,8 +26,10 @@ public:
 
   inline class_instance();
   inline class_instance(const class_instance<T> &other);
+  inline class_instance(class_instance<T> &&other) noexcept;
   inline class_instance(bool value);
   inline class_instance &operator=(const class_instance<T> &other);
+  inline class_instance &operator=(class_instance<T> &&other) noexcept;
   inline class_instance &operator=(bool value);
   inline class_instance clone() const;
   inline ~class_instance();

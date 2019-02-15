@@ -20,8 +20,8 @@ Storage::Storage() :
 }
 
 var Storage::load_exception(char *storage) {
-  php_assert (CurException == nullptr);
-  CurException = load_implementation_helper<Exception *, Exception *>::load(storage);
+  php_assert (CurException.is_null());
+  CurException = load_implementation_helper<Exception, Exception>::load(storage);
   return var();
 }
 
@@ -37,7 +37,7 @@ var Storage::load_as_var() {
 }
 
 void Storage::save_void() {
-  if (CurException) {
+  if (!CurException.is_null()) {
     save_exception();
   } else {
     getter_ = load_implementation_helper<void, var>::load;
@@ -45,10 +45,9 @@ void Storage::save_void() {
 }
 
 void Storage::save_exception() {
-  php_assert (CurException != nullptr);
-  Exception *exception = CurException;
-  CurException = nullptr;
-  save<Exception *>(exception, load_exception);
+  php_assert (!CurException.is_null());
+  Exception exception = std::move(CurException);
+  save<Exception>(exception, load_exception);
 }
 
 Storage *Resumable::input_;
