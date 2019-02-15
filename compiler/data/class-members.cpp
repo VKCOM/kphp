@@ -28,11 +28,12 @@ string ClassMemberInstanceMethod::local_name() const {
 }
 
 
-inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type) :
+inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, Token *phpdoc_token) :
   access_type(access_type),
   full_name(replace_backslashes(klass->name) + "$$" + root->get_string()),
   root(root),
-  init_val(init_val) {}
+  init_val(init_val),
+  phpdoc_token(phpdoc_token) {}
 
 const string &ClassMemberStaticField::global_name() const {
   return full_name;
@@ -118,9 +119,9 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   }
 }
 
-void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type) {
+void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, Token *phpdoc_token) {
   string hash_name = "$" + root->str_val;
-  append_member(hash_name, ClassMemberStaticField(klass, root, init_val, access_type));
+  append_member(hash_name, ClassMemberStaticField(klass, root, init_val, access_type, phpdoc_token));
 }
 
 void ClassMembersContainer::add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type) {

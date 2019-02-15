@@ -54,8 +54,9 @@ struct ClassMemberStaticField {
   string full_name;
   VertexAdaptor<op_var> root;
   VertexPtr init_val;          // op_empty в случае отсутствия значения, или какое-то выражение
+  Token *phpdoc_token;
 
-  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type);
+  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, Token *phpdoc_token);
 
   const string &global_name() const;
   const string &local_name() const;
@@ -163,7 +164,7 @@ public:
 
   void add_static_method(FunctionPtr function, AccessType access_type);
   void add_instance_method(FunctionPtr function, AccessType access_type);
-  void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type);
+  void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, Token *phpdoc_token);
   void add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type);
   void add_constant(string const_name, VertexPtr value);
 

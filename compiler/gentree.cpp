@@ -1774,7 +1774,7 @@ AccessType convert_token_type_to_access_type(TokenType access_token, bool is_sta
             access_token == tok_private ? access_private : access_protected);
 }
 
-VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unused)), AccessType access_type) {
+VertexPtr GenTree::get_static_field_list(Token *phpdoc_token, AccessType access_type) {
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);  // cur сразу перед $field_name
   CE (check_statement_end());
 
@@ -1783,13 +1783,13 @@ VertexPtr GenTree::get_static_field_list(Token *phpdoc_token __attribute__ ((unu
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), access_type);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), access_type, phpdoc_token);
         break;
       }
       case op_set: {
         auto set_expr = node.as<op_set>();
         kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
-        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), access_type);
+        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), access_type, phpdoc_token);
         break;
       }
       default:

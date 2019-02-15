@@ -450,6 +450,11 @@ void init_assumptions_for_all_vars(ClassPtr c) {
       analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_token);
     }
   });
+  c->members.for_each([&](ClassMemberStaticField &f) {
+    if (f.phpdoc_token) {
+      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_token);
+    }
+  });
 }
 
 
@@ -485,6 +490,14 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
   AssumType calculated = assumption_get_for_var(f, var_name, out_class);
   if (calculated != assum_unknown) {
     return calculated;
+  }
+
+  auto pos = var_name.find("$$");
+  if (pos != std::string::npos) {   // static переменная класса, просто используется внутри функции
+    ClassPtr of_class = G->get_class(replace_characters(var_name.substr(0, pos), '$', '\\'));
+    if (of_class) {
+      return calc_assumption_for_class_var(of_class, var_name.substr(pos + 2), out_class);
+    }
   }
 
   f->assumptions_for_vars.emplace_back(assum_not_instance, var_name, ClassPtr());
@@ -528,7 +541,7 @@ AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
 AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
   if (c->assumptions_inited_vars == 0) {
     if (__sync_bool_compare_and_swap(&c->assumptions_inited_vars, 0, 1)) {
-      init_assumptions_for_all_vars(c);
+      init_assumptions_for_all_vars(c);   // как инстанс-переменные, так и статические
       __sync_synchronize();
       c->assumptions_inited_vars = 2;
     }
