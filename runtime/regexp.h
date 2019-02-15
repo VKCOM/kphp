@@ -92,6 +92,7 @@ public:
   static void global_init();
 };
 
+void global_init_regexp_lib();
 
 inline void preg_add_match(array<var> &v, const var &match, const string &name);
 inline void preg_add_match(array<string> &v, const string &match, const string &name);

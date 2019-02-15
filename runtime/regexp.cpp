@@ -1047,7 +1047,6 @@ string f$preg_quote(const string &str, const string &delimiter) {
   return static_SB.str();
 }
 
-
 void regexp::global_init() {
   pcre_malloc = dl::malloc_replace;
   pcre_free = dl::free_replace;
@@ -1055,5 +1054,9 @@ void regexp::global_init() {
   extra.flags = PCRE_EXTRA_MATCH_LIMIT | PCRE_EXTRA_MATCH_LIMIT_RECURSION;
   extra.match_limit = PCRE_BACKTRACK_LIMIT;
   extra.match_limit_recursion = PCRE_RECURSION_LIMIT;
+}
+
+void global_init_regexp_lib() {
+  regexp::global_init();
 }
 

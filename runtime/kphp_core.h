@@ -50,14 +50,9 @@ class UnknownType {
   }                                        \
 })
 
-template<typename T, typename T1>
-void hard_reset_var(T &var, T1 &&init_value) noexcept {
-  new(&var) T(std::forward<T1>(init_value));
-}
-
-template<typename T>
-void hard_reset_var(T &var) noexcept {
-  new(&var) T();
+template<typename T, typename ...Args>
+void hard_reset_var(T &var, Args &&... args) noexcept {
+  new(&var) T(std::forward<Args>(args)...);
 }
 
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})

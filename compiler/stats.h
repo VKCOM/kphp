@@ -21,7 +21,6 @@ private:
   std::atomic<std::uint64_t> param_vars_{0u};
   std::atomic<std::uint64_t> static_vars_{0u};
   std::atomic<std::uint64_t> instance_vars_{0u};
-
 };
 
 

@@ -1966,7 +1966,7 @@ void global_init_runtime_libs() {
   global_init_files_lib();
   global_init_interface_lib();
   global_init_openssl_lib();
-  regexp::global_init();
+  global_init_regexp_lib();
   global_init_resumable_lib();
   global_init_rpc_lib();
   global_init_udp_lib();
@@ -1983,7 +1983,7 @@ void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
 
   init_drivers_lib();
-  int_datetime_lib();
+  init_datetime_lib();
   init_net_events_lib();
   init_resumable_lib();
   init_rpc_lib();

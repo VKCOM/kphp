@@ -576,103 +576,86 @@ bool operator==(const TypeData &a, const TypeData &b) {
   return cmp(&a, &b) == 0;
 }
 
-void append_class_name(const TypeData *type, type_out_style out_style, string *res) {
-  if (!type->class_type()->is_builtin()) {
-    if (out_style == type_out_style::cpp) {
-      *res += "class_instance<";
-    }
-    *res += type->class_type()->src_name;
-    if (out_style == type_out_style::cpp) {
-      *res += ">";
-    }
-  } else {
-    *res += type->class_type()->name;
-  }
-}
-
-void append_primitive_typename(const TypeData *type, type_out_style out_style, string *res) {
+inline void get_cpp_style_type(const TypeData *type, string &res) {
   const PrimitiveType tp = type->get_real_ptype();
-
-  if (out_style == type_out_style::txt) {
-    *res += ptype_name(tp);
-    return;
-  }
-  if (out_style == type_out_style::var_name) {
-    *res += ptype_name(tp);
-    if (tp == tp_Class) {
-      *res += "$";
-      append_class_name(type, out_style, res);
-    }
-    return;
-  }
 
   switch (tp) {
     case tp_DB: {
-      *res += "MyDB";
+      res += "MyDB";
       break;
     }
     case tp_Class: {
-      append_class_name(type, out_style, res);
+      if (!type->class_type()->is_builtin()) {
+        res += "class_instance<";
+        res += type->class_type()->src_name;
+        res += ">";
+      } else {
+        res += type->class_type()->name;
+      }
       break;
     }
     case tp_RPC: {
-      *res += "rpc_connection";
+      res += "rpc_connection";
       break;
     }
     case tp_float: {
-      *res += "double";
+      res += "double";
       break;
     }
     case tp_tuple: {
-      *res += "std::tuple";
+      res += "std::tuple";
       break;
     }
     default : {
-      *res += ptype_name(tp);
+      res += ptype_name(tp);
       break;
     }
   }
 }
 
-void type_out_impl(const TypeData *type, string *res, type_out_style out_style) {
+void type_out_impl(const TypeData *type, string &res, bool cpp_out) {
   const PrimitiveType tp = type->get_real_ptype();
   const bool or_false = type->use_or_false() && tp != tp_bool;
 
   if (or_false) {
-    *res += out_style == type_out_style::var_name ? "or_false$" : "OrFalse < ";
+    res += "OrFalse < ";
   }
 
-  append_primitive_typename(type, out_style, res);
+  if (cpp_out) {
+    get_cpp_style_type(type, res);
+  } else {
+    res += ptype_name(tp);
+  }
 
   const bool need_any_key = tp == tp_array;
   const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
   if (anykey_value) {
-    *res += out_style == type_out_style::var_name ? "$" : "< ";
-    type_out_impl(anykey_value, res, out_style);
-    *res += out_style == type_out_style::var_name ? "$" : " >";
+    res += "< ";
+    type_out_impl(anykey_value, res, cpp_out);
+    res += " >";
   }
 
   const bool need_all_subkeys = tp == tp_tuple;
   if (need_all_subkeys) {
-    *res += out_style == type_out_style::var_name ? "$" : "<";
+    res += "<";
     for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
       if (subkey != type->lookup_begin()) {
-        *res += out_style == type_out_style::var_name ? "$" : " , ";
+        res += " , ";
       }
       kphp_assert(subkey->first.is_int_key());
-      type_out_impl(type->const_read_at(subkey->first), res, out_style);
+      type_out_impl(type->const_read_at(subkey->first), res, cpp_out);
     }
-    *res += out_style == type_out_style::var_name ? "$" : ">";
+    res += ">";
   }
 
   if (or_false) {
-    *res += out_style == type_out_style::var_name ? "$" : " >";
+    res += " >";
   }
 }
 
-string type_out(const TypeData *type, type_out_style out_style) {
+string type_out(const TypeData *type, bool cpp_out) {
   string res;
-  type_out_impl(type, &res, out_style);
+  type_out_impl(type, res, cpp_out);
   return res;
 }
 

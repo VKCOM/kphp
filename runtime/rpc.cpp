@@ -1589,9 +1589,9 @@ void free_arr_space() {
 }
 
 void clear_arr_space() {
-  if (last_arr_ptr >= var_stack) {
-    std::memset(var_stack, 0, (last_arr_ptr - var_stack + 1) * sizeof(*last_arr_ptr));
-    last_arr_ptr = nullptr;
+  while (last_arr_ptr >= var_stack) {
+    std::memset(last_arr_ptr, 0x00, sizeof(var));
+    last_arr_ptr--;
   }
 }
 

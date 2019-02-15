@@ -33,4 +33,4 @@ OrFalse<int> f$strtotime(const string &time_str, int timestamp = INT_MIN);
 int f$time();
 
 
-void int_datetime_lib();
+void init_datetime_lib();

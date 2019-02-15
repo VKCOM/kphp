@@ -1106,6 +1106,11 @@ void array<T>::convert_to_map() {
 template<class T>
 template<class T1>
 void array<T>::copy_from(const array<T1> &other) {
+  if (other.empty()) {
+    p = array_inner::empty_array();
+    return;
+  }
+
   array_inner *new_array = array_inner::create(other.p->int_size, other.p->string_size, other.is_vector());
 
   if (new_array->is_vector()) {

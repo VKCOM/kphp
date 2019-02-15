@@ -3,9 +3,10 @@
 #include "compiler/inferring/public.h"
 
 namespace {
-VarPtr cast_const_array(VertexPtr &type_acceptor, const tinf::Node &donor_tinf_node) {
-  auto required_type = donor_tinf_node.get_type();
-  auto existed_type = type_acceptor->tinf_node.get_type();
+template<typename T>
+VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
+  auto required_type = tinf::get_type(type_donor);
+  auto existed_type = tinf::get_type(type_acceptor);
   if (existed_type->get_real_ptype() != tp_array ||
       type_acceptor->extra_type != op_ex_var_const ||
       is_equal_types(existed_type, required_type)) {
@@ -13,7 +14,9 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const tinf::Node &donor_tinf_n
   }
 
   kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_var));
-  const std::string name = type_acceptor->get_string() + "$" + type_out(required_type, type_out_style::var_name);
+  std::stringstream ss;
+  ss << type_acceptor->get_string() << "$" << std::hex << hash_ll(type_out(required_type));
+  const std::string name = ss.str();
   auto casted_var = VertexAdaptor<op_var>::create();
   casted_var->str_val = name;
   casted_var->extra_type = op_ex_var_const;
@@ -207,12 +210,12 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
 VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, FunctionPassBase::LocalT *) {
   if (auto param = root.try_as<op_func_param>()) {
     if (param->has_default_value() && param->default_value()) {
-      if (auto var_id = cast_const_array(param->default_value(), param->var()->tinf_node)) {
+      if (auto var_id = cast_const_array(param->default_value(), param->var())) {
         current_function->explicit_header_const_var_ids.emplace(var_id);
       }
     }
   } else if (auto set_vertex = root.try_as<op_set>()) {
-    if (auto var_id = cast_const_array(set_vertex->rhs(), set_vertex->lhs()->tinf_node)) {
+    if (auto var_id = cast_const_array(set_vertex->rhs(), set_vertex->lhs())) {
       current_function->explicit_const_var_ids.emplace(var_id);
     }
   } else if (auto func_call = root.try_as<op_func_call>()) {
@@ -221,7 +224,7 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, FunctionPassBase::Loc
       auto args = func_call->args();
       const auto &params = func->param_ids;
       for (size_t index = 0; index < args.size(); ++index) {
-        if (auto var_id = cast_const_array(args[index], params[index]->tinf_node)) {
+        if (auto var_id = cast_const_array(args[index], params[index])) {
           current_function->explicit_const_var_ids.emplace(var_id);
         }
       }
@@ -237,7 +240,7 @@ bool OptimizationPass::user_recursion(VertexPtr root, LocalT *, VisitVertex<Opti
     if (var->init_val) {
       if (try_optimize_var(var)) {
         visit(var->init_val);
-        cast_const_array(var->init_val, var->tinf_node);
+        cast_const_array(var->init_val, var);
       }
     }
   }
