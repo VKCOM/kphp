@@ -51,11 +51,9 @@ string drivers_cpp_filename;
 string drivers_h_filename;
 
 
-var f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
+void f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
 
-var f$kphp_mcStats(int, string, string, double, var) {
-  return var();
-}
+void f$kphp_mcStats(int, string, string, double, var) {}
 
 static inline void mc_stats_do(const var &res) {
   if (mc_stats_port != -1) {
