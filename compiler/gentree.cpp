@@ -2077,12 +2077,11 @@ VertexPtr GenTree::get_instance_var_list(Token *phpdoc_token, AccessType access_
     def_val = get_expression();
   }
 
-  auto var = def_val ? VertexAdaptor<op_class_var>::create(def_val) : VertexAdaptor<op_class_var>::create();
+  auto var = VertexAdaptor<op_var>::create();
   var->str_val = static_cast<string>(var_name);
-  var->phpdoc_token = phpdoc_token;
   set_location(var, AutoLocation(this));
 
-  cur_class->members.add_instance_field(var, access_type);
+  cur_class->members.add_instance_field(var, def_val, access_type, phpdoc_token);
 
   if (test_expect(tok_comma)) {
     next_cur();

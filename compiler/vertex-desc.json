@@ -394,31 +394,6 @@
     }
   },
   {
-    "name": "op_class_var",
-    "base_name": "meta_op_base",
-    "sons": {
-      "def_val": {
-        "id": 0,
-        "optional": true
-      }
-    },
-    "props": {
-      "rl": "rl_error",
-      "cnst": "cnst_const_func",
-      "type": "common_op",
-      "str": "op_class_var"
-    },
-    "extras": [
-      "string"
-    ],
-    "extra_fields": {
-      "phpdoc_token": {
-        "type": "Token*",
-        "default": "nullptr"
-      }
-    }
-  },
-  {
     "name": "op_seq",
     "base_name": "meta_op_varg",
     "props": {

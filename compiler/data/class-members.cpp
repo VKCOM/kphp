@@ -52,10 +52,11 @@ const string &ClassMemberInstanceField::local_name() const {
   return root->str_val;
 }
 
-inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_class_var> root, AccessType access_type) :
+inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, Token *phpdoc_token) :
   access_type(access_type),
   root(root),
-  phpdoc_token(root->phpdoc_token) {
+  def_val(def_val),
+  phpdoc_token(phpdoc_token) {
 
   var = VarPtr(new VarData(VarData::var_instance_t));
   var->class_id = klass;
@@ -124,9 +125,9 @@ void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexP
   append_member(hash_name, ClassMemberStaticField(klass, root, init_val, access_type, phpdoc_token));
 }
 
-void ClassMembersContainer::add_instance_field(VertexAdaptor<op_class_var> root, AccessType access_type) {
+void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, Token *phpdoc_token) {
   string hash_name = "$" + root->str_val;
-  append_member(hash_name, ClassMemberInstanceField(klass, root, access_type));
+  append_member(hash_name, ClassMemberInstanceField(klass, root, def_val, access_type, phpdoc_token));
 }
 
 void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {

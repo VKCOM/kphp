@@ -91,12 +91,12 @@ void ClassData::patch_func_constructor(VertexAdaptor<op_function> func, int loca
 
   // выносим "$var = 0" в начало конструктора; переменные класса — в порядке, обратном объявлению, это не страшно
   members.for_each([&](ClassMemberInstanceField &f) {
-    if (f.root->has_def_val()) {
+    if (f.def_val) {
       auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(location_line_num));
       inst_prop->location = f.root->location;
-      inst_prop->str_val = f.root->get_string();
+      inst_prop->str_val = f.local_name();
 
-      next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f.root->def_val()));
+      next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f.def_val));
     }
   });
 

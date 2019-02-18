@@ -169,7 +169,7 @@ VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
     if (field.local_name() == "parent$this") {
       res->set_string("this");
     } else {
-      res->set_string(field.root->get_string());
+      res->set_string(field.local_name());
     }
     res->location = field.root->location;
     args.emplace_back(res);
