@@ -23,7 +23,7 @@ class SortAndInheritClassesF {
   void inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream);
   void inherit_static_method_from_parent(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream);
 
-  std::string is_class_ready(ClassPtr klass);
+  decltype(ht)::HTNode *get_not_ready_dependency(ClassPtr klass);
 
 public:
   void execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os);

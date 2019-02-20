@@ -41,15 +41,18 @@ public:
   }
 };
 
-// если все dependents класса уже обработаны, возвращает пустую строку
-// если же какой-то из dependents (имя класса/интерфейса) ещё не обработан (его надо подождать), возвращает его
-std::string SortAndInheritClassesF::is_class_ready(ClassPtr klass) {
+// если все dependents класса уже обработаны, возвращает nullptr
+// если же какой-то из dependents (класс/интерфейс) ещё не обработан (его надо подождать), возвращает указатель на его
+auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
   for (const auto &dep : klass->str_dependents) {
-    if (!ht.at(hash_ll(dep.class_name))->data.done) {
-      return dep.class_name;
+    auto node = ht.at(hash_ll(dep.class_name));
+    kphp_assert(node);
+    if (!node->data.done) {
+      return node;
     }
   }
-  return std::string();
+
+  return {};
 }
 
 // делаем функцию childclassname$$localname, которая выглядит как
@@ -190,30 +193,26 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   auto &function_stream = *os.template project_to_nth_data_stream<0>();
   auto &restart_class_stream = *os.template project_to_nth_data_stream<1>();
 
-  std::string to_wait_classname_if_not_ready = is_class_ready(klass);
-  if (!to_wait_classname_if_not_ready.empty()) {
-    auto node = ht.at(hash_ll(to_wait_classname_if_not_ready));
-    AutoLocker<Lockable*> locker(node);
-    if (node->data.done) {              // вдруг между вызовом ready и этим моментом стало done
+  if (auto dependency = get_not_ready_dependency(klass)) {
+    AutoLocker<Lockable*> locker(dependency);
+    if (dependency->data.done) {              // вдруг между вызовом ready и этим моментом стало done
       restart_class_stream << klass;
-      return;
+    } else {
+      dependency->data.waiting.emplace_front(klass);
     }
-    node->data.waiting.emplace_front(klass);
     return;
   }
 
   on_class_ready(klass, function_stream);
 
-  {
-    auto node = ht.at(hash_ll(klass->name));
-    kphp_assert(!node->data.done);
+  auto node = ht.at(hash_ll(klass->name));
+  kphp_assert(!node->data.done);
 
-    AutoLocker<Lockable *> locker(node);
-    for (ClassPtr restart_klass: node->data.waiting) {    // все классы, которые ждали текущего —
-      restart_class_stream << restart_klass;              // запустить SortAndInheritClassesF ещё раз для них
-    }
-
-    node->data.waiting.clear();
-    node->data.done = true;
+  AutoLocker<Lockable *> locker(node);
+  for (ClassPtr restart_klass: node->data.waiting) {    // все классы, которые ждали текущего —
+    restart_class_stream << restart_klass;              // запустить SortAndInheritClassesF ещё раз для них
   }
+
+  node->data.waiting.clear();
+  node->data.done = true;
 }
