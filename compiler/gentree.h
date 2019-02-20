@@ -40,7 +40,7 @@ public:
 
   static inline void set_location(VertexPtr v, const AutoLocation &location);
 
-  GenTree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
+  GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
   VertexPtr generate_constant_field_class_value();
 
@@ -66,7 +66,6 @@ public:
   static VertexPtr get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());
-  static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   static VertexAdaptor<op_class_type_rule> create_type_help_class_vertex(vk::string_view klass_name);
   static VertexAdaptor<op_class_type_rule> create_type_help_class_vertex(ClassPtr klass);
@@ -83,8 +82,8 @@ public:
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement(Token *phpdoc_token = nullptr);
-  VertexPtr get_instance_var_list(Token *phpdoc_token, AccessType access_type);
+  VertexPtr get_statement(const Token *phpdoc_token = nullptr);
+  VertexPtr get_instance_var_list(const Token *phpdoc_token, AccessType access_type);
   VertexPtr get_use();
   VertexPtr get_seq(bool add_force_func_return = false);
 
@@ -122,29 +121,29 @@ public:
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
   VertexPtr get_anonymous_function();
-  VertexPtr get_function(Token *phpdoc_token, AccessType access_type, bool is_final = false, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
+  VertexPtr get_function(const Token *phpdoc_token, AccessType access_type, bool is_final = false, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   unsigned int parse_class_member_modifier_mask();
   void check_class_member_modifier_mask(unsigned int mask, TokenType cur_tok);
-  VertexPtr get_class_member(Token *phpdoc_token);
+  VertexPtr get_class_member(const Token *phpdoc_token);
 
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
 
-  VertexPtr get_class(Token *phpdoc_token);
+  VertexPtr get_class(const Token *phpdoc_token);
 
 private:
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
-  VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
+  VertexPtr get_static_field_list(const Token *phpdoc_token, AccessType access_type);
 
 public:
   int line_num;
 
 private:
-  const vector<Token *> tokens;
+  const vector<Token> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_;
   decltype(tokens)::const_iterator cur, end;
@@ -157,7 +156,7 @@ private:
   SrcFilePtr processing_file;
 };
 
-void php_gen_tree(vector<Token *> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
+void php_gen_tree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
 template<PrimitiveType ToT>
 VertexPtr GenTree::conv_to_lval(VertexPtr x) {

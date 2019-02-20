@@ -16,7 +16,6 @@ enum TokenType {
   tok_expr_end,
   tok_var_name,
   tok_func_name,
-  tok_constructor_call,
   tok_while,
   tok_for,
   tok_foreach,
@@ -183,16 +182,28 @@ enum TokenType {
 class Token {
 public:
   TokenType type_;
+  int line_num = -1;
   vk::string_view str_val;
   vk::string_view debug_str;
 
-  int line_num;
+  explicit Token(TokenType type_) :
+    type_(type_) {
+  }
 
-  explicit Token(TokenType type);
-  Token(TokenType type, const vk::string_view &s);
-  Token(TokenType type, const char *s, const char *t);
+  Token(TokenType type_, const vk::string_view &s) :
+    type_(type_),
+    str_val(s) {
+  }
+
+  Token(TokenType type_, const char *s, const char *t) :
+    type_(type_),
+    str_val(s, t) {
+  }
 
   inline TokenType &type() { return type_; }
+  inline const TokenType &type() const { return type_; }
 
-  string to_str();
+  string to_str() const {
+    return static_cast<string>(debug_str);
+  }
 };

@@ -5,5 +5,5 @@
 
 class ParseF {
 public:
-  void execute(std::pair<SrcFilePtr, std::vector<Token *>> file_and_tokens, DataStream<FunctionPtr> &os);
+  void execute(std::pair<SrcFilePtr, std::vector<Token>> file_and_tokens, DataStream<FunctionPtr> &os);
 };

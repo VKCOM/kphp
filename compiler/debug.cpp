@@ -23,7 +23,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_expr_end] = "tok_expr_end";
   TOKEN_TYPE_NAMES[tok_var_name] = "tok_var_name";
   TOKEN_TYPE_NAMES[tok_func_name] = "tok_func_name";
-  TOKEN_TYPE_NAMES[tok_constructor_call] = "tok_constructor_call";
   TOKEN_TYPE_NAMES[tok_while] = "tok_while";
   TOKEN_TYPE_NAMES[tok_for] = "tok_for";
   TOKEN_TYPE_NAMES[tok_foreach] = "tok_foreach";

@@ -52,6 +52,7 @@ void LexerData::set_code(char *new_code, int new_code_len) {
   code_end = code + code_len;
   line_num = 0;
   new_line();
+  tokens.reserve(new_code_len * 0.3);
 }
 
 char *LexerData::get_code() {
@@ -72,19 +73,21 @@ void LexerData::pass_raw(int shift) {
   code += shift;
 }
 
-void LexerData::add_token_(Token *tok, int shift) {
+template <typename ...Args>
+void LexerData::add_token_(int shift, Args&& ...tok) {
   kphp_assert (code + shift <= code_end);
-  tok->line_num = line_num;
-  tok->debug_str = vk::string_view(code, code + shift);
-  tokens.push_back(tok);
+  tokens.emplace_back(std::forward<Args>(tok)...);
+  tokens.back().line_num = line_num;
+  tokens.back().debug_str = vk::string_view(code, code + shift);
   //fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
   pass(shift);
+  hack_last_tokens();
 }
 
-void LexerData::add_token(Token *tok, int shift) {
-  kphp_assert (tok != nullptr);
+template <typename ...Args>
+void LexerData::add_token(int shift, Args&& ...tok) {
   flush_str();
-  add_token_(tok, shift);
+  add_token_(shift, std::forward<Args>(tok)...);
 }
 
 void LexerData::start_str() {
@@ -111,7 +114,7 @@ void LexerData::append_char(int c) {
 
 void LexerData::flush_str() {
   if (in_gen_str) {
-    add_token_(new Token(tok_str, str_begin, str_cur), 0);
+    add_token_(0, tok_str, str_begin, str_cur);
     while (str_cur != get_code()) {
       *str_cur++ = ' ';
     }
@@ -119,8 +122,8 @@ void LexerData::flush_str() {
   }
 }
 
-const map<string, string> &config_func() {
-  static map<string, string> to
+const map<string, const char*> &config_func() {
+  static map<string, const char *> to
     {{"attr_wrap",      "attrWrap"},
      {"logout_hash",    "logoutHash"},
      {"videocall_hash", "videocallHash"},
@@ -130,232 +133,171 @@ const map<string, string> &config_func() {
   return to;
 }
 
-static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, TokenType type) {
-  return pos + 1 < tokens.size() && tokens[pos + 1]->type() == type;
+template<>
+bool LexerData::are_last_tokens(TokenType type1) {
+  return tokens.size() >= 1 &&
+         tokens[tokens.size() - 1].type() == type1;
 }
 
-static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, TokenType type1, TokenType type2) {
-  return pos + 2 < tokens.size() &&
-         tokens[pos + 1]->type() == type1 &&
-         tokens[pos + 2]->type() == type2;
+template<>
+bool LexerData::are_last_tokens(any_token_tag) {
+  return tokens.size() >= 1;
 }
 
-static inline bool are_next_tokens(const std::vector<Token *> &tokens, int pos, TokenType type1, TokenType type2, TokenType type3) {
-  return pos + 3 < tokens.size() &&
-         tokens[pos + 1]->type() == type1 &&
-         tokens[pos + 2]->type() == type2 &&
-         tokens[pos + 3]->type() == type3;
+template<typename ...Args>
+bool LexerData::are_last_tokens(TokenType type1, Args ...args) {
+  return tokens.size() >= (sizeof...(args) + 1) &&
+         tokens[tokens.size() - sizeof...(args) - 1].type() == type1 &&
+         are_last_tokens(args...);
 }
 
-void LexerData::post_process() {
-  vector<Token *> oldtokens;
-  oldtokens.swap(tokens);
-  int n = (int)oldtokens.size();
+template<typename ...Args>
+bool LexerData::are_last_tokens(any_token_tag, Args ...args) {
+  return tokens.size() >= (sizeof...(args) + 1) &&
+         are_last_tokens(args...);
+}
 
-  int i = 0;
-  while (i < n) {
-    TokenType tp = tok_empty;
-    if (i + 2 < n && oldtokens[i]->type() == tok_oppar && oldtokens[i + 2]->type() == tok_clpar) {
-      switch (oldtokens[i + 1]->type()) {
-        case tok_int:
-          tp = tok_conv_int;
-          break;
-        case tok_float:
-          tp = tok_conv_float;
-          break;
-        case tok_string:
-          tp = tok_conv_string;
-          break;
-        case tok_array:
-          tp = tok_conv_array;
-          break;
-        case tok_object:
-          tp = tok_conv_object;
-          break;
-        case tok_bool:
-          tp = tok_conv_bool;
-          break;
-        case tok_var:
-          tp = tok_conv_var;
-        default:
-          break;
-      }
-    }
-    if (tp == tok_empty) {
-      int old_i = i;
-      const vk::string_view &str_val = oldtokens[i]->str_val;
+void LexerData::hack_last_tokens() {
+  TokenType casts[][2] = {
+    {tok_int,    tok_conv_int},
+    {tok_float,  tok_conv_float},
+    {tok_string, tok_conv_string},
+    {tok_array,  tok_conv_array},
+    {tok_object, tok_conv_object},
+    {tok_bool,   tok_conv_bool},
+    {tok_var,    tok_conv_var},
+  };
 
-      switch (oldtokens[i]->type()) {
-        case tok_elseif: {
-          tokens.push_back(new Token(tok_else));
-          tokens.push_back(new Token(tok_if));
-          delete oldtokens[i];
-          oldtokens[i] = nullptr;
-          i++;
-          break;
-        }
+  auto remove_last_tokens = [this](size_t cnt) {
+    tokens.erase(std::prev(tokens.end(), cnt), tokens.end());
+  };
 
-        case tok_str_begin: {
-          if (are_next_tokens(oldtokens, i, tok_str_end)) {
-            tokens.push_back(new Token(tok_str));
-            delete oldtokens[i];
-            delete oldtokens[i + 1];
-            oldtokens[i] = nullptr;
-            oldtokens[i + 1] = nullptr;
-            i += 2;
-          } else if (are_next_tokens(oldtokens, i, tok_str, tok_str_end)) {
-            tokens.push_back(oldtokens[i + 1]);
-            delete oldtokens[i];
-            delete oldtokens[i + 2];
-            oldtokens[i] = nullptr;
-            oldtokens[i + 2] = nullptr;
-            i += 3;
-          }
-          break;
-        }
-
-        case tok_new: {
-          if (are_next_tokens(oldtokens, i, tok_func_name)) {
-            tokens.push_back(oldtokens[i]);
-            tokens.back()->type() = tok_constructor_call;
-            tokens.back()->str_val = oldtokens[i + 1]->str_val;
-            delete oldtokens[i + 1];
-            oldtokens[i + 1] = nullptr;
-            if (!are_next_tokens(oldtokens, i + 1, tok_oppar)) {
-              tokens.push_back(new Token(tok_oppar));
-              tokens.push_back(new Token(tok_clpar));
-            } else {
-              if (tokens.back()->str_val == "Exception" || tokens.back()->str_val == "\\Exception") {
-                tokens.push_back(oldtokens[i + 2]);
-                tokens.push_back(new Token(tok_file_c));
-                tokens.push_back(new Token(tok_comma));
-                tokens.push_back(new Token(tok_line_c));
-                if (!are_next_tokens(oldtokens, i + 2, tok_clpar)) {
-                  tokens.push_back(new Token(tok_comma));
-                }
-                i += 1;
-              }
-            }
-            i += 2;
-          }
-          break;
-        }
-
-        case tok_func_name: {
-          if (str_val == "static") {
-            i++;
-            break;
-          } else if (i == 0 || (oldtokens[i - 1] != nullptr && oldtokens[i - 1]->type() != tok_function)) {
-            if (str_val == "err" && are_next_tokens(oldtokens, i, tok_oppar)) {
-              tokens.push_back(oldtokens[i]);
-              tokens.push_back(oldtokens[i + 1]);
-              tokens.push_back(new Token(tok_file_c));
-              tokens.push_back(new Token(tok_comma));
-              tokens.push_back(new Token(tok_line_c));
-              if (i + 2 < n && oldtokens[i + 2]->type() != tok_clpar) {
-                tokens.push_back(new Token(tok_comma));
-              }
-              i += 2;
-              break;
-            } else if (str_val == "requireOnce") {
-              tokens.push_back(oldtokens[i]);
-              tokens.back()->type() = tok_require_once;
-              i++;
-              break;
-            }
-          }
-        }
-          /* fallthrough */
-        case tok_static: {
-          if (are_next_tokens(oldtokens, i, tok_double_colon)) {
-            /**
-             * Для случаев:
-             *   \VK\Foo::array
-             *   \VK\Foo::try
-             *   \VK\Foo::$static_field
-             * после tok_double_colon будет tok_array или tok_try, а мы хотим tok_func_name
-             * так как это корректные имена переменных
-             * поэтому проверяем является ли первый символ следующего токена is_alpha, чтобы не пропустить tok_opbrk и тому подобное
-             */
-            if (oldtokens[i + 2]->str_val.empty() || !is_alpha(oldtokens[i + 2]->str_val.begin()[0])) {
-              break;
-            }
-
-            if (oldtokens[i + 2]->type() == tok_var_name) {
-              tokens.push_back(new Token(tok_var_name));
-            } else {
-              tokens.push_back(new Token(tok_func_name));
-            }
-
-            string pref_name = (oldtokens[i]->type() == tok_static ? "static" : string(oldtokens[i]->str_val));
-            tokens.back()->str_val = string_view_dup(pref_name + "::" + string(oldtokens[i + 2]->str_val));
-            tokens.back()->line_num = oldtokens[i]->line_num;
-            i += 3;
-          }
-          break;
-        }
-
-        case tok_var_name: {
-          if (are_next_tokens(oldtokens, i + 3, tok_eq1)) {
-            break;
-          }
-
-          if (str_val == "config" &&
-              are_next_tokens(oldtokens, i, tok_opbrk, tok_str, tok_clbrk) &&
-              config_func().count(static_cast<string>(oldtokens[i + 2]->str_val))) {
-            tokens.push_back(new Token(tok_func_name));
-            tokens.back()->str_val = string_view_dup((config_func().find(static_cast<string>(oldtokens[i + 2]->str_val)))->second);
-            i += 4;
-          }
-          break;
-        }
-
-          /**
-           * Для случаев, когда встречаются ключевые слова после ->, const, это должны быть tok_func_name,
-           * а не tok_array, tok_try и т.д.
-           * например:
-           *     $c->array, $c->try
-           *     class U { const array = [1, 2]; }
-           *     class U { const try = [1, 2]; }
-           */
-        case tok_arrow:
-        case tok_const: {
-          if (!are_next_tokens(oldtokens, i, tok_func_name)) {
-            if (oldtokens[i + 1]->str_val.empty() || !is_alpha(oldtokens[i + 1]->str_val.begin()[0])) {
-              break;
-            }
-            tokens.push_back(oldtokens[i]);
-            tokens.push_back(new Token(tok_func_name));
-            tokens.back()->str_val = string_view_dup(oldtokens[i + 1]->str_val);
-            i += 2;
-          }
-          break;
-        }
-
-        default:
-          break;
-      }
-
-      if (old_i == i) {
-        tokens.push_back(oldtokens[i]);
-        i++;
-      }
-    } else {
-      tokens.push_back(new Token(tp));
-      delete oldtokens[i];
-      delete oldtokens[i + 1];
-      delete oldtokens[i + 2];
-      oldtokens[i] = nullptr;
-      oldtokens[i + 1] = nullptr;
-      oldtokens[i + 2] = nullptr;
-      i += 3;
+  for (auto &cast : casts) {
+    if (are_last_tokens(tok_oppar, cast[0], tok_clpar)) {
+      remove_last_tokens(3);
+      tokens.emplace_back(cast[1]);
+      return;
     }
   }
 
-  tokens.push_back(new Token(tok_end));
+  if (are_last_tokens(tok_elseif)) {
+    tokens.back() = Token{tok_else};
+    tokens.emplace_back(tok_if);
+    return;
+  }
+
+  if (are_last_tokens(tok_str_begin, tok_str_end)) {
+    remove_last_tokens(2);
+    tokens.emplace_back(tok_str);
+    return;
+  }
+
+  if (are_last_tokens(tok_str_begin, tok_str, tok_str_end)) {
+    tokens.pop_back();
+    tokens.erase(std::prev(tokens.end(), 2));
+    return;
+  }
+
+  if (are_last_tokens(tok_var_name, tok_opbrk, tok_str, tok_clbrk, tok_oppar)) {
+    auto var_name = tokens[tokens.size() - 5].str_val;
+    auto str_name = tokens[tokens.size() - 3].str_val;
+    if (var_name == "config" && config_func().count(static_cast<string>(str_name))) {
+      remove_last_tokens(5);
+      tokens.emplace_back(tok_func_name);
+      tokens.back().str_val = config_func().find(static_cast<string>(str_name))->second;
+      tokens.emplace_back(tok_oppar);
+      return;
+    }
+  }
+
+  if (are_last_tokens(tok_new, tok_func_name, tok_oppar, any_token_tag{})) {
+    auto class_name = tokens[tokens.size() - 3].str_val;
+    if (class_name == "Exception" || class_name == "\\Exception") {
+      Token t = tokens.back();
+      tokens.pop_back();
+      tokens.emplace_back(tok_file_c);
+      tokens.emplace_back(tok_comma);
+      tokens.emplace_back(tok_line_c);
+      if (t.type() != tok_clpar) {
+        tokens.emplace_back(tok_comma);
+      }
+      tokens.push_back(t);
+      return;
+    }
+  }
+
+  if (are_last_tokens(tok_new, tok_func_name, any_token_tag{})) {
+    if (tokens.back().type() != tok_oppar) {
+      Token t = tokens.back();
+      tokens.pop_back();
+      tokens.emplace_back(tok_oppar);
+      tokens.emplace_back(tok_clpar);
+      tokens.push_back(t);
+      return;
+    }
+  }
+
+  if (are_last_tokens(any_token_tag{}, tok_func_name, tok_oppar, any_token_tag{})) {
+    if (tokens[tokens.size() - 3].str_val == "err" && tokens[tokens.size() - 4].type() != tok_function) {
+      Token t = tokens.back();
+      tokens.pop_back();
+      tokens.emplace_back(tok_file_c);
+      tokens.emplace_back(tok_comma);
+      tokens.emplace_back(tok_line_c);
+      if (t.type() != tok_clpar) {
+        tokens.emplace_back(tok_comma);
+      }
+      tokens.push_back(t);
+      return;
+    }
+  }
+
+  if (are_last_tokens(any_token_tag{}, tok_func_name)) {
+    if (tokens[tokens.size() - 1].str_val == "requireOnce" && tokens[tokens.size() - 2].type() != tok_function) {
+      tokens.back() = Token{tok_require_once};
+      return;
+    }
+  }
+
+  /**
+   * Для случаев:
+   *   \VK\Foo::array
+   *   \VK\Foo::try
+   *   \VK\Foo::$static_field
+   * после tok_double_colon будет tok_array или tok_try, а мы хотим tok_func_name
+   * так как это корректные имена переменных
+   * поэтому проверяем является ли первый символ следующего токена is_alpha, чтобы не пропустить tok_opbrk и тому подобное
+   */
+  if (are_last_tokens(tok_static, tok_double_colon, any_token_tag{}) || are_last_tokens(tok_func_name, tok_double_colon, any_token_tag{})) {
+    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
+      string val = static_cast<std::string>(tokens[tokens.size() - 3].str_val);
+      val += "::";
+      val += static_cast<std::string>(tokens[tokens.size() - 1].str_val);
+      Token back = tokens.back();
+      remove_last_tokens(3);
+      tokens.emplace_back(back.type() == tok_var_name ? tok_var_name : tok_func_name, string_view_dup(val));
+      tokens.back().line_num = back.line_num;
+      return;
+    }
+  }
+
+  /**
+   * Для случаев, когда встречаются ключевые слова после ->, const, это должны быть tok_func_name,
+   * а не tok_array, tok_try и т.д.
+   * например:
+   *     $c->array, $c->try
+   *     class U { const array = [1, 2]; }
+   *     class U { const try = [1, 2]; }
+   */
+  if (are_last_tokens(tok_const, any_token_tag{}) || are_last_tokens(tok_arrow, any_token_tag{})) {
+    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
+      tokens.back().type_ = tok_func_name;
+      return;
+    }
+  }
 }
 
-std::vector<Token *> &&LexerData::move_tokens() {
+std::vector<Token> &&LexerData::move_tokens() {
   return std::move(tokens);
 }
 
@@ -458,14 +400,14 @@ int TokenLexerName::parse(LexerData *lexer_data) const {
   if (type == tok_func_name) {
     const KeywordType *tp = KeywordsSet::get_type(name.begin(), name.size());
     if (tp != nullptr) {
-      lexer_data->add_token(new Token(tp->type, s, t), (int)(t - st));
+      lexer_data->add_token((int)(t - st), tp->type, s, t);
       return 0;
     }
   } else if (type == tok_var_name && name == "GLOBALS") {
     return TokenLexerError("$GLOBALS is not supported").parse(lexer_data);
   }
 
-  lexer_data->add_token(new Token(type, name), (int)(t - st));
+  lexer_data->add_token((int)(t - st), type, name);
   return 0;
 }
 
@@ -613,7 +555,7 @@ int TokenLexerNum::parse(LexerData *lexer_data) const {
   }
 
   assert (t != s);
-  lexer_data->add_token(new Token(is_float ? tok_float_const : tok_int_const, s, t), (int)(t - s));
+  lexer_data->add_token((int)(t - s), is_float ? tok_float_const : tok_int_const, s, t);
 
   return 0;
 }
@@ -749,7 +691,7 @@ int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
   assert (h != nullptr);
   const char *s = lexer_data->get_code();
   assert (*s == '{');
-  lexer_data->add_token(new Token(tok_expr_begin), 1);
+  lexer_data->add_token(1, tok_expr_begin);
 
   int bal = 0;
   while (true) {
@@ -761,7 +703,7 @@ int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
       bal++;
     } else if (*s == '}') {
       if (bal == 0) {
-        lexer_data->add_token(new Token(tok_expr_end), 1);
+        lexer_data->add_token(1, tok_expr_end);
         break;
       }
       bal--;
@@ -798,7 +740,7 @@ int TokenLexerTypeHint::parse(LexerData *lexer_data) const {
       default:
         return TokenLexerError("Unknow tipe-hint comment type").parse(lexer_data);
     }
-    lexer_data->add_token(new Token(type), 4);
+    lexer_data->add_token(4, type);
   }
 
   while (true) {
@@ -902,12 +844,12 @@ int TokenLexerString::parse(LexerData *lexer_data) const {
   int is_heredoc = s[0] == '<';
   assert (!is_heredoc);
 
-  lexer_data->add_token(new Token(tok_str_begin), 1);
+  lexer_data->add_token(1, tok_str_begin);
 
   while (true) {
     const char *s = lexer_data->get_code();
     if (*s == '\"') {
-      lexer_data->add_token(new Token(tok_str_end), 1);
+      lexer_data->add_token(1, tok_str_end);
       break;
     }
 
@@ -967,7 +909,7 @@ int TokenLexerHeredocString::parse(LexerData *lexer_data) const {
   s++;
 
   if (!single_quote) {
-    lexer_data->add_token(new Token(tok_str_begin), (int)(s - st));
+    lexer_data->add_token((int)(s - st), tok_str_begin);
     assert (s == lexer_data->get_code());
   } else {
     lexer_data->start_str();
@@ -990,7 +932,7 @@ int TokenLexerHeredocString::parse(LexerData *lexer_data) const {
         }
         if (t[0] == '\n' || t[0] == 0) {
           if (!single_quote) {
-            lexer_data->add_token(new Token(tok_str_end), (int)(t - st - semicolon));
+            lexer_data->add_token((int)(t - st - semicolon), tok_str_end);
           } else {
             lexer_data->flush_str();
             lexer_data->pass_raw((int)(t - st - semicolon));;
@@ -1043,9 +985,9 @@ int TokenLexerComment::parse(LexerData *lexer_data) const {
         s++;
       }
       if (is_kphpdoc) {
-        lexer_data->add_token(new Token(tok_phpdoc_kphp, phpdoc_start, s), 0);
+        lexer_data->add_token(0, tok_phpdoc_kphp, phpdoc_start, s);
       } else if (is_regular) {
-        lexer_data->add_token(new Token(tok_phpdoc, phpdoc_start, s), 0);
+        lexer_data->add_token(0, tok_phpdoc, phpdoc_start, s);
       }
     } else {
       while (s[0] && (s[0] != '*' || s[1] != '/')) {
@@ -1114,7 +1056,7 @@ TokenLexerToken::TokenLexerToken(TokenType tp, int len) :
 }
 
 int TokenLexerToken::parse(LexerData *lexer_data) const {
-  lexer_data->add_token(new Token(tp), len);
+  lexer_data->add_token(len, tp);
   return 0;
 }
 
@@ -1243,7 +1185,7 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
   }
 
   if (s != t) {
-    lexer_data->add_token(new Token(tok_inline_html, s, t), (int)(t - s));
+    lexer_data->add_token((int)(t - s), tok_inline_html, s, t);
     return 0;
   }
 
@@ -1275,7 +1217,7 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
       return ret;
     }
   }
-  lexer_data->add_token(new Token(tok_semicolon), 0);
+  lexer_data->add_token(0, tok_semicolon);
   if (*lexer_data->get_code()) {
     lexer_data->pass(2);
   }
@@ -1303,7 +1245,7 @@ void lexer_init() {
   config_func();
 }
 
-vector<Token*> php_text_to_tokens(char *text, int text_length) {
+vector<Token> php_text_to_tokens(char *text, int text_length) {
   static TokenLexerGlobal lexer;
 
   LexerData lexer_data;
@@ -1318,7 +1260,9 @@ vector<Token*> php_text_to_tokens(char *text, int text_length) {
     kphp_error_act (ret == 0, "failed to parse", return {});
   }
 
-  lexer_data.post_process();
-  return lexer_data.move_tokens();
+  auto tokens = lexer_data.move_tokens();
+  tokens.emplace_back(tok_end);
+  tokens.shrink_to_fit();
+  return tokens;
 }
 

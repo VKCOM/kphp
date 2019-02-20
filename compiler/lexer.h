@@ -13,15 +13,23 @@ struct LexerData : private vk::not_copyable {
   char *get_code();
   void pass(int x);
   void pass_raw(int x);
-  void add_token_(Token *tok, int shift);
-  void add_token(Token *tok, int shift);
+  template <typename ...Args>
+  void add_token_(int shift, Args&& ...tok);
+  template <typename ...Args>
+  void add_token(int shift, Args&& ...tok);
   void start_str();
   void append_char(int c);
   void flush_str();
-  void post_process();
+  void hack_last_tokens();
+
+  struct any_token_tag{};
+  template<typename ...Args>
+  bool are_last_tokens(TokenType type1, Args ...args);
+  template<typename ...Args>
+  bool are_last_tokens(any_token_tag type1, Args ...args);
 
 
-  std::vector<Token *>&& move_tokens();
+  std::vector<Token>&& move_tokens();
   int get_line_num();
 
 private:
@@ -30,7 +38,7 @@ private:
   char *code_end;
   char *start;
   int code_len;
-  vector<Token *> tokens;
+  vector<Token> tokens;
   bool in_gen_str;
   const char *str_begin;
   char *str_cur;
@@ -178,4 +186,4 @@ struct TokenLexerGlobal : TokenLexer {
 };
 
 void lexer_init();
-vector<Token*> php_text_to_tokens(char *text, int text_length);
+vector<Token> php_text_to_tokens(char *text, int text_length);
