@@ -460,8 +460,8 @@ void hard_link_or_copy_impl(const std::string &from, const std::string &to, bool
     return;
   }
 
-  // the file is placed on other device, therefore we need to copy it
-  if (errno == EXDEV && allow_copy) {
+  // the file is placed on other device, or we have a permission problems, try to copy it
+  if (vk::any_of_equal(errno, EXDEV, EPERM) && allow_copy) {
     struct stat file_stat;
     kphp_error_return (!stat(from.c_str(), &file_stat),
                        format("Can't get file stat '%s': %s", from.c_str(), strerror(errno)));
