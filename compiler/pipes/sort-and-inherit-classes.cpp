@@ -57,7 +57,9 @@ auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltyp
 
 // делаем функцию childclassname$$localname, которая выглядит как
 // function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
-VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr parent_class, ClassPtr child_class, const string &local_name) {
+VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
+  auto local_name = parent_method.local_name();
+
   auto new_name = VertexAdaptor<op_func_name>::create();
   new_name->set_string(replace_backslashes(child_class->name) + "$$" + local_name);
   vector<VertexPtr> new_params_next;
@@ -73,7 +75,8 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
     }
   }
 
-  string parent_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
+  auto parent_class = parent_method.function->class_id;
+  auto parent_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
   // it's equivalent to new_func_call->set_string("parent::" + local_name);
   auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
   new_func_call->set_string(parent_function_name);
@@ -104,14 +107,16 @@ FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr par
   return context_function;
 }
 
-void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_class, ClassPtr parent_class, const string &local_name, DataStream<FunctionPtr> &function_stream) {
-  FunctionPtr parent_f = parent_class->members.get_static_method(local_name)->function;
+void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_class, const ClassMemberStaticMethod &parent_method, DataStream<FunctionPtr> &function_stream) {
+  auto local_name = parent_method.local_name();
+  auto parent_f = parent_method.function;
+  auto parent_class = parent_f->class_id;
   if (parent_f->is_auto_inherited) {      // A::f() -> B -> C; при A->B сделался A::f$$B
     return;                               // но при B->C должно быть A::f$$C, а не B::f$$C
   }                                       // (чтобы B::f$$C не считать required)
 
   if (!child_class->members.has_static_method(local_name)) {
-    auto child_root = generate_function_with_parent_call(parent_f->root.as<op_function>(), parent_class, child_class, local_name);
+    auto child_root = generate_function_with_parent_call(parent_f->root.as<op_function>(), child_class, parent_method);
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
     child_function->file_id = parent_f->file_id;
@@ -149,7 +154,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
     parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
-      inherit_static_method_from_parent(child_class, parent_class, m.local_name(), function_stream);
+      inherit_static_method_from_parent(child_class, m, function_stream);
     });
   }
 }
