@@ -320,6 +320,7 @@ bool compiler_execute(KphpEnviroment *env) {
     mem_info_t mem_info;
     get_mem_stats(getpid(), &mem_info);
     fprintf(stderr, "RSS: %lluKb\n", mem_info.rss);
+    fprintf(stderr, "Peak RSS: %lluKb\n", mem_info.rss_peak);
   }
   return true;
 }
