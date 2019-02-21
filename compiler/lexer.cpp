@@ -1069,11 +1069,20 @@ int TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
 
   assert (strncmp(s, "#ifndef KittenPHP", 17) == 0);
   s += 17;
-  while (s[0] && strncmp(s, "\n#endif", 7)) {
-    s++;
+  // ищем \n\s*#endif
+  while (*s) {
+    if (*s != '\n') {
+      s++;
+      continue;
+    }
+    for (++s; *s == ' ' || *s == '\t'; ++s) {
+    }
+    if (!strncmp(s, "#endif", 6)) {
+      break;
+    }
   }
-  if (s[0]) {
-    s += 7;
+  if (*s) {
+    s += 6;
   } else {
     return TokenLexerError("Unclosed comment (#endif expected)").parse(lexer_data);
   }
