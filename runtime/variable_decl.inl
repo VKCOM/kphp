@@ -14,15 +14,15 @@ class var {
     ARRAY_TYPE
   };
 
-  var_type type;
-  uint64_t storage;
+  var_type type{NULL_TYPE};
+  uint64_t storage{0};
 
   inline void copy_from(const var &other);
   inline void copy_from(var &&other);
 
 public:
   var(const void *) = delete; // deprecate conversion from pointer to boolean
-  inline var();
+  inline var() = default;
   inline var(const Unknown &u);
   inline var(bool b);
   inline var(int i);

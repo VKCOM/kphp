@@ -12,9 +12,11 @@ void enter_critical_section();
 void leave_critical_section();
 
 
-extern long long query_num;//engine query number. query_num == 0 before first query
-extern bool script_runned;//betwen init_static and free_runtime_libs
-extern volatile bool use_script_allocator;//use script allocator instead of static heap allocator
+extern long long query_num; // engine query number. query_num == 0 before first query
+extern volatile bool script_runned; // betwen init_static and free_static
+extern volatile bool replace_malloc_with_script_allocator; // replace malloc and cpp operator new with script allocator
+extern volatile bool replace_script_allocator_with_malloc; // replace script allocator with malloc
+extern volatile bool forbid_malloc_allocations; // used for catch unexpected memory allocations
 
 using size_type = unsigned int;
 

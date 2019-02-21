@@ -110,8 +110,10 @@ public:
 
 
 long long query_num = 0;
-bool script_runned = false;
-volatile bool use_script_allocator = false;
+volatile bool script_runned = false;
+volatile bool replace_malloc_with_script_allocator = false;
+volatile bool replace_script_allocator_with_malloc = false;
+volatile bool forbid_malloc_allocations = false;
 
 bool allocator_inited = false;
 
@@ -160,12 +162,17 @@ inline void check_script_memory_piece(void *p, size_t s) {
     "static_memory_used:   %u\n"
     "query_num:            %lld\n"
     "script_runned:        %d\n"
-    "use_script_allocator: %d\n"
     "in_critical_section:  %d\n"
-    "pending_signals:      %lld\n",
-    p, s, piece, piece_end, reinterpret_cast<void *>(memory_begin), reinterpret_cast<void *>(memory_end),
+    "pending_signals:      %lld\n"
+    "forbid_malloc_allocations:            %d\n"
+    "replace_malloc_with_script_allocator: %d\n"
+    "replace_script_allocator_with_malloc: %d\n",
+    p, s, piece, piece_end,
+    reinterpret_cast<void *>(memory_begin), reinterpret_cast<void *>(memory_end),
     memory_limit, memory_used, max_memory_used, max_real_memory_used, static_memory_used,
-    query_num, script_runned, use_script_allocator, in_critical_section, pending_signals);
+    query_num, script_runned, in_critical_section, pending_signals,
+    forbid_malloc_allocations, replace_malloc_with_script_allocator,
+    replace_script_allocator_with_malloc);
 }
 
 inline void allocator_add(void *block, size_type size) {
@@ -200,7 +207,9 @@ void init_script_allocator(void *buf, size_type n) {
   enter_critical_section();
 
   allocator_inited = true;
-  use_script_allocator = false;
+  replace_malloc_with_script_allocator = false;
+  replace_script_allocator_with_malloc = false;
+  forbid_malloc_allocations = false;
   memory_begin = (size_t)buf;
   memory_end = (size_t)buf + n;
   memory_limit = n;
@@ -227,7 +236,9 @@ void free_script_allocator() {
 
   dl::script_runned = false;
   left_pieces = nullptr;
-  php_assert (!dl::use_script_allocator);
+  php_assert (!dl::forbid_malloc_allocations);
+  php_assert (!dl::replace_script_allocator_with_malloc);
+  php_assert (!dl::replace_malloc_with_script_allocator);
 
   leave_critical_section();
 }
@@ -245,7 +256,7 @@ static inline void *allocate_stack(size_type n) {
 }
 
 void *allocate(size_type n) {
-  if (!allocator_inited) {
+  if (!allocator_inited || replace_script_allocator_with_malloc) {
     return static_allocate(n);
   }
 
@@ -312,7 +323,7 @@ void *allocate(size_type n) {
 }
 
 void *allocate0(size_type n) {
-  if (!allocator_inited) {
+  if (!allocator_inited || replace_script_allocator_with_malloc) {
     return static_allocate0(n);
   }
 
@@ -325,7 +336,7 @@ void *allocate0(size_type n) {
 }
 
 void *reallocate(void *p, size_type new_n, size_type old_n) {
-  if (!allocator_inited) {
+  if (!allocator_inited || replace_script_allocator_with_malloc) {
     static_reallocate(&p, new_n, &old_n);
     return p;
   }
@@ -374,7 +385,7 @@ void *reallocate(void *p, size_type new_n, size_type old_n) {
 
 void deallocate(void *p, size_type n) {
 //  fprintf (stderr, "deallocate %d: allocator_inited = %d, script_runned = %d\n", n, allocator_inited, script_runned);
-  if (!allocator_inited) {
+  if (!allocator_inited || replace_script_allocator_with_malloc) {
     return static_deallocate(&p, &n);
   }
 
@@ -401,11 +412,12 @@ void deallocate(void *p, size_type n) {
 
 
 void *static_allocate(size_type n) {
-  php_assert (!query_num || !use_script_allocator);
+  php_assert (!query_num || !replace_malloc_with_script_allocator || replace_script_allocator_with_malloc);
   enter_critical_section();
 
   php_assert (n);
 
+  php_assert(!forbid_malloc_allocations);
   void *result = malloc(n);
 #ifdef DEBUG_MEMORY
   fprintf (stderr, "static allocate %d at %p\n", n, result);
@@ -423,11 +435,12 @@ void *static_allocate(size_type n) {
 }
 
 void *static_allocate0(size_type n) {
-  php_assert (!query_num);
+  php_assert (!query_num || replace_script_allocator_with_malloc);
   enter_critical_section();
 
   php_assert (n);
 
+  php_assert(!forbid_malloc_allocations);
   void *result = calloc(1, n);
 #ifdef DEBUG_MEMORY
   fprintf (stderr, "static allocate0 %d at %p\n", n, result);
@@ -452,6 +465,7 @@ void static_reallocate(void **p, size_type new_n, size_type *n) {
   enter_critical_section();
   static_memory_used -= *n;
 
+  php_assert(!forbid_malloc_allocations);
   void *old_p = *p;
   *p = realloc(*p, new_n);
   if (*p == nullptr) {
@@ -490,7 +504,7 @@ void *malloc_replace(size_t x) {
   php_assert (sizeof(size_t) <= MAX_ALIGNMENT);
   size_t real_allocate = x + MAX_ALIGNMENT;
   void *p;
-  if (use_script_allocator) {
+  if (replace_malloc_with_script_allocator) {
     p = allocate(real_allocate);
   } else {
     p = static_allocate(real_allocate);
@@ -508,7 +522,7 @@ void free_replace(void *p) {
   }
 
   p = (void *)((char *)p - MAX_ALIGNMENT);
-  if (use_script_allocator) {
+  if (replace_malloc_with_script_allocator) {
     deallocate(p, *(size_t *)p);
   } else {
     size_type n = *(size_t *)p;

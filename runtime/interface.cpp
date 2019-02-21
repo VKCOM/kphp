@@ -17,6 +17,7 @@
 #include "runtime/drivers.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
+#include "runtime/instance_cache.h"
 #include "runtime/net_events.h"
 #include "runtime/openssl.h"
 #include "runtime/regexp.h"
@@ -1992,6 +1993,7 @@ static void reset_global_interface_vars() {
 
 static void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
+  init_instance_cache_lib();
 
   init_drivers_lib();
   init_datetime_lib();
@@ -2048,6 +2050,8 @@ static void free_runtime_libs() {
   free_rpc_lib();
   free_streams_lib();
   free_udp_lib();
+
+  free_instance_cache_lib();
 
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {

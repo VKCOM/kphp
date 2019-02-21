@@ -1036,3 +1036,10 @@ function unimplemented_function ($a1 = "", $a2 = "", $a3 = "", $a4 = "", $a5 = "
 /** For local usage only **/
 function system ($query ::: string) ::: int;
 function raise_sigsegv () ::: void;
+
+/** Instance cache interface (like APC) **/
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cache_fetch($type ::: string, $key ::: string) ::: instance<^1>;
+function instance_cache_store($key ::: string, $value ::: Any, $ttl ::: int = 0) ::: bool;
+function instance_cache_delete($key ::: string) ::: bool;
+function instance_cache_clear() ::: bool;

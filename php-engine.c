@@ -2928,6 +2928,8 @@ void start_server(void) {
   }
 }
 
+void set_instance_cache_memory_limit(int64_t limit);
+
 void read_engine_tag(const char *file_name);
 
 void read_tl_config(const char *file_name);
@@ -3178,6 +3180,15 @@ int main_args_handler(int i) {
       use_madvise_dontneed = 1;
       return 0;
     }
+    case 2003: {
+      int64_t instance_cache_memory_limit = parse_memory_limit(optarg);
+      if (instance_cache_memory_limit <= 0) {
+        kprintf("couldn't parse instance-cache-memory-limit argument\n");
+        return -1;
+      }
+      set_instance_cache_memory_limit(instance_cache_memory_limit);
+      return 0;
+    }
     default:
       return -1;
   }
@@ -3225,6 +3236,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("worker-queries-to-reload", required_argument, 2000, "worker script is reloaded, when <queries> queries processed (default: 100)");
   parse_option("worker-memory-to-reload", required_argument, 2001, "worker script is reloaded, when <memory> queries processed");
   parse_option("use-madvise-dontneed", no_argument, 2002, "Use madvise MADV_DONTNEED for script memory above limit");
+  parse_option("instance-cache-memory-limit", required_argument, 2003, "memory limit for instance_cache");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_end(argc, argv);
 }

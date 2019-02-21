@@ -8,9 +8,7 @@
 #include "runtime/allocator.h"
 #include "runtime/include.h"
 #include "runtime/profiler.h"
-
-template<typename T, typename T1>
-using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
+#include "runtime/kphp_type_traits.h"
 
 // order of includes below matters, be careful
 
@@ -30,10 +28,6 @@ using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<
 
 #undef INCLUDED_FROM_KPHP_CORE
 
-
-class UnknownType {
-};
-
 #define unimplemented_function(name, args...) ({                              \
   php_critical_error ("unimplemented_function: %s", f$strval (name).c_str()); \
   1;                                                                          \
@@ -50,11 +44,6 @@ class UnknownType {
   }                                        \
 })
 
-template<typename T, typename ...Args>
-void hard_reset_var(T &var, Args &&... args) noexcept {
-  new(&var) T(std::forward<Args>(args)...);
-}
-
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})
 #define SAFE_INDEX(a, b, b_type) a[({b_type b_tmp___ = b; b_tmp___;})]
@@ -67,17 +56,10 @@ void hard_reset_var(T &var, Args &&... args) noexcept {
 #define f$likely likely
 #define f$unlikely unlikely
 
-
-using list_bool_int_double = vk::list_of_types<bool, int, double>;
-
-using list_bool_int_double_array = vk::list_of_types<bool, int, double, array_tag>;
-
-template<class T>
-using enable_for_bool_int_double = vk::enable_if_in_list<T, list_bool_int_double>;
-
-template<class T>
-using enable_for_bool_int_double_array = vk::enable_if_base_in_list<T, list_bool_int_double_array>;
-
+template<typename T, typename ...Args>
+void hard_reset_var(T &var, Args &&... args) noexcept {
+  new(&var) T(std::forward<Args>(args)...);
+}
 
 inline bool lt(const bool &lhs, const bool &rhs);
 

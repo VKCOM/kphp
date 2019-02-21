@@ -42,6 +42,8 @@ public:
   inline T *operator->() __attribute__ ((always_inline));
   inline T *operator->() const __attribute__ ((always_inline));
 
+  inline T *get() const;
+
   inline bool is_null() const;
   inline string to_string() const;
   inline const char *get_class() const;
@@ -51,4 +53,12 @@ public:
   template<class T1>
   friend inline bool equals(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
 
+};
+
+template<typename>
+struct is_class_instance : std::false_type {
+};
+
+template<typename T>
+struct is_class_instance<class_instance<T>> : std::true_type {
 };

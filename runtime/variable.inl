@@ -46,10 +46,6 @@ void var::copy_from(var &&other) {
   other.type = NULL_TYPE;
 }
 
-var::var() :
-  type(NULL_TYPE) {
-}
-
 var::var(const Unknown &u __attribute__((unused))) :
   type(NULL_TYPE) {
   php_assert ("Unknown used!!!" && 0);

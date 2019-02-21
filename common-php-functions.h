@@ -30,6 +30,8 @@ const int STRLEN_ANY = STRLEN_ERROR;
 const int STRLEN_CREATE_ANY = STRLEN_ERROR;
 
 const int REF_CNT_FOR_CONST = 0x7ffffff0;
+const int REF_CNT_FOR_CACHE = REF_CNT_FOR_CONST + 1;
+
 
 inline int string_hash(const char *p, int l) __attribute__ ((always_inline));
 

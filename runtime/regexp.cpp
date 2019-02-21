@@ -376,7 +376,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
 
   is_static = (dl::memory_begin == 0);
 
-  dl::use_script_allocator = !is_static;
+  dl::replace_malloc_with_script_allocator = !is_static;
 
   is_utf8 = false;
   int pcre_options = 0;
@@ -525,17 +525,17 @@ void regexp::init(const char *regexp_string, int regexp_len) {
     return;
   }
 
-  dl::use_script_allocator = false;
+  dl::replace_malloc_with_script_allocator = false;
 }
 
 void regexp::clean() {
   if (!is_static) {
     //from cache
-    dl::use_script_allocator = false;
+    dl::replace_malloc_with_script_allocator = false;
     return;
   }
 
-  dl::use_script_allocator = !is_static;
+  dl::replace_malloc_with_script_allocator = !is_static;
 
   subpatterns_count = 0;
   named_subpatterns_count = 0;
@@ -553,7 +553,7 @@ void regexp::clean() {
   delete[] subpattern_names;
   subpattern_names = nullptr;
 
-  dl::use_script_allocator = false;
+  dl::replace_malloc_with_script_allocator = false;
 }
 
 regexp::~regexp() {
@@ -566,13 +566,13 @@ int regexp::pcre_last_error;
 int regexp::exec(const string &subject, int offset, bool second_try) const {
   if (RE2_regexp && !second_try) {
     dl::enter_critical_section();//OK
-    dl::use_script_allocator = !is_static;
+    dl::replace_malloc_with_script_allocator = !is_static;
     if (!RE2_regexp->Match(re2::StringPiece(subject.c_str(), (int)subject.size()), offset, (int)subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count)) {
-      dl::use_script_allocator = false;
+      dl::replace_malloc_with_script_allocator = false;
       dl::leave_critical_section();
       return 0;
     }
-    dl::use_script_allocator = false;
+    dl::replace_malloc_with_script_allocator = false;
     dl::leave_critical_section();
 
     int count = -1;

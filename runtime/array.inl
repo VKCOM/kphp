@@ -263,7 +263,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, 
 
 template<class T>
 void array<T>::array_inner::dispose() {
-  if (ref_cnt != REF_CNT_FOR_CONST) {
+  if (ref_cnt < REF_CNT_FOR_CONST) {
     ref_cnt--;
     if (ref_cnt <= -1) {
       if (is_vector()) {
@@ -290,7 +290,7 @@ void array<T>::array_inner::dispose() {
 
 template<class T>
 typename array<T>::array_inner *array<T>::array_inner::ref_copy() {
-  if (ref_cnt != REF_CNT_FOR_CONST) {
+  if (ref_cnt < REF_CNT_FOR_CONST) {
     ref_cnt++;
   }
   return this;
@@ -995,6 +995,16 @@ typename array<T>::key_type array<T>::iterator::get_key() const {
   } else {
     return ((const int_hash_entry *)entry)->get_key();
   }
+}
+
+template<class T>
+bool array<T>::iterator::is_string_key() const {
+  return !self->is_vector() && self->is_string_hash_entry((const string_hash_entry *)entry);
+}
+
+template<class T>
+string &array<T>::iterator::get_string_key() {
+  return ((string_hash_entry *)entry)->string_key;
 }
 
 template<class T>
@@ -2609,6 +2619,43 @@ void array<T>::set_reference_counter_to_const() {
   // some const arrays are placed in read only memory and can't be modified
   if (p->ref_cnt != REF_CNT_FOR_CONST) {
     p->ref_cnt = REF_CNT_FOR_CONST;
+  }
+}
+
+template<class T>
+bool array<T>::is_const_reference_counter() const {
+  return p->ref_cnt == REF_CNT_FOR_CONST;
+}
+
+template<class T>
+typename array<T>::iterator array<T>::begin_no_mutate() {
+  php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);
+  if (is_vector()) {
+    return typename array<T>::iterator(p, p->int_entries);
+  }
+
+  return typename array<T>::iterator(p, p->begin());
+}
+
+template<class T>
+typename array<T>::iterator array<T>::end_no_mutate() {
+  php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);
+  return end();
+}
+
+template<class T>
+void array<T>::set_reference_counter_to_cache() {
+  php_assert(get_reference_counter() == 1);
+  p->ref_cnt = REF_CNT_FOR_CACHE;
+}
+
+template<class T>
+void array<T>::destroy_cached() {
+  if (p) {
+    php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);
+    p->ref_cnt = 0;
+    p->dispose();
+    p = nullptr;
   }
 }
 

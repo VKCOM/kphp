@@ -171,6 +171,9 @@ public:
 
   inline int get_reference_counter() const;
   inline void set_reference_counter_to_const();
+  inline bool is_const_reference_counter() const;
+  inline void set_reference_counter_to_cache();
+  inline void destroy_cached();
 
   inline void destroy() __attribute__((always_inline));
 

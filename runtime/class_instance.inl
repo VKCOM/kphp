@@ -130,6 +130,11 @@ T *class_instance<T>::operator->() const {
 };
 
 template<class T>
+T *class_instance<T>::get() const {
+  return o;
+}
+
+template<class T>
 void class_instance<T>::warn_on_access_null() const {
   php_warning("Trying to access property of null object");
   const_cast<class_instance<T> *>(this)->alloc();

@@ -72,7 +72,7 @@ char *string::string_inner::reserve(size_type requested_capacity) {
 
 void string::string_inner::dispose() {
 //  fprintf (stderr, "dec ref cnt %d %s\n", ref_count - 1, ref_data());
-  if (ref_count != REF_CNT_FOR_CONST) {
+  if (ref_count < REF_CNT_FOR_CONST) {
     ref_count--;
     if (ref_count <= -1) {
       destroy();
@@ -87,7 +87,7 @@ void string::string_inner::destroy() {
 
 char *string::string_inner::ref_copy() {
 //  fprintf (stderr, "inc ref cnt %d, %s\n", ref_count + 1, ref_data());
-  if (ref_count != REF_CNT_FOR_CONST) {
+  if (ref_count < REF_CNT_FOR_CONST) {
     ref_count++;
   }
   return ref_data();
@@ -998,6 +998,24 @@ int string::get_reference_counter() const {
 
 inline void string::set_reference_counter_to_const() {
   inner()->ref_count = REF_CNT_FOR_CONST;
+}
+
+inline bool string::is_const_reference_counter() const {
+  return inner()->ref_count == REF_CNT_FOR_CONST;
+}
+
+inline void string::set_reference_counter_to_cache() {
+  php_assert(get_reference_counter() == 1);
+  inner()->ref_count = REF_CNT_FOR_CACHE;
+}
+
+inline void string::destroy_cached() {
+  if (p) {
+    php_assert(inner()->ref_count == REF_CNT_FOR_CACHE);
+    inner()->ref_count = 0;
+    inner()->dispose();
+    p = nullptr;
+  }
 }
 
 inline void string::destroy() {

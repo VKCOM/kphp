@@ -180,6 +180,8 @@ public:
 
     inline T &get_value() __attribute__ ((always_inline));
     inline key_type get_key() const __attribute__ ((always_inline));
+    inline bool is_string_key() const;
+    inline string &get_string_key();
     inline iterator &operator++() __attribute__ ((always_inline));
     inline iterator &operator--() __attribute__ ((always_inline));
     inline bool operator==(const iterator &other) const __attribute__ ((always_inline));
@@ -321,6 +323,12 @@ public:
 
   int get_reference_counter() const;
   void set_reference_counter_to_const();
+  bool is_const_reference_counter() const;
+
+  iterator begin_no_mutate();
+  iterator end_no_mutate();
+  void set_reference_counter_to_cache();
+  void destroy_cached();
 
   const T *get_const_vector_pointer() const; // unsafe
 

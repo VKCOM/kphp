@@ -1062,7 +1062,14 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   if (!klass->is_lambda()) {
     W << NL << "inline const char *get_class() const " << BEGIN << "return ";
     compile_string_raw(klass->name, W);
-    W << ";" << NL << END << NL;
+    W << ";" << NL << END << NL << NL;
+
+    W << "template<class Visitor>" << NL
+      << "static void accept(Visitor &visitor) " << BEGIN;
+        klass->members.for_each([&](const ClassMemberInstanceField &f) {
+          W << "visitor(&" << klass->src_name << "::$" << f.local_name() << ");" << NL;
+        });
+     W << END << NL;
   }
 
   W << END << ";" << NL;

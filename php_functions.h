@@ -11,6 +11,7 @@
 #include "runtime/drivers.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
+#include "runtime/instance_cache.h"
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"
 #include "runtime/mail.h"
