@@ -1346,7 +1346,7 @@ inline double vk_dot_product_dense<double>(const array<double> &a, const array<d
   int size = min(a.count(), b.count());
   const double *ap = a.get_const_vector_pointer();
   const double *bp = b.get_const_vector_pointer();
-  return __vector_product(ap, bp, size);
+  return __dot_product(ap, bp, size);
 }
 
 
