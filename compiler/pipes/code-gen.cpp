@@ -1361,29 +1361,14 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
 }
 
 inline static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &dependent_vars) {
-  switch (vertex->type()) {
-    case op_var:
-      dependent_vars.emplace(vertex->get_var_id());
-      break;
-    case op_double_arrow: {
-      auto arrow = vertex.as<op_double_arrow>();
-      add_dependent_declarations(arrow->key(), dependent_vars);
-      add_dependent_declarations(arrow->value(), dependent_vars);
-      break;
-    }
-    case op_array:
-      for (auto array_el_it : *vertex) {
-        add_dependent_declarations(array_el_it, dependent_vars);
-      }
-      break;
-    case op_index: {
-      auto index = vertex.as<op_index>();
-      add_dependent_declarations(index->key(), dependent_vars);
-      add_dependent_declarations(index->array(), dependent_vars);
-      break;
-    }
-    default:
-      return;
+  if (!vertex) {
+    return;
+  }
+  for (auto child: *vertex) {
+    add_dependent_declarations(child, dependent_vars);
+  }
+  if (vertex->type() == op_var) {
+    dependent_vars.emplace(vertex->get_var_id());
   }
 }
 
@@ -1556,7 +1541,7 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
   std::set_difference(dependent_vars.begin(), dependent_vars.end(),
                       vars.begin(), vars.end(), std::back_inserter(extern_depends));
   for (auto var : extern_depends) {
-    W << VarDeclaration(var, true, true);
+    W << VarExternDeclaration(var);
   }
 
   std::string raw_data;
@@ -1630,7 +1615,7 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
 inline VarsCpp::VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt) :
   vars_(std::move(vars)),
   parts_cnt_(parts_cnt) {
-  kphp_assert (1 <= parts_cnt && parts_cnt <= 128);
+  kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= 128);
 }
 
 inline void VarsCpp::compile(CodeGenerator &W) const {
