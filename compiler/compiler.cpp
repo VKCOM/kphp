@@ -22,6 +22,7 @@
 #include "compiler/gentree.h"
 #include "compiler/io.h"
 #include "compiler/lexer.h"
+#include "compiler/make/make.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/pipes/analyzer.h"
@@ -307,7 +308,7 @@ bool compiler_execute(KphpEnviroment *env) {
   int verbosity = G->env().get_verbosity();
   if (G->env().get_use_make()) {
     fprintf(stderr, "start make\n");
-    G->make();
+    run_make();
   }
   G->finish();
   if (verbosity > 1) {

@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "common/algorithms/hashes.h"
+
 #include "compiler/compiler.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/lib-data.h"
@@ -21,7 +23,6 @@
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
-#include "common/algorithms/hashes.h"
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization
@@ -47,7 +48,6 @@ public:
 
   CompilerCore();
   void start();
-  void make();
   void finish();
   void register_env(KphpEnviroment *env);
   const KphpEnviroment &env() const;
@@ -96,18 +96,13 @@ public:
 
   void load_index();
   void save_index();
+  const Index &get_index();
   File *get_file_info(const string &file_name);
   void del_extra_files();
   void init_dest_dir();
   std::string get_subdir_name() const;
 
   Stats stats;
-
-private:
-  std::string get_full_file_name(const string &file_name) const;
-  void copy_static_lib_to_out_dir(File &&static_archive) const;
-  std::forward_list<File> collect_imported_libs();
-  std::forward_list<Index> collect_imported_headers();
 };
 
 extern CompilerCore *G;
