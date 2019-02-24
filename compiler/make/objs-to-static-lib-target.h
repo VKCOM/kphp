@@ -1,10 +1,10 @@
 #pragma once
 
-class Objs2StaticLibTarget : public KphpTarget {
+class Objs2StaticLibTarget : public Target {
 public:
   string get_cmd() final {
     std::stringstream ss;
-    ss << env->get_ar() << " rcs " << target() << " " << dep_list();
+    ss << env->ar << " rcs " << target() << " " << dep_list();
     return ss.str();
   }
 };

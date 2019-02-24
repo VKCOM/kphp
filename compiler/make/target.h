@@ -9,52 +9,43 @@
 #include "compiler/make/make-env.h"
 
 class Target : private vk::not_copyable {
-  friend class Make;
+  friend class MakeRunner;
 
 private:
   std::vector<Target *> deps;
   std::vector<Target *> rdeps;
 
-  long long mtime;
-  int pending_deps;
-  bool is_required;
-  bool is_waiting;
-  bool is_ready;
+  long long mtime = 0;
+  int pending_deps = 0;
+  bool is_required = false;
+  bool is_waiting = false;
+  bool is_ready = false;
+  File *file = nullptr;
+
 protected:
   bool upd_mtime(long long new_mtime) __attribute__ ((warn_unused_result));
   void set_mtime(long long new_mtime);
+
+  const KphpMakeEnv *env = nullptr;
 public:
   long long priority;
   double start_time;
-  Target();
+  Target() = default;
   virtual ~Target() = default;
 
   virtual void compute_priority();
   virtual std::string get_cmd() = 0;
-  virtual std::string get_name() = 0;
+  std::string get_name();
 
-  virtual void on_require() {} //can't fail
-  virtual bool after_run_success() __attribute__ ((warn_unused_result));
-  virtual void after_run_fail() = 0;
+  void on_require();
+  bool after_run_success() __attribute__ ((warn_unused_result));
+  void after_run_fail();
 
   void force_changed(long long new_mtime);
   bool require();
   std::string target();
   std::string dep_list();
-};
 
-// TODO: merge this two classes to one
-class KphpTarget : public Target {
-private:
-  File *file;
-protected:
-  const KphpMakeEnv *env;
-public:
-  KphpTarget();
-  virtual std::string get_name() final;
-  virtual void on_require() final;
-  virtual bool after_run_success() final;
-  virtual void after_run_fail() final;
   void set_file(File *new_file);
   File *get_file() const;
   void set_env(KphpMakeEnv *new_env);

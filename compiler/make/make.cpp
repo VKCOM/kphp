@@ -1,10 +1,5 @@
 #include "compiler/make/make.h"
 
-#include <fcntl.h>
-#include <sys/prctl.h>
-#include <sys/sendfile.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <unordered_map>
 
 #include "common/wrappers/mkdir_recursive.h"
@@ -12,408 +7,92 @@
 #include "compiler/compiler-core.h"
 #include "compiler/make/cpp-to-obj-target.h"
 #include "compiler/make/file-target.h"
+#include "compiler/make/hardlink-or-copy.h"
+#include "compiler/make/make-runner.h"
 #include "compiler/make/objs-to-bin-target.h"
 #include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
-#include "compiler/utils/string-utils.h"
 
-/*** Make ***/
-void Make::run_target(Target *target) {
-  //todo: multiple threads
-  //fprintf (stderr, "run target %s\n", target->get_name().c_str());
-  bool ready = target->mtime != 0;
-  if (ready) {
-    for (auto const dep : target->deps) {
-      if (dep->mtime > target->mtime) {
-        ready = false;
-        break;
-      }
+class MakeSetup {
+private:
+  MakeRunner make;
+  KphpMakeEnv env;
+
+  void target_set_file(Target *target, File *file) {
+    assert (file->target == nullptr);
+    target->set_file(file);
+    file->target = target;
+  }
+
+  void target_set_env(Target *target) {
+    target->set_env(&env);
+  }
+
+  Target *to_target(File *file) {
+    if (file->target != nullptr) {
+      return file->target;
     }
+    return create_cpp_target(file);
   }
 
-  if (!ready) {
-    target->compute_priority();
-    pending_jobs.push(target);
-  } else {
-    ready_target(target);
+  vector<Target *> to_targets(File *file) {
+    return {to_target(file)};
   }
-}
 
-void Make::ready_target(Target *target) {
-  //fprintf (stderr, "ready target %s\n", target->get_name().c_str());
-  assert (!target->is_ready);
-
-  targets_left--;
-  target->is_ready = true;
-  for (auto const rdep : target->rdeps) {
-    one_dep_ready_target(rdep);
-  }
-}
-
-void Make::one_dep_ready_target(Target *target) {
-  //fprintf (stderr, "one_dep_ready target %s\n", target->get_name().c_str());
-  target->pending_deps--;
-  assert (target->pending_deps >= 0);
-  if (target->pending_deps == 0) {
-    if (target->is_waiting) {
-      target->is_waiting = false;
-      targets_waiting--;
-      run_target(target);
+  vector<Target *> to_targets(vector<File *> files) {
+    vector<Target *> res(files.size());
+    for (int i = 0; i < (int)files.size(); i++) {
+      res[i] = to_target(files[i]);
     }
-  }
-}
-
-void Make::wait_target(Target *target) {
-  assert (!target->is_waiting);
-  target->is_waiting = true;
-  targets_waiting++;
-}
-
-void Make::register_target(Target *target, const vector<Target *> &deps) {
-  for (auto const dep : deps) {
-    dep->rdeps.push_back(target);
-    target->pending_deps++;
-  }
-  target->deps = deps;
-
-  targets_left++;
-  all_targets.push_back(target);
-}
-
-void Make::require_target(Target *target) {
-  if (!target->require()) {
-    return;
+    return res;
   }
 
-  if (target->pending_deps == 0) {
-    run_target(target);
-  } else {
-    wait_target(target);
-    for (auto const dep : target->deps) {
-      require_target(dep);
-    }
-  }
-}
-
-static int run_cmd(const string &cmd) {
-  //fprintf (stdout, "%s\n", cmd.c_str());
-  vector<string> args = split(cmd);
-  vector<char *> argv(args.size() + 1);
-  for (int i = 0; i < (int)args.size(); i++) {
-    argv[i] = (char *)args[i].c_str();
-  }
-  argv.back() = nullptr;
-
-  int pid = vfork();
-  if (pid < 0) {
-    perror("vfork failed: ");
-    return pid;
+  Target *create_target(Target *target, vector<Target *> &&deps, File *file) {
+    target_set_file(target, file);
+    target_set_env(target);
+    make.register_target(target, std::move(deps));
+    return target;
   }
 
-  if (pid == 0) {
-    //prctl (PR_SET_PDEATHSIG, SIGKILL);
-    execvp(argv[0], &argv[0]);
-    perror("execvp failed: ");
-    _exit(1);
-  } else {
-    return pid;
-  }
-}
-
-bool Make::start_job(Target *target) {
-  target->start_time = dl_time();
-  string cmd = target->get_cmd();
-
-  int pid = run_cmd(cmd);
-  if (pid < 0) {
-    return false;
-  }
-  jobs[pid] = target;
-  return true;
-}
-
-bool Make::finish_job(int pid, int return_code, int by_signal) {
-  map<int, Target *>::iterator it = jobs.find(pid);
-  assert (it != jobs.end());
-  Target *target = it->second;
-  if (G->env().get_stats_file() != nullptr) {
-    double passed = dl_time() - target->start_time;
-    fprintf(G->env().get_stats_file(), "%lfs %s\n", passed, target->get_name().c_str());
-  }
-  jobs.erase(it);
-  if (return_code != 0) {
-    if (!fail_flag) {
-      fprintf(stdout, "pid [%d] failed or terminated : ", pid);
-      if (return_code != -1) {
-        fprintf(stdout, "return code %d\n", return_code);
-      } else if (by_signal != -1) {
-        fprintf(stdout, "killed by signal %d\n", by_signal);
-      } else {
-        fprintf(stdout, "killed by unknown reason\n");
-      }
-      fprintf(stdout, "Failed [%s]\n", target->get_cmd().c_str());
-    }
-    target->after_run_fail();
-    return false;
-  }
-  if (!target->after_run_success()) {
-    return false;
-  }
-  ready_target(target);
-  return true;
-}
-
-void Make::on_fail() {
-  if (fail_flag) {
-    return;
-  }
-  fprintf(stdout, "Make failed. Waiting for %d children\n", (int)jobs.size());
-  fail_flag = true;
-  for (const auto &pid_and_target : jobs) {
-    int err = kill(pid_and_target.first, SIGINT);
-    if (err < 0) {
-      perror("kill failed: ");
-    }
-  }
-}
-
-int Make::signal_flag;
-
-void Make::sigint_handler(int sig __attribute__((unused))) {
-  signal_flag = 1;
-}
-
-bool Make::make_target(Target *target, int jobs_count) {
-  if (jobs_count < 1) {
-    printf("Invalid jobs_count [%d]\n", jobs_count);
-    return false;
-  }
-  signal_flag = 0;
-  fail_flag = false;
-  dl_signal(SIGINT, Make::sigint_handler);
-  dl_signal(SIGTERM, Make::sigint_handler);
-
-  //fprintf (stderr, "make target: %s\n", target->get_name().c_str());
-  //TODO: check timeouts
-  require_target(target);
-
-  int total_jobs = targets_left;
-  int old_perc = -1;
-  enum {
-    wait_jobs_st,
-    start_jobs_st
-  } state = start_jobs_st;
-  while (true) {
-    int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
-    if (old_perc != perc) {
-      fprintf(stderr, "%3d%% [total jobs %d] [left jobs %d] [running jobs %d] [waiting jobs %d]\n",
-              perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);
-      old_perc = perc;
-    }
-    if (jobs.empty() && (fail_flag || pending_jobs.empty())) {
-      break;
-    }
-
-    if (signal_flag != 0) {
-      on_fail();
-      signal_flag = 0;
-    }
-
-    switch (state) {
-      case start_jobs_st: {
-        if (fail_flag || pending_jobs.empty() || (int)jobs.size() >= jobs_count) {
-          state = wait_jobs_st;
-          break;
-        }
-
-        Target *target = pending_jobs.top();
-        pending_jobs.pop();
-        if (!start_job(target)) {
-          on_fail();
-        }
-        break;
-      }
-      case wait_jobs_st: {
-        if (jobs.empty()) {
-          state = start_jobs_st;
-          break;
-        }
-        int status;
-        int pid = wait(&status);
-        if (pid == -1) {
-          if (errno != EINTR) {
-            perror("waitpid failed: ");
-            on_fail();
-          }
-        } else {
-          int return_code = -1;
-          int by_signal = -1;
-          if (WIFEXITED (status)) {
-            return_code = WEXITSTATUS (status);
-          } else if (WIFSIGNALED (status)) {
-            by_signal = WTERMSIG (status);
-          } else {
-            printf("Something strange happened with pid [%d]\n", pid);
-          }
-          if (!finish_job(pid, return_code, by_signal)) {
-            on_fail();
-          }
-        }
-        if (!fail_flag) {
-          state = start_jobs_st;
-        }
-        break;
-      }
-    }
+public:
+  Target *create_cpp_target(File *cpp) {
+    return create_target(new FileTarget(), vector<Target *>(), cpp);
   }
 
-  //TODO: use old handlers instead SIG_DFL
-  dl_signal(SIGINT, SIG_DFL);
-  dl_signal(SIGTERM, SIG_DFL);
-  return !fail_flag && target->is_ready;
-}
-
-Make::Make() :
-  targets_waiting(0),
-  targets_left(0),
-  fail_flag(false) {}
-
-Make::~Make() {
-  //TODO: delete targets
-  for (auto target : all_targets) {
-    delete target;
-  }
-}
-
-
-/*** KphpMake ***/
-
-void KphpMake::target_set_file(KphpTarget *target, File *file) {
-  assert (file->target == nullptr);
-  target->set_file(file);
-  file->target = target;
-}
-
-void KphpMake::target_set_env(KphpTarget *target) {
-  target->set_env(&env);
-}
-
-KphpTarget *KphpMake::to_target(File *file) {
-  if (file->target != nullptr) {
-    return dynamic_cast <KphpTarget *> (file->target);
-  }
-  return create_cpp_target(file);
-}
-
-vector<Target *> KphpMake::to_targets(File *file) {
-  return {to_target(file)};
-}
-
-vector<Target *> KphpMake::to_targets(vector<File *> files) {
-  vector<Target *> res(files.size());
-  for (int i = 0; i < (int)files.size(); i++) {
-    res[i] = to_target(files[i]);
-  }
-  return res;
-}
-
-KphpTarget *KphpMake::create_cpp_target(File *cpp) {
-  KphpTarget *res = new FileTarget();
-  target_set_file(res, cpp);
-  target_set_env(res);
-  make.register_target(res);
-  return res;
-}
-
-KphpTarget *KphpMake::create_cpp2obj_target(File *cpp, File *obj) {
-  KphpTarget *res = new Cpp2ObjTarget();
-  target_set_file(res, obj);
-  target_set_env(res);
-  make.register_target(res, to_targets(cpp));
-  return res;
-}
-
-KphpTarget *KphpMake::create_objs2obj_target(const vector<File *> &objs, File *obj) {
-  KphpTarget *res = new Objs2ObjTarget();
-  target_set_file(res, obj);
-  target_set_env(res);
-  make.register_target(res, to_targets(objs));
-  return res;
-}
-
-KphpTarget *KphpMake::create_objs2bin_target(const vector<File *> &objs, File *bin) {
-  KphpTarget *res = new Objs2BinTarget();
-  target_set_file(res, bin);
-  target_set_env(res);
-  make.register_target(res, to_targets(objs));
-  return res;
-}
-
-KphpTarget *KphpMake::create_objs2static_lib_target(const vector<File *> &objs, File *static_lib) {
-  KphpTarget *res = new Objs2StaticLibTarget();
-  target_set_file(res, static_lib);
-  target_set_env(res);
-  make.register_target(res, to_targets(objs));
-  return res;
-}
-
-void KphpMake::init_env(const KphpEnviroment &kphp_env) {
-  env.cxx = kphp_env.get_cxx();
-  env.cxx_flags = kphp_env.get_cxx_flags();
-  env.ld = kphp_env.get_ld();
-  env.ld_flags = kphp_env.get_ld_flags();
-  env.ar = kphp_env.get_ar();
-  env.debug_level = kphp_env.get_debug_level();
-}
-
-bool KphpMake::make_target(File *bin, int jobs_count) {
-  return make.make_target(to_target(bin), jobs_count);
-}
-
-static void hard_link_or_copy_impl(const std::string &from, const std::string &to, bool replace, bool allow_copy) noexcept {
-  if (!link(from.c_str(), to.c_str())) {
-    return;
+  Target *create_cpp2obj_target(File *cpp, File *obj) {
+    return create_target(new Cpp2ObjTarget(), to_targets(cpp), obj);
   }
 
-  if (errno == EEXIST) {
-    if (replace) {
-      kphp_error_return(!unlink(to.c_str()),
-                        format("Can't remove file '%s': %s", to.c_str(), strerror(errno)));
-      hard_link_or_copy_impl(from, to, false, allow_copy);
-    }
-    return;
+  Target *create_objs2obj_target(const vector<File *> &objs, File *obj) {
+    return create_target(new Objs2ObjTarget(), to_targets(objs), obj);
   }
 
-  // the file is placed on other device, or we have a permission problems, try to copy it
-  if (vk::any_of_equal(errno, EXDEV, EPERM) && allow_copy) {
-    struct stat file_stat;
-    kphp_error_return (!stat(from.c_str(), &file_stat),
-                       format("Can't get file stat '%s': %s", from.c_str(), strerror(errno)));
-
-    std::string tmp_file = to + ".XXXXXX";
-    int tmp_fd = mkstemp(&tmp_file[0]);
-    kphp_error_return(tmp_fd != -1,
-                      format("Can't create tmp file '%s': %s", tmp_file.c_str(), strerror(errno)));
-    kphp_error_return(fchmod(tmp_fd, file_stat.st_mode) != -1,
-                      format("Can't change permissions of tmp file '%s': %s", tmp_file.c_str(), strerror(errno)));
-    int from_fd = open(from.c_str(), O_RDONLY);
-    const ssize_t s = sendfile(tmp_fd, from_fd, nullptr, file_stat.st_size);
-    close(from_fd);
-    close(tmp_fd);
-    kphp_error_return(s != -1, format("Can't copy file from '%s' to '%s': %s", from.c_str(), tmp_file.c_str(), strerror(errno)));
-    kphp_assert(s == file_stat.st_size);
-    hard_link_or_copy_impl(tmp_file, to, replace, false);
-    unlink(tmp_file.c_str());
-    return;
+  Target *create_objs2bin_target(const vector<File *> &objs, File *bin) {
+    return create_target(new Objs2BinTarget(), to_targets(objs), bin);
   }
 
-  kphp_error(0, format("Can't copy file from '%s' to '%s': %s", from.c_str(), to.c_str(), strerror(errno)));
-}
+  Target *create_objs2static_lib_target(const vector<File *> &objs, File *lib) {
+    return create_target(new Objs2StaticLibTarget, to_targets(objs), lib);
+  }
 
-static void hard_link_or_copy(const std::string &from, const std::string &to, bool replace = true) {
-  hard_link_or_copy_impl(from, to, replace, true);
-  stage::die_if_global_errors();
-}
+  void init_env(const KphpEnviroment &kphp_env) {
+    env.cxx = kphp_env.get_cxx();
+    env.cxx_flags = kphp_env.get_cxx_flags();
+    env.ld = kphp_env.get_ld();
+    env.ld_flags = kphp_env.get_ld_flags();
+    env.ar = kphp_env.get_ar();
+    env.debug_level = kphp_env.get_debug_level();
+  }
+
+  void add_gch_dir(const std::string &gch_dir) {
+    env.add_gch_dir(gch_dir);
+  }
+
+  bool make_target(File *bin, int jobs_count = 32) {
+    return make.make_target(to_target(bin), jobs_count);
+  }
+};
+
 
 static void copy_static_lib_to_out_dir(File &&static_archive) {
   Index out_dir;
@@ -496,7 +175,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviro
     return gch_dir;
   }
 
-  KphpMake make;
+  MakeSetup make;
   File php_functions_h(kphp_env.get_path() + "PHP/" + header_filename);
   kphp_error_act(php_functions_h.upd_mtime() > 0,
                  format("Can't read mtime of '%s'", php_functions_h.path.c_str()),
@@ -579,7 +258,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
   return dep_mtime;
 }
 
-static std::vector<File *> create_obj_files(KphpMake *make, Index &obj_dir, const Index &cpp_dir,
+static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, const Index &cpp_dir,
                                      const std::forward_list<Index> &imported_headers) {
   std::vector<File *> files = cpp_dir.get_files();
   std::unordered_map<File *, long long> dep_mtime = create_dep_mtime(cpp_dir, imported_headers);
@@ -625,7 +304,7 @@ static std::vector<File *> create_obj_files(KphpMake *make, Index &obj_dir, cons
 static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
                const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
                const std::string &gch_dir) {
-  KphpMake make;
+  MakeSetup make;
   std::vector<File *> lib_objs;
   for (File &link_file: imported_libs) {
     make.create_cpp_target(&link_file);
@@ -644,7 +323,7 @@ static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forw
 static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
                           const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
                           const std::string &gch_dir) {
-  KphpMake make;
+  MakeSetup make;
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   make.create_objs2static_lib_target(objs, &static_lib);
   make.init_env(kphp_env);

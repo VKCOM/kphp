@@ -1,8 +1,5 @@
 #include "compiler/make/target.h"
 
-#include <cassert>
-#include <cstdio>
-
 void Target::set_mtime(long long new_mtime) {
   assert(mtime == 0);
   mtime = new_mtime;
@@ -17,20 +14,8 @@ bool Target::upd_mtime(long long new_mtime) {
   return true;
 }
 
-Target::Target() :
-  mtime(0),
-  pending_deps(0),
-  is_required(false),
-  is_waiting(false),
-  is_ready(false) {
-}
-
 void Target::compute_priority() {
   priority = 0;
-}
-
-bool Target::after_run_success() {
-  return true;
 }
 
 bool Target::require() {
@@ -61,21 +46,15 @@ std::string Target::dep_list() {
   return ss;
 }
 
-KphpTarget::KphpTarget() :
-  Target(),
-  file(nullptr),
-  env(nullptr) {
-}
-
-string KphpTarget::get_name() {
+string Target::get_name() {
   return file->path;
 }
 
-void KphpTarget::on_require() {
+void Target::on_require() {
   file->needed = true;
 }
 
-bool KphpTarget::after_run_success() {
+bool Target::after_run_success() {
   long long mtime = file->upd_mtime();
   if (mtime < 0) {
     return false;
@@ -86,21 +65,21 @@ bool KphpTarget::after_run_success() {
   return upd_mtime(file->mtime);
 }
 
-void KphpTarget::after_run_fail() {
+void Target::after_run_fail() {
   file->unlink();
 }
 
-void KphpTarget::set_file(File *new_file) {
+void Target::set_file(File *new_file) {
   assert (file == nullptr);
   file = new_file;
   set_mtime(file->mtime);
 }
 
-File *KphpTarget::get_file() const {
+File *Target::get_file() const {
   return file;
 }
 
-void KphpTarget::set_env(KphpMakeEnv *new_env) {
+void Target::set_env(KphpMakeEnv *new_env) {
   assert (env == nullptr);
   env = new_env;
 }

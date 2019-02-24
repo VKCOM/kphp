@@ -2,19 +2,12 @@
 
 #include <fstream>
 #include <numeric>
-#include <sys/sendfile.h>
 #include <unordered_map>
 
 #include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/const-manipulations.h"
-#include "compiler/data/class-data.h"
-#include "compiler/data/define-data.h"
-#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
-#include "compiler/make/make.h"
-#include "compiler/threading/hash-table.h"
 
 static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 

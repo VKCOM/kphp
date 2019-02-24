@@ -2,17 +2,17 @@
 
 #include "compiler/make/target.h"
 
-class Cpp2ObjTarget : public KphpTarget {
+class Cpp2ObjTarget : public Target {
 public:
   string get_cmd() final {
     std::stringstream ss;
-    ss << env->get_cxx() <<
+    ss << env->cxx <<
        " -c -o " << target() <<
        " " << dep_list() <<
-       " " << env->get_cxx_flags();
+       " " << env->cxx_flags;
 
     if (get_file()->compile_with_debug_info_flag) {
-      ss << " " << env->get_debug_level();
+      ss << " " << env->debug_level;
     }
 
     return ss.str();
