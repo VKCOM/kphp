@@ -472,6 +472,19 @@ bool KphpEnviroment::init() {
     as_file(&main_file);
   }
 
+  string color_settings_str;
+  init_env_var(&color_settings_str, "KPHP_COLORS", "auto");
+  if (color_settings_str == "auto") {
+    color_ = auto_colored;
+  } else if (color_settings_str == "no") {
+    color_ = not_colored;
+  } else if (color_settings_str == "yes") {
+    color_ = colored;
+  } else {
+    fprintf(stderr, "Unknown color settings %s, fallback to auto\n", color_settings_str.c_str());
+    color_ = auto_colored;
+  }
+
   string user_cxx_flags;
   init_env_var(&user_cxx_flags, "CXXFLAGS", "-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
   init_env_var(&cxx_, "CXX", "g++");
@@ -592,4 +605,8 @@ std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename
   kphp_error(runtime_sha256_file.gcount() == SHA256_LEN,
              format("Can't read runtime sha256 from file '%s'", filename.c_str()));
   return std::string(runtime_sha256, runtime_sha256 + SHA256_LEN);
+}
+
+KphpEnviroment::color_settings KphpEnviroment::get_color_settings() const {
+  return color_;
 }

@@ -37,7 +37,7 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n%s [gen by %s at %d]\n", get_assert_level_desc(assert_level), file_name, line_number);
   stage::print(file);
   string correct_description;
-  if (!TermStringFormat::is_terminal(file)) {
+  if (!stage::should_be_colored(file)) {
     correct_description = TermStringFormat::remove_special_symbols(full_description);
   } else {
     correct_description = full_description;
@@ -112,7 +112,7 @@ void stage::print_file(FILE *f) {
 void stage::print_function(FILE *f) {
   FunctionPtr function = get_function();
   string function_name_str = (function ? function->get_human_readable_name() : "unknown function");
-  if (TermStringFormat::is_terminal(f)) {
+  if (should_be_colored(f)) {
     function_name_str = TermStringFormat::add_text_attribute(function_name_str, TermStringFormat::bold);
   }
   fprintf(f, "[function = %s]\n", function_name_str.c_str());
@@ -263,4 +263,16 @@ string stage::to_str(const Location &new_location) {
   }
 
   return out;
+}
+
+bool stage::should_be_colored(FILE *f)  {
+  switch (G->env().get_color_settings()) {
+    case KphpEnviroment::colored:
+      return true;
+    case KphpEnviroment::not_colored:
+      return false;
+    case KphpEnviroment::auto_colored:
+    default:
+      return TermStringFormat::is_terminal(f);
+  }
 }

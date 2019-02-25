@@ -87,6 +87,7 @@ int get_line();
 const string &get_file_name();
 const string &get_function_name();
 string to_str(const Location &new_location);
+bool should_be_colored(FILE *f);
 
 extern int warnings_count;
 }

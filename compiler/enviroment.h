@@ -3,6 +3,8 @@
 #include "compiler/common.h"
 
 class KphpEnviroment {
+public:
+  enum color_settings { auto_colored, not_colored, colored};
 private:
   string cur_dir_;
   string home_;
@@ -61,6 +63,7 @@ private:
   string version_;
 
   string cxx_flags_sha256_;
+  color_settings color_;
 
   void update_cxx_flags_sha256();
 
@@ -147,6 +150,7 @@ public:
 
   const string &get_version() const;
   bool is_static_lib_mode() const;
+  color_settings get_color_settings() const;
 
   bool init();
   void debug() const;
