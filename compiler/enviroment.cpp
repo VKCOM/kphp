@@ -516,6 +516,11 @@ bool KphpEnviroment::init() {
   init_env_var(&version_, "KPHP_VERSION_OVERRIDE", get_version_string());
   env_str2bool(&use_auto_dest_bool_, use_auto_dest_);
 
+  init_env_var(&verbosity_, "KPHP_VERBOSITY", "0");
+  if (!verbosity_int_) {
+    env_str2int(&verbosity_int_, verbosity_);
+  }
+
   return true;
 }
 

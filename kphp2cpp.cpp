@@ -129,14 +129,6 @@ int main(int argc, char *argv[]) {
   set_debug_handlers();
 
   env = new KphpEnviroment();
-  struct passwd *user_pwd = getpwuid(getuid());
-  dl_passert (user_pwd != nullptr, "Failed to get user name");
-  char *user = user_pwd->pw_name;
-  if (user != nullptr && (!strcmp(user, "levlam") || !strcmp(user, "arseny30") || !strcmp(user, "pkunyavskiy"))) {
-    env->inc_verbosity();
-    env->inc_verbosity();
-    env->inc_verbosity();
-  }
 
   remove_all_options();
   parse_option("help", no_argument, 'h', "prints help and exits");
