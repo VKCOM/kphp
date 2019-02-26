@@ -1,3 +1,5 @@
+#include <unordered_map>
+
 #include "compiler/pipes/code-gen.h"
 
 #include "common/algorithms/find.h"
@@ -2099,16 +2101,16 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
 
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
-  kphp_error_return (OpInfo::str(root->type())[0] != '@', format("Unexpected %s\n", OpInfo::str(root->type()).c_str() + 1));
+  auto &root_type_str = OpInfo::str(root->type());
+  kphp_error_return (root_type_str[0] != '@', format("Unexpected %s\n", root_type_str.c_str() + 1));
 
-  VertexPtr lhs = root->lhs();
-  VertexPtr rhs = root->rhs();
+  auto lhs = root->lhs();
+  auto rhs = root->rhs();
+
+  auto lhs_tp = tinf::get_type(lhs);
+  auto rhs_tp = tinf::get_type(rhs);
 
   if (root->type() == op_add) {
-    const TypeData *lhs_tp, *rhs_tp;
-    lhs_tp = tinf::get_type(lhs);
-    rhs_tp = tinf::get_type(rhs);
-
     if (lhs_tp->ptype() == tp_array && rhs_tp->ptype() == tp_array && type_out(lhs_tp) != type_out(rhs_tp)) {
       const TypeData *res_tp = tinf::get_type(root)->const_read_at(Key::any_key());
       W << "array_add < " << TypeName(res_tp) << " > (" << lhs << ", " << rhs << ")";
@@ -2117,45 +2119,35 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   }
   // специальные inplace переменные, которые объявляются в момент присваивания, а не в начале функции
   if (root->type() == op_set && lhs->type() == op_var && lhs->extra_type == op_ex_var_superlocal_inplace) {
-    W << TypeName(tinf::get_type(lhs)) << " ";    // получится не "$tmp = v", а "array<T> $tmp = v" к примеру
+    W << TypeName(lhs_tp) << " ";    // получится не "$tmp = v", а "array<T> $tmp = v" к примеру
   }
 
-  OperationType tp = OpInfo::type(root->type());
-  if (tp == binary_func_op) {
+  if (OpInfo::type(root->type()) == binary_func_op) {
     compile_binary_func_op(root, W);
     return;
   }
 
-  if (root->type() == op_lt || root->type() == op_gt || root->type() == op_le || root->type() == op_ge ||
-      root->type() == op_eq2 || root->type() == op_neq2) {
-    const TypeData *lhs_tp = tinf::get_type(lhs);
-    const TypeData *rhs_tp = tinf::get_type(rhs);
-    bool lhs_is_bool = lhs_tp->get_real_ptype() == tp_bool;
-    bool rhs_is_bool = rhs_tp->get_real_ptype() == tp_bool;
+  bool lhs_is_bool = lhs_tp->get_real_ptype() == tp_bool;
+  bool rhs_is_bool = rhs_tp->get_real_ptype() == tp_bool;
+  if (rhs_is_bool ^ lhs_is_bool) {
+    static const std::unordered_map<int, const char *, std::hash<int>> tp_to_str{
+      {op_lt,   "lt"},
+      {op_gt,   "gt"},
+      {op_le,   "leq"},
+      {op_ge,   "geq"},
+      {op_eq2,  "eq2"},
+      {op_neq2, "neq2"},
+    };
 
-    if (rhs_is_bool ^ lhs_is_bool) {
-      if (root->type() == op_lt) {
-        W << "lt";
-      } else if (root->type() == op_gt) {
-        W << "gt";
-      } else if (root->type() == op_le) {
-        W << "leq";
-      } else if (root->type() == op_ge) {
-        W << "geq";
-      } else if (root->type() == op_eq2) {
-        W << "eq2";
-      } else if (root->type() == op_neq2) {
-        W << "neq2";
-      } else {
-        kphp_fail();
-      }
-      W << " (" << lhs << ", " << rhs << ")";
+    auto str_repr_it = tp_to_str.find(root->type());
+    if (str_repr_it != tp_to_str.end()) {
+      W << str_repr_it->second << " (" << lhs << ", " << rhs << ")";
       return;
     }
   }
 
   W << Operand(lhs, root->type(), true) <<
-    " " << OpInfo::str(root->type()) << " " <<
+    " " << root_type_str << " " <<
     Operand(rhs, root->type(), false);
 }
 
