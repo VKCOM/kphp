@@ -349,7 +349,7 @@ void KphpEnviroment::update_cxx_flags_sha256() {
   SHA256_CTX sha256;
   SHA256_Init(&sha256);
 
-  auto cxx_flags_full = cxx_ + cxx_flags_;
+  auto cxx_flags_full = cxx_ + cxx_flags_ + debug_level_;
   SHA256_Update(&sha256, cxx_flags_full.c_str(), cxx_flags_full.size());
 
   unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
