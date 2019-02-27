@@ -143,7 +143,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts = arr
 
 extern "C" {
 void global_init_runtime_libs();
-void init_heap_allocator();
+void global_init_script_allocator();
 }
 
 void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);

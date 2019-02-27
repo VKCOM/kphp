@@ -2247,12 +2247,7 @@ var v$Durov __attribute__ ((weak));
 var v$FullMCTime __attribute__ ((weak));
 var v$KPHP_MC_WRITE_STAT_PROBABILITY __attribute__ ((weak));
 
-void init_drivers_lib() {
-  drivers_cpp_filename = string("drivers.cpp", 11);
-  drivers_h_filename = string("drivers.h", 9);
-}
-
-void free_drivers_lib() {
+static void reset_drivers_global_vars() {
   hard_reset_var(v$MC);
   hard_reset_var(v$MC_True);
   hard_reset_var(v$config);
@@ -2268,4 +2263,14 @@ void free_drivers_lib() {
 
   hard_reset_var(drivers_cpp_filename);
   hard_reset_var(drivers_h_filename);
+}
+
+void init_drivers_lib() {
+  reset_drivers_global_vars();
+  drivers_cpp_filename = string("drivers.cpp", 11);
+  drivers_h_filename = string("drivers.h", 9);
+}
+
+void free_drivers_lib() {
+  reset_drivers_global_vars();
 }

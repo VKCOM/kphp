@@ -6,12 +6,9 @@
 
 const string::size_type string::max_size __attribute__ ((weak));
 
-string::size_type string::string_inner::empty_string_storage[sizeof(string_inner) / sizeof(size_type) + 1] __attribute__ ((weak)) = {0 /* size */,
-                                                                                                                                     0 /* capacity */,
-                                                                                                                                     REF_CNT_FOR_CONST};
-
 string::string_inner &string::string_inner::empty_string() {
-  return *reinterpret_cast <string_inner *> (empty_string_storage);
+  static string::string_inner empty_string{0, 0, REF_CNT_FOR_CONST};
+  return empty_string;
 }
 
 bool string::string_inner::is_shared() const {

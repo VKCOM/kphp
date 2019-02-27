@@ -14,7 +14,7 @@ void leave_critical_section();
 
 extern long long query_num;//engine query number. query_num == 0 before first query
 extern bool script_runned;//betwen init_static and free_runtime_libs
-extern bool use_script_allocator;//use script allocator instead of static heap allocator
+extern volatile bool use_script_allocator;//use script allocator instead of static heap allocator
 
 using size_type = unsigned int;
 
@@ -29,7 +29,9 @@ extern size_type static_memory_used;
 
 size_type memory_get_total_usage();//usage of script memory
 
-void allocator_init(void *buf, size_type n);//init script allocator with arena of n bytes at buf
+void global_init_script_allocator();
+void init_script_allocator(void *buf, size_type n);//init script allocator with arena of n bytes at buf
+void free_script_allocator();
 
 void *allocate(size_type n);//allocate script memory
 void *allocate0(size_type n);//allocate zeroed script memory

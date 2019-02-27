@@ -1265,11 +1265,8 @@ void arg_add(const char *value) {
   arg_vars->push_back(string(value, (dl::size_type)strlen(value)));
 }
 
-
-static void init_superglobals(const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
-                              const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
-                              const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
-  rpc_parse(serialized_data, serialized_data_len);
+static void reset_superglobals() {
+  dl::enter_critical_section();
 
   hard_reset_var(v$_SERVER, array<var>());
   hard_reset_var(v$_GET, array<var>());
@@ -1278,6 +1275,16 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
   hard_reset_var(v$_COOKIE, array<var>());
   hard_reset_var(v$_REQUEST, array<var>());
   hard_reset_var(v$_ENV, array<var>());
+
+  dl::leave_critical_section();
+}
+
+static void init_superglobals(const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
+                              const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
+                              const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
+  rpc_parse(serialized_data, serialized_data_len);
+
+  reset_superglobals();
 
   string uri_str;
   if (uri_len) {
@@ -1549,7 +1556,6 @@ void init_superglobals(php_query_data *data) {
                     http_data->ip, http_data->port, http_data->keep_alive,
                     rpc_data->data, rpc_data->len, rpc_data->req_id, rpc_data->ip, rpc_data->port, rpc_data->pid, rpc_data->utime);
 }
-
 
 bool f$set_server_status(const string &status) {
   set_server_status(status.c_str(), status.size());
@@ -1962,30 +1968,36 @@ static void global_init_interface_lib() {
   register_stream_functions(&php_stream_functions, false);
 }
 
-void global_init_runtime_libs() {
-  global_init_files_lib();
-  global_init_interface_lib();
-  global_init_openssl_lib();
-  global_init_regexp_lib();
-  global_init_resumable_lib();
-  global_init_rpc_lib();
-  global_init_udp_lib();
-}
-
 dl::size_type string_buffer::MIN_BUFFER_LEN = 266175; //TODO: move to some better place
 dl::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24); //TODO: move to some better place
 
-void init_heap_allocator(void) {
-  dl::allocator_init(nullptr, 0);
+static void reset_global_interface_vars() {
+  dl::enter_critical_section();
+
+  hard_reset_var(http_status_line);
+
+  hard_reset_var(empty_string);
+  hard_reset_var(empty_var);
+  hard_reset_var(empty_array_var);
+
+  hard_reset_var(v$argc);
+  hard_reset_var(v$argv);
+
+  hard_reset_var(v$d$PHP_SAPI);
+
+  hard_reset_var(raw_post_data);
+
+  dl::leave_critical_section();
 }
 
-void init_runtime_libs() {
+static void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
 
   init_drivers_lib();
   init_datetime_lib();
   init_net_events_lib();
   init_resumable_lib();
+  init_streams_lib();
   init_rpc_lib();
 
   init_string_buffer_lib(static_buffer_length_limit);
@@ -2024,7 +2036,7 @@ void init_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
 }
 
-void free_runtime_libs() {
+static void free_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
 
   free_bcmath_lib();
@@ -2046,32 +2058,35 @@ void free_runtime_libs() {
     uploaded_files_last_query_num--;
   }
 
-  hard_reset_var(http_status_line);
-
-  hard_reset_var(empty_string);
-  hard_reset_var(empty_var);
-  hard_reset_var(empty_array_var);
-
-  hard_reset_var(v$argc);
-  hard_reset_var(v$argv);
-
-  hard_reset_var(v$d$PHP_SAPI);
-
-  hard_reset_var(raw_post_data);
-
-  dl::script_runned = false;
-  php_assert (dl::use_script_allocator == false);
   dl::leave_critical_section();
 }
 
+void global_init_runtime_libs() {
+  global_init_files_lib();
+  global_init_interface_lib();
+  global_init_openssl_lib();
+  global_init_regexp_lib();
+  global_init_resumable_lib();
+  global_init_rpc_lib();
+  global_init_udp_lib();
+}
+
+void global_init_script_allocator() {
+  dl::global_init_script_allocator();
+}
+
 void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size) {
-  dl::allocator_init(mem, mem_size);
+  dl::init_script_allocator(mem, mem_size);
+  reset_global_interface_vars();
   init_runtime_libs();
   init_superglobals(data);
 }
 
 void free_runtime_environment() {
+  reset_superglobals();
   free_runtime_libs();
+  reset_global_interface_vars();
+  dl::free_script_allocator();
 }
 
 void read_engine_tag(const char *file_name) {

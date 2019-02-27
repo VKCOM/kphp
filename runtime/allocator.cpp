@@ -27,8 +27,8 @@ const size_type MAX_BLOCK_SIZE = 16384;
 const size_type MAX_ALLOC = 0xFFFFFF00;
 
 
-volatile int in_critical_section;
-volatile long long pending_signals;
+volatile int in_critical_section = 0;
+volatile long long pending_signals = 0;
 
 
 void enter_critical_section() {
@@ -111,35 +111,66 @@ public:
 
 long long query_num = 0;
 bool script_runned = false;
-bool use_script_allocator = false;
+volatile bool use_script_allocator = false;
 
 bool allocator_inited = false;
 
-size_t memory_begin;
-size_t memory_end = ULONG_MAX;
-size_type memory_limit;
-size_type memory_used;
-size_type max_memory_used;
-size_type max_real_memory_used;
+size_t memory_begin = 0;
+size_t memory_end = 0;
+size_type memory_limit = 0;
+size_type memory_used = 0;
+size_type max_memory_used = 0;
+size_type max_real_memory_used = 0;
 
-size_type static_memory_used;
+size_type static_memory_used = 0;
 
-typedef std::multimap<size_type, void *, std::less<size_type>, script_allocator<std::pair<const size_type, void *>>> map_type;
-char left_pieces_storage[sizeof(map_type)];
-map_type *left_pieces = reinterpret_cast <map_type *> (left_pieces_storage);
-void *piece, *piece_end;
-void *free_blocks[MAX_BLOCK_SIZE >> 3];
+using map_type = std::multimap<size_type, void *, std::less<size_type>, script_allocator<std::pair<const size_type, void *>>>;
+char left_pieces_storage[sizeof(map_type)] = {0};
+map_type *left_pieces = nullptr;
+void *piece = nullptr;
+void *piece_end = nullptr;
+void *free_blocks[MAX_BLOCK_SIZE >> 3] = {0};
+
+const bool stupid_allocator = false;
 
 
 size_type memory_get_total_usage() {
   return (size_type)((size_t)piece - memory_begin);
 }
 
+void check_script_memory_piece(void *p, size_t s) {
+  const size_t p_begin = reinterpret_cast<size_t>(p);
+  const size_t p_end = p_begin + s;
+  if (memory_begin <= p_begin && p_end <= memory_end) {
+    return;
+  }
 
-const bool stupid_allocator = false;
-
+  php_critical_error(
+    "Found unexpected script memory piece:\n"
+    "ptr:          %p\n"
+    "size:         %zu\n"
+    "piece:        %p\n"
+    "piece_end:    %p\n"
+    "memory_begin: %p\n"
+    "memory_end:   %p\n"
+    "memory_limit:         %u\n"
+    "memory_used:          %u\n"
+    "max_memory_used:      %u\n"
+    "max_real_memory_used: %u\n"
+    "static_memory_used:   %u\n"
+    "query_num:            %lld\n"
+    "script_runned:        %d\n"
+    "use_script_allocator: %d\n"
+    "in_critical_section:  %d\n"
+    "pending_signals:      %lld\n",
+    p, s, piece, piece_end, reinterpret_cast<void *>(memory_begin), reinterpret_cast<void *>(memory_end),
+    memory_limit, memory_used, max_memory_used, max_real_memory_used, static_memory_used,
+    query_num, script_runned, use_script_allocator, in_critical_section, pending_signals);
+}
 
 inline void allocator_add(void *block, size_type size) {
+  check_script_memory_piece(block, size);
+
   if ((char *)block + size == (char *)piece) {
     piece = block;
     return;
@@ -150,11 +181,19 @@ inline void allocator_add(void *block, size_type size) {
     *(void **)block = free_blocks[size];
     free_blocks[size] = block;
   } else {
+    php_assert(left_pieces);
     left_pieces->insert(std::make_pair(size, block));
   }
 }
 
-void allocator_init(void *buf, size_type n) {
+void global_init_script_allocator() {
+  enter_critical_section();
+  memset(free_blocks, 0, sizeof(free_blocks));
+  query_num++;
+  leave_critical_section();
+}
+
+void init_script_allocator(void *buf, size_type n) {
   in_critical_section = 0;
   pending_signals = 0;
 
@@ -170,18 +209,25 @@ void allocator_init(void *buf, size_type n) {
   max_memory_used = 0;
   max_real_memory_used = 0;
 
-  if (query_num == 0) {
-//    static_memory_used = 0;//do not count shared memory
-  }
-
   piece = buf;
   piece_end = (void *)((char *)piece + n);
 
   new(left_pieces_storage) map_type();
+  left_pieces = reinterpret_cast <map_type *> (left_pieces_storage);
   memset(free_blocks, 0, sizeof(free_blocks));
 
   query_num++;
   script_runned = true;
+
+  leave_critical_section();
+}
+
+void free_script_allocator() {
+  enter_critical_section();
+
+  dl::script_runned = false;
+  left_pieces = nullptr;
+  php_assert (!dl::use_script_allocator);
 
   leave_critical_section();
 }
@@ -204,6 +250,7 @@ void *allocate(size_type n) {
   }
 
   if (!script_runned) {
+    php_warning("Trying to call allocate for non runned script, n = %u", n);
     return nullptr;
   }
   enter_critical_section();
@@ -231,6 +278,7 @@ void *allocate(size_type n) {
         free_blocks[nn] = *(void **)result;
       }
     } else {
+      php_assert(left_pieces);
       auto p = left_pieces->lower_bound(n);
 #ifdef DEBUG_MEMORY
       fprintf (stderr, "allocate %d from %d, map size = %d\n", n, p == left_pieces->end() ? -1 : (int)p->first, (int)left_pieces->size());
@@ -269,6 +317,7 @@ void *allocate0(size_type n) {
   }
 
   if (!script_runned) {
+    php_warning("Trying to call allocate0 for non runned script, n = %u", n);
     return nullptr;
   }
 
@@ -282,6 +331,7 @@ void *reallocate(void *p, size_type new_n, size_type old_n) {
   }
 
   if (!script_runned) {
+    php_warning("Trying to call reallocate for non runned script, p = %p, new_n = %u, old_n = %u", p, new_n, old_n);
     return p;
   }
   enter_critical_section();
@@ -459,7 +509,6 @@ void free_replace(void *p) {
 
   p = (void *)((char *)p - MAX_ALIGNMENT);
   if (use_script_allocator) {
-    php_assert (memory_begin <= (size_t)p && (size_t)p < memory_end);
     deallocate(p, *(size_t *)p);
   } else {
     size_type n = *(size_t *)p;

@@ -30,8 +30,6 @@ private:
     size_type capacity;
     int ref_count;
 
-    static size_type empty_string_storage[];
-
     inline static string_inner &empty_string();
 
     inline bool is_shared() const;

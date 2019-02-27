@@ -1504,7 +1504,7 @@ const int TLS_ARRAY = 0xd9fb20de;
 const int TLS_TYPE_EXPR = 0xc1863d08;
 
 
-static class {
+static class TlConfig {
 public:
   array<tl_type *> types;
   array<tl_type *> id_to_type;
@@ -1517,6 +1517,17 @@ public:
   tl_type *ReqResult;
 
   void **fetchIP;
+
+  ~TlConfig() {
+    // TODO may be it makes sense to destroy it more gracefully
+    hard_reset_var(types);
+    hard_reset_var(id_to_type);
+    hard_reset_var(name_to_type);
+
+    hard_reset_var(functions);
+    hard_reset_var(id_to_function);
+    hard_reset_var(name_to_function);
+  }
 } tl_config;
 
 
@@ -4055,8 +4066,17 @@ void global_init_rpc_lib() {
   timeout_wakeup_id = register_wakeup_callback(&process_rpc_timeout);
 }
 
+static void reset_rpc_global_vars() {
+  hard_reset_var(rpc_filename);
+  hard_reset_var(rpc_data_copy);
+  hard_reset_var(rpc_data_copy_backup);
+  hard_reset_var(rpc_request_need_timer);
+}
+
 void init_rpc_lib() {
   php_assert (timeout_wakeup_id != -1);
+
+  reset_rpc_global_vars();
 
   rpc_parse(nullptr, 0);
   // init backup
@@ -4073,10 +4093,6 @@ void init_rpc_lib() {
 }
 
 void free_rpc_lib() {
-  hard_reset_var(rpc_filename);
-  hard_reset_var(rpc_data_copy);
-  hard_reset_var(rpc_data_copy_backup);
-  hard_reset_var(rpc_request_need_timer);
-
+  reset_rpc_global_vars();
   clear_arr_space();
 }

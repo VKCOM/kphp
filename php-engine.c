@@ -2944,7 +2944,7 @@ void global_init_php_scripts(void);
 
 void global_init_runtime_libs(void);
 
-void init_heap_allocator(void);
+void global_init_script_allocator(void);
 
 void init_all(void) {
   srand48((long)cycleclock_now());
@@ -2961,7 +2961,7 @@ void init_all(void) {
 
   global_init_runtime_libs();
   global_init_php_scripts();
-  init_heap_allocator();
+  global_init_script_allocator();
 
   init_handlers();
 

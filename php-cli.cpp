@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   dl_set_default_handlers();
   global_init_runtime_libs();
   global_init_php_scripts();
-  init_heap_allocator();
+  global_init_script_allocator();
   init_php_scripts();
   init_runtime_environment(nullptr, memory_buffer, 1 << 29);
   script_t *script = get_script("#0");
