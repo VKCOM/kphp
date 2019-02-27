@@ -1590,7 +1590,7 @@ void free_arr_space() {
 
 void clear_arr_space() {
   while (last_arr_ptr >= var_stack) {
-    std::memset(last_arr_ptr, 0x00, sizeof(var));
+    std::memset(reinterpret_cast<void*>(last_arr_ptr), 0x0, sizeof(var));
     last_arr_ptr--;
   }
 }
