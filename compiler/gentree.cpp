@@ -664,8 +664,7 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
 }
 
 VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
-  op_priority_cur = std::min(op_priority_cur, OpInfo::op_priority_end);
-  if (op_priority_cur == OpInfo::op_priority_end) {
+  if (op_priority_cur >= OpInfo::op_priority_end) {
     return get_expr_top(false);
   }
 
@@ -682,8 +681,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
     return left;
   }
 
-  bool need = true;
-  while (need && cur != end) {
+  while (cur != end) {
     const Operation binary_op_tp = OpInfo::tok_to_binary_op[(*cur)->type()];
     if (binary_op_tp == op_err || OpInfo::priority(binary_op_tp) != op_priority_cur) {
       break;
@@ -699,7 +697,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
                                       till_ternary && op_priority_cur >= OpInfo::ternaryP);
     if (!right && !ternary) {
       kphp_error (0, format("Failed to parse second argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
-      return VertexPtr();
+      return {};
     }
 
     VertexPtr third;
@@ -708,7 +706,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
       third = get_expression_impl(true);
       if (!third) {
         kphp_error (0, format("Failed to parse third argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
-        return VertexPtr();
+        return {};
       }
       if (right) {
         left = conv_to<tp_bool>(left);
@@ -727,13 +725,14 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
       right = conv_to<tp_int>(right);
     }
 
-    VertexPtr expr = ternary
-                     ? create_ternary_op_vertex(left, right, third)
-                     : create_vertex(binary_op_tp, left, right);
+    left = ternary
+           ? create_ternary_op_vertex(left, right, third)
+           : create_vertex(binary_op_tp, left, right);
 
-    set_location(expr, expr_location);
-    left = expr;
-    need = need && (left_to_right || ternary);
+    set_location(left, expr_location);
+    if (!(left_to_right || ternary)) {
+      break;
+    }
   }
   return left;
 }
