@@ -5,6 +5,7 @@
 #include "compiler/common.h"
 #include "compiler/threading/format.h"
 #include "compiler/threading/hash-table.h"
+#include "common/algorithms/hashes.h"
 
 static TSHashTable<Key *> int_keys_ht;
 static TSHashTable<Key *> string_keys_ht;
@@ -24,7 +25,7 @@ Key Key::any_key() {
 }
 
 Key Key::string_key(const std::string &key) {
-  auto node = string_keys_ht.at(hash_ll(key));
+  auto node = string_keys_ht.at(vk::std_hash(key));
   if (node->data != nullptr) {
     return *node->data;
   }

@@ -36,29 +36,7 @@ using std::queue;
 using std::stringstream;
 using std::string;
 
-#define DISALLOW_COPY_AND_ASSIGN(type_name)   \
-  type_name (const type_name&) = delete;      \
-  void operator = (const type_name&) = delete;
-
-
 bool use_safe_integer_arithmetic __attribute__ ((weak)) = false;
-
-inline int hash(const string &s) {
-  int res = 31;
-  for (int i = 0; i < (int)s.size(); i++) {
-    res = res * 239 + s[i];
-  }
-  res &= ~((unsigned)1 << 31);
-  return res;
-}
-
-inline unsigned long long hash_ll(const string &s) {
-  unsigned long long res = 31;
-  for (int i = 0; i < (int)s.size(); i++) {
-    res = res * 239 + s[i];
-  }
-  return res;
-}
 
 template<class K, class V>
 std::vector<V> get_map_values(const std::map<K, V> &m) {

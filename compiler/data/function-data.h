@@ -68,7 +68,7 @@ public:
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
   set<string> disabled_warnings;
-  map<long long, int> name_gen_map;
+  map<size_t, int> name_gen_map;
 
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;

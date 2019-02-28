@@ -1,12 +1,11 @@
 #include "compiler/data/class-data.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "compiler/compiler-core.h"
 
 ClassData::ClassData() :
   id(0),

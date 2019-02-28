@@ -1612,7 +1612,7 @@ inline void VarsCpp::compile(CodeGenerator &W) const {
   std::vector<std::vector<VarPtr>> vars_batches(parts_cnt_);
   std::vector<std::vector<bool>> dep_masks(parts_cnt_);
   for (auto var : vars_) {
-    vars_batches[hash(var->name) % parts_cnt_].emplace_back(var);
+    vars_batches[vk::std_hash(var->name) % parts_cnt_].emplace_back(var);
   }
   for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
     std::sort(vars_batches[part_id].begin(), vars_batches[part_id].end());
@@ -1812,11 +1812,11 @@ template<class It>
 void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
   for (; begin != end; begin++) {
     VarPtr var_id = *begin;
-    int var_hash;
+    size_t var_hash;
     if (var_id->class_id) {
-      var_hash = hash(var_id->class_id->file_id->main_func_name);
+      var_hash = vk::std_hash(var_id->class_id->file_id->main_func_name);
     } else {
-      var_hash = hash(var_id->name);
+      var_hash = vk::std_hash(var_id->name);
     }
     int bucket = var_hash % used_vars_cnt;
     used_vars[bucket].insert(var_id);
@@ -4062,22 +4062,21 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
 }
 
 string CodeGenF::get_subdir(const string &base) {
-  int func_hash = hash(base);
-  int bucket = func_hash % 100;
+  int bucket = vk::std_hash(base) % 100;
 
   return string("o_") + int_to_str(bucket);
 }
 
 void CodeGenF::recalc_hash_of_subdirectory(const string &subdir, const string &file_name) {
-  long long &cur_hash = subdir_hash[subdir];
-  cur_hash = cur_hash * 987654321 + hash(file_name);
+  auto &cur_hash = subdir_hash[subdir];
+  vk::hash_combine(cur_hash, vk::std_hash(file_name));
 }
 
 void CodeGenF::write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
   for (const auto &dir_and_hash : subdir_hash) {
     W << OpenFile("_dep.cpp", dir_and_hash.first, false);
     char tmp[100];
-    sprintf(tmp, "%llx", dir_and_hash.second);
+    sprintf(tmp, "%zx", dir_and_hash.second);
     W << "//" << (const char *)tmp << NL;
     W << CloseFile();
   }

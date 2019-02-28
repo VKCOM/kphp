@@ -5,6 +5,7 @@
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
 #include "compiler/threading/profiler.h"
+#include "common/algorithms/hashes.h"
 
 /**
  * Через этот pass проходят функции вида
@@ -45,7 +46,7 @@ public:
 // если же какой-то из dependents (класс/интерфейс) ещё не обработан (его надо подождать), возвращает указатель на его
 auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
   for (const auto &dep : klass->str_dependents) {
-    auto node = ht.at(hash_ll(dep.class_name));
+    auto node = ht.at(vk::std_hash(dep.class_name));
     kphp_assert(node);
     if (!node->data.done) {
       return node;
@@ -210,7 +211,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 
   on_class_ready(klass, function_stream);
 
-  auto node = ht.at(hash_ll(klass->name));
+  auto node = ht.at(vk::std_hash(klass->name));
   kphp_assert(!node->data.done);
 
   AutoLocker<Lockable *> locker(node);

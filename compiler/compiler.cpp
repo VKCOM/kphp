@@ -13,6 +13,7 @@
 #include "common/crc32.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
+#include "common/algorithms/hashes.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
@@ -104,7 +105,7 @@ public:
     }
 
     std::stringstream ss;
-    ss << "/tmp/" << std::hex << hash(dest_path) << "_kphp_temp_lock";
+    ss << "/tmp/" << std::hex << vk::std_hash(dest_path) << "_kphp_temp_lock";
     locked_filename_ = ss.str();
 
     fd_ = open(locked_filename_.c_str(), O_RDWR | O_CREAT, 0666);

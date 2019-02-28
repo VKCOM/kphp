@@ -8,6 +8,7 @@
 #include "compiler/io.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
+#include "common/algorithms/hashes.h"
 
 string register_unique_name(const string &prefix) {
   //static set <string> v;
@@ -23,11 +24,11 @@ string register_unique_name(const string &prefix) {
 
 static inline string gen_unique_name_inside_function(FunctionPtr function, const std::string &prefix, volatile int &x) {
   AutoLocker<volatile int *> locker(&x);
-  unsigned long long h = hash_ll(function->name);
-  int *i = &(function->name_gen_map[h]);
-  int cur_i = (*i)++;
+  auto h = vk::std_hash(function->name);
+  auto &i = function->name_gen_map[h];
   char tmp[50];
-  sprintf(tmp, "%llx_%d", h, cur_i);
+  sprintf(tmp, "%zx_%d", h, i);
+  i++;
 
   return prefix + "$ut" + tmp;
 }
@@ -44,16 +45,16 @@ string gen_anonymous_function_name(FunctionPtr function) {
 
 
 string gen_const_string_name(const string &str) {
-  unsigned long long h = hash_ll(str);
+  auto h = vk::std_hash(str);
   char tmp[50];
-  sprintf(tmp, "const_string$us%llx", h);
+  sprintf(tmp, "const_string$us%zx", h);
   return tmp;
 }
 
 string gen_const_regexp_name(const string &str) {
-  unsigned long long h = hash_ll(str);
+  auto h = vk::std_hash(str);
   char tmp[50];
-  sprintf(tmp, "const_regexp$us%llx", h);
+  sprintf(tmp, "const_regexp$us%zx", h);
   return tmp;
 }
 
@@ -68,11 +69,10 @@ string gen_const_array_name(const VertexAdaptor<op_array> &array) {
 }
 
 string gen_unique_name(string prefix, bool flag) {
-  for (int i = 0; i < (int)prefix.size(); i++) {
-    int c = prefix[i];
+  for (char &c : prefix) {
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
     } else {
-      prefix[i] = '_';
+      c = '_';
     }
   }
   prefix += "$u";
@@ -80,13 +80,12 @@ string gen_unique_name(string prefix, bool flag) {
   if (!function || flag) {
     return register_unique_name(prefix);
   }
-  map<long long, int> *name_gen_map = &function->name_gen_map;
-  int h = hash(function->name);
-  long long ph = hash_ll(prefix);
-  int *i = &(*name_gen_map)[ph];
-  int cur_i = (*i)++;
+  auto h = vk::std_hash(function->name);
+  auto ph = vk::std_hash(prefix);
+  auto &i = function->name_gen_map[ph];
   char tmp[50];
-  sprintf(tmp, "%x_%d", h, cur_i);
+  sprintf(tmp, "%zx_%d", h, i);
+  i++;
   return register_unique_name(prefix + tmp);
 }
 

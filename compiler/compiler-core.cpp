@@ -1,9 +1,10 @@
+#include "compiler/compiler-core.h"
+
 #include <fstream>
 #include <numeric>
 #include <sys/sendfile.h>
 #include <unordered_map>
 
-#include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
@@ -55,7 +56,7 @@ const string &CompilerCore::get_global_namespace() const {
 }
 
 FunctionPtr CompilerCore::get_function(const string &name) {
-  TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+  TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
   AutoLocker<Lockable *> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
     return FunctionPtr();
@@ -67,12 +68,12 @@ FunctionPtr CompilerCore::get_function(const string &name) {
 }
 
 VertexPtr CompilerCore::get_extern_func_header(const string &name) {
-  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
+  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(vk::std_hash(name));
   return node->data;
 }
 
 void CompilerCore::save_extern_func_header(const string &name, VertexPtr header) {
-  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(hash_ll(name));
+  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(vk::std_hash(name));
   AutoLocker<Lockable *> locker(node);
   kphp_error_return (
     !node->data,
@@ -161,13 +162,13 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
   }
 
   //register file if needed
-  TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(hash_ll(full_file_name));
+  TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(vk::std_hash(full_file_name));
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       char tmp[50];
-      sprintf(tmp, "%x", hash(full_file_name));
+      sprintf(tmp, "%zx", vk::std_hash(full_file_name));
       string func_name = gen_unique_name("src_" + new_file->short_file_name + tmp, true);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name(new_file->file_name);
@@ -218,7 +219,7 @@ void CompilerCore::register_and_require_function(FunctionPtr function, DataStrea
 }
 
 void CompilerCore::register_class(ClassPtr cur_class) {
-  TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(hash_ll(cur_class->name));
+  TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(vk::std_hash(cur_class->name));
   AutoLocker<Lockable *> locker(node);
   kphp_error (!node->data,
               format("Redeclaration of class [%s], the previous declaration was in [%s]",
@@ -227,7 +228,7 @@ void CompilerCore::register_class(ClassPtr cur_class) {
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {
-  TSHashTable<LibPtr>::HTNode *node = libs_ht.at(hash_ll(lib->lib_namespace()));
+  TSHashTable<LibPtr>::HTNode *node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
   AutoLocker<Lockable *> locker(node);
   if (!node->data) {
     node->data = lib;
@@ -256,7 +257,7 @@ SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib,
 
 
 ClassPtr CompilerCore::get_class(const string &name) {
-  return classes_ht.at(hash_ll(name))->data;
+  return classes_ht.at(vk::std_hash(name))->data;
 }
 
 ClassPtr CompilerCore::get_memcache_class() {
@@ -273,7 +274,7 @@ void CompilerCore::set_memcache_class(ClassPtr klass) {
 }
 
 bool CompilerCore::register_define(DefinePtr def_id) {
-  TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(hash_ll(def_id->name));
+  TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(vk::std_hash(def_id->name));
   AutoLocker<Lockable *> locker(node);
 
   kphp_error_act (
@@ -288,7 +289,7 @@ bool CompilerCore::register_define(DefinePtr def_id) {
 }
 
 DefinePtr CompilerCore::get_define(const string &name) {
-  return defines_ht.at(hash_ll(name))->data;
+  return defines_ht.at(vk::std_hash(name))->data;
 }
 
 VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
@@ -300,7 +301,7 @@ VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
 
 VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
                                     VertexPtr init_val) {
-  TSHashTable<VarPtr>::HTNode *node = global_vars_ht.at(hash_ll(name));
+  TSHashTable<VarPtr>::HTNode *node = global_vars_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
@@ -442,7 +443,7 @@ std::string CompilerCore::get_subdir_name() const {
     hash_string += ";";
   }
   stringstream ss;
-  ss << "auto." << name << "-" << std::hex << hash(hash_string);
+  ss << "auto." << name << "-" << std::hex << vk::std_hash(hash_string);
 
   return ss.str();
 }

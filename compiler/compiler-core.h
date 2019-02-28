@@ -21,6 +21,7 @@
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
+#include "common/algorithms/hashes.h"
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization
@@ -67,7 +68,7 @@ public:
   void operate_on_function_locking(const string &name, CallbackT callback) {
     static_assert(std::is_constructible<std::function<void(FunctionPtr&)>, CallbackT>::value, "invalid callback signature");
 
-    TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(hash_ll(name));
+    TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
     AutoLocker<Lockable *> locker(node);
     callback(node->data);
   }

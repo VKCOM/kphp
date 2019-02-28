@@ -1,6 +1,7 @@
 #include "compiler/pipes/optimization.h"
 
 #include "compiler/inferring/public.h"
+#include "common/algorithms/hashes.h"
 
 namespace {
 template<typename T>
@@ -15,7 +16,7 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
 
   kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_var));
   std::stringstream ss;
-  ss << type_acceptor->get_string() << "$" << std::hex << hash_ll(type_out(required_type));
+  ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
   const std::string name = ss.str();
   auto casted_var = VertexAdaptor<op_var>::create();
   casted_var->str_val = name;

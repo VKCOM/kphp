@@ -7,7 +7,7 @@ class CodeGenerator;
 
 class CodeGenF {
   DataStream<FunctionPtr> tmp_stream;
-  map<string, long long> subdir_hash;
+  map<string, size_t> subdir_hash;
   void prepare_generate_class(ClassPtr klass);
   void prepare_generate_function(FunctionPtr func);
   string get_subdir(const string &base);
