@@ -5,6 +5,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
 #include "compiler/vertex.h"
+#include "compiler/gentree.h"
 
 using std::vector;
 using std::string;
@@ -155,13 +156,6 @@ VertexPtr PhpDocTypeRuleParser::create_type_help_vertex(PrimitiveType type) {
   return type_rule;
 }
 
-VertexPtr PhpDocTypeRuleParser::create_type_help_class_vertex(ClassPtr klass) {
-  auto type_rule = VertexAdaptor<op_class_type_rule>::create();
-  type_rule->type_help = tp_Class;
-  type_rule->class_ptr = klass;
-  return type_rule;
-}
-
 /*
  * Имея строку '(\VK\A|false)[]' и pos=1 — найти, где заканчивается имя класса. ('\VK\A' оно в данном случае)
  */
@@ -194,7 +188,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
       }
       if (s.substr(pos, 4) == "self") {
         pos += 4;
-        return create_type_help_class_vertex(current_function->class_id);
+        return GenTree::create_type_help_class_vertex(current_function->class_id);
       }
       break;
     }
@@ -293,7 +287,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
         pos += class_name.size();
         ClassPtr klass = G->get_class(resolve_uses(current_function, static_cast<string>(class_name), '\\'));
         kphp_error(klass, format("Could not find class in phpdoc: %s\nProbably, this class is used only in phpdoc and never created in reachable code", string(class_name).c_str()));
-        return create_type_help_class_vertex(klass);
+        return GenTree::create_type_help_class_vertex(klass);
       }
     }
   }

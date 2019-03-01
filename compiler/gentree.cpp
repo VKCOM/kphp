@@ -631,6 +631,17 @@ VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, Ver
   return VertexAdaptor<op_ternary>::create(left_set_bool, left_var_move, third);
 }
 
+VertexAdaptor<op_class_type_rule> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
+  return create_type_help_class_vertex(G->get_class(klass_name));
+}
+
+VertexAdaptor<op_class_type_rule> GenTree::create_type_help_class_vertex(ClassPtr klass) {
+  auto type_rule = VertexAdaptor<op_class_type_rule>::create();
+  type_rule->type_help = tp_Class;
+  type_rule->class_ptr = klass;
+  return type_rule;
+}
+
 VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary) {
   AutoLocation expr_location(this);
   next_cur();
@@ -1036,9 +1047,7 @@ VertexPtr GenTree::get_type_rule_() {
         res->extra_type = op_ex_rule_const;
       }
     } else if ((*cur)->str_val[0] == '\\' || ('A' <= (*cur)->str_val[0] && (*cur)->str_val[0] <= 'Z')) {
-      auto rule = VertexAdaptor<op_class_type_rule>::create();
-      rule->type_help = tp_Class;
-      rule->class_ptr = G->get_class((*cur)->str_val);
+      auto rule = create_type_help_class_vertex((*cur)->str_val);
       kphp_error(rule->class_ptr, format("Unknown class %s in type rule", string((*cur)->str_val).c_str()));
       next_cur();
       res = rule;

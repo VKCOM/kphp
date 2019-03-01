@@ -4,6 +4,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/gentree.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -61,9 +62,7 @@ std::string ClassData::get_namespace() const {
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(int location_line_num) {
   auto this_var = gen_vertex_this(location_line_num);
-  auto rule_this_var = VertexAdaptor<op_class_type_rule>::create();
-  rule_this_var->type_help = tp_Class;
-  rule_this_var->class_ptr = ClassPtr{this};
+  auto rule_this_var = GenTree::create_type_help_class_vertex(ClassPtr{this});
 
   this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
   return this_var;
