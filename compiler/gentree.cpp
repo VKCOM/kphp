@@ -1038,7 +1038,7 @@ VertexPtr GenTree::get_type_rule_() {
     } else if ((*cur)->str_val[0] == '\\' || ('A' <= (*cur)->str_val[0] && (*cur)->str_val[0] <= 'Z')) {
       auto rule = VertexAdaptor<op_class_type_rule>::create();
       rule->type_help = tp_Class;
-      rule->class_ptr = G->get_class(static_cast<std::string>((*cur)->str_val));
+      rule->class_ptr = G->get_class((*cur)->str_val);
       kphp_error(rule->class_ptr, format("Unknown class %s in type rule", string((*cur)->str_val).c_str()));
       next_cur();
       res = rule;

@@ -79,7 +79,7 @@ public:
   LibPtr register_lib(LibPtr lib);
 
   FunctionPtr get_function(const string &name);
-  ClassPtr get_class(const string &name);
+  ClassPtr get_class(vk::string_view name);
   ClassPtr get_memcache_class();
   void set_memcache_class(ClassPtr klass);
 

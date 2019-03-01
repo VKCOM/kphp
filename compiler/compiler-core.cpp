@@ -256,7 +256,7 @@ SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib,
 }
 
 
-ClassPtr CompilerCore::get_class(const string &name) {
+ClassPtr CompilerCore::get_class(vk::string_view name) {
   return classes_ht.at(vk::std_hash(name))->data;
 }
 
