@@ -6,53 +6,6 @@
 #include "compiler/data/class-data.h"
 #include "compiler/phpdoc.h"
 
-static void function_apply_header(FunctionPtr func, VertexAdaptor<meta_op_function> header) {
-  VertexAdaptor<meta_op_function> root = func->root;
-  func->used_in_source = true;
-
-  kphp_assert (root && header);
-  kphp_error_return (
-    !func->header,
-    format("Function [%s]: multiple headers", func->get_human_readable_name().c_str())
-  );
-  func->header = header;
-
-  kphp_error_return (
-    !root->type_rule,
-    format("Function [%s]: type_rule is overided by header", func->get_human_readable_name().c_str())
-  );
-  root->type_rule = header->type_rule;
-
-  if (func->has_variadic_param) {
-    return;
-  }
-
-  auto root_params_vertex = root->params().as<op_func_param_list>();
-  auto header_params_vertex = header->params().as<op_func_param_list>();
-  VertexRange root_params = root_params_vertex->params();
-  VertexRange header_params = header_params_vertex->params();
-
-  kphp_error (
-    root_params.size() == header_params.size(),
-    format("Bad header for function [%s]", func->get_human_readable_name().c_str())
-  );
-  int params_n = (int)root_params.size();
-  for (int i = 0; i < params_n; i++) {
-    kphp_error (
-      root_params[i]->size() == header_params[i]->size(),
-      format(
-        "Function [%s]: %dth param has problem with default value",
-        func->get_human_readable_name().c_str(), i + 1
-      )
-    );
-    kphp_error (
-      root_params[i]->type_help == tp_Unknown,
-      format("Function [%s]: type_help is overrided by header", func->get_human_readable_name().c_str())
-    );
-    root_params[i]->type_help = header_params[i]->type_help;
-  }
-}
-
 static void check_template_function(FunctionPtr func) {
   if (!func->is_template) return;
 
@@ -294,11 +247,6 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
 
   parse_and_apply_function_kphp_phpdoc(function);
   prepare_function_misc(function);
-
-  VertexPtr header = G->get_extern_func_header(function->name);
-  if (header) {
-    function_apply_header(function, header.as<meta_op_function>());
-  }
 
   if (stage::has_error()) {
     return;

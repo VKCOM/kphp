@@ -1475,8 +1475,7 @@ VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType acces
   AutoLocation func_location(this);
   set_location(flags, func_location);
 
-  kphp_assert(test_expect(tok_function) || test_expect(tok_ex_function));
-  next_cur();
+  expect(tok_function, "'function'");
 
   auto name = VertexAdaptor<op_func_name>::create();
   set_location(name, func_location);
@@ -1538,8 +1537,6 @@ VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType acces
 }
 
 VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
-  bool is_tok_ex_function = (*cur)->type() == tok_ex_function;  // extern_function debugServerLog (...); (костыль, который когда-нибудь уйдёт)
-
   vertex_inner<meta_op_base> flags_inner;
   VertexPtr flags(&flags_inner);
   VertexAdaptor<op_func_param_list> params;
@@ -1547,14 +1544,6 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   bool has_variadic_param = false;
   VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor, has_variadic_param);
   CE(name);
-
-  if (is_tok_ex_function) {
-    CE (expect(tok_semicolon, "';'"));
-    VertexPtr root = VertexAdaptor<op_extern_func>::create(name, params);
-    root->copy_location_and_flags(*flags);
-    G->save_extern_func_header(name->get_string(), root);
-    return {};
-  }
 
   auto func_type = test_expect(tok_semicolon) ? FunctionData::func_extern : FunctionData::func_local;
 
@@ -1955,7 +1944,6 @@ VertexPtr GenTree::get_statement(Token *phpdoc_token) {
       next_cur();
       return get_statement(token);
     }
-    case tok_ex_function:
     case tok_function:
       if (cur_class) {      // пропущен access modifier — значит, public
         return get_function(phpdoc_token, access_public);

@@ -36,7 +36,6 @@ public:
 
   string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
   VertexAdaptor<meta_op_function> root;
-  VertexPtr header;   // это только для костыля extern_function, потом должно уйти
   bool is_required = false;
 
   enum func_type_t {
@@ -75,7 +74,6 @@ public:
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
 
   int min_argn = 0;
-  bool used_in_source = false;    // это только для костыля extern_function, потом должно уйти
   bool is_vararg = false;
   bool has_variadic_param = false;
   bool should_be_sync = false;

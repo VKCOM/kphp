@@ -67,21 +67,6 @@ FunctionPtr CompilerCore::get_function(const string &name) {
   return f;
 }
 
-VertexPtr CompilerCore::get_extern_func_header(const string &name) {
-  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(vk::std_hash(name));
-  return node->data;
-}
-
-void CompilerCore::save_extern_func_header(const string &name, VertexPtr header) {
-  TSHashTable<VertexPtr>::HTNode *node = extern_func_headers_ht.at(vk::std_hash(name));
-  AutoLocker<Lockable *> locker(node);
-  kphp_error_return (
-    !node->data,
-    format("Several headers for one function [%s] are found", name.c_str())
-  );
-  node->data = header;
-}
-
 string CompilerCore::unify_file_name(const string &file_name) {
   if (env().get_base_dir().empty()) { //hack: directory of first file will be used ad base_dir
     size_t i = file_name.find_last_of("/");

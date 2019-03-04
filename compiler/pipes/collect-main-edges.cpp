@@ -375,34 +375,6 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
       create_set(as_lvalue(function, i), function->param_ids[i]);
       create_set(function->param_ids[i], as_rvalue(function, i));
     }
-    if (function->used_in_source) {
-      for (int i = -1; i < params_n; i++) {
-        PrimitiveType x = tp_Unknown;
-
-        if (i == -1) {
-          if (function->root->type_rule) {
-            kphp_error_act (function->root->type_rule->type() == op_common_type_rule, "...", continue);
-            auto common_type_rule = function->root->type_rule.as<op_common_type_rule>();
-            VertexPtr rule = common_type_rule->rule();
-            kphp_error_act (rule->type() == op_type_rule, "...", continue);
-            x = rule->type_help;
-          }
-        } else {
-          x = params[i]->type_help;
-          if (function->has_variadic_param && i == params_n - 1 && x == tp_Unknown) {
-            x = tp_array;
-          }
-        }
-
-        if (x == tp_Unknown) {
-          x = tp_var;
-        }
-        const TypeData *tp = TypeData::get_type(x, tp_var);
-        create_less(as_rvalue(function, i), tp);
-        create_set(as_lvalue(function, i), tp);
-      }
-
-    }
 
     // @kphp-infer hint/check для @param/@return — это less/set на соответствующие tinf_nodes функции
     for (const FunctionData::InferHint &hint : function->infer_hints) {

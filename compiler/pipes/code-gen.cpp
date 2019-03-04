@@ -460,18 +460,8 @@ struct LibHeaderTxt {
 
 struct InitScriptsCpp {
   vector<SrcFilePtr> main_file_ids;
-  vector<FunctionPtr> source_functions;
   vector<FunctionPtr> all_functions;
-  inline InitScriptsCpp(
-    vector<SrcFilePtr> &main_file_ids,
-    vector<FunctionPtr> &source_functions,
-    vector<FunctionPtr> &all_functions);
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct InitFuncPtrs {
-  const vector<FunctionPtr> &ids;
-  inline InitFuncPtrs(const vector<FunctionPtr> &ids);
+  inline InitScriptsCpp(vector<SrcFilePtr> &&main_file_ids, vector<FunctionPtr> &&all_functions);
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -1148,39 +1138,6 @@ inline void VertexCompiler::compile(CodeGenerator &W) const {
 }
 
 
-inline InitFuncPtrs::InitFuncPtrs(const vector<FunctionPtr> &ids) :
-  ids(ids) {
-}
-
-inline void InitFuncPtrs::compile(CodeGenerator &W) const {
-  vector<string> names;
-
-  int n = (int)ids.size();
-
-  for (int i = 0; i < n; i++) {
-    FunctionPtr f = ids[i];
-    if (ids[i] && (!ids[i]->root || !ids[i]->is_required)) {
-      //skip
-    } else {
-      kphp_assert (f->root->type() == op_function);
-      W << Include(f->header_full_name);
-    }
-  }
-
-  W << "void init_func_ptrs() " << BEGIN;
-
-  for (int i = 0; i < n; i++) {
-    FunctionPtr f = ids[i];
-    //FIXME: copypast %(
-    if (ids[i] && (!ids[i]->root || !ids[i]->is_required)) {
-      //skip
-    } else {
-      W << f->name << "_pointer = " << FunctionName(f) << ";" << NL;
-    }
-  }
-  W << END << NL;
-}
-
 inline RunFunction::RunFunction(FunctionPtr function) :
   function(function) {
 }
@@ -1278,17 +1235,9 @@ inline void LibHeaderH::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-inline InitScriptsCpp::InitScriptsCpp(
-  vector<SrcFilePtr> &new_main_file_ids,
-  vector<FunctionPtr> &new_source_functions,
-  vector<FunctionPtr> &new_all_functions) :
-  main_file_ids(),
-  source_functions(),
-  all_functions() {
-  std::swap(main_file_ids, new_main_file_ids);
-  std::swap(source_functions, new_source_functions);
-  std::swap(all_functions, new_all_functions);
-}
+inline InitScriptsCpp::InitScriptsCpp(vector<SrcFilePtr> &&main_file_ids, vector<FunctionPtr> &&all_functions) :
+  main_file_ids(std::move(main_file_ids)),
+  all_functions(std::move(all_functions)) {}
 
 inline void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
@@ -1323,10 +1272,7 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
     W << GlobalResetFunction(i->main_function) << NL;
   }
 
-  W << InitFuncPtrs(source_functions) << NL;
-
-  W << "void init_php_scripts() " << BEGIN <<
-    "init_func_ptrs();" << NL;
+  W << "void init_php_scripts() " << BEGIN;
 
   for (auto i : main_file_ids) {
     W << FunctionName(i->main_function) << "$global_reset();" << NL;
@@ -3984,14 +3930,10 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   }
 
   vector<FunctionPtr> all_functions;
-  vector<FunctionPtr> source_functions;
   vector<FunctionPtr> exported_functions;
   for (const auto &function : xall) {
     if (!should_gen_function(function)) {
       continue;
-    }
-    if (function->used_in_source) {
-      source_functions.push_back(function);
     }
     if (function->is_extern()) {
       continue;
@@ -4014,7 +3956,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   for (const auto &main_file : main_files) {
     W << Async(GlobalVarsReset(main_file));
   }
-  W << Async(InitScriptsCpp(/*std::move*/main_files, source_functions, all_functions));
+  W << Async(InitScriptsCpp(std::move(main_files), std::move(all_functions)));
 
   std::vector<VarPtr> vars = G->get_global_vars();
   for (FunctionPtr fun: xall) {

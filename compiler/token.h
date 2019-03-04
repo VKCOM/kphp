@@ -29,7 +29,6 @@ enum TokenType {
   tok_dbg_echo,
   tok_var_dump,
   tok_function,
-  tok_ex_function,
   tok_min,
   tok_max,
   tok_varg,

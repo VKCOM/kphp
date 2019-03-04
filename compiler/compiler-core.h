@@ -37,8 +37,6 @@ private:
   vector<SrcFilePtr> main_files;
   KphpEnviroment *env_;
   TSHashTable<ClassPtr> classes_ht;
-  // это костыль, который должен уйти, когда мы перепишем часть php-кода
-  TSHashTable<VertexPtr> extern_func_headers_ht;
   ClassPtr memcache_class;
 
 
@@ -82,9 +80,6 @@ public:
   ClassPtr get_class(vk::string_view name);
   ClassPtr get_memcache_class();
   void set_memcache_class(ClassPtr klass);
-
-  VertexPtr get_extern_func_header(const string &name);
-  void save_extern_func_header(const string &name, VertexPtr header);
 
   bool register_define(DefinePtr def_id);
   DefinePtr get_define(const string &name);
