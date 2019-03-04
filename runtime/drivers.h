@@ -9,10 +9,6 @@
 void init_drivers_lib();
 void free_drivers_lib();
 
-extern var (*base128DecodeMixed_pointer)(var str);
-extern var (*debugServerLog_pointer)(array<var>);
-extern var (*debugLogPlain_pointer)(string section, string text);
-
 const string mc_prepare_key(const string &key);
 
 var mc_get_value(const char *result_str, int result_str_len, int flags);
@@ -125,59 +121,7 @@ private:
   inline host get_host(const string &key);
 
 public:
-  RpcMemcache(bool fake);
-
-  bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
-  bool connect(const string &host_name, int port = 11211, int timeout = 1);
-  bool pconnect(const string &host_name, int port = 11211, int timeout = 1);
-  bool rpc_connect(const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
-
-  bool add(const string &key, const var &value, int flags = 0, int expire = 0);
-  bool set(const string &key, const var &value, int flags = 0, int expire = 0);
-  bool replace(const string &key, const var &value, int flags = 0, int expire = 0);
-
-  var get(const var &key_var);
-
-  bool delete_(const string &key);
-
-  var decrement(const string &key, const var &v = 1);
-  var increment(const string &key, const var &v = 1);
-
-  var getVersion();
-
-  var getTag() const;
-  var getLastQueryTime() const;
-
-  void bufferNextLog();
-  void clearLogBuffer();
-  void flushLogBuffer();
-};
-
-class true_mc : public MC_object {
-private:
-  int server_rand;
-
-  MC_object *mc;
-  string engine_tag;
-  string engine_name;
-  bool is_debug;
-  bool is_debug_empty;
-  double query_time_threshold;
-
-  int query_index;
-  double last_query_time;
-
-  bool is_true_mc;
-
-  int use_log_buffer;
-  array<string> log_buffer_key;
-  array<array<var>> log_buffer_value;
-  array<int> log_buffer_expire;
-
-  void check_result(const char *operation, const var &key_var, double time_diff, const var &result);
-
-public:
-  true_mc(MC_object *mc, bool is_true_mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
+  explicit RpcMemcache(bool fake);
 
   bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
   bool connect(const string &host_name, int port = 11211, int timeout = 1);
@@ -210,7 +154,7 @@ private:
   bool bool_value;
   MC_object *mc;
 
-  Memcache(MC_object *mc);
+  explicit Memcache(MC_object *mc);
 public:
   Memcache();
 
@@ -250,15 +194,8 @@ public:
   Memcache &operator=(bool value);
   Memcache(bool value);
 
-  friend array<string> f$mcGetStats(const Memcache &MC);
-
-  friend int f$mcGetClusterSize(const Memcache &MC);
-
-
   friend Memcache f$Memcache$$__construct();
   friend Memcache f$new_RpcMemcache(bool fake);
-  friend Memcache f$new_true_mc(const Memcache &mc, const string &engine_tag, const string &engine_name, bool is_debug, bool is_debug_empty, double query_time_threshold);
-  friend Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag);
 };
 
 bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
@@ -292,14 +229,8 @@ bool eq2(bool value, const Memcache &my_mc);
 bool equals(bool value, const Memcache &my_mc);
 bool equals(const Memcache &my_mc, bool value);
 
-array<string> f$mcGetStats(const Memcache &MC);
-
-int f$mcGetClusterSize(const Memcache &MC);
-
 Memcache f$Memcache$$__construct();
 Memcache f$new_RpcMemcache(bool fake = false);
-Memcache f$new_true_mc(const Memcache &mc, const string &engine_tag = string(), const string &engine_name = string(), bool is_debug = false, bool is_debug_empty = false, double query_time_threshold = 0.0);
-Memcache f$new_test_mc(const Memcache &mc, const string &engine_tag = string());
 
 
 var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);

@@ -56,17 +56,7 @@ $_REQUEST ::: var;
 $_ENV ::: var;
 $argc ::: var;
 $argv ::: var;
-
-$config ::: var;
-$Durov ::: var;
-$FullMCTime ::: var;
 $KPHP_MC_WRITE_STAT_PROBABILITY ::: var;
-
-
-
-extern_function base128DecodeMixed ($str ::: var) ::: var;
-extern_function debugLogPlain ($section ::: string, $text ::: string) ::: var;
-extern_function debugServerLog (...$args);
 
 
 function ob_clean() ::: void;
@@ -575,11 +565,6 @@ define('IMAGETYPE_JP2', 10);
 define('MEMCACHE_COMPRESSED', 2);
 
 function new_RpcMemcache($fake ::: bool = false) ::: Memcache;
-function new_true_mc ($MC :<=: Memcache, $engine_tag ::: string = "", $engine_name ::: string = "", $is_debug ::: bool = false, $is_debug_empty ::: bool = false, $query_time_threshold ::: float = 0.0) ::: Memcache;
-function new_test_mc ($MC :<=: Memcache, $engine_tag ::: string = "") ::: Memcache;
-
-function mcGetStats ($MC :<=: Memcache) ::: array <int>;
-function mcGetClusterSize ($MC :<=: Memcache) ::: int;
 
 /** vkext **/
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
