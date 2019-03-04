@@ -250,7 +250,7 @@ void *allocate(size_type n) {
   }
 
   if (!script_runned) {
-    php_warning("Trying to call allocate for non runned script, n = %u", n);
+    php_critical_error("Trying to call allocate for non runned script, n = %u", n);
     return nullptr;
   }
   enter_critical_section();
@@ -317,7 +317,7 @@ void *allocate0(size_type n) {
   }
 
   if (!script_runned) {
-    php_warning("Trying to call allocate0 for non runned script, n = %u", n);
+    php_critical_error("Trying to call allocate0 for non runned script, n = %u", n);
     return nullptr;
   }
 
@@ -331,7 +331,7 @@ void *reallocate(void *p, size_type new_n, size_type old_n) {
   }
 
   if (!script_runned) {
-    php_warning("Trying to call reallocate for non runned script, p = %p, new_n = %u, old_n = %u", p, new_n, old_n);
+    php_critical_error("Trying to call reallocate for non runned script, p = %p, new_n = %u, old_n = %u", p, new_n, old_n);
     return p;
   }
   enter_critical_section();
