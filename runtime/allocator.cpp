@@ -138,10 +138,10 @@ size_type memory_get_total_usage() {
   return (size_type)((size_t)piece - memory_begin);
 }
 
-void check_script_memory_piece(void *p, size_t s) {
+inline void check_script_memory_piece(void *p, size_t s) {
   const size_t p_begin = reinterpret_cast<size_t>(p);
   const size_t p_end = p_begin + s;
-  if (memory_begin <= p_begin && p_end <= memory_end) {
+  if (likely(memory_begin <= p_begin && p_end <= memory_end)) {
     return;
   }
 

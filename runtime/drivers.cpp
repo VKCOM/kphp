@@ -46,9 +46,6 @@ static double mc_stats_time;
 static int mc_stats_port;
 static char *mc_stats_key;
 
-string drivers_cpp_filename;
-string drivers_h_filename;
-
 
 void f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
 
@@ -2260,15 +2257,10 @@ static void reset_drivers_global_vars() {
   hard_reset_var(mc_method);
   hard_reset_var(mc_bool_res);
   hard_reset_var(mc_res);
-
-  hard_reset_var(drivers_cpp_filename);
-  hard_reset_var(drivers_h_filename);
 }
 
 void init_drivers_lib() {
   reset_drivers_global_vars();
-  drivers_cpp_filename = string("drivers.cpp", 11);
-  drivers_h_filename = string("drivers.h", 9);
 }
 
 void free_drivers_lib() {

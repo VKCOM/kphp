@@ -13,8 +13,6 @@ extern var (*base128DecodeMixed_pointer)(var str);
 extern var (*debugServerLog_pointer)(array<var>);
 extern var (*debugLogPlain_pointer)(string section, string text);
 
-extern string drivers_h_filename;
-
 const string mc_prepare_key(const string &key);
 
 var mc_get_value(const char *result_str, int result_str_len, int flags);
