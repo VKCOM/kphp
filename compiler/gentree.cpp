@@ -126,7 +126,7 @@ inline void GenTree::skip_phpdoc_tokens() {
   }
 
 template<Operation EmptyOp, class FuncT, class ResultType>
-bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim, bool disable_kphp_error /*= false*/) {
+bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
   //Do not clear res. Result must be appended to it.
   bool prev_delim = false;
   bool next_delim = true;
@@ -145,7 +145,7 @@ bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim, b
                              [&v] { return v; },
                              [] { return VertexAdaptor<EmptyOp>::create(); });
       } else if (prev_delim) {
-        kphp_error(disable_kphp_error, "Expected something after ','");
+        kphp_error(0, "Expected something after ','");
         return false;
       } else {
         break;
@@ -859,6 +859,13 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
     set_location(v, st_location);
 
     return v;
+  } else if (test_expect(tok_varg)) {   // variadic param (can not be inside callback, as it modifies cur_function)
+    next_cur();
+    if (auto name_var_arg = get_var_name()) {
+      kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
+      cur_function->has_variadic_param = true;
+      return VertexAdaptor<op_func_param>::create(name_var_arg).set_location(name_var_arg);
+    }
   }
 
   return get_func_param_without_callbacks();
@@ -1444,14 +1451,14 @@ bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *use
   return true;
 }
 
-bool GenTree::check_uses_and_args_are_not_intersect(const std::vector<VertexAdaptor<op_func_param>> &uses, const std::vector<VertexAdaptor<meta_op_func_param>> &params) {
+bool GenTree::check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params) {
   std::set<std::string> uniq_uses;
   std::transform(uses.begin(), uses.end(),
                  std::inserter(uniq_uses, uniq_uses.begin()),
                  [](VertexAdaptor<op_func_param> v) { return v->var()->get_string(); });
 
   return std::none_of(params.begin(), params.end(),
-    [&](VertexAdaptor<meta_op_func_param> p) { return uniq_uses.find(p->var()->get_string()) != uniq_uses.end(); });
+                      [&](VertexPtr p) { return uniq_uses.find(p.as<meta_op_func_param>()->var()->get_string()) != uniq_uses.end(); });
 }
 
 VertexPtr GenTree::get_anonymous_function() {
@@ -1466,100 +1473,46 @@ VertexPtr GenTree::get_anonymous_function() {
   return {};
 }
 
-VertexAdaptor<op_func_name> GenTree::parse_function_declaration(AccessType access_type,
-                                                                std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda,
-                                                                VertexAdaptor<op_func_param_list> &params,
-                                                                VertexPtr &flags,
-                                                                bool &is_constructor,
-                                                                bool &has_variadic_param) {
-  AutoLocation func_location(this);
-  set_location(flags, func_location);
-
-  expect(tok_function, "'function'");
-
-  auto name = VertexAdaptor<op_func_name>::create();
-  set_location(name, func_location);
-
-  if (uses_of_lambda != nullptr) {
-    name->str_val = gen_anonymous_function_name(cur_function);
-  } else {
-    CE(expect(tok_func_name, "'tok_func_name'"));
-    name->str_val = static_cast<string>((*std::prev(cur))->str_val);
-    if (cur_class) {        // fname внутри класса — это full$class$name$$fname
-      name->str_val = replace_backslashes(cur_class->name) + "$$" + name->str_val;
-    }
-  }
-
-  bool is_instance_method = FunctionData::is_instance_access_type(access_type);
-  is_constructor = is_instance_method && vk::string_view(name->str_val).ends_with("$$__construct");
+VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
+  vector<VertexAdaptor<meta_op_func_param>> params_next;
 
   CE(expect(tok_oppar, "'('"));
 
-  AutoLocation params_location(this);
-  vector<VertexAdaptor<meta_op_func_param>> params_next;
-
-  if (is_instance_method && !is_constructor) {
-    cur_class->patch_func_add_this(params_next, func_location.line_num);
+  if (cur_function->is_instance_function() && !cur_function->is_constructor()) {
+    cur_class->patch_func_add_this(params_next, line_num);
   }
 
-  /*
-   * Удалим этот флаг когда уйдем от extern_function (сделаем, чтобы get_func_param сам умел в tok_varg и ставил флаг у cur_function)
-   * в данном месте нужно, чтобы FunctionData уже был создан
-   */
-  bool disable_kphp_error = true;
-  bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma, disable_kphp_error);
-
-  if (test_expect(tok_varg)) {
-    next_cur();
-    if (auto name_var_arg = get_var_name()) {
-      has_variadic_param = true;
-
-      auto func_param = VertexAdaptor<op_func_param>::create(name_var_arg);
-      ::set_location(name_var_arg->location, func_param);
-      params_next.emplace_back(func_param);
-      ok_params_next = true;
-    }
-  }
+  bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
-
-  params = VertexAdaptor<op_func_param_list>::create(params_next);
-  set_location(params, params_location);
-
   CE(expect(tok_clpar, "')'"));
 
-  CE(parse_function_uses(uses_of_lambda));
-  kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersect(*uses_of_lambda, params_next),
-    "arguments and captured variables(in `use` clause) must have different names");
-
-  flags->type_rule = get_type_rule();
-
-  return name;
+  return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
 VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
-  vertex_inner<meta_op_base> flags_inner;
-  VertexPtr flags(&flags_inner);
-  VertexAdaptor<op_func_param_list> params;
-  bool is_constructor = false;
-  bool has_variadic_param = false;
-  VertexAdaptor<op_func_name> name = parse_function_declaration(access_type, uses_of_lambda, params, flags, is_constructor, has_variadic_param);
-  CE(name);
+  expect(tok_function, "'function'");
+  AutoLocation func_location(this);
 
-  auto func_type = test_expect(tok_semicolon) ? FunctionData::func_extern : FunctionData::func_local;
+  auto func_name = VertexAdaptor<op_func_name>::create();
+  set_location(func_name, func_location);
 
-  VertexPtr root = func_type == FunctionData::func_extern
-                   ? (VertexPtr)VertexAdaptor<op_func_decl>::create(name, params)
-                   : (VertexPtr)VertexAdaptor<op_function>::create(name, params, VertexPtr{});
-  root->copy_location_and_flags(*flags);
+  // имя функции — то, что идёт после 'function' (внутри класса сразу же полное$$имя)
+  if (uses_of_lambda != nullptr) {
+    func_name->str_val = gen_anonymous_function_name(cur_function);   // cur_function пока ещё функция-родитель
+  } else {
+    CE(expect(tok_func_name, "'tok_func_name'"));
+    func_name->str_val = static_cast<string>((*std::prev(cur))->str_val);
+    if (cur_class) {        // fname внутри класса — это full$class$name$$fname
+      func_name->str_val = replace_backslashes(cur_class->name) + "$$" + func_name->str_val;
+    }
+  }
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root.as<meta_op_function>(), func_type));
+  auto func_root = VertexAdaptor<op_function>::create(func_name, VertexPtr{}, VertexPtr{});
+  set_location(func_root, func_location);
 
+  // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_local));
   cur_function->phpdoc_token = phpdoc_token;
-  cur_function->has_variadic_param = has_variadic_param;
-
-  const bool kphp_required_flag = phpdoc_token &&
-                                  (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
-                                   phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
 
   if (FunctionData::is_instance_access_type(access_type)) {
     if (!kphp_error(cur_class, "Function with access modifier not within class")) {
@@ -1571,28 +1524,43 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
     }
   }
 
+  // после имени функции — параметры, затем блок use для замыканий
+  CE(cur_function->root->params() = parse_cur_function_param_list());
+  CE(parse_function_uses(uses_of_lambda));
+  kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
+             "arguments and captured variables(in `use` clause) must have different names");
+  // а дальше может идти ::: string в functions.txt
+  cur_function->root->type_rule = get_type_rule();
+
+  // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
     is_top_of_the_function_ = true;
-    auto function = root.as<op_function>();
-    function->cmd() = get_statement();
-    CE(!kphp_error(function->cmd(), "Failed to parse function body"));
+    auto function_root = cur_function->root.as<op_function>();
+    function_root->cmd() = get_statement();
+    CE(!kphp_error(function_root->cmd(), "Failed to parse function body"));
 
-    if (is_constructor) {
-      cur_class->patch_func_constructor(function, line_num);
+    if (cur_function->is_constructor()) {
+      cur_class->patch_func_constructor(function_root, line_num);
     } else {
-      func_force_return(function);
+      func_force_return(function_root);
     }
   } else {
     CE (expect(tok_semicolon, "';'"));
+    cur_function->type = FunctionData::func_extern;
+    cur_function->root.as<op_function>()->cmd() = VertexAdaptor<op_seq>::create();
   }
 
+  // функция готова, регистрируем
+  bool kphp_required_flag = phpdoc_token &&
+                           (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
+                            phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
   bool auto_require = cur_function->is_extern()
                       || cur_function->is_instance_function()
                       || kphp_required_flag;
   G->register_and_require_function(cur_function, parsed_os, auto_require);
 
   if (uses_of_lambda != nullptr && !stage::has_error()) {
-    return root;
+    return cur_function->root;
   }
 
   return {};

@@ -90,7 +90,7 @@ public:
   void run();
 
   template<Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
-  bool gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim, bool disable_kphp_error = false);
+  bool gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim);
   template<Operation Op>
   VertexPtr get_conv();
   VertexPtr get_require();
@@ -116,7 +116,7 @@ public:
   VertexPtr get_do();
   VertexPtr get_switch();
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
-  static bool check_uses_and_args_are_not_intersect(const std::vector<VertexAdaptor<op_func_param>> &uses, const std::vector<VertexAdaptor<meta_op_func_param>> &params);
+  static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
   VertexPtr get_anonymous_function();
   VertexPtr get_function(Token *phpdoc_token, AccessType access_type, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
@@ -128,12 +128,7 @@ public:
   VertexPtr get_class(Token *phpdoc_token);
 
 private:
-  VertexAdaptor<op_func_name> parse_function_declaration(AccessType access_type,
-                                                         std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda,
-                                                         VertexAdaptor<op_func_param_list> &params,
-                                                         VertexPtr &flags,
-                                                         bool &is_constructor,
-                                                         bool &has_variadic_param);
+  VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
   VertexPtr get_static_field_list(Token *phpdoc_token, AccessType access_type);
 
