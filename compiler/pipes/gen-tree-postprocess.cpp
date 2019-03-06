@@ -62,16 +62,16 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
 
 GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function(const std::string &name) {
   static map<std::string, builtin_fun> functions = {
-    {"strval", {op_conv_string, 1}},
-    {"intval", {op_conv_int, 1}},
-    {"boolval", {op_conv_bool, 1}},
-    {"floatval", {op_conv_float, 1}},
-    {"arrayval", {op_conv_array, 1}},
-    {"uintval", {op_conv_uint, 1}},
-    {"longval", {op_conv_long, 1}},
-    {"ulongval", {op_conv_ulong, 1}},
-    {"fork", {op_fork, 1}},
-    {"pow", {op_pow, 2}}
+    {"strval",   {op_conv_string, 1}},
+    {"intval",   {op_conv_int,    1}},
+    {"boolval",  {op_conv_bool,   1}},
+    {"floatval", {op_conv_float,  1}},
+    {"arrayval", {op_conv_array,  1}},
+    {"uintval",  {op_conv_uint,   1}},
+    {"longval",  {op_conv_long,   1}},
+    {"ulongval", {op_conv_ulong,  1}},
+    {"fork",     {op_fork,        1}},
+    {"pow",      {op_pow,         2}}
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
@@ -81,47 +81,37 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
 }
 
 VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  if (auto call = root.try_as<op_func_call>()) {
-    auto builtin = get_builtin_function(call->get_string());
-    if (builtin.op != op_err && call->size() == builtin.args) {
-      VertexRange args = call->args();
-      VertexPtr new_root = create_vertex(builtin.op, vector<VertexPtr>(args.begin(), args.end()));
-      ::set_location(new_root, root->get_location());
-      return new_root;
-    }
-  }
-
   if (auto set_op = root.try_as<op_set>()) {
     if (set_op->lhs()->type() == op_list_ce) {
-      vector<VertexPtr> next;
-      next = set_op->lhs()->get_next();
-      next.push_back(set_op->rhs());
-      auto list = VertexAdaptor<op_list>::create(next);
-      ::set_location(list, root->get_location());
+      auto list = VertexAdaptor<op_list>::create(set_op->lhs()->get_next(), set_op->rhs()).set_location(root);
       list->phpdoc_token = root.as<op_set>()->phpdoc_token;
       return list;
     }
   }
 
-  if (root->type() == op_func_call && root->get_string() == "call_user_func_array") {
-    VertexRange args = root.as<op_func_call>()->args();
-    kphp_error (args.size() == 2, format("call_user_func_array expected 2 arguments, got %d", (int)root->size()));
-    kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
-    auto arg = VertexAdaptor<op_varg>::create(args[1]);
-    ::set_location(arg, args[1]->get_location());
-    auto new_root = VertexAdaptor<op_func_call>::create(arg);
-    ::set_location(new_root, arg->get_location());
-    new_root->str_val = args[0].as<op_string>()->str_val;
-    return new_root;
-  }
+  if (auto call = root.try_as<op_func_call>()) {
+    auto &name = call->get_string();
 
-  if (root->type() == op_func_call && root->get_string() == "require_lib") {
-    return process_require_lib(root.as<op_func_call>());
-  }
+    auto builtin = get_builtin_function(name);
+    if (builtin.op != op_err && call->size() == builtin.args) {
+      return create_vertex(builtin.op, call->args()).set_location(root);
+    }
 
-  if (root->type() == op_func_call) {
-    const string &name = root->get_string();
-    if (name[0] == 'f' && (name == "func_get_args" || name == "func_get_arg" || name == "func_num_args")) {
+    if (name == "call_user_func_array") {
+      auto args = call->args();
+      kphp_error (args.size() == 2, format("call_user_func_array expected 2 arguments, got %d", (int)root->size()));
+      kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
+      auto arg = VertexAdaptor<op_varg>::create(args[1]).set_location(args[1]);
+      auto new_root = VertexAdaptor<op_func_call>::create(arg).set_location(arg);
+      new_root->set_string(args[0]->get_string());
+      return new_root;
+    }
+
+    if (name == "require_lib") {
+      return process_require_lib(call);
+    }
+
+    if (vk::any_of_equal(name, "func_get_args", "func_get_arg", "func_num_args")) {
       current_function->is_vararg = true;
       current_function->has_variadic_param = true;
     }
