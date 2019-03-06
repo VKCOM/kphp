@@ -115,12 +115,6 @@ void OpInfo::init_static() {
   add_unary_op(curP, tok_and, op_addr);
   ++curP;
 
-  add_binary_op(curP, tok_pow, op_pow);
-  ++curP;
-
-  add_unary_op(curP, tok_inc, op_prefix_inc);
-  add_unary_op(curP, tok_dec, op_prefix_dec);
-  add_unary_op(curP, tok_at, op_noerr);
   add_unary_op(curP, tok_conv_int, op_conv_int);
   add_unary_op(curP, tok_conv_float, op_conv_float);
   add_unary_op(curP, tok_conv_uint, op_conv_uint);
@@ -131,6 +125,14 @@ void OpInfo::init_static() {
   add_unary_op(curP, tok_conv_object, op_conv_object);
   add_unary_op(curP, tok_conv_bool, op_conv_bool);
   add_unary_op(curP, tok_conv_var, op_conv_var);
+  add_unary_op(curP, tok_at, op_noerr);
+  ++curP;
+
+  add_binary_op(curP, tok_pow, op_pow);
+  ++curP;
+
+  add_unary_op(curP, tok_inc, op_prefix_inc);
+  add_unary_op(curP, tok_dec, op_prefix_dec);
 
   op_priority_end = ++curP;
 

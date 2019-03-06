@@ -157,6 +157,23 @@ function test_or_false() {
 function test_priority() {
     echo 2 ** 3 ** 2 + 2 ** 3 * 8 + 54 - 2 ** -7, "\n";
     echo 2 ** 3. ** false + "2" ** 3 * 8 + 54 - false ** -7, "\n";
+
+    echo (int)2.5 ** 2, "\n";
+    echo 2 ** (int)2.7, "\n";
+
+    $x = 2;
+    echo ++$x ** 2, "\n";
+    echo $x++ ** 2, "\n";
+    echo 2 ** ++$x, "\n";
+    echo 2 ** $x++, "\n";
+
+    echo (int)++$x ** 2, "\n";
+
+    $x_arr1 = [];
+    echo @$x_arr1 ** 2, "\n";
+
+    $x_arr2 = [];
+    echo @(int)$x_arr1 ** 2, "\n";
 }
 
 function test_array_arrow() {
