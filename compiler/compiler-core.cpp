@@ -94,19 +94,29 @@ string CompilerCore::unify_file_name(const string &file_name) {
   return file_name.substr(base_dir.size());
 }
 
+std::string CompilerCore::search_file_in_include_dirs(const std::string &file_name, size_t *dir_index) const {
+  if (file_name.empty() || file_name[0] == '/' || file_name[0] == '.') {
+    return {};
+  }
+  std::string full_file_name;
+  size_t index = 0;
+  const auto &includes = env().get_includes();
+  for (; index < includes.size() && full_file_name.empty(); ++index) {
+    full_file_name = get_full_path(includes[index] + file_name);
+  }
+  if (!full_file_name.empty() && dir_index) {
+    *dir_index = index;
+  }
+  return full_file_name;
+}
+
 SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib) {
   if (file_name.empty()) {
     return SrcFilePtr();
   }
 
   //search file
-  string full_file_name;
-  if (file_name[0] != '/' && file_name[0] != '.') {
-    int n = (int)env().get_includes().size();
-    for (int i = 0; i < n && full_file_name.empty(); i++) {
-      full_file_name = get_full_path(env().get_includes()[i] + file_name);
-    }
-  }
+  string full_file_name = search_file_in_include_dirs(file_name);
   if (file_name[0] == '/') {
     full_file_name = get_full_path(file_name);
   } else if (full_file_name.empty()) {

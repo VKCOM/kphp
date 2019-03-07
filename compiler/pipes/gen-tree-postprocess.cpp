@@ -24,20 +24,33 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   kphp_error_act (!lib_require_name.empty() && lib_require_name.back() != '/',
                   format("require_lib got bad lib name '%s'", lib_require_name.c_str()), return require_lib_call);
 
-  LibPtr lib(new LibData(lib_require_name));
-  LibPtr registered_lib = G->register_lib(lib);
+  size_t txt_file_index = std::numeric_limits<size_t>::max();
+  const std::string functions_txt = lib_require_name + "/lib/functions.txt";
+  const std::string functions_txt_full = G->search_file_in_include_dirs(functions_txt, &txt_file_index);
+  size_t php_file_index = std::numeric_limits<size_t>::max();
+  const std::string index_php = lib_require_name + "/php/index.php";
+  const std::string index_php_full = G->search_file_in_include_dirs(index_php, &php_file_index);
 
   VertexPtr new_vertex;
-  if (SrcFilePtr header_file = G->register_file(lib_require_name + "/lib/functions.txt", registered_lib)) {
-    lib->update_lib_main_file(header_file->file_name, header_file->unified_dir_name);
-    auto req_header_txt = make_require_once_call(header_file, require_lib_call);
-    auto lib_run_global_call = VertexAdaptor<op_func_call>::create();
-    lib_run_global_call->set_string(lib->run_global_function_name());
-    new_vertex = VertexAdaptor<op_seq>::create(req_header_txt, lib_run_global_call);
-    set_location(new_vertex, require_lib_call->get_location());
-  } else if (SrcFilePtr lib_index_file = G->register_file(lib_require_name + "/php/index.php", registered_lib)) {
-    lib->update_lib_main_file(lib_index_file->file_name, lib_index_file->unified_dir_name);
-    new_vertex = make_require_once_call(lib_index_file, require_lib_call);
+  LibPtr lib(new LibData(lib_require_name));
+  LibPtr registered_lib = G->register_lib(lib);
+  if (txt_file_index <= php_file_index) {
+    const std::string &txt_file = functions_txt_full.empty() ? functions_txt : functions_txt_full;
+    if (SrcFilePtr header_file = G->register_file(txt_file, registered_lib)) {
+      lib->update_lib_main_file(header_file->file_name, header_file->unified_dir_name);
+      auto req_header_txt = make_require_once_call(header_file, require_lib_call);
+      auto lib_run_global_call = VertexAdaptor<op_func_call>::create();
+      lib_run_global_call->set_string(lib->run_global_function_name());
+      new_vertex = VertexAdaptor<op_seq>::create(req_header_txt, lib_run_global_call);
+      set_location(new_vertex, require_lib_call->get_location());
+    }
+  }
+  if (!new_vertex) {
+    const std::string &php_file = index_php_full.empty() ? index_php : index_php_full;
+    if (SrcFilePtr lib_index_file = G->register_file(php_file, registered_lib)) {
+      lib->update_lib_main_file(lib_index_file->file_name, lib_index_file->unified_dir_name);
+      new_vertex = make_require_once_call(lib_index_file, require_lib_call);
+    }
   }
   if (lib != registered_lib) {
     lib.clear();

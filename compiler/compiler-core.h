@@ -54,8 +54,8 @@ public:
   const KphpEnviroment &env() const;
   const string &get_global_namespace() const;
   string unify_file_name(const string &file_name);
+  std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
   SrcFilePtr register_file(const string &file_name, LibPtr owner_lib);
-
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
   SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true);
@@ -108,6 +108,7 @@ public:
   Stats stats;
 
 private:
+  std::string get_full_file_name(const string &file_name) const;
   void copy_static_lib_to_out_dir(File &&static_archive) const;
   std::forward_list<File> collect_imported_libs();
   std::forward_list<Index> collect_imported_headers();
