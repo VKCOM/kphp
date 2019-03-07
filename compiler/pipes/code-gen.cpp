@@ -1053,8 +1053,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  W << NL << "struct " << klass->src_name << " " << BEGIN;
-  W << "int ref_cnt;" << NL << NL;
+  W << NL << "struct " << klass->src_name << " final : public refcountable_php_classes<" << klass->src_name << "> " << BEGIN << NL;
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;
   });

@@ -1,4 +1,5 @@
 #pragma once
+#include "common/smart_ptrs/intrusive_ptr.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
@@ -18,41 +19,65 @@
 
 template<class T>
 class class_instance {
-  T *o;
+  vk::intrusive_ptr<T> o;
 
   void warn_on_access_null() const;
 
 public:
   using ClassType = T;
 
-  inline class_instance();
-  inline class_instance(const class_instance<T> &other);
-  inline class_instance(class_instance<T> &&other) noexcept;
-  inline class_instance(bool value);
-  inline class_instance &operator=(const class_instance<T> &other);
-  inline class_instance &operator=(class_instance<T> &&other) noexcept;
-  inline class_instance &operator=(bool value);
-  inline class_instance clone() const;
-  inline ~class_instance();
+  class_instance() = default;
+  class_instance(const class_instance &) = default;
+  class_instance(class_instance &&) noexcept = default;
 
-  inline void alloc();
-  inline void destroy();
-  inline int get_reference_counter() const;
+  class_instance(bool) {}
+
+  template<class Derived>
+  class_instance(const class_instance<Derived> &d)
+    : o(d.o) {
+  }
+
+  class_instance& operator=(const class_instance &) = default;
+  class_instance& operator=(class_instance &&) noexcept = default;
+
+  // prohibits creating a class_instance from int/char*/etc by implicit casting them to bool
+  template<class T2>
+  class_instance(T2) = delete;
+
+  template<class Derived>
+  class_instance& operator=(const class_instance<Derived> &d) {
+    o = d.o;
+    return *this;
+  }
+
+  // prohibits assignment int/char*/etc to class_instance by implicit casting them to bool
+  template<class T2>
+  class_instance &operator=(T2) = delete;
+
+  inline class_instance &operator=(bool);
+  inline class_instance clone() const;
+
+  inline void alloc() __attribute__((always_inline));
+  inline void destroy() { o.reset(); }
+  int get_reference_counter() const { return o->get_refcnt(); }
 
   inline T *operator->() __attribute__ ((always_inline));
   inline T *operator->() const __attribute__ ((always_inline));
 
   inline T *get() const;
 
-  inline bool is_null() const;
+  bool is_null() const { return !static_cast<bool>(o); }
   inline string to_string() const;
-  inline const char *get_class() const;
+  const char *get_class() const { return o ? o->get_class() : "null"; }
 
   template<class T1>
   friend inline bool eq2(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
+
   template<class T1>
   friend inline bool equals(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
 
+  template<class Derived>
+  friend class class_instance;
 };
 
 template<typename>

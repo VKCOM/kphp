@@ -1,12 +1,12 @@
 #pragma once
 
 #include "runtime/kphp_core.h"
+#include "runtime/refcountable_php_classes.h"
 
 array<array<string>> f$debug_backtrace();
 
 
-struct C$Exception {
-  int ref_cnt = 0;
+struct C$Exception : refcountable_php_classes<C$Exception> {
   string message;
   int code = 0;
   string file;
