@@ -12,7 +12,7 @@
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
 
-FunctionPtr FunctionData::create_function(VertexAdaptor<meta_op_function> root, func_type_t type) {
+FunctionPtr FunctionData::create_function(VertexAdaptor<op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
   AutoProfiler prof{*cache};
   FunctionPtr function(new FunctionData());
@@ -66,7 +66,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   VertexRange func_args = param_list->params();
   auto func_args_n = static_cast<size_t>(func_args.size());
 
-  auto new_func_root = func->root.as<op_function>().clone();
+  auto new_func_root = func->root.clone();
   new_func_root->name()->set_string(name_of_function_instance);
 
   auto new_function = FunctionData::create_function(new_func_root, func->type);

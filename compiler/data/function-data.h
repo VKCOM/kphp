@@ -1,6 +1,6 @@
 #pragma once
 
-#include "auto/compiler/vertex/vertex-meta_op_function.h"
+#include "auto/compiler/vertex/vertex-op_function.h"
 #include "common/mixin/not_copyable.h"
 
 #include "compiler/class-assumptions.h"
@@ -35,7 +35,7 @@ public:
   int id = -1;
 
   string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
-  VertexAdaptor<meta_op_function> root;
+  VertexAdaptor<op_function> root;
   bool is_required = false;
 
   enum func_type_t {
@@ -97,7 +97,7 @@ public:
     unknown,
   } body_seq = body_value::unknown;
 
-  static FunctionPtr create_function(VertexAdaptor<meta_op_function> root, func_type_t type);
+  static FunctionPtr create_function(VertexAdaptor<op_function> root, func_type_t type);
 
   string get_resumable_path() const;
   static string get_human_readable_name(const std::string &name);

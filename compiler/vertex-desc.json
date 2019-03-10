@@ -42,18 +42,20 @@
   {
     "sons": {
       "name": 0,
-      "params": 1
+      "params": 1,
+      "cmd": 2
     },
     "extras": [
       "function",
       "string"
     ],
-    "name": "meta_op_function",
+    "name": "op_function",
     "base_name": "meta_op_base",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
-      "type": "common_op"
+      "type": "common_op",
+      "str": "function"
     }
   },
   {
@@ -457,20 +459,6 @@
     "base_name": "meta_op_func_param"
   },
   {
-    "name": "op_func_decl",
-    "base_name": "meta_op_function",
-    "props": {
-      "str": "function declaration"
-    }
-  },
-  {
-    "name": "op_extern_func",
-    "base_name": "meta_op_function",
-    "props": {
-      "str": "extern function"
-    }
-  },
-  {
     "name": "op_isset",
     "base_name": "meta_op_xset",
     "props": {
@@ -674,16 +662,6 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "continue"
-    }
-  },
-  {
-    "sons": {
-      "cmd": 2
-    },
-    "name": "op_function",
-    "base_name": "meta_op_function",
-    "props": {
-      "str": "function"
     }
   },
   {

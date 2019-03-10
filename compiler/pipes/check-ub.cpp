@@ -263,7 +263,7 @@ void fix_undefined_behaviour(FunctionPtr function) {
   }
   stage::set_function(function);
   vector<VarPtr> foreach_vars;
-  fix_ub(function->root.as<op_function>()->cmd(), &foreach_vars);
+  fix_ub(function->root->cmd(), &foreach_vars);
 }
 
 

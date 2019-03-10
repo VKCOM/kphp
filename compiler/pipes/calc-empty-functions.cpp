@@ -55,10 +55,10 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
       f->type == FunctionData::func_switch ||
       f->type == FunctionData::func_class_holder ||
       f->root->type() != op_function ||
-      !f->root.as<op_function>()->params()->empty()) {
+      !f->root->params()->empty()) {
     f->body_seq = FunctionData::body_value::non_empty;
   } else {
-    f->body_seq = calc_seq_body_type(f->root.as<op_function>()->cmd().as<op_seq>());
+    f->body_seq = calc_seq_body_type(f->root->cmd().as<op_seq>());
   }
   return f->body_seq;
 }

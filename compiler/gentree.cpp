@@ -1535,19 +1535,18 @@ VertexPtr GenTree::get_function(Token *phpdoc_token, AccessType access_type, std
   // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
     is_top_of_the_function_ = true;
-    auto function_root = cur_function->root.as<op_function>();
-    function_root->cmd() = get_statement();
-    CE(!kphp_error(function_root->cmd(), "Failed to parse function body"));
+    cur_function->root->cmd() = get_statement();
+    CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
 
     if (cur_function->is_constructor()) {
-      cur_class->patch_func_constructor(function_root, line_num);
+      cur_class->patch_func_constructor(cur_function->root, line_num);
     } else {
-      func_force_return(function_root);
+      func_force_return(cur_function->root);
     }
   } else {
     CE (expect(tok_semicolon, "';'"));
     cur_function->type = FunctionData::func_extern;
-    cur_function->root.as<op_function>()->cmd() = VertexAdaptor<op_seq>::create();
+    cur_function->root->cmd() = VertexAdaptor<op_seq>::create();
   }
 
   // функция готова, регистрируем
@@ -2092,7 +2091,7 @@ void GenTree::run() {
     parse_namespace_and_uses_at_top_of_file();
   }
 
-  cur_function->root.as<op_function>()->cmd() = get_seq(true);
+  cur_function->root->cmd() = get_seq(true);
   G->register_and_require_function(cur_function, parsed_os, true);  // global функция — поэтому required
 
   if (cur != end) {

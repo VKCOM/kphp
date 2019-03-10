@@ -130,8 +130,6 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_global:
     case op_static:
     case op_empty:
-    case op_func_decl:
-    case op_extern_func:
       break;
     case op_foreach_param:
       if (root.as<op_foreach_param>()->x()->ref_flag) {

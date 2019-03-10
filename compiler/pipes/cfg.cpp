@@ -413,7 +413,7 @@ struct XPred {
 
 void CFG::find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars) {
   splittable_vars->insert(splittable_vars->end(), func->local_var_ids.begin(), func->local_var_ids.end());
-  VertexAdaptor<meta_op_function> func_root = func->root;
+  VertexAdaptor<op_function> func_root = func->root;
   auto params = func_root->params().as<op_func_param_list>();
   for (VarPtr var : func->param_ids) {
     auto param = params->params()[var->param_i].as<op_func_param>();
@@ -1284,7 +1284,7 @@ void CFG::process_function(FunctionPtr function) {
   cur_dfs_mark++;
   calc_used(start);
   vector<VertexPtr *> unused_vertices;
-  collect_unused(&function->root.as<op_function>()->cmd(), &unused_vertices);
+  collect_unused(&function->root->cmd(), &unused_vertices);
   data->unused_vertices(unused_vertices);
 
   std::for_each(splittable_vars.begin(), splittable_vars.end(), std::bind1st(std::mem_fun(&CFG::process_var), this));

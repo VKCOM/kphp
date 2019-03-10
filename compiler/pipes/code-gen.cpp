@@ -3796,8 +3796,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_defined:
       compile_defined(root.as<op_defined>(), W);
       break;
-    case op_extern_func:
-      break;
     case op_conv_array_l:
       compile_conv_array_l(root.as<op_conv_array_l>(), W);
       break;

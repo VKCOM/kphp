@@ -35,7 +35,7 @@ public:
         uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
       });
 
-      return GenTree::generate_anonymous_class(invoke_method->root.as<op_function>(), function_stream, current_function, std::move(uses_of_lambda));
+      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda));
     }
 
     return root;
@@ -94,7 +94,7 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
 // клонировать функцию baseclassname$$fname в контекстную baseclassname$$fname$$contextclassname
 // (контекстные нужны для реализации статического наследования)
 FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name) {
-  auto root = clone_vertex(parent_f->root).as<op_function>();
+  auto root = parent_f->root.clone();
   root->name()->set_string(ctx_function_name);
 
   FunctionPtr context_function = FunctionData::create_function(root, FunctionData::func_local);
@@ -117,7 +117,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   }                                       // (чтобы B::f$$C не считать required)
 
   if (!child_class->members.has_static_method(local_name)) {
-    auto child_root = generate_function_with_parent_call(parent_f->root.as<op_function>(), child_class, parent_method);
+    auto child_root = generate_function_with_parent_call(parent_f->root, child_class, parent_method);
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
     child_function->file_id = parent_f->file_id;

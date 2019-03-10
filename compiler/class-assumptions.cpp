@@ -469,7 +469,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
   }
 
   if (f->assumptions_inited_args == 0) {
-    init_assumptions_for_arguments(f, f->root.as<op_function>());
+    init_assumptions_for_arguments(f, f->root);
     f->assumptions_inited_args = 2;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
   }
 
@@ -479,7 +479,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
   }
 
 
-  calc_assumptions_for_var_internal(f, var_name, f->root.as<op_function>()->cmd(), depth + 1);
+  calc_assumptions_for_var_internal(f, var_name, f->root->cmd(), depth + 1);
 
   if (f->type == FunctionData::func_global || f->type == FunctionData::func_switch) {
     if ((var_name.size() == 2 && var_name == "MC") || (var_name.size() == 3 && var_name == "PMC")) {
@@ -521,7 +521,7 @@ AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
 
   if (f->assumptions_inited_return == 0) {
     if (__sync_bool_compare_and_swap(&f->assumptions_inited_return, 0, 1)) {
-      init_assumptions_for_return(f, f->root.as<op_function>());
+      init_assumptions_for_return(f, f->root);
       __sync_synchronize();
       f->assumptions_inited_return = 2;
     }

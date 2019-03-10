@@ -110,9 +110,7 @@ void CollectMainEdgesPass::create_non_void(const A &a) {
 
 
 void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
-  if (v->type() == op_function ||
-      v->type() == op_func_decl ||
-      v->type() == op_extern_func) {
+  if (v->type() == op_function) {
     return;
   }
 
