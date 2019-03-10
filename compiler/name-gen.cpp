@@ -150,7 +150,7 @@ string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
 
-  if (likely(klass && klass->construct_function)) {
+  if (likely(klass && !klass->is_fully_static())) {
     return replace_backslashes(klass->name) + "$$" + arrow_call->get_string();
   }
 

@@ -5,6 +5,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/phpdoc.h"
 
 class CollectRequiredPass : public FunctionPassBase {
 private:
@@ -35,7 +36,27 @@ private:
     });
     cur_class->members.for_each([&](ClassMemberStaticField &f) {
       f.init_val = run_function_pass(f.init_val, this, nullptr);
+      if (f.phpdoc_token) {
+        require_all_classes_in_phpdoc(f.phpdoc_token);
+      }
     });
+    cur_class->members.for_each([&](ClassMemberInstanceField &f) {
+      if (f.phpdoc_token) {
+        require_all_classes_in_phpdoc(f.phpdoc_token);
+      }
+    });
+  }
+
+  // если /** @var Photo */ над полем инстанса, видим класс Photo даже если нет явного вызова конструктора
+  inline void require_all_classes_in_phpdoc(const Token *phpdoc_token) {
+    std::string param_var_name, type_str;
+    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str, 0)) {
+      PhpDocTypeRuleParser parser(current_function);
+      parser.parse_from_type_string(type_str);
+      for (const auto &class_name : parser.get_unknown_classes()) {
+        require_class(replace_characters(class_name, '\\', '/'));
+      }
+    }
   }
 
 public:

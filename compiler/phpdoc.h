@@ -46,6 +46,7 @@ private:
 
 class PhpDocTypeRuleParser {
   FunctionPtr current_function;
+  std::vector<std::string> unknown_classes_list;
 
   VertexPtr create_type_help_vertex(PrimitiveType type);
   vk::string_view extract_classname_from_pos(const vk::string_view &str, size_t pos);
@@ -55,10 +56,12 @@ class PhpDocTypeRuleParser {
   VertexPtr parse_type_expression(const vk::string_view &s, size_t &pos);
 
 public:
-  PhpDocTypeRuleParser(FunctionPtr current_function) :
+  explicit PhpDocTypeRuleParser(FunctionPtr current_function) :
     current_function(current_function) {}
 
   VertexPtr parse_from_type_string(const vk::string_view &type_str);
+
+  const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
 
   static bool find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset = 0);
   static void run_tipa_unit_tests_parsing_tags();

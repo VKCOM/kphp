@@ -283,10 +283,13 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
       /* fallthrough */
     default: {
       if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z')) {
-        const vk::string_view &class_name = extract_classname_from_pos(s, pos);
-        pos += class_name.size();
-        ClassPtr klass = G->get_class(resolve_uses(current_function, static_cast<string>(class_name), '\\'));
-        kphp_error(klass, format("Could not find class in phpdoc: %s\nProbably, this class is used only in phpdoc and never created in reachable code", string(class_name).c_str()));
+        const vk::string_view &relative_class_name = extract_classname_from_pos(s, pos);
+        pos += relative_class_name.size();
+        const std::string &class_name = resolve_uses(current_function, static_cast<string>(relative_class_name), '\\');
+        ClassPtr klass = G->get_class(class_name);
+        if (!klass) {
+          unknown_classes_list.push_back(class_name);
+        }
         return GenTree::create_type_help_class_vertex(klass);
       }
     }
@@ -375,7 +378,14 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const vk::string_view &ty
 
 VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function) {
   PhpDocTypeRuleParser parser(current_function);
-  return parser.parse_from_type_string(type_str);
+  VertexPtr doc_type = parser.parse_from_type_string(type_str);
+
+  kphp_error_act(parser.get_unknown_classes().empty(),
+                 format("Could not find class in phpdoc: %s\nProbably, this class is used only in phpdoc and never created in reachable code",
+                        parser.get_unknown_classes().begin()->c_str()),
+                 return {});
+
+  return doc_type;
 }
 
 

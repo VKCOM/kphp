@@ -162,7 +162,7 @@ bool ClassData::is_builtin() const {
 // 1. написанные в php коде не полностью статические классы (у них есть хотя бы одно поле или метод => есть конструктор)
 // 2. достижимые лямбды; достижимыми считаем те, поля которых вывелись
 bool ClassData::does_need_codegen() const {
-  if (!this->construct_function || is_builtin()) {
+  if (is_fully_static() || is_builtin()) {
     return false;
   }
   if (is_lambda_class()) {

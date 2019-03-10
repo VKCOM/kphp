@@ -58,5 +58,7 @@ inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_Unknown,
                format("var %s::$%s is declared but never written; please, provide a default value", klass->name.c_str(), f.local_name().c_str()));
+    kphp_error(!(ptype == tp_Class && f.var->tinf_node.get_type()->class_type()->is_fully_static()),
+               format("var %s::$%s refers to fully static class", klass->name.c_str(), f.local_name().c_str()));
   });
 }

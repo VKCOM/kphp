@@ -73,6 +73,10 @@ public:
     return false;
   }
 
+  virtual bool is_fully_static() const {
+    return !construct_function;
+  }
+
   void set_name_and_src_name(const string &name);
 
   void debugPrint();
