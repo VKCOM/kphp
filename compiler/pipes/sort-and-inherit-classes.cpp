@@ -115,6 +115,10 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   if (parent_f->is_auto_inherited) {      // A::f() -> B -> C; при A->B сделался A::f$$B
     return;                               // но при B->C должно быть A::f$$C, а не B::f$$C
   }                                       // (чтобы B::f$$C не считать required)
+  if (parent_f->is_final) {
+    kphp_error(0, format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
+    return;
+  }
 
   if (!child_class->members.has_static_method(local_name)) {
     auto child_root = generate_function_with_parent_call(parent_f->root, child_class, parent_method);

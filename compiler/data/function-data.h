@@ -84,6 +84,7 @@ public:
   bool can_throw = false;
   bool cpp_template_call = false;
   bool is_resumable = false;
+  bool is_final = false;
 
   ClassPtr class_id;
   ClassPtr context_class;

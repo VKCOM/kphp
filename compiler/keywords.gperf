@@ -35,6 +35,8 @@ exit, tok_exit
 die, tok_exit
 global, tok_global
 static, tok_static
+final, tok_final
+abstract, tok_abstract
 goto, tok_goto
 return, tok_return
 list, tok_list

@@ -57,6 +57,8 @@ enum TokenType {
   tok_var,
   tok_global,
   tok_static,
+  tok_final,
+  tok_abstract,
   tok_goto,
   tok_isset,
   tok_eq1,
