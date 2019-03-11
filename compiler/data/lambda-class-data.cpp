@@ -5,6 +5,7 @@
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/vertex.h"
 
@@ -71,11 +72,8 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
 
       return result_pt != tp_Unknown ? result_pt : tp_Any;
     } else if (func_rule->get_string() == "callback_call") {
-      auto call_params = extern_function_call->args();
+      auto param = GenTree::get_call_arg_ref(func_rule->args()[0].as<op_arg_ref>(), extern_function_call);
 
-      int id_of_call_parameter = func_rule->args()[0].as<op_arg_ref>()->int_val - 1;
-      kphp_assert(id_of_call_parameter >= 0 && id_of_call_parameter < static_cast<int>(call_params.size()));
-      VertexPtr param = call_params[id_of_call_parameter];
       if (auto lambda_class = LambdaClassData::get_from(param)) {
         FunctionPtr template_invoke = lambda_class->get_template_of_invoke_function();
         assum = calc_assumption_for_return(template_invoke, extern_function_call, klass_assumed);
@@ -92,12 +90,13 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     }
     return pt;
   } else if (auto arg_ref = type_rule.try_as<op_arg_ref>()) {
-    auto call_params = extern_function_call->args();
-    auto extern_func_params = extern_function_call->get_func_id()->get_params();
+    int id_of_call_parameter = GenTree::get_id_call_arg_ref(arg_ref, extern_function_call);
+    kphp_assert(id_of_call_parameter != -1);
 
-    int id_of_call_parameter = arg_ref->int_val - 1;
-    kphp_assert(id_of_call_parameter >= 0 && id_of_call_parameter < static_cast<int>(call_params.size()));
-    assum = infer_class_of_expr(function_context, call_params[id_of_call_parameter], klass_assumed);
+    auto call_param = extern_function_call->args()[id_of_call_parameter];
+    assum = infer_class_of_expr(function_context, call_param, klass_assumed);
+
+    auto extern_func_params = extern_function_call->get_func_id()->get_params();
     return extern_func_params[id_of_call_parameter]->type_help;
   } else if (auto rule = type_rule.try_as<op_type_rule>()) {
     return rule->type_help;

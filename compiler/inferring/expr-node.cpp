@@ -82,16 +82,16 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
     kphp_assert(func_type_rule->size() == 1);
 
     auto arg = func_type_rule->args()[0].as<op_arg_ref>();
-    int callback_arg_id = arg->int_val;
-    if (!expr || callback_arg_id < 1 || expr->type() != op_func_call || callback_arg_id > (int)expr->get_func_id()->get_params().size()) {
+    int callback_arg_id = GenTree::get_id_call_arg_ref(arg, expr);
+    if (callback_arg_id == -1) {
       kphp_error (0, "error in type rule");
       recalc_ptype<tp_Error>();
     }
-    const FunctionPtr called_function = expr->get_func_id();
-    kphp_assert(called_function->is_extern() && called_function->get_params()[callback_arg_id - 1]->type() == op_func_param_callback);
+    auto called_function = expr->get_func_id();
+    kphp_assert(called_function->is_extern() && called_function->get_params()[callback_arg_id]->type() == op_func_param_callback);
 
     VertexRange call_args = expr.as<op_func_call>()->args();
-    VertexPtr callback_arg = call_args[callback_arg_id - 1];
+    VertexPtr callback_arg = call_args[callback_arg_id];
 
     if (callback_arg->type() == op_func_ptr) {
       set_lca(callback_arg->get_func_id(), -1);

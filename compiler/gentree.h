@@ -61,6 +61,9 @@ public:
   template<PrimitiveType ToT>
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);
+  static int get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
+  static VertexPtr get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
+
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());
   static void for_each(VertexPtr root, void (*callback)(VertexPtr));
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);

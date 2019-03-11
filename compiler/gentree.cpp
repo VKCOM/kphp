@@ -953,6 +953,26 @@ VertexPtr GenTree::get_actual_value(VertexPtr v) {
   return v;
 }
 
+int GenTree::get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+  if (auto fun_call = expr.try_as<op_func_call>()) {
+    VertexRange call_args = fun_call->args();
+    int i = arg->int_val;
+    if (1 <= i && i <= call_args.size()) {
+      return i - 1;
+    }
+  }
+
+  return -1;
+}
+
+VertexPtr GenTree::get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+  int arg_id = get_id_call_arg_ref(arg, expr);
+  if (arg_id != -1) {
+    return expr.as<op_func_call>()->args()[arg_id];
+  }
+  return {};
+}
+
 PrimitiveType GenTree::get_ptype() {
   PrimitiveType tp;
   TokenType tok = (*cur)->type();
@@ -1041,7 +1061,7 @@ VertexPtr GenTree::get_type_rule_() {
     set_location(arr, arr_location);
     res = arr;
   } else if (tok == tok_func_name) {
-    if ((*cur)->str_val == "lca" || (*cur)->str_val == "OrFalse") {
+    if (vk::any_of_equal((*cur)->str_val, "lca", "OrFalse")) {
       res = get_type_rule_func();
     } else if ((*cur)->str_val == "self") {
       //TODO: why no next_cur here?
