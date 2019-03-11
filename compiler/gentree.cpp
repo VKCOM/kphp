@@ -953,6 +953,17 @@ VertexPtr GenTree::get_actual_value(VertexPtr v) {
   return v;
 }
 
+const std::string *GenTree::get_constexpr_string(VertexPtr v) {
+  v = get_actual_value(v);
+  if (auto conv_vertex = v.try_as<op_conv_string>()) {
+    return get_constexpr_string(conv_vertex->expr());
+  }
+  if (auto str_vertex = v.try_as<op_string>()) {
+    return &str_vertex->get_string();
+  }
+  return nullptr;
+}
+
 int GenTree::get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
   if (auto fun_call = expr.try_as<op_func_call>()) {
     VertexRange call_args = fun_call->args();
