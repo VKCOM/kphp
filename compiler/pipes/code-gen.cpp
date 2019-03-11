@@ -3927,7 +3927,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     }
   }
   for (const auto &c : all_classes) {
-    if (c && c->was_constructor_invoked && !c->is_builtin()) {
+    if (c && c->does_need_codegen()) {
       prepare_generate_class(c);
     }
   }
@@ -3951,7 +3951,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   }
 
   for (const auto &c : all_classes) {
-    if (c && c->was_constructor_invoked && !c->is_builtin()) {
+    if (c && c->does_need_codegen()) {
       W << Async(ClassDeclaration(c));
     }
   }

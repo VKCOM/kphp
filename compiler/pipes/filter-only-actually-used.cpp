@@ -68,9 +68,6 @@ void calc_actually_used_dfs(FunctionPtr from, IdMap<FunctionPtr> &used_functions
                             const IdMap<std::vector<EdgeInfo>> &call_graph) {
   used_functions[from] = from;
 
-  if (from->is_constructor()) {
-    from->class_id->was_constructor_invoked = true;
-  }
   for (const auto &to : call_graph[from]) {
     if (!used_functions[to.called_f]) {
       calc_actually_used_dfs(to.called_f, used_functions, call_graph);
@@ -92,6 +89,7 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
       fun->type == FunctionData::func_global ||
       fun->type == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
      (fun->type == FunctionData::func_extern && fun->name == "wait") ||
+     (fun->is_constructor() && !fun->is_lambda()) ||    // все достижимые php классы кодогенерятся (см. does_need_codegen())
       fun->kphp_lib_export;
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);

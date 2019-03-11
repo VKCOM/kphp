@@ -128,6 +128,10 @@ void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
       create_less(v->type_rule, v);
       create_less(v, v->type_rule);
       break;
+    case op_set_check_type_rule:
+      create_set(v, v->type_rule);
+      create_less(v, v->type_rule);
+      break;
     default:
       assert (0 && "unreachable");
   }

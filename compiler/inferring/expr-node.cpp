@@ -388,6 +388,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_gt_type_rule:
     case op_lt_type_rule:
     case op_eq_type_rule:
+    case op_set_check_type_rule:
       apply_type_rule(expr.as<meta_op_type_rule>()->rule(), VertexPtr());
       break;
     case op_var:

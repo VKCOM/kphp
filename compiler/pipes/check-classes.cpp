@@ -24,7 +24,7 @@ void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
 inline void CheckClassesF::analyze_class(ClassPtr klass) {
   //printf("Check class %s\n", klass->name.c_str());
   check_static_fields_inited(klass);
-  if (klass->was_constructor_invoked) {
+  if (klass->does_need_codegen()) {
     check_instance_fields_inited(klass);
   }
   if (klass->can_be_php_autoloaded && !klass->is_builtin()) {
@@ -57,6 +57,6 @@ inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_Unknown,
-               format("var %s::$%s is declared but never written; maybe, it is used only in unreachable code?", klass->name.c_str(), f.local_name().c_str()));
+               format("var %s::$%s is declared but never written; please, provide a default value", klass->name.c_str(), f.local_name().c_str()));
   });
 }

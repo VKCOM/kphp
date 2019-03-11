@@ -12,7 +12,6 @@ ClassData::ClassData() :
   id(0),
   class_type(ctype_class),
   assumptions_inited_vars(0),
-  was_constructor_invoked(false),
   can_be_php_autoloaded(false),
   members(this),
   type_data(TypeData::create_for_class(ClassPtr(this))) {
@@ -157,6 +156,20 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
 }
 
 bool ClassData::is_builtin() const {
-  // TODO: how can be !file_id?
   return file_id && file_id->file_name == G->env().get_functions();
+}
+
+// какие классы мы превращаем в С++ структуры?
+// 1. написанные в php коде не полностью статические классы (у них есть хотя бы одно поле или метод => есть конструктор)
+// 2. достижимые лямбды; достижимыми считаем те, поля которых вывелись
+bool ClassData::does_need_codegen() const {
+  if (!this->construct_function || is_builtin()) {
+    return false;
+  }
+  if (is_lambda_class()) {
+    return !members.find_member([](const ClassMemberInstanceField &f) {
+      return f.var->tinf_node.get_recalc_cnt() == -1;
+    });
+  }
+  return true;
 }

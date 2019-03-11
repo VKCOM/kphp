@@ -40,7 +40,6 @@ public:
 
   std::vector<Assumption> assumptions_for_vars;
   int assumptions_inited_vars;
-  bool was_constructor_invoked;
   bool can_be_php_autoloaded;
 
   SrcFilePtr file_id;
@@ -90,4 +89,5 @@ public:
   }
 
   bool is_builtin() const;
+  bool does_need_codegen() const;
 };
