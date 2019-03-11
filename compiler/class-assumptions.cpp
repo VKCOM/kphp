@@ -24,6 +24,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
 
 AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
@@ -423,10 +424,10 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
         assumption_add_for_return(f, assum_instance, klass);        // return A
       } else if (expr->type() == op_var && expr->get_string() == "this" && f->is_instance_function()) {
         assumption_add_for_return(f, assum_instance, f->class_id);  // return this
-      } else if (expr->type() == op_func_call) {
-        if (auto fun = expr->get_func_id()) {
+      } else if (auto call_vertex = expr.try_as<op_func_call>()) {
+        if (auto fun = call_vertex->get_func_id()) {
           ClassPtr klass;
-          calc_assumption_for_return(fun, klass);
+          calc_assumption_for_return(fun, call_vertex, klass);
           if (klass) {
             assumption_add_for_return(f, assum_instance, klass);
           }
@@ -508,12 +509,25 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
  * Высокоуровневая функция, определяющая, что возвращает f.
  * Включает кеширование повторных вызовов и init на f при первом вызове.
  */
-AssumType calc_assumption_for_return(FunctionPtr f, ClassPtr &out_class) {
+AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr &out_class) {
   if (f->is_extern()) {
     if (f->root->type_rule) {
-      if (auto class_type_rule = f->root->type_rule.as<meta_op_type_rule>()->rule().try_as<op_class_type_rule>()) {
+      auto rule_meta = f->root->type_rule.as<meta_op_type_rule>()->rule();
+      if (auto class_type_rule = rule_meta.try_as<op_class_type_rule>()) {
         out_class = class_type_rule->class_ptr;
         return assum_instance;
+      } else if (auto func_type_rule = rule_meta.try_as<op_type_rule_func>()) {
+        if (func_type_rule->get_string() == "instance") {
+          auto arg_ref = func_type_rule->back().try_as<op_arg_ref>();
+          if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
+            if (auto class_name = GenTree::get_constexpr_string(arg)) {
+              if (auto klass = G->get_class(*class_name)) {
+                out_class = klass;
+                return assum_instance;
+              }
+            }
+          }
+        }
       }
     }
     return assum_unknown;
@@ -586,7 +600,7 @@ inline AssumType infer_from_call(FunctionPtr f,
     return assum_unknown;
   }
 
-  return calc_assumption_for_return(ptr, out_class);
+  return calc_assumption_for_return(ptr, call, out_class);
 }
 
 inline AssumType infer_from_array(FunctionPtr f,

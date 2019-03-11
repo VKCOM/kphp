@@ -18,6 +18,7 @@ private:
   void apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_type_rule, VertexPtr expr);
   void apply_type_rule_type(VertexAdaptor<op_type_rule> rule, VertexPtr expr);
   void apply_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
+  void apply_instance_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
   void apply_index(VertexAdaptor<op_index> index, VertexPtr expr);
   void apply_type_rule(VertexPtr rule, VertexPtr expr);
   void recalc_func_call(VertexAdaptor<op_func_call> call);
@@ -71,6 +72,8 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
       //TODO: is it hack?
       apply_type_rule(i, expr);
     }
+  } else if (func_type_rule->str_val == "instance") {
+    apply_instance_arg_ref(func_type_rule->back().try_as<op_arg_ref>(), expr);
   } else if (func_type_rule->str_val == "OrFalse") {
     if (kphp_error (!func_type_rule->args().empty(), "OrFalse with no arguments")) {
       recalc_ptype<tp_Error>();
@@ -134,16 +137,42 @@ void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, Vert
 }
 
 void ExprNodeRecalc::apply_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
-  int i = arg->int_val;
-  if (!expr || i < 1 || expr->type() != op_func_call ||
-      i > (int)expr->get_func_id()->get_params().size()) {
+  if (GenTree::get_id_call_arg_ref(arg, expr) == -1) {
     kphp_error (0, "error in type rule");
     recalc_ptype<tp_Error>();
   }
 
-  VertexRange call_args = expr.as<op_func_call>()->args();
-  if (i - 1 < (int)call_args.size()) {
-    set_lca(call_args[i - 1]);
+  if (auto vertex = GenTree::get_call_arg_ref(arg, expr)) {
+    set_lca(vertex);
+  }
+}
+
+void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+  const char *err_msg = nullptr;
+
+  if (auto vertex = GenTree::get_call_arg_ref(arg, expr)) {
+    auto class_name = GenTree::get_constexpr_string(vertex);
+
+    if (class_name && !class_name->empty()) {
+      if (auto klass = G->get_class(*class_name)) {
+        if (klass->class_type == ClassType::ctype_class && klass->members.has_any_instance_method()) {
+          set_lca(klass);
+        } else {
+          err_msg = "class passed as type-string should be non-static";
+        }
+      } else {
+        err_msg = format("bad %d parameter: can't find class %s", arg->int_val, class_name->c_str());
+      }
+    } else {
+      err_msg = format("bad %d parameter: expected constant nonempty string with class name", arg->int_val);
+    }
+  } else {
+    err_msg = "error in type rule";
+  }
+
+  if (err_msg) {
+    kphp_error(false, err_msg);
+    recalc_ptype<tp_Error>();
   }
 }
 

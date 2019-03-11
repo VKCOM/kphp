@@ -966,9 +966,9 @@ const std::string *GenTree::get_constexpr_string(VertexPtr v) {
 
 int GenTree::get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
   if (auto fun_call = expr.try_as<op_func_call>()) {
-    VertexRange call_args = fun_call->args();
+    auto params_sz = fun_call->get_func_id()->get_params().size();
     int i = arg->int_val;
-    if (1 <= i && i <= call_args.size()) {
+    if (1 <= i && i <= params_sz) {
       return i - 1;
     }
   }
@@ -979,7 +979,8 @@ int GenTree::get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) 
 VertexPtr GenTree::get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
   int arg_id = get_id_call_arg_ref(arg, expr);
   if (arg_id != -1) {
-    return expr.as<op_func_call>()->args()[arg_id];
+    auto call_args = expr.as<op_func_call>()->args();
+    return arg_id < call_args.size() ? call_args[arg_id] : VertexPtr{};
   }
   return {};
 }
@@ -1074,6 +1075,10 @@ VertexPtr GenTree::get_type_rule_() {
   } else if (tok == tok_func_name) {
     if (vk::any_of_equal((*cur)->str_val, "lca", "OrFalse")) {
       res = get_type_rule_func();
+    } else if ((*cur)->str_val == "instance") {
+      res = get_type_rule_func();
+      kphp_error(res->size() == 1, format("Allowed only one arg_ref for 'instance<>', got %d", res->size()));
+      kphp_error(res->back().try_as<op_arg_ref>(), "Allowed only arg_ref for 'instance<>'");
     } else if ((*cur)->str_val == "self") {
       //TODO: why no next_cur here?
       auto self = VertexAdaptor<op_self>::create();

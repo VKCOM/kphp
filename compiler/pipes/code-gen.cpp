@@ -798,6 +798,11 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
       internal_headers_.emplace(to_include->header_full_name);
     }
   }
+
+  for (auto local_var : function->local_var_ids) {
+    add_var_signature_depends(local_var);
+  }
+
   for (auto global_var : function->global_var_ids) {
     add_var_signature_depends(global_var);
   }
