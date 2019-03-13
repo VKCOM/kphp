@@ -62,7 +62,7 @@ public:
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);
   static const std::string *get_constexpr_string(VertexPtr v);
-  static int get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
+  static int get_id_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
   static VertexPtr get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());

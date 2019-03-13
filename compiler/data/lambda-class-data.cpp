@@ -90,7 +90,7 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     }
     return pt;
   } else if (auto arg_ref = type_rule.try_as<op_arg_ref>()) {
-    int id_of_call_parameter = GenTree::get_id_call_arg_ref(arg_ref, extern_function_call);
+    int id_of_call_parameter = GenTree::get_id_arg_ref(arg_ref, extern_function_call);
     kphp_assert(id_of_call_parameter != -1);
 
     auto call_param = extern_function_call->args()[id_of_call_parameter];

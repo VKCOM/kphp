@@ -975,20 +975,21 @@ const std::string *GenTree::get_constexpr_string(VertexPtr v) {
   return nullptr;
 }
 
-int GenTree::get_id_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+int GenTree::get_id_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+  int id = -1;
   if (auto fun_call = expr.try_as<op_func_call>()) {
-    auto params_sz = fun_call->get_func_id()->get_params().size();
-    int i = arg->int_val;
-    if (1 <= i && i <= params_sz) {
-      return i - 1;
+    id = arg->int_val - 1;
+    if (auto func_id = fun_call->get_func_id()) {
+      if (id < 0 || id >= func_id->get_params().size()) {
+        id = -1;
+      }
     }
   }
-
-  return -1;
+  return id;
 }
 
 VertexPtr GenTree::get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
-  int arg_id = get_id_call_arg_ref(arg, expr);
+  int arg_id = get_id_arg_ref(arg, expr);
   if (arg_id != -1) {
     auto call_args = expr.as<op_func_call>()->args();
     return arg_id < call_args.size() ? call_args[arg_id] : VertexPtr{};

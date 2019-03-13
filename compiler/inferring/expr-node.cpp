@@ -85,7 +85,7 @@ void ExprNodeRecalc::apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_
     kphp_assert(func_type_rule->size() == 1);
 
     auto arg = func_type_rule->args()[0].as<op_arg_ref>();
-    int callback_arg_id = GenTree::get_id_call_arg_ref(arg, expr);
+    int callback_arg_id = GenTree::get_id_arg_ref(arg, expr);
     if (callback_arg_id == -1) {
       kphp_error (0, "error in type rule");
       recalc_ptype<tp_Error>();
@@ -137,7 +137,7 @@ void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, Vert
 }
 
 void ExprNodeRecalc::apply_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
-  if (GenTree::get_id_call_arg_ref(arg, expr) == -1) {
+  if (GenTree::get_id_arg_ref(arg, expr) == -1) {
     kphp_error (0, "error in type rule");
     recalc_ptype<tp_Error>();
   }
