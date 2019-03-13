@@ -629,26 +629,6 @@
     }
   },
   {
-    "name": "op_else",
-    "base_name": "meta_op_base",
-    "props": {
-      "rl": "rl_common",
-      "cnst": "cnst_not_func",
-      "type": "common_op",
-      "str": "else"
-    }
-  },
-  {
-    "name": "op_elseif",
-    "base_name": "meta_op_base",
-    "props": {
-      "rl": "rl_common",
-      "cnst": "cnst_not_func",
-      "type": "common_op",
-      "str": "elseif"
-    }
-  },
-  {
     "name": "op_break",
     "base_name": "meta_op_goto",
     "props": {
