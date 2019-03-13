@@ -114,6 +114,22 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   return new_function;
 }
 
+std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(int shift) const {
+  auto func_params = get_params();
+  kphp_assert(func_params.size() >= shift);
+
+  std::vector<VertexAdaptor<op_var>> res_params(static_cast<size_t>(func_params.size() - shift));
+  std::transform(std::next(func_params.begin(), shift), func_params.end(), res_params.begin(),
+                 [](VertexPtr param) {
+                   auto new_param = VertexAdaptor<op_var>::create();
+                   new_param->set_string(param.as<op_func_param>()->var()->get_string());
+                   return new_param;
+                 }
+  );
+
+  return res_params;
+}
+
 string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;

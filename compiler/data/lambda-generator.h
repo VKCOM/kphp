@@ -31,8 +31,6 @@ private:
   FunctionPtr register_invoke_method(VertexAdaptor<op_function> fun);
   LambdaGenerator &create_invoke_fun_returning_call(VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params);
 
-  static std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(FunctionPtr function, int shift = 0);
-
 private:
   const Location created_location;
   LambdaPtr generated_lambda;

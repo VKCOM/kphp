@@ -136,6 +136,7 @@ public:
   static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
+  std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
 
   bool is_lambda() const {
     return static_cast<bool>(function_in_which_lambda_was_created);
