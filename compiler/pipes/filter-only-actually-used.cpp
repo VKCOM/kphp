@@ -36,6 +36,7 @@ void calc_throws_and_body_value_through_call_edges(const std::vector<FunctionAnd
     FunctionPtr fun = f_and_e.first;
     for (const auto &edge : f_and_e.second) {
       if (!edge.inside_try) {
+        kphp_assert(edge.called_f);
         throws_graph[edge.called_f].emplace_back(fun);
       }
       if (fun->body_seq == FunctionData::body_value::unknown
