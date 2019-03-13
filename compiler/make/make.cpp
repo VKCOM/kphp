@@ -107,7 +107,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   // copy functions.txt of this static archive
   File functions_txt_tmp(G->env().get_dest_cpp_dir() + LibData::functions_txt_tmp_file());
   hard_link_or_copy(functions_txt_tmp.path, out_lib.functions_txt_file());
-  static_archive.unlink();
+  functions_txt_tmp.unlink();
 
   // copy runtime lib sha256 of this static archive
   File runtime_lib_sha256(G->env().get_runtime_sha256_file());
@@ -120,7 +120,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   // copy cpp header files of this static archive
   for (File *header_file: headers_tmp_dir.get_files()) {
     hard_link_or_copy(header_file->path, out_headers_dir.get_dir() + header_file->name);
-    static_archive.unlink();
+    header_file->unlink();
   }
 }
 
@@ -218,8 +218,8 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
   for (const auto &file : files) {
     for (const auto &include : file->includes) {
       File *header = cpp_dir.get_file(include);
-      kphp_assert (header != nullptr);
-      kphp_assert (header->on_disk);
+      kphp_assert_msg(header != nullptr, format("Can't find header %s required by %s", include.c_str(), file->name.c_str()));
+      kphp_assert(header->on_disk);
       reverse_includes[header].push_back(file);
     }
 
