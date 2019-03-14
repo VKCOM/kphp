@@ -10,7 +10,7 @@
 
 ClassData::ClassData() :
   id(0),
-  class_type(ctype_class),
+  class_type(ClassType::klass),
   assumptions_inited_vars(0),
   can_be_php_autoloaded(false),
   members(this),
@@ -32,11 +32,10 @@ void ClassData::set_name_and_src_name(const string &name) {
 }
 
 void ClassData::debugPrint() {
-  string str_class_type =
-    class_type == ctype_interface ? "interface" :
-    class_type == ctype_trait ? "trait" :
-    "class";
-  printf("=== %s %s\n", str_class_type.c_str(), name.c_str());
+  const char *str_class_type =
+    is_interface() ? "interface" :
+    is_trait() ? "trait" : "class";
+  printf("=== %s %s\n", str_class_type, name.c_str());
 
   members.for_each([](ClassMemberConstant &m) {
     printf("const %s\n", m.local_name().c_str());

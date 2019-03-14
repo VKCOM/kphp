@@ -7,10 +7,10 @@
 #include "compiler/threading/locks.h"
 #include "compiler/threading/data-stream.h"
 
-enum ClassType {
-  ctype_class,
-  ctype_interface,
-  ctype_trait
+enum class ClassType {
+  klass,
+  interface,
+  trait
 };
 
 class ClassData : public Lockable {
@@ -65,6 +65,10 @@ public:
   // function fname(args) => function fname($this ::: class_instance, args)
   void patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num);
 
+  bool is_class() const { return class_type == ClassType::klass; }
+  bool is_interface() const { return class_type == ClassType::interface; }
+  bool is_trait() const { return class_type == ClassType::trait; }
+
   virtual bool is_lambda_class() const {
     return false;
   }
@@ -81,7 +85,7 @@ public:
 
   const std::string *get_parent_class_name() const {
     for (const auto &dep : str_dependents) {    // именно когда нужно строковое имя extends,
-      if (dep.type == ctype_class) {            // до связки классов, т.е. parent_class ещё не определёнs
+      if (dep.type == ClassType::klass) {       // до связки классов, т.е. parent_class ещё не определёнs
         return &dep.class_name;
       }
     }

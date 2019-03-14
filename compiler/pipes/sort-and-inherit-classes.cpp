@@ -173,13 +173,13 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
     ClassPtr dep_class = G->get_class(dep.class_name);
 
     switch (dep.type) {
-      case ctype_class:
+      case ClassType::klass:
         inherit_child_class_from_parent(klass, dep_class, function_stream);
         break;
-      case ctype_interface:
+      case ClassType::interface:
         kphp_assert(0 && "implementing interfaces is not supported yet");
         break;
-      case ctype_trait:
+      case ClassType::trait:
         kphp_assert(0 && "mixin traits is not supported yet");
         break;
     }
