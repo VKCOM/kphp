@@ -176,7 +176,7 @@ public:
 
   bool has_any_instance_var() const;
   bool has_any_instance_method() const;
-  bool has_constructor() const;
+  FunctionPtr get_constructor() const;
 
   const ClassMemberStaticMethod *get_static_method(const string &local_name) const;
   const ClassMemberInstanceMethod *get_instance_method(const string &local_name) const;

@@ -39,6 +39,7 @@ GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> 
   is_top_of_the_function_(false),
   cur(this->tokens.begin()),
   end(this->tokens.end()),
+  is_in_parse_func_call(false),
   processing_file(file) {                  // = stage::get_file()
 
   kphp_assert (cur != end);
@@ -1656,9 +1657,8 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
     is_top_of_the_function_ = true;
     cur_function->root->cmd() = get_statement();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
-
     if (cur_function->is_constructor()) {
-      cur_class->patch_func_constructor(cur_function->root, line_num);
+      func_force_return(cur_function->root, ClassData::gen_vertex_this(line_num));
     } else {
       func_force_return(cur_function->root);
     }
@@ -1669,13 +1669,16 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
   }
 
   // функция готова, регистрируем
-  bool kphp_required_flag = phpdoc_token &&
-                           (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
-                            phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
-  bool auto_require = cur_function->is_extern()
-                      || cur_function->is_instance_function()
-                      || kphp_required_flag;
-  G->register_and_require_function(cur_function, parsed_os, auto_require);
+  // конструктор регистрируем в самом конце, после парсинга всего класса
+  if (!cur_function->is_constructor()) {
+    const bool kphp_required_flag = phpdoc_token &&
+                                    (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
+                                     phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
+    const bool auto_require = cur_function->is_extern()
+                              || cur_function->is_instance_function()
+                              || kphp_required_flag;
+    G->register_and_require_function(cur_function, parsed_os, auto_require);
+  }
 
   if (uses_of_lambda != nullptr && !stage::has_error()) {
     return cur_function->root;
@@ -1757,8 +1760,12 @@ VertexPtr GenTree::get_class(const Token *phpdoc_token) {
 
   cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
 
-  if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) &&
-      !cur_class->members.has_constructor()) {
+  if (auto constructor_method = cur_class->members.get_constructor()) {
+    if (!cur_class->is_builtin()) {
+      cur_class->patch_func_constructor(constructor_method->root);
+    }
+    G->register_and_require_function(constructor_method, parsed_os, true);
+  } else if (cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) {
     cur_class->create_default_constructor(line_num, parsed_os);
   }
 

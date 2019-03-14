@@ -78,27 +78,28 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
   return res;
 }
 
-void ClassData::patch_func_constructor(VertexAdaptor<op_function> func, int location_line_num) {
-  auto return_node = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(location_line_num));
-  return_node->location.set_line(location_line_num);
+void ClassData::patch_func_constructor(VertexAdaptor<op_function> func) {
+  std::vector<VertexPtr> new_body;
+  int func_first_line = func->location.get_line();
+  new_body.emplace_back(gen_vertex_this_with_type_rule(func_first_line));
 
-  std::vector<VertexPtr> next = func->cmd()->get_next();
-  next.insert(next.begin(), gen_vertex_this_with_type_rule(location_line_num));
-
-  // выносим "$var = 0" в начало конструктора; переменные класса — в порядке, обратном объявлению, это не страшно
+  // выносим "$var = 0" в начало конструктора
   members.for_each([&](ClassMemberInstanceField &f) {
     if (f.def_val) {
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(location_line_num));
+      int line = std::min(f.root->location.get_line(), func_first_line);
+      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(line));
       inst_prop->location = f.root->location;
+      inst_prop->location.set_line(line);
       inst_prop->str_val = f.local_name();
 
-      next.insert(next.begin() + 1, VertexAdaptor<op_set>::create(inst_prop, f.def_val));
+      auto init_value = f.def_val.clone();
+      init_value->location.set_line(line);
+      new_body.emplace_back(VertexAdaptor<op_set>::create(inst_prop, init_value));
     }
   });
 
-  next.emplace_back(return_node);
-
-  func->cmd() = VertexAdaptor<op_seq>::create(next);
+  new_body.insert(new_body.end(), func->cmd()->begin(), func->cmd()->end());
+  func->cmd() = VertexAdaptor<op_seq>::create(new_body);
 }
 
 void ClassData::create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os) {
@@ -129,7 +130,8 @@ void ClassData::create_constructor_with_args(int location_line_num, VertexAdapto
   auto func = VertexAdaptor<op_function>::create(func_name, params, func_root);
   func->location.set_line(location_line_num);
 
-  patch_func_constructor(func, location_line_num);
+  patch_func_constructor(func);
+  GenTree::func_force_return(func, gen_vertex_this(location_line_num));
 
   auto ctor_function = FunctionData::create_function(func, FunctionData::func_local);
   ctor_function->update_location_in_body();

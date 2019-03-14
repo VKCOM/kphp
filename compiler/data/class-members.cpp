@@ -163,10 +163,12 @@ bool ClassMembersContainer::has_any_instance_method() const {
   return !instance_methods.empty();
 }
 
-bool ClassMembersContainer::has_constructor() const {
-  return has_instance_method("__construct");
+FunctionPtr ClassMembersContainer::get_constructor() const {
+  if (auto construct_method = get_instance_method("__construct")) {
+    return construct_method->function;
+  }
+  return {};
 }
-
 
 const ClassMemberStaticMethod *ClassMembersContainer::get_static_method(const string &local_name) const {
   return find_by_local_name<ClassMemberStaticMethod>(local_name);

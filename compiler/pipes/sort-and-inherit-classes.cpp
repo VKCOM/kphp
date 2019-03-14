@@ -152,7 +152,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
   child_class->parent_class = parent_class;
 
-  kphp_error(!child_class->members.has_constructor() && !child_class->parent_class->members.has_constructor(),
+  kphp_error(!child_class->members.get_constructor() && !child_class->parent_class->members.get_constructor(),
              format("Invalid class extends %s and %s: extends is available only if classes are only-static",
                     child_class->name.c_str(), child_class->parent_class->name.c_str()));
 
