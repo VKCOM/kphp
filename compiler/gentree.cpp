@@ -1212,6 +1212,10 @@ VertexPtr GenTree::get_return() {
   if (!return_val) {
     ret = VertexAdaptor<op_return>::create();
   } else {
+    if (cur_function->is_constructor()) {
+      kphp_error(return_val->type() == op_var && return_val->get_string() == "this",
+                 "Class constructor may return only $this or nothing.");
+    }
     ret = VertexAdaptor<op_return>::create(return_val);
   }
   set_location(ret, ret_location);
@@ -1388,7 +1392,7 @@ VertexPtr GenTree::get_do() {
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   VertexPtr second_node = get_expression();
-  CE (!kphp_error(second_node, "Faild to parse 'do' statement"));
+  CE (!kphp_error(second_node, "Failed to parse 'do' statement"));
   second_node = conv_to<tp_bool>(second_node);
   CE (expect(tok_clpar, "')'"));
   CE (expect(tok_semicolon, "';'"));
