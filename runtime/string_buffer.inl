@@ -252,3 +252,28 @@ inline void init_string_buffer_lib(int max_length) {
     string_buffer::MAX_BUFFER_LEN = max_length;
   }
 }
+
+void string_buffer::copy_raw_data(const string_buffer &other) {
+  clean();
+  append(other.str().c_str(), other.size());
+}
+
+bool operator==(const string_buffer &lhs, const string_buffer &rhs) {
+  size_t len_l = lhs.buffer_end - lhs.buffer_begin;
+  size_t len_r = rhs.buffer_end - rhs.buffer_begin;
+  if (len_l != len_r) {
+    return false;
+  }
+  return std::equal(lhs.buffer_begin, lhs.buffer_end, rhs.buffer_begin);
+}
+
+bool operator!=(string_buffer const &lhs, string_buffer const &rhs) {
+  return !(lhs == rhs);
+}
+
+void string_buffer::debug_print() const {
+  std::for_each(buffer_begin, buffer_end, [](char c) {
+    fprintf(stderr, "%02x ", (int)c);
+  });
+  fprintf(stderr, "\n");
+}

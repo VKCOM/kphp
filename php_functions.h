@@ -30,5 +30,6 @@
 #include "runtime/vkext_stats.h"
 #include "runtime/zlib.h"
 #include "runtime/refcountable_php_classes.h"
+#include "PHP/tl/tl_init.h"
 
 #endif // PHP_FUNCTIONS_H

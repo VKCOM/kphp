@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "compiler/threading/thread-id.h"
+#include "compiler/threading/locks.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"

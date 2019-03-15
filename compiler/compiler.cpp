@@ -38,7 +38,7 @@
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
 #include "compiler/pipes/check-ub.h"
-#include "compiler/pipes/code-gen.h"
+#include "compiler/pipes/code-gen/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"

@@ -14,9 +14,13 @@
 #include "runtime/string_functions.h"
 #include "runtime/zlib.h"
 
+#include "PHP/tl/tl_init.h"
+
 static const int GZIP_PACKED = 0x3072cfa1;
 
 static const string UNDERSCORE("_", 1);
+static const string STR_ERROR("__error", 7);
+static const string STR_ERROR_CODE("__error_code", 12);
 
 static const char *last_rpc_error;
 
@@ -31,6 +35,8 @@ static const int *rpc_data_backup;
 static int rpc_data_len_backup;
 static string rpc_data_copy_backup;
 
+tl_fetch_wrapper_ptr tl_fetch_wrapper;
+array<tl_storer_ptr> tl_storers_ht;
 
 template<class T>
 static inline T store_parse_number(const string &v) {
@@ -336,7 +342,7 @@ var f$fetch_memcache_value() {
   int res = TRY_CALL(int, bool, f$fetch_int());
   switch (res) {
     case MEMCACHE_VALUE_STRING: {
-      int value_len;
+      int value_len = 0;
       const char *value = TRY_CALL(const char*, bool, f$fetch_string_raw(&value_len));
       int flags = TRY_CALL(int, bool, f$fetch_int());
       return mc_get_value(value, value_len, flags);
@@ -444,6 +450,7 @@ bool equals(const rpc_connection &my_rpc, bool value) {
 
 
 static string_buffer data_buf;
+static string_buffer old_data_buf;
 static const int data_buf_header_size = 2 * sizeof(long long) + 4 * sizeof(int);
 static const int data_buf_header_reserved_size = sizeof(long long) + sizeof(int);
 
@@ -649,6 +656,7 @@ bool f$store_finish() {
 }
 
 bool f$rpc_clean(bool is_error) {
+  new_tl_mode_error_flag = false;
   data_buf.clean();
   f$store_int(-1); //reserve for TL_RPC_DEST_ACTOR
   store_long(-1); //reserve for actor_id
@@ -806,7 +814,7 @@ static void process_rpc_timeout(int request_id) {
   process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
 }
 
-static void process_rpc_timeout(event_timer* timer) {
+static void process_rpc_timeout(event_timer *timer) {
   return process_rpc_timeout(timer->wakeup_extra);
 }
 
@@ -1267,7 +1275,7 @@ public:
       return false;
     }
     const tl_tree_type *other = static_cast <const tl_tree_type *> (other_);
-    if ((flags & FLAGS_MASK) != (other->flags & FLAGS_MASK) || type != other->type) {
+    if ((flags & FLAGS_MASK) != (other->flags & FLAGS_MASK) || type->id != other->type->id) {
       return false;
     }
     for (int i = 0; i < children.count(); i++) {
@@ -1485,7 +1493,6 @@ public:
   }
 };
 
-
 const int TLS_SCHEMA_V2 = 0x3a2f9be2;
 const int TLS_SCHEMA_V3 = 0xe4a8604b;
 const int TLS_TYPE = 0x12eb4386;
@@ -1601,7 +1608,7 @@ void free_arr_space() {
 
 void clear_arr_space() {
   while (last_arr_ptr >= var_stack) {
-    std::memset(reinterpret_cast<void*>(last_arr_ptr), 0x0, sizeof(var));
+    std::memset(reinterpret_cast<void *>(last_arr_ptr), 0x0, sizeof(var));
     last_arr_ptr--;
   }
 }
@@ -1615,8 +1622,11 @@ typedef void *(*function_ptr)(void **IP, void **Data, var *arr, tl_tree **vars);
 #define TLUNI_OK ((void *)1l)
 
 static const char *tl_current_function_name;
+const char *new_tl_current_function_name;
+bool new_tl_mode_error_flag;
 
 tl_tree *store_function(const var &tl_object) {
+  tl_debug(__FUNCTION__, -2);
   if (tl_config.fetchIP == nullptr) {
     php_warning("rpc_tl_query not supported due to missing TL scheme");
     return nullptr;
@@ -1677,8 +1687,8 @@ tl_tree *store_function(const var &tl_object) {
 
 array<var> tl_fetch_error(const string &error, int error_code) {
   array<var> result;
-  result.set_value(string("__error", 7), error);
-  result.set_value(string("__error_code", 12), error_code);
+  result.set_value(STR_ERROR, error);
+  result.set_value(STR_ERROR_CODE, error_code);
   return result;
 }
 
@@ -1756,6 +1766,7 @@ array<var> fetch_function(tl_tree *T) {
   }
 
   tl_debug(__FUNCTION__, -2);
+
   Data_stack[0] = T;
   string fetched_type = ((tl_tree_type *)T)->type->name;
   void *res;
@@ -1807,35 +1818,185 @@ static char rpc_tl_results_storage[sizeof(array<tl_tree *>)];
 static array<tl_tree *> *rpc_tl_results = reinterpret_cast <array<tl_tree *> *> (rpc_tl_results_storage);
 static long long rpc_tl_results_last_query_num = -1;
 
-int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double timeout) {
+static char new_mode_rpc_tl_results_storage[sizeof(array<tl_func_base *>)];
+static array<tl_func_base *> *new_mode_rpc_tl_results = reinterpret_cast <array<tl_func_base *> *> (new_mode_rpc_tl_results_storage);
+
+enum tl_mode {
+  SAFE_NEW_TL_MODE,
+  FULL_OLD_TL_MODE,
+  FULL_NEW_TL_MODE
+};
+
+tl_mode cur_tl_mode = FULL_OLD_TL_MODE;
+
+namespace new_tl_mode {
+bool try_fetch_rpc_error(array<var> &out_if_error) {
+  int x = rpc_lookup_int();
+  if (x == RPC_REQ_ERROR && CurException.is_null()) {
+    php_assert (tl_parse_int() == RPC_REQ_ERROR);
+    if (CurException.is_null()) {
+      tl_parse_long();
+      if (CurException.is_null()) {
+        int error_code = tl_parse_int();
+        if (CurException.is_null()) {
+          string error = tl_parse_string();
+          if (CurException.is_null()) {
+            out_if_error = tl_fetch_error(error, error_code);
+            return true;
+          }
+        }
+      }
+    }
+  }
+  if (!CurException.is_null()) {
+    out_if_error = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
+    CurException = false;
+    return true;
+  }
+  return false;
+}
+
+std::unique_ptr<tl_func_base> store_function(const var &tl_object) {
+  new_tl_current_function_name = "_unknown_";
+  if (!tl_object.is_array()) {
+    tl_storing_error(tl_object, "Not an array passed to function rpc_tl_query");
+    return nullptr;
+  }
+  string fun_name = tl_arr_get(tl_object, UNDERSCORE, 0).to_string();
+  if (!tl_storers_ht.has_key(fun_name)) {
+    tl_storing_error(tl_object, "Function \"%s\" not found in tl-scheme", fun_name.c_str());
+    return nullptr;
+  }
+  const auto &storer_kv = tl_storers_ht.get_value(fun_name);
+  new_tl_current_function_name = fun_name.c_str();    // актуально только на время процесса store, при fetch уже \0
+  std::unique_ptr<tl_func_base> stored_fetcher = storer_kv(tl_object);
+  new_tl_current_function_name = nullptr;
+  if (new_tl_mode_error_flag) {
+    return nullptr;
+  }
+
+  return stored_fetcher;
+}
+
+array<var> fetch_function(std::unique_ptr<tl_func_base> &stored_fetcher) {
+  php_assert(stored_fetcher != nullptr);
+  array<var> new_tl_object;
+  if (try_fetch_rpc_error(new_tl_object)) {
+    return new_tl_object;       // тогда содержит ошибку (см. tl_fetch_error())
+  }
+  new_tl_object = tl_fetch_wrapper(stored_fetcher);
+  if (!CurException.is_null()) {
+    array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
+    CurException = false;
+    return result;
+  }
+  if (!f$fetch_eof()) {
+    php_warning("Not all data fetched");
+    return tl_fetch_error("Not all data fetched", TL_ERROR_EXTRA_DATA);
+  }
+  return new_tl_object;
+}
+}
+
+bool f$set_tl_mode(int mode) {
+  if (mode < 0 || mode > 2) {
+    return false;
+  }
+  cur_tl_mode = static_cast<tl_mode>(mode);
+  return true;
+}
+
+int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, int &bytes_sent, bool flush) {
   f$rpc_clean();
+  tl_tree *result_tree = nullptr;
+  std::unique_ptr<tl_func_base> stored_fetcher;
 
-  tl_tree *result_tree = store_function(tl_object);
-  if (result_tree == nullptr) {
-    return 0;
+  switch (cur_tl_mode) {
+    case FULL_NEW_TL_MODE:
+      stored_fetcher = new_tl_mode::store_function(tl_object);
+      if (stored_fetcher == nullptr) {
+        return 0;
+      }
+      break;
+
+    case SAFE_NEW_TL_MODE:
+      result_tree = store_function(tl_object);
+      if (result_tree == nullptr) {
+        return 0;
+      }
+      old_data_buf.copy_raw_data(data_buf);
+      f$rpc_clean();
+      stored_fetcher = new_tl_mode::store_function(tl_object);
+      if (stored_fetcher == nullptr) {
+        php_warning("NEW_TL_MODE_ERROR: error_flag=1 but old is ok storing %s", tl_current_function_name);
+        fprintf(stderr, "--------- NEW_TL_MODE_ERROR: error_flag=1 but old is ok storing %s\n", tl_current_function_name);
+        fprintf(stderr, "Input:\n%s\n", dump_tl_array(tl_object).c_str());
+        data_buf.copy_raw_data(old_data_buf);
+      } else if (data_buf != old_data_buf) {
+        php_warning("NEW_TL_MODE_ERROR: Buffers not equal storing %s", tl_current_function_name);
+        fprintf(stderr, "--------- NEW_TL_MODE_ERROR: Buffers not equal storing %s\n", tl_current_function_name);
+        fprintf(stderr, "Expected:\n"), old_data_buf.debug_print();
+        fprintf(stderr, "Actual:\n"), data_buf.debug_print();
+        fprintf(stderr, "Input:\n%s\n", dump_tl_array(tl_object).c_str());
+        data_buf.copy_raw_data(old_data_buf);
+      }
+      break;
+
+    case FULL_OLD_TL_MODE:
+    default:
+      result_tree = store_function(tl_object);
+      if (result_tree == nullptr) {
+        return 0;
+      }
   }
 
-  int query_id = f$rpc_send(c, timeout);
+  if (bytes_estimating) {
+    bytes_sent += data_buf.size();//estimate
+    if (bytes_sent >= (1 << 15) && bytes_sent > (int)data_buf.size()) {
+      f$rpc_flush();
+      bytes_sent = data_buf.size();
+    }
+  }
+  int query_id = rpc_send(c, timeout, ignore_answer);
   if (query_id <= 0) {
-    result_tree->destroy();
+    if (result_tree) {
+      result_tree->destroy();
+    }
     return 0;
   }
-
+  if (flush) {
+    f$rpc_flush();
+  }
+  if (ignore_answer) {
+    if (result_tree) {
+      result_tree->destroy();
+    }
+    return -1;
+  }
   if (dl::query_num != rpc_tl_results_last_query_num) {
     new(rpc_tl_results_storage) array<tl_tree *>();
     rpc_tl_results_last_query_num = dl::query_num;
+    new(new_mode_rpc_tl_results_storage) array<tl_func_base *>();
   }
-  rpc_tl_results->set_value(query_id, result_tree);
-
+  if (result_tree) {
+    rpc_tl_results->set_value(query_id, result_tree);
+  }
+  if (stored_fetcher) {
+    new_mode_rpc_tl_results->set_value(query_id, stored_fetcher.release());
+  }
   return query_id;
+}
+
+int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double timeout) {
+  int bytes_sent = 0;
+  return rpc_tl_query_impl(c, tl_object, timeout, false, false, bytes_sent, true);
 }
 
 int f$rpc_tl_pending_queries_count() {
   if (dl::query_num != rpc_tl_results_last_query_num) {
     return 0;
   }
-
-  return rpc_tl_results->count();
+  return cur_tl_mode == FULL_NEW_TL_MODE ? new_mode_rpc_tl_results->count() : rpc_tl_results->count();
 }
 
 bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<var> &result) {
@@ -1878,39 +2039,8 @@ array<int> f$rpc_tl_query(const rpc_connection &c, const array<var> &tl_objects,
   array<int> result(tl_objects.size());
   int bytes_sent = 0;
   for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
-    f$rpc_clean();
-
-    tl_tree *result_tree = store_function(it.get_value());
-    if (result_tree == nullptr) {
-      result.set_value(it.get_key(), 0);
-      continue;
-    }
-
-    bytes_sent += data_buf.size();//estimate
-    if (bytes_sent >= (1 << 15) && bytes_sent > (int)data_buf.size()) {
-      f$rpc_flush();
-      bytes_sent = data_buf.size();
-    }
-    int request_id = rpc_send(c, timeout, ignore_answer);
-    if (request_id <= 0) {
-      result.set_value(it.get_key(), 0);
-      result_tree->destroy();
-      continue;
-    }
-
-    if (ignore_answer) {
-      result.set_value(it.get_key(), -1);
-      result_tree->destroy();
-      continue;
-    }
-
-    if (dl::query_num != rpc_tl_results_last_query_num) {
-      new(rpc_tl_results_storage) array<tl_tree *>();
-      rpc_tl_results_last_query_num = dl::query_num;
-    }
-    rpc_tl_results->set_value(request_id, result_tree);
-
-    result.set_value(it.get_key(), request_id);
+    int query_id = rpc_tl_query_impl(c, it.get_value(), timeout, ignore_answer, true, bytes_sent, false);
+    result.set_value(it.get_key(), query_id);
   }
   if (bytes_sent > 0) {
     f$rpc_flush();
@@ -1925,7 +2055,7 @@ class rpc_tl_query_result_one_resumable : public Resumable {
 
   int query_id;
   tl_tree *T;
-
+  std::unique_ptr<tl_func_base> stored_fetcher;
 protected:
   bool run() {
     bool ready;
@@ -1939,18 +2069,52 @@ protected:
         T->destroy();
         RETURN(tl_fetch_error(last_rpc_error, TL_ERROR_UNKNOWN));
       }
+      array<var> tl_object, new_tl_object;
 
-      array<var> tl_object = fetch_function(T);
-      //fprintf (stderr, "!!! %s\n", f$serialize (tl_object).c_str());
-      rpc_parse_restore_previous();
-      RETURN(tl_object);
+      switch (cur_tl_mode) {
+        case FULL_NEW_TL_MODE:
+          new_tl_object = new_tl_mode::fetch_function(stored_fetcher);
+          rpc_parse_restore_previous();
+          RETURN(new_tl_object);
+
+        case SAFE_NEW_TL_MODE:
+          rpc_parse_save_backup();
+          tl_object = fetch_function(T);
+          if (tl_object.isset(STR_ERROR)) {
+            rpc_parse_restore_previous();
+            RETURN(tl_object);
+          }
+          if (stored_fetcher) {
+            rpc_parse_restore_previous();
+            rpc_parse_save_backup();
+            new_tl_object = new_tl_mode::fetch_function(stored_fetcher);
+            if (!equals(tl_object, new_tl_object)) {
+              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", stored_fetcher->get_name());
+              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", stored_fetcher->get_name());
+              fprintf(stderr, "Expected:\n%s\n", dump_tl_array(tl_object).c_str());
+              fprintf(stderr, "Actual:\n%s\n", dump_tl_array(new_tl_object).c_str());
+            }
+          } else {
+            php_warning("NEW_TL_MODE_ERROR: stored_fetcher is null %s", tl_current_function_name);
+            fprintf(stderr, "--------- NEW_TL_MODE_ERROR: stored_fetcher is null %s\n", tl_current_function_name);
+          }
+          rpc_parse_restore_previous();
+          RETURN(tl_object);
+
+        case FULL_OLD_TL_MODE:
+        default:
+          tl_object = fetch_function(T);
+          rpc_parse_restore_previous();
+          RETURN(tl_object);
+      }
     RESUMABLE_END
   }
 
 public:
-  rpc_tl_query_result_one_resumable(int query_id, tl_tree *T) :
+  rpc_tl_query_result_one_resumable(int query_id, tl_tree *T, std::unique_ptr<tl_func_base> &&stored_fetcher) :
     query_id(query_id),
-    T(T) {
+    T(T),
+    stored_fetcher(std::move(stored_fetcher)) {
   }
 };
 
@@ -1965,15 +2129,42 @@ array<var> f$rpc_tl_query_result_one(int query_id) {
     resumable_finished = true;
     return tl_fetch_error("There was no TL queries in current script run", TL_ERROR_INTERNAL);
   }
+  tl_tree *T = nullptr;
+  std::unique_ptr<tl_func_base> stored_fetcher = nullptr;
 
-  tl_tree *T = rpc_tl_results->get_value(query_id);
-  if (T == nullptr) {
-    resumable_finished = true;
-    return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
+  switch (cur_tl_mode) {
+    case FULL_NEW_TL_MODE:
+      stored_fetcher = std::unique_ptr<tl_func_base>(new_mode_rpc_tl_results->get_value(query_id));
+      if (stored_fetcher == nullptr) {
+        resumable_finished = true;
+        return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
+      }
+      new_mode_rpc_tl_results->unset(query_id);
+      break;
+
+    case SAFE_NEW_TL_MODE:
+      T = rpc_tl_results->get_value(query_id);
+      if (T == nullptr) {
+        resumable_finished = true;
+        return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
+      }
+      rpc_tl_results->unset(query_id);
+      // если по-новому не засторилось, stored_fetcher может быть null, об этом будет warning при фетче
+      stored_fetcher = std::unique_ptr<tl_func_base>(new_mode_rpc_tl_results->get_value(query_id));
+      new_mode_rpc_tl_results->unset(query_id);
+      break;
+
+    case FULL_OLD_TL_MODE:
+    default:
+      T = rpc_tl_results->get_value(query_id);
+      if (T == nullptr) {
+        resumable_finished = true;
+        return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
+      }
+      rpc_tl_results->unset(query_id);
   }
-  rpc_tl_results->unset(query_id);
 
-  return start_resumable<array<var>>(new rpc_tl_query_result_one_resumable(query_id, T));
+  return start_resumable<array<var>>(new rpc_tl_query_result_one_resumable(query_id, T, std::move(stored_fetcher)));
 }
 
 
@@ -2259,6 +2450,8 @@ void *tlcomb_store_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   if (l >= 0) {
     r = l + 1;
   } else {
+    php_warning("### DEPRECATED TL FEATURE ###\nThe constructor name must be given if type has several ones. It's going to guess the constructor in runtime!\n"
+                "TL object:\n%s\nduring storing %s", dump_tl_array(*arr).c_str(), tl_current_function_name);
     l = 0;
     r = t->constructors_num;
   }
@@ -2817,7 +3010,7 @@ void *tlcomb_store_int_key_dictionary(void **IP, void **Data, var *arr, tl_tree 
 
   const array<var> a = arr->to_array();
   for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
-    f$store_int(f$safe_intval(p.get_key()));
+    f$store_int(f$safe_intval(p.get_key()));    // todo: use f$intval
 
     new(++arr) var(p.get_value());
     last_arr_ptr = arr;
@@ -2846,7 +3039,7 @@ void *tlcomb_store_long_key_dictionary(void **IP, void **Data, var *arr, tl_tree
 
   const array<var> a = arr->to_array();
   for (array<var>::const_iterator p = a.begin(); p != a.end(); ++p) {
-    f$store_Long(f$longval(p.get_key()));
+    f$store_Long(f$longval(p.get_key()));       // todo: use f$store_long()
 
     new(++arr) var(p.get_value());
     last_arr_ptr = arr;

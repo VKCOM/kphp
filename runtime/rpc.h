@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
 #include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
+
+extern const char *new_tl_current_function_name;
 
 void process_rpc_answer(int request_id, char *result, int result_len);
 
@@ -57,6 +60,16 @@ bool f$fetch_eof();//TODO remove parameters
 
 bool f$fetch_end();
 
+struct tl_func_base;
+using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var&);
+extern array<tl_storer_ptr> tl_storers_ht;
+using tl_fetch_wrapper_ptr = array<var>(*)(std::unique_ptr<tl_func_base> &);
+extern tl_fetch_wrapper_ptr tl_fetch_wrapper;
+
+inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
+  tl_storers_ht = gen$ht;
+  tl_fetch_wrapper = gen$t_ReqResult_fetch;
+};
 
 struct rpc_connection {
   bool bool_value;
@@ -188,6 +201,8 @@ array<array<var>> f$rpc_tl_query_result_synchronously(const array<int> &query_id
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids);
+
+bool f$set_tl_mode(int mode);
 
 int f$query_x2(int x);
 

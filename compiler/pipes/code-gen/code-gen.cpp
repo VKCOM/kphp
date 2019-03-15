@@ -1,6 +1,7 @@
 #include <unordered_map>
 
-#include "compiler/pipes/code-gen.h"
+#include "compiler/pipes/code-gen/code-gen.h"
+#include "compiler/pipes/code-gen/common-code-gen.h"
 
 #include "common/algorithms/find.h"
 #include "common/mixin/not_copyable.h"
@@ -16,16 +17,9 @@
 #include "compiler/io.h"
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"
+#include "compiler/pipes/code-gen/tl2cpp.h"
 #include "compiler/vertex.h"
 
-struct CGContext {
-  vector<string> catch_labels;
-  vector<int> catch_label_used;
-  FunctionPtr parent_func;
-  bool use_safe_integer_arithmetic{false};
-  bool resumable_flag{false};
-  bool namespace_opened{false};
-};
 
 struct PlainCode;
 
@@ -47,86 +41,6 @@ public:
     data_copy->calc_crc();
     os << data_copy;
   }
-};
-
-
-class CodeGenerator {
-private:
-  TLS<Writer> *master_writer;
-  Writer *writer;
-  WriterCallbackBase *callback_;
-  CGContext context;
-  bool own_flag;
-public:
-
-  CodeGenerator() :
-    master_writer(nullptr),
-    writer(nullptr),
-    callback_(nullptr),
-    context(),
-    own_flag(false) {
-  }
-
-  CodeGenerator(const CodeGenerator &from) :
-    master_writer(from.master_writer),
-    writer(nullptr),
-    callback_(from.callback_),
-    context(from.context),
-    own_flag(false) {
-  }
-
-  void init(WriterCallbackBase *new_callback) {
-    master_writer = new TLS<Writer>();
-    callback_ = new_callback;
-    own_flag = true;
-  }
-
-  void clear() {
-    if (own_flag) {
-      delete master_writer;
-      delete callback_;
-      own_flag = false;
-    }
-    master_writer = nullptr;
-    callback_ = nullptr;
-  }
-
-  ~CodeGenerator() {
-    clear();
-  }
-
-  void use_safe_integer_arithmetic(bool flag = true) {
-    context.use_safe_integer_arithmetic = flag;
-  }
-
-  WriterCallbackBase *callback() {
-    return callback_;
-  }
-
-  inline void lock_writer() {
-    assert (writer == nullptr);
-    writer = master_writer->lock_get();
-  }
-
-  inline void unlock_writer() {
-    assert (writer != nullptr);
-    master_writer->unlock_get(writer);
-    writer = nullptr;
-  }
-
-
-  inline CodeGenerator &operator<<(const char *s);
-  inline CodeGenerator &operator<<(char c);
-  inline CodeGenerator &operator<<(const string &s);
-  inline CodeGenerator &operator<<(const vk::string_view &s);
-
-  template<Operation Op>
-  inline CodeGenerator &operator<<(VertexAdaptor<Op> vertex);
-  template<class T>
-  CodeGenerator &operator<<(const T &value);
-
-  inline Writer &get_writer();
-  inline CGContext &get_context();
 };
 
 inline void compile_vertex(VertexPtr, CodeGenerator &W);
@@ -153,52 +67,6 @@ struct UnlockComments {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct OpenFile {
-  string file_name;
-  string subdir;
-  bool compile_with_debug_info_flag;
-  bool compile_with_crc;
-  inline OpenFile(const string &file_name, const string &subdir = "",
-                  bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct CloseFile {
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct UpdateLocation {
-  const Location &location;
-  inline UpdateLocation(const Location &location);
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct NewLine {
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct Indent {
-  int val;
-  Indent(int val);
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct PlainCode {
-  vk::string_view str;
-  inline PlainCode(const char *s);
-  inline PlainCode(const string &s);
-  inline PlainCode(const vk::string_view &s);
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct OpenBlock {
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct CloseBlock {
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct OpenNamespace {
   inline OpenNamespace();
   inline OpenNamespace(const string &ns);
@@ -210,19 +78,6 @@ private:
 };
 
 struct CloseNamespace {
-  inline void compile(CodeGenerator &W) const;
-};
-
-struct ExternInclude {
-  inline explicit ExternInclude(const PlainCode &plain_code);
-  inline void compile(CodeGenerator &W) const;
-
-protected:
-  const PlainCode &plain_code_;
-};
-
-struct Include : private ExternInclude {
-  using ExternInclude::ExternInclude;
   inline void compile(CodeGenerator &W) const;
 };
 
@@ -422,12 +277,6 @@ struct CycleBody {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct VertexCompiler {
-  VertexPtr vertex;
-  inline VertexCompiler(VertexPtr vertex);
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct InitVar {
   VarPtr var;
   inline InitVar(VarPtr var);
@@ -582,7 +431,6 @@ inline void compile_safe_version(VertexPtr root, CodeGenerator &W);
 inline void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W);
 inline void compile_push_back(VertexAdaptor<op_push_back> root, CodeGenerator &W);
 inline void compile_push_back_return(VertexAdaptor<op_push_back_return> root, CodeGenerator &W);
-void compile_string_raw(const string &str, CodeGenerator &W);
 inline void compile_string_raw(VertexAdaptor<op_string> root, CodeGenerator &W);
 inline void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W);
 inline void compile_string_build(VertexAdaptor<op_string_build> root, CodeGenerator &W);
@@ -596,45 +444,6 @@ inline void compile_common_op(VertexPtr root, CodeGenerator &W);
 inline void compile(VertexPtr root, CodeGenerator &W);
 
 /*** Implementation ***/
-inline CodeGenerator &CodeGenerator::operator<<(const char *s) {
-  get_writer().append(s);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(char c) {
-  get_writer().append(c);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(const string &s) {
-  get_writer().append(s);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(const vk::string_view &s) {
-  get_writer().append(s);
-  return *this;
-}
-
-template<Operation Op>
-inline CodeGenerator &CodeGenerator::operator<<(VertexAdaptor<Op> vertex) {
-  return (*this) << VertexCompiler(vertex);
-}
-
-template<class T>
-CodeGenerator &CodeGenerator::operator<<(const T &value) {
-  value.compile(*this);
-  return *this;
-}
-
-inline Writer &CodeGenerator::get_writer() {
-  assert (writer != nullptr);
-  return *writer;
-}
-
-inline CGContext &CodeGenerator::get_context() {
-  return context;
-}
 
 template<class T>
 inline AsyncImpl<T>::AsyncImpl(const T &cmd) :
@@ -664,6 +473,17 @@ public:
   }
 };
 
+inline UpdateLocation::UpdateLocation(const Location &location) :
+  location(location) {
+}
+
+inline void UpdateLocation::compile(CodeGenerator &W) const {
+  if (!W.get_writer().is_comments_locked()) {
+    stage::set_location(location);
+    W.get_writer().add_location(stage::get_file(), stage::get_line());
+  }
+}
+
 template<class T>
 inline CodeGenTask<T> *create_async_task(CodeGenerator &W, const T &cmd) {
   return new CodeGenTask<T>(W, cmd);
@@ -688,74 +508,6 @@ inline void UnlockComments::compile(CodeGenerator &W) const {
   W.get_writer().unlock_comments();
 }
 
-inline OpenFile::OpenFile(const string &file_name, const string &subdir,
-                          bool compile_with_debug_info_flag, bool compile_with_crc) :
-  file_name(file_name),
-  subdir(subdir),
-  compile_with_debug_info_flag(compile_with_debug_info_flag),
-  compile_with_crc(compile_with_crc) {
-}
-
-inline void OpenFile::compile(CodeGenerator &W) const {
-  W.lock_writer();
-  W.get_writer().set_callback(W.callback());
-  W.get_writer().begin_write(compile_with_debug_info_flag, compile_with_crc);
-  W.get_writer().set_file_name(file_name, subdir);
-}
-
-inline void CloseFile::compile(CodeGenerator &W) const {
-  W.get_writer().end_write();
-  W.unlock_writer();
-}
-
-inline UpdateLocation::UpdateLocation(const Location &location) :
-  location(location) {
-}
-
-inline void UpdateLocation::compile(CodeGenerator &W) const {
-  if (!W.get_writer().is_comments_locked()) {
-    stage::set_location(location);
-    W.get_writer().add_location(stage::get_file(), stage::get_line());
-  }
-}
-
-inline void NewLine::compile(CodeGenerator &W) const {
-  W.get_writer().new_line();
-}
-
-inline Indent::Indent(int val) :
-  val(val) {
-}
-
-inline void Indent::compile(CodeGenerator &W) const {
-  W.get_writer().indent(val);
-}
-
-inline PlainCode::PlainCode(const char *s) :
-  str(s, s + strlen(s)) {
-}
-
-inline PlainCode::PlainCode(const string &s) :
-  str(&s[0], &s[0] + s.size()) {
-}
-
-inline PlainCode::PlainCode(const vk::string_view &s) :
-  str(s) {
-}
-
-inline void PlainCode::compile(CodeGenerator &W) const {
-  W.get_writer().append(str);
-}
-
-
-inline void OpenBlock::compile(CodeGenerator &W) const {
-  W << "{" << NL << Indent(+2);
-}
-
-inline void CloseBlock::compile(CodeGenerator &W) const {
-  W << Indent(-2) << "}";
-}
-
 inline OpenNamespace::OpenNamespace() :
   OpenNamespace(G->get_global_namespace()) {
 }
@@ -777,19 +529,6 @@ inline void CloseNamespace::compile(CodeGenerator &W) const {
     W << "}" << NL << NL;
     W.get_context().namespace_opened = false;
   }
-}
-
-inline ExternInclude::ExternInclude(const PlainCode &plain_code) :
-  plain_code_(plain_code) {
-}
-
-inline void ExternInclude::compile(CodeGenerator &W) const {
-  W << "#include \"" << plain_code_ << "\"" << NL;
-}
-
-inline void Include::compile(CodeGenerator &W) const {
-  W.get_writer().add_include(static_cast<std::string>(plain_code_.str));
-  ExternInclude::compile(W);
 }
 
 inline void LibInclude::compile(CodeGenerator &W) const {
@@ -1211,15 +950,6 @@ inline void Function::compile(CodeGenerator &W) const {
   W << NL;
 }
 
-inline VertexCompiler::VertexCompiler(VertexPtr vertex) :
-  vertex(vertex) {
-}
-
-inline void VertexCompiler::compile(CodeGenerator &W) const {
-  compile_vertex(vertex, W);
-}
-
-
 inline RunFunction::RunFunction(FunctionPtr function) :
   function(function) {
 }
@@ -1557,31 +1287,12 @@ std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> 
     W << VarExternDeclaration(var);
   }
 
-  std::string raw_data;
-  std::vector<int> const_string_shifts(const_raw_string_vars.size());
-  std::vector<int> const_string_length(const_raw_string_vars.size());
-  int ii = 0;
-  for (auto var : const_raw_string_vars) {
-    int shift_to_align = (((int)raw_data.size() + 7) & -8) - (int)raw_data.size();
-    if (shift_to_align != 0) {
-      raw_data.append(shift_to_align, 0);
-    }
-    const string &s = var->init_val.as<op_string>()->get_string();
-    int raw_len = string_raw_len(static_cast<int>(s.size()));
-    kphp_assert (raw_len != -1);
-    const_string_shifts[ii] = (int)raw_data.size();
-    raw_data.append(raw_len, 0);
-    int err = string_raw(&raw_data[const_string_shifts[ii]], raw_len, s.c_str(), (int)s.size());
-    kphp_assert (err == raw_len);
-    const_string_length[ii] = raw_len;
-    ii++;
-  }
-
-  if (!raw_data.empty()) {
-    W << "static const char *raw = ";
-    compile_string_raw(raw_data, W);
-    W << ";" << NL;
-  }
+  std::vector<int> const_string_shifts;
+  std::vector<std::string> values(const_raw_string_vars.size());
+  std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(),
+    values.begin(),
+    [](const VarPtr &var){ return var->init_val.as<op_string>()->get_string(); });
+  compile_raw_data(W, const_string_shifts, values);
 
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
@@ -1711,6 +1422,10 @@ inline void StaticInit::compile(CodeGenerator &W) const {
   W << OpenNamespace();
   W << "void const_vars_init();" << NL << NL;
 
+  W << "void tl_str_const_init();" << NL;
+  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> &);" << NL;
+  W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
+  W << "void fill_tl_storers_ht();" << NL << NL;
   if (G->env().is_static_lib_mode()) {
     W << "void global_init_lib_scripts() " << BEGIN;
   } else {
@@ -1721,7 +1436,11 @@ inline void StaticInit::compile(CodeGenerator &W) const {
       }
     }
   }
-
+  if (G->env().get_tl_schema_file() != "") {
+    W << "tl_str_const_init();" << NL;
+    W << "fill_tl_storers_ht();" << NL;
+    W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
+  }
   W << "const_vars_init();" << NL;
 
   W << END << NL;
@@ -4078,6 +3797,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   write_hashes_of_subdirs_to_dep_files(W);
 
   write_tl_schema(W);
+  tl_gen::write_tl_query_handlers(W);
   write_lib_version(W);
 }
 

@@ -11,15 +11,14 @@
 class string_buffer {
   static dl::size_type MIN_BUFFER_LEN;
   static dl::size_type MAX_BUFFER_LEN;
-  string_buffer(const string_buffer &other);
-  string_buffer &operator=(const string_buffer &other);
-
   char *buffer_end;
   char *buffer_begin;
   dl::size_type buffer_len;
 
   inline void resize(dl::size_type new_buffer_len);
   inline void reserve_at_least(dl::size_type new_buffer_len);
+  string_buffer(const string_buffer &other) = delete;
+  string_buffer &operator=(const string_buffer &other) = delete;
 
 public:
   static int string_buffer_error_flag;
@@ -58,6 +57,13 @@ public:
   inline ~string_buffer();
 
   friend void init_string_buffer_lib(int max_length);
+
+  inline void debug_print() const;
+
+  inline void copy_raw_data(const string_buffer &other);
+
+  friend inline bool operator==(const string_buffer &lhs, const string_buffer &rhs);
+  friend inline bool operator!=(const string_buffer &lhs, const string_buffer &rhs);
 };
 
 string_buffer static_SB __attribute__ ((weak));
