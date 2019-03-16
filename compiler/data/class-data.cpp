@@ -165,7 +165,7 @@ bool ClassData::does_need_codegen(ClassPtr c) {
   if (!c || c->is_fully_static() || c->is_builtin()) {
     return false;
   }
-  if (c->is_lambda_class()) {
+  if (c->is_lambda()) {
     return !c->members.find_member([](const ClassMemberInstanceField &f) {
       return f.var->tinf_node.get_recalc_cnt() == -1;
     });

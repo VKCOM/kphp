@@ -120,13 +120,13 @@ class FunctionData;
 class LibData;
 class SrcFile;
 
-typedef Id<VarData> VarPtr;
-typedef Id<ClassData> ClassPtr;
-typedef Id<LambdaClassData> LambdaPtr;
-typedef Id<DefineData> DefinePtr;
-typedef Id<FunctionData> FunctionPtr;
-typedef Id<LibData> LibPtr;
-typedef Id<SrcFile> SrcFilePtr;
+using VarPtr = Id<VarData>;
+using ClassPtr = Id<ClassData>;
+using LambdaPtr = Id<LambdaClassData>;
+using DefinePtr = Id<DefineData>;
+using FunctionPtr = Id<FunctionData>;
+using LibPtr = Id<LibData>;
+using SrcFilePtr = Id<SrcFile>;
 
 bool operator<(FunctionPtr, FunctionPtr);
 bool operator<(VarPtr, VarPtr);

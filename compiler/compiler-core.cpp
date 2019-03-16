@@ -236,6 +236,7 @@ SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib,
 
 
 ClassPtr CompilerCore::get_class(vk::string_view name) {
+  kphp_assert(name[0] != '\\');
   return classes_ht.at(vk::std_hash(name))->data;
 }
 

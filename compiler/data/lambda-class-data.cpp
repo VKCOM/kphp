@@ -194,7 +194,6 @@ VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_ar
 
 
 FunctionPtr LambdaClassData::get_template_of_invoke_function() const {
-  kphp_assert(is_lambda_class());
   auto found_method = members.get_instance_method("__invoke");
 
   return (found_method && found_method->function->is_template) ? found_method->function : FunctionPtr();

@@ -31,7 +31,7 @@ public:
     return get_lambda_namespace();
   }
 
-  bool is_lambda_class() const override {
+  bool is_lambda() const override {
     return true;
   }
 

@@ -1059,7 +1059,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;
   });
 
-  if (!klass->is_lambda_class()) {
+  if (!klass->is_lambda()) {
     W << NL << "inline const char *get_class() const " << BEGIN << "return ";
     compile_string_raw(klass->name, W);
     W << ";" << NL << END << NL;

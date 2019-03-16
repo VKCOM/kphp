@@ -68,10 +68,7 @@ public:
   bool is_class() const { return class_type == ClassType::klass; }
   bool is_interface() const { return class_type == ClassType::interface; }
   bool is_trait() const { return class_type == ClassType::trait; }
-
-  virtual bool is_lambda_class() const {
-    return false;
-  }
+  virtual bool is_lambda() const { return false; }
 
   virtual bool is_fully_static() const {
     return !construct_function;
