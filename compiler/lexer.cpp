@@ -1262,7 +1262,6 @@ vector<Token> php_text_to_tokens(char *text, int text_length) {
 
   auto tokens = lexer_data.move_tokens();
   tokens.emplace_back(tok_end);
-  tokens.shrink_to_fit();
   return tokens;
 }
 
