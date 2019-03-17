@@ -895,6 +895,10 @@ static bool do_json_encode_string_php(const char *s, int len, int options) {
 
 static bool do_json_encode_string_vkext(const char *s, int len) {
   static_SB.reserve(2 * len + 2);
+  if (static_SB.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+    return false;
+  }
+
   static_SB.append_char('"');
 
   for (int pos = 0; pos < len; pos++) {
