@@ -96,6 +96,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
       size_t list_size = vertex.as<op_list>()->list().size();
       size_t tuple_size = arrayType->get_tuple_max_index();
       kphp_error (list_size <= tuple_size, format("Can't assign tuple of length %zd to list of length %zd", tuple_size, list_size));
+    } else {
+      kphp_error (arrayType->ptype() == tp_var, format("Can not compile list with '%s'", ptype_name(arrayType->ptype())));
     }
   }
   if (vertex->type() == op_index && vertex.as<op_index>()->has_key()) {
