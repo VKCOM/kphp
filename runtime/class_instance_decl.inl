@@ -23,6 +23,7 @@ class class_instance {
   void warn_on_access_null() const;
 
 public:
+  using ClassType = T;
 
   inline class_instance();
   inline class_instance(const class_instance<T> &other);
