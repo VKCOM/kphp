@@ -23,7 +23,7 @@ public:
 
 
   static const std::string &get_lambda_namespace() {
-    static std::string lambda_namespace("$L");
+    static std::string lambda_namespace("L");
     return lambda_namespace;
   }
 
