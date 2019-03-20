@@ -97,5 +97,5 @@ public:
   }
 
   bool is_builtin() const;
-  bool does_need_codegen() const;
+  static bool does_need_codegen(ClassPtr c);
 };

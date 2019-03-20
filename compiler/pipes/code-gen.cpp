@@ -3926,7 +3926,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
     }
   }
   for (const auto &c : all_classes) {
-    if (c && c->does_need_codegen()) {
+    if (ClassData::does_need_codegen(c)) {
       prepare_generate_class(c);
     }
   }
@@ -3950,7 +3950,7 @@ void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   }
 
   for (const auto &c : all_classes) {
-    if (c && c->does_need_codegen()) {
+    if (ClassData::does_need_codegen(c)) {
       W << Async(ClassDeclaration(c));
     }
   }

@@ -161,12 +161,12 @@ bool ClassData::is_builtin() const {
 // какие классы мы превращаем в С++ структуры?
 // 1. написанные в php коде не полностью статические классы (у них есть хотя бы одно поле или метод => есть конструктор)
 // 2. достижимые лямбды; достижимыми считаем те, поля которых вывелись
-bool ClassData::does_need_codegen() const {
-  if (is_fully_static() || is_builtin()) {
+bool ClassData::does_need_codegen(ClassPtr c) {
+  if (!c || c->is_fully_static() || c->is_builtin()) {
     return false;
   }
-  if (is_lambda_class()) {
-    return !members.find_member([](const ClassMemberInstanceField &f) {
+  if (c->is_lambda_class()) {
+    return !c->members.find_member([](const ClassMemberInstanceField &f) {
       return f.var->tinf_node.get_recalc_cnt() == -1;
     });
   }
