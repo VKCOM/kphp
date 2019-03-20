@@ -152,8 +152,8 @@ private:
   OptionalState value_state_{OptionalState::null_value};
 };
 
-template<class T>
-using enable_if_t_is_optional = std::enable_if_t<is_optional<std::decay_t<T>>::value>;
+template<class T, class ResT = void>
+using enable_if_t_is_optional = std::enable_if_t<is_optional<std::decay_t<T>>::value, ResT>;
 
 template<class T, class ResT = void>
 using enable_if_t_is_not_optional = std::enable_if_t<!is_optional<std::decay_t<T>>{}, ResT>;

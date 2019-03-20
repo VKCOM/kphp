@@ -134,8 +134,8 @@ public:
 
   const TypeData *const_read_at(const Key &key) const;
   const TypeData *const_read_at(const MultiKey &multi_key) const;
-  void set_lca(const TypeData *rhs, bool save_optional = true);
-  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_optional = true);
+  void set_lca(const TypeData *rhs, bool save_or_false = true, bool save_or_null = true);
+  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true, bool save_or_null = true);
   void set_lca(PrimitiveType ptype);
   void fix_inf_array();
   bool should_proxy_error_flag_to_parent() const;

@@ -66,6 +66,9 @@ void OpInfo::init_static() {
   ternaryP = curP;
   curP++;
 
+  add_binary_op(curP, tok_null_coalesce, op_null_coalesce);
+  curP++;
+
   add_binary_op(curP, tok_log_or, op_log_or);
   curP++;
 

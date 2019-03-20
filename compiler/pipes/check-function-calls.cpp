@@ -7,6 +7,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   kphp_assert(f);
   kphp_error_return(f->root, fmt_format("Function [{}] undeclared", f->get_human_readable_name()));
 
+  call->throw_flag = f->can_throw;
   if (f->modifiers.is_static()) {
     kphp_error_return(call->extra_type != op_ex_func_call_arrow,
                       fmt_format("Called static method {}() using -> (need to use ::)", f->get_human_readable_name()));
@@ -59,6 +60,16 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
 VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v, LocalT*) {
   if (v->type() == op_func_ptr || v->type() == op_func_call || v->type() == op_constructor_call) {
     check_func_call(v);
+  }
+  return v;
+}
+
+VertexPtr CheckFunctionCallsPass::on_exit_vertex(VertexPtr v, LocalT *) {
+  for (auto child : *v) {
+    if (child->throw_flag) {
+      v->throw_flag = true;
+      break;
+    }
   }
   return v;
 }

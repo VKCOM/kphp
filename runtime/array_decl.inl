@@ -119,7 +119,6 @@ private:
 
     inline array_inner *ref_copy() __attribute__ ((always_inline));
 
-    inline const T *find_value(int int_key) const;
 
     template<class ...Args>
     inline T &emplace_back_vector_value(Args &&... args) noexcept;
@@ -140,7 +139,8 @@ private:
     inline void unset_vector_value();
     inline void unset_map_value(int int_key);
 
-    inline const T *find_value(int int_key, const string &string_key) const;
+    inline const T *find_value(int int_key) const;
+    inline const T *find_value(const string &string_key, int precomuted_hash) const;
 
     inline const T &get_vector_value(int int_key) const;//unsafe
     inline T &get_vector_value(int int_key);//unsafe

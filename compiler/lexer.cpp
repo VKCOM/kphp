@@ -1122,6 +1122,7 @@ Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
   add_rule(h, "~", tok_not);
   add_rule(h, "!", tok_log_not);
   add_rule(h, "?", tok_question);
+  add_rule(h, "??", tok_null_coalesce);
 
   add_rule(h, "<<", tok_shl);
   add_rule(h, ">>", tok_shr);

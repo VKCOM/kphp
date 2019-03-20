@@ -20,12 +20,19 @@ struct RValue {
   const TypeData *type{nullptr};
   tinf::Node *node{nullptr};
   const MultiKey *key{nullptr};
-  bool drop_optional{false};
+  bool drop_or_false{false};
+  bool drop_or_null{false};
 };
 
 
 inline RValue drop_optional(RValue rvalue) {
-  rvalue.drop_optional = true;
+  rvalue.drop_or_false = true;
+  rvalue.drop_or_null = true;
+  return rvalue;
+}
+
+inline RValue drop_or_null(RValue rvalue) {
+  rvalue.drop_or_null = true;
   return rvalue;
 }
 

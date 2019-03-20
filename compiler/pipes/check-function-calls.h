@@ -15,4 +15,5 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__((unused)));
+  VertexPtr on_exit_vertex(VertexPtr v, LocalT *);
 };

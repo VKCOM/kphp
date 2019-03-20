@@ -17,6 +17,7 @@ struct CGContext {
   bool resumable_flag{false};
   bool namespace_opened{false};
   int inside_macro{0};
+  size_t inside_null_coalesce_fallback{0};
 };
 
 class CodeGenerator {

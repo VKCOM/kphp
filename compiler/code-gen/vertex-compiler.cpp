@@ -122,6 +122,65 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
   }
 }
 
+//TODO: some interface for context?
+//TODO: it's copypasted to compile_return
+void compile_throw_action(CodeGenerator &W) {
+  CGContext &context = W.get_context();
+  if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
+    const TypeData *tp = tinf::get_type(context.parent_func, -1);
+    if (context.resumable_flag) {
+      kphp_assert(!context.inside_null_coalesce_fallback);
+      if (tp->ptype() != tp_void) {
+        W << "RETURN (";
+      } else {
+        W << "RETURN_VOID (";
+      }
+    } else {
+      W << "return ";
+    }
+    if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
+      W << "{}";
+    }
+    if (context.resumable_flag) {
+      W << ")";
+    }
+  } else {
+    W << "goto " << context.catch_labels.back();
+    context.catch_label_used.back() = 1;
+  }
+}
+
+void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
+  W << BEGIN <<
+    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL;
+  compile_throw_action(W);
+  W << ";" << NL <<
+    END << NL;
+}
+
+void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
+  CGContext &context = W.get_context();
+
+  string catch_label = gen_unique_name("catch_label");
+  W << "/""*** TRY ***""/" << NL;
+  context.catch_labels.push_back(catch_label);
+  context.catch_label_used.push_back(0);
+  W << root->try_cmd() << NL;
+  context.catch_labels.pop_back();
+  bool used = context.catch_label_used.back();
+  context.catch_label_used.pop_back();
+
+  if (used) {
+    W << "/""*** CATCH ***""/" << NL <<
+      "if (0) " <<
+      BEGIN <<
+      catch_label << ":;" << NL << //TODO: Label (lable_id) ?
+      root->exception() << " = std::move(CurException);" << NL <<
+      root->catch_cmd() << NL <<
+      END << NL;
+  }
+}
+
 void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W) {
   switch (tinf::get_type(power)->ptype()) {
     case tp_int:
@@ -142,9 +201,78 @@ void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W) {
   }
 }
 
+/**
+ * Обращения к массиву по константной строке, типа $a['somekey'], хочется заменить не просто на get_value, но
+ * ещё и на этапе компиляции посчитать хеш строки, чтобы не делать этого в рантайме.
+ * Т.е. нужно проверить, что строка константная, а не $a[$var], не $a[3], не $a['a'.'b'] и т.п.
+ * @return int string_hash или 0 (если случайно хеш сам получился 0 — не страшно, просто не заинлайнится)
+ */
+inline int can_use_precomputed_hash_indexing_array(VertexPtr key) {
+  // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
+  if (auto key_var = key.try_as<op_var>()) {
+    if (key->extra_type == op_ex_var_const && key_var->var_id->init_val->type() == op_string) {
+      const std::string &string_key = key_var->var_id->init_val->get_string();
+
+      // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
+      int int_val;
+      if (php_try_to_int(string_key.c_str(), (int)string_key.size(), &int_val)) {
+        return 0;
+      }
+
+      return string_hash(string_key.c_str(), (int)string_key.size());
+    }
+  }
+
+  return 0;
+}
+
+void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &W) {
+  const TypeData *type = tinf::get_type(root);
+  auto lhs = root->lhs();
+  auto rhs = root->rhs();
+
+  // rhs is wrapped into lambda, therefore we need special call for exception throwing cases
+  if (rhs->throw_flag) {
+    W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
+  }
+  W << "null_coalesce< " << TypeName{type} << " >(";
+  if (auto index = lhs.try_as<op_index>()) {
+    kphp_assert (index->has_key());
+    W << index->array() << ", " << index->key() << ", ";
+    if (vk::any_of_equal(tinf::get_type(index->array())->get_real_ptype(), tp_array, tp_var)) {
+      if (const int precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
+        W << precomputed_hash << ", ";
+      }
+    }
+  } else {
+    W << lhs << ", ";
+  }
+
+  if (vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null)) {
+    W << rhs;
+  } else {
+    auto &context = W.get_context();
+    context.catch_labels.emplace_back();
+    ++context.inside_null_coalesce_fallback;
+    W << "[&] () -> " << TypeName{tinf::get_type(rhs)} << " " << BEGIN
+      << " return " << rhs << ";" << NL
+      << END;
+    context.catch_labels.pop_back();
+    kphp_assert(context.inside_null_coalesce_fallback > 0);
+    context.inside_null_coalesce_fallback--;
+  }
+
+  W << ")";
+  if (rhs->throw_flag) {
+    W << ", ";
+    compile_throw_action(W);
+    W << MacroEnd{};
+  }
+}
+
 void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
-  if (root->type() == op_pow) {
-    compile_power(root.as<op_pow>(), W);
+  if (auto pow_vertex = root.try_as<op_pow>()) {
+    compile_power(pow_vertex, W);
   } else {
     W << OpInfo::str(root->type());
   }
@@ -168,6 +296,11 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
     W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
+    return;
+  }
+
+  if (auto null_coalesce_vertex = root.try_as<op_null_coalesce>()) {
+    compile_null_coalesce(null_coalesce_vertex, W);
     return;
   }
 
@@ -304,66 +437,6 @@ void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
     JoinValues(*root->cond(), ", ") << "; " <<
     JoinValues(*root->post_cond(), ", ") << ") " <<
     CycleBody{root->cmd(), root->continue_label_id, root->break_label_id};
-}
-
-//TODO: some interface for context?
-//TODO: it's copypasted to compile_return
-void compile_throw_action(CodeGenerator &W) {
-  CGContext &context = W.get_context();
-  if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
-    const TypeData *tp = tinf::get_type(context.parent_func, -1);
-    if (context.resumable_flag) {
-      if (tp->ptype() != tp_void) {
-        W << "RETURN (";
-      } else {
-        W << "RETURN_VOID (";
-      }
-    } else {
-      W << "return ";
-    }
-    if (tp->ptype() != tp_void) {
-      W << "(" << TypeName(tp) << "())";
-    }
-    if (context.resumable_flag) {
-      W << ")";
-    }
-  } else {
-    W << "goto " << context.catch_labels.back();
-    context.catch_label_used.back() = 1;
-  }
-}
-
-
-void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
-  W << BEGIN <<
-    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL;
-  compile_throw_action(W);
-  W << ";" << NL <<
-    END << NL;
-}
-
-
-void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
-  CGContext &context = W.get_context();
-
-  string catch_label = gen_unique_name("catch_label");
-  W << "/""*** TRY ***""/" << NL;
-  context.catch_labels.push_back(catch_label);
-  context.catch_label_used.push_back(0);
-  W << root->try_cmd() << NL;
-  context.catch_labels.pop_back();
-  bool used = context.catch_label_used.back();
-  context.catch_label_used.pop_back();
-
-  if (used) {
-    W << "/""*** CATCH ***""/" << NL <<
-      "if (0) " <<
-      BEGIN <<
-      catch_label << ":;" << NL << //TODO: Label (lable_id) ?
-      root->exception() << " = std::move(CurException);" << NL <<
-      root->catch_cmd() << NL <<
-      END << NL;
-  }
 }
 
 enum class func_call_mode {
@@ -1046,31 +1119,6 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   }
 }
 
-/**
- * Обращения к массиву по константной строке, типа $a['somekey'], хочется заменить не просто на get_value, но
- * ещё и на этапе компиляции посчитать хеш строки, чтобы не делать этого в рантайме.
- * Т.е. нужно проверить, что строка константная, а не $a[$var], не $a[3], не $a['a'.'b'] и т.п.
- * @return int string_hash или 0 (если случайно хеш сам получился 0 — не страшно, просто не заинлайнится)
- */
-inline int can_use_precomputed_hash_indexing_array(VertexPtr key) {
-  // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
-  if (auto key_var = key.try_as<op_var>()) {
-    if (key->extra_type == op_ex_var_const && key_var->var_id->init_val->type() == op_string) {
-      const std::string &string_key = key_var->var_id->init_val->get_string();
-
-      // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
-      int int_val;
-      if (php_try_to_int(string_key.c_str(), (int)string_key.size(), &int_val)) {
-        return 0;
-      }
-
-      return string_hash(string_key.c_str(), (int)string_key.size());
-    }
-  }
-
-  return 0;
-}
-
 void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
   bool used_as_rval = root->rl_type != val_l;
   if (!used_as_rval) {
@@ -1149,7 +1197,6 @@ void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   }
   kphp_error (0, "Some problems with isset/unset");
 }
-
 
 void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   VertexPtr arr = root->array();

@@ -44,6 +44,7 @@ private:
   void recalc_arithm(VertexAdaptor<meta_op_binary> expr);
   void recalc_power(VertexAdaptor<op_pow> expr);
   void recalc_fork(VertexAdaptor<op_fork> fork);
+  void recalc_null_coalesce(VertexAdaptor<op_null_coalesce> expr);
   void recalc_expr(VertexPtr expr);
 
 public:
@@ -360,6 +361,11 @@ void ExprNodeRecalc::recalc_fork(VertexAdaptor<op_fork> fork) {
   set_lca_at(&MultiKey::any_key(1), fork->func_call());
 }
 
+void ExprNodeRecalc::recalc_null_coalesce(VertexAdaptor<op_null_coalesce> expr) {
+  set_lca(drop_or_null(as_rvalue(expr->lhs())));
+  set_lca(as_rvalue(expr->rhs()));
+}
+
 void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   VertexPtr lhs = expr->lhs();
   VertexPtr rhs = expr->rhs();
@@ -563,6 +569,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
 
     case op_seq_rval:
       set_lca(expr.as<op_seq_rval>()->back());
+      break;
+
+    case op_null_coalesce:
+      recalc_null_coalesce(expr.as<op_null_coalesce>());
       break;
 
     default:

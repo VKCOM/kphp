@@ -9,7 +9,7 @@ is_func_id_t get_ifi_id(VertexPtr v) {
   if (v->type() == op_unset) {
     return ifi_unset;
   }
-  if (v->type() == op_isset) {
+  if (vk::any_of_equal(v->type(), op_isset, op_null_coalesce)) {
     return ifi_isset;
   }
   if (v->type() == op_eq3 || v->type() == op_neq3) {

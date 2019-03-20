@@ -1283,6 +1283,18 @@
     }
   },
   {
+    "name": "op_null_coalesce",
+    "base_name": "meta_op_binary",
+    "props": {
+      "cnst": "cnst_const_func",
+      "description": "??",
+      "str": "null_coalesce",
+      "rl": "rl_op",
+      "fixity": "right_opp",
+      "type": "binary_func_op"
+    }
+  },
+  {
     "name": "op_not",
     "base_name": "meta_op_unary",
     "props": {

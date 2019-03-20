@@ -406,7 +406,7 @@ TypeData::lookup_iterator TypeData::lookup_end() const {
   return subkeys_values.end();
 }
 
-void TypeData::set_lca(const TypeData *rhs, bool save_optional) {
+void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_null) {
   if (rhs == nullptr) {
     return;
   }
@@ -431,8 +431,11 @@ void TypeData::set_lca(const TypeData *rhs, bool save_optional) {
 
   lhs->set_ptype(new_ptype);
   TypeData::flags_t new_flags = rhs->flags_;
-  if (!save_optional) {
-    new_flags &= ~(or_false_flag_e|or_null_flag_e);
+  if (!save_or_false) {
+    new_flags &= ~(or_false_flag_e);
+  }
+  if (!save_or_null) {
+    new_flags &= ~(or_null_flag_e);
   }
   new_flags |= lhs->flags_;
 
@@ -459,19 +462,19 @@ void TypeData::set_lca(const TypeData *rhs, bool save_optional) {
 
   TypeData *lhs_any_key = lhs->at_force(Key::any_key());
   TypeData *rhs_any_key = rhs->lookup_at(Key::any_key());
-  lhs_any_key->set_lca(rhs_any_key, true);
+  lhs_any_key->set_lca(rhs_any_key);
 
   if (!rhs->subkeys_values.empty()) {
     for (auto &rhs_subkey : rhs->subkeys_values) {
       Key rhs_key = rhs_subkey.first;
       TypeData *rhs_value = rhs_subkey.second;
       TypeData *lhs_value = lhs->subkeys_values.create_if_empty(rhs_key, lhs);
-      lhs_value->set_lca(rhs_value, true);
+      lhs_value->set_lca(rhs_value);
     }
   }
 }
 
-void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_optional) {
+void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null) {
   TypeData *cur = this;
   auto last = multi_key.rbegin();
   for (auto it = multi_key.begin(); it != multi_key.end(); it++) {
@@ -492,13 +495,13 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
       return;
     }
   }
-  cur->set_lca(rhs, save_optional);
+  cur->set_lca(rhs, save_or_false, save_or_null);
   for (auto it = last; it != multi_key.rend(); it++) {
     cur = cur->parent_;
     if (*it == Key::any_key()) {
       TypeData *any_value = cur->at_force(Key::any_key());
       TypeData *key_value = cur->write_at(*it);
-      any_value->set_lca(key_value, true);
+      any_value->set_lca(key_value);
     }
   }
 }
@@ -524,7 +527,7 @@ bool TypeData::should_proxy_error_flag_to_parent() const {
 }
 
 void TypeData::set_lca(PrimitiveType ptype) {
-  set_lca(TypeData::get_type(ptype), true);
+  set_lca(TypeData::get_type(ptype));
 }
 
 TLS<TypeData::generation_t> TypeData::current_generation_;

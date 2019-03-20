@@ -98,6 +98,7 @@ enum TokenType {
   tok_not,
   tok_log_not,
   tok_question,
+  tok_null_coalesce,
 
   tok_leq,
   tok_shl,

@@ -316,22 +316,6 @@ typename array<T>::array_inner *array<T>::array_inner::ref_copy() {
 }
 
 template<class T>
-const T *array<T>::array_inner::find_value(int int_key) const {
-  if (is_vector()) {
-    return static_cast<unsigned int>(int_key) < static_cast<unsigned int>(int_size) ? &get_vector_value(int_key) : nullptr;
-  }
-
-  int bucket = choose_bucket(int_key, int_buf_size);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
-    if (unlikely (++bucket == int_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  return int_entries[bucket].next != EMPTY_POINTER ? &int_entries[bucket].value : nullptr;
-}
-
-template<class T>
 template<class ...Args>
 inline T &array<T>::array_inner::emplace_back_vector_value(Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
@@ -468,15 +452,31 @@ void array<T>::array_inner::unset_map_value(int int_key) {
 }
 
 template<class T>
-const T *array<T>::array_inner::find_value(int int_key, const string &string_key) const {
+const T *array<T>::array_inner::find_value(int int_key) const {
+  if (is_vector()) {
+    return static_cast<unsigned int>(int_key) < static_cast<unsigned int>(int_size) ? &get_vector_value(int_key) : nullptr;
+  }
+
+  int bucket = choose_bucket(int_key, int_buf_size);
+  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
+    if (unlikely (++bucket == int_buf_size)) {
+      bucket = 0;
+    }
+  }
+
+  return int_entries[bucket].next != EMPTY_POINTER ? &int_entries[bucket].value : nullptr;
+}
+
+template<class T>
+const T *array<T>::array_inner::find_value(const string &string_key, int precomuted_hash) const {
   if (is_vector()) {
     return nullptr;
   }
 
   const string_hash_entry *string_entries = get_string_entries();
-  int bucket = choose_bucket(int_key, string_buf_size);
+  int bucket = choose_bucket(precomuted_hash, string_buf_size);
   while (string_entries[bucket].next != EMPTY_POINTER &&
-         (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
+         (string_entries[bucket].int_key != precomuted_hash || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == string_buf_size)) {
       bucket = 0;
     }
@@ -1667,12 +1667,12 @@ const T *array<T>::find_value(const string &string_key) const {
     return p->find_value(int_val);
   }
 
-  return p->find_value(string_key.hash(), string_key);
+  return p->find_value(string_key, string_key.hash());
 }
 
 template<class T>
 const T *array<T>::find_value(const string &string_key, int precomuted_hash) const {
-  return p->find_value(precomuted_hash, string_key);
+  return p->find_value(string_key, precomuted_hash);
 }
 
 template<class T>
@@ -1704,7 +1704,7 @@ const T *array<T>::find_value(const const_iterator &it) const {
   } else {
     auto *entry = reinterpret_cast<const string_hash_entry *>(it.entry);
     return it.self->is_string_hash_entry(entry)
-           ? p->find_value(entry->int_key, entry->string_key)
+           ? p->find_value(entry->string_key, entry->int_key)
            : p->find_value(entry->int_key);
   }
 }

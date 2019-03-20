@@ -96,9 +96,9 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
   }
 
   if (types_stack.empty()) {
-    new_type_->set_lca_at(*key, type, !rvalue.drop_optional);
+    new_type_->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null);
   } else {
-    types_stack.back()->set_lca_at(*key, type, !rvalue.drop_optional);
+    types_stack.back()->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null);
   }
 
   if (unlikely(new_type_->error_flag())) {
