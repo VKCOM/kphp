@@ -61,7 +61,7 @@ bool SrcFile::load() {
 vk::string_view SrcFile::get_line(int id) {
   id--;
   if (id < 0 || id >= (int)lines.size()) {
-    return vk::string_view(nullptr, nullptr);
+    return {nullptr, nullptr};
   }
   return lines[id];
 }
@@ -72,4 +72,8 @@ string SrcFile::get_short_name() {
     return file_name.substr(root_path.length());
   }
   return file_name;
+}
+
+bool SrcFile::is_builtin() const {
+  return file_name == G->env().get_functions();
 }

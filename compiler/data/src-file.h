@@ -28,4 +28,6 @@ public:
 
   vk::string_view get_line(int id);
   string get_short_name();
+
+  bool is_builtin() const;
 };

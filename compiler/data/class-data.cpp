@@ -157,7 +157,7 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
 }
 
 bool ClassData::is_builtin() const {
-  return file_id && file_id->file_name == G->env().get_functions();
+  return file_id && file_id->is_builtin();
 }
 
 // какие классы мы превращаем в С++ структуры?
