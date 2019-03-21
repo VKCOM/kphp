@@ -8,12 +8,13 @@
 #include "compiler/threading/hash-table.h"
 
 class SortAndInheritClassesF {
+private:
   struct wait_list {
     bool done;
     std::forward_list<ClassPtr> waiting;
   };
 
-  TSHashTable<wait_list> ht;
+  static TSHashTable<wait_list> ht;
 
   void on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream);
   void analyze_class_phpdoc(ClassPtr klass);
@@ -28,4 +29,5 @@ class SortAndInheritClassesF {
 
 public:
   void execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os);
+  static void check_on_finish();
 };

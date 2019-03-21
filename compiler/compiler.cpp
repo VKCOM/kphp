@@ -36,6 +36,7 @@
 #include "compiler/pipes/check-instance-props.h"
 #include "compiler/pipes/check-modifications-of-const-fields.h"
 #include "compiler/pipes/check-nested-foreach.h"
+#include "compiler/pipes/check-requires.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
@@ -232,7 +233,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<SplitSwitchF>{}
     >> PassC<CreateSwitchForeachVarsPass>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
-    >> sync_node_tag{}
+    >> SyncC<CheckRequires>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}

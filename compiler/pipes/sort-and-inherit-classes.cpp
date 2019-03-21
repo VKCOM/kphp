@@ -4,6 +4,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
+#include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 #include "common/algorithms/hashes.h"
 
@@ -41,6 +42,8 @@ public:
     return root;
   }
 };
+
+TSHashTable<SortAndInheritClassesF::wait_list> SortAndInheritClassesF::ht;
 
 // если все dependents класса уже обработаны, возвращает nullptr
 // если же какой-то из dependents (класс/интерфейс) ещё не обработан (его надо подождать), возвращает указатель на его
@@ -225,4 +228,10 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 
   node->data.waiting.clear();
   node->data.done = true;
+}
+void SortAndInheritClassesF::check_on_finish() {
+  for (auto c : G->get_classes()) {
+    auto node = ht.at(vk::std_hash(c->name));
+    kphp_error(node->data.done, format("class `%s` has unresolved dependencies", c->name.c_str()));
+  }
 }
