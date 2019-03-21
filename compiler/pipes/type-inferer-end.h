@@ -1,19 +1,13 @@
 #pragma once
 
 #include "compiler/pipes/function-and-cfg.h"
+#include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 
-class TypeInfererEndF {
-private:
-  DataStream<FunctionAndCFG> tmp_stream;
+class TypeInfererEndF final : public SyncPipeF<FunctionAndCFG> {
+  using Base = SyncPipeF<FunctionAndCFG>;
 public:
-  TypeInfererEndF() {
-    tmp_stream.set_sink(true);
-  }
+  TypeInfererEndF() = default;
 
-  void execute(FunctionAndCFG input, DataStream<FunctionAndCFG> &) {
-    tmp_stream << input;
-  }
-
-  void on_finish(DataStream<FunctionAndCFG> &os);
+  void on_finish(DataStream<FunctionAndCFG> &os) final;
 };

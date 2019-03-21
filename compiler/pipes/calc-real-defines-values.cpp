@@ -2,18 +2,13 @@
 
 #include "common/version-string.h"
 
-CalcRealDefinesValuesF::CalcRealDefinesValuesF() {
-  all_fun.set_sink(true);
-
+CalcRealDefinesValuesF::CalcRealDefinesValuesF() : Base() {
   auto val = VertexAdaptor<op_string>::create();
   val->set_string(G->env().get_version());
   DefineData *data = new DefineData("KPHP_COMPILER_VERSION", val, DefineData::def_const);
   G->register_define(DefinePtr(data));
 }
 
-void CalcRealDefinesValuesF::execute(FunctionPtr function, DataStream<FunctionPtr> &) {
-  all_fun << function;
-}
 
 void CalcRealDefinesValuesF::on_finish(DataStream<FunctionPtr> &os) {
   stage::set_name("Calc real defines values");
@@ -24,9 +19,7 @@ void CalcRealDefinesValuesF::on_finish(DataStream<FunctionPtr> &os) {
     process_define(define);
   }
 
-  for (const auto &fun : all_fun.get_as_vector()) {
-    os << fun;
-  }
+  Base::on_finish(os);
 }
 
 void CalcRealDefinesValuesF::process_define_recursive(VertexPtr root) {

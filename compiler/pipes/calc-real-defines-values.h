@@ -1,14 +1,14 @@
 #pragma once
 
 #include "compiler/const-manipulations.h"
+#include "compiler/pipes/sync.h"
 #include "compiler/vertex.h"
 
-class CalcRealDefinesValuesF {
+class CalcRealDefinesValuesF final : public SyncPipeF<FunctionPtr> {
 private:
+  using Base = SyncPipeF<FunctionPtr>;
   set<string*> in_progress;
   vector<string*> stack;
-
-  DataStream<FunctionPtr> all_fun;
 
   CheckConstWithDefines check_const;
   MakeConst make_const;
@@ -22,7 +22,5 @@ public:
 
   CalcRealDefinesValuesF();
 
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &os __attribute__((unused)));
-
-  void on_finish(DataStream<FunctionPtr> &os);
+  void on_finish(DataStream<FunctionPtr> &os) final;
 };

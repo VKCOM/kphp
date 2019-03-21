@@ -329,10 +329,6 @@ public:
   }
 };
 
-void CalcBadVarsF::execute(std::pair<FunctionPtr, DepData> data, DataStream<FunctionPtr> &) {
-  tmp_stream << std::move(data);
-}
-
 void CalcBadVarsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
 

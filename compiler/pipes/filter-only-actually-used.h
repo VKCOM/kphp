@@ -1,8 +1,14 @@
 #pragma once
 
 #include "compiler/pipes/calc-actual-edges.h"
+#include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/utils/idmap.h"
+
+namespace filter_detail {
+using EdgeInfo = CalcActualCallsEdgesPass::EdgeInfo;
+using FunctionAndEdges = std::pair<FunctionPtr, std::vector<EdgeInfo>>;
+}
 
 /**
  * Имеет на входе FunctionAndEdges — какая функция какие вызывает —  делает следующее:
@@ -12,17 +18,12 @@
  * 4) в os отправляет только реально достижимые (так, инстанс-функции парсятся все, но дальше пойдут только вызываемые)
  * 5) удаляет неиспользуемые методы классов
  */
-class FilterOnlyActuallyUsedFunctionsF {
+class FilterOnlyActuallyUsedFunctionsF final: public SyncPipeF<filter_detail::FunctionAndEdges, FunctionPtr> {
 public:
-  using EdgeInfo = CalcActualCallsEdgesPass::EdgeInfo;
-  using FunctionAndEdges = std::pair<FunctionPtr, std::vector<EdgeInfo>>;
-private:
-  DataStream<FunctionAndEdges> tmp_stream;
-
+  using EdgeInfo = filter_detail::EdgeInfo;
+  using FunctionAndEdges = filter_detail::FunctionAndEdges;
 public:
-  FilterOnlyActuallyUsedFunctionsF();
+  FilterOnlyActuallyUsedFunctionsF() = default;
 
-  void execute(FunctionAndEdges f, DataStream<FunctionPtr> &);
-
-  void on_finish(DataStream<FunctionPtr> &os);
+  void on_finish(DataStream<FunctionPtr> &os) final;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/pipes/sync.h"
 #include "compiler/scheduler/pipe.h"
 
 struct sync_node_tag {
@@ -55,25 +56,6 @@ private:
   Node *previous_node;
 
 private:
-  class SyncPipeF {
-    StreamT tmp_stream;
-  public:
-    using need_profiler = std::false_type;
-    using need_on_finish_profiler = std::false_type;
-    SyncPipeF() { tmp_stream.set_sink(true); }
-
-    void execute(typename StreamT::DataType input, StreamT &) { tmp_stream << input; }
-
-    void on_finish(StreamT &os) {
-      mem_info_t mem_info;
-      get_mem_stats(getpid(), &mem_info);
-
-      stage::die_if_global_errors();
-      for (auto &el : tmp_stream.get_as_vector()) {
-        os << el;
-      }
-    }
-  };
 
   static void connect(StreamT *&first_stream, StreamT *&second_stream) {
     if (first_stream != nullptr && second_stream != nullptr) {
@@ -113,7 +95,7 @@ public:
   }
 
   SC_Pipe operator>>(sync_node_tag) {
-    return *this >> sync_pipe_creator_tag<Pipe<SyncPipeF, StreamT, StreamT>, true, false>{};
+    return *this >> sync_pipe_creator_tag<Pipe<SyncPipeF<typename StreamT::DataType>, StreamT, StreamT>, true, false>{};
   }
 
   template<typename NextPipeT, bool parallel, bool unique>

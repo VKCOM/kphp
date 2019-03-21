@@ -1,12 +1,12 @@
 #pragma once
 
 #include "compiler/io.h"
+#include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 
 class CodeGenerator;
 
-class CodeGenF {
-  DataStream<FunctionPtr> tmp_stream;
+class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData*> {
   map<string, size_t> subdir_hash;
   void prepare_generate_class(ClassPtr klass);
   void prepare_generate_function(FunctionPtr func);
@@ -18,13 +18,6 @@ class CodeGenF {
   size_t calc_count_of_parts(size_t cnt_global_vars);
 
 public:
-  CodeGenF() {
-    tmp_stream.set_sink(true);
-  }
 
-  void execute(FunctionPtr input, DataStream<WriterData *> &os __attribute__((unused))) {
-    tmp_stream << input;
-  }
-
-  void on_finish(DataStream<WriterData *> &os);
+  void on_finish(DataStream<WriterData *> &os) final;
 };

@@ -154,10 +154,3 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   }
 }
 
-void FilterOnlyActuallyUsedFunctionsF::execute(FunctionAndEdges f, DataStream<FunctionPtr> &) {
-  tmp_stream << std::move(f);
-}
-
-FilterOnlyActuallyUsedFunctionsF::FilterOnlyActuallyUsedFunctionsF() {
-  tmp_stream.set_sink(true);
-}
