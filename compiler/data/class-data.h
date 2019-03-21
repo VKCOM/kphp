@@ -96,3 +96,5 @@ public:
   bool is_builtin() const;
   static bool does_need_codegen(ClassPtr c);
 };
+
+bool operator<(const ClassPtr &lhs, const ClassPtr &rhs);

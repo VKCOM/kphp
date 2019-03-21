@@ -174,3 +174,7 @@ bool ClassData::does_need_codegen(ClassPtr c) {
   }
   return true;
 }
+
+bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
+  return lhs->name < rhs->name;
+}
