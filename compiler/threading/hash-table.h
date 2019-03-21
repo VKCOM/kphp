@@ -49,6 +49,18 @@ public:
     return &nodes[i];
   }
 
+  const T *find(unsigned long long hash) {
+    int i = (unsigned)hash % (unsigned)nodes_size;
+    while (nodes[i].hash != 0 && nodes[i].hash != hash) {
+      i++;
+      if (i == nodes_size) {
+        i = 0;
+      }
+    }
+
+    return nodes[i].hash == hash ? &nodes[i].data : nullptr;
+  }
+
   std::vector<T> get_all() {
     std::vector<T> res;
     for (int i = 0; i < N; i++) {
