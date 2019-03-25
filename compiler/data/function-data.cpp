@@ -130,6 +130,35 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
   return res_params;
 }
 
+void FunctionData::calc_min_argn() {
+  auto params = get_params();
+  auto param_n = params.size();
+  bool was_default = false;
+  min_argn = param_n;
+  for (int i = 0; i < param_n; i++) {
+    auto param = params[i].as<meta_op_func_param>();
+
+    if (param->type_declaration == "callable") {
+      param->is_callable = true;
+      param->template_type_id = param_n + i;
+      param->type_declaration.clear();
+      is_template = true;
+    }
+
+    if (param->has_default_value() && param->default_value()) {
+      if (!was_default) {
+        was_default = true;
+        min_argn = i;
+      }
+      if (type == FunctionData::func_local) {
+        kphp_error (!param->var()->ref_flag, format("Default value in reference function argument [function = %s]", get_human_readable_name().c_str()));
+      }
+    } else {
+      kphp_error (!was_default, format("Default value expected [function = %s] [param_i = %d]", get_human_readable_name().c_str(), i));
+    }
+  }
+}
+
 string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;

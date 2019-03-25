@@ -138,6 +138,8 @@ public:
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
 
+  void calc_min_argn();
+
   bool is_lambda() const {
     return static_cast<bool>(function_in_which_lambda_was_created);
   }

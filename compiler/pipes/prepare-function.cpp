@@ -6,48 +6,15 @@
 #include "compiler/data/class-data.h"
 #include "compiler/phpdoc.h"
 
-static void check_template_function(FunctionPtr func) {
-  if (!func->is_template) return;
-
-  //for (auto l : func->lambdas_inside) {
-  //  const auto &prev_location = stage::get_location();
-  //  stage::set_location(l->class_id->construct_function->root->location);
-  //  kphp_error(!l->is_lambda_with_uses(), "it's not allowed lambda with uses inside template function(or another lambda)");
-  //  stage::set_location(prev_location);
-  //}
-}
-
-static void prepare_function_misc(FunctionPtr func) {
-  check_template_function(func);
-  VertexRange params = get_function_params(func->root);
-  int param_n = (int)params.size();
-  bool was_default = false;
-  func->min_argn = param_n;
-  for (int i = 0; i < param_n; i++) {
-    VertexAdaptor<meta_op_func_param> param = params[i].as<meta_op_func_param>();
-
-    if (param->type_declaration == "callable") {
-      param->is_callable = true;
-      param->template_type_id = param_n + i;
-      param->type_declaration.clear();
-      func->is_template = true;
-    }
-
-    if (param->has_default_value() && param->default_value()) {
-      if (!was_default) {
-        was_default = true;
-        func->min_argn = i;
-      }
-      if (func->type == FunctionData::func_local) {
-        kphp_error (!param->var()->ref_flag,
-                    format("Default value in reference function argument [function = %s]", func->get_human_readable_name().c_str()));
-      }
-    } else {
-      kphp_error (!was_default,
-                  format("Default value expected [function = %s] [param_i = %d]", func->get_human_readable_name().c_str(), i));
-    }
-  }
-}
+//static void check_template_function(FunctionPtr func) {
+//  if (!func->is_template) return;
+//  for (auto l : func->lambdas_inside) {
+//    const auto &prev_location = stage::get_location();
+//    stage::set_location(l->class_id->construct_function->root->location);
+//    kphp_error(!l->is_lambda_with_uses(), "it's not allowed lambda with uses inside template function(or another lambda)");
+//    stage::set_location(prev_location);
+//  }
+//}
 
 /*
  * Анализ @kphp-infer, @kphp-inline и других @kphp-* внутри phpdoc над функцией f
@@ -246,7 +213,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   kphp_assert (function);
 
   parse_and_apply_function_kphp_phpdoc(function);
-  prepare_function_misc(function);
+  function->calc_min_argn();
 
   if (stage::has_error()) {
     return;
