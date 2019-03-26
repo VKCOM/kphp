@@ -52,7 +52,7 @@ void LexerData::set_code(char *new_code, int new_code_len) {
   code_end = code + code_len;
   line_num = 0;
   new_line();
-  tokens.reserve(new_code_len * 0.3);
+  tokens.reserve(static_cast<size_t >(new_code_len * 0.3));
 }
 
 char *LexerData::get_code() {
