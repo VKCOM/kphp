@@ -61,7 +61,6 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
           data.ref_ref_edges.emplace_back(from_var, to_var);
         }
       }
-      ii++;
     }
   } else if (vertex->type() == op_func_ptr) {
     data.dep.push_back(vertex.as<op_func_ptr>()->get_func_id());

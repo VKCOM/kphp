@@ -2750,7 +2750,7 @@ bool eq2(const class_instance<T> &lhs, bool rhs) {
 }
 
 template<class T>
-bool eq2(const class_instance<T> &lhs, const class_instance<T> &rhs) {
+inline bool eq2(const class_instance<T> &lhs, const class_instance<T> &rhs) {
   php_warning("Using == on objects is bad, please use ===");
   return lhs.o == rhs.o;
 }

@@ -112,7 +112,7 @@ template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
   static array_inner empty_array = {
     REF_CNT_FOR_CONST /* ref_cnt */, -1 /* max_key */,
-    0 /* end_.next */, 0 /* end_.prev */,
+    {0 /* end_.next */, 0 /* end_.prev */},
     0 /* int_size */, 2 /* int_buf_size */,
     0 /* string_size */, -1 /* string_buf_size */,
     {} /* int_entries */
