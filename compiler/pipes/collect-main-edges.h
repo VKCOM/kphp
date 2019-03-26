@@ -59,5 +59,5 @@ public:
   VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__((unused)));
 
 
-  nullptr_t on_finish();
+  std::nullptr_t on_finish();
 };

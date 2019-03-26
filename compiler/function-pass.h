@@ -47,7 +47,7 @@ public:
     return true;
   }
 
-  nullptr_t on_finish() { return nullptr; }
+  std::nullptr_t on_finish() { return nullptr; }
 
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local __attribute__((unused))) {
     return vertex;
@@ -127,7 +127,7 @@ template<typename FunctionPassT>
 class FunctionPassTraits {
 public:
   using OnFinishReturnT = typename vk::function_traits<decltype(&FunctionPassT::on_finish)>::ResultType;
-  using IsNullPtr = std::is_same<OnFinishReturnT, nullptr_t>;
+  using IsNullPtr = std::is_same<OnFinishReturnT, std::nullptr_t>;
   using ExecuteType = typename FunctionPassT::ExecuteType;
   using OutType = typename std::conditional<
     IsNullPtr::value,

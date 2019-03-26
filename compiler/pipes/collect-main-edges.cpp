@@ -489,7 +489,7 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   }
 }
 
-nullptr_t CollectMainEdgesPass::on_finish() {
+std::nullptr_t CollectMainEdgesPass::on_finish() {
   if (!have_returns) {
     // hack to work well with functions which always throws
     create_set(as_lvalue(current_function, -1), tp_void);
