@@ -245,6 +245,10 @@ bool KphpEnviroment::get_no_pch() const {
   return no_pch_;
 }
 
+bool KphpEnviroment::get_stop_on_type_error() const {
+  return stop_on_type_error_;
+}
+
 void KphpEnviroment::add_main_file(const string &main_file) {
   main_files_.push_back(main_file);
 }
@@ -464,6 +468,10 @@ bool KphpEnviroment::init() {
     return false;
   }
 
+  std::string stop_on_type_error;
+  init_env_var(&stop_on_type_error, "KPHP_STOP_ON_TYPE_ERROR", "1");
+  env_str2bool(&stop_on_type_error_, stop_on_type_error);
+
   for (string &include : includes_) {
     as_dir(&include);
   }
@@ -560,6 +568,7 @@ void KphpEnviroment::debug() const {
             "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
             "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
+            "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
             "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<

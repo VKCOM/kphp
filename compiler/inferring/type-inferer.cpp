@@ -1,5 +1,6 @@
 #include "compiler/inferring/type-inferer.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/threading/profiler.h"
 
 namespace tinf {
@@ -40,7 +41,7 @@ void TypeInferer::add_restriction(RestrictionBase *restriction) {
 void TypeInferer::check_restrictions() {
   for (int i = 0; i < restrictions.size(); i++) {
     for (RestrictionBase *r : *restrictions.get(i)) {
-      if (r->check_broken_restriction()) {
+      if (r->check_broken_restriction() && G->env().get_stop_on_type_error()) {
         return;
       }
     }
@@ -128,5 +129,5 @@ bool TypeInferer::is_finished() {
 
 
 
-}
+} // namespace tinf
 

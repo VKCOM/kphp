@@ -37,6 +37,7 @@ private:
   int enable_profiler_{0};
   string tl_schema_file_;
   bool no_pch_{false};
+  bool stop_on_type_error_{true};
 
   string cxx_;
   string cxx_flags_;
@@ -119,6 +120,7 @@ public:
   string get_tl_schema_file() const;
   void set_no_pch();
   bool get_no_pch() const;
+  bool get_stop_on_type_error() const;
   void add_main_file(const string &main_file);
   const vector<string> &get_main_files() const;
 
