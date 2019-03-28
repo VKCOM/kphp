@@ -42,7 +42,7 @@ extern int die_on_fail;
 /** stats **/
 extern double load_time;
 //uptime
-typedef struct {
+struct acc_stats_t {
   long tot_queries;
   double worked_time;
   double net_time;
@@ -52,7 +52,7 @@ typedef struct {
   double tot_idle_percent;
   double a_idle_percent;
   int cnt;
-} acc_stats_t;
+};
 extern acc_stats_t worker_acc_stats;
 
 /** http **/
@@ -81,7 +81,7 @@ extern int rpc_stopped;
 
 /** script **/
 #define IMM_STATS_DESC_LEN 128
-typedef struct php_immediate_stats {
+struct php_immediate_stats_t {
   int is_running;
   int is_wait_net;
   double timestamp;
@@ -92,7 +92,7 @@ typedef struct php_immediate_stats {
   int port;
   long long actor_id;
   double rpc_timestamp;
-} php_immediate_stats_t;
+};
 
 
 /***

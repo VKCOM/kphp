@@ -69,11 +69,11 @@ double rpc_ping_interval = RPC_DEFAULT_PING_INTERVAL;
  ***/
 #define RESPONSE_FAIL_TIMEOUT 30.0
 
-int proxy_client_execute(struct connection *c, int op);
+int proxy_client_execute(connection *c, int op);
 
-int sqlp_authorized(struct connection *c);
-int sqlp_becomes_ready(struct connection *c);
-int sqlp_check_ready(struct connection *c);
+int sqlp_authorized(connection *c);
+int sqlp_becomes_ready(connection *c);
+int sqlp_check_ready(connection *c);
 
 mysql_client_functions db_client_outbound = [] {
   auto res = mysql_client_functions();
@@ -94,9 +94,9 @@ long long cur_request_id = -1;
   MC-client
  ***/
 
-int memcache_client_execute(struct connection *c, int op);
-int memcache_client_check_ready(struct connection *c);
-int memcache_connected(struct connection *c);
+int memcache_client_execute(connection *c, int op);
+int memcache_client_check_ready(connection *c);
+int memcache_connected(connection *c);
 
 memcache_client_functions memcache_client_outbound = [] {
   auto res = memcache_client_functions();
@@ -115,11 +115,11 @@ memcache_client_functions memcache_client_outbound = [] {
 /***
   RPC-client
  ***/
-int rpcc_execute(struct connection *c, int op, int len);
-int rpcc_send_query(struct connection *c);
-int rpcc_check_ready(struct connection *c);
-void prepare_rpc_query(struct connection *c, int *q, int qn);
-void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsize);
+int rpcc_execute(connection *c, int op, int len);
+int rpcc_send_query(connection *c);
+int rpcc_check_ready(connection *c);
+void prepare_rpc_query(connection *c, int *q, int qsize);
+void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
 
 rpc_client_functions rpc_client_outbound = [] {
   auto res = rpc_client_functions();
@@ -174,13 +174,13 @@ conn_target_t rpc_ct = [] {
 }();
 
 
-struct connection *get_target_connection(conn_target_t *S, int force_flag) {
+connection *get_target_connection(conn_target_t *S, int force_flag) {
   connection *c, *d = nullptr;
   int u = 10000;
   if (!S) {
     return nullptr;
   }
-  for (c = S->first_conn; c != (struct connection *)S; c = c->next) {
+  for (c = S->first_conn; c != (connection *)S; c = c->next) {
     int r = S->type->check_ready(c);
     if (r == cr_ok || (force_flag && r == cr_notyet)) {
       return c;
@@ -192,8 +192,8 @@ struct connection *get_target_connection(conn_target_t *S, int force_flag) {
   return d;
 }
 
-struct connection *get_target_connection_force(conn_target_t *S) {
-  struct connection *res = get_target_connection(S, 0);
+connection *get_target_connection_force(conn_target_t *S) {
+  connection *res = get_target_connection(S, 0);
 
   if (res == nullptr) {
     create_new_connections(S);
@@ -222,7 +222,7 @@ int get_target(const char *host, int port, conn_target_t *ct) {
     return -1;
   }
 
-  struct hostent *h;
+  hostent *h;
   if (!(h = kdb_gethostbyname(host)) || h->h_addrtype != AF_INET || h->h_length != 4 || !h->h_addr_list || !h->h_addr) {
     vkprintf (0, "can't resolve host\n");
     return -1;
@@ -246,9 +246,9 @@ double fix_timeout(double timeout) {
 /***
   HTTP INTERFACE
  ***/
-void http_return(struct connection *c, const char *str, int len);
+void http_return(connection *c, const char *str, int len);
 
-int delete_pending_query(struct conn_query *q) {
+int delete_pending_query(conn_query *q) {
   vkprintf (1, "delete_pending_query(%p,%p)\n", q, q->requester);
 
   delete_conn_query(q);
@@ -268,11 +268,11 @@ conn_query_functions pending_cq_func = [] {
 }();
 
 /** delayed httq queries queue **/
-struct connection pending_http_queue;
+connection pending_http_queue;
 int php_worker_run_flag;
 
 /** dummy request queue **/
-struct connection dummy_request_queue;
+connection dummy_request_queue;
 
 void on_net_event(int event_status);
 
@@ -280,20 +280,20 @@ void on_net_event(int event_status);
 /** do write delayed write to connection **/
 
 
-typedef struct {
+struct command_net_write_t {
   command_t base;
 
   unsigned char *data;
   int len;
   long long extra;
-} command_net_write_t;
+};
 
 void command_net_write_run_sql(command_t *base_command, void *data) {
   //fprintf (stderr, "command_net_write [ptr=%p]\n", base_command);
-  command_net_write_t *command = (command_net_write_t *)base_command;
+  auto command = (command_net_write_t *)base_command;
 
   assert (command->data != nullptr);
-  struct connection *d = (struct connection *)data;
+  auto d = (connection *)data;
   assert (d->status == conn_ready);
 
   /*
@@ -326,7 +326,7 @@ void command_net_write_run_sql(command_t *base_command, void *data) {
 }
 
 void command_net_write_run_rpc(command_t *base_command, void *data) {
-  command_net_write_t *command = (command_net_write_t *)base_command;
+  auto *command = (command_net_write_t *)base_command;
 //  fprintf (stderr, "command_net_write [ptr=%p] [len = %d] [data = %p]\n", base_command, command->len, data);
 
   slot_id_t slot_id = command->extra;
@@ -335,7 +335,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
     vkprintf (3, "failed to send rpc request %d\n", slot_id);
     on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to send query, timeout expired", nullptr));
   } else {
-    struct connection *d = (struct connection *)data;
+    auto d = (connection *)data;
     //assert (d->status == conn_ready);
     send_rpc_query(d, RPC_INVOKE_REQ, slot_id, (int *)command->data, command->len);
     d->last_query_sent_time = precise_now;
@@ -344,7 +344,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
 
 
 void command_net_write_free(command_t *base_command) {
-  command_net_write_t *command = (command_net_write_t *)base_command;
+  auto *command = (command_net_write_t *)base_command;
 
   if (command->data != nullptr) {
     free(command->data);
@@ -388,7 +388,7 @@ void *php_script;
 
 php_worker *active_worker = nullptr;
 
-php_worker *php_worker_create(php_worker_mode_t mode, struct connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id) {
+php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id) {
   auto worker = reinterpret_cast<php_worker *>(dl_malloc(sizeof(php_worker)));
 
   worker->data = php_query_data_create(http_data, rpc_data);
@@ -434,7 +434,7 @@ void php_worker_free(php_worker *worker) {
 }
 
 int has_pending_scripts() {
-  return php_worker_run_flag || pending_http_queue.first_query != (struct conn_query *)&pending_http_queue;
+  return php_worker_run_flag || pending_http_queue.first_query != (conn_query *)&pending_http_queue;
 }
 
 /** trying to start query **/
@@ -448,10 +448,10 @@ void php_worker_try_start(php_worker *worker) {
   if (php_worker_run_flag) { // put connection into pending_http_query
     vkprintf (2, "php script [req_id = %016llx] is waiting\n", worker->req_id);
 
-    auto pending_q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
+    auto pending_q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
 
     pending_q->custom_type = 0;
-    pending_q->outbound = (struct connection *)&pending_http_queue;
+    pending_q->outbound = (connection *)&pending_http_queue;
     assert (worker->conn != nullptr);
     pending_q->requester = worker->conn;
 
@@ -478,8 +478,8 @@ void php_worker_init_script(php_worker *worker) {
   }
 
   if (force_clear_sql_connection && sql_target_id != -1) {
-    struct connection *c, *tmp;
-    for (c = Targets[sql_target_id].first_conn; c != (struct connection *)(Targets + sql_target_id);) {
+    connection *c, *tmp;
+    for (c = Targets[sql_target_id].first_conn; c != (connection *)(Targets + sql_target_id);) {
       tmp = c->next;
       fail_connection(c, -17); // -17 for no error
       c = tmp;
@@ -557,9 +557,9 @@ void php_worker_run_query_connect(php_worker *worker __attribute__((unused)), ph
   php_script_query_answered(php_script);
 }
 
-struct conn_query *create_pnet_query(struct connection *http_conn, struct connection *mc_conn, net_ansgen_t *gen, double finish_time);
-void create_pnet_delayed_query(struct connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time);
-int pnet_query_timeout(struct conn_query *q);
+conn_query *create_pnet_query(connection *http_conn, connection *mc_conn, net_ansgen_t *gen, double finish_time);
+void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time);
+int pnet_query_timeout(conn_query *q);
 void create_delayed_send_query(conn_target_t *t, command_t *command,
                                double finish_time);
 
@@ -578,7 +578,7 @@ void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *
   mc_ansgen_t *ansgen = mc_ansgen_packet_create();
   ansgen->func->set_query_type(ansgen, query->extra_type);
 
-  net_ansgen_t *net_ansgen = (net_ansgen_t *)ansgen;
+  auto net_ansgen = (net_ansgen_t *)ansgen;
   int connection_id = query->connection_id;
 
   if (connection_id < 0 || connection_id >= MAX_TARGETS) {
@@ -597,7 +597,7 @@ void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *
 
   query_stats.port = inet_sockaddr_port(&target->endpoint);
 
-  struct connection *conn = get_target_connection_force(target);
+  connection *conn = get_target_connection_force(target);
   if (conn == nullptr) {
     net_error(net_ansgen, (php_query_base_t *)query, "Failed to establish connection [probably reconnect timeout is not expired]");
     return;
@@ -614,7 +614,7 @@ void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *
   }
 
   double timeout = fix_timeout(query->timeout) + precise_now;
-  struct conn_query *cq = create_pnet_query(worker->conn, conn, (net_ansgen_t *)ansgen, timeout);
+  conn_query *cq = create_pnet_query(worker->conn, conn, (net_ansgen_t *)ansgen, timeout);
 
   if (query->extra_type & PNETF_IMMEDIATE) {
     pnet_query_timeout(cq);
@@ -632,7 +632,7 @@ void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t 
 
   sql_ansgen_t *ansgen = sql_ansgen_packet_create();
 
-  net_ansgen_t *net_ansgen = (net_ansgen_t *)ansgen;
+  auto net_ansgen = (net_ansgen_t *)ansgen;
   if (connection_id != sql_target_id) {
     net_error(net_ansgen, (php_query_base_t *)query, "Invalid connection_id (sql connection expected)");
     return;
@@ -652,7 +652,7 @@ void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t 
 
   net_ansgen->func->set_desc(net_ansgen, qmem_pstr("[%s]", sockaddr_storage_to_string(&target->endpoint)));
 
-  struct connection *conn = get_target_connection(target, 0);
+  connection *conn = get_target_connection(target, 0);
 
   double timeout = fix_timeout(query->timeout) + precise_now;
   if (conn != nullptr && conn->status == conn_ready) {
@@ -696,7 +696,7 @@ void php_worker_run_rpc_send_query(net_query_t *query) {
     on_net_event(create_rpc_error_event(slot_id, TL_ERROR_INVALID_CONNECTION_ID, "Invalid connection_id (2)", nullptr));
     return;
   }
-  struct connection *conn = get_target_connection(target, 0);
+  connection *conn = get_target_connection(target, 0);
 
   if (conn != nullptr) {
     send_rpc_query(conn, RPC_INVOKE_REQ, slot_id, (int *)query->request, query->request_size);
@@ -708,9 +708,7 @@ void php_worker_run_rpc_send_query(net_query_t *query) {
       return;
     }
 
-    command_t *command =
-      create_command_net_writer(query->request, query->request_size,
-                                &command_net_write_rpc_base, slot_id);
+    command_t *command = create_command_net_writer(query->request, query->request_size, &command_net_write_rpc_base, slot_id);
     double timeout = fix_timeout(query->timeout_ms * 0.001) + precise_now;
     create_delayed_send_query(target, command, timeout);
   }
@@ -741,7 +739,7 @@ void php_worker_run_net_query(php_worker *worker, php_query_base_t *q_base) {
 }
 
 void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom)(const void *q, long len, unsigned crc32_complement)) {
-  assert (sizeof(int) == 4);
+  static_assert(sizeof(int) == 4, "");
   q[0] = qsize;
   assert ((qsize & 3) == 0);
   int qlen = qsize >> 2;
@@ -751,11 +749,11 @@ void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_pa
   q[qlen - 1] = (int)~crc32_partial_custom(q, q[0] - 4, 0xffffffff);
 }
 
-void prepare_rpc_query(struct connection *c, int *q, int qsize) {
+void prepare_rpc_query(connection *c, int *q, int qsize) {
   prepare_rpc_query_raw(RPCS_DATA(c)->out_packet_num++, q, qsize, RPCS_DATA(c)->custom_crc_partial);
 }
 
-void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsize) {
+void send_rpc_query(connection *c, int op, long long id, int *q, int qsize) {
   q[2] = op;
   if (id != -1) {
     *(long long *)(q + 3) = id;
@@ -771,7 +769,7 @@ void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsiz
 
 void php_worker_run_rpc_answer_query(php_worker *worker, php_query_rpc_answer *ans) {
   if (worker->mode == rpc_worker) {
-    struct connection *c = worker->conn;
+    connection *c = worker->conn;
     int *q = (int *)ans->data;
     int qsize = ans->data_len;
 
@@ -785,7 +783,7 @@ void php_worker_run_rpc_answer_query(php_worker *worker, php_query_rpc_answer *a
 int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, int max_len) {
   assert (worker != nullptr);
 
-  struct connection *c = worker->conn;
+  connection *c = worker->conn;
   double precise_now = get_utime_monotonic();
 
 //  fprintf (stderr, "Trying to load data of len [%d;%d] at %.6lf\n", min_len, max_len, precise_now - worker->start_time);
@@ -812,7 +810,7 @@ int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, i
     read += have_bytes;
   }
 
-  struct pollfd poll_fds;
+  pollfd poll_fds;
   poll_fds.fd = c->fd;
   poll_fds.events = POLLIN | POLLPRI;
 
@@ -883,7 +881,7 @@ void php_worker_http_load_post(php_worker *worker, php_query_http_load_post_t *q
 
 void php_worker_answer_query(php_worker *worker, void *ans) {
   assert (worker != nullptr && ans != nullptr);
-  php_query_base_t *q_base = (php_query_base_t *)php_script_get_query(php_script);
+  auto q_base = (php_query_base_t *)php_script_get_query(php_script);
   q_base->ans = ans;
   php_script_query_answered(php_script);
 }
@@ -947,11 +945,10 @@ void php_worker_wait(php_worker *worker, int timeout_ms) {
       worker->wakeup_time = get_utime_monotonic() + timeout_ms * 0.001;
     }
   }
-  return;
 }
 
 void php_worker_run_query(php_worker *worker) {
-  php_query_base_t *q_base = (php_query_base_t *)php_script_get_query(php_script);
+  auto q_base = (php_query_base_t *)php_script_get_query(php_script);
 
   qmem_free_ptrs();
 
@@ -991,7 +988,7 @@ void php_worker_run_query(php_worker *worker) {
 extern int rpc_stored;
 
 void rpc_error(php_worker *worker, int code, const char *str) {
-  struct connection *c = worker->conn;
+  connection *c = worker->conn;
   //fprintf (stderr, "RPC ERROR %s\n", str);
   static int q[10000];
   q[1] = RPCS_DATA(c)->out_packet_num++;
@@ -1173,9 +1170,9 @@ void php_worker_free_script(php_worker *worker) {
     vkprintf (1, "ATTENTION php script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, worker->req_id);
   }
 
-  while (pending_http_queue.first_query != (struct conn_query *)&pending_http_queue && !f) {
+  while (pending_http_queue.first_query != (conn_query *)&pending_http_queue && !f) {
     //TODO: is it correct to do it?
-    struct conn_query *q = pending_http_queue.first_query;
+    conn_query *q = pending_http_queue.first_query;
     f = q->requester != nullptr && q->requester->generation == q->req_generation;
     delete_pending_query(q);
   }
@@ -1251,8 +1248,8 @@ double php_worker_main(php_worker *worker) {
 }
 
 
-int hts_php_wakeup(struct connection *c);
-int hts_php_alarm(struct connection *c);
+int hts_php_wakeup(connection *c);
+int hts_php_alarm(connection *c);
 
 conn_type_t ct_php_engine_http_server = [] {
   auto res = conn_type_t();
@@ -1274,7 +1271,7 @@ conn_type_t ct_php_engine_http_server = [] {
   return res;
 }();
 
-int hts_php_wakeup(struct connection *c) {
+int hts_php_wakeup(connection *c) {
   if (c->status == conn_wait_net || c->status == conn_wait_aio) {
     c->status = conn_expect_query;
     HTS_FUNC(c)->ht_wakeup(c);
@@ -1287,7 +1284,7 @@ int hts_php_wakeup(struct connection *c) {
   return 0;
 }
 
-int hts_php_alarm(struct connection *c) {
+int hts_php_alarm(connection *c) {
   HTS_FUNC(c)->ht_alarm(c);
   if (c->Out.total_bytes > 0) {
     c->flags |= C_WANTWR;
@@ -1298,9 +1295,9 @@ int hts_php_alarm(struct connection *c) {
 }
 
 
-int hts_func_wakeup(struct connection *c);
-int hts_func_execute(struct connection *c, int op);
-int hts_func_close(struct connection *c, int who);
+int hts_func_wakeup(connection *c);
+int hts_func_execute(connection *c, int op);
+int hts_func_close(connection *c, int who);
 
 http_server_functions http_methods = [] {
   auto res = http_server_functions();
@@ -1323,9 +1320,9 @@ static char no_cache_headers[] =
 
 //static char http_body_buffer[HTTP_RESULT_SIZE], *http_w;
 //#define http_w_end  (http_body_buffer + HTTP_RESULT_SIZE - 16384)
-//void http_return (struct connection *c, const char *str, int len);
+//void http_return (connection *c, const char *str, int len);
 
-void http_return(struct connection *c, const char *str, int len) {
+void http_return(connection *c, const char *str, int len) {
   if (len < 0) {
     len = (int)strlen(str);
   }
@@ -1335,7 +1332,7 @@ void http_return(struct connection *c, const char *str, int len) {
 
 #define MAX_POST_SIZE (1 << 18)
 
-void hts_my_func_finish(struct connection *c __attribute__((unused))) {
+void hts_my_func_finish(connection *c __attribute__((unused))) {
 /*  c->status = conn_expect_query;
   clear_connection_timeout (c);
 
@@ -1360,8 +1357,8 @@ void hts_stop() {
   hts_stopped = 1;
 }
 
-void hts_at_query_end(struct connection *c, int check_keep_alive) {
-  struct hts_data *D = HTS_DATA (c);
+void hts_at_query_end(connection *c, int check_keep_alive) {
+  hts_data *D = HTS_DATA (c);
 
   clear_connection_timeout(c);
   c->generation = ++conn_generation;
@@ -1376,8 +1373,8 @@ void hts_at_query_end(struct connection *c, int check_keep_alive) {
   assert (c->status != conn_wait_net);
 }
 
-int do_hts_func_wakeup(struct connection *c, int flag) {
-  struct hts_data *D = HTS_DATA(c);
+int do_hts_func_wakeup(connection *c, int flag) {
+  hts_data *D = HTS_DATA(c);
 
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
@@ -1394,8 +1391,8 @@ int do_hts_func_wakeup(struct connection *c, int flag) {
   return 0;
 }
 
-int hts_func_execute(struct connection *c, int op) {
-  struct hts_data *D = HTS_DATA(c);
+int hts_func_execute(connection *c, int op) {
+  hts_data *D = HTS_DATA(c);
   static char ReqHdr[MAX_HTTP_HEADER_SIZE];
   static char Post[MAX_POST_SIZE];
 
@@ -1482,12 +1479,12 @@ int hts_func_execute(struct connection *c, int op) {
   return do_hts_func_wakeup(c, 0);
 }
 
-int hts_func_wakeup(struct connection *c) {
+int hts_func_wakeup(connection *c) {
   return do_hts_func_wakeup(c, 1);
 }
 
-int hts_func_close(struct connection *c, int who __attribute__((unused))) {
-  struct hts_data *D = HTS_DATA(c);
+int hts_func_close(connection *c, int who __attribute__((unused))) {
+  hts_data *D = HTS_DATA(c);
 
   auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
@@ -1502,13 +1499,13 @@ int hts_func_close(struct connection *c, int who __attribute__((unused))) {
 /***
   RPC INTERFACE
  ***/
-int rpcs_php_wakeup(struct connection *c);
-int rpcs_php_alarm(struct connection *c);
-int rpcs_php_close_connection(struct connection *c, int who);
+int rpcs_php_wakeup(connection *c);
+int rpcs_php_alarm(connection *c);
+int rpcs_php_close_connection(connection *c, int who);
 
-int rpcc_php_wakeup(struct connection *c);
-int rpcc_php_alarm(struct connection *c);
-int rpcc_php_close_connection(struct connection *c, int who);
+int rpcc_php_wakeup(connection *c);
+int rpcc_php_alarm(connection *c);
+int rpcc_php_close_connection(connection *c, int who);
 
 conn_type_t ct_php_engine_rpc_server = [] {
   auto res = conn_type_t();
@@ -1561,7 +1558,7 @@ conn_type_t ct_php_rpc_client = [] {
   return res;
 }();
 
-int rpcs_php_wakeup(struct connection *c) {
+int rpcs_php_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
     RPCS_FUNC(c)->rpc_wakeup(c);
@@ -1574,7 +1571,7 @@ int rpcs_php_wakeup(struct connection *c) {
   return 0;
 }
 
-int rpcs_php_close_connection(struct connection *c, int who) {
+int rpcs_php_close_connection(connection *c, int who) {
   if (RPCS_FUNC(c)->rpc_close != nullptr) {
     RPCS_FUNC(c)->rpc_close(c, who);
   }
@@ -1583,7 +1580,7 @@ int rpcs_php_close_connection(struct connection *c, int who) {
 }
 
 
-int rpcc_php_wakeup(struct connection *c) {
+int rpcc_php_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
     RPCC_FUNC(c)->rpc_wakeup(c);
@@ -1596,7 +1593,7 @@ int rpcc_php_wakeup(struct connection *c) {
   return 0;
 }
 
-int rpcc_php_close_connection(struct connection *c, int who) {
+int rpcc_php_close_connection(connection *c, int who) {
   if (RPCC_FUNC(c)->rpc_close != nullptr) {
     RPCC_FUNC(c)->rpc_close(c, who);
   }
@@ -1604,11 +1601,11 @@ int rpcc_php_close_connection(struct connection *c, int who) {
   return client_close_connection(c, who);
 }
 
-int rpcx_execute(struct connection *c, int op, int len);
-int rpcx_func_wakeup(struct connection *c);
-int rpcx_func_close(struct connection *c, int who);
+int rpcx_execute(connection *c, int op, int len);
+int rpcx_func_wakeup(connection *c);
+int rpcx_func_close(connection *c, int who);
 
-int rpcc_func_ready(struct connection *c);
+int rpcc_func_ready(connection *c);
 
 rpc_server_functions rpc_methods = [] {
   auto res = rpc_server_functions();
@@ -1653,9 +1650,7 @@ conn_target_t rpc_client_ct = [] {
 }();
 
 
-void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsize);
-
-int rpcc_func_ready(struct connection *c) {
+int rpcc_func_ready(connection *c) {
   c->last_query_sent_time = precise_now;
   c->last_response_time = precise_now;
 
@@ -1674,8 +1669,8 @@ void rpcc_stop() {
   sigterm_time = precise_now + SIGTERM_WAIT_TIMEOUT;
 }
 
-void rpcx_at_query_end(struct connection *c) {
-  struct rpcs_data *D = RPCS_DATA(c);
+void rpcx_at_query_end(connection *c) {
+  rpcs_data *D = RPCS_DATA(c);
 
   clear_connection_timeout(c);
   c->generation = ++conn_generation;
@@ -1690,8 +1685,8 @@ void rpcx_at_query_end(struct connection *c) {
   assert (c->status != conn_wait_net);
 }
 
-int rpcx_func_wakeup(struct connection *c) {
-  struct rpcs_data *D = RPCS_DATA(c);
+int rpcx_func_wakeup(connection *c) {
+  rpcs_data *D = RPCS_DATA(c);
 
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
@@ -1708,8 +1703,8 @@ int rpcx_func_wakeup(struct connection *c) {
   return 0;
 }
 
-int rpcx_func_close(struct connection *c, int who __attribute__((unused))) {
-  struct rpcs_data *D = RPCS_DATA(c);
+int rpcx_func_close(connection *c, int who __attribute__((unused))) {
+  rpcs_data *D = RPCS_DATA(c);
 
   auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
@@ -1728,8 +1723,8 @@ int rpcx_func_close(struct connection *c, int who __attribute__((unused))) {
 }
 
 
-int rpcx_execute(struct connection *c, int op, int len) {
-  struct rpcs_data *D = RPCS_DATA(c);
+int rpcx_execute(connection *c, int op, int len) {
+  rpcs_data *D = RPCS_DATA(c);
 
   vkprintf (1, "rpcs_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
 
@@ -1766,7 +1761,7 @@ int rpcx_execute(struct connection *c, int op, int len) {
         if (len < 4) {
           return 0;
         }
-        assert (sizeof(xpid) == 12);
+        static_assert(sizeof(xpid) == 12, "");
         xpid = *(process_id_t *)v;
         v += 3;
         len -= 3;
@@ -1805,8 +1800,8 @@ int rpcx_execute(struct connection *c, int op, int len) {
   Common query function
  ***/
 
-void pnet_query_answer(struct conn_query *q) {
-  struct connection *req = q->requester;
+void pnet_query_answer(conn_query *q) {
+  connection *req = q->requester;
   if (req != nullptr && req->generation == q->req_generation) {
     void *extra = nullptr;
     if (req->type == &ct_php_engine_rpc_server) {
@@ -1822,8 +1817,8 @@ void pnet_query_answer(struct conn_query *q) {
   }
 }
 
-void pnet_query_delete(struct conn_query *q) {
-  net_ansgen_t *ansgen = (net_ansgen_t *)q->extra;
+void pnet_query_delete(conn_query *q) {
+  auto ansgen = (net_ansgen_t *)q->extra;
 
   ansgen->func->free(ansgen);
   q->extra = nullptr;
@@ -1832,8 +1827,8 @@ void pnet_query_delete(struct conn_query *q) {
   zfree(q, sizeof(*q));
 }
 
-int pnet_query_timeout(struct conn_query *q) {
-  net_ansgen_t *net_ansgen = (net_ansgen_t *)q->extra;
+int pnet_query_timeout(conn_query *q) {
+  auto net_ansgen = (net_ansgen_t *)q->extra;
   net_ansgen->func->timeout(net_ansgen);
 
   pnet_query_answer(q);
@@ -1843,8 +1838,8 @@ int pnet_query_timeout(struct conn_query *q) {
   return 0;
 }
 
-int pnet_query_term(struct conn_query *q) {
-  net_ansgen_t *net_ansgen = (net_ansgen_t *)q->extra;
+int pnet_query_term(conn_query *q) {
+  auto net_ansgen = (net_ansgen_t *)q->extra;
   net_ansgen->func->error(net_ansgen, "Connection closed by server");
 
   pnet_query_answer(q);
@@ -1853,8 +1848,8 @@ int pnet_query_term(struct conn_query *q) {
   return 0;
 }
 
-int pnet_query_check(struct conn_query *q) {
-  net_ansgen_t *net_ansgen = (net_ansgen_t *)q->extra;
+int pnet_query_check(conn_query *q) {
+  auto net_ansgen = (net_ansgen_t *)q->extra;
 
   ansgen_state_t state = net_ansgen->state;
   switch (state) {
@@ -1871,8 +1866,8 @@ int pnet_query_check(struct conn_query *q) {
   return state == st_ansgen_error;
 }
 
-int delayed_send_term(struct conn_query *q) {
-  command_t *command = (command_t *)q->extra;
+int delayed_send_term(conn_query *q) {
+  auto command = (command_t *)q->extra;
 
   if (command != nullptr) {
     command->run(command, nullptr);
@@ -1891,10 +1886,10 @@ int delayed_send_term(struct conn_query *q) {
 
 void data_read_conn(data_reader_t *reader, void *dest) {
   reader->readed = 1;
-  read_in(&((struct connection *)(reader->extra))->In, dest, reader->len);
+  read_in(&((connection *)(reader->extra))->In, dest, reader->len);
 }
 
-data_reader_t *create_data_reader(struct connection *c, int data_len) {
+data_reader_t *create_data_reader(connection *c, int data_len) {
   static data_reader_t reader;
 
   reader.readed = 0;
@@ -1906,46 +1901,44 @@ data_reader_t *create_data_reader(struct connection *c, int data_len) {
   return &reader;
 }
 
-int mc_query_value(struct conn_query *q, data_reader_t *reader) {
-  mc_ansgen_t *ansgen = (mc_ansgen_t *)q->extra;
+int mc_query_value(conn_query *q, data_reader_t *reader) {
+  auto ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->value(ansgen, reader);
 
   int err = pnet_query_check(q);
   return err;
 }
 
-int mc_query_other(struct conn_query *q, data_reader_t *reader) {
-  mc_ansgen_t *ansgen = (mc_ansgen_t *)q->extra;
+int mc_query_other(conn_query *q, data_reader_t *reader) {
+  auto ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->other(ansgen, reader);
 
-  int err = pnet_query_check(q);
-  return err;
+  return pnet_query_check(q);
 }
 
-int mc_query_version(struct conn_query *q, data_reader_t *reader) {
-  mc_ansgen_t *ansgen = (mc_ansgen_t *)q->extra;
+int mc_query_version(conn_query *q, data_reader_t *reader) {
+  auto ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->version(ansgen, reader);
 
-  int err = pnet_query_check(q);
-  return err;
+  return pnet_query_check(q);
 }
 
-int mc_query_end(struct conn_query *q) {
-  mc_ansgen_t *ansgen = (mc_ansgen_t *)q->extra;
+int mc_query_end(conn_query *q) {
+  auto ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->end(ansgen);
 
   return pnet_query_check(q);
 }
 
-int mc_query_xstored(struct conn_query *q, int is_stored) {
-  mc_ansgen_t *ansgen = (mc_ansgen_t *)q->extra;
+int mc_query_xstored(conn_query *q, int is_stored) {
+  auto ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->xstored(ansgen, is_stored);
 
   return pnet_query_check(q);
 }
 
-int mc_query_error(struct conn_query *q) {
-  net_ansgen_t *ansgen = (net_ansgen_t *)q->extra;
+int mc_query_error(conn_query *q) {
+  auto ansgen = (net_ansgen_t *)q->extra;
   ansgen->func->error(ansgen, "some protocol error");
 
   return pnet_query_check(q);
@@ -1984,7 +1977,7 @@ conn_query_functions delayed_send_cq_func = [] {
 }();
 
 
-int memcache_client_check_ready(struct connection *c) {
+int memcache_client_check_ready(connection *c) {
   if (c->status == conn_connecting) {
     return c->ready = cr_ok;
   }
@@ -1999,7 +1992,7 @@ int memcache_client_check_ready(struct connection *c) {
   return c->ready = cr_ok;
 }
 
-int memcache_connected(struct connection *c) {
+int memcache_connected(connection *c) {
   if (c->Tmp != nullptr) {
     int query_len = get_total_ready_bytes(c->Tmp);
     copy_through(&c->Out, c->Tmp, query_len);
@@ -2008,8 +2001,8 @@ int memcache_connected(struct connection *c) {
   return 0;
 }
 
-int memcache_client_execute(struct connection *c, int op) {
-  struct mcc_data *D = MCC_DATA(c);
+int memcache_client_execute(connection *c, int op) {
+  mcc_data *D = MCC_DATA(c);
   int len, x = 0;
   char *ptr;
 
@@ -2019,8 +2012,8 @@ int memcache_client_execute(struct connection *c, int op) {
     return SKIP_ALL_BYTES;
   }
 
-  struct conn_query *cur_query = nullptr;
-  if (c->first_query == (struct conn_query *)c) {
+  conn_query *cur_query = nullptr;
+  if (c->first_query == (conn_query *)c) {
     if (op != mcrt_VERSION) {
       vkprintf (-1, "response received for empty query list? op=%d\n", op);
       if (verbosity > -2) {
@@ -2111,7 +2104,7 @@ int memcache_client_execute(struct connection *c, int op) {
       //errors_received++;
       /*if (verbosity > -2 && errors_received < 32) {
         dump_connection_buffers (c);
-        if (c->first_query != (struct conn_query *) c && c->first_query->req_generation == c->first_query->requester->generation) {
+        if (c->first_query != (conn_query *) c && c->first_query->req_generation == c->first_query->requester->generation) {
           dump_connection_buffers (c->first_query->requester);
         }
       }*/
@@ -2152,7 +2145,6 @@ int memcache_client_execute(struct connection *c, int op) {
 
     default:
       assert ("unknown state" && 0);
-      x = 0;
   }
 
   assert ("unreachable position" && 0);
@@ -2163,22 +2155,22 @@ int memcache_client_execute(struct connection *c, int op) {
 /***
   DB CLIENT
  ***/
-int sql_query_packet(struct conn_query *q, data_reader_t *reader) {
-  sql_ansgen_t *ansgen = (sql_ansgen_t *)q->extra;
+int sql_query_packet(conn_query *q, data_reader_t *reader) {
+  auto ansgen = (sql_ansgen_t *)q->extra;
   ansgen->func->packet(ansgen, reader);
 
   return pnet_query_check(q);
 }
 
-int sql_query_done(struct conn_query *q) {
-  sql_ansgen_t *ansgen = (sql_ansgen_t *)q->extra;
+int sql_query_done(conn_query *q) {
+  auto ansgen = (sql_ansgen_t *)q->extra;
   ansgen->func->done(ansgen);
 
   return pnet_query_check(q);
 }
 
-void create_pnet_delayed_query(struct connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
+void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = nullptr;
@@ -2190,12 +2182,12 @@ void create_pnet_delayed_query(struct connection *http_conn, conn_target_t *t, n
   q->cq_type = &pnet_delayed_cq_func;
   q->timer.wakeup_time = finish_time;
 
-  insert_conn_query_into_list(q, (struct conn_query *)t);
+  insert_conn_query_into_list(q, (conn_query *)t);
 }
 
 void create_delayed_send_query(conn_target_t *t, command_t *command,
                                double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->start_time = precise_now;
@@ -2207,13 +2199,11 @@ void create_delayed_send_query(conn_target_t *t, command_t *command,
   q->cq_type = &delayed_send_cq_func;
   q->timer.wakeup_time = finish_time;
 
-  insert_conn_query_into_list(q, (struct conn_query *)t);
-
-  return;
+  insert_conn_query_into_list(q, (conn_query *)t);
 }
 
-struct conn_query *create_pnet_query(struct connection *http_conn, struct connection *conn, net_ansgen_t *gen, double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
+conn_query *create_pnet_query(connection *http_conn, connection *conn, net_ansgen_t *gen, double finish_time) {
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = conn;
@@ -2230,24 +2220,24 @@ struct conn_query *create_pnet_query(struct connection *http_conn, struct connec
   return q;
 }
 
-int sqlp_becomes_ready(struct connection *c) {
-  struct conn_query *q;
+int sqlp_becomes_ready(connection *c) {
+  conn_query *q;
 
 
-  while (c->target->first_query != (struct conn_query *)(c->target)) {
+  while (c->target->first_query != (conn_query *)(c->target)) {
     q = c->target->first_query;
     //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
     if (q->requester != nullptr && q->requester->generation == q->req_generation) {
       q->requester->queries_ok++;
       //waiting_queries--;
 
-      net_ansgen_t *net_ansgen = (net_ansgen_t *)q->extra;
+      auto net_ansgen = (net_ansgen_t *)q->extra;
       create_pnet_query(q->requester, c, net_ansgen, q->timer.wakeup_time);
 
       delete_conn_query(q);
       zfree(q, sizeof(*q));
 
-      sql_ansgen_t *ansgen = (sql_ansgen_t *)net_ansgen;
+      auto ansgen = (sql_ansgen_t *)net_ansgen;
       ansgen->func->ready(ansgen, c);
       break;
     } else {
@@ -2258,7 +2248,7 @@ int sqlp_becomes_ready(struct connection *c) {
   return 0;
 }
 
-int sqlp_check_ready(struct connection *c) {
+int sqlp_check_ready(connection *c) {
   if (c->status == conn_ready && c->In.total_bytes > 0) {
     vkprintf (-1, "have %d bytes in outbound sql connection %d in state ready, closing connection\n", c->In.total_bytes, c->fd);
     c->status = conn_error;
@@ -2285,7 +2275,7 @@ int sqlp_check_ready(struct connection *c) {
 }
 
 
-int sqlp_authorized(struct connection *c) {
+int sqlp_authorized(connection *c) {
   nbw_iterator_t it;
   unsigned temp = 0x00000000;
   int len = 0;
@@ -2316,11 +2306,11 @@ int sqlp_authorized(struct connection *c) {
   return 0;
 }
 
-int stop_forwarding_response(struct connection *c __attribute__((unused))) {
+int stop_forwarding_response(connection *c __attribute__((unused))) {
   //TODO: stop forwarding if requester is dead
   return 0;
 
-/*  struct connection *d = c->first_query->requester;
+/*  connection *d = c->first_query->requester;
   assert (d);
   if (d->generation != c->first_query->req_generation || d->Out.total_bytes + d->Out.unprocessed_bytes <= FORWARD_HIGH_WATERMARK) {
     return 0;
@@ -2336,8 +2326,8 @@ int stop_forwarding_response(struct connection *c __attribute__((unused))) {
   return 1;*/
 }
 
-int proxy_client_execute(struct connection *c, int op) {
-  struct sqlc_data *D = SQLC_DATA(c);
+int proxy_client_execute(connection *c, int op) {
+  sqlc_data *D = SQLC_DATA(c);
   static char buffer[8];
   int b_len, field_cnt = -1;
   nb_iterator_t it;
@@ -2351,7 +2341,7 @@ int proxy_client_execute(struct connection *c, int op) {
 
   vkprintf (1, "proxy_db_client: op=%d, packet_len=%d, response_state=%d, field_num=%d\n", op, D->packet_len, D->response_state, field_cnt);
 
-  if (c->first_query == (struct conn_query *)c) {
+  if (c->first_query == (conn_query *)c) {
     vkprintf (-1, "response received for empty query list? op=%d\n", op);
     return SKIP_ALL_BYTES;
   }
@@ -2456,7 +2446,7 @@ int proxy_client_execute(struct connection *c, int op) {
 /***
   RCP CLIENT
  ***/
-int rpcc_check_ready(struct connection *c) {
+int rpcc_check_ready(connection *c) {
   /*assert (c->status != conn_none);*/
   /*if (c->status == conn_none || c->status == conn_connecting || RPCC_DATA(c)->in_packet_num < 0) {*/
   /*return c->ready = cr_notyet;*/
@@ -2534,22 +2524,22 @@ int rpcc_check_ready(struct connection *c) {
   return c->ready = cr_failed;
 }
 
-int rpcc_send_query(struct connection *c) {
+int rpcc_send_query(connection *c) {
   //rpcc_ready
   c->last_query_sent_time = precise_now;
   c->last_response_time = precise_now;
 
-  struct conn_query *q;
+  conn_query *q;
   dl_assert (c != nullptr, "...");
   dl_assert (c->target != nullptr, "...");
 
-  while (c->target->first_query != (struct conn_query *)(c->target)) {
+  while (c->target->first_query != (conn_query *)(c->target)) {
     q = c->target->first_query;
     dl_assert (q != nullptr, "...");
 //    dl_assert (q->requester != nullptr, "...");
 //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
 
-    command_t *command = (command_t *)q->extra;
+    auto command = (command_t *)q->extra;
     command->run(command, c);
     command->free(command);
     q->extra = nullptr;
@@ -2559,7 +2549,7 @@ int rpcc_send_query(struct connection *c) {
   return 0;
 }
 
-int rpcc_execute(struct connection *c, int op, int len) {
+int rpcc_execute(connection *c, int op, int len) {
   vkprintf (1, "rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
 
   int head[5];
@@ -2775,7 +2765,6 @@ int try_get_http_fd() {
 }
 
 void start_server() {
-  int i;
   int prev_time;
   double next_create_outbound = 0;
 
@@ -2799,11 +2788,6 @@ void start_server() {
     if (rpc_port != -1) {
       vkprintf (-1, "rpc_port is ignored in master mode\n");
       rpc_port = -1;
-    }
-
-    if (0 && http_port != -1) {
-      vkprintf (-1, "http_port is ignored in master mode\n");
-      http_port = -1;
     }
   }
 
@@ -2895,8 +2879,7 @@ void start_server() {
     int q[6];
     int qsize = 6 * sizeof(int);
     q[2] = RPC_INVOKE_REQ;
-    int i;
-    for (i = 0; i < run_once_count; i++) {
+    for (int i = 0; i < run_once_count; i++) {
       prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
       assert (write(write_fd, q, (size_t)qsize) == qsize);
     }
@@ -2918,7 +2901,7 @@ void start_server() {
   dl_allow_all_signals();
 
   vkprintf (1, "Server started\n");
-  for (i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
+  for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
     if (verbosity > 0 && !(i & 255)) {
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
@@ -2963,7 +2946,7 @@ void start_server() {
     }
 
     if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag &&
-        pending_http_queue.first_query == (struct conn_query *)&pending_http_queue) {
+        pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
       vkprintf (1, "Quitting because of sigterm\n");
       break;
     }
@@ -2994,10 +2977,10 @@ void init_all() {
   srand48((long)cycleclock_now());
 
   //init pending_http_queue
-  pending_http_queue.first_query = pending_http_queue.last_query = (struct conn_query *)&pending_http_queue;
+  pending_http_queue.first_query = pending_http_queue.last_query = (conn_query *)&pending_http_queue;
   php_worker_run_flag = 0;
 
-  dummy_request_queue.first_query = dummy_request_queue.last_query = (struct conn_query *)&dummy_request_queue;
+  dummy_request_queue.first_query = dummy_request_queue.last_query = (conn_query *)&dummy_request_queue;
 
   if (script_timeout == 0) {
     script_timeout = run_once ? 1e9 : DEFAULT_SCRIPT_TIMEOUT;

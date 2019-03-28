@@ -1,5 +1,6 @@
 #include "PHP/php-lease.h"
 
+#include "common/options.h"
 #include "common/precise-time.h"
 #include "common/rpc-const.h"
 #include "net/net-connections.h"
@@ -7,14 +8,14 @@
 
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-engine.h"
+#include "PHP/php-ready.h"
 #include "PHP/php-worker.h"
 
-int rpc_client_target = -1;
-int rpc_main_target = -1;
+static int rpc_main_target = -1;
 
 static int cur_lease_target_ip = -1;
 static int cur_lease_target_port = -1;
-static conn_target_t *cur_lease_target_ct = NULL;
+static conn_target_t *cur_lease_target_ct = nullptr;
 static int cur_lease_target = -1;
 
 static int rpc_lease_target = -1;
@@ -26,14 +27,15 @@ static double lease_stats_time;
 static long long lease_stats_cnt;
 static int ready_cnt = 0;
 
-typedef enum {
-  lst_off,
-  lst_start,
-  lst_on,
-  lst_finish
-} lease_state_t;
+enum lease_state_t {
+  lst_off,            // connect to rpc-proxy, wait kphp.startLease from it, connect to target
+  lst_start,          // if !has_pending_scripts -> change state to lst_on, wait for connection to target ready, do lease_set_ready() && run_rpc_lease();
+  lst_on,             // connecting to target, send RPC_READY, doing work, if too much time doing work -> change state to lst_finish
+  lst_finish          // wait finishing current task, send RPC_STOP to target, send TL_KPHP_LEASE_STATS to rpc-proxy, change state to lst_off
+};
+
 static lease_state_t lease_state = lst_off;
-static int lease_ready_flag = 0;
+static int lease_ready_flag = 0; // waiting for something -> equal 0
 
 
 static int get_lease_target_by_pid(int ip, int port, conn_target_t *ct) {
@@ -67,7 +69,7 @@ void lease_on_worker_finish(php_worker *worker) {
   }
 }
 
-static void rpc_send_stopped(struct connection *c) {
+static void rpc_send_stopped(connection *c) {
   int q[100], qn = 0;
   qn += 2;
   q[qn++] = -1;
@@ -78,15 +80,15 @@ static void rpc_send_stopped(struct connection *c) {
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
-  send_rpc_query(c, RPC_STOP_READY, -1, q, qn * 4);
+  send_rpc_query(c, TL_KPHP_STOP_READY, -1, q, qn * 4);
 }
 
-static void rpc_send_lease_stats(struct connection *c) {
+static void rpc_send_lease_stats(connection *c) {
   int q[100], qn = 0;
   qn += 2;
   q[qn++] = -1;
   *(process_id_t *)(q + qn) = lease_pid;
-  assert(sizeof(lease_pid) == 12);
+  static_assert(sizeof(lease_pid) == 12, "");
   qn += 3;
   *(double *)(q + qn) = precise_now - lease_stats_start_time;
   qn += 2;
@@ -98,10 +100,16 @@ static void rpc_send_lease_stats(struct connection *c) {
   send_rpc_query(c, TL_KPHP_LEASE_STATS, -1, q, qn * 4);
 }
 
+static int is_staging;
+FLAG_OPTION_PARSER(OPT_ENGINE_CUSTOM, "staging", is_staging, "kphp sends this info to tasks if running as worker");
 
-static void rpc_send_ready(struct connection *c) {
+static void rpc_send_ready(connection *c) {
   int q[100], qn = 0;
   qn += 2;
+  bool use_ready_v2 = (is_staging != 0);
+  if (use_ready_v2) {
+    q[qn++] = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;
+  }
   q[qn++] = -1;
   q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
   q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
@@ -110,7 +118,7 @@ static void rpc_send_ready(struct connection *c) {
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
-  send_rpc_query(c, RPC_READY, -1, q, qn * 4);
+  send_rpc_query(c, use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY, -1, q, qn * 4);
 }
 
 
@@ -119,8 +127,8 @@ static int rpct_ready(int target_fd) {
     return -1;
   }
   conn_target_t *target = &Targets[target_fd];
-  struct connection *conn = get_target_connection(target, 0);
-  if (conn == NULL) {
+  connection *conn = get_target_connection(target, 0);
+  if (conn == nullptr) {
     return -2;
   }
   rpc_send_ready(conn);
@@ -132,8 +140,8 @@ static void rpct_stop_ready(int target_fd) {
     return;
   }
   conn_target_t *target = &Targets[target_fd];
-  struct connection *conn = get_target_connection(target, 0);
-  if (conn != NULL) {
+  connection *conn = get_target_connection(target, 0);
+  if (conn != nullptr) {
     rpc_send_stopped(conn);
   }
 }
@@ -143,13 +151,13 @@ static void rpct_lease_stats(int target_fd) {
     return;
   }
   conn_target_t *target = &Targets[target_fd];
-  struct connection *conn = get_target_connection(target, 0);
-  if (conn != NULL) {
+  connection *conn = get_target_connection(target, 0);
+  if (conn != nullptr) {
     rpc_send_lease_stats(conn);
   }
 }
 
-int get_current_target(void) {
+int get_current_target() {
   if (lease_state == lst_off) {
     return rpc_main_target;
   }
@@ -159,7 +167,7 @@ int get_current_target(void) {
   return -1;
 }
 
-static int lease_off(void) {
+static int lease_off() {
   assert(lease_state == lst_off);
   if (!lease_ready_flag) {
     return 0;
@@ -174,7 +182,7 @@ static int lease_off(void) {
   return 0;
 }
 
-static int lease_on(void) {
+static int lease_on() {
   assert(lease_state == lst_on);
   if (!lease_ready_flag) {
     return 0;
@@ -189,7 +197,7 @@ static int lease_on(void) {
   return 0;
 }
 
-static int lease_start(void) {
+static int lease_start() {
   assert(lease_state == lst_start);
   if (has_pending_scripts()) {
     return 0;
@@ -202,7 +210,7 @@ static int lease_start(void) {
   return 1;
 }
 
-static int lease_finish(void) {
+static int lease_finish() {
   assert(lease_state == lst_finish);
   if (has_pending_scripts()) {
     return 0;
@@ -214,10 +222,9 @@ static int lease_finish(void) {
   return 1;
 }
 
-void run_rpc_lease(void) {
+void run_rpc_lease() {
   int run_flag = 1;
   while (run_flag) {
-    run_flag = 0;
     switch (lease_state) {
       case lst_off:
         run_flag = lease_off();
@@ -237,7 +244,7 @@ void run_rpc_lease(void) {
   }
 }
 
-void lease_cron(void) {
+void lease_cron() {
   int need = 0;
 
   if (lease_state == lst_on && rpc_lease_timeout < precise_now) {
@@ -253,7 +260,7 @@ void lease_cron(void) {
 }
 
 
-void do_rpc_stop_lease(void) {
+void do_rpc_stop_lease() {
   if (lease_state != lst_on) {
     return;
   }
@@ -301,12 +308,16 @@ void lease_set_ready() {
 }
 
 void lease_on_stop() {
-  if (rpc_client_target != -1) {
-    conn_target_t *target = &Targets[rpc_client_target];
-    struct connection *conn = get_target_connection(target, 0);
-    if (conn != NULL) {
+  if (rpc_main_target != -1) {
+    conn_target_t *target = &Targets[rpc_main_target];
+    connection *conn = get_target_connection(target, 0);
+    if (conn != nullptr) {
       rpc_send_stopped(conn);
     }
     do_rpc_stop_lease();
   }
+}
+
+void set_main_target(int target) {
+  rpc_main_target = target;
 }
