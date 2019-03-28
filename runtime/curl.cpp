@@ -412,7 +412,10 @@ static bool curl_setopt(curl_handler *ch, int option, const var &value) {
         CURL_SSLVERSION_DEFAULT,
         CURL_SSLVERSION_TLSv1,
         CURL_SSLVERSION_SSLv2,
-        CURL_SSLVERSION_SSLv3
+        CURL_SSLVERSION_SSLv3,
+        CURL_SSLVERSION_TLSv1_0,
+        CURL_SSLVERSION_TLSv1_1,
+        CURL_SSLVERSION_TLSv1_2,
       };
       const int OPTIONS_COUNT = sizeof(options) / sizeof(options[0]);
 
