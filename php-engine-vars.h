@@ -25,7 +25,6 @@
 extern char *logname_pattern;
 extern int logname_id;
 extern long long max_memory;
-extern int http_port;
 
 extern int worker_id;
 extern int pid;
@@ -132,13 +131,3 @@ extern int kstdout;
 extern int kstderr;
 extern int kproffd;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-void reopen_logs(void);
-
-#ifdef __cplusplus
-}
-#endif

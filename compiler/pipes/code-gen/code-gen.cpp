@@ -1063,10 +1063,8 @@ inline void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   if (!G->env().is_static_lib_mode()) {
     W << NL
-      << "extern \"C\" " << BEGIN
       << "void global_init_php_scripts();" << NL
-      << "void init_php_scripts();" << NL
-      << END << NL;
+      << "void init_php_scripts();" << NL;
   }
 
   W << NL << StaticInit(all_functions) << NL;
@@ -3861,7 +3859,6 @@ void CodeGenF::write_tl_schema(CodeGenerator &W) {
   }
   if (!G->env().is_static_lib_mode()) {
     W << OpenFile("_tl_schema.cpp", "", false);
-    W << "extern \"C\" " << BEGIN;
     W << "const char *builtin_tl_schema = " << NL << Indent(2);
     compile_string_raw(schema, W);
     W << ";" << NL;
@@ -3869,7 +3866,6 @@ void CodeGenF::write_tl_schema(CodeGenerator &W) {
     char buf[100];
     sprintf(buf, "%d", schema_length);
     W << string(buf) << ";" << NL;
-    W << END;
     W << CloseFile();
   }
 }

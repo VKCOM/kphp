@@ -11,7 +11,6 @@
 char *logname_pattern = NULL;
 int logname_id = 0;
 long long max_memory = 1 << 29;
-int http_port;
 
 int worker_id = -1;
 int pid = -1;

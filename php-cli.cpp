@@ -5,10 +5,8 @@
 
 static char memory_buffer[1 << 29];
 
-extern "C" {
 void init_php_scripts(void);
 void global_init_php_scripts(void);
-}
 
 int main(int argc, char **argv) {
   int arg_index;

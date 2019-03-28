@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <assert.h>
+#include <cstddef>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -18,6 +19,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "PHP/php-engine-vars.h"
+#include "PHP/php-lease.h"
+#include "PHP/php-master.h"
+#include "PHP/php-queries.h"
+#include "PHP/php-runner.h"
+#include "PHP/php-worker.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
@@ -46,13 +53,6 @@
 #include "net/net-sockaddr-storage.h"
 #include "net/net-socket.h"
 
-#include "PHP/php-engine-vars.h"
-#include "PHP/php-lease.h"
-#include "PHP/php-master.h"
-#include "PHP/php-queries.h"
-#include "PHP/php-runner.h"
-#include "PHP/php-worker.h"
-
 static void turn_sigterm_on(void);
 
 #define MAX_TIMEOUT 30
@@ -75,15 +75,18 @@ int sqlp_authorized(struct connection *c);
 int sqlp_becomes_ready(struct connection *c);
 int sqlp_check_ready(struct connection *c);
 
-struct mysql_client_functions db_client_outbound = {
-  .execute = proxy_client_execute,
-  .sql_authorized = sqlp_authorized,
-  .sql_becomes_ready = sqlp_becomes_ready,
-  .check_ready = sqlp_check_ready,
-  .sql_flush_packet = sqlc_flush_packet,
-  .sql_check_perm = sqlc_default_check_perm,
-  .sql_init_crypto = sqlc_init_crypto,
-};
+mysql_client_functions db_client_outbound = [] {
+  auto res = mysql_client_functions();
+  res.execute = proxy_client_execute;
+  res.sql_authorized = sqlp_authorized;
+  res.sql_becomes_ready = sqlp_becomes_ready;
+  res.check_ready = sqlp_check_ready;
+  res.sql_flush_packet = sqlc_flush_packet;
+  res.sql_check_perm = sqlc_default_check_perm;
+  res.sql_init_crypto = sqlc_init_crypto;
+
+  return res;
+}();
 
 
 long long cur_request_id = -1;
@@ -95,16 +98,19 @@ int memcache_client_execute(struct connection *c, int op);
 int memcache_client_check_ready(struct connection *c);
 int memcache_connected(struct connection *c);
 
-struct memcache_client_functions memcache_client_outbound = {
-  .execute = memcache_client_execute,
-  .check_ready = memcache_client_check_ready,
-  .connected = memcache_connected,
+memcache_client_functions memcache_client_outbound = [] {
+  auto res = memcache_client_functions();
+  res.execute = memcache_client_execute;
+  res.check_ready = memcache_client_check_ready;
+  res.connected = memcache_connected;
 
-  .flush_query = mcc_flush_query,
-  .mc_check_perm = mcc_default_check_perm,
-  .mc_init_crypto = mcc_init_crypto,
-  .mc_start_crypto = mcc_start_crypto
-};
+  res.flush_query = mcc_flush_query;
+  res.mc_check_perm = mcc_default_check_perm;
+  res.mc_init_crypto = mcc_init_crypto;
+  res.mc_start_crypto = mcc_start_crypto;
+
+  return res;
+}();
 
 /***
   RPC-client
@@ -115,45 +121,57 @@ int rpcc_check_ready(struct connection *c);
 void prepare_rpc_query(struct connection *c, int *q, int qn);
 void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsize);
 
-struct rpc_client_functions rpc_client_outbound = {
-  .execute = rpcc_execute, //replaced
-  .check_ready = rpcc_check_ready, //replaced
-  .flush_packet = rpcc_flush_packet_later,
-  .rpc_check_perm = rpcc_default_check_perm,
-  .rpc_init_crypto = rpcc_init_crypto,
-  .rpc_start_crypto = rpcc_start_crypto,
-  .rpc_ready = rpcc_send_query //replaced
-};
+rpc_client_functions rpc_client_outbound = [] {
+  auto res = rpc_client_functions();
+  res.execute = rpcc_execute; //replaced
+  res.check_ready = rpcc_check_ready; //replaced
+  res.flush_packet = rpcc_flush_packet_later;
+  res.rpc_check_perm = rpcc_default_check_perm;
+  res.rpc_init_crypto = rpcc_init_crypto;
+  res.rpc_start_crypto = rpcc_start_crypto;;
+  res.rpc_ready = rpcc_send_query; //replaced
 
+  return res;
+}();
 
 /***
   OUTBOUND CONNECTIONS
  ***/
 
-conn_target_t default_ct = {
-  .min_connections = 2,
-  .max_connections = 3,
-  .type = &ct_memcache_client,
-  .extra = &memcache_client_outbound,
-  .reconnect_timeout = 1
-};
-
-conn_target_t db_ct = {
-  .min_connections = 2,
-  .max_connections = 3,
-  .type = &ct_mysql_client,
-  .extra = &db_client_outbound,
-  .reconnect_timeout = 1,
-};
 static int db_port = 3306;
 
-conn_target_t rpc_ct = {
-  .min_connections = 2,
-  .max_connections = 3,
-  .type = &ct_rpc_client,
-  .extra = (void *)&rpc_client_outbound,
-  .reconnect_timeout = 1
-};
+conn_target_t default_ct = [] {
+  auto res = conn_target_t();
+  res.min_connections = 2;
+  res.max_connections = 3;
+  res.type = &ct_memcache_client;
+  res.extra = &memcache_client_outbound;
+  res.reconnect_timeout = 1;
+
+  return res;
+}();
+
+conn_target_t db_ct = [] {
+  auto res = conn_target_t();
+  res.min_connections = 2;
+  res.max_connections = 3;
+  res.type = &ct_mysql_client;
+  res.extra = &db_client_outbound;
+  res.reconnect_timeout = 1;
+
+  return res;
+}();
+
+conn_target_t rpc_ct = [] {
+  auto res = conn_target_t();
+  res.min_connections = 2;
+  res.max_connections = 3;
+  res.type = &ct_rpc_client;
+  res.extra = (void *)&rpc_client_outbound;
+  res.reconnect_timeout = 1;
+
+  return res;
+}();
 
 
 struct connection *get_target_connection(conn_target_t *S, int force_flag) {
@@ -238,13 +256,16 @@ int delete_pending_query(struct conn_query *q) {
   return 0;
 }
 
-struct conn_query_functions pending_cq_func = {
-  .magic = (int)CQUERY_FUNC_MAGIC,
-  .title = "pending-query",
-  .wakeup = delete_pending_query,
-  .close = delete_pending_query,
-  .complete = delete_pending_query
-};
+conn_query_functions pending_cq_func = [] {
+  auto res = conn_query_functions();
+  res.magic = (int)CQUERY_FUNC_MAGIC;
+  res.title = "pending-query";
+  res.wakeup = delete_pending_query;
+  res.close = delete_pending_query;
+  res.complete = delete_pending_query;
+
+  return res;
+}();
 
 /** delayed httq queries queue **/
 struct connection pending_http_queue;
@@ -345,16 +366,16 @@ command_t command_net_write_rpc_base = {
 
 
 command_t *create_command_net_writer(const char *data, int data_len, command_t *base, long long extra) {
-  command_net_write_t *command = malloc(sizeof(command_net_write_t));
+  auto command = reinterpret_cast<command_net_write_t *>(malloc(sizeof(command_net_write_t)));
   command->base.run = base->run;
   command->base.free = base->free;
 
-  command->data = malloc((size_t)data_len);
+  command->data = reinterpret_cast<unsigned char *>(malloc((size_t)data_len));
   memcpy(command->data, data, (size_t)data_len);
   command->len = data_len;
   command->extra = extra;
 
-  return (command_t *)command;
+  return reinterpret_cast<command_t *>(command);
 }
 
 
@@ -368,7 +389,7 @@ void *php_script;
 php_worker *active_worker = NULL;
 
 php_worker *php_worker_create(php_worker_mode_t mode, struct connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id) {
-  php_worker *worker = dl_malloc(sizeof(php_worker));
+  auto worker = reinterpret_cast<php_worker *>(dl_malloc(sizeof(php_worker)));
 
   worker->data = php_query_data_create(http_data, rpc_data);
   worker->conn = c;
@@ -427,7 +448,7 @@ void php_worker_try_start(php_worker *worker) {
   if (php_worker_run_flag) { // put connection into pending_http_query
     vkprintf (2, "php script [req_id = %016llx] is waiting\n", worker->req_id);
 
-    struct conn_query *pending_q = zmalloc(sizeof(struct conn_query));
+    auto pending_q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
 
     pending_q->custom_type = 0;
     pending_q->outbound = (struct connection *)&pending_http_queue;
@@ -1233,22 +1254,25 @@ double php_worker_main(php_worker *worker) {
 int hts_php_wakeup(struct connection *c);
 int hts_php_alarm(struct connection *c);
 
-conn_type_t ct_php_engine_http_server = {
-  .magic = CONN_FUNC_MAGIC,
-  .title = "http_server",
-  .accept = accept_new_connections,
-  .init_accepted = hts_init_accepted,
-  .run = server_read_write,
-  .reader = server_reader,
-  .writer = server_writer,
-  .parse_execute = hts_parse_execute,
-  .close = hts_close_connection,
-  .free_buffers = free_connection_buffers,
-  .init_outbound = server_failed,
-  .connected = server_failed,
-  .wakeup = hts_php_wakeup,
-  .alarm = hts_php_wakeup
-};
+conn_type_t ct_php_engine_http_server = [] {
+  auto res = conn_type_t();
+  res.magic = CONN_FUNC_MAGIC;
+  res.title = "http_server";
+  res.accept = accept_new_connections;
+  res.init_accepted = hts_init_accepted;
+  res.run = server_read_write;
+  res.reader = server_reader;
+  res.writer = server_writer;
+  res.parse_execute = hts_parse_execute;
+  res.close = hts_close_connection;
+  res.free_buffers = free_connection_buffers;
+  res.init_outbound = server_failed;
+  res.connected = server_failed;
+  res.wakeup = hts_php_wakeup;
+  res.alarm = hts_php_wakeup;
+
+  return res;
+}();
 
 int hts_php_wakeup(struct connection *c) {
   if (c->status == conn_wait_net || c->status == conn_wait_aio) {
@@ -1278,12 +1302,15 @@ int hts_func_wakeup(struct connection *c);
 int hts_func_execute(struct connection *c, int op);
 int hts_func_close(struct connection *c, int who);
 
-struct http_server_functions http_methods = {
-  .execute = hts_func_execute,
-  .ht_wakeup = hts_func_wakeup,
-  .ht_alarm = hts_func_wakeup,
-  .ht_close = hts_func_close
-};
+http_server_functions http_methods = [] {
+  auto res = http_server_functions();
+  res.execute = hts_func_execute;
+  res.ht_wakeup = hts_func_wakeup;
+  res.ht_alarm = hts_func_wakeup;
+  res.ht_close = hts_func_close;
+
+  return res;
+}();
 
 static char *qPost, *qGet, *qUri, *qHeaders;
 static int qPostLen, qGetLen, qUriLen, qHeadersLen;
@@ -1355,7 +1382,7 @@ int do_hts_func_wakeup(struct connection *c, int flag) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  php_worker *worker = D->extra;
+  auto worker = reinterpret_cast<php_worker *>(D->extra);
   double timeout = php_worker_main(worker);
   if (timeout == 0) {
     hts_at_query_end(c, flag);
@@ -1425,7 +1452,7 @@ int hts_func_execute(struct connection *c, int op) {
   qUri = ReqHdr + D->uri_offset;
   qUriLen = D->uri_size;
 
-  char *get_qm_ptr = memchr(qUri, '?', (size_t)qUriLen);
+  auto get_qm_ptr = reinterpret_cast<char *>(memchr(qUri, '?', (size_t)qUriLen));
   if (get_qm_ptr) {
     qGet = get_qm_ptr + 1;
     qGetLen = (int)(qUri + qUriLen - qGet);
@@ -1462,7 +1489,7 @@ int hts_func_wakeup(struct connection *c) {
 int hts_func_close(struct connection *c, int who __attribute__((unused))) {
   struct hts_data *D = HTS_DATA(c);
 
-  php_worker *worker = D->extra;
+  auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != NULL) {
     php_worker_terminate(worker, 1, "http connection close");
     double timeout = php_worker_main(worker);
@@ -1483,50 +1510,56 @@ int rpcc_php_wakeup(struct connection *c);
 int rpcc_php_alarm(struct connection *c);
 int rpcc_php_close_connection(struct connection *c, int who);
 
-conn_type_t ct_php_engine_rpc_server = {
-  .magic = CONN_FUNC_MAGIC,
-  .title = "rpc_server",
-  .accept = accept_new_connections,
-  .init_accepted = rpcs_init_accepted,
-  .run = server_read_write,
-  .reader = server_reader,
-  .writer = server_writer,
-  .parse_execute = rpcs_parse_execute,
-  .close = rpcs_php_close_connection, //replaced, then replaced back
-  .free_buffers = free_connection_buffers,
-  .init_outbound = server_failed,
-  .connected = server_failed,
-  .wakeup = rpcs_php_wakeup, //replaced
-  .alarm = rpcs_php_wakeup, //replaced
-  .crypto_init = aes_crypto_init,
-  .crypto_free = aes_crypto_free,
-  .crypto_encrypt_output = aes_crypto_encrypt_output,
-  .crypto_decrypt_input = aes_crypto_decrypt_input,
-  .crypto_needed_output_bytes = aes_crypto_needed_output_bytes,
-};
+conn_type_t ct_php_engine_rpc_server = [] {
+  auto res = conn_type_t();
+  res.magic = CONN_FUNC_MAGIC;
+  res.title = "rpc_server";
+  res.accept = accept_new_connections;
+  res.init_accepted = rpcs_init_accepted;
+  res.run = server_read_write;
+  res.reader = server_reader;
+  res.writer = server_writer;
+  res.parse_execute = rpcs_parse_execute;
+  res.close = rpcs_php_close_connection; //replaced, then replaced back
+  res.free_buffers = free_connection_buffers;
+  res.init_outbound = server_failed;
+  res.connected = server_failed;
+  res.wakeup = rpcs_php_wakeup; //replaced
+  res.alarm = rpcs_php_wakeup; //replaced
+  res.crypto_init = aes_crypto_init;
+  res.crypto_free = aes_crypto_free;
+  res.crypto_encrypt_output = aes_crypto_encrypt_output;
+  res.crypto_decrypt_input = aes_crypto_decrypt_input;
+  res.crypto_needed_output_bytes = aes_crypto_needed_output_bytes;
 
-conn_type_t ct_php_rpc_client = {
-  .magic = CONN_FUNC_MAGIC,
-  .title = "rpc_client",
-  .accept = server_failed,
-  .init_accepted = server_failed,
-  .run = server_read_write,
-  .reader = server_reader,
-  .writer = server_writer,
-  .parse_execute = rpcc_parse_execute,
-  .close = rpcc_php_close_connection, //replaced from (client_close_connection)
-  .free_buffers = free_connection_buffers,
-  .init_outbound = rpcc_init_outbound,
-  .connected = rpcc_connected,
-  .wakeup = rpcc_php_wakeup, // replaced
-  .alarm = rpcc_php_wakeup, // replaced
-  .check_ready = rpc_client_check_ready,
-  .crypto_init = aes_crypto_init,
-  .crypto_free = aes_crypto_free,
-  .crypto_encrypt_output = aes_crypto_encrypt_output,
-  .crypto_decrypt_input = aes_crypto_decrypt_input,
-  .crypto_needed_output_bytes = aes_crypto_needed_output_bytes,
-};
+  return res;
+}();
+
+conn_type_t ct_php_rpc_client = [] {
+  auto res = conn_type_t();
+  res.magic = CONN_FUNC_MAGIC;
+  res.title = "rpc_client";
+  res.accept = server_failed;
+  res.init_accepted = server_failed;
+  res.run = server_read_write;
+  res.reader = server_reader;
+  res.writer = server_writer;
+  res.parse_execute = rpcc_parse_execute;
+  res.close = rpcc_php_close_connection; //replaced from (client_close_connection)
+  res.free_buffers = free_connection_buffers;
+  res.init_outbound = rpcc_init_outbound;
+  res.connected = rpcc_connected;
+  res.wakeup = rpcc_php_wakeup; // replaced
+  res.alarm = rpcc_php_wakeup; // replaced
+  res.check_ready = rpc_client_check_ready;
+  res.crypto_init = aes_crypto_init;
+  res.crypto_free = aes_crypto_free;
+  res.crypto_encrypt_output = aes_crypto_encrypt_output;
+  res.crypto_decrypt_input = aes_crypto_decrypt_input;
+  res.crypto_needed_output_bytes = aes_crypto_needed_output_bytes;
+
+  return res;
+}();
 
 int rpcs_php_wakeup(struct connection *c) {
   if (c->status == conn_wait_net) {
@@ -1577,38 +1610,47 @@ int rpcx_func_close(struct connection *c, int who);
 
 int rpcc_func_ready(struct connection *c);
 
-struct rpc_server_functions rpc_methods = {
-  .execute = rpcx_execute, //replaced
-  .check_ready = server_check_ready,
-  .flush_packet = rpcs_flush_packet,
-  .rpc_check_perm = rpcs_default_check_perm,
-  .rpc_init_crypto = rpcs_init_crypto,
-  .rpc_wakeup = rpcx_func_wakeup, //replaced
-  .rpc_alarm = rpcx_func_wakeup, //replaced
-  .rpc_close = rpcx_func_close, //replaced
-};
+rpc_server_functions rpc_methods = [] {
+  auto res = rpc_server_functions();
+  res.execute = rpcx_execute; //replaced
+  res.check_ready = server_check_ready;
+  res.flush_packet = rpcs_flush_packet;
+  res.rpc_check_perm = rpcs_default_check_perm;
+  res.rpc_init_crypto = rpcs_init_crypto;
+  res.rpc_wakeup = rpcx_func_wakeup; //replaced
+  res.rpc_alarm = rpcx_func_wakeup; //replaced
+  res.rpc_close = rpcx_func_close; //replaced
 
-struct rpc_client_functions rpc_client_methods = {
-  .execute = rpcx_execute, //replaced
-  .check_ready = rpcc_default_check_ready, //replaced
-  .flush_packet = rpcc_flush_packet,
-  .rpc_check_perm = rpcc_default_check_perm,
-  .rpc_init_crypto = rpcc_init_crypto,
-  .rpc_start_crypto = rpcc_start_crypto,
-  .rpc_ready = rpcc_func_ready,
-  .rpc_wakeup = rpcx_func_wakeup, //replaced
-  .rpc_alarm = rpcx_func_wakeup, //replaced
-  .rpc_close = rpcx_func_close, //replaced
-};
+  return res;
+}();
 
-conn_target_t rpc_client_ct = {
-  .min_connections = 1,
-  .max_connections = 1,
-  //.type = &ct_rpc_client,
-  .type = &ct_php_rpc_client,
-  .extra = (void *)&rpc_client_methods,
-  .reconnect_timeout = 1
-};
+rpc_client_functions rpc_client_methods = [] {
+  auto res = rpc_client_functions();
+  res.execute = rpcx_execute; //replaced
+  res.check_ready = rpcc_default_check_ready; //replaced
+  res.flush_packet = rpcc_flush_packet;
+  res.rpc_check_perm = rpcc_default_check_perm;
+  res.rpc_init_crypto = rpcc_init_crypto;
+  res.rpc_start_crypto = rpcc_start_crypto;
+  res.rpc_ready = rpcc_func_ready;
+  res.rpc_wakeup = rpcx_func_wakeup; //replaced
+  res.rpc_alarm = rpcx_func_wakeup; //replaced
+  res.rpc_close = rpcx_func_close; //replaced
+
+  return res;
+}();
+
+conn_target_t rpc_client_ct = [] {
+  auto res = conn_target_t();
+  res.min_connections = 1;
+  res.max_connections = 1;
+  //.type = &ct_rpc_client;
+  res.type = &ct_php_rpc_client;
+  res.extra = (void *)&rpc_client_methods;
+  res.reconnect_timeout = 1;
+
+  return res;
+}();
 
 
 void send_rpc_query(struct connection *c, int op, long long id, int *q, int qsize);
@@ -1654,7 +1696,7 @@ int rpcx_func_wakeup(struct connection *c) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  php_worker *worker = D->extra;
+  auto worker = reinterpret_cast<php_worker *>(D->extra);
   double timeout = php_worker_main(worker);
   if (timeout == 0) {
     rpcx_at_query_end(c);
@@ -1669,7 +1711,7 @@ int rpcx_func_wakeup(struct connection *c) {
 int rpcx_func_close(struct connection *c, int who __attribute__((unused))) {
   struct rpcs_data *D = RPCS_DATA(c);
 
-  php_worker *worker = D->extra;
+  auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != NULL) {
     php_worker_terminate(worker, 1, "rpc connection close");
     double timeout = php_worker_main(worker);
@@ -1776,7 +1818,7 @@ void pnet_query_answer(struct conn_query *q) {
     } else {
       assert ("unexpected type of connection\n" && 0);
     }
-    php_worker_answer_query(extra, ((net_ansgen_t *)(q->extra))->ans);
+    php_worker_answer_query(reinterpret_cast<php_worker *>(extra), ((net_ansgen_t *)(q->extra))->ans);
   }
 }
 
@@ -1909,29 +1951,37 @@ int mc_query_error(struct conn_query *q) {
   return pnet_query_check(q);
 }
 
-struct conn_query_functions pnet_cq_func = {
-  .magic = (int)CQUERY_FUNC_MAGIC,
-  .title = "pnet-cq-query",
-  .wakeup = pnet_query_timeout,
-  .close = pnet_query_term,
-//  .complete = mc_query_done //???
-};
+conn_query_functions pnet_cq_func = [] {
+  auto res = conn_query_functions();
+  res.magic = (int)CQUERY_FUNC_MAGIC;
+  res.title = "pnet-cq-query";
+  res.wakeup = pnet_query_timeout;
+  res.close = pnet_query_term;
+//  res.complete = mc_query_done //???
+  return res;
+}();
 
-struct conn_query_functions pnet_delayed_cq_func = {
-  .magic = (int)CQUERY_FUNC_MAGIC,
-  .title = "pnet-cq-query",
-  .wakeup = pnet_query_term,
-  .close = pnet_query_term,
-//  .complete = mc_query_done //???
-};
+conn_query_functions pnet_delayed_cq_func = [] {
+  auto res = conn_query_functions();
+  res.magic = (int)CQUERY_FUNC_MAGIC;
+  res.title = "pnet-cq-query";
+  res.wakeup = pnet_query_term;
+  res.close = pnet_query_term;
+//  res.complete = mc_query_done //???
 
-struct conn_query_functions delayed_send_cq_func = {
-  .magic = (int)CQUERY_FUNC_MAGIC,
-  .title = "delayed-send-cq-query",
-  .wakeup = delayed_send_term,
-  .close = delayed_send_term,
-//  .complete = mc_query_done //???
-};
+  return res;
+}();
+
+conn_query_functions delayed_send_cq_func = [] {
+  auto res = conn_query_functions();
+  res.magic = (int)CQUERY_FUNC_MAGIC;
+  res.title = "delayed-send-cq-query";
+  res.wakeup = delayed_send_term;
+  res.close = delayed_send_term;
+//  res.complete = mc_query_done //???
+
+  return res;
+}();
 
 
 int memcache_client_check_ready(struct connection *c) {
@@ -2000,7 +2050,7 @@ int memcache_client_execute(struct connection *c, int op) {
         nbit_advance(&c->Q, (int)D->args[1]);
         len = nbit_ready_bytes(&c->Q);
         assert (len > 0);
-        ptr = nbit_get_ptr(&c->Q);
+        ptr = reinterpret_cast<char *>(nbit_get_ptr(&c->Q));
       } else {
         vkprintf (-1, "error at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
 
@@ -2128,7 +2178,7 @@ int sql_query_done(struct conn_query *q) {
 }
 
 void create_pnet_delayed_query(struct connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
-  struct conn_query *q = zmalloc(sizeof(struct conn_query));
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
 
   q->custom_type = 0;
   q->outbound = NULL;
@@ -2145,7 +2195,7 @@ void create_pnet_delayed_query(struct connection *http_conn, conn_target_t *t, n
 
 void create_delayed_send_query(conn_target_t *t, command_t *command,
                                double finish_time) {
-  struct conn_query *q = zmalloc(sizeof(struct conn_query));
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
 
   q->custom_type = 0;
   q->start_time = precise_now;
@@ -2163,7 +2213,7 @@ void create_delayed_send_query(conn_target_t *t, command_t *command,
 }
 
 struct conn_query *create_pnet_query(struct connection *http_conn, struct connection *conn, net_ansgen_t *gen, double finish_time) {
-  struct conn_query *q = zmalloc(sizeof(struct conn_query));
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(struct conn_query)));
 
   q->custom_type = 0;
   q->outbound = conn;
@@ -2521,9 +2571,9 @@ int rpcc_execute(struct connection *c, int op, int len) {
   c->last_response_time = precise_now;
 
 
-  switch (op) {
+  switch (static_cast<unsigned int>(op)) {
     case RPC_REQ_ERROR:
-    case RPC_REQ_RESULT:
+    case RPC_REQ_RESULT: {
       assert (len % (int)sizeof(int) == 0);
       len /= (int)sizeof(int);
       assert (len >= 6);
@@ -2549,6 +2599,7 @@ int rpcc_execute(struct connection *c, int op, int len) {
       }
 
       break;
+    }
     case RPC_PONG:
       break;
   }
@@ -2660,7 +2711,7 @@ void write_full_stats_to_pipe(void) {
 
     int qsize = stats_len + 1 + (int)sizeof(int) * 5;
     qsize = (qsize + 3) & -4;
-    int *q = malloc((size_t)qsize);
+    auto q = reinterpret_cast<int *>(malloc((size_t)qsize));
     memset(q, 0, (size_t)qsize);
 
     q[2] = RPC_PHP_FULL_STATS;

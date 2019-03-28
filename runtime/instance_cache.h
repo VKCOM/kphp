@@ -293,9 +293,7 @@ InstanceWrapperBase *instance_cache_fetch(const string &key);
 
 void init_instance_cache_lib();
 void free_instance_cache_lib();
-extern "C" {
-  void set_instance_cache_memory_limit(int64_t limit);
-}
+void set_instance_cache_memory_limit(int64_t limit);
 
 template<typename I>
 bool f$instance_cache_store(const string &key, const I &instance, int ttl = 0) {

@@ -6,10 +6,6 @@
 
 #pragma pack(push, 4)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /***
  QUERY MEMORY ALLOCATOR
  ***/
@@ -327,9 +323,5 @@ void php_queries_finish(void);
 //typedef enum {} net_send_ansgen_state_t;
 
 void init_drivers(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #pragma pack(pop)

@@ -127,13 +127,11 @@ string f$get_engine_version();
 
 int f$get_engine_workers_number();
 
-extern "C" {
 void arg_add(const char *value);
 
 void ini_set(const char *key, const char *value);
 
 void read_engine_tag(const char *file_name);
-}
 
 bool f$ini_set(const string &s, const string &value);
 
@@ -141,10 +139,8 @@ OrFalse<string> f$ini_get(const string &s);
 
 OrFalse<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
 
-extern "C" {
 void global_init_runtime_libs();
 void global_init_script_allocator();
-}
 
 void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);
 

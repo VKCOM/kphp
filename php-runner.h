@@ -2,17 +2,9 @@
 
 #include <ucontext.h>
 
-#include "drinkless/dl-utils-lite.h"
-
+#include "PHP/php-engine-vars.h"
 #include "PHP/php_script.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "php-engine-vars.h"
-#ifdef __cplusplus
-}
-#endif
+#include "drinkless/dl-utils-lite.h"
 
 typedef enum {
   rst_finished,
@@ -45,11 +37,6 @@ typedef struct {
 } query_int;
 
 #pragma pack(pop)
-
-//C interface
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct {
   long long q_id;
@@ -91,12 +78,6 @@ void server_status_rpc(int port, long long actor_id, double start_time);
 void idle_server_status(void);
 void wait_net_server_status(void);
 void running_server_status(void);
-#ifdef __cplusplus
-}
-#endif
-
-//C++ part
-#ifdef __cplusplus
 
 class PHPScriptBase;
 
@@ -164,4 +145,3 @@ public:
 void sigalrm_handler(int signal);
 void sigsegv_handler(int signum, siginfo_t *info, void *data);
 
-#endif

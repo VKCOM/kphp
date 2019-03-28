@@ -1,17 +1,8 @@
 #pragma once
 
-
-//C interface
-#ifdef __cplusplus
-
 #include <cstddef>
 
-extern "C" {
-#else
-#include <stddef.h>
-#endif
-
-#include "common-net-functions.h"
+#include "PHP/common-net-functions.h"
 
 /** script_t **/
 typedef struct {
@@ -32,6 +23,3 @@ typedef struct {
   int exit_code;
 } script_result;
 
-#ifdef __cplusplus
-}
-#endif

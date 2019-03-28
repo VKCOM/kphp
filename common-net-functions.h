@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /** http_query_data **/
 typedef struct {
   char *uri, *get, *headers, *post, *request_method;
@@ -117,7 +113,3 @@ extern void (*wait_net_events)(int timeout_ms);
 extern net_event_t *(*pop_net_event)(void);
 
 extern int (*query_x2)(int x);
-
-#ifdef __cplusplus
-}
-#endif

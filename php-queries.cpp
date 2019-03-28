@@ -5,10 +5,10 @@
 #include <cstdio>
 #include <cstring>
 
-#include "runtime/allocator.h"
-
+#include "PHP/php-engine-vars.h"
 #include "PHP/php-runner.h"
 #include "PHP/php_script.h"
+#include "runtime/allocator.h"
 #include "common/precise-time.h"
 
 extern long long cur_qres_id, first_qres_id;
@@ -1036,9 +1036,6 @@ int engine_get_net_queries_count(void) {
   return PHPScriptBase::current_script->get_net_queries_count();
 }
 
-extern "C" {
-#include "php-engine-vars.h"
-}
 
 int engine_get_uptime(void) {
   return get_uptime();

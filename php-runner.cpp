@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <exception>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,23 +12,19 @@
 #include <ucontext.h>
 #include <unistd.h>
 
-extern "C" {
+#include "PHP/php-engine-vars.h"
+#include "runtime/allocator.h"
+#include "runtime/exception.h"
+#include "runtime/interface.h"
+
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
 
 #include "common/server/signals.h"
 #include "common/wrappers/madvise.h"
-#include "php-engine-vars.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
-}
-
-#include "runtime/allocator.h"
-#include "runtime/exception.h"
-#include "runtime/interface.h"
-
-#include <exception>
 
 using std::exception;
 
