@@ -25,6 +25,7 @@
 #include "PHP/php-queries.h"
 #include "PHP/php-runner.h"
 #include "PHP/php-worker.h"
+#include "runtime/interface.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
@@ -1500,11 +1501,9 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
   RPC INTERFACE
  ***/
 int rpcs_php_wakeup(connection *c);
-int rpcs_php_alarm(connection *c);
 int rpcs_php_close_connection(connection *c, int who);
 
 int rpcc_php_wakeup(connection *c);
-int rpcc_php_alarm(connection *c);
 int rpcc_php_close_connection(connection *c, int who);
 
 conn_type_t ct_php_engine_rpc_server = [] {
@@ -2306,26 +2305,6 @@ int sqlp_authorized(connection *c) {
   return 0;
 }
 
-int stop_forwarding_response(connection *c __attribute__((unused))) {
-  //TODO: stop forwarding if requester is dead
-  return 0;
-
-/*  connection *d = c->first_query->requester;
-  assert (d);
-  if (d->generation != c->first_query->req_generation || d->Out.total_bytes + d->Out.unprocessed_bytes <= FORWARD_HIGH_WATERMARK) {
-    return 0;
-  }
-
-  if (verbosity > 0) {
-    fprintf (stderr, "forwarding response from outbound connection %d to connection %d stopped: already %d+%d bytes in output buffers.\n", c->fd, d->fd, d->Out.total_bytes, d->Out.unprocessed_bytes);
-  }
-  d->write_low_watermark = FORWARD_LOW_WATERMARK;
-  c->flags |= C_STOPREAD;
-  create_reverse_watermark_query (d, c);
-  c->status = conn_wait_net;
-  return 1;*/
-}
-
 int proxy_client_execute(connection *c, int op) {
   sqlc_data *D = SQLC_DATA(c);
   static char buffer[8];
@@ -2347,10 +2326,6 @@ int proxy_client_execute(connection *c, int op) {
   }
 
   c->last_response_time = precise_now;
-
-  if (stop_forwarding_response(c)) {
-    return 0;
-  }
 
   int query_len = D->packet_len + 4;
   data_reader_t *reader = create_data_reader(c, query_len);
@@ -2963,15 +2938,10 @@ void start_server() {
 }
 
 void set_instance_cache_memory_limit(int64_t limit);
-void read_engine_tag(const char *file_name);
 void read_tl_config(const char *file_name);
 void update_tl_config(const char *data, unsigned int len);
-void arg_add(const char *value);
-void ini_set(const char *key, const char *value);
 void init_php_scripts();
 void global_init_php_scripts();
-void global_init_runtime_libs();
-void global_init_script_allocator();
 
 void init_all() {
   srand48((long)cycleclock_now());

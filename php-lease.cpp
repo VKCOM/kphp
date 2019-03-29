@@ -7,7 +7,6 @@
 #include "net/net-sockaddr-storage.h"
 
 #include "PHP/php-engine-vars.h"
-#include "PHP/php-engine.h"
 #include "PHP/php-ready.h"
 #include "PHP/php-worker.h"
 
@@ -37,6 +36,12 @@ enum lease_state_t {
 static lease_state_t lease_state = lst_off;
 static int lease_ready_flag = 0; // waiting for something -> equal 0
 
+extern conn_target_t rpc_client_ct;
+
+int get_target_by_pid(int ip, int port, conn_target_t *ct);
+void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
+connection *get_target_connection(conn_target_t *S, int force_flag);
+int has_pending_scripts();
 
 static int get_lease_target_by_pid(int ip, int port, conn_target_t *ct) {
   if (ip == cur_lease_target_ip && port == cur_lease_target_port && ct == cur_lease_target_ct) {

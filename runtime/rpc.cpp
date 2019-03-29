@@ -4223,9 +4223,6 @@ void renew_tl_config() {
   }
 }
 
-void read_tl_config(const char *file_name);
-void update_tl_config(const char *data, dl::size_type data_len);
-
 unsigned tl_schema_crc32 = 0;
 
 void update_tl_config(const char *data, dl::size_type data_len) {
