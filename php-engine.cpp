@@ -53,6 +53,10 @@
 #include "net/net-rpc-server.h"
 #include "net/net-sockaddr-storage.h"
 #include "net/net-socket.h"
+#include "net/net-tcp-rpc-client.h"
+#include "vv/vv-tl-parse.h"
+#include "net/net-tcp-rpc-server.h"
+#include "net/net-tcp-connections.h"
 
 static void turn_sigterm_on();
 
@@ -116,20 +120,19 @@ memcache_client_functions memcache_client_outbound = [] {
 /***
   RPC-client
  ***/
-int rpcc_execute(connection *c, int op, int len);
+int php_rpcc_execute(connection *c, int op, raw_message *raw);
 int rpcc_send_query(connection *c);
 int rpcc_check_ready(connection *c);
-void prepare_rpc_query(connection *c, int *q, int qsize);
 void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
 
-rpc_client_functions rpc_client_outbound = [] {
-  auto res = rpc_client_functions();
-  res.execute = rpcc_execute; //replaced
+tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
+  auto res = tcp_rpc_client_functions();
+  res.execute = php_rpcc_execute; //replaced
   res.check_ready = rpcc_check_ready; //replaced
-  res.flush_packet = rpcc_flush_packet_later;
-  res.rpc_check_perm = rpcc_default_check_perm;
-  res.rpc_init_crypto = rpcc_init_crypto;
-  res.rpc_start_crypto = rpcc_start_crypto;;
+  res.flush_packet = tcp_rpcc_flush_packet_later;
+  res.rpc_check_perm = tcp_rpcc_default_check_perm;
+  res.rpc_init_crypto = tcp_rpcc_init_crypto;
+  res.rpc_start_crypto = tcp_rpcc_start_crypto;;
   res.rpc_ready = rpcc_send_query; //replaced
 
   return res;
@@ -167,8 +170,8 @@ conn_target_t rpc_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 2;
   res.max_connections = 3;
-  res.type = &ct_rpc_client;
-  res.extra = (void *)&rpc_client_outbound;
+  res.type = &ct_tcp_rpc_client;
+  res.extra = (void *)&tcp_rpc_client_outbound;
   res.reconnect_timeout = 1;
 
   return res;
@@ -750,22 +753,16 @@ void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_pa
   q[qlen - 1] = (int)~crc32_partial_custom(q, q[0] - 4, 0xffffffff);
 }
 
-void prepare_rpc_query(connection *c, int *q, int qsize) {
-  prepare_rpc_query_raw(RPCS_DATA(c)->out_packet_num++, q, qsize, RPCS_DATA(c)->custom_crc_partial);
-}
-
 void send_rpc_query(connection *c, int op, long long id, int *q, int qsize) {
   q[2] = op;
   if (id != -1) {
     *(long long *)(q + 3) = id;
   }
 
-  prepare_rpc_query(c, q, qsize);
-
   vkprintf (4, "send_rpc_query: [len = %d] [op = %08x] [rpc_id = <%lld>]\n", q[0], op, id);
-  assert (write_out(&c->Out, q, q[0]) == q[0]);
+  tcp_rpc_conn_send_data(c, qsize - 3 * sizeof(int), q + 2);
 
-  RPCS_FUNC(c)->flush_packet(c);
+  TCP_RPCS_FUNC(c)->flush_packet(c);
 }
 
 void php_worker_run_rpc_answer_query(php_worker *worker, php_query_rpc_answer *ans) {
@@ -992,14 +989,13 @@ void rpc_error(php_worker *worker, int code, const char *str) {
   connection *c = worker->conn;
   //fprintf (stderr, "RPC ERROR %s\n", str);
   static int q[10000];
-  q[1] = RPCS_DATA(c)->out_packet_num++;
   q[2] = RPC_REQ_ERROR;
   *(long long *)(q + 3) = worker->req_id;
   q[5] = code;
   //TODO: write str
 
   char *buf = (char *)(q + 6);
-  int all_len = 0;
+  int all_len = sizeof(q[2]) + sizeof(long long) + sizeof(q[5]);
   int sn = (int)strlen(str);
 
   if (sn > 5000) {
@@ -1027,13 +1023,9 @@ void rpc_error(php_worker *worker, int code, const char *str) {
     all_len++;
   }
 
-  int qn = 7 + all_len / 4;
-  q[0] = qn * 4;
-  q[qn - 1] = (int)~RPCS_DATA(c)->custom_crc_partial(q, q[0] - 4, -1);
+  tcp_rpc_conn_send_data(c, all_len, q + 2);
 
-  assert (write_out(&c->Out, q, q[0]) == q[0]);
-
-  RPCS_FUNC(c)->flush_packet(c);
+  TCP_RPCS_FUNC(c)->flush_packet(c);
 }
 
 void php_worker_set_result(php_worker *worker, script_result *res) {
@@ -1501,58 +1493,58 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
   RPC INTERFACE
  ***/
 int rpcs_php_wakeup(connection *c);
-int rpcs_php_close_connection(connection *c, int who);
 
 int rpcc_php_wakeup(connection *c);
-int rpcc_php_close_connection(connection *c, int who);
 
 conn_type_t ct_php_engine_rpc_server = [] {
   auto res = conn_type_t();
+  res.flags = C_RAWMSG;
   res.magic = CONN_FUNC_MAGIC;
   res.title = "rpc_server";
   res.accept = accept_new_connections;
-  res.init_accepted = rpcs_init_accepted;
+  res.init_accepted = tcp_rpcs_init_accepted;
   res.run = server_read_write;
-  res.reader = server_reader;
-  res.writer = server_writer;
-  res.parse_execute = rpcs_parse_execute;
-  res.close = rpcs_php_close_connection; //replaced, then replaced back
-  res.free_buffers = free_connection_buffers;
+  res.reader = tcp_server_reader;
+  res.writer = tcp_server_writer;
+  res.parse_execute = tcp_rpcs_parse_execute;
+  res.close = tcp_rpcs_close_connection;
+  res.free_buffers = tcp_free_connection_buffers;
   res.init_outbound = server_failed;
   res.connected = server_failed;
   res.wakeup = rpcs_php_wakeup; //replaced
   res.alarm = rpcs_php_wakeup; //replaced
   res.crypto_init = aes_crypto_init;
   res.crypto_free = aes_crypto_free;
-  res.crypto_encrypt_output = aes_crypto_encrypt_output;
-  res.crypto_decrypt_input = aes_crypto_decrypt_input;
-  res.crypto_needed_output_bytes = aes_crypto_needed_output_bytes;
+  res.crypto_encrypt_output = tcp_aes_crypto_encrypt_output;
+  res.crypto_decrypt_input = tcp_aes_crypto_decrypt_input;
+  res.crypto_needed_output_bytes = tcp_aes_crypto_needed_output_bytes;
 
   return res;
 }();
 
 conn_type_t ct_php_rpc_client = [] {
   auto res = conn_type_t();
+  res.flags = C_RAWMSG;
   res.magic = CONN_FUNC_MAGIC;
   res.title = "rpc_client";
   res.accept = server_failed;
   res.init_accepted = server_failed;
   res.run = server_read_write;
-  res.reader = server_reader;
-  res.writer = server_writer;
-  res.parse_execute = rpcc_parse_execute;
-  res.close = rpcc_php_close_connection; //replaced from (client_close_connection)
-  res.free_buffers = free_connection_buffers;
-  res.init_outbound = rpcc_init_outbound;
-  res.connected = rpcc_connected;
+  res.reader = tcp_server_reader;
+  res.writer = tcp_server_writer;
+  res.parse_execute = tcp_rpcc_parse_execute;
+  res.close = tcp_rpcc_close_connection;
+  res.free_buffers = tcp_free_connection_buffers;
+  res.init_outbound = tcp_rpcc_init_outbound;
+  res.connected = tcp_rpcc_connected;
   res.wakeup = rpcc_php_wakeup; // replaced
   res.alarm = rpcc_php_wakeup; // replaced
-  res.check_ready = rpc_client_check_ready;
+  res.check_ready = tcp_rpc_client_check_ready;
   res.crypto_init = aes_crypto_init;
   res.crypto_free = aes_crypto_free;
-  res.crypto_encrypt_output = aes_crypto_encrypt_output;
-  res.crypto_decrypt_input = aes_crypto_decrypt_input;
-  res.crypto_needed_output_bytes = aes_crypto_needed_output_bytes;
+  res.crypto_encrypt_output = tcp_aes_crypto_encrypt_output;
+  res.crypto_decrypt_input = tcp_aes_crypto_decrypt_input;
+  res.crypto_needed_output_bytes = tcp_aes_crypto_needed_output_bytes;
 
   return res;
 }();
@@ -1560,31 +1552,22 @@ conn_type_t ct_php_rpc_client = [] {
 int rpcs_php_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
-    RPCS_FUNC(c)->rpc_wakeup(c);
+    TCP_RPCS_FUNC(c)->rpc_wakeup(c);
   }
-  if (c->Out.total_bytes > 0) {
+  if (c->out_p.total_bytes > 0) {
     c->flags |= C_WANTWR;
   }
   //c->generation = ++conn_generation;
   //c->pending_queries = 0;
   return 0;
 }
-
-int rpcs_php_close_connection(connection *c, int who) {
-  if (RPCS_FUNC(c)->rpc_close != nullptr) {
-    RPCS_FUNC(c)->rpc_close(c, who);
-  }
-
-  return server_close_connection(c, who);
-}
-
 
 int rpcc_php_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
-    RPCC_FUNC(c)->rpc_wakeup(c);
+    TCP_RPCC_FUNC(c)->rpc_wakeup(c);
   }
-  if (c->Out.total_bytes > 0) {
+  if (c->out.total_bytes > 0) {
     c->flags |= C_WANTWR;
   }
   //c->generation = ++conn_generation;
@@ -1592,27 +1575,19 @@ int rpcc_php_wakeup(connection *c) {
   return 0;
 }
 
-int rpcc_php_close_connection(connection *c, int who) {
-  if (RPCC_FUNC(c)->rpc_close != nullptr) {
-    RPCC_FUNC(c)->rpc_close(c, who);
-  }
-
-  return client_close_connection(c, who);
-}
-
-int rpcx_execute(connection *c, int op, int len);
+int rpcx_execute(connection *c, int op, raw_message *raw);
 int rpcx_func_wakeup(connection *c);
 int rpcx_func_close(connection *c, int who);
 
 int rpcc_func_ready(connection *c);
 
-rpc_server_functions rpc_methods = [] {
-  auto res = rpc_server_functions();
+tcp_rpc_server_functions rpc_methods = [] {
+  auto res = tcp_rpc_server_functions();
   res.execute = rpcx_execute; //replaced
   res.check_ready = server_check_ready;
-  res.flush_packet = rpcs_flush_packet;
-  res.rpc_check_perm = rpcs_default_check_perm;
-  res.rpc_init_crypto = rpcs_init_crypto;
+  res.flush_packet = tcp_rpcs_flush_packet;
+  res.rpc_check_perm = tcp_rpcs_default_check_perm;
+  res.rpc_init_crypto = tcp_rpcs_init_crypto;
   res.rpc_wakeup = rpcx_func_wakeup; //replaced
   res.rpc_alarm = rpcx_func_wakeup; //replaced
   res.rpc_close = rpcx_func_close; //replaced
@@ -1620,14 +1595,14 @@ rpc_server_functions rpc_methods = [] {
   return res;
 }();
 
-rpc_client_functions rpc_client_methods = [] {
-  auto res = rpc_client_functions();
+tcp_rpc_client_functions rpc_client_methods = [] {
+  auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
   res.check_ready = rpcc_default_check_ready; //replaced
-  res.flush_packet = rpcc_flush_packet;
-  res.rpc_check_perm = rpcc_default_check_perm;
-  res.rpc_init_crypto = rpcc_init_crypto;
-  res.rpc_start_crypto = rpcc_start_crypto;
+  res.flush_packet = tcp_rpcc_flush_packet;
+  res.rpc_check_perm = tcp_rpcc_default_check_perm;
+  res.rpc_init_crypto = tcp_rpcc_init_crypto;
+  res.rpc_start_crypto = tcp_rpcc_start_crypto;
   res.rpc_ready = rpcc_func_ready;
   res.rpc_wakeup = rpcx_func_wakeup; //replaced
   res.rpc_alarm = rpcx_func_wakeup; //replaced
@@ -1640,7 +1615,6 @@ conn_target_t rpc_client_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 1;
   res.max_connections = 1;
-  //.type = &ct_rpc_client;
   res.type = &ct_php_rpc_client;
   res.extra = (void *)&rpc_client_methods;
   res.reconnect_timeout = 1;
@@ -1669,7 +1643,7 @@ void rpcc_stop() {
 }
 
 void rpcx_at_query_end(connection *c) {
-  rpcs_data *D = RPCS_DATA(c);
+  auto D = TCP_RPC_DATA(c);
 
   clear_connection_timeout(c);
   c->generation = ++conn_generation;
@@ -1685,7 +1659,7 @@ void rpcx_at_query_end(connection *c) {
 }
 
 int rpcx_func_wakeup(connection *c) {
-  rpcs_data *D = RPCS_DATA(c);
+  auto D = TCP_RPC_DATA(c);
 
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
@@ -1703,7 +1677,7 @@ int rpcx_func_wakeup(connection *c) {
 }
 
 int rpcx_func_close(connection *c, int who __attribute__((unused))) {
-  rpcs_data *D = RPCS_DATA(c);
+  auto D = TCP_RPC_DATA(c);
 
   auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
@@ -1722,76 +1696,78 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
 }
 
 
-int rpcx_execute(connection *c, int op, int len) {
-  rpcs_data *D = RPCS_DATA(c);
+int rpcx_execute(connection *c, int op, raw_message *raw) {
+  auto D = TCP_RPC_DATA(c);
 
-  vkprintf (1, "rpcs_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
+  vkprintf (1, "rpcs_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
-#define MAX_RPC_QUERY_LEN 126214400
-  static char buf[MAX_RPC_QUERY_LEN];
+  int len = raw->total_bytes;
 
   if (sigterm_on && sigterm_time < precise_now) {
-    return SKIP_ALL_BYTES;
+    return 0;
   }
-  process_id_t xpid;
+
+  auto MAX_RPC_QUERY_LEN = 126214400;
+  if (len < sizeof(long long) || MAX_RPC_QUERY_LEN < len) {
+    return 0;
+  }
 
   switch (op) {
     case TL_KPHP_STOP_LEASE:
       do_rpc_stop_lease();
       break;
     case TL_KPHP_START_LEASE:
-    case RPC_INVOKE_REQ:
-      if (len > MAX_RPC_QUERY_LEN) {
-        return SKIP_ALL_BYTES;
-      }
+    case RPC_INVOKE_REQ: {
 
-      assert (read_in(&c->In, buf, len) == len);
-      assert (len % (int)sizeof(int) == 0);
-      len /= (int)sizeof(int);
-      if (len < 6) {
-        return 0;
-      }
+      tl_fetch_init_tcp_raw_message(raw, len);
 
-      int *v = (int *)buf;
-      v += 3;
-      len -= 4;
+      auto op_from_tl = tl_fetch_int();
+      len -= sizeof(op_from_tl);
+      assert(op_from_tl == op);
+      assert(len % sizeof(int) == 0);
 
       if (op == TL_KPHP_START_LEASE) {
-        if (len < 4) {
+        static_assert(sizeof(process_id_t) == 12, "");
+
+        if (len < sizeof(process_id_t) + sizeof(int)) {
           return 0;
         }
-        static_assert(sizeof(xpid) == 12, "");
-        xpid = *(process_id_t *)v;
-        v += 3;
-        len -= 3;
-        int timeout = *v++;
-        len--;
+
+        union {
+          std::array<char, sizeof(process_id_t)> buf;
+          process_id_t xpid;
+        };
+        auto fetched_bytes = tl_fetch_data(buf.data(), buf.size());
+        assert(fetched_bytes == buf.size());
+
+        int timeout = tl_fetch_int();
+
         do_rpc_start_lease(xpid, precise_now + timeout);
         return 0;
-        break;
       }
 
-      long long req_id = *(long long *)v;
-      v += 2;
-      len -= 2;
+      auto req_id = tl_fetch_long();
+      len -= sizeof(req_id);
 
-      vkprintf (2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
+      vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
       set_connection_timeout(c, script_timeout);
 
-
-      rpc_query_data *rpc_data = rpc_query_data_create(v, len, req_id, D->remote_pid.ip, D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
+      char buf[len];
+      auto fetched_bytes = tl_fetch_data(buf, len);
+      assert(fetched_bytes == len);
+      rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / sizeof(int),
+                                                       req_id, D->remote_pid.ip, D->remote_pid.port,
+                                                       D->remote_pid.pid, D->remote_pid.utime);
 
       php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data, script_timeout, req_id);
       D->extra = worker;
 
       c->status = conn_wait_net;
       rpcx_func_wakeup(c);
-      return 0;
-      break;
+    }
   }
 
-  return SKIP_ALL_BYTES;
-#undef MAX_RPC_QUERY_LEN
+  return 0;
 }
 
 
@@ -1804,9 +1780,9 @@ void pnet_query_answer(conn_query *q) {
   if (req != nullptr && req->generation == q->req_generation) {
     void *extra = nullptr;
     if (req->type == &ct_php_engine_rpc_server) {
-      extra = RPCS_DATA (req)->extra;
+      extra = TCP_RPC_DATA(req)->extra;
     } else if (req->type == &ct_php_rpc_client) {
-      extra = RPCC_DATA (req)->extra;
+      extra = TCP_RPC_DATA(req)->extra;
     } else if (req->type == &ct_php_engine_http_server) {
       extra = HTS_DATA (req)->extra;
     } else {
@@ -2423,7 +2399,7 @@ int proxy_client_execute(connection *c, int op) {
  ***/
 int rpcc_check_ready(connection *c) {
   /*assert (c->status != conn_none);*/
-  /*if (c->status == conn_none || c->status == conn_connecting || RPCC_DATA(c)->in_packet_num < 0) {*/
+  /*if (c->status == conn_none || c->status == conn_connecting || TCP_RPC_DATA(c)->in_packet_num < 0) {*/
   /*return c->ready = cr_notyet;*/
   /*}*/
   /*if (c->status == conn_error || c->ready == cr_failed) {*/
@@ -2439,8 +2415,8 @@ int rpcc_check_ready(connection *c) {
     return c->ready = cr_failed;
   }
 
-  if (RPCC_DATA(c)->in_packet_num < 0) {
-    if (RPCC_DATA(c)->in_packet_num == -1 && c->status == conn_running) {
+  if (TCP_RPC_DATA(c)->in_packet_num < 0) {
+    if (TCP_RPC_DATA(c)->in_packet_num == -1 && c->status == conn_running) {
       if (verbosity > 1 && c->ready != cr_ok) {
         fprintf(stderr, "changing connection %d readiness from %d to %d [OK] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_ok, c->last_query_sent_time, c
           ->last_response_time, precise_now);
@@ -2524,30 +2500,24 @@ int rpcc_send_query(connection *c) {
   return 0;
 }
 
-int rpcc_execute(connection *c, int op, int len) {
-  vkprintf (1, "rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
+int php_rpcc_execute(connection *c, int op, raw_message *raw) {
+  vkprintf (1, "php_rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
-  int head[5];
-  net_event_t *event = nullptr;
-  int result_len;
   int event_status = 0;
-
-  nb_iterator_t Iter;
   c->last_response_time = precise_now;
-
 
   switch (static_cast<unsigned int>(op)) {
     case RPC_REQ_ERROR:
     case RPC_REQ_RESULT: {
-      assert (len % (int)sizeof(int) == 0);
-      len /= (int)sizeof(int);
-      assert (len >= 6);
+      int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
+      assert(result_len >= 0);
 
-      nbit_set(&Iter, &c->In);
-      assert (nbit_read_in(&Iter, head, sizeof(int) * 5) == sizeof(int) * 5);
+      tl_fetch_init_tcp_raw_message(raw, raw->total_bytes);
 
-      long long id = *(long long *)(&head[3]);
+      auto op_from_tl = tl_fetch_int();
+      assert(op_from_tl == op);
 
+      auto id = tl_fetch_long();
       if (op == RPC_REQ_ERROR) {
         //FIXME: error code, error string
         //almost never happens
@@ -2555,12 +2525,11 @@ int rpcc_execute(connection *c, int op, int len) {
         break;
       }
 
-      result_len = len - 5 - 1;
+      net_event_t *event = nullptr;
       event_status = create_rpc_answer_event(id, result_len, &event);
       if (event_status > 0) {
-        int size = (int)sizeof(int) * result_len;
-        assert (nbit_read_in(&Iter, event->result, size) == size);
-        nbit_clear(&Iter);
+        auto fetched_bytes = tl_fetch_data(event->result, result_len);
+        assert (fetched_bytes == result_len);
       }
 
       break;
@@ -2568,11 +2537,12 @@ int rpcc_execute(connection *c, int op, int len) {
     case RPC_PONG:
       break;
   }
+
   if (event_status) {
     on_net_event(event_status);
   }
 
-  return SKIP_ALL_BYTES;
+  return 0;
 }
 
 static char stats[65536];
@@ -3269,7 +3239,7 @@ int main(int argc, char *argv[]) {
   set_core_dump_rlimit(1LL << 40);
   tcp_maximize_buffers = 1;
   max_special_connections = 1;
-  static_assert(offsetof(rpc_client_functions, rpc_ready) == offsetof(rpc_server_functions, rpc_ready), "");
+  static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
 
   if (builtin_tl_schema_length != -1) {
     update_tl_config(builtin_tl_schema, builtin_tl_schema_length);
@@ -3285,6 +3255,8 @@ int main(int argc, char *argv[]) {
   load_time += dl_time();
 
   init_uptime();
+  always_enable_option("tcp-buffers", NULL);
+  preallocate_msg_buffers();
 
   start_server();
 

@@ -22,6 +22,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include "PHP/php-engine-vars.h"
+#include "common/algorithms/find.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/kprintf.h"
@@ -35,12 +37,10 @@
 #include "net/net-rpc-common.h"
 #include "net/net-rpc-server.h"
 #include "net/net-socket.h"
+#include "net/net-tcp-rpc-client.h"
+#include "net/net-tcp-rpc-server.h"
 #include "vv/vv-tl-act.h"
 #include "vv/vv-tl-parse.h"
-
-#include "PHP/php-engine-vars.h"
-#include "net/net-tcp-rpc-server.h"
-#include "common/algorithms/find.h"
 
 extern const char *engine_tag;
 
@@ -868,53 +868,50 @@ struct pr_data {
   int worker_generation;
   pipe_info_t *pipe_info;
 };
-#define PR_DATA(c) ((pr_data *)(RPCC_DATA (c) + 1))
+#define PR_DATA(c) ((pr_data *)(TCP_RPC_DATA (c) + 1))
 
-int pr_execute(connection *c, int op, int len) {
-  vkprintf(3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
+int pr_execute(connection *c, int op, raw_message *raw) {
+  vkprintf(3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
   if (vk::none_of_equal(op, RPC_PHP_FULL_STATS, RPC_PHP_IMMEDIATE_STATS)) {
     return 0;
   }
+  auto len = raw->total_bytes;
 
-  int head[5];
-  nb_iterator_t Iter;
+  assert(len % sizeof(int) == 0);
+  assert(len >= sizeof(int));
 
-  assert (len % (int)sizeof(int) == 0);
-  assert (len >= 3 * sizeof(int));
+  tl_fetch_init_tcp_raw_message(raw, len);
+  auto op_from_tl = tl_fetch_int();
+  len -= sizeof(op_from_tl);
+  assert(op_from_tl == op);
 
-  nbit_set(&Iter, &c->In);
-  assert (nbit_read_in(&Iter, head, sizeof(int) * 3) == sizeof(int) * 3);
+  std::vector<char> buf(len);
+  auto fetched_bytes = tl_fetch_data(buf.data(), buf.size());
+  assert(fetched_bytes == buf.size());
 
-  int packet_num = head[1];
-  //long long id = *(long long *)(&head[3]);
-
-  std::vector<char> buf(len - (3 + 1) * sizeof(int));
-  assert (nbit_read_in(&Iter, buf.data(), buf.size()));
-
-  nbit_clear(&Iter);
-
-  worker_info_t *w = PR_DATA (c)->worker;
-  pipe_info_t *p = PR_DATA (c)->pipe_info;
-  if (w->generation == PR_DATA (c)->worker_generation) {
+  worker_info_t *w = PR_DATA(c)->worker;
+  pipe_info_t *p = PR_DATA(c)->pipe_info;
+  if (w->generation == PR_DATA(c)->worker_generation) {
     if (op == RPC_PHP_FULL_STATS) {
       w->last_activity_time = my_now;
       worker_set_stats(w, buf.data());
     }
+
     if (op == RPC_PHP_IMMEDIATE_STATS) {
       worker_set_immediate_stats(w, reinterpret_cast<php_immediate_stats_t *>(buf.data()));
     }
 
-    pipe_on_get_packet(p, packet_num);
+    pipe_on_get_packet(p, TCP_RPC_DATA(c)->packet_num);
   } else {
-    vkprintf (1, "connection [%p:%d] will be closed soon\n", c, c->fd);
+    vkprintf(1, "connection [%p:%d] will be closed soon\n", c, c->fd);
   }
 
-  return SKIP_ALL_BYTES;
+  return 0;
 }
 
-rpc_client_functions pipe_reader_methods = [] {
-  auto res = rpc_client_functions();
+tcp_rpc_client_functions pipe_reader_methods = [] {
+  auto res = tcp_rpc_client_functions();
   res.execute = pr_execute;
 
   return res;
@@ -938,17 +935,16 @@ connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extra) {
   c->ev = ev;
   //c->target = nullptr;
   c->generation = ++conn_generation;
-  c->flags = C_WANTRD;
-  init_builtin_buffer(&c->In, c->in_buff, BUFF_SIZE);
-  init_builtin_buffer(&c->Out, c->out_buff, BUFF_SIZE);
+  c->flags = C_WANTRD | C_RAWMSG;
+  init_connection_buffers(c);
   c->timer.wakeup = conn_timer_wakeup_gateway;
   c->type = type;
   c->extra = extra;
   c->basic_type = ct_pipe; //why not?
   c->status = conn_wait_answer;
   active_connections++;
-  c->first_query = c->last_query = (struct conn_query *)c;
-  RPCC_DATA(c)->custom_crc_partial = crc32c_partial;
+  c->first_query = c->last_query = (conn_query *)c;
+  TCP_RPC_DATA(c)->custom_crc_partial = crc32c_partial;
 
   //assert (c->type->init_outbound (c) >= 0);
 
@@ -965,7 +961,7 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
   info->pipe_read = pipe;
   info->pipe_out_packet_num = -1;
   info->pipe_in_packet_num = -1;
-  struct connection *reader = create_pipe_reader(pipe, &ct_rpc_client, (void *)&pipe_reader_methods);
+  connection *reader = create_pipe_reader(pipe, &ct_tcp_rpc_client, (void *)&pipe_reader_methods);
   if (reader != nullptr) {
     PR_DATA (reader)->worker = worker;
     PR_DATA (reader)->worker_generation = worker->generation;
@@ -1285,13 +1281,13 @@ memcache_server_functions php_master_methods = [] {
   return res;
 }();
 
-rpc_server_functions php_rpc_master_methods = [] {
-  auto res = rpc_server_functions();
-  res.execute = default_tl_rpcs_execute;
+tcp_rpc_server_functions php_rpc_master_methods = [] {
+  auto res = tcp_rpc_server_functions();
+  res.execute = default_tl_tcp_rpcs_execute;
   res.check_ready = server_check_ready;
-  res.flush_packet = rpcs_flush_packet;
-  res.rpc_check_perm = rpcs_default_check_perm;
-  res.rpc_init_crypto = rpcs_init_crypto;
+  res.flush_packet = tcp_rpcs_flush_packet;
+  res.rpc_check_perm = tcp_rpcs_default_check_perm;
+  res.rpc_init_crypto = tcp_rpcs_init_crypto;
   res.memcache_fallback_type = &ct_memcache_server;
   res.memcache_fallback_extra = &php_master_methods;
 
@@ -1674,7 +1670,7 @@ void run_master_on() {
       } else {
         PID.port = (short)master_port;
         tl_stat_function = php_master_rpc_stats;
-        init_listening_connection(master_sfd, &ct_rpc_server, &php_rpc_master_methods);
+        init_listening_connection(master_sfd, &ct_tcp_rpc_server, &php_rpc_master_methods);
         master_sfd_inited = 1;
       }
     }

@@ -855,9 +855,8 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   if (status <= 0) {
     return status;
   }
-  size_t size = len * sizeof(int);
-  if (size != 0) {
-    void *buf = dl_allocate_safe(size);
+  if (len != 0) {
+    void *buf = dl_allocate_safe(len);
     if (buf == nullptr) {
       unalloc_net_event(event);
       return -1;
@@ -866,7 +865,7 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   } else {
     event->result = nullptr;
   }
-  event->result_len = size;
+  event->result_len = len;
   assert (res != nullptr);
   *res = event;
   return 1;
