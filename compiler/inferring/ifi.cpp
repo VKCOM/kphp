@@ -2,6 +2,7 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/gentree.h"
 #include "compiler/vertex.h"
 
 is_func_id_t get_ifi_id(VertexPtr v) {
@@ -12,24 +13,24 @@ is_func_id_t get_ifi_id(VertexPtr v) {
     return ifi_isset;
   }
   if (v->type() == op_eq3 || v->type() == op_neq3) {
-    VertexPtr b = v.as<meta_op_binary>()->rhs();
+    VertexPtr b = GenTree::get_actual_value(v.as<meta_op_binary>()->rhs());
     if (b->type() == op_var || b->type() == op_index) {
-      b = v.as<meta_op_binary>()->lhs();
+      b = GenTree::get_actual_value(v.as<meta_op_binary>()->lhs());
     }
 
-    if (b->type() == op_false) {
+    if (b->type() == op_false) {                                // $var === false
       return ifi_is_bool;
     }
-    if (b->type() == op_string && b->get_string() == "") {
+    if (b->type() == op_string && b->get_string().empty()) {    // $var === ''
       return ifi_is_string;
     }
-    if (b->type() == op_int_const && b->get_string() == "0") {
+    if (b->type() == op_int_const && b->get_string() == "0") {  // $var === 0
       return ifi_is_integer;
     }
-    if (b->type() == op_float_const) {
+    if (b->type() == op_float_const) {                          // $var === 3.52
       return ifi_is_float;
     }
-    if (b->type() == op_array && b->empty()) {
+    if (b->type() == op_array && b->empty()) {                  // $var === []
       return ifi_is_array;
     }
   }

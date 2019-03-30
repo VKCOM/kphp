@@ -148,9 +148,6 @@ private:
       tmp_vars[func] = std::move(dep_datas[i].used_global_vars);
 
       if (func->is_resumable) {
-        if (G->env().get_verbosity() > 1) {
-          fprintf(stderr, "Resumable [%s]\n", func->name.c_str());
-        }
         call_graph.graph[wait_func].push_back(func);
         call_graph.rev_graph[func].push_back(wait_func);
 
