@@ -70,6 +70,15 @@ public:
     return process_tuple(value);
   }
 
+  bool process(var &value) {
+    if (value.is_string()) {
+      return child_.process(value.as_string());
+    } else if (value.is_array()) {
+      return child_.process(value.as_array());
+    }
+    return true;
+  }
+
 protected:
   explicit BasicProcessor(Child &child) :
     child_(child) {
@@ -89,14 +98,6 @@ protected:
     return res;
   }
 
-  bool process_var(var &value) {
-    if (value.is_string()) {
-      return child_.process(value.as_string());
-    } else if (value.is_array()) {
-      return child_.process(value.as_array());
-    }
-    return true;
-  }
 
 private:
   template<size_t Index = 0, typename ...Args>
@@ -133,7 +134,7 @@ public:
       result = Basic::process_range(first, arr.end());
     }
 
-    // here any optimizations are possible (e.g. const empty array), therefore check
+    // mutates may make array as constant again (e.g. empty array), therefore check again
     if (!arr.is_const_reference_counter()) {
       arr.set_reference_counter_to_cache();
     }
@@ -158,7 +159,6 @@ public:
     }
   }
 
-  bool process(var &value) { return process_var(value); }
   bool process(string &str);
 
   bool is_depth_limit_exceeded() const {
@@ -196,7 +196,6 @@ public:
     return true;
   }
 
-  bool process(var &value) { return process_var(value); }
   bool process(string &str);
 };
 
@@ -212,6 +211,8 @@ public:
     instance = instance.clone();
     return Basic::process(instance);
   }
+
+  bool process(var &) { return true; }
 
   template<typename T>
   vk::enable_if_t<is_class_instance_inside<T>::value, bool> process(array<T> &arr) {
@@ -240,15 +241,15 @@ public:
     instance_(instance) {
   }
 
-  virtual const char *get_class() const final {
+  const char *get_class() const final {
     return instance_.get_class();
   }
 
-  virtual void memory_limit_warning() const final {
+  void memory_limit_warning() const final {
     php_warning("Memory limit exceeded on cloning instance of class '%s' into cache", get_class());
   }
 
-  virtual InstanceWrapperBase *clone_and_detach_shared_ref() const final {
+  InstanceWrapperBase *clone_and_detach_shared_ref() const final {
     auto detached_instance = instance_;
     DeepSharedDetach detach_processor;
     detach_processor.process(detached_instance);
@@ -276,7 +277,7 @@ public:
     instance_.destroy();
   }
 
-  virtual ~InstanceWrapper() final {
+  ~InstanceWrapper() final {
     if (!instance_.is_null()) {
       DeepDestroy{}.process(instance_);
     }

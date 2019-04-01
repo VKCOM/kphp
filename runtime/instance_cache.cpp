@@ -34,7 +34,7 @@ bool DeepSharedDetach::process(string &str) {
     str.make_not_shared();
   }
 
-  // here any optimizations are possible (e.g. const empty or single char str), therefore check again
+  // make_not_shared may make str constant again (e.g. const empty or single char str), therefore check again
   if (!str.is_const_reference_counter()) {
     str.set_reference_counter_to_cache();
   }
