@@ -60,6 +60,7 @@ __LINE__, tok_line_c
 __METHOD__, tok_method_c
 int, tok_int
 float, tok_float
+double, tok_float
 string, tok_string
 object, tok_object
 bool, tok_bool
