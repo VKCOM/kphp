@@ -20,6 +20,7 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <vector>
 
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
@@ -38,6 +39,8 @@
 #include "vv/vv-tl-parse.h"
 
 #include "PHP/php-engine-vars.h"
+#include "net/net-tcp-rpc-server.h"
+#include "common/algorithms/find.h"
 
 extern const char *engine_tag;
 
@@ -854,8 +857,8 @@ void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
   assert (packet_num > p->pipe_in_packet_num);
   p->pipe_in_packet_num = packet_num;
   struct connection *c = &p->pending_stat_queue;
-  while (c->first_query != (struct conn_query *)c) {
-    struct conn_query *q = c->first_query;
+  while (c->first_query != (conn_query *)c) {
+    conn_query *q = c->first_query;
     dl_assert (q != nullptr, "...");
     dl_assert (q->requester != nullptr, "...");
     //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
@@ -901,57 +904,46 @@ struct pr_data {
 #define PR_DATA(c) ((struct pr_data *)(RPCC_DATA (c) + 1))
 
 int pr_execute(struct connection *c, int op, int len) {
-  vkprintf (3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
+  vkprintf(3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
+
+  if (vk::none_of_equal(op, RPC_PHP_FULL_STATS, RPC_PHP_IMMEDIATE_STATS)) {
+    return 0;
+  }
 
   int head[5];
-
   nb_iterator_t Iter;
 
-  char *data;
-  int data_len;
+  assert (len % (int)sizeof(int) == 0);
+  assert (len >= 3 * sizeof(int));
 
-  switch (op) {
-    case RPC_PHP_FULL_STATS:
-    case RPC_PHP_IMMEDIATE_STATS:
-      assert (len % (int)sizeof(int) == 0);
-      len /= (int)sizeof(int);
-      assert (len >= 3);
+  nbit_set(&Iter, &c->In);
+  assert (nbit_read_in(&Iter, head, sizeof(int) * 3) == sizeof(int) * 3);
 
-      nbit_set(&Iter, &c->In);
-      assert (nbit_read_in(&Iter, head, sizeof(int) * 3) == sizeof(int) * 3);
+  int packet_num = head[1];
+  //long long id = *(long long *)(&head[3]);
 
-      int packet_num = head[1];
-      //long long id = *(long long *)(&head[3]);
+  std::vector<char> buf(len - (3 + 1) * sizeof(int));
+  assert (nbit_read_in(&Iter, buf.data(), buf.size()));
 
-      data_len = len - 3 - 1;
-      data = (char *)malloc(sizeof(int) * data_len);
-      assert (nbit_read_in(&Iter, data, data_len * (int)sizeof(int)));
+  nbit_clear(&Iter);
 
-      nbit_clear(&Iter);
+  worker_info_t *w = PR_DATA (c)->worker;
+  pipe_info_t *p = PR_DATA (c)->pipe_info;
+  if (w->generation == PR_DATA (c)->worker_generation) {
+    if (op == RPC_PHP_FULL_STATS) {
+      w->last_activity_time = my_now;
+      worker_set_stats(w, buf.data());
+    }
+    if (op == RPC_PHP_IMMEDIATE_STATS) {
+      worker_set_immediate_stats(w, reinterpret_cast<php_immediate_stats_t *>(buf.data()));
+    }
 
-      worker_info_t *w = PR_DATA (c)->worker;
-      pipe_info_t *p = PR_DATA (c)->pipe_info;
-      if (w->generation == PR_DATA (c)->worker_generation) {
-        if (op == RPC_PHP_FULL_STATS) {
-          w->last_activity_time = my_now;
-          worker_set_stats(w, data);
-        }
-        if (op == RPC_PHP_IMMEDIATE_STATS) {
-          worker_set_immediate_stats(w, (php_immediate_stats_t *)data);
-        }
-
-        pipe_on_get_packet(p, packet_num);
-      } else {
-        vkprintf (1, "connection [%p:%d] will be closed soon\n", c, c->fd);
-      }
-
-      free(data);
-
-      break;
+    pipe_on_get_packet(p, packet_num);
+  } else {
+    vkprintf (1, "connection [%p:%d] will be closed soon\n", c, c->fd);
   }
 
   return SKIP_ALL_BYTES;
-
 }
 
 struct rpc_client_functions pipe_reader_methods;
@@ -970,11 +962,10 @@ struct connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extr
     return nullptr;
   }
   event_t *ev;
-  struct connection *c;
 
   ev = epoll_fd_event(pipe_fd);
-  c = Connections + pipe_fd;
-  memset(c, 0, sizeof(struct connection));
+  connection *c = Connections + pipe_fd;
+  memset(c, 0, sizeof(connection));
   c->fd = pipe_fd;
   c->ev = ev;
   //c->target = nullptr;
@@ -1341,7 +1332,8 @@ struct pmm_data {
 
 #define PMM_DATA(c) ((struct pmm_data *) (MCS_DATA(c) + 1))
 int delete_stats_query(struct conn_query *q);
-struct conn_query_functions stats_cq_func;
+
+conn_query_functions stats_cq_func;
 
 void stats_cq_func_init(void) {
   stats_cq_func.magic = CQUERY_FUNC_MAGIC;
