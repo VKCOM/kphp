@@ -4,8 +4,21 @@
 
 #include "runtime/include.h"
 #include "runtime/interface.h"
-#include "auto/TL/constants.h"
 #include "runtime/rpc.h"
+
+#define TL_INT 0xa8509bda
+#define TL_LONG 0x22076cba
+#define TL_DOUBLE 0x2210c154
+#define TL_STRING 0xb5286e24
+#define TL_BOOL_FALSE 0xbc799737
+#define TL_BOOL_TRUE 0x997275b5
+#define TL_VECTOR 0x1cb5c415
+#define TL_TUPLE 0x9770768a
+#define TL_RESULT_FALSE 0x27930a7b
+#define TL_RESULT_TRUE 0x3f9c8ef8
+#define TL_DICTIONARY 0x1f4c618f
+#define TL_INT_KEY_DICTIONARY 0x07bafc42
+#define TL_LONG_KEY_DICTIONARY 0xb424d8f1
 
 const string tl_str_("");
 const string tl_str_underscore("_");
