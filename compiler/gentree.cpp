@@ -1519,7 +1519,7 @@ bool GenTree::check_uses_and_args_are_not_intersecting(const std::vector<VertexA
 
 VertexPtr GenTree::get_anonymous_function() {
   std::vector<VertexAdaptor<op_func_param>> uses_of_lambda;
-  VertexPtr f = get_function(nullptr, access_nonmember, false, &uses_of_lambda);
+  VertexPtr f = get_function(vk::string_view{}, access_nonmember, false, &uses_of_lambda);
 
   if (auto anon_function = f.try_as<op_function>()) {
     // это constructor call
@@ -1573,7 +1573,7 @@ void GenTree::check_class_member_modifier_mask(unsigned int mask, TokenType cur_
              "Mupliple access modifiers (e.g. public and private at the same time) are not allowed");
 }
 
-VertexPtr GenTree::get_class_member(const Token *phpdoc_token) {
+VertexPtr GenTree::get_class_member(const vk::string_view &phpdoc_str) {
   unsigned int mask = parse_class_member_modifier_mask();
 
   const TokenType cur_tok = cur == end ? tok_end : cur->type();
@@ -1588,11 +1588,11 @@ VertexPtr GenTree::get_class_member(const Token *phpdoc_token) {
        (mask & ClassMemberModifier::cm_protected) ? access_protected : access_public);
 
   if (cur_tok == tok_function) {
-    return get_function(phpdoc_token, access_type, (mask & ClassMemberModifier::cm_final) != 0);
+    return get_function(phpdoc_str, access_type, (mask & ClassMemberModifier::cm_final) != 0);
   }
   if (cur_tok == tok_var_name) {
     kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
-    return is_static ? get_static_field_list(phpdoc_token, access_type) : get_instance_var_list(phpdoc_token, access_type);
+    return is_static ? get_static_field_list(phpdoc_str, access_type) : get_instance_var_list(phpdoc_str, access_type);
   }
 
   kphp_error(0, "Expected 'function' or $var_name after class member modifiers");
@@ -1616,7 +1616,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
-VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_type, bool is_final, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
+VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType access_type, bool is_final, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
   expect(tok_function, "'function'");
   AutoLocation func_location(this);
 
@@ -1639,7 +1639,7 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
 
   // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_local));
-  cur_function->phpdoc_token = phpdoc_token ? new Token(*phpdoc_token) : nullptr;
+  cur_function->phpdoc_str = phpdoc_str;
   cur_function->is_final = is_final;
 
   if (FunctionData::is_instance_access_type(access_type)) {
@@ -1679,9 +1679,8 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
   // функция готова, регистрируем
   // конструктор регистрируем в самом конце, после парсинга всего класса
   if (!cur_function->is_constructor()) {
-    const bool kphp_required_flag = phpdoc_token &&
-                                    (phpdoc_token->str_val.find("@kphp-required") != std::string::npos ||
-                                     phpdoc_token->str_val.find("@kphp-lib-export") != std::string::npos);
+    const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
+                                    phpdoc_str.find("@kphp-lib-export") != std::string::npos;
     const bool auto_require = cur_function->is_extern()
                               || cur_function->is_instance_function()
                               || kphp_required_flag;
@@ -1743,7 +1742,7 @@ void GenTree::parse_extends_implements() {
   }
 }
 
-VertexPtr GenTree::get_class(const Token *phpdoc_token, ClassType class_type) {
+VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_type) {
   AutoLocation class_location(this);
   CE(vk::any_of_equal(cur->type(), tok_class, tok_interface));
   next_cur();
@@ -1775,7 +1774,7 @@ VertexPtr GenTree::get_class(const Token *phpdoc_token, ClassType class_type) {
 
   cur_class->class_type = class_type;
   cur_class->file_id = processing_file;
-  cur_class->phpdoc_token = phpdoc_token ? new Token(*phpdoc_token) : nullptr;
+  cur_class->phpdoc_str = phpdoc_str;
   cur_class->root = class_vertex;
   cur_class->set_name_and_src_name(full_class_name);    // с полным неймспейсом и слешами
 
@@ -1882,7 +1881,7 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
   }
 }
 
-VertexPtr GenTree::get_static_field_list(const Token *phpdoc_token, AccessType access_type) {
+VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, AccessType access_type) {
   cur--;      // он был $field_name, делаем перед, т.к. get_multi_call() делает next_cur()
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);
   CE (check_statement_end());
@@ -1892,13 +1891,13 @@ VertexPtr GenTree::get_static_field_list(const Token *phpdoc_token, AccessType a
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), access_type, phpdoc_token ? new Token(*phpdoc_token) : nullptr);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), access_type, phpdoc_str);
         break;
       }
       case op_set: {
         auto set_expr = node.as<op_set>();
         kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
-        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), access_type, phpdoc_token ? new Token(*phpdoc_token) : nullptr);
+        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), access_type, phpdoc_str);
         break;
       }
       default:
@@ -1909,7 +1908,7 @@ VertexPtr GenTree::get_static_field_list(const Token *phpdoc_token, AccessType a
   return VertexAdaptor<op_empty>::create();
 }
 
-VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
+VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
   VertexPtr res, first_node, second_node, third_node, forth_node, tmp_node;
   TokenType type = cur->type();
 
@@ -1956,14 +1955,14 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
     case tok_private:
     case tok_final:
       if (cur_function->type == FunctionData::func_class_holder) {
-        return get_class_member(phpdoc_token);
+        return get_class_member(phpdoc_str);
       }
       next_cur();
       kphp_error(0, "Unexpected access modifier outside of class body");
       return {};
     case tok_static:
       if (cur_function->type == FunctionData::func_class_holder) {
-        return get_class_member(phpdoc_token);
+        return get_class_member(phpdoc_str);
       }
       if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) {   // статическая переменная функции
         res = get_multi_call<op_static>(&GenTree::get_expression);
@@ -2004,17 +2003,16 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
       return get_foreach();
     case tok_switch:
       return get_switch();
-    case tok_phpdoc_kphp:
     case tok_phpdoc: {
       const Token *token = &*cur;
       next_cur();
-      return get_statement(token);
+      return get_statement(token->str_val);
     }
     case tok_function:
       if (cur_class) {      // пропущен access modifier — значит, public
-        return get_function(phpdoc_token, access_public);
+        return get_function(phpdoc_str, access_public);
       }
-      return get_function(phpdoc_token, access_nonmember);
+      return get_function(phpdoc_str, access_nonmember);
 
     case tok_try: {
       AutoLocation try_location(this);
@@ -2096,16 +2094,16 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
     }
     case tok_var: {
       next_cur();
-      get_instance_var_list(phpdoc_token, access_public);
+      get_instance_var_list(phpdoc_str, access_public);
       CE (check_statement_end());
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
     case tok_class:
-      res = get_class(phpdoc_token, ClassType::klass);
+      res = get_class(phpdoc_str, ClassType::klass);
       return res;
     case tok_interface:
-      res = get_class(phpdoc_token, ClassType::interface);
+      res = get_class(phpdoc_str, ClassType::interface);
       return res;
     default:
       res = get_expression();
@@ -2114,7 +2112,7 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
           auto empty = VertexAdaptor<op_empty>::create();
           set_location(empty, AutoLocation(this));
           res = empty;
-        } else if (phpdoc_token) {
+        } else if (!phpdoc_str.empty()) {
           return res;
         } else {
           CE (check_statement_end());
@@ -2124,7 +2122,7 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
         type_rule = get_type_rule();
         res->type_rule = type_rule;
         if (res->type() == op_set) {
-          res.as<op_set>()->phpdoc_token = phpdoc_token ? new Token(*phpdoc_token) : nullptr;
+          res.as<op_set>()->phpdoc_str = phpdoc_str;
         }
       }
       CE (check_statement_end());
@@ -2134,7 +2132,7 @@ VertexPtr GenTree::get_statement(const Token *phpdoc_token) {
   kphp_fail();
 }
 
-VertexPtr GenTree::get_instance_var_list(const Token *phpdoc_token, AccessType access_type) {
+VertexPtr GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, AccessType access_type) {
   kphp_error(cur_class, "var declaration is outside of class");
 
   const vk::string_view &var_name = cur->str_val;
@@ -2150,11 +2148,11 @@ VertexPtr GenTree::get_instance_var_list(const Token *phpdoc_token, AccessType a
   var->str_val = static_cast<string>(var_name);
   set_location(var, AutoLocation(this));
 
-  cur_class->members.add_instance_field(var, def_val, access_type, phpdoc_token ? new Token(*phpdoc_token) : nullptr);
+  cur_class->members.add_instance_field(var, def_val, access_type, phpdoc_str);
 
   if (test_expect(tok_comma)) {
     next_cur();
-    get_instance_var_list(phpdoc_token, access_type);
+    get_instance_var_list(phpdoc_str, access_type);
   }
 
   return VertexPtr();

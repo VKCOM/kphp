@@ -90,8 +90,7 @@ public:
   ClassPtr class_id;
   ClassPtr context_class;
   AccessType access_type = access_nonmember;
-  Token *phpdoc_token = nullptr;
-
+  vk::string_view phpdoc_str;
 
   enum class body_value {
     empty,

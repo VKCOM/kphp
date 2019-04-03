@@ -972,21 +972,15 @@ int TokenLexerComment::parse(LexerData *lexer_data) const {
     s += 2;
     if (s[0] && s[1] && s[0] == '*' && s[1] != '/') { // phpdoc
       char const *phpdoc_start = s;
-      bool is_kphpdoc = false;
-      bool is_regular = false;
+      bool is_phpdoc = false;
       while (s[0] && (s[0] != '*' || s[1] != '/')) {
+        // @return, @var, @param, @type, etc
         if (s[0] == '@') {
-          if (!strncmp(s, "@kphp", 5)) {
-            is_kphpdoc = true;
-          } else {      // @return, @var, @param, @type, etc
-            is_regular = true;
-          }
+          is_phpdoc = true;
         }
         s++;
       }
-      if (is_kphpdoc) {
-        lexer_data->add_token(0, tok_phpdoc_kphp, phpdoc_start, s);
-      } else if (is_regular) {
+      if (is_phpdoc) {
         lexer_data->add_token(0, tok_phpdoc, phpdoc_start, s);
       }
     } else {

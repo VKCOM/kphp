@@ -714,9 +714,8 @@
       ]
     },
     "extra_fields": {
-      "phpdoc_token": {
-        "type": "Token*",
-        "default": "nullptr"
+      "phpdoc_str": {
+        "type": "vk::string_view"
       }
     }
   },
@@ -1107,9 +1106,8 @@
       "str": "="
     },
     "extra_fields": {
-      "phpdoc_token": {
-        "type": "Token*",
-        "default": "nullptr"
+      "phpdoc_str": {
+        "type": "vk::string_view"
       }
     }
   },

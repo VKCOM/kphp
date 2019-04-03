@@ -173,7 +173,6 @@ enum TokenType {
   tok_private,
   tok_protected,
 
-  tok_phpdoc_kphp,
   tok_phpdoc,
 
   tok_clone,
@@ -189,8 +188,8 @@ public:
   vk::string_view str_val;
   vk::string_view debug_str;
 
-  explicit Token(TokenType type_) :
-    type_(type_) {
+  explicit Token(TokenType type) :
+    type_(type) {
   }
 
   Token(TokenType type_, const vk::string_view &s) :

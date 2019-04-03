@@ -21,7 +21,7 @@
  * Сейчас пока что есть костыль: @kphp-required анализируется всё равно в gentree
  */
 static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
-  if (f->phpdoc_token == nullptr || f->phpdoc_token->type() != tok_phpdoc_kphp) {
+  if (f->phpdoc_str.find("@kphp") == std::string::npos) {
     return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
   }
 
@@ -29,7 +29,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   int infer_type = 0;
   VertexRange func_params = get_function_params(f->root);
-  const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_token->str_val);
+  const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_str);
 
   std::unordered_map<std::string, int> name_to_function_param;
   int param_i = 0;

@@ -82,8 +82,8 @@ public:
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement(const Token *phpdoc_token = nullptr);
-  VertexPtr get_instance_var_list(const Token *phpdoc_token, AccessType access_type);
+  VertexPtr get_statement(const vk::string_view &phpdoc_str = vk::string_view{});
+  VertexPtr get_instance_var_list(const vk::string_view &phpdoc_str, AccessType access_type);
   VertexPtr get_use();
   VertexPtr get_seq(bool add_force_func_return = false);
 
@@ -121,24 +121,24 @@ public:
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
   VertexPtr get_anonymous_function();
-  VertexPtr get_function(const Token *phpdoc_token, AccessType access_type, bool is_final = false, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
+  VertexPtr get_function(const vk::string_view &phpdoc_str, AccessType access_type, bool is_final = false, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   unsigned int parse_class_member_modifier_mask();
   void check_class_member_modifier_mask(unsigned int mask, TokenType cur_tok);
-  VertexPtr get_class_member(const Token *phpdoc_token);
+  VertexPtr get_class_member(const vk::string_view &phpdoc_str);
 
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
 
-  VertexPtr get_class(const Token *phpdoc_token, ClassType class_type);
+  VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
   void parse_extends_implements();
 
 private:
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
-  VertexPtr get_static_field_list(const Token *phpdoc_token, AccessType access_type);
+  VertexPtr get_static_field_list(const vk::string_view &phpdoc_str, AccessType access_type);
 
 public:
   int line_num;

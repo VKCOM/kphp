@@ -176,10 +176,10 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
  * / ** @var A * / $a = ...;
  * Т.е. имя класса есть, а название переменной может отсутствовать (но это в контексте конкретной переменной, это ок).
  */
-void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const Token *phpdoc_token) {
+void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const vk::string_view &phpdoc_str) {
   int param_i = 0;
   std::string param_var_name, type_str;
-  while (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str, param_i++)) {
+  while (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, param_var_name, type_str, param_i++)) {
     if (!param_var_name.empty() || !var_name.empty()) {
       ClassPtr klass;
       AssumType assum = parse_phpdoc_classname(type_str, klass, f);
@@ -193,10 +193,10 @@ void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const 
  * / ** @var A * / var $aInstance;
  * Распознаём такие phpdoc'и у объявления var'ов внутри классов.
  */
-void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const Token *phpdoc_token) {
+void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const vk::string_view &phpdoc_str) {
   std::string type_str, param_var_name;
   ClassPtr klass;
-  if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_token->str_val, php_doc_tag::var, param_var_name, type_str)) {
+  if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, param_var_name, type_str)) {
     AssumType assum = parse_phpdoc_classname(type_str, klass, c->file_id->main_function);
 
     if (klass && (param_var_name.empty() || var_name == param_var_name)) {
@@ -259,8 +259,8 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
     case op_set: {
       auto set = root.as<op_set>();
       if (set->lhs()->type() == op_var && set->lhs()->get_string() == var_name) {
-        if (set->phpdoc_token) {
-          analyze_phpdoc_with_type(f, var_name, set->phpdoc_token);
+        if (!set->phpdoc_str.empty()) {
+          analyze_phpdoc_with_type(f, var_name, set->phpdoc_str);
         } else {
           analyze_set_to_var(f, var_name, set->rhs(), depth + 1);
         }
@@ -269,8 +269,8 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
     }
 
     case op_list: {
-      if (root.as<op_list>()->phpdoc_token) {
-        analyze_phpdoc_with_type(f, std::string(), root.as<op_list>()->phpdoc_token);
+      if (!root.as<op_list>()->phpdoc_str.empty()) {
+        analyze_phpdoc_with_type(f, std::string(), root.as<op_list>()->phpdoc_str);
       }
       return;
     }
@@ -314,10 +314,10 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
  * Вызывается единожды на функцию.
  */
 void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> root) {
-  if (f->phpdoc_token != nullptr) {
+  if (!f->phpdoc_str.empty()) {
     int param_i = 0;
     std::string param_var_name, type_str;
-    while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::param, param_var_name, type_str, param_i++)) {
+    while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::param, param_var_name, type_str, param_i++)) {
       if (!param_var_name.empty() && !type_str.empty()) {
         ClassPtr klass;
         AssumType assum = parse_phpdoc_classname(type_str, klass, f);
@@ -340,7 +340,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
 bool parse_kphp_return_doc(FunctionPtr f) {
   std::string type_str, dummy;
 
-  if (!PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::kphp_return, dummy, type_str)) {
+  if (!PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::kphp_return, dummy, type_str)) {
     return true;
   }
 
@@ -354,7 +354,7 @@ bool parse_kphp_return_doc(FunctionPtr f) {
   std::string template_type_of_arg;
   std::string template_arg_name;
   while (true) {
-    bool kphp_template_found = PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::kphp_template,
+    bool kphp_template_found = PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::kphp_template,
                                                                         template_arg_name, template_type_of_arg, param_i++);
     if (!kphp_template_found) {
       break;
@@ -409,9 +409,9 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
   assert (f->assumptions_inited_return == 1);
 //  printf("[%d] init_assumptions_for_return of %s\n", get_thread_id(), f->name.c_str());
 
-  if (f->phpdoc_token != nullptr) {
+  if (!f->phpdoc_str.empty()) {
     std::string type_str, dummy;
-    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_token->str_val, php_doc_tag::returns, dummy, type_str)) {
+    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::returns, dummy, type_str)) {
       ClassPtr klass;
       AssumType assum = parse_phpdoc_classname(type_str, klass, f);
       assumption_add_for_return(f, assum, klass);       // 'self' тоже работает
@@ -456,13 +456,13 @@ void init_assumptions_for_all_vars(ClassPtr c) {
 //  printf("[%d] init_assumptions_for_all_vars of %s\n", get_thread_id(), c->name.c_str());
 
   c->members.for_each([&](ClassMemberInstanceField &f) {
-    if (f.phpdoc_token) {
-      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_token);
+    if (!f.phpdoc_str.empty()) {
+      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_str);
     }
   });
   c->members.for_each([&](ClassMemberStaticField &f) {
-    if (f.phpdoc_token) {
-      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_token);
+    if (!f.phpdoc_str.empty()) {
+      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_str);
     }
   });
 }

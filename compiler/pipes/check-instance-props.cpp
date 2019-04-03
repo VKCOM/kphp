@@ -34,10 +34,10 @@ void CheckInstancePropsPass::init_class_instance_var(VertexPtr v, const ClassMem
   kphp_assert(field->var->class_id == klass);
 
   // сейчас phpdoc у class var'а парсится каждый раз при ->обращении;
-  // это уйдёт, когда вместо phpdoc_token будем хранить что-то более умное (что парсится 1 раз и хранит type_rule)
-  if (field->phpdoc_token) {
+  // это уйдёт, когда вместо phpdoc_str будем хранить что-то более умное (что парсится 1 раз и хранит type_rule)
+  if (!field->phpdoc_str.empty()) {
     std::string var_name, type_str;
-    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(field->phpdoc_token->str_val, php_doc_tag::var, var_name, type_str)) {
+    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(field->phpdoc_str, php_doc_tag::var, var_name, type_str)) {
       VertexPtr doc_type = phpdoc_parse_type(type_str, klass->file_id->main_function);
       if (!kphp_error(doc_type,
                       format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), field->local_name().c_str()))) {

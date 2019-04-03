@@ -106,7 +106,7 @@ FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr par
   context_function->access_type = parent_f->access_type;
   context_function->file_id = parent_f->file_id;
   context_function->class_id = parent_f->class_id;   // self:: это он, а parent:: это его parent (если есть)
-  context_function->phpdoc_token = parent_f->phpdoc_token;
+  context_function->phpdoc_str = parent_f->phpdoc_str;
 
   return context_function;
 }
@@ -128,7 +128,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 
     FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
     child_function->file_id = parent_f->file_id;
-    child_function->phpdoc_token = parent_f->phpdoc_token;
+    child_function->phpdoc_str = parent_f->phpdoc_str;
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
     child_function->has_variadic_param = parent_f->has_variadic_param;
@@ -199,13 +199,13 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
     }
   }
 
-  if (klass->phpdoc_token) {
+  if (!klass->phpdoc_str.empty()) {
     analyze_class_phpdoc(klass);
   }
 }
 
 inline void SortAndInheritClassesF::analyze_class_phpdoc(ClassPtr klass) {
-  for (const auto &tag : parse_php_doc(klass->phpdoc_token->str_val)) {
+  for (const auto &tag : parse_php_doc(klass->phpdoc_str)) {
     if (tag.type == php_doc_tag::kphp_memcache_class) {
       G->set_memcache_class(klass);
     }

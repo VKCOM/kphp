@@ -162,7 +162,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_public] = "tok_public";
   TOKEN_TYPE_NAMES[tok_private] = "tok_private";
   TOKEN_TYPE_NAMES[tok_protected] = "tok_protected";
-  TOKEN_TYPE_NAMES[tok_phpdoc_kphp] = "tok_phpdoc_kphp";
   TOKEN_TYPE_NAMES[tok_clone] = "tok_clone";
   TOKEN_TYPE_NAMES[tok_instanceof] = "tok_instanceof";
   TOKEN_TYPE_NAMES[tok_end] = "tok_end";

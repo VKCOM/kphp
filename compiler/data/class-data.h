@@ -37,7 +37,7 @@ public:
   vector<ClassPtr> traits_uses;         // на будущее
 
   FunctionPtr construct_function;
-  Token *phpdoc_token;
+  vk::string_view phpdoc_str;
 
   std::vector<Assumption> assumptions_for_vars;
   int assumptions_inited_vars;

@@ -3255,7 +3255,6 @@ int main(int argc, char *argv[]) {
   load_time += dl_time();
 
   init_uptime();
-  always_enable_option("tcp-buffers", NULL);
   preallocate_msg_buffers();
 
   start_server();
