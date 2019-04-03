@@ -63,7 +63,7 @@ bool f$fetch_end();
 struct tl_func_base;
 using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var&);
 extern array<tl_storer_ptr> tl_storers_ht;
-using tl_fetch_wrapper_ptr = array<var>(*)(std::unique_ptr<tl_func_base> &);
+using tl_fetch_wrapper_ptr = array<var>(*)(std::unique_ptr<tl_func_base>);
 extern tl_fetch_wrapper_ptr tl_fetch_wrapper;
 
 inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {

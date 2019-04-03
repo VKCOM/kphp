@@ -1038,7 +1038,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << Include("tl/" + module_name + ".h");
   }
   W << NL;
-  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> &stored_fetcher) " << BEGIN
+  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
     << "tl_exclamation_fetch_wrapper X;" << NL
     << "X.fetcher = std::move(stored_fetcher);" << NL
     << "return t_ReqResult<tl_exclamation_fetch_wrapper>(std::move(X)).fetch();" << NL

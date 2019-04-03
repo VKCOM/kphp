@@ -1878,13 +1878,13 @@ std::unique_ptr<tl_func_base> store_function(const var &tl_object) {
   return stored_fetcher;
 }
 
-array<var> fetch_function(std::unique_ptr<tl_func_base> &stored_fetcher) {
+array<var> fetch_function(std::unique_ptr<tl_func_base> stored_fetcher) {
   php_assert(stored_fetcher != nullptr);
   array<var> new_tl_object;
   if (try_fetch_rpc_error(new_tl_object)) {
     return new_tl_object;       // тогда содержит ошибку (см. tl_fetch_error())
   }
-  new_tl_object = tl_fetch_wrapper(stored_fetcher);
+  new_tl_object = tl_fetch_wrapper(std::move(stored_fetcher));
   if (!CurException.is_null()) {
     array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
     CurException = false;
@@ -2073,7 +2073,7 @@ protected:
 
       switch (cur_tl_mode) {
         case FULL_NEW_TL_MODE:
-          new_tl_object = new_tl_mode::fetch_function(stored_fetcher);
+          new_tl_object = new_tl_mode::fetch_function(std::move(stored_fetcher));
           rpc_parse_restore_previous();
           RETURN(new_tl_object);
 
@@ -2087,10 +2087,11 @@ protected:
           if (stored_fetcher) {
             rpc_parse_restore_previous();
             rpc_parse_save_backup();
-            new_tl_object = new_tl_mode::fetch_function(stored_fetcher);
+            const char *cur_f_name = stored_fetcher->get_name(); // get_name() возвращает const string literal => не будет висячего указателя
+            new_tl_object = new_tl_mode::fetch_function(std::move(stored_fetcher));
             if (!equals(tl_object, new_tl_object)) {
-              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", stored_fetcher->get_name());
-              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", stored_fetcher->get_name());
+              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", cur_f_name);
+              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", cur_f_name);
               fprintf(stderr, "Expected:\n%s\n", dump_tl_array(tl_object).c_str());
               fprintf(stderr, "Actual:\n%s\n", dump_tl_array(new_tl_object).c_str());
             }
