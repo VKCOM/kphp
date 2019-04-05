@@ -270,7 +270,8 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   add_dependency(as_rvalue(arg));
   if (tinf::get_type(arg)->get_real_ptype() == tp_array) {
     set_lca(drop_or_false(as_rvalue(arg)));
-  } else if (tinf::get_type(arg)->ptype() == tp_tuple) {   // foreach/array_map/(array) на tuple'ах — ошибка
+    // foreach/array_map/(array) на tuple'ах и инстнсах — ошибка
+  } else if (vk::any_of_equal(tinf::get_type(arg)->ptype(), tp_tuple, tp_Class)) {
     set_lca(TypeData::get_type(tp_Error));
   } else {
     recalc_ptype<tp_array>();
