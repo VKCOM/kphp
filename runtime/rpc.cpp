@@ -2451,8 +2451,11 @@ void *tlcomb_store_type(void **IP, void **Data, var *arr, tl_tree **vars) {
   if (l >= 0) {
     r = l + 1;
   } else {
-    php_warning("### DEPRECATED TL FEATURE ###\nThe constructor name must be given if type has several ones. It's going to guess the constructor in runtime!\n"
-                "TL object:\n%s\nduring storing %s", dump_tl_array(*arr).c_str(), tl_current_function_name);
+    php_warning("### DEPRECATED TL FEATURE ###\n"
+                "The constructor name must be given if type has several ones. It's going to guess the constructor in runtime!\n"
+                "Type: %s\n"
+                "Function: %s\n"
+                "TL object:\n%s", t->name.c_str(), tl_current_function_name, dump_tl_array(*arr).c_str());
     l = 0;
     r = t->constructors_num;
   }
