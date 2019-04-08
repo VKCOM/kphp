@@ -913,11 +913,12 @@ int pr_execute(connection *c, int op, int len) {
   return SKIP_ALL_BYTES;
 }
 
-struct rpc_client_functions pipe_reader_methods;
+rpc_client_functions pipe_reader_methods = [] {
+  auto res = rpc_client_functions();
+  res.execute = pr_execute;
 
-void init_pipe_reader_methods(void) {
-  pipe_reader_methods.execute = pr_execute;
-}
+  return res;
+}();
 
 connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extra) {
   //fprintf (stderr, "create_pipe_reader [%d]\n", pipe_fd);
@@ -1264,32 +1265,38 @@ int php_master_get(connection *c, const char *key, int key_len);
 int php_master_version(connection *c);
 int php_master_wakeup(connection *c);
 int php_master_get_end(connection *c, int key_cnt);
-memcache_server_functions php_master_methods;
-rpc_server_functions php_rpc_master_methods;
 
-void init_php_master_methods(void) {
-  php_master_methods.execute = mcs_execute;
-  php_master_methods.mc_store = mcs_store;
-  php_master_methods.mc_get_start = mcs_get_start;
-  php_master_methods.mc_get = php_master_get;
-  php_master_methods.mc_get_end = php_master_get_end;
-  php_master_methods.mc_incr = mcs_incr;
-  php_master_methods.mc_delete = mcs_delete;
-  php_master_methods.mc_version = php_master_version;
-  php_master_methods.mc_stats = mcs_stats;
-  php_master_methods.mc_check_perm = mcs_default_check_perm;
-  php_master_methods.mc_init_crypto = mcs_init_crypto;
-  php_master_methods.mc_wakeup = php_master_wakeup;
-  php_master_methods.mc_alarm = php_master_wakeup;
+memcache_server_functions php_master_methods = [] {
+  auto res = memcache_server_functions();
+  res.execute = mcs_execute;
+  res.mc_store = mcs_store;
+  res.mc_get_start = mcs_get_start;
+  res.mc_get = php_master_get;
+  res.mc_get_end = php_master_get_end;
+  res.mc_incr = mcs_incr;
+  res.mc_delete = mcs_delete;
+  res.mc_version = php_master_version;
+  res.mc_stats = mcs_stats;
+  res.mc_check_perm = mcs_default_check_perm;
+  res.mc_init_crypto = mcs_init_crypto;
+  res.mc_wakeup = php_master_wakeup;
+  res.mc_alarm = php_master_wakeup;
 
-  php_rpc_master_methods.execute = default_tl_rpcs_execute;
-  php_rpc_master_methods.check_ready = server_check_ready;
-  php_rpc_master_methods.flush_packet = rpcs_flush_packet;
-  php_rpc_master_methods.rpc_check_perm = rpcs_default_check_perm;
-  php_rpc_master_methods.rpc_init_crypto = rpcs_init_crypto;
-  php_rpc_master_methods.memcache_fallback_type = &ct_memcache_server;
-  php_rpc_master_methods.memcache_fallback_extra = &php_master_methods;
-}
+  return res;
+}();
+
+rpc_server_functions php_rpc_master_methods = [] {
+  auto res = rpc_server_functions();
+  res.execute = default_tl_rpcs_execute;
+  res.check_ready = server_check_ready;
+  res.flush_packet = rpcs_flush_packet;
+  res.rpc_check_perm = rpcs_default_check_perm;
+  res.rpc_init_crypto = rpcs_init_crypto;
+  res.memcache_fallback_type = &ct_memcache_server;
+  res.memcache_fallback_extra = &php_master_methods;
+
+  return res;
+}();
 
 struct pmm_data {
   int full_flag;
@@ -1300,14 +1307,15 @@ struct pmm_data {
 #define PMM_DATA(c) ((pmm_data *) (MCS_DATA(c) + 1))
 int delete_stats_query(conn_query *q);
 
-conn_query_functions stats_cq_func;
+conn_query_functions stats_cq_func = [] {
+  auto res = conn_query_functions();
+  res.magic = CQUERY_FUNC_MAGIC;
+  res.title = "stats-cq-query";
+  res.wakeup = delete_stats_query;
+  res.close = delete_stats_query;
 
-void stats_cq_func_init(void) {
-  stats_cq_func.magic = CQUERY_FUNC_MAGIC;
-  stats_cq_func.title = (char *)"stats-cq-query";
-  stats_cq_func.wakeup = delete_stats_query;
-  stats_cq_func.close = delete_stats_query;
-};
+  return res;
+}();
 
 struct stats_query_data {
   worker_info_t *worker;
@@ -1821,11 +1829,6 @@ void run_master() {
   dl_assert (err >= 0, "epoll_insert failed");
 
   preallocate_msg_buffers();
-
-  //it is C++, not C :(
-  init_php_master_methods();
-  init_pipe_reader_methods();
-  stats_cq_func_init();
 
   while (true) {
     vkprintf (2, "run_master iteration: begin\n");
