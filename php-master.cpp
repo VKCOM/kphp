@@ -54,7 +54,7 @@ extern const char *engine_tag;
 
 static int save_verbosity;
 
-typedef struct {
+struct master_data_t {
   int valid_flag;
 
   pid_t pid;
@@ -75,9 +75,9 @@ typedef struct {
   int sent_http_fd_generation;
 
   int reserved[50];
-} master_data_t;
+};
 
-typedef struct {
+struct shared_data_t {
   int magic;
   int is_inited;
   int init_owner;
@@ -87,7 +87,7 @@ typedef struct {
 
   int id;
   master_data_t masters[2];
-} shared_data_t;
+};
 
 
 static std::string socket_name, shmem_name;
@@ -168,36 +168,16 @@ struct CpuStatTimestamp {
   unsigned long long utime;
   unsigned long long stime;
   unsigned long long total_time;
-
-  CpuStatTimestamp() :
-    timestamp(0),
-    utime(0),
-    stime(0),
-    total_time(0) {}
-
-  CpuStatTimestamp(double timestamp, unsigned long long utime,
-                   unsigned long long stime, unsigned long long total_time) :
-    timestamp(timestamp),
-    utime(utime),
-    stime(stime),
-    total_time(total_time) {
-  }
 };
 
 struct CpuStat {
-  double cpu_usage;
-  double cpu_u_usage;
-  double cpu_s_usage;
+  double cpu_usage = 0;
+  double cpu_u_usage = 0;
+  double cpu_s_usage = 0;
 
-  CpuStat() :
-    cpu_usage(0),
-    cpu_u_usage(0),
-    cpu_s_usage(0) {}
+  CpuStat() = default;
 
-  CpuStat(const CpuStatTimestamp &from, const CpuStatTimestamp &to) :
-    cpu_usage(0),
-    cpu_u_usage(0),
-    cpu_s_usage(0) {
+  CpuStat(const CpuStatTimestamp &from, const CpuStatTimestamp &to) {
     unsigned long long total_diff = to.total_time - from.total_time;
     cpu_u_usage = (double)(to.utime - from.utime) / (double)total_diff;
     cpu_s_usage = (double)(to.stime - from.stime) / (double)total_diff;
@@ -206,7 +186,7 @@ struct CpuStat {
 };
 
 struct CpuStatSegment {
-  typedef CpuStat Stat;
+  using Stat = CpuStat;
   CpuStatTimestamp first, last;
 
   void init(const CpuStatTimestamp &from) {
@@ -223,7 +203,7 @@ struct CpuStatSegment {
   }
 
   Stat get_stat() {
-    return Stat(first, last);
+    return {first, last};
   }
 };
 
@@ -235,15 +215,10 @@ struct MiscStat {
 struct MiscStatTimestamp {
   double timestamp;
   int running_workers;
-
-  MiscStatTimestamp(double timestamp, int running_workers) :
-    timestamp(timestamp),
-    running_workers(running_workers) {
-  }
 };
 
 struct MiscStatSegment {
-  typedef MiscStat Stat;
+  using Stat = MiscStat;
 
   unsigned long long stat_cnt;
   unsigned long long running_workers_sum;
@@ -272,24 +247,18 @@ struct MiscStatSegment {
   }
 
   MiscStat get_stat() {
-    MiscStat res;
-    res.running_workers_max = running_workers_max;
-    res.running_workers_avg = stat_cnt != 0 ? (double)running_workers_sum / (double)stat_cnt : -1.0;
-    return res;
+    auto running_workers_avg = stat_cnt != 0 ? (double)running_workers_sum / stat_cnt : -1.0;
+    return {running_workers_max, running_workers_avg};
   }
 };
 
 
 template<class StatSegment, class StatTimestamp>
 struct StatImpl {
-
-  StatSegment first, second;
-  double period;
-  bool is_inited;
-
-  StatImpl() :
-    period((double)60 * 60 * 24 * 100000),
-    is_inited(false) {}
+  StatSegment first = StatSegment();
+  StatSegment second = StatSegment();
+  double period = (double)60 * 60 * 24 * 100000;
+  bool is_inited = false;
 
   void set_period(double new_period) {
     period = new_period;
@@ -311,7 +280,7 @@ struct StatImpl {
     }
   }
 
-  typename StatSegment::Stat get_stat(void) {
+  typename StatSegment::Stat get_stat() {
     if (!is_inited) {
       return typename StatSegment::Stat();
     }
@@ -326,26 +295,23 @@ const char *periods_desc[] = {"now", "1m", "10m", "1h"};
 struct Stats {
   std::string engine_stats;
   std::string cpu_desc, misc_desc;
-  php_immediate_stats_t istats;
-  mem_info_t mem_info;
+  php_immediate_stats_t istats = php_immediate_stats_t();
+  mem_info_t mem_info = mem_info_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc[periods_n];
-  acc_stats_t acc_stats;
+  acc_stats_t acc_stats = acc_stats_t();
 
-  Stats() :
-    istats(),
-    mem_info(),
-    acc_stats() {
+  Stats() {
     for (int i = 0; i < periods_n; i++) {
       cpu[i].set_period(periods_len[i]);
       misc[i].set_period(periods_len[i]);
     }
 
-    for (int i = 0; i < periods_n; i++) {
+    for (auto period : periods_desc) {
       if (!cpu_desc.empty()) {
         cpu_desc += ",";
       }
-      cpu_desc += periods_desc[i];
+      cpu_desc += period;
     }
     for (int i = 1; i < periods_n; i++) {
       if (!misc_desc.empty()) {
@@ -356,8 +322,8 @@ struct Stats {
   }
 
   void update(const CpuStatTimestamp &cpu_timestamp) {
-    for (int i = 0; i < periods_n; i++) {
-      cpu[i].add_timestamp(cpu_timestamp);
+    for (auto & i_cpu : cpu) {
+      i_cpu.add_timestamp(cpu_timestamp);
     }
   }
 
@@ -386,8 +352,8 @@ struct Stats {
 //    sprintf (buffer, "is_paused = %d\n", istats.is_wait_net);
 
     std::string cpu_vals;
-    for (int i = 0; i < periods_n; i++) {
-      CpuStat s = cpu[i].get_stat();
+    for (auto & i_cpu : cpu) {
+      CpuStat s = i_cpu.get_stat();
 
       sprintf(buffer, " %6.2lf%%", cpu_cnt * (s.cpu_usage * 100));
       cpu_vals += buffer;
@@ -476,7 +442,7 @@ shared_data_t *get_shared_data(const char *name) {
   ret = ftruncate(fid, mem_len);
   assert (ret == 0 && "failed to ftruncate shared memory");
 
-  shared_data_t *data = (shared_data_t *)mmap(0, mem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fid, 0);
+  auto data = reinterpret_cast<shared_data_t *>(mmap(0, mem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fid, 0));
   assert (data != MAP_FAILED && "failed to mmap shared memory");
 
   if (init_flag) {
@@ -594,22 +560,23 @@ struct worker_stats_t {
   long long total_time;
 };
 
-typedef enum {
+enum master_state_t {
   mst_on,
   mst_off
-} master_state_t;
+};
+
 #define MAX_WORKER_STATS_LEN 10000
 //TODO: save it as pointer
-typedef struct {
+struct pipe_info_t {
   int pipe_read;
   int pipe_in_packet_num;
   int pipe_out_packet_num;
-  struct connection *reader;
-  struct connection pending_stat_queue;
-} pipe_info_t;
+  connection *reader;
+  connection pending_stat_queue;
+};
 
-typedef struct worker_info_tmp_t {
-  worker_info_tmp_t *next_worker;
+struct worker_info_t {
+  worker_info_t *next_worker;
 
   int generation;
   pid_t pid;
@@ -630,7 +597,7 @@ typedef struct worker_info_tmp_t {
   int logname_id;
 
   Stats *stats;
-} worker_info_t;
+};
 
 static worker_info_t *workers[MAX_WORKERS];
 static int worker_ids[MAX_WORKERS];
@@ -643,7 +610,7 @@ static int me_dying_workers_n;
 static double last_failed;
 static int *http_fd;
 static int http_fd_port;
-static int (*try_get_http_fd)(void);
+static int (*try_get_http_fd)();
 static master_state_t state;
 
 static int signal_fd;
@@ -699,7 +666,7 @@ void delete_worker(worker_info_t *w) {
   free_workers = w;
 }
 
-void start_master(int *new_http_fd, int (*new_try_get_http_fd)(void), int new_http_fd_port) {
+void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
   save_verbosity = verbosity;
   if (verbosity < 1) {
     //verbosity = 1;
@@ -801,7 +768,7 @@ void terminate_worker(worker_info_t *w) {
   changed = 1;
 }
 
-int kill_worker(void) {
+int kill_worker() {
   int i;
   for (i = 0; i < me_workers_n; i++) {
     if (!workers[i]->is_dying) {
@@ -815,7 +782,7 @@ int kill_worker(void) {
 
 #define MAX_HANGING_TIME 65.0
 
-void kill_hanging_workers(void) {
+void kill_hanging_workers() {
   int i;
 
   static double last_terminated = -1;
@@ -856,7 +823,7 @@ void workers_send_signal(int sig) {
 void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
   assert (packet_num > p->pipe_in_packet_num);
   p->pipe_in_packet_num = packet_num;
-  struct connection *c = &p->pending_stat_queue;
+  connection *c = &p->pending_stat_queue;
   while (c->first_query != (conn_query *)c) {
     conn_query *q = c->first_query;
     dl_assert (q != nullptr, "...");
@@ -883,7 +850,7 @@ void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
 }
 
 void worker_set_stats(worker_info_t *w, const char *data) {
-  acc_stats_t *acc_stats = (acc_stats_t *)data;
+  auto acc_stats = reinterpret_cast<const acc_stats_t *>(data);
   w->stats->acc_stats = *acc_stats;
 
   data += sizeof(acc_stats_t);
@@ -901,9 +868,9 @@ struct pr_data {
   int worker_generation;
   pipe_info_t *pipe_info;
 };
-#define PR_DATA(c) ((struct pr_data *)(RPCC_DATA (c) + 1))
+#define PR_DATA(c) ((pr_data *)(RPCC_DATA (c) + 1))
 
-int pr_execute(struct connection *c, int op, int len) {
+int pr_execute(connection *c, int op, int len) {
   vkprintf(3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, len);
 
   if (vk::none_of_equal(op, RPC_PHP_FULL_STATS, RPC_PHP_IMMEDIATE_STATS)) {
@@ -952,7 +919,7 @@ void init_pipe_reader_methods(void) {
   pipe_reader_methods.execute = pr_execute;
 }
 
-struct connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extra) {
+connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extra) {
   //fprintf (stderr, "create_pipe_reader [%d]\n", pipe_fd);
 
   if (check_conn_functions(type) < 0) {
@@ -1007,8 +974,8 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
   }
   info->reader = reader;
 
-  struct connection *c = &info->pending_stat_queue;
-  c->first_query = c->last_query = (struct conn_query *)c;
+  connection *c = &info->pending_stat_queue;
+  c->first_query = c->last_query = (conn_query *)c;
   c->generation = ++conn_generation;
   c->pending_queries = 0;
 }
@@ -1018,7 +985,7 @@ void clear_pipe_info(pipe_info_t *info) {
   info->reader = nullptr;
 }
 
-int run_worker(void) {
+int run_worker() {
   dl_block_all_signals();
 
   int err;
@@ -1078,7 +1045,7 @@ int run_worker(void) {
     }
 
     for (int i = 0; i < MAX_CONNECTIONS; i++) {
-      struct connection *conn = Connections + i;
+      connection *conn = Connections + i;
       if (conn->status == conn_none) {
         continue;
       }
@@ -1161,8 +1128,8 @@ void remove_worker(pid_t pid) {
   assert (0 && "trying to remove unexisted worker");
 }
 
-void update_workers(void) {
-  while (1) {
+void update_workers() {
+  while (true) {
     int status;
     pid_t pid = waitpid(-1, &status, WNOHANG);
     if (pid > 0) {
@@ -1180,16 +1147,16 @@ void update_workers(void) {
 
 
 /*** send fd via unix socket ***/
-void init_sockaddr_un(struct sockaddr_un *unix_socket_addr, const char *name) {
+void init_sockaddr_un(sockaddr_un *unix_socket_addr, const char *name) {
   memset(unix_socket_addr, 0, sizeof(*unix_socket_addr));
   unix_socket_addr->sun_family = AF_LOCAL;
   dl_assert (strlen(name) < sizeof(unix_socket_addr->sun_path), "too long socket name");
   strcpy(unix_socket_addr->sun_path, name);
 }
 
-static const struct sockaddr_un *get_socket_addr() {
+static const sockaddr_un *get_socket_addr() {
 
-  static struct sockaddr_un unix_socket_addr;
+  static sockaddr_un unix_socket_addr;
   static int inited = 0;
 
   if (!inited) {
@@ -1204,14 +1171,14 @@ static int send_fd_via_socket(int fd) {
   int unix_socket_fd = socket(AF_LOCAL, SOCK_DGRAM, 0);
   dl_passert (fd >= 0, "failed to create socket");
 
-  struct msghdr msg;
+  msghdr msg;
   char ccmsg[CMSG_SPACE(sizeof(fd))];
-  struct cmsghdr *cmsg;
-  struct iovec vec;  /* stupidity: must send/receive at least one byte */
+  cmsghdr *cmsg;
+  iovec vec;  /* stupidity: must send/receive at least one byte */
   const char *str = "x";
   int rv;
 
-  msg.msg_name = (struct sockaddr *)get_socket_addr();
+  msg.msg_name = (sockaddr *)get_socket_addr();
   msg.msg_namelen = sizeof(*get_socket_addr());
 
   vec.iov_base = (void *)str;
@@ -1249,20 +1216,20 @@ static int sock_dgram(const char *path) {
   int fd = socket(PF_UNIX, SOCK_DGRAM, 0);
   fcntl(fd, F_SETFL, O_NONBLOCK);
   dl_passert (fd != -1, "failed to create a socket");
-  err = bind(fd, (struct sockaddr *)get_socket_addr(), sizeof(*get_socket_addr()));
+  err = bind(fd, (sockaddr *)get_socket_addr(), sizeof(*get_socket_addr()));
   dl_passert (err >= 0, "failed to bind socket");
   return fd;
 }
 
 /* receive a file descriptor over file descriptor fd */
 static int receive_fd(int fd) {
-  struct msghdr msg;
-  struct iovec iov;
+  msghdr msg;
+  iovec iov;
   char buf[1];
   int rv;
   int connfd = -1;
   char ccmsg[CMSG_SPACE (sizeof(connfd))];
-  struct cmsghdr *cmsg;
+  cmsghdr *cmsg;
 
   iov.iov_base = buf;
   iov.iov_len = 1;
@@ -1293,10 +1260,10 @@ static int receive_fd(int fd) {
 
 
 /*** Memcached interface for stats ***/
-int php_master_get(struct connection *c, const char *key, int key_len);
-int php_master_version(struct connection *c);
-int php_master_wakeup(struct connection *c);
-int php_master_get_end(struct connection *c, int key_cnt);
+int php_master_get(connection *c, const char *key, int key_len);
+int php_master_version(connection *c);
+int php_master_wakeup(connection *c);
+int php_master_get_end(connection *c, int key_cnt);
 memcache_server_functions php_master_methods;
 rpc_server_functions php_rpc_master_methods;
 
@@ -1330,8 +1297,8 @@ struct pmm_data {
   int need_end;
 };
 
-#define PMM_DATA(c) ((struct pmm_data *) (MCS_DATA(c) + 1))
-int delete_stats_query(struct conn_query *q);
+#define PMM_DATA(c) ((pmm_data *) (MCS_DATA(c) + 1))
+int delete_stats_query(conn_query *q);
 
 conn_query_functions stats_cq_func;
 
@@ -1347,7 +1314,7 @@ struct stats_query_data {
   int pipe_out_packet_num;
 };
 
-int delete_stats_query(struct conn_query *q) {
+int delete_stats_query(conn_query *q) {
   vkprintf (2, "delete_stats_query(%p,%p)\n", q, q->requester);
 
   delete_conn_query(q);
@@ -1355,8 +1322,8 @@ int delete_stats_query(struct conn_query *q) {
   return 0;
 }
 
-struct conn_query *create_stats_query(struct connection *c, pipe_info_t *pipe_info) {
-  struct conn_query *q = (struct conn_query *)zmalloc(sizeof(struct conn_query));
+conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
+  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = &pipe_info->pending_stat_queue;
@@ -1374,7 +1341,7 @@ struct conn_query *create_stats_query(struct connection *c, pipe_info_t *pipe_in
   return q;
 }
 
-void create_stats_queries(struct connection *c, int op, int worker_pid) {
+void create_stats_queries(connection *c, int op, int worker_pid) {
   int i;
 
   sigval to_send;
@@ -1402,7 +1369,7 @@ void create_stats_queries(struct connection *c, int op, int worker_pid) {
   }
 }
 
-int return_one_key_key(struct connection *c, const char *key) {
+int return_one_key_key(connection *c, const char *key) {
   std::string tmp;
   tmp += "VALUE ";
   tmp += key;
@@ -1410,7 +1377,7 @@ int return_one_key_key(struct connection *c, const char *key) {
   return 0;
 }
 
-int return_one_key_val(struct connection *c, const char *val, int vlen) {
+int return_one_key_val(connection *c, const char *val, int vlen) {
   char tmp[300];
   int l = sprintf(tmp, " 0 %d\r\n", vlen);
   assert (l < 300);
@@ -1420,7 +1387,7 @@ int return_one_key_val(struct connection *c, const char *val, int vlen) {
   return 0;
 }
 
-int update_mem_stats(void);
+int update_mem_stats();
 
 extern unsigned tl_schema_crc32;
 
@@ -1524,7 +1491,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
 }
 
 
-int php_master_wakeup(struct connection *c) {
+int php_master_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
   }
@@ -1574,7 +1541,7 @@ inline void eat_at(const char *key, int key_len, char **new_key, int *new_len) {
   }
 }
 
-int php_master_get(struct connection *c, const char *old_key, int old_key_len) {
+int php_master_get(connection *c, const char *old_key, int old_key_len) {
   char *key;
   int key_len;
   eat_at(old_key, old_key_len, &key, &key_len);
@@ -1630,19 +1597,19 @@ int php_master_get(struct connection *c, const char *old_key, int old_key_len) {
   return SKIP_ALL_BYTES;
 }
 
-int php_master_get_end(struct connection *c, int key_cnt __attribute__((unused))) {
+int php_master_get_end(connection *c, int key_cnt __attribute__((unused))) {
   if (c->status != conn_wait_net) {
     write_out(&c->Out, "END\r\n", 5);
   }
   return 0;
 }
 
-int php_master_version(struct connection *c) {
+int php_master_version(connection *c) {
   write_out(&c->Out, "VERSION " PHP_MASTER_VERSION"\r\n", 9 + sizeof(PHP_MASTER_VERSION));
   return 0;
 }
 
-void php_master_rpc_stats(void) {
+void php_master_rpc_stats() {
   std::string res(1 << 12, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
@@ -1771,9 +1738,9 @@ void run_master_on() {
 int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
   //empty
   vkprintf (2, "signal_epoll_handler\n");
-  struct signalfd_siginfo fdsi;
+  signalfd_siginfo fdsi;
   //fprintf (stderr, "A\n");
-  int s = (int)read(signal_fd, &fdsi, sizeof(struct signalfd_siginfo));
+  int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
   //fprintf (stderr, "B\n");
   if (s == -1) {
     if (0 && errno == EAGAIN) {
@@ -1782,13 +1749,13 @@ int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute_
     }
     dl_passert (0, "read signalfd_siginfo");
   }
-  dl_assert (s == sizeof(struct signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(struct signalfd_siginfo)));
+  dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
 
   vkprintf (2, "some signal received\n");
   return 0;
 }
 
-int update_mem_stats(void) {
+int update_mem_stats() {
   get_mem_stats(me->pid, &stats.mem_info);
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
@@ -1801,7 +1768,7 @@ int update_mem_stats(void) {
   return 0;
 }
 
-static void cron(void) {
+static void cron() {
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;
   unsigned long long stime = 0;
@@ -1819,18 +1786,18 @@ static void cron(void) {
       continue;
     }
 
-    CpuStatTimestamp cpu_timestamp(my_now, w->my_info.utime, w->my_info.stime, cpu_total);
+    CpuStatTimestamp cpu_timestamp{my_now, w->my_info.utime, w->my_info.stime, cpu_total};
     utime += w->my_info.utime;
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
     running_workers += w->stats->istats.is_running;
   }
-  MiscStatTimestamp misc_timestamp(my_now, running_workers);
+  MiscStatTimestamp misc_timestamp{my_now, running_workers};
   stats.update(misc_timestamp);
 
   utime += dead_utime;
   stime += dead_stime;
-  CpuStatTimestamp cpu_timestamp(my_now, utime, stime, cpu_total);
+  CpuStatTimestamp cpu_timestamp{my_now, utime, stime, cpu_total};
   stats.update(cpu_timestamp);
 
   create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
@@ -1860,7 +1827,7 @@ void run_master() {
   init_pipe_reader_methods();
   stats_cq_func_init();
 
-  while (1) {
+  while (true) {
     vkprintf (2, "run_master iteration: begin\n");
     my_now = dl_time();
 
@@ -1939,7 +1906,7 @@ void run_master() {
 
     vkprintf (2, "run_master iteration: end\n");
 
-    //struct timespec timeout;
+    //timespec timeout;
     //timeout.tv_sec = failed ? 1 : 10;
     //timeout.tv_nsec = 0;
 
