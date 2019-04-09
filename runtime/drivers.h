@@ -41,13 +41,6 @@ public:
   virtual var increment(const string &key, const var &v = 1) = 0;
 
   virtual var getVersion() = 0;
-
-  virtual var getTag() const = 0;
-  virtual var getLastQueryTime() const = 0;
-
-  virtual void bufferNextLog() = 0;
-  virtual void clearLogBuffer() = 0;
-  virtual void flushLogBuffer() = 0;
 };
 
 class McMemcache : public MC_object {
@@ -93,12 +86,6 @@ public:
 
   var getVersion();
 
-  var getTag() const;
-  var getLastQueryTime() const;
-
-  void bufferNextLog();
-  void clearLogBuffer();
-  void flushLogBuffer();
 };
 
 class RpcMemcache : public MC_object {
@@ -141,12 +128,6 @@ public:
 
   var getVersion();
 
-  var getTag() const;
-  var getLastQueryTime() const;
-
-  void bufferNextLog();
-  void clearLogBuffer();
-  void flushLogBuffer();
 };
 
 class Memcache {
@@ -175,13 +156,6 @@ public:
   friend var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v);
 
   friend var f$Memcache$$getVersion(const Memcache &mc);
-
-  friend var f$Memcache$$getTag(const Memcache &mc);
-  friend var f$Memcache$$getLastQueryTime(const Memcache &mc);
-
-  friend void f$Memcache$$bufferNextLog(const Memcache &mc);
-  friend void f$Memcache$$clearLogBuffer(const Memcache &mc);
-  friend void f$Memcache$$flushLogBuffer(const Memcache &mc);
 
   friend bool f$boolval(const Memcache &my_mc);
   friend bool eq2(const Memcache &my_mc, bool value);
@@ -216,12 +190,6 @@ var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v = 
 
 var f$Memcache$$getVersion(const Memcache &mc);
 
-var f$Memcache$$getTag(const Memcache &mc);
-var f$Memcache$$getLastQueryTime(const Memcache &mc);
-
-void f$Memcache$$bufferNextLog(const Memcache &mc);
-void f$Memcache$$clearLogBuffer(const Memcache &mc);
-void f$Memcache$$flushLogBuffer(const Memcache &mc);
 
 bool f$boolval(const Memcache &my_mc);
 bool eq2(const Memcache &my_mc, bool value);

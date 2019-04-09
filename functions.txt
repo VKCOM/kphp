@@ -37,10 +37,6 @@ class Memcache {
     public function increment ($key ::: string, $v ::: Any = 1) ::: var;
 
     public function getVersion () ::: var;
-    public function getLastQueryTime () ::: var;
-    public function bufferNextLog () ::: void;
-    public function flushLogBuffer () ::: void;
-    public function clearLogBuffer () ::: void;
     public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = -1) ::: bool;
     public function connect ($host ::: string, $port ::: int = 11211) ::: bool;
     public function pconnect ($host ::: string, $port ::: int = 11211) ::: bool;

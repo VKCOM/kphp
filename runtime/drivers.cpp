@@ -674,29 +674,6 @@ var McMemcache::getVersion() {
 }
 
 
-var McMemcache::getTag() const {
-  php_warning("Method getTag doesn't supported for object of class Memcache");
-  return var();
-}
-
-var McMemcache::getLastQueryTime() const {
-  php_warning("Method getLastQueryTime doesn't supported for object of class Memcache");
-  return var();
-}
-
-void McMemcache::bufferNextLog() {
-  php_warning("Method bufferNextLog doesn't supported for object of class Memcache");
-}
-
-void McMemcache::clearLogBuffer() {
-  php_warning("Method clearLogBuffer doesn't supported for object of class Memcache");
-}
-
-void McMemcache::flushLogBuffer() {
-  php_warning("Method flushLogBuffer doesn't supported for object of class Memcache");
-}
-
-
 RpcMemcache::host::host() :
   conn(),
   host_weight(0),
@@ -894,28 +871,6 @@ var RpcMemcache::getVersion() {
 }
 
 
-var RpcMemcache::getTag() const {
-  php_warning("Method getTag doesn't supported for object of class RpcMemcache");
-  return var();
-}
-
-var RpcMemcache::getLastQueryTime() const {
-  php_warning("Method getLastQueryTime doesn't supported for object of class RpcMemcache");
-  return var();
-}
-
-void RpcMemcache::bufferNextLog() {
-  php_warning("Method bufferNextLog doesn't supported for object of class RpcMemcache");
-}
-
-void RpcMemcache::clearLogBuffer() {
-  php_warning("Method clearLogBuffer doesn't supported for object of class RpcMemcache");
-}
-
-void RpcMemcache::flushLogBuffer() {
-  php_warning("Method flushLogBuffer doesn't supported for object of class RpcMemcache");
-}
-
 
 bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
   if (mc.mc == nullptr) {
@@ -1024,47 +979,6 @@ var f$Memcache$$getVersion(const Memcache &mc) {
     return false;
   }
   return mc.mc->getVersion();
-}
-
-
-var f$Memcache$$getTag(const Memcache &mc) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->getTag");
-    return false;
-  }
-  return mc.mc->getTag();
-}
-
-var f$Memcache$$getLastQueryTime(const Memcache &mc) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->getLastQueryTime");
-    return false;
-  }
-  return mc.mc->getLastQueryTime();
-}
-
-void f$Memcache$$bufferNextLog(const Memcache &mc) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->bufferNextLog");
-    return;
-  }
-  mc.mc->bufferNextLog();
-}
-
-void f$Memcache$$clearLogBuffer(const Memcache &mc) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->clearLogBuffer");
-    return;
-  }
-  mc.mc->clearLogBuffer();
-}
-
-void f$Memcache$$flushLogBuffer(const Memcache &mc) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->flushLogBuffer");
-    return;
-  }
-  mc.mc->flushLogBuffer();
 }
 
 
