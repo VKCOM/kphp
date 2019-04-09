@@ -791,6 +791,7 @@ public:
 
   void compile_tl_cpp_file(CodeGenerator &W) const {
     W << OpenFile("tl/" + name + ".cpp");
+    W << ExternInclude("php_functions.h");
     W << Include("tl/" + name + ".h") << NL;
     for (const auto &t : target_types) {
       if (!is_type_dependent(t)) {
