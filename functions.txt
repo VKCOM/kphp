@@ -52,7 +52,6 @@ $_REQUEST ::: var;
 $_ENV ::: var;
 $argc ::: var;
 $argv ::: var;
-$KPHP_MC_WRITE_STAT_PROBABILITY ::: var;
 
 
 function ob_clean() ::: void;

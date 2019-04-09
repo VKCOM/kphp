@@ -29,7 +29,6 @@ const int MAX_INPUT_VALUE_LEN = (1 << 24);
 const string UNDERSCORE("_", 1);
 
 
-extern var v$KPHP_MC_WRITE_STAT_PROBABILITY;
 
 const char *mc_method{nullptr};
 static const char *mc_last_key{nullptr};
@@ -37,59 +36,6 @@ static int mc_last_key_len{0};
 static var mc_res;
 static bool mc_bool_res{false};
 
-static double mc_stats_time;
-static int mc_stats_port;
-static char *mc_stats_key;
-
-
-void f$kphp_mcStats(int, string, string, double, var) __attribute__((weak));
-
-void f$kphp_mcStats(int, string, string, double, var) {}
-
-static inline void mc_stats_do(const var &res) {
-  if (mc_stats_port != -1) {
-    if (!mc_stats_key || !mc_method) {
-      php_warning("Debug: mc_stats_key %s, mc_method = %s\n", mc_stats_key, mc_method);
-      return;
-    }
-    f$kphp_mcStats(mc_stats_port, string(mc_method, strlen(mc_method)),
-                   string(mc_stats_key, strlen(mc_stats_key)),
-                   microtime() - mc_stats_time,
-                   res
-    );
-    mc_stats_time = -1;
-    mc_stats_port = -1;
-  }
-}
-
-static inline void mc_stats_init(int port, const char *key) {
-  if (!key) {
-    php_warning("Debug: init stats with null key to port %d\n", port);
-    return;
-  }
-  int prob = v$KPHP_MC_WRITE_STAT_PROBABILITY.to_int();
-  if (prob > 0 && f$mt_rand(0, prob - 1) == 0) {
-    mc_stats_time = microtime();
-    mc_stats_port = port;
-    if (mc_stats_key) {
-      free(mc_stats_key);
-    }
-    mc_stats_key = strdup(key);
-  } else {
-    mc_stats_port = -1;
-  }
-}
-
-static inline void mc_stats_init_multiget(int port, const var &key) {
-  int prob = v$KPHP_MC_WRITE_STAT_PROBABILITY.to_int();
-  if (prob > 0 && f$mt_rand(0, prob - 1) == 0) {
-    mc_stats_time = microtime();
-    mc_stats_port = port;
-    mc_stats_key = strdup(f$implode(string("\t", 1), key.to_array()).c_str());
-  } else {
-    mc_stats_port = -1;
-  }
-}
 
 
 const string mc_prepare_key(const string &key) {
@@ -232,18 +178,15 @@ var mc_get_value(const char *result_str, int result_str_len, int flags) {
 
 void mc_set_callback(const char *result, int result_len __attribute__((unused))) {
   if (!strcmp(result, "ERROR\r\n")) {
-    mc_stats_do(false);
     return;
   }
 
   if (!strcmp(result, "STORED\r\n")) {
     mc_bool_res = true;
-    mc_stats_do(true);
     return;
   }
   if (!strcmp(result, "NOT_STORED\r\n")) {
     mc_bool_res = false;
-    mc_stats_do(false);
     return;
   }
 
@@ -253,7 +196,6 @@ void mc_set_callback(const char *result, int result_len __attribute__((unused)))
 
 void mc_multiget_callback(const char *result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
-    mc_stats_do(false);
     return;
   }
   const char *full_result = result;
@@ -280,7 +222,6 @@ void mc_multiget_callback(const char *result, int result_len) {
       }
       case 'E':
         if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
-          mc_stats_do(mc_res);
           return;
         }
         /* fallthrough */
@@ -292,7 +233,6 @@ void mc_multiget_callback(const char *result, int result_len) {
 
 void mc_get_callback(const char *result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
-    mc_stats_do(false);
     return;
   }
   const char *full_result = result;
@@ -322,7 +262,6 @@ void mc_get_callback(const char *result, int result_len) {
       /* fallthrough */
     case 'E':
       if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
-        mc_stats_do(mc_res);
         return;
       }
       /* fallthrough */
@@ -333,7 +272,6 @@ void mc_get_callback(const char *result, int result_len) {
 
 void mc_delete_callback(const char *result, int result_len __attribute__((unused))) {
   if (!strcmp(result, "ERROR\r\n")) {
-    mc_stats_do(false);
     return;
   }
 
@@ -345,12 +283,10 @@ void mc_delete_callback(const char *result, int result_len __attribute__((unused
     php_warning("Strange result \"%s\" returned from memcached in Memcache::delete with key %s", result, mc_last_key);
     mc_bool_res = false;
   }
-  mc_stats_do(mc_bool_res);
 }
 
 void mc_increment_callback(const char *result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
-    mc_stats_do(false);
     return;
   }
 
@@ -363,12 +299,10 @@ void mc_increment_callback(const char *result, int result_len) {
       php_warning("Wrong memcache response \"%s\" in Memcache::%sement with key %s", result, mc_method, mc_last_key);
     }
   }
-  mc_stats_do(mc_res);
 }
 
 void mc_version_callback(const char *result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
-    mc_stats_do(false);
     return;
   }
 
@@ -385,7 +319,6 @@ void mc_version_callback(const char *result, int result_len) {
     default:
       php_warning("Wrong memcache response \"%s\" in Memcache::getVersion", result);
   }
-  mc_stats_do(mc_res);
 }
 
 
@@ -465,7 +398,6 @@ bool McMemcache::run_set(const string &key, const var &value, int flags, int exp
   } else {
     mc_last_key = real_key.c_str();
     mc_last_key_len = (int)real_key.size();
-    mc_stats_init(cur_host.host_port, mc_last_key);
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_set_callback);
     return mc_bool_res;
   }
@@ -507,7 +439,6 @@ var McMemcache::run_increment(const string &key, const var &count) {
   } else {
     mc_last_key = real_key.c_str();
     mc_last_key_len = (int)real_key.size();
-    mc_stats_init(cur_host.host_port, mc_last_key);
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_increment_callback);
     return mc_res;
   }
@@ -595,7 +526,6 @@ var McMemcache::get(const var &key_var) {
     } else {
       mc_last_key = drivers_SB.c_str();
       mc_last_key_len = (int)drivers_SB.size();
-      mc_stats_init(cur_host.host_port, mc_last_key);
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_multiget_callback); //TODO wrong if we have no mc_proxy
     }
   } else {
@@ -617,7 +547,6 @@ var McMemcache::get(const var &key_var) {
       mc_res = false;
       mc_last_key = real_key.c_str();
       mc_last_key_len = (int)real_key.size();
-      mc_stats_init(cur_host.host_port, mc_last_key);
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_get_callback);
     }
   }
@@ -643,7 +572,6 @@ bool McMemcache::delete_(const string &key) {
   } else {
     mc_last_key = real_key.c_str();
     mc_last_key_len = (int)real_key.size();
-    mc_stats_init(cur_host.host_port, mc_last_key);
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_delete_callback);
     return mc_bool_res;
   }
@@ -754,9 +682,7 @@ bool RpcMemcache::add(const string &key, const var &value, int flags, int expire
 
   const string real_key = mc_prepare_key(key);
   host cur_host = get_host(real_key);
-  mc_stats_init(cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  mc_stats_do(res);
   return res;
 }
 
@@ -768,9 +694,7 @@ bool RpcMemcache::set(const string &key, const var &value, int flags, int expire
 
   const string real_key = mc_prepare_key(key);
   host cur_host = get_host(real_key);
-  mc_stats_init(cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  mc_stats_do(res);
   return res;
 }
 
@@ -782,9 +706,7 @@ bool RpcMemcache::replace(const string &key, const var &value, int flags, int ex
 
   const string real_key = mc_prepare_key(key);
   host cur_host = get_host(real_key);
-  mc_stats_init(cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  mc_stats_do(res);
   return res;
 }
 
@@ -796,10 +718,8 @@ var RpcMemcache::get(const var &key_var) {
     }
 
     host cur_host = get_host(string());
-    mc_stats_init_multiget(cur_host.actor_id, key_var);
     var res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, false, true, fake);
     php_assert(resumable_finished);
-    mc_stats_do(res);
     return res;
   } else {
     if (hosts.count() <= 0) {
@@ -811,9 +731,7 @@ var RpcMemcache::get(const var &key_var) {
     const string real_key = mc_prepare_key(key);
 
     host cur_host = get_host(real_key);
-    mc_stats_init(cur_host.actor_id, real_key.c_str());
     var res = f$rpc_mc_get(cur_host.conn, real_key, -1.0, fake);
-    mc_stats_do(res);
     return res;
   }
 }
@@ -826,9 +744,7 @@ bool RpcMemcache::delete_(const string &key) {
 
   const string real_key = mc_prepare_key(key);
   host cur_host = get_host(real_key);
-  mc_stats_init(cur_host.actor_id, real_key.c_str());
   bool res = f$rpc_mc_delete(cur_host.conn, real_key, -1.0, fake);
-  mc_stats_do(res);
   return res;
 }
 
@@ -840,9 +756,7 @@ var RpcMemcache::decrement(const string &key, const var &count) {
 
   const string real_key = mc_prepare_key(key);
   host cur_host = get_host(real_key);
-  mc_stats_init(cur_host.actor_id, real_key.c_str());
   var res = f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, fake);
-  mc_stats_do(res);
   return res;
 }
 
@@ -854,9 +768,7 @@ var RpcMemcache::increment(const string &key, const var &count) {
 
   const string real_key = mc_prepare_key(key);
   host cur_host = get_host(real_key);
-  mc_stats_init(cur_host.actor_id, real_key.c_str());
   var res = f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, fake);
-  mc_stats_do(res);
   return res;
 }
 
@@ -1724,11 +1636,7 @@ bool f$mysqli_select_db(const MyDB &dn __attribute__((unused)), const string &na
 }
 
 
-var v$KPHP_MC_WRITE_STAT_PROBABILITY __attribute__ ((weak));
-
 static void reset_drivers_global_vars() {
-  hard_reset_var(v$KPHP_MC_WRITE_STAT_PROBABILITY);
-
   hard_reset_var(DB_Proxy);
 
   hard_reset_var(mc_method);
