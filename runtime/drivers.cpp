@@ -322,9 +322,6 @@ void mc_version_callback(const char *result, int result_len) {
 }
 
 
-MC_object::~MC_object() {
-}
-
 McMemcache::host::host() :
   host_num(-1),
   host_port(-1),
@@ -472,11 +469,11 @@ bool McMemcache::addServer(const string &host_name, int port, bool persistent __
 }
 
 bool McMemcache::connect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, false, 1, timeout);
+  return addServer(host_name, port, false, 1, timeout, 15, true, var(), -1);
 }
 
 bool McMemcache::pconnect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, true, 1, timeout);
+  return addServer(host_name, port, true, 1, timeout, 15, true, var(), -1);
 }
 
 bool McMemcache::rpc_connect(const string &host_name __attribute__((unused)), int port __attribute__((unused)), const var &default_actor_id __attribute__((unused)), double timeout __attribute__((unused)), double connect_timeout __attribute__((unused)), double reconnect_timeout __attribute__((unused))) {
@@ -602,12 +599,6 @@ var McMemcache::getVersion() {
 }
 
 
-RpcMemcache::host::host() :
-  conn(),
-  host_weight(0),
-  actor_id(-1) {
-}
-
 RpcMemcache::host::host(const string &host_name, int port, int actor_id, int host_weight, int timeout_ms) :
   conn(f$new_rpc_connection(host_name, port, actor_id, timeout_ms * 0.001)),
   host_weight(host_weight),
@@ -655,11 +646,11 @@ bool RpcMemcache::addServer(const string &host_name, int port, bool persistent _
 }
 
 bool RpcMemcache::connect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, false, 1, timeout);
+  return addServer(host_name, port, false, 1, timeout, 15, true, var(), -1);
 }
 
 bool RpcMemcache::pconnect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, true, 1, timeout);
+  return addServer(host_name, port, true, 1, timeout, 15, true, var(), -1);
 }
 
 bool RpcMemcache::rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
@@ -1202,12 +1193,12 @@ string mysql_read_string(const unsigned char *&result, int &result_len, bool &is
 
 void mysql_query_callback(const char *result_, int result_len) {
 //  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
-  if (*query_id_ptr == false || !strcmp(result_, "ERROR\r\n")) {
+  if (!*query_id_ptr || !strcmp(result_, "ERROR\r\n")) {
     *query_id_ptr = false;
     return;
   }
 
-  const unsigned char *result = (const unsigned char *)result_;
+  const auto *result = (const unsigned char *)result_;
   if (result_len < 4) {
     return;
   }
@@ -1359,17 +1350,13 @@ static MyDB DB_Proxy;
 db_driver::db_driver() :
   connection_id(-1),
   connected(0),
-
   last_query_id(0),
   biggest_query_id(0),
   error(),
   errno_(0),
   affected_rows(0),
   insert_id(0),
-  query_results(),
-  cur_pos(),
-  field_cnt(0),
-  field_names() {
+  field_cnt(0) {
   cur_pos.push_back(0);
   query_results.push_back(array<array<var>>());
 }

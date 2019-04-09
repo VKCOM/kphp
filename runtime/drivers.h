@@ -1,3 +1,5 @@
+#include <utility>
+
 #pragma once
 
 #include "runtime/exception.h"
@@ -21,29 +23,29 @@ const int MEMCACHE_COMPRESSED = 2;
 
 class MC_object {
 protected:
-  virtual ~MC_object();
+  virtual ~MC_object() = default;
 
 public:
-  virtual bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1) = 0;
-  virtual bool connect(const string &host_name, int port = 11211, int timeout = 1) = 0;
-  virtual bool pconnect(const string &host_name, int port = 11211, int timeout = 1) = 0;
-  virtual bool rpc_connect(const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17) = 0;
+  virtual bool addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) = 0;
+  virtual bool connect(const string &host_name, int port, int timeout) = 0;
+  virtual bool pconnect(const string &host_name, int port, int timeout) = 0;
+  virtual bool rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) = 0;
 
-  virtual bool add(const string &key, const var &value, int flags = 0, int expire = 0) = 0;
-  virtual bool set(const string &key, const var &value, int flags = 0, int expire = 0) = 0;
-  virtual bool replace(const string &key, const var &value, int flags = 0, int expire = 0) = 0;
+  virtual bool add(const string &key, const var &value, int flags, int expire) = 0;
+  virtual bool set(const string &key, const var &value, int flags, int expire) = 0;
+  virtual bool replace(const string &key, const var &value, int flags, int expire) = 0;
 
   virtual var get(const var &key_var) = 0;
 
   virtual bool delete_(const string &key) = 0;
 
-  virtual var decrement(const string &key, const var &v = 1) = 0;
-  virtual var increment(const string &key, const var &v = 1) = 0;
+  virtual var decrement(const string &key, const var &v) = 0;
+  virtual var increment(const string &key, const var &v) = 0;
 
   virtual var getVersion() = 0;
 };
 
-class McMemcache : public MC_object {
+class McMemcache final : public MC_object {
 private:
   class host {
   public:
@@ -68,37 +70,37 @@ private:
 public:
   McMemcache();
 
-  bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
-  bool connect(const string &host_name, int port = 11211, int timeout = 1);
-  bool pconnect(const string &host_name, int port = 11211, int timeout = 1);
-  bool rpc_connect(const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+  bool addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) final;
+  bool connect(const string &host_name, int port, int timeout) final;
+  bool pconnect(const string &host_name, int port, int timeout) final;
+  bool rpc_connect(const string &host_name, int port, const var &default_actor_id , double timeout, double connect_timeout, double reconnect_timeout) final;
 
-  bool add(const string &key, const var &value, int flags = 0, int expire = 0);
-  bool set(const string &key, const var &value, int flags = 0, int expire = 0);
-  bool replace(const string &key, const var &value, int flags = 0, int expire = 0);
+  bool add(const string &key, const var &value, int flags, int expire) final;
+  bool set(const string &key, const var &value, int flags, int expire) final;
+  bool replace(const string &key, const var &value, int flags, int expire) final;
 
-  var get(const var &key_var);
+  var get(const var &key_var) final;
 
-  bool delete_(const string &key);
+  bool delete_(const string &key) final;
 
-  var decrement(const string &key, const var &v = 1);
-  var increment(const string &key, const var &v = 1);
+  var decrement(const string &key, const var &v) final;
+  var increment(const string &key, const var &v) final;
 
-  var getVersion();
+  var getVersion() final;
 
 };
 
-class RpcMemcache : public MC_object {
+class RpcMemcache final : public MC_object {
 private:
   class host {
   public:
     rpc_connection conn;
-    int host_weight;
-    int actor_id;
+    int host_weight = 0;
+    int actor_id = -1;
 
-    host();
+    host() = default;
     host(const string &host_name, int port, int actor_id, int host_weight, int timeout_ms);
-    host(const rpc_connection &c);
+    explicit host(const rpc_connection &c);
   };
 
   array<host> hosts;
@@ -110,24 +112,23 @@ private:
 public:
   explicit RpcMemcache(bool fake);
 
-  bool addServer(const string &host_name, int port = 11211, bool persistent = true, int weight = 1, int timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
-  bool connect(const string &host_name, int port = 11211, int timeout = 1);
-  bool pconnect(const string &host_name, int port = 11211, int timeout = 1);
-  bool rpc_connect(const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+  bool addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) final;
+  bool connect(const string &host_name, int port, int timeout) final;
+  bool pconnect(const string &host_name, int port, int timeout) final;
+  bool rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) final;
 
-  bool add(const string &key, const var &value, int flags = 0, int expire = 0);
-  bool set(const string &key, const var &value, int flags = 0, int expire = 0);
-  bool replace(const string &key, const var &value, int flags = 0, int expire = 0);
+  bool add(const string &key, const var &value, int flags, int expire) final;
+  bool set(const string &key, const var &value, int flags, int expire) final;
+  bool replace(const string &key, const var &value, int flags, int expire) final;
 
-  var get(const var &key_var);
+  var get(const var &key_var) final;
 
-  bool delete_(const string &key);
+  bool delete_(const string &key) final;
 
-  var decrement(const string &key, const var &v = 1);
-  var increment(const string &key, const var &v = 1);
+  var decrement(const string &key, const var &v) final;
+  var increment(const string &key, const var &v) final;
 
-  var getVersion();
-
+  var getVersion() final;
 };
 
 class Memcache {
@@ -373,7 +374,7 @@ class rpc_mc_multiget_resumable : public Resumable {
   bool return_false_if_not_found;
 
 protected:
-  bool run() {
+  bool run() override {
     RESUMABLE_BEGIN
       while (keys_n > 0) {
         request_id = f$wait_queue_next(queue_id, -1);
@@ -423,7 +424,7 @@ public:
     first_request_id(first_request_id),
     keys_n(keys_n),
     request_id(-1),
-    query_names(query_names),
+    query_names(std::move(query_names)),
     result(array_size(0, keys_n, false)),
     return_false_if_not_found(return_false_if_not_found) {
   }
