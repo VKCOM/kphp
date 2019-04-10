@@ -79,5 +79,5 @@ bool SrcFile::is_builtin() const {
     return true;
   }
 
-  return owner_lib && file_name == owner_lib->functions_txt_file();
+  return owner_lib && !owner_lib->is_raw_php() && file_name == owner_lib->functions_txt_file();
 }
