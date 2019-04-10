@@ -1670,7 +1670,7 @@ VertexPtr GenTree::get_function(const Token *phpdoc_token, AccessType access_typ
       func_force_return(cur_function->root);
     }
   } else {
-    //CE(!kphp_error((cur_class && cur_class->is_interface()) || processing_file->is_builtin(), "function must have non-empty body"));
+    CE(!kphp_error((cur_class && cur_class->is_interface()) || processing_file->is_builtin(), "function must have non-empty body"));
     CE (expect(tok_semicolon, "';'"));
     cur_function->type = FunctionData::func_extern;
     cur_function->root->cmd() = VertexAdaptor<op_seq>::create();

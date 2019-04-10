@@ -75,5 +75,9 @@ string SrcFile::get_short_name() {
 }
 
 bool SrcFile::is_builtin() const {
-  return file_name == G->env().get_functions();
+  if (file_name == G->env().get_functions()) {
+    return true;
+  }
+
+  return owner_lib && file_name == owner_lib->functions_txt_file();
 }
