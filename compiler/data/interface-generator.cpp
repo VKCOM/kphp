@@ -27,10 +27,8 @@ VertexAdaptor<op_func_call> create_instance_cast_to(ClassPtr derived) {
   return cast_to_derived;
 }
 
-bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interface_function) {
-  const auto &interface_name = interface_function->name;
-  auto interface_method_in_derived = context_class->members.get_instance_method(get_local_name_from_global_$$(interface_name));
-
+template<class ClassMemberMethod>
+bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
   if (!interface_method_in_derived) {
     auto msg = format("You should override interface method: `%s` in class: `%s`",
                       interface_function->get_human_readable_name().c_str(),
@@ -62,13 +60,19 @@ bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interfac
 
   if (!(i_argn <= max_argn && (default_argn >= max_argn - i_argn))) {
     auto msg = format("Count of arguments are different in interface method: `%s` and in class: `%s`",
-      interface_function->get_human_readable_name().c_str(),
-      context_class->name.c_str());
+                      interface_function->get_human_readable_name().c_str(),
+                      context_class->name.c_str());
 
     kphp_error_act(false, msg, return false);
   }
 
   return true;
+}
+
+bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interface_function) {
+  const auto &interface_name = interface_function->name;
+  auto interface_method_in_derived = context_class->members.get_instance_method(get_local_name_from_global_$$(interface_name));
+  return check_that_signatures_are_same(interface_function, context_class, interface_method_in_derived);
 }
 
 VertexPtr generate_call_in_context_of_derived(ClassPtr context_class, FunctionPtr interface_function) {
@@ -94,6 +98,13 @@ bool check_that_function_is_abstract(FunctionPtr interface_function) {
          interface_function->root->cmd()->empty();
 }
 
+void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr> &derived_classes) {
+  for (auto derived : derived_classes) {
+    auto static_in_derived = derived->members.get_static_method(get_local_name_from_global_$$(interface_function->name));
+    check_that_signatures_are_same(interface_function, derived, static_in_derived);
+  }
+}
+
 } // anonymous namespace
 
 
@@ -117,6 +128,9 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
   }
 
   kphp_assert(check_that_function_is_abstract(interface_function));
+  if (interface_function->is_static_function()) {
+    return check_static_function(interface_function, derived_classes);
+  }
 
   VertexPtr body_of_interface_method;
   for (auto derived : derived_classes) {

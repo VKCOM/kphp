@@ -9,7 +9,6 @@ void GenerateInterfaceMethods::execute(FunctionPtr function, DataStream<Function
 
   bool is_in_interface = function->class_id && function->class_id->is_interface();
   if (is_in_interface && function->type != FunctionData::func_class_holder) {
-    kphp_error_return(!function->is_static_function(), "static functions are not allowed in interfaces");
     generate_body_of_interface_method(function);
   }
 
