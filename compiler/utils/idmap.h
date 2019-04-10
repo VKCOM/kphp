@@ -36,7 +36,7 @@ template<class DataType>
 template<class IndexType>
 DataType &IdMap<DataType>::operator[](const IndexType &i) {
   int index = get_index(i);
-  assert(index >= 0);
+  assert(index >= 0 && "maybe you've forgotten pass function to stream");
   dl_assert(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
   return data[index];
 }

@@ -87,7 +87,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPt
   kphp_assert(!params_of_called_method.empty());
   auto params_without_arg_of_captured_class = VertexRange(std::next(params_of_called_method.begin()), params_of_called_method.end());
 
-  return create_invoke_fun_returning_call(call_function, VertexAdaptor<op_func_param_list>::create(params_without_arg_of_captured_class));
+  return create_invoke_fun_returning_call(called_method, call_function, VertexAdaptor<op_func_param_list>::create(params_without_arg_of_captured_class));
 }
 
 LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(FunctionPtr called_function) {
@@ -96,7 +96,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 
   call_function->set_string(called_function->name);
   call_function->set_func_id(called_function);
-  return create_invoke_fun_returning_call(call_function, called_function->root->params().as<op_func_param_list>());
+  return create_invoke_fun_returning_call(called_function, call_function, called_function->root->params().as<op_func_param_list>());
 }
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
@@ -254,13 +254,14 @@ FunctionPtr LambdaGenerator::register_invoke_method(VertexAdaptor<op_function> f
   return invoke_function;
 }
 
-LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params) {
+LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(FunctionPtr base_fun, VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params) {
   auto return_call = VertexAdaptor<op_return>::create(call_function);
   auto lambda_body = VertexAdaptor<op_seq>::create(return_call);
 
   set_location(created_location, call_function, return_call, lambda_body);
 
   auto fun = VertexAdaptor<op_function>::create(generated_lambda->root->name(), invoke_params, lambda_body);
+  fun->set_func_id(base_fun);
   add_invoke_method(fun);
 
   return *this;

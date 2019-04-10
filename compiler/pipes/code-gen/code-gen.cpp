@@ -802,9 +802,19 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(interface->header_name, interface->get_subdir());
   W << "#pragma once" << NL;
 
+  std::string parent_class;
+  if (auto parent = interface->parent_class) {
+    parent_class = parent->src_name;
+    IncludesCollector includes;
+    includes.add_class_include(parent);
+    W << includes;
+  } else {
+    parent_class = "abstract_refcountable_php_interface";
+  }
+
   W << OpenNamespace() << NL;
 
-  W << "struct " << interface->src_name << " : public abstract_refcountable_php_interface " << BEGIN;
+  W << "struct " << interface->src_name << " : public " << parent_class << " " << BEGIN;
 
   W << "virtual ";
   ClassDeclaration::compile_get_class(W, interface);

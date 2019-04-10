@@ -71,6 +71,7 @@ public:
   bool is_trait() const { return class_type == ClassType::trait; }
   virtual bool is_lambda() const { return false; }
 
+  bool is_parent_of(ClassPtr other);
   InterfacePtr get_common_interface(ClassPtr other) const;
 
   virtual bool is_fully_static() const {

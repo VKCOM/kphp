@@ -146,26 +146,38 @@ void ClassData::patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &p
   params_next.emplace(params_next.begin(), param_this);
 }
 
+bool ClassData::is_parent_of(ClassPtr other) {
+  return other->parent_class && (other->parent_class == ClassPtr{this} || is_parent_of(other->parent_class));
+}
+
 InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
   if (!other) {
     return {};
   }
 
   ClassPtr self{const_cast<ClassData *>(this)};
-  InterfacePtr result;
+  if (self == other) {
+    return self;
+  }
 
   if (class_type == other->class_type) {
     switch (class_type) {
       case ClassType::klass: {
-        auto common_interface_it = std::find_first_of(implements.begin(), implements.end(), other->implements.begin(), other->implements.end());
-        if (common_interface_it != implements.end()) {
-          result = *common_interface_it;
+        if (implements.size() == other->implements.size() && implements.size() == 1) {
+          return implements[0]->get_common_interface(other->implements[0]);
         }
         break;
       }
       case ClassType::interface: {
-        if (self == other) {
-          result = other;
+        // performance doesn't matter
+        for (; self && other; self = self->parent_class, other = other->parent_class) {
+          if (self == other) {
+            return self;
+          } else if (self->is_parent_of(other)) {
+            return self;
+          } else if (other->is_parent_of(self)) {
+            return other;
+          }
         }
         break;
       }
@@ -178,14 +190,12 @@ InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
     }
 
     if (self->is_class() && other->is_interface()) {
-      auto interface_it = std::find(self->implements.begin(), self->implements.end(), other);
-      if (interface_it != self->implements.end()) {
-        result = *interface_it;
-      }
+      kphp_assert(self->implements.size() == 1);
+      return self->implements[0]->get_common_interface(other);
     }
   }
 
-  return result;
+  return {};
 }
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {

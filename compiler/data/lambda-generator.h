@@ -29,7 +29,7 @@ private:
   void add_uses_for_captured_class_from_array();
   std::vector<VertexAdaptor<op_var>> create_params_for_invoke_which_call_method(FunctionPtr called_method);
   FunctionPtr register_invoke_method(VertexAdaptor<op_function> fun);
-  LambdaGenerator &create_invoke_fun_returning_call(VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params);
+  LambdaGenerator &create_invoke_fun_returning_call(FunctionPtr base_fun, VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params);
 
 private:
   const Location created_location;

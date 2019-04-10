@@ -61,16 +61,28 @@ auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltyp
 
 // делаем функцию childclassname$$localname, которая выглядит как
 // function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
-VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(FunctionPtr parent_f, ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
+VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
   auto local_name = parent_method.local_name();
+  auto parent_f = parent_method.function;
 
   auto new_name = VertexAdaptor<op_func_name>::create();
   new_name->set_string(replace_backslashes(child_class->name) + "$$" + local_name);
 
-  auto parent_class = parent_method.function->class_id;
-  auto parent_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
+  auto parent_function_name = parent_f->name + "$$" + replace_backslashes(child_class->name);
   // it's equivalent to new_func_call->set_string("parent::" + local_name);
-  auto new_func_call = VertexAdaptor<op_func_call>::create(parent_f->get_params_as_vector_of_vars());
+
+  VertexAdaptor<op_func_call> new_func_call;
+  auto parent_params = parent_f->get_params_as_vector_of_vars();
+  if (!parent_f->has_variadic_param) {
+    new_func_call = VertexAdaptor<op_func_call>::create(parent_params);
+  } else {
+    kphp_assert(!parent_params.empty());
+    auto &last_param = parent_params.back();
+    auto unpacked_last_param = VertexAdaptor<op_varg>::create(last_param).set_location(last_param);
+    parent_params.pop_back();
+
+    new_func_call = VertexAdaptor<op_func_call>::create(parent_params, unpacked_last_param);
+  }
   new_func_call->set_string(parent_function_name);
 
   auto new_return = VertexAdaptor<op_return>::create(new_func_call);
@@ -89,7 +101,6 @@ FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr par
   root->name()->set_string(ctx_function_name);
 
   auto context_function = FunctionData::clone_from(parent_f, root);
-  context_function->has_variadic_param = false;
 
   return context_function;
 }
@@ -107,7 +118,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   }
 
   if (!child_class->members.has_static_method(local_name)) {
-    auto child_root = generate_function_with_parent_call(parent_f, child_class, parent_method);
+    auto child_root = generate_function_with_parent_call(child_class, parent_method);
 
     FunctionPtr child_function = FunctionData::clone_from(parent_f, child_root);
     child_function->is_auto_inherited = true;
@@ -150,10 +161,33 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   }
 }
 
-void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class) {
+void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class, DataStream<FunctionPtr> &function_stream) {
   kphp_error(interface_class->is_interface(),
              format("Error implements %s and %s", child_class->name.c_str(), interface_class->name.c_str()));
-  child_class->implements.emplace_back(interface_class);
+  if (child_class->is_interface()) {
+    child_class->parent_class = interface_class;
+
+    auto clone_function = [child_class, &function_stream](FunctionPtr from) {
+      auto new_root = from->root.clone();
+      new_root->name()->set_string(child_class->name + "$$" + get_local_name_from_global_$$(from->name));
+      auto cloned_fun = FunctionData::clone_from(from, new_root);
+      cloned_fun->class_id = child_class;
+      G->register_and_require_function(cloned_fun, function_stream, true);
+
+      return cloned_fun;
+    };
+
+    interface_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
+      child_class->members.add_instance_method(clone_function(m.function), m.access_type);
+    });
+
+    interface_class->members.for_each([&](const ClassMemberStaticMethod &m) {
+      child_class->members.add_static_method(clone_function(m.function), m.access_type);
+    });
+  } else {
+    child_class->implements.emplace_back(interface_class);
+  }
+
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);
 }
@@ -171,7 +205,7 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         inherit_child_class_from_parent(klass, dep_class, function_stream);
         break;
       case ClassType::interface:
-        inherit_class_from_interface(klass, dep_class);
+        inherit_class_from_interface(klass, dep_class, function_stream);
         break;
       case ClassType::trait:
         kphp_assert(0 && "mixin traits is not supported yet");

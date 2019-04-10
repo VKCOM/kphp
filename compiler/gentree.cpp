@@ -475,11 +475,12 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_varg: {
       bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar);
-      CE (!kphp_error(is_in_parse_func_call && good_prefix, "It's not allowed using `...` in this place"));
+      CE (!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
 
       next_cur();
       res = get_expression();
-      CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_arrow, op_index, op_conv_array) , "It's not allowed using `...` in this place"));
+      CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_arrow, op_index, op_conv_array) ,
+        format("It's not allowed using `...` in this place (op: %s)", OpInfo::str(res->type()).c_str())));
       res = VertexAdaptor<op_varg>::create(res).set_location(res);
       break;
     }
@@ -1729,7 +1730,7 @@ void GenTree::parse_extends_implements() {
     next_cur();                       // (в php тоже так)
     kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
     auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(cur->str_val), '\\');
-    cur_class->str_dependents.emplace_back(ClassType::klass, full_class_name);
+    cur_class->str_dependents.emplace_back(cur_class->class_type, full_class_name);
     next_cur();
   }
 
@@ -1763,6 +1764,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
   }
 
+  cur_class->class_type = class_type;
   parse_extends_implements();
 
   auto name_vertex = VertexAdaptor<op_func_name>::create();
@@ -1772,7 +1774,6 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   auto class_vertex = VertexAdaptor<op_class>::create(name_vertex);
   set_location(class_vertex, class_location);
 
-  cur_class->class_type = class_type;
   cur_class->file_id = processing_file;
   cur_class->phpdoc_str = phpdoc_str;
   cur_class->root = class_vertex;
