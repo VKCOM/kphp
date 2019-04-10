@@ -126,9 +126,8 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
   std::vector<VertexAdaptor<op_var>> res_params(static_cast<size_t>(func_params.size() - shift));
   std::transform(std::next(func_params.begin(), shift), func_params.end(), res_params.begin(),
                  [](VertexPtr param) {
-                   auto new_param = VertexAdaptor<op_var>::create();
-                   new_param->set_string(param.as<op_func_param>()->var()->get_string());
-                   return new_param;
+                   kphp_error_act(param->type() != op_func_param_callback, "Callbacks are not supported", return VertexAdaptor<op_var>{});
+                   return param.as<op_func_param>()->var().as<op_var>().clone();
                  }
   );
 

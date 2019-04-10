@@ -61,35 +61,23 @@ auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltyp
 
 // делаем функцию childclassname$$localname, которая выглядит как
 // function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
-VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(VertexAdaptor<op_function> root, ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
+VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(FunctionPtr parent_f, ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
   auto local_name = parent_method.local_name();
 
   auto new_name = VertexAdaptor<op_func_name>::create();
   new_name->set_string(replace_backslashes(child_class->name) + "$$" + local_name);
-  vector<VertexPtr> new_params_next;
-  vector<VertexPtr> new_params_call;
-  for (const auto &parameter : *root->params()) {
-    if (parameter->type() == op_func_param) {
-      new_params_call.push_back(parameter.as<op_func_param>()->var().as<op_var>().clone());
-      new_params_next.push_back(parameter.clone());
-    } else if (parameter->type() == op_func_param_callback) {
-      if (!kphp_error(false, "Callbacks are not supported in class static methods")) {
-        return {};
-      }
-    }
-  }
 
   auto parent_class = parent_method.function->class_id;
   auto parent_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
   // it's equivalent to new_func_call->set_string("parent::" + local_name);
-  auto new_func_call = VertexAdaptor<op_func_call>::create(new_params_call);
+  auto new_func_call = VertexAdaptor<op_func_call>::create(parent_f->get_params_as_vector_of_vars());
   new_func_call->set_string(parent_function_name);
 
   auto new_return = VertexAdaptor<op_return>::create(new_func_call);
   auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
-  auto new_params = VertexAdaptor<op_func_param_list>::create(new_params_next);
+  auto new_params = parent_f->root->params().clone();
   auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
-  func->copy_location_and_flags(*root);
+  func->copy_location_and_flags(*parent_f->root);
 
   return func;
 }
@@ -100,13 +88,8 @@ FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr par
   auto root = parent_f->root.clone();
   root->name()->set_string(ctx_function_name);
 
-  FunctionPtr context_function = FunctionData::create_function(root, FunctionData::func_local);
-  root->set_func_id(context_function);
-
-  context_function->access_type = parent_f->access_type;
-  context_function->file_id = parent_f->file_id;
-  context_function->class_id = parent_f->class_id;   // self:: это он, а parent:: это его parent (если есть)
-  context_function->phpdoc_str = parent_f->phpdoc_str;
+  auto context_function = FunctionData::clone_from(parent_f, root);
+  context_function->has_variadic_param = false;
 
   return context_function;
 }
@@ -124,14 +107,11 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   }
 
   if (!child_class->members.has_static_method(local_name)) {
-    auto child_root = generate_function_with_parent_call(parent_f->root, child_class, parent_method);
+    auto child_root = generate_function_with_parent_call(parent_f, child_class, parent_method);
 
-    FunctionPtr child_function = FunctionData::create_function(child_root, FunctionData::func_local);
-    child_function->file_id = parent_f->file_id;
-    child_function->phpdoc_str = parent_f->phpdoc_str;
+    FunctionPtr child_function = FunctionData::clone_from(parent_f, child_root);
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
-    child_function->has_variadic_param = parent_f->has_variadic_param;
 
     child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
 
