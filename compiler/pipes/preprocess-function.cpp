@@ -91,7 +91,7 @@ private:
           ClassPtr klass = f_inst->class_id;
           if (klass) {
             AutoLocker<Lockable *> locker(&(*klass));
-            if (klass->members.get_instance_method(get_local_name_from_global_$$(f_inst->name))) {
+            if (klass->members.get_instance_method(f_inst->local_name())) {
               klass->members.for_each([&](ClassMemberInstanceMethod &m) {
                 if (m.global_name() == f_inst->name) {
                   m.function = f_inst;

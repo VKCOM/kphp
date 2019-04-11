@@ -80,7 +80,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPt
 
   auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
   call_function->extra_type = op_ex_func_call_arrow;
-  call_function->set_string(get_local_name_from_global_$$(called_method->name));
+  call_function->set_string(called_method->local_name());
   call_function->set_func_id(called_method);
 
   auto params_of_called_method = called_method->get_params();

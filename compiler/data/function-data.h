@@ -154,4 +154,5 @@ public:
 
   VertexRange get_params() const;
 
+  std::string local_name() const { return get_local_name_from_global_$$(name); }
 };

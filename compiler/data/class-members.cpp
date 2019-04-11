@@ -15,7 +15,7 @@ const string &ClassMemberStaticMethod::global_name() const {
 }
 
 string ClassMemberStaticMethod::local_name() const {
-  return get_local_name_from_global_$$(global_name());
+  return function->local_name();
 }
 
 
@@ -24,7 +24,7 @@ const string &ClassMemberInstanceMethod::global_name() const {
 }
 
 string ClassMemberInstanceMethod::local_name() const {
-  return get_local_name_from_global_$$(global_name());
+  return function->local_name();
 }
 
 
@@ -106,7 +106,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function, AccessType a
 }
 
 void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType access_type) {
-  string hash_name = get_local_name_from_global_$$(function->name) + "()";
+  string hash_name = function->local_name() + "()";
   append_member(hash_name, ClassMemberInstanceMethod(function, access_type));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 

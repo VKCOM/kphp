@@ -70,8 +70,7 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
 }
 
 bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interface_function) {
-  const auto &interface_name = interface_function->name;
-  auto interface_method_in_derived = context_class->members.get_instance_method(get_local_name_from_global_$$(interface_name));
+  auto interface_method_in_derived = context_class->members.get_instance_method(interface_function->local_name());
   return check_that_signatures_are_same(interface_function, context_class, interface_method_in_derived);
 }
 
@@ -84,7 +83,7 @@ VertexPtr generate_call_in_context_of_derived(ClassPtr context_class, FunctionPt
   auto params = interface_function->get_params_as_vector_of_vars(1);
 
   auto call_method_in_context = VertexAdaptor<op_func_call>::create(cast_to_derived, params);
-  call_method_in_context->set_string(get_local_name_from_global_$$(interface_function->name));
+  call_method_in_context->set_string(interface_function->local_name());
   call_method_in_context->extra_type = op_ex_func_call_arrow;
 
   return VertexAdaptor<op_return>::create(call_method_in_context);
@@ -100,7 +99,7 @@ bool check_that_function_is_abstract(FunctionPtr interface_function) {
 
 void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr> &derived_classes) {
   for (auto derived : derived_classes) {
-    auto static_in_derived = derived->members.get_static_method(get_local_name_from_global_$$(interface_function->name));
+    auto static_in_derived = derived->members.get_static_method(interface_function->local_name());
     check_that_signatures_are_same(interface_function, derived, static_in_derived);
   }
 }
