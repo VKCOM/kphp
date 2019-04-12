@@ -37,6 +37,7 @@
 #include "net/net-rpc-common.h"
 #include "net/net-rpc-server.h"
 #include "net/net-socket.h"
+#include "net/net-http-server.h"
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 #include "vv/vv-tl-act.h"
@@ -1281,6 +1282,19 @@ memcache_server_functions php_master_methods = [] {
   return res;
 }();
 
+/*** HTTP interface for server-status ***/
+int php_master_http_execute (struct connection *c, int op);
+
+http_server_functions php_http_master_methods = [] {
+  auto res = http_server_functions();
+  res.execute = php_master_http_execute;
+  res.ht_wakeup = hts_do_wakeup; //todo: assert false here!!!
+  res.ht_alarm = hts_do_wakeup; //todo: assert false here!!!
+  res.ht_close = nullptr;
+
+  return res;
+}();
+
 tcp_rpc_server_functions php_rpc_master_methods = [] {
   auto res = tcp_rpc_server_functions();
   res.execute = default_tl_tcp_rpcs_execute;
@@ -1290,7 +1304,8 @@ tcp_rpc_server_functions php_rpc_master_methods = [] {
   res.rpc_init_crypto = tcp_rpcs_init_crypto;
   res.memcache_fallback_type = &ct_memcache_server;
   res.memcache_fallback_extra = &php_master_methods;
-
+  res.http_fallback_type = &ct_http_server;
+  res.http_fallback_extra = &php_http_master_methods;
   return res;
 }();
 
@@ -1623,6 +1638,72 @@ void php_master_rpc_stats() {
   res.resize(stats.sb.pos);
   res += php_master_prepare_stats(true, -1);
   tl_store_stats(res.c_str(), 0);
+}
+
+std::string get_master_stats_html() {
+  int total_workers_n = 0;
+  int running_workers_n = 0;
+  int paused_workers_n = 0;
+  for (int i = 0; i < me_workers_n; i++) {
+    worker_info_t *w = workers[i];
+    if (!w->is_dying) {
+      total_workers_n++;
+      running_workers_n += w->stats->istats.is_running;
+      paused_workers_n += w->stats->istats.is_wait_net;
+    }
+  }
+
+  std::string html;
+  char buf[100];
+  sprintf(buf, "total_workers\t%d\n", total_workers_n);
+  html += buf;
+  sprintf(buf, "free_workers\t%d\n", total_workers_n - running_workers_n);
+  html += buf;
+  sprintf(buf, "working_workers\t%d\n", running_workers_n);
+  html += buf;
+  sprintf(buf, "working_but_waiting_workers\t%d\n", paused_workers_n);
+  html += buf;
+  for (int i = 1; i <= 3; ++i) {
+    sprintf(buf, "running_workers_avg_%s\t%7.3lf\n", periods_desc[i], stats.misc[i].get_stat().running_workers_avg);
+    html += buf;
+  }
+
+  return html;
+}
+
+int php_master_http_execute (struct connection *c, int op) {
+  struct hts_data *D = HTS_DATA(c);
+  char ReqHdr[MAX_HTTP_HEADER_SIZE];
+
+  vkprintf (1, "in php_master_http_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
+            c->fd, op, D->header_size, D->data_size, D->http_ver);
+
+  if (D->query_type != htqt_get) {
+    D->query_flags &= ~QF_KEEPALIVE;
+    return -501;
+  }
+
+  assert (D->header_size <= MAX_HTTP_HEADER_SIZE);
+  assert (read_in (&c->In, &ReqHdr, D->header_size) == D->header_size);
+
+  assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
+
+  vkprintf (1, "===============\n%.*s\n==============\n", D->header_size, ReqHdr);
+  vkprintf (1, "%d,%d,%d,%d\n", D->host_offset, D->host_size, D->uri_offset, D->uri_size);
+
+  vkprintf (1, "hostname: '%.*s'\n", D->host_size, ReqHdr + D->host_offset);
+  vkprintf (1, "URI: '%.*s'\n", D->uri_size, ReqHdr + D->uri_offset);
+
+  const char *allowed_query = "/server-status";
+  if (D->uri_size == strlen(allowed_query) && strncmp(ReqHdr + D->uri_offset, allowed_query, static_cast<size_t>(D->uri_size)) == 0) {
+    std::string stat_html = get_master_stats_html();
+    write_basic_http_header(c, 200, 0, static_cast<int>(stat_html.length()), nullptr, "text/plain; charset=UTF-8");
+    write_out (&c->Out, stat_html.c_str(), static_cast<int>(stat_html.length()));
+    return 0;
+  }
+  
+  D->query_flags |= QF_ERROR;
+  return -404;
 }
 
 
