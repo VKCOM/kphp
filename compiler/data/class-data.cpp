@@ -8,6 +8,8 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
+const char * ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
+
 ClassData::ClassData() :
   members(this),
   type_data(TypeData::create_for_class(ClassPtr(this))) {
@@ -71,6 +73,51 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
   auto res = FunctionData::create_function(func_root, FunctionData::func_class_holder);
   res->class_id = ClassPtr{this};
   return res;
+}
+
+/**
+ * Generate and add `__virt_clone` method to class (or interface); method is dedicated for cloning interfaces
+ *
+ * For classes:
+ * function __virt_clone() { return clone $this; }
+ *
+ * For interfaces:
+ * / ** @return InterfaceName * /
+ * function __virt_clone();
+ *
+ * @param os for register new method
+ * @param with_body when it's true, generates only empty body it's needed for interfaces
+ * @return generated method
+ */
+FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_body /** =true */) {
+  auto clone_func_name = VertexAdaptor<op_func_name>::create();
+  clone_func_name->set_string(replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE);
+
+  std::vector<VertexAdaptor<meta_op_func_param>> params;
+  patch_func_add_this(params, -1);
+  auto param_list = VertexAdaptor<op_func_param_list>::create(params);
+
+  VertexAdaptor<op_seq> body;
+  if (with_body) {
+    auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(-1));
+    auto return_clone_this = VertexAdaptor<op_return>::create(clone_this);
+    body = VertexAdaptor<op_seq>::create(return_clone_this);
+  } else {
+    body = VertexAdaptor<op_seq>::create();
+  }
+
+  auto virt_clone_func = VertexAdaptor<op_function>::create(clone_func_name, param_list, body);
+  auto virt_clone_func_ptr = FunctionData::create_function(virt_clone_func, FunctionData::func_local);
+  virt_clone_func_ptr->file_id = file_id;
+  virt_clone_func_ptr->update_location_in_body();
+  virt_clone_func_ptr->assumptions_inited_return = 2;
+  virt_clone_func_ptr->assumption_for_return = Assumption{AssumType::assum_instance, {}, ClassPtr{this}};
+  virt_clone_func_ptr->is_inline = with_body;
+
+  members.add_instance_method(virt_clone_func_ptr, AccessType::access_public);
+  G->register_and_require_function(virt_clone_func_ptr, os, true);
+
+  return virt_clone_func_ptr;
 }
 
 void ClassData::patch_func_constructor(VertexAdaptor<op_function> func) {

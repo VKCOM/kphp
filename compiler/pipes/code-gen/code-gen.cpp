@@ -3633,9 +3633,12 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_clone: {
       auto tp = tinf::get_type(root);
       if (auto klass = tp->class_type()) {
-        kphp_error_return(!klass->is_interface(), "cloning of interfaces have not been supported yet");
+        if (klass->is_class()) {
+          W << root.as<op_clone>()->expr() << ".clone()";
+          break;
+        }
       }
-      W << root.as<op_clone>()->expr() << ".clone()";
+      kphp_error_return(false, "unsupported operand for cloning");
       break;
     }
     default:

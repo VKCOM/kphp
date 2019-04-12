@@ -30,6 +30,23 @@ public:
       auto assum = infer_class_of_expr(stage::get_function(), clone_root, klass);
       kphp_error_act(assum == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
       kphp_error_act(!klass->is_builtin(), format("`%s` class is forbidden for clonning", klass->name.c_str()), return clone_root);
+      if (klass->is_interface()) {
+        /**
+         * clone of interfaces are replaced with call of virtual method
+         * which automatic calls clone of derived class
+         */
+        auto virt_clone = klass->members.get_instance_method(ClassData::NAME_OF_VIRT_CLONE);
+        kphp_assert(virt_clone);
+        auto virt_clone_func = virt_clone->function;
+        kphp_assert(virt_clone_func);
+
+        auto call_function = VertexAdaptor<op_func_call>::create(clone_root->expr()).set_location(clone_root);
+        call_function->extra_type = op_ex_func_call_arrow;
+        call_function->set_string(ClassData::NAME_OF_VIRT_CLONE);
+        call_function->set_func_id(virt_clone_func);
+
+        return call_function;
+      }
 
       if (klass->members.has_instance_method("__clone")) {
         auto location = clone_root->get_location();

@@ -51,11 +51,14 @@ public:
 
   const TypeData *const type_data;
 
+  static const char * NAME_OF_VIRT_CLONE;
+
   ClassData();
 
   static VertexAdaptor<op_var> gen_vertex_this(int location_line_num);
   VertexAdaptor<op_var> gen_vertex_this_with_type_rule(int location_line_num);
   FunctionPtr gen_holder_function(const std::string &name);
+  FunctionPtr add_virt_clone(DataStream<FunctionPtr> &os, bool with_body = true);
 
   // __construct(args) { body } => __construct(args) { $this ::: tp_Class; def vars init; body; return $this; }
   void patch_func_constructor(VertexAdaptor<op_function> func);
