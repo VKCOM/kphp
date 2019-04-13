@@ -1791,8 +1791,16 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
       cur_class->patch_func_constructor(constructor_method->root);
     }
     G->register_and_require_function(constructor_method, parsed_os, true);
-  } else if ((cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method()) && !cur_class->is_interface()) {
-    cur_class->create_default_constructor(line_num, parsed_os);
+  } else if (cur_class->is_class()) {
+    bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();
+    non_static |= std::any_of(cur_class->str_dependents.begin(), cur_class->str_dependents.end(),
+                              [](const ClassData::StrDependence &dep) {
+                                return dep.type == ClassType::interface;
+                              });
+
+    if (non_static) {
+      cur_class->create_default_constructor(line_num, parsed_os);
+    }
   }
 
   G->register_class(cur_class);
