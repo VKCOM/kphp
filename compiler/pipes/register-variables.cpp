@@ -27,6 +27,9 @@ VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type
     return it->second;
   }
   VarPtr var = G->create_local_var(current_function, name, type);
+  if (current_function->is_instance_function() && name == "this") {
+    var->marked_as_const = true;
+  }
   kphp_error (registred_vars.insert(make_pair(name, var)).second, format("Redeclaration of local variable: %s", name.c_str()));
 
   return var;

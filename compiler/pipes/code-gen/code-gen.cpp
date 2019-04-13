@@ -745,7 +745,11 @@ inline void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexPtr var, c
   if (var->ref_flag) {
     W << "&";
   }
-  W << VarName(var->get_var_id());
+  auto var_ptr = var->get_var_id();
+  if (var_ptr->marked_as_const) {
+    W << "const &";
+  }
+  W << VarName(var_ptr);
 }
 
 inline void FunctionParams::declare_txt_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const {
