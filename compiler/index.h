@@ -25,6 +25,7 @@ public:
   vector<string> includes;
   vector<string> lib_includes;
   bool compile_with_debug_info_flag;
+  bool is_changed;
 
   File();
   explicit File(const string &path);

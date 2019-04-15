@@ -69,6 +69,17 @@ private:
   OutputStreamType *output_stream = nullptr;
   PipeF function;
 
+  void on_finish(std::true_type) {
+    if (NeedOnFinishProfiler<PipeF>::value) {
+      AutoProfiler prof{get_profiler(demangle(typeid(PipeF).name()) + "::on_finish")};
+      function.on_finish(*output_stream);
+    } else {
+      function.on_finish(*output_stream);
+    }
+  }
+
+  void on_finish(std::false_type) {}
+
 public:
   explicit Pipe(bool parallel = true) :
     Node(parallel) {}
@@ -85,8 +96,6 @@ public:
 
   void set_input_stream(InputStreamType *is) { input_stream = is; }
 
-  void process_input(InputType &&input) { function.execute(std::move(input), *output_stream); }
-
   Task *get_task() override {
     InputType x{};
     if (!input_stream->get(x)) {
@@ -95,14 +104,11 @@ public:
     return new TaskType(std::move(x), this);
   }
 
-  void on_finish(std::true_type) {
-    if (NeedOnFinishProfiler<PipeF>::value) {
-      AutoProfiler prof{get_profiler(demangle(typeid(PipeF).name()) + "::on_finish")};
-      function.on_finish(*output_stream);
-    } else {
-      function.on_finish(*output_stream);
-    }
+  virtual void process_input(InputType &&input) {
+    function.execute(std::move(input), *output_stream);
   }
-  void on_finish(std::false_type) {}
-  void on_finish() override { on_finish(pipe_fun_have_on_finish{}); }
+
+  void on_finish() override {
+    on_finish(pipe_fun_have_on_finish{});
+  }
 };

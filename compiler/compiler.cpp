@@ -73,7 +73,7 @@
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
 #include "compiler/scheduler/one-thread-scheduler.h"
-#include "compiler/scheduler/pipe.h"
+#include "compiler/scheduler/pipe_with_progress.h"
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
@@ -89,12 +89,12 @@ class lockf_wrapper {
 
   void close_and_unlink() {
     if (close(fd_) == -1) {
-      perror(("Can't close file: " + locked_filename_).c_str());
+      std::cerr << "Can't close file '" << locked_filename_ << "': " << strerror(errno) << "\n";
       return;
     }
 
     if (unlink(locked_filename_.c_str()) == -1) {
-      perror(("Can't unlink file: " + locked_filename_).c_str());
+      std::cerr << "Can't unlink file '" << locked_filename_ << "': " << strerror(errno) << "\n";
       return;
     }
   }
@@ -115,9 +115,7 @@ public:
 
     locked_ = true;
     if (lockf(fd_, F_TLOCK, 0) == -1) {
-      perror("\nCan't lock file, maybe you have already run kphp2cpp");
-      fprintf(stderr, "\n");
-
+      std::cerr << "\nCan't lock file, maybe you have already run kphp2cpp: " << strerror(errno) << "\n";
       close(fd_);
       locked_ = false;
     }
@@ -128,7 +126,7 @@ public:
   ~lockf_wrapper() {
     if (locked_) {
       if (lockf(fd_, F_ULOCK, 0) == -1) {
-        perror(("Can't unlock file: " + locked_filename_).c_str());
+        std::cerr << "Can't unlock file '" << locked_filename_ << "': " << strerror(errno) << "\n";
       }
 
       close_and_unlink();
@@ -145,14 +143,20 @@ template<typename F>
 using ExecuteFunctionOutput = typename std::remove_reference<typename ExecuteFunctionArguments<F>::template Argument<1>>::type;
 
 template<class PipeFunctionT>
-using PipeStream = Pipe<
+using PipeStream = PipeWithProgress<
   PipeFunctionT,
   DataStream<ExecuteFunctionInput<PipeFunctionT>>,
   ExecuteFunctionOutput<PipeFunctionT>
 >;
 
+using SyncNode = sync_node_tag<PipeWithProgress>;
+
 template<class Pass>
 using FunctionPassPipe = PipeStream<FunctionPassF<Pass>>;
+
+template<typename Pass>
+struct PipeProgressName<FunctionPassF<Pass>> : PipeProgressName<Pass> {
+};
 
 template<class PipeFunctionT, bool parallel = true>
 using PipeC = pipe_creator_tag<PipeStream<PipeFunctionT>, parallel>;
@@ -173,7 +177,7 @@ bool compiler_execute(KphpEnviroment *env) {
   if (!env->get_warnings_filename().empty()) {
     FILE *f = fopen(env->get_warnings_filename().c_str(), "w");
     if (!f) {
-      fprintf(stderr, "Can't open warnings-file %s\n", env->get_warnings_filename().c_str());
+      std::cerr << "Can't open warnings-file " << env->get_warnings_filename() << "\n";
       return false;
     }
 
@@ -184,7 +188,7 @@ bool compiler_execute(KphpEnviroment *env) {
   if (!env->get_stats_filename().empty()) {
     FILE *f = fopen(env->get_stats_filename().c_str(), "w");
     if (!f) {
-      fprintf(stderr, "Can't open stats-file %s\n", env->get_stats_filename().c_str());
+      std::cerr << "Can't open stats-file " << env->get_stats_filename() << "\n";
       return false;
     }
     env->set_stats_file(f);
@@ -245,7 +249,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
-    >> sync_node_tag{}
+    >> SyncNode{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
@@ -264,7 +268,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CheckModificationsOfConstFields>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
-    >> sync_node_tag{}
+    >> SyncNode{}
     >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
@@ -300,16 +304,36 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
 
+  std::cerr << "Starting php to cpp transpiling...\n";
   get_scheduler()->execute();
+
+  PipesProgress::get().transpiling_process_finish();
 
   if (G->env().get_error_on_warns() && stage::warnings_count > 0) {
     stage::error();
   }
 
   stage::die_if_global_errors();
-  int verbosity = G->env().get_verbosity();
+  const int verbosity = G->env().get_verbosity();
+
+  if (verbosity > 0) {
+    auto src_files = G->get_index().get_files();
+    src_files.erase(
+      std::remove_if(src_files.begin(), src_files.end(),
+                     [](File *file) {
+                       return !file->is_changed;
+                     }),
+      src_files.end());
+    if (!src_files.empty()) {
+      std::cerr << "\n";
+    }
+    for (auto file: src_files) {
+      std::cerr << "File [" <<  file->path << "] changed\n";
+    }
+  }
+
   if (G->env().get_use_make()) {
-    fprintf(stderr, "start make\n");
+    std::cerr << "\nStarting make...\n";
     run_make();
   }
   G->finish();
@@ -318,11 +342,11 @@ bool compiler_execute(KphpEnviroment *env) {
     G->stats.write_to(std::cerr);
     double en = dl_time();
     double passed = en - st;
-    fprintf(stderr, "PASSED: %lf\n", passed);
+    std::cerr << "PASSED: " << passed << "\n";
     mem_info_t mem_info;
     get_mem_stats(getpid(), &mem_info);
-    fprintf(stderr, "RSS: %lluKb\n", mem_info.rss);
-    fprintf(stderr, "Peak RSS: %lluKb\n", mem_info.rss_peak);
+    std::cerr << "RSS: " << mem_info.rss / 1024 << "Mb\n";
+    std::cerr << "Peak RSS: " << mem_info.rss_peak / 1024 << "Mb\n";
   }
   return true;
 }

@@ -349,8 +349,7 @@ void run_make() {
   stage::set_name("Make");
   G->del_extra_files();
 
-  auto env = G->env();
-
+  const auto &env = G->env();
   Index obj_index;
   obj_index.sync_with_dir(env.get_dest_objs_dir());
 

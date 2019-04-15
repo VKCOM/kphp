@@ -3,7 +3,10 @@
 #include "compiler/pipes/sync.h"
 #include "compiler/scheduler/pipe.h"
 
+template<template<typename, typename, typename> class PipeT>
 struct sync_node_tag {
+  template<class PipeF, class InputStreamT, class OutputStreamT>
+  using PipeType = PipeT<PipeF, InputStreamT, OutputStreamT>;
 };
 
 template<size_t id>
@@ -94,8 +97,10 @@ public:
     pipe->add_to_scheduler(scheduler);
   }
 
-  SC_Pipe operator>>(sync_node_tag) {
-    return *this >> sync_pipe_creator_tag<Pipe<SyncPipeF<typename StreamT::DataType>, StreamT, StreamT>, true, false>{};
+  template<template<typename, typename, typename> class PipeT>
+  SC_Pipe operator>>(sync_node_tag<PipeT>) {
+    using PipeType = typename sync_node_tag<PipeT>::template PipeType<SyncPipeF<typename StreamT::DataType>, StreamT, StreamT>;
+    return *this >> sync_pipe_creator_tag<PipeType, true, false>{};
   }
 
   template<typename NextPipeT, bool parallel, bool unique>

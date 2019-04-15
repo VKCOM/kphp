@@ -77,9 +77,6 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
         need_save_time = false;
       }
     }
-    if (!need_save_time && G->env().get_verbosity() > 0) {
-      fprintf(stderr, "File [%s] changed\n", full_file_name.c_str());
-    }
     if (need_del) {
       int err = unlink(full_file_name.c_str());
       dl_passert (err == 0, format("Failed to unlink [%s]", full_file_name.c_str()));
@@ -110,6 +107,8 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
 
     if (need_save_time) {
       file->set_mtime(mtime_before);
+    } else {
+      file->is_changed = true;
     }
     long long mtime = file->upd_mtime();
     dl_assert (mtime > 0, "Stat failed");

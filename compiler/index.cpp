@@ -32,7 +32,9 @@ File::File() :
   on_disk(false),
   needed(false),
   target(nullptr),
-  compile_with_debug_info_flag(true) {}
+  compile_with_debug_info_flag(true),
+  is_changed(false) {
+}
 
 File::File(const string &path) :
   path(path),
@@ -42,7 +44,9 @@ File::File(const string &path) :
   on_disk(false),
   needed(false),
   target(nullptr),
-  compile_with_debug_info_flag(true) {}
+  compile_with_debug_info_flag(true),
+  is_changed(false) {
+}
 
 void File::set_mtime(long long mtime_value) {
   timespec times[2]; // {atime, mtime}
