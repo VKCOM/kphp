@@ -41,8 +41,8 @@ File::File(const string &path) :
   crc64_with_comments(-1),
   on_disk(false),
   needed(false),
-  target(nullptr) {
-}
+  target(nullptr),
+  compile_with_debug_info_flag(true) {}
 
 void File::set_mtime(long long mtime_value) {
   timespec times[2]; // {atime, mtime}
@@ -250,7 +250,7 @@ void Index::load(FILE *f) {
   int err = fscanf(f, "%d\n", &n);
   dl_passert (err == 1, "Failed to load index");
   for (int i = 0; i < n; i++) {
-    char tmp[500];
+    char tmp[501] = {0};
     unsigned long long crc64;
     unsigned long long crc64_with_comments;
     int err = fscanf(f, "%500s %llu %llu", tmp, &crc64, &crc64_with_comments);

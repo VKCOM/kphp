@@ -49,9 +49,6 @@ is_func_id_t get_ifi_id(VertexPtr v) {
       if (name == "is_null") {
         return ifi_is_null;
       }
-      if (name == "is_bool") {
-        return ifi_is_bool;
-      }
       if (name == "is_integer" || name == "is_int") {
         return ifi_is_integer;
       }

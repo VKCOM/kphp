@@ -435,12 +435,8 @@ string f$html_entity_decode(const string &str, int flags, const string &encoding
               if (num >= 1000) {
                 *p++ = (char)(num / 1000 % 10 + '0');
               }
-              if (num >= 100) {
-                *p++ = (char)(num / 100 % 10 + '0');
-              }
-              if (num >= 10) {
-                *p++ = (char)(num / 10 % 10 + '0');
-              }
+              *p++ = (char)(num / 100 % 10 + '0');
+              *p++ = (char)(num / 10 % 10 + '0');
               *p++ = (char)(num % 10 + '0');
               *p++ = ';';
             }

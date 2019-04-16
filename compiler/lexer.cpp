@@ -347,13 +347,10 @@ void TokenLexerName::init_static() {
 
 int TokenLexerName::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(), *st = s;
-  TokenType type;
+  const TokenType type = s[0] == '$' ? tok_var_name : tok_func_name;
 
-  if (s[0] == '$') {
-    type = tok_var_name;
-    s++;
-  } else {
-    type = tok_func_name;
+  if (type == tok_var_name) {
+    ++s;
   }
 
   const char *t = s;
@@ -403,7 +400,7 @@ int TokenLexerName::parse(LexerData *lexer_data) const {
       lexer_data->add_token((int)(t - st), tp->type, s, t);
       return 0;
     }
-  } else if (type == tok_var_name && name == "GLOBALS") {
+  } else if (name == "GLOBALS") {
     return TokenLexerError("$GLOBALS is not supported").parse(lexer_data);
   }
 

@@ -1701,7 +1701,6 @@ void run_master_on() {
 
 
         if (*http_fd != -1) {
-          dl_assert (*http_fd != -1, "failed to receive http_fd");
           me->own_http_fd = 1;
           need_http_fd = false;
         } else {

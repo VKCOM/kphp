@@ -41,6 +41,8 @@ public:
     own_flag(false) {
   }
 
+  CodeGenerator &operator=(const CodeGenerator &) = delete;
+
   void init(WriterCallbackBase *new_callback) {
     master_writer = new TLS<Writer>();
     callback_ = new_callback;

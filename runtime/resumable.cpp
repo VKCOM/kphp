@@ -773,7 +773,8 @@ protected:
 public:
   wait_result_resumable(int resumable_id, double timeout) :
     resumable_id(resumable_id),
-    timeout(timeout) {
+    timeout(timeout),
+    ready(false) {
   }
 };
 

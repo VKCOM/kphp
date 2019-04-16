@@ -362,7 +362,7 @@ var f$fetch_memcache_value() {
     }
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
-      THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Wrong memcache.Value constructor", 32), -1));
+      THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Wrong memcache.Value constructor"), -1));
       return var();
     }
   }
@@ -374,7 +374,7 @@ bool f$fetch_eof() {
 
 bool f$fetch_end() {
   if (rpc_data_len) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Too much data to fetch", 22), -2));
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Too much data to fetch"), -2));
     return false;
   }
   return true;
@@ -1021,7 +1021,8 @@ protected:
 public:
   rpc_get_resumable(int resumable_id, double timeout) :
     resumable_id(resumable_id),
-    timeout(timeout) {
+    timeout(timeout),
+    ready(false) {
   }
 };
 
@@ -1085,7 +1086,8 @@ protected:
 public:
   rpc_get_and_parse_resumable(int resumable_id, double timeout) :
     resumable_id(resumable_id),
-    timeout(timeout) {
+    timeout(timeout),
+    ready(false) {
   }
 };
 
@@ -2223,7 +2225,9 @@ protected:
 public:
   rpc_tl_query_result_resumable(const array<int> &query_ids) :
     query_ids(query_ids),
-    tl_objects_unsorted(array_size(query_ids.count(), 0, false)) {
+    tl_objects_unsorted(array_size(query_ids.count(), 0, false)),
+    queue_id(0),
+    query_id(0) {
   }
 };
 

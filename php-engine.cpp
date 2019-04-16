@@ -592,11 +592,6 @@ void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *
 
   conn_target_t *target = &Targets[connection_id];
 
-  if (target == nullptr) {
-    net_error(net_ansgen, (php_query_base_t *)query, "Invalid connection_id (2)");
-    return;
-  }
-
   net_ansgen->func->set_desc(net_ansgen, qmem_pstr("[%s]", sockaddr_storage_to_string(&target->endpoint)));
 
   query_stats.port = inet_sockaddr_port(&target->endpoint);
@@ -649,11 +644,6 @@ void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t 
 
   conn_target_t *target = &Targets[connection_id];
 
-  if (target == nullptr) {
-    net_error(net_ansgen, (php_query_base_t *)query, "Invalid connection_id (2)");
-    return;
-  }
-
   net_ansgen->func->set_desc(net_ansgen, qmem_pstr("[%s]", sockaddr_storage_to_string(&target->endpoint)));
 
   connection *conn = get_target_connection(target, 0);
@@ -696,10 +686,6 @@ void php_worker_run_rpc_send_query(net_query_t *query) {
     return;
   }
   conn_target_t *target = &Targets[connection_id];
-  if (target == nullptr) {
-    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_INVALID_CONNECTION_ID, "Invalid connection_id (2)", nullptr));
-    return;
-  }
   connection *conn = get_target_connection(target, 0);
 
   if (conn != nullptr) {
@@ -1958,7 +1944,7 @@ int memcache_client_check_ready(connection *c) {
   }
 
   /*assert (c->status != conn_none);*/
-  if (c->status == conn_none || c->status == conn_connecting) {
+  if (c->status == conn_none) {
     return c->ready = cr_notyet;
   }
   if (c->status == conn_error || c->ready == cr_failed) {
@@ -2667,10 +2653,9 @@ sig_atomic_t pipe_fast_packet_id = 0;
 void write_immediate_stats_to_pipe() {
   if (master_pipe_fast_write != -1) {
 #define QSIZE (sizeof (php_immediate_stats_t) + 1 + sizeof (int) * 5 + 3) & -4
-    int q[QSIZE];
+    int q[QSIZE] = {0};
     int qsize = QSIZE;
 #undef QSIZE
-    memset(q, 0, (size_t)qsize);
 
     q[2] = RPC_PHP_IMMEDIATE_STATS;
     memcpy(q + 3, get_imm_stats(), sizeof(php_immediate_stats_t));

@@ -263,20 +263,8 @@ void TypeData::set_or_false_flag(bool f) {
   set_flag<or_false_flag_e>(f);
 }
 
-bool TypeData::write_flag() const {
-  return get_flag<read_flag_e>();
-}
-
 void TypeData::set_write_flag(bool f) {
   set_flag<write_flag_e>(f);
-}
-
-bool TypeData::read_flag() const {
-  return get_flag<read_flag_e>();
-}
-
-void TypeData::set_read_flag(bool f) {
-  set_flag<read_flag_e>(f);
 }
 
 bool TypeData::error_flag() const {

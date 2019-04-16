@@ -37,7 +37,7 @@ public:
 public:
   std::string name;
   std::string value;
-  doc_type type;
+  doc_type type = unknown;
   int line_num = -1;
 
 private:

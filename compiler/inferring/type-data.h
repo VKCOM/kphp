@@ -85,6 +85,7 @@ private:
   bool for_each_deep(const F &visitor) const;
 
 public:
+  TypeData &operator=(const TypeData &) = delete;
   TypeData(const TypeData &from);
   ~TypeData();
 
@@ -102,10 +103,7 @@ public:
   bool or_false_flag() const;
   void set_or_false_flag(bool f);
   bool use_or_false() const;
-  bool write_flag() const;
   void set_write_flag(bool f);
-  bool read_flag() const;
-  void set_read_flag(bool f);
   bool error_flag() const;
   void set_error_flag(bool f);
   void set_flags(flags_t new_flags);

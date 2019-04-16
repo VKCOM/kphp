@@ -64,7 +64,7 @@ private:
   string version_;
 
   string cxx_flags_sha256_;
-  color_settings color_;
+  color_settings color_{auto_colored};
 
   void update_cxx_flags_sha256();
 

@@ -1390,7 +1390,7 @@ struct CipherCtx {
 
   bool init(string key, string iv) {
     const size_t max_iv_len = static_cast<size_t>(EVP_CIPHER_iv_length(type_));
-    if (encrypt && iv.empty() && max_iv_len > 0) {
+    if (action_ == encrypt && iv.empty() && max_iv_len > 0) {
       php_warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
     }
     align_iv(iv, max_iv_len);
