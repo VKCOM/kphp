@@ -7,6 +7,7 @@
 #include "compiler/debug.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
+#include "compiler/phpdoc.h"
 #include "compiler/vertex.h"
 #include "common/algorithms/hashes.h"
 
@@ -60,12 +61,12 @@ inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, Vertex
 
   var = G->create_var(local_name(), VarData::var_instance_t);
   var->class_id = klass;
+  var->marked_as_const = klass->is_immutable || PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_const);
 }
 
 const TypeData *ClassMemberInstanceField::get_inferred_type() const {
   return tinf::get_type(var);
 }
-
 
 inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, string const_name, VertexPtr value) :
   value(value) {

@@ -56,8 +56,11 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
       if (write_flag) {
         auto var_of_instance_prop = v->get_var_id();
         if (var_of_instance_prop && var_of_instance_prop->marked_as_const) {
+          const bool modification_allowed = var_of_instance_prop->class_id &&
+                                            var_of_instance_prop->class_id->construct_function == current_function &&
+                                            v.as<op_instance_prop>()->instance()->get_string() == "this";
           auto err_msg = "Modification of const field: " + TermStringFormat::paint(var_of_instance_prop->name, TermStringFormat::red);
-          kphp_error(false, err_msg.c_str());
+          kphp_error(modification_allowed, err_msg.c_str());
         }
       }
       break;

@@ -57,6 +57,7 @@ public:
 
   template<typename I>
   bool process(class_instance<I> &instance) {
+    static_assert(!std::is_abstract<I>::value, "instance_cache doesn't support interfaces");
     if (!instance.is_null()) {
       InstanceVisitor<I, Child> visitor{instance, child_};
       instance->accept(visitor);
@@ -148,8 +149,11 @@ public:
       return false;
     }
     if (++instance_depth_level_ < instance_depth_level_limit_) {
-      instance = instance.clone();
-      Basic::process(instance);
+      if (!instance.is_null()) {
+        instance = instance.clone();
+        instance.set_reference_counter_to_cache();
+        Basic::process(instance);
+      }
       --instance_depth_level_;
       return true;
     } else {
@@ -196,6 +200,13 @@ public:
     return true;
   }
 
+  template<typename I>
+  bool process(class_instance<I> &instance) {
+    Basic::process(instance);
+    instance.destroy_cached();
+    return true;
+  }
+
   bool process(string &str);
 };
 
@@ -231,13 +242,12 @@ public:
 };
 
 template<typename I>
-class InstanceWrapper final : public InstanceWrapperBase {
-private:
-  static_assert(is_class_instance<I>::value, "class_instance<> type expected");
-  using ClassType = typename I::ClassType;
+class InstanceWrapper;
 
+template<typename I>
+class InstanceWrapper<class_instance<I>> final : public InstanceWrapperBase {
 public:
-  explicit InstanceWrapper(const class_instance<ClassType> &instance) :
+  explicit InstanceWrapper(const class_instance<I> &instance) :
     instance_(instance) {
   }
 
@@ -263,14 +273,17 @@ public:
       DeepDestroy{}.process(detached_instance);
       return nullptr;
     }
-    return new InstanceWrapper<class_instance<ClassType>>{detached_instance};
+    return new InstanceWrapper<class_instance<I>>{detached_instance};
   }
 
-  class_instance<ClassType> deep_instance_clone() const {
-    php_assert(instance_.get_reference_counter() == 1);
+  class_instance<I> deep_instance_clone() const {
     auto cloned_instance = instance_;
     DeepInstanceClone{}.process(cloned_instance);
     return cloned_instance;
+  }
+
+  class_instance<I> get_instance() const {
+    return instance_;
   }
 
   void clear() {
@@ -284,38 +297,22 @@ public:
   }
 
 private:
-  class_instance<ClassType> instance_;
+  class_instance<I> instance_;
 };
 
 bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int ttl);
-InstanceWrapperBase *instance_cache_fetch(const string &key);
-} // namespace ic_impl_
+InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key);
 
-void init_instance_cache_lib();
-void free_instance_cache_lib();
-void set_instance_cache_memory_limit(int64_t limit);
-
-template<typename I>
-bool f$instance_cache_store(const string &key, const I &instance, int ttl = 0) {
-  static_assert(is_class_instance<I>::value, "class_instance<> type expected");
-  static_assert(!std::is_abstract<typename I::ClassType>::value, "instance_cache_store doesn't support interfaces");
-  if (instance.is_null()) {
-    return false;
-  }
-  ic_impl_::InstanceWrapper<I> instance_wrapper{instance};
-  const bool result = ic_impl_::instance_cache_store(key, instance_wrapper, ttl);
-  instance_wrapper.clear();
-  return result;
-}
-
-template<typename I>
-I f$instance_cache_fetch(const string &class_name, const string &key) {
-  static_assert(is_class_instance<I>::value, "class_instance<> type expected");
-  if (auto base_wrapper = ic_impl_::instance_cache_fetch(key)) {
+template<typename ClassInstanceType>
+ClassInstanceType instance_cache_fetch(const string &class_name, const string &key, bool deep_clone) {
+  static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
+  if (auto base_wrapper = ic_impl_::instance_cache_fetch_wrapper(key)) {
     // do not use first parameter (class name) for verifying type,
     // because different classes from separated libs may have same names
-    if (auto instance_wrapper = dynamic_cast<ic_impl_::InstanceWrapper<I> *>(base_wrapper)) {
-      auto result = instance_wrapper->deep_instance_clone();
+    if (auto wrapper = dynamic_cast<ic_impl_::InstanceWrapper<ClassInstanceType> *>(base_wrapper)) {
+      auto result = deep_clone ?
+                    wrapper->deep_instance_clone() :
+                    wrapper->get_instance();
       php_assert(!result.is_null());
       return result;
     } else {
@@ -324,6 +321,34 @@ I f$instance_cache_fetch(const string &class_name, const string &key) {
     }
   }
   return false;
+}
+
+} // namespace ic_impl_
+
+void init_instance_cache_lib();
+void free_instance_cache_lib();
+void set_instance_cache_memory_limit(int64_t limit);
+
+template<typename ClassInstanceType>
+bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int ttl = 0) {
+  static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
+  if (instance.is_null()) {
+    return false;
+  }
+  ic_impl_::InstanceWrapper<ClassInstanceType> instance_wrapper{instance};
+  const bool result = ic_impl_::instance_cache_store(key, instance_wrapper, ttl);
+  instance_wrapper.clear();
+  return result;
+}
+
+template<typename ClassInstanceType>
+ClassInstanceType f$instance_cache_fetch(const string &class_name, const string &key) {
+  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, true);
+}
+
+template<typename ClassInstanceType>
+ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, const string &key) {
+  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, false);
 }
 
 bool f$instance_cache_delete(const string &key);

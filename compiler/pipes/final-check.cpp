@@ -5,10 +5,94 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "common/termformat/termformat.h"
+
+namespace {
+void check_class_immutableness(ClassPtr klass) {
+  if (!klass->is_immutable) {
+    return;
+  }
+  klass->members.for_each([klass](const ClassMemberInstanceField &field) {
+    kphp_assert(field.var->marked_as_const);
+    std::unordered_set<ClassPtr> sub_classes;
+    field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+    for (auto sub_class : sub_classes) {
+      kphp_error(sub_class->is_immutable,
+                 format("Field %s of immutable class %s should be immutable too, but class %s is mutable",
+                        TermStringFormat::paint(field.local_name(), TermStringFormat::red).c_str(),
+                        TermStringFormat::paint(klass->name, TermStringFormat::red).c_str(),
+                        TermStringFormat::paint(sub_class->name, TermStringFormat::red).c_str()));
+    }
+  });
+}
+
+void check_instance_cache_fetch_immutable_call(VertexAdaptor<op_func_call> call) {
+  kphp_assert(call->get_string() == "instance_cache_fetch_immutable");
+  auto klass = tinf::get_type(call)->class_type();
+  kphp_assert(klass);
+  kphp_error(klass->is_immutable,
+             format("Can not fetch instance of mutable class %s with instance_cache_fetch_immutable call", klass->name.c_str()));
+}
+
+void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
+  kphp_assert(call->get_string() == "instance_cache_store");
+  auto type = tinf::get_type(call->args()[1]);
+  kphp_error_return(type->ptype() == tp_Class,
+                    "Can not store non-instance var with instance_cache_store call");
+  auto klass = type->class_type();
+  kphp_error(!klass->is_interface_or_has_interface_member(),
+             "Can not store instance with interface inside with instance_cache_store call");
+}
+
+void check_func_call_params(VertexAdaptor<op_func_call> call) {
+  FunctionPtr f = call->get_func_id();
+  VertexRange func_params = f->root->params().as<op_func_param_list>()->params();
+
+  VertexRange call_params = call->args();
+  int call_params_n = static_cast<int>(call_params.size());
+  if (call_params_n != func_params.size()) {
+    return;
+  }
+
+  for (int i = 0; i < call_params_n; i++) {
+    if (func_params[i]->type() != op_func_param_callback) {
+      kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
+      continue;
+    }
+
+    auto lambda_class = LambdaClassData::get_from(call_params[i]);
+    kphp_error_act(call_params[i]->type() == op_func_ptr || lambda_class, "Callable object expected", continue);
+
+    FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
+
+    kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
+    VertexRange cur_params = func_ptr_of_callable->root->params().as<op_func_param_list>()->params();
+
+    int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
+    for (auto arg : cur_params) {
+      auto param_arg = arg.try_as<op_func_param>();
+      kphp_error_return(param_arg, "Callback function with callback parameter");
+      kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
+
+      if (param_arg->has_default_value()) {
+        given_arguments_count--;
+      }
+    }
+
+    auto expected_arguments_count = func_params[i].as<op_func_param_callback>()->params().as<op_func_param_list>()->params().size();
+    kphp_error_act(given_arguments_count == expected_arguments_count,
+                   format("Wrong callback arguments count; given: %d, expected: %ld", given_arguments_count, expected_arguments_count), continue);
+  }
+}
+}
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->is_extern()) {
     return false;
+  }
+
+  if (function->type == FunctionData::func_class_holder) {
+    check_class_immutableness(function->class_id);
   }
 
   if (function->is_instance_function() && function->local_name() == "__clone") {
@@ -171,44 +255,15 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
 }
 
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
-  FunctionPtr f = call->get_func_id();
-  VertexRange func_params = f->root->params().as<op_func_param_list>()->params();
-
-  VertexRange call_params = call->args();
-  int call_params_n = static_cast<int>(call_params.size());
-  if (call_params_n != func_params.size()) {
-    return;
+  if (call->get_func_id()->is_extern()) {
+    if (call->get_string() == "instance_cache_fetch_immutable") {
+      check_instance_cache_fetch_immutable_call(call);
+    } else if (call->get_string() == "instance_cache_store") {
+      check_instance_cache_store_call(call);
+    }
   }
 
-  for (int i = 0; i < call_params_n; i++) {
-    if (func_params[i]->type() != op_func_param_callback) {
-      kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
-      continue;
-    }
-
-    auto lambda_class = LambdaClassData::get_from(call_params[i]);
-    kphp_error_act(call_params[i]->type() == op_func_ptr || lambda_class, "Callable object expected", continue);
-
-    FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
-
-    kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
-    VertexRange cur_params = func_ptr_of_callable->root->params().as<op_func_param_list>()->params();
-
-    int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
-    for (auto arg : cur_params) {
-      auto param_arg = arg.try_as<op_func_param>();
-      kphp_error_return(param_arg, "Callback function with callback parameter");
-      kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
-
-      if (param_arg->has_default_value()) {
-        given_arguments_count--;
-      }
-    }
-
-    auto expected_arguments_count = func_params[i].as<op_func_param_callback>()->params().as<op_func_param_list>()->params().size();
-    kphp_error_act(given_arguments_count == expected_arguments_count,
-      format("Wrong callback arguments count; given: %d, expected: %ld", given_arguments_count, expected_arguments_count), continue);
-  }
+  check_func_call_params(call);
 }
 
 /*

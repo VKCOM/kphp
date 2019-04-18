@@ -219,13 +219,10 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
 }
 
 inline void SortAndInheritClassesF::analyze_class_phpdoc(ClassPtr klass) {
-  for (const auto &tag : parse_php_doc(klass->phpdoc_str)) {
-    if (tag.type == php_doc_tag::kphp_memcache_class) {
+  if (PhpDocTypeRuleParser::is_tag_in_phpdoc(klass->phpdoc_str, php_doc_tag::kphp_memcache_class)) {
       G->set_memcache_class(klass);
-    }
   }
 }
-
 
 void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os) {
   auto &function_stream = *os.template project_to_nth_data_stream<0>();

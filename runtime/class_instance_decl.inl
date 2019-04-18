@@ -63,6 +63,9 @@ public:
   inline void destroy() { o.reset(); }
   int get_reference_counter() const { return o->get_refcnt(); }
 
+  void set_reference_counter_to_cache();
+  void destroy_cached();
+
   inline T *operator->() __attribute__ ((always_inline));
   inline T *operator->() const __attribute__ ((always_inline));
 

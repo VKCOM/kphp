@@ -11,7 +11,6 @@ public:
   bool check_function(FunctionPtr function) final {
     return default_check_function(function) &&
            function->root->type() == op_function &&
-           !function->is_constructor() &&
            function->type != FunctionData::func_class_holder;
   }
 

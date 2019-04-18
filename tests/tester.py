@@ -2,6 +2,7 @@
 import shutil
 import sys
 import os
+import re
 import itertools
 import argparse
 import subprocess
@@ -249,11 +250,19 @@ class Test:
 
         with self.path.open("rb") as f:
             header = f.readline().decode('utf-8')
+            after_header = f.readline().decode('utf-8')
 
         if header[0] == '@':
             self.tags = set(header[1:].split())
         else:
             self.tags = {"none"}
+
+        self.fail_regex = None
+        after_header = after_header.strip()
+        if "kphp_should_fail" in self.tags and len(after_header) > 1 \
+                and after_header[0] == "/" and after_header[-1] == "/":
+            self.fail_regex = re.compile(after_header[1:-1])
+
         self.tags |= tags
 
         self.ans_path = get_ans_path(self.path)
@@ -312,6 +321,15 @@ class Test:
                 return None, out_s
 
             if kphp_should_fail:
+                if self.fail_regex:
+                    with get_kphp_out_path().open() as f:
+                        out = f.read()
+                    if self.fail_regex.search(out) is None:
+                        out_s += "Test [{path}] [{mode}]: {0}kphp error message mismatched with regex /{1}/ {2} \n".format(
+                            BashColors.FAIL, self.fail_regex.pattern, BashColors.END_COLOR, path=self.short_path, mode=mode)
+                        die(args.keep_going)
+                        return False, out_s
+
                 out_s += "Test [{path}] [{mode}]: {0}Compilation failed, OK{1}\n".format(
                     BashColors.OK_GREEN, BashColors.END_COLOR, path=self.short_path, mode=mode)
 
@@ -450,7 +468,8 @@ def get_all_tests(args):
         ["libs"],
         ["variadic_args"],
         ["clone_keyword"],
-        ["interfaces"]
+        ["interfaces"],
+        ["instance_cache"]
     ]
 
     for tags in test_tags:

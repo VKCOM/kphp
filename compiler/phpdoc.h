@@ -22,6 +22,8 @@ struct php_doc_tag {
     kphp_template,
     kphp_return,
     kphp_memcache_class,
+    kphp_immutable_class,
+    kphp_const,
   };
 
 public:
@@ -64,6 +66,7 @@ public:
   const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
 
   static bool find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset = 0);
+  static bool is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type);
   static void run_tipa_unit_tests_parsing_tags();
 };
 

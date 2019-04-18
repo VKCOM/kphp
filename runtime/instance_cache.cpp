@@ -282,7 +282,7 @@ bool instance_cache_store(const string &key, const InstanceWrapperBase &instance
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
-InstanceWrapperBase *instance_cache_fetch(const string &key) {
+InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key) {
   return InstanceCache::get().fetch(key);
 }
 } // ic_impl_ namespace

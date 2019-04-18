@@ -25,7 +25,7 @@ public:
   tinf::VarNode tinf_node;
   VertexPtr init_val;
   FunctionPtr holder_func;
-  ClassPtr class_id; // id of class if variable is static fields
+  ClassPtr class_id;
   vector<VarPtr> *bad_vars = nullptr;
   bool is_reference = false;
   bool uninited_flag = false;

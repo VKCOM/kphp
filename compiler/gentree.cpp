@@ -1778,6 +1778,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   cur_class->phpdoc_str = phpdoc_str;
   cur_class->root = class_vertex;
   cur_class->set_name_and_src_name(full_class_name);    // с полным неймспейсом и слешами
+  cur_class->is_immutable = PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_immutable_class);
 
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));

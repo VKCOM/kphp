@@ -25,23 +25,24 @@ public:
       class_name(std::move(class_name)) {}
   };
 
-  int id;
-  ClassType class_type;       // класс / интерфейс / трейт
-  string name;                // название класса с полным namespace и слешами: "VK\Feed\A"
+  int id{0};
+  ClassType class_type{ClassType::klass}; // класс / интерфейс / трейт
+  string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
   VertexAdaptor<op_class> root;
 
-  vector<StrDependence> str_dependents; // extends / implements / use trait на время парсинга, до связки ptr'ов
-  ClassPtr parent_class;                // extends
-  vector<InterfacePtr> implements;      // на будущее
+  vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
+  ClassPtr parent_class;                  // extends
+  vector<InterfacePtr> implements;        // на будущее
   vector<ClassPtr> derived_classes;
-  vector<ClassPtr> traits_uses;         // на будущее
+  vector<ClassPtr> traits_uses;           // на будущее
 
   FunctionPtr construct_function;
   vk::string_view phpdoc_str;
 
   std::vector<Assumption> assumptions_for_vars;
-  int assumptions_inited_vars;
-  bool can_be_php_autoloaded;
+  int assumptions_inited_vars{0};
+  bool can_be_php_autoloaded{false};
+  bool is_immutable{false};
 
   SrcFilePtr file_id;
   string src_name, header_name;
@@ -98,7 +99,11 @@ public:
   }
 
   bool is_builtin() const;
+  bool is_interface_or_has_interface_member();
   static bool does_need_codegen(ClassPtr c);
+
+private:
+  bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked);
 };
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs);

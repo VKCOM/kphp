@@ -9,14 +9,9 @@
 #include "compiler/vertex.h"
 
 ClassData::ClassData() :
-  id(0),
-  class_type(ClassType::klass),
-  assumptions_inited_vars(0),
-  can_be_php_autoloaded(false),
   members(this),
   type_data(TypeData::create_for_class(ClassPtr(this))) {
 }
-
 
 void ClassData::set_name_and_src_name(const string &name) {
   this->name = name;
@@ -210,6 +205,30 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
 
 bool ClassData::is_builtin() const {
   return file_id && file_id->is_builtin();
+}
+
+bool ClassData::is_interface_or_has_interface_member() {
+  if (is_interface()) {
+    return true;
+  }
+  std::unordered_set<ClassPtr> checked{ClassPtr{this}};
+  return has_interface_member_dfs(checked);
+}
+
+bool ClassData::has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) {
+  return nullptr != members.find_member(
+    [&checked](const ClassMemberInstanceField &field) {
+      std::unordered_set<ClassPtr> sub_classes;
+      field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+      for (auto klass : sub_classes) {
+        if (checked.insert(klass).second) {
+          if (klass->is_interface() || klass->has_interface_member_dfs(checked)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
 }
 
 // какие классы мы превращаем в С++ структуры?

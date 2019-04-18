@@ -16,7 +16,9 @@ template<class Derived, class Base = void>
 class refcountable_php_classes : public Base {
 public:
   void add_ref() final {
-    ++refcnt;
+    if (refcnt < REF_CNT_FOR_CONST) {
+      ++refcnt;
+    }
   }
 
   uint32_t get_refcnt() final {
@@ -24,7 +26,9 @@ public:
   }
 
   void release() final __attribute__((always_inline)) {
-    refcnt--;
+    if (refcnt < REF_CNT_FOR_CONST) {
+      --refcnt;
+    }
     if (refcnt == 0) {
       auto derived = static_cast<Derived *>(this);
       derived->~Derived();
@@ -44,7 +48,9 @@ template<class Derived>
 class refcountable_php_classes<Derived, void> {
 public:
   void add_ref() {
-    ++refcnt;
+    if (refcnt < REF_CNT_FOR_CONST) {
+      ++refcnt;
+    }
   }
 
   uint32_t get_refcnt() {
@@ -52,7 +58,9 @@ public:
   }
 
   void release() __attribute__((always_inline)) {
-    refcnt--;
+    if (refcnt < REF_CNT_FOR_CONST) {
+      --refcnt;
+    }
     if (refcnt == 0) {
       auto derived = static_cast<Derived *>(this);
       derived->~Derived();

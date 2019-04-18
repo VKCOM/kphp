@@ -26,6 +26,8 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-template",         kphp_template},
   {"@kphp-return",           kphp_return},
   {"@kphp-memcache-class",   kphp_memcache_class},
+  {"@kphp-immutable-class",  kphp_immutable_class},
+  {"@kphp-const",            kphp_const},
 };
 
 /*
@@ -125,29 +127,35 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
  * Возвращает bool — нашёлся ли; если да, то out_type_str заполнен, а out_var_name либо заполен, либо пустая строка.
  */
 bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset) {
-  const std::vector<php_doc_tag> &tags = parse_php_doc(phpdoc);
+  std::vector<php_doc_tag> tags = parse_php_doc(phpdoc);
   int idx = 0;
-  for (std::vector<php_doc_tag>::const_iterator tag = tags.begin(); tag != tags.end(); ++tag) {
-
-    if (php_doc_tag::get_doc_type(tag->name) == doc_type && idx++ >= offset) {  // для @param имеет смысл offset
-      const std::string &a1 = tag->get_value_token();
-      const std::string &a2 = tag->get_value_token(a1.size());
+  for (const auto &tag : tags) {
+    if (tag.type == doc_type && idx++ >= offset) {  // для @param имеет смысл offset
+      std::string a1 = tag.get_value_token();
+      std::string a2 = tag.get_value_token(a1.size());
 
       if (!a1.empty() && a1[0] == '$') {
         out_var_name = a1.substr(1);
-        out_type_str = a2;
+        out_type_str = std::move(a2);
       } else if (!a2.empty() && a2[0] == '$') {
         out_var_name = a2.substr(1);
-        out_type_str = a1;
+        out_type_str = std::move(a1);
       } else {
-        out_type_str = a1;
-        out_var_name = "";
+        out_type_str = std::move(a1);
+        out_var_name.clear();
       }
       return true;
     }
-
   }
   return false;
+}
+
+bool PhpDocTypeRuleParser::is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type) {
+  auto tags = parse_php_doc(phpdoc);
+  return std::any_of(tags.begin(), tags.end(),
+                     [doc_type](const php_doc_tag &tag) {
+                       return tag.type == doc_type;
+                     });
 }
 
 VertexPtr PhpDocTypeRuleParser::create_type_help_vertex(PrimitiveType type) {

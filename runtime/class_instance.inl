@@ -64,3 +64,18 @@ void class_instance<T>::warn_on_access_null() const {
   php_warning("Trying to access property of null object");
   const_cast<class_instance<T> *>(this)->alloc();
 }
+
+template<class T>
+void class_instance<T>::set_reference_counter_to_cache() {
+  php_assert(o->get_refcnt() == 1);
+  o->set_refcnt(REF_CNT_FOR_CACHE);
+}
+
+template<class T>
+void class_instance<T>::destroy_cached() {
+  if (o) {
+    php_assert(o->get_refcnt() == REF_CNT_FOR_CACHE);
+    o->set_refcnt(1);
+    destroy();
+  }
+}
