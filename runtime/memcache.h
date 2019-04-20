@@ -21,32 +21,11 @@ bool mc_is_immediate_query(const string &key);
 const int MEMCACHE_SERIALIZED = 1;
 const int MEMCACHE_COMPRESSED = 2;
 
-class MC_object {
-protected:
-  virtual ~MC_object() = default;
-
-public:
-  virtual bool addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) = 0;
-  virtual bool connect(const string &host_name, int port, int timeout) = 0;
-  virtual bool pconnect(const string &host_name, int port, int timeout) = 0;
-  virtual bool rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) = 0;
-
-  virtual bool add(const string &key, const var &value, int flags, int expire) = 0;
-  virtual bool set(const string &key, const var &value, int flags, int expire) = 0;
-  virtual bool replace(const string &key, const var &value, int flags, int expire) = 0;
-
-  virtual var get(const var &key_var) = 0;
-
-  virtual bool delete_(const string &key) = 0;
-
-  virtual var decrement(const string &key, const var &v) = 0;
-  virtual var increment(const string &key, const var &v) = 0;
-
-  virtual var getVersion() = 0;
+class C$Memcache : public abstract_refcountable_php_interface {
 };
 
-class McMemcache final : public MC_object {
-private:
+class C$McMemcache final : public refcountable_php_classes<C$McMemcache, C$Memcache> {
+public:
   class host {
   public:
     int host_num;
@@ -58,40 +37,11 @@ private:
     host(int host_num, int host_port, int host_weight, int timeout_ms);
   };
 
-  array<host> hosts;
-
-
-  inline host get_host(const string &key);
-
-  bool run_set(const string &key, const var &value, int flags, int expire);
-
-  var run_increment(const string &key, const var &count);
-
-public:
-  McMemcache();
-
-  bool addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) final;
-  bool connect(const string &host_name, int port, int timeout) final;
-  bool pconnect(const string &host_name, int port, int timeout) final;
-  bool rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) final;
-
-  bool add(const string &key, const var &value, int flags, int expire) final;
-  bool set(const string &key, const var &value, int flags, int expire) final;
-  bool replace(const string &key, const var &value, int flags, int expire) final;
-
-  var get(const var &key_var) final;
-
-  bool delete_(const string &key) final;
-
-  var decrement(const string &key, const var &count) final;
-  var increment(const string &key, const var &count) final;
-
-  var getVersion() final;
-
+  array<host> hosts{array_size{1, 0, true}};
 };
 
-class RpcMemcache final : public MC_object {
-private:
+class C$RpcMemcache final : public refcountable_php_classes<C$RpcMemcache, C$Memcache> {
+public:
   class host {
   public:
     rpc_connection conn;
@@ -99,107 +49,38 @@ private:
     int actor_id = -1;
 
     host() = default;
-    host(const string &host_name, int port, int actor_id, int host_weight, int timeout_ms);
-    explicit host(const rpc_connection &c);
+    explicit host(const rpc_connection &c): conn(c), host_weight(1) {}
   };
 
-  array<host> hosts;
-
-  bool fake;
-
-  inline host get_host(const string &key);
-
-public:
-  explicit RpcMemcache(bool fake);
-
-  bool addServer(const string &host_name, int port, bool persistent, int weight, int timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) final;
-  bool connect(const string &host_name, int port, int timeout) final;
-  bool pconnect(const string &host_name, int port, int timeout) final;
-  bool rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) final;
-
-  bool add(const string &key, const var &value, int flags, int expire) final;
-  bool set(const string &key, const var &value, int flags, int expire) final;
-  bool replace(const string &key, const var &value, int flags, int expire) final;
-
-  var get(const var &key_var) final;
-
-  bool delete_(const string &key) final;
-
-  var decrement(const string &key, const var &count) final;
-  var increment(const string &key, const var &count) final;
-
-  var getVersion() final;
+  array<host> hosts{array_size{1, 0, true}};
+  bool fake{false};
 };
 
-class Memcache {
-private:
-  bool bool_value;
-  MC_object *mc;
-
-  explicit Memcache(MC_object *mc);
-public:
-  Memcache();
-
-  friend bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms);
-  friend bool f$Memcache$$connect(const Memcache &mc, const string &host_name, int port, int timeout);
-  friend bool f$Memcache$$pconnect(const Memcache &mc, const string &host_name, int port, int timeout);
-  friend bool f$Memcache$$rpc_connect(const Memcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout);
-
-  friend bool f$Memcache$$add(const Memcache &mc, const string &key, const var &value, int flags, int expire);
-  friend bool f$Memcache$$set(const Memcache &mc, const string &key, const var &value, int flags, int expire);
-  friend bool f$Memcache$$replace(const Memcache &mc, const string &key, const var &value, int flags, int expire);
-
-  friend var f$Memcache$$get(const Memcache &mc, const var &key_var);
-
-  friend bool f$Memcache$$delete(const Memcache &mc, const string &key);
-
-  friend var f$Memcache$$decrement(const Memcache &mc, const string &key, const var &v);
-  friend var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v);
-
-  friend var f$Memcache$$getVersion(const Memcache &mc);
-
-  friend bool f$boolval(const Memcache &my_mc);
-  friend bool eq2(const Memcache &my_mc, bool value);
-  friend bool eq2(bool value, const Memcache &my_mc);
-  friend bool eq2(const Memcache &mc1, const Memcache &mc2);
-  friend bool equals(bool value, const Memcache &my_mc);
-  friend bool equals(const Memcache &my_mc, bool value);
-  friend bool equals(const Memcache &mc1, const Memcache &mc2);
-
-  Memcache &operator=(bool value);
-  Memcache(bool value);
-
-  friend Memcache f$Memcache$$__construct();
-  friend Memcache f$new_RpcMemcache(bool fake);
-};
-
-bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = -1);
-bool f$Memcache$$connect(const Memcache &mc, const string &host_name, int port = 11211, int timeout = 1);
-bool f$Memcache$$pconnect(const Memcache &mc, const string &host_name, int port = 11211, int timeout = 1);
-bool f$Memcache$$rpc_connect(const Memcache &mc, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
-
-bool f$Memcache$$add(const Memcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$Memcache$$set(const Memcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$Memcache$$replace(const Memcache &mc, const string &key, const var &value, int flags = 0, int expire = 0);
-
-var f$Memcache$$get(const Memcache &mc, const var &key_var);
-
-bool f$Memcache$$delete(const Memcache &mc, const string &key);
-
-var f$Memcache$$decrement(const Memcache &mc, const string &key, const var &v = 1);
-var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v = 1);
-
-var f$Memcache$$getVersion(const Memcache &mc);
+class_instance<C$McMemcache> f$McMemcache$$__construct();
+bool f$McMemcache$$addServer(const class_instance<C$McMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
+bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+var f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const var &key_var);
+bool f$McMemcache$$delete(const class_instance<C$McMemcache> &v$this, const string &key);
+var f$McMemcache$$decrement(const class_instance<C$McMemcache> &v$this, const string &key, const var &v = 1);
+var f$McMemcache$$increment(const class_instance<C$McMemcache> &v$this, const string &key, const var &v = 1);
+var f$McMemcache$$getVersion(const class_instance<C$McMemcache> &v$this);
+bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 
-bool f$boolval(const Memcache &my_mc);
-bool eq2(const Memcache &my_mc, bool value);
-bool eq2(bool value, const Memcache &my_mc);
-bool equals(bool value, const Memcache &my_mc);
-bool equals(const Memcache &my_mc, bool value);
+class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(bool fake = false);
+bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
+bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &v$this, const var &key_var);
+bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &v$this, const string &key);
+var f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &count = 1);
+var f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &count = 1);
+var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& v$this);
 
-Memcache f$Memcache$$__construct();
-Memcache f$new_RpcMemcache(bool fake = false);
 
 
 var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);

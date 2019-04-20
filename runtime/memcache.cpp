@@ -319,14 +319,14 @@ void mc_version_callback(const char *result, int result_len) {
 }
 
 
-McMemcache::host::host() :
+C$McMemcache::host::host() :
   host_num(-1),
   host_port(-1),
   host_weight(0),
   timeout_ms(200) {
 }
 
-McMemcache::host::host(int host_num, int host_port, int host_weight, int timeout_ms) :
+C$McMemcache::host::host(int host_num, int host_port, int host_weight, int timeout_ms) :
   host_num(host_num),
   host_port(host_port),
   host_weight(host_weight),
@@ -334,15 +334,15 @@ McMemcache::host::host(int host_num, int host_port, int host_weight, int timeout
 }
 
 
-McMemcache::host McMemcache::get_host(const string &key __attribute__((unused))) {
+C$McMemcache::host get_host(const array<C$McMemcache::host> &hosts) {
   php_assert (hosts.count() > 0);
 
   return hosts.get_value(f$array_rand(hosts));
 }
 
 
-bool McMemcache::run_set(const string &key, const var &value, int flags, int expire) {
-  if (hosts.count() <= 0) {
+static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, const var &value, int flags, int expire) {
+  if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
   }
@@ -385,7 +385,7 @@ bool McMemcache::run_set(const string &key, const var &value, int flags, int exp
                      << "\r\n";
 
   mc_bool_res = false;
-  host cur_host = get_host(real_key);
+  auto cur_host = get_host(mc->hosts);
   if (mc_is_immediate_query(real_key)) {
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     return true;
@@ -397,8 +397,8 @@ bool McMemcache::run_set(const string &key, const var &value, int flags, int exp
   }
 }
 
-var McMemcache::run_increment(const string &key, const var &count) {
-  if (hosts.count() <= 0) {
+var run_increment(const class_instance<C$McMemcache> &mc, const string &key, const var &count) {
+  if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
   }
@@ -426,7 +426,7 @@ var McMemcache::run_increment(const string &key, const var &count) {
   drivers_SB << "\r\n";
 
   mc_res = false;
-  host cur_host = get_host(real_key);
+  auto cur_host = get_host(mc->hosts);
   if (mc_is_immediate_query(real_key)) {
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     return 0;
@@ -438,66 +438,47 @@ var McMemcache::run_increment(const string &key, const var &count) {
   }
 }
 
-McMemcache::McMemcache() :
-  hosts(array_size(1, 0, true)) {
-}
+bool f$McMemcache$$addServer(const class_instance<C$McMemcache> & mc, const string &host_name, int port, bool persistent __attribute__((unused)), int weight, double timeout, int retry_interval __attribute__((unused)), bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
+  int result_timeout = static_cast<int>(timeout * 1000 + timeoutms);
 
-bool McMemcache::addServer(const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval __attribute__((unused)), bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
-  if (timeout <= 0) {
-    timeout = 1;
+  if (result_timeout <= 0) {
+    result_timeout = 1;
   }
-  if (timeout >= MAX_TIMEOUT) {
-    timeout = MAX_TIMEOUT;
-  }
-
-  php_assert (MAX_TIMEOUT < 1000000);
-  if (1 <= timeoutms && timeoutms <= 1000 * MAX_TIMEOUT) {
-    timeout = timeoutms;
-  } else {
-    timeout *= 1000;
+  if (result_timeout >= MAX_TIMEOUT) {
+    result_timeout = MAX_TIMEOUT;
   }
 
   int host_num = mc_connect_to(host_name.c_str(), port);
   if (host_num >= 0) {
-    hosts.push_back(host(host_num, port, weight, timeout));
-    return true;
+    mc->hosts.push_back({host_num, port, weight, result_timeout});
   }
+  return host_num >= 0;
+}
+
+bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &, const string &, int, bool, int, double, int, bool, const var &, int) {
+  php_warning("addServer used on rpc-Memcache object");
   return false;
 }
 
-bool McMemcache::connect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, false, 1, timeout, 15, true, var(), -1);
-}
-
-bool McMemcache::pconnect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, true, 1, timeout, 15, true, var(), -1);
-}
-
-bool McMemcache::rpc_connect(const string &host_name __attribute__((unused)), int port __attribute__((unused)), const var &default_actor_id __attribute__((unused)), double timeout __attribute__((unused)), double connect_timeout __attribute__((unused)), double reconnect_timeout __attribute__((unused))) {
-  php_warning("Method rpc_connect doesn't supported for object of class Memcache");
-  return false;
-}
-
-
-bool McMemcache::add(const string &key, const var &value, int flags, int expire) {
+bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
   mc_method = "add";
-  return run_set(key, value, flags, expire);
+  return run_set(v$this, key, value, flags, expire);
 }
 
-bool McMemcache::set(const string &key, const var &value, int flags, int expire) {
+bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
   mc_method = "set";
-  return run_set(key, value, flags, expire);
+  return run_set(v$this, key, value, flags, expire);
 }
 
-bool McMemcache::replace(const string &key, const var &value, int flags, int expire) {
+bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
   mc_method = "replace";
-  return run_set(key, value, flags, expire);
+  return run_set(v$this, key, value, flags, expire);
 }
 
-var McMemcache::get(const var &key_var) {
+var f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const var &key_var) {
   mc_method = "get";
   if (f$is_array(key_var)) {
-    if (hosts.count() <= 0) {
+    if (v$this->hosts.count() <= 0) {
       php_warning("There is no available server to run Memcache::get");
       return array<var>();
     }
@@ -514,7 +495,7 @@ var McMemcache::get(const var &key_var) {
     drivers_SB << "\r\n";
 
     mc_res = array<var>(array_size(0, key_var.count(), false));
-    host cur_host = get_host(string());
+    auto cur_host = get_host(v$this->hosts);
     if (is_immediate_query) {
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr); //TODO wrong if we have no mc_proxy
     } else {
@@ -523,7 +504,7 @@ var McMemcache::get(const var &key_var) {
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_multiget_callback); //TODO wrong if we have no mc_proxy
     }
   } else {
-    if (hosts.count() <= 0) {
+    if (v$this->hosts.count() <= 0) {
       php_warning("There is no available server to run Memcache::get with key \"%s\"", key_var.to_string().c_str());
       return false;
     }
@@ -533,7 +514,7 @@ var McMemcache::get(const var &key_var) {
 
     drivers_SB.clean() << "get " << real_key << "\r\n";
 
-    host cur_host = get_host(real_key);
+    auto cur_host = get_host(v$this->hosts);
     if (mc_is_immediate_query(real_key)) {
       mc_res = true;
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
@@ -547,9 +528,9 @@ var McMemcache::get(const var &key_var) {
   return mc_res;
 }
 
-bool McMemcache::delete_(const string &key) {
+bool f$McMemcache$$delete(const class_instance<C$McMemcache> &v$this,const string &key) {
   mc_method = "delete";
-  if (hosts.count() <= 0) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::delete with key \"%s\"", key.c_str());
     return false;
   }
@@ -559,7 +540,7 @@ bool McMemcache::delete_(const string &key) {
   drivers_SB.clean() << "delete " << real_key << "\r\n";
 
   mc_bool_res = false;
-  host cur_host = get_host(real_key);
+  auto cur_host = get_host(v$this->hosts);
   if (mc_is_immediate_query(real_key)) {
     mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr);
     return true;
@@ -571,146 +552,99 @@ bool McMemcache::delete_(const string &key) {
   }
 }
 
-var McMemcache::decrement(const string &key, const var &count) {
+var f$McMemcache$$decrement(const class_instance<C$McMemcache> &mc, const string &key, const var &count) {
   mc_method = "decr";
-  return run_increment(key, count);
+  return run_increment(mc, key, count);
 }
 
-var McMemcache::increment(const string &key, const var &count) {
+var f$McMemcache$$increment(const class_instance<C$McMemcache> &mc,const string &key, const var &count) {
   mc_method = "incr";
-  return run_increment(key, count);
+  return run_increment(mc, key, count);
 }
 
-var McMemcache::getVersion() {
+var f$McMemcache$$getVersion(const class_instance<C$McMemcache>& v$this) {
   static const char *version_str = "version\r\n";
-  if (hosts.count() <= 0) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::getVersion");
     return false;
   }
 
   mc_res = false;
-  host cur_host = get_host(string());
+  auto cur_host = get_host(v$this->hosts);
   mc_run_query(cur_host.host_num, version_str, (int)strlen(version_str), cur_host.timeout_ms, 1, mc_version_callback);
 
   return mc_res;
 }
 
 
-RpcMemcache::host::host(const string &host_name, int port, int actor_id, int host_weight, int timeout_ms) :
-  conn(f$new_rpc_connection(host_name, port, actor_id, timeout_ms * 0.001)),
-  host_weight(host_weight),
-  actor_id(actor_id) {
-}
-
-RpcMemcache::host::host(const rpc_connection &c) :
-  conn(c),
-  host_weight(1),
-  actor_id(-1) {
-}
-
-RpcMemcache::host RpcMemcache::get_host(const string &key __attribute__((unused))) {
+static C$RpcMemcache::host get_host(const array<C$RpcMemcache::host> &hosts) {
   php_assert (hosts.count() > 0);
-
   return hosts.get_value(f$array_rand(hosts));
 }
 
-RpcMemcache::RpcMemcache(bool fake) :
-  hosts(array_size(1, 0, true)),
-  fake(fake) {
-}
-
-bool RpcMemcache::addServer(const string &host_name, int port, bool persistent __attribute__((unused)), int weight, int timeout, int retry_interval, bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
-  if (timeout <= 0) {
-    timeout = 1;
-  }
-  if (timeout >= MAX_TIMEOUT) {
-    timeout = MAX_TIMEOUT;
-  }
-
-  php_assert (MAX_TIMEOUT < 1000000);
-  if (1 <= timeoutms && timeoutms <= 1000 * MAX_TIMEOUT) {
-    timeout = timeoutms;
-  } else {
-    timeout *= 1000;
-  }
-
-  host new_host = host(host_name, port, retry_interval >= 100 ? retry_interval : 0, weight, timeout);
-  if (new_host.conn.host_num >= 0) {
-    hosts.push_back(new_host);
-    return true;
-  }
-  return false;
-}
-
-bool RpcMemcache::connect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, false, 1, timeout, 15, true, var(), -1);
-}
-
-bool RpcMemcache::pconnect(const string &host_name, int port, int timeout) {
-  return addServer(host_name, port, true, 1, timeout, 15, true, var(), -1);
-}
-
-bool RpcMemcache::rpc_connect(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   rpc_connection c = f$new_rpc_connection(host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
   if (c.host_num >= 0) {
-    host h = host(c);
+    auto h = C$RpcMemcache::host(c);
     h.actor_id = default_actor_id.to_int();
-    hosts.push_back(h);
+    v$this->hosts.push_back(h);
     return true;
   }
   return false;
 }
 
+bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &, const string &, int, const var &, double, double, double) {
+  php_warning("rpc_connect used on non-rpc Memcache object");
+  return false;
+}
 
-bool RpcMemcache::add(const string &key, const var &value, int flags, int expire) {
-  if (hosts.count() <= 0) {
+bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::add with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  host cur_host = get_host(real_key);
-  bool res = f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
+  auto cur_host = get_host(v$this->hosts);
+  bool res = f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake);
   return res;
 }
 
-bool RpcMemcache::set(const string &key, const var &value, int flags, int expire) {
-  if (hosts.count() <= 0) {
+bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int flags, int expire) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::set with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  host cur_host = get_host(real_key);
-  bool res = f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  return res;
+  auto cur_host = get_host(v$this->hosts);
+  return f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake);
 }
 
-bool RpcMemcache::replace(const string &key, const var &value, int flags, int expire) {
-  if (hosts.count() <= 0) {
+bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::replace with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  host cur_host = get_host(real_key);
-  bool res = f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, fake);
-  return res;
+  auto cur_host = get_host(v$this->hosts);
+  return f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake);
 }
 
-var RpcMemcache::get(const var &key_var) {
+var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &mc, const var &key_var) {
   if (f$is_array(key_var)) {
-    if (hosts.count() <= 0) {
+    if (mc->hosts.count() <= 0) {
       php_warning("There is no available server to run RpcMemcache::get");
       return array<var>();
     }
 
-    host cur_host = get_host(string());
-    var res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, false, true, fake);
+    auto cur_host = get_host(mc->hosts);
+    var res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, false, true, mc->fake);
     php_assert(resumable_finished);
     return res;
   } else {
-    if (hosts.count() <= 0) {
+    if (mc->hosts.count() <= 0) {
       php_warning("There is no available server to run RpcMemcache::get with key \"%s\"", key_var.to_string().c_str());
       return false;
     }
@@ -718,50 +652,46 @@ var RpcMemcache::get(const var &key_var) {
     const string key = key_var.to_string();
     const string real_key = mc_prepare_key(key);
 
-    host cur_host = get_host(real_key);
-    var res = f$rpc_mc_get(cur_host.conn, real_key, -1.0, fake);
-    return res;
+    auto cur_host = get_host(mc->hosts);
+    return f$rpc_mc_get(cur_host.conn, real_key, -1.0, mc->fake);
   }
 }
 
-bool RpcMemcache::delete_(const string &key) {
-  if (hosts.count() <= 0) {
+bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &mc, const string &key) {
+  if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::delete with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  host cur_host = get_host(real_key);
-  bool res = f$rpc_mc_delete(cur_host.conn, real_key, -1.0, fake);
-  return res;
+  auto cur_host = get_host(mc->hosts);
+  return f$rpc_mc_delete(cur_host.conn, real_key, -1.0, mc->fake);
 }
 
-var RpcMemcache::decrement(const string &key, const var &count) {
-  if (hosts.count() <= 0) {
+var f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &mc, const string &key, const var &count) {
+  if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::decrement with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  host cur_host = get_host(real_key);
-  var res = f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, fake);
-  return res;
+  auto cur_host = get_host(mc->hosts);
+  return f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, mc->fake);
 }
 
-var RpcMemcache::increment(const string &key, const var &count) {
-  if (hosts.count() <= 0) {
+var f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &mc, const string &key, const var &count) {
+  if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::increment with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  host cur_host = get_host(real_key);
-  var res = f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, fake);
-  return res;
+  auto cur_host = get_host(mc->hosts);
+  return f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, mc->fake);
 }
 
-var RpcMemcache::getVersion() {
-  if (hosts.count() <= 0) {
+var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& mc) {
+  if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::getVersion");
     return false;
   }
@@ -771,173 +701,17 @@ var RpcMemcache::getVersion() {
 }
 
 
-bool f$Memcache$$addServer(const Memcache &mc, const string &host_name, int port, bool persistent, int weight, double timeout, int retry_interval, bool status, const var &failure_callback, int timeoutms) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->addServer");
-    return false;
-  }
-
-  int timeout_s = static_cast<int>(timeout);
-  int timeout_ms_from_timeout = static_cast<int>((timeout - timeout_s) * 1000);
-  if (timeout_ms_from_timeout > 0 && timeoutms > 0) {
-    php_warning("Memcache::addServer doesn't support timeoutms parameter with float timeout = %lf", timeout);
-    return false;
-  } else if (timeout_ms_from_timeout == 0) {
-    timeout_ms_from_timeout = timeoutms;
-  } else {
-    timeout_ms_from_timeout += timeout_s * 1000;
-  }
-
-  return mc.mc->addServer(host_name, port, persistent, weight, timeout_s, retry_interval, status, failure_callback, timeout_ms_from_timeout);
+class_instance<C$McMemcache> f$McMemcache$$__construct() {
+  class_instance<C$McMemcache> v$this;
+  v$this.alloc();
+  return v$this;
 }
 
-bool f$Memcache$$connect(const Memcache &mc, const string &host_name, int port, int timeout) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->connect");
-    return false;
-  }
-  return mc.mc->connect(host_name, port, timeout);
-}
-
-bool f$Memcache$$pconnect(const Memcache &mc, const string &host_name, int port, int timeout) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->pconnect");
-    return false;
-  }
-  return mc.mc->pconnect(host_name, port, timeout);
-}
-
-bool f$Memcache$$rpc_connect(const Memcache &mc, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->rpc_connect");
-    return false;
-  }
-  return mc.mc->rpc_connect(host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
-}
-
-
-bool f$Memcache$$add(const Memcache &mc, const string &key, const var &value, int flags, int expire) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->add");
-    return false;
-  }
-  return mc.mc->add(key, value, flags, expire);
-}
-
-bool f$Memcache$$set(const Memcache &mc, const string &key, const var &value, int flags, int expire) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->set");
-    return false;
-  }
-  return mc.mc->set(key, value, flags, expire);
-}
-
-bool f$Memcache$$replace(const Memcache &mc, const string &key, const var &value, int flags, int expire) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->replace");
-    return false;
-  }
-  return mc.mc->replace(key, value, flags, expire);
-}
-
-var f$Memcache$$get(const Memcache &mc, const var &key_var) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->get");
-    return key_var.is_array() ? var(array<var>()) : var(false);
-  }
-  return mc.mc->get(key_var);
-}
-
-bool f$Memcache$$delete(const Memcache &mc, const string &key) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->delete");
-    return false;
-  }
-  return mc.mc->delete_(key);
-}
-
-var f$Memcache$$decrement(const Memcache &mc, const string &key, const var &v) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->decrement");
-    return false;
-  }
-  return mc.mc->decrement(key, v);
-}
-
-var f$Memcache$$increment(const Memcache &mc, const string &key, const var &v) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->increment");
-    return false;
-  }
-  return mc.mc->increment(key, v);
-}
-
-var f$Memcache$$getVersion(const Memcache &mc) {
-  if (mc.mc == nullptr) {
-    php_warning("Memcache object is NULL in Memcache->getVersion");
-    return false;
-  }
-  return mc.mc->getVersion();
-}
-
-
-bool f$boolval(const Memcache &my_mc) {
-  return f$boolval(my_mc.bool_value);
-}
-
-bool eq2(const Memcache &my_mc, bool value) {
-  return my_mc.bool_value == value;
-}
-
-bool eq2(bool value, const Memcache &my_mc) {
-  return value == my_mc.bool_value;
-}
-
-bool eq2(const Memcache &mc1, const Memcache &mc2) {
-  return mc1.bool_value == mc2.bool_value && mc1.mc == mc2.mc;
-}
-
-bool equals(bool value, const Memcache &my_mc) {
-  return equals(value, my_mc.bool_value);
-}
-
-bool equals(const Memcache &my_mc, bool value) {
-  return equals(my_mc.bool_value, value);
-}
-
-bool equals(const Memcache &mc1, const Memcache &mc2) {
-  return mc1.bool_value == mc2.bool_value && mc1.mc == mc2.mc;
-}
-
-
-Memcache &Memcache::operator=(bool value) {
-  bool_value = value;
-  mc = nullptr;
-  return *this;
-}
-
-Memcache::Memcache(bool value) :
-  bool_value(value),
-  mc(nullptr) {}
-
-Memcache::Memcache(MC_object *mc) :
-  bool_value(true),
-  mc(mc) {
-}
-
-Memcache::Memcache() :
-  bool_value(),
-  mc(nullptr) {
-}
-
-Memcache f$Memcache$$__construct() {
-  void *buf = dl::allocate(sizeof(McMemcache));
-  return Memcache(new(buf) McMemcache());
-}
-
-Memcache f$new_RpcMemcache(bool fake) {
-  void *buf = dl::allocate(sizeof(RpcMemcache));
-  return Memcache(new(buf) RpcMemcache(fake));
+class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(bool fake) {
+  class_instance<C$RpcMemcache> v$this;
+  v$this.alloc();
+  v$this->fake = fake;
+  return v$this;
 }
 
 /*

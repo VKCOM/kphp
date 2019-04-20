@@ -575,13 +575,9 @@ inline void get_cpp_style_type(const TypeData *type, string &res) {
 
   switch (tp) {
     case tp_Class: {
-      if (type->class_type()->name != "Memcache") {
-        res += "class_instance<";
-        res += type->class_type()->src_name;
-        res += ">";
-      } else {
-        res += type->class_type()->name;
-      }
+      res += "class_instance<";
+      res += type->class_type()->src_name;
+      res += ">";
       break;
     }
     case tp_RPC: {

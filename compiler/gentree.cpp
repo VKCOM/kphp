@@ -258,10 +258,9 @@ VertexPtr GenTree::get_func_call() {
     auto func_call = call.as<op_constructor_call>();
     func_call->set_string(name);
 
-    // Hack for several classes inherited from Memcache
-    if (name == "RpcMemcache") {
-      call = VertexAdaptor<op_func_call>::create(call->get_next());
-      call->set_string("new_" + name);
+    // Hack to be more compatible with php
+    if (name == "Memcache") {
+      func_call->set_string("McMemcache");
     }
   }
   return call;
@@ -1719,7 +1718,7 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const string &name) {
-  static std::set<string> disallowed_names{"RpcMemcache", "rpc_connection", "Long", "ULong", "UInt"};
+  static std::set<std::string> disallowed_names{"rpc_connection", "Long", "ULong", "UInt"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }

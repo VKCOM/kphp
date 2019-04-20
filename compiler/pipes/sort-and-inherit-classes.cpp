@@ -211,7 +211,9 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
     });
   } else {
     child_class->implements.emplace_back(interface_class);
-    child_class->add_virt_clone(function_stream);
+    if (!child_class->is_builtin()) {
+      child_class->add_virt_clone(function_stream);
+    }
   }
 
   AutoLocker<Lockable *> locker(&(*interface_class));
@@ -243,7 +245,7 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
     analyze_class_phpdoc(klass);
   }
 
-  if (klass->is_interface() && klass->str_dependents.empty()) {
+  if (klass->is_interface() && klass->str_dependents.empty() && !klass->is_builtin()) {
     klass->add_virt_clone(function_stream, false);
   }
 }

@@ -18,8 +18,40 @@ class Exception {
     public function getTraceAsString () ::: string;
 };
 
-class Memcache {
+interface Memcache {
+    public function get ($key) ::: var;
+    public function delete ($key ::: string) ::: bool;
+    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
+    public function increment ($key ::: string, $v ::: Any = 1) ::: var;
+    public function getVersion () ::: var;
+
+    // this two functions shouldn't be there, but we need it to rewrite code
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
+    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+}
+
+
+class McMemcache implements Memcache {
     public function __construct();
+
+    public function get ($key) ::: var;
+    public function delete ($key ::: string) ::: bool;
+    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int  = 0) ::: bool;
+    public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
+    public function increment ($key ::: string, $v ::: Any = 1) ::: var;
+    public function getVersion () ::: var;
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
+
+    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+}
+
+class RpcMemcache implements Memcache {
+    public function __construct($fake ::: bool = false);
 
     /** @kphp-extern-func-info can_throw */
     public function get ($key) ::: var;
@@ -37,11 +69,11 @@ class Memcache {
     public function increment ($key ::: string, $v ::: Any = 1) ::: var;
 
     public function getVersion () ::: var;
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = -1) ::: bool;
-    public function connect ($host ::: string, $port ::: int = 11211) ::: bool;
-    public function pconnect ($host ::: string, $port ::: int = 11211) ::: bool;
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
 }
+
 
 class mysqli {
     private function __construct();
