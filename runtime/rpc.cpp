@@ -7,9 +7,9 @@
 #include "common/rpc-const.h"
 
 #include "PHP/common-net-functions.h"
-#include "runtime/drivers.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
+#include "runtime/memcache.h"
 #include "runtime/misc.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"

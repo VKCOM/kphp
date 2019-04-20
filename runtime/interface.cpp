@@ -14,10 +14,11 @@
 #include "runtime/bcmath.h"
 #include "runtime/curl.h"
 #include "runtime/datetime.h"
-#include "runtime/drivers.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance_cache.h"
+#include "runtime/memcache.h"
+#include "runtime/mysql.h"
 #include "runtime/net_events.h"
 #include "runtime/openssl.h"
 #include "runtime/regexp.h"
@@ -1995,7 +1996,8 @@ static void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
   init_instance_cache_lib();
 
-  init_drivers_lib();
+  init_memcache_lib();
+  init_mysql_lib();
   init_datetime_lib();
   init_net_events_lib();
   init_resumable_lib();
@@ -2044,7 +2046,8 @@ static void free_runtime_libs() {
   free_bcmath_lib();
   free_exception_lib();
   free_curl_lib();
-  free_drivers_lib();
+  free_memcache_lib();
+  free_mysql_lib();
   free_files_lib();
   free_openssl_lib();
   free_rpc_lib();
