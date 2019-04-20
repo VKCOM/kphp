@@ -192,7 +192,7 @@ void CompilerCore::register_and_require_function(FunctionPtr function, DataStrea
     bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
     kphp_error(!f || was_previously_required,
                format("Redeclaration of function %s(), the previous declaration was in [%s]",
-                       function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
+                      function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
     f = function;
 
     if (was_previously_required || force_require) {
@@ -240,6 +240,9 @@ SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib,
 
 
 ClassPtr CompilerCore::get_class(vk::string_view name) {
+  if (name[0] == '\\') {
+    name = name.substr(1);
+  }
   kphp_assert(name[0] != '\\');
   auto result = classes_ht.find(vk::std_hash(name));
   return result ? *result : ClassPtr{};
@@ -265,7 +268,7 @@ bool CompilerCore::register_define(DefinePtr def_id) {
   kphp_error_act (
     !node->data,
     format("Redeclaration of define [%s], the previous declaration was in [%s]",
-            def_id->name.c_str(), node->data->file_id->file_name.c_str()),
+           def_id->name.c_str(), node->data->file_id->file_name.c_str()),
     return false
   );
 
@@ -346,7 +349,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, 
       function->param_ids.push_back(var);
       break;
     default:
-      kphp_fail();
+    kphp_fail();
   }
   return var;
 }
@@ -400,7 +403,7 @@ void CompilerCore::save_index() {
   kphp_error (err == 0, "Failed to rewrite index");
 }
 
-const Index& CompilerCore::get_index() {
+const Index &CompilerCore::get_index() {
   return cpp_index;
 }
 

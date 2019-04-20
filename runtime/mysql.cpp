@@ -2,21 +2,21 @@
 
 #include "PHP/common-net-functions.h"
 
-int mysql_callback_state;
+static int mysql_callback_state;
 
-const int DB_TIMEOUT_MS = 120000;
+constexpr int DB_TIMEOUT_MS = 120000;
 
-string *error_ptr;
-int *errno_ptr;
-int *affected_rows_ptr;
-int *insert_id_ptr;
-array<array<var>> *query_result_ptr;
-bool *query_id_ptr;
+static string *error_ptr;
+static int *errno_ptr;
+static int *affected_rows_ptr;
+static int *insert_id_ptr;
+static array<array<var>> *query_result_ptr;
+static bool *query_id_ptr;
 
-int *field_cnt_ptr;
-array<string> *field_names_ptr;
+static int *field_cnt_ptr;
+static array<string> *field_names_ptr;
 
-unsigned long long mysql_read_long_long(const unsigned char *&result, int &result_len, bool &is_null) {
+static unsigned long long mysql_read_long_long(const unsigned char *&result, int &result_len, bool &is_null) {
   result_len--;
   if (result_len < 0) {
     return 0;
@@ -48,7 +48,7 @@ unsigned long long mysql_read_long_long(const unsigned char *&result, int &resul
   return value;
 }
 
-string mysql_read_string(const unsigned char *&result, int &result_len, bool &is_null, bool need_value = false) {
+static string mysql_read_string(const unsigned char *&result, int &result_len, bool &is_null, bool need_value = false) {
   if (result_len < 0) {
     return string();
   }
@@ -65,7 +65,7 @@ string mysql_read_string(const unsigned char *&result, int &result_len, bool &is
   return value;
 }
 
-void mysql_query_callback(const char *result_, int result_len) {
+static void mysql_query_callback(const char *result_, int result_len) {
 //  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
   if (!*query_id_ptr || !strcmp(result_, "ERROR\r\n")) {
     *query_id_ptr = false;
@@ -219,77 +219,18 @@ void mysql_query_callback(const char *result_, int result_len) {
 }
 
 
-static MyDB DB_Proxy;
+static class_instance<C$mysqli> DB_Proxy;
 
-db_driver::db_driver() :
-  connection_id(-1),
-  connected(0),
-  last_query_id(0),
-  biggest_query_id(0),
-  error(),
-  errno_(0),
-  affected_rows(0),
-  insert_id(0),
-  field_cnt(0) {
-  cur_pos.push_back(0);
-  query_results.push_back(array<array<var >>());
-}
-
-void db_driver::do_connect_no_log() {
-  if (connection_id >= 0 || connected) {
-    return;
-  }
-
-  connection_id = db_proxy_connect();
-
-  if (connection_id < 0) {
-    connected = -1;
-    return;
-  }
-
-  connected = 1;
-}
-
-var db_driver::mysql_query_update_last(const string &query_string) {
-  bool query_id = mysql_query(query_string);
-  if (!query_id) {
-    return false;
-  }
-  return last_query_id = biggest_query_id;
-}
-
-
-int db_driver::get_affected_rows() {
-  if (connected < 0) {
-    return 0;
-  }
-  return affected_rows;
-}
-
-int db_driver::get_num_rows() {
-  if (connected < 0) {
-    return 0;
-  }
-  return query_results[last_query_id].count();
-}
-
-int db_driver::get_insert_id() {
-  if (connected < 0) {
-    return -1;
-  }
-  return insert_id;
-}
-
-bool db_driver::mysql_query(const string &query) {
+static bool mysql_query(const class_instance<C$mysqli> &db, const string &query) {
   if (query.size() > (1 << 24) - 10) {
     return false;
   }
 
-  error = string();
-  errno_ = 0;
-  affected_rows = 0;
+  db->error = string();
+  db->errno_ = 0;
+  db->affected_rows = 0;
 
-  insert_id = 0;
+  db->insert_id = 0;
   array<array<var>> query_result;
   bool query_id = true;
 
@@ -304,195 +245,125 @@ bool db_driver::mysql_query(const string &query) {
   real_query[4] = 3;
   memcpy(&real_query[5], query.c_str(), query.size());
 
-  error_ptr = &error;
-  errno_ptr = &errno_;
-  affected_rows_ptr = &affected_rows;
-  insert_id_ptr = &insert_id;
+  error_ptr = &db->error;
+  errno_ptr = &db->errno_;
+  affected_rows_ptr = &db->affected_rows;
+  insert_id_ptr = &db->insert_id;
   query_result_ptr = &query_result;
   query_id_ptr = &query_id;
 
-  field_cnt_ptr = &field_cnt;
-  field_names_ptr = &field_names;
+  field_cnt_ptr = &db->field_cnt;
+  field_names_ptr = &db->field_names;
 
   mysql_callback_state = 0;
-  db_run_query(connection_id, real_query.c_str(), len, DB_TIMEOUT_MS, mysql_query_callback);
+  db_run_query(db->connection_id, real_query.c_str(), len, DB_TIMEOUT_MS, mysql_query_callback);
   if (mysql_callback_state != 5 || !query_id) {
     return false;
   }
 
-  php_assert(biggest_query_id < 2000000000);
-  query_results[++biggest_query_id] = query_result;
-  cur_pos[biggest_query_id] = 0;
+  php_assert(db->biggest_query_id < 2000000000);
+  db->query_results[++db->biggest_query_id] = query_result;
+  db->cur_pos[db->biggest_query_id] = 0;
 
   return true;
 }
 
-var db_driver::mysql_fetch_array(int query_id) {
-  if (query_id <= 0 || query_id > biggest_query_id) {
+string f$mysqli_error(const class_instance<C$mysqli> &db) {
+  return db->error;
+}
+
+int f$mysqli_errno(const class_instance<C$mysqli> &db) {
+  return db->errno_;
+}
+
+int f$mysqli_affected_rows(const class_instance<C$mysqli> &db) {
+  if (db->connected < 0) {
+    return 0;
+  }
+  return db->affected_rows;
+}
+
+var f$mysqli_fetch_array(int query_id, int result_type) {
+  if (result_type != 1) {
+    php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
+  }
+  if (query_id <= 0 || query_id > DB_Proxy->biggest_query_id) {
     return var();
   }
 
-  array<array<var>> &query_result = query_results[query_id];
-  int &cur = cur_pos[query_id];
+  array<array<var>> &query_result = DB_Proxy->query_results[query_id];
+  int &cur = DB_Proxy->cur_pos[query_id];
   if (cur >= (int)query_result.count()) {
     return var();
   }
   array<var> result = query_result[cur++];
   if (cur >= (int)query_result.count()) {
-    query_result = query_results[0];
+    query_result = DB_Proxy->query_results[0];
   }
   return result;
 }
 
-
-void db_do_connect_no_log(const MyDB &db) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in DB->do_connect");
-    return;
-  }
-  return db.db->do_connect_no_log();
-}
-
-var db_mysql_query(const MyDB &db, const string &query) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in DB->mysql_query");
-    return false;
-  }
-  return db.db->mysql_query_update_last(query);
-}
-
-int db_get_affected_rows(const MyDB &db) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in DB->get_affected_rows");
-    return 0;
-  }
-  return db.db->get_affected_rows();
-}
-
-int db_get_num_rows(const MyDB &db, int id) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in DB->get_num_rows");
-    return 0;
-  }
-  if (id != -1 && id != db.db->last_query_id) {
-    php_warning("mysql_num_rows is supported only for last request");
-    return 0;
-  }
-  return db.db->get_num_rows();
-}
-
-int db_get_insert_id(const MyDB &db) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in DB->get_insert_id");
+int f$mysqli_insert_id(const class_instance<C$mysqli> &db) {
+  if (db->connected < 0) {
     return -1;
   }
-  return db.db->get_insert_id();
-}
-
-var db_fetch_array(const MyDB &db, int query_id) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in DB->get_insert_id");
-    return var();
-  }
-  return db.db->mysql_fetch_array(query_id);
-}
-
-
-bool f$boolval(const MyDB &my_db) {
-  return f$boolval(my_db.bool_value);
-}
-
-bool eq2(const MyDB &my_db, bool value) {
-  return my_db.bool_value == value;
-}
-
-bool eq2(bool value, const MyDB &my_db) {
-  return value == my_db.bool_value;
-}
-
-bool equals(bool value, const MyDB &my_db) {
-  return equals(value, my_db.bool_value);
-}
-
-bool equals(const MyDB &my_db, bool value) {
-  return equals(my_db.bool_value, value);
-}
-
-
-MyDB &MyDB::operator=(bool value) {
-  bool_value = value;
-  db = nullptr;
-  return *this;
-}
-
-MyDB::MyDB(bool value) :
-  bool_value(value),
-  db(nullptr) {}
-
-
-MyDB::MyDB(db_driver *db) :
-  bool_value(true),
-  db(db) {
-}
-
-MyDB::MyDB() :
-  bool_value(),
-  db(nullptr) {
-}
-
-string f$mysqli_error(const MyDB &db) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in f$mysqli_error");
-    return string();
-  }
-  return db.db->error;
-}
-
-int f$mysqli_errno(const MyDB &db) {
-  if (db.db == nullptr) {
-    php_warning("DB object is NULL in f$mysqli_errno");
-    return 0;
-  }
-  return db.db->errno_;
-}
-
-int f$mysqli_affected_rows(const MyDB &dn) {
-  return db_get_affected_rows(dn);
-}
-
-var f$mysqli_fetch_array(int query_id_var, int result_type) {
-  if (result_type != 1) {
-    php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
-  }
-  return db_fetch_array(DB_Proxy, query_id_var);
-}
-
-int f$mysqli_insert_id(const MyDB &dn) {
-  return db_get_insert_id(dn);
+  return db->insert_id;
 }
 
 int f$mysqli_num_rows(int query_id) {
-  return db_get_num_rows(DB_Proxy, query_id);
-}
-
-var f$mysqli_query(const MyDB &dn, const string &query) {
-  return db_mysql_query(dn, query);
-}
-
-MyDB f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __attribute__((unused))) {
-  if (!f$boolval(DB_Proxy)) {
-    void *buf = dl::allocate(sizeof(db_driver));
-    DB_Proxy = MyDB(new(buf) db_driver());
+  if (DB_Proxy.is_null()) {
+    php_warning("DB object is NULL in get_num_rows");
+    return 0;
   }
-  db_do_connect_no_log(DB_Proxy);
-  if (DB_Proxy.db->connection_id >= 0 || DB_Proxy.db->connected) {
+  if (query_id != -1 && query_id != DB_Proxy->last_query_id) {
+    php_warning("mysql_num_rows is supported only for last request");
+    return 0;
+  }
+
+  if (DB_Proxy->connected < 0) {
+    return 0;
+  }
+  return DB_Proxy->query_results[DB_Proxy->last_query_id].count();
+}
+
+var f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
+  if (db.is_null()) {
+    php_warning("DB object is NULL in mysql_query");
+    return false;
+  }
+  bool query_id = mysql_query(db, query);
+  if (!query_id) {
+    return false;
+  }
+  return db->last_query_id = db->biggest_query_id;
+}
+
+class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __attribute__((unused))) {
+  if (DB_Proxy.is_null()) {
+    DB_Proxy.alloc();
+
+    DB_Proxy->cur_pos.push_back(0);
+    DB_Proxy->query_results.push_back(array<array<var>>{});
+  }
+
+  if (DB_Proxy->connection_id < 0 && !DB_Proxy->connected) {
+    DB_Proxy->connection_id = db_proxy_connect();
+
+    if (DB_Proxy->connection_id < 0) {
+      DB_Proxy->connected = -1;
+    } else {
+      DB_Proxy->connected = 1;
+    }
+  }
+
+  if (DB_Proxy->connection_id >= 0 || DB_Proxy->connected) {
     return DB_Proxy;
   } else {
-    return MyDB(false);
+    return false;
   }
 }
 
-bool f$mysqli_select_db(const MyDB &dn __attribute__((unused)), const string &name __attribute__((unused))) {
+bool f$mysqli_select_db(const class_instance<C$mysqli> &db __attribute__((unused)), const string &name __attribute__((unused))) {
   return true;
 }
 

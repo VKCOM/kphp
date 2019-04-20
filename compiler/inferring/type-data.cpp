@@ -63,7 +63,7 @@ void TypeData::init_static() {
   }
 
   for (int tp = 0; tp < ptype_size; tp++) {
-    array_types[tp] = create_array_type_data(primitive_types[tp ==  tp_Any ? tp_CreateAny : tp]);
+    array_types[tp] = create_array_type_data(primitive_types[tp == tp_Any ? tp_CreateAny : tp]);
   }
 }
 
@@ -224,7 +224,7 @@ bool TypeData::has_class_type_inside() const {
 }
 
 void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const {
-  for_each_deep([&out] (const TypeData &this_) {
+  for_each_deep([&out](const TypeData &this_) {
     if (this_.class_type()) {
       out.emplace(this_.class_type());
     }
@@ -234,7 +234,7 @@ void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) con
 
 ClassPtr TypeData::get_first_class_type_inside() const {
   ClassPtr first_class;
-  for_each_deep([&first_class] (const TypeData &this_) {
+  for_each_deep([&first_class](const TypeData &this_) {
     first_class = this_.class_type();
     return first_class;
   });
@@ -574,10 +574,6 @@ inline void get_cpp_style_type(const TypeData *type, string &res) {
   const PrimitiveType tp = type->get_real_ptype();
 
   switch (tp) {
-    case tp_DB: {
-      res += "MyDB";
-      break;
-    }
     case tp_Class: {
       if (type->class_type()->name != "Memcache") {
         res += "class_instance<";
@@ -700,8 +696,6 @@ int type_strlen(const TypeData *type) {
       return STRLEN_LONG;
     case tp_ULong:
       return STRLEN_ULONG;
-    case tp_DB:
-      return STRLEN_DB;
     case tp_RPC:
       return STRLEN_RPC;
     case tp_Class:

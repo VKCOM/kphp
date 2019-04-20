@@ -43,6 +43,10 @@ class Memcache {
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
 
+class mysqli {
+    private function __construct();
+}
+
 $_SERVER ::: var;
 $_GET ::: var;
 $_POST ::: var;
@@ -499,18 +503,18 @@ function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: 
 function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
 function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: int;
 
-function mysqli_errno($dn ::: DB) ::: int;
-function mysqli_error($dn ::: DB) ::: string;
+function mysqli_errno($dn :<=: \mysqli) ::: int;
+function mysqli_error($dn :<=: \mysqli) ::: string;
 
 define('MYSQLI_ASSOC', 1);
 
-function mysqli_affected_rows($dn ::: DB) ::: int;
+function mysqli_affected_rows($dn :<=: \mysqli) ::: int;
 function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: var;
-function mysqli_insert_id($dn ::: DB) ::: int;
+function mysqli_insert_id($dn :<=: \mysqli) ::: int;
 function mysqli_num_rows($query_id ::: int) ::: int;
-function mysqli_query($dn ::: DB, $query ::: string) ::: var;
-function vk_mysqli_connect($host ::: string, $port ::: int) ::: DB;
-function mysqli_select_db($dn ::: DB, $name ::: string) ::: bool;
+function mysqli_query($dn :<=: \mysqli, $query ::: string) ::: var;
+function vk_mysqli_connect($host ::: string, $port ::: int) ::: \mysqli;
+function mysqli_select_db($dn :<=: \mysqli, $name ::: string) ::: bool;
 
 
 function function_exists ($func_name ::: Any) ::: bool;
