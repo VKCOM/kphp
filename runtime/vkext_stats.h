@@ -22,7 +22,7 @@ OrFalse<array<int>> f$vk_stats_parse_sample(const string &str);
 OrFalse<string> f$vk_stats_hll_merge(const array<var> &a);
 OrFalse<double> f$vk_stats_hll_count(const string &hll);
 OrFalse<string> f$vk_stats_hll_create(const array<var> &a = array<var>(), int size = (1 << 8));
-OrFalse<string> f$vk_stats_hll_add(string hll, const array<var> &a);
+OrFalse<string> f$vk_stats_hll_add(const string &hll, const array<var> &a);
 OrFalse<string> f$vk_stats_hll_pack(const string &hll);
 OrFalse<string> f$vk_stats_hll_unpack(const string &hll);
 bool f$vk_stats_hll_is_packed(const string &hll);

@@ -2513,15 +2513,15 @@ array<var> f$unpack(const string &pattern, const string &data) {
   return result;
 }
 
-int f$vprintf(const string &format, array<var> args) {
+int f$vprintf(const string &format, const array<var> &args) {
   return f$printf(format, args);
 }
 
-string f$vsprintf(const string &format, array<var> args) {
+string f$vsprintf(const string &format, const array<var> &args) {
   return f$sprintf(format, args);
 }
 
-string f$wordwrap(const string &str, int width, string brk, bool cut) {
+string f$wordwrap(const string &str, int width, const string &brk, bool cut) {
   if (width <= 0) {
     php_warning("Wrong parameter width = %d in function wordwrap", width);
     return str;

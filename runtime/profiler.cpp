@@ -5,9 +5,9 @@
 #include "runtime/datetime.h"
 #include "runtime/kphp_core.h"
 
-var f$kphp_profiler_handle_call(string, double, double) __attribute__((weak));
+var f$kphp_profiler_handle_call(const string &, double, double) __attribute__((weak));
 
-var f$kphp_profiler_handle_call(string, double, double) {
+var f$kphp_profiler_handle_call(const string &, double, double) {
   return var();
 }
 

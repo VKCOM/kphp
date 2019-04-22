@@ -355,7 +355,7 @@ OrFalse<double> hll_count(const string &hll, int m) {
 
 extern "C" void hll_add_shifted(unsigned char *a, int hll_size, long long value);
 
-OrFalse<string> f$vk_stats_hll_add(string hll, const array<var> &a) {
+OrFalse<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
   if (!is_hll_unpacked(hll)) {
     return false;
   }

@@ -102,7 +102,7 @@ struct TokenLexerStringExpr : TokenLexer {
 struct TokenLexerHeredocString : TokenLexer {
   Helper<TokenLexer> *h;
 
-  void add_esc(string s, char c);
+  void add_esc(const string &s, char c);
   Helper<TokenLexer> *gen_helper();
   void init();
   TokenLexerHeredocString();
@@ -113,7 +113,7 @@ struct TokenLexerHeredocString : TokenLexer {
 struct TokenLexerString : TokenLexer {
   Helper<TokenLexer> *h;
 
-  void add_esc(string s, char c);
+  void add_esc(const string &s, char c);
   Helper<TokenLexer> *gen_helper();
   void init();
   TokenLexerString();
@@ -157,7 +157,7 @@ struct TokenLexerToken : TokenLexer {
 };
 
 struct TokenLexerCommon : TokenLexerWithHelper {
-  inline void add_rule(Helper<TokenLexer> *h, string str, TokenType tp);
+  inline void add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp);
 
   Helper<TokenLexer> *gen_helper();
   TokenLexerCommon();

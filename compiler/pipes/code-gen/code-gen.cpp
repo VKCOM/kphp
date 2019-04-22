@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <utility>
 
 #include "compiler/pipes/code-gen/code-gen.h"
 #include "compiler/pipes/code-gen/common-code-gen.h"
@@ -27,7 +28,7 @@ class WriterCallback : public WriterCallbackBase {
 private:
   DataStream<WriterData *> &os;
 public:
-  WriterCallback(DataStream<WriterData *> &os, const string dir __attribute__((unused)) = "./") :
+  WriterCallback(DataStream<WriterData *> &os, const string &dir __attribute__((unused)) = "./") :
     os(os) {
   }
 
@@ -1771,7 +1772,7 @@ inline void Label::compile(CodeGenerator &W) const {
 
 inline AsList::AsList(VertexPtr root, string delim) :
   root(root),
-  delim(delim) {
+  delim(std::move(delim)) {
 }
 
 inline void AsList::compile(CodeGenerator &W) const {

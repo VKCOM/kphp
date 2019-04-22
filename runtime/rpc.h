@@ -89,7 +89,7 @@ struct rpc_connection {
   rpc_connection &operator=(bool value);
 };
 
-rpc_connection f$new_rpc_connection(string host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+rpc_connection f$new_rpc_connection(const string& host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 bool f$boolval(const rpc_connection &my_rpc);
 

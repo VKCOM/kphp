@@ -134,7 +134,7 @@ void acc_stats_update(acc_stats_t *to, const acc_stats_t &from) {
   to->cnt++;
 }
 
-std::string acc_stats_to_str(std::string pid_s, const acc_stats_t &acc) {
+std::string acc_stats_to_str(const std::string &pid_s, const acc_stats_t &acc) {
   char buf[1000];
   std::string res;
 

@@ -1,6 +1,7 @@
 #include "compiler/phpdoc.h"
 
 #include <cstdio>
+#include <utility>
 
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
@@ -406,18 +407,18 @@ void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags() {
     bool is_valid;
 
     ParsingTagsTest(std::string phpdoc, std::string var_name, std::string type_str, int offset, bool is_valid) :
-      phpdoc(phpdoc),
-      var_name(var_name),
-      type_str(type_str),
+      phpdoc(std::move(phpdoc)),
+      var_name(std::move(var_name)),
+      type_str(std::move(type_str)),
       offset(offset),
       is_valid(is_valid) {}
 
     static ParsingTagsTest test_pass(std::string phpdoc, std::string var_name, std::string type_str, int offset = 0) {
-      return ParsingTagsTest(phpdoc, var_name, type_str, offset, true);   // CLion тут показывает ошибку, но это его косяк
+      return ParsingTagsTest(std::move(phpdoc), std::move(var_name), std::move(type_str), offset, true);   // CLion тут показывает ошибку, но это его косяк
     }
 
     static ParsingTagsTest test_fail(std::string phpdoc, std::string var_name, std::string type_str, int offset = 0) {
-      return ParsingTagsTest(phpdoc, var_name, type_str, offset, false);
+      return ParsingTagsTest(std::move(phpdoc), std::move(var_name), std::move(type_str), offset, false);
     }
 
     static void run_tests() {

@@ -68,7 +68,7 @@ const TypeData *ClassMemberInstanceField::get_inferred_type() const {
   return tinf::get_type(var);
 }
 
-inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, string const_name, VertexPtr value) :
+inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, const string &const_name, VertexPtr value) :
   value(value) {
   define_name = "c#" + replace_backslashes(klass->name) + "$$" + const_name;
 }

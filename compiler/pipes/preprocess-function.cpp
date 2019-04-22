@@ -476,7 +476,7 @@ private:
     return call;
   }
 
-  void print_why_cant_set_func_id_error(VertexPtr call, std::string unexisting_func_name) {
+  void print_why_cant_set_func_id_error(VertexPtr call, const std::string &unexisting_func_name) {
     if (call->type() == op_constructor_call) {
       ClassPtr klass = G->get_class(call->get_string());
       if (klass) {

@@ -1,10 +1,11 @@
 #include "compiler/lexer.h"
 
-#include "auto/compiler/keywords_set.hpp"
+#include <utility>
 
 #include "compiler/io.h"
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
+#include "auto/compiler/keywords_set.hpp"
 
 template<class T>
 class Singleton {
@@ -330,7 +331,7 @@ int parse_with_helper(LexerData *lexer_data, Helper<TokenLexer> *h) {
 }
 
 TokenLexerError::TokenLexerError(string error_str) :
-  error_str(error_str) {
+  error_str(std::move(error_str)) {
 }
 
 TokenLexerError::~TokenLexerError() {
@@ -760,11 +761,11 @@ int TokenLexerTypeHint::parse(LexerData *lexer_data) const {
 }
 
 
-void TokenLexerString::add_esc(string s, char c) {
+void TokenLexerString::add_esc(const string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
 }
 
-void TokenLexerHeredocString::add_esc(string s, char c) {
+void TokenLexerHeredocString::add_esc(const string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
 }
 
@@ -1051,7 +1052,7 @@ int TokenLexerToken::parse(LexerData *lexer_data) const {
   return 0;
 }
 
-void TokenLexerCommon::add_rule(Helper<TokenLexer> *h, string str, TokenType tp) {
+void TokenLexerCommon::add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp) {
   h->add_simple_rule(str, new TokenLexerToken(tp, (int)str.size()));
 }
 

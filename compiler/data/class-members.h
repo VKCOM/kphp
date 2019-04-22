@@ -80,7 +80,7 @@ struct ClassMemberConstant {
   string define_name;
   VertexPtr value;
 
-  ClassMemberConstant(ClassPtr klass, string const_name, VertexPtr value);
+  ClassMemberConstant(ClassPtr klass, const string &const_name, VertexPtr value);
 
   const string &global_name() const;
   string local_name() const;

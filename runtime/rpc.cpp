@@ -417,7 +417,7 @@ rpc_connection &rpc_connection::operator=(bool value) {
 }
 
 
-rpc_connection f$new_rpc_connection(string host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+rpc_connection f$new_rpc_connection(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   int host_num = rpc_connect_to(host_name.c_str(), port);
   if (host_num < 0) {
     return rpc_connection();
