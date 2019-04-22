@@ -38,6 +38,7 @@ private:
   string tl_schema_file_;
   bool no_pch_{false};
   bool stop_on_type_error_{true};
+  bool show_progress_{true};
 
   string cxx_;
   string cxx_flags_;
@@ -121,6 +122,7 @@ public:
   void set_no_pch();
   bool get_no_pch() const;
   bool get_stop_on_type_error() const;
+  bool get_show_progress() const;
   void add_main_file(const string &main_file);
   const vector<string> &get_main_files() const;
 

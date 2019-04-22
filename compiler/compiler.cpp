@@ -304,6 +304,10 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
 
+  if (G->env().get_show_progress()) {
+    PipesProgress::get().enable();
+  }
+
   std::cerr << "Starting php to cpp transpiling...\n";
   get_scheduler()->execute();
 

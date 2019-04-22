@@ -30,23 +30,31 @@ public:
 
   template<typename PipeFunctionT>
   void on_pipe_process_input() {
-    if (is_first_process_input<PipeFunctionT>()) {
+    if (enabled_ && is_first_process_input<PipeFunctionT>()) {
       write_progress<PipeFunctionT>(" is started");
     }
   }
 
   template<typename PipeFunctionT>
   void on_pipe_finish() {
-    write_progress<PipeFunctionT>(" is finished");
+    if (enabled_) {
+      write_progress<PipeFunctionT>(" is finished");
+    }
   }
 
   void transpiling_process_finish() {
-    write_progress<TranspilingProcessFinishTag>();
+    if (enabled_) {
+      write_progress<TranspilingProcessFinishTag>();
+    }
   }
 
   void register_stage() {
     std::lock_guard<std::mutex> lock{mutex_};
     ++total_stages_;
+  }
+
+  void enable() {
+    enabled_ = true;
   }
 
 private:
@@ -67,6 +75,7 @@ private:
   std::mutex mutex_;
   size_t total_stages_{1};
   size_t stages_counter_{0};
+  std::atomic<bool> enabled_{false};
 };
 
 template<class PipeF, class InputStreamT, class OutputStreamT>

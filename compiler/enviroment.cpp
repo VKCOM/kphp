@@ -249,6 +249,10 @@ bool KphpEnviroment::get_stop_on_type_error() const {
   return stop_on_type_error_;
 }
 
+bool KphpEnviroment::get_show_progress() const {
+  return show_progress_;
+}
+
 void KphpEnviroment::add_main_file(const string &main_file) {
   main_files_.push_back(main_file);
 }
@@ -471,6 +475,10 @@ bool KphpEnviroment::init() {
   std::string stop_on_type_error;
   init_env_var(&stop_on_type_error, "KPHP_STOP_ON_TYPE_ERROR", "1");
   env_str2bool(&stop_on_type_error_, stop_on_type_error);
+
+  std::string show_progress;
+  init_env_var(&show_progress, "KPHP_SHOW_PROGRESS", "1");
+  env_str2bool(&show_progress_, show_progress);
 
   for (string &include : includes_) {
     as_dir(&include);
