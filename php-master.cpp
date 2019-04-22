@@ -677,11 +677,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
   }
 
   std::string s = cluster_name;
-  for (int i = 0; i < (int)s.size(); i++) {
-    if (!((s[i] >= 'A' && s[i] <= 'Z') || (s[i] >= 'a' && s[i] <= 'z') || s[i] == '_')) {
-      s[i] = '_';
-    }
-  }
+  std::replace_if(s.begin(), s.end(), [](unsigned char c) { return !isalpha(c); }, '_');
 
   shmem_name = std::string() + "/" + s + "_kphp_shm";
   socket_name = std::string() + s + "_kphp_fd_transfer";

@@ -24,8 +24,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
     VertexPtr x = params->x();
     kphp_assert (x->type() == op_var);
     VarPtr x_var = x.as<op_var>()->get_var_id();
-    for (int i = 0; i < foreach_vars.size(); i++) {
-      if (x_var->name == foreach_vars[i]->name) {
+    for (auto &foreach_var : foreach_vars) {
+      if (x_var->name == foreach_var->name) {
         kphp_warning (format("Foreach value \"%s\" shadows array, key or value of outer foreach", x_var->name.c_str()));
       }
     }
@@ -46,8 +46,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
       VertexPtr key = params->key();
       kphp_assert (key->type() == op_var);
       VarPtr key_var = key.as<op_var>()->get_var_id();
-      for (int i = 0; i < foreach_vars.size(); i++) {
-        if (key_var->name == foreach_vars[i]->name) {
+      for (auto &foreach_var : foreach_vars) {
+        if (key_var->name == foreach_var->name) {
           kphp_warning (format("Foreach key \"%s\" shadows array, key or value of outer foreach", key_var->name.c_str()));
         }
       }

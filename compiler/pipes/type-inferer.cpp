@@ -8,7 +8,5 @@ void TypeInfererF::execute(FunctionAndCFG input, DataStream<FunctionAndCFG> &os)
 
 void TypeInfererF::on_finish(DataStream<FunctionAndCFG> &) {
   vector<Task *> tasks = tinf::get_inferer()->get_tasks();
-  for (int i = 0; i < (int)tasks.size(); i++) {
-    register_async_task(tasks[i]);
-  }
+  std::for_each(tasks.begin(), tasks.end(), register_async_task);
 }

@@ -1585,8 +1585,7 @@ void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
 void GlobalVarsReset::collect_used_funcs_and_vars(
   FunctionPtr func, std::set<FunctionPtr> *visited_functions,
   std::set<VarPtr> *used_vars, int used_vars_cnt) {
-  for (int i = 0, ni = (int)func->dep.size(); i < ni; i++) {
-    FunctionPtr to = func->dep[i];
+  for (auto to : func->dep) {
     if (visited_functions->insert(to).second) {
       collect_used_funcs_and_vars(to, visited_functions, used_vars, used_vars_cnt);
     }
@@ -2717,33 +2716,33 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   if (complex_flag) {
     W << "(" << BEGIN;
     vector<string> to_add;
-    for (int i = 0; i < (int)info.size(); i++) {
-      if (info[i].str_flag) {
+    for (auto &str_info : info) {
+      if (str_info.str_flag) {
         continue;
       }
-      if (info[i].len == STRLEN_DYNAMIC || info[i].len == STRLEN_OBJECT) {
+      if (str_info.len == STRLEN_DYNAMIC || str_info.len == STRLEN_OBJECT) {
         string var_name = gen_unique_name("var");
 
-        if (info[i].len == STRLEN_DYNAMIC) {
-          bool can_save_ref_flag = can_save_ref(info[i].v);
-          W << "const " << TypeName(tinf::get_type(info[i].v)) << " " <<
+        if (str_info.len == STRLEN_DYNAMIC) {
+          bool can_save_ref_flag = can_save_ref(str_info.v);
+          W << "const " << TypeName(tinf::get_type(str_info.v)) << " " <<
             (can_save_ref_flag ? "&" : "") <<
-            var_name << "=" << info[i].v << ";" << NL;
-        } else if (info[i].len == STRLEN_OBJECT) {
+            var_name << "=" << str_info.v << ";" << NL;
+        } else if (str_info.len == STRLEN_OBJECT) {
           W << "const string " << var_name << " = f$strval" <<
-            "(" << info[i].v << ");" << NL;
+            "(" << str_info.v << ");" << NL;
         }
 
         to_add.push_back(var_name);
-        info[i].var_flag = true;
-        info[i].str = var_name;
+        str_info.var_flag = true;
+        str_info.str = var_name;
       }
     }
 
     len_name = gen_unique_name("strlen");
     W << "dl::size_type " << len_name << " = " << int_to_str(static_length);
-    for (int i = 0; i < (int)to_add.size(); i++) {
-      W << " + max_string_size (" << to_add[i] << ")";
+    for (const auto &str : to_add) {
+      W << " + max_string_size (" << str << ")";
     }
     W << ";" << NL;
   }
@@ -2755,15 +2754,15 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
     W << int_to_str(static_length);
   }
   W << ", true)";
-  for (int i = 0; i < (int)info.size(); i++) {
+  for (const auto &str_info : info) {
     W << ".append_unsafe (";
-    if (info[i].str_flag) {
-      compile_string_raw(info[i].str, W);
-      W << ", " << int_to_str((int)info[i].len);
-    } else if (info[i].var_flag) {
-      W << info[i].str;
+    if (str_info.str_flag) {
+      compile_string_raw(str_info.str, W);
+      W << ", " << int_to_str((int)str_info.len);
+    } else if (str_info.var_flag) {
+      W << str_info.str;
     } else {
-      W << info[i].v;
+      W << str_info.v;
     }
     W << ")";
   }

@@ -104,16 +104,12 @@ bool Scheduler::thread_process_node(Node *node) {
 void Scheduler::thread_execute(ThreadContext *tls) {
   set_thread_id(tls->thread_id);
 
+  auto process_node = [this](Node *node) { while(thread_process_node(node)) {} };
   while (tls->run_flag) {
     if (tls->node != nullptr) {
-      while (thread_process_node(tls->node)) {
-      }
+      process_node(tls->node);
     } else {
-      for (int i = 0; i < (int)nodes.size(); i++) {
-        Node *node = nodes[i];
-        while (thread_process_node(node)) {
-        }
-      }
+      std::for_each(nodes.begin(), nodes.end(), process_node);
     }
     usleep(250);
   }

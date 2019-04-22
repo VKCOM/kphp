@@ -62,27 +62,27 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
 
   vector<string> lines(1);
   bool have_star = false;
-  for (int i = 0; i < phpdoc.size(); i++) {
+  for (char c : phpdoc) {
     if (!have_star) {
-      if (phpdoc[i] == ' ' || phpdoc[i] == '\t') {
+      if (c == ' ' || c == '\t') {
         continue;
       }
-      if (phpdoc[i] == '*') {
+      if (c == '*') {
         have_star = true;
         continue;
       }
       kphp_error(0, "failed to parse php_doc");
       return vector<php_doc_tag>();
     }
-    if (phpdoc[i] == '\n') {
+    if (c == '\n') {
       lines.push_back("");
       have_star = false;
       continue;
     }
-    if (lines.back() == "" && (phpdoc[i] == ' ' || phpdoc[i] == '\t')) {
+    if (lines.back() == "" && (c == ' ' || c == '\t')) {
       continue;
     }
-    lines.back() += phpdoc[i];
+    lines.back() += c;
   }
   vector<php_doc_tag> result;
   result.push_back(php_doc_tag());
@@ -440,19 +440,19 @@ void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags() {
       };
 
       int n_not_passed = 0;
-      for (int i = 0; i < sizeof(tests) / sizeof(tests[0]); ++i) {
+      for (auto &test : tests) {
         std::string var_name, type_str;
-        bool found = find_tag_in_phpdoc(tests[i].phpdoc, php_doc_tag::var, var_name, type_str, tests[i].offset);
-        bool correct = found == tests[i].is_valid
-                       && (!found || (var_name == tests[i].var_name && type_str == tests[i].type_str));
+        bool found = find_tag_in_phpdoc(test.phpdoc, php_doc_tag::var, var_name, type_str, test.offset);
+        bool correct = found == test.is_valid
+                       && (!found || (var_name == test.var_name && type_str == test.type_str));
         if (!correct) {
           n_not_passed++;
         }
 
         std::string ok_str = correct
-                             ? tests[i].is_valid ? "ok" : "ok (was not parsed)"
+                             ? test.is_valid ? "ok" : "ok (was not parsed)"
                              : "error";
-        printf("%-50s %s\n", tests[i].phpdoc.c_str(), ok_str.c_str());
+        printf("%-50s %s\n", test.phpdoc.c_str(), ok_str.c_str());
       }
       printf("Not passed count: %d\n", n_not_passed);
     }

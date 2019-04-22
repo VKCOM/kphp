@@ -19,15 +19,7 @@ const char *RestrictionIsset::get_description() {
 
 
 static string remove_after_tab(const string &s) {
-  string ns = "";
-  for (size_t i = 0; i < s.size(); i++) {
-    if (s[i] == '\t') {
-      break;
-    }
-
-    ns += s[i];
-  }
-  return ns;
+  return s.substr(0, s.find('\t'));
 }
 
 void RestrictionIsset::find_dangerous_isset_warning(const vector<tinf::Node *> &bt, tinf::Node *node, const string &msg __attribute__((unused))) {
