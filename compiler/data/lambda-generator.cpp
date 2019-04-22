@@ -160,7 +160,7 @@ VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAd
   auto params_begin = params_range.begin();
   auto params_end = params_range.end();
   if (function->get_func_id() && (function->get_func_id()->function_in_which_lambda_was_created || function->get_func_id()->is_lambda())) {
-    kphp_assert(params_range.size() > 0);
+    kphp_assert(!params_range.empty());
     // skip $this parameter, which was added to `function` previously
     std::advance(params_begin, 1);
   }

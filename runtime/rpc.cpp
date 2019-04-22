@@ -2529,7 +2529,7 @@ void *tlcomb_fetch_field_end(void **IP, void **Data, var *arr, tl_tree **vars) {
   if (arr->is_null()) {
     *arr = array<var>();
   }
-  if (name->size() != 0) {
+  if (!name->empty()) {
     arr[-1].set_value(*name, *arr);
   } else {
     arr[-1].set_value(num, *arr);

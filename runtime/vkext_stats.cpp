@@ -227,7 +227,7 @@ OrFalse<array<int>> f$vk_stats_parse_sample(const string &str) {
 }
 
 static bool is_hll_unpacked(const string &hll) {
-  return hll.size() == 0 || (hll[0] != HLL_PACK_CHAR && hll[0] != HLL_PACK_CHAR_V2);
+  return hll.empty() || (hll[0] != HLL_PACK_CHAR && hll[0] != HLL_PACK_CHAR_V2);
 }
 
 static int get_hll_size(const string &hll) {

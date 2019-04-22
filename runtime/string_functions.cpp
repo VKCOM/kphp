@@ -1255,7 +1255,7 @@ OrFalse<int> f$stripos(const string &haystack, const string &needle, int offset)
 }
 
 static bool php_tag_find(const string &tag, const string &allow) {
-  if (tag.size() <= 0 || allow.size() <= 0) {
+  if (tag.empty() || allow.empty()) {
     return false;
   }
 
@@ -2134,7 +2134,7 @@ int f$substr_count(const string &haystack, const string &needle, int offset, int
 
   int ans = 0;
   const char *s = haystack.c_str() + offset, *end = haystack.c_str() + offset + length;
-  if (needle.size() == 0) {
+  if (needle.empty()) {
     php_warning("Needle is empty in function substr_count");
     return (int)(end - s);
   }
@@ -2338,7 +2338,7 @@ array<var> f$unpack(const string &pattern, const string &data) {
           cnt--;
         }
 
-        if (key_prefix.size() == 0) {
+        if (key_prefix.empty()) {
           key_prefix = ONE;
         }
 
@@ -2377,7 +2377,7 @@ array<var> f$unpack(const string &pattern, const string &data) {
         }
         php_assert (cnt == 0 || cnt == -1);
 
-        if (key_prefix.size() == 0) {
+        if (key_prefix.empty()) {
           key_prefix = ONE;
         }
 
@@ -2388,7 +2388,7 @@ array<var> f$unpack(const string &pattern, const string &data) {
       }
 
       default: {
-        if (key_prefix.size() == 0 && cnt == -1) {
+        if (key_prefix.empty() && cnt == -1) {
           key_prefix = ONE;
         }
         int counter = 1;

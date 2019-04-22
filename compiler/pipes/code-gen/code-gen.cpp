@@ -1448,7 +1448,7 @@ inline void StaticInit::compile(CodeGenerator &W) const {
       }
     }
   }
-  if (G->env().get_tl_schema_file() != "") {
+  if (!G->env().get_tl_schema_file().empty()) {
     W << "tl_str_const_init();" << NL;
     W << "fill_tl_storers_ht();" << NL;
     W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
@@ -3863,7 +3863,7 @@ void CodeGenF::write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
 void CodeGenF::write_tl_schema(CodeGenerator &W) {
   string schema;
   int schema_length = -1;
-  if (G->env().get_tl_schema_file() != "") {
+  if (!G->env().get_tl_schema_file().empty()) {
     FILE *f = fopen(G->env().get_tl_schema_file().c_str(), "r");
     const int MAX_SCHEMA_LEN = 1024 * 1024;
     static char buf[MAX_SCHEMA_LEN + 1];

@@ -135,13 +135,13 @@ const map<string, const char*> &config_func() {
 
 template<>
 bool LexerData::are_last_tokens(TokenType type1) {
-  return tokens.size() >= 1 &&
+  return !tokens.empty() &&
          tokens[tokens.size() - 1].type() == type1;
 }
 
 template<>
 bool LexerData::are_last_tokens(any_token_tag) {
-  return tokens.size() >= 1;
+  return !tokens.empty();
 }
 
 template<typename ...Args>

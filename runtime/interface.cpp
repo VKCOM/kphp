@@ -385,7 +385,7 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
   php_assert (dl::query_num == header_last_query_num);
 
   static_SB_spare.clean();
-  if (http_status_line.size()) {
+  if (!http_status_line.empty()) {
     static_SB_spare << http_status_line << "\r\n";
   } else {
     const char *message = http_get_error_msg_text(&http_return_code);

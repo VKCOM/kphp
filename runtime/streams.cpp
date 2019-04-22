@@ -37,7 +37,7 @@ static const stream_functions *get_stream_functions(const string &name) {
 }
 
 static const stream_functions *get_stream_functions_from_url(const string &url) {
-  if (url.size() == 0) {
+  if (url.empty()) {
     return nullptr;
   }
 
@@ -405,19 +405,19 @@ OrFalse<int> f$vfprintf(const Stream &stream, const string &format, const array<
 
 OrFalse<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
                        string enclosure, string escape) {
-  if (delimiter.size() < 1) {
+  if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
   } else if (delimiter.size() > 1) {
     php_warning("delimiter must be a single character");
   }
-  if (enclosure.size() < 1) {
+  if (enclosure.empty()) {
     php_warning("enclosure must be a character");
     return false;
   } else if (enclosure.size() > 1) {
     php_warning("enclosure must be a single character");
   }
-  if (escape.size() < 1) {
+  if (escape.empty()) {
     php_warning("escape_char must be a character");
     return false;
   } else if (escape.size() > 1) {
@@ -497,19 +497,19 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
 
 
 OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter, string enclosure, string escape) {
-  if (delimiter.size() < 1) {
+  if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
   } else if (delimiter.size() > 1) {
     php_warning("delimiter must be a single character");
   }
-  if (enclosure.size() < 1) {
+  if (enclosure.empty()) {
     php_warning("enclosure must be a character");
     return false;
   } else if (enclosure.size() > 1) {
     php_warning("enclosure must be a single character");
   }
-  if (escape.size() < 1) {
+  if (escape.empty()) {
     php_warning("escape_char must be a character");
     return false;
   } else if (escape.size() > 1) {

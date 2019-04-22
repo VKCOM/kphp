@@ -301,7 +301,7 @@ VertexPtr GenTree::get_string_build() {
       v_next.push_back(get_string());
       if (after_simple_expression) {
         VertexAdaptor<op_string> last = v_next.back().as<op_string>();
-        if (last->str_val != "" && last->str_val[0] == '[') {
+        if (!last->str_val.empty() && last->str_val[0] == '[') {
           kphp_warning("Simple string expressions with [] can work wrong. Use more {}");
         }
       }

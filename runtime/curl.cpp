@@ -142,7 +142,7 @@ curl f$curl_init(const string &url) {
 
   php_assert (curl_easy_setopt(cp, CURLOPT_PROTOCOLS, (long)(CURLPROTO_ALL & ~(CURLPROTO_FILE | CURLPROTO_SCP))) == CURLE_OK);//Always disabled FILE and SCP
 
-  if (url.size()) {
+  if (!url.empty()) {
     if (curl_easy_setopt (cp, CURLOPT_URL, url.c_str()) != CURLE_OK) {
       dl::leave_critical_section();
       php_warning("Could not set url to a new cURL handle");

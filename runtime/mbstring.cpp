@@ -94,7 +94,7 @@ bool f$mb_check_encoding(const string &str, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_check_encoding", encoding.c_str());
-    return str.size();
+    return !str.empty();
   }
 
   if (encoding_num == 1251) {

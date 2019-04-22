@@ -55,7 +55,7 @@ bool f$mail(const string &to, const string &subject, const string &message, stri
 
   fprintf(sendmail, "To: %s\n", to.c_str());
   fprintf(sendmail, "Subject: %s\n", subject.c_str());
-  if (additional_headers.size()) {
+  if (!additional_headers.empty()) {
     fprintf(sendmail, "%s\n", additional_headers.c_str());
   }
   fprintf(sendmail, "\n%s\n", message.c_str());

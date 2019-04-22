@@ -707,7 +707,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, bool all_matches
     if (all_matches) {
       for (int i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
-        if (named_subpatterns_count && subpattern_names[i].size()) {
+        if (named_subpatterns_count && !subpattern_names[i].empty()) {
           matches[subpattern_names[i]].push_back(match_str);
         }
         matches[i].push_back(match_str);
@@ -817,12 +817,12 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
         if (offset_capture && (fix_php_bugs || i < count)) {
           auto match = array<var>::create(match_str, submatch[i + i]);
 
-          if (named_subpatterns_count && subpattern_names[i].size()) {
+          if (named_subpatterns_count && !subpattern_names[i].empty()) {
             matches[subpattern_names[i]].push_back(match);
           }
           matches[i].push_back(match);
         } else {
-          if (named_subpatterns_count && subpattern_names[i].size()) {
+          if (named_subpatterns_count && !subpattern_names[i].empty()) {
             matches[subpattern_names[i]].push_back(match_str);
           }
           matches[i].push_back(match_str);

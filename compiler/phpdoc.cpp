@@ -79,7 +79,7 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
       have_star = false;
       continue;
     }
-    if (lines.back() == "" && (c == ' ' || c == '\t')) {
+    if (lines.back().empty() && (c == ' ' || c == '\t')) {
       continue;
     }
     lines.back() += c;

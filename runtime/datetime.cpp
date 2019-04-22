@@ -727,7 +727,7 @@ OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
         }
       }
     }
-  } while (old_size != (int)s.size() && s.size());
+  } while (old_size != (int)s.size() && !s.empty());
 
   bool need_gmt = false;
   if ((int)s.size() != 0) {
