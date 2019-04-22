@@ -122,12 +122,12 @@ Resumable *get_forked_resumable(int resumable_id);
 int get_resumable_stack(void **buffer, int limit);
 
 int f$wait_queue_create();
-int f$wait_queue_create(const var &request_ids);
+int f$wait_queue_create(const var &resumable_ids);
 int wait_queue_create(const array<int> &resumable_ids);
 void unregister_wait_queue(int queue_id);
 
-int f$wait_queue_push(int queue_id, const var &request_ids);
-int wait_queue_push(int queue_id, int request_id);
+int f$wait_queue_push(int queue_id, const var &resumable_ids);
+int wait_queue_push(int queue_id, int resumable_id);
 int wait_queue_push_unsafe(int queue_id, int resumable_id);
 
 bool f$wait_queue_empty(int queue_id);

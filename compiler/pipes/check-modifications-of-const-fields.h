@@ -21,6 +21,6 @@ public:
   }
 
 private:
-  void check_modification_of_const_class_field(VertexPtr lhs, bool write_flag = false) const;
+  void check_modification_of_const_class_field(VertexPtr v, bool write_flag = false) const;
 };
 

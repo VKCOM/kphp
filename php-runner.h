@@ -105,7 +105,7 @@ public:
   script_result *res;
 
   static void cur_run();
-  static void error(const char *s);
+  static void error(const char *error_message);
 
   void check_tl();
 
@@ -142,6 +142,6 @@ public:
 };
 
 //TODO: sometimes I need to call old handlers
-void sigalrm_handler(int signal);
+void sigalrm_handler(int signum);
 void sigsegv_handler(int signum, siginfo_t *info, void *data);
 

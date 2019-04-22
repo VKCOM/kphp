@@ -8,7 +8,7 @@
 namespace tinf {
 
 tinf::Node *get_tinf_node(VertexPtr vertex);
-tinf::Node *get_tinf_node(VarPtr var);
+tinf::Node *get_tinf_node(VarPtr vertex);
 tinf::Node *get_tinf_node(FunctionPtr function, int id);
 
 tinf::TypeInferer *get_inferer();

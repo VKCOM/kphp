@@ -83,8 +83,8 @@ public:
 
   bool delete_(const string &key) final;
 
-  var decrement(const string &key, const var &v) final;
-  var increment(const string &key, const var &v) final;
+  var decrement(const string &key, const var &count) final;
+  var increment(const string &key, const var &count) final;
 
   var getVersion() final;
 
@@ -125,8 +125,8 @@ public:
 
   bool delete_(const string &key) final;
 
-  var decrement(const string &key, const var &v) final;
-  var increment(const string &key, const var &v) final;
+  var decrement(const string &key, const var &count) final;
+  var increment(const string &key, const var &count) final;
 
   var getVersion() final;
 };

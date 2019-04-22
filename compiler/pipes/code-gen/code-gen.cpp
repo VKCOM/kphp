@@ -1459,8 +1459,8 @@ inline void StaticInit::compile(CodeGenerator &W) const {
   W << CloseNamespace();
 }
 
-inline LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_fn) :
-  main_function(main_fn) {
+inline LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_function) :
+  main_function(main_function) {
 }
 
 inline void LibGlobalVarsReset::compile(CodeGenerator &W) const {

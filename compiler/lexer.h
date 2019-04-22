@@ -11,8 +11,8 @@ struct LexerData : private vk::not_copyable {
   void set_code(char *code, int code_len);
   void new_line();
   char *get_code();
-  void pass(int x);
-  void pass_raw(int x);
+  void pass(int shift);
+  void pass_raw(int shift);
   template <typename ...Args>
   void add_token_(int shift, Args&& ...tok);
   template <typename ...Args>

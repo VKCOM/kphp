@@ -17,7 +17,7 @@ void f$srand(int seed = INT_MIN);
 
 int f$rand();
 
-int f$rand(int r, int l);
+int f$rand(int l, int r);
 
 int f$getrandmax();
 
@@ -25,7 +25,7 @@ void f$mt_srand(int seed = INT_MIN);
 
 int f$mt_rand();
 
-int f$mt_rand(int r, int l);
+int f$mt_rand(int l, int r);
 
 int f$mt_getrandmax();
 

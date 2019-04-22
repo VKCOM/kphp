@@ -48,7 +48,7 @@ bool f$is_writeable(const string &name);
 
 bool f$mkdir(const string &name, int mode = 0777, bool recursive = false);
 
-string f$php_uname(const string &mode = LETTER_a);
+string f$php_uname(const string &name = LETTER_a);
 
 bool f$rename(const string &oldname, const string &newname);
 

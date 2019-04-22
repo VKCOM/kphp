@@ -54,7 +54,7 @@ struct stream_functions {
 void register_stream_functions(const stream_functions *functions, bool is_default);
 
 
-Stream f$fopen(const string &url, const string &mode);
+Stream f$fopen(const string &stream, const string &mode);
 
 OrFalse<int> f$fwrite(const Stream &stream, const string &text);
 
@@ -88,9 +88,9 @@ OrFalse<int> f$fputcsv(const Stream &stream, const array<var> &fields, string de
 OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length = 0, string delimiter = string(",", 1),
                               string enclosure = string("\"", 1), string escape_char = string("\\", 1));
 
-OrFalse<string> f$file_get_contents(const string &url);
+OrFalse<string> f$file_get_contents(const string &stream);
 
-OrFalse<int> f$file_put_contents(const string &url, const var &content_var, int flags = 0);
+OrFalse<int> f$file_put_contents(const string &stream, const var &content_var, int flags = 0);
 
 
 var f$stream_context_create(const var &options = array<var>());

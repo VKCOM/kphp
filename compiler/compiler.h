@@ -6,4 +6,4 @@
 
 class Compiler;
 
-bool compiler_execute(KphpEnviroment *args);
+bool compiler_execute(KphpEnviroment *env);

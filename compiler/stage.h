@@ -78,7 +78,7 @@ void set_name(const string &name);
 const string &get_name();
 
 void set_file(SrcFilePtr file);
-void set_function(FunctionPtr function);
+void set_function(FunctionPtr file);
 void set_line(int line);
 SrcFilePtr get_file();
 FunctionPtr get_function();
