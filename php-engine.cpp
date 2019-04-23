@@ -166,11 +166,17 @@ conn_target_t db_ct = [] {
   return res;
 }();
 
+conn_type_t ct_tcp_rpc_client_read_all = [] {
+  auto res = get_default_tcp_rpc_client_conn_type();
+  res.reader = tcp_server_reader_till_end;
+  return res;
+}();
+
 conn_target_t rpc_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 2;
   res.max_connections = 3;
-  res.type = &ct_tcp_rpc_client;
+  res.type = &ct_tcp_rpc_client_read_all;
   res.extra = (void *)&tcp_rpc_client_outbound;
   res.reconnect_timeout = 1;
 
