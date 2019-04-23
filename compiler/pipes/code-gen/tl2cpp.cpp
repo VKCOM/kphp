@@ -1,10 +1,12 @@
+#include "compiler/pipes/code-gen/tl2cpp.h"
+
 #include <string>
 
-#include "compiler/compiler-core.h"
-#include "common/tlo-parsing/tlo-parsing-tools.h"
-#include "compiler/pipes/code-gen/tl2cpp.h"
-#include "compiler/pipes/code-gen/common-code-gen.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/tlo-parsing/tlo-parsing-tools.h"
+
+#include "compiler/compiler-core.h"
+#include "compiler/pipes/code-gen/common-code-gen.h"
 
 namespace tl_gen {
 static const std::string T_TYPE = "Type";
@@ -748,7 +750,7 @@ public:
     name(std::move(name)) {}
 
   void compile_tl_h_file(CodeGenerator &W) const {
-    W << OpenFile("tl/" + name + ".h");
+    W << OpenFile(name + ".h", "tl");
     W << "#pragma once" << NL;
     W << ExternInclude("PHP/tl/tl_init.h");
     W << ExternInclude("tl/tl_const_vars.h");
@@ -790,7 +792,7 @@ public:
   }
 
   void compile_tl_cpp_file(CodeGenerator &W) const {
-    W << OpenFile("tl/" + name + ".cpp");
+    W << OpenFile(name + ".cpp", "tl", false);
     W << ExternInclude("php_functions.h");
     W << Include("tl/" + name + ".h") << NL;
     for (const auto &t : target_types) {
@@ -1034,7 +1036,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << module;
   }
 
-  W << OpenFile("tl/tl_store_funs_table.cpp");
+  W << OpenFile("tl_store_funs_table.cpp", "tl", false);
   for (const auto &module_name : modules_with_functions) {
     W << Include("tl/" + module_name + ".h");
   }
@@ -1054,7 +1056,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << END << NL;
   W << CloseFile();
 
-  W << OpenFile("tl/tl_const_vars.h");
+  W << OpenFile("tl_const_vars.h", "tl");
   W << "#pragma once" << NL;
   W << ExternInclude("php_functions.h");
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
@@ -1062,7 +1064,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   });
   W << CloseFile();
 
-  W << OpenFile("tl/tl_const_vars.cpp");
+  W << OpenFile("tl_const_vars.cpp", "tl", false);
   W << ExternInclude("php_functions.h");
   W << Include("tl/tl_const_vars.h");
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
