@@ -113,7 +113,7 @@ static void mc_run_query_default(int host_num __attribute__((unused)), const cha
 }
 
 
-static int db_proxy_connect_default(void) {
+static int db_proxy_connect_default() {
   critical_error (__FUNCTION__);
 }
 
@@ -139,24 +139,24 @@ static void set_server_status_rpc_default(int port __attribute__((unused)), long
   critical_error (__FUNCTION__);
 }
 
-static double get_net_time_default(void) {
+static double get_net_time_default() {
   critical_error (__FUNCTION__);
 }
 
-double get_script_time_default(void) {
+double get_script_time_default() {
   critical_error (__FUNCTION__);
 }
 
-int get_net_queries_count_default(void) {
+int get_net_queries_count_default() {
   critical_error (__FUNCTION__);
 }
 
 
-int get_engine_uptime_default(void) {
+int get_engine_uptime_default() {
   critical_error (__FUNCTION__);
 }
 
-const char *get_engine_version_default(void) {
+const char *get_engine_version_default() {
   critical_error (__FUNCTION__);
 }
 
@@ -169,7 +169,7 @@ static void rpc_set_result_default(const char *body __attribute__((unused)), int
   critical_error (__FUNCTION__);
 }
 
-static void script_error_default(void) {
+static void script_error_default() {
   critical_error (__FUNCTION__);
 }
 
@@ -191,7 +191,7 @@ static void wait_net_events_default(int timeout_ms) {
   usleep(timeout_ms * 1000);
 }
 
-static net_event_t *pop_net_event_default(void) {
+static net_event_t *pop_net_event_default() {
   return nullptr;
 }
 
@@ -211,7 +211,7 @@ int (*mc_connect_to)(const char *host_name, int port) = mc_connect_to_default;
 void (*mc_run_query)(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) = mc_run_query_default;
 
 
-int (*db_proxy_connect)(void) = db_proxy_connect_default;
+int (*db_proxy_connect)() = db_proxy_connect_default;
 
 void (*db_run_query)(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len)) = db_run_query_default;
 
@@ -225,23 +225,23 @@ void (*set_server_status)(const char *status, int status_len) = set_server_statu
 void (*set_server_status_rpc)(int port, long long actor_id, double start_time) = set_server_status_rpc_default;
 
 
-double (*get_net_time)(void) = get_net_time_default;
+double (*get_net_time)() = get_net_time_default;
 
-double (*get_script_time)(void) = get_script_time_default;
+double (*get_script_time)() = get_script_time_default;
 
-int (*get_net_queries_count)(void) = get_net_queries_count_default;
+int (*get_net_queries_count)() = get_net_queries_count_default;
 
 
-int (*get_engine_uptime)(void) = get_engine_uptime_default;
+int (*get_engine_uptime)() = get_engine_uptime_default;
 
-const char *(*get_engine_version)(void) = get_engine_version_default;
+const char *(*get_engine_version)() = get_engine_version_default;
 
 
 void (*rpc_answer)(const char *res, int res_len) = rpc_answer_default;
 
 void (*rpc_set_result)(const char *body, int body_len, int exit_code) = rpc_set_result_default;
 
-void (*script_error)(void) = script_error_default;
+void (*script_error)() = script_error_default;
 
 
 void (*finish_script)(int exit_code) = finish_script_default;
@@ -253,7 +253,7 @@ slot_id_t (*rpc_send_query)(int host_num, char *request, int request_len, int ti
 
 void (*wait_net_events)(int timeout_ms) = wait_net_events_default;
 
-net_event_t *(*pop_net_event)(void) = pop_net_event_default;
+net_event_t *(*pop_net_event)() = pop_net_event_default;
 
 
 int (*query_x2)(int x) = query_x2_default;

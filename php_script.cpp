@@ -19,7 +19,7 @@ script_t *get_script(const char *name) {
   return nullptr;
 }
 
-void set_script(const char *name, void (*run)(void), void (*clear)()) {
+void set_script(const char *name, void (*run)(), void (*clear)()) {
   static int cnt = 0;
 
   auto script = new script_t{run, clear};

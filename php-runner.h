@@ -50,11 +50,11 @@ struct query_stats_t {
 extern query_stats_t query_stats;
 extern long long query_stats_id;
 
-void dump_query_stats(void);
+void dump_query_stats();
 
 int msq(int x);
 
-void init_handlers(void);
+void init_handlers();
 void php_script_finish(void *ptr);
 void php_script_free(void *ptr);
 void php_script_clear(void *ptr);
@@ -76,9 +76,9 @@ php_immediate_stats_t *get_immediate_stats();
 php_immediate_stats_t *get_imm_stats();
 void custom_server_status(const char *status, int status_len);
 void server_status_rpc(int port, long long actor_id, double start_time);
-void idle_server_status(void);
-void wait_net_server_status(void);
-void running_server_status(void);
+void idle_server_status();
+void wait_net_server_status();
+void running_server_status();
 
 class PHPScriptBase;
 
@@ -128,18 +128,18 @@ public:
 
   void finish();
   void clear();
-  void query_readed(void);
-  void query_answered(void);
+  void query_readed();
+  void query_answered();
 
-  void run(void);
+  void run();
 
-  void update_net_time(void);
-  void update_script_time(void);
+  void update_net_time();
+  void update_script_time();
 
-  double get_net_time(void) const;
-  double get_script_time(void);
-  int get_net_queries_count(void) const;
-  long long memory_get_total_usage(void) const;
+  double get_net_time() const;
+  double get_script_time();
+  int get_net_queries_count() const;
+  long long memory_get_total_usage() const;
 };
 
 //TODO: sometimes I need to call old handlers

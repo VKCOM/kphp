@@ -86,7 +86,7 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
   //fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
 
-PHPScriptBase::~PHPScriptBase(void) {
+PHPScriptBase::~PHPScriptBase() {
   mprotect(run_stack, getpagesize(), PROT_READ | PROT_WRITE);
   free(run_stack);
   munmap(run_mem, mem_size);
@@ -138,7 +138,7 @@ void PHPScriptBase::resume() {
   assert (swapcontext(&exit_context, &run_context) == 0);
 }
 
-void dump_query_stats(void) {
+void dump_query_stats() {
   char tmp[100];
   char *s = tmp;
   if (query_stats.desc != nullptr) {
@@ -167,7 +167,7 @@ void dump_query_stats(void) {
   }
 }
 
-void PHPScriptBase::update_net_time(void) {
+void PHPScriptBase::update_net_time() {
   double new_cur_timestamp = dl_time();
 
   double net_add = new_cur_timestamp - cur_timestamp;
@@ -182,7 +182,7 @@ void PHPScriptBase::update_net_time(void) {
   cur_timestamp = new_cur_timestamp;
 }
 
-void PHPScriptBase::update_script_time(void) {
+void PHPScriptBase::update_script_time() {
   double new_cur_timestamp = dl_time();
   script_time += new_cur_timestamp - cur_timestamp;
   cur_timestamp = new_cur_timestamp;
@@ -284,19 +284,19 @@ void PHPScriptBase::set_script_result(script_result *res_to_set) {
   pause();
 }
 
-void PHPScriptBase::query_readed(void) {
+void PHPScriptBase::query_readed() {
   assert (is_running == false);
   assert (state == rst_query);
   state = rst_query_running;
 }
 
-void PHPScriptBase::query_answered(void) {
+void PHPScriptBase::query_answered() {
   assert (state == rst_query_running);
   state = rst_ready;
   //fprintf (stderr, "ok\n");
 }
 
-void PHPScriptBase::run(void) {
+void PHPScriptBase::run() {
   is_running = true;
   check_tl();
 
@@ -340,21 +340,21 @@ void PHPScriptBase::run(void) {
   }
 }
 
-double PHPScriptBase::get_net_time(void) const {
+double PHPScriptBase::get_net_time() const {
   return net_time;
 }
 
-long long PHPScriptBase::memory_get_total_usage(void) const {
+long long PHPScriptBase::memory_get_total_usage() const {
   return dl::memory_get_total_usage();
 }
 
-double PHPScriptBase::get_script_time(void) {
+double PHPScriptBase::get_script_time() {
   assert (state == rst_running);
   update_script_time();
   return script_time;
 }
 
-int PHPScriptBase::get_net_queries_count(void) const {
+int PHPScriptBase::get_net_queries_count() const {
   return queries_cnt;
 }
 
@@ -490,13 +490,13 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
   }
 }
 
-static __inline__ void *get_sp(void) {
+static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
 }
 
-void check_stack_overflow(void) __attribute__ ((noinline));
+void check_stack_overflow() __attribute__ ((noinline));
 
-void check_stack_overflow(void) {
+void check_stack_overflow() {
   if (PHPScriptBase::is_running) {
     void *sp = get_sp();
     bool f = PHPScriptBase::current_script->check_stack_overflow((char *)sp);
@@ -509,7 +509,7 @@ void check_stack_overflow(void) {
 }
 
 //C interface
-void init_handlers(void) {
+void init_handlers() {
   stack_t segv_stack;
   segv_stack.ss_sp = valloc(SEGV_STACK_SIZE);
   segv_stack.ss_flags = 0;
@@ -608,11 +608,11 @@ void php_script_set_timeout(double t) {
 static php_immediate_stats_t imm_stats[2];
 static sig_atomic_t imm_stats_i = 0;
 
-static php_immediate_stats_t *get_new_imm_stats(void) {
+static php_immediate_stats_t *get_new_imm_stats() {
   return &imm_stats[imm_stats_i ^ 1];
 }
 
-static void upd_imm_stats(void) {
+static void upd_imm_stats() {
   int x = imm_stats_i;
   imm_stats_i = 1 ^ x;
   memcpy(get_new_imm_stats(), get_imm_stats(), sizeof(php_immediate_stats_t));
@@ -660,7 +660,7 @@ static void upd_server_status(server_status_t server_status, const char *desc, i
   upd_imm_stats();
 }
 
-php_immediate_stats_t *get_imm_stats(void) {
+php_immediate_stats_t *get_imm_stats() {
   return &imm_stats[imm_stats_i];
 }
 
@@ -676,18 +676,18 @@ void server_status_rpc(int port, long long actor_id, double start_time) {
   upd_imm_stats();
 }
 
-void idle_server_status(void) {
+void idle_server_status() {
   upd_server_status(ss_idle, "Idle", 4);
 }
 
-void wait_net_server_status(void) {
+void wait_net_server_status() {
   upd_server_status(ss_wait_net, "WaitNet", 7);
 }
 
-void running_server_status(void) {
+void running_server_status() {
   upd_server_status(ss_running, "Running", 7);
 }
 
-void PHPScriptBase::cur_run(void) {
+void PHPScriptBase::cur_run() {
   current_script->run();
 }

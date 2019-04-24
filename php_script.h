@@ -6,12 +6,12 @@
 
 /** script_t **/
 struct script_t {
-  void (*run)(void);
-  void (*clear)(void);
+  void (*run)();
+  void (*clear)();
 };
 
 script_t *get_script(const char *name);
-void set_script(const char *name, void (*run)(void), void (*clear)(void));
+void set_script(const char *name, void (*run)(), void (*clear)());
 
 /** script result **/
 

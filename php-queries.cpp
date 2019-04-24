@@ -116,7 +116,7 @@ void *alloc_at_least(size_t n, size_t use) {
 }
 
 //public functions
-void qmem_init(void) {
+void qmem_init() {
   using namespace qmem;
 
   assert (state == st_empty);
@@ -181,7 +181,7 @@ void *qmem_malloc0(size_t n) {
 }
 
 
-void qmem_free_ptrs(void) {
+void qmem_free_ptrs() {
   using namespace qmem;
 
   if (used_mem + used_mem > cur_mem) {
@@ -195,7 +195,7 @@ void qmem_free_ptrs(void) {
   qmem_generation++;
 }
 
-void qmem_clear(void) {
+void qmem_clear() {
   using namespace qmem;
 
   assert (state == st_inited);
@@ -234,7 +234,7 @@ const char *qmem_pstr(char const *msg, ...) {
 
 /** str_buffer **/
 
-str_buf_t *str_buf_create(void) {
+str_buf_t *str_buf_create() {
   str_buf_t *buf = (str_buf_t *)qmem_malloc(sizeof(str_buf_t));
   assert (buf != nullptr);
   buf->buf_len = 0;
@@ -273,7 +273,7 @@ void chain_conn(chain_t *a, chain_t *b) {
   b->prev = a;
 }
 
-chain_t *chain_create(void) {
+chain_t *chain_create() {
   chain_t *chain = (chain_t *)qmem_malloc(sizeof(chain_t));
   assert (chain != nullptr);
   chain_conn(chain, chain);
@@ -332,7 +332,7 @@ int engine_mc_connect_to(const char *host, int port) {
   return ans->connection_id;
 }
 
-int engine_db_proxy_connect(void) {
+int engine_db_proxy_connect() {
   php_query_connect_answer_t *ans = php_query_connect("unknown", -1, p_sql);
   return ans->connection_id;
 }
@@ -577,7 +577,7 @@ mc_ansgen_func_t *get_mc_ansgen_functions() {
   return &f;
 }
 
-mc_ansgen_t *mc_ansgen_packet_create(void) {
+mc_ansgen_t *mc_ansgen_packet_create() {
   mc_ansgen_packet_t *ansgen = (mc_ansgen_packet_t *)malloc(sizeof(mc_ansgen_packet_t));
 
   ansgen->base.func = get_mc_net_ansgen_functions();
@@ -684,7 +684,7 @@ sql_ansgen_func_t *get_sql_ansgen_functions() {
   return &f;
 }
 
-sql_ansgen_t *sql_ansgen_packet_create(void) {
+sql_ansgen_t *sql_ansgen_packet_create() {
   sql_ansgen_packet_t *ansgen = (sql_ansgen_packet_t *)malloc(sizeof(sql_ansgen_packet_t));
 
   ansgen->base.func = get_sql_net_ansgen_functions();
@@ -708,11 +708,11 @@ sql_ansgen_t *sql_ansgen_packet_create(void) {
 static slot_id_t end_slot_id, begin_slot_id;
 static const slot_id_t max_slot_id = 1000000000;
 
-void init_slots(void) {
+void init_slots() {
   end_slot_id = begin_slot_id = lrand48() % (max_slot_id / 4) + 1;
 }
 
-slot_id_t create_slot(void) {
+slot_id_t create_slot() {
   if (end_slot_id > max_slot_id) {
     return -1;
   }
@@ -888,7 +888,7 @@ void unalloc_net_query(net_query_t *query) {
   net_queries.undo_create(query);
 }
 
-net_query_t *pop_net_query(void) {
+net_query_t *pop_net_query() {
   return net_queries.pop();
 }
 
@@ -955,7 +955,7 @@ static void engine_wait_net_events(int timeout_ms) {
   PHPScriptBase::current_script->ask_query((void *)&q);
 }
 
-static net_event_t *engine_pop_net_event(void) {
+static net_event_t *engine_pop_net_event() {
   return net_events.pop();
 }
 
@@ -984,7 +984,7 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
   return (php_net_query_packet_answer_t *)q.base.ans;
 }
 
-void script_error_(void) {
+void script_error_() {
   PHPScriptBase::error("script_error called");
 }
 
@@ -1023,24 +1023,24 @@ void engine_set_server_status_rpc(int port, long long actor_id, double start_tim
   server_status_rpc(port, actor_id, start_time);
 }
 
-double engine_get_net_time(void) {
+double engine_get_net_time() {
   return PHPScriptBase::current_script->get_net_time();
 }
 
-double engine_get_script_time(void) {
+double engine_get_script_time() {
   return PHPScriptBase::current_script->get_script_time();
 }
 
-int engine_get_net_queries_count(void) {
+int engine_get_net_queries_count() {
   return PHPScriptBase::current_script->get_net_queries_count();
 }
 
 
-int engine_get_uptime(void) {
+int engine_get_uptime() {
   return get_uptime();
 }
 
-const char *engine_get_version(void) {
+const char *engine_get_version() {
   return get_version_string();
 }
 
@@ -1050,7 +1050,7 @@ int engine_query_x2(int x) {
   return ans->x2;
 }
 
-void init_drivers(void) {
+void init_drivers() {
   init_readers();
   http_load_long_query = engine_http_load_long_query;
   mc_connect_to = engine_mc_connect_to;
@@ -1078,11 +1078,11 @@ void init_drivers(void) {
   init_slots();
 }
 
-void php_queries_start(void) {
+void php_queries_start() {
   qmem_init();
 }
 
-void php_queries_finish(void) {
+void php_queries_finish() {
   qmem_clear();
   clear_slots();
   net_events.clear();
