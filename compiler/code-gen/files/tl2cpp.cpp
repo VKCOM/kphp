@@ -10,9 +10,11 @@
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/compiler-core.h"
 
+// todo: comments
+
 namespace tl_gen {
 static const std::string T_TYPE = "Type";
-static const std::string T_SHARP = "#";
+static const std::string T_FIELDS_MASK = "#";
 
 using vk::tl::FLAG_OPT_FIELD;
 using vk::tl::FLAG_OPT_VAR;
@@ -26,7 +28,7 @@ static vk::tl::combinator *cur_combinator;
 const bool DEBUG_MODE = false;
 
 const std::unordered_set<std::string> CUSTOM_IMPL_TYPES
-  {T_SHARP, T_TYPE, "Int", "Long", "Double", "String", "Bool",
+  {T_FIELDS_MASK, T_TYPE, "Int", "Long", "Double", "String", "Bool",
    "False", "Vector", "Maybe",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField", "Tuple"};
 
@@ -59,6 +61,74 @@ bool is_type_dependent(vk::tl::combinator *constructor) {
 
 bool is_type_dependent(vk::tl::type *type) {
   return is_type_dependent(type->constructors[0].get());
+}
+
+std::vector<std::string> get_not_optional_fields_masks(const vk::tl::combinator *constructor) {
+  std::vector<std::string> res;
+  for (const auto &arg : constructor->args) {
+    if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_FIELDS_MASK && !(arg->flags & FLAG_OPT_VAR)) {
+      res.emplace_back(arg->name);
+    }
+  }
+  return res;
+}
+
+std::string get_optional_args_for_decl(const std::unique_ptr<vk::tl::combinator> &constructor) {
+  std::vector<std::string> res;
+  for (const auto &arg : constructor->args) {
+    if (arg->flags & FLAG_OPT_VAR) {
+      if (type_of(arg->type_expr)->name == T_FIELDS_MASK) {
+        res.emplace_back("int " + arg->name);
+      } else {
+        res.emplace_back("T" + std::to_string(arg->var_num) + " " + arg->name);
+      }
+    }
+  }
+  return join(res, ", ");
+}
+
+std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl::combinator> &constructor) {
+  std::vector<std::string> res;
+  for (const auto &arg : constructor->args) {
+    if (arg->flags & FLAG_OPT_VAR) {
+      if (type_of(arg->type_expr)->name == T_FIELDS_MASK) {
+        res.emplace_back(arg->name);
+      } else {
+        res.emplace_back("std::move(" + arg->name + ")");
+      }
+    }
+  }
+  return res;
+}
+
+std::vector<std::string> get_template_typenames(const std::unique_ptr<vk::tl::combinator> &constructor) {
+  std::vector<std::string> typenames;
+  for (const auto &arg : constructor->args) {
+    if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
+      kphp_assert(arg->flags & FLAG_OPT_VAR);
+      typenames.emplace_back(format("T%d", arg->var_num));
+    }
+  }
+  return typenames;
+}
+
+std::string get_template_declaration(const std::unique_ptr<vk::tl::combinator> &constructor) {
+  std::vector<std::string> typenames = get_template_typenames(constructor);
+  if (typenames.empty()) {
+    return "";
+  }
+  std::transform(typenames.begin(), typenames.end(), typenames.begin(), [](const std::string &s) {
+    return "typename " + s;
+  });
+  return "template<" + join(typenames, ", ") + ">";
+}
+
+std::string get_template_params(const std::unique_ptr<vk::tl::combinator> &constructor) {
+  std::vector<std::string> typenames = get_template_typenames(constructor);
+  if (typenames.empty()) {
+    return "";
+  }
+  return "<" + join(typenames, ", ") + ">";
 }
 } // namespace
 
@@ -112,22 +182,23 @@ void t_tree_stats_CountersTypesFilter::store(const var& tl_object) {
 struct TypeStore {
   bool is_bare_type;
   const std::unique_ptr<vk::tl::type> &type;
-  std::vector<std::string> constructor_params;
   std::string template_str;
 
-  inline TypeStore(bool is_bare_type, const std::unique_ptr<vk::tl::type> &type, vector<string> constructor_params, string template_str) :
+  inline TypeStore(bool is_bare_type, const std::unique_ptr<vk::tl::type> &type, string template_str) :
     is_bare_type(is_bare_type),
     type(type),
-    constructor_params(std::move(constructor_params)),
     template_str(std::move(template_str)) {}
 
   inline void compile(CodeGenerator &W) const {
+    auto store_params = get_optional_args_for_call(type->constructors[0]);
+    store_params.insert(store_params.begin(), "tl_object");
+    auto store_call = "store(" + join(store_params, ", ") + ")";
     if (type->constructors_num == 1) {
       if (is_bare_type) {
-        W << "c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "(" << join(constructor_params, ", ") << ").store(tl_object);" << NL;
+        W << "c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "::" << store_call << ";" << NL;
       } else {
         W << format("f$store_int(0x%08x);", static_cast<unsigned int>(type->constructors[0]->id)) << NL;
-        W << "c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "(" << join(constructor_params, ", ") << ").store(tl_object);" << NL;
+        W << "c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "::" << store_call << ";" << NL;
       }
       return;
     }
@@ -143,7 +214,7 @@ struct TypeStore {
       if (c.get() != default_constructor) {
         W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
       }
-      W << "c_" << cpp_tl_struct_name(c->name) << template_str << "(" << join(constructor_params, ", ") << ").store(tl_object);" << NL;
+      W << "c_" << cpp_tl_struct_name(c->name) << template_str << "::" << store_call << ";" << NL;
     }
     W << END << " else " << BEGIN
       << "tl_storing_error(tl_object, \"Constructor %s of type " << type->name << " was not found in TL scheme\", constructor_name.c_str());" << NL
@@ -180,20 +251,20 @@ array<var> t_tree_stats_CountersTypesFilter::fetch() {
 struct TypeFetch {
   bool is_bare_type;
   const std::unique_ptr <vk::tl::type> &type;
-  std::vector<std::string> constructor_params;
   std::string template_str;
 
-  inline TypeFetch(bool is_bare_type, const std::unique_ptr <vk::tl::type> &type, vector<string> constructor_params, string template_str) :
+  inline TypeFetch(bool is_bare_type, const std::unique_ptr <vk::tl::type> &type, string template_str) :
     is_bare_type(is_bare_type),
     type(type),
-    constructor_params(std::move(constructor_params)),
     template_str(std::move(template_str)) {}
 
   inline void compile(CodeGenerator &W) const {
+    auto fetch_params = get_optional_args_for_call(type->constructors[0]);
+    auto fetch_call = "fetch(" + join(fetch_params, ", ") + ")";
     if (is_bare_type) {
       kphp_assert(type->constructors_num == 1);
       W << "if (!CurException.is_null()) return array<var>();" << NL;
-      W << "return c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "(" << join(constructor_params, ", ") << ").fetch();" << NL;
+      W << "return c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "::" << fetch_call << ";" << NL;
       return;
     }
     W << (type->constructors[0]->is_flat(tl) ? "var " : "array<var> ");
@@ -211,7 +282,7 @@ struct TypeFetch {
         continue;
       }
       W << format("case 0x%08x: ", static_cast<unsigned int>(c->id)) << BEGIN;
-      W << "result = c_" << cpp_tl_struct_name(c->name) << template_str << "(" << join(constructor_params, ", ") << ").fetch();" << NL;
+      W << "result = c_" << cpp_tl_struct_name(c->name) << template_str << "::" << fetch_call << ";" << NL;
       if (has_name) {
         W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << int_to_str(hash_tl_const_str("_")) << ");" << NL;
       }
@@ -221,7 +292,7 @@ struct TypeFetch {
     W << "default: " << BEGIN;
     if (default_constructor != nullptr) {
       W << "tl_parse_restore_pos(pos);" << NL;
-      W << "result = c_" << cpp_tl_struct_name(default_constructor->name) << template_str << "(" << join(constructor_params, ", ") << ").fetch();" << NL;
+      W << "result = c_" << cpp_tl_struct_name(default_constructor->name) << template_str << "::" << fetch_call << ";" << NL;
       if (has_name) {
         W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", " << int_to_str(hash_tl_const_str("_")) << ");" << NL;
       }
@@ -307,6 +378,12 @@ struct CombinatorStore {
   inline void compile(CodeGenerator &W) const {
     cur_combinator = combinator;
     auto var_num_access = (combinator->is_function() ? "result_fetcher->" : "");
+    if (combinator->is_constructor()) {
+      auto fields_masks = get_not_optional_fields_masks(combinator);
+      for (const auto &item : fields_masks) {
+        W << "int " << item << "{0};" << NL;
+      }
+    }
     if (combinator->is_flat(tl)) {
       W << get_full_value(get_first_explicit_arg(combinator)->type_expr.get(), var_num_access) << ".store(tl_object);" << NL;
       return;
@@ -349,7 +426,7 @@ struct CombinatorStore {
           << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
         W << var_num_access << combinator->get_var_num_arg(as_type_var->var_num)->name <<
           ".fetcher = storer_kv(" << cur_arg << ");" << NL;
-      } else if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_SHARP) {
+      } else if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_FIELDS_MASK) {
         W << format("%s%s = f$intval(tl_arr_get(tl_object, %s, %d, %d));",
                     var_num_access,
                     combinator->get_var_num_arg(arg->var_num)->name.c_str(),
@@ -413,6 +490,12 @@ struct CombinatorFetch {
 
   inline void compile(CodeGenerator &W) const {
     cur_combinator = combinator;
+    if (combinator->is_constructor()) {
+      auto fields_masks = get_not_optional_fields_masks(combinator);
+      for (const auto &item : fields_masks) {
+        W << "int " << item << "{0};" << NL;
+      }
+    }
     if (combinator->is_flat(tl)) {
       W << "return " << get_fetcher_call(get_first_explicit_arg(combinator)->type_expr) << ";" << NL;
       return;
@@ -433,7 +516,7 @@ struct CombinatorFetch {
       }
       W << TypeExprFetch(arg);
       // запоминаем var_num для fields_mask
-      if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_SHARP) {
+      if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_FIELDS_MASK) {
         W << combinator->get_var_num_arg(arg->var_num)->name << " = f$intval(result.get_value(" << register_tl_const_str(arg->name) << ", " << int_to_str(hash_tl_const_str(arg->name)) << "));" << NL;
         if (DEBUG_MODE) {
           W << R"(fprintf(stderr, "### fields_mask processing\n");)" << NL;
@@ -513,133 +596,47 @@ struct Cell {
 int Cell::cells_cnt = 0;
 std::unordered_map<vk::tl::type_array *, std::string> Cell::type_array_to_cell_name = std::unordered_map<vk::tl::type_array *, std::string>();
 
-struct WrapperConstructorAndFields {
+struct ConstructorDecl {
   const std::unique_ptr<vk::tl::combinator> &constructor;
-  std::string name;
 
-  inline WrapperConstructorAndFields(const std::unique_ptr<vk::tl::combinator> &constructor, string name) :
-    constructor(constructor),
-    name(std::move(name)) {};
+  inline explicit ConstructorDecl(const std::unique_ptr<vk::tl::combinator> &constructor) :
+    constructor(constructor) {}
 
   inline void compile(CodeGenerator &W) const {
-    std::vector<std::string> constructor_params;
-    std::vector<std::string> constructor_inits;
-    std::vector<std::string> constructor_params_forward;
-    for (const auto &arg : constructor->args) {
-      if (arg->var_num != -1) {  // для всех TLTypeVar и TLTypeArray arg.var_num == -1
-        if (type_of(arg->type_expr)->name == "#") {
-          W << "int " << arg->name << "{0};" << NL;
-          if (arg->flags & FLAG_OPT_VAR) {
-            constructor_params.emplace_back("int " + arg->name);
-            constructor_params_forward.emplace_back(arg->name);
-            constructor_inits.emplace_back(format("%s(%s)", arg->name.c_str(), arg->name.c_str()));
-          }
-        } else if (type_of(arg->type_expr)->name == T_TYPE) {
-          W << format("T%d %s;", arg->var_num, arg->name.c_str()) << NL;
-          kphp_assert(arg->flags & FLAG_OPT_VAR);
-          constructor_params.emplace_back(format("T%d %s", arg->var_num, arg->name.c_str()));
-          constructor_params_forward.emplace_back(arg->name);
-          constructor_inits.emplace_back(format("%s(std::move(%s))", arg->name.c_str(), arg->name.c_str()));
-        }
-      }
+    std::string template_decl = get_template_declaration(constructor);
+    if (!template_decl.empty()) {
+      W << template_decl << NL;
     }
-    if (constructor_params.empty()) {
-      return;
-    }
-    W << "explicit " << name << "(" << join(constructor_params, ", ") << ") : " << join(constructor_inits, ", ") << " {}\n" << NL;
-  }
-};
-
-// Общий код для генерации объявления типов и контсрукторов
-struct WrapperDecl {
-  const std::unique_ptr<vk::tl::combinator> &constructor;
-  std::string struct_name;
-
-  inline WrapperDecl(const std::unique_ptr<vk::tl::combinator> &constructor, std::string struct_name) :
-    constructor(constructor),
-    struct_name(std::move(struct_name)) {}
-
-  inline void compile(CodeGenerator &W) const {
-    std::vector<std::string> typenames;
-    if (is_type_dependent(constructor.get())) {
-      for (const auto &arg : constructor->args) {
-        if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
-          kphp_assert(arg->flags & FLAG_OPT_VAR);
-          typenames.emplace_back(format("typename T%d", arg->var_num));
-        }
-      }
-      W << "template<" << join(typenames, ", ") << ">" << NL;
-    }
-    W << "struct " << struct_name << " " << BEGIN
-      << WrapperConstructorAndFields(constructor, struct_name)
-      << "void store(const var& tl_object);" << NL;
-    if (constructor->is_flat(tl)) {
-      W << "var fetch();" << NL;
-    } else {
-      W << "array<var> fetch();" << NL;
-    }
+    W << "struct " << "c_" << cpp_tl_struct_name(constructor->name) << " " << BEGIN;
+    auto params = get_optional_args_for_decl(constructor);
+    W << "static void store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
+    W << "static " << (constructor->is_flat(tl) ? "var " : "array<var> ");
+    W << "fetch(" << params << ");" << NL;
     W << END << ";\n\n";
   }
 };
 
-// Общий код для генерации определения типов и контсрукторов
-struct WrapperDef {
+struct ConstructorDef {
   const std::unique_ptr<vk::tl::combinator> &constructor;
-  std::string struct_name;
 
-  inline WrapperDef(const std::unique_ptr<vk::tl::combinator> &constructor, std::string struct_name) :
-    constructor(constructor),
-    struct_name(std::move(struct_name)) {}
+  inline explicit ConstructorDef(const std::unique_ptr<vk::tl::combinator> &constructor) :
+    constructor(constructor) {}
 
   inline void compile(CodeGenerator &W) const {
-    bool is_constructor = vk::string_view(struct_name).starts_with("c_");
-    bool is_type = vk::string_view(struct_name).starts_with("t_");
-    bool is_bare_type = is_type && vk::string_view(struct_name).ends_with("_$");
-    const auto &type = tl->types[constructor->type_id];
-
-    std::vector<std::string> constructor_params_forward;
-    std::vector<std::string> template_params_forward;
-    for (const auto &arg : constructor->args) {
-      if (arg->flags & FLAG_OPT_VAR) {
-        if (type_of(arg->type_expr)->name == T_TYPE) {
-          constructor_params_forward.emplace_back("std::move(" + arg->name + ")");
-          template_params_forward.emplace_back("T" + std::to_string(arg->var_num));
-        } else {
-          constructor_params_forward.emplace_back(arg->name);
-        }
-      }
+    std::string template_decl = get_template_declaration(constructor);
+    std::string template_params = get_template_params(constructor);
+    auto full_struct_name = "c_" + cpp_tl_struct_name(constructor->name) + template_params;
+    if (!template_decl.empty()) {
+      W << template_decl << NL;
     }
-    std::vector<std::string> typenames;
-    typenames.reserve(template_params_forward.size());
-    for (const auto &e : template_params_forward) {
-      typenames.emplace_back("typename " + e);
-    }
-    std::string template_decl;
-    std::string template_brackets;
-    if (!typenames.empty()) {
-      template_decl = format("template<%s>", join(typenames, ", ").c_str());
-      template_brackets = format("<%s>", join(template_params_forward, ", ").c_str());
-    }
-
-    auto full_struct_name = struct_name + template_brackets;
-    W << template_decl << NL;
-    W << "void " + full_struct_name + "::store(const var& tl_object) " << BEGIN;
-    if (is_constructor) {
-      W << CombinatorStore(constructor.get());
-    } else if (is_type) {
-      W << TypeStore(is_bare_type, type, constructor_params_forward, template_brackets);
-    } else {
-      kphp_assert(false);
-    }
+    auto params = get_optional_args_for_decl(constructor);
+    W << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    W << CombinatorStore(constructor.get());
     W << END << "\n\n";
     W << template_decl << NL;
     W << (constructor->is_flat(tl) ? "var " : "array<var> ");
-    W << full_struct_name + "::fetch() " << BEGIN;
-    if (is_constructor) {
-      W << CombinatorFetch(constructor.get());
-    } else if (is_type) {
-      W << TypeFetch(is_bare_type, type, constructor_params_forward, template_brackets);
-    }
+    W << full_struct_name + "::fetch(" << params << ") " << BEGIN;
+    W << CombinatorFetch(constructor.get());
     W << END << "\n\n";
   }
 };
@@ -655,7 +652,37 @@ struct TypeDecl {
   inline void compile(CodeGenerator &W) const {
     W << "/* ~~~~~~~~~ " << t->name << " ~~~~~~~~~ */\n" << NL;
     std::string struct_name = "t_" + cpp_tl_struct_name(t->name) + (is_bare_type ? "_$" : "");
-    W << WrapperDecl(t->constructors[0], struct_name);
+    const auto &constructor = t->constructors[0];
+    std::string template_decl = get_template_declaration(constructor);
+    if (!template_decl.empty()) {
+      W << template_decl << NL;
+    }
+    W << "struct " << struct_name << " " << BEGIN;
+    std::vector<std::string> constructor_params;
+    std::vector<std::string> constructor_inits;
+    for (const auto &arg : constructor->args) {
+      if (arg->var_num != -1) {
+        if (type_of(arg->type_expr)->name == T_FIELDS_MASK) {
+          if (arg->flags & FLAG_OPT_VAR) {
+            W << "int " << arg->name << "{0};" << NL;
+            constructor_params.emplace_back("int " + arg->name);
+            constructor_inits.emplace_back(format("%s(%s)", arg->name.c_str(), arg->name.c_str()));
+          }
+        } else if (type_of(arg->type_expr)->name == T_TYPE) {
+          W << format("T%d %s;", arg->var_num, arg->name.c_str()) << NL;
+          kphp_assert(arg->flags & FLAG_OPT_VAR);
+          constructor_params.emplace_back(format("T%d %s", arg->var_num, arg->name.c_str()));
+          constructor_inits.emplace_back(format("%s(std::move(%s))", arg->name.c_str(), arg->name.c_str()));
+        }
+      }
+    }
+    if (!constructor_params.empty()) {
+      W << "explicit " << struct_name << "(" << join(constructor_params, ", ") << ") : " << join(constructor_inits, ", ") << " {}\n" << NL;
+    }
+    W << "void store(const var& tl_object);" << NL;
+    W << (constructor->is_flat(tl) ? "var " : "array<var> ");
+    W << "fetch();" << NL;
+    W << END << ";\n\n";
   }
 };
 
@@ -668,8 +695,23 @@ struct TypeDef {
     t(t) {}
 
   inline void compile(CodeGenerator &W) const {
+    const auto &constructor = t->constructors[0];
     std::string struct_name = "t_" + cpp_tl_struct_name(t->name) + (is_bare_type ? "_$" : "");
-    W << WrapperDef(t->constructors[0], struct_name);
+    const auto &type = tl->types[constructor->type_id];
+    std::string template_decl = get_template_declaration(constructor);
+    std::string template_params = get_template_params(constructor);
+    auto full_struct_name = struct_name + template_params;
+    if (!template_decl.empty()) {
+      W << template_decl << NL;
+    }
+    W << "void " + full_struct_name + "::store(const var& tl_object) " << BEGIN;
+    W << TypeStore(is_bare_type, type, template_params);
+    W << END << "\n\n";
+    W << template_decl << NL;
+    W << (constructor->is_flat(tl) ? "var " : "array<var> ");
+    W << full_struct_name + "::fetch() " << BEGIN;
+    W << TypeFetch(is_bare_type, type, template_params);
+    W << END << "\n\n";
   }
 };
 
@@ -762,7 +804,7 @@ public:
     W << NL;
     for (const auto &t : target_types) {
       for (const auto &constructor : t->constructors) {
-        W << WrapperDecl(constructor, "c_" + cpp_tl_struct_name(constructor->name));
+        W << ConstructorDecl(constructor);
       }
     }
     for (const auto &t : target_types) {
@@ -783,7 +825,7 @@ public:
     for (const auto &t : target_types) {
       if (is_type_dependent(t)) {
         for (const auto &constructor : t->constructors) {
-          W << WrapperDef(constructor, "c_" + cpp_tl_struct_name(constructor->name));
+          W << ConstructorDef(constructor);
         }
       }
     }
@@ -804,7 +846,7 @@ public:
           W << TypeDef(t, true);
         }
         for (const auto &constructor : t->constructors) {
-          W << WrapperDef(constructor, "c_" + cpp_tl_struct_name(constructor->name));
+          W << ConstructorDef(constructor);
         }
       }
     }
@@ -946,8 +988,8 @@ std::pair<std::string, std::string> get_full_type_expr_str(
       template_params.emplace_back(child_type_name);
     }
   }
-  auto type_name = "t_" + (type->name != T_SHARP ? cpp_tl_struct_name(type->name) : cpp_tl_struct_name(tl->types[TL_INT]->name));
-  auto bare_suf = ((as_type_expr->flags & FLAG_BARE) || type->name == T_SHARP ? "_$" : "");
+  auto type_name = "t_" + (type->name != T_FIELDS_MASK ? cpp_tl_struct_name(type->name) : cpp_tl_struct_name(tl->types[TL_INT]->name));
+  auto bare_suf = ((as_type_expr->flags & FLAG_BARE) || type->name == T_FIELDS_MASK ? "_$" : "");
   auto template_str = (!template_params.empty() ? "<" + join(template_params, ", ") + ">" : "");
   auto full_type_name = type_name + bare_suf + template_str;
   auto full_type_value = full_type_name + "(" + join(constructor_params, ", ") + ")";
