@@ -58,7 +58,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   kphp_error_act (new_vertex, format("Can't find '%s' lib", lib_require_name.c_str()), return require_lib_call);
   return new_vertex;
 }
-} // anonymous namespace
+} // namespace
 
 GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function(const std::string &name) {
   static map<std::string, builtin_fun> functions = {

@@ -60,4 +60,4 @@ public:
   virtual string get_description() = 0;
 };
 
-}
+} // namespace tinf

@@ -22,7 +22,7 @@ public:
   virtual void on_finish(DataStream<Out> &) = 0;
   virtual ~SyncPipeFBase() = default;
 };
-}
+} // namespace sync_detail
 
 
 template<typename In, typename Out = In>

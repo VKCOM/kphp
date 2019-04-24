@@ -70,4 +70,4 @@ bool Node::try_finish_recalc() {
   return false;
 }
 
-}
+} // namespace tinf

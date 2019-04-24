@@ -7,7 +7,7 @@
 
 namespace re2 {
 class RE2;
-};
+} // namespace re2
 
 extern int preg_replace_count_dummy;
 

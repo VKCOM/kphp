@@ -1503,7 +1503,7 @@ OrFalse<string> eval_cipher(CipherCtx::cipher_action action, const string &data,
   }
   return false;
 }
-} // anonymous namespace
+} // namespace
 
 array<string> f$openssl_get_cipher_methods(bool aliases) {
   array<string> return_value;

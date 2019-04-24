@@ -113,7 +113,7 @@ void *alloc_at_least(size_t n, size_t use) {
   pages_n++;
   return ptr;
 }
-}
+} // namespace qmem
 
 //public functions
 void qmem_init() {

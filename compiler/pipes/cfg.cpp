@@ -1295,7 +1295,7 @@ void CFG::run(CFGData *new_data) {
   data = new_data;
   process_function(data->get_function());
 }
-}
+} // namespace cfg
 
 void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
   stage::set_name("Calc control flow graph");

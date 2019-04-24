@@ -40,4 +40,4 @@ private:
   int do_run_queue();
 };
 
-}
+} // namespace tinf

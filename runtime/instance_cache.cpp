@@ -285,7 +285,7 @@ bool instance_cache_store(const string &key, const InstanceWrapperBase &instance
 InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key) {
   return InstanceCache::get().fetch(key);
 }
-} // ic_impl_ namespace
+} // namespace ic_impl_
 
 void init_instance_cache_lib() {
   // Before each request we refresh current time point and remove expired elements

@@ -71,4 +71,4 @@ const TypeData *get_type(FunctionPtr function, int id) {
   return get_type_impl(get_tinf_node(function, id));
 }
 
-}
+} // namespace tinf

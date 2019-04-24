@@ -90,6 +90,6 @@ string to_str(const Location &new_location);
 bool should_be_colored(FILE *f);
 
 extern int warnings_count;
-}
+} // namespace stage
 
 

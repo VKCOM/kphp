@@ -24,7 +24,7 @@ std::string get_lib_name(const std::string &lib_require_name) {
 bool is_raw_php_dir(vk::string_view lib_dir) {
   return lib_dir.ends_with("/php/");
 }
-} // anonymous namespace
+} // namespace
 
 LibData::LibData(const std::string &lib_name, const std::string &lib_dir) :
   lib_dir_(lib_dir),

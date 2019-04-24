@@ -30,7 +30,7 @@ enum {
   cm_final = 1 << 4,
   cm_abstract = 1 << 5,
 };
-}
+} // namespace ClassMemberModifier
 
 GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
   line_num(0),

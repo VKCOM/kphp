@@ -9,7 +9,7 @@ void warn_on_mixing(FunctionPtr fun) {
     kphp_typed_warning("return", "Mixing void and not void returns in one function");
   }
 }
-}
+} // namespace
 
 VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
   auto is_void_fun = [](FunctionPtr f) {

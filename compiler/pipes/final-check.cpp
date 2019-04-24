@@ -84,7 +84,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
                    format("Wrong callback arguments count; given: %d, expected: %ld", given_arguments_count, expected_arguments_count), continue);
   }
 }
-}
+} // namespace
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->is_extern()) {

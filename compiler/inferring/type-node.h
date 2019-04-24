@@ -21,4 +21,4 @@ public:
   string get_description();
 };
 
-}
+} // namespace tinf

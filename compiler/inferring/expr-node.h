@@ -24,4 +24,4 @@ public:
   const Location &get_location();
 };
 
-}
+} // namespace tinf

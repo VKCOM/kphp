@@ -63,7 +63,7 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
   return f->body_seq;
 }
 
-} // anonymous namespace
+} // namespace
 
 
 void CalcEmptyFunctions::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {

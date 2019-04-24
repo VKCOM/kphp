@@ -16,4 +16,4 @@ const TypeData *get_type(VertexPtr vertex);
 const TypeData *get_type(VarPtr var);
 const TypeData *get_type(FunctionPtr function, int id);
 
-}
+} // namespace tinf

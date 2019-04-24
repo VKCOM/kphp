@@ -104,7 +104,7 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
   }
 }
 
-} // anonymous namespace
+} // namespace
 
 
 /**

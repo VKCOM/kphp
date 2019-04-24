@@ -58,7 +58,7 @@ bool is_type_dependent(vk::tl::combinator *constructor) {
 bool is_type_dependent(vk::tl::type *type) {
   return is_type_dependent(type->constructors[0].get());
 }
-}
+} // namespace
 
 static std::set<std::string> tl_const_vars;
 
@@ -1080,4 +1080,4 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << END;
   W << CloseFile();
 }
-}
+} // namespace tl_gen

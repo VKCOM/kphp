@@ -115,7 +115,7 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
   }
 }
 
-} // anonymous namespace
+} // namespace
 
 void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   auto all = tmp_stream.get_as_vector();

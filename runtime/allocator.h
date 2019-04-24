@@ -48,4 +48,4 @@ void static_deallocate(void **p, size_type *n);//deallocate heap memory
 void *malloc_replace(size_t x);
 void free_replace(void *p);
 
-};
+} // namespace dl

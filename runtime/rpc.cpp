@@ -1898,7 +1898,7 @@ array<var> fetch_function(std::unique_ptr<tl_func_base> stored_fetcher) {
   }
   return new_tl_object;
 }
-}
+} // namespace new_tl_mode
 
 bool f$set_tl_mode(int mode) {
   if (mode < 0 || mode > 2) {

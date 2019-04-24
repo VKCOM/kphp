@@ -92,7 +92,7 @@ int Location::get_line() const {
 
 namespace stage {
 static TLS<StageInfo> stage_info;
-}
+} // namespace stage
 
 void stage::print(FILE *f) {
   fprintf(f, "In stage = [%s]:\n", get_name().c_str());

@@ -30,7 +30,7 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   type_acceptor = casted_var;
   return var_id;
 }
-} // anonymous namespace
+} // namespace
 
 VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op) {
   if (set_op->lhs()->type() != op_index) {

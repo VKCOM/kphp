@@ -530,7 +530,7 @@ void free_replace(void *p) {
   }
 }
 
-}
+} // namespace dl
 
 //replace global operators new and delete for linked C++ code
 void *operator new(std::size_t n) {

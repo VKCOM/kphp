@@ -22,4 +22,4 @@ protected:
   virtual bool check_broken_restriction_impl() = 0;
 };
 
-}
+} // namespace tinf

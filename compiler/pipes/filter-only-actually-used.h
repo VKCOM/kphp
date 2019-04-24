@@ -8,7 +8,7 @@
 namespace filter_detail {
 using EdgeInfo = CalcActualCallsEdgesPass::EdgeInfo;
 using FunctionAndEdges = std::pair<FunctionPtr, std::vector<EdgeInfo>>;
-}
+} // namespace filter_detail
 
 /**
  * Имеет на входе FunctionAndEdges — какая функция какие вызывает —  делает следующее:
