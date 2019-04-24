@@ -79,10 +79,10 @@ void *pages[max_pages_n];
 size_t pages_size[max_pages_n], cur_mem, used_mem;
 int pages_n;
 
-typedef enum {
+enum state_t {
   st_empty,
   st_inited
-} state_t;
+};
 state_t state;
 
 std::multimap<size_t, void *> left;

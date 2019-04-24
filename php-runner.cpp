@@ -618,12 +618,12 @@ static void upd_imm_stats(void) {
   memcpy(get_new_imm_stats(), get_imm_stats(), sizeof(php_immediate_stats_t));
 }
 
-typedef enum {
+enum server_status_t {
   ss_idle,
   ss_wait_net,
   ss_running,
   ss_custom
-} server_status_t;
+};
 
 static void upd_server_status(server_status_t server_status, const char *desc, int desc_len) {
   php_immediate_stats_t *imm = get_new_imm_stats();

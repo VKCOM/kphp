@@ -1,20 +1,20 @@
 #pragma once
 
 /** http_query_data **/
-typedef struct {
+struct http_query_data {
   char *uri, *get, *headers, *post, *request_method;
   int uri_len, get_len, headers_len, post_len, request_method_len;
   int keep_alive;
   unsigned int ip;
   unsigned int port;
-} http_query_data;
+};
 
 http_query_data *http_query_data_create(const char *qUri, int qUriLen, const char *qGet, int qGetLen, const char *qHeaders,
                                         int qHeadersLen, const char *qPost, int qPostLen, const char *request_method, int keep_alive, unsigned int ip, unsigned int port);
 void http_query_data_free(http_query_data *d);
 
 /** rpc_query_data **/
-typedef struct {
+struct rpc_query_data {
   int *data, len;
 
   long long req_id;
@@ -24,16 +24,16 @@ typedef struct {
   short port;
   short pid;
   int utime;
-} rpc_query_data;
+};
 
 rpc_query_data *rpc_query_data_create(int *data, int len, long long req_id, unsigned int ip, short port, short pid, int utime);
 void rpc_query_data_free(rpc_query_data *d);
 
 /** php_query_data **/
-typedef struct {
+struct php_query_data {
   http_query_data *http_data;
   rpc_query_data *rpc_data;
-} php_query_data;
+};
 
 php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data);
 void php_query_data_free(php_query_data *d);
@@ -42,11 +42,12 @@ void php_query_data_free(php_query_data *d);
 /** rpc intreface **/
 typedef int slot_id_t;
 
-typedef enum {
+enum net_event_type_t {
   ne_rpc_answer,
   ne_rpc_error
-} net_event_type_t;
-typedef struct {
+};
+
+struct net_event_t {
   net_event_type_t type;
   union {
     slot_id_t slot_id;
@@ -63,12 +64,13 @@ typedef struct {
       const char *error_message;
     };
   };
-} net_event_t;
+};
 
-typedef enum {
+enum net_query_type_t {
   nq_rpc_send
-} net_query_type_t;
-typedef struct {
+};
+
+struct net_query_t {
   net_query_type_t type;
   slot_id_t slot_id;
   union {
@@ -79,7 +81,7 @@ typedef struct {
       int timeout_ms;
     };
   };
-} net_query_t;
+};
 
 extern int (*mc_connect_to)(const char *host_name, int port);
 extern void (*mc_run_query)(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len));

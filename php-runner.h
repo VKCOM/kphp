@@ -6,7 +6,7 @@
 #include "PHP/php_script.h"
 #include "drinkless/dl-utils-lite.h"
 
-typedef enum {
+enum run_state_t {
   rst_finished,
   rst_uncleared,
   rst_query,
@@ -16,35 +16,36 @@ typedef enum {
   rst_running,
   rst_empty,
   rst_query_running
-} run_state_t;
-typedef enum {
+};
+
+enum query_type {
   q_memcached,
   q_rpc,
   q_int
-} query_type;
+};
 
 #define SEGV_STACK_SIZE (MINSIGSTKSZ + 65536)
 
 #pragma pack(push, 4)
 
-typedef struct {
+struct query_base {
   query_type type;
-} query_base;
+};
 
-typedef struct {
+struct query_int {
   query_type type; // MUST BE HERE
   int val, res;
-} query_int;
+};
 
 #pragma pack(pop)
 
-typedef struct {
+struct query_stats_t {
   long long q_id;
   const char *desc;
   int port;
   const char *query;
   double timeout;
-} query_stats_t;
+};
 
 extern query_stats_t query_stats;
 extern long long query_stats_id;
