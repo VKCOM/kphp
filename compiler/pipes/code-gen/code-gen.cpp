@@ -2515,7 +2515,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << Indent(-2) << "public:" << NL << Indent(+2);
 
   //ReturnT
-  W << "typedef " << TypeName(tinf::get_type(func, -1)) << " ReturnT;" << NL;
+  W << "using ReturnT = " << TypeName(tinf::get_type(func, -1)) << ";" << NL;
 
   //CONSTRUCTOR
   W << FunctionClassName(func) << "(" << FunctionParams(func) << ")";

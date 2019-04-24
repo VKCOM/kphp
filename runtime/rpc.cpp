@@ -977,7 +977,7 @@ void process_rpc_error(int request_id, int error_code __attribute__((unused)), c
 
 
 class rpc_get_resumable : public Resumable {
-  typedef OrFalse<string> ReturnT;
+  using ReturnT = OrFalse<string>;
   int resumable_id;
   double timeout;
 
@@ -1039,7 +1039,7 @@ OrFalse<string> f$rpc_get_synchronously(int request_id) {
 }
 
 class rpc_get_and_parse_resumable : public Resumable {
-  typedef bool ReturnT;
+  using ReturnT = bool;
   int resumable_id;
   double timeout;
 
@@ -1615,10 +1615,10 @@ void clear_arr_space() {
   }
 }
 
-typedef tl_tree *tl_tree_ptr;
-typedef void *void_ptr;
+using tl_tree_ptr = tl_tree *;
+using void_ptr = void *;
 
-typedef void *(*function_ptr)(void **IP, void **Data, var *arr, tl_tree **vars);
+using function_ptr = void *(*)(void **IP, void **Data, var *arr, tl_tree **vars);
 #define TLUNI_NEXT return TRY_CALL(void *, void_ptr, ((*(function_ptr *) IP) (IP + 1, Data, arr, vars)))
 #define TLUNI_START(IP, Data, arr, vars) TRY_CALL(void *, void_ptr, ((*(function_ptr *) IP) (IP + 1, Data, arr, vars)))
 #define TLUNI_OK ((void *)1l)
@@ -2053,7 +2053,7 @@ array<int> f$rpc_tl_query(const rpc_connection &c, const array<var> &tl_objects,
 
 
 class rpc_tl_query_result_one_resumable : public Resumable {
-  typedef array<var> ReturnT;
+  using ReturnT = array<var>;
 
   int query_id;
   tl_tree *T;
@@ -2172,7 +2172,7 @@ array<var> f$rpc_tl_query_result_one(int query_id) {
 
 
 class rpc_tl_query_result_resumable : public Resumable {
-  typedef array<array<var>> ReturnT;
+  using ReturnT = array<array<var>>;
 
   const array<int> query_ids;
   array<array<var>> tl_objects_unsorted;
@@ -4148,8 +4148,7 @@ tl_type *read_type() {
     type->flags |= FLAG_NOCONS;
   }
   type->arity = TRY_CALL_EXIT(int, "Wrong TL-scheme specified.", tl_parse_int());
-  typedef long long ll;
-  TRY_CALL_EXIT(ll, "Wrong TL-scheme specified.", tl_parse_long());//unused
+  TRY_CALL_EXIT(long long, "Wrong TL-scheme specified.", tl_parse_long());//unused
   return type;
 }
 

@@ -265,8 +265,6 @@ struct net_send_ansgen_func_t {
   void (*send_and_finish)(net_send_ansgen_t *self, void *data);
 };
 
-//typedef enum {} net_send_ansgen_state_t;
-
 struct net_send_ansgen_t {
   net_ansgen_t base;
   net_send_ansgen_func_t *func;
@@ -320,8 +318,6 @@ int net_events_empty();
 
 void php_queries_start();
 void php_queries_finish();
-
-//typedef enum {} net_send_ansgen_state_t;
 
 void init_drivers();
 

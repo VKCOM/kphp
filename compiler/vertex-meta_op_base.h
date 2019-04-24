@@ -11,11 +11,11 @@ vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 template<>
 class vertex_inner<meta_op_base> {
 public:
-  typedef VertexPtr value_type;
-  typedef value_type *xiterator;
-  typedef const value_type *const_xiterator;
-  typedef std::reverse_iterator<xiterator> iterator;
-  typedef std::reverse_iterator<const_xiterator> const_iterator;
+  using value_type = VertexPtr;
+  using xiterator = value_type *;
+  using const_xiterator = const value_type *;
+  using iterator = std::reverse_iterator<xiterator>;
+  using const_iterator = std::reverse_iterator<const_xiterator>;
 
 private:
   Operation type_;

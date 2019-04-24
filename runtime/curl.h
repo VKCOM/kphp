@@ -2,7 +2,7 @@
 
 #include "runtime/kphp_core.h"
 
-typedef int curl;
+using curl = int;
 
 curl f$curl_init(const string &url = string());
 

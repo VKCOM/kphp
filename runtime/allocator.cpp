@@ -53,17 +53,17 @@ void leave_critical_section() {
 template<class T>
 class script_allocator {
 public:
-  typedef dl::size_type size_type;
-  typedef ptrdiff_t difference_type;
-  typedef T *pointer;
-  typedef const T *const_pointer;
-  typedef T &reference;
-  typedef const T &const_reference;
-  typedef T value_type;
+  using size_type = dl::size_type;
+  using difference_type = ptrdiff_t;
+  using pointer = T *;
+  using const_pointer = const T *;
+  using reference = T&;
+  using const_reference = const T &;
+  using value_type = T;
 
   template<class U>
   struct rebind {
-    typedef script_allocator<U> other;
+    using other = script_allocator<U>;
   };
 
   script_allocator() noexcept = default;

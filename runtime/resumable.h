@@ -31,7 +31,7 @@ private:
   void save_exception();
 
 public:
-  typedef var (*Getter)(char *);
+  using Getter = var (*)(char *);
 
   Getter getter_;
 

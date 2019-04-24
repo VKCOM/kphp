@@ -4,14 +4,13 @@
 #include "runtime/kphp_core.h"
 
 #pragma pack(push, 4)
-struct sample {
+struct sample_t {
   int max_size;
   //int size;            //assert(size <= max_size);
   int dataset_size;       //assert(size == min(dataset_size,max_size));
   int values[0];
 };
 #pragma pack(pop)
-typedef struct sample sample_t;
 
 
 double f$vk_stats_merge_deviation(int n1, Long sum1, double nsigma21, int n2, Long sum2, double nsigma22);

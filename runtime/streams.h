@@ -2,7 +2,7 @@
 
 #include "runtime/kphp_core.h"
 
-typedef var Stream;
+using Stream = var;
 
 
 const int STREAM_SET_BLOCKING_OPTION = 0;

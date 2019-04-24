@@ -7,7 +7,7 @@
 
 namespace tinf {
 
-typedef queue<Node *> NodeQueue;
+using NodeQueue = queue<Node *>;
 
 class TypeInferer {
 private:

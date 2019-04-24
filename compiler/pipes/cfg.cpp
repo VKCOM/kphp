@@ -223,7 +223,7 @@ struct IdBase {
   int id = -1;
 };
 
-typedef Id<IdBase> Node;
+using Node = Id<IdBase>;
 
 enum UsageType {
   usage_write_t,
@@ -244,7 +244,7 @@ struct UsageData {
   }
 };
 
-typedef Id<UsageData> UsagePtr;
+using UsagePtr = Id<UsageData>;
 
 struct SubTreeData {
   VertexPtr v;
@@ -256,7 +256,7 @@ struct SubTreeData {
   }
 };
 
-typedef Id<SubTreeData> SubTreePtr;
+using SubTreePtr = Id<SubTreeData>;
 
 struct VertexUsage {
   bool used = false;
@@ -274,7 +274,7 @@ struct VarSplitData {
   }
 };
 
-typedef Id<VarSplitData> VarSplitPtr;
+using VarSplitPtr = Id<VarSplitData>;
 
 class CFG {
   CFGData *data = nullptr;

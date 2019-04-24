@@ -743,7 +743,7 @@ void process_wait_timeout(event_timer *timer) {
 }
 
 class wait_result_resumable : public Resumable {
-  typedef var ReturnT;
+  using ReturnT = var;
   int resumable_id;
   double timeout;
   bool ready;

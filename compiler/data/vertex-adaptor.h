@@ -13,7 +13,7 @@ class VertexAdaptor;
 
 class Location;
 
-typedef VertexAdaptor<meta_op_base> VertexPtr;
+using VertexPtr = VertexAdaptor<meta_op_base>;
 
 template<Operation op>
 inline void set_location(const Location &location, VertexAdaptor<op> &v);

@@ -361,10 +361,6 @@ php_net_query_packet_answer_t *php_net_query_packet(
   return (php_net_query_packet_answer_t *)q.base.ans;
 }
 
-//typedef enum {st_ansgen_done, st_ansgen_error, st_ansgen_wait} ansgen_state_t;
-//typedef enum {ap_any, ap_get, ap_err, ap_done} mc_ansgen_packet_state_t;
-//typedef enum {nq_error, nq_ok} nq_state_t;
-
 void read_str(data_reader_t *reader, void *dest) {
   //reader->readed = 1;
   memcpy(dest, reader->extra, reader->len);

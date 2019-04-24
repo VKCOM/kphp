@@ -15,8 +15,7 @@ extern decltype(free) __libc_free;
 extern decltype(calloc) __libc_calloc;
 extern decltype(realloc) __libc_realloc;
 
-typedef struct block_t_tmp block_t;
-struct block_t_tmp {
+struct block_t {
   union {
     size_t size;
     block_t *next;

@@ -21,7 +21,7 @@ public:
 template<class VertexT>
 class MergeReachalbe {
 private:
-  typedef IdMap<vector<VertexT>> GraphT;
+  using GraphT = IdMap<vector<VertexT>>;
 
   void dfs(const VertexT &vertex, const GraphT &graph, IdMap<int> *was, vector<VertexT> *topsorted) {
     if ((*was)[vertex]) {

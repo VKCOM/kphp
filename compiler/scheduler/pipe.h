@@ -22,7 +22,7 @@ struct NeedOnFinishProfiler<T, typename std::enable_if<!T::need_on_finish_profil
 template<class PipeType>
 class PipeTask : public Task {
 private:
-  typedef typename PipeType::InputType InputType;
+  using InputType = typename PipeType::InputType;
   InputType input;
   PipeType *pipe_ptr;
   static ProfilerRaw& get_task_profiler() {

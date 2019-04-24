@@ -11,7 +11,7 @@ template<class DataType>
 struct IdMap : public IdMapBase {
   vector <DataType> data;
 
-  typedef typename vector<DataType>::iterator iterator;
+  using iterator = typename vector<DataType>::iterator;
   IdMap() = default;
   explicit IdMap(int size);
 

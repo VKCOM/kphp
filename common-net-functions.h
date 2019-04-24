@@ -40,7 +40,7 @@ void php_query_data_free(php_query_data *d);
 
 
 /** rpc intreface **/
-typedef int slot_id_t;
+using slot_id_t = int;
 
 enum net_event_type_t {
   ne_rpc_answer,

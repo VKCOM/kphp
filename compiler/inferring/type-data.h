@@ -19,10 +19,10 @@
 
 class TypeData {
 public:
-  typedef pair<Key, TypeData *> KeyValue;
-  typedef vector<KeyValue>::const_iterator lookup_iterator;
-  typedef long generation_t;
-  typedef unsigned long flags_t;
+  using KeyValue = std::pair<Key, TypeData *>;
+  using lookup_iterator = vector<KeyValue>::const_iterator;
+  using generation_t = long;
+  using flags_t = unsigned long;
 private:
 
   class SubkeysValues {

@@ -363,7 +363,7 @@ const int ENGINE_MC_GET_QUERY = 0x62408e9e;
 extern const char *mc_method;
 
 class rpc_mc_multiget_resumable : public Resumable {
-  typedef OrFalse<array<var>> ReturnT;
+  using ReturnT = OrFalse<array<var>>;
 
   int queue_id;
   int first_request_id;

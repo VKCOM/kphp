@@ -8,8 +8,8 @@ class MultiKey {
 private:
   std::vector<Key> keys_;
 public:
-  typedef std::vector<Key>::const_iterator iterator;
-  typedef std::vector<Key>::const_reverse_iterator reverse_iterator;
+  using iterator = std::vector<Key>::const_iterator;
+  using reverse_iterator = std::vector<Key>::const_reverse_iterator;
   MultiKey() = default;
   MultiKey(const MultiKey &multi_key);
   MultiKey &operator=(const MultiKey &multi_key);

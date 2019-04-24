@@ -4,7 +4,7 @@
 
 template<class IdType>
 struct IdGen {
-  typedef typename IdMap<IdType>::iterator iterator;
+  using iterator = typename IdMap<IdType>::iterator;
 
   vector<IdMapBase *> id_maps;
   IdMap<IdType> ids;
