@@ -17,7 +17,7 @@ struct TranspilingProcessFinishTag {};
 template<>
 struct PipeProgressName<TranspilingProcessFinishTag> {
   static std::string get() {
-    return "Transpiling process is finished";
+    return "Transpiling process finished";
   }
 };
 
@@ -31,14 +31,14 @@ public:
   template<typename PipeFunctionT>
   void on_pipe_process_input() {
     if (enabled_ && is_first_process_input<PipeFunctionT>()) {
-      write_progress<PipeFunctionT>(" is started");
+      write_progress<PipeFunctionT>(" started");
     }
   }
 
   template<typename PipeFunctionT>
   void on_pipe_finish() {
     if (enabled_) {
-      write_progress<PipeFunctionT>(" is finished");
+      write_progress<PipeFunctionT>(" finished");
     }
   }
 
