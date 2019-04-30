@@ -35,7 +35,7 @@
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-function-calls.h"
 #include "compiler/pipes/check-instance-props.h"
-#include "compiler/pipes/check-modifications-of-const-fields.h"
+#include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
 #include "compiler/pipes/check-ub.h"
@@ -262,7 +262,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<ConvertListAssignmentsPass>{}
     >> PassC<RegisterVariablesPass>{}
     >> PassC<CheckFunctionCallsPass>{}
-    >> PassC<CheckModificationsOfConstFields>{}
+    >> PassC<CheckModificationsOfConstVars>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
     >> SyncNode{}

@@ -2,7 +2,7 @@
 
 #include "compiler/function-pass.h"
 
-class CheckModificationsOfConstFields : public FunctionPassBase {
+class CheckModificationsOfConstVars : public FunctionPassBase {
 public:
   string get_description() final {
     return "Check modifications of const fields";
@@ -21,6 +21,6 @@ public:
   }
 
 private:
-  void check_modification_of_const_class_field(VertexPtr v, bool write_flag = false) const;
+  void check_modifications(VertexPtr v, bool write_flag = false) const;
 };
 

@@ -1,18 +1,18 @@
-#include "compiler/pipes/check-modifications-of-const-fields.h"
+#include "compiler/pipes/check-modifications-of-const-vars.h"
 
 #include "common/termformat/termformat.h"
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 
-VertexPtr CheckModificationsOfConstFields::on_enter_vertex(VertexPtr v, LocalT *) {
-  check_modification_of_const_class_field(v);
+VertexPtr CheckModificationsOfConstVars::on_enter_vertex(VertexPtr v, LocalT *) {
+  check_modifications(v);
   return v;
 }
 
-void CheckModificationsOfConstFields::check_modification_of_const_class_field(VertexPtr v, bool write_flag) const {
+void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_flag) const {
   if (OpInfo::rl(v->type()) == rl_set) {
-    return check_modification_of_const_class_field(v.as<meta_op_binary>()->lhs(), true);
+    return check_modifications(v.as<meta_op_binary>()->lhs(), true);
   }
 
   switch (v->type()) {
@@ -22,12 +22,12 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
     case op_postfix_dec:
     case op_conv_array_l:
     case op_conv_int_l:
-      return check_modification_of_const_class_field(v.as<meta_op_unary>()->expr(), true);
+      return check_modifications(v.as<meta_op_unary>()->expr(), true);
 
     case op_foreach: {
       auto foreach_param = v.as<op_foreach>()->params();
       if (foreach_param->x()->ref_flag) {
-        check_modification_of_const_class_field(foreach_param->xs(), true);
+        check_modifications(foreach_param->xs(), true);
       }
       break;
     }
@@ -44,14 +44,14 @@ void CheckModificationsOfConstFields::check_modification_of_const_class_field(Ve
       for (int i = 0; i < cnt_params; ++i) {
         auto param = func->get_params()[i].try_as<op_func_param>();
         if (param && param->var()->ref_flag) {
-          check_modification_of_const_class_field(func_call->args()[i], true);
+          check_modifications(func_call->args()[i], true);
         }
       }
       break;
     }
 
     case op_index:
-      return check_modification_of_const_class_field(v.as<op_index>()->array(), write_flag);
+      return check_modifications(v.as<op_index>()->array(), write_flag);
 
     case op_instance_prop: {
       if (write_flag) {
