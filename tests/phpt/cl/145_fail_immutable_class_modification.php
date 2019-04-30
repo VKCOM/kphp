@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Modification of const field: v/
+/Modification of const/
 <?php
 
 /** @kphp-immutable-class */

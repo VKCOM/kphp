@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Modification of const field: y/
+/Modification of const/
 <?php
 
 class Y {
