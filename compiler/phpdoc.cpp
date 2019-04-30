@@ -60,7 +60,7 @@ const std::string php_doc_tag::get_value_token(unsigned long chars_offset) const
   return value.substr(chars_offset, pos - chars_offset);
 }
 
-vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
+vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc, bool enable_error /*= true*/) {
   int line_num_of_function_declaration = stage::get_line();
 
   vector<string> lines(1);
@@ -74,7 +74,9 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
         have_star = true;
         continue;
       }
-      kphp_error(0, "failed to parse php_doc");
+      if (enable_error) {
+        kphp_error(0, "failed to parse php_doc");
+      }
       return vector<php_doc_tag>();
     }
     if (c == '\n') {
@@ -153,8 +155,8 @@ bool PhpDocTypeRuleParser::find_tag_in_phpdoc(const vk::string_view &phpdoc, php
   return false;
 }
 
-bool PhpDocTypeRuleParser::is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type) {
-  auto tags = parse_php_doc(phpdoc);
+bool PhpDocTypeRuleParser::is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, bool enable_error /*= true*/) {
+  auto tags = parse_php_doc(phpdoc, enable_error);
   return std::any_of(tags.begin(), tags.end(),
                      [doc_type](const php_doc_tag &tag) {
                        return tag.type == doc_type;

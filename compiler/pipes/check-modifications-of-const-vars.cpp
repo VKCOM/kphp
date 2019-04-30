@@ -15,7 +15,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
   if (auto set_op = v.try_as<op_set>()) {
     auto lvalue = set_op->lhs();
     if (auto var_inited = lvalue.try_as<op_var>()) {
-      bool const_var_initialization = PhpDocTypeRuleParser::is_tag_in_phpdoc(set_op->phpdoc_str, php_doc_tag::kphp_const);
+      bool const_var_initialization = PhpDocTypeRuleParser::is_tag_in_phpdoc(set_op->phpdoc_str, php_doc_tag::kphp_const, false);
       if (const_var_initialization) {
         var_inited->get_var_id()->marked_as_const = true;
         return;
