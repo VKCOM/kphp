@@ -4,6 +4,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/phpdoc.h"
 
 VertexPtr CheckModificationsOfConstVars::on_enter_vertex(VertexPtr v, LocalT *) {
   check_modifications(v);
@@ -11,6 +12,17 @@ VertexPtr CheckModificationsOfConstVars::on_enter_vertex(VertexPtr v, LocalT *) 
 }
 
 void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_flag) const {
+  if (auto set_op = v.try_as<op_set>()) {
+    auto lvalue = set_op->lhs();
+    if (auto var_inited = lvalue.try_as<op_var>()) {
+      bool const_var_initialization = PhpDocTypeRuleParser::is_tag_in_phpdoc(set_op->phpdoc_str, php_doc_tag::kphp_const);
+      if (const_var_initialization) {
+        var_inited->get_var_id()->marked_as_const = true;
+        return;
+      }
+    }
+  }
+
   if (OpInfo::rl(v->type()) == rl_set) {
     return check_modifications(v.as<meta_op_binary>()->lhs(), true);
   }
@@ -53,14 +65,16 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
     case op_index:
       return check_modifications(v.as<op_index>()->array(), write_flag);
 
+    case op_var:
     case op_instance_prop: {
       if (write_flag) {
-        auto var_of_instance_prop = v->get_var_id();
-        if (var_of_instance_prop && var_of_instance_prop->marked_as_const) {
-          const bool modification_allowed = var_of_instance_prop->class_id &&
-                                            var_of_instance_prop->class_id->construct_function == current_function &&
+        auto const_var = v->get_var_id();
+        if (const_var && const_var->marked_as_const) {
+          const bool modification_allowed = const_var->class_id &&
+                                            const_var->class_id->construct_function == current_function &&
+                                            v->type() == op_instance_prop &&
                                             v.as<op_instance_prop>()->instance()->get_string() == "this";
-          auto err_msg = "Modification of const field: " + TermStringFormat::paint(var_of_instance_prop->name, TermStringFormat::red);
+          auto err_msg = "Modification of const variable: " + TermStringFormat::paint(const_var->name, TermStringFormat::red);
           kphp_error(modification_allowed, err_msg.c_str());
         }
       }

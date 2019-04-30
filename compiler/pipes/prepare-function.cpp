@@ -125,6 +125,18 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         break;
       }
 
+      case php_doc_tag::kphp_const: {
+        for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
+          auto func_param_it = name_to_function_param.find(var_name);
+          kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-const tag var name mismatch. found %s.", var_name.c_str()));
+
+          auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
+          cur_func_param->is_const = true;
+        }
+
+        break;
+      }
+
       default:
         break;
     }

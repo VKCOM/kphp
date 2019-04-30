@@ -27,9 +27,6 @@ VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type
     return it->second;
   }
   VarPtr var = G->create_local_var(current_function, name, type);
-  if (current_function->is_instance_function() && name == "this") {
-    var->marked_as_const = true;
-  }
   kphp_error (registred_vars.insert(make_pair(name, var)).second, format("Redeclaration of local variable: %s", name.c_str()));
 
   return var;
@@ -89,10 +86,12 @@ void RegisterVariablesPass::register_class_static_var(ClassPtr class_id, ClassMe
   f.root->set_var_id(var);
 }
 
-void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
+void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value) {
+  auto var_vertex = param->var().as<op_var>();
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
   var->is_reference = var_vertex->ref_flag;
+  var->marked_as_const = param->is_const;
   kphp_assert (var);
   if (default_value) {
     if (!kphp_error (

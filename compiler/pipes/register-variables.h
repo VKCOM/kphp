@@ -27,7 +27,7 @@ private:
   bool is_global_var(VertexPtr v);
   void register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value);
   void register_class_static_var(ClassPtr class_id, ClassMemberStaticField &f);
-  void register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value);
+  void register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value);
   void register_var(VertexAdaptor<op_var> var_vertex);
   void visit_global_vertex(VertexAdaptor<op_global> global);
   void visit_static_vertex(VertexAdaptor<op_static> stat);
@@ -40,13 +40,12 @@ private:
       kphp_assert (i);
       kphp_assert (i->type() == op_func_param);
       auto param = i.as<op_func_param>();
-      auto var = param->var().as<op_var>();
       VertexPtr default_value;
       if (param->has_default_value() && param->default_value()) {
         default_value = param->default_value();
         visit(param->default_value());
       }
-      register_param_var(var, default_value);
+      register_param_var(param, default_value);
     }
   }
 

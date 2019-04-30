@@ -149,6 +149,10 @@
       "is_callable": {
         "type": "bool",
         "default": "false"
+      },
+      "is_const": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },
