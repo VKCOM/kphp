@@ -7,6 +7,7 @@ private:
   string namespace_name;
   string class_name;
   ClassPtr class_id;
+  ClassPtr lambda_class_id;
 public:
   string get_description() {
     return "Check access modifiers";

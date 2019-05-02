@@ -7,52 +7,59 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
   }
-  class_id = function->get_this_or_topmost_if_lambda()->class_id;
+  lambda_class_id = function->get_this_or_topmost_if_lambda()->class_id;
+  class_id = function->class_id;
   return true;
 }
+
 VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  if (vk::any_of_equal(root->type(), op_var, op_instance_prop)) {
+  AccessType need_access = access_nonmember;
+  ClassPtr access_class;
+  std::string description;
+
+  if (root->type() == op_var) {
     VarPtr var_id = root->get_var_id();
     if (var_id->is_class_static_var()) {
       auto member = var_id->as_class_static_field();
-      string name = var_id->name;
-      size_t pos = name.find("$$");
-
-      kphp_error(member->access_type != access_nonmember,
-                 format("Field wasn't declared: %s", member->local_name().c_str()));
-      kphp_error(member->access_type != access_static_private ||
-                 (class_id && replace_backslashes(class_id->name) == name.substr(0, pos)),
-                 format("Can't access private field %s", member->local_name().c_str()));
-      if (member->access_type == access_static_protected) {
-        kphp_error_act(class_id, format("Can't access protected field %s", member->local_name().c_str()), return root);
-        ClassPtr var_class = var_id->class_id;
-        ClassPtr klass = G->get_class(class_id->name);      // это не class_id! из-за множественного парсинга одного файла
-        while (klass && var_class != klass) {
-          klass = klass->parent_class;
-        }
-        kphp_error(klass, format("Can't access protected field %s", member->local_name().c_str()));
-      }
-    } else if (var_id->is_class_instance_var()) {
+      kphp_assert(member);
+      access_class = var_id->class_id;
+      need_access = member->access_type;
+      description = "static field " + member->local_name();
+    }
+  } else if (root->type() == op_instance_prop) {
+    VarPtr var_id = root->get_var_id();
+    if (var_id->is_class_instance_var()) {
       auto member = var_id->as_class_instance_field();
-
-      bool has_access = member->access_type != access_private ||
-                        vk::any_of_equal(member->var->class_id,
-                                         current_function->class_id,
-                                         current_function->get_this_or_topmost_if_lambda()->class_id);
-
-      kphp_error(has_access, format("Can't access private field %s", member->local_name().c_str()));
+      kphp_assert(member);
+      access_class = var_id->class_id;
+      need_access = member->access_type;
+      description = "field " + member->local_name();
     }
   } else if (root->type() == op_func_call) {
     FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
     if (func_id->access_type != access_nonmember) {
-      string name = func_id->name;
-      size_t pos = name.find("$$");
-      kphp_assert(pos != string::npos);
-      kphp_error(func_id->access_type != access_static_private ||
-                 (class_id && replace_backslashes(class_id->name) == name.substr(0, pos)),
-                 format("Can't access private function %s", name.c_str()));
-      // TODO: check protected
+      access_class = func_id->class_id;
+      need_access = func_id->access_type;
+      //TODO: this is hack, which should be fixed after functions with context are added to static methods list
+      std::string real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
+      if (func_id->context_class->members.has_static_method(real_name)) {
+        description = "static method " + func_id->get_human_readable_name();
+      } else if (func_id->context_class->members.has_instance_method(real_name)) {
+        description = "method " + func_id->get_human_readable_name();
+      }
     }
   }
+
+  if (need_access == access_static_private || need_access == access_private) {
+    kphp_error(class_id == access_class || lambda_class_id == access_class, format("Can't access private %s", description.c_str()));
+  }
+  if (need_access == access_static_protected || need_access == access_protected) {
+    auto is_ok = [&access_class](ClassPtr class_id) {
+      return class_id && (class_id == access_class || class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
+    };
+    kphp_error(is_ok(class_id) || is_ok(lambda_class_id),
+               format("Can't access protected %s", description.c_str()));
+  }
+
   return root;
 }

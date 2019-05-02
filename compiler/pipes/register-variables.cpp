@@ -114,13 +114,15 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
       string class_name = name.substr(0, pos$$);
       string var_name = name.substr(pos$$ + 2);
       ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
+      ClassPtr used_klass = klass;
       kphp_assert(klass);
       while (klass && !klass->members.has_field(var_name)) {
         klass = klass->parent_class;
       }
-      if (kphp_error(klass, format("static field not found: %s", name.c_str()))) {
-        return;
-      }
+      kphp_error_return(klass, format("static field not found: %s", name.c_str()));
+      auto field = klass->members.find_by_local_name<ClassMemberStaticField>(var_name);
+      kphp_error_return(field, format("field %s is not static in klass %s", var_name.c_str(), used_klass->name.c_str()));
+      kphp_error_return(klass == used_klass || field->access_type != access_static_private, format("static field not found: %s", name.c_str()));
       name = replace_backslashes(klass->name) + "$$" + var_name;
     }
     var = get_global_var(name);

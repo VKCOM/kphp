@@ -1,5 +1,7 @@
 #include "compiler/pipes/sort-and-inherit-classes.h"
 
+#include "common/algorithms/hashes.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
@@ -7,7 +9,6 @@
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
-#include "common/algorithms/hashes.h"
 
 /**
  * Через этот pass проходят функции вида
@@ -110,11 +111,13 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   auto local_name = parent_method.local_name();
   auto parent_f = parent_method.function;
   auto parent_class = parent_f->class_id;
-  if (parent_f->is_auto_inherited) {      // A::f() -> B -> C; при A->B сделался A::f$$B
-    return;                               // но при B->C должно быть A::f$$C, а не B::f$$C
-  }                                       // (чтобы B::f$$C не считать required)
-  if (parent_f->is_final) {
-    kphp_error(0, format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
+  /**
+   * A::f() -> B -> C; при A->B сделался A::f$$B
+   * но при B->C должно быть A::f$$C, а не B::f$$C
+   * (чтобы B::f$$C не считать required)
+   */
+  if (parent_f->is_auto_inherited || parent_f->context_class != parent_class) {
+    //
     return;
   }
 
@@ -128,6 +131,21 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
 
     G->register_and_require_function(child_function, function_stream);
+  } else {
+    auto child_method = child_class->members.get_static_method(local_name);
+    kphp_assert(child_method);
+    if (parent_f->is_final) {
+      kphp_error(0, format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
+      return;
+    }
+    if (parent_method.access_type == access_static_private) {
+      kphp_error(0, format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
+      return;
+    }
+    if (parent_method.access_type != child_method->access_type) {
+      kphp_error(0, format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
+      return;
+    }
   }
 
   // контекстная функция имеет название baseclassname$$fname$$contextclassname
@@ -138,6 +156,8 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 
   PatchInheritedMethodPass pass(function_stream);
   run_function_pass(context_function, &pass);
+  stage::set_file(child_class->file_id);
+  stage::set_function(FunctionPtr{});
 
   G->register_and_require_function(context_function, function_stream);
 }
@@ -145,6 +165,9 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 
 
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
+  stage::set_file(child_class->file_id);
+  stage::set_function(FunctionPtr{});
+  
   kphp_error_return(parent_class->is_class() && child_class->is_class(),
                     format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
 
@@ -158,6 +181,14 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   for (; parent_class; parent_class = parent_class->parent_class) {
     parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
       inherit_static_method_from_parent(child_class, m, function_stream);
+    });
+    parent_class->members.for_each([&](const ClassMemberStaticField &f) {
+      if (auto field = child_class->members.get_static_field(f.local_name())) {
+        kphp_error(f.access_type != access_static_private,
+          format("Can't redeclare private static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
+        kphp_error(f.access_type == field->access_type,
+                   format("Can't change access type for static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
+      }
     });
   }
 }
