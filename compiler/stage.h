@@ -3,14 +3,18 @@
 #include "compiler/data/data_ptr.h"
 #include "compiler/location.h"
 
-#define compiler_assert(x, y, level)  ({\
-  int kphp_error_res__ = 0;\
-  if (!(x)) {\
-    kphp_error_res__ = 1;\
-    on_compilation_error (#x, __FILE__, __LINE__, y, level);\
-  }\
-  kphp_error_res__;\
+#define compiler_assert_(x, y, level, unreachable)  ({          \
+  int kphp_error_res__ = 0;                                     \
+  if (!(x)) {                                                   \
+    kphp_error_res__ = 1;                                       \
+    on_compilation_error (#x, __FILE__, __LINE__, y, level);    \
+    unreachable;                                                \
+  }                                                             \
+  kphp_error_res__;                                             \
 })
+
+#define compiler_assert(x, y, level) compiler_assert_(x, y, level,)
+#define compiler_assert_noret(x, y, level) compiler_assert_(x, y, level, __builtin_unreachable())
 
 #define kphp_warning(y)  compiler_assert (0, y, WRN_ASSERT_LEVEL)
 #define kphp_typed_warning(x, y) do {                                      \
@@ -26,11 +30,13 @@
     }                                                                      \
   }                                                                        \
 } while (0)
+
+
 #define kphp_error(x, y) compiler_assert (x, y, CE_ASSERT_LEVEL)
 #define kphp_error_act(x, y, act) if (kphp_error (x, y)) act;
 #define kphp_error_return(x, y) kphp_error_act (x, y, return)
-#define kphp_assert(x) compiler_assert (x, "", FATAL_ASSERT_LEVEL)
-#define kphp_assert_msg(x, y) compiler_assert (x, y, FATAL_ASSERT_LEVEL)
+#define kphp_assert(x) compiler_assert_noret (x, "", FATAL_ASSERT_LEVEL)
+#define kphp_assert_msg(x, y) compiler_assert_noret (x, y, FATAL_ASSERT_LEVEL)
 #define kphp_fail() kphp_assert (0); _exit(1);
 
 enum AssertLevelT {
