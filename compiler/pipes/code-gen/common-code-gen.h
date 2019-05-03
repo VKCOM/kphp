@@ -1,7 +1,8 @@
 #pragma once
+#include "compiler/code-gen/writer.h"
 #include "compiler/pipes/code-gen/code-gen.h"
-#include "compiler/threading/tls.h"
 #include "compiler/stage.h"
+#include "compiler/threading/tls.h"
 
 #define NL NewLine()
 #define BEGIN OpenBlock()

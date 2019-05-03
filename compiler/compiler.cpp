@@ -10,12 +10,16 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#include "common/algorithms/hashes.h"
+#include "common/crc32.h"
+#include "common/type_traits/function_traits.h"
+#include "common/version-string.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
-#include "compiler/io.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
 #include "compiler/name-gen.h"
@@ -77,10 +81,6 @@
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
-#include "common/algorithms/hashes.h"
-#include "common/crc32.h"
-#include "common/type_traits/function_traits.h"
-#include "common/version-string.h"
 
 class lockf_wrapper {
   std::string locked_filename_;

@@ -1,4 +1,4 @@
-#include "compiler/io.h"
+#include "compiler/code-gen/writer.h"
 
 #include <dirent.h>
 #include <fcntl.h>

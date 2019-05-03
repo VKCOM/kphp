@@ -17,7 +17,6 @@
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/index.h"
-#include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/stats.h"

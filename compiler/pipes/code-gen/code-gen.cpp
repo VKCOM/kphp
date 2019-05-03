@@ -6,6 +6,7 @@
 #include "common/algorithms/find.h"
 #include "common/mixin/not_copyable.h"
 
+#include "compiler/code-gen/writer.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
@@ -14,7 +15,6 @@
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
-#include "compiler/io.h"
 #include "compiler/pipes/code-gen/common-code-gen.h"
 #include "compiler/pipes/code-gen/tl2cpp.h"
 #include "compiler/scheduler/scheduler-base.h"

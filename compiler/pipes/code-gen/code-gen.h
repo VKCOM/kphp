@@ -1,6 +1,6 @@
 #pragma once
 
-#include "compiler/io.h"
+#include "compiler/code-gen/writer-data.h"
 #include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 

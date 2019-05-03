@@ -7,7 +7,6 @@
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
-#include "compiler/io.h"
 
 int stage::warnings_count;
 

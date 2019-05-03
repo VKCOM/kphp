@@ -2,13 +2,13 @@
 
 #include <regex>
 
+#include "compiler/code-gen/writer.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
-#include "compiler/io.h"
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
 

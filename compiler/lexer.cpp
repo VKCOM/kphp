@@ -2,10 +2,10 @@
 
 #include <utility>
 
-#include "compiler/io.h"
+#include "auto/compiler/keywords_set.hpp"
+
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
-#include "auto/compiler/keywords_set.hpp"
 
 template<class T>
 class Singleton {

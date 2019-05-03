@@ -13,7 +13,6 @@
 #include "compiler/data/lambda-generator.h"
 #include "compiler/data/src-file.h"
 #include "compiler/debug.h"
-#include "compiler/io.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
