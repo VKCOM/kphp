@@ -13,10 +13,10 @@
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
 
-Writer::Writer() :
+Writer::Writer(DataStream<WriterData> &os) :
   state(w_stopped),
   data(),
-  callback(nullptr),
+  os(os),
   indent_level(0),
   need_indent(false),
   lock_comments_cnt(1) {
@@ -43,9 +43,6 @@ void Writer::set_file_name(const string &file_name, const string &subdir) {
   data.subdir = subdir;
 }
 
-void Writer::set_callback(WriterCallbackBase *new_callback) {
-  callback = new_callback;
-}
 
 void Writer::begin_write(bool compile_with_debug_info_flag, bool compile_with_crc) {
   assert (state == w_stopped);
@@ -60,8 +57,9 @@ void Writer::begin_write(bool compile_with_debug_info_flag, bool compile_with_cr
 void Writer::end_write() {
   end_line();
 
-  if (callback != nullptr) {
-    callback->on_end_write(std::move(data));
+  if (!stage::has_error()) {
+    data.calc_crc();
+    os << std::move(data);
   }
 
   assert (state == w_running);

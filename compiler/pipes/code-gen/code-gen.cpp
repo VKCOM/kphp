@@ -23,24 +23,6 @@
 
 struct PlainCode;
 
-class WriterCallback : public WriterCallbackBase {
-private:
-  DataStream<WriterData> &os;
-public:
-  WriterCallback(DataStream<WriterData> &os, const string &dir __attribute__((unused)) = "./") :
-    os(os) {
-  }
-
-  void on_end_write(WriterData &&data) {
-    if (stage::has_error()) {
-      return;
-    }
-
-    data.calc_crc();
-    os << std::move(data);
-  }
-};
-
 inline void compile_vertex(VertexPtr, CodeGenerator &W);
 
 #define NL NewLine()
@@ -3710,7 +3692,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   const vector<ClassPtr> &all_classes = G->get_classes();
 
   //TODO: delete W_ptr
-  CodeGenerator *W_ptr = new CodeGenerator();
+  CodeGenerator *W_ptr = new CodeGenerator(os);
   CodeGenerator &W = *W_ptr;
 
   if (G->env().get_use_safe_integer_arithmetic()) {
@@ -3719,8 +3701,6 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
 
   G->init_dest_dir();
   G->load_index();
-
-  W.init(new WriterCallback(os));
 
   vector<SrcFilePtr> main_files = G->get_main_files();
   std::unordered_set<FunctionPtr> main_functions(main_files.size());

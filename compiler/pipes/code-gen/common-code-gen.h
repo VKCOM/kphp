@@ -1,4 +1,9 @@
 #pragma once
+
+#include <memory>
+
+#include "common/smart_ptrs/make_unique.h"
+
 #include "compiler/code-gen/writer.h"
 #include "compiler/pipes/code-gen/code-gen.h"
 #include "compiler/stage.h"
@@ -19,61 +24,31 @@ struct CGContext {
 
 class CodeGenerator {
 private:
-  TLS<Writer> *master_writer;
-  Writer *writer;
-  WriterCallbackBase *callback_;
+  std::unique_ptr<Writer> writer;
+  DataStream<WriterData> &os;
   CGContext context;
-  bool own_flag;
 public:
 
-  CodeGenerator() :
-    master_writer(nullptr),
+  CodeGenerator(DataStream<WriterData> &os) :
     writer(nullptr),
-    callback_(nullptr),
-    context(),
-    own_flag(false) {
+    os(os),
+    context() {
   }
 
   CodeGenerator(const CodeGenerator &from) :
-    master_writer(from.master_writer),
     writer(nullptr),
-    callback_(from.callback_),
-    context(from.context),
-    own_flag(false) {
+    os(from.os),
+    context(from.context) {
   }
 
   CodeGenerator &operator=(const CodeGenerator &) = delete;
-
-  void init(WriterCallbackBase *new_callback) {
-    master_writer = new TLS<Writer>();
-    callback_ = new_callback;
-    own_flag = true;
-  }
-
-  void clear() {
-    if (own_flag) {
-      delete master_writer;
-      delete callback_;
-      own_flag = false;
-    }
-    master_writer = nullptr;
-    callback_ = nullptr;
-  }
-
-  ~CodeGenerator() {
-    clear();
-  }
 
   void use_safe_integer_arithmetic(bool flag = true) {
     context.use_safe_integer_arithmetic = flag;
   }
 
-  WriterCallbackBase *callback() {
-    return callback_;
-  }
-
-  inline void lock_writer();
-  inline void unlock_writer();
+  inline void create_writer();
+  inline void clear_writer();
 
   inline CodeGenerator &operator<<(char *s);
   inline CodeGenerator &operator<<(const char *s);
@@ -196,14 +171,13 @@ inline CodeGenerator &CodeGenerator::operator<<(VertexAdaptor<Op> vertex) {
   return (*this) << VertexCompiler(vertex);
 }
 
-inline void CodeGenerator::lock_writer() {
+inline void CodeGenerator::create_writer() {
   assert (writer == nullptr);
-  writer = master_writer->lock_get();
+  writer = vk::make_unique<Writer>(os);
 }
 
-inline void CodeGenerator::unlock_writer() {
+inline void CodeGenerator::clear_writer() {
   assert (writer != nullptr);
-  master_writer->unlock_get(writer);
   writer = nullptr;
 }
 
@@ -231,15 +205,14 @@ inline OpenFile::OpenFile(const string &file_name, const string &subdir,
 }
 
 inline void OpenFile::compile(CodeGenerator &W) const {
-  W.lock_writer();
-  W.get_writer().set_callback(W.callback());
+  W.create_writer();
   W.get_writer().begin_write(compile_with_debug_info_flag, compile_with_crc);
   W.get_writer().set_file_name(file_name, subdir);
 }
 
 inline void CloseFile::compile(CodeGenerator &W) const {
   W.get_writer().end_write();
-  W.unlock_writer();
+  W.clear_writer();
 }
 
 inline void NewLine::compile(CodeGenerator &W) const {

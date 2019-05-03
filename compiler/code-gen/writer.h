@@ -5,14 +5,8 @@
 #include "compiler/code-gen/writer-data.h"
 #include "compiler/common.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/utils/string-utils.h"
-
-class WriterCallbackBase {
-public:
-  virtual ~WriterCallbackBase() {}
-
-  virtual void on_end_write(WriterData &&data) = 0;
-};
 
 class Writer : private vk::not_copyable {
 private:
@@ -25,7 +19,7 @@ private:
 
   WriterData data;
 
-  WriterCallbackBase *callback;
+  DataStream<WriterData> &os;
 
   int indent_level;
   bool need_indent;
@@ -37,11 +31,10 @@ private:
   void end_line();
 
 public:
-  Writer();
+  Writer(DataStream<WriterData> &os);
   ~Writer() = default;
 
   void set_file_name(const string &file_name, const string &subdir = "");
-  void set_callback(WriterCallbackBase *new_callback);
 
   void begin_write(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
   void end_write();
