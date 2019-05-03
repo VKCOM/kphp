@@ -5,6 +5,7 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/tlo-parsing/tlo-parsing-tools.h"
 
+#include "compiler/code-gen/includes.h"
 #include "compiler/compiler-core.h"
 #include "compiler/pipes/code-gen/common-code-gen.h"
 

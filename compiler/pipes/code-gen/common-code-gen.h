@@ -53,19 +53,6 @@ struct CloseBlock {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct ExternInclude {
-  inline explicit ExternInclude(const vk::string_view &file_name);
-  inline void compile(CodeGenerator &W) const;
-
-protected:
-  vk::string_view file_name;
-};
-
-struct Include : private ExternInclude {
-  using ExternInclude::ExternInclude;
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct VertexCompiler {
   VertexPtr vertex;
   inline VertexCompiler(VertexPtr vertex);
@@ -120,19 +107,6 @@ inline void OpenBlock::compile(CodeGenerator &W) const {
 
 inline void CloseBlock::compile(CodeGenerator &W) const {
   W << Indent(-2) << "}";
-}
-
-inline ExternInclude::ExternInclude(const vk::string_view &file_name) :
-  file_name(file_name) {
-}
-
-inline void ExternInclude::compile(CodeGenerator &W) const {
-  W << "#include \"" << file_name << "\"" << NL;
-}
-
-inline void Include::compile(CodeGenerator &W) const {
-  W.get_writer().add_include(static_cast<std::string>(file_name));
-  ExternInclude::compile(W);
 }
 
 void compile_string_raw(const string &str, CodeGenerator &W);
