@@ -4,12 +4,12 @@
 
 #include "compiler/compiler-core.h"
 
-void WriteFilesF::execute(WriterData *data, EmptyStream &) {
+void WriteFilesF::execute(WriterData data, EmptyStream &) {
   stage::set_name("Write files");
   string dir = G->cpp_dir;
 
-  string cur_file_name = data->file_name;
-  string cur_subdir = data->subdir;
+  string cur_file_name = data.file_name;
+  string cur_subdir = data.subdir;
 
   string full_file_name = dir;
   if (!cur_subdir.empty()) {
@@ -20,12 +20,12 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
 
   File *file = G->get_file_info(full_file_name);
   file->needed = true;
-  file->includes = data->get_includes();
-  file->lib_includes = data->get_lib_includes();
+  file->includes = data.get_includes();
+  file->lib_includes = data.get_lib_includes();
 
-  file->compile_with_debug_info_flag = data->compile_with_debug_info();
+  file->compile_with_debug_info_flag = data.compile_with_debug_info();
 
-  if (file->on_disk && data->compile_with_crc()) {
+  if (file->on_disk && data.compile_with_crc()) {
     if (file->crc64 == (unsigned long long)-1) {
       FILE *old_file = fopen(full_file_name.c_str(), "r");
       dl_passert (old_file != nullptr,
@@ -51,11 +51,11 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   bool need_del = false;
   bool need_fix = false;
   bool need_save_time = false;
-  const unsigned long long crc = data->calc_crc();
+  const unsigned long long crc = data.calc_crc();
   string code_str;
-  data->dump(code_str);
+  data.dump(code_str);
   const unsigned long long crc_with_comments = compute_crc64(code_str.c_str(), code_str.length());
-  if (file->on_disk && data->compile_with_crc()) {
+  if (file->on_disk && data.compile_with_crc()) {
     if (file->crc64 != crc) {
       need_fix = true;
       need_del = true;
@@ -85,7 +85,7 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
     dl_passert (dest_file != nullptr,
                 format("Failed to open [%s] for write\n", full_file_name.c_str()));
 
-    if (data->compile_with_crc()) {
+    if (data.compile_with_crc()) {
       dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", ~crc));
       dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
       dl_pcheck (fprintf(dest_file, "%s", code_str.c_str()));
@@ -114,5 +114,4 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
     dl_assert (mtime > 0, "Stat failed");
     kphp_error(!need_save_time || file->mtime == mtime_before, "Failed to set previous mtime\n");
   }
-  delete data;
 }

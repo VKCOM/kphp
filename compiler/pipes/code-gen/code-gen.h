@@ -6,7 +6,7 @@
 
 class CodeGenerator;
 
-class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData*> {
+class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
   map<string, size_t> subdir_hash;
   void prepare_generate_class(ClassPtr klass);
   void prepare_generate_function(FunctionPtr func);
@@ -19,5 +19,5 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData*> {
 
 public:
 
-  void on_finish(DataStream<WriterData *> &os) final;
+  void on_finish(DataStream<WriterData> &os) final;
 };

@@ -11,7 +11,7 @@ class WriterCallbackBase {
 public:
   virtual ~WriterCallbackBase() {}
 
-  virtual void on_end_write(WriterData *data) = 0;
+  virtual void on_end_write(WriterData &&data) = 0;
 };
 
 class Writer : private vk::not_copyable {

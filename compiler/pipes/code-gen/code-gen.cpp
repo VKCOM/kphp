@@ -25,20 +25,19 @@ struct PlainCode;
 
 class WriterCallback : public WriterCallbackBase {
 private:
-  DataStream<WriterData *> &os;
+  DataStream<WriterData> &os;
 public:
-  WriterCallback(DataStream<WriterData *> &os, const string &dir __attribute__((unused)) = "./") :
+  WriterCallback(DataStream<WriterData> &os, const string &dir __attribute__((unused)) = "./") :
     os(os) {
   }
 
-  void on_end_write(WriterData *data) {
+  void on_end_write(WriterData &&data) {
     if (stage::has_error()) {
       return;
     }
 
-    WriterData *data_copy = new WriterData(std::move(*data));
-    data_copy->calc_crc();
-    os << data_copy;
+    data.calc_crc();
+    os << std::move(data);
   }
 };
 
@@ -3701,7 +3700,7 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / 4096u;
 }
 
-void CodeGenF::on_finish(DataStream<WriterData *> &os) {
+void CodeGenF::on_finish(DataStream<WriterData> &os) {
   stage::set_name("GenerateCode");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();

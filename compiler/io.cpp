@@ -61,7 +61,7 @@ void Writer::end_write() {
   end_line();
 
   if (callback != nullptr) {
-    callback->on_end_write(&data);
+    callback->on_end_write(std::move(data));
   }
 
   assert (state == w_running);
