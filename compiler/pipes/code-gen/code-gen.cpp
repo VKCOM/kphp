@@ -517,7 +517,7 @@ inline void CloseNamespace::compile(CodeGenerator &W) const {
 }
 
 inline void LibInclude::compile(CodeGenerator &W) const {
-  W.get_writer().add_lib_include(static_cast<std::string>(plain_code_.str));
+  W.get_writer().add_lib_include(static_cast<std::string>(file_name));
   ExternInclude::compile(W);
 }
 

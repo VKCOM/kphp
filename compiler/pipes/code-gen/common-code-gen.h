@@ -45,14 +45,6 @@ struct Indent {
   inline void compile(CodeGenerator &W) const;
 };
 
-struct PlainCode {
-  vk::string_view str;
-  inline PlainCode(const char *s);
-  inline PlainCode(const string &s);
-  inline PlainCode(const vk::string_view &s);
-  inline void compile(CodeGenerator &W) const;
-};
-
 struct OpenBlock {
   inline void compile(CodeGenerator &W) const;
 };
@@ -62,11 +54,11 @@ struct CloseBlock {
 };
 
 struct ExternInclude {
-  inline explicit ExternInclude(const PlainCode &plain_code);
+  inline explicit ExternInclude(const vk::string_view &file_name);
   inline void compile(CodeGenerator &W) const;
 
 protected:
-  const PlainCode &plain_code_;
+  vk::string_view file_name;
 };
 
 struct Include : private ExternInclude {
@@ -122,23 +114,6 @@ inline void Indent::compile(CodeGenerator &W) const {
   W.get_writer().indent(val);
 }
 
-inline PlainCode::PlainCode(const char *s) :
-  str(s, s + strlen(s)) {
-}
-
-inline PlainCode::PlainCode(const string &s) :
-  str(&s[0], &s[0] + s.size()) {
-}
-
-inline PlainCode::PlainCode(const vk::string_view &s) :
-  str(s) {
-}
-
-inline void PlainCode::compile(CodeGenerator &W) const {
-  W.get_writer().append(str);
-}
-
-
 inline void OpenBlock::compile(CodeGenerator &W) const {
   W << "{" << NL << Indent(+2);
 }
@@ -147,16 +122,16 @@ inline void CloseBlock::compile(CodeGenerator &W) const {
   W << Indent(-2) << "}";
 }
 
-inline ExternInclude::ExternInclude(const PlainCode &plain_code) :
-  plain_code_(plain_code) {
+inline ExternInclude::ExternInclude(const vk::string_view &file_name) :
+  file_name(file_name) {
 }
 
 inline void ExternInclude::compile(CodeGenerator &W) const {
-  W << "#include \"" << plain_code_ << "\"" << NL;
+  W << "#include \"" << file_name << "\"" << NL;
 }
 
 inline void Include::compile(CodeGenerator &W) const {
-  W.get_writer().add_include(static_cast<std::string>(plain_code_.str));
+  W.get_writer().add_include(static_cast<std::string>(file_name));
   ExternInclude::compile(W);
 }
 
