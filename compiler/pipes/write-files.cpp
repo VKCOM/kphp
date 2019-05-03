@@ -3,6 +3,7 @@
 #include "common/crc32.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/stage.h"
 
 void WriteFilesF::execute(WriterData data, EmptyStream &) {
   stage::set_name("Write files");

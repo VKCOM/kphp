@@ -11,6 +11,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/lambda-generator.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/debug.h"
 #include "compiler/name-gen.h"

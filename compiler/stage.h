@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unistd.h>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/location.h"
 

@@ -5,6 +5,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 
 class CollectRequiredPass : public FunctionPassBase {

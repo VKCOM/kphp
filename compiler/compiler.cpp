@@ -4,7 +4,9 @@
 #include <fcntl.h>
 #include <ftw.h>
 #include <functional>
+#include <iostream>
 #include <mutex>
+#include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -16,14 +18,8 @@
 #include "common/version-string.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/const-manipulations.h"
-#include "compiler/data/data_ptr.h"
-#include "compiler/function-pass.h"
-#include "compiler/gentree.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
-#include "compiler/name-gen.h"
-#include "compiler/phpdoc.h"
 #include "compiler/pipes/analyzer.h"
 #include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/pipes/calc-bad-vars.h"
@@ -42,7 +38,7 @@
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
 #include "compiler/pipes/check-ub.h"
-#include "compiler/pipes/code-gen/code-gen.h"
+#include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"

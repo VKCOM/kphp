@@ -6,10 +6,8 @@
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
-#include "compiler/data/lambda-class-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/var-node.h"
-#include "compiler/stage.h"
-#include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData : private vk::not_copyable {

@@ -1,8 +1,9 @@
 #pragma once
-#include "compiler/data/var-data.h"
 
 #include <atomic>
 #include <ostream>
+
+#include "compiler/data/var-data.h"
 
 class Stats {
 public:

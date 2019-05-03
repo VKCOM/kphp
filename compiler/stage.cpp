@@ -1,11 +1,13 @@
 #include "compiler/stage.h"
 
 #include <regex>
+#include <sstream>
 
 #include "common/termformat/termformat.h"
 
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 
 int stage::warnings_count;
@@ -246,7 +248,7 @@ const string &stage::get_function_name() {
 string stage::to_str(const Location &new_location) {
   set_location(new_location);
   FunctionPtr function = get_function();
-  stringstream ss;
+  std::stringstream ss;
 
   // Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
   ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();

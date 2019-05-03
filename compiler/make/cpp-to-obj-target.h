@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include "compiler/make/target.h"
 
 class Cpp2ObjTarget : public Target {

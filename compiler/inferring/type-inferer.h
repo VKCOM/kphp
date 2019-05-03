@@ -1,5 +1,6 @@
 #pragma once
 
+#include <queue>
 
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
@@ -7,7 +8,7 @@
 
 namespace tinf {
 
-using NodeQueue = queue<Node *>;
+using NodeQueue = std::queue<Node *>;
 
 class TypeInferer {
 private:

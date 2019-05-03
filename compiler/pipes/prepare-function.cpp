@@ -1,10 +1,13 @@
 #include "compiler/pipes/prepare-function.h"
 
+#include <sstream>
 #include <unordered_map>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/phpdoc.h"
+#include "compiler/vertex.h"
 
 //static void check_template_function(FunctionPtr func) {
 //  if (!func->is_template) return;

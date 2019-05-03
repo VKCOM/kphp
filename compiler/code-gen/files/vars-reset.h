@@ -1,0 +1,23 @@
+#pragma once
+
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/data/data_ptr.h"
+
+struct GlobalVarsReset {
+  GlobalVarsReset(SrcFilePtr main_file);
+
+  void compile(CodeGenerator &W) const;
+
+  static void compile_part(FunctionPtr func, const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W);
+
+  static void compile_func(FunctionPtr func, const std::set<FunctionPtr> &used_functions, int parts_n, CodeGenerator &W);
+
+  static void collect_used_funcs_and_vars(
+    FunctionPtr func, std::set<FunctionPtr> *visited_functions,
+    std::set<VarPtr> *used_vars, int used_vars_cnt);
+
+  static void declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W);
+
+private:
+  SrcFilePtr main_file_;
+};

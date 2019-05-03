@@ -1,11 +1,13 @@
 #include "compiler/data/function-data.h"
 
 #include <regex>
+#include <sstream>
 
 #include "compiler/code-gen/writer.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lambda-class-data.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
@@ -177,7 +179,7 @@ string FunctionData::get_resumable_path() const {
     names.push_back(f->name);
     f = f->wait_prev;
   }
-  stringstream res;
+  std::stringstream res;
   for (int i = 0; i < names.size(); i++) {
     if (i) {
       res << " -> ";

@@ -1,13 +1,14 @@
-#include "compiler/pipes/code-gen/tl2cpp.h"
+#include "compiler/code-gen/files/tl2cpp.h"
 
 #include <string>
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/tlo-parsing/tlo-parsing-tools.h"
 
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
+#include "compiler/code-gen/raw-data.h"
 #include "compiler/compiler-core.h"
-#include "compiler/pipes/code-gen/common-code-gen.h"
 
 namespace tl_gen {
 static const std::string T_TYPE = "Type";
@@ -1071,8 +1072,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
     W << "string " << cpp_tl_const_str(s) << ";" << NL;
   });
-  vector<int> const_string_shifts;
-  compile_raw_data(W, const_string_shifts, tl_const_vars);
+  auto const_string_shifts = compile_raw_data(W, tl_const_vars);
   W << "void tl_str_const_init() " << BEGIN;
   int i = 0;
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {

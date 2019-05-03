@@ -1,5 +1,7 @@
 #include "compiler/inferring/var-node.h"
 
+#include <sstream>
+
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
@@ -62,7 +64,7 @@ string tinf::VarNode::get_var_as_argument_name() {
 }
 
 string tinf::VarNode::get_description() {
-  stringstream ss;
+  std::stringstream ss;
   if (is_variable()) {
     //Вывод должен совпадать с выводом в соответсвующей ветке в get_expr_description, чтобы детектились и убирались дубликаты в стектрейсе
     ss << "as variable:" << "  " << get_var_name() << " : " << colored_type_out(tinf::get_type(var_));

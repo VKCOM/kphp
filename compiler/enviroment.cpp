@@ -1,7 +1,10 @@
 #include "compiler/enviroment.h"
 
 #include <fstream>
+#include <iostream>
 #include <openssl/sha.h>
+#include <sstream>
+#include <unistd.h>
 
 #include "common/version-string.h"
 
@@ -504,7 +507,7 @@ bool KphpEnviroment::init() {
   string user_cxx_flags;
   init_env_var(&user_cxx_flags, "CXXFLAGS", "-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
   init_env_var(&cxx_, "CXX", "g++");
-  stringstream ss;
+  std::stringstream ss;
   ss << user_cxx_flags;
   ss << " -iquote" << get_path() << " -iquote" << get_path() << "PHP/";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";

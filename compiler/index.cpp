@@ -235,7 +235,14 @@ File *Index::insert_file(std::string path) {
 }
 
 vector<File *> Index::get_files() const {
-  return get_map_values(files);
+  std::vector<File *> res;
+  res.reserve(files.size());
+
+  for (const auto &kv: files) {
+    res.emplace_back(kv.second);
+  }
+
+  return res;
 }
 
 //stupid text version. to be improved

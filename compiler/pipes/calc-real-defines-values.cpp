@@ -1,5 +1,7 @@
 #include "compiler/pipes/calc-real-defines-values.h"
 
+#include <sstream>
+
 #include "common/version-string.h"
 
 CalcRealDefinesValuesF::CalcRealDefinesValuesF() : Base() {

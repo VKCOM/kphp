@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <regex>
+#include <sstream>
 
 #include "common/termformat/termformat.h"
 
@@ -291,7 +292,7 @@ string RestrictionLess::get_stacktrace_text() {
     width[1] = std::max(width[1], (int)row.col[1].length() - TermStringFormat::get_length_without_symbols(row.col[1]));
     width[2] = std::max(width[2], (int)row.col[2].length());
   }
-  stringstream ss;
+  std::stringstream ss;
   for (auto &row : rows) {
     ss << std::setw(width[1] + 3 + TermStringFormat::get_length_without_symbols(row.col[1])) << std::left << row.col[1];
     ss << std::setw(width[2]) << std::left << row.col[2] << std::endl;

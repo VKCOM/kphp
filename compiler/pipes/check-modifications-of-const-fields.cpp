@@ -2,6 +2,7 @@
 
 #include "common/termformat/termformat.h"
 
+#include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 
 VertexPtr CheckModificationsOfConstFields::on_enter_vertex(VertexPtr v, LocalT *) {

@@ -25,7 +25,9 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/vertex.h"
 
 AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
 

@@ -1,10 +1,13 @@
 #include "compiler/make/make.h"
 
+#include <forward_list>
+#include <queue>
 #include <unordered_map>
 
 #include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/make/cpp-to-obj-target.h"
 #include "compiler/make/file-target.h"
 #include "compiler/make/hardlink-or-copy.h"
@@ -12,6 +15,8 @@
 #include "compiler/make/objs-to-bin-target.h"
 #include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
+#include "compiler/stage.h"
+#include "compiler/threading/profiler.h"
 
 class MakeSetup {
 private:

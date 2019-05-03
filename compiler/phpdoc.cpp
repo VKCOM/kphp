@@ -4,9 +4,11 @@
 #include <utility>
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/function-data.h"
+#include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/vertex.h"
-#include "compiler/gentree.h"
 
 using std::vector;
 using std::string;

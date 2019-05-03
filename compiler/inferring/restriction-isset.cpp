@@ -1,5 +1,7 @@
 #include "compiler/inferring/restriction-isset.h"
 
+#include <sstream>
+
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
@@ -23,7 +25,7 @@ static string remove_after_tab(const string &s) {
 }
 
 void RestrictionIsset::find_dangerous_isset_warning(const vector<tinf::Node *> &bt, tinf::Node *node, const string &msg __attribute__((unused))) {
-  stringstream ss;
+  std::stringstream ss;
   ss << "isset, !==, ===, is_array or similar function result may differ from PHP\n" <<
      " Probably, this happened because " << remove_after_tab(node->get_description()) << " of type " <<
      type_out(node->get_type()) << " can't be null in KPHP, while it can be in PHP\n" <<

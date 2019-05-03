@@ -2,10 +2,11 @@
 
 #include <string>
 
-#include "compiler/common.h"
+#include "common/algorithms/hashes.h"
+#include "drinkless/dl-utils-lite.h"
+
 #include "compiler/threading/format.h"
 #include "compiler/threading/hash-table.h"
-#include "common/algorithms/hashes.h"
 
 static TSHashTable<Key *> int_keys_ht;
 static TSHashTable<Key *> string_keys_ht;
@@ -36,7 +37,7 @@ Key Key::string_key(const std::string &key) {
 
   auto name_node = string_key_names_ht.at(node->data->id);
   dl_assert(name_node->data == nullptr, "");
-  name_node->data = new string(key);
+  name_node->data = new std::string(key);
 
   return *node->data;
 }
@@ -52,7 +53,7 @@ Key Key::int_key(int key) {
   return *node->data;
 }
 
-string Key::to_string() const {
+std::string Key::to_string() const {
   if (is_int_key()) {
     return format("%d", (id - 1) / 2);
   }

@@ -2,6 +2,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"

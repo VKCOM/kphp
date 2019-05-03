@@ -2,6 +2,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/name-gen.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   // defined('NAME') заменяем на true или false 

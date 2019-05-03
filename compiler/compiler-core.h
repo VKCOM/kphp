@@ -1,30 +1,17 @@
 #pragma once
 
-#include <dirent.h>
-#include <fcntl.h>
-#include <forward_list>
-#include <ftw.h>
-#include <functional>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "common/algorithms/hashes.h"
-
-#include "compiler/compiler.h"
-#include "compiler/data/data_ptr.h"
-#include "compiler/data/lib-data.h"
-#include "compiler/data/var-data.h"
-#include "compiler/function-pass.h"
-#include "compiler/index.h"
-#include "compiler/name-gen.h"
-#include "compiler/stage.h"
-#include "compiler/stats.h"
-#include "compiler/threading/data-stream.h"
-#include "compiler/threading/hash-table.h"
 
 /*** Core ***/
 //Consists mostly of functions that require synchronization
+
+#include "common/algorithms/hashes.h"
+
+#include "compiler/data/data_ptr.h"
+#include "compiler/enviroment.h"
+#include "compiler/index.h"
+#include "compiler/stats.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/hash-table.h"
 
 class CompilerCore {
 private:

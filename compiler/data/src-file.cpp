@@ -1,8 +1,12 @@
 #include "compiler/data/src-file.h"
 
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/stage.h"
 
 SrcFile::SrcFile() :

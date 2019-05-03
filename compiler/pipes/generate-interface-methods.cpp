@@ -1,4 +1,6 @@
 #include "compiler/pipes/generate-interface-methods.h"
+
+#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/interface-generator.h"
 

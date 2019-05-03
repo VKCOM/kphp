@@ -1,6 +1,7 @@
 #include "compiler/pipes/gen-tree-postprocess.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 

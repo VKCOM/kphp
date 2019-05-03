@@ -1,8 +1,9 @@
 #include "compiler/pipes/calc-func-dep.h"
 
-#include "compiler/inferring/public.h"
-
+#include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/public.h"
+#include "compiler/vertex.h"
 
 VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::LocalT *local) {
   if (local->extern_func_call && vertex->type() == op_func_ptr) {

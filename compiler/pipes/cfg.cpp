@@ -1,5 +1,6 @@
 #include "compiler/pipes/cfg.h"
 
+#include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/utils/dsu.h"

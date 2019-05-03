@@ -1,6 +1,9 @@
 #pragma once
 
-#include "compiler/common.h"
+
+#include "common/type_traits/function_traits.h"
+
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/debug.h"
 #include "compiler/stage.h"

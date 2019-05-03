@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common/mixin/not_copyable.h"
+#include <cassert>
 
-#include "compiler/common.h"
+#include "common/mixin/not_copyable.h"
 
 template<typename T>
 struct Trie : private vk::not_copyable {

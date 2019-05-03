@@ -1,7 +1,8 @@
 #include "compiler/pipes/collect-const-vars.h"
 
-#include "compiler/gentree.h"
 #include "compiler/data/src-file.h"
+#include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 
 int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
   if (vertex->type() == op_var) {

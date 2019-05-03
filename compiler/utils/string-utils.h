@@ -1,10 +1,10 @@
 #pragma once
 
+#include <algorithm>
+
 #include "common/wrappers/string_view.h"
 
-#include "compiler/common.h"
-
-inline string get_full_path(const string &file_name) {
+inline std::string get_full_path(const string &file_name) {
   char name[PATH_MAX + 1];
   char *ptr = realpath(file_name.c_str(), name);
 
@@ -108,11 +108,11 @@ static inline void trim(std::string &s) {
   rtrim(s);
 }
 
-static inline string replace_characters(string s, char from, char to) {
+static inline std::string replace_characters(std::string s, char from, char to) {
   std::replace(s.begin(), s.end(), from, to);
   return s;
 }
 
-static inline string replace_backslashes(const string &s) {
+static inline std::string replace_backslashes(const std::string &s) {
   return replace_characters(s, '\\', '$');
 }

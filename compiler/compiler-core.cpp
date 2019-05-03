@@ -1,13 +1,17 @@
 #include "compiler/compiler-core.h"
 
-#include <fstream>
 #include <numeric>
+#include <sstream>
 #include <unordered_map>
 
 #include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/const-manipulations.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/name-gen.h"
 
 static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
@@ -427,7 +431,7 @@ std::string CompilerCore::get_subdir_name() const {
     hash_string += main_file->file_name;
     hash_string += ";";
   }
-  stringstream ss;
+  std::stringstream ss;
   ss << "auto." << name << "-" << std::hex << vk::std_hash(hash_string);
 
   return ss.str();

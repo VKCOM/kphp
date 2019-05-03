@@ -1,9 +1,11 @@
 #include "compiler/inferring/expr-node.h"
 
 #include <regex>
+#include <sstream>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/node-recalc.h"
@@ -618,7 +620,7 @@ static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
 }
 
 string tinf::ExprNode::get_description() {
-  stringstream ss;
+  std::stringstream ss;
   ss << "as expression:" << "  " << get_expr_description(expr_) << "  " << "at " + get_location_text();
   return ss.str();
 }

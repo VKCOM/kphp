@@ -2,8 +2,10 @@
 
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
+#include "compiler/vertex.h"
 
 class GenTree {
 

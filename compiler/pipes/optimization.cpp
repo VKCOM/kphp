@@ -1,7 +1,10 @@
 #include "compiler/pipes/optimization.h"
 
-#include "compiler/inferring/public.h"
+#include <sstream>
+
 #include "common/algorithms/hashes.h"
+
+#include "compiler/inferring/public.h"
 
 namespace {
 template<typename T>

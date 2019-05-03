@@ -1,8 +1,9 @@
 #include "compiler/code-gen/includes.h"
 
+#include "compiler/code-gen/common.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/pipes/code-gen/common-code-gen.h"
 
 ExternInclude::ExternInclude(const vk::string_view &file_name) :
   file_name(file_name) {

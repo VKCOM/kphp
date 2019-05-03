@@ -3,7 +3,6 @@
 #include "common/mixin/not_copyable.h"
 
 #include "compiler/code-gen/writer-data.h"
-#include "compiler/common.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/utils/string-utils.h"

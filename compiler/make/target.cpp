@@ -1,5 +1,7 @@
 #include "compiler/make/target.h"
 
+#include <cassert>
+
 void Target::set_mtime(long long new_mtime) {
   assert(mtime == 0);
   mtime = new_mtime;
