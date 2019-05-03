@@ -25,6 +25,11 @@ struct PlainCode;
 
 inline void compile_vertex(VertexPtr, CodeGenerator &W);
 
+template<Operation Op>
+CodeGenerator& operator<<(CodeGenerator &c, VertexAdaptor<Op> v) {
+  return c << VertexCompiler{v};
+}
+
 #define NL NewLine()
 #define BEGIN OpenBlock()
 #define END CloseBlock()

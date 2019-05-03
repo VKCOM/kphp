@@ -4,6 +4,7 @@
 
 #include "common/smart_ptrs/make_unique.h"
 
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/writer.h"
 #include "compiler/pipes/code-gen/code-gen.h"
 #include "compiler/stage.h"
@@ -13,57 +14,6 @@
 #define BEGIN OpenBlock()
 #define END CloseBlock()
 
-struct CGContext {
-  vector<string> catch_labels;
-  vector<int> catch_label_used;
-  FunctionPtr parent_func;
-  bool use_safe_integer_arithmetic{false};
-  bool resumable_flag{false};
-  bool namespace_opened{false};
-};
-
-class CodeGenerator {
-private:
-  std::unique_ptr<Writer> writer;
-  DataStream<WriterData> &os;
-  CGContext context;
-public:
-
-  CodeGenerator(DataStream<WriterData> &os) :
-    writer(nullptr),
-    os(os),
-    context() {
-  }
-
-  CodeGenerator(const CodeGenerator &from) :
-    writer(nullptr),
-    os(from.os),
-    context(from.context) {
-  }
-
-  CodeGenerator &operator=(const CodeGenerator &) = delete;
-
-  void use_safe_integer_arithmetic(bool flag = true) {
-    context.use_safe_integer_arithmetic = flag;
-  }
-
-  inline void create_writer();
-  inline void clear_writer();
-
-  inline CodeGenerator &operator<<(char *s);
-  inline CodeGenerator &operator<<(const char *s);
-  inline CodeGenerator &operator<<(char c);
-  inline CodeGenerator &operator<<(const string &s);
-  inline CodeGenerator &operator<<(const vk::string_view &s);
-
-  template<Operation Op>
-  inline CodeGenerator &operator<<(VertexAdaptor<Op> vertex);
-  template<class T>
-  CodeGenerator &operator<<(const T &value);
-
-  inline Writer &get_writer();
-  inline CGContext &get_context();
-};
 
 struct OpenFile {
   string file_name;
@@ -139,61 +89,6 @@ inline VertexCompiler::VertexCompiler(VertexPtr vertex) :
 
 inline void VertexCompiler::compile(CodeGenerator &W) const {
   compile_vertex(vertex, W);
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(char *s) {
-  get_writer().append(s);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(const char *s) {
-  get_writer().append(s);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(char c) {
-  get_writer().append(c);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(const string &s) {
-  get_writer().append(s);
-  return *this;
-}
-
-inline CodeGenerator &CodeGenerator::operator<<(const vk::string_view &s) {
-  get_writer().append(s);
-  return *this;
-}
-
-template<Operation Op>
-inline CodeGenerator &CodeGenerator::operator<<(VertexAdaptor<Op> vertex) {
-  return (*this) << VertexCompiler(vertex);
-}
-
-inline void CodeGenerator::create_writer() {
-  assert (writer == nullptr);
-  writer = vk::make_unique<Writer>(os);
-}
-
-inline void CodeGenerator::clear_writer() {
-  assert (writer != nullptr);
-  writer = nullptr;
-}
-
-template<class T>
-CodeGenerator &CodeGenerator::operator<<(const T &value) {
-  value.compile(*this);
-  return *this;
-}
-
-inline Writer &CodeGenerator::get_writer() {
-  assert (writer != nullptr);
-  return *writer;
-}
-
-inline CGContext &CodeGenerator::get_context() {
-  return context;
 }
 
 inline OpenFile::OpenFile(const string &file_name, const string &subdir,

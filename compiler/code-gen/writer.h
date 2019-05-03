@@ -39,25 +39,11 @@ public:
   void begin_write(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
   void end_write();
 
-  inline void append(const string &s) {
-    if (need_indent) {
-      write_indent();
-    }
-    data.append(s.c_str(), s.size());
-  }
-
-  inline void append(const char *s) {
-    if (need_indent) {
-      write_indent();
-    }
-    data.append(s, strlen(s));
-  }
-
-  inline void append(char c) {
+  void append(char c) {
     data.append(c);
   }
 
-  inline void append(const vk::string_view &s) {
+  void append(const vk::string_view &s) {
     if (need_indent) {
       write_indent();
     }
