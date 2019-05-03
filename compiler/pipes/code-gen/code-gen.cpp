@@ -1,8 +1,7 @@
+#include "compiler/pipes/code-gen/code-gen.h"
+
 #include <unordered_map>
 #include <utility>
-
-#include "compiler/pipes/code-gen/code-gen.h"
-#include "compiler/pipes/code-gen/common-code-gen.h"
 
 #include "common/algorithms/find.h"
 #include "common/mixin/not_copyable.h"
@@ -16,11 +15,11 @@
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/io.h"
+#include "compiler/pipes/code-gen/common-code-gen.h"
+#include "compiler/pipes/code-gen/tl2cpp.h"
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"
-#include "compiler/pipes/code-gen/tl2cpp.h"
 #include "compiler/vertex.h"
-
 
 struct PlainCode;
 
@@ -37,8 +36,7 @@ public:
       return;
     }
 
-    WriterData *data_copy = new WriterData();
-    data_copy->swap(*data);
+    WriterData *data_copy = new WriterData(std::move(*data));
     data_copy->calc_crc();
     os << data_copy;
   }

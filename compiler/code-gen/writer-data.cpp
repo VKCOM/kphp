@@ -15,7 +15,6 @@ WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc)
   subdir() {
 }
 
-
 void WriterData::begin_line() {
   lines.emplace_back((int)text.size());
 }
@@ -78,8 +77,7 @@ void WriterData::write_code(string &dest_str, const Line &line) {
   dest_str += '\n';
 }
 
-template<class T>
-void WriterData::dump(string &dest_str, const T &begin, const T &end, SrcFilePtr file) {
+void WriterData::dump(string &dest_str, const vector<Line>::iterator &begin, const vector<Line>::iterator &end, SrcFilePtr file) {
   int l = (int)1e9, r = -1;
 
   if (file) {
@@ -92,8 +90,8 @@ void WriterData::dump(string &dest_str, const T &begin, const T &end, SrcFilePtr
   for (int t = 0; t < 3; t++) {
     int pos = 0, end_pos = 0, cur_id = l - 1;
 
-    T cur_line = begin;
-    for (T i = begin; i != end; i++, pos++) {
+    auto cur_line = begin;
+    for (auto i = begin; i != end; i++, pos++) {
       for (int id : i->line_ids) {
         if (t == 0) {
           if (id < l) {
@@ -178,24 +176,12 @@ void WriterData::dump(string &dest_str) {
       continue;
     }
 
-    decltype(i) j;
-    for (j = i + 1; j != lines.end() && (!j->file || i->file == j->file) && !j->brk; j++) {
+    auto j = i + 1;
+    for (; j != lines.end() && (!j->file || i->file == j->file) && !j->brk; j++) {
     }
     dump(dest_str, i, j, i->file);
     i = j;
   }
-}
-
-void WriterData::swap(WriterData &other) {
-  std::swap(lines, other.lines);
-  std::swap(text, other.text);
-  std::swap(crc, other.crc);
-  std::swap(file_name, other.file_name);
-  std::swap(subdir, other.subdir);
-  std::swap(includes, other.includes);
-  std::swap(lib_includes, other.lib_includes);
-  std::swap(compile_with_debug_info_flag, other.compile_with_debug_info_flag);
-  std::swap(compile_with_crc_flag, other.compile_with_crc_flag);
 }
 
 bool WriterData::compile_with_debug_info() const {

@@ -5,25 +5,12 @@
 class WriterData {
 private:
   struct Line {
-    int begin_pos, end_pos;
+    int begin_pos = 0, end_pos = -1;
     SrcFilePtr file;
-    bool brk;
+    bool brk = false;
     set<int> line_ids;//????
-    Line() :
-      begin_pos(0),
-      end_pos(-1),
-      file(),
-      brk(false),
-      line_ids() {
-    }
-
-    explicit Line(int begin_pos) :
-      begin_pos(begin_pos),
-      end_pos(-1),
-      file(),
-      brk(false),
-      line_ids() {
-    }
+    Line() = default;
+    explicit Line(int begin_pos) : begin_pos(begin_pos){}
   };
 
   vector<Line> lines;
@@ -41,8 +28,7 @@ public:
 
 private:
   void write_code(string &dest_str, const Line &line);
-  template<class T>
-  void dump(string &dest_str, const T &begin, const T &end, SrcFilePtr file);
+  void dump(string &dest_str, const vector<Line>::iterator &begin, const vector<Line>::iterator &end, SrcFilePtr file);
 
 public:
   explicit WriterData(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
@@ -70,8 +56,6 @@ public:
 
   unsigned long long calc_crc();
   void dump(string &dest_str);
-
-  void swap(WriterData &other);
 
   bool compile_with_debug_info() const;
   bool compile_with_crc() const;
