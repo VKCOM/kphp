@@ -1720,7 +1720,7 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const string &name) {
-  static set<string> disallowed_names{"RpcMemcache", "rpc_connection", "Long", "ULong", "UInt"};
+  static std::set<string> disallowed_names{"RpcMemcache", "rpc_connection", "Long", "ULong", "UInt"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }

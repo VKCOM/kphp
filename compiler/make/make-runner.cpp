@@ -2,6 +2,8 @@
 
 #include <wait.h>
 
+#include "drinkless/dl-utils-lite.h"
+
 #include "compiler/compiler-core.h"
 
 void MakeRunner::run_target(Target *target) {
@@ -117,7 +119,7 @@ bool MakeRunner::start_job(Target *target) {
 }
 
 bool MakeRunner::finish_job(int pid, int return_code, int by_signal) {
-  map<int, Target *>::iterator it = jobs.find(pid);
+  auto it = jobs.find(pid);
   assert (it != jobs.end());
   Target *target = it->second;
   if (G->env().get_stats_file() != nullptr) {

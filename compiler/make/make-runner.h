@@ -37,7 +37,7 @@ private:
   void require_target(Target *target);
 
 public:
-  void register_target(Target *target, vector<Target *> &&deps);
+  void register_target(Target *target, std::vector<Target *> &&deps);
   bool make_target(Target *target, int jobs_count = 32);
   MakeRunner() = default;
   ~MakeRunner();

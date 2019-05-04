@@ -1,5 +1,7 @@
 #include "compiler/pipes/collect-required-and-classes.h"
 
+#include "common/wrappers/likely.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"

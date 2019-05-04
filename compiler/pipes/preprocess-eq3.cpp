@@ -1,8 +1,6 @@
-//
-// Created by pavel on 28.09.18.
-//
-
 #include "compiler/pipes/preprocess-eq3.h"
+
+#include "common/wrappers/likely.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root, LocalT *) {
   if (root->type() == op_eq3 || root->type() == op_neq3) {

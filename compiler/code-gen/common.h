@@ -14,7 +14,7 @@ struct OpenFile {
   std::string subdir;
   bool compile_with_debug_info_flag;
   bool compile_with_crc;
-  OpenFile(const string &file_name, const string &subdir = "",
+  OpenFile(const std::string &file_name, const std::string &subdir = "",
            bool compile_with_debug_info_flag = true, bool compile_with_crc = true) :
     file_name(file_name),
     subdir(subdir),

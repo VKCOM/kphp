@@ -35,7 +35,7 @@ VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type
   return var;
 }
 VarPtr RegisterVariablesPass::get_global_var(const string &name) {
-  map<string, VarPtr>::iterator it = registred_vars.find(name);
+  auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
     return it->second;
   }

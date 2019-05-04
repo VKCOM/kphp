@@ -10,6 +10,8 @@
 #include "compiler/data/data_ptr.h"
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
+#include "compiler/stage.h"
+#include "compiler/threading/format.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
@@ -20,14 +22,14 @@
 class TypeData {
 public:
   using KeyValue = std::pair<Key, TypeData *>;
-  using lookup_iterator = vector<KeyValue>::const_iterator;
+  using lookup_iterator = std::vector<KeyValue>::const_iterator;
   using generation_t = long;
   using flags_t = unsigned long;
 private:
 
   class SubkeysValues {
   private:
-    vector<KeyValue> values_pairs;
+    std::vector<KeyValue> values_pairs;
 
   public:
     void add(const Key &key, TypeData *value);
@@ -35,13 +37,13 @@ private:
     TypeData *find(const Key &key) const;
     void clear();
 
-    inline vector<KeyValue>::iterator begin() { return values_pairs.begin(); }
+    inline std::vector<KeyValue>::iterator begin() { return values_pairs.begin(); }
 
-    inline vector<KeyValue>::iterator end() { return values_pairs.end(); }
+    inline std::vector<KeyValue>::iterator end() { return values_pairs.end(); }
 
-    inline vector<KeyValue>::const_iterator begin() const { return values_pairs.begin(); }
+    inline std::vector<KeyValue>::const_iterator begin() const { return values_pairs.begin(); }
 
-    inline vector<KeyValue>::const_iterator end() const { return values_pairs.end(); }
+    inline std::vector<KeyValue>::const_iterator end() const { return values_pairs.end(); }
 
     inline bool empty() const { return values_pairs.empty(); }
 
@@ -143,8 +145,8 @@ public:
 bool operator<(const TypeData &a, const TypeData &b);
 bool operator==(const TypeData &a, const TypeData &b);
 
-string type_out(const TypeData *type, bool cpp_out = true);
-string colored_type_out(const TypeData *type);
+std::string type_out(const TypeData *type, bool cpp_out = true);
+std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
 bool is_equal_types(const TypeData *type1, const TypeData *type2);
@@ -153,7 +155,7 @@ template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag(bool f) {
   bool old_f = get_flag<FLAG>();
   if (old_f) {
-    dl_assert (f, format("It is forbidden to remove flag %d", FLAG));
+    kphp_assert_msg (f, format("It is forbidden to remove flag %d", FLAG));
   } else if (f) {
     flags_ |= FLAG;
     on_changed();

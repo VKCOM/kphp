@@ -1,5 +1,7 @@
 #include "compiler/inferring/node-recalc.h"
 
+#include "common/wrappers/likely.h"
+
 #include "compiler/data/class-data.h"
 #include "compiler/inferring/type-inferer.h"
 #include "compiler/stage.h"

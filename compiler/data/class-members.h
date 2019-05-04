@@ -9,9 +9,14 @@
  */
 #pragma once
 
+#include <map>
+#include <set>
+#include <string>
+
 #include "common/type_traits/function_traits.h"
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
 
@@ -33,8 +38,8 @@ struct ClassMemberStaticMethod {
     access_type(access_type),
     function(function) {}
 
-  const string &global_name() const;
-  string local_name() const;
+  const std::string &global_name() const;
+  std::string local_name() const;
 };
 
 struct ClassMemberInstanceMethod {
@@ -45,21 +50,21 @@ struct ClassMemberInstanceMethod {
     access_type(access_type),
     function(function) {}
 
-  const string &global_name() const;
-  string local_name() const;
+  const std::string &global_name() const;
+  std::string local_name() const;
 };
 
 struct ClassMemberStaticField {
   AccessType access_type;
-  string full_name;
+  std::string full_name;
   VertexAdaptor<op_var> root;
   VertexPtr init_val;          // op_empty в случае отсутствия значения, или какое-то выражение
   vk::string_view phpdoc_str;
 
   ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, const vk::string_view &phpdoc_str);
 
-  const string &global_name() const;
-  const string &local_name() const;
+  const std::string &global_name() const;
+  const std::string &local_name() const;
   const TypeData *get_inferred_type() const;
 };
 
@@ -72,18 +77,18 @@ struct ClassMemberInstanceField {
 
   ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);
 
-  const string &local_name() const;
+  const std::string &local_name() const;
   const TypeData *get_inferred_type() const;
 };
 
 struct ClassMemberConstant {
-  string define_name;
+  std::string define_name;
   VertexPtr value;
 
-  ClassMemberConstant(ClassPtr klass, const string &const_name, VertexPtr value);
+  ClassMemberConstant(ClassPtr klass, const std::string &const_name, VertexPtr value);
 
-  const string &global_name() const;
-  string local_name() const;
+  const std::string &global_name() const;
+  std::string local_name() const;
 };
 
 
@@ -108,8 +113,8 @@ class ClassMembersContainer {
   std::set<uint64_t> names_hashes;
 
   template<class MemberT>
-  void append_member(const string &hash_name, const MemberT &member);
-  bool member_exists(const string &hash_name) const;
+  void append_member(const std::string &hash_name, const MemberT &member);
+  bool member_exists(const std::string &hash_name) const;
 
   template<class CallbackT>
   struct arg_helper {
@@ -169,20 +174,20 @@ public:
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);
   void add_constant(string const_name, VertexPtr value);
 
-  bool has_constant(const string &local_name) const;
-  bool has_field(const string &local_name) const;
-  bool has_instance_method(const string &local_name) const;
-  bool has_static_method(const string &local_name) const;
+  bool has_constant(const std::string &local_name) const;
+  bool has_field(const std::string &local_name) const;
+  bool has_instance_method(const std::string &local_name) const;
+  bool has_static_method(const std::string &local_name) const;
 
   bool has_any_instance_var() const;
   bool has_any_instance_method() const;
   FunctionPtr get_constructor() const;
 
-  const ClassMemberStaticMethod *get_static_method(const string &local_name) const;
-  const ClassMemberInstanceMethod *get_instance_method(const string &local_name) const;
-  const ClassMemberStaticField *get_static_field(const string &local_name) const;
-  const ClassMemberInstanceField *get_instance_field(const string &local_name) const;
-  const ClassMemberConstant *get_constant(const string &local_name) const;
+  const ClassMemberStaticMethod *get_static_method(const std::string &local_name) const;
+  const ClassMemberInstanceMethod *get_instance_method(const std::string &local_name) const;
+  const ClassMemberStaticField *get_static_field(const std::string &local_name) const;
+  const ClassMemberInstanceField *get_instance_field(const std::string &local_name) const;
+  const ClassMemberConstant *get_constant(const std::string &local_name) const;
 };
 
 /*
@@ -190,9 +195,9 @@ public:
  * "Classes$A$$method", "c#Classes$A$$constname"
  * Т.е. везде паттерн такой, что после $$ идёт именно локальное для класса имя, как оно объявлено разработчиком.
  */
-inline string get_local_name_from_global_$$(const string &global_name) {
-  string::size_type pos$$ = global_name.find("$$");
-  return pos$$ == string::npos ? global_name : global_name.substr(pos$$ + 2);
+inline std::string get_local_name_from_global_$$(const std::string &global_name) {
+  auto pos$$ = global_name.find("$$");
+  return pos$$ == std::string::npos ? global_name : global_name.substr(pos$$ + 2);
 }
 
 template<>

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <limits.h>
 
 #include "common/wrappers/string_view.h"
 
-inline std::string get_full_path(const string &file_name) {
+inline std::string get_full_path(const std::string &file_name) {
   char name[PATH_MAX + 1];
   char *ptr = realpath(file_name.c_str(), name);
 
@@ -51,14 +52,14 @@ inline vk::string_view string_view_dup(const vk::string_view &s) {
   return vk::string_view(buf, buf + s.size());
 }
 
-inline string int_to_str(int x) {
+inline std::string int_to_str(int x) {
   char tmp[50];
   sprintf(tmp, "%d", x);
   return tmp;
 }
 
-inline vector<string> split(const string &s, char delimiter = ' ') {
-  vector<string> res;
+inline std::vector<std::string> split(const std::string &s, char delimiter = ' ') {
+  std::vector<std::string> res;
 
   int prev = 0;
   for (int i = 0; i <= (int)s.size(); i++) {

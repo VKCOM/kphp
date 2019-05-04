@@ -1,5 +1,8 @@
 #include "compiler/pipes/preprocess-function.h"
 
+#include "common/termformat/termformat.h"
+#include "common/wrappers/likely.h"
+
 #include "compiler/data/class-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/lambda-generator.h"
@@ -7,7 +10,6 @@
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
-#include "common/termformat/termformat.h"
 
 class PreprocessFunctionPass : public FunctionPassBase {
 public:

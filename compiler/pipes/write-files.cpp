@@ -29,8 +29,8 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
   if (file->on_disk && data.compile_with_crc()) {
     if (file->crc64 == (unsigned long long)-1) {
       FILE *old_file = fopen(full_file_name.c_str(), "r");
-      dl_passert (old_file != nullptr,
-                  format("Failed to open [%s]", full_file_name.c_str()));
+      kphp_assert_msg (old_file != nullptr,
+                  format("Failed to open [%s] : %m", full_file_name.c_str()));
       unsigned long long old_crc = 0;
       unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
 
@@ -80,27 +80,27 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
     }
     if (need_del) {
       int err = unlink(full_file_name.c_str());
-      dl_passert (err == 0, format("Failed to unlink [%s]", full_file_name.c_str()));
+      kphp_assert_msg(err == 0, format("Failed to unlink [%s] : %m", full_file_name.c_str()));
     }
     FILE *dest_file = fopen(full_file_name.c_str(), "w");
-    dl_passert (dest_file != nullptr,
-                format("Failed to open [%s] for write\n", full_file_name.c_str()));
+    kphp_assert_msg(dest_file != nullptr,
+                format("Failed to open [%s] for write : %m\n", full_file_name.c_str()));
 
     if (data.compile_with_crc()) {
-      dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", ~crc));
-      dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments));
-      dl_pcheck (fprintf(dest_file, "%s", code_str.c_str()));
-      dl_pcheck (fflush(dest_file));
-      dl_pcheck (fseek(dest_file, 0, SEEK_SET));
-      dl_pcheck (fprintf(dest_file, "//crc64:%016Lx\n", crc));
-      dl_pcheck (fprintf(dest_file, "//crc64_with_comments:%016Lx\n", crc_with_comments));
+      kphp_assert(fprintf(dest_file, "//crc64:%016Lx\n", ~crc) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments) >= 0);
+      kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);
+      kphp_assert(fflush(dest_file) >= 0);
+      kphp_assert(fseek(dest_file, 0, SEEK_SET) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64:%016Lx\n", crc) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016Lx\n", crc_with_comments) >= 0);
     }
     else {
-      dl_pcheck (fprintf(dest_file, "%s", code_str.c_str()));
+      kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);
     }
 
-    dl_pcheck (fflush(dest_file));
-    dl_pcheck (fclose(dest_file));
+    kphp_assert(fflush(dest_file) >= 0);
+    kphp_assert(fclose(dest_file) >= 0);
 
     file->crc64 = crc;
     file->crc64_with_comments = crc_with_comments;
@@ -112,7 +112,7 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
       file->is_changed = true;
     }
     long long mtime = file->upd_mtime();
-    dl_assert (mtime > 0, "Stat failed");
+    kphp_assert_msg(mtime > 0, "Stat failed");
     kphp_error(!need_save_time || file->mtime == mtime_before, "Failed to set previous mtime\n");
   }
 }

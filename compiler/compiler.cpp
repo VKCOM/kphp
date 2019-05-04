@@ -16,6 +16,7 @@
 #include "common/crc32.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
+#include "drinkless/dl-utils-lite.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/lexer.h"

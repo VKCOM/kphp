@@ -5,7 +5,7 @@
 
 class RestrictionNonVoid : public tinf::RestrictionBase {
   tinf::Node *node;
-  string desc;
+  std::string desc;
 public:
 
   explicit RestrictionNonVoid(tinf::Node *node);

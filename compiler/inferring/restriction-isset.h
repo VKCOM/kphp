@@ -6,14 +6,14 @@
 class RestrictionIsset : public tinf::RestrictionBase {
 public:
   tinf::Node *a_;
-  string desc;
+  std::string desc;
 
   explicit RestrictionIsset(tinf::Node *a);
   const char *get_description() override;
-  void find_dangerous_isset_warning(const vector<tinf::Node *> &bt, tinf::Node *node, const string &msg);
+  void find_dangerous_isset_warning(const std::vector<tinf::Node *> &bt, tinf::Node *node, const std::string &msg);
   bool isset_is_dangerous(int isset_flags, const TypeData *tp);
   bool find_dangerous_isset_dfs(int isset_flags, tinf::Node *node,
-                                vector<tinf::Node *> *bt);
+                                std::vector<tinf::Node *> *bt);
 
 protected:
   bool check_broken_restriction_impl() override;

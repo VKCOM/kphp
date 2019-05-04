@@ -1,10 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <unordered_set>
-
-#include "compiler/data/vertex-adaptor.h"
+#include <vector>
 
 template<class IdData>
 class Id {
@@ -84,7 +84,7 @@ public:
     return !(*this == other);
   }
 
-  string &str() {
+  std::string &str() {
     return ptr->str_val;
   }
 

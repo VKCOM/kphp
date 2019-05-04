@@ -3,6 +3,7 @@
 #include "auto/compiler/vertex/is-base-of.h"
 
 #include "compiler/operation.h"
+#include "compiler/stage.h"
 #include "compiler/threading/format.h"
 
 template<Operation Op>
@@ -78,7 +79,7 @@ public:
       return {};
     };
     auto res = try_as<to>();
-    dl_assert(res, format("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", Op, impl ? impl->type() : -1, to));
+    kphp_assert_msg(res, format("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", Op, impl ? impl->type() : -1, to));
     return res;
   }
 

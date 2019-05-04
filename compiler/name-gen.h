@@ -2,6 +2,7 @@
 
 #include "compiler/common.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 int hash(const string &s);
 //string next_const_string_name (const string &str);

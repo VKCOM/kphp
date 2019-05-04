@@ -62,7 +62,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
 } // namespace
 
 GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function(const std::string &name) {
-  static map<std::string, builtin_fun> functions = {
+  static std::map<std::string, builtin_fun> functions = {
     {"strval",   {op_conv_string, 1}},
     {"intval",   {op_conv_int,    1}},
     {"boolval",  {op_conv_bool,   1}},
@@ -172,7 +172,7 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
 }
 
 bool GenTreePostprocessPass::is_superglobal(const string &s) {
-  static set<string> names = {
+  static std::set<string> names = {
     "_SERVER",
     "_GET",
     "_POST",

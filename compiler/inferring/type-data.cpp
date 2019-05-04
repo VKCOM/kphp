@@ -4,6 +4,7 @@
 
 #include "common/termformat/termformat.h"
 
+#include "common-php-functions.h"
 #include "compiler/data/class-data.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
@@ -132,13 +133,13 @@ TypeData::~TypeData() {
 }
 
 TypeData *TypeData::at(const Key &key) const {
-  dl_assert (structured(), "bug in TypeData");
+  kphp_assert_msg (structured(), "bug in TypeData");
 
   return key.is_any_key() ? anykey_value : subkeys_values.find(key);  // любое может быть nullptr
 }
 
 TypeData *TypeData::at_force(const Key &key) {
-  dl_assert (structured(), "bug in TypeData");
+  kphp_assert_msg (structured(), "bug in TypeData");
 
   TypeData *res = at(key);
   if (res != nullptr) {
@@ -245,7 +246,7 @@ TypeData::flags_t TypeData::flags() const {
 }
 
 void TypeData::set_flags(TypeData::flags_t new_flags) {
-  dl_assert ((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
+  kphp_assert_msg((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
   if (flags_ != new_flags) {
     if (new_flags & error_flag_e) {
       set_error_flag(true);

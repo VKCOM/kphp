@@ -7,8 +7,8 @@
 class CalcRealDefinesValuesF final : public SyncPipeF<FunctionPtr> {
 private:
   using Base = SyncPipeF<FunctionPtr>;
-  set<string*> in_progress;
-  vector<string*> stack;
+  std::set<string*> in_progress;
+  std::vector<string*> stack;
 
   CheckConstWithDefines check_const;
   MakeConst make_const;

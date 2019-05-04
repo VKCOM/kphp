@@ -4,6 +4,7 @@
 
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
+#include "compiler/threading/format.h"
 
 WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc) :
   lines(),
@@ -44,19 +45,19 @@ void WriterData::add_location(SrcFilePtr file, int line) {
   }
 }
 
-void WriterData::add_include(const string &s) {
+void WriterData::add_include(const std::string &s) {
   includes.push_back(s);
 }
 
-const vector<string> &WriterData::get_includes() const {
+const std::vector<std::string> &WriterData::get_includes() const {
   return includes;
 }
 
-void WriterData::add_lib_include(const string &s) {
+void WriterData::add_lib_include(const std::string &s) {
   lib_includes.push_back(s);
 }
 
-const vector<string> &WriterData::get_lib_includes() const {
+const std::vector<std::string> &WriterData::get_lib_includes() const {
   return lib_includes;
 }
 
@@ -70,14 +71,14 @@ unsigned long long WriterData::calc_crc() {
   return crc;
 }
 
-void WriterData::write_code(string &dest_str, const Line &line) {
+void WriterData::write_code(std::string &dest_str, const Line &line) {
   const char *s = &text[line.begin_pos];
   int length = line.end_pos - line.begin_pos;
   dest_str.append(s, length);
   dest_str += '\n';
 }
 
-void WriterData::dump(string &dest_str, const vector<Line>::iterator &begin, const vector<Line>::iterator &end, SrcFilePtr file) {
+void WriterData::dump(std::string &dest_str, const std::vector<Line>::iterator &begin, const std::vector<Line>::iterator &end, SrcFilePtr file) {
   int l = (int)1e9, r = -1;
 
   if (file) {
@@ -86,7 +87,7 @@ void WriterData::dump(string &dest_str, const vector<Line>::iterator &begin, con
     dest_str += "]\n";
   }
 
-  vector<int> rev;
+  std::vector<int> rev;
   for (int t = 0; t < 3; t++) {
     int pos = 0, end_pos = 0, cur_id = l - 1;
 
@@ -168,7 +169,7 @@ void WriterData::dump(string &dest_str, const vector<Line>::iterator &begin, con
 
 }
 
-void WriterData::dump(string &dest_str) {
+void WriterData::dump(std::string &dest_str) {
   for (auto i = lines.begin(); i != lines.end();) {
     if (!i->file) {
       dump(dest_str, i, i + 1, SrcFilePtr());
@@ -176,9 +177,10 @@ void WriterData::dump(string &dest_str) {
       continue;
     }
 
-    auto j = i + 1;
-    for (; j != lines.end() && (!j->file || i->file == j->file) && !j->brk; j++) {
-    }
+    auto j = std::find_if(std::next(i), lines.end(),
+                          [i](const Line &l) {
+                            return (l.file && i->file != l.file) || l.brk;
+                          });
     dump(dest_str, i, j, i->file);
     i = j;
   }

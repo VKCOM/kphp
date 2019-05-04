@@ -1,7 +1,8 @@
 #pragma once
 
+#include "common/wrappers/string_view.h"
+
 #include "compiler/common.h"
-#include "compiler/utils/string-utils.h"
 
 enum TokenType {
   tok_empty,

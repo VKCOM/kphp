@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "common/wrappers/likely.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/stage.h"
@@ -30,17 +32,17 @@ bool SrcFile::load() {
   int err;
 
   int fid = open(file_name.c_str(), O_RDONLY);
-  dl_passert (fid >= 0, format("failed to open file [%s]", file_name.c_str()));
+  kphp_assert_msg (fid >= 0, format("failed to open file [%s] : %m", file_name.c_str()));
 
   struct stat buf;
   err = fstat(fid, &buf);
-  dl_passert (err >= 0, "fstat failed");
+  kphp_assert_msg(err >= 0, "fstat failed : %m");
 
-  dl_assert (buf.st_size < 100000000, format("file [%s] is too big [%lu]\n", file_name.c_str(), buf.st_size));
+  kphp_assert_msg(buf.st_size < 100000000, format("file [%s] is too big [%lu]\n", file_name.c_str(), buf.st_size));
   int file_size = (int)buf.st_size;
   text = string(file_size, ' ');
   err = (int)read(fid, &text[0], file_size);
-  dl_assert (err >= 0, format("Can't read file [%s]: %m", file_name.c_str()));
+  kphp_assert_msg(err >= 0, format("Can't read file [%s]: %m", file_name.c_str()));
 
   for (int i = 0; i < file_size; i++) {
     if (unlikely (text[i] == 0)) {

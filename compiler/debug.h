@@ -2,6 +2,7 @@
 #define PHP_DEBUG_H
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
 

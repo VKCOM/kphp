@@ -1,5 +1,6 @@
 #include "compiler/lexer.h"
 
+#include <map>
 #include <utility>
 
 #include "auto/compiler/keywords_set.hpp"
@@ -123,8 +124,8 @@ void LexerData::flush_str() {
   }
 }
 
-const map<string, const char*> &config_func() {
-  static map<string, const char *> to
+const std::map<std::string, const char*> &config_func() {
+  static std::map<std::string, const char *> to
     {{"attr_wrap",      "attrWrap"},
      {"logout_hash",    "logoutHash"},
      {"videocall_hash", "videocallHash"},

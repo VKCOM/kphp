@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "common/wrappers/string_view.h"
 
 #include "compiler/data/data_ptr.h"
@@ -17,17 +19,17 @@ public:
   FunctionPtr main_function;
   LibPtr owner_lib;
 
-  vector<vk::string_view> lines;
+  std::vector<vk::string_view> lines;
 
-  string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
-  map<string, string> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
+  std::string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
+  std::map<std::string, std::string> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
 
   SrcFile();
-  SrcFile(const string &file_name, const string &short_file_name, LibPtr owner_lib_id);
+  SrcFile(const std::string &file_name, const std::string &short_file_name, LibPtr owner_lib_id);
   bool load();
 
   vk::string_view get_line(int id);
-  string get_short_name();
+  std::string get_short_name();
 
   bool is_builtin() const;
 };

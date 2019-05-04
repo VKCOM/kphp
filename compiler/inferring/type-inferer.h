@@ -12,7 +12,7 @@ using NodeQueue = std::queue<Node *>;
 
 class TypeInferer {
 private:
-  TLS<vector<RestrictionBase *>> restrictions;
+  TLS<std::vector<RestrictionBase *>> restrictions;
   bool finish_flag;
 
 public:
@@ -30,7 +30,7 @@ public:
   void check_restrictions();
 
   int run_queue(NodeQueue *q);
-  vector<Task *> get_tasks();
+  std::vector<Task *> get_tasks();
 
   void run_node(Node *node);
 

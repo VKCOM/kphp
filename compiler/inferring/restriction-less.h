@@ -8,23 +8,23 @@ private:
   std::vector<tinf::Node *> stacktrace;
   std::vector<tinf::Node *> node_path_;
   static const unsigned long max_cnt_nodes_in_path = 30;
-  string desc;
+  std::string desc;
 
   struct ComparatorByEdgePriorityRelativeToExpectedType;
 
   struct row {
-    string col[3];
+    std::string col[3];
 
     row() = default;
 
-    row(string const &s1, string const &s2, string const &s3) {
+    row(std::string const &s1, std::string const &s2, std::string const &s3) {
       col[0] = s1;
       col[1] = s2;
       col[2] = s3;
     }
   };
 
-  row parse_description(string const &description);
+  row parse_description(std::string const &description);
 
   tinf::Node *actual_, *expected_;
 
@@ -44,8 +44,8 @@ public:
     return desc.c_str();
   }
 
-  string get_actual_error_message();
-  string get_stacktrace_text();
+  std::string get_actual_error_message();
+  std::string get_stacktrace_text();
 
 protected:
   bool check_broken_restriction_impl() override;

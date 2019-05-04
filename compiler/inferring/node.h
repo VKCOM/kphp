@@ -36,11 +36,11 @@ public:
   void add_edge(Edge *edge);
   void add_rev_edge(Edge *edge);
 
-  inline vector<Edge *> &get_next() {
+  inline std::vector<Edge *> &get_next() {
     return next_;
   }
 
-  inline vector<Edge *> &get_rev_next() {
+  inline std::vector<Edge *> &get_rev_next() {
     return rev_next_;
   }
 
@@ -57,7 +57,7 @@ public:
   }
 
   virtual void recalc(TypeInferer *inferer) = 0;
-  virtual string get_description() = 0;
+  virtual std::string get_description() = 0;
 };
 
 } // namespace tinf

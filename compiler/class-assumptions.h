@@ -4,6 +4,7 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 enum AssumType {
   assum_unknown,

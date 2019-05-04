@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/node.h"
 #include "compiler/stage.h"
 

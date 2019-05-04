@@ -1,9 +1,11 @@
 #include "compiler/pipes/resolve-self-static-parent.h"
-#include "compiler/name-gen.h"
+
+#include "common/wrappers/likely.h"
+
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/compiler-core.h"
-
+#include "compiler/name-gen.h"
 
 bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {

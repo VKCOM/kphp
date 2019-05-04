@@ -6,7 +6,7 @@
 void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
   bool have_arrow = false;
   bool have_int_key = false;
-  set<string> used_keys;
+  std::set<string> used_keys;
   int id = 0;
   for (auto v : *to_check) {
     if (v->type() == op_double_arrow) {

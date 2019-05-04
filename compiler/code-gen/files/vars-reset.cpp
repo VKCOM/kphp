@@ -25,7 +25,7 @@ void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> 
   }
 }
 
-void GlobalVarsReset::compile_part(FunctionPtr func, const set<VarPtr> &used_vars, int part_i, CodeGenerator &W) {
+void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W) {
   IncludesCollector includes;
   for (auto var : used_vars) {
     includes.add_var_signature_depends(var);
@@ -83,7 +83,7 @@ void GlobalVarsReset::compile_func(FunctionPtr func, const std::set<FunctionPtr>
 }
 
 template<class It>
-void collect_vars(set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
+void collect_vars(std::set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
   for (; begin != end; begin++) {
     VarPtr var_id = *begin;
     size_t var_hash;

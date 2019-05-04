@@ -30,10 +30,10 @@ public:
     return var_;
   }
 
-  string get_description();
-  string get_var_name();
-  string get_function_name();
-  string get_var_as_argument_name();
+  std::string get_description();
+  std::string get_var_name();
+  std::string get_function_name();
+  std::string get_var_as_argument_name();
 
   bool is_variable() const {
     return param_i == e_variable;

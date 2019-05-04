@@ -3,6 +3,7 @@
 #include "common/wrappers/iterator_range.h"
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/expr-node.h"
 
 template<Operation Op>
@@ -75,7 +76,7 @@ protected:
   }
 
   void set_children(int shift) {
-    dl_assert(shift == n, "???");
+    kphp_assert_msg(shift == n, "???");
   }
 
   template<class... Args>
@@ -181,17 +182,17 @@ public:
 
   const char *get_c_string() const { return get_string().c_str(); }
 
-  virtual const FunctionPtr &get_func_id() const { dl_fail ("get_func_id is not supported"); }
+  virtual const FunctionPtr &get_func_id() const { kphp_fail_msg ("get_func_id is not supported"); }
 
-  virtual void set_func_id(FunctionPtr func_ptr __attribute__((unused))) { dl_fail ("set_func_id is not supported"); }
+  virtual void set_func_id(FunctionPtr func_ptr __attribute__((unused))) { kphp_fail_msg ("set_func_id is not supported"); }
 
-  virtual const VarPtr &get_var_id() const { dl_fail (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual const VarPtr &get_var_id() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual void set_var_id(const VarPtr &) { dl_fail (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual void set_var_id(const VarPtr &) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual const string &get_string() const { dl_fail (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual const string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual void set_string(const string &) { dl_fail (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual void set_string(const string &) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
   virtual bool has_get_string() const { return false; }
 

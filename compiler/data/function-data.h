@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <set>
+
 #include "auto/compiler/vertex/vertex-op_function.h"
 #include "common/mixin/not_copyable.h"
 
@@ -47,7 +50,7 @@ public:
 
   vector<VarPtr> local_var_ids, global_var_ids, static_var_ids;
   vector<VarPtr> *bad_vars = nullptr;
-  set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
+  std::set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
   std::set<ClassPtr> class_dep;
@@ -65,8 +68,8 @@ public:
 
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
-  set<string> disabled_warnings;
-  map<size_t, int> name_gen_map;
+  std::set<string> disabled_warnings;
+  std::map<size_t, int> name_gen_map;
 
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;

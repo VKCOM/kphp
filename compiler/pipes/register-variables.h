@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 
@@ -12,7 +14,7 @@
  */
 class RegisterVariablesPass : public FunctionPassBase {
 private:
-  map<string, VarPtr> registred_vars;
+  std::map<string, VarPtr> registred_vars;
   bool global_function_flag;
   int in_param_list;
 

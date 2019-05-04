@@ -1,6 +1,7 @@
 #include "compiler/make/target.h"
 
 #include <cassert>
+#include <string>
 
 void Target::set_mtime(long long new_mtime) {
   assert(mtime == 0);
@@ -48,7 +49,7 @@ std::string Target::dep_list() {
   return ss;
 }
 
-string Target::get_name() {
+std::string Target::get_name() {
   return file->path;
 }
 

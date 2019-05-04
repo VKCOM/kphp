@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "common/version-string.h"
+#include "common/wrappers/likely.h"
 
 CalcRealDefinesValuesF::CalcRealDefinesValuesF() : Base() {
   auto val = VertexAdaptor<op_string>::create();

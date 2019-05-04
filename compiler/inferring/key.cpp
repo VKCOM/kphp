@@ -3,8 +3,8 @@
 #include <string>
 
 #include "common/algorithms/hashes.h"
-#include "drinkless/dl-utils-lite.h"
 
+#include "compiler/stage.h"
 #include "compiler/threading/format.h"
 #include "compiler/threading/hash-table.h"
 
@@ -36,7 +36,7 @@ Key Key::string_key(const std::string &key) {
   node->data = new Key(old_n * 2 + 2);
 
   auto name_node = string_key_names_ht.at(node->data->id);
-  dl_assert(name_node->data == nullptr, "");
+  kphp_assert(name_node->data == nullptr);
   name_node->data = new std::string(key);
 
   return *node->data;
@@ -63,6 +63,6 @@ std::string Key::to_string() const {
   if (is_any_key()) {
     return "Any";
   }
-  dl_unreachable("...");
+  kphp_assert(0);
   return "fail";
 }

@@ -674,7 +674,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     }
   }
 
-  map<unsigned int, int> prev;
+  std::map<unsigned int, int> prev;
   for (int i = n - 1; i >= 0; i--) {
     if (cases[i].is_default) {
       continue;
@@ -754,7 +754,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << "static_cast<void>(" << root->switch_var() << ");" << NL;
   W << "static_cast<void>(" << root->switch_flag() << ");" << NL;
 
-  set<string> used;
+  std::set<string> used;
   for (auto i : root->cases()) {
     Operation tp = i->type();
     VertexPtr cmd;

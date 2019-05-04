@@ -310,7 +310,7 @@ class CFG {
   SubTreePtr new_subtree(VertexPtr v, bool recursive_flag);
   void add_subtree(Node node, SubTreePtr subtree);
   void add_edge(Node from, Node to);
-  void collect_ref_vars(VertexPtr v, set<VarPtr> *ref);
+  void collect_ref_vars(VertexPtr v, std::set<VarPtr> *ref);
   void find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars);
   void collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *can_throw);
   void create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish);
@@ -394,7 +394,7 @@ void CFG::add_edge(Node from, Node to) {
   }
 }
 
-void CFG::collect_ref_vars(VertexPtr v, set<VarPtr> *ref) {
+void CFG::collect_ref_vars(VertexPtr v, std::set<VarPtr> *ref) {
   if (v->type() == op_var && v->ref_flag) {
     ref->insert(v->get_var_id());
   }
@@ -404,9 +404,9 @@ void CFG::collect_ref_vars(VertexPtr v, set<VarPtr> *ref) {
 }
 
 struct XPred {
-  set<VarPtr> *ref;
+  std::set<VarPtr> *ref;
 
-  explicit XPred(set<VarPtr> *ref) :
+  explicit XPred(std::set<VarPtr> *ref) :
     ref(ref) {};
 
   bool operator()(const VarPtr &x) { return ref->find(x) != ref->end(); }
@@ -426,7 +426,7 @@ void CFG::find_splittable_vars(FunctionPtr func, vector<VarPtr> *splittable_vars
   }
 
   //todo: references in foreach
-  set<VarPtr> ref;
+  std::set<VarPtr> ref;
   collect_ref_vars(func->root, &ref);
   splittable_vars->erase(std::remove_if(splittable_vars->begin(), splittable_vars->end(), XPred(&ref)),
                          splittable_vars->end());

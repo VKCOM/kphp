@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/inferring/type-inferer.h"

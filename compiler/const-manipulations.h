@@ -1,9 +1,6 @@
-//
-// Created by eugene on 15.05.18.
-//
-
 #pragma once
 
+#include "common-php-functions.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
 #include "compiler/gentree.h"
@@ -11,10 +8,6 @@
 #include "compiler/operation.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-
-#if __cplusplus < 201103L
-#define override
-#endif
 
 template<typename T>
 struct ConstManipulations {

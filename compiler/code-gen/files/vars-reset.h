@@ -2,6 +2,7 @@
 
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 struct GlobalVarsReset {
   GlobalVarsReset(SrcFilePtr main_file);

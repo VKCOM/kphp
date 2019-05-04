@@ -21,8 +21,8 @@
 #define kphp_warning(y)  compiler_assert (0, y, WRN_ASSERT_LEVEL)
 #define kphp_typed_warning(x, y) do {                                      \
   FunctionPtr kphp_warning_fun__ = stage::get_function();                  \
-  if (kphp_warning_fun__) {                                     \
-    const set<string> &disabled__ = kphp_warning_fun__->disabled_warnings; \
+  if (kphp_warning_fun__) {                                                \
+    auto &disabled__ = kphp_warning_fun__->disabled_warnings;              \
     string s = x;                                                          \
     if (disabled__.find(s) == disabled__.end()) {                          \
       string message = y;                                                  \
@@ -39,6 +39,7 @@
 #define kphp_error_return(x, y) kphp_error_act (x, y, return)
 #define kphp_assert(x) compiler_assert_noret (x, "", FATAL_ASSERT_LEVEL)
 #define kphp_assert_msg(x, y) compiler_assert_noret (x, y, FATAL_ASSERT_LEVEL)
+#define kphp_fail_msg(y) kphp_assert_msg (0, y); _exit(1);
 #define kphp_fail() kphp_assert (0); _exit(1);
 
 enum AssertLevelT {
@@ -52,7 +53,7 @@ void on_compilation_error(const char *description, const char *file_name, int li
 
 namespace stage {
 struct StageInfo {
-  string name;
+  std::string name;
   Location location;
   bool global_error_flag;
   bool error_flag;
@@ -82,8 +83,8 @@ void print_function(FILE *f);
 void print_line(FILE *f);
 void print_comment(FILE *f);
 
-void set_name(const string &name);
-const string &get_name();
+void set_name(const std::string &name);
+const std::string &get_name();
 
 void set_file(SrcFilePtr file);
 void set_function(FunctionPtr file);
@@ -92,9 +93,9 @@ SrcFilePtr get_file();
 FunctionPtr get_function();
 int get_line();
 
-const string &get_file_name();
-const string &get_function_name();
-string to_str(const Location &new_location);
+const std::string &get_file_name();
+const std::string &get_function_name();
+std::string to_str(const Location &new_location);
 bool should_be_colored(FILE *f);
 
 extern int warnings_count;

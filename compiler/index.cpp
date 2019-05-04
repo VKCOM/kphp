@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 
 #include "common/wrappers/mkdir_recursive.h"
+#include "drinkless/dl-utils-lite.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
@@ -174,7 +175,7 @@ void Index::del_extra_files() {
 }
 
 void Index::remove_file(const string &path) {
-  map<string, File *>::iterator it = files.find(path);
+  auto it = files.find(path);
   kphp_assert (it != files.end());
   delete it->second;
   files.erase(it);

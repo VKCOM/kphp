@@ -1,6 +1,9 @@
 #pragma once
 
-#include "compiler/common.h"
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 /*** Index ***/
 class Target;
@@ -10,11 +13,11 @@ private:
   File(const File &from);
   File &operator=(const File &from);
 public:
-  string path;
-  string name;
-  string ext;
-  string name_without_ext;
-  string subdir;
+  std::string path;
+  std::string name;
+  std::string ext;
+  std::string name_without_ext;
+  std::string subdir;
   long long mtime;
   unsigned long long crc64;
   unsigned long long crc64_with_comments;
@@ -22,13 +25,13 @@ public:
   bool needed;
   Target *target;
   //Don't know where else I can save it
-  vector<string> includes;
-  vector<string> lib_includes;
+  std::vector<std::string> includes;
+  std::vector<std::string> lib_includes;
   bool compile_with_debug_info_flag;
   bool is_changed;
 
   File();
-  explicit File(const string &path);
+  explicit File(const std::string &path);
   long long upd_mtime() __attribute__ ((warn_unused_result));
   void set_mtime(long long mtime_value);
   void unlink();

@@ -1,6 +1,7 @@
 #include "compiler/name-gen.h"
 
 #include "common/algorithms/hashes.h"
+#include "common/wrappers/likely.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"

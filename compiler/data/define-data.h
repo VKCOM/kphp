@@ -4,6 +4,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 class DefineData : private vk::not_copyable {
 public:

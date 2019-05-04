@@ -33,7 +33,7 @@ public:
   Writer(DataStream<WriterData> &os);
   ~Writer() = default;
 
-  void set_file_name(const string &file_name, const string &subdir = "");
+  void set_file_name(const std::string &file_name, const std::string &subdir = "");
 
   void begin_write(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
   void end_write();
@@ -56,6 +56,6 @@ public:
   void lock_comments();
   void unlock_comments();
   bool is_comments_locked();
-  void add_include(const string &s);
-  void add_lib_include(const string &s);
+  void add_include(const std::string &s);
+  void add_lib_include(const std::string &s);
 };

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "compiler/stage.h"
+
 struct IdMapBase {
   virtual void update_size(int new_max_id) = 0;
   virtual void clear() = 0;
@@ -37,7 +39,7 @@ template<class IndexType>
 DataType &IdMap<DataType>::operator[](const IndexType &i) {
   int index = get_index(i);
   assert(index >= 0 && "maybe you've forgotten pass function to stream");
-  dl_assert(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
+  kphp_assert_msg(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
   return data[index];
 }
 
@@ -46,7 +48,7 @@ template<class IndexType>
 const DataType &IdMap<DataType>::operator[](const IndexType &i) const {
   int index = get_index(i);
   assert(index >= 0);
-  dl_assert(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
+  kphp_assert_msg(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
   return data[index];
 }
 

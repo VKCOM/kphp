@@ -2,7 +2,7 @@
 
 #include "compiler/stage.h"
 
-MultiKey::MultiKey(const vector<Key> &keys) :
+MultiKey::MultiKey(const std::vector<Key> &keys) :
   keys_(keys) {
 }
 
@@ -26,8 +26,8 @@ void MultiKey::push_front(const Key &key) {
   keys_.insert(keys_.begin(), key);
 }
 
-string MultiKey::to_string() const {
-  string res;
+std::string MultiKey::to_string() const {
+  std::string res;
   for (Key key : *this) {
     res += "[";
     res += key.to_string();
