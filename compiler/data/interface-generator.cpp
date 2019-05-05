@@ -8,21 +8,19 @@
 namespace {
 
 template<Operation op>
-VertexAdaptor<op> create_call_with_this_and_class_name_params(ClassPtr klass) {
-  auto this_var = ClassData::gen_vertex_this(0);
-
+VertexAdaptor<op> create_call_with_var_and_class_name_params(VertexAdaptor<op_var> instance_var, ClassPtr klass) {
   auto class_name = VertexAdaptor<op_func_name>::create();
   class_name->set_string("\\" + klass->name + "::class");
 
-  return VertexAdaptor<op>::create(this_var, class_name);
+  return VertexAdaptor<op>::create(instance_var, class_name);
 }
 
-VertexAdaptor<op_instanceof> create_instanceof(ClassPtr derived) {
-  return create_call_with_this_and_class_name_params<op_instanceof>(derived); 
+VertexAdaptor<op_instanceof> create_instanceof(VertexAdaptor<op_var> instance_var, ClassPtr derived) {
+  return create_call_with_var_and_class_name_params<op_instanceof>(instance_var, derived);
 }
 
-VertexAdaptor<op_func_call> create_instance_cast_to(ClassPtr derived) {
-  auto cast_to_derived = create_call_with_this_and_class_name_params<op_func_call>(derived);
+VertexAdaptor<op_func_call> create_instance_cast_to(VertexAdaptor<op_var> instance_var, ClassPtr derived) {
+  auto cast_to_derived = create_call_with_var_and_class_name_params<op_func_call>(instance_var, derived);
   cast_to_derived->set_string("instance_cast");
   return cast_to_derived;
 }
@@ -34,7 +32,8 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
                       interface_function->get_human_readable_name().c_str(),
                       context_class->name.c_str());
 
-    kphp_error_act(false, msg, return false);
+    kphp_error(false, msg);
+    return false;
   }
 
   auto derived_method = interface_method_in_derived->function;
@@ -74,19 +73,14 @@ bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interfac
   return check_that_signatures_are_same(interface_function, context_class, interface_method_in_derived);
 }
 
-VertexPtr generate_call_in_context_of_derived(ClassPtr context_class, FunctionPtr interface_function) {
-  if (!check_that_signatures_are_same(context_class, interface_function)) {
-    return VertexPtr{};
-  }
-
-  auto cast_to_derived = create_instance_cast_to(context_class);
+VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr interface_function) {
   auto params = interface_function->get_params_as_vector_of_vars(1);
 
-  auto call_method_in_context = VertexAdaptor<op_func_call>::create(cast_to_derived, params);
-  call_method_in_context->set_string(interface_function->local_name());
-  call_method_in_context->extra_type = op_ex_func_call_arrow;
+  auto call_method = VertexAdaptor<op_func_call>::create(instance_var, params);
+  call_method->set_string(interface_function->local_name());
+  call_method->extra_type = op_ex_func_call_arrow;
 
-  return VertexAdaptor<op_return>::create(call_method_in_context);
+  return call_method;
 }
 
 bool check_that_function_is_abstract(FunctionPtr interface_function) {
@@ -111,9 +105,9 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
  * generated AST for interface function will be like this:
  *
  * function interface_function($param1, ...) {
- *   if (is_a($this, Derived_first)) {
+ *   if ($this instanceof Derived_first) {
  *     return instance_cast($this, Derived_first)->interface_function($param1, ...);
- *   } else if (is_a($this, Derived_second)) {
+ *   } else if ($this instanceof Derived_second) {
  *     return instance_cast($this, Derived_second)->interface_function($param1, ...);
  *   } else {
  *     return instance_cast($this, Derived_last)->interface_function($param1, ...);
@@ -133,8 +127,13 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
 
   VertexPtr body_of_interface_method;
   for (auto derived : derived_classes) {
-    auto is_instance_of_derived = create_instanceof(derived);
-    auto call_derived_method = generate_call_in_context_of_derived(derived, interface_function);
+    auto is_instance_of_derived = create_instanceof(ClassData::gen_vertex_this(0), derived);
+
+    VertexAdaptor<op_return> call_derived_method;
+    if (check_that_signatures_are_same(derived, interface_function)) {
+      auto this_var = create_instance_cast_to(ClassData::gen_vertex_this(0), derived);
+      call_derived_method = VertexAdaptor<op_return>::create(generate_call_on_instance_var(this_var, interface_function));
+    }
 
     if (body_of_interface_method) {
       body_of_interface_method = VertexAdaptor<op_if>::create(is_instance_of_derived, call_derived_method, body_of_interface_method);
