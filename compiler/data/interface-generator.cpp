@@ -106,11 +106,11 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
  *
  * function interface_function($param1, ...) {
  *   if ($this instanceof Derived_first) {
- *     return instance_cast($this, Derived_first)->interface_function($param1, ...);
+ *     return $this->interface_function($param1, ...);
  *   } else if ($this instanceof Derived_second) {
- *     return instance_cast($this, Derived_second)->interface_function($param1, ...);
+ *     return $this->interface_function($param1, ...);
  *   } else {
- *     return instance_cast($this, Derived_last)->interface_function($param1, ...);
+ *     return $this->interface_function($param1, ...);
  *   }
  */
 void generate_body_of_interface_method(FunctionPtr interface_function) {
@@ -131,7 +131,11 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
 
     VertexAdaptor<op_return> call_derived_method;
     if (check_that_signatures_are_same(derived, interface_function)) {
-      auto this_var = create_instance_cast_to(ClassData::gen_vertex_this(0), derived);
+      auto generated_this = ClassData::gen_vertex_this(0);
+      VertexPtr this_var = generated_this;
+      if (derived_classes.size() == 1) {
+        this_var = create_instance_cast_to(generated_this, derived);
+      }
       call_derived_method = VertexAdaptor<op_return>::create(generate_call_on_instance_var(this_var, interface_function));
     }
 
@@ -147,5 +151,3 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
   root->set_func_id(interface_function);
   interface_function->type = FunctionData::func_local;
 }
-
-

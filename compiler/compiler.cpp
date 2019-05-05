@@ -69,6 +69,7 @@
 #include "compiler/pipes/resolve-self-static-parent.h"
 #include "compiler/pipes/sort-and-inherit-classes.h"
 #include "compiler/pipes/split-switch.h"
+#include "compiler/pipes/transform-to-smart-instanceof.h"
 #include "compiler/pipes/type-inferer-end.h"
 #include "compiler/pipes/type-inferer.h"
 #include "compiler/pipes/write-files.h"
@@ -247,6 +248,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
     >> SyncNode{}
+    >> PassC<TransformToSmartInstanceof>{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
