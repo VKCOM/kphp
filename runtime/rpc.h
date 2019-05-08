@@ -7,6 +7,10 @@
 
 extern const char *new_tl_current_function_name;
 
+void tl_storing_error(const var &tl_object, const char *format, ...) __attribute__ ((format (printf, 2, 3), noinline));
+
+void tl_fetching_error(const char *format, ...) __attribute__ ((format (printf, 1, 2), noinline));
+
 void process_rpc_answer(int request_id, char *result, int result_len);
 
 void process_rpc_error(int request_id, int error_code, const char *error_message);

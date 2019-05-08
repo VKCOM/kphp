@@ -1,3 +1,5 @@
+#include <cstdarg>
+
 #include "runtime/rpc.h"
 
 #include "auto/TL/constants.h"
@@ -37,6 +39,7 @@ static string rpc_data_copy_backup;
 
 tl_fetch_wrapper_ptr tl_fetch_wrapper;
 array<tl_storer_ptr> tl_storers_ht;
+static bool new_tl_mode_error_flag = false;
 
 template<class T>
 static inline T store_parse_number(const string &v) {
@@ -1625,7 +1628,6 @@ using function_ptr = void *(*)(void **IP, void **Data, var *arr, tl_tree **vars)
 
 static const char *tl_current_function_name;
 const char *new_tl_current_function_name;
-bool new_tl_mode_error_flag;
 
 tl_tree *store_function(const var &tl_object) {
   tl_debug(__FUNCTION__, -2);
@@ -1831,6 +1833,36 @@ enum tl_mode {
 
 tl_mode cur_tl_mode = FULL_OLD_TL_MODE;
 
+void tl_storing_error(const var &tl_object, const char *format, ...) {
+  if (!new_tl_mode_error_flag) {
+    new_tl_mode_error_flag = true;
+    constexpr size_t BUFF_SZ = 1024;
+    char buff[BUFF_SZ];
+    va_list args;
+    va_start (args, format);
+    vsnprintf(buff, BUFF_SZ, format, args);
+    va_end(args);
+    php_warning("Storing error:\n%s\nIn %s serializing TL object:\n%s",
+                buff, new_tl_current_function_name, dump_tl_array(tl_object).c_str());
+  }
+}
+
+void tl_fetching_error(const char *format, ...) {
+  if (CurException.is_null()) {
+    constexpr size_t BUFF_SZ = 1024;
+    char buff[BUFF_SZ];
+    va_list args;
+    va_start(args, format);
+    int sz = vsnprintf(buff, BUFF_SZ, format, args);
+    php_assert(sz > 0);
+    va_end(args);
+    string msg = string(buff, static_cast<size_t>(sz));
+    php_warning("Fetching error:\n%s\nDeserializing result of function: %s", msg.c_str(), new_tl_current_function_name);
+    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__,
+                                             msg.append(string(" in result of ")).append(string(new_tl_current_function_name)), -1));
+  }
+}
+
 namespace new_tl_mode {
 bool try_fetch_rpc_error(array<var> &out_if_error) {
   int x = rpc_lookup_int();
@@ -1870,7 +1902,7 @@ std::unique_ptr<tl_func_base> store_function(const var &tl_object) {
     return nullptr;
   }
   const auto &storer_kv = tl_storers_ht.get_value(fun_name);
-  new_tl_current_function_name = fun_name.c_str();    // актуально только на время процесса store, при fetch уже \0
+  new_tl_current_function_name = fun_name.c_str();
   std::unique_ptr<tl_func_base> stored_fetcher = storer_kv(tl_object);
   new_tl_current_function_name = nullptr;
   if (new_tl_mode_error_flag) {
@@ -2075,6 +2107,7 @@ protected:
 
       switch (cur_tl_mode) {
         case FULL_NEW_TL_MODE:
+          new_tl_current_function_name = stored_fetcher->get_name(); // get_name() возвращает const string literal => не будет висячего указателя
           new_tl_object = new_tl_mode::fetch_function(std::move(stored_fetcher));
           rpc_parse_restore_previous();
           RETURN(new_tl_object);
@@ -2089,11 +2122,11 @@ protected:
           if (stored_fetcher) {
             rpc_parse_restore_previous();
             rpc_parse_save_backup();
-            const char *cur_f_name = stored_fetcher->get_name(); // get_name() возвращает const string literal => не будет висячего указателя
+            new_tl_current_function_name = stored_fetcher->get_name(); // get_name() возвращает const string literal => не будет висячего указателя
             new_tl_object = new_tl_mode::fetch_function(std::move(stored_fetcher));
             if (!equals(tl_object, new_tl_object)) {
-              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", cur_f_name);
-              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", cur_f_name);
+              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", new_tl_current_function_name);
+              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", new_tl_current_function_name);
               fprintf(stderr, "Expected:\n%s\n", dump_tl_array(tl_object).c_str());
               fprintf(stderr, "Actual:\n%s\n", dump_tl_array(new_tl_object).c_str());
             }
