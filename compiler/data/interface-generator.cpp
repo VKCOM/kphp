@@ -127,7 +127,7 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
 
   VertexPtr body_of_interface_method;
   for (auto derived : derived_classes) {
-    auto is_instance_of_derived = create_instanceof(ClassData::gen_vertex_this(0), derived);
+    auto is_instance_of_derived = GenTree::conv_to<tp_bool>(create_instanceof(ClassData::gen_vertex_this(0), derived));
 
     VertexAdaptor<op_return> call_derived_method;
     if (check_that_signatures_are_same(derived, interface_function)) {
