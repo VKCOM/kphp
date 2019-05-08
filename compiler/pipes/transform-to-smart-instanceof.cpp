@@ -84,6 +84,7 @@ VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance
   new_name = gen_unique_name(instance_var->get_string());
   tmp_var->set_string(new_name);
   tmp_var->extra_type = op_ex_var_superlocal_inplace;
+  tmp_var->is_const = true;
 
   auto set_instance_cast_to_tmp = VertexAdaptor<op_set>::create(tmp_var, cast_to_derived);
   set_location(instance_var->get_location(), cast_to_derived, tmp_var, set_instance_cast_to_tmp, derived_name_vertex);
