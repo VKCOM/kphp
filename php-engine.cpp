@@ -19,13 +19,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "PHP/php-engine-vars.h"
-#include "PHP/php-lease.h"
-#include "PHP/php-master.h"
-#include "PHP/php-queries.h"
-#include "PHP/php-runner.h"
-#include "PHP/php-worker.h"
-#include "runtime/interface.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
@@ -39,6 +32,7 @@
 #include "common/server/relogin.h"
 #include "common/server/signals.h"
 #include "common/server/sockets.h"
+#include "common/tl/parse.h"
 #include "db-proxy/passwd.h"
 #include "drinkless/dl-utils-lite.h"
 #include "net/net-buffers.h"
@@ -48,15 +42,19 @@
 #include "net/net-memcache-client.h"
 #include "net/net-memcache-server.h"
 #include "net/net-mysql-client.h"
-#include "net/net-rpc-client.h"
-#include "net/net-rpc-common.h"
-#include "net/net-rpc-server.h"
 #include "net/net-sockaddr-storage.h"
 #include "net/net-socket.h"
-#include "net/net-tcp-rpc-client.h"
-#include "vv/vv-tl-parse.h"
-#include "net/net-tcp-rpc-server.h"
 #include "net/net-tcp-connections.h"
+#include "net/net-tcp-rpc-client.h"
+#include "net/net-tcp-rpc-server.h"
+
+#include "PHP/php-engine-vars.h"
+#include "PHP/php-lease.h"
+#include "PHP/php-master.h"
+#include "PHP/php-queries.h"
+#include "PHP/php-runner.h"
+#include "PHP/php-worker.h"
+#include "runtime/interface.h"
 
 static void turn_sigterm_on();
 
@@ -1590,7 +1588,7 @@ tcp_rpc_server_functions rpc_methods = [] {
 tcp_rpc_client_functions rpc_client_methods = [] {
   auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
-  res.check_ready = rpcc_default_check_ready; //replaced
+  res.check_ready = server_check_ready; //replaced
   res.flush_packet = tcp_rpcc_flush_packet;
   res.rpc_check_perm = tcp_rpcc_default_check_perm;
   res.rpc_init_crypto = tcp_rpcc_init_crypto;
