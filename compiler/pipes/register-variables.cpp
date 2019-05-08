@@ -91,7 +91,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> para
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
   var->is_reference = var_vertex->ref_flag;
-  var->marked_as_const = param->is_const;
+  var->marked_as_const = var_vertex->is_const;
   kphp_assert (var);
   if (default_value) {
     if (!kphp_error (

@@ -185,7 +185,6 @@ void ClassData::create_constructor_with_args(int location_line_num, VertexAdapto
 void ClassData::patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num) {
   auto vertex_this = gen_vertex_this_with_type_rule(location_line_num);
   auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
-  param_this->is_const = true;
   params_next.emplace(params_next.begin(), param_this);
 }
 
@@ -247,6 +246,7 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
   this_var->extra_type = op_ex_var_this;
   this_var->const_type = cnst_const_val;
   this_var->location.line = location_line_num;
+  this_var->is_const = true;
 
   return this_var;
 }

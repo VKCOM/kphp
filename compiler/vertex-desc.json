@@ -149,10 +149,6 @@
       "is_callable": {
         "type": "bool",
         "default": "false"
-      },
-      "is_const": {
-        "type": "bool",
-        "default": "false"
       }
     }
   },
@@ -299,6 +295,12 @@
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
       "str": "var"
+    },
+    "extra_fields": {
+      "is_const": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
   {
