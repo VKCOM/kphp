@@ -1,5 +1,5 @@
 @kphp_should_fail access
-/static field not found:/
+/Can't access/
 <?php
 
 class Base {

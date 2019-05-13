@@ -12,53 +12,45 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   return true;
 }
 
-VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  AccessType need_access = access_nonmember;
-  ClassPtr access_class;
-  std::string description;
-
-  if (root->type() == op_var) {
-    VarPtr var_id = root->get_var_id();
-    if (var_id->is_class_static_var()) {
-      auto member = var_id->as_class_static_field();
-      kphp_assert(member);
-      access_class = var_id->class_id;
-      need_access = member->access_type;
-      description = "static field " + member->local_name();
-    }
-  } else if (root->type() == op_instance_prop) {
-    VarPtr var_id = root->get_var_id();
-    if (var_id->is_class_instance_var()) {
-      auto member = var_id->as_class_instance_field();
-      kphp_assert(member);
-      access_class = var_id->class_id;
-      need_access = member->access_type;
-      description = "field " + member->local_name();
-    }
-  } else if (root->type() == op_func_call) {
-    FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
-    if (func_id->access_type != access_nonmember) {
-      access_class = func_id->class_id;
-      need_access = func_id->access_type;
-      //TODO: this is hack, which should be fixed after functions with context are added to static methods list
-      std::string real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
-      if (func_id->context_class->members.has_static_method(real_name)) {
-        description = "static method " + func_id->get_human_readable_name();
-      } else if (func_id->context_class->members.has_instance_method(real_name)) {
-        description = "method " + func_id->get_human_readable_name();
-      }
-    }
-  }
-
+void CheckAccessModifiersPass::check_access(AccessType need_access, ClassPtr access_class, const char *field_type, const std::string &name) {
   if (need_access == access_static_private || need_access == access_private) {
-    kphp_error(class_id == access_class || lambda_class_id == access_class, format("Can't access private %s", description.c_str()));
+    kphp_error(class_id == access_class || lambda_class_id == access_class, format("Can't access private %s %s", field_type, name.c_str()));
   }
   if (need_access == access_static_protected || need_access == access_protected) {
     auto is_ok = [&access_class](ClassPtr class_id) {
       return class_id && (class_id == access_class || class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
     };
     kphp_error(is_ok(class_id) || is_ok(lambda_class_id),
-               format("Can't access protected %s", description.c_str()));
+               format("Can't access protected %s %s", field_type, name.c_str()));
+  }
+}
+
+VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
+  if (root->type() == op_var) {
+    VarPtr var_id = root->get_var_id();
+    if (var_id->is_class_static_var()) {
+      auto member = var_id->as_class_static_field();
+      kphp_assert(member);
+      check_access(member->access_type, var_id->class_id, "static field", member->local_name());
+    }
+  } else if (root->type() == op_instance_prop) {
+    VarPtr var_id = root->get_var_id();
+    if (var_id->is_class_instance_var()) {
+      auto member = var_id->as_class_instance_field();
+      kphp_assert(member);
+      check_access(member->access_type, var_id->class_id, "field", member->local_name());
+    }
+  } else if (root->type() == op_func_call) {
+    FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
+    if (func_id->access_type != access_nonmember) {
+      //TODO: this is hack, which should be fixed after functions with context are added to static methods list
+      std::string real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
+      if (func_id->context_class->members.has_static_method(real_name)) {
+        check_access(func_id->access_type, func_id->class_id, "static method", func_id->get_human_readable_name());
+      } else if (func_id->context_class->members.has_instance_method(real_name)) {
+        check_access(func_id->access_type, func_id->class_id, "method", func_id->get_human_readable_name());
+      }
+    }
   }
 
   return root;

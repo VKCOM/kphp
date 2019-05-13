@@ -8,6 +8,7 @@ private:
   string class_name;
   ClassPtr class_id;
   ClassPtr lambda_class_id;
+  void check_access(AccessType need_access, ClassPtr access_class, const char *field_type, const std::string &name);
 public:
   string get_description() {
     return "Check access modifiers";

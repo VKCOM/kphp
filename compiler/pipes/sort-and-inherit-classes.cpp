@@ -117,7 +117,6 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
    * (чтобы B::f$$C не считать required)
    */
   if (parent_f->is_auto_inherited || parent_f->context_class != parent_class) {
-    //
     return;
   }
 
@@ -134,18 +133,12 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   } else {
     auto child_method = child_class->members.get_static_method(local_name);
     kphp_assert(child_method);
-    if (parent_f->is_final) {
-      kphp_error(0, format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
-      return;
-    }
-    if (parent_method.access_type == access_static_private) {
-      kphp_error(0, format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
-      return;
-    }
-    if (parent_method.access_type != child_method->access_type) {
-      kphp_error(0, format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
-      return;
-    }
+    kphp_error_return(!parent_f->is_final,
+                      format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
+    kphp_error_return(parent_method.access_type != access_static_private,
+                      format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
+    kphp_error_return(parent_method.access_type == child_method->access_type,
+                      format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
   }
 
   // контекстная функция имеет название baseclassname$$fname$$contextclassname
@@ -185,7 +178,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
     parent_class->members.for_each([&](const ClassMemberStaticField &f) {
       if (auto field = child_class->members.get_static_field(f.local_name())) {
         kphp_error(f.access_type != access_static_private,
-          format("Can't redeclare private static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
+                   format("Can't redeclare private static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
         kphp_error(f.access_type == field->access_type,
                    format("Can't change access type for static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
       }
