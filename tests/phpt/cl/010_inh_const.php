@@ -1,4 +1,5 @@
-@ok
+@kphp_should_fail
+/Can not override/
 <?php
 require_once 'Classes/autoload.php';
 use Classes\Inheritance\Child11;

@@ -454,6 +454,7 @@ def get_all_tests(args):
         return list(tests)
 
     test_tags = [
+        ["access"],
         ["dl"],
         ["dl", "switch"],
         ["phc", "parsing"],
@@ -478,6 +479,7 @@ def get_all_tests(args):
 
     if args.mode == "php":
         args.exclude_tags.add("no_php")
+        args.exclude_tags.add("kphp_should_fail")
 
     check_excluded_tags_exist_in_tests(tests, args.exclude_tags)
 
