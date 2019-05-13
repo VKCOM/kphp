@@ -157,7 +157,7 @@ void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_arg_ref> arg, Verte
 
     if (class_name && !class_name->empty()) {
       if (auto klass = G->get_class(*class_name)) {
-        if (klass->members.has_any_instance_method()) {
+        if (klass->members.has_any_instance_method() || klass->is_interface()) {
           set_lca(klass);
         } else {
           err_msg = "class passed as type-string may not be static";

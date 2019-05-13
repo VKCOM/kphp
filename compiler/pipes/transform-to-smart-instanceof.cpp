@@ -17,18 +17,16 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
 
   auto name_of_derived_vertex = condition->rhs();
   visit(if_vertex->cond());
+  auto initial_state = variable_state;
 
-  auto &initial_state = variable_state;
-  {
-    auto _ = vk::finally([this, initial_state] { variable_state = initial_state; });
-    visit_cmd(visit, if_vertex, name_of_derived_vertex, if_vertex->true_cmd());
-  }
+  visit_cmd(visit, if_vertex, name_of_derived_vertex, if_vertex->true_cmd());
+  variable_state = initial_state;
 
   if (!if_vertex->has_false_cmd()) {
     return true;
   }
 
-  auto _ = vk::finally([this, initial_state] { variable_state = initial_state; });
+  auto _ = vk::finally([this, &initial_state] () mutable { variable_state = std::move(initial_state); });
   auto instance_var = condition->lhs();
   auto &state = variable_state[instance_var->get_string()];
   fill_derived_classes(instance_var, name_of_derived_vertex, state);
@@ -56,10 +54,10 @@ void TransformToSmartInstanceof::visit_cmd(VisitVertex<TransformToSmartInstanceo
   auto &state = variable_state[instance_var->get_string()];
 
   auto set_instance_cast_to_tmp = generate_tmp_var_with_instance_cast(instance_var.clone(), name_of_derived_vertex, state.new_name);
-
-  visit(cmd);
-
   cmd = VertexAdaptor<op_seq>::create(set_instance_cast_to_tmp, cmd).set_location(cmd);
+  auto commands = cmd.as<op_seq>()->args();
+
+  std::for_each(std::next(commands.begin()), commands.end(), visit);
 }
 
 VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {
@@ -68,8 +66,12 @@ VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassB
     return v;
   }
 
-  auto replacement_it = variable_state.find(var_vertex->get_string());
-  if (replacement_it != variable_state.end() && !replacement_it->second.new_name.empty()) {
+  while (true) {
+    auto replacement_it = variable_state.find(var_vertex->get_string());
+    if (replacement_it == variable_state.end() || replacement_it->second.new_name.empty()) {
+      break;
+    }
+
     var_vertex->set_string(replacement_it->second.new_name);
   }
 
