@@ -67,9 +67,9 @@ public:
   const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
 
   static bool find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset = 0);
-  static bool is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, bool enable_error = true);
+  static bool is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type);
   static void run_tipa_unit_tests_parsing_tags();
 };
 
-std::vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc, bool enable_error = true);
+std::vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc);
 VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function);
