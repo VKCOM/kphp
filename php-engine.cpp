@@ -3166,6 +3166,7 @@ void parse_main_args(int argc, char *argv[]) {
 
   remove_parse_option("log");
   remove_parse_option("port");
+  remove_parse_option("clusters-config");
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
