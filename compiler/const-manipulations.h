@@ -428,6 +428,10 @@ protected:
   }
 
   std::string on_non_const(VertexPtr v) override {
+    if (v->has_get_string()) {
+      return v->get_string() + OpInfo::str(v->type());
+    }
+
     string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
     return "ERROR: " + msg;

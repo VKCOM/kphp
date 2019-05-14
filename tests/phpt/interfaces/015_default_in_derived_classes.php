@@ -1,16 +1,18 @@
 @ok
 <?php
 
+define('AB', 200);
+
 interface WithDefault2 {
-    public function foo($x, $y);
+    public function foo($x, $y = 10 + 10 * AB);
 }
 
 class B implements WithDefault2 {
-    public function foo($x = 4, $y = 10) { var_dump($x, $y); }
+    public function foo($x = 20, $y = 10 + 10 * AB) { var_dump($x, $y); }
 }
 
 class A implements WithDefault2 {
-    public function foo($x, $y = 20, $z = 10) {
+    public function foo($x, $y = 10 + 10 * AB, $z = 10) {
         var_dump($x, $y, $z);
     }
 }

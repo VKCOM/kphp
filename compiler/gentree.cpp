@@ -819,7 +819,6 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
 
   VertexPtr def_val = get_def_value();
   if (def_val) {
-    kphp_error(!(cur_class && cur_class->is_interface()), "Methods of interfaces may not include default values");
     next.push_back(def_val);
   }
   auto v = VertexAdaptor<op_func_param>::create(next);

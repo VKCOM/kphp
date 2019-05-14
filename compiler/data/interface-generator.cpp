@@ -1,9 +1,11 @@
 #include "compiler/data/interface-generator.h"
 
+#include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/stage.h"
+#include "common/termformat/termformat.h"
 
 namespace {
 
@@ -27,6 +29,7 @@ VertexAdaptor<op_func_call> create_instance_cast_to(VertexAdaptor<op_var> instan
 
 template<class ClassMemberMethod>
 bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
+  stage::set_line(get_location(interface_function->root).line);
   if (!interface_method_in_derived) {
     auto msg = format("You should override interface method: `%s` in class: `%s`",
                       interface_function->get_human_readable_name().c_str(),
@@ -36,7 +39,7 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     return false;
   }
 
-  auto derived_method = interface_method_in_derived->function;
+  FunctionPtr derived_method = interface_method_in_derived->function;
   kphp_assert(derived_method);
 
   /**
@@ -52,10 +55,12 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
    */
   derived_method->calc_min_argn();
   auto min_argn = derived_method->min_argn;
-  auto max_argn = derived_method->get_params().size();
+  auto derived_params = derived_method->get_params();
+  auto max_argn = derived_params.size();
   auto default_argn = max_argn - min_argn;
 
-  auto i_argn = interface_function->get_params().size();
+  auto interface_params = interface_function->get_params();
+  auto i_argn = interface_params.size();
 
   if (!(i_argn <= max_argn && (default_argn >= max_argn - i_argn))) {
     auto msg = format("Count of arguments are different in interface method: `%s` and in class: `%s`",
@@ -63,6 +68,24 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
                       context_class->name.c_str());
 
     kphp_error_act(false, msg, return false);
+  }
+
+  auto get_string_repr = [] (VertexPtr v) {
+    auto param = v.try_as<op_func_param>();
+    kphp_assert(param && param->has_default_value());
+    return VertexPtrFormatter::to_string(param->default_value());
+  };
+
+  interface_function->calc_min_argn();
+  for (auto arg_id = interface_function->min_argn; arg_id < i_argn; ++arg_id) {
+    auto interface_repr = get_string_repr(interface_params[arg_id]);
+    auto derived_repr = get_string_repr(derived_params[arg_id]);
+
+    kphp_error(interface_repr == derived_repr,
+      format("default value of interface parameter:`%s` may not differ from value of derived parameter: `%s`, in function: %s",
+             TermStringFormat::paint(interface_repr, TermStringFormat::green).c_str(),
+             TermStringFormat::paint(derived_repr, TermStringFormat::green).c_str(),
+             TermStringFormat::paint(derived_method->get_human_readable_name(), TermStringFormat::red).c_str()));
   }
 
   return true;
