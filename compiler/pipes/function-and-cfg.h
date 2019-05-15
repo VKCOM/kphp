@@ -8,12 +8,7 @@ struct FunctionAndCFG {
   FunctionPtr function;
   CFGData *data;
 
-  FunctionAndCFG() :
-    function(),
-    data(nullptr) {
-  }
-
-  FunctionAndCFG(FunctionPtr function, CFGData *data) :
+  explicit FunctionAndCFG(FunctionPtr function = {}, CFGData *data = nullptr) :
     function(function),
     data(data) {
   }
