@@ -12,7 +12,7 @@
 template<typename T>
 struct ConstManipulations {
 public:
-  virtual ~ConstManipulations() {}
+  virtual ~ConstManipulations() = default;
 
 protected:
   virtual T on_trivial(VertexPtr v) { return on_non_const(v); }
@@ -33,7 +33,7 @@ protected:
 
   virtual T on_func_name(VertexAdaptor<op_func_name> v) { return on_non_const(v); }
 
-  virtual T on_var(VertexPtr v) { return on_non_const(v); }
+  virtual T on_var(VertexAdaptor<op_var> v) { return on_non_const(v); }
 
   virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
 
@@ -106,7 +106,7 @@ protected:
         return on_array(v.as<op_array>());
 
       case op_var:
-        return on_var(v);
+        return on_var(v.as<op_var>());
 
       case op_func_name:
         return on_func_name(v.as<op_func_name>());
@@ -161,7 +161,7 @@ protected:
     return visit(GenTree::get_actual_value(v->args()[ind]));
   }
 
-  bool on_var(VertexPtr v) override {
+  bool on_var(VertexAdaptor<op_var> v) override {
     if (v->get_var_id() && (v->extra_type == op_ex_var_const || v->get_var_id()->is_constant())) {
       return visit(v->get_var_id()->init_val);
     }
@@ -174,7 +174,7 @@ protected:
   }
 };
 
-struct CheckConstWithDefines
+struct CheckConstWithDefines final
   : CheckConst {
 public:
   bool is_const(VertexPtr v) {
@@ -182,11 +182,11 @@ public:
   }
 
 protected:
-  bool on_trivial(VertexPtr v) override {
+  bool on_trivial(VertexPtr v) final {
     return in_concat == 0 || v->has_get_string();
   }
 
-  bool on_func_name(VertexAdaptor<op_func_name> v) override {
+  bool on_func_name(VertexAdaptor<op_func_name> v) final {
     std::string name = resolve_define_name(v->str_val);
     DefinePtr define = G->get_define(name);
     if (define) {
@@ -195,7 +195,7 @@ protected:
     return false;
   }
 
-  bool on_non_const(VertexPtr v) override {
+  bool on_non_const(VertexPtr v) final {
     if (v->type() == op_concat || v->type() == op_string_build) {
       in_concat++;
 
@@ -217,7 +217,7 @@ private:
 };
 
 
-struct MakeConst
+struct MakeConst final
   : ConstManipulations<VertexPtr> {
 public:
   VertexPtr make_const(VertexPtr v) {
@@ -225,46 +225,46 @@ public:
   }
 
 protected:
-  VertexPtr on_trivial(VertexPtr v) override {
+  VertexPtr on_trivial(VertexPtr v) final {
     return v;
   }
 
-  VertexPtr on_unary(VertexAdaptor<meta_op_unary> v) override {
+  VertexPtr on_unary(VertexAdaptor<meta_op_unary> v) final {
     v->expr() = make_const(v->expr());
     return v;
   }
 
-  VertexPtr on_binary(VertexAdaptor<meta_op_binary> v) override {
+  VertexPtr on_binary(VertexAdaptor<meta_op_binary> v) final {
     v->lhs() = make_const(v->lhs());
     v->rhs() = make_const(v->rhs());
     return v;
   }
 
-  bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
+  bool on_array_value(VertexAdaptor<op_array> v, size_t ind) final {
     v->args()[ind] = make_const(v->args()[ind]);
     return true;
   }
 
-  bool on_array_double_arrow(VertexAdaptor<op_double_arrow> v) override {
+  bool on_array_double_arrow(VertexAdaptor<op_double_arrow> v) final {
     v->key() = make_const(v->key());
     v->value() = make_const(v->value());
     return true;
   }
 
-  VertexPtr on_array_finish(VertexAdaptor<op_array> v) override {
+  VertexPtr on_array_finish(VertexAdaptor<op_array> v) final {
     return v;
   }
 
-  VertexPtr on_conv(VertexAdaptor<meta_op_unary> v) override {
+  VertexPtr on_conv(VertexAdaptor<meta_op_unary> v) final {
     return make_const(v->expr());
   }
 
-  VertexPtr on_func_name(VertexAdaptor<op_func_name> v) override {
+  VertexPtr on_func_name(VertexAdaptor<op_func_name> v) final {
     std::string name = resolve_define_name(v->str_val);
     return G->get_define(name)->val;
   }
 
-  VertexPtr on_non_const(VertexPtr v) override {
+  VertexPtr on_non_const(VertexPtr v) final {
     if (v->type() == op_concat || v->type() == op_string_build) {
       auto new_val = VertexAdaptor<op_string>::create();
       new_val->location = v->get_location();
@@ -278,11 +278,11 @@ protected:
       return new_val;
     }
 
-    return VertexPtr();
+    return {};
   }
 };
 
-struct ArrayHash
+struct ArrayHash final
   : ConstManipulations<void> {
   static long long calc_hash(VertexPtr v) {
     ArrayHash array_hash;
@@ -299,7 +299,7 @@ struct ArrayHash
   }
 
 protected:
-  void on_trivial(VertexPtr v) override {
+  void on_trivial(VertexPtr v) final {
     string s = OpInfo::str(v->type());
 
     if (v->has_get_string()) {
@@ -309,22 +309,22 @@ protected:
     feed_hash_string(s);
   }
 
-  void on_conv(VertexAdaptor<meta_op_unary> v) override {
+  void on_conv(VertexAdaptor<meta_op_unary> v) final {
     return visit(v->expr());
   }
 
-  void on_unary(VertexAdaptor<meta_op_unary> v) override {
+  void on_unary(VertexAdaptor<meta_op_unary> v) final {
     string type_str = OpInfo::str(v->type());
     feed_hash_string(type_str);
 
     return visit(v->expr());
   }
 
-  void on_define_val(VertexAdaptor<op_define_val> v) override {
+  void on_define_val(VertexAdaptor<op_define_val> v) final {
     return visit(GenTree::get_actual_value(v));
   }
 
-  void on_binary(VertexAdaptor<meta_op_binary> v) override {
+  void on_binary(VertexAdaptor<meta_op_binary> v) final {
     VertexPtr key = v->lhs();
     VertexPtr value = v->rhs();
 
@@ -333,7 +333,7 @@ protected:
     visit(value);
   }
 
-  void on_double_arrow(VertexAdaptor<op_double_arrow> v) override {
+  void on_double_arrow(VertexAdaptor<op_double_arrow> v) final {
     VertexPtr key = GenTree::get_actual_value(v->key());
     VertexPtr value = GenTree::get_actual_value(v->value());
 
@@ -342,7 +342,7 @@ protected:
     visit(value);
   }
 
-  void on_array(VertexAdaptor<op_array> v) override {
+  void on_array(VertexAdaptor<op_array> v) final {
     feed_hash(v->args().size());
     feed_hash(MAGIC1);
 
@@ -353,11 +353,11 @@ protected:
     feed_hash(MAGIC2);
   }
 
-  void on_var(VertexPtr v) override {
+  void on_var(VertexAdaptor<op_var> v) final {
     return visit(GenTree::get_actual_value(v));
   }
 
-  void on_non_const(VertexPtr v) override {
+  void on_non_const(VertexPtr v) final {
     string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
   }
@@ -369,7 +369,7 @@ private:
   static const long long MAGIC2 = 288288288288069LL;
 };
 
-struct VertexPtrFormatter
+struct VertexPtrFormatter final
   : ConstManipulations<std::string> {
   static std::string to_string(VertexPtr v) {
     static VertexPtrFormatter serializer;
@@ -377,7 +377,7 @@ struct VertexPtrFormatter
   }
 
 protected:
-  std::string on_trivial(VertexPtr v) override {
+  std::string on_trivial(VertexPtr v) final {
     string s;
 
     if (v->has_get_string()) {
@@ -387,33 +387,33 @@ protected:
     return s + OpInfo::str(v->type());
   }
 
-  std::string on_conv(VertexAdaptor<meta_op_unary> v) override {
+  std::string on_conv(VertexAdaptor<meta_op_unary> v) final {
     return visit(v->expr());
   }
 
-  std::string on_unary(VertexAdaptor<meta_op_unary> v) override {
+  std::string on_unary(VertexAdaptor<meta_op_unary> v) final {
     return visit(v->expr()) + ':' + OpInfo::str(v->type());
   }
 
-  std::string on_define_val(VertexAdaptor<op_define_val> v) override {
+  std::string on_define_val(VertexAdaptor<op_define_val> v) final {
     return visit(GenTree::get_actual_value(v));
   }
 
-  std::string on_binary(VertexAdaptor<meta_op_binary> v) override {
+  std::string on_binary(VertexAdaptor<meta_op_binary> v) final {
     VertexPtr key = v->lhs();
     VertexPtr value = v->rhs();
 
     return '(' + visit(key) + OpInfo::str(v->type()) + visit(value) + ')';
   }
 
-  std::string on_double_arrow(VertexAdaptor<op_double_arrow> v) override {
+  std::string on_double_arrow(VertexAdaptor<op_double_arrow> v) final {
     VertexPtr key = GenTree::get_actual_value(v->key());
     VertexPtr value = GenTree::get_actual_value(v->value());
 
     return visit(key) + "=>" + visit(value);
   }
 
-  std::string on_array(VertexAdaptor<op_array> v) override {
+  std::string on_array(VertexAdaptor<op_array> v) final {
     std::string res;
 
     for (auto it : *v) {
@@ -423,11 +423,11 @@ protected:
     return res;
   }
 
-  std::string on_var(VertexPtr v) override {
+  std::string on_var(VertexAdaptor<op_var> v) final {
     return v->get_string() + OpInfo::str(v->type());
   }
 
-  std::string on_non_const(VertexPtr v) override {
+  std::string on_non_const(VertexPtr v) final {
     if (v->has_get_string()) {
       return v->get_string() + OpInfo::str(v->type());
     }
