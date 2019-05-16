@@ -68,7 +68,7 @@ public:""".format(name=name, base_name=base_name))
 def get_string_extra():
     return """
   virtual const string &get_string() const override { return str_val; }
-  virtual void set_string(const string &s) override { str_val = s; }
+  virtual void set_string(string s) override { str_val = std::move(s); }
   virtual bool has_get_string() const override { return true; }
 """
 

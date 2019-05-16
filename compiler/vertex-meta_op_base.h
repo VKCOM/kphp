@@ -192,7 +192,7 @@ public:
 
   virtual const string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual void set_string(const string &) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual void set_string(string) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
   virtual bool has_get_string() const { return false; }
 
