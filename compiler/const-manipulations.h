@@ -35,6 +35,8 @@ protected:
 
   virtual T on_var(VertexAdaptor<op_var> v) { return on_non_const(v); }
 
+  virtual T on_instance_prop(VertexAdaptor<op_instance_prop> v) { return on_non_const(v); }
+
   virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
 
   virtual T on_non_const(VertexPtr) { return T(); }
@@ -107,6 +109,9 @@ protected:
 
       case op_var:
         return on_var(v.as<op_var>());
+
+      case op_instance_prop:
+        return on_instance_prop(v.as<op_instance_prop>());
 
       case op_func_name:
         return on_func_name(v.as<op_func_name>());
@@ -425,6 +430,10 @@ protected:
 
   std::string on_var(VertexAdaptor<op_var> v) final {
     return v->get_string() + OpInfo::str(v->type());
+  }
+
+  std::string on_instance_prop(VertexAdaptor<op_instance_prop> v) final {
+    return visit(v->instance()) + "->" + v->get_string();
   }
 
   std::string on_non_const(VertexPtr v) final {
