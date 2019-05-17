@@ -646,7 +646,7 @@ VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, Ver
 }
 
 VertexAdaptor<op_class_type_rule> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
-  return create_type_help_class_vertex(G->get_class(klass_name));
+  return create_type_help_class_vertex(G->get_class(resolve_uses(cur_function, static_cast<std::string>(klass_name))));
 }
 
 VertexAdaptor<op_class_type_rule> GenTree::create_type_help_class_vertex(ClassPtr klass) {
