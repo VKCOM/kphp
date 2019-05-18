@@ -44,6 +44,9 @@ string gen_anonymous_function_name(FunctionPtr function) {
   return gen_unique_name_inside_function(function, "anon", x);
 }
 
+bool is_anonymous_function_name(vk::string_view name) {
+  return name.starts_with("anon$");
+}
 
 string gen_const_string_name(const string &str) {
   auto h = vk::std_hash(str);

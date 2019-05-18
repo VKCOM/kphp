@@ -76,15 +76,6 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
-    if (root->type() == op_function_c) {
-      auto new_root = VertexAdaptor<op_string>::create();
-      if (stage::get_function_name() != stage::get_file()->main_func_name) {
-        new_root->set_string(stage::get_function_name());
-      }
-      set_location(new_root, root->get_location());
-      root = new_root;
-    }
-
     if (auto instanceof = root.try_as<op_instanceof>()) {
       auto str_repr_of_class = GenTree::get_actual_value(instanceof->rhs())->get_string();
       instanceof->derived_class = G->get_class(str_repr_of_class);

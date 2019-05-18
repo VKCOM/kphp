@@ -245,10 +245,6 @@
     }
   },
   {
-    "name": "op_function_c",
-    "base_name": "meta_op_base"
-  },
-  {
     "name": "op_int_const",
     "base_name": "meta_op_num",
     "props": {

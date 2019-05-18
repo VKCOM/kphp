@@ -132,6 +132,7 @@ enum TokenType {
   tok_dir_c,
   tok_line_c,
   tok_method_c,
+  tok_namespace_c,
 
   tok_int,
   tok_float,

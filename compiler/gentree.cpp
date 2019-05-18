@@ -424,9 +424,54 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = v;
       break;
     }
-    case tok_func_c: {
-      auto v = VertexAdaptor<op_function_c>::create();
+    case tok_class_c: {
+      auto v = VertexAdaptor<op_string>::create();
       set_location(v, AutoLocation(this));
+      v->str_val = cur_class ? cur_class->name : "";
+      next_cur();
+      res = v;
+      break;
+    }
+    case tok_dir_c: {
+      auto v = VertexAdaptor<op_string>::create();
+      set_location(v, AutoLocation(this));
+      v->str_val = processing_file->file_name.substr(0, processing_file->file_name.rfind('/'));
+      next_cur();
+      res = v;
+      break;
+    }
+    case tok_method_c: {
+      auto v = VertexAdaptor<op_string>::create();
+      set_location(v, AutoLocation(this));
+      next_cur();
+      if (is_anonymous_function_name(cur_function->name)) {
+        v->str_val = "{closure}";
+      } else if (cur_function->name != processing_file->main_func_name) {
+        if (cur_class) {
+          v->str_val = cur_class->name + "::" + cur_function->name.substr(cur_function->name.rfind('$') + 1);
+        } else {
+          v->str_val = cur_function->name;
+        }
+      }
+      res = v;
+      break;
+    }
+    case tok_namespace_c: {
+      auto v = VertexAdaptor<op_string>::create();
+      set_location(v, AutoLocation(this));
+      v->str_val = processing_file->namespace_name;
+      next_cur();
+      res = v;
+      break;
+    }
+    case tok_func_c: {
+      auto v = VertexAdaptor<op_string>::create();
+      set_location(v, AutoLocation(this));
+      if (is_anonymous_function_name(cur_function->name)) {
+        v->str_val = "{closure}";
+      } else if (cur_function->name != processing_file->main_func_name) {
+        v->str_val = cur_function->name.substr(cur_function->name.rfind('$') + 1);
+      }
       next_cur();
       res = v;
       break;

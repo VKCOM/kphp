@@ -9,6 +9,7 @@ int hash(const string &s);
 //string next_name (const string &prefix);
 string gen_shorthand_ternary_name(FunctionPtr function);
 string gen_anonymous_function_name(FunctionPtr function);
+bool is_anonymous_function_name(vk::string_view name);
 string gen_unique_name(string prefix, bool flag = false);
 string gen_const_string_name(const string &str);
 string gen_const_regexp_name(const string &str);
