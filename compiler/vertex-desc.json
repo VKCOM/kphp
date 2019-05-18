@@ -100,7 +100,7 @@
   },
   {
     "name": "meta_op_require",
-    "base_name": "meta_op_base",
+    "base_name": "meta_op_unary",
     "props": {
       "cnst": "cnst_not_func",
       "type": "common_op"

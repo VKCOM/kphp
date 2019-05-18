@@ -11,6 +11,20 @@
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 
+namespace {
+std::string collect_string_concatenation(VertexPtr v) {
+  if (auto string = v.try_as<op_string>()) {
+    return string->str_val;
+  }
+  if (auto concat = v.try_as<op_concat>()) {
+    auto left = collect_string_concatenation(concat->lhs());
+    auto right = collect_string_concatenation(concat->rhs());
+    return (left.empty() || right.empty()) ? std::string() : (left + right);
+  }
+  return std::string();
+}
+} // namespace
+
 class CollectRequiredPass : public FunctionPassBase {
 private:
   DataStream<SrcFilePtr> &file_stream;
@@ -107,21 +121,22 @@ public:
     return root;
   }
 
-  VertexAdaptor<op_func_call> make_require_call(VertexPtr v) {
-    kphp_error_act (v->type() == op_string, "Not a string in 'require' arguments", return {});
-    if (SrcFilePtr file = require_file(v->get_string(), true)) {
+  void make_require_call(VertexPtr &v) {
+    string name = collect_string_concatenation(v);
+    kphp_error_return (!name.empty(), "Not a string in 'require' arguments");
+    if (SrcFilePtr file = require_file(name, true)) {
       auto call = VertexAdaptor<op_func_call>::create();
       call->str_val = file->main_func_name;
-      return call;
+      v = call;
+    } else {
+      kphp_error (0, format("Cannot require [%s]\n", name.c_str()));
     }
-    kphp_error (0, format("Cannot require [%s]\n", v->get_string().c_str()));
-    return {};
   }
 
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
-    if (root->type() == op_require_once || root->type() == op_require) {
-      kphp_assert_msg(root->size() == 1, "Only one child possible for require vertex");
-      root->back() = make_require_call(root->back());
+    if (auto require = root.try_as<meta_op_require>()) {
+      kphp_assert_msg(require->size() == 1, "Only one child possible for require vertex");
+      make_require_call(require->expr());
     }
     return root;
   }
