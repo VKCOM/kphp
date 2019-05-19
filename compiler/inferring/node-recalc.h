@@ -8,7 +8,7 @@ protected:
   TypeData *new_type_;
   tinf::Node *node_;
   tinf::TypeInferer *inferer_;
-  vector<TypeData *> types_stack;
+  std::vector<TypeData *> types_stack;
 public:
   const TypeData *new_type();
   void add_dependency_impl(tinf::Node *from, tinf::Node *to);
@@ -25,7 +25,7 @@ public:
   void set_lca(ClassPtr klass);
   NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer);
 
-  virtual ~NodeRecalc() {}
+  virtual ~NodeRecalc() = default;
   NodeRecalc(const NodeRecalc &) = delete;
   NodeRecalc &operator=(const NodeRecalc &) = delete;
 

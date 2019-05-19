@@ -5,6 +5,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/vertex.h"
 
 void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {

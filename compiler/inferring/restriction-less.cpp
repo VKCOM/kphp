@@ -7,6 +7,7 @@
 #include "common/termformat/termformat.h"
 
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-node.h"

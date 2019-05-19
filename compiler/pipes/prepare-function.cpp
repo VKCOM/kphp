@@ -7,6 +7,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/phpdoc.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 //static void check_template_function(FunctionPtr func) {

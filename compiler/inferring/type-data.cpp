@@ -1,6 +1,8 @@
 #include "compiler/inferring/type-data.h"
 
 #include <regex>
+#include <string>
+#include <vector>
 
 #include "common/termformat/termformat.h"
 
@@ -8,6 +10,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
+#include "compiler/utils/string-utils.h"
 
 /*** TypeData::SubkeysValues ***/
 
@@ -48,8 +51,8 @@ inline void TypeData::SubkeysValues::clear() {
 
 /*** TypeData ***/
 
-static vector<TypeData *> primitive_types;
-static vector<TypeData *> array_types;
+static std::vector<TypeData *> primitive_types;
+static std::vector<TypeData *> array_types;
 
 void TypeData::init_static() {
   if (!primitive_types.empty()) {
@@ -570,7 +573,7 @@ bool operator==(const TypeData &a, const TypeData &b) {
   return cmp(&a, &b) == 0;
 }
 
-inline void get_cpp_style_type(const TypeData *type, string &res) {
+inline void get_cpp_style_type(const TypeData *type, std::string &res) {
   const PrimitiveType tp = type->get_real_ptype();
 
   switch (tp) {
@@ -599,7 +602,7 @@ inline void get_cpp_style_type(const TypeData *type, string &res) {
   }
 }
 
-void type_out_impl(const TypeData *type, string &res, bool cpp_out) {
+void type_out_impl(const TypeData *type, std::string &res, bool cpp_out) {
   const PrimitiveType tp = type->get_real_ptype();
   const bool or_false = type->use_or_false() && tp != tp_bool;
 
@@ -639,14 +642,14 @@ void type_out_impl(const TypeData *type, string &res, bool cpp_out) {
   }
 }
 
-string type_out(const TypeData *type, bool cpp_out) {
-  string res;
+std::string type_out(const TypeData *type, bool cpp_out) {
+  std::string res;
   type_out_impl(type, res, cpp_out);
   return res;
 }
 
-string colored_type_out(const TypeData *type) {
-  string type_str = type_out(type);
+std::string colored_type_out(const TypeData *type) {
+  std::string type_str = type_out(type);
   if (vk::string_view(type_str).starts_with("std::")) {
     type_str = type_str.substr(5);
   }

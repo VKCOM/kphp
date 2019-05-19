@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 

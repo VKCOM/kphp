@@ -9,6 +9,8 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/threading/tls.h"
+#include "compiler/utils/string-utils.h"
 
 int stage::warnings_count;
 

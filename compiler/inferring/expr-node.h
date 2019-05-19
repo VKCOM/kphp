@@ -20,8 +20,8 @@ public:
     return expr_;
   }
 
-  string get_description();
-  string get_location_text();
+  std::string get_description();
+  std::string get_location_text();
   const Location &get_location();
 };
 

@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/public.h"

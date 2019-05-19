@@ -6,6 +6,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 LambdaGenerator::LambdaGenerator(const std::string &name, const Location &location)

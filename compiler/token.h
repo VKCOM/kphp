@@ -2,8 +2,6 @@
 
 #include "common/wrappers/string_view.h"
 
-#include "compiler/common.h"
-
 enum TokenType {
   tok_empty,
   tok_int_const,
@@ -206,7 +204,7 @@ public:
   inline TokenType &type() { return type_; }
   inline const TokenType &type() const { return type_; }
 
-  string to_str() const {
-    return static_cast<string>(debug_str);
+  std::string to_str() const {
+    return static_cast<std::string>(debug_str);
   }
 };

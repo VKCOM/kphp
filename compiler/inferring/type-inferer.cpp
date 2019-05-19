@@ -1,6 +1,7 @@
 #include "compiler/inferring/type-inferer.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/threading/profiler.h"
 
 namespace tinf {
@@ -71,8 +72,8 @@ public:
 
 CachedProfiler TypeInfererTask::type_inferer_profiler{"type_inferring"};
 
-vector<Task *> TypeInferer::get_tasks() {
-  vector<Task *> res;
+std::vector<Task *> TypeInferer::get_tasks() {
+  std::vector<Task *> res;
   for (int i = 0; i < Q.size(); i++) {
     NodeQueue *q = Q.get(i);
     if (q->empty()) {

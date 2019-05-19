@@ -3,7 +3,6 @@
 #include "auto/compiler/vertex/vertex-types.h"
 
 #include "compiler/token.h"
-#include "compiler/utils/string-utils.h"
 
 enum OperationExtra {
   op_ex_none = 0,
@@ -44,8 +43,8 @@ struct OpProperties {
   ConstOperationType cnst;
   OperationType type;
 
-  string description;
-  string str;
+  std::string description;
+  std::string str;
 };
 
 struct OpInfo {
@@ -90,7 +89,7 @@ public:
     return properties(op).type;
   }
 
-  static inline const string &str(Operation op) {
+  static inline const std::string &str(Operation op) {
     return properties(op).str;
   }
 

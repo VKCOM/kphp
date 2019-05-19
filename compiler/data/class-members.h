@@ -125,7 +125,7 @@ class ClassMembersContainer {
 
   // выбор нужного vector'а из static_methods/instance_methods/etc; реализации см. внизу
   template<class MemberT>
-  vector<MemberT> &get_all_of() {
+  std::vector<MemberT> &get_all_of() {
     static_assert(sizeof(MemberT) == -1u, "Invalid template MemberT parameter");
     return {};
   }
@@ -172,7 +172,7 @@ public:
   void add_instance_method(FunctionPtr function, AccessType access_type);
   void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, const vk::string_view &phpdoc_str);
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);
-  void add_constant(string const_name, VertexPtr value);
+  void add_constant(std::string const_name, VertexPtr value);
 
   bool has_constant(const std::string &local_name) const;
   bool has_field(const std::string &local_name) const;
@@ -201,12 +201,12 @@ inline std::string get_local_name_from_global_$$(const std::string &global_name)
 }
 
 template<>
-inline vector<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() { return static_methods; }
+inline std::vector<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() { return static_methods; }
 template<>
-inline vector<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() { return instance_methods; }
+inline std::vector<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() { return instance_methods; }
 template<>
-inline vector<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() { return static_fields; }
+inline std::vector<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() { return static_fields; }
 template<>
-inline vector<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
+inline std::vector<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
 template<>
-inline vector<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return contants; }
+inline std::vector<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return contants; }

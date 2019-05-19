@@ -5,7 +5,9 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/inferring/node-recalc.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 class VarNodeRecalc : public NodeRecalc {

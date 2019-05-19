@@ -9,6 +9,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/utils/string-utils.h"
 
 class CollectRequiredPass : public FunctionPassBase {
 private:

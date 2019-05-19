@@ -17,6 +17,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 #define CE(x) if (!(x)) {return {};}

@@ -1,5 +1,6 @@
 #include "compiler/inferring/node.h"
 
+#include "compiler/inferring/type-data.h"
 #include "compiler/stage.h"
 
 namespace tinf {

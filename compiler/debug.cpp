@@ -5,6 +5,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 static std::map<TokenType, std::string> TOKEN_TYPE_NAMES;

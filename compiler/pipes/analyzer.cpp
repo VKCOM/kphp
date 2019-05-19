@@ -2,6 +2,7 @@
 
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/utils/string-utils.h"
 
 void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
   bool have_arrow = false;

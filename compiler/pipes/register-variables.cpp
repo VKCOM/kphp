@@ -4,6 +4,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/utils/string-utils.h"
 
 VarPtr RegisterVariablesPass::create_global_var(const string &name) {
   VarPtr var = G->get_global_var(name, VarData::var_global_t, VertexPtr());

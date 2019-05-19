@@ -26,7 +26,7 @@ public:
   VertexPtr init_val;
   FunctionPtr holder_func;
   ClassPtr class_id;
-  vector<VarPtr> *bad_vars = nullptr;
+  std::vector<VarPtr> *bad_vars = nullptr;
   bool is_reference = false;
   bool uninited_flag = false;
   bool optimize_flag = false;
@@ -43,7 +43,7 @@ public:
 
   inline Type &type() { return type_; }
 
-  string get_human_readable_name() const;
+  std::string get_human_readable_name() const;
 
   inline bool is_global_var() const {
     return type_ == var_global_t && !class_id;

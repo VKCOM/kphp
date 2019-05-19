@@ -3,6 +3,7 @@
 #include "common/wrappers/likely.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/inferring/type-inferer.h"
 #include "compiler/stage.h"
 

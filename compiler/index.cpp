@@ -10,6 +10,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
+#include "compiler/utils/string-utils.h"
 
 bool is_dir(const string &path) {
   struct stat s;

@@ -9,6 +9,7 @@
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
+#include "compiler/utils/string-utils.h"
 
 /**
  * Через этот pass проходят функции вида

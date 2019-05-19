@@ -4,6 +4,7 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/lvalue.h"
 #include "compiler/inferring/public.h"
@@ -12,8 +13,8 @@
 #include "compiler/inferring/restriction-non-void.h"
 #include "compiler/inferring/rvalue.h"
 #include "compiler/inferring/type-node.h"
-#include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"
+#include "compiler/utils/string-utils.h"
 
 tinf::Node *CollectMainEdgesPass::node_from_rvalue(const RValue &rvalue) {
   if (rvalue.node == nullptr) {

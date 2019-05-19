@@ -1,5 +1,7 @@
 #include "compiler/inferring/restriction-non-void.h"
 
+#include "compiler/inferring/type-data.h"
+
 RestrictionNonVoid::RestrictionNonVoid(tinf::Node *node) : node(node) {}
 
 bool RestrictionNonVoid::check_broken_restriction_impl() {

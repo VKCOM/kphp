@@ -2,9 +2,11 @@
 
 #include "common/wrappers/iterator_range.h"
 
+#include "compiler/common.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/expr-node.h"
+#include "compiler/inferring/primitive-type.h"
 
 template<Operation Op>
 vertex_inner<Op> *raw_create_vertex_inner(int args_n);
@@ -160,7 +162,7 @@ public:
 
   VertexPtr &back() { return ith(size() - 1); }
 
-  vector<VertexPtr> get_next() { return vector<VertexPtr>(begin(), end()); }
+  std::vector<VertexPtr> get_next() { return std::vector<VertexPtr>(begin(), end()); }
 
   bool empty() { return size() == 0; }
 
@@ -190,9 +192,9 @@ public:
 
   virtual void set_var_id(const VarPtr &) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual const string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual const std::string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
-  virtual void set_string(string) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual void set_string(std::string) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
   virtual bool has_get_string() const { return false; }
 

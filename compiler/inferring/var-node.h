@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/data_ptr.h"
 #include "compiler/inferring/node.h"
 
 namespace tinf {

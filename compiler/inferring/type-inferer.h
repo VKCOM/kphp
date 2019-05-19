@@ -5,6 +5,7 @@
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 #include "compiler/scheduler/task.h"
+#include "compiler/threading/tls.h"
 
 namespace tinf {
 

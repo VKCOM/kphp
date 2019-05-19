@@ -7,6 +7,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 LambdaPtr LambdaClassData::get_from(VertexPtr v) {

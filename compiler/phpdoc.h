@@ -1,11 +1,12 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
-#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/primitive-type.h"
 
 struct php_doc_tag {
   enum doc_type {
@@ -66,7 +67,7 @@ public:
 
   const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
 
-  static bool find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, string &out_var_name, string &out_type_str, int offset = 0);
+  static bool find_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type, std::string &out_var_name, std::string &out_type_str, int offset = 0);
   static bool is_tag_in_phpdoc(const vk::string_view &phpdoc, php_doc_tag::doc_type doc_type);
   static void run_tipa_unit_tests_parsing_tags();
 };

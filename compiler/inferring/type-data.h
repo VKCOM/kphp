@@ -8,12 +8,12 @@
 #include <string>
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/inferring/key.h"
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/stage.h"
 #include "compiler/threading/format.h"
 #include "compiler/threading/tls.h"
-#include "compiler/utils/string-utils.h"
 
 /*** TypeData ***/
 // read/write/lookup at

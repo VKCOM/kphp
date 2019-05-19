@@ -1,6 +1,6 @@
 #pragma once
 
-#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/multi-key.h"
 
 namespace tinf {
 

@@ -5,6 +5,7 @@
 #include "drinkless/dl-utils-lite.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/utils/string-utils.h"
 
 void MakeRunner::run_target(Target *target) {
   bool ready = target->mtime != 0;

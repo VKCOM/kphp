@@ -4,6 +4,7 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/gentree.h"
+#include "compiler/inferring/type-data.h"
 
 void compile_string_raw(const string &str, CodeGenerator &W) {
   W << "\"";

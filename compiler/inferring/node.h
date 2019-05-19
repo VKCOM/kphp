@@ -1,12 +1,15 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
-#include "compiler/inferring/edge.h"
-#include "compiler/inferring/type-data.h"
 #include "compiler/threading/locks.h"
 
+struct TypeData;
+
 namespace tinf {
+
+struct Edge;
 
 class TypeInferer;
 

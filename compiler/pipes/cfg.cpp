@@ -5,6 +5,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/utils/dsu.h"
 #include "compiler/utils/idgen.h"
+#include "compiler/utils/string-utils.h"
 
 class CFGData {
 private:

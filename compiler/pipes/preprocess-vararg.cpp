@@ -1,5 +1,7 @@
 #include "compiler/pipes/preprocess-vararg.h"
 
+#include "compiler/utils/string-utils.h"
+
 VertexPtr PreprocessVarargPass::create_va_list_var(Location loc) {
   auto result = VertexAdaptor<op_var>::create();
   result->str_val = "$VA_LIST";

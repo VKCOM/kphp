@@ -5,6 +5,7 @@
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 

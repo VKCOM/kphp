@@ -1,5 +1,7 @@
 #include "compiler/data/class-members.h"
 
+#include "common/algorithms/hashes.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
@@ -8,8 +10,8 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "common/algorithms/hashes.h"
 
 const string &ClassMemberStaticMethod::global_name() const {
   return function->name;

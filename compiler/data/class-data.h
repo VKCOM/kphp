@@ -5,7 +5,6 @@
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
-#include "compiler/threading/data-stream.h"
 
 enum class ClassType {
   klass,
@@ -18,23 +17,23 @@ public:
   // описание extends / implements / use trait в строковом виде (class_name)
   struct StrDependence {
     ClassType type;
-    string class_name;
+    std::string class_name;
 
-    StrDependence(ClassType type, string class_name) :
+    StrDependence(ClassType type, std::string class_name) :
       type(type),
       class_name(std::move(class_name)) {}
   };
 
   int id{0};
   ClassType class_type{ClassType::klass}; // класс / интерфейс / трейт
-  string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
+  std::string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
   VertexAdaptor<op_class> root;
 
-  vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
+  std::vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
   ClassPtr parent_class;                  // extends
-  vector<InterfacePtr> implements;        // на будущее
-  vector<ClassPtr> derived_classes;
-  vector<ClassPtr> traits_uses;           // на будущее
+  std::vector<InterfacePtr> implements;        // на будущее
+  std::vector<ClassPtr> derived_classes;
+  std::vector<ClassPtr> traits_uses;           // на будущее
 
   FunctionPtr construct_function;
   vk::string_view phpdoc_str;
@@ -45,7 +44,7 @@ public:
   bool is_immutable{false};
 
   SrcFilePtr file_id;
-  string src_name, header_name;
+  std::string src_name, header_name;
 
   ClassMembersContainer members;
 
@@ -68,7 +67,7 @@ public:
   void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os, bool auto_required = true);
 
   // function fname(args) => function fname($this ::: class_instance, args)
-  void patch_func_add_this(vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num);
+  void patch_func_add_this(std::vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num);
 
   bool is_class() const { return class_type == ClassType::klass; }
   bool is_interface() const { return class_type == ClassType::interface; }
@@ -82,7 +81,7 @@ public:
     return is_class() && !construct_function;
   }
 
-  void set_name_and_src_name(const string &name);
+  void set_name_and_src_name(const std::string &name);
 
   void debugPrint();
 

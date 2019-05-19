@@ -16,7 +16,7 @@ bool VarData::get_uninited_flag() {
   return uninited_flag;
 }
 
-string VarData::get_human_readable_name() const {
+std::string VarData::get_human_readable_name() const {
   return (this->class_id ? (this->class_id->name + "::$" + this->name) : "$" + this->name);
 }
 
