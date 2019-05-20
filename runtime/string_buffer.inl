@@ -23,7 +23,7 @@ inline void string_buffer::resize(dl::size_type new_buffer_len) {
   }
 
   dl::size_type current_len = size();
-  dl::static_reallocate((void **)&buffer_begin, new_buffer_len, &buffer_len);
+  dl::heap_reallocate((void **)&buffer_begin, new_buffer_len, &buffer_len);
   buffer_end = buffer_begin + current_len;
 }
 
@@ -35,7 +35,7 @@ inline void string_buffer::reserve_at_least(dl::size_type need) {
 }
 
 string_buffer::string_buffer(dl::size_type buffer_len) :
-  buffer_end((char *)dl::static_allocate(buffer_len)),
+  buffer_end((char *)dl::heap_allocate(buffer_len)),
   buffer_begin(buffer_end),
   buffer_len(buffer_len) {
 }
@@ -216,7 +216,7 @@ bool string_buffer::set_pos(int pos) {
 }
 
 string_buffer::~string_buffer() {
-  dl::static_deallocate((void **)&buffer_begin, &buffer_len);
+  dl::heap_deallocate((void **)&buffer_begin, &buffer_len);
 }
 
 string_buffer &string_buffer::append(const char *str, int len) {

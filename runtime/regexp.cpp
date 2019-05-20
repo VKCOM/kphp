@@ -277,7 +277,7 @@ void regexp::init(const string &regexp_string) {
   static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
 
-  is_static = (dl::memory_begin == 0);
+  is_static = (dl::get_script_memory_stats().memory_limit == 0);
 
   if (!is_static) {
     if (dl::query_num != regexp_last_query_num) {
@@ -374,7 +374,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
 
   static_SB.clean().append(regexp_string + 1, regexp_end - 1);
 
-  is_static = (dl::memory_begin == 0);
+  is_static = (dl::get_script_memory_stats().memory_limit == 0);
 
   dl::replace_malloc_with_script_allocator = !is_static;
 

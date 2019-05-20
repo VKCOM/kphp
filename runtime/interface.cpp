@@ -1615,7 +1615,7 @@ OrFalse<string> f$ini_get(const string &s) {
   } else if (!strcmp(s.c_str(), "max_execution_time")) {
     return string(script_timeout);
   } else if (!strcmp(s.c_str(), "memory_limit")) {
-    return f$strval((int)dl::memory_limit);//TODO
+    return f$strval((int)dl::get_script_memory_stats().memory_limit);//TODO
   } else if (!strcmp(s.c_str(), "include_path")) {
     return string();//TODO
   } else if (!strcmp(s.c_str(), "static-buffers-size")) {

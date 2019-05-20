@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdlib>
 
+#include "runtime/memory_resource/memory_resource.h"
+
 namespace dl {
 
 extern volatile int in_critical_section;
@@ -18,21 +20,14 @@ extern volatile bool replace_malloc_with_script_allocator; // replace malloc and
 extern volatile bool replace_script_allocator_with_malloc; // replace script allocator with malloc
 extern volatile bool forbid_malloc_allocations; // used for catch unexpected memory allocations
 
-using size_type = unsigned int;
-
-extern size_t memory_begin;//begin of script memory arena
-extern size_t memory_end;//end of script memory arena
-extern size_type memory_limit;//size of script memory arena
-extern size_type memory_used;//currently used script memory
-extern size_type max_memory_used;//maxumum of used script memory
-extern size_type max_real_memory_used;//maxumum of used and dirty script memory
+using size_type = memory_resource::size_type;
 
 extern size_type static_memory_used;
 
-size_type memory_get_total_usage();//usage of script memory
+const memory_resource::MemoryStats &get_script_memory_stats();
 
 void global_init_script_allocator();
-void init_script_allocator(void *buf, size_type n);//init script allocator with arena of n bytes at buf
+void init_script_allocator(void *buffer, size_type buffer_size); // init script allocator with arena of n bytes at buf
 void free_script_allocator();
 
 void *allocate(size_type n);//allocate script memory
@@ -40,10 +35,10 @@ void *allocate0(size_type n);//allocate zeroed script memory
 void *reallocate(void *p, size_type n, size_type old_n);//reallocate script memory
 void deallocate(void *p, size_type n);//deallocate script memory
 
-void *static_allocate(size_type n);//allocate heap memory (persistent between script runs)
-void *static_allocate0(size_type n);//allocate zeroed heap memory
-void static_reallocate(void **p, size_type new_n, size_type *n);//reallocate heap memory
-void static_deallocate(void **p, size_type *n);//deallocate heap memory
+void *heap_allocate(size_type n);//allocate heap memory (persistent between script runs)
+void *heap_allocate0(size_type n);//allocate zeroed heap memory
+void heap_reallocate(void **p, size_type new_n, size_type *n);//reallocate heap memory
+void heap_deallocate(void **p, size_type *n);//deallocate heap memory
 
 void *malloc_replace(size_t x);
 void free_replace(void *p);

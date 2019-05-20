@@ -1059,7 +1059,6 @@ static void free_replace(void *p) {
   }
 
   p = static_cast <void *>(static_cast <char *> (p) - sizeof(size_t));
-  php_assert (dl::memory_begin <= (size_t)p && (size_t)p < dl::memory_end);
   dl::deallocate(p, *static_cast <size_t *> (p));
 }
 
@@ -1074,7 +1073,6 @@ static void *realloc_replace(void *p, size_t x) {
   }
 
   void *real_p = static_cast <void *> (static_cast <char *> (p) - sizeof(size_t));
-  php_assert (dl::memory_begin <= (size_t)real_p && (size_t)real_p < dl::memory_end);
   size_t old_size = *static_cast <size_t *> (real_p);
 
   void *new_p = malloc_replace(x);

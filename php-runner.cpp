@@ -223,7 +223,7 @@ void PHPScriptBase::finish() {
     assert (error_message != nullptr);
     kprintf ("Critical error during script execution: %s\n", error_message);
   }
-  if (save_state == rst_error || (int)dl::memory_get_total_usage() >= 100000000) {
+  if (save_state == rst_error || dl::get_script_memory_stats().real_memory_used >= 100000000) {
     if (data != nullptr) {
       http_query_data *http_data = data->http_data;
       if (http_data != nullptr) {
@@ -249,9 +249,12 @@ void PHPScriptBase::finish() {
         }
       }
     }
+    const auto &script_mem_stats = dl::get_script_memory_stats();
     kprintf ("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
              script_time + net_time, net_time, script_time, queries_cnt,
-             (int)dl::static_memory_used, (int)dl::max_real_memory_used, (int)dl::memory_get_total_usage(), buf);
+             (int)dl::static_memory_used,
+             (int)script_mem_stats.max_real_memory_used,
+             (int)script_mem_stats.real_memory_used, buf);
   }
 }
 
@@ -261,7 +264,7 @@ void PHPScriptBase::clear() {
   free_runtime_environment();
   state = rst_empty;
   if (use_madvise_dontneed) {
-    if (dl::memory_get_total_usage() > memory_used_to_recreate_script) {
+    if (dl::get_script_memory_stats().real_memory_used > memory_used_to_recreate_script) {
       const int advice = madvise_madv_free_supported() ? MADV_FREE : MADV_DONTNEED;
       our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, advice);
     }
@@ -345,7 +348,7 @@ double PHPScriptBase::get_net_time() const {
 }
 
 long long PHPScriptBase::memory_get_total_usage() const {
-  return dl::memory_get_total_usage();
+  return dl::get_script_memory_stats().real_memory_used;
 }
 
 double PHPScriptBase::get_script_time() {

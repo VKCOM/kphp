@@ -2027,18 +2027,18 @@ int f$memory_get_static_usage() {
 
 int f$memory_get_peak_usage(bool real_usage) {
   if (real_usage) {
-    return (int)dl::max_real_memory_used;
+    return (int)dl::get_script_memory_stats().max_real_memory_used;
   } else {
-    return (int)dl::max_memory_used;
+    return (int)dl::get_script_memory_stats().max_memory_used;
   }
 }
 
 int f$memory_get_usage(bool real_usage __attribute__((unused))) {
-  return (int)dl::memory_used;
+  return (int)dl::get_script_memory_stats().memory_used;
 }
 
 int f$memory_get_total_usage() {
-  return (int)dl::memory_get_total_usage();
+  return (int)dl::get_script_memory_stats().real_memory_used;
 }
 
 
