@@ -217,56 +217,233 @@ void f$parse_str(const string &str, var &arr) {
   }
 }
 
-var f$parse_url(const string &s, int component) {
-  var result;
-  static const char *regexp = "~^(?:([^:/?#]+):)?(?:///?(?:(?:(?:([^:@?#/]+)(?::([^@?#/]+))?)@)?([^/?#:]+)(?::([0-9]+))?))?([^?#]*)(?:\\?([^#]*))?(?:#(.*))?$~";//I'm too lazy
-  f$preg_match(string(regexp, (dl::size_type)(strlen(regexp))), s, result);
-  if (!result.is_array()) {
-    return false;
-  }
+// returns associative array like [host=> path=>] or empty array if str is not a valid url
+array<var> php_url_parse_ex(const char *str, dl::size_type length) {
+  array<var> result;
+  const char *s = str, *e, *p, *pp, *ue = str + length;
 
-  swap(result[2], result[4]);
-  swap(result[3], result[5]);
-  result[3].convert_to_int();
-
-  if ((unsigned int)component < 8u) {
-    if (result[component + 1].empty()) {
-      return var();
+  /* parse scheme */
+  if ((e = static_cast<const char *>(memchr(s, ':', length))) && e != s) {
+    /* validate scheme */
+    p = s;
+    while (p < e) {
+      /* scheme = 1*[ lowalpha | digit | "+" | "-" | "." ] */
+      if (!isalpha(*p) && !isdigit(*p) && *p != '+' && *p != '.' && *p != '-') {
+        if (e + 1 < ue && e < s + strcspn(s, "?#")) {
+          goto parse_port;
+        } else if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
+          s += 2;
+          e = nullptr;
+          goto parse_host;
+        } else {
+          goto just_path;
+        }
+      }
+      p++;
     }
-    return result.get_value(component + 1);
+
+    if (e + 1 == ue) { /* only scheme is available */
+      result.set_value(string("scheme", 6), string(s, e - s));
+      return result;
+    }
+
+    /*
+     * certain schemas like mailto: and zlib: may not have any / after them
+     * this check ensures we support those.
+     */
+    if (*(e + 1) != '/') {
+      /* check if the data we get is a port this allows us to
+       * correctly parse things like a.com:80
+       */
+      p = e + 1;
+      while (p < ue && isdigit(*p)) {
+        p++;
+      }
+
+      if ((p == ue || *p == '/') && (p - e) < 7) {
+        goto parse_port;
+      }
+
+      result.set_value(string("scheme", 6), string(s, e - s));
+      s = e + 1;
+      goto just_path;
+    } else {
+      result.set_value(string("scheme", 6), string(s, e - s));
+
+      if (e + 2 < ue && *(e + 2) == '/') {
+        s = e + 3;
+        if (!strcmp(result.get_value(string("scheme", 6)).as_string().c_str(), "file")) {
+          if (e + 3 < ue && *(e + 3) == '/') {
+            /* support windows drive letters as in: file:///c:/somedir/file.txt */
+            if (e + 5 < ue && *(e + 5) == ':') {
+              s = e + 4;
+            }
+            goto just_path;
+          }
+        }
+      } else {
+        s = e + 1;
+        goto just_path;
+      }
+    }
+  } else if (e) { /* no scheme; starts with colon: look for port */
+    parse_port:
+    p = e + 1;
+    pp = p;
+
+    while (pp < ue && pp - p < 6 && isdigit(*pp)) {
+      pp++;
+    }
+
+    if (pp - p > 0 && pp - p < 6 && (pp == ue || *pp == '/')) {
+      int port = string(p, pp - p).to_int();
+      if (port > 0 && port <= 65535) {
+        result.set_value(string("port", 4), port);
+        if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
+          s += 2;
+        }
+      } else {
+        return {};
+      }
+    } else if (p == pp && pp == ue) {
+      return {};
+    } else if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
+      s += 2;
+    } else {
+      goto just_path;
+    }
+  } else if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
+    s += 2;
+  } else {
+    goto just_path;
   }
-  if (component != -1) {
-    php_warning("Wrong parameter component = %d in function parse_url", component);
+
+  parse_host:
+  /* Binary-safe strcspn(s, "/?#") */
+  e = ue;
+  if ((p = static_cast<const char *>(memchr(s, '/', e - s)))) {
+    e = p;
+  }
+  if ((p = static_cast<const char *>(memchr(s, '?', e - s)))) {
+    e = p;
+  }
+  if ((p = static_cast<const char *>(memchr(s, '#', e - s)))) {
+    e = p;
+  }
+
+  /* check for login and password */
+  if ((p = static_cast<const char *>(memrchr(s, '@', (e - s))))) {
+    if ((pp = static_cast<const char *>(memchr(s, ':', (p - s))))) {
+      result.set_value(string("user", 4), string(s, pp - s));
+      pp++;
+      result.set_value(string("pass", 4), string(pp, p - pp));
+    } else {
+      result.set_value(string("user", 4), string(s, p - s));
+    }
+
+    s = p + 1;
+  }
+
+  /* check for port */
+  if (s < ue && *s == '[' && *(e - 1) == ']') {
+    /* Short circuit portscan, we're dealing with an IPv6 embedded address */
+    p = nullptr;
+  } else {
+    p = static_cast<const char *>(memrchr(s, ':', (e - s)));
+  }
+
+  if (p) {
+    if (!result.isset(string("port", 4))) {
+      p++;
+      if (e - p > 5) { /* port cannot be longer then 5 characters */
+        return {};
+      } else if (e - p > 0) {
+        int port = string(p, e - p).to_int();
+        if (port > 0 && port <= 65535) {
+          result.set_value(string("port", 4), port);
+        } else {
+          return {};
+        }
+      }
+      p--;
+    }
+  } else {
+    p = e;
+  }
+
+  /* check if we have a valid host, if we don't reject the string as url */
+  if ((p - s) < 1) {
+    return {};
+  }
+  result.set_value(string("host", 4), string(s, p - s));
+
+  if (e == ue) {
+    return result;
+  }
+
+  s = e;
+
+  just_path:
+
+  e = ue;
+  p = static_cast<const char *>(memchr(s, '#', (e - s)));
+  if (p) {
+    p++;
+    if (p < e) {
+      result.set_value(string("fragment", 8), string(p, e - p));
+    }
+    e = p - 1;
+  }
+
+  p = static_cast<const char *>(memchr(s, '?', (e - s)));
+  if (p) {
+    p++;
+    if (p < e) {
+      result.set_value(string("query", 5), string(p, e - p));
+    }
+    e = p - 1;
+  }
+
+  if (s < e || s == ue) {
+    result.set_value(string("path", 4), string(s, e - s));
+  }
+
+  return result;
+}
+
+// returns var, as array|false|null (null if component doesn't exist)
+var f$parse_url(const string &s, int component) {
+  array<var> url_as_array = php_url_parse_ex(s.c_str(), s.size());
+
+  if (url_as_array.empty()) {
     return false;
   }
 
-  array<var> res;
-  if (!result[1].empty()) {
-    res.set_value(string("scheme", 6), result[1]);
-  }
-  if (!result[2].empty()) {
-    res.set_value(string("host", 4), result[2]);
-  }
-  if (!result[3].empty()) {
-    res.set_value(string("port", 4), result[3]);
-  }
-  if (!result[4].empty()) {
-    res.set_value(string("user", 4), result[4]);
-  }
-  if (!result[5].to_string().empty()) {
-    res.set_value(string("pass", 4), result[5]);
-  }
-  if (!result[6].to_string().empty()) {
-    res.set_value(string("path", 4), result[6]);
-  }
-  if (!result[7].to_string().empty()) {
-    res.set_value(string("query", 5), result[7]);
-  }
-  if (!result[8].to_string().empty()) {
-    res.set_value(string("fragment", 8), result[8]);
+  if (component != -1) {
+    switch (component) {
+      case 0:             // PHP_URL_SCHEME
+        return url_as_array.get_value(string("scheme", 6));
+      case 1:             // PHP_URL_HOST
+        return url_as_array.get_value(string("host", 4));
+      case 2:             // PHP_URL_PORT
+        return url_as_array.get_value(string("port", 4));
+      case 3:             // PHP_URL_USER
+        return url_as_array.get_value(string("user", 4));
+      case 4:             // PHP_URL_PASS
+        return url_as_array.get_value(string("pass", 4));
+      case 5:             // PHP_URL_PATH
+        return url_as_array.get_value(string("path", 4));
+      case 6:             // PHP_URL_QUERY
+        return url_as_array.get_value(string("query", 5));
+      case 7:             // PHP_URL_FRAGMENT
+        return url_as_array.get_value(string("fragment", 8));
+      default:
+        php_warning("Wrong parameter component = %d in function parse_url", component);
+        return false;
+    }
   }
 
-  return res;
+  return url_as_array;
 }
 
 string f$rawurldecode(const string &s) {

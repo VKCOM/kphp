@@ -2,6 +2,7 @@
 <?php
   $url = 'http://username:password@hostname.ru:2323/path/path2?arg=value&arg2=value#http://username:password@hostname.ru:2323/path/path2?arg=value&arg2=value';
   $res = parse_url ($url);
+  ksort ($res);
   var_dump ($res);
 
   for ($i = 0; $i < 8; $i++) {
@@ -19,6 +20,7 @@
 
   $url = 'http:/hostname.ru/path/path2?arg=value&arg2=value#http://';
   $res = parse_url ($url);
+  ksort ($res);
   var_dump ($res);
 
   for ($i = 0; $i < 8; $i++) {
