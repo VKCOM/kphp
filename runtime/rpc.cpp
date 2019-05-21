@@ -1,6 +1,6 @@
-#include <cstdarg>
-
 #include "runtime/rpc.h"
+
+#include <cstdarg>
 
 #include "auto/TL/constants.h"
 #include "common/crc32.h"
@@ -4323,4 +4323,28 @@ void init_rpc_lib() {
 void free_rpc_lib() {
   reset_rpc_global_vars();
   clear_arr_space();
+}
+
+int f$rpc_queue_create() {
+  return f$wait_queue_create();
+}
+
+int f$rpc_queue_create(const var &request_ids) {
+  return f$wait_queue_create(request_ids);
+}
+
+int f$rpc_queue_push(int queue_id, const var &request_ids) {
+  return f$wait_queue_push(queue_id, request_ids);
+}
+
+bool f$rpc_queue_empty(int queue_id) {
+  return f$wait_queue_empty(queue_id);
+}
+
+int f$rpc_queue_next(int queue_id, double timeout) {
+  return f$wait_queue_next(queue_id, timeout);
+}
+
+int f$rpc_queue_next_synchronously(int queue_id) {
+  return f$wait_queue_next_synchronously(queue_id);
 }

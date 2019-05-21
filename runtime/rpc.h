@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+
 #include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
@@ -169,16 +170,17 @@ OrFalse<string> f$rpc_get_synchronously(int request_id);
 bool f$rpc_get_and_parse(int request_id, double timeout = -1.0);
 
 
-inline int f$rpc_queue_create();
+int f$rpc_queue_create();
 
-inline int f$rpc_queue_create(const var &request_ids);
+int f$rpc_queue_create(const var &request_ids);
 
-inline int f$rpc_queue_push(int queue_id, const var &request_ids);
+int f$rpc_queue_push(int queue_id, const var &request_ids);
 
-inline bool f$rpc_queue_empty(int queue_id);
+bool f$rpc_queue_empty(int queue_id);
 
-inline int f$rpc_queue_next(int queue_id, double timeout = -1.0);
+int f$rpc_queue_next(int queue_id, double timeout = -1);
 
+int f$rpc_queue_next_synchronously(int queue_id);
 
 bool f$store_unsigned_int(const var &v);
 
@@ -232,24 +234,4 @@ array<array<var>> f$rpc_tl_query_result(const array<T> &query_ids) {
 template<class T>
 array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids) {
   return f$rpc_tl_query_result_synchronously(array<int>::convert_from(query_ids));
-}
-
-int f$rpc_queue_create() {
-  return f$wait_queue_create();
-}
-
-int f$rpc_queue_create(const var &request_ids) {
-  return f$wait_queue_create(request_ids);
-}
-
-int f$rpc_queue_push(int queue_id, const var &request_ids) {
-  return f$wait_queue_push(queue_id, request_ids);
-}
-
-bool f$rpc_queue_empty(int queue_id) {
-  return f$wait_queue_empty(queue_id);
-}
-
-int f$rpc_queue_next(int queue_id, double timeout) {
-  return f$wait_queue_next(queue_id, timeout);
 }
