@@ -1104,7 +1104,7 @@ VertexPtr GenTree::get_type_rule_() {
 
     vector<VertexPtr> next;
     if (tok == tok_lt) {        // array<...>, tuple<...,...>
-      kphp_error(tp == tp_array || tp == tp_tuple, "Cannot parse type_rule");
+      kphp_error(vk::any_of_equal(tp, tp_array, tp_tuple, tp_future, tp_future_queue), "Cannot parse type_rule");
       bool allow_comma_sep = tp == tp_tuple;
       do {
         next_cur();

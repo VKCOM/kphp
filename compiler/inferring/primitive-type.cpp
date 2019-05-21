@@ -31,27 +31,28 @@ PrimitiveType get_ptype_by_name(const std::string &s) {
 
 const char *ptype_name(PrimitiveType id) {
   switch (id) {
-    case tp_Unknown:    return "Unknown";
-    case tp_False:      return "False";
-    case tp_bool:       return "bool";
-    case tp_int:        return "int";
-    case tp_float:      return "float";
-    case tp_array:      return "array";
-    case tp_string:     return "string";
-    case tp_var:        return "var";
-    case tp_UInt:       return "UInt";
-    case tp_Long:       return "Long";
-    case tp_ULong:      return "ULong";
-    case tp_RPC:        return "RPC";
-    case tp_tuple:      return "tuple";
-    case tp_future:     return "future";
-    case tp_regexp:     return "regexp";
-    case tp_Class:      return "Class";
-    case tp_void:       return "void";
-    case tp_Error:      return "Error";
-    case tp_Any:        return "Any";
-    case tp_CreateAny:  return "CreateAny";
-    case ptype_size:    kphp_fail();
+    case tp_Unknown:       return "Unknown";
+    case tp_False:         return "False";
+    case tp_bool:          return "bool";
+    case tp_int:           return "int";
+    case tp_float:         return "float";
+    case tp_array:         return "array";
+    case tp_string:        return "string";
+    case tp_var:           return "var";
+    case tp_UInt:          return "UInt";
+    case tp_Long:          return "Long";
+    case tp_ULong:         return "ULong";
+    case tp_RPC:           return "RPC";
+    case tp_tuple:         return "tuple";
+    case tp_future:        return "future";
+    case tp_future_queue:  return "future_queue";
+    case tp_regexp:        return "regexp";
+    case tp_Class:         return "Class";
+    case tp_void:          return "void";
+    case tp_Error:         return "Error";
+    case tp_Any:           return "Any";
+    case tp_CreateAny:     return "CreateAny";
+    case ptype_size:       kphp_fail();
   }
   kphp_fail();
 }

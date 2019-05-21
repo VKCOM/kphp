@@ -286,7 +286,7 @@ bool TypeData::use_or_false() const {
 }
 
 bool TypeData::structured() const {
-  return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_future);
+  return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_future, tp_future_queue);
 }
 
 TypeData::generation_t TypeData::generation() const {
@@ -618,7 +618,7 @@ void type_out_impl(const TypeData *type, std::string &res, bool cpp_out) {
     res += ptype_name(tp);
   }
 
-  const bool need_any_key = vk::any_of_equal(tp, tp_array, tp_future);
+  const bool need_any_key = vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue);
   const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
   if (anykey_value) {
     res += "< ";
@@ -705,6 +705,8 @@ int type_strlen(const TypeData *type) {
       return STRLEN_VOID;
     case tp_future:
       return STRLEV_FUTURE;
+    case tp_future_queue:
+      return STRLEN_FUTURE_QUEUE;
     case tp_Error:
       return STRLEN_ERROR;
     case tp_Any:

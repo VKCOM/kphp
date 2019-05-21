@@ -751,12 +751,12 @@ function wait_result ($id :<=: future, $timeout ::: float = -1.0) ::: var;
 function wait_synchronously ($id :<=: future) ::: bool;
 /** @kphp-extern-func-info resumable */
 function wait_multiple ($id :<=: future) ::: bool;
-function wait_queue_create ($request_ids ::: Any = TODO) ::: int;
-function wait_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
-function wait_queue_empty ($queue_id ::: int) ::: bool;
+function wait_queue_create ($request_ids :<=: array<future> = TODO) ::: future_queue<^1[][]>;
+function wait_queue_push ($queue_id :<=: future_queue, $request_ids ::: future) ::: future_queue< lca<^1[], ^2[]> >;
+function wait_queue_empty ($queue_id :<=: future_queue) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: future;
-function wait_queue_next_synchronously ($queue_id ::: int) ::: future;
+function wait_queue_next ($queue_id :<=: future_queue, $timeout ::: float = -1.0) ::: future<^1[]>;
+function wait_queue_next_synchronously ($queue_id :<=: future_queue) ::: future<^1[]>;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */

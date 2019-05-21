@@ -2219,3 +2219,5 @@ void unset(var &x) {
 
 template<typename T>
 using future = int;
+template<typename T>
+using future_queue = int;

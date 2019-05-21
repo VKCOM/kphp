@@ -108,7 +108,9 @@ void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_rule> rule, Vert
   set_lca(rule->type_help);
   if (!rule->empty()) {
     switch (rule->type_help) {
-      case tp_array: {
+      case tp_array:
+      case tp_future:
+      case tp_future_queue: {
         push_type();
         apply_type_rule(rule->args()[0], expr);
         TypeData *tmp = pop_type();
