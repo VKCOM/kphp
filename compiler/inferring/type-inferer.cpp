@@ -41,7 +41,7 @@ void TypeInferer::add_restriction(RestrictionBase *restriction) {
 
 void TypeInferer::check_restrictions() {
   for (int i = 0; i < restrictions.size(); i++) {
-    for (RestrictionBase *r : *restrictions.get(i)) {
+    for (RestrictionBase *r : restrictions.get(i)) {
       if (r->check_broken_restriction() && G->env().get_stop_on_type_error()) {
         return;
       }
@@ -54,19 +54,18 @@ class TypeInfererTask : public Task {
   static CachedProfiler type_inferer_profiler;
 private:
   TypeInferer *inferer_;
-  NodeQueue *queue_;
+  NodeQueue queue_;
 public:
-  TypeInfererTask(TypeInferer *inferer, NodeQueue *queue) :
+  TypeInfererTask(TypeInferer *inferer, NodeQueue &&queue) :
     inferer_(inferer),
-    queue_(queue) {
+    queue_(std::move(queue)) {
   }
 
-  void execute() {
+  void execute() override {
     AutoProfiler profiler{*type_inferer_profiler};
     stage::set_name("Infer types");
     stage::set_function(FunctionPtr());
-    inferer_->run_queue(queue_);
-    delete queue_;
+    inferer_->run_queue(&queue_);
   }
 };
 
@@ -75,14 +74,12 @@ CachedProfiler TypeInfererTask::type_inferer_profiler{"type_inferring"};
 std::vector<Task *> TypeInferer::get_tasks() {
   std::vector<Task *> res;
   for (int i = 0; i < Q.size(); i++) {
-    NodeQueue *q = Q.get(i);
-    if (q->empty()) {
+    NodeQueue q = std::move(Q.get(i));
+    if (q.empty()) {
       continue;
     }
-    NodeQueue *new_q = new NodeQueue();
-    swap(*new_q, *q);
 
-    res.push_back(new TypeInfererTask(this, new_q));
+    res.push_back(new TypeInfererTask(this, std::move(q)));
   }
   return res;
 }
@@ -107,7 +104,7 @@ int TypeInferer::do_run_queue() {
 }
 
 int TypeInferer::run_queue(NodeQueue *new_q) {
-  swap(*Q, *new_q);
+  *Q = std::move(*new_q);
   return do_run_queue();
 }
 

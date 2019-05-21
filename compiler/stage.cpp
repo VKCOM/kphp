@@ -172,7 +172,7 @@ bool stage::has_error() {
 
 bool stage::has_global_error() {
   for (int i = 0; i < stage_info.size(); i++) {
-    if (stage_info.get(i)->global_error_flag) {
+    if (stage_info.get(i).global_error_flag) {
       return true;
     }
   }

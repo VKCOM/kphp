@@ -55,15 +55,8 @@ namespace stage {
 struct StageInfo {
   std::string name;
   Location location;
-  bool global_error_flag;
-  bool error_flag;
-
-  StageInfo() :
-    name(),
-    location(),
-    global_error_flag(false),
-    error_flag(false) {
-  }
+  bool global_error_flag{false};
+  bool error_flag{false};
 };
 
 StageInfo *get_stage_info_ptr();

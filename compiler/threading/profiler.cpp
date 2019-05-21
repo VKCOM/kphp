@@ -11,7 +11,7 @@ void profiler_print_all() {
   std::map<std::string, ProfilerRaw> collected;
 
   for (int i = 0; i <= MAX_THREADS_COUNT; i++) {
-    const auto &local = *profiler.get(i);
+    const auto &local = profiler.get(i);
     for (const ProfilerRaw &raw : local) {
       auto it = collected.find(raw.name);
       if (it == collected.end()) {

@@ -2,8 +2,8 @@
 
 #include <cassert>
 
-#include "compiler/threading/thread-id.h"
 #include "compiler/threading/locks.h"
+#include "compiler/threading/thread-id.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
@@ -20,10 +20,6 @@ private:
   };
 
   TLSRaw arr[MAX_THREADS_COUNT + 1];
-public:
-  TLS() :
-    arr() {
-  }
 
   TLSRaw *get_raw(int id) {
     assert(0 <= id && id <= MAX_THREADS_COUNT);
@@ -34,20 +30,26 @@ public:
     return get_raw(get_thread_id());
   }
 
-  T *get() {
-    return &get_raw()->data;
+public:
+  TLS() :
+    arr() {
   }
 
-  T *get(int i) {
-    return &get_raw(i)->data;
+
+  T &get() {
+    return get_raw()->data;
+  }
+
+  T &get(int i) {
+    return get_raw(i)->data;
   }
 
   T *operator->() {
-    return get();
+    return &get();
   }
 
   T &operator*() {
-    return *get();
+    return get();
   }
 
   int size() {
