@@ -8,7 +8,7 @@ class RestrictionLess : public tinf::RestrictionBase {
 private:
   std::vector<tinf::Node *> stacktrace;
   std::vector<tinf::Node *> node_path_;
-  static const unsigned long max_cnt_nodes_in_path = 30;
+  static const unsigned long max_cnt_nodes_in_path = 50;
   std::string desc;
 
   struct ComparatorByEdgePriorityRelativeToExpectedType;
