@@ -17,6 +17,7 @@ enum PrimitiveType {
   tp_ULong,
   tp_RPC,
   tp_tuple,
+  tp_future,
   tp_regexp,
   tp_Class,
   tp_Error,

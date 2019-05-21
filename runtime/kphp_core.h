@@ -2217,3 +2217,5 @@ void unset(var &x) {
   x = var();
 }
 
+template<typename T>
+using future = int;

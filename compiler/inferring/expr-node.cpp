@@ -41,6 +41,7 @@ private:
   void recalc_arithm(VertexAdaptor<meta_op_binary> expr);
   void recalc_define_val(VertexAdaptor<op_define_val> define_val);
   void recalc_power(VertexAdaptor<op_pow> expr);
+  void recalc_fork(VertexAdaptor<op_fork> fork);
   void recalc_expr(VertexPtr expr);
 
 public:
@@ -323,6 +324,10 @@ void ExprNodeRecalc::recalc_noerr(VertexAdaptor<op_noerr> expr) {
   set_lca(as_rvalue(expr->expr()));
 }
 
+void ExprNodeRecalc::recalc_fork(VertexAdaptor<op_fork> fork) {
+  recalc_ptype<tp_future>();
+  set_lca_at(&MultiKey::any_key(1), fork->func_call());
+}
 
 void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   VertexPtr lhs = expr->lhs();
@@ -441,8 +446,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_or:
     case op_and:
     case op_xor:
-    case op_fork:
       recalc_ptype<tp_int>();
+      break;
+    case op_fork:
+      recalc_fork(expr.as<op_fork>());
       break;
 
     case op_conv_float:

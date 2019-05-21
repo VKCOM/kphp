@@ -44,6 +44,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_ULong:      return "ULong";
     case tp_RPC:        return "RPC";
     case tp_tuple:      return "tuple";
+    case tp_future:     return "future";
     case tp_regexp:     return "regexp";
     case tp_Class:      return "Class";
     case tp_void:       return "void";

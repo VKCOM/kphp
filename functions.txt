@@ -745,18 +745,18 @@ function rpc_tl_pending_queries_count () ::: int;
 function set_tl_mode ($mode ::: int) ::: bool;
 
 /** @kphp-extern-func-info resumable */
-function wait ($id ::: int, $timeout ::: float = -1.0) ::: bool;
+function wait ($id :<=: future, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable */
-function wait_result ($id ::: int, $timeout ::: float = -1.0) ::: var;
-function wait_synchronously ($id ::: int) ::: bool;
+function wait_result ($id :<=: future, $timeout ::: float = -1.0) ::: var;
+function wait_synchronously ($id :<=: future) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_multiple ($id ::: int) ::: bool;
+function wait_multiple ($id :<=: future) ::: bool;
 function wait_queue_create ($request_ids ::: Any = TODO) ::: int;
 function wait_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function wait_queue_empty ($queue_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int;
-function wait_queue_next_synchronously ($queue_id ::: int) ::: int;
+function wait_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: future;
+function wait_queue_next_synchronously ($queue_id ::: int) ::: future;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */
