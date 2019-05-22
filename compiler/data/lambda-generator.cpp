@@ -6,13 +6,14 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-LambdaGenerator::LambdaGenerator(const std::string &name, const Location &location)
+LambdaGenerator::LambdaGenerator(FunctionPtr function, const Location &location)
   : created_location(location)
 {
-  auto lambda_class_name = create_name(name);
+  auto lambda_class_name = create_name(gen_anonymous_function_name(function));
   generated_lambda = create_class(lambda_class_name);
 }
 

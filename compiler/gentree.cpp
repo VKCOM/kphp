@@ -1859,10 +1859,9 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda) {
-  auto anon_name = gen_anonymous_function_name(cur_function);
   auto anon_location = function->name()->location;
 
-  return LambdaGenerator{anon_name, anon_location}
+  return LambdaGenerator{cur_function, anon_location}
     .add_uses(uses_of_lambda, cur_function->is_instance_function())
     .add_invoke_method(function)
     .add_constructor_from_uses()

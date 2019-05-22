@@ -21,21 +21,24 @@ public:
   VertexPtr gen_constructor_call_pass_fields_as_args() const;
   VertexAdaptor<op_constructor_call> gen_constructor_call_with_args(std::vector<VertexPtr> args) const;
 
+  const char *get_name() const final {
+    return "lambda";
+  }
 
   static const std::string &get_lambda_namespace() {
     static std::string lambda_namespace("L");
     return lambda_namespace;
   }
 
-  std::string get_namespace() const override {
+  std::string get_namespace() const final {
     return get_lambda_namespace();
   }
 
-  bool is_lambda() const override {
+  bool is_lambda() const final {
     return true;
   }
 
-  std::string get_subdir() const override {
+  std::string get_subdir() const final {
     return "cl_l";
   }
 };

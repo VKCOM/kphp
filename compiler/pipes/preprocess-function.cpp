@@ -360,7 +360,7 @@ private:
               }
 
               auto anon_location = call->location;
-              call_arg = LambdaGenerator{gen_anonymous_function_name(current_function), anon_location}
+              call_arg = LambdaGenerator{current_function, anon_location}
                 .add_invoke_method_which_call_function(fun_for_wrapping)
                 .add_constructor_from_uses()
                 .generate_and_require(current_function, instance_of_function_template_stream)
@@ -380,7 +380,7 @@ private:
                     kphp_error_act(false, err_msg.c_str(), return call);
                   }
 
-                  call_arg = LambdaGenerator{gen_anonymous_function_name(current_function), anon_location}
+                  call_arg = LambdaGenerator{current_function, anon_location}
                     .add_invoke_method_which_call_method(called_method->function)
                     .add_constructor_from_uses()
                     .generate_and_require(current_function, instance_of_function_template_stream)

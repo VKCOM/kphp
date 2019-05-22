@@ -4,7 +4,7 @@
 
 class LambdaGenerator {
 public:
-  LambdaGenerator(const std::string &name, const Location &location);
+  LambdaGenerator(FunctionPtr function, const Location &location);
 
   LambdaGenerator &add_uses(std::vector<VertexAdaptor<op_func_param>> uses, bool implicit_capture_this = false);
   LambdaGenerator &add_invoke_method(const VertexAdaptor<op_function> &function);

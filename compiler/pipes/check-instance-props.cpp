@@ -17,7 +17,7 @@ VertexPtr CheckInstancePropsPass::on_enter_vertex(VertexPtr v, LocalT *) {
         v->set_var_id(m->var);
         init_class_instance_var(v, m, klass);
       } else {
-        kphp_error(0, format("Invalid property access ...->%s: does not exist in class %s", v->get_c_string(), klass->name.c_str()));
+        kphp_error(0, format("Invalid property access ...->%s: does not exist in class `%s`", v->get_c_string(), klass->get_name()));
       }
     }
   }

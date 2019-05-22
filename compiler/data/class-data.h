@@ -85,6 +85,10 @@ public:
 
   void debugPrint();
 
+  virtual const char *get_name() const {
+    return name.c_str();
+  }
+
   virtual std::string get_namespace() const;
 
   virtual std::string get_subdir() const {
