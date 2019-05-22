@@ -994,7 +994,6 @@ int run_worker() {
   dl_assert (err != -1, "failed to create a pipe");
 
   tot_workers_started++;
-  const size_t workers_count = me_workers_n;
 
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
@@ -1025,25 +1024,21 @@ int run_worker() {
     clear_event(new_pipe[0]);
     clear_event(new_fast_pipe[0]);
 
-    for (size_t i = 0; i < workers_count; ++i) {
-      worker_info_t *worker = workers[i];
-      close(worker->pipes[0].pipe_read);
-      close(worker->pipes[1].pipe_read);
-      clear_event(worker->pipes[0].pipe_read);
-      clear_event(worker->pipes[1].pipe_read);
-    }
+    master_sfd = -1;
 
-    if (master_sfd > -1) {
-      close(master_sfd);
-      clear_event(master_sfd);
-      master_sfd = -1;
+    for (int i = 0; i < allocated_targets; i++) {
+      while (Targets[i].refcnt > 0) {
+        destroy_target(&Targets[i]);
+      }
     }
 
     for (int i = 0; i < MAX_CONNECTIONS; i++) {
-      connection *conn = Connections + i;
+      connection_t *conn = &Connections[i];
       if (conn->status == conn_none) {
         continue;
       }
+      close(i);
+      clear_event(i);
       force_clear_connection(conn);
     }
 
@@ -1055,7 +1050,6 @@ int run_worker() {
     //
 
     signal_fd = -1;
-    master_sfd = -1;
 
     if (logname_pattern) {
       char buf[100];
