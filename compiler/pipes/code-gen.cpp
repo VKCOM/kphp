@@ -9,6 +9,7 @@
 #include "compiler/code-gen/files/init-scripts.h"
 #include "compiler/code-gen/files/lib-header.h"
 #include "compiler/code-gen/files/tl2cpp.h"
+#include "compiler/code-gen/files/type-tagger.h"
 #include "compiler/code-gen/files/vars-cpp.h"
 #include "compiler/code-gen/files/vars-reset.h"
 #include "compiler/code-gen/raw-data.h"
@@ -17,6 +18,37 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/function-pass.h"
+#include "compiler/inferring/public.h"
+
+class CollectForkableTypes : public FunctionPassBase {
+public:
+  std::vector<const TypeData *> waitable_types;
+
+  VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
+    if (auto call = root.try_as<op_func_call>()) {
+      if (call->str_val == "wait_result") {
+        waitable_types.push_back(tinf::get_type(root));
+      }
+    }
+    return root;
+  }
+};
+
+void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &os) {
+  CollectForkableTypes pass;
+  run_function_pass(function, &pass);
+  if (!pass.waitable_types.empty() || function->is_resumable){
+    static volatile int lock = 0;
+    AutoLocker<volatile int*> locker(&lock);
+    waitable_types.insert(waitable_types.end(), pass.waitable_types.begin(), pass.waitable_types.end());
+    forkable_types.insert(forkable_types.end(), pass.waitable_types.begin(), pass.waitable_types.end());
+    if (function->is_resumable) {
+      forkable_types.push_back(tinf::get_type(function, -1));
+    }
+  }
+  SyncPipeF<FunctionPtr, WriterData>::execute(function, os);
+}
 
 size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / 4096u;
@@ -70,6 +102,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
 
   vector<FunctionPtr> all_functions;
   vector<FunctionPtr> exported_functions;
+
   for (const auto &function : xall) {
     if (!should_gen_function(function)) {
       continue;
@@ -125,6 +158,8 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(LibHeaderTxt(std::move(exported_functions)));
     W << Async(StaticLibraryRunGlobalHeaderH());
   }
+
+  W << Async(TypeTagger(std::move(forkable_types), std::move(waitable_types)));
 
   write_tl_schema(W);
   //TODO: use Async for that

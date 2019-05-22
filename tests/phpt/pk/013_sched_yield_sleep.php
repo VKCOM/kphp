@@ -24,5 +24,5 @@ $ids[] = fork(f(0.02, 2));
 
 foreach ($ids as $id) {
   wait($id);
-  echo "waited $id\n";
+  echo "waited ".(int)$id."\n";
 }

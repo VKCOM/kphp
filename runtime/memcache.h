@@ -142,7 +142,7 @@ protected:
   bool run() override {
     RESUMABLE_BEGIN
       while (keys_n > 0) {
-        request_id = f$wait_queue_next(queue_id, -1);
+        request_id = f$wait_queue_next(queue_id, -1).val();
         TRY_WAIT(rpc_mc_multiget_resumable_label_0, request_id, int);
 
         if (request_id <= 0) {
@@ -247,7 +247,7 @@ OrFalse<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T>
     array<var> result(array_size(0, keys_n, false));
 
     while (keys_n > 0) {
-      int request_id = wait_queue_next_synchronously(queue_id);
+      int request_id = wait_queue_next_synchronously(queue_id).val();
       if (request_id <= 0) {
         break;
       }

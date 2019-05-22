@@ -15,9 +15,12 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
   auto is_void_fun = [](FunctionPtr f) {
     return tinf::get_type(f, -1)->ptype() == tp_void;
   };
+  auto is_void_expr = [](VertexPtr root) {
+    return tinf::get_type(root)->ptype() == tp_void;
+  };
   if (root->type() == op_func_call) {
     FunctionPtr fun = root.as<op_func_call>()->get_func_id();
-    if (is_void_fun(fun) && root->rl_type == val_r) {
+    if (is_void_expr(root) && root->rl_type == val_r) {
       kphp_error(0, format("Using result of void function %s\n", fun->get_human_readable_name().c_str()));
     }
     return root;
@@ -36,7 +39,7 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
       return return_op;
     }
 
-    if (tinf::get_type(return_op->expr())->ptype() == tp_void) {
+    if (is_void_expr(return_op->expr())) {
       std::vector<VertexPtr> seq;
       seq.push_back(return_op->expr());
       seq.back()->rl_type = val_none;

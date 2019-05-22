@@ -206,13 +206,28 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     VertexRange args = call->args();
     LValue val = as_lvalue(args[0]);
 
-    MultiKey *key = new MultiKey(*val.key);
-    key->push_back(Key::any_key());
-    val.key = key;
+    val.key = &MultiKey::any_key(1);
 
     for (auto i : VertexRange(args.begin() + 1, args.end())) {
       create_set(val, i);
     }
+  }
+
+  if (function->name == "wait_queue_push") {
+    VertexRange args = call->args();
+    LValue val = as_lvalue(args[0]);
+
+    auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
+    auto ref = VertexAdaptor<op_arg_ref>::create();
+    ref->int_val = 2;
+    VertexPtr rule = VertexAdaptor<op_index>::create(ref);
+    rule = VertexAdaptor<op_type_rule>::create(rule);
+    rule->type_help = tp_future_queue;
+    rule = VertexAdaptor<op_common_type_rule>::create(rule);
+    fake_func_call->type_rule = rule;
+    fake_func_call->set_func_id(call->get_func_id());
+
+    create_set(val, fake_func_call);
   }
 
 
@@ -303,11 +318,6 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
     }
     i++;
   }
-}
-
-void CollectMainEdgesPass::on_fork(VertexAdaptor<op_fork> fork) {
-  // fork(f()) — f() не должна возвращать instance/tuple, т.е. то, что не кастится к var (см. wait_result())
-  create_less(fork->func_call(), tp_var);
 }
 
 void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
@@ -458,9 +468,6 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::L
       break;
     case op_throw:
       on_throw(v.as<op_throw>());
-      break;
-    case op_fork:
-      on_fork(v.as<op_fork>());
       break;
     case op_try:
       on_try(v.as<op_try>());

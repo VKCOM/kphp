@@ -184,6 +184,10 @@ int f$rpc_queue_next_synchronously(int queue_id);
 
 bool f$store_unsigned_int(const var &v);
 
+bool f$rpc_wait(int request_id);
+
+bool f$rpc_wait_multiple(int request_id);
+
 bool f$store_long(const var &v);
 
 bool f$store_unsigned_long(const var &v);

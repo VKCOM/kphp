@@ -64,7 +64,14 @@ bool f$wait(int resumable_id, double timeout = -1.0);
 
 bool f$wait_multiple(int resumable_id);
 
-var f$wait_result(int resumable_id, double timeout = -1.0);
+inline bool f$wait_synchronously(OrFalse<int> resumable_id) { return f$wait_synchronously(resumable_id.val());}
+
+inline bool f$wait(OrFalse<int> resumable_id, double timeout = -1.0) { return f$wait(resumable_id.val(), timeout); }
+
+inline bool f$wait_multiple(OrFalse<int> resumable_id) { return f$wait_multiple(resumable_id.val());};
+
+inline bool f$wait_multiple(const var &resumable_id) { return f$wait_multiple(resumable_id.to_int());};
+
 
 void f$sched_yield();
 void f$sched_yield_sleep(double timeout);
@@ -101,10 +108,9 @@ int wait_queue_push_unsafe(int queue_id, int resumable_id);
 
 bool f$wait_queue_empty(int queue_id);
 
-int f$wait_queue_next(int queue_id, double timeout = -1.0);
-
-int wait_queue_next_synchronously(int queue_id);
-int f$wait_queue_next_synchronously(int queue_id);
+OrFalse<int> f$wait_queue_next(int queue_id, double timeout = -1.0);
+OrFalse<int> wait_queue_next_synchronously(int queue_id);
+OrFalse<int> f$wait_queue_next_synchronously(int queue_id);
 
 void global_init_resumable_lib();
 
@@ -152,4 +158,50 @@ int fork_resumable(Resumable *resumable) {
   }
 
   return id;
+}
+
+template<typename T>
+class wait_result_resumable : public Resumable {
+  using ReturnT = T;
+  int resumable_id;
+  double timeout;
+  bool ready;
+protected:
+  bool run() {
+    RESUMABLE_BEGIN
+      ready = f$wait(resumable_id, timeout);
+      TRY_WAIT(wait_result_resumable_label_1, ready, bool);
+      if (!ready) {
+        if (last_wait_error == nullptr) {
+          last_wait_error = "Timeout in wait_result";
+        }
+        RETURN(false);
+      }
+      Storage *output = get_forked_storage(resumable_id);
+
+      if (output->tag == 0) {
+        last_wait_error = "Result already was gotten";
+        RETURN(false);
+      }
+
+      RETURN(output->load_as<T>());
+    RESUMABLE_END
+  }
+
+public:
+  wait_result_resumable(int resumable_id, double timeout) :
+    resumable_id(resumable_id),
+    timeout(timeout),
+    ready(false) {
+  }
+};
+
+template<typename T>
+T f$wait_result(int resumable_id, double timeout = -1) {
+  return start_resumable<T>(new wait_result_resumable<T>(resumable_id, timeout));
+}
+
+template<typename T>
+T f$wait_result(OrFalse<int> resumable_id, double timeout = -1) {
+  return f$wait_result<T>(resumable_id.val(), timeout);
 }

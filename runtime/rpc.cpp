@@ -709,6 +709,13 @@ struct rpc_request {
   };
 };
 
+
+// only for good linkage. Will be never used to load
+template<>
+int Storage::tagger<rpc_request>::get_tag() {
+  return 1960913044;
+}
+
 static rpc_request *rpc_requests;
 static int rpc_requests_size;
 static long long rpc_requests_last_query_num;
@@ -728,23 +735,6 @@ static inline rpc_request *get_rpc_request(slot_id_t request_id) {
     return &gotten_rpc_request;
   }
   return &rpc_requests[request_id - rpc_first_array_request_id];
-}
-
-var load_rpc_request_as_var(char *storage) {
-  rpc_request *data = reinterpret_cast <rpc_request *> (storage);
-  var result;
-  if (data->resumable_id == -2) {
-    result = false;
-  } else {
-    php_assert (data->resumable_id == -1);
-
-    string result_str;
-    result_str.assign_raw(data->answer - 12);
-    result = result_str;
-  }
-
-  data->resumable_id = -3;
-  return result;
 }
 
 class rpc_resumable : public Resumable {
@@ -787,7 +777,7 @@ protected:
     }
 
     request_id = -1;
-    output_->save<rpc_request>(*request, load_rpc_request_as_var);
+    output_->save<rpc_request>(*request);
     php_assert (request->resumable_id == -2 || request->resumable_id == -1);
     request->resumable_id = -3;
     request->answer = nullptr;
@@ -996,11 +986,11 @@ protected:
       }
 
       Storage *input = get_forked_storage(resumable_id);
-      if (input->getter_ == nullptr) {
+      if (input->tag == 0) {
         last_rpc_error = "Result already was gotten";
         RETURN(false);
       }
-      if (input->getter_ != load_rpc_request_as_var) {
+      if (input->tag != Storage::tagger<rpc_request>::get_tag()) {
         last_rpc_error = "Not a rpc request";
         RETURN(false);
       }
@@ -1058,11 +1048,11 @@ protected:
       }
 
       Storage *input = get_forked_storage(resumable_id);
-      if (input->getter_ == nullptr) {
+      if (input->tag == 0) {
         last_rpc_error = "Result already was gotten";
         RETURN(false);
       }
-      if (input->getter_ != load_rpc_request_as_var) {
+      if (input->tag != Storage::tagger<rpc_request>::get_tag()) {
         last_rpc_error = "Not a rpc request";
         RETURN(false);
       }
@@ -2224,7 +2214,7 @@ protected:
         queue_id = wait_queue_create(query_ids);
 
         while (true) {
-          query_id = f$wait_queue_next(queue_id, -1);
+          query_id = f$wait_queue_next(queue_id, -1).val();
           TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id, int);
           if (query_id <= 0) {
             break;
@@ -2278,7 +2268,7 @@ array<array<var>> f$rpc_tl_query_result_synchronously(const array<int> &query_id
     int queue_id = wait_queue_create(query_ids);
 
     while (true) {
-      int query_id = f$wait_queue_next_synchronously(queue_id);
+      int query_id = f$wait_queue_next_synchronously(queue_id).val();
       if (query_id <= 0) {
         break;
       }
@@ -4342,9 +4332,17 @@ bool f$rpc_queue_empty(int queue_id) {
 }
 
 int f$rpc_queue_next(int queue_id, double timeout) {
-  return f$wait_queue_next(queue_id, timeout);
+  return f$wait_queue_next(queue_id, timeout).val();
 }
 
 int f$rpc_queue_next_synchronously(int queue_id) {
-  return f$wait_queue_next_synchronously(queue_id);
+  return f$wait_queue_next_synchronously(queue_id).val();
+}
+
+bool f$rpc_wait(int request_id) {
+  return f$wait(request_id);
+}
+
+bool f$rpc_wait_multiple(int request_id) {
+  return f$wait_multiple(request_id);
 }

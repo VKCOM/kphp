@@ -29,13 +29,13 @@ public:
 
   void add_class_include(const ClassPtr &klass);
   void add_implements_include(const ClassPtr &klass);
+  void add_all_class_types(const TypeData &tinf_type);
 
   void compile(CodeGenerator &W) const;
 
   void start_next_block();
 
 private:
-  void add_all_class_types(const TypeData &tinf_type);
 
   std::unordered_set<ClassPtr> classes_;
   std::set<std::string> internal_headers_;

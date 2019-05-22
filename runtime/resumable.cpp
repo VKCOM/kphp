@@ -177,7 +177,7 @@ int register_forked_resumable(Resumable *resumable) {
     int first_needed_id = 0;
     while (first_needed_id < forked_resumables_size &&
            forked_resumables[first_needed_id].queue_id == -1 &&
-           forked_resumables[first_needed_id].output.getter_ == nullptr) {
+           forked_resumables[first_needed_id].output.tag == 0) {
       first_needed_id++;
     }
     if (first_needed_id > forked_resumables_size / 2) {
@@ -242,7 +242,7 @@ int register_started_resumable(Resumable *resumable) {
 
   started_resumable_info *res = get_started_resumable_info(res_id);
 
-  php_assert (is_new || res->output.getter_ == nullptr);
+  php_assert (is_new || res->output.tag == 0);
 
   new(&res->output) Storage();
   res->continuation = resumable;
@@ -707,43 +707,6 @@ void process_wait_timeout(event_timer *timer) {
   resumable_run_ready(wait_resumable_id);
 }
 
-class wait_result_resumable : public Resumable {
-  using ReturnT = var;
-  int resumable_id;
-  double timeout;
-  bool ready;
-protected:
-  bool run() {
-    RESUMABLE_BEGIN
-      ready = f$wait(resumable_id, timeout);
-      TRY_WAIT(wait_result_resumable_label_1, ready, bool);
-      if (!ready) {
-        if (last_wait_error == nullptr) {
-          last_wait_error = "Timeout in wait_result";
-        }
-        RETURN(false);
-      }
-
-      forked_resumable_info *resumable = get_forked_resumable_info(resumable_id);
-
-      if (resumable->output.getter_ == nullptr) {
-        last_wait_error = "Result already was gotten";
-        RETURN(false);
-      }
-
-      RETURN(resumable->output.load_as_var());
-    RESUMABLE_END
-  }
-
-public:
-  wait_result_resumable(int resumable_id, double timeout) :
-    resumable_id(resumable_id),
-    timeout(timeout),
-    ready(false) {
-  }
-};
-
-
 bool f$wait(int resumable_id, double timeout) {
   resumable_finished = true;
 
@@ -826,10 +789,6 @@ bool f$wait_multiple(int resumable_id) {
   return f$wait(resumable_id);
 }
 
-var f$wait_result(int resumable_id, double timeout) {
-  return start_resumable<var>(new wait_result_resumable(resumable_id, timeout));
-}
-
 int wait_queue_push(int queue_id, int resumable_id) {
   if (!is_forked_resumable_id(resumable_id)) {
     php_warning("Wrong resumable_id %d in function wait_queue_push", resumable_id);
@@ -842,7 +801,7 @@ int wait_queue_push(int queue_id, int resumable_id) {
 
     return queue_id;
   }
-  if (resumable->queue_id < 0 && resumable->output.getter_ == nullptr) {
+  if (resumable->queue_id < 0 && resumable->output.tag == 0) {
     return queue_id;
   }
 
@@ -960,7 +919,7 @@ int wait_queue_create(const array<int> &resumable_ids) {
 static void wait_queue_skip_gotten(wait_queue *q) {
   while (q->first_finished_function != -2) {
     forked_resumable_info *resumable = get_forked_resumable_info(-q->first_finished_function);
-    if (resumable->output.getter_ != nullptr) {
+    if (resumable->output.tag != 0) {
       break;
     }
     q->first_finished_function = resumable->queue_id;
@@ -1016,7 +975,7 @@ static void wait_queue_next(int queue_id, double timeout) {
   return;
 }
 
-int wait_queue_next_synchronously(int queue_id) {
+OrFalse<int> wait_queue_next_synchronously(int queue_id) {
   wait_queue *q = get_wait_queue(queue_id);
   wait_queue_skip_gotten(q);
 
@@ -1039,6 +998,7 @@ int wait_queue_next_synchronously(int queue_id) {
 static int wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable : public Resumable {
+  using ReturnT = OrFalse<int>;
   int queue_id;
   event_timer *timer;
 protected:
@@ -1053,15 +1013,13 @@ protected:
     php_assert (q->resumable_id > 0);
     q->resumable_id = 0;
 
+    queue_id = -1;
     if (q->first_finished_function != -2) {
-      output_->save<int>(-q->first_finished_function);
+      RETURN(-q->first_finished_function);
     } else {
       php_assert (input_ == nullptr);//timeout
-      output_->save<int>(0);
+      RETURN(false);
     }
-
-    queue_id = -1;
-    return true;
   }
 
 public:
@@ -1082,7 +1040,7 @@ void process_wait_queue_timeout(event_timer *timer) {
   resumable_run_ready(wait_queue_resumable_id);
 }
 
-int f$wait_queue_next(int queue_id, double timeout) {
+OrFalse<int> f$wait_queue_next(int queue_id, double timeout) {
   resumable_finished = true;
 
 //  fprintf (stderr, "Waiting for queue %d\n", queue_id);
@@ -1091,7 +1049,7 @@ int f$wait_queue_next(int queue_id, double timeout) {
       php_warning("Wrong queue_id %d in function wait_queue_next", queue_id);
     }
 
-    return 0;
+    return false;
   }
 
   wait_queue *q = get_wait_queue(queue_id);
@@ -1102,13 +1060,13 @@ int f$wait_queue_next(int queue_id, double timeout) {
     return -finished_slot_id;
   }
   if (q->left_functions == 0) {
-    return 0;
+    return false;
   }
 
   if (timeout == 0.0) {
     wait_net(0);
 
-    return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
+    return q->first_finished_function == -2 ? OrFalse<int>{false} : OrFalse<int>{-q->first_finished_function};
   }
 
   bool has_timeout = true;
@@ -1124,7 +1082,7 @@ int f$wait_queue_next(int queue_id, double timeout) {
     wait_queue_next(queue_id, timeout);
 
     q = get_wait_queue(queue_id);//can change in scheduler
-    return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
+    return q->first_finished_function == -2 ? OrFalse<int>{false} : OrFalse<int>{-q->first_finished_function};
   }
 
   wait_queue_resumable *res = new wait_queue_resumable(queue_id);
@@ -1134,16 +1092,16 @@ int f$wait_queue_next(int queue_id, double timeout) {
   }
 
   resumable_finished = false;
-  return 0;
+  return false;
 }
 
-int f$wait_queue_next_synchronously(int queue_id) {
+OrFalse<int> f$wait_queue_next_synchronously(int queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %d in function wait_queue_next_synchronously", queue_id);
     }
 
-    return 0;
+    return false;
   }
 
   return wait_queue_next_synchronously(queue_id);

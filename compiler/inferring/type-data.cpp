@@ -704,7 +704,7 @@ int type_strlen(const TypeData *type) {
     case tp_void:
       return STRLEN_VOID;
     case tp_future:
-      return STRLEV_FUTURE;
+      return STRLEN_FUTURE;
     case tp_future_queue:
       return STRLEN_FUTURE_QUEUE;
     case tp_Error:

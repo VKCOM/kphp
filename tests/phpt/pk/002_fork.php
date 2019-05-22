@@ -52,15 +52,15 @@
       	switch ($key % 3) {
       		case 0:
       			$id = fork(add_res($value));
-				$q = wait_queue_push($q, $id);
+				wait_queue_push($q, $id);
       			break;
       		case 1:
       			$id = fork(add_res($value));
-				$q = wait_queue_push($q, $id);
+				wait_queue_push($q, $id);
       			break;
       		case 2:
       			$id = fork(add_res($value));
-				$q = wait_queue_push($q, $id);
+				wait_queue_push($q, $id);
       			break;
       		case "iamstring!":
       			break;
@@ -79,8 +79,8 @@
 
   print "{$res}\n";
 
-  $id3 = fork(hash4(100));
-  $qid = wait_result($id3);
+  # $id3 = fork(hash4(100));
+  $qid = hash4(100);
   while (true) {
     $t = wait_queue_next ($qid);
    	if (!$t) {

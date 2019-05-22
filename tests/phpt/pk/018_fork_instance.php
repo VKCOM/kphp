@@ -1,0 +1,69 @@
+<?php
+
+#ifndef KittenPHP
+$fork_results = [];
+
+function sched_yield() {}
+
+function fork($x) {
+  global $fork_results;
+  static $id = 1;
+  $fork_results[$id] = $x;
+  return $id++;
+}
+
+function wait_result($x) {
+  global $fork_results;
+  if (!isset($fork_results[$x])) {
+    return false;
+  }
+  $res = $fork_results[$x];
+  unset($fork_results[$x]);
+  return $res;
+}
+
+#endif
+
+class A {
+  public $x;
+  public function __construct($x) { $this->x = $x; }
+}
+
+interface B {
+  public function foo();
+}
+
+class C implements B {
+  public function foo() { echo "I'm C\n";}
+}
+
+class D implements B {
+  public $x;
+  public function __construct($x) { $this->x = $x; }
+  public function foo() { echo "I'm D, x = {$this->x}\n";}
+}
+
+function return_A() { return new A(4);}
+function return_C() { return new C();}
+function return_D() { return new D(5);}
+
+function test() {
+  /** @var A */
+  $a = wait_result(fork(return_A()));
+  var_dump($a->x);
+
+  /** @var B */
+  $c = wait_result(fork(return_C()));
+  $c->foo();
+
+  $c = wait_result(fork(return_D()));
+  $c->foo();
+
+  $r = [fork(return_C()), fork(return_D())];
+  $c = wait_result($r[0]);
+  $c->foo();
+  $c = wait_result($r[1]);
+  $c->foo();
+}
+
+test();

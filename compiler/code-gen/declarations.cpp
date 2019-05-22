@@ -41,7 +41,7 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   W << (extern_flag ? "extern " : "") << TypeName(type) << " " << VarName(var);
 
   if (defval_flag) {
-    if (type->ptype() == tp_float || type->ptype() == tp_int) {
+    if (vk::any_of_equal(type->ptype(), tp_float, tp_int, tp_future, tp_future_queue)) {
       W << " = 0";
     } else if (type->get_real_ptype() == tp_bool) {
       W << " = false";

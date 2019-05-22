@@ -35,7 +35,6 @@ private:
   void on_return(VertexAdaptor<op_return> v);
   void on_foreach(VertexAdaptor<op_foreach> foreach_op);
   void on_list(VertexAdaptor<op_list> list);
-  void on_fork(VertexAdaptor<op_fork> fork);
   void on_throw(VertexAdaptor<op_throw> throw_op);
   void on_try(VertexAdaptor<op_try> try_op);
   void on_set_op(VertexPtr v);

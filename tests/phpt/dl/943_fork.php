@@ -38,8 +38,8 @@ $y = fork (my_pow (5, 3));
 $z = fork (my_pow (2));
 
 var_dump (wait ($x));
-var_dump (wait ($x + 1));
-var_dump (wait ($x + 2));
+var_dump (wait ($y));
+var_dump (wait ($z));
 var_dump (wait_result ($y));
 var_dump (wait_result ($y));
 var_dump (rpc_get ($x));
