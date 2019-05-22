@@ -216,21 +216,25 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
   }
 
 
-  if (!(function->has_variadic_param && function->is_extern())) {
-    for (int i = 0; i < call->args().size(); ++i) {
-      VertexPtr arg = call->args()[i];
-      auto param = function_params[i].as<meta_op_func_param>();
+  if (function->has_variadic_param) {
+    auto id_of_last_param = function_params.size() - 1;
+    RValue array_of_any{TypeData::get_type(tp_array, tp_Any)};
+    create_less(as_rvalue(function, id_of_last_param), array_of_any);
+  }
 
-      if (param->type() == op_func_param_callback) {
-        on_func_param_callback(call, i);
-      } else {
-        if (!function->is_extern()) {
-          create_set(as_lvalue(function, i), arg);
-        }
+  for (int i = 0; i < call->args().size(); ++i) {
+    VertexPtr arg = call->args()[i];
+    auto param = function_params[i].as<meta_op_func_param>();
 
-        if (param->var()->ref_flag) {
-          create_set(arg, as_rvalue(function, i));
-        }
+    if (param->type() == op_func_param_callback) {
+      on_func_param_callback(call, i);
+    } else {
+      if (!function->is_extern()) {
+        create_set(as_lvalue(function, i), arg);
+      }
+
+      if (param->var()->ref_flag) {
+        create_set(arg, as_rvalue(function, i));
       }
     }
   }
