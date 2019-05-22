@@ -30,6 +30,7 @@
 #include "common/precise-time.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
+#include "common/server/statsd-client.h"
 #include "common/tl/act.h"
 #include "common/tl/parse.h"
 #include "drinkless/dl-utils-lite.h"
@@ -603,7 +604,7 @@ struct worker_info_t {
 static worker_info_t *workers[MAX_WORKERS];
 static int worker_ids[MAX_WORKERS];
 static int worker_ids_n;
-static Stats stats;
+static Stats server_stats;
 static unsigned long long dead_stime, dead_utime;
 static int me_workers_n;
 static int me_running_workers_n;
@@ -1408,7 +1409,7 @@ extern unsigned tl_schema_crc32;
 
 std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   std::string res, header;
-  header = stats.to_string(me == nullptr ? 0 : (int)me->pid, false, true);
+  header = server_stats.to_string(me == nullptr ? 0 : (int)me->pid, false, true);
   int total_workers_n = 0;
   int running_workers_n = 0;
   int paused_workers_n = 0;
@@ -1636,35 +1637,58 @@ void php_master_rpc_stats() {
   tl_store_stats(res.c_str(), 0);
 }
 
-std::string get_master_stats_html() {
-  int total_workers_n = 0;
-  int running_workers_n = 0;
-  int paused_workers_n = 0;
-  for (int i = 0; i < me_workers_n; i++) {
-    worker_info_t *w = workers[i];
-    if (!w->is_dying) {
-      total_workers_n++;
-      running_workers_n += w->stats->istats.is_running;
-      paused_workers_n += w->stats->istats.is_wait_net;
+struct WorkerStats {
+  int total_workers_n{0};
+  int running_workers_n{0};
+  int paused_workers_n{0};
+
+  static WorkerStats collect() {
+    WorkerStats result;
+    for (int i = 0; i < me_workers_n; i++) {
+      worker_info_t *w = workers[i];
+      if (!w->is_dying) {
+        result.total_workers_n++;
+        result.running_workers_n += w->stats->istats.is_running;
+        result.paused_workers_n += w->stats->istats.is_wait_net;
+      }
     }
+    return result;
   }
+};
+std::string get_master_stats_html() {
+  const auto worker_stats = WorkerStats::collect();
 
   std::string html;
   char buf[100];
-  sprintf(buf, "total_workers\t%d\n", total_workers_n);
+  sprintf(buf, "total_workers\t%d\n", worker_stats.total_workers_n);
   html += buf;
-  sprintf(buf, "free_workers\t%d\n", total_workers_n - running_workers_n);
+  sprintf(buf, "free_workers\t%d\n", worker_stats.total_workers_n - worker_stats.running_workers_n);
   html += buf;
-  sprintf(buf, "working_workers\t%d\n", running_workers_n);
+  sprintf(buf, "working_workers\t%d\n", worker_stats.running_workers_n);
   html += buf;
-  sprintf(buf, "working_but_waiting_workers\t%d\n", paused_workers_n);
+  sprintf(buf, "working_but_waiting_workers\t%d\n", worker_stats.paused_workers_n);
   html += buf;
   for (int i = 1; i <= 3; ++i) {
-    sprintf(buf, "running_workers_avg_%s\t%7.3lf\n", periods_desc[i], stats.misc[i].get_stat().running_workers_avg);
+    sprintf(buf, "running_workers_avg_%s\t%7.3lf\n", periods_desc[i], server_stats.misc[i].get_stat().running_workers_avg);
     html += buf;
   }
 
   return html;
+}
+
+STATS_PROVIDER_TAGGED(workers, 100, STATS_TAG_KPHP_SERVER) {
+  const auto worker_stats = WorkerStats::collect();
+
+  add_histogram_stat_long(stats, "total_workers", worker_stats.total_workers_n);
+  add_histogram_stat_long(stats, "free_workers", worker_stats.total_workers_n - worker_stats.running_workers_n);
+  add_histogram_stat_long(stats, "working_workers", worker_stats.running_workers_n);
+  add_histogram_stat_long(stats, "working_but_waiting_workers", worker_stats.paused_workers_n);
+
+  char stat_name[32] = {0};
+  for (size_t i = 1; i <= 3; ++i) {
+    sprintf(stat_name, "running_workers_avg_%s", periods_desc[i]);
+    add_histogram_stat_double(stats, stat_name, server_stats.misc[i].get_stat().running_workers_avg);
+  }
 }
 
 int php_master_http_execute (struct connection *c, int op) {
@@ -1836,14 +1860,14 @@ int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute_
 }
 
 int update_mem_stats() {
-  get_mem_stats(me->pid, &stats.mem_info);
+  get_mem_stats(me->pid, &server_stats.mem_info);
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
 
     if (get_mem_stats(w->pid, &w->stats->mem_info) != 1) {
       continue;
     }
-    mem_info_add(&stats.mem_info, w->stats->mem_info);
+    mem_info_add(&server_stats.mem_info, w->stats->mem_info);
   }
   return 0;
 }
@@ -1873,12 +1897,12 @@ static void cron() {
     running_workers += w->stats->istats.is_running;
   }
   MiscStatTimestamp misc_timestamp{my_now, running_workers};
-  stats.update(misc_timestamp);
+  server_stats.update(misc_timestamp);
 
   utime += dead_utime;
   stime += dead_stime;
   CpuStatTimestamp cpu_timestamp{my_now, utime, stime, cpu_total};
-  stats.update(cpu_timestamp);
+  server_stats.update(cpu_timestamp);
 
   create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
   static double last_full_stats = -1;
@@ -1886,6 +1910,9 @@ static void cron() {
     last_full_stats = my_now;
     create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
   }
+
+  send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+  create_all_outbound_connections();
 }
 
 void run_master() {
