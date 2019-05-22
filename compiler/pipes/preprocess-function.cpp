@@ -292,6 +292,44 @@ private:
     return new_call;
   }
 
+  bool convert_array_with_instance_to_lambda_class(VertexPtr &arr, Location anon_location) {
+    auto array_arg = arr.try_as<op_array>();
+    if (!array_arg || array_arg->size() != 2) {
+      return false;
+    }
+
+    const auto *name_of_class_method = GenTree::get_constexpr_string(array_arg->args()[1]);
+    if (!name_of_class_method) {
+      return false;
+    }
+
+    kphp_error_act(!vk::string_view{*name_of_class_method}.starts_with("__"),
+      format("Call methods with prefix `__` are prohibited: `%s`", name_of_class_method->c_str()),
+      return false);
+
+    ClassPtr captured_class;
+    AssumType assum = infer_class_of_expr(current_function, array_arg->args()[0], captured_class);
+    if (assum != AssumType::assum_instance) {
+      return false;
+    }
+
+    auto called_method = captured_class->members.get_instance_method(*name_of_class_method);
+    if (!called_method) {
+      auto err_msg = "Can't find instance method: " +
+                     TermStringFormat::paint(FunctionData::get_human_readable_name(captured_class->name + "$$" + *name_of_class_method), TermStringFormat::green);
+      kphp_error(false, err_msg.c_str());
+      return false;
+    }
+
+    arr = LambdaGenerator{current_function, anon_location}
+      .add_invoke_method_which_call_method(called_method->function)
+      .add_constructor_from_uses()
+      .generate_and_require(current_function, instance_of_function_template_stream)
+      ->gen_constructor_call_with_args({array_arg->args()[0]});
+
+    return true;
+  }
+
   VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
     kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
     kphp_assert (func);
@@ -366,27 +404,11 @@ private:
                 .generate_and_require(current_function, instance_of_function_template_stream)
                 ->gen_constructor_call_pass_fields_as_args();
               is_callable_ok = true;
-            } else if (auto array_arg = call_arg.try_as<op_array>()) {
-              if (array_arg->size() == 2 && array_arg->args()[1]->type() == op_string) {
-                ClassPtr captured_class;
-                AssumType assum = infer_class_of_expr(current_function, array_arg->args()[0], captured_class);
-                if (assum == AssumType::assum_instance) {
-                  auto anon_location = call->location;
-                  const auto &name_of_class_method = array_arg->args()[1]->get_string();
-                  auto called_method = captured_class->members.get_instance_method(name_of_class_method);
-                  if (!called_method) {
-                    auto err_msg = "Can't find instance method: " +
-                                   TermStringFormat::paint(FunctionData::get_human_readable_name(captured_class->name + "$$" + name_of_class_method), TermStringFormat::green);
-                    kphp_error_act(false, err_msg.c_str(), return call);
-                  }
-
-                  call_arg = LambdaGenerator{current_function, anon_location}
-                    .add_invoke_method_which_call_method(called_method->function)
-                    .add_constructor_from_uses()
-                    .generate_and_require(current_function, instance_of_function_template_stream)
-                    ->gen_constructor_call_with_args({array_arg->args()[0]});
-                  is_callable_ok = true;
-                }
+            } else {
+              if (convert_array_with_instance_to_lambda_class(call_arg, get_location(call))) {
+                is_callable_ok = true;
+              } else if (stage::has_error()) {
+                return call;
               }
             }
           }
@@ -408,7 +430,11 @@ private:
         }
 
         case op_func_param_callback: {
-          call_arg = conv_to_func_ptr(call_arg);
+          bool converted = convert_array_with_instance_to_lambda_class(call_arg, get_location(call));
+          if (!converted) {
+            call_arg = conv_to_func_ptr(call_arg);
+          }
+
           instantiate_lambda(call.as<op_func_call>(), call_arg);
           break;
         }
