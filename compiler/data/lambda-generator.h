@@ -4,9 +4,9 @@
 
 class LambdaGenerator {
 public:
-  LambdaGenerator(FunctionPtr function, const Location &location);
+  LambdaGenerator(FunctionPtr function, const Location &location, bool is_static = false);
 
-  LambdaGenerator &add_uses(std::vector<VertexAdaptor<op_func_param>> uses, bool implicit_capture_this = false);
+  LambdaGenerator &add_uses(std::vector<VertexAdaptor<op_func_param>> uses);
   LambdaGenerator &add_invoke_method(const VertexAdaptor<op_function> &function);
   LambdaGenerator &add_invoke_method_which_call_method(FunctionPtr called_method);
   LambdaGenerator &add_invoke_method_which_call_function(FunctionPtr called_function);

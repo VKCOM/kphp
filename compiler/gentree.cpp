@@ -601,6 +601,10 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       return_flag = was_arrow;
       break;
     }
+    case tok_static:
+      next_cur();
+      res = get_anonymous_function(true);
+      break;
     case tok_function: {
       res = get_anonymous_function();
       break;
@@ -1562,13 +1566,13 @@ bool GenTree::check_uses_and_args_are_not_intersecting(const std::vector<VertexA
                       [&](VertexPtr p) { return uniq_uses.find(p.as<meta_op_func_param>()->var()->get_string()) != uniq_uses.end(); });
 }
 
-VertexPtr GenTree::get_anonymous_function() {
+VertexPtr GenTree::get_anonymous_function(bool is_static/* = false*/) {
   std::vector<VertexAdaptor<op_func_param>> uses_of_lambda;
   VertexPtr f = get_function(vk::string_view{}, access_nonmember, false, &uses_of_lambda);
 
   if (auto anon_function = f.try_as<op_function>()) {
     // это constructor call
-    return generate_anonymous_class(anon_function, parsed_os, cur_function, std::move(uses_of_lambda));
+    return generate_anonymous_class(anon_function, parsed_os, cur_function, is_static, std::move(uses_of_lambda));
   }
 
   return {};
@@ -1858,11 +1862,12 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
+                                            bool is_static,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda) {
   auto anon_location = function->name()->location;
 
-  return LambdaGenerator{cur_function, anon_location}
-    .add_uses(uses_of_lambda, cur_function->is_instance_function())
+  return LambdaGenerator{cur_function, anon_location, is_static}
+    .add_uses(uses_of_lambda)
     .add_invoke_method(function)
     .add_constructor_from_uses()
     .generate_and_require(cur_function, os)

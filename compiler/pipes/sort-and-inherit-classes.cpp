@@ -39,7 +39,7 @@ public:
         uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
       });
 
-      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, std::move(uses_of_lambda));
+      return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, true, std::move(uses_of_lambda));
     }
 
     return root;

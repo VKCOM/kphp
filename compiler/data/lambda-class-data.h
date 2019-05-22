@@ -22,7 +22,7 @@ public:
   VertexAdaptor<op_constructor_call> gen_constructor_call_with_args(std::vector<VertexPtr> args) const;
 
   const char *get_name() const final {
-    return "lambda";
+    return is_static ? "static lambda" : "lambda";
   }
 
   static const std::string &get_lambda_namespace() {
@@ -41,4 +41,7 @@ public:
   std::string get_subdir() const final {
     return "cl_l";
   }
+
+public:
+  bool is_static = false;
 };

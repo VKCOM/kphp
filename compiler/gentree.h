@@ -122,7 +122,7 @@ public:
   VertexPtr get_switch();
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
-  VertexPtr get_anonymous_function();
+  VertexPtr get_anonymous_function(bool is_static = false);
   VertexPtr get_function(const vk::string_view &phpdoc_str, AccessType access_type, bool is_final = false, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   unsigned int parse_class_member_modifier_mask();
@@ -132,6 +132,7 @@ public:
   static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
                                             DataStream<FunctionPtr> &os,
                                             FunctionPtr cur_function,
+                                            bool is_static,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
 
   VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
