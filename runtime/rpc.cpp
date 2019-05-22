@@ -891,7 +891,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
   if (ignore_answer) {
     int resumable_id = cur->resumable_id;
     process_rpc_timeout(result);
-    get_forked_storage(resumable_id)->load<rpc_request, rpc_request>();
+    get_forked_storage(resumable_id)->load<rpc_request>();
     return resumable_id;
   } else {
     rpc_request_need_timer.set_value(result, timeout);
@@ -1005,7 +1005,7 @@ protected:
         RETURN(false);
       }
 
-      rpc_request res = input->load<rpc_request, rpc_request>();
+      rpc_request res = input->load<rpc_request>();
       php_assert (CurException.is_null());
 
       if (res.resumable_id == -2) {
@@ -1067,7 +1067,7 @@ protected:
         RETURN(false);
       }
 
-      rpc_request res = input->load<rpc_request, rpc_request>();
+      rpc_request res = input->load<rpc_request>();
       php_assert (CurException.is_null());
 
       if (res.resumable_id == -2) {

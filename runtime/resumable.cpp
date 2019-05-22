@@ -14,42 +14,6 @@ static int runned_resumable_id;
 
 void debug_print_resumables();
 
-Storage::Storage() :
-  getter_(nullptr) {
-  memset(storage_, 0, sizeof(var));
-}
-
-var Storage::load_exception(char *storage) {
-  php_assert (CurException.is_null());
-  CurException = load_implementation_helper<Exception, Exception>::load(storage);
-  return var();
-}
-
-var Storage::load_as_var() {
-  if (getter_ == nullptr) {
-    last_wait_error = "Result already was gotten";
-    return false;
-  }
-
-  Getter getter = getter_;
-  getter_ = nullptr;
-  return getter(storage_);
-}
-
-void Storage::save_void() {
-  if (!CurException.is_null()) {
-    save_exception();
-  } else {
-    getter_ = load_implementation_helper<void, var>::load;
-  }
-}
-
-void Storage::save_exception() {
-  php_assert (!CurException.is_null());
-  Exception exception = std::move(CurException);
-  save<Exception>(exception, load_exception);
-}
-
 Storage *Resumable::input_;
 Storage *Resumable::output_;
 
@@ -211,8 +175,9 @@ bool check_forked_storage(Storage *storage) {
 int register_forked_resumable(Resumable *resumable) {
   if (current_forked_resumable_id == first_array_forked_resumable_id + forked_resumables_size) {
     int first_needed_id = 0;
-    while (first_needed_id < forked_resumables_size && forked_resumables[first_needed_id].queue_id == -1 && forked_resumables[first_needed_id].output
-                                                                                                                                              .getter_ == nullptr) {
+    while (first_needed_id < forked_resumables_size &&
+           forked_resumables[first_needed_id].queue_id == -1 &&
+           forked_resumables[first_needed_id].output.getter_ == nullptr) {
       first_needed_id++;
     }
     if (first_needed_id > forked_resumables_size / 2) {
