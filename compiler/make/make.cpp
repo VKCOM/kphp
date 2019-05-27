@@ -68,16 +68,16 @@ public:
     return create_target(new Cpp2ObjTarget(), to_targets(cpp), obj);
   }
 
-  Target *create_objs2obj_target(const vector<File *> &objs, File *obj) {
-    return create_target(new Objs2ObjTarget(), to_targets(objs), obj);
+  Target *create_objs2obj_target(vector<File *> objs, File *obj) {
+    return create_target(new Objs2ObjTarget(), to_targets(std::move(objs)), obj);
   }
 
-  Target *create_objs2bin_target(const vector<File *> &objs, File *bin) {
-    return create_target(new Objs2BinTarget(), to_targets(objs), bin);
+  Target *create_objs2bin_target(vector<File *> objs, File *bin) {
+    return create_target(new Objs2BinTarget(), to_targets(std::move(objs)), bin);
   }
 
-  Target *create_objs2static_lib_target(const vector<File *> &objs, File *lib) {
-    return create_target(new Objs2StaticLibTarget, to_targets(objs), lib);
+  Target *create_objs2static_lib_target(vector<File *> objs, File *lib) {
+    return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
   }
 
   void init_env(const KphpEnviroment &kphp_env) {
@@ -292,14 +292,20 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
       tmp_objs.push_back(obj_file);
       continue;
     }
-    name += ".o";
     subdirs[name].push_back(obj_file);
   }
 
   objs = std::move(tmp_objs);
-  for (const auto &name_and_files : subdirs) {
-    File *obj_file = obj_dir.insert_file(name_and_files.first);
-    make->create_objs2obj_target(name_and_files.second, obj_file);
+  for (auto &name_and_files : subdirs) {
+    auto &deps = name_and_files.second;
+    std::sort(deps.begin(), deps.end(), [](File *a, File *b) { return a->name < b->name;});
+    size_t hash = 0;
+    for (File *f : deps) {
+      vk::hash_combine(hash, vk::std_hash(f->name));
+    }
+    std::string intermediate_file_name = format("%s_%zx.o", name_and_files.first.c_str(), hash);
+    File *obj_file = obj_dir.insert_file(intermediate_file_name);
+    make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
   }
   fprintf(stderr, "objs cnt = %zu\n", objs.size());

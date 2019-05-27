@@ -126,8 +126,6 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(StaticLibraryRunGlobalHeaderH());
   }
 
-  write_hashes_of_subdirs_to_dep_files(W);
-
   write_tl_schema(W);
   //TODO: use Async for that
   tl_gen::write_tl_query_handlers(W);
@@ -141,11 +139,8 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   func->header_name = file_name + ".h";
   func->subdir = get_subdir(func->file_id->short_file_name);
 
-  recalc_hash_of_subdirectory(func->subdir, func->header_name);
-
   if (!func->is_inline) {
     func->src_name = file_name + ".cpp";
-    recalc_hash_of_subdirectory(func->subdir, func->src_name);
   }
 
   func->header_full_name =
@@ -162,21 +157,6 @@ string CodeGenF::get_subdir(const string &base) {
   int bucket = vk::std_hash(base) % 100;
 
   return string("o_") + int_to_str(bucket);
-}
-
-void CodeGenF::recalc_hash_of_subdirectory(const string &subdir, const string &file_name) {
-  auto &cur_hash = subdir_hash[subdir];
-  vk::hash_combine(cur_hash, vk::std_hash(file_name));
-}
-
-void CodeGenF::write_hashes_of_subdirs_to_dep_files(CodeGenerator &W) {
-  for (const auto &dir_and_hash : subdir_hash) {
-    W << OpenFile("_dep.cpp", dir_and_hash.first, false);
-    char tmp[100];
-    sprintf(tmp, "%zx", dir_and_hash.second);
-    W << "//" << (const char *)tmp << NL;
-    W << CloseFile();
-  }
 }
 
 void CodeGenF::write_tl_schema(CodeGenerator &W) {
