@@ -3167,6 +3167,7 @@ void parse_main_args(int argc, char *argv[]) {
   remove_parse_option("log");
   remove_parse_option("port");
   remove_parse_option("clusters-config");
+  always_enable_option("maximize-tcp-buffers", NULL);
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
@@ -3227,7 +3228,6 @@ int main(int argc, char *argv[]) {
   init_version_string(NAME_VERSION);
   dl_block_all_signals();
   set_core_dump_rlimit(1LL << 40);
-  tcp_maximize_buffers = 1;
   max_special_connections = 1;
   static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
 
