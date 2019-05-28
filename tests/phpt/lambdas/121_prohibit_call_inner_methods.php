@@ -1,4 +1,4 @@
-@ok
+@kphp_should_fail
 <?php
 
 class A {
