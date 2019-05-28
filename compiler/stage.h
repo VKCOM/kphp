@@ -37,7 +37,7 @@
 #define kphp_error(x, y) compiler_assert (x, y, CE_ASSERT_LEVEL)
 #define kphp_error_act(x, y, act) if (kphp_error (x, y)) act;
 #define kphp_error_return(x, y) kphp_error_act (x, y, return)
-#define kphp_assert(x) compiler_assert_noret (x, "", FATAL_ASSERT_LEVEL)
+#define kphp_assert(x) compiler_assert_noret (x, "Assertion "  #x " failed", FATAL_ASSERT_LEVEL)
 #define kphp_assert_msg(x, y) compiler_assert_noret (x, y, FATAL_ASSERT_LEVEL)
 #define kphp_fail_msg(y) kphp_assert_msg (0, y); _exit(1);
 #define kphp_fail() kphp_assert (0); _exit(1);
