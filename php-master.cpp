@@ -1673,6 +1673,9 @@ std::string get_master_stats_html() {
 STATS_PROVIDER_TAGGED(workers, 100, STATS_TAG_KPHP_SERVER) {
   const auto worker_stats = WorkerStats::collect();
 
+  if (engine_tag) {
+    add_histogram_stat_long(stats, "kphp_version", atoll(engine_tag));
+  }
   add_histogram_stat_long(stats, "total_workers", worker_stats.total_workers_n);
   add_histogram_stat_long(stats, "free_workers", worker_stats.total_workers_n - worker_stats.running_workers_n);
   add_histogram_stat_long(stats, "working_workers", worker_stats.running_workers_n);
