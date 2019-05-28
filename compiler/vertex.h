@@ -100,9 +100,14 @@ inline VertexRange get_function_params(VertexAdaptor<Op> func) {
   return func->params().template as<op_func_param_list>()->params();
 }
 
-// op_int_const string representation can be "123", "0x123", "0002", "-123"
+// op_int_const string representation can be "123", "0x123", "0002", "-123", "0b0010101"
 // but it is guaranteed to be a valid int
 inline long parse_int_from_string(VertexAdaptor<op_int_const> v) {
-  char *end;
-  return std::strtol(v->get_string().c_str(), &end, 0);
+  auto start = v->get_string().c_str();
+
+  if (start[0] == '0' && start[1] == 'b') {
+    return std::strtol(start + 2, nullptr, 2);
+  }
+
+  return std::strtol(start, nullptr, 0);
 }
