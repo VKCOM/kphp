@@ -104,6 +104,7 @@ public:
     return nullptr;
   }
 
+  bool need_generate_accept_method() const;
   bool is_builtin() const;
   bool is_interface_or_has_interface_member();
   static bool does_need_codegen(ClassPtr c);

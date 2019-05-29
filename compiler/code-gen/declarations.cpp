@@ -227,7 +227,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;
   });
 
-  if (!klass->is_lambda()) {
+  if (klass->need_generate_accept_method()) {
     compile_get_class(W, klass);
 
     W << NL;
