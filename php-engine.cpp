@@ -2912,7 +2912,7 @@ void init_all() {
   dummy_request_queue.first_query = dummy_request_queue.last_query = (conn_query *)&dummy_request_queue;
 
   if (script_timeout == 0) {
-    script_timeout = run_once ? 1e9 : DEFAULT_SCRIPT_TIMEOUT;
+    script_timeout = run_once ? 1e6 : DEFAULT_SCRIPT_TIMEOUT;
   }
 
   global_init_runtime_libs();
