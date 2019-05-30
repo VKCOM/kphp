@@ -206,7 +206,6 @@ private:
                                 "Function is resumable because of calls chain:\n%s\n", func->name.c_str(), func->get_resumable_path().c_str()));
         }
         if (func->is_inline) {
-          kphp_error(func->is_auto_inherited, format("you must not use @kphp-inline for resumable function %s", func->get_human_readable_name().c_str()));
           func->is_inline = false;
         }
       }
