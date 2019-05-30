@@ -12,9 +12,9 @@ public:
   }
 
   template<typename T>
-  void operator()(T I::* value) {
+  void operator()(const char *field_name, T I::* value) {
     // we need to process each element
-    if (!processor_.process(instance_.get()->*value)) {
+    if (!processor_.process(field_name, instance_.get()->*value)) {
       is_ok_ = false;
     }
   }

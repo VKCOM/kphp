@@ -44,6 +44,14 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
              "Can not store instance with interface inside with instance_cache_store call");
 }
 
+void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
+  auto type = tinf::get_type(call->args()[0]);
+  kphp_error_return(type->ptype() == tp_Class, "You may not use instance_to_array with non-instance var");
+
+  auto klass = type->class_type();
+  kphp_error(!klass->is_interface_or_has_interface_member(), "You may not convert interface to array");
+}
+
 void check_func_call_params(VertexAdaptor<op_func_call> call) {
   FunctionPtr f = call->get_func_id();
   VertexRange func_params = f->root->params().as<op_func_param_list>()->params();
@@ -256,10 +264,13 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
 
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   if (call->get_func_id()->is_extern()) {
-    if (call->get_string() == "instance_cache_fetch_immutable") {
+    auto &function_name = call->get_string();
+    if (function_name == "instance_cache_fetch_immutable") {
       check_instance_cache_fetch_immutable_call(call);
-    } else if (call->get_string() == "instance_cache_store") {
+    } else if (function_name == "instance_cache_store") {
       check_instance_cache_store_call(call);
+    } else if (function_name == "instance_to_array") {
+      check_instance_to_array_call(call);
     }
   }
 

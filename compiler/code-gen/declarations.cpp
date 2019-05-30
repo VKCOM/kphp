@@ -232,9 +232,9 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
     W << NL;
     W << "template<class Visitor>" << NL
-      << "static void accept(Visitor &visitor) " << BEGIN;
+      << "static void accept(Visitor &&visitor) " << BEGIN;
     klass->members.for_each([&](const ClassMemberInstanceField &f) {
-      W << "visitor(&" << klass->src_name << "::$" << f.local_name() << ");" << NL;
+      W << "visitor(\"" << f.local_name() << "\", &" << klass->src_name << "::$" << f.local_name() << ");" << NL;
     });
     W << END << NL;
   }

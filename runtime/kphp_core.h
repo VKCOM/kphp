@@ -7,8 +7,8 @@
 
 #include "runtime/allocator.h"
 #include "runtime/include.h"
-#include "runtime/profiler.h"
 #include "runtime/kphp_type_traits.h"
+#include "runtime/profiler.h"
 
 // order of includes below matters, be careful
 

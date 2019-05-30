@@ -16,6 +16,7 @@
 #include "runtime/kphp_core.h"
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/traits.h"
+#include "runtime/instance-visitor.h"
 
 namespace ic_impl_ {
 
@@ -24,6 +25,11 @@ bool is_instance_cache_memory_limit_exceeded_();
 template<typename Child>
 class BasicProcessor {
 public:
+  template<typename T>
+  bool process(const char *, T &&value) {
+    return child_.process(std::forward<T>(value));
+  }
+
   template<typename T>
   bool process(T &) { return true; }
 

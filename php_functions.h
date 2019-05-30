@@ -10,6 +10,7 @@
 #include "runtime/datetime.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
+#include "runtime/instance-to-array-processor.h"
 #include "runtime/instance_cache.h"
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"

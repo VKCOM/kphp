@@ -223,8 +223,6 @@ function is_real ($v ::: Any) ::: bool;
 function is_string ($v ::: Any) ::: bool;
 function is_array ($v ::: Any) ::: bool;
 function is_object ($v ::: Any) ::: bool;
-/** @kphp-extern-func-info cpp_template_call */
-function instance_cast($instance ::: Any, $to_type ::: string) ::: instance<^2>;
 function get_class ($v ::: Any) ::: string;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
@@ -1074,6 +1072,11 @@ function unimplemented_function ($a1 = "", $a2 = "", $a3 = "", $a4 = "", $a5 = "
 /** For local usage only **/
 function system ($query ::: string) ::: int;
 function raise_sigsegv () ::: void;
+
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast($instance ::: Any, $to_type ::: string) ::: instance<^2>;
+
+function instance_to_array($instance ::: Any) ::: array<var>;
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
