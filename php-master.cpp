@@ -30,6 +30,7 @@
 #include "common/precise-time.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
+#include "common/server/stats.h"
 #include "common/server/statsd-client.h"
 #include "common/tl/act.h"
 #include "common/tl/parse.h"
