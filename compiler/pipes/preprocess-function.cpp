@@ -452,6 +452,19 @@ private:
     return call;
   }
 
+  static VertexAdaptor<op_func_call> replace_call_of_static_method_through_instance(VertexAdaptor<op_func_call> call, FunctionPtr fun) {
+    kphp_error(!fun->class_id->is_interface(), "It's not allowed to call static method through interface");
+
+    auto first_param = std::next(call->args().begin());
+    auto last_param = call->args().end();
+    VertexRange params_without_first_instance(first_param, last_param);
+
+    auto new_call = VertexAdaptor<op_func_call>::create(params_without_first_instance).set_location(call);
+    new_call->str_val = fun->class_id->name + "$$" + call->get_string();
+
+    return new_call;
+  }
+
   /**
    * Имея vertex вида 'fn(...)' или 'new A(...)', сопоставить этому vertex реальную FunctionPtr
    *  (он будет доступен через vertex->get_func_id()).
@@ -487,6 +500,9 @@ private:
     FunctionPtr f = G->get_function(name);
 
     if (likely(!!f)) {
+      if (f->is_static_function() && call->extra_type == op_ex_func_call_arrow) {
+        call = replace_call_of_static_method_through_instance(call.as<op_func_call>(), f);
+      }
       call = set_func_id(call, f);
     } else {
       print_why_cant_set_func_id_error(call, name);
