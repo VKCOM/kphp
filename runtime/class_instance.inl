@@ -31,12 +31,6 @@ void class_instance<T>::alloc() {
 }
 
 template<class T>
-string class_instance<T>::to_string() const {
-  const char *classname = get_class();
-  return string(classname, (int)strlen(classname));
-}
-
-template<class T>
 T *class_instance<T>::operator->() {
   if (unlikely(!o)) {
     warn_on_access_null();

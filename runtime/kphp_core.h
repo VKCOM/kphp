@@ -1439,7 +1439,7 @@ string f$strval(const OrFalse<T> &val) {
 
 template<class T>
 string f$strval(const class_instance<T> &val) {
-  return val.to_string();
+  return string(val.get_class());
 }
 
 string f$strval(const var &val) {

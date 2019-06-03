@@ -72,7 +72,6 @@ public:
   inline T *get() const;
 
   bool is_null() const { return !static_cast<bool>(o); }
-  inline string to_string() const;
   const char *get_class() const { return o ? o->get_class() : "null"; }
 
   template<class D>
