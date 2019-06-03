@@ -1,36 +1,17 @@
 #pragma once
 
 #include <algorithm>
-#include <type_traits>
 #include <cmath>
+#include <type_traits>
 
-#include "runtime/php_assert.h"
 #include "common-php-functions.h"
-#include "common/wrappers/likely.h"
+#include "runtime/declarations.h"
+#include "runtime/php_assert.h"
 #include "common/type_traits/is_constructible.h"
+#include "common/wrappers/likely.h"
 
 #define COMMA ,
 
-
-struct array_size;
-
-class array_tag {
-};
-
-template<class T>
-class array;
-
-template<class T>
-class class_instance;
-
-class var;
-
-class Unknown {
-};
-
-class string;
-
-class string_buffer;
 
 template<class T>
 class convert_to {

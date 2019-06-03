@@ -2,20 +2,7 @@
 #include <tuple>
 #include <type_traits>
 
-
-template<typename T>
-class array;
-
-class array_tag;
-
-template<typename T>
-class class_instance;
-
-template<typename T>
-class OrFalse;
-
-class Unknown;
-
+#include "runtime/declarations.h"
 
 template<typename T, typename T1>
 using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
