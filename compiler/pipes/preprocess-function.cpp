@@ -454,6 +454,7 @@ private:
 
   static VertexAdaptor<op_func_call> replace_call_of_static_method_through_instance(VertexAdaptor<op_func_call> call, FunctionPtr fun) {
     kphp_error(!fun->class_id->is_interface(), "It's not allowed to call static method through interface");
+    kphp_error(fun->is_required, format("function: `%s` needs tag @kphp-required", fun->get_human_readable_name().c_str()));
 
     auto first_param = std::next(call->args().begin());
     auto last_param = call->args().end();
