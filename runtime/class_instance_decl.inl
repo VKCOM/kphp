@@ -60,6 +60,7 @@ public:
   inline class_instance clone() const;
 
   inline void alloc() __attribute__((always_inline));
+  inline void empty_alloc() __attribute__((always_inline));
   inline void destroy() { o.reset(); }
   int get_reference_counter() const { return o->get_refcnt(); }
 

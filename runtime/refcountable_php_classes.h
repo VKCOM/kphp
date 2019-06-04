@@ -75,3 +75,9 @@ public:
 private:
   uint32_t refcnt{0};
 };
+
+class refcountable_empty_php_classes {
+public:
+  static void add_ref() {}
+  static void release() {}
+};

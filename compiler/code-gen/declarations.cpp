@@ -49,7 +49,12 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   }
   W << ";" << NL;
   if (var->type() == VarData::var_local_t && type->ptype() == tp_Class && var->name == "this") {
-    W << VarName(var) << ".alloc();" << NL << NL;    // инициализация $this в самом начале __construct()
+    // инициализация $this в самом начале __construct()
+    if (type->class_type()->is_not_empty_class()) {
+      W << VarName(var) << ".alloc();" << NL << NL;
+    } else {
+      W << VarName(var) << ".empty_alloc();" << NL << NL;
+    }
   }
   if (var->needs_const_iterator_flag) {
     W << (extern_flag ? "extern " : "") <<
@@ -217,11 +222,16 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     interface = klass->implements.front();
   }
 
-  W << NL << "struct " << klass->src_name << " final : public refcountable_php_classes<" << klass->src_name;
-  if (interface) {
-    W << ", " << interface->src_name;
+  if (klass->is_not_empty_class()) {
+    W << NL << "struct " << klass->src_name << " final : public refcountable_php_classes<" << klass->src_name;
+    if (interface) {
+      W << ", " << interface->src_name;
+    }
+    W << "> ";
+  } else {
+    W << NL << "struct " << klass->src_name << " final : public refcountable_empty_php_classes ";
   }
-  W << "> " << BEGIN;
+  W << BEGIN;
 
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;

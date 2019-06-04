@@ -24,10 +24,19 @@ class_instance<T> class_instance<T>::clone() const {
 
 template<class T>
 void class_instance<T>::alloc() {
+  static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
   auto new_t = static_cast<T *>(dl::allocate(sizeof(T)));
   new(new_t) T();
   new (&o) vk::intrusive_ptr<T>(new_t);
+}
+
+template<class T>
+inline void class_instance<T>::empty_alloc() {
+  static_assert(std::is_empty<T>{}, "class T must be empty");
+  static uint32_t obj;
+  obj++;
+  new (&o) vk::intrusive_ptr<T>(reinterpret_cast<T*>(obj));
 }
 
 template<class T>
@@ -36,7 +45,7 @@ T *class_instance<T>::operator->() {
     warn_on_access_null();
   }
 
-  return o.get();
+  return get();
 };
 
 template<class T>
@@ -45,11 +54,12 @@ T *class_instance<T>::operator->() const {
     warn_on_access_null();
   }
 
-  return o.get();
+  return get();
 };
 
 template<class T>
 T *class_instance<T>::get() const {
+  static_assert(!std::is_empty<T>{}, "class T may not be empty");
   return o.get();
 }
 

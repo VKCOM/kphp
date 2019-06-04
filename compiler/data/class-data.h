@@ -69,6 +69,10 @@ public:
   // function fname(args) => function fname($this ::: class_instance, args)
   void patch_func_add_this(std::vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num);
 
+  bool is_not_empty_class() const {
+    return members.has_any_instance_var() || is_builtin() || is_interface() || !implements.empty();
+  }
+
   bool is_class() const { return class_type == ClassType::klass; }
   bool is_interface() const { return class_type == ClassType::interface; }
   bool is_trait() const { return class_type == ClassType::trait; }
