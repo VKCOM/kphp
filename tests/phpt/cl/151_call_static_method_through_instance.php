@@ -9,6 +9,5 @@ class A {
 
 
 $a = new A();
-A::bar();
 $a->bar();
 
