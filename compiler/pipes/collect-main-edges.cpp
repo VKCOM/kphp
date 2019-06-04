@@ -397,6 +397,21 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
           break;
       }
     }
+
+    Assumption return_assumption = function->assumption_for_return;
+    RValue rvalue_of_return = as_rvalue(function, -1);
+    switch (return_assumption.assum_type) {
+      case AssumType::assum_instance:
+        create_less(rvalue_of_return, return_assumption.klass->type_data);
+        break;
+
+      case AssumType::assum_instance_array:
+        create_less(rvalue_of_return, TypeData::create_array_type_data(return_assumption.klass->type_data, true));
+        break;
+
+      default:
+        break;
+    }
   }
 }
 
