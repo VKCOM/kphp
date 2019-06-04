@@ -3,7 +3,26 @@
 
 #ifndef KittenPHP
 function tuple(...$args) { return $args; }
-function instance_to_array($instance) { return (array) $instance; }
+function instance_to_array($instance) { 
+    if (!is_object($instance)) {
+        return $instance;
+    }
+
+    $convert_array_of_instances = function (&$a) use (&$convert_array_of_instances) {
+        foreach ($a as &$v) {
+            if (is_object($v)) {
+                $v = instance_to_array($v);
+            } elseif (is_array($v)) {
+                $convert_array_of_instances($v);
+            }
+        }
+    };
+
+    $a = (array) $instance;
+    $convert_array_of_instances($a);
+
+    return $a;
+}
 #endif
 
 class A {
@@ -30,17 +49,7 @@ class B {
     }
 }
 
+
 $b = new B();
-$arr_b = instance_to_array($b);
-
-#ifndef KittenPHP
-$arr_b["a_b"] = (array) $arr_b["a_b"];
-$arr_b["arr_a_b"] = array_map("instance_to_array", $arr_b["arr_a_b"]);
-#endif 
-
-var_dump($arr_b["s_b"]);
-var_dump($arr_b["a_b"]["nm_a"]);
-var_dump($arr_b["a_b"]["t_a"]);
-var_dump($arr_b["arr_a_b"][0]["t_a"]);
-var_dump($arr_b["arr_a_b"][0]["t_or_false_a"]);
+var_dump(instance_to_array($b));
 
