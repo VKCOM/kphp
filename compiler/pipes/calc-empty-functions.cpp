@@ -1,6 +1,7 @@
 #include "compiler/pipes/calc-empty-functions.h"
 
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/vertex.h"
 
@@ -11,6 +12,26 @@ FunctionData::body_value calc_seq_body_type(VertexAdaptor<op_seq> seq);
 
 FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
   switch (vertex->type()) {
+    case op_set: {
+      FunctionPtr fun = stage::get_function();
+      if (fun->file_id->main_function == fun) {
+        auto set = vertex.as<op_set>();
+        auto lhs = set->lhs();
+        auto rhs = set->rhs();
+        if (rhs->type() == op_true && lhs->type() == op_var && lhs->get_string() == fun->file_id->get_main_func_run_var_name()) {
+          return FunctionData::body_value::empty;
+        }
+      }
+      return FunctionData::body_value::non_empty;
+    }
+    case op_if: {
+      auto if_v = vertex.as<op_if>();
+      auto cond = if_v->cond();
+      if (cond->type() == op_log_not && cond.as<op_log_not>()->expr()->type() == op_var && !if_v->has_false_cmd()) {
+        return get_vertex_body_type(if_v->true_cmd());
+      }
+      return FunctionData::body_value::non_empty;
+    }
     case op_func_call:
       return FunctionData::body_value::unknown;
     case op_return: {
@@ -65,6 +86,7 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
 
 
 void CalcEmptyFunctions::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
+  stage::set_function(f);
   calc_function_body_type(f);
   os << f;
 }

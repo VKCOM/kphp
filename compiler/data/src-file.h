@@ -33,5 +33,6 @@ public:
   std::string get_short_name();
 
   bool is_builtin() const;
+  std::string get_main_func_run_var_name() const;
   VertexPtr get_main_func_run_var() const;
 };
