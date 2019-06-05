@@ -2253,6 +2253,8 @@ void GenTree::run() {
 
   AutoLocation seq_location(this);
   std::vector<VertexPtr> seq_next;
+  auto set_run_flag = VertexAdaptor<op_set>::create(processing_file->get_main_func_run_var(), VertexAdaptor<op_true>::create());
+  seq_next.push_back(set_run_flag);
   get_seq(seq_next);
   seq_next.push_back(VertexAdaptor<op_return>::create());
   cur_function->root->cmd() = VertexAdaptor<op_seq>::create(seq_next);

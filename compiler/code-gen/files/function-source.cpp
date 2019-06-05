@@ -49,10 +49,6 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   declare_const_vars(function, W);
   declare_static_vars(function, W);
 
-  if (function->type == FunctionData::func_global) {
-    W << "bool " << FunctionCallFlag(function) << ";" << NL;
-  }
-
   W << UnlockComments();
   W << function->root << NL;
   W << LockComments();

@@ -62,15 +62,9 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
   W << CloseNamespace();
 }
 
-void GlobalVarsReset::compile_func(FunctionPtr func, const std::set<FunctionPtr> &used_functions, int parts_n, CodeGenerator &W) {
+void GlobalVarsReset::compile_func(FunctionPtr func, int parts_n, CodeGenerator &W) {
   W << OpenNamespace();
   W << "void " << GlobalVarsResetFuncName(func) << " " << BEGIN;
-  for (auto func : used_functions) {
-    if (func->type == FunctionData::func_global) {
-      W << "extern bool " << FunctionCallFlag(func) << ";" << NL;
-      W << FunctionCallFlag(func) << " = false;" << NL;
-    }
-  }
 
   for (int i = 0; i < parts_n; i++) {
     W << "void " << GlobalVarsResetFuncName(func, i) << ";" << NL;
@@ -138,6 +132,6 @@ void GlobalVarsReset::compile(CodeGenerator &W) const {
 
   W << OpenFile(vars_reset_src_prefix + main_func->src_name, "", false);
   W << ExternInclude("php_functions.h");
-  compile_func(main_func, used_functions, non_empty_parts, W);
+  compile_func(main_func, non_empty_parts, W);
   W << CloseFile();
 }

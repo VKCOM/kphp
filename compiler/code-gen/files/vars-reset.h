@@ -11,7 +11,7 @@ struct GlobalVarsReset {
 
   static void compile_part(FunctionPtr func, const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W);
 
-  static void compile_func(FunctionPtr func, const std::set<FunctionPtr> &used_functions, int parts_n, CodeGenerator &W);
+  static void compile_func(FunctionPtr func, int parts_n, CodeGenerator &W);
 
   static void collect_used_funcs_and_vars(
     FunctionPtr func, std::set<FunctionPtr> *visited_functions,

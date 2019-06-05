@@ -5,6 +5,7 @@
 #include "common/wrappers/string_view.h"
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 class SrcFile {
 public:
@@ -32,4 +33,5 @@ public:
   std::string get_short_name();
 
   bool is_builtin() const;
+  VertexPtr get_main_func_run_var() const;
 };

@@ -62,8 +62,9 @@ struct FunctionCallFlag {
     function(function) {
   }
 
+  // will be removed in future
   inline void compile(CodeGenerator &W) const {
-    W << FunctionName(function) << "$called";
+    W << "v$" + function->name << "$called";
   }
 };
 

@@ -114,7 +114,6 @@ LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_function) :
 void LibGlobalVarsReset::compile(CodeGenerator &W) const {
   W << OpenNamespace();
   W << "void lib_global_vars_reset() " << BEGIN
-    << FunctionCallFlag(main_function) << " = false;" << NL
     << "void " << GlobalVarsResetFuncName(main_function) << ";" << NL
     << GlobalVarsResetFuncName(main_function) << ";" << NL
     << END << NL << NL;
@@ -122,9 +121,7 @@ void LibGlobalVarsReset::compile(CodeGenerator &W) const {
 
   W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
     << "using namespace " << G->get_global_namespace() << ";" << NL
-    << "require_once ("
-    << FunctionCallFlag(main_function) << ", "
-    << FunctionName(main_function) << "());" << NL
+    << FunctionName(main_function) << "();" << NL
     << END << NL << NL;
 }
 

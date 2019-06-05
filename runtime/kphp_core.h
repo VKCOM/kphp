@@ -34,7 +34,6 @@
 })
 
 #define require(flag_name, action) ({ \
-  flag_name = true;                   \
   action;                             \
 })
 

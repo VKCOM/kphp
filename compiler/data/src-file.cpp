@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "auto/compiler/vertex/vertex-all.h"
 #include "common/wrappers/likely.h"
 
 #include "compiler/compiler-core.h"
@@ -86,4 +87,11 @@ bool SrcFile::is_builtin() const {
   }
 
   return owner_lib && !owner_lib->is_raw_php() && file_name == owner_lib->functions_txt_file();
+}
+
+VertexPtr SrcFile::get_main_func_run_var() const {
+  auto v = VertexAdaptor<op_var>::create();
+  v->set_string(main_func_name + "$called");
+  v->extra_type = op_ex_var_superglobal;
+  return v;
 }
