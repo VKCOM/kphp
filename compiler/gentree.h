@@ -99,8 +99,7 @@ public:
   bool gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim);
   template<Operation Op>
   VertexPtr get_conv();
-  VertexPtr get_require();
-  VertexPtr get_require_once();
+  VertexPtr get_require(bool once);
   template<Operation Op, Operation EmptyOp>
   VertexPtr get_func_call();
   VertexPtr get_short_array();

@@ -1,11 +1,12 @@
 #include "compiler/pipes/final-check.h"
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
-#include "common/termformat/termformat.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {
@@ -233,14 +234,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
                format("Accessing ->property of non-instance %s", colored_type_out(lhs_type).c_str()));
   }
 
-  if (G->env().get_warnings_level() >= 2 && vk::any_of_equal(vertex->type(), op_require, op_require_once)) {
+  if (G->env().get_warnings_level() >= 2 && vertex->type() == op_func_call) {
     FunctionPtr function_where_require = stage::get_function();
 
     if (function_where_require && function_where_require->type == FunctionData::func_local) {
-      for (auto v : *vertex) {
-        FunctionPtr function_which_required = v->get_func_id();
-
-        kphp_assert(function_which_required);
+      FunctionPtr function_which_required = vertex->get_func_id();
+      if (function_which_required == function_which_required->file_id->main_function) {
         kphp_assert(function_which_required->type == FunctionData::func_global);
 
         for (VarPtr global_var : function_which_required->global_var_ids) {

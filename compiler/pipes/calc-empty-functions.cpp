@@ -11,8 +11,6 @@ FunctionData::body_value calc_seq_body_type(VertexAdaptor<op_seq> seq);
 
 FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
   switch (vertex->type()) {
-    case op_require:
-    case op_require_once:
     case op_func_call:
       return FunctionData::body_value::unknown;
     case op_return: {

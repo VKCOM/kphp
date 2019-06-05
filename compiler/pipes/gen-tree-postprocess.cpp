@@ -6,10 +6,11 @@
 #include "compiler/data/src-file.h"
 
 namespace {
-VertexAdaptor<op_require_once> make_require_once_call(SrcFilePtr lib_main_file, VertexAdaptor<op_func_call> require_lib_call) {
+VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, VertexAdaptor<op_func_call> require_lib_call) {
   auto lib_main_file_name = VertexAdaptor<op_string>::create();
   lib_main_file_name->set_string(lib_main_file->file_name);
-  auto req_once = VertexAdaptor<op_require_once>::create(lib_main_file_name);
+  auto req_once = VertexAdaptor<op_require>::create(lib_main_file_name);
+  req_once->once = true;
   set_location(req_once, require_lib_call->get_location());
   return req_once;
 }

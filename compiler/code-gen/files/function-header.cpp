@@ -25,10 +25,6 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << VarExternDeclaration(const_var) << NL;
   }
 
-  if (function->type == FunctionData::func_global) {
-    W << "extern bool " << FunctionCallFlag(function) << ";" << NL;
-  }
-
   if (function->is_inline) {
     W << "static inline ";
   }

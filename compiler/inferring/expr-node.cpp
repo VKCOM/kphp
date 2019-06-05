@@ -15,7 +15,6 @@ private:
   template<PrimitiveType tp>
   void recalc_ptype();
 
-  void recalc_require(VertexAdaptor<op_require> require);
   void recalc_ternary(VertexAdaptor<op_ternary> ternary);
   void apply_type_rule_func(VertexAdaptor<op_type_rule_func> func_type_rule, VertexPtr expr);
   void apply_type_rule_type(VertexAdaptor<op_type_rule> rule, VertexPtr expr);
@@ -56,11 +55,6 @@ template<PrimitiveType tp>
 void ExprNodeRecalc::recalc_ptype() {
 
   set_lca(TypeData::get_type(tp));
-}
-
-void ExprNodeRecalc::recalc_require(VertexAdaptor<op_require> require) {
-  FunctionPtr last_function = require->back()->get_func_id();
-  set_lca(last_function, -1);
 }
 
 void ExprNodeRecalc::recalc_ternary(VertexAdaptor<op_ternary> ternary) {
@@ -376,9 +370,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
   switch (expr->type()) {
     case op_move:
       recalc_expr(expr.as<op_move>()->expr());
-      break;
-    case op_require:
-      recalc_require(expr.as<op_require>());
       break;
     case op_ternary:
       recalc_ternary(expr.as<op_ternary>());

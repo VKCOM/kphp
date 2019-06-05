@@ -39,7 +39,7 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *local) {
 
   local->need_recursion_flag = false;
 
-  if (vk::any_of_equal(root->type(), op_defined, op_require, op_require_once)) {
+  if (vk::any_of_equal(root->type(), op_defined)) {
     return root;
   }
 

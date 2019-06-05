@@ -33,16 +33,6 @@
   1;                                                                          \
 })
 
-#define require(flag_name, action) ({ \
-  action;                             \
-})
-
-#define require_once(flag_name, action) ({ \
-  if (!flag_name) {                        \
-    require (flag_name, action);           \
-  }                                        \
-})
-
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})
 #define SAFE_INDEX(a, b, b_type) a[({b_type b_tmp___ = b; b_tmp___;})]

@@ -254,13 +254,6 @@ void LexerData::hack_last_tokens() {
     }
   }
 
-  if (are_last_tokens(any_token_tag{}, tok_func_name)) {
-    if (tokens[tokens.size() - 1].str_val == "requireOnce" && tokens[tokens.size() - 2].type() != tok_function) {
-      tokens.back() = Token{tok_require_once};
-      return;
-    }
-  }
-
   /**
    * Для случаев:
    *   \VK\Foo::array

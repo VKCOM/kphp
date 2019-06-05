@@ -40,12 +40,6 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
       std::vector<VertexPtr> seq;
       seq.push_back(return_op->expr());
       seq.back()->rl_type = val_none;
-      // hack!
-      if (seq.back()->type() == op_require) {
-        VertexAdaptor<op_require> require = seq.back().as<op_require>();
-        kphp_assert(require->size() == 1 && require->back()->type() == op_func_call);
-        require->back()->rl_type = val_none;
-      }
       if (is_current_function_void) {
         seq.push_back(VertexAdaptor<op_return>::create());
       } else {

@@ -56,18 +56,6 @@ struct FunctionName {
   }
 };
 
-struct FunctionCallFlag {
-  FunctionPtr function;
-  inline FunctionCallFlag(FunctionPtr function) :
-    function(function) {
-  }
-
-  // will be removed in future
-  inline void compile(CodeGenerator &W) const {
-    W << "v$" + function->name << "$called";
-  }
-};
-
 struct FunctionForkName {
   FunctionPtr function;
   inline FunctionForkName(FunctionPtr function) : function(function) {}

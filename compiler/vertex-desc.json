@@ -99,11 +99,18 @@
     }
   },
   {
-    "name": "meta_op_require",
+    "name": "op_require",
     "base_name": "meta_op_unary",
     "props": {
-      "cnst": "cnst_not_func",
+      "cnst": "cnst_error",
+      "rl": "rl_error",
       "type": "common_op"
+    },
+    "extra_fields": {
+      "once": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
   {
@@ -1613,22 +1620,6 @@
       "cnst": "cnst_nonconst_func",
       "type": "conv_op",
       "str": "std::move"
-    }
-  },
-  {
-    "name": "op_require",
-    "base_name": "meta_op_require",
-    "props": {
-      "rl": "rl_func",
-      "str": "require"
-    }
-  },
-  {
-    "name": "op_require_once",
-    "base_name": "meta_op_require",
-    "props": {
-      "rl": "rl_common",
-      "str": "require_once"
     }
   },
   {

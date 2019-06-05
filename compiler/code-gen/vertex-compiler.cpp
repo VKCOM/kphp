@@ -323,21 +323,6 @@ void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
 }
 
 
-void compile_require(VertexPtr root, CodeGenerator &W) {
-  if (root->type() == op_require) {
-    W << "require (";
-  } else if (root->type() == op_require_once) {
-    W << "require_once (";
-  } else {
-    kphp_fail();
-  }
-
-  kphp_assert_msg(root->size() == 1, "Only one child possible for require vertex");
-  auto func = root->back().as<op_func_call>();
-  W << FunctionCallFlag(func->get_func_id()) << ", " << func << ")";
-}
-
-
 void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
   if (resumable_flag) {
@@ -1775,10 +1760,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
 
     case op_if:
       compile_if(root.as<op_if>(), W);
-      break;
-    case op_require:
-    case op_require_once:
-      compile_require(root, W);
       break;
     case op_return:
       compile_return(root.as<op_return>(), W);
