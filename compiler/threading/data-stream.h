@@ -15,7 +15,7 @@ class DataStream : Lockable {
 public:
   using DataType = DataT;
 private:
-  static const int MAX_STREAM_ELEMENTS = 200000;
+  static const int MAX_STREAM_ELEMENTS = 250000;
   DataType *data;
   volatile int *ready;
   volatile int write_i, read_i;
