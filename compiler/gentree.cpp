@@ -2216,10 +2216,7 @@ VertexPtr GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, Acce
   return VertexPtr();
 }
 
-VertexPtr GenTree::get_seq(bool add_force_func_return) {
-  vector<VertexPtr> seq_next;
-  AutoLocation seq_location(this);
-
+void GenTree::get_seq(std::vector<VertexPtr> &seq_next) {
   while (cur != end && !test_expect(tok_clbrc)) {
     VertexPtr cur_node = get_statement();
     if (!cur_node) {
@@ -2227,11 +2224,13 @@ VertexPtr GenTree::get_seq(bool add_force_func_return) {
     }
     seq_next.push_back(cur_node);
   }
+}
 
-  if (add_force_func_return) {
-    auto return_node = VertexAdaptor<op_return>::create();
-    seq_next.push_back(return_node);
-  }
+VertexPtr GenTree::get_seq() {
+  vector<VertexPtr> seq_next;
+  AutoLocation seq_location(this);
+
+  get_seq(seq_next);
 
   auto seq = VertexAdaptor<op_seq>::create(seq_next);
   set_location(seq, seq_location);
@@ -2252,7 +2251,13 @@ void GenTree::run() {
     parse_namespace_and_uses_at_top_of_file();
   }
 
-  cur_function->root->cmd() = get_seq(true);
+  AutoLocation seq_location(this);
+  std::vector<VertexPtr> seq_next;
+  get_seq(seq_next);
+  seq_next.push_back(VertexAdaptor<op_return>::create());
+  cur_function->root->cmd() = VertexAdaptor<op_seq>::create(seq_next);
+  set_location(cur_function->root->cmd(), seq_location);
+
   G->register_and_require_function(cur_function, parsed_os, true);  // global функция — поэтому required
 
   if (cur != end) {
