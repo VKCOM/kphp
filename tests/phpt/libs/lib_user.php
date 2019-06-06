@@ -13,6 +13,7 @@ echo "lib_user: global run\n";
 
 echo "lib_user: require_lib('lib_examples/example1');\n";
 require_lib('lib_examples/example1');
+require_lib('lib_examples/example1');
 
 function call_example1_lib_functions() {
     echo "lib_user: minus1(5, 2): ", minus1(5, 2), "\n";

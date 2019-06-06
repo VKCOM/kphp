@@ -117,11 +117,14 @@ void LibGlobalVarsReset::compile(CodeGenerator &W) const {
     << "void " << GlobalVarsResetFuncName(main_function) << ";" << NL
     << GlobalVarsResetFuncName(main_function) << ";" << NL
     << END << NL << NL;
+  W << "extern bool v$" << main_function->file_id->get_main_func_run_var_name() << ";" << NL;
   W << CloseNamespace();
 
   W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
     << "using namespace " << G->get_global_namespace() << ";" << NL
+    << "if (!v$" << main_function->file_id->get_main_func_run_var_name() << ")" << BEGIN
     << FunctionName(main_function) << "();" << NL
+    << END << NL
     << END << NL << NL;
 }
 
