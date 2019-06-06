@@ -290,7 +290,7 @@ int register_started_resumable(Resumable *resumable) {
     if (is_started_resumable_id(runned_resumable_id)) {
       started_resumable_info *parent = get_started_resumable_info(runned_resumable_id);
       if (parent->son != 0) {
-        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, 0, res_id);
+        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, parent->son, res_id);
         debug_print_resumables();
         php_assert(parent->son == 0);
       }
@@ -298,7 +298,7 @@ int register_started_resumable(Resumable *resumable) {
     } else {
       forked_resumable_info *parent = get_forked_resumable_info(runned_resumable_id);
       if (parent->son != 0) {
-        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, 0, res_id);
+        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, parent->son, res_id);
         debug_print_resumables();
         php_assert(parent->son == 0);
       }
