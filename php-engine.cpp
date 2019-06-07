@@ -1386,7 +1386,7 @@ int hts_func_execute(connection *c, int op) {
   vkprintf (1, "in hts_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
             c->fd, op, D->header_size, D->data_size, D->http_ver);
 
-  if (D->query_type != htqt_get && D->query_type != htqt_post) {
+  if (!vk::any_of_equal(D->query_type, htqt_get, htqt_post, htqt_head)) {
     D->query_flags &= ~QF_KEEPALIVE;
     return -501;
   }
@@ -1448,10 +1448,19 @@ int hts_func_execute(connection *c, int op) {
 
   vkprintf (1, "OK, lets do something\n");
 
+  const char *query_type_str = nullptr;
+  switch (D->query_type) {
+    case htqt_get: query_type_str = "GET"; break;
+    case htqt_post: query_type_str = "POST"; break;
+    case htqt_head: query_type_str = "HEAD"; break;
+    default: assert(0);
+  }
+
   /** save query here **/
   http_query_data *http_data = http_query_data_create(qUri, qUriLen, qGet, qGetLen, qHeaders, qHeadersLen, qPost,
-                                                      qPostLen, D->query_type == htqt_get ? "GET" : "POST", D->query_flags & QF_KEEPALIVE, inet_sockaddr_address(&c
-      ->remote_endpoint), inet_sockaddr_port(&c->remote_endpoint));
+                                                      qPostLen, query_type_str, D->query_flags & QF_KEEPALIVE,
+                                                      inet_sockaddr_address(&c->remote_endpoint),
+                                                      inet_sockaddr_port(&c->remote_endpoint));
 
   static long long http_script_req_id = 0;
   php_worker *worker = php_worker_create(http_worker, c, http_data, nullptr, script_timeout, ++http_script_req_id);

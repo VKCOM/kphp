@@ -36,6 +36,7 @@ static enum {
   QUERY_TYPE_HTTP,
   QUERY_TYPE_RPC
 } query_type;
+static bool is_head_query;
 
 static const string HTTP_DATE("D, d M Y H:i:s \\G\\M\\T", 21);
 
@@ -380,8 +381,10 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
   static_SB_spare.clean() << "Date: " << date;
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
 
-  static_SB_spare.clean() << "Content-Length: " << content_length;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  if (!is_head_query) {
+    static_SB_spare.clean() << "Content-Length: " << content_length;
+    header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  }
 
   php_assert (dl::query_num == header_last_query_num);
 
@@ -447,14 +450,19 @@ void f$fastcgi_finish_request(int exit_code) {
       php_assert (http_set_result != nullptr);
 
       const string_buffer *compressed;
-      if ((http_need_gzip & 5) == 5) {
-        header("Content-Encoding: gzip", 22, true);
-        compressed = zlib_encode(oub[first_not_empty_buffer].c_str(), oub[first_not_empty_buffer].size(), 6, ZLIB_ENCODE);
-      } else if ((http_need_gzip & 6) == 6) {
-        header("Content-Encoding: deflate", 25, true);
-        compressed = zlib_encode(oub[first_not_empty_buffer].c_str(), oub[first_not_empty_buffer].size(), 6, ZLIB_COMPRESS);
-      } else {
+      if (is_head_query) {
+        oub[first_not_empty_buffer].clean();
         compressed = &oub[first_not_empty_buffer];
+      } else {
+        if ((http_need_gzip & 5) == 5) {
+          header("Content-Encoding: gzip", 22, true);
+          compressed = zlib_encode(oub[first_not_empty_buffer].c_str(), oub[first_not_empty_buffer].size(), 6, ZLIB_ENCODE);
+        } else if ((http_need_gzip & 6) == 6) {
+          header("Content-Encoding: deflate", 25, true);
+          compressed = zlib_encode(oub[first_not_empty_buffer].c_str(), oub[first_not_empty_buffer].size(), 6, ZLIB_COMPRESS);
+        } else {
+          compressed = &oub[first_not_empty_buffer];
+        }
       }
 
       const string_buffer *headers = get_headers(compressed->size());
@@ -1471,8 +1479,12 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     v$_SERVER.set_value(string("RPC_REMOTE_PID", 14), rpc_remote_pid);
     v$_SERVER.set_value(string("RPC_REMOTE_UTIME", 16), rpc_remote_utime);
   }
+  is_head_query = false;
   if (request_method_len) {
     v$_SERVER.set_value(string("REQUEST_METHOD", 14), string(request_method, request_method_len));
+    if (request_method_len == 4 && !strncmp(request_method, "HEAD", request_method_len)) {
+      is_head_query = true;
+    }
   }
   v$_SERVER.set_value(string("REQUEST_TIME", 12), int(cur_time));
   v$_SERVER.set_value(string("REQUEST_TIME_FLOAT", 18), cur_time);
