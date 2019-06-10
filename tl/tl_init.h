@@ -113,7 +113,7 @@ inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char *error_
 
 struct t_Int {
   void store(const var &tl_object) {
-    f$store_int(f$safe_intval(tl_object));
+    f$store_int(f$intval(tl_object));
   }
 
   int fetch() {
