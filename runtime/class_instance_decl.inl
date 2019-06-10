@@ -86,7 +86,7 @@ public:
 
   template<class D, class CurType, class Derived = vk::enable_if_t<!std::is_polymorphic<CurType>{}, D>>
   bool is_a_helper() const {
-    return std::is_same<T, Derived>{};
+    return o && std::is_same<T, Derived>{};
   }
 
   template<class Derived>
