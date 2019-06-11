@@ -282,6 +282,27 @@ void f$header(const string &str, bool replace, int http_response_code) {
   header(str.c_str(), (int)str.size(), replace, http_response_code);
 }
 
+array<string> f$headers_list() {
+  array<string> result;
+  if (dl::query_num != header_last_query_num) {
+    new(headers_storage) array<string>();
+    header_last_query_num = dl::query_num;
+  }
+
+  string delim("\r\n");
+
+  for (auto header = headers->cbegin(); header != headers->cend(); ++header) {
+    array<string> temp = f$explode(delim, header.get_value());
+    for (auto part = temp.cbegin(); part != temp.cend(); ++part) {
+      if (!part.get_value().empty()) {
+        result.push_back(part.get_value());
+      }
+    }
+  }
+
+  return result;
+}
+
 void f$setrawcookie(const string &name, const string &value, int expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate(HTTP_DATE, expire);
 

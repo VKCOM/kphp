@@ -896,13 +896,19 @@ bool array<T>::const_iterator::operator!=(const array<T>::const_iterator &other)
 
 
 template<class T>
-typename array<T>::const_iterator array<T>::begin() const {
+typename array<T>::const_iterator array<T>::cbegin() const {
   if (is_vector()) {
     return typename array<T>::const_iterator(p, p->int_entries);
   }
 
   return typename array<T>::const_iterator(p, (const list_hash_entry *)p->begin());
 }
+
+template<class T>
+typename array<T>::const_iterator array<T>::begin() const {
+  return cbegin();
+}
+
 
 template<class T>
 typename array<T>::const_iterator array<T>::middle(int n) const {
@@ -954,13 +960,19 @@ typename array<T>::const_iterator array<T>::middle(int n) const {
 }
 
 template<class T>
-typename array<T>::const_iterator array<T>::end() const {
+typename array<T>::const_iterator array<T>::cend() const {
   if (is_vector()) {
     return typename array<T>::const_iterator(p, (const list_hash_entry *)((const T *)p->int_entries + p->int_size));
   }
 
   return typename array<T>::const_iterator(p, (const list_hash_entry *)p->end());
 }
+
+template<class T>
+typename array<T>::const_iterator array<T>::end() const {
+  return cend();
+}
+
 
 
 template<class T>

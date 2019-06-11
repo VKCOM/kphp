@@ -31,6 +31,8 @@ int f$ob_get_level();
 
 void f$header(const string &str, bool replace = true, int http_response_code = 0);
 
+array<string> f$headers_list();
+
 void f$setcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
 void f$setrawcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);

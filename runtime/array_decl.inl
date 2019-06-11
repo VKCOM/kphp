@@ -293,8 +293,10 @@ public:
   array &operator+=(const array &other);
 
   inline const_iterator begin() const __attribute__ ((always_inline));
+  inline const_iterator cbegin() const __attribute__ ((always_inline));
   inline const_iterator middle(int n) const __attribute__ ((always_inline));
   inline const_iterator end() const __attribute__ ((always_inline));
+  inline const_iterator cend() const __attribute__ ((always_inline));
 
   inline iterator begin() __attribute__ ((always_inline));
   inline iterator middle(int n) __attribute__ ((always_inline));

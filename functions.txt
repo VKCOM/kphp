@@ -102,6 +102,7 @@ function ob_get_length () ::: OrFalse <int>;
 function ob_get_level () ::: int;
 
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
+function headers_list () ::: array <string>;
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function register_shutdown_function (callback() ::: void) ::: void;
