@@ -25,7 +25,9 @@
  * Сейчас пока что есть костыль: @kphp-required анализируется всё равно в gentree
  */
 static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
-  if (f->phpdoc_str.find("@kphp") == std::string::npos) {
+  bool function_has_kphp_doc = f->phpdoc_str.find("@kphp") != std::string::npos;
+  bool class_has_kphp_doc = (f->is_instance_function() || f->is_static_function()) && f->class_id->phpdoc_str.find("@kphp") != std::string::npos;
+  if (!function_has_kphp_doc && !class_has_kphp_doc) {
     return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
   }
 
@@ -39,6 +41,22 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   int param_i = 0;
   for (auto param : func_params) {
     name_to_function_param.emplace("$" + param.as<meta_op_func_param>()->var()->get_string(), param_i++);
+  }
+
+  // phpdoc класса может влиять на phpdoc функции
+  if (class_has_kphp_doc) {
+    for (auto &tag : parse_php_doc(f->class_id->phpdoc_str)) {
+      switch (tag.type) {
+        // @kphp-infer, написанный над классом — будто его написали над каждой функцией
+        case php_doc_tag::kphp_infer: {
+          infer_type |= (infer_mask::check | infer_mask::hint);
+          break;
+        }
+
+        default:
+          break;
+      }
+    }
   }
 
   std::size_t id_of_kphp_template = 0;
@@ -57,7 +75,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       }
 
       case php_doc_tag::kphp_infer: {
-        kphp_error(infer_type == 0, "Double kphp-infer tag found");
         infer_type |= (infer_mask::check | infer_mask::hint);
         if (tag.value.find("cast") != std::string::npos) {
           infer_type |= infer_mask::cast;
@@ -209,17 +226,19 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           break;
       }
     }
-  }
 
-  size_t cnt_left_params_without_tag = f->has_implicit_this_arg() ? 1 : 0;  // пропускаем неявный this
-  if (infer_type && name_to_function_param.size() != cnt_left_params_without_tag) {
-    std::string err_msg = "Not enough @param tags. Need tags for function arguments:\n";
-    for (auto name_and_function_param : name_to_function_param) {
-      err_msg += name_and_function_param.first;
-      err_msg += "\n";
+    // проверяем, что все @param заданы
+    if (f->has_implicit_this_arg()) {
+      name_to_function_param.erase(name_to_function_param.find("$this"));
     }
-    stage::set_location(f->root->get_location());
-    kphp_error(false, err_msg.c_str());
+    if (!name_to_function_param.empty()) {
+      std::string err_msg = "Specify @param for arguments: ";
+      for (const auto &name_and_function_param : name_to_function_param) {
+        err_msg += name_and_function_param.first + " ";
+      }
+      stage::set_location(f->root->get_location());
+      kphp_error(0, err_msg.c_str());
+    }
   }
 }
 
