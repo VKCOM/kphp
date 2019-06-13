@@ -3,6 +3,7 @@
 #include <climits>
 
 #include "common/vector-product.h"
+#include "common/type_traits/function_traits.h"
 
 #include "runtime/kphp_core.h"
 #include "runtime/string_functions.h"
@@ -32,9 +33,6 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
 
 template<class ReturnT, class DefaultValueT>
 ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value);
-
-template<typename T>
-OrFalse<array<var>> f$array_column(const array<T> &a, var column_key, var index_key = var());
 
 template<class T>
 array<T> f$array_filter(const array<T> &a);
@@ -475,60 +473,129 @@ ReturnT f$array_pad(const array<Unknown> &, int size, const DefaultValueT &defau
   return f$array_fill(0, std::abs(size), default_value);
 }
 
-template<typename T>
-inline void extract_array_column(array<var> &, const T &, const var &, const var &) {
-}
-
-template<typename S>
-inline void extract_array_column(array<var> &dest, const array<S> &source, const var &column_key, const var &index_key) {
+template<class T>
+inline void extract_array_column(array<T> &dest, const array<T> &source, const var &column_key, const var &index_key) {
+  static_assert(!is_class_instance<T>{}, "using index_key is prohibited with array of class_instances");
   if (!source.has_key(column_key)) {
     return;
   }
-  const var column = source.get_var(column_key);
+
+  auto column = source.get_value(column_key);
   if (!index_key.is_null() && source.has_key(index_key)) {
-    const var index = source.get_var(index_key);
-    if (index.is_string() || index.is_int() || (index.is_float() && index.to_int() == index.to_float())) {
+    auto index = source.get_var(index_key);
+    if (index.is_bool() || index.is_numeric()) {
+      index.convert_to_int();
+    } else if (index.is_null()) {
+      php_warning("index_key is null behaviour depends on php version");
+      index = string{};
+    }
+
+    if (!index.is_array()) {
       dest.set_value(index, column);
       return;
     }
   }
+
   dest.push_back(column);
 }
 
-template<typename S>
-inline void extract_array_column(array<var> &dest, const OrFalse<S> &source, const var &column_key, const var &index_key) {
-  if (source.bool_value) {
-    extract_array_column(dest, source.val(), column_key, index_key);
+template<class T>
+void extract_array_column_instance(array<class_instance<T>> &dest, const array<class_instance<T>> &source, const var &column_key, const var &) {
+  if (!source.has_key(column_key)) {
+    return;
   }
+  dest.push_back(source.get_value(column_key));
 }
 
-inline void extract_array_column(array<var> &dest, const var &source, const var &column_key, const var &index_key) {
-  if (source.is_array()) {
-    extract_array_column(dest, source.as_array(), column_key, index_key);
-  }
-}
+template<class T, class FunT, class ResT = vk::decay_function_arg_t<FunT, 0>>
+OrFalse<ResT> array_column_helper(const array<T> &a, var column_key, var index_key, FunT &&element_transformer) {
+  ResT result;
 
-template<typename T>
-OrFalse<array<var>> f$array_column(const array<T> &a, var column_key, var index_key) {
   if (!column_key.is_string() && !column_key.is_numeric()) {
     php_warning("Parameter column_key must be string or number");
     return false;
   }
+
   if (!index_key.is_null() && !index_key.is_string() && !index_key.is_numeric()) {
     php_warning("Parameter index_key must be string or number or null");
     return false;
   }
+
   if (column_key.is_float()) {
     column_key.convert_to_int();
   }
+
   if (index_key.is_float()) {
     index_key.convert_to_int();
   }
-  array<var> result;
+
   for (auto it = a.begin(); it != a.end(); ++it) {
-    extract_array_column(result, it.get_value(), column_key, index_key);
+    element_transformer(result, it.get_value(), column_key, index_key);
   }
+
   return result;
+}
+
+template<class T>
+OrFalse<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const var &column_key) {
+  return array_column_helper(a, column_key, {}, extract_array_column_instance<T>);
+}
+
+template<class T>
+OrFalse<array<class_instance<T>>> f$array_column(const array<OrFalse<array<class_instance<T>>>> &a, const var &column_key) {
+  auto element_transformer = [] (array<class_instance<T>> &dest, const OrFalse<array<class_instance<T>>> &source, const var &column_key, const var &index_key) {
+    if (source.bool_value) {
+      back_inserter_class_instance(dest, source.value, column_key, index_key);
+    }
+  };
+
+  return array_column_helper(a, column_key, {}, std::move(element_transformer));
+}
+
+template<class T>
+OrFalse<array<T>>  f$array_column(const array<array<T>> &a, const var &column_key, const var &index_key = {}) {
+  return array_column_helper(a, column_key, index_key, extract_array_column<T>);
+
+}
+
+template<class T>
+OrFalse<array<T>>  f$array_column(const array<OrFalse<array<T>>> &a, const var &column_key, const var &index_key = {}) {
+  auto element_transformer = [] (array<T> &dest, const OrFalse<array<T>> &source, const var &column_key, const var &index_key) {
+    if (source.bool_value) {
+      extract_array_column(dest, source.val(), column_key, index_key);
+    }
+  };
+
+  return array_column_helper(a, column_key, index_key, std::move(element_transformer));
+}
+
+inline OrFalse<array<var>> f$array_column(const array<var> &a, const var &column_key, const var &index_key = {}) {
+  auto element_transformer = [] (array<var> &dest, const var &source, const var &column_key, const var &index_key) {
+    if (source.is_array()) {
+      extract_array_column(dest, source.as_array(), column_key, index_key);
+    }
+  };
+
+  return array_column_helper(a, column_key, index_key, std::move(element_transformer));
+}
+
+inline OrFalse<array<var>> f$array_column(const var &a, const var &column_key, const var &index_key = {}) {
+  if (!a.is_array()) {
+    php_warning("first parameter of array_column must be array");
+    return false;
+  }
+
+  return f$array_column(a.as_array(), column_key, index_key);
+}
+
+template<class T>
+inline auto f$array_column(const OrFalse<T> &a, const var &column_key, const var &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+  if (!a.bool_value) {
+    php_warning("first parameter of array_column must be array");
+    return false;
+  }
+
+  return f$array_column(a, column_key, index_key);
 }
 
 template<class T>

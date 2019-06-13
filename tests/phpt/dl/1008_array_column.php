@@ -26,6 +26,36 @@ function test_multiple_data_types() {
     var_dump(array_column($values, 'value', 'id'));
 }
 
+function test_multiple_types_as_index() {
+    $a = [
+        ["id" => [1]   , "value" => 20], 
+        ["id" => "asdf", "value" => 30], 
+        ["id" => true  , "value" => 35], 
+        ["id" => [2]   , "value" => 25], 
+        ["id" => null  , "value" => 40], 
+        ["id" => "229" , "value" => 22], 
+        ["id" => "229a", "value" => 229],
+        ["id" => false , "value" => "new_20_value"]
+    ];
+
+    $a = [
+        [[1]   , "value" => 20], 
+        ["asdf", "value" => 30], 
+        [true  , "value" => 35], 
+        [[2]   , "value" => 25], 
+        [null  , "value" => 40], 
+        ["229" , "value" => 22], 
+        ["229a", "value" => 229],
+        [2.3, "value" => 2.3]
+    ];
+
+    var_dump(array_column($a, "value", [0]));
+    var_dump(array_column($a, "value", 0));
+    var_dump(array_column($a, "value", 0.2));
+    var_dump(array_column($a, "value", false));
+    var_dump(array_column($a, "value", "id"));
+}
+
 function test_numeric_column_keys() {
     $numeric_cols = [
         ['aaa', '111'],
@@ -56,11 +86,6 @@ function test_float_key() {
     var_dump(array_column($records, 0.001, 'id'));
 }
 
-function test_single_dimensional_array() {
-    $single_dimension = ['foo', 'bar', 'baz'];
-    var_dump(array_column($single_dimension, 1));
-}
-
 function test_columns_not_present_in_all_rows() {
     $mismatched_columns = [
         ['a' => 'foo', 'b' => 'bar', 'e' => 'bbb'],
@@ -88,15 +113,42 @@ function test_or_false_array() {
         1 ? ['name' => 'Alex'] : false,
         0 ? ['name' => 'Mike'] : false
     ];
-    var_dump(array_column($or_false_array, 'name'));
+    $res = array_column($or_false_array, 'name');
+    $res /*:= OrFalse< array< string > > */;
+    var_dump($res);
 }
 
+class A {
+    public $x;
+    public function __construct($x) {
+        $this->x = $x;
+    }
+}
+
+function test_class_instances() {
+    $as = [
+        [new A(0), new A(1)],
+        [new A(2), new A(3)],
+        [new A(4), new A(5)]
+    ];
+    /** @var A[] */
+    $odd_a = array_column($as, 1);
+
+    var_dump(array_map(function ($a) { return $a->x; }, $odd_a));
+}
+
+function test_var_as_array() {
+    $a = false ? "" : [[1, 2]];
+    var_dump(array_column($a, 1));
+}
 
 test_basic();
 test_multiple_data_types();
+test_multiple_types_as_index();
 test_float_key();
 test_numeric_column_keys();
-test_single_dimensional_array();
 test_columns_not_present_in_all_rows();
 test_or_false_value();
 test_or_false_array();
+test_class_instances();
+test_var_as_array();
