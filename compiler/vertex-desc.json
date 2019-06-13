@@ -1332,7 +1332,7 @@
       "rl": "rl_other",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "(int)"
+      "str": "intval_ref"
     }
   },
   {
@@ -1356,6 +1356,16 @@
     }
   },
   {
+    "name": "op_conv_string_l",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_other",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "strval_ref"
+    }
+  },
+  {
     "name": "op_conv_array",
     "base_name": "meta_op_unary",
     "props": {
@@ -1372,7 +1382,7 @@
       "rl": "rl_other",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "(array)"
+      "str": "arrayval_ref"
     }
   },
   {

@@ -1640,32 +1640,24 @@ void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W) 
   }
 }
 
-
-void compile_conv_array_l(VertexAdaptor<op_conv_array_l> root, CodeGenerator &W) {
+template<Operation op_conv_l>
+void compile_conv_l(VertexAdaptor<op_conv_l> root, CodeGenerator &W) {
+  static_assert(vk::any_of_equal(op_conv_l, op_conv_array_l, op_conv_int_l, op_conv_string_l), "unexpected conv_op");
   VertexPtr val = root->expr();
   PrimitiveType tp = tinf::get_type(val)->get_real_ptype();
-  if (tp == tp_array || tp == tp_var) {
+  if (tp == tp_var ||
+      (op_conv_l == op_conv_array_l && tp == tp_array) ||
+      (op_conv_l == op_conv_int_l && tp == tp_int) ||
+      (op_conv_l == op_conv_string_l && tp == tp_string)) {
     std::string fun_name = "unknown";
     if (auto cur_fun = stage::get_function()) {
       fun_name = cur_fun->get_human_readable_name();
     }
-    W << "arrayval_ref (" << val << ", R\"(" << fun_name << ")\", -1)";
+    W << OpInfo::str(op_conv_l) << " (" << val << ", R\"(" << fun_name << ")\", -1)";
   } else {
-    kphp_error (0, "Trying to pass non-array as reference to array");
+    kphp_error (0, format("Trying to pass incompatible type as reference to '%s'", root->get_c_string()));
   }
 }
-
-
-void compile_conv_int_l(VertexAdaptor<op_conv_int_l> root, CodeGenerator &W) {
-  VertexPtr val = root->expr();
-  PrimitiveType tp = tinf::get_type(val)->get_real_ptype();
-  if (tp == tp_int || tp == tp_var) {
-    W << "intval_ref (" << val << ")";
-  } else {
-    kphp_error (0, "Trying to pass non-int as reference to int");
-  }
-}
-
 
 void compile_cycle_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();
@@ -1840,10 +1832,13 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_defined(root.as<op_defined>(), W);
       break;
     case op_conv_array_l:
-      compile_conv_array_l(root.as<op_conv_array_l>(), W);
+      compile_conv_l(root.as<op_conv_array_l>(), W);
       break;
     case op_conv_int_l:
-      compile_conv_int_l(root.as<op_conv_int_l>(), W);
+      compile_conv_l(root.as<op_conv_int_l>(), W);
+      break;
+    case op_conv_string_l:
+      compile_conv_l(root.as<op_conv_string_l>(), W);
       break;
     case op_set_value:
       compile_set_value(root.as<op_set_value>(), W);

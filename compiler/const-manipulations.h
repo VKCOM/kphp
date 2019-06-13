@@ -64,6 +64,7 @@ protected:
       case op_conv_int_l:
       case op_conv_float:
       case op_conv_string:
+      case op_conv_string_l:
       case op_conv_array:
       case op_conv_array_l:
       case op_conv_object:

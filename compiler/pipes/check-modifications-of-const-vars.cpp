@@ -34,6 +34,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
     case op_postfix_dec:
     case op_conv_array_l:
     case op_conv_int_l:
+    case op_conv_string_l:
       return check_modifications(v.as<meta_op_unary>()->expr(), true);
 
     case op_foreach: {

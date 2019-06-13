@@ -61,8 +61,8 @@ var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
 var_dump(openssl_verify($data, $signature_sha1, $public_key, OPENSSL_ALGO_MD5));
 var_dump(openssl_verify($data, $signature_md5, $public_key));
 
-//$signature_sha1[0] = 10;
-//$signature_md5[0] = 10;
-//var_dump(openssl_verify($data, $signature_sha1, $public_key));
-//var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
+$signature_sha1[0] = 10;
+$signature_md5[0] = 10;
+var_dump(openssl_verify($data, $signature_sha1, $public_key));
+var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
 

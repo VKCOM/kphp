@@ -454,13 +454,13 @@ inline const bool &boolval_ref(const bool &val);
 inline const bool &boolval_ref(const var &val);
 
 
-inline int &intval_ref(int &val);
+inline int &intval_ref(int &val, const char *function, int parameter_num);
 
-inline int &intval_ref(var &val);
+inline int &intval_ref(var &val, const char *function, int parameter_num);
 
-inline const int &intval_ref(const int &val);
+inline const int &intval_ref(const int &val, const char *function, int parameter_num);
 
-inline const int &intval_ref(const var &val);
+inline const int &intval_ref(const var &val, const char *function, int parameter_num);
 
 
 inline double &floatval_ref(double &val);
@@ -472,13 +472,13 @@ inline const double &floatval_ref(const double &val);
 inline const double &floatval_ref(const var &val);
 
 
-inline string &strval_ref(string &val);
+inline string &strval_ref(string &val, const char *function, int parameter_num);
 
-inline string &strval_ref(var &val);
+inline string &strval_ref(var &val, const char *function, int parameter_num);
 
-inline const string &strval_ref(const string &val);
+inline const string &strval_ref(const string &val, const char *function, int parameter_num);
 
-inline const string &strval_ref(const var &val);
+inline const string &strval_ref(const var &val, const char *function, int parameter_num);
 
 
 template<class T>
@@ -1480,20 +1480,20 @@ const bool &boolval_ref(const var &val) {
 }
 
 
-int &intval_ref(int &val) {
+int &intval_ref(int &val, const char *, int) {
   return val;
 }
 
-int &intval_ref(var &val) {
-  return val.as_int("unknown", -1);
+int &intval_ref(var &val, const char *function, int parameter_num) {
+  return val.as_int(function, parameter_num);
 }
 
-const int &intval_ref(const int &val) {
+const int &intval_ref(const int &val, const char *, int) {
   return val;
 }
 
-const int &intval_ref(const var &val) {
-  return val.as_int("unknown", -1);
+const int &intval_ref(const var &val, const char *function, int parameter_num) {
+  return val.as_int(function, parameter_num);
 }
 
 
@@ -1514,25 +1514,25 @@ const double &floatval_ref(const var &val) {
 }
 
 
-string &strval_ref(string &val) {
+string &strval_ref(string &val, const char *, int) {
   return val;
 }
 
-string &strval_ref(var &val) {
-  return val.as_string("unknown", -1);
+string &strval_ref(var &val, const char *function, int parameter_num) {
+  return val.as_string(function, parameter_num);
 }
 
-const string &strval_ref(const string &val) {
+const string &strval_ref(const string &val, const char *, int) {
   return val;
 }
 
-const string &strval_ref(const var &val) {
-  return val.as_string("unknown", -1);
+const string &strval_ref(const var &val, const char *function, int parameter_num) {
+  return val.as_string(function, parameter_num);
 }
 
 
 template<class T>
-array<T> &arrayval_ref(array<T> &val, const char *function __attribute__((unused)), int parameter_num __attribute__((unused))) {
+array<T> &arrayval_ref(array<T> &val, const char *, int) {
   return val;
 }
 
@@ -1541,7 +1541,7 @@ array<var> &arrayval_ref(var &val, const char *function, int parameter_num) {
 }
 
 template<class T>
-const array<T> &arrayval_ref(const array<T> &val, const char *function __attribute__((unused)), int parameter_num __attribute__((unused))) {
+const array<T> &arrayval_ref(const array<T> &val, const char *, int) {
   return val;
 }
 

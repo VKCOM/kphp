@@ -16,8 +16,9 @@ void ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *&replace) {
     )) {
       replace = &((*replace).as<meta_op_binary>()->rhs());
     } else if (vk::any_of_equal(
-      op, op_conv_int, op_conv_bool, op_conv_int_l, op_conv_float, op_conv_string, op_conv_array_l,
-      op_conv_var, op_conv_uint, op_conv_long, op_conv_ulong, op_conv_regexp, op_log_not
+      op, op_conv_int, op_conv_bool, op_conv_int_l, op_conv_float, op_conv_string,
+      op_conv_string_l, op_conv_array_l,  op_conv_var, op_conv_uint,
+      op_conv_long, op_conv_ulong, op_conv_regexp, op_log_not
     )) {
       replace = &((*replace).as<meta_op_unary>()->expr());
     } else {

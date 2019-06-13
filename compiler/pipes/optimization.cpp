@@ -154,15 +154,15 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
   const TypeData *tp = tinf::get_type(expr);
   if (tp->use_or_false() == false) {
     VertexPtr res;
-    if ((root->type() == op_conv_int || root->type() == op_conv_int_l) && tp->ptype() == tp_int) {
+    if (vk::any_of_equal(root->type(), op_conv_int, op_conv_int_l) && tp->ptype() == tp_int) {
       res = expr;
     } else if (root->type() == op_conv_bool && tp->ptype() == tp_bool) {
       res = expr;
     } else if (root->type() == op_conv_float && tp->ptype() == tp_float) {
       res = expr;
-    } else if (root->type() == op_conv_string && tp->ptype() == tp_string) {
+    } else if (vk::any_of_equal(root->type(), op_conv_string, op_conv_string_l) && tp->ptype() == tp_string) {
       res = expr;
-    } else if ((root->type() == op_conv_array || root->type() == op_conv_array_l) && tp->get_real_ptype() == tp_array) {
+    } else if (vk::any_of_equal(root->type(), op_conv_array, op_conv_array_l) && tp->get_real_ptype() == tp_array) {
       res = expr;
     } else if (root->type() == op_conv_uint && tp->ptype() == tp_UInt) {
       res = expr;
@@ -182,7 +182,7 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
 }
 
 VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::LocalT *) {
-  if (OpInfo::type(root->type()) == conv_op || root->type() == op_conv_array_l || root->type() == op_conv_int_l) {
+  if (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     root = remove_extra_conversions(root);
   }
 

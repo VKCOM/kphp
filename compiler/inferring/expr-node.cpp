@@ -434,6 +434,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     case op_conv_string:
+    case op_conv_string_l:
     case op_concat:
     case op_string_build:
     case op_string:

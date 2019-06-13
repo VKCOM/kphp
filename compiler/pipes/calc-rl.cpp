@@ -74,6 +74,7 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
   switch (root->type()) {
     case op_conv_array_l:
     case op_conv_int_l:
+    case op_conv_string_l:
       rl_calc_all<val_l>(root);
       break;
     case op_noerr:

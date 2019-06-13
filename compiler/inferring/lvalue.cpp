@@ -1,5 +1,7 @@
 #include "compiler/inferring/lvalue.h"
 
+#include "common/algorithms/find.h"
+
 #include "compiler/vertex.h"
 
 LValue as_lvalue(VertexPtr v) {
@@ -20,7 +22,7 @@ LValue as_lvalue(VertexPtr v) {
   tinf::Node *value = nullptr;
   if (v->type() == op_var) {
     value = tinf::get_tinf_node(v->get_var_id());
-  } else if (v->type() == op_conv_array_l || v->type() == op_conv_int_l) {
+  } else if (vk::any_of_equal(v->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     kphp_assert (depth == 0);
     return as_lvalue(v.as<meta_op_unary>()->expr());
   } else if (v->type() == op_array) {

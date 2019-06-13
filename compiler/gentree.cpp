@@ -948,11 +948,13 @@ VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
         return conv_to_lval<tp_array>(x);
       case tp_int:
         return conv_to_lval<tp_int>(x);
+      case tp_string:
+        return conv_to_lval<tp_string>(x);
       case tp_var:
         return x;
         break;
       default:
-        kphp_error (0, "convert_to not array with ref_flag");
+        kphp_error (0, "convert_to supports only var, array, string or int with ref_flag");
         return x;
     }
   }

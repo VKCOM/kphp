@@ -165,13 +165,15 @@ VertexPtr GenTree::conv_to_lval(VertexPtr x) {
   VertexPtr res;
   switch (ToT) {
     case tp_array: {
-      auto v = VertexAdaptor<op_conv_array_l>::create(x);
-      res = v;
+      res = VertexAdaptor<op_conv_array_l>::create(x);
       break;
     }
     case tp_int: {
-      auto v = VertexAdaptor<op_conv_int_l>::create(x);
-      res = v;
+      res = VertexAdaptor<op_conv_int_l>::create(x);
+      break;
+    }
+    case tp_string: {
+      res = VertexAdaptor<op_conv_string_l>::create(x);
       break;
     }
   }
