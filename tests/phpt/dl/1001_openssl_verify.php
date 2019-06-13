@@ -49,19 +49,11 @@ EOF;
 
 $data = "Hello, world!";
 
-$signature_sha1 = "ZDRJqL5QHiqRqLRFvsjAxS+kAyMrXrK2dAD7RhcGH4RyGJGK1Ze13PI2hs0J1T7O/jYdkfORT9rDdiYQV44/2hKNYr9y6y7zAvcTKjhARW5XSXutHQ0D0x8kBvN+lBDh4+NHz7LzVPO4VRDQEyR7wxgI353RvA2Gf5OkhLNqBu4=";
-$signature_sha1 = base64_decode($signature_sha1);
+$signature_sha1 = "";
+$signature_md5 = "";
 
-$signature_md5 = "JnOFPb86ec0Omj+VCJpxXy8bxT/iF0QwdNd3meBs7DkheMi0Dw8ZuNQG9+JYZd7rAv0P0UHWXqW6fBFfZ/R2OHR7ET/kgsfKXJx3QFrfxBDjn2uRXt5dgv0NaYgXCFz+wN6BRvDP5Az1FL5CYTajGI+7E+eIaowGADxhTCeVgfk=";
-$signature_md5 = base64_decode($signature_md5);
-
-#ifndef KittenPHP
 openssl_sign($data, $signature_sha1, $private_key);
-file_put_contents("signature_sha1", base64_encode($signature_sha1));
-
 openssl_sign($data, $signature_md5, $private_key, OPENSSL_ALGO_MD5);
-file_put_contents("signature_md5", base64_encode($signature_md5));
-#endif
 
 var_dump(openssl_verify($data, $signature_sha1, $public_key));
 var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
@@ -69,8 +61,8 @@ var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
 var_dump(openssl_verify($data, $signature_sha1, $public_key, OPENSSL_ALGO_MD5));
 var_dump(openssl_verify($data, $signature_md5, $public_key));
 
-$signature_sha1[0] = 10;
-$signature_md5[0] = 10;
-var_dump(openssl_verify($data, $signature_sha1, $public_key));
-var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
+//$signature_sha1[0] = 10;
+//$signature_md5[0] = 10;
+//var_dump(openssl_verify($data, $signature_sha1, $public_key));
+//var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
 
