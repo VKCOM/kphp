@@ -40,7 +40,6 @@ GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> 
   is_top_of_the_function_(false),
   cur(this->tokens.begin()),
   end(this->tokens.end()),
-  is_in_parse_func_call(false),
   processing_file(file) {                  // = stage::get_file()
 
   kphp_assert (cur != end);
@@ -208,11 +207,7 @@ VertexPtr GenTree::get_func_call() {
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   vector<VertexPtr> next;
-  bool ok_next = false;
-  {
-    StackPushPop<bool> stack_parse_func(in_parse_func_call_stack, is_in_parse_func_call, true);
-    ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
-  }
+  bool ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_next, "get argument list failed"));
   CE (expect(tok_clpar, "')'"));
 

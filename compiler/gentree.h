@@ -154,8 +154,6 @@ private:
   vector<ClassPtr> class_stack;
   ClassPtr cur_class;               // = class_stack.back()
   vector<FunctionPtr> functions_stack;
-  vector<bool> in_parse_func_call_stack;
-  bool is_in_parse_func_call;
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
 };
