@@ -57,8 +57,8 @@ const char *ptype_name(PrimitiveType id) {
   kphp_fail();
 }
 
-bool can_store_bool(PrimitiveType tp) {
-  return vk::any_of_equal(tp, tp_var, tp_Class, tp_RPC, tp_bool, tp_Any);
+bool can_store_false(PrimitiveType tp) {
+  return vk::any_of_equal(tp, tp_False, tp_bool, tp_var, tp_Class, tp_RPC, tp_Any);
 }
 
 
@@ -89,7 +89,7 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return b;
   }
 
-  if (b >= tp_RPC && a >= tp_int) { // Memcache and e.t.c can store only bool
+  if (b >= tp_RPC && a != tp_False) { // instances, future, etc — can mix only with false
     return tp_Error;
   }
 

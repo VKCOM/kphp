@@ -282,7 +282,7 @@ void TypeData::set_error_flag(bool f) {
 }
 
 bool TypeData::use_or_false() const {
-  return !can_store_bool(ptype()) && or_false_flag();
+  return !can_store_false(ptype()) && or_false_flag();
 }
 
 bool TypeData::structured() const {
@@ -721,7 +721,7 @@ int type_strlen(const TypeData *type) {
 }
 
 bool can_store_false(const TypeData *type) {
-  return type->ptype() == tp_False || can_store_bool(type->ptype()) || type->or_false_flag();
+  return can_store_false(type->ptype()) || type->or_false_flag();
 }
 
 bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
