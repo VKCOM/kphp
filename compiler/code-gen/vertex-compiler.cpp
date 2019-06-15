@@ -158,10 +158,10 @@ void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
 
 void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
   if (root->rl_type == val_none) {
-    W << "NOERR_VOID (" << Operand(root->expr(), root->type(), true) << ")";
+    W << "NOERR_VOID" << MacroBegin{} << Operand(root->expr(), root->type(), true) << MacroEnd{};
   } else {
     const TypeData *res_tp = tinf::get_type(root);
-    W << "NOERR (" << Operand(root->expr(), root->type(), true) << ", " << TypeNameInsideMacro(res_tp) << ")";
+    W << "NOERR" << MacroBegin{} << Operand(root->expr(), root->type(), true) << ", " << TypeName(res_tp) << MacroEnd{};
   }
 }
 
@@ -327,9 +327,9 @@ void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
   if (resumable_flag) {
     if (root->has_expr()) {
-      W << "RETURN (";
+      W << "RETURN " << MacroBegin{};
     } else {
-      W << "RETURN_VOID (";
+      W << "RETURN_VOID " << MacroBegin{};
     }
   } else {
     W << "return ";
@@ -340,7 +340,7 @@ void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   }
 
   if (resumable_flag) {
-    W << ")";
+    W << MacroEnd{};
   }
 }
 
@@ -383,7 +383,7 @@ void compile_throw_action(CodeGenerator &W) {
 
 void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << BEGIN <<
-    "THROW_EXCEPTION (" << root->exception() << ");" << NL;
+    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL;
   compile_throw_action(W);
   W << ";" << NL <<
     END << NL;
@@ -458,10 +458,10 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   bool is_void = root->rl_type == val_none;
 
   if (is_void) {
-    W << "TRY_CALL_VOID_ (";
+    W << "TRY_CALL_VOID_ " << MacroBegin{};
   } else {
     const TypeData *type = tinf::get_type(root);
-    W << "TRY_CALL_ (" << TypeNameInsideMacro(type) << ", ";
+    W << "TRY_CALL_ " << MacroBegin{} << TypeName(type) << ", ";
   }
 
   W.get_context().catch_labels.push_back("");
@@ -470,7 +470,7 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
 
   W << ", ";
   compile_throw_action(W);
-  W << ")";
+  W << MacroEnd{};
 }
 
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
@@ -488,18 +488,17 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
   FunctionPtr func = func_call->get_func_id();
   W << ";" << NL;
   if (lhs->type() != op_empty) {
-    W << "TRY_WAIT(" << gen_unique_name("resumable_label") << ", " << lhs << ", "
-      << TypeNameInsideMacro(tinf::get_type(func_call)) << ");";
+    W << "TRY_WAIT" << MacroBegin{} << gen_unique_name("resumable_label") << ", " << lhs << ", "
+      << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
   } else {
-    W << "TRY_WAIT_DROP_RESULT(" << gen_unique_name("resumable_label") << ", "
-      << TypeNameInsideMacro(tinf::get_type(func_call)) << ");";
+    W << "TRY_WAIT_DROP_RESULT" << MacroBegin{} << gen_unique_name("resumable_label") << ", "
+      << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
   }
-
   if (func->can_throw) {
     W << NL;
-    W << "CHECK_EXCEPTION(";
+    W << "CHECK_EXCEPTION" << MacroBegin{};
     compile_throw_action(W);
-    W << ")";
+    W << MacroEnd{};
   }
 }
 
@@ -1477,49 +1476,49 @@ void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __
 
 void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   if (auto set_value = root.try_as<op_set_value>()) {
-    W << "SAFE_SET_VALUE (" <<
+    W << "SAFE_SET_VALUE " << MacroBegin{} <<
       set_value->array() << ", " <<
       set_value->key() << ", " <<
-      TypeNameInsideMacro(tinf::get_type(set_value->key())) << ", " <<
+      TypeName(tinf::get_type(set_value->key())) << ", " <<
       set_value->value() << ", " <<
-      TypeNameInsideMacro(tinf::get_type(set_value->value())) <<
-      ")";
+      TypeName(tinf::get_type(set_value->value())) <<
+      MacroEnd{};
   } else if (OpInfo::rl(root->type()) == rl_set) {
     auto op = root.as<meta_op_binary>();
     if (OpInfo::type(root->type()) == binary_func_op) {
-      W << "SAFE_SET_FUNC_OP (";
+      W << "SAFE_SET_FUNC_OP " << MacroBegin{};
     } else if (OpInfo::type(root->type()) == binary_op) {
-      W << "SAFE_SET_OP (";
+      W << "SAFE_SET_OP " << MacroBegin{};
     } else {
       kphp_fail();
     }
     W << op->lhs() << ", " <<
       OpInfo::str(root->type()) << ", " <<
       op->rhs() << ", " <<
-      TypeNameInsideMacro(tinf::get_type(op->rhs())) <<
-      ")";
+      TypeName(tinf::get_type(op->rhs())) <<
+      MacroEnd{};
   } else if (auto pb = root.try_as<op_push_back>()) {
-    W << "SAFE_PUSH_BACK (" <<
+    W << "SAFE_PUSH_BACK " << MacroBegin{} <<
       pb->array() << ", " <<
       pb->value() << ", " <<
-      TypeNameInsideMacro(tinf::get_type(pb->value())) <<
-      ")";
+      TypeName(tinf::get_type(pb->value())) <<
+      MacroEnd{};
   } else if (auto pb = root.try_as<op_push_back_return>()) {
-    W << "SAFE_PUSH_BACK_RETURN (" <<
+    W << "SAFE_PUSH_BACK_RETURN " << MacroBegin{} <<
       pb->array() << ", " <<
       pb->value() << ", " <<
-      TypeNameInsideMacro(tinf::get_type(pb->value())) <<
-      ")";
+      TypeName(tinf::get_type(pb->value())) <<
+      MacroEnd{};
   } else if (root->type() == op_array) {
     compile_array(root.as<op_array>(), W);
     return;
   } else if (auto index = root.try_as<op_index>()) {
     kphp_assert (index->has_key());
-    W << "SAFE_INDEX (" <<
+    W << "SAFE_INDEX " << MacroBegin{} <<
       index->array() << ", " <<
       index->key() << ", " <<
-      TypeNameInsideMacro(tinf::get_type(index->key())) <<
-      ")";
+      TypeName(tinf::get_type(index->key())) <<
+      MacroEnd{};
   } else {
     kphp_error (0, format("Safe version of [%s] is not supported", OpInfo::str(root->type()).c_str()));
     kphp_fail();

@@ -14,16 +14,17 @@ struct LabelName {
   }
 };
 
-struct TypeNameInsideMacro {
-  const TypeData *type;
-  explicit TypeNameInsideMacro(const TypeData *type) : type(type) { }
-
+struct MacroBegin {
   void compile(CodeGenerator &W) const {
-    string s = type_out(type);
-    while (s.find(',') != string::npos) {
-      s = s.replace(s.find(','), 1, " COMMA ");   // такое есть у tuple'ов
-    }
-    W << s;
+    W.get_context().inside_macro++;
+    W << "(";
+  }
+};
+
+struct MacroEnd {
+  void compile(CodeGenerator &W) const {
+    W.get_context().inside_macro--;
+    W << ")";
   }
 };
 
@@ -36,7 +37,13 @@ struct TypeName {
   }
 
   void compile(CodeGenerator &W) const {
-    W << type_out(type, style == gen_out_style::cpp);
+    string s = type_out(type, style == gen_out_style::cpp);
+    if (W.get_context().inside_macro) {
+      while (s.find(',') != string::npos) {
+        s = s.replace(s.find(','), 1, " COMMA ");   // такое есть у tuple'ов
+      }
+    }
+    W << s;
   }
 };
 

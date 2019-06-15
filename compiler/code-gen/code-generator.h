@@ -17,6 +17,7 @@ struct CGContext {
   bool use_safe_integer_arithmetic{false};
   bool resumable_flag{false};
   bool namespace_opened{false};
+  int inside_macro{0};
 };
 
 class CodeGenerator {
