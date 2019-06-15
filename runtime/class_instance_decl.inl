@@ -34,7 +34,7 @@ public:
 
   class_instance(bool) {}
 
-  template<class Derived>
+  template<class Derived, class = vk::enable_if_t<std::is_base_of<T, Derived>{}>>
   class_instance(const class_instance<Derived> &d)
     : o(d.o) {
   }
@@ -46,7 +46,7 @@ public:
   template<class T2>
   class_instance(T2) = delete;
 
-  template<class Derived>
+  template<class Derived, class = vk::enable_if_t<std::is_base_of<T, Derived>{}>>
   class_instance& operator=(const class_instance<Derived> &d) {
     o = d.o;
     return *this;
