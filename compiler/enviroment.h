@@ -17,8 +17,6 @@ private:
   string static_lib_out_dir_;
   string static_lib_name_;
 
-  string use_safe_integer_arithmetic_;
-  bool use_safe_integer_arithmetic_bool_{false};
   string base_dir_;
   string index_;
   vector<string> includes_;
@@ -71,8 +69,6 @@ private:
 
 public:
   const string &get_home() const;
-  void set_use_safe_integer_arithmetic(const string &flag);
-  bool get_use_safe_integer_arithmetic() const;
   void set_base_dir(const string &base_dir);
   const string &get_base_dir() const;
   void set_dest_dir(const string &dest_dir);

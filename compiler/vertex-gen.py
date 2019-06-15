@@ -155,11 +155,6 @@ def output_props(f, type_data, schema):
 
         output_props_dictionary(f, schema, type_data["props"], 4)
 
-        if "safe_props" in type_data:
-            f.write("    if (use_safe_integer_arithmetic) {\n")
-            output_props_dictionary(f, schema, type_data["safe_props"], 6)
-
-            f.write("    }\n")
         f.write("  }\n")
 
 

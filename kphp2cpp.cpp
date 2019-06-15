@@ -27,9 +27,6 @@ int parse_args_f(int i) {
     case 'h':
       usage_and_exit();
       exit(2);
-    case 'a':
-      env->set_use_safe_integer_arithmetic("1");
-      break;
     case 'b':
       env->set_base_dir(optarg);
       break;
@@ -132,7 +129,6 @@ int main(int argc, char *argv[]) {
 
   remove_all_options();
   parse_option("help", no_argument, 'h', "prints help and exits");
-  parse_option("safe-arithmetic", no_argument, 'a', "Use safe integer arithmetic");
   parse_option("base-directiory", required_argument, 'b', "Base directory. Use it when compiling the same code from different directories");
   parse_option("destination-directory", required_argument, 'd', "Destination directory");
   parse_option("force-make", no_argument, 'F', "Force make. Old object files and binary will be removed");

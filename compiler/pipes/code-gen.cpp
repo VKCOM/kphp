@@ -66,11 +66,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   //TODO: delete W_ptr
   CodeGenerator *W_ptr = new CodeGenerator(os);
   CodeGenerator &W = *W_ptr;
-
-  if (G->env().get_use_safe_integer_arithmetic()) {
-    W.use_safe_integer_arithmetic();
-  }
-
+  
   G->init_dest_dir();
   G->load_index();
 

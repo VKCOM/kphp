@@ -73,25 +73,11 @@ public:
   inline var &operator<<=(const var &other);
   inline var &operator>>=(const var &other);
 
-  inline var &safe_set_add(const var &other);
-  inline var &safe_set_sub(const var &other);
-  inline var &safe_set_mul(const var &other);
-  inline var &safe_set_shl(const var &other);
-
-
   inline var &operator++();
   inline const var operator++(int);
 
   inline var &operator--();
   inline const var operator--(int);
-
-
-  inline var &safe_incr_pre();
-  inline const var safe_incr_post();
-
-  inline var &safe_decr_pre();
-  inline const var safe_decr_post();
-
 
   inline bool operator!() const;
 
@@ -216,10 +202,6 @@ public:
   inline friend const var operator/(const var &lhs, const var &rhs);
   inline friend const var operator%(const var &lhs, const var &rhs);
 
-  inline friend const var safe_add(const var &lhs, const var &rhs);
-  inline friend const var safe_sub(const var &lhs, const var &rhs);
-  inline friend const var safe_mul(const var &lhs, const var &rhs);
-
   inline friend bool eq2(const var &lhs, const var &rhs);
   inline friend bool neq2(const var &lhs, const var &rhs);
   inline friend bool operator<=(const var &lhs, const var &rhs);
@@ -288,12 +270,6 @@ inline int operator^(const var &lhs, const var &rhs);
 inline int operator<<(const var &lhs, const var &rhs);
 inline int operator>>(const var &lhs, const var &rhs);
 
-inline const var safe_add(const var &lhs, const var &rhs);
-inline const var safe_sub(const var &lhs, const var &rhs);
-inline const var safe_mul(const var &lhs, const var &rhs);
-inline const var safe_shl(const var &lhs, const var &rhs);
-
-
 inline bool eq2(const var &lhs, const var &rhs);
 inline bool neq2(const var &lhs, const var &rhs);
 inline bool operator<=(const var &lhs, const var &rhs);
@@ -304,77 +280,6 @@ inline bool equals(const var &lhs, const var &rhs);
 
 
 inline void swap(var &lhs, var &rhs);
-
-
-template<class T, class T1>
-inline array<T> &safe_set_add(array<T> &lhs, const array<T1> &rhs);
-
-template<class T>
-inline array<T> safe_add(const array<T> &lhs, const array<T> &rhs);
-
-
-inline var &safe_set_add(var &lhs, const var &rhs);
-inline var &safe_set_sub(var &lhs, const var &rhs);
-inline var &safe_set_mul(var &lhs, const var &rhs);
-inline var &safe_set_shl(var &lhs, const var &rhs);
-
-inline int &safe_set_add(int &lhs, int rhs);
-inline int &safe_set_sub(int &lhs, int rhs);
-inline int &safe_set_mul(int &lhs, int rhs);
-inline int &safe_set_shl(int &lhs, int rhs);
-
-inline int safe_add(int lhs, int rhs);
-inline int safe_sub(int lhs, int rhs);
-inline int safe_mul(int lhs, int rhs);
-inline int safe_shl(int lhs, int rhs);
-
-
-inline double &safe_set_add(double &lhs, double rhs);
-inline double &safe_set_sub(double &lhs, double rhs);
-inline double &safe_set_mul(double &lhs, double rhs);
-
-inline int safe_add(bool lhs, bool rhs);
-inline int safe_add(bool lhs, int rhs);
-inline double safe_add(bool lhs, double rhs);
-inline int safe_add(int lhs, bool rhs);
-inline double safe_add(int lhs, double rhs);
-inline double safe_add(double lhs, bool rhs);
-inline double safe_add(double lhs, int rhs);
-inline double safe_add(double lhs, double rhs);
-
-inline int safe_sub(bool lhs, bool rhs);
-inline int safe_sub(bool lhs, int rhs);
-inline double safe_sub(bool lhs, double rhs);
-inline int safe_sub(int lhs, bool rhs);
-inline double safe_sub(int lhs, double rhs);
-inline double safe_sub(double lhs, bool rhs);
-inline double safe_sub(double lhs, int rhs);
-inline double safe_sub(double lhs, double rhs);
-
-inline int safe_mul(bool lhs, bool rhs);
-inline int safe_mul(bool lhs, int rhs);
-inline double safe_mul(bool lhs, double rhs);
-inline int safe_mul(int lhs, bool rhs);
-inline double safe_mul(int lhs, double rhs);
-inline double safe_mul(double lhs, bool rhs);
-inline double safe_mul(double lhs, int rhs);
-inline double safe_mul(double lhs, double rhs);
-
-
-inline int &safe_incr_pre(int &lhs);
-inline int &safe_decr_pre(int &lhs);
-inline int safe_incr_post(int &lhs);
-inline int safe_decr_post(int &lhs);
-
-inline double &safe_incr_pre(double &lhs);
-inline double &safe_decr_pre(double &lhs);
-inline double safe_incr_post(double &lhs);
-inline double safe_decr_post(double &lhs);
-
-inline var &safe_incr_pre(var &lhs);
-inline var &safe_decr_pre(var &lhs);
-inline var safe_incr_post(var &lhs);
-inline var safe_decr_post(var &lhs);
 
 
 inline bool eq2(bool lhs, bool rhs);

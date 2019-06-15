@@ -56,14 +56,6 @@ const string &KphpEnviroment::get_home() const {
   return home_;
 }
 
-void KphpEnviroment::set_use_safe_integer_arithmetic(const string &flag) {
-  use_safe_integer_arithmetic_ = flag;
-}
-
-bool KphpEnviroment::get_use_safe_integer_arithmetic() const {
-  return use_safe_integer_arithmetic_bool_;
-}
-
 void KphpEnviroment::set_base_dir(const string &base_dir) {
   base_dir_ = base_dir;
 }
@@ -440,9 +432,6 @@ bool KphpEnviroment::init() {
   init_env_var(&runtime_sha256_filename_, "KPHP_RUNTIME_SHA256", get_path() + "objs/PHP/php_lib_version.sha256");
   as_file(&runtime_sha256_filename_);
 
-  init_env_var(&use_safe_integer_arithmetic_, "KPHP_USE_SAFE_INTEGER_ARITHMETIC", "0");
-  env_str2bool(&use_safe_integer_arithmetic_bool_, use_safe_integer_arithmetic_);
-
   init_env_var(&base_dir_, "", "");
   as_dir(&base_dir_);
 
@@ -563,7 +552,6 @@ void KphpEnviroment::init_dest_dirs() {
 
 void KphpEnviroment::debug() const {
   std::cerr << "HOME=[" << get_home() << "]\n" <<
-            "KPHP_USE_SAFE_INTEGER_ARITHMETIC=[" << get_use_safe_integer_arithmetic() << "]\n" <<
             "KPHP_BASE_DIR=[" << get_base_dir() << "]\n" <<
             "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
             "KPHP_FUNCTIONS=[" << get_functions() << "]\n" <<

@@ -14,7 +14,6 @@ struct CGContext {
   std::vector<std::string> catch_labels;
   std::vector<int> catch_label_used;
   FunctionPtr parent_func;
-  bool use_safe_integer_arithmetic{false};
   bool resumable_flag{false};
   bool namespace_opened{false};
   int inside_macro{0};
@@ -40,10 +39,6 @@ public:
   }
 
   CodeGenerator &operator=(const CodeGenerator &) = delete;
-
-  void use_safe_integer_arithmetic(bool flag = true) {
-    context.use_safe_integer_arithmetic = flag;
-  }
 
   void create_writer() {
     assert (writer == nullptr);

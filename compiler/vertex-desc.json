@@ -863,10 +863,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_add"
-    },
     "name": "op_add",
     "base_name": "meta_op_binary",
     "props": {
@@ -877,10 +873,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_sub"
-    },
     "name": "op_sub",
     "base_name": "meta_op_binary",
     "props": {
@@ -901,10 +893,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_mul"
-    },
     "name": "op_mul",
     "base_name": "meta_op_binary",
     "props": {
@@ -1046,10 +1034,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_shl"
-    },
     "name": "op_shl",
     "base_name": "meta_op_binary",
     "props": {
@@ -1121,10 +1105,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_set_add"
-    },
     "name": "op_set_add",
     "base_name": "meta_op_binary",
     "props": {
@@ -1137,10 +1117,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_set_sub"
-    },
     "name": "op_set_sub",
     "base_name": "meta_op_binary",
     "props": {
@@ -1153,10 +1129,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_set_mul"
-    },
     "name": "op_set_mul",
     "base_name": "meta_op_binary",
     "props": {
@@ -1265,10 +1237,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "binary_func_op",
-      "str": "safe_set_shl"
-    },
     "name": "op_set_shl",
     "base_name": "meta_op_binary",
     "props": {
@@ -1318,10 +1286,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "conv_op",
-      "str": "safe_incr_pre"
-    },
     "name": "op_prefix_inc",
     "base_name": "meta_op_unary",
     "props": {
@@ -1332,10 +1296,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "conv_op",
-      "str": "safe_decr_pre"
-    },
     "name": "op_prefix_dec",
     "base_name": "meta_op_unary",
     "props": {
@@ -1356,9 +1316,6 @@
     }
   },
   {
-    "safe_props": {
-      "str": "f$safe_intval"
-    },
     "name": "op_conv_int",
     "base_name": "meta_op_unary",
     "props": {
@@ -1489,10 +1446,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "conv_op",
-      "str": "safe_incr_post"
-    },
     "name": "op_postfix_inc",
     "base_name": "meta_op_unary",
     "props": {
@@ -1503,10 +1456,6 @@
     }
   },
   {
-    "safe_props": {
-      "type": "conv_op",
-      "str": "safe_decr_post"
-    },
     "name": "op_postfix_dec",
     "base_name": "meta_op_unary",
     "props": {

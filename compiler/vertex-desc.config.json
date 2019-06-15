@@ -184,9 +184,6 @@
       },
       "props": {
         "$ref": "#/definitions/operation_property_dict"
-      },
-      "safe_props": {
-        "$ref": "#/definitions/operation_property_dict"
       }
     },
     "additionalProperties": false

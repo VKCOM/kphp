@@ -54,12 +54,7 @@ struct FunctionName {
   }
 
   void compile(CodeGenerator &W) const {
-    W << "f$";
-    if (W.get_context().use_safe_integer_arithmetic && function->name == "intval") {
-      W << "safe_intval";
-    } else {
-      W << function->name;
-    }
+    W << "f$" << function->name;
   }
 };
 
