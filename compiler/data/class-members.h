@@ -13,10 +13,11 @@
 #include <set>
 #include <string>
 
-#include "common/type_traits/function_traits.h"
-
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+
+#include "common/type_traits/function_traits.h"
+#include "common/type_traits/traits.h"
 
 class TypeData;
 
@@ -118,9 +119,7 @@ class ClassMembersContainer {
 
   template<class CallbackT>
   struct arg_helper {
-    using MemberT = typename std::decay<
-      typename vk::function_traits<CallbackT>::template Argument<0>
-    >::type;
+    using MemberT = vk::decay_function_arg_t<CallbackT, 0>;
   };
 
   // выбор нужного vector'а из static_methods/instance_methods/etc; реализации см. внизу
