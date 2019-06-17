@@ -178,9 +178,9 @@ int f$rpc_queue_push(int queue_id, const var &request_ids);
 
 bool f$rpc_queue_empty(int queue_id);
 
-int f$rpc_queue_next(int queue_id, double timeout = -1);
+OrFalse<int> f$rpc_queue_next(int queue_id, double timeout = -1);
 
-int f$rpc_queue_next_synchronously(int queue_id);
+OrFalse<int> f$rpc_queue_next_synchronously(int queue_id);
 
 bool f$store_unsigned_int(const var &v);
 

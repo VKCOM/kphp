@@ -4331,12 +4331,12 @@ bool f$rpc_queue_empty(int queue_id) {
   return f$wait_queue_empty(queue_id);
 }
 
-int f$rpc_queue_next(int queue_id, double timeout) {
-  return f$wait_queue_next(queue_id, timeout).val();
+OrFalse<int> f$rpc_queue_next(int queue_id, double timeout) {
+  return f$wait_queue_next(queue_id, timeout);
 }
 
-int f$rpc_queue_next_synchronously(int queue_id) {
-  return f$wait_queue_next_synchronously(queue_id).val();
+OrFalse<int> f$rpc_queue_next_synchronously(int queue_id) {
+  return f$wait_queue_next_synchronously(queue_id);
 }
 
 bool f$rpc_wait(int request_id) {

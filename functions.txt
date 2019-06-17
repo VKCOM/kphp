@@ -713,8 +713,8 @@ function rpc_queue_create ($request_ids ::: Any = TODO) ::: int;
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
-function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int;
-function rpc_queue_next_synchronously ($queue_id ::: int) ::: int;
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: OrFalse<int>;
+function rpc_queue_next_synchronously ($queue_id ::: int) ::: OrFalse<int>;
 /** @kphp-extern-func-info resumable */
 function rpc_wait ($request_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
