@@ -1,4 +1,4 @@
-@kphp_should_fail
+@ok
 <?php
 #ifndef KittenPHP
 require_once __DIR__.'/../dl/polyfill/fork-php-polyfill.php';
