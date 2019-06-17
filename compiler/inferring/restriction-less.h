@@ -27,7 +27,8 @@ private:
 
   row parse_description(std::string const &description);
 
-  tinf::Node *actual_, *expected_;
+  tinf::Node *actual_;
+  tinf::Node *expected_;
 
   bool is_parent_node(tinf::Node const *node);
   bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected);
@@ -55,4 +56,7 @@ protected:
     return true;
   }
 
+  virtual bool is_greater_restriction() {
+    return false;
+  }
 };

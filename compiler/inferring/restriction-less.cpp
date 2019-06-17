@@ -303,10 +303,17 @@ string RestrictionLess::get_stacktrace_text() {
 
 bool RestrictionLess::check_broken_restriction_impl() {
   const TypeData *actual_type = actual_->get_type();
-  TypeData * expected_type = expected_->get_type()->clone();
+  TypeData *expected_type = expected_->get_type()->clone();
   expected_type->convert_Unknown_to_Any();
 
   if (is_less(actual_type, expected_type)) {
+    if (is_greater_restriction()) {
+      std::swap(expected_, actual_);
+      actual_type = actual_->get_type();
+      expected_type = expected_->get_type()->clone();
+      expected_type->convert_Unknown_to_Any();
+    }
+
     find_call_trace_with_error(actual_, expected_type);
     desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
     desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
