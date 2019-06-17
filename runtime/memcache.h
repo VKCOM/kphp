@@ -133,7 +133,7 @@ class rpc_mc_multiget_resumable : public Resumable {
   int queue_id;
   int first_request_id;
   int keys_n;
-  int request_id;
+  OrFalse<int> request_id;
   array<string> query_names;
   array<var> result;
   bool return_false_if_not_found;
@@ -142,18 +142,18 @@ protected:
   bool run() override {
     RESUMABLE_BEGIN
       while (keys_n > 0) {
-        request_id = f$wait_queue_next(queue_id, -1).val();
-        TRY_WAIT(rpc_mc_multiget_resumable_label_0, request_id, int);
+        request_id = f$wait_queue_next(queue_id, -1);
+        TRY_WAIT(rpc_mc_multiget_resumable_label_0, request_id, decltype(request_id));
 
-        if (request_id <= 0) {
+        if (request_id.val() <= 0) {
           break;
         }
         keys_n--;
 
-        int k = (int)(request_id - first_request_id);
+        int k = (int)(request_id.val() - first_request_id);
         php_assert ((unsigned int)k < (unsigned int)query_names.count());
 
-        bool parse_result = f$rpc_get_and_parse(request_id, -1);
+        bool parse_result = f$rpc_get_and_parse(request_id.val(), -1);
         php_assert (resumable_finished);
         if (!parse_result) {
           continue;

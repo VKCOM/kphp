@@ -2200,7 +2200,7 @@ class rpc_tl_query_result_resumable : public Resumable {
   const array<int> query_ids;
   array<array<var>> tl_objects_unsorted;
   int queue_id;
-  int query_id;
+  OrFalse<int> query_id;
 
 protected:
   bool run() {
@@ -2208,18 +2208,18 @@ protected:
       if (query_ids.count() == 1) {
         query_id = query_ids.begin().get_value();
 
-        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id);
+        tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id.val());
         TRY_WAIT(rpc_tl_query_result_resumable_label_0, tl_objects_unsorted[query_id], array<var>);
       } else {
         queue_id = wait_queue_create(query_ids);
 
         while (true) {
-          query_id = f$wait_queue_next(queue_id, -1).val();
-          TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id, int);
-          if (query_id <= 0) {
+          query_id = f$wait_queue_next(queue_id, -1);
+          TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id, decltype(query_id));
+          if (query_id.val() <= 0) {
             break;
           }
-          tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id);
+          tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id.val());
           php_assert (resumable_finished);
         }
 

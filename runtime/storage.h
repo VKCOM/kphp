@@ -5,7 +5,6 @@
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
 
-
 extern const char *last_wait_error;
 
 struct thrown_exception {
@@ -135,6 +134,7 @@ X Storage::load() {
     return load_implementation_helper<thrown_exception, X>::load(storage_);
   }
 
+  php_assert(tag == tagger<X>::get_tag());
   tag = 0;
   return load_implementation_helper<X, X>::load(storage_);
 }
