@@ -1007,76 +1007,76 @@ void var::safe_convert_to_int() {
 }
 
 
-const bool &var::as_bool(const char *function, int parameter_num) const {
+const bool &var::as_bool(const char *function) const {
   switch (type) {
     case BOOLEAN_TYPE:
       return as_bool();
     default:
-      php_warning("%s() expects parameter %d to be boolean, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_c_str());
       empty_bool = false;
       return empty_bool;
   }
 }
 
-const int &var::as_int(const char *function, int parameter_num) const {
+const int &var::as_int(const char *function) const {
   switch (type) {
     case INTEGER_TYPE:
       return as_int();
     default:
-      php_warning("%s() expects parameter %d to be int, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
       empty_int = 0;
       return empty_int;
   }
 }
 
-const double &var::as_float(const char *function, int parameter_num) const {
+const double &var::as_float(const char *function) const {
   switch (type) {
     case FLOAT_TYPE:
       return as_double();
     default:
-      php_warning("%s() expects parameter %d to be float, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be float, %s is given", function, get_type_c_str());
       empty_float = 0;
       return empty_float;
   }
 }
 
-const string &var::as_string(const char *function, int parameter_num) const {
+const string &var::as_string(const char *function) const {
   switch (type) {
     case STRING_TYPE:
       return as_string();
     default:
-      php_warning("%s() expects parameter %d to be string, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
       empty_string = string();
       return empty_string;
   }
 }
 
-const array<var> &var::as_array(const char *function, int parameter_num) const {
+const array<var> &var::as_array(const char *function) const {
   switch (type) {
     case ARRAY_TYPE:
       return as_array();
     default:
-      php_warning("%s() expects parameter %d to be array, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
       empty_array_var = array<var>();
       return empty_array_var;
   }
 }
 
 
-bool &var::as_bool(const char *function, int parameter_num) {
+bool &var::as_bool(const char *function) {
   switch (type) {
     case NULL_TYPE:
       convert_to_bool();
     case BOOLEAN_TYPE:
       return as_bool();
     default:
-      php_warning("%s() expects parameter %d to be boolean, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_c_str());
       empty_bool = false;
       return empty_bool;
   }
 }
 
-int &var::as_int(const char *function, int parameter_num) {
+int &var::as_int(const char *function) {
   switch (type) {
     case NULL_TYPE:
     case BOOLEAN_TYPE:
@@ -1086,13 +1086,13 @@ int &var::as_int(const char *function, int parameter_num) {
     case INTEGER_TYPE:
       return as_int();
     default:
-      php_warning("%s() expects parameter %d to be int, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
       empty_int = 0;
       return empty_int;
   }
 }
 
-double &var::as_float(const char *function, int parameter_num) {
+double &var::as_float(const char *function) {
   switch (type) {
     case NULL_TYPE:
     case BOOLEAN_TYPE:
@@ -1102,13 +1102,13 @@ double &var::as_float(const char *function, int parameter_num) {
     case FLOAT_TYPE:
       return as_double();
     default:
-      php_warning("%s() expects parameter %d to be float, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be float, %s is given", function, get_type_c_str());
       empty_float = 0;
       return empty_float;
   }
 }
 
-string &var::as_string(const char *function, int parameter_num) {
+string &var::as_string(const char *function) {
   switch (type) {
     case NULL_TYPE:
     case BOOLEAN_TYPE:
@@ -1118,18 +1118,18 @@ string &var::as_string(const char *function, int parameter_num) {
     case STRING_TYPE:
       return as_string();
     default:
-      php_warning("%s() expects parameter %d to be string, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
       empty_string = string();
       return empty_string;
   }
 }
 
-array<var> &var::as_array(const char *function, int parameter_num) {
+array<var> &var::as_array(const char *function) {
   switch (type) {
     case ARRAY_TYPE:
       return as_array();
     default:
-      php_warning("%s() expects parameter %d to be array, %s is given", function, parameter_num, get_type_c_str());
+      php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
       empty_array_var = array<var>();
       return empty_array_var;
   }

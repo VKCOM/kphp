@@ -1523,9 +1523,9 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     }
   }
 
-  v$_REQUEST.as_array("", -1) += v$_GET.to_array();
-  v$_REQUEST.as_array("", -1) += v$_POST.to_array();
-  v$_REQUEST.as_array("", -1) += v$_COOKIE.to_array();
+  v$_REQUEST.as_array("") += v$_GET.to_array();
+  v$_REQUEST.as_array("") += v$_POST.to_array();
+  v$_REQUEST.as_array("") += v$_COOKIE.to_array();
 
   if (uri != nullptr) {
     if (keep_alive) {

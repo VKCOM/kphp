@@ -181,11 +181,11 @@ int f$mt_getrandmax() {
 
 
 var f$min(const var &a) {
-  return f$min(a.as_array("min", 1));
+  return f$min(a.as_array("min"));
 }
 
 var f$max(const var &a) {
-  return f$max(a.as_array("max", 1));
+  return f$max(a.as_array("max"));
 }
 
 

@@ -155,17 +155,17 @@ public:
 
   inline void safe_convert_to_int();
 
-  inline const bool &as_bool(const char *function, int parameter_num) const;
-  inline const int &as_int(const char *function, int parameter_num) const;
-  inline const double &as_float(const char *function, int parameter_num) const;
-  inline const string &as_string(const char *function, int parameter_num) const;
-  inline const array<var> &as_array(const char *function, int parameter_num) const;
+  inline const bool &as_bool(const char *function) const;
+  inline const int &as_int(const char *function) const;
+  inline const double &as_float(const char *function) const;
+  inline const string &as_string(const char *function) const;
+  inline const array<var> &as_array(const char *function) const;
 
-  inline bool &as_bool(const char *function, int parameter_num);
-  inline int &as_int(const char *function, int parameter_num);
-  inline double &as_float(const char *function, int parameter_num);
-  inline string &as_string(const char *function, int parameter_num);
-  inline array<var> &as_array(const char *function, int parameter_num);
+  inline bool &as_bool(const char *function);
+  inline int &as_int(const char *function);
+  inline double &as_float(const char *function);
+  inline string &as_string(const char *function);
+  inline array<var> &as_array(const char *function);
 
   inline bool is_numeric() const;
   inline bool is_scalar() const;

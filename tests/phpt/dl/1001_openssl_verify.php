@@ -55,6 +55,9 @@ $signature_md5 = "";
 openssl_sign($data, $signature_sha1, $private_key);
 openssl_sign($data, $signature_md5, $private_key, OPENSSL_ALGO_MD5);
 
+var_dump(base64_encode($signature_sha1));
+var_dump(base64_encode($signature_md5));
+
 var_dump(openssl_verify($data, $signature_sha1, $public_key));
 var_dump(openssl_verify($data, $signature_md5, $public_key, OPENSSL_ALGO_MD5));
 

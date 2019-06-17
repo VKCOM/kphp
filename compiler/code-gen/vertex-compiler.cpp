@@ -1653,7 +1653,7 @@ void compile_conv_l(VertexAdaptor<op_conv_l> root, CodeGenerator &W) {
     if (auto cur_fun = stage::get_function()) {
       fun_name = cur_fun->get_human_readable_name();
     }
-    W << OpInfo::str(op_conv_l) << " (" << val << ", R\"(" << fun_name << ")\", -1)";
+    W << OpInfo::str(op_conv_l) << " (" << val << ", R\"(" << fun_name << ")\")";
   } else {
     kphp_error (0, format("Trying to pass incompatible type as reference to '%s'", root->get_c_string()));
   }

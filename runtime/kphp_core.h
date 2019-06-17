@@ -454,13 +454,13 @@ inline const bool &boolval_ref(const bool &val);
 inline const bool &boolval_ref(const var &val);
 
 
-inline int &intval_ref(int &val, const char *function, int parameter_num);
+inline int &intval_ref(int &val, const char *function);
 
-inline int &intval_ref(var &val, const char *function, int parameter_num);
+inline int &intval_ref(var &val, const char *function);
 
-inline const int &intval_ref(const int &val, const char *function, int parameter_num);
+inline const int &intval_ref(const int &val, const char *function);
 
-inline const int &intval_ref(const var &val, const char *function, int parameter_num);
+inline const int &intval_ref(const var &val, const char *function);
 
 
 inline double &floatval_ref(double &val);
@@ -472,24 +472,24 @@ inline const double &floatval_ref(const double &val);
 inline const double &floatval_ref(const var &val);
 
 
-inline string &strval_ref(string &val, const char *function, int parameter_num);
+inline string &strval_ref(string &val, const char *function);
 
-inline string &strval_ref(var &val, const char *function, int parameter_num);
+inline string &strval_ref(var &val, const char *function);
 
-inline const string &strval_ref(const string &val, const char *function, int parameter_num);
+inline const string &strval_ref(const string &val, const char *function);
 
-inline const string &strval_ref(const var &val, const char *function, int parameter_num);
+inline const string &strval_ref(const var &val, const char *function);
 
-
-template<class T>
-inline array<T> &arrayval_ref(array<T> &val, const char *function, int parameter_num);
-
-inline array<var> &arrayval_ref(var &val, const char *function, int parameter_num);
 
 template<class T>
-inline const array<T> &arrayval_ref(const array<T> &val, const char *function, int parameter_num);
+inline array<T> &arrayval_ref(array<T> &val, const char *function);
 
-inline const array<var> &arrayval_ref(const var &val, const char *function, int parameter_num);
+inline array<var> &arrayval_ref(var &val, const char *function);
+
+template<class T>
+inline const array<T> &arrayval_ref(const array<T> &val, const char *function);
+
+inline const array<var> &arrayval_ref(const var &val, const char *function);
 
 
 template<class T>
@@ -1468,7 +1468,7 @@ bool &boolval_ref(bool &val) {
 }
 
 bool &boolval_ref(var &val) {
-  return val.as_bool("unknown", -1);
+  return val.as_bool("unknown");
 }
 
 const bool &boolval_ref(const bool &val) {
@@ -1476,24 +1476,24 @@ const bool &boolval_ref(const bool &val) {
 }
 
 const bool &boolval_ref(const var &val) {
-  return val.as_bool("unknown", -1);
+  return val.as_bool("unknown");
 }
 
 
-int &intval_ref(int &val, const char *, int) {
+int &intval_ref(int &val, const char *) {
   return val;
 }
 
-int &intval_ref(var &val, const char *function, int parameter_num) {
-  return val.as_int(function, parameter_num);
+int &intval_ref(var &val, const char *function) {
+  return val.as_int(function);
 }
 
-const int &intval_ref(const int &val, const char *, int) {
+const int &intval_ref(const int &val, const char *) {
   return val;
 }
 
-const int &intval_ref(const var &val, const char *function, int parameter_num) {
-  return val.as_int(function, parameter_num);
+const int &intval_ref(const var &val, const char *function) {
+  return val.as_int(function);
 }
 
 
@@ -1502,7 +1502,7 @@ double &floatval_ref(double &val) {
 }
 
 double &floatval_ref(var &val) {
-  return val.as_float("unknown", -1);
+  return val.as_float("unknown");
 }
 
 const double &floatval_ref(const double &val) {
@@ -1510,43 +1510,43 @@ const double &floatval_ref(const double &val) {
 }
 
 const double &floatval_ref(const var &val) {
-  return val.as_float("unknown", -1);
+  return val.as_float("unknown");
 }
 
 
-string &strval_ref(string &val, const char *, int) {
+string &strval_ref(string &val, const char *) {
   return val;
 }
 
-string &strval_ref(var &val, const char *function, int parameter_num) {
-  return val.as_string(function, parameter_num);
+string &strval_ref(var &val, const char *function) {
+  return val.as_string(function);
 }
 
-const string &strval_ref(const string &val, const char *, int) {
+const string &strval_ref(const string &val, const char *) {
   return val;
 }
 
-const string &strval_ref(const var &val, const char *function, int parameter_num) {
-  return val.as_string(function, parameter_num);
+const string &strval_ref(const var &val, const char *function) {
+  return val.as_string(function);
 }
 
 
 template<class T>
-array<T> &arrayval_ref(array<T> &val, const char *, int) {
+array<T> &arrayval_ref(array<T> &val, const char *) {
   return val;
 }
 
-array<var> &arrayval_ref(var &val, const char *function, int parameter_num) {
-  return val.as_array(function, parameter_num);
+array<var> &arrayval_ref(var &val, const char *function) {
+  return val.as_array(function);
 }
 
 template<class T>
-const array<T> &arrayval_ref(const array<T> &val, const char *, int) {
+const array<T> &arrayval_ref(const array<T> &val, const char *) {
   return val;
 }
 
-const array<var> &arrayval_ref(const var &val, const char *function, int parameter_num) {
-  return val.as_array(function, parameter_num);
+const array<var> &arrayval_ref(const var &val, const char *function) {
+  return val.as_array(function);
 }
 
 

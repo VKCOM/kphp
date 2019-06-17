@@ -442,7 +442,7 @@ var f$preg_replace(const regexp &regex, const var &replace_val, const var &subje
   if (subject.is_array()) {
     replace_count = 0;
     int replace_count_one;
-    const array<var> &subject_arr = subject.as_array("", -1);
+    const array<var> &subject_arr = subject.as_array("");
     array<var> result(subject_arr.size());
     for (array<var>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       var cur_result = f$preg_replace(regex, replace_val.to_string(), it.get_value().to_string(), limit, replace_count_one);
@@ -514,7 +514,7 @@ var f$preg_replace(const var &regex, const var &replace_val, const var &subject,
   if (subject.is_array()) {
     replace_count = 0;
     int replace_count_one;
-    const array<var> &subject_arr = subject.as_array("", -1);
+    const array<var> &subject_arr = subject.as_array("");
     array<var> result(subject_arr.size());
     for (array<var>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       var cur_result = f$preg_replace(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
@@ -539,7 +539,7 @@ var f$preg_replace_callback(const regexp &regex, const T &replace_val, const var
   if (subject.is_array()) {
     replace_count = 0;
     int replace_count_one;
-    const array<var> &subject_arr = subject.as_array("", -1);
+    const array<var> &subject_arr = subject.as_array("");
     array<var> result(subject_arr.size());
     for (array<var>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       var cur_result = f$preg_replace_callback(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
@@ -583,7 +583,7 @@ var f$preg_replace_callback(const var &regex, const T &replace_val, const var &s
   if (subject.is_array()) {
     replace_count = 0;
     int replace_count_one;
-    const array<var> &subject_arr = subject.as_array("", -1);
+    const array<var> &subject_arr = subject.as_array("");
     array<var> result(subject_arr.size());
     for (array<var>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       var cur_result = f$preg_replace_callback(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);

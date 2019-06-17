@@ -2004,7 +2004,7 @@ string str_replace(const string &search, const string &replace, const string &su
 
 string str_replace_string(const var &search, const var &replace, const string &subject, int &replace_count) {
   if (search.is_array() && replace.is_array()) {
-    return str_replace_string_array(search.as_array("", -1), replace.as_array("", -1), subject, replace_count);
+    return str_replace_string_array(search.as_array(""), replace.as_array(""), subject, replace_count);
   } else if (search.is_array()) {
     string result = subject;
     const string &replace_value = replace.to_string();
