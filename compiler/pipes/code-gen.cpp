@@ -153,9 +153,10 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     }
     W << Async(LibHeaderTxt(std::move(exported_functions)));
     W << Async(StaticLibraryRunGlobalHeaderH());
+  } else {
+    // TODO: should be done in lib mode, but by some other way
+    W << Async(TypeTagger(std::move(forkable_types), std::move(waitable_types)));
   }
-
-  W << Async(TypeTagger(std::move(forkable_types), std::move(waitable_types)));
 
   write_tl_schema(W);
   //TODO: use Async for that
