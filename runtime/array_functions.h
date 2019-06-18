@@ -595,7 +595,7 @@ inline auto f$array_column(const OrFalse<T> &a, const var &column_key, const var
     return false;
   }
 
-  return f$array_column(a, column_key, index_key);
+  return f$array_column(a.val(), column_key, index_key);
 }
 
 template<class T>
