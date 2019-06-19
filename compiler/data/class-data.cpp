@@ -198,7 +198,7 @@ InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
     return {};
   }
 
-  ClassPtr self{const_cast<ClassData *>(this)};
+  auto self = get_self();
   if (self == other) {
     return self;
   }

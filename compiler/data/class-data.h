@@ -80,6 +80,9 @@ public:
 
   bool is_parent_of(ClassPtr other);
   InterfacePtr get_common_interface(ClassPtr other) const;
+  ClassPtr get_self() const {
+    return ClassPtr{const_cast<ClassData *>(this)};
+  }
 
   virtual bool is_fully_static() const {
     return is_class() && !construct_function;
