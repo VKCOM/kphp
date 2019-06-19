@@ -154,10 +154,10 @@ string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused
  * Например, $a->method(), если $a имеет тип Classes\A, то на самом деле это Classes$A$$method
  */
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
-  ClassPtr klass = resolve_class_of_arrow_access(function, arrow_call);
-
-  if (likely(klass && !klass->is_fully_static())) {
-    return replace_backslashes(klass->name) + "$$" + arrow_call->get_string();
+  if (auto klass = resolve_class_of_arrow_access(function, arrow_call)) {
+    if (auto method = klass->get_instance_method(arrow_call->get_string())) {
+      return method->function->name;
+    }
   }
 
   return std::string();

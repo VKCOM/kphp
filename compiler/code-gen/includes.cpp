@@ -70,11 +70,15 @@ void IncludesCollector::add_class_forward_declaration(const ClassPtr &klass) {
   fwd_declarations_.emplace(klass);
 }
 
-void IncludesCollector::add_implements_include(const ClassPtr &klass) {
+void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
   if (!klass->implements.empty()) {
     for (auto &interface : klass->implements) {
       classes_.emplace(interface);
     }
+  }
+
+  if (klass->parent_class) {
+    classes_.emplace(klass->parent_class);
   }
 }
 

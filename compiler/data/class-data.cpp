@@ -170,7 +170,7 @@ bool ClassData::is_parent_of(ClassPtr other) {
   return other->parent_class && (other->parent_class == ClassPtr{this} || is_parent_of(other->parent_class));
 }
 
-InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
+InterfacePtr ClassData::get_common_base_or_interface(ClassPtr other) const {
   if (!other) {
     return {};
   }
@@ -184,10 +184,10 @@ InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
     switch (class_type) {
       case ClassType::klass: {
         if (implements.size() == other->implements.size() && implements.size() == 1) {
-          return implements[0]->get_common_interface(other->implements[0]);
+          return implements[0]->get_common_base_or_interface(other->implements[0]);
         }
-        break;
       }
+      /* fallthrough */
       case ClassType::interface: {
         // performance doesn't matter
         for (; self && other; self = self->parent_class, other = other->parent_class) {
@@ -211,11 +211,15 @@ InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
 
     if (self->is_class() && other->is_interface()) {
       kphp_assert(self->implements.size() == 1);
-      return self->implements[0]->get_common_interface(other);
+      return self->implements[0]->get_common_base_or_interface(other);
     }
   }
 
   return {};
+}
+
+const ClassMemberInstanceMethod *ClassData::get_instance_method(const std::string &local_name) const {
+  return find_by_local_name<ClassMemberInstanceMethod>(local_name);
 }
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {

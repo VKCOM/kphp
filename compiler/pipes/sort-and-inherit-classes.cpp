@@ -164,10 +164,6 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   kphp_error_return(parent_class->is_class() && child_class->is_class(),
                     format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
 
-  kphp_error_return(!child_class->members.has_any_instance_method() && !parent_class->members.has_any_instance_method(),
-                    format("Invalid class extends %s and %s: extends is available only if classes are only-static",
-                           child_class->name.c_str(), parent_class->name.c_str()));
-
   child_class->parent_class = parent_class;
 
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
@@ -183,6 +179,11 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
                    format("Can't change access type for static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
       }
     });
+  }
+
+  if (child_class->parent_class) {
+    AutoLocker<Lockable *> locker(&(*child_class->parent_class));
+    child_class->parent_class->derived_classes.emplace_back(child_class);
   }
 }
 

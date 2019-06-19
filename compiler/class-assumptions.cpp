@@ -73,10 +73,10 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &v
   for (auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
       bool ok = a.assum_type == assum;
-      if (ok && a.klass != klass) {
+      if (ok && (a.klass != klass && !a.klass->is_parent_of(klass))) {
         ok = false;
         if (klass->is_interface() || a.klass->is_interface()) {
-          if (auto common_interface = klass->get_common_interface(a.klass)) {
+          if (auto common_interface = klass->get_common_base_or_interface(a.klass)) {
             a.klass = common_interface;
             ok = true;
           }

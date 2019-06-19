@@ -69,7 +69,7 @@ public:
   void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location);
 
   bool is_not_empty_class() const {
-    return members.has_any_instance_var() || is_builtin() || is_interface() || !implements.empty() || is_tl_class;
+    return members.has_any_instance_var() || is_builtin() || !derived_classes.empty() || !implements.empty() || parent_class || is_tl_class;
   }
 
   bool is_class() const { return class_type == ClassType::klass; }
@@ -78,7 +78,9 @@ public:
   virtual bool is_lambda() const { return false; }
 
   bool is_parent_of(ClassPtr other);
-  InterfacePtr get_common_interface(ClassPtr other) const;
+  InterfacePtr get_common_base_or_interface(ClassPtr other) const;
+  const ClassMemberInstanceMethod *get_instance_method(const std::string &local_name) const;
+
   ClassPtr get_self() const {
     return ClassPtr{const_cast<ClassData *>(this)};
   }
@@ -118,6 +120,17 @@ public:
 
 private:
   bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const;
+
+  template<class MemberT>
+  const MemberT *find_by_local_name(const std::string &name) const {
+    for (auto klass = get_self(); klass; klass = klass->parent_class) {
+      if (auto member = klass->members.find_by_local_name<MemberT>(name)) {
+        return member;
+      }
+    }
+
+    return {};
+  }
 };
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs);

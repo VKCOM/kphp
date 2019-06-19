@@ -183,7 +183,6 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
 
   W << "struct " << interface->src_name << " : public " << parent_class << " " << BEGIN;
 
-  W << "virtual ";
   ClassDeclaration::compile_get_class(W, interface);
 
   W << END << ";" << NL;
@@ -234,14 +233,18 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     interface = klass->implements.front();
   }
 
-  if (klass->is_not_empty_class()) {
-    W << NL << "struct " << klass->src_name << " final : public refcountable_php_classes<" << klass->src_name;
+  W << NL << "struct " << klass->src_name;
+  if (ClassPtr base = klass->parent_class) {
+    auto final_keyword = klass->derived_classes.empty() ? " final" : "";
+    W << final_keyword << " : public " << base->src_name;
+  } else if (klass->is_not_empty_class()) {
+    W << " : public refcountable_php_classes<" << klass->src_name;
     if (interface) {
       W << ", " << interface->src_name;
     }
     W << "> ";
   } else {
-    W << NL << "struct " << klass->src_name << " final : public refcountable_empty_php_classes ";
+    W << " final : public refcountable_empty_php_classes ";
   }
   W << BEGIN;
 
@@ -252,6 +255,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     }
     W << "};" << NL;
   });
+
+  if (!klass->derived_classes.empty()) {
+    W << "virtual ~" << klass->src_name << "() = default;" << NL;
+  }
 
   if (klass->need_generate_accept_method()) {
     compile_get_class(W, klass);
@@ -280,6 +287,9 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 }
 
 void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->derived_classes.empty()) {
+    W << "virtual ";
+  }
   W << "const char *get_class() const " << (klass->implements.empty() ? "" : "final") << BEGIN;
   {
     W << "return ";
@@ -295,7 +305,7 @@ void ClassDeclaration::compile_includes(CodeGenerator &W) const {
     includes.add_var_signature_depends(f.var);
   });
 
-  includes.add_implements_include(klass);
+  includes.add_base_classes_include(klass);
 
   W << includes;
 

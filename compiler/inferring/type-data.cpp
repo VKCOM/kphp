@@ -193,7 +193,7 @@ void TypeData::set_class_type(ClassPtr new_class_type) {
     class_type_ = new_class_type;
     on_changed();
   } else if (class_type_ != new_class_type) {
-    if (auto common_interface = class_type_->get_common_interface(new_class_type)) {
+    if (auto common_interface = class_type_->get_common_base_or_interface(new_class_type)) {
       if (class_type_ != common_interface) {
         class_type_ = common_interface;
         on_changed();

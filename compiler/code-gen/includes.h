@@ -29,7 +29,7 @@ public:
 
   void add_class_include(const ClassPtr &klass);
   void add_class_forward_declaration(const ClassPtr &klass);
-  void add_implements_include(const ClassPtr &klass);
+  void add_base_classes_include(const ClassPtr &klass);
   void add_all_class_types(const TypeData &tinf_type);
 
   void add_raw_filename_include(const std::string &file_name);

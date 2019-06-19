@@ -1824,7 +1824,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();
     non_static |= std::any_of(cur_class->str_dependents.begin(), cur_class->str_dependents.end(),
                               [](const ClassData::StrDependence &dep) {
-                                return dep.type == ClassType::interface;
+                                return vk::any_of_equal(dep.type, ClassType::interface, ClassType::klass);
                               });
 
     if (non_static) {

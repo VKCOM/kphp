@@ -479,7 +479,8 @@ def get_all_tests(args):
         ["variadic_args"],
         ["clone_keyword"],
         ["interfaces"],
-        ["instance_cache"]
+        ["instance_cache"],
+        ["class_inheritance"],
     ]
 
     for tags in test_tags:
