@@ -675,6 +675,13 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_finish = Node();
       break;
     }
+    case op_exit: {
+      auto exit_op = tree_node.as<op_exit>();
+      Node tmp;
+      create_cfg(exit_op->expr(), res_start, &tmp);
+      *res_finish = Node();
+      break;
+    }
     case op_set: {
       auto set_op = tree_node.as<op_set>();
       Node a, b;

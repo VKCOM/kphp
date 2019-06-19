@@ -18,12 +18,14 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
   auto is_void_expr = [](VertexPtr root) {
     return tinf::get_type(root)->ptype() == tp_void;
   };
-  if (root->type() == op_func_call) {
-    FunctionPtr fun = root.as<op_func_call>()->get_func_id();
-    if (is_void_expr(root) && root->rl_type == val_r) {
-      kphp_error(0, format("Using result of void function %s\n", fun->get_human_readable_name().c_str()));
+
+  if (root->rl_type == val_r && is_void_expr(root)) {
+    if (root->type() == op_func_call) {
+      FunctionPtr fun = root.as<op_func_call>()->get_func_id();
+      kphp_error(0, format("Using result of void function %s", fun->get_human_readable_name().c_str()));
+    } else {
+      kphp_error(0,"Using result of void expression");
     }
-    return root;
   }
 
   if (root->type() == op_return) {

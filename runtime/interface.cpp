@@ -536,19 +536,15 @@ void finish(int exit_code) {
   php_assert (0);
 }
 
-bool f$exit(const var &v) {
+void f$exit(const var &v) {
   if (v.is_string()) {
     *coub << v;
     finish(0);
   } else {
     finish(v.to_int());
   }
-  return true;
 }
 
-bool f$die(const var &v) {
-  return f$exit(v);
-}
 
 
 OrFalse<int> f$ip2long(const string &ip) {

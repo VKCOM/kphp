@@ -41,12 +41,11 @@ void f$register_shutdown_function(const shutdown_function_type &f);
 
 void f$fastcgi_finish_request(int exit_code = 0);
 
+__attribute__((noreturn))
 void finish(int exit_code);
 
-bool f$exit(const var &v = 0);
-
-bool f$die(const var &v = 0);
-
+__attribute__((noreturn))
+void f$exit(const var &v = 0);
 
 OrFalse<int> f$ip2long(const string &ip);
 
