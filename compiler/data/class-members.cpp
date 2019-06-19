@@ -65,9 +65,9 @@ void ClassMemberInstanceField::process_phpdoc() {
   if (!phpdoc_str.empty()) {
     std::string var_name, type_str;
     if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, var_name, type_str)) {
-      VertexPtr doc_type = phpdoc_parse_type(type_str, var->class_id->file_id->main_function);
-      if (!kphp_error(doc_type,
-                      format("Failed to parse phpdoc of %s::$%s", var->class_id->name.c_str(), local_name().c_str()))) {
+      auto klass = var->class_id;
+      VertexPtr doc_type = phpdoc_parse_type(type_str, klass->file_id->main_function);
+      if (!kphp_error(doc_type, format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), local_name().c_str()))) {
         doc_type->location = root->location;
         root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(doc_type);
       }

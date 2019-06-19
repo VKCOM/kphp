@@ -222,6 +222,10 @@ const ClassMemberInstanceMethod *ClassData::get_instance_method(const std::strin
   return find_by_local_name<ClassMemberInstanceMethod>(local_name);
 }
 
+const ClassMemberInstanceField *ClassData::get_instance_field(const std::string &local_name) const {
+  return find_by_local_name<ClassMemberInstanceField>(local_name);
+}
+
 VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {
   auto this_var = VertexAdaptor<op_var>::create();
   this_var->str_val = "this";

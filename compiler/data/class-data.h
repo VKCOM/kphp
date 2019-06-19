@@ -80,6 +80,7 @@ public:
   bool is_parent_of(ClassPtr other);
   InterfacePtr get_common_base_or_interface(ClassPtr other) const;
   const ClassMemberInstanceMethod *get_instance_method(const std::string &local_name) const;
+  const ClassMemberInstanceField *get_instance_field(const std::string &local_name) const;
 
   ClassPtr get_self() const {
     return ClassPtr{const_cast<ClassData *>(this)};
