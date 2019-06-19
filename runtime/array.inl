@@ -824,7 +824,7 @@ void array<T>::reserve(int int_size, int string_size, bool make_vector_if_possib
 template<class T>
 template<class Arg, class... Args>
 void array<T>::push_back_values(Arg &&arg, Args &&... args) {
-  static_assert(std::is_convertible<typename std::decay<Arg>::type, T>::value, "Arg type must be convertible to T");
+  static_assert(std::is_convertible<vk::decay_t<Arg>, T>::value, "Arg type must be convertible to T");
 
   p->push_back_vector_value(std::forward<Arg>(arg));
   push_back_values(std::forward<Args>(args)...);
