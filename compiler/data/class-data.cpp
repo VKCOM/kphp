@@ -123,16 +123,16 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
 }
 
 void ClassData::create_default_constructor(Location location, DataStream<FunctionPtr> &os) {
-  create_constructor_with_args(location, {}, os);
+  create_constructor(location, {}, os);
 }
 
-void ClassData::create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params) {
+void ClassData::create_constructor(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params) {
   static DataStream<FunctionPtr> unused;
-  create_constructor_with_args(location, std::move(params), unused, false);
+  create_constructor(location, std::move(params), unused, false);
   kphp_assert(!construct_function->is_required);
 }
 
-void ClassData::create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required) {
+void ClassData::create_constructor(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required) {
   std::string func_name = replace_backslashes(name) + "$$__construct";
 
   std::vector<VertexPtr> fields_initializers;
