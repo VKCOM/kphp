@@ -135,6 +135,8 @@ public:
                                             bool is_static,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
 
+  static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function);
+
   VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
   void parse_extends_implements();
 

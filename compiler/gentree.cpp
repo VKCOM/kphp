@@ -1852,6 +1852,16 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
     ->gen_constructor_call_pass_fields_as_args();
 }
 
+VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function) {
+  auto params = function->get_params_as_vector_of_vars(1);
+
+  auto call_method = VertexAdaptor<op_func_call>::create(instance_var, params);
+  call_method->set_string(function->local_name());
+  call_method->extra_type = op_ex_func_call_arrow;
+
+  return call_method;
+}
+
 VertexPtr GenTree::get_use() {
   kphp_assert(test_expect(tok_use));
   next_cur();

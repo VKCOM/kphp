@@ -96,16 +96,6 @@ bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interfac
   return check_that_signatures_are_same(interface_function, context_class, interface_method_in_derived);
 }
 
-VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr interface_function) {
-  auto params = interface_function->get_params_as_vector_of_vars(1);
-
-  auto call_method = VertexAdaptor<op_func_call>::create(instance_var, params);
-  call_method->set_string(interface_function->local_name());
-  call_method->extra_type = op_ex_func_call_arrow;
-
-  return call_method;
-}
-
 bool check_that_function_is_abstract(FunctionPtr interface_function) {
   auto interface_class = interface_function->class_id;
 
@@ -159,7 +149,7 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
       if (derived_classes.size() == 1) {
         this_var = create_instance_cast_to(generated_this, derived);
       }
-      call_derived_method = VertexAdaptor<op_return>::create(generate_call_on_instance_var(this_var, interface_function));
+      call_derived_method = VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, interface_function));
     }
 
     if (body_of_interface_method) {
