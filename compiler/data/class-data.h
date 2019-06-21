@@ -67,7 +67,8 @@ public:
   void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os, bool auto_required = true);
 
   // function fname(args) => function fname($this ::: class_instance, args)
-  void patch_func_add_this(std::vector<VertexAdaptor<meta_op_func_param>> &params_next, int location_line_num);
+  template<Operation Op>
+  void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, int location_line_num);
 
   bool is_not_empty_class() const {
     return members.has_any_instance_var() || is_builtin() || is_interface() || !implements.empty();
