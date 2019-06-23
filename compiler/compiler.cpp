@@ -272,9 +272,9 @@ bool compiler_execute(KphpEnviroment *env) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
     >> PipeC<CFGEndF>{}
-    >> PassC<FixReturnsPass>{}
     >> PipeC<CheckClassesF>{}
     >> PassC<OptimizationPass>{}
+    >> PassC<FixReturnsPass>{}
     >> PassC<CalcValRefPass>{}
     >> PassC<CalcFuncDepPass>{}
     >> SyncC<CalcBadVarsF>{}

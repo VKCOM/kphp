@@ -25,7 +25,7 @@ test11(array(1));
 //test12();
 //test13();
 test14();
-test15();
+//test15();
 test16();
 test17();
 test18();
@@ -308,6 +308,9 @@ function test1() {
 
   $a = array (array (array (1)), array());
 
+  /**
+   * @kphp-disable-warnings return
+   */
   function return_op_empty() {
     if (1) {
       return 1;
@@ -632,14 +635,14 @@ function test16() {
   //ef4 (1, "t");
 //}
 
-function test15() {
-  if (1) {
-    return;
-    $a = 5;
-  }
-  $a = 6;
-  return $a;
-}
+//function test15() {
+//  if (1) {
+//    return;
+//    $a = 5;
+//  }
+//  $a = 6;
+//  return $a;
+//}
 
 
 function test17() {

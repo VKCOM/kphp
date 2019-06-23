@@ -1,3 +1,4 @@
+@ok
 <?php
 
 header('X-TEST-1: value1');

@@ -86,6 +86,18 @@ public:
       root = try_set_func_id(root);
     }
 
+    if (auto return_op = root.try_as<op_return>()) {
+      if (current_function->type == FunctionData::func_global ||
+          current_function->type == FunctionData::func_switch ||
+          current_function->disabled_warnings.count("return")) {
+        if (return_op->has_expr()) {
+          return VertexAdaptor<op_return>::create(VertexAdaptor<op_conv_var>::create(return_op->expr()));
+        } else {
+          return VertexAdaptor<op_return>::create(VertexAdaptor<op_null>::create());
+        }
+      }
+    }
+
     return root;
   }
 

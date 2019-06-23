@@ -79,7 +79,9 @@ void ExprNodeRecalc::apply_type_rule_instance(VertexAdaptor<op_type_expr_instanc
 
 void ExprNodeRecalc::apply_type_rule_or_false(VertexAdaptor<op_type_expr_or_false> type_rule, VertexPtr expr) {
   apply_type_rule(type_rule->expr(), expr);
-  recalc_ptype<tp_False>();
+  if (new_type()->ptype() != tp_void) {
+    recalc_ptype<tp_False>();
+  }
 }
 
 void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexPtr expr) {

@@ -47,6 +47,7 @@ function Fannkuch($n){
          }
       }
    } while (true);
+  return [];
 }
 
 list($checksum,$pf) = Fannkuch($n);

@@ -59,6 +59,7 @@
       case 26:
         return 2700;
     }
+    return null;
   }
 
   for ($i = -1; $i < 30; $i++) {

@@ -85,10 +85,10 @@ struct Storage::load_implementation_helper<void, void, std::true_type> {
   static void load(char *storage __attribute__((unused))) {}
 };
 
-template<>
-struct Storage::load_implementation_helper<void, var, std::false_type> {
-  static var load(char *storage __attribute__((unused))) {
-    return var();
+template<typename T>
+struct Storage::load_implementation_helper<T, void, std::false_type> {
+  static void load(char *storage) {
+    Storage::load_implementation_helper<T, T>::load(storage);
   }
 };
 
@@ -100,6 +100,15 @@ struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type>
     return Y();
   }
 };
+
+template<>
+struct Storage::load_implementation_helper<thrown_exception, void, std::false_type> {
+  static void load(char *storage __attribute__((unused))) {
+    php_assert (CurException.is_null());
+    CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
+  }
+};
+
 
 
 template<class T1, class T2>

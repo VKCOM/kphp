@@ -166,6 +166,7 @@ class wait_result_resumable : public Resumable {
   int resumable_id;
   double timeout;
   bool ready;
+
 protected:
   bool run() {
     RESUMABLE_BEGIN
@@ -195,6 +196,29 @@ public:
     ready(false) {
   }
 };
+
+template<>
+inline bool wait_result_resumable<void>::run() {
+  RESUMABLE_BEGIN
+    ready = f$wait(resumable_id, timeout);
+    TRY_WAIT(wait_result_resumable_label_1, ready, bool);
+    if (!ready) {
+      if (last_wait_error == nullptr) {
+        last_wait_error = "Timeout in wait_result";
+      }
+      RETURN_VOID();
+    }
+    Storage *output = get_forked_storage(resumable_id);
+
+    if (output->tag == 0) {
+      last_wait_error = "Result already was gotten";
+      RETURN_VOID();
+    }
+
+    output->load_as<void>();
+    RETURN_VOID();
+  RESUMABLE_END
+}
 
 template<typename T>
 T f$wait_result(int resumable_id, double timeout = -1) {

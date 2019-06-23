@@ -34,4 +34,4 @@
 
   run();
 
-  var_dump (wait_result (fork (run())));
+  wait_result (fork (run()));

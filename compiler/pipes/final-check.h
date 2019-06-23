@@ -6,8 +6,6 @@
 
 class FinalCheckPass : public FunctionPassBase {
 private:
-  int from_return;
-
   void check_static_var_inited(VarPtr static_var);
   
 public:
@@ -15,8 +13,6 @@ public:
   string get_description() {
     return "Final check";
   }
-
-  void init();
 
   bool on_start(FunctionPtr function);
 

@@ -1,29 +1,8 @@
+@ok
 <?php
 
-#ifndef KittenPHP
-$fork_results = [];
-
-function sched_yield() {}
-
-function fork($x) {
-  global $fork_results;
-  static $id = 1;
-  $fork_results[$id] = $x;
-  return $id++;
-}
-
-function wait_result($x) {
-  global $fork_results;
-  if (!isset($fork_results[$x])) {
-    return false;
-  }
-  $res = $fork_results[$x];
-  unset($fork_results[$x]);
-  return $res;
-}
-
-function tuple(...$args) { return $args;}
-#endif
+require_once __DIR__ . "/../dl/polyfill/fork-php-polyfill.php";
+require_once __DIR__ . "/../tup/polyfill/tuple-php-polyfill.php";
 
 function return_tuple1() {
   sched_yield();

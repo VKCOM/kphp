@@ -413,10 +413,6 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false) {
   TypeData::flags_t mask = save_or_false ? -1 : ~or_false_flag_e;
   TypeData::flags_t new_flags = lhs->flags_ | (rhs->flags_ & mask);
 
-  if (new_ptype == tp_void && (new_flags & or_false_flag_e)) {
-    lhs->set_ptype(tp_var);
-  }
-
   lhs->set_flags(new_flags);
 
   if (rhs->ptype() == tp_Class) {

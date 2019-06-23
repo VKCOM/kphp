@@ -170,8 +170,13 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
       res = expr;
     } else if (root->type() == op_conv_ulong && tp->ptype() == tp_ULong) {
       res = expr;
-      //} else if (root->type() == op_conv_regexp && tp->ptype() != tp_string) {
-      //res = expr;
+    } else if (root->type() == op_conv_var) {
+      if (tp->ptype() == tp_void) {
+        expr->rl_type = val_none;
+        res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
+      } else if (type_lca(tp->ptype(), tp_var) == tp_var) {
+        res = expr;
+      }
     }
     if (res) {
       res->rl_type = root->rl_type;

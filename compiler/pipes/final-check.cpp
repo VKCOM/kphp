@@ -119,14 +119,7 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   return true;
 }
 
-void FinalCheckPass::init() {
-  from_return = 0;
-}
-
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
-  if (vertex->type() == op_return) {
-    from_return++;
-  }
   if (vertex->type() == op_func_name) {
     kphp_error (0, format("Unexpected %s (maybe, it should be a define?)", vertex->get_c_string()));
   }
@@ -255,9 +248,6 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
-  if (vertex->type() == op_return) {
-    from_return--;
-  }
   return vertex;
 }
 

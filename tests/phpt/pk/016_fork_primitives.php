@@ -1,27 +1,7 @@
+@ok
 <?php
 
-#ifndef KittenPHP
-$fork_results = [];
-
-function sched_yield() {}
-
-function fork($x) {
-  global $fork_results;
-  static $id = 1;
-  $fork_results[$id] = $x;
-  return $id++;
-}
-
-function wait_result($x) {
-  global $fork_results;
-  if (!isset($fork_results[$x])) {
-    return false;
-  }
-  $res = $fork_results[$x];
-  unset($fork_results[$x]);
-  return $res;
-}
-#endif
+require_once __DIR__ . "/../dl/polyfill/fork-php-polyfill.php";
 
 function return_int() {
   sched_yield();
