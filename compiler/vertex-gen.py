@@ -60,7 +60,7 @@ def output_include_directive(f, name):
 
 def output_class_header(f, base_name, name):
     f.write("""
-template<> 
+template<>
 class vertex_inner<{name}> : public vertex_inner<{base_name}> {{
 public:""".format(name=name, base_name=base_name))
 
@@ -126,15 +126,78 @@ def output_extra_fields(f, type_data):
                 output_one_extra_field(f, extra_field, extra_fields[extra_field])
 
 
-def output_create_function(f, name):
+def parents(data, name):
+    while True:
+        for type in data:
+            if type["name"] != name:
+                continue
+            yield type
+            if "base_name" in type:
+                name = type["base_name"]
+            else:
+                return
+
+
+def is_varg(data, name):
+    for type in parents(data, name):
+        if "ranges" in type:
+            return True
+    return False
+
+
+def get_argument(data, name, id):
+    for type in parents(data, name):
+        if "sons" in type:
+            for son_name, son in type["sons"].items():
+                if isinstance(son, int) and son == id:
+                    return son_name, {"id": son}
+                if isinstance(son, dict) and son["id"] == id:
+                    return son_name, son
+    return None, None
+
+
+def output_create_function(f, data, name):
     f.write("""
-  template<typename... Args> 
-  static vertex_inner<{name}> *create(Args&&... args) {{ 
-    auto v = raw_create_vertex_inner<{name}>(get_children_size(std::forward<Args>(args)...)); 
-    v->set_children(0, std::forward<Args>(args)...); 
-    return v; 
-  }} 
+  template<typename... Args>
+  static vertex_inner<{name}> *create_vararg(Args&&... args) {{
+    auto v = raw_create_vertex_inner<{name}>(get_children_size(std::forward<Args>(args)...));
+    v->set_children(0, std::forward<Args>(args)...);
+    return v;
+  }}
 """.format(name=name))
+    if is_varg(data, name):
+        f.write("""
+  template<typename... Args>
+  static vertex_inner<{name}> *create(Args&&... args) {{
+    return create_vararg(std::forward<Args>(args)...);
+  }}
+""".format(name=name))
+        return
+    args_decl = []
+    args_call = []
+
+    def write_func():
+        f.write("""
+  static vertex_inner<{name}> *create({args_decl}) {{
+    return create_vararg({args_call});
+  }}
+""".format(name=name, args_decl=', '.join(args_decl), args_call=', '.join(args_call)))
+
+    id = 0
+    while True:
+        arg_name, arg = get_argument(data, name, id)
+        if arg is None:
+            break
+        if "optional" in arg:
+            write_func()
+        if "type" not in arg:
+            arg_type = 'const VertexPtr&'
+        else:
+            arg_type = 'const VertexAdaptor<' + arg["type"] + '>&'
+        args_decl.append(arg_type + ' ' + arg_name)
+        args_call.append(arg_name)
+        id += 1
+    write_func()
 
 
 def output_props_dictionary(f, schema, props, cnt_spaces):
@@ -222,7 +285,7 @@ def output_class_footer(f):
     f.write("};\n")
 
 
-def output_vertex_type(type_data, schema):
+def output_vertex_type(type_data, data, schema):
     if "base_name" not in type_data: return
 
     (name, base_name) = (type_data["name"], type_data["base_name"])
@@ -234,7 +297,7 @@ def output_vertex_type(type_data, schema):
         output_extras(f, type_data)
         output_extra_fields(f, type_data)
 
-        output_create_function(f, name)
+        output_create_function(f, data, name)
         output_props(f, type_data, schema)
 
         output_sons(f, type_data)
@@ -258,6 +321,7 @@ def output_foreach_op(data):
 
         f.write("#undef FOREACH_OP\n")
 
+
 def check_is_base(base, derived, data):
     while True:
         if derived["name"] == base["name"]:
@@ -268,6 +332,7 @@ def check_is_base(base, derived, data):
             if i["name"] == derived["base_name"]:
                 derived = i
                 break
+
 
 def output_vertex_is_base_of(data):
     with open_file("is-base-of.h") as f:
@@ -289,7 +354,6 @@ constexpr bool op_type_is_base_of(Operation Base, Operation Derived) {
 ''')
 
 
-
 if __name__ == "__main__":
     print(DIR)
     with open(sys.argv[1]) as f:
@@ -305,7 +369,7 @@ if __name__ == "__main__":
     output_enums(data, schema)
 
     for vertex in data:
-        output_vertex_type(vertex, schema)
+        output_vertex_type(vertex, data, schema)
 
     output_all(data)
     output_vertex_is_base_of(data)

@@ -498,7 +498,7 @@
   },
   {
     "name": "op_echo",
-    "base_name": "meta_op_base",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",
@@ -508,7 +508,7 @@
   },
   {
     "name": "op_dbg_echo",
-    "base_name": "meta_op_base",
+    "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_common",
       "cnst": "cnst_not_func",

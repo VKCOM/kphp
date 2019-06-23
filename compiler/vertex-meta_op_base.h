@@ -202,7 +202,7 @@ public:
   friend vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
   template<typename... Args>
-  static vertex_inner<meta_op_base> *create(Args &&... args) {
+  static vertex_inner<meta_op_base> *create_vararg(Args &&... args) {
     vertex_inner<meta_op_base> *v = raw_create_vertex_inner<meta_op_base>(get_children_size(std::forward<Args>(args)...));
     v->set_children(0, std::forward<Args>(args)...);
     return v;

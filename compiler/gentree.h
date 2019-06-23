@@ -75,7 +75,7 @@ public:
   VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
   VertexAdaptor<op_func_param> get_func_param_from_callback();
   VertexAdaptor<meta_op_func_param> get_func_param();
-  VertexPtr get_foreach_param();
+  VertexAdaptor<op_foreach_param> get_foreach_param();
   VertexAdaptor<op_var> get_var_name();
   VertexAdaptor<op_var> get_var_name_ref();
   VertexPtr get_expr_top(bool was_arrow);

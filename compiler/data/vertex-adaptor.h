@@ -105,6 +105,11 @@ public:
     return VertexAdaptor<Op>(vertex_inner<Op>::create(std::forward<Args>(args)...));
   }
 
+  template<typename... Args>
+  static VertexAdaptor<Op> create_vararg(Args &&... args) {
+    return VertexAdaptor<Op>(vertex_inner<Op>::create_vararg(std::forward<Args>(args)...));
+  }
+
   VertexAdaptor<Op> clone() const {
     return VertexAdaptor<Op>(clone_vertex(*this).template as<Op>());
   }

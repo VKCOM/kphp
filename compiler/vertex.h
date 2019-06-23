@@ -85,7 +85,7 @@ vertex_inner<Op> *raw_clone_vertex_inner(const vertex_inner<Op> &from) {
 template <typename... Args>
 VertexPtr create_vertex(Operation op, Args&& ...args) {
   switch (op) {
-#define FOREACH_OP(x) case x: return VertexAdaptor<x>::create(std::forward<Args>(args)...);
+#define FOREACH_OP(x) case x: return VertexAdaptor<x>::create_vararg(std::forward<Args>(args)...);
 
 #include "auto/compiler/vertex/foreach-op.h"
 

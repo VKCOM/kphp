@@ -223,7 +223,7 @@ VertexPtr GenTree::get_func_call() {
     return left;
   }
 
-  VertexPtr call = VertexAdaptor<Op>::create(next);
+  VertexPtr call = VertexAdaptor<Op>::create_vararg(next);
   set_location(call, call_location);
 
   //hack..
@@ -833,8 +833,6 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     return {};
   }
 
-  vector<VertexPtr> next{name};
-
   PrimitiveType tp = tp_Unknown;
   VertexPtr type_rule;
   if (!from_callback && cur->type() == tok_triple_colon) {
@@ -844,10 +842,12 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   }
 
   VertexPtr def_val = get_def_value();
+  VertexAdaptor<op_func_param> v;
   if (def_val) {
-    next.push_back(def_val);
+    v = VertexAdaptor<op_func_param>::create(name, def_val);
+  } else {
+    v = VertexAdaptor<op_func_param>::create(name);
   }
-  auto v = VertexAdaptor<op_func_param>::create(next);
   set_location(v, st_location);
   if (tok_type_declaration != nullptr) {
     v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
@@ -912,7 +912,7 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
   return get_func_param_without_callbacks();
 }
 
-VertexPtr GenTree::get_foreach_param() {
+VertexAdaptor<op_foreach_param> GenTree::get_foreach_param() {
   AutoLocation location(this);
   VertexPtr xs = get_expression();
   CE (!kphp_error(xs, ""));
@@ -931,13 +931,13 @@ VertexPtr GenTree::get_foreach_param() {
     CE (!kphp_error(x, ""));
   }
 
-  vector<VertexPtr> next{xs, x};
   auto empty = VertexAdaptor<op_empty>::create();
-  next.push_back(empty); // will be replaced
+  VertexAdaptor<op_foreach_param> res;
   if (key) {
-    next.push_back(key);
+    res = VertexAdaptor<op_foreach_param>::create(xs, x, empty, key);
+  } else {
+    res = VertexAdaptor<op_foreach_param>::create(xs, x, empty);
   }
-  auto res = VertexAdaptor<op_foreach_param>::create(next);
   set_location(res, location);
   return res;
 }
@@ -1304,7 +1304,7 @@ VertexPtr GenTree::get_foreach() {
 
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
-  VertexPtr first_node = get_foreach_param();
+  auto first_node = get_foreach_param();
   CE (!kphp_error(first_node, "Failed to parse 'foreach' params"));
 
   CE (expect(tok_clpar, "')'"));
@@ -1312,9 +1312,7 @@ VertexPtr GenTree::get_foreach() {
   VertexPtr second_node = get_statement();
   CE (!kphp_error(second_node, "Failed to parse 'foreach' body"));
 
-  auto temp_node = VertexAdaptor<op_empty>::create();
-
-  auto foreach = VertexAdaptor<op_foreach>::create(first_node, embrace(second_node), temp_node);
+  auto foreach = VertexAdaptor<op_foreach>::create(first_node, embrace(second_node));
   set_location(foreach, foreach_location);
   return foreach;
 }
