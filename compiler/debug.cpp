@@ -210,10 +210,10 @@ std::string debugVertexMore(VertexPtr v) {
       return v->get_string() == "\n" ? "\"\\n\"" : "\"" + v->get_string() + "\"";
     case op_int_const:
       return v->get_string();
-    case op_class_type_rule:
-      return v.as<op_class_type_rule>()->class_ptr
-             ? v.as<op_class_type_rule>()->class_ptr->name : "class_ptr = null";
-    case op_type_rule:
+    case op_type_expr_class:
+      return v.as<op_type_expr_class>()->class_ptr
+             ? v.as<op_type_expr_class>()->class_ptr->name : "class_ptr = null";
+    case op_type_expr_type:
       return ptype_name(v->type_help);
     case op_seq:
       return int_to_str(v->size());

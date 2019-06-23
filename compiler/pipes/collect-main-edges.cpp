@@ -175,12 +175,12 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
   // // restriction on return type
   bool is_any = false;
   if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
-    if (auto son = rule->rule().try_as<op_type_rule>()) {
+    if (auto son = rule->rule().try_as<op_type_expr_type>()) {
       is_any = son->type_help == tp_Any;
 
       if (!is_any && callback_function && callback_function->is_extern()) {
         if (auto rule_of_callback = callback_function->root->type_rule.try_as<op_common_type_rule>()) {
-          if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_rule>()) {
+          if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_expr_type>()) {
             is_any = son_of_callback_rule->type_help == son->type_help;
           }
         }
@@ -235,10 +235,10 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     LValue val = as_lvalue(args[0]);
 
     auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
-    auto ref = VertexAdaptor<op_arg_ref>::create();
+    auto ref = VertexAdaptor<op_type_expr_arg_ref>::create();
     ref->int_val = 2;
     VertexPtr rule = VertexAdaptor<op_index>::create(ref);
-    rule = VertexAdaptor<op_type_rule>::create(rule);
+    rule = VertexAdaptor<op_type_expr_type>::create(rule);
     rule->type_help = tp_future_queue;
     rule = VertexAdaptor<op_common_type_rule>::create(rule);
     fake_func_call->type_rule = rule;

@@ -162,7 +162,7 @@ bool PhpDocTypeRuleParser::is_tag_in_phpdoc(const vk::string_view &phpdoc, php_d
 }
 
 VertexPtr PhpDocTypeRuleParser::create_type_help_vertex(PrimitiveType type) {
-  auto type_rule = VertexAdaptor<op_type_rule>::create();
+  auto type_rule = VertexAdaptor<op_type_expr_type>::create();
   type_rule->type_help = type;
   return type_rule;
 }
@@ -271,7 +271,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 'a': {
       if (s.substr(pos, 5) == "array") {
         pos += 5;
-        auto res = VertexAdaptor<op_type_rule>::create(create_type_help_vertex(tp_Unknown));
+        auto res = VertexAdaptor<op_type_expr_type>::create(create_type_help_vertex(tp_Unknown));
         res->type_help = tp_array;
         return res;
       }
@@ -317,7 +317,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_
   }
   while (pos < s.size() && s[pos] == '[') {
     CHECK(pos + 1 < s.size() && s[pos + 1] == ']', "Failed to parse phpdoc type: unmatching []");
-    auto new_res = VertexAdaptor<op_type_rule>::create(res);
+    auto new_res = VertexAdaptor<op_type_expr_type>::create(res);
     new_res->type_help = tp_array;
     res = new_res;
     pos += 2;
@@ -344,7 +344,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_
     CHECK(s[pos] == ',', "Failed to parse phpdoc type: expected ',' for tuple");
     ++pos;
   }
-  auto type_rule = VertexAdaptor<op_type_rule>::create(sub_types);
+  auto type_rule = VertexAdaptor<op_type_expr_type>::create(sub_types);
   type_rule->type_help = tp_tuple;
   return type_rule;
 }
@@ -366,11 +366,10 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, 
       return next;
     }
     has_raw_bool |= s.substr(old_pos, pos - old_pos) == "bool";
-    auto rule = VertexAdaptor<op_type_rule_func>::create(res, next);
-    rule->str_val = "lca";
+    auto rule = VertexAdaptor<op_type_expr_lca>::create(res, next);
     res = rule;
   }
-  if (res->type() == op_type_rule_func && res->get_string() == "lca") {
+  if (res->type() == op_type_expr_lca) {
     kphp_error(!has_raw_bool, format("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)"));
   }
   return res;

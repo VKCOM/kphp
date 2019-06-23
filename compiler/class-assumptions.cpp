@@ -153,8 +153,8 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
 
   // phpdoc-тип в виде строки сейчас представлен в виде дерева vertex'ов; допускаем 'A', 'A[]', 'A|false', 'false|\A'
   // другие, более сложные, по типу '(A|int)', не разбираем и считаем assum_not_instance
-  if (type_rule->type() == op_type_rule_func) {
-    VertexRange or_rules = type_rule.as<op_type_rule_func>()->args();
+  if (auto lca_rule = type_rule.try_as<op_type_expr_lca>()) {
+    VertexRange or_rules = lca_rule->args();
     if (or_rules[1]->type_help == tp_False || or_rules[1]->type_help == tp_bool) {
       type_rule = or_rules[0];      // из 'A|false', 'A[]|false', 'A|bool' достаём 'A' / 'A[]'
     } else if (or_rules[0]->type_help == tp_False || or_rules[0]->type_help == tp_bool) {
@@ -163,10 +163,10 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
   }
 
   if (type_rule->type_help == tp_Class) {
-    out_klass = type_rule.as<op_class_type_rule>()->class_ptr;
+    out_klass = type_rule.as<op_type_expr_class>()->class_ptr;
     return assum_instance;
-  } else if (type_rule->type_help == tp_array && type_rule.as<op_type_rule>()->args()[0]->type_help == tp_Class) {
-    out_klass = type_rule.as<op_type_rule>()->args()[0].as<op_class_type_rule>()->class_ptr;
+  } else if (type_rule->type_help == tp_array && type_rule.as<op_type_expr_type>()->args()[0]->type_help == tp_Class) {
+    out_klass = type_rule.as<op_type_expr_type>()->args()[0].as<op_type_expr_class>()->class_ptr;
     return assum_instance_array;
   }
 
@@ -525,18 +525,16 @@ AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> 
   if (f->is_extern()) {
     if (f->root->type_rule) {
       auto rule_meta = f->root->type_rule.as<meta_op_type_rule>()->rule();
-      if (auto class_type_rule = rule_meta.try_as<op_class_type_rule>()) {
+      if (auto class_type_rule = rule_meta.try_as<op_type_expr_class>()) {
         out_class = class_type_rule->class_ptr;
         return assum_instance;
-      } else if (auto func_type_rule = rule_meta.try_as<op_type_rule_func>()) {
-        if (func_type_rule->get_string() == "instance") {
-          auto arg_ref = func_type_rule->back().try_as<op_arg_ref>();
-          if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
-            if (auto class_name = GenTree::get_constexpr_string(arg)) {
-              if (auto klass = G->get_class(*class_name)) {
-                out_class = klass;
-                return assum_instance;
-              }
+      } else if (auto func_type_rule = rule_meta.try_as<op_type_expr_instance>()) {
+        auto arg_ref = func_type_rule->expr().as<op_type_expr_arg_ref>();
+        if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
+          if (auto class_name = GenTree::get_constexpr_string(arg)) {
+            if (auto klass = G->get_class(*class_name)) {
+              out_class = klass;
+              return assum_instance;
             }
           }
         }
@@ -616,12 +614,12 @@ inline AssumType infer_from_call(FunctionPtr f,
   // для built-in функций по типу array_pop/array_filter/etc на массиве инстансов
   if (auto common_rule = ptr->root->type_rule.try_as<op_common_type_rule>()) {
     auto rule = common_rule->rule();
-    if (auto arg_ref = rule.try_as<op_arg_ref>()) {     // array_values ($a ::: array) ::: ^1
+    if (auto arg_ref = rule.try_as<op_type_expr_arg_ref>()) {     // array_values ($a ::: array) ::: ^1
       return infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), out_class, depth + 1);
     }
     if (auto index = rule.try_as<op_index>()) {         // array_shift (&$a ::: array) ::: ^1[]
       auto arr = index->array();
-      if (auto arg_ref = arr.try_as<op_arg_ref>()) {
+      if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
         AssumType result = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), out_class, depth + 1);
         if (result == assum_instance_array) {
           result = assum_instance;
@@ -632,10 +630,10 @@ inline AssumType infer_from_call(FunctionPtr f,
         return result;
       }
     }
-    if (auto array_rule = rule.try_as<op_type_rule>()) {  // create_vector ($n ::: int, $x ::: Any) ::: array <^2>
+    if (auto array_rule = rule.try_as<op_type_expr_type>()) {  // create_vector ($n ::: int, $x ::: Any) ::: array <^2>
       if (array_rule->type_help == tp_array) {
         auto arr = array_rule->args()[0];
-        if (auto arg_ref = arr.try_as<op_arg_ref>()) {
+        if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
           AssumType result = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), out_class, depth + 1);
           if (result == assum_instance) {
             result = assum_instance_array;

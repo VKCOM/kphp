@@ -188,28 +188,47 @@
     }
   },
   {
-    "name": "op_type_rule",
+    "name": "op_type_expr_type",
     "base_name": "meta_op_varg"
   },
   {
-    "extras": [
-      "string"
-    ],
-    "name": "op_type_rule_func",
+    "name": "op_type_expr_lca",
     "base_name": "meta_op_varg"
   },
   {
-    "name": "op_common_type_rule",
-    "base_name": "meta_op_type_rule"
+    "name": "op_type_expr_instance",
+    "base_name": "meta_op_unary"
   },
   {
-    "name": "op_class_type_rule",
-    "base_name": "meta_op_type_rule",
+    "name": "op_type_expr_or_false",
+    "base_name": "meta_op_unary"
+  },
+  {
+    "name": "op_type_expr_callback_call",
+    "base_name": "meta_op_unary"
+  },
+  {
+    "name": "op_type_expr_class",
+    "base_name": "meta_op_base",
     "extra_fields": {
       "class_ptr": {
         "type": "ClassPtr"
       }
     }
+  },
+  {
+    "extra_fields": {
+      "int_val": {
+        "type": "int",
+        "default": 0
+      }
+    },
+    "name": "op_type_expr_arg_ref",
+    "base_name": "meta_op_base"
+  },
+  {
+    "name": "op_common_type_rule",
+    "base_name": "meta_op_type_rule"
   },
   {
     "name": "op_lt_type_rule",
@@ -229,16 +248,6 @@
   },
   {
     "name": "op_self",
-    "base_name": "meta_op_base"
-  },
-  {
-    "extra_fields": {
-      "int_val": {
-        "type": "int",
-        "default": 0
-      }
-    },
-    "name": "op_arg_ref",
     "base_name": "meta_op_base"
   },
   {

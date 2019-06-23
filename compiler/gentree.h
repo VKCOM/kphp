@@ -64,13 +64,13 @@ public:
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);
   static const std::string *get_constexpr_string(VertexPtr v);
-  static int get_id_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
-  static VertexPtr get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr);
+  static int get_id_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
+  static VertexPtr get_call_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());
   VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
-  VertexAdaptor<op_class_type_rule> create_type_help_class_vertex(vk::string_view klass_name);
-  static VertexAdaptor<op_class_type_rule> create_type_help_class_vertex(ClassPtr klass);
+  VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(vk::string_view klass_name);
+  static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(ClassPtr klass);
 
   VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
   VertexAdaptor<op_func_param> get_func_param_from_callback();

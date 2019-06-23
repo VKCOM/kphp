@@ -213,11 +213,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             f->add_kphp_infer_hint(infer_mask::hint, param_i, type_rule);
           }
           if (infer_type & infer_mask::cast) {
-            kphp_error(doc_type->type() == op_type_rule && doc_type.as<op_type_rule>()->args().empty(),
+            kphp_error(doc_type->type() == op_type_expr_type && doc_type.as<op_type_expr_type>()->args().empty(),
                        format("Too hard rule '%s' for cast", type_help.c_str()));
             kphp_error(cur_func_param->type_help == tp_Unknown,
                        format("Duplicate type rule for argument '%s'", var_name.c_str()));
-            cur_func_param->type_help = doc_type.as<op_type_rule>()->type_help;
+            cur_func_param->type_help = doc_type.as<op_type_expr_type>()->type_help;
           }
 
           break;

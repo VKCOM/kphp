@@ -671,12 +671,12 @@ VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, Ver
   return VertexAdaptor<op_ternary>::create(left_set_bool, left_var_move, third);
 }
 
-VertexAdaptor<op_class_type_rule> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
+VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
   return create_type_help_class_vertex(G->get_class(resolve_uses(cur_function, static_cast<std::string>(klass_name))));
 }
 
-VertexAdaptor<op_class_type_rule> GenTree::create_type_help_class_vertex(ClassPtr klass) {
-  auto type_rule = VertexAdaptor<op_class_type_rule>::create();
+VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(ClassPtr klass) {
+  auto type_rule = VertexAdaptor<op_type_expr_class>::create();
   type_rule->type_help = tp_Class;
   type_rule->class_ptr = klass;
   return type_rule;
@@ -1006,7 +1006,7 @@ const std::string *GenTree::get_constexpr_string(VertexPtr v) {
   return nullptr;
 }
 
-int GenTree::get_id_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+int GenTree::get_id_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
   int id = -1;
   if (auto fun_call = expr.try_as<op_func_call>()) {
     id = arg->int_val - 1;
@@ -1019,7 +1019,7 @@ int GenTree::get_id_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
   return id;
 }
 
-VertexPtr GenTree::get_call_arg_ref(VertexAdaptor<op_arg_ref> arg, VertexPtr expr) {
+VertexPtr GenTree::get_call_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
   int arg_id = get_id_arg_ref(arg, expr);
   if (arg_id != -1) {
     auto call_args = expr.as<op_func_call>()->args();
@@ -1086,9 +1086,19 @@ VertexPtr GenTree::get_type_rule_func() {
   CE (!kphp_error(ok_next, "Failed get_type_rule_func"));
   CE (expect(tok_gt, ">"));
 
-  auto rule = VertexAdaptor<op_type_rule_func>::create(next);
+  VertexPtr rule;
+  if (name == "lca") {
+    rule = VertexAdaptor<op_type_expr_lca>::create(next);
+  } else if (name == "instance") {
+    CE (!kphp_error(next.size() == 1, "Instance type rule should have one argument"));
+    rule = VertexAdaptor<op_type_expr_instance>::create(next[0]);
+  } else if (name == "OrFalse") {
+    CE (!kphp_error(next.size() == 1, "OrFalse type rule should have one argument"));
+    rule = VertexAdaptor<op_type_expr_or_false>::create(next[0]);
+  } else {
+    CE (!kphp_error(0, ("Unknown type rule name " + name).c_str()));
+  }
   set_location(rule, rule_location);
-  rule->str_val = name;
   return rule;
 }
 
@@ -1111,7 +1121,7 @@ VertexPtr GenTree::get_type_rule_() {
       CE (expect(tok_gt, "'>'"));
     }
 
-    auto arr = VertexAdaptor<op_type_rule>::create(next);
+    auto arr = VertexAdaptor<op_type_expr_type>::create(next);
     arr->type_help = tp;
     set_location(arr, arr_location);
     res = arr;
@@ -1121,7 +1131,7 @@ VertexPtr GenTree::get_type_rule_() {
     } else if (cur->str_val == "instance") {
       res = get_type_rule_func();
       kphp_error(res->size() == 1, format("Allowed only one arg_ref for 'instance<>', got %d", res->size()));
-      kphp_error(res->back().try_as<op_arg_ref>(), "Allowed only arg_ref for 'instance<>'");
+      kphp_error(res->back().try_as<op_type_expr_arg_ref>(), "Allowed only arg_ref for 'instance<>'");
     } else if (cur->str_val == "self") {
       //TODO: why no next_cur here?
       auto self = VertexAdaptor<op_self>::create();
@@ -1145,7 +1155,7 @@ VertexPtr GenTree::get_type_rule_() {
     if (kphp_error (test_expect(tok_int_const), "Int expected")) {
       return VertexPtr();
     }
-    auto v = VertexAdaptor<op_arg_ref>::create();
+    auto v = VertexAdaptor<op_type_expr_arg_ref>::create();
     set_location(v, AutoLocation(this));
     v->int_val = std::atoi(std::string(cur->str_val).c_str());
     res = v;
@@ -1163,8 +1173,7 @@ VertexPtr GenTree::get_type_rule_() {
       AutoLocation oppar_location(this);
       next_cur();
       CE (expect(tok_clpar, ")"));
-      auto call = VertexAdaptor<op_type_rule_func>::create(res);
-      call->set_string("callback_call");
+      auto call = VertexAdaptor<op_type_expr_callback_call>::create(res);
       set_location(call, oppar_location);
       res = call;
     }

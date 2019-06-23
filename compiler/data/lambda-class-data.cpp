@@ -54,43 +54,39 @@ void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
 
 PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_func_call> extern_function_call,
                                          FunctionPtr function_context, AssumType &assum, ClassPtr &klass_assumed) {
-  if (auto func_rule = type_rule.try_as<op_type_rule_func>()) {
-    if (func_rule->get_string() == "OrFalse") {
-      // TODO:
-      return infer_type_of_callback_arg(func_rule->args()[0], extern_function_call, function_context, assum, klass_assumed);
-    } else if (func_rule->get_string() == "lca") {
-      PrimitiveType result_pt = tp_Unknown;
-      for (auto v : func_rule->args()) {
-        PrimitiveType pt = infer_type_of_callback_arg(v, extern_function_call, function_context, assum, klass_assumed);
-        if (klass_assumed) {
-          return pt;
-        }
-
-        if (result_pt == tp_Unknown) {
-          result_pt = pt;
-        }
+  if (auto or_false_rule = type_rule.try_as<op_type_expr_or_false>()) {
+    // TODO:
+    return infer_type_of_callback_arg(or_false_rule->expr(), extern_function_call, function_context, assum, klass_assumed);
+  } else if (auto lca_rule = type_rule.try_as<op_type_expr_lca>()) {
+    PrimitiveType result_pt = tp_Unknown;
+    for (auto v : lca_rule->args()) {
+      PrimitiveType pt = infer_type_of_callback_arg(v, extern_function_call, function_context, assum, klass_assumed);
+      if (klass_assumed) {
+        return pt;
       }
 
-      return result_pt != tp_Unknown ? result_pt : tp_Any;
-    } else if (func_rule->get_string() == "callback_call") {
-      auto param = GenTree::get_call_arg_ref(func_rule->args()[0].as<op_arg_ref>(), extern_function_call);
-
-      if (auto lambda_class = LambdaClassData::get_from(param)) {
-        FunctionPtr template_invoke = lambda_class->get_template_of_invoke_function();
-        assum = calc_assumption_for_return(template_invoke, extern_function_call, klass_assumed);
+      if (result_pt == tp_Unknown) {
+        result_pt = pt;
       }
-
-      return tp_Unknown;
-    } else {
-      kphp_assert(false);
     }
+
+    return result_pt != tp_Unknown ? result_pt : tp_Any;
+  } else if (auto callback_call_rule = type_rule.try_as<op_type_expr_callback_call>()) {
+    auto param = GenTree::get_call_arg_ref(callback_call_rule->expr().as<op_type_expr_arg_ref>(), extern_function_call);
+
+    if (auto lambda_class = LambdaClassData::get_from(param)) {
+      FunctionPtr template_invoke = lambda_class->get_template_of_invoke_function();
+      assum = calc_assumption_for_return(template_invoke, extern_function_call, klass_assumed);
+    }
+
+    return tp_Unknown;
   } else if (auto index_rule = type_rule.try_as<op_index>()) {
     PrimitiveType pt = infer_type_of_callback_arg(index_rule->array(), extern_function_call, function_context, assum, klass_assumed);
     if (assum == assum_instance_array) {
       assum = assum_instance;
     }
     return pt;
-  } else if (auto arg_ref = type_rule.try_as<op_arg_ref>()) {
+  } else if (auto arg_ref = type_rule.try_as<op_type_expr_arg_ref>()) {
     int id_of_call_parameter = GenTree::get_id_arg_ref(arg_ref, extern_function_call);
     kphp_assert(id_of_call_parameter != -1);
 
@@ -99,7 +95,7 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
 
     auto extern_func_params = extern_function_call->get_func_id()->get_params();
     return extern_func_params[id_of_call_parameter]->type_help;
-  } else if (auto rule = type_rule.try_as<op_type_rule>()) {
+  } else if (auto rule = type_rule.try_as<op_type_expr_type>()) {
     return rule->type_help;
   } else {
     kphp_assert(false);
