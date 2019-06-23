@@ -61,8 +61,7 @@ public:
   FunctionPtr add_virt_clone(DataStream<FunctionPtr> &os, bool with_body = true);
 
   void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
-  void create_constructor(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params);
-  void create_constructor(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required = true);
+  void create_constructor(VertexAdaptor<op_function> func);
 
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>

@@ -123,41 +123,28 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
 }
 
 void ClassData::create_default_constructor(Location location, DataStream<FunctionPtr> &os) {
-  create_constructor(location, {}, os);
-}
-
-void ClassData::create_constructor(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params) {
-  static DataStream<FunctionPtr> unused;
-  create_constructor(location, std::move(params), unused, false);
-  kphp_assert(!construct_function->is_required);
-}
-
-void ClassData::create_constructor(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required) {
-  std::string func_name = replace_backslashes(name) + "$$__construct";
-
-  std::vector<VertexPtr> fields_initializers;
-  for (auto param : params) {
-    VertexPtr param_var = param->var();
-    auto inst_prop = VertexAdaptor<op_instance_prop>::create(gen_vertex_this(location));
-    inst_prop->location = location;
-    inst_prop->str_val = param_var->get_string();
-
-    fields_initializers.emplace_back(VertexAdaptor<op_set>::create(inst_prop, param_var.clone()));
-  }
-  auto func_root = VertexAdaptor<op_seq>::create(fields_initializers);
-
-  patch_func_add_this(params, location);
-  auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(params), func_root);
+  auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(),
+                                                 VertexAdaptor<op_seq>::create());
   func->location = location;
+  create_constructor(func);
 
-  GenTree::func_force_return(func, gen_vertex_this(location));
+  G->register_and_require_function(construct_function, os, true);
+}
+
+void ClassData::create_constructor(VertexAdaptor<op_function> func) {
+  std::string func_name = replace_backslashes(name) + "$$__construct";
+  auto params = func->params()->get_next();
+  patch_func_add_this(params, func->get_location());
+  func->params_ref() = VertexAdaptor<op_func_param_list>::create(std::move(params));
+
+  GenTree::func_force_return(func, gen_vertex_this(func->location));
 
   auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
   ctor_function->update_location_in_body();
   ctor_function->is_inline = true;
   members.add_instance_method(ctor_function, access_public);
-  G->register_and_require_function(ctor_function, os, auto_required);
 }
+
 template<Operation Op>
 void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
   static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");

@@ -61,7 +61,10 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
 
 LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
   std::vector<VertexAdaptor<meta_op_func_param>> conv_uses(uses.begin(), uses.end());
-  generated_lambda->create_constructor(created_location, conv_uses);
+  auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses);
+  auto constructor_body = create_seq_saving_captured_vars_to_fields(uses);
+  auto constructor = VertexAdaptor<op_function>::create(constructor_params, constructor_body);
+  generated_lambda->create_constructor(constructor);
   generated_lambda->construct_function->is_template = !uses.empty();
 
   return *this;
@@ -138,6 +141,20 @@ VertexAdaptor<op_seq> LambdaGenerator::create_invoke_cmd(VertexAdaptor<op_functi
     add_this_to_captured_variables(new_cmd);
   }
   return new_cmd.as<op_seq>();
+}
+
+VertexAdaptor<op_seq> LambdaGenerator::create_seq_saving_captured_vars_to_fields(const std::vector<VertexAdaptor<op_func_param>> &params) {
+  std::vector<VertexPtr> fields_initializers;
+  for (auto &param : params) {
+    auto param_var = param->var().clone();
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(created_location));
+    inst_prop->location = created_location;
+    inst_prop->str_val = param_var->get_string();
+
+    fields_initializers.emplace_back(VertexAdaptor<op_set>::create(inst_prop, param_var.clone()));
+  }
+
+  return VertexAdaptor<op_seq>::create(fields_initializers);
 }
 
 VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAdaptor<op_function> function) {

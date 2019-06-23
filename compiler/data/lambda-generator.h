@@ -19,6 +19,7 @@ private:
   static LambdaPtr create_class(const std::string &name);
   VertexAdaptor<op_func_param_list> create_invoke_params(VertexAdaptor<op_function> function);
   VertexAdaptor<op_seq> create_invoke_cmd(VertexAdaptor<op_function> function);
+  VertexAdaptor<op_seq> create_seq_saving_captured_vars_to_fields(const std::vector<VertexAdaptor<op_func_param>> &params);
 
   void add_this_to_captured_variables(VertexPtr &root);
 
