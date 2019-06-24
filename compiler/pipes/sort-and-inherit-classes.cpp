@@ -165,6 +165,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
                     format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
 
   child_class->parent_class = parent_class;
+  child_class->check_parent_constructor();
 
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {

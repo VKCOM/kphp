@@ -9,6 +9,7 @@
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "common/termformat/termformat.h"
 
 const char * ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 
@@ -145,6 +146,12 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   members.add_instance_method(ctor_function, access_public);
 }
 
+bool ClassData::has_only_default_constructor() const {
+  kphp_assert(construct_function && construct_function->root);
+  bool constructor_contains_only_return_this_statement = construct_function->root->cmd()->size() == 1;
+  return constructor_contains_only_return_this_statement;
+}
+
 template<Operation Op>
 void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
   static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
@@ -211,6 +218,31 @@ const ClassMemberInstanceMethod *ClassData::get_instance_method(const std::strin
 
 const ClassMemberInstanceField *ClassData::get_instance_field(const std::string &local_name) const {
   return find_by_local_name<ClassMemberInstanceField>(local_name);
+}
+
+const ClassMemberStaticField *ClassData::get_static_field(const std::string &local_name) const {
+  return find_by_local_name<ClassMemberStaticField>(local_name);
+}
+
+const ClassMemberConstant *ClassData::get_constant(const std::string &local_name) const {
+  return find_by_local_name<ClassMemberConstant>(local_name);
+}
+
+void ClassData::check_parent_constructor() {
+  if (!construct_function || !construct_function->root) {
+    return;
+  }
+
+  if (!parent_class || !parent_class->construct_function || !parent_class->construct_function->root) {
+    return;
+  }
+
+  if (has_only_default_constructor() && !parent_class->has_only_default_constructor()) {
+    kphp_error(false,
+               format("You must write `__constructor` in class: %s because one of your parent(%s) has constructor",
+                      TermStringFormat::paint_green(name).c_str(), TermStringFormat::paint_green(parent_class->name).c_str())
+    );
+  }
 }
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {

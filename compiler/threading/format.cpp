@@ -1,7 +1,7 @@
 #include "compiler/threading/format.h"
 
 #include <cstdio>
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "compiler/threading/tls.h"
 
