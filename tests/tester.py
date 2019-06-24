@@ -465,6 +465,7 @@ def get_all_tests(args):
         ["tup"],
         ["templates"],
         ["lambdas"],
+        ["lang", "operators"],
         ["errors"],
         ["libs"],
         ["variadic_args"],

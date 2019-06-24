@@ -1082,6 +1082,7 @@ Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
   add_rule(h, "<>", tok_neq_lg);
   add_rule(h, "!=", tok_neq2);
   add_rule(h, "!==", tok_neq3);
+  add_rule(h, "<=>", tok_spaceship);
   add_rule(h, "<", tok_lt);
   add_rule(h, "<=", tok_le);
   add_rule(h, ">", tok_gt);

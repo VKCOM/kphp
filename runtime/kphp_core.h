@@ -266,6 +266,16 @@ inline double divide(const OrFalse<T1> &lhs, const T2 &rhs); //not defined
 template<class T1, class T2>
 inline double divide(const T1 &lhs, const OrFalse<T2> &rhs); //not defined
 
+template<class T1, class T2>
+inline int spaceship(const T1 &lhs, const T2 &rhs) {
+  if (lt(lhs, rhs)) {
+    return -1;
+  } else if (gt(lhs, rhs)) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
 inline int modulo(int lhs, int rhs);
 

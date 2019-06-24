@@ -445,6 +445,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_conv_int_l:
     case op_int_const:
     case op_mod:
+    case op_spaceship:
     case op_not:
     case op_or:
     case op_and:

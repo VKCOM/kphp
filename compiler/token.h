@@ -68,6 +68,7 @@ enum TokenType {
   tok_gt,
   tok_le,
   tok_ge,
+  tok_spaceship,
   tok_neq2,
   tok_neq3,
   tok_neq_lg,

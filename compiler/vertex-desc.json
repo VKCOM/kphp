@@ -863,6 +863,16 @@
     }
   },
   {
+    "name": "op_spaceship",
+    "base_name": "meta_op_binary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "binary_func_op",
+      "str": "spaceship"
+    }
+  },
+  {
     "name": "op_add",
     "base_name": "meta_op_binary",
     "props": {
