@@ -261,15 +261,15 @@ bool ClassData::is_builtin() const {
   return file_id && file_id->is_builtin();
 }
 
-bool ClassData::is_interface_or_has_interface_member() {
+bool ClassData::is_interface_or_has_interface_member() const {
   if (is_interface()) {
     return true;
   }
-  std::unordered_set<ClassPtr> checked{ClassPtr{this}};
+  std::unordered_set<ClassPtr> checked{get_self()};
   return has_interface_member_dfs(checked);
 }
 
-bool ClassData::has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) {
+bool ClassData::has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const {
   return nullptr != members.find_member(
     [&checked](const ClassMemberInstanceField &field) {
       std::unordered_set<ClassPtr> sub_classes;

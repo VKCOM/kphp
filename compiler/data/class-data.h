@@ -114,11 +114,11 @@ public:
 
   bool need_generate_accept_method() const;
   bool is_builtin() const;
-  bool is_interface_or_has_interface_member();
+  bool is_interface_or_has_interface_member() const;
   static bool does_need_codegen(ClassPtr c);
 
 private:
-  bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked);
+  bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 };
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs);

@@ -7,6 +7,7 @@
 
 ExternInclude::ExternInclude(const vk::string_view &file_name) :
   file_name(file_name) {
+  kphp_assert(!file_name.empty());
 }
 
 void ExternInclude::compile(CodeGenerator &W) const {
@@ -31,6 +32,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     if (to_include->is_imported_from_static_lib()) {
       lib_headers_.emplace(to_include->header_full_name);
     } else if (!to_include->is_extern()) {
+      kphp_assert(!to_include->header_full_name.empty());
       internal_headers_.emplace(to_include->header_full_name);
     }
   }

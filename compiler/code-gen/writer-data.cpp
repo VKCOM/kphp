@@ -46,6 +46,7 @@ void WriterData::add_location(SrcFilePtr file, int line) {
 }
 
 void WriterData::add_include(const std::string &s) {
+  kphp_assert(!s.empty());
   includes.push_back(s);
 }
 
