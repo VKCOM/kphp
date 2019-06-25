@@ -221,7 +221,9 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     VertexRange args = call->args();
     LValue val = as_lvalue(args[0]);
 
-    val.key = &MultiKey::any_key(1);
+    auto key = new MultiKey(*val.key);
+    key->push_back(Key::any_key());
+    val.key = key;
 
     for (auto i : VertexRange(args.begin() + 1, args.end())) {
       create_set(val, i);
