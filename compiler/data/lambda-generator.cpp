@@ -23,7 +23,7 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
 
   if (!generated_lambda->is_static) {
     auto implicit_captured_var_parent_this = VertexAdaptor<op_var>::create();
-    implicit_captured_var_parent_this->set_string("parent$this");
+    implicit_captured_var_parent_this->set_string(LambdaClassData::get_parent_this_name());
     set_location(implicit_captured_var_parent_this, created_location);
 
     auto func_param = VertexAdaptor<op_func_param>::create(implicit_captured_var_parent_this);
@@ -205,7 +205,7 @@ void LambdaGenerator::add_this_to_captured_variables(VertexPtr &root) {
   } else if (!generated_lambda->is_static && root->get_string() == "this") {
     // replace `$this` with `$this->parent$this`
     auto new_root = VertexAdaptor<op_instance_prop>::create(root);
-    new_root->set_string("parent$this");
+    new_root->set_string(LambdaClassData::get_parent_this_name());
     set_location(new_root, root->location);
     root = new_root;
   }

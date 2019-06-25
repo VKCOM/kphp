@@ -30,6 +30,10 @@ public:
     return lambda_namespace;
   }
 
+  static const char *get_parent_this_name() {
+    return "parent$this";
+  }
+
   std::string get_namespace() const final {
     return get_lambda_namespace();
   }
