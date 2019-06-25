@@ -16,7 +16,7 @@ class Derived extends Base {
         $f = function() { 
             parent::bar(); 
             $g = function() {
-                parent::bar(); 
+                parent::bar();
                 self::bar();
             };
             $g();

@@ -99,11 +99,14 @@ string resolve_uses(FunctionPtr current_function, string class_name, char delim)
   if (class_name[0] != '\\') {
     if (class_name == "parent") {
       // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов
-      const std::string *parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name();
-      kphp_error(parent_class_name != nullptr, "Using parent:: in class that extends nothing");
-      class_name = *parent_class_name;
+      if (auto parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name()) {
+        class_name = *parent_class_name;
+      } else {
+        kphp_error(false, "Using parent:: in class that extends nothing");
+      }
     } else if (class_name == "static") {
-      class_name = current_function->get_this_or_topmost_if_lambda()->context_class->name;
+      auto parent_function = current_function->get_this_or_topmost_if_lambda();
+      class_name = parent_function->context_class->name;
     } else if (class_name == "self"){
       auto class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
       kphp_error_act(class_id, "Can't resolve self, there is no any class context", return {});

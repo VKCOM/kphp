@@ -4,7 +4,7 @@
 
 class ResolveSelfStaticParentPass : public FunctionPassBase {
 private:
-  void check_access_to_class_from_this_file(const std::string &class_name);
+  void check_access_to_class_from_this_file(ClassPtr ref_class);
 public:
   string get_description() {
     return "Resolve self/static/parent";
