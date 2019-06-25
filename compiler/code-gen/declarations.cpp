@@ -266,9 +266,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << NL;
     W << "template<class Visitor>" << NL
       << "static void accept(Visitor &&visitor) " << BEGIN;
-    klass->members.for_each([&](const ClassMemberInstanceField &f) {
-      W << "visitor(\"" << f.local_name() << "\", &" << klass->src_name << "::$" << f.local_name() << ");" << NL;
-    });
+
+    for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
+      cur_klass->members.for_each([&](const ClassMemberInstanceField &f) {
+        // will generate visitor.template operator()<int>("field_name", &ClassName::field_name);
+        W << "visitor.template operator()<" << TypeName(tinf::get_type(f.var)) << ">(\"" << f.local_name() << "\", &" << klass->src_name << "::$" << f.local_name() << ");" << NL;
+      });
+    }
     W << END << NL;
   }
 
