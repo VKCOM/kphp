@@ -104,7 +104,8 @@ def run_test_mode_php(path):
         ("xdebug.var_display_max_depth", -1),
         ("xdebug.var_display_max_children", -1),
         ("xdebug.var_display_max_data", -1),
-        ("include_path", path.parent)
+        ("include_path", path.parent),
+        ("include_path", DIRECTORY_WITH_TESTS),
     ]
     extensions_str = " ".join("-d {}='{}'".format(k, v) for (k, v) in extensions)
 
@@ -127,11 +128,11 @@ def run_test_mode_kphp(path):
     out = get_kphp_out_path()
     path_to_kphp = PATH_TO_PHP / "kphp.sh"
 
-    make_cmd = "{kphp} -S -I {path_to_dir} -M cli " \
+    make_cmd = "{kphp} -S -I {path_to_dir} -I {path_to_tests} -M cli " \
                "-o {main} {path} " \
                "> {out} " \
-               "2>&1".format(kphp=path_to_kphp, path=path, path_to_dir=path.parent, out=out,
-                             main=path_to_main)
+               "2>&1".format(kphp=path_to_kphp, path=path, path_to_dir=path.parent, path_to_tests=DIRECTORY_WITH_TESTS,
+                             out=out, main=path_to_main)
     my_check_call(make_cmd)
 
     return run_and_save_answer(path_to_main)
