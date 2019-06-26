@@ -201,6 +201,19 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
 
+void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
+  if (!vertex) {
+    return;
+  }
+  for (auto child: *vertex) {
+    declare_all_variables(child, W);
+  }
+  if (vertex->type() == op_var) {
+    W << VarExternDeclaration(vertex->get_var_id());
+  }
+}
+
+
 void ClassDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(klass->header_name, klass->get_subdir());
   W << "#pragma once" << NL;
@@ -212,6 +225,12 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   compile_includes(W);
 
   W << OpenNamespace();
+
+  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+    if (f.var->init_val) {
+      declare_all_variables(f.var->init_val, W);
+    }
+  });
 
   InterfacePtr interface;
   if (!klass->implements.empty()) {
@@ -231,7 +250,11 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << BEGIN;
 
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
-    W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << ";" << NL;
+    W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << "{";
+    if (f.var->init_val) {
+      W << f.var->init_val;
+    }
+    W << "};" << NL;
   });
 
   if (klass->need_generate_accept_method()) {

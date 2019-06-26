@@ -64,6 +64,7 @@ struct ClassDeclaration {
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
 private:
   void compile_includes(CodeGenerator &W) const;
+  void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
 };
 
 struct StaticLibraryRunGlobal {

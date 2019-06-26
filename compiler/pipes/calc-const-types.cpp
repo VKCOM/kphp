@@ -2,6 +2,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 
 bool CalcConstTypePass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
@@ -10,8 +11,16 @@ bool CalcConstTypePass::on_start(FunctionPtr function) {
 
   if (current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
-      LocalT local;
-      f.init_val = run_function_pass(f.init_val, this, &local);
+      if (f.init_val) {
+        LocalT local;
+        f.init_val = run_function_pass(f.init_val, this, &local);
+      }
+    });
+    current_function->class_id->members.for_each([&](ClassMemberInstanceField &f) {
+      if (f.var->init_val) {
+        LocalT local;
+        f.var->init_val = run_function_pass(f.var->init_val, this, &local);
+      }
     });
   }
   return true;

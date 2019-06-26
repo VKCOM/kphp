@@ -45,6 +45,7 @@ private:
   void on_set_op(VertexPtr v);
   void ifi_fix(VertexPtr v);
   void on_function(FunctionPtr function);
+  void on_class(ClassPtr klass);
   void on_var(VarPtr var);
 
   template<class CollectionT>

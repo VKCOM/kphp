@@ -118,6 +118,11 @@ bool CollectConstVarsPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<Col
   if (v->type() == op_function) {
     if (current_function->type == FunctionData::func_class_holder) {
       ClassPtr c = current_function->class_id;
+      c->members.for_each([&](ClassMemberInstanceField &field) {
+        if (field.var->init_val) {
+          visit(field.var->init_val);
+        }
+      });
       c->members.for_each([&](ClassMemberStaticField &field) {
         if (field.init_val) {
           visit(field.init_val);

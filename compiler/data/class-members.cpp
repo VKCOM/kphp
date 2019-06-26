@@ -58,10 +58,10 @@ const string &ClassMemberInstanceField::local_name() const {
 inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str) :
   access_type(access_type),
   root(root),
-  def_val(def_val),
   phpdoc_str(phpdoc_str) {
 
   var = G->create_var(local_name(), VarData::var_instance_t);
+  var->init_val = def_val;
   var->class_id = klass;
   var->marked_as_const = klass->is_immutable || PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_const);
 }

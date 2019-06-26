@@ -380,6 +380,13 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
     }
   }
 }
+
+void CollectMainEdgesPass::on_class(ClassPtr klass) {
+  klass->members.for_each([&](ClassMemberInstanceField field) {
+    on_var(field.var);
+  });
+}
+
 void CollectMainEdgesPass::on_function(FunctionPtr function) {
   VertexRange params = function->get_params();
   int params_n = (int)params.size();
@@ -445,6 +452,9 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
 bool CollectMainEdgesPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
     return false;
+  }
+  if (function->type == FunctionData::func_class_holder) {
+    on_class(function->class_id);
   }
   on_function(function);
   return !function->is_extern();
@@ -518,18 +528,23 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   }
 
   // для всех переменных-инстансов (локальные, параметры и т.п.) делаем restriction'ы, что классы те же что в phpdoc
-  if (!current_function->assumptions_for_vars.empty()) {
-    ClassPtr cl;
-    AssumType assum = assumption_get_for_var(current_function, var->name, cl);
-    if (assum == assum_instance) {                  // var == cl
-      create_less(var, cl->type_data);
-      // You could specify php-doc that some var is `Interface class` but always assign to that var only one class.
-      // In this situation we will infer that type of this var is concrete class not Interface
-      // create_less(cl->type_data, var);
-    } else if (assum == assum_instance_array) {     // cl[] <= var <= OrFalse<cl[]>
-      create_less(var, TypeData::create_array_type_data(cl->type_data, true));
-      create_less(TypeData::create_array_type_data(cl->type_data), var);
+  ClassPtr cl;
+  AssumType assum = assum_unknown;
+  if (var->is_class_instance_var()) {
+    assum = assumption_get_for_var(var->class_id, var->name, cl);
+  } else {
+    if (!current_function->assumptions_for_vars.empty()) {
+      assum = assumption_get_for_var(current_function, var->name, cl);
     }
+  }
+  if (assum == assum_instance) {                  // var == cl
+    create_less(var, cl->type_data);
+    // You could specify php-doc that some var is `Interface class` but always assign to that var only one class.
+    // In this situation we will infer that type of this var is concrete class not Interface
+    // create_less(cl->type_data, var);
+  } else if (assum == assum_instance_array) {     // cl[] <= var <= OrFalse<cl[]>
+    create_less(var, TypeData::create_array_type_data(cl->type_data, true));
+    create_less(TypeData::create_array_type_data(cl->type_data), var);
   }
 }
 

@@ -154,6 +154,7 @@ NodeRecalc::NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer) :
 void NodeRecalc::on_changed() {
   __sync_synchronize();
 
+  //fprintf(stderr, "%s : %s -> %s\n", node_->get_description().c_str(), type_out(node_->get_type()).c_str(), type_out(new_type()).c_str());
   node_->set_type(new_type_);
   new_type_ = nullptr;
 

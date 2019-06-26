@@ -13,11 +13,11 @@
 #include <set>
 #include <string>
 
-#include "compiler/data/data_ptr.h"
-#include "compiler/data/vertex-adaptor.h"
-
 #include "common/type_traits/function_traits.h"
 #include "common/type_traits/traits.h"
+
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
 
@@ -73,7 +73,6 @@ struct ClassMemberInstanceField {
   AccessType access_type;
   VertexAdaptor<op_var> root;
   VarPtr var;
-  VertexPtr def_val;            // пусто в случае отсутствия значения, или какое-то выражение
   vk::string_view phpdoc_str;
 
   ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);

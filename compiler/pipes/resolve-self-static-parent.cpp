@@ -18,7 +18,14 @@ bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
       c.value = run_function_pass(c.value, this, nullptr);
     });
     current_function->class_id->members.for_each([&](ClassMemberStaticField &c) {
-      c.init_val = run_function_pass(c.init_val, this, nullptr);
+      if (c.init_val) {
+        c.init_val = run_function_pass(c.init_val, this, nullptr);
+      }
+    });
+    current_function->class_id->members.for_each([&](ClassMemberInstanceField &c) {
+      if (c.var->init_val) {
+        c.var->init_val = run_function_pass(c.var->init_val, this, nullptr);
+      }
     });
   }
   return true;

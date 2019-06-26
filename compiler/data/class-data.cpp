@@ -125,22 +125,6 @@ void ClassData::patch_func_constructor(VertexAdaptor<op_function> func) {
   std::vector<VertexPtr> new_body;
   int func_first_line = func->location.get_line();
   new_body.emplace_back(gen_vertex_this_with_type_rule(func_first_line));
-
-  // выносим "$var = 0" в начало конструктора
-  members.for_each([&](ClassMemberInstanceField &f) {
-    if (f.def_val) {
-      int line = std::min(f.root->location.get_line(), func_first_line);
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(line));
-      inst_prop->location = f.root->location;
-      inst_prop->location.set_line(line);
-      inst_prop->str_val = f.local_name();
-
-      auto init_value = f.def_val.clone();
-      init_value->location.set_line(line);
-      new_body.emplace_back(VertexAdaptor<op_set>::create(inst_prop, init_value));
-    }
-  });
-
   new_body.insert(new_body.end(), func->cmd()->begin(), func->cmd()->end());
   func->cmd() = VertexAdaptor<op_seq>::create(new_body);
 }
