@@ -162,11 +162,25 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
       ::set_location(new_root, root->get_location());
       new_root->extra_type = op_ex_func_call_arrow;
       new_root->str_val = rhs->get_string();
+      new_root->set_func_id(rhs->get_func_id());
 
       return new_root;
     } else {
       kphp_error (false, "Operator '->' expects property or function call as its right operand");
     }
+  }
+
+  if (auto call = root.try_as<op_constructor_call>()) {
+    vector<VertexPtr> next = call->get_next();
+
+    next.insert(next.begin(), VertexAdaptor<op_false>::create());
+
+    auto new_root = VertexAdaptor<op_constructor_call>::create(next);
+    ::set_location(new_root, root->get_location());
+    new_root->extra_type = op_ex_func_call_arrow;
+    new_root->str_val = root->get_string();
+    new_root->set_func_id(call->get_func_id());
+    return new_root;
   }
 
   return root;

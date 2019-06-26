@@ -66,10 +66,9 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
 }
 
 LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
-  auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses);
+  std::vector<VertexAdaptor<meta_op_func_param>> conv_uses(uses.begin(), uses.end());
   auto name_location = generated_lambda->root->name()->location;
-  set_location(constructor_params, name_location);
-  generated_lambda->create_constructor_with_args(name_location.line, constructor_params);
+  generated_lambda->create_constructor_with_args(name_location.line, conv_uses);
   generated_lambda->construct_function->is_template = !uses.empty();
 
   return *this;

@@ -124,7 +124,7 @@ public:
   }
 
   inline bool has_implicit_this_arg() const {
-    return is_instance_function() && !is_constructor();
+    return is_instance_function();
   }
 
   inline bool is_extern() const {

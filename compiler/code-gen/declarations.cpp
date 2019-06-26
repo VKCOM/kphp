@@ -48,11 +48,6 @@ void VarDeclaration::compile(CodeGenerator &W) const {
     }
   }
   W << ";" << NL;
-  if (var->type() == VarData::var_local_t && type->ptype() == tp_Class && var->name == "this") {
-    // инициализация $this в самом начале __construct()
-    auto alloc_function = type->class_type()->is_not_empty_class() ? ".alloc();" : ".empty_alloc();";
-    W << VarName(var) << alloc_function << NL << NL;
-  }
   if (var->needs_const_iterator_flag) {
     W << (extern_flag ? "extern " : "") <<
       "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << "$it;" << NL;

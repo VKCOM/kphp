@@ -59,12 +59,9 @@ public:
   FunctionPtr gen_holder_function(const std::string &name);
   FunctionPtr add_virt_clone(DataStream<FunctionPtr> &os, bool with_body = true);
 
-  // __construct(args) { body } => __construct(args) { $this ::: tp_Class; def vars init; body; return $this; }
-  void patch_func_constructor(VertexAdaptor<op_function> func);
-
   void create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os);
-  void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params);
-  void create_constructor_with_args(int location_line_num, VertexAdaptor<op_func_param_list> params, DataStream<FunctionPtr> &os, bool auto_required = true);
+  void create_constructor_with_args(int location_line_num, std::vector<VertexAdaptor<meta_op_func_param>> params);
+  void create_constructor_with_args(int location_line_num, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required = true);
 
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>

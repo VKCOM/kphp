@@ -23,20 +23,22 @@ class_instance<T> class_instance<T>::clone() const {
 }
 
 template<class T>
-void class_instance<T>::alloc() {
+class_instance<T> class_instance<T>::alloc() {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
   auto new_t = static_cast<T *>(dl::allocate(sizeof(T)));
   new(new_t) T();
   new (&o) vk::intrusive_ptr<T>(new_t);
+  return *this;
 }
 
 template<class T>
-inline void class_instance<T>::empty_alloc() {
+inline class_instance<T> class_instance<T>::empty_alloc() {
   static_assert(std::is_empty<T>{}, "class T must be empty");
   static uint32_t obj;
   obj++;
   new (&o) vk::intrusive_ptr<T>(reinterpret_cast<T*>(obj));
+  return *this;
 }
 
 template<class T>

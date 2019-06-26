@@ -1641,7 +1641,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
 
   CE(expect(tok_oppar, "'('"));
 
-  if (cur_function->is_instance_function() && !cur_function->is_constructor()) {
+  if (cur_function->is_instance_function()) {
     cur_class->patch_func_add_this(params_next, line_num);
   }
 
@@ -1822,9 +1822,6 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
     CE (!kphp_error(!cur_class->is_interface(), "constructor in interfaces have not been supported yet"));
-    if (!cur_class->is_builtin()) {
-      cur_class->patch_func_constructor(constructor_method->root);
-    }
     G->register_and_require_function(constructor_method, parsed_os, true);
   } else if (cur_class->is_class()) {
     bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();

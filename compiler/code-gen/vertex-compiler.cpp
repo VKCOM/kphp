@@ -435,17 +435,23 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int s
     W << "< " << TypeName(tp) << " >";
   }
   W << "(";
-  auto i = root->args().begin();
-  auto i_end = root->args().end();
   bool first = true;
-  for (; i != i_end; ++i) {
+  for (auto i: root->args()) {
     if (first) {
       first = false;
     } else {
       W << ", ";
     }
 
-    W << *i;
+    if (root->type() == op_constructor_call && i->type() == op_false && i == root->args()[0]) {
+      const TypeData *tp = tinf::get_type(root);
+      kphp_assert(tp->ptype() == tp_Class);
+      auto alloc_function = tp->class_type()->is_not_empty_class() ? "().alloc()" : "().empty_alloc()";
+      W << TypeName(tp) << alloc_function;
+      continue;
+    }
+
+    W << i;
   }
   W << ")";
 }
