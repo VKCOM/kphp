@@ -56,7 +56,7 @@ public:
   bool fake{false};
 };
 
-class_instance<C$McMemcache> f$McMemcache$$__construct();
+class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache> &v$this);
 bool f$McMemcache$$addServer(const class_instance<C$McMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
 bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
 bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
@@ -69,7 +69,7 @@ var f$McMemcache$$getVersion(const class_instance<C$McMemcache> &v$this);
 bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 
-class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(bool fake = false);
+class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$RpcMemcache> &v$this,bool fake = false);
 bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
 bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);

@@ -192,7 +192,7 @@ bool rpc_set_pos(int pos) {
 
 static inline void check_rpc_data_len(int len) {
   if (rpc_data_len < len) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
     return;
   }
   rpc_data_len -= len;
@@ -321,7 +321,7 @@ static inline const char *f$fetch_string_raw(int *string_len) {
     TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return nullptr);
     rpc_data += ((result_len + 7) >> 2);
   } else {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
     return nullptr;
   }
 
@@ -365,7 +365,7 @@ var f$fetch_memcache_value() {
     }
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
-      THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Wrong memcache.Value constructor"), -1));
+      THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Wrong memcache.Value constructor"), -1));
       return var();
     }
   }
@@ -377,7 +377,7 @@ bool f$fetch_eof() {
 
 bool f$fetch_end() {
   if (rpc_data_len) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Too much data to fetch"), -2));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Too much data to fetch"), -2));
     return false;
   }
   return true;
@@ -1848,7 +1848,7 @@ void tl_fetching_error(const char *format, ...) {
     va_end(args);
     string msg = string(buff, static_cast<size_t>(sz));
     php_warning("Fetching error:\n%s\nDeserializing result of function: %s", msg.c_str(), new_tl_current_function_name);
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__,
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__,
                                              msg.append(string(" in result of ")).append(string(new_tl_current_function_name)), -1));
   }
 }
@@ -2030,7 +2030,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
 
   int magic = TRY_CALL_ (int, f$fetch_int(), return false);
   if (magic != TL_DICTIONARY) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("Strange dictionary magic", 24), -1));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Strange dictionary magic", 24), -1));
     return false;
   };
 
@@ -2680,7 +2680,7 @@ void *tlcomb_fetch_vector(void **IP, void **Data, var *arr, tl_tree **vars) {
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("vector size is negative"), -1));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("vector size is negative"), -1));
     return nullptr;
   }
 
@@ -2716,7 +2716,7 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, var *arr, tl_tree **vars) 
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
     return nullptr;
   }
 
@@ -2749,7 +2749,7 @@ void *tlcomb_fetch_int_key_dictionary(void **IP, void **Data, var *arr, tl_tree 
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
     return nullptr;
   }
 
@@ -2782,7 +2782,7 @@ void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, var *arr, tl_tree
   void **newIP = (void **)*(IP++);
 
   if (multiplicity < 0) {
-    THROW_EXCEPTION(f$Exception$$__construct(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("dictionary size is negative"), -1));
     return nullptr;
   }
 

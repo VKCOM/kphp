@@ -1055,7 +1055,7 @@ string f$vk_json_encode_safe(const var &v, bool simple_encode) {
   if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     static_SB.clean();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    THROW_EXCEPTION (f$Exception$$__construct(string(__FILE__, (dl::size_type)strlen(__FILE__)), __LINE__, string("json_encode buffer overflow", 27)));
+    THROW_EXCEPTION (new_Exception(string(__FILE__, (dl::size_type)strlen(__FILE__)), __LINE__, string("json_encode buffer overflow", 27)));
     return string();
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;

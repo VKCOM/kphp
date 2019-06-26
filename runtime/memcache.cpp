@@ -701,15 +701,11 @@ var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& mc) {
 }
 
 
-class_instance<C$McMemcache> f$McMemcache$$__construct() {
-  class_instance<C$McMemcache> v$this;
-  v$this.alloc();
+class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache> &v$this) {
   return v$this;
 }
 
-class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(bool fake) {
-  class_instance<C$RpcMemcache> v$this;
-  v$this.alloc();
+class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$RpcMemcache> &v$this, bool fake) {
   v$this->fake = fake;
   return v$this;
 }

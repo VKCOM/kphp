@@ -46,9 +46,7 @@ array<array<string>> f$Exception$$getTrace(const Exception &e) {
   return e->trace;
 }
 
-Exception f$Exception$$__construct(const string &file, int line, const string &message, int code) {
-  Exception v$this;
-  v$this.alloc();
+Exception f$Exception$$__construct(const Exception &v$this, const string &file, int line, const string &message, int code) {
   v$this->file = file;
   v$this->line = line;
   v$this->message = message;
@@ -57,8 +55,13 @@ Exception f$Exception$$__construct(const string &file, int line, const string &m
   return v$this;
 }
 
+Exception new_Exception(const string &file, int line, const string &message, int code) {
+  return f$Exception$$__construct(Exception().alloc(), file, line, message, code);
+}
+
+
 Exception f$err(const string &file, int line, const string &code, const string &desc) {
-  return f$Exception$$__construct(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
+  return new_Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
 
