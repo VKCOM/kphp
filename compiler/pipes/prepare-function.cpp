@@ -277,6 +277,20 @@ static void check_default_args(FunctionPtr fun) {
   }
 }
 
+static void apply_function_typehints(FunctionPtr function) {
+  using infer_mask = FunctionData::InferHint::infer_mask;
+  auto func_params = function->get_params();
+
+  for (int i = 0; i < func_params.size(); ++i) {
+    auto param = func_params[i].try_as<op_func_param>();
+    if (param && param->type_declaration == "array") {
+      auto doc_type = phpdoc_parse_type(param->type_declaration, function);
+      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+      function->add_kphp_infer_hint(infer_mask::check, i, type_rule);
+    }
+  }
+}
+
 void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Prepare function");
   stage::set_function(function);
@@ -285,6 +299,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   parse_and_apply_function_kphp_phpdoc(function);
   set_template_flag_if_has_callable_arg(function);
   check_default_args(function);
+  apply_function_typehints(function);
 
   if (stage::has_error()) {
     return;

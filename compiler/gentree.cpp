@@ -820,7 +820,7 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   AutoLocation st_location(this);
   const Token *tok_type_declaration = nullptr;
-  if (cur->type() == tok_func_name) {
+  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array)) {
     tok_type_declaration = &*cur;
     next_cur();
   }
@@ -848,7 +848,6 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   set_location(v, st_location);
   if (tok_type_declaration != nullptr) {
     v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
-    v->type_help = tp_Class;
   }
 
   if (type_rule) {
