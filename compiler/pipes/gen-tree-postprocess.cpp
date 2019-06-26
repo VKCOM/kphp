@@ -151,14 +151,14 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
       inst_prop->set_string(rhs->get_string());
 
       return inst_prop;
-    } else if (rhs->type() == op_func_call) {
+    } else if (rhs->type() == op_func_call || rhs->type() == op_constructor_call) {
       vector<VertexPtr> new_next;
       const vector<VertexPtr> &old_next = rhs.as<op_func_call>()->get_next();
 
       new_next.push_back(arrow->lhs());
       new_next.insert(new_next.end(), old_next.begin(), old_next.end());
 
-      auto new_root = VertexAdaptor<op_func_call>::create(new_next);
+      auto new_root = create_vertex(rhs->type(), new_next).as<op_func_call>();
       ::set_location(new_root, root->get_location());
       new_root->extra_type = op_ex_func_call_arrow;
       new_root->str_val = rhs->get_string();
@@ -168,19 +168,6 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
     } else {
       kphp_error (false, "Operator '->' expects property or function call as its right operand");
     }
-  }
-
-  if (auto call = root.try_as<op_constructor_call>()) {
-    vector<VertexPtr> next = call->get_next();
-
-    next.insert(next.begin(), VertexAdaptor<op_false>::create());
-
-    auto new_root = VertexAdaptor<op_constructor_call>::create(next);
-    ::set_location(new_root, root->get_location());
-    new_root->extra_type = op_ex_func_call_arrow;
-    new_root->str_val = root->get_string();
-    new_root->set_func_id(call->get_func_id());
-    return new_root;
   }
 
   return root;
