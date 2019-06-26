@@ -56,8 +56,8 @@ std::string ClassData::get_namespace() const {
   return file_id->namespace_name;
 }
 
-VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(int location_line_num) {
-  auto this_var = gen_vertex_this(location_line_num);
+VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(Location location) {
+  auto this_var = gen_vertex_this(location);
   auto rule_this_var = GenTree::create_type_help_class_vertex(ClassPtr{this});
 
   this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
@@ -95,12 +95,12 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
   clone_func_name->set_string(replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE);
 
   std::vector<VertexAdaptor<meta_op_func_param>> params;
-  patch_func_add_this(params, -1);
+  patch_func_add_this(params, Location{});
   auto param_list = VertexAdaptor<op_func_param_list>::create(params);
 
   VertexAdaptor<op_seq> body;
   if (with_body) {
-    auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(-1));
+    auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
     auto return_clone_this = VertexAdaptor<op_return>::create(clone_this);
     body = VertexAdaptor<op_seq>::create(return_clone_this);
   } else {
@@ -121,36 +121,36 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
   return virt_clone_func_ptr;
 }
 
-void ClassData::create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os) {
-  create_constructor_with_args(location_line_num, {}, os);
+void ClassData::create_default_constructor(Location location, DataStream<FunctionPtr> &os) {
+  create_constructor_with_args(location, {}, os);
 }
 
-void ClassData::create_constructor_with_args(int location_line_num, std::vector<VertexAdaptor<meta_op_func_param>> params) {
+void ClassData::create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params) {
   static DataStream<FunctionPtr> unused;
-  create_constructor_with_args(location_line_num, std::move(params), unused, false);
+  create_constructor_with_args(location, std::move(params), unused, false);
   kphp_assert(!construct_function->is_required);
 }
 
-void ClassData::create_constructor_with_args(int location_line_num, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required) {
+void ClassData::create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required) {
   auto func_name = VertexAdaptor<op_func_name>::create();
   func_name->str_val = replace_backslashes(name) + "$$__construct";
 
   std::vector<VertexPtr> fields_initializers;
   for (auto param : params) {
     VertexPtr param_var = param->var();
-    auto inst_prop = VertexAdaptor<op_instance_prop>::create(gen_vertex_this(location_line_num));
-    inst_prop->location.set_line(location_line_num);
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(gen_vertex_this(location));
+    inst_prop->location = location;
     inst_prop->str_val = param_var->get_string();
 
     fields_initializers.emplace_back(VertexAdaptor<op_set>::create(inst_prop, param_var.clone()));
   }
   auto func_root = VertexAdaptor<op_seq>::create(fields_initializers);
 
-  patch_func_add_this(params, location_line_num);
+  patch_func_add_this(params, location);
   auto func = VertexAdaptor<op_function>::create(func_name, VertexAdaptor<op_func_param_list>::create(params), func_root);
-  func->location.set_line(location_line_num);
+  func->location = location;
 
-  GenTree::func_force_return(func, gen_vertex_this(location_line_num));
+  GenTree::func_force_return(func, gen_vertex_this(location));
 
   auto ctor_function = FunctionData::create_function(func, FunctionData::func_local);
   ctor_function->update_location_in_body();
@@ -159,9 +159,9 @@ void ClassData::create_constructor_with_args(int location_line_num, std::vector<
   G->register_and_require_function(ctor_function, os, auto_required);
 }
 template<Operation Op>
-void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, int location_line_num) {
+void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
   static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
-  auto vertex_this = gen_vertex_this_with_type_rule(location_line_num);
+  auto vertex_this = gen_vertex_this_with_type_rule(location);
   auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
   params_next.emplace(params_next.begin(), param_this);
 }
@@ -218,12 +218,12 @@ InterfacePtr ClassData::get_common_interface(ClassPtr other) const {
   return {};
 }
 
-VertexAdaptor<op_var> ClassData::gen_vertex_this(int location_line_num) {
+VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {
   auto this_var = VertexAdaptor<op_var>::create();
   this_var->str_val = "this";
   this_var->extra_type = op_ex_var_this;
   this_var->const_type = cnst_const_val;
-  this_var->location.line = location_line_num;
+  this_var->location = location;
   this_var->is_const = true;
 
   return this_var;

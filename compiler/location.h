@@ -6,10 +6,10 @@ class Location {
 public:
   SrcFilePtr file;
   FunctionPtr function;
-  int line;
-
-  Location();
-
+  int line = -1;
+  Location() = default;
+  explicit Location(int line) : line(line) {}
+  Location(const SrcFilePtr &file, const FunctionPtr &function, int line);
   void set_file(SrcFilePtr file);
   void set_function(FunctionPtr function);
   void set_line(int line);

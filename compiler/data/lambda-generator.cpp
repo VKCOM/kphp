@@ -68,7 +68,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
 LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
   std::vector<VertexAdaptor<meta_op_func_param>> conv_uses(uses.begin(), uses.end());
   auto name_location = generated_lambda->root->name()->location;
-  generated_lambda->create_constructor_with_args(name_location.line, conv_uses);
+  generated_lambda->create_constructor_with_args(name_location, conv_uses);
   generated_lambda->construct_function->is_template = !uses.empty();
 
   return *this;
@@ -157,7 +157,7 @@ VertexPtr LambdaGenerator::create_invoke_cmd(VertexAdaptor<op_function> function
 
 VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAdaptor<op_function> function) {
   std::vector<VertexAdaptor<meta_op_func_param>> func_parameters;
-  generated_lambda->patch_func_add_this(func_parameters, created_location.line);
+  generated_lambda->patch_func_add_this(func_parameters, created_location);
   auto params_range = get_function_params(function);
   auto params_begin = params_range.begin();
   auto params_end = params_range.end();
@@ -197,7 +197,7 @@ void LambdaGenerator::add_this_to_captured_variables(VertexPtr &root) {
   }
 
   if (generated_lambda->members.get_instance_field(root->get_string())) {
-    auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this(-1));
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(ClassData::gen_vertex_this({}));
     inst_prop->location = root->location;
     inst_prop->str_val = root->get_string();
     root = inst_prop;

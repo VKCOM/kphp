@@ -54,18 +54,18 @@ public:
 
   ClassData();
 
-  static VertexAdaptor<op_var> gen_vertex_this(int location_line_num);
-  VertexAdaptor<op_var> gen_vertex_this_with_type_rule(int location_line_num);
+  static VertexAdaptor<op_var> gen_vertex_this(Location location);
+  VertexAdaptor<op_var> gen_vertex_this_with_type_rule(Location location);
   FunctionPtr gen_holder_function(const std::string &name);
   FunctionPtr add_virt_clone(DataStream<FunctionPtr> &os, bool with_body = true);
 
-  void create_default_constructor(int location_line_num, DataStream<FunctionPtr> &os);
-  void create_constructor_with_args(int location_line_num, std::vector<VertexAdaptor<meta_op_func_param>> params);
-  void create_constructor_with_args(int location_line_num, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required = true);
+  void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
+  void create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params);
+  void create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required = true);
 
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>
-  void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, int location_line_num);
+  void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location);
 
   bool is_not_empty_class() const {
     return members.has_any_instance_var() || is_builtin() || is_interface() || !implements.empty();

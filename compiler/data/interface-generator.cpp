@@ -1,11 +1,12 @@
 #include "compiler/data/interface-generator.h"
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/stage.h"
-#include "common/termformat/termformat.h"
 
 namespace {
 
@@ -140,11 +141,11 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
 
   VertexPtr body_of_interface_method;
   for (auto derived : derived_classes) {
-    auto is_instance_of_derived = GenTree::conv_to<tp_bool>(create_instanceof(ClassData::gen_vertex_this(0), derived));
+    auto is_instance_of_derived = GenTree::conv_to<tp_bool>(create_instanceof(ClassData::gen_vertex_this({}), derived));
 
     VertexAdaptor<op_return> call_derived_method;
     if (check_that_signatures_are_same(derived, interface_function)) {
-      auto generated_this = ClassData::gen_vertex_this(0);
+      auto generated_this = ClassData::gen_vertex_this({});
       VertexPtr this_var = generated_this;
       if (derived_classes.size() == 1) {
         this_var = create_instance_cast_to(generated_this, derived);

@@ -1642,7 +1642,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   CE(expect(tok_oppar, "'('"));
 
   if (cur_function->is_instance_function()) {
-    cur_class->patch_func_add_this(params_next, line_num);
+    cur_class->patch_func_add_this(params_next, Location(line_num));
   }
 
   bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
@@ -1701,7 +1701,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
     cur_function->root->cmd() = get_statement();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
     if (cur_function->is_constructor()) {
-      func_force_return(cur_function->root, ClassData::gen_vertex_this(line_num));
+      func_force_return(cur_function->root, ClassData::gen_vertex_this(Location(line_num)));
     } else {
       func_force_return(cur_function->root);
     }
@@ -1831,7 +1831,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
                               });
 
     if (non_static) {
-      cur_class->create_default_constructor(line_num, parsed_os);
+      cur_class->create_default_constructor(Location(line_num), parsed_os);
     }
   }
 

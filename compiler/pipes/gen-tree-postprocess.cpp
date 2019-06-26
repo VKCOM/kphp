@@ -127,7 +127,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
 
   if (auto return_vertex = root.try_as<op_return>()) {
     if (current_function->is_constructor() && !return_vertex->has_expr()) {
-      root = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(return_vertex->location.line));
+      root = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(return_vertex->location));
       set_location(root, return_vertex->location);
     }
   }

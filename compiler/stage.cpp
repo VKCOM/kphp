@@ -59,9 +59,6 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   fflush(file);
 }
 
-Location::Location() :
-  line(-1) {
-}
 
 void Location::set_file(SrcFilePtr new_file) {
   file = new_file;
@@ -92,6 +89,10 @@ FunctionPtr Location::get_function() const {
 int Location::get_line() const {
   return line;
 }
+Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line) :
+  file(file),
+  function(function),
+  line(line) {}
 
 namespace stage {
 static TLS<StageInfo> stage_info;

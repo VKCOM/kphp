@@ -58,7 +58,10 @@ bool FunctionData::is_constructor() const {
 void FunctionData::update_location_in_body() {
   if (!root) return;
 
+  SrcFilePtr file = root->location.file;
+
   std::function<void(VertexPtr)> update_location = [&](VertexPtr root) {
+    root->location.file = file;
     root->location.function = FunctionPtr{this};
     std::for_each(root->begin(), root->end(), update_location);
   };
