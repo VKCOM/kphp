@@ -382,8 +382,12 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
 }
 
 void CollectMainEdgesPass::on_class(ClassPtr klass) {
-  klass->members.for_each([&](ClassMemberInstanceField field) {
+  klass->members.for_each([&](ClassMemberInstanceField &field) {
     on_var(field.var);
+    field.process_phpdoc();
+    if (field.root->type_rule) {
+      add_type_rule(field.root);
+    }
   });
 }
 

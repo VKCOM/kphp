@@ -4,6 +4,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 #include "compiler/utils/string-utils.h"
 
 VarPtr RegisterVariablesPass::create_global_var(const string &name) {
@@ -192,7 +193,19 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariabl
   } else if (root->type() == op_var) {
     visit_var(root.as<op_var>());
     local->need_recursion_flag = false;
+  } else if (root->type() == op_instance_prop) {
+    ClassPtr klass = resolve_class_of_arrow_access(current_function, root);
+    if (klass) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
+      auto m = klass->members.get_instance_field(root->get_string());
+
+      if (m) {
+        root->set_var_id(m->var);
+      } else {
+        kphp_error(0, format("Invalid property access ...->%s: does not exist in class `%s`", root->get_c_string(), klass->get_name()));
+      }
+    }
   }
+
   return root;
 }
 

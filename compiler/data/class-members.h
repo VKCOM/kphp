@@ -79,6 +79,7 @@ struct ClassMemberInstanceField {
 
   const std::string &local_name() const;
   const TypeData *get_inferred_type() const;
+  void process_phpdoc();
 };
 
 struct ClassMemberConstant {

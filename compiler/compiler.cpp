@@ -34,7 +34,6 @@
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-function-calls.h"
-#include "compiler/pipes/check-instance-props.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
@@ -260,7 +259,6 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<PreprocessBreakPass>{}
     >> PassC<CalcConstTypePass>{}
     >> PassC<CollectConstVarsPass>{}
-    >> PassC<CheckInstancePropsPass>{}
     >> PassC<ConvertListAssignmentsPass>{}
     >> PassC<RegisterVariablesPass>{}
     >> PassC<CheckFunctionCallsPass>{}

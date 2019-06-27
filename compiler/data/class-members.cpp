@@ -5,6 +5,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/debug.h"
 #include "compiler/inferring/public.h"
@@ -55,12 +56,32 @@ const string &ClassMemberInstanceField::local_name() const {
   return root->str_val;
 }
 
-inline ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str) :
+/**
+ * Если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc.
+ * Это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка.
+ * С инстансами это тоже работает, т.е. / ** @var \AnotherClass * / будет тоже проверяться при выводе типов.
+ */
+void ClassMemberInstanceField::process_phpdoc() {
+  if (!phpdoc_str.empty()) {
+    std::string var_name, type_str;
+    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, var_name, type_str)) {
+      VertexPtr doc_type = phpdoc_parse_type(type_str, var->class_id->file_id->main_function);
+      if (!kphp_error(doc_type,
+                      format("Failed to parse phpdoc of %s::$%s", var->class_id->name.c_str(), local_name().c_str()))) {
+        doc_type->location = root->location;
+        root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(doc_type);
+      }
+    }
+  }
+}
+
+ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str) :
   access_type(access_type),
   root(root),
   phpdoc_str(phpdoc_str) {
 
   var = G->create_var(local_name(), VarData::var_instance_t);
+  root->set_var_id(var);
   var->init_val = def_val;
   var->class_id = klass;
   var->marked_as_const = klass->is_immutable || PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_const);
