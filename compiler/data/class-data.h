@@ -42,6 +42,7 @@ public:
   int assumptions_inited_vars{0};
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
+  bool really_used{false};
 
   SrcFilePtr file_id;
   std::string src_name, header_name;
@@ -113,6 +114,7 @@ public:
   bool is_builtin() const;
   bool is_interface_or_has_interface_member() const;
   static bool does_need_codegen(ClassPtr c);
+  void mark_as_used();
 
 private:
   bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const;

@@ -536,10 +536,8 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   AssumType assum = assum_unknown;
   if (var->is_class_instance_var()) {
     assum = assumption_get_for_var(var->class_id, var->name, cl);
-  } else {
-    if (!current_function->assumptions_for_vars.empty()) {
-      assum = assumption_get_for_var(current_function, var->name, cl);
-    }
+  } else if (!current_function->assumptions_for_vars.empty()) {
+    assum = assumption_get_for_var(current_function, var->name, cl);
   }
   if (assum == assum_instance) {                  // var == cl
     create_less(var, cl->type_data);

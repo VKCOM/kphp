@@ -261,21 +261,23 @@ bool ClassData::has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) 
     });
 }
 
-// какие классы мы превращаем в С++ структуры?
-// 1. написанные в php коде не полностью статические классы (у них есть хотя бы одно поле или метод => есть конструктор)
-// 2. достижимые лямбды; достижимыми считаем те, поля которых вывелись
 bool ClassData::does_need_codegen(ClassPtr c) {
-  if (!c || c->is_fully_static() || c->is_builtin()) {
-    return false;
-  }
-  if (c->is_lambda()) {
-    return !c->members.find_member([](const ClassMemberInstanceField &f) {
-      return f.var->tinf_node.get_recalc_cnt() == -1;
-    });
-  }
-  return true;
+  return c && !c->is_fully_static() && !c->is_builtin() && c->really_used;
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
   return lhs->name < rhs->name;
+}
+
+void ClassData::mark_as_used() {
+  if (really_used)
+    return;
+  really_used = true;
+  if (parent_class) {
+    parent_class->mark_as_used();
+  }
+  if (implements.size()) {
+    kphp_assert(implements.size() == 1);
+    implements[0]->mark_as_used();
+  }
 }

@@ -178,6 +178,7 @@ void NodeRecalc::run() {
   new_type_->fix_inf_array();
 
   if (new_type_->generation() != old_generation) {
+    new_type_->mark_classes_used();
     //fprintf(stderr, "%s %s->%s\n", node_->get_description().c_str(), type_out(node_->get_type()).c_str(), type_out(new_type_).c_str());
     on_changed();
   }

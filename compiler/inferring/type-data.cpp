@@ -228,6 +228,15 @@ bool TypeData::has_class_type_inside() const {
   return for_each_deep(std::mem_fn(&TypeData::class_type));
 }
 
+void TypeData::mark_classes_used() const {
+  for_each_deep([](const TypeData &this_) {
+    if (this_.ptype() == tp_Class) {
+      this_.class_type()->mark_as_used();
+    }
+    return false;
+  });
+}
+
 void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const {
   for_each_deep([&out](const TypeData &this_) {
     if (this_.class_type()) {
