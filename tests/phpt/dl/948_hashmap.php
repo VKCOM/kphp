@@ -1,4 +1,4 @@
-@wa no_php benchmar
+@ok benchmar
 <?php
 
 function test_base_str ($keys, $n) {

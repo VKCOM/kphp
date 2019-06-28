@@ -32,7 +32,7 @@ var_dump($res["hash"]);
 var_dump($res["issuer"]);
 var_dump($res["version"]);
 var_dump($res["validFrom_time_t"]);
-var_dump($res["validTotime_t"]);
+var_dump($res["validTo_time_t"]);
 var_dump($res["purposes"]);
 
 $certificate = <<<EOF

@@ -1,4 +1,4 @@
-@ok no_php
+@ok
 <?php
 	function f($param)
 	{
@@ -6,6 +6,14 @@
 		return 1;
 	}
 
+#ifndef KittenPHP
+  $_6 = f("six");
+  $_3 = f("three");
+  $_1 = f("one");
+  $x[$_1][2][$_3][4][5][$_6] += 1;
+
+  if (false)
+#endif
 	$x
 		[f("one")]
 		[2]

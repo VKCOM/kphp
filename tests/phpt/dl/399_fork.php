@@ -1,46 +1,47 @@
-@wa no_php
+@ok
 <?php
-  $a = array (0 => 1, 1 => 2);
+require_once "polyfill/fork-php-polyfill.php";
 
-  function f () {
-    global $id;
+$a = array (0 => 1, 1 => 2);
 
-    wait ($id);
-  }
+function f () {
+  global $id;
 
-  function i () {
-    sched_yield();
-    sched_yield();
-    sched_yield();
-    sched_yield();
-  }
+  wait ($id);
+}
 
-  function g () {
-    global $a;
-    sched_yield();
+function i () {
+  sched_yield();
+  sched_yield();
+  sched_yield();
+  sched_yield();
+}
 
-    $aa = $a;
-    var_dump ($aa);
-    for ($k = 0; $k < 2; $k++) {
-      $v = $aa[$k];
-      var_dump ($v);
-      usleep (10000);
-      sched_yield();
-    }
-  }
+function g () {
+  global $a;
+  sched_yield();
 
-  function h (&$x) {
-    global $id3;
-    sched_yield();
-    sched_yield();
-    wait ($id3, 0.001);
-    $x = 6;
+  $aa = $a;
+  var_dump ($aa);
+  for ($k = 0; $k < 2; $k++) {
+    $v = $aa[$k];
+    var_dump ($v);
+    usleep (10000);
     sched_yield();
   }
+}
+
+function h (&$x) {
+  global $id3;
+  sched_yield();
+  sched_yield();
+  wait ($id3, 0.001);
+  $x = 6;
+  sched_yield();
+}
 
 
-  $id3 = fork (i());
-  $id = fork (g());
-  // $id2 = fork (h($a[1]));
+$id3 = fork (i());
+$id = fork (g());
 
-  f ();
+f ();

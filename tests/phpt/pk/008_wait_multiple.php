@@ -1,5 +1,6 @@
-@ok no_php
+@ok
 <?php
+require_once __DIR__."/../dl/polyfill/fork-php-polyfill.php";
 
 $f_finished = false;
 
@@ -14,7 +15,6 @@ function f() {
   $f_finished = true;
 }
 
-
 function g($id) {
   global $f_resumable; 
   $res = wait($f_resumable);
@@ -28,7 +28,18 @@ function h($id) {
   var_dump("h", $id, $res);
 }
 
+echo "-----------<stage 1>-----------\n";
 
+#ifndef KittenPHP
+  echo "f 1\n";
+  var_dump("g", 1, false);
+  echo "f 2\n";
+  echo "f 3\n";
+  echo "f 4\n";
+  var_dump("g", 0, true);
+if (false)
+#endif
+{
 $f_resumable = fork(f());
 
 $gid1 = fork(g(0));
@@ -36,6 +47,8 @@ $gid2 = fork(g(1));
 
 wait($gid1);
 wait($gid2);
+}
+echo "-----------<stage 2>-----------\n";
 
 $f_resumable = fork(f());
 

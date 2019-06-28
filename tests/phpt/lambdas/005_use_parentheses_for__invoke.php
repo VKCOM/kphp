@@ -1,4 +1,4 @@
-@ok no_php
+@ok
 <?php
 
 require_once("Classes/autoload.php");

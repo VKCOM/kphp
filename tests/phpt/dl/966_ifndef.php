@@ -1,13 +1,19 @@
-@ok no_php
+@ok
 <?
 
 echo "A";
 
 #ifndef KittenPHP
 
-echo "B";
+class X { }
 
-echo "C";
+$x = new X;
+// kphp does not support such thing
+$x->unknown_field = "123";
+if ($x->unknown_field != 123) {
+  echo "Wow";
+}
+
 #endif
 
 echo "D";

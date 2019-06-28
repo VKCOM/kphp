@@ -1,5 +1,11 @@
-@ok no_php
+@ok
 <?php
+#ifndef KittenPHP
+var_dump([]);
+exit;
+?>
+#endif
+
   $x ::: array <var>;
 
 	// Illustrates the problem of turning $x[0] into $t =& $x[0]

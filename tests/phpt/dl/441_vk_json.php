@@ -1,11 +1,5 @@
 @ok benchmark
 <?php
-#ifndef KittenPHP
-  function vk_json_encode ($x) {
-    return json_encode ($x);
-  }
-#endif
-
   $data1 = array('hello world', '~!@#$%^&*()_+|', 'ashdasdfhasdfbhsdfb hfgh jhweg 23g 3hhg3 12 123 123 !@#!@#  !@#!@#@#$#%$^%&^*^&(*)(_)_"><:<"><:><"><">:"<">"<:><>"<||||{}|{}|{}|[]\\[]\\[]\\[]\[\]\[\]\[\]\[]\\[\]\[]\[\]\\[]\[\\\\\\\\\\\\\\\\\\\\');
 
   for ($i = 0; $i < 500000; $i++) {

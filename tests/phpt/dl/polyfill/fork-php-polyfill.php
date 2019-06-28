@@ -37,7 +37,7 @@ function wait_synchronously($id) {
 function wait_multiple($id) {
   static $waiting = array();
 
-  if (!$waiting[$id]) {
+  if (!array_key_exists($id, $waiting)) {
     $waiting[$id] = true;
     wait($id);
     unset($waiting[$id]);
@@ -58,7 +58,7 @@ function wait_queue_create($request_ids) {
   return array($request_ids);
 }
 
-function wait_queue_push($queue_id, $request_ids) {
+function wait_queue_push(&$queue_id, $request_ids) {
   if ($queue_id == -1) {
     return wait_queue_create($request_ids);
   }
@@ -80,7 +80,7 @@ function wait_queue_next(&$queue_id, $timeout = -1.0) {
   if (wait_queue_empty($queue_id)) {
     return 0;
   }
-  return array_shift($queue_id);
+  return array_pop($queue_id);
 }
 
 function wait_queue_next_synchronously($queue_id) {

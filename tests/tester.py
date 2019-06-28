@@ -101,6 +101,7 @@ def run_test_mode_php(path):
         ("extension", "iconv.so"),
         ("extension", "memcache.so"),
         ("extension", "mbstring.so"),
+        ("extension", "vkext.so"),
         ("xdebug.var_display_max_depth", -1),
         ("xdebug.var_display_max_children", -1),
         ("xdebug.var_display_max_data", -1),
@@ -200,7 +201,7 @@ def die(keep_going=False):
 def run_test_mode(test, args):
     global dead
 
-    assert not (args.mode == "php" and "no_php" in test.tags)
+    assert not (args.mode == "php" in test.tags)
     if dead:
         return None
 
@@ -480,7 +481,6 @@ def get_all_tests(args):
         tests.extend(get_tests(path.glob("*.php"), tags))
 
     if args.mode == "php":
-        args.exclude_tags.add("no_php")
         args.exclude_tags.add("kphp_should_fail")
 
     check_excluded_tags_exist_in_tests(tests, args.exclude_tags)

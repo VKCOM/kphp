@@ -1,4 +1,4 @@
-@ok no_php fixme
+@ok fixme
 <?php
 
 date_default_timezone_set ("Etc/GMT-3");

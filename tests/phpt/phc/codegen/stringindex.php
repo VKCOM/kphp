@@ -1,4 +1,4 @@
-@ok no_php
+@ok
 <?php
 	$arr = array("a" => 1, "b" => 2, "c" => 3);
 	var_dump($arr);
@@ -7,5 +7,8 @@
 	var_dump($x);
 	
 	$y = $arr["d"];
+#ifndef KittenPHP
+  $y = 0;
+#endif
 	var_dump($y);
 ?>
