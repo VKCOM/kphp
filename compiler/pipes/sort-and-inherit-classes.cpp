@@ -40,7 +40,10 @@ public:
           uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
         });
 
-        return GenTree::generate_anonymous_class(invoke_method->root, function_stream, current_function, true, std::move(uses_of_lambda));
+        return GenTree::generate_anonymous_class(invoke_method->root, current_function, true, std::move(uses_of_lambda))
+          .require(function_stream)
+          .get_generated_lambda()
+          ->gen_constructor_call_pass_fields_as_args();
       }
     }
 

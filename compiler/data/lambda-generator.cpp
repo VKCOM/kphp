@@ -46,15 +46,19 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
   return *this;
 }
 
-LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_function> &function) {
+LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_function> &function, FunctionPtr already_created_function/* = {}*/) {
   std::string name = "__invoke";
   auto params = create_invoke_params(function);
   auto cmd = create_invoke_cmd(function);
   auto invoke_function = VertexAdaptor<op_function>::create(params, cmd);
   set_location(invoke_function, created_location);
+  if (already_created_function) {
+    invoke_function->func_id = already_created_function;
+    already_created_function->root = invoke_function;
+  }
 
-  auto invoke_fun = register_invoke_method(name, invoke_function);
-  invoke_fun->has_variadic_param = function->func_id && function->func_id->has_variadic_param;
+  register_invoke_method(name, invoke_function);
+  invoke_function->func_id->has_variadic_param = function->func_id && function->func_id->has_variadic_param;
 
   return *this;
 }
@@ -98,24 +102,13 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 }
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
-  auto lambda_class = generate(std::move(parent_function));
+  generate(std::move(parent_function));
+  require(os);
 
-  auto invoke_method = lambda_class->members.get_instance_method("__invoke");
-  kphp_assert(invoke_method && invoke_method->function && !invoke_method->function->is_required);
-  G->require_function(invoke_method->function, os);
-
-  auto constructor = lambda_class->construct_function;
-  kphp_assert(constructor && !constructor->is_required);
-  if (!constructor->is_lambda_with_uses()) {
-    G->require_function(constructor, os);
-  }
-
-  G->register_and_require_function(lambda_class->gen_holder_function(lambda_class->name), os, true);
-
-  return lambda_class;
+  return std::move(generated_lambda);
 }
 
-LambdaPtr LambdaGenerator::generate(FunctionPtr parent_function) {
+LambdaGenerator &LambdaGenerator::generate(FunctionPtr parent_function) {
   kphp_assert(generated_lambda);
   generated_lambda->members.for_each([&parent_function](ClassMemberInstanceMethod &m) {
     m.function->function_in_which_lambda_was_created = parent_function;
@@ -123,7 +116,25 @@ LambdaPtr LambdaGenerator::generate(FunctionPtr parent_function) {
 
   G->register_class(generated_lambda);
   ++G->stats.total_lambdas;
-  return std::move(generated_lambda);
+
+  return *this;
+}
+
+LambdaGenerator &LambdaGenerator::require(DataStream<FunctionPtr> &os) {
+  auto invoke_method = generated_lambda->members.get_instance_method("__invoke");
+  kphp_assert(invoke_method && invoke_method->function && !invoke_method->function->is_required);
+
+  auto constructor = generated_lambda->construct_function;
+  kphp_assert(constructor && !constructor->is_required);
+  // generated_lambda->patch_func_constructor(os);
+  if (!constructor->is_lambda_with_uses()) {
+    G->require_function(constructor, os);
+  }
+  G->require_function(invoke_method->function, os);
+
+  G->register_and_require_function(generated_lambda->gen_holder_function(generated_lambda->name), os, true);
+
+  return *this;
 }
 
 
@@ -236,9 +247,13 @@ std::vector<VertexAdaptor<op_var>> LambdaGenerator::create_params_for_invoke_whi
   return lambda_params;
 }
 
-FunctionPtr LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor<op_function> fun) {
+void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor<op_function> fun) {
   fun_name = replace_backslashes(generated_lambda->name) + "$$" + fun_name;
-  auto invoke_function = FunctionData::create_function(fun_name, fun, FunctionData::func_type_t::func_local);
+  auto invoke_function = fun->func_id;
+  if (!invoke_function) {
+    invoke_function = FunctionData::create_function(fun_name, fun, FunctionData::func_type_t::func_local);
+  }
+  invoke_function->name = fun_name;
   invoke_function->update_location_in_body();
   generated_lambda->members.add_instance_method(invoke_function, AccessType::access_public);
 
@@ -246,15 +261,7 @@ FunctionPtr LambdaGenerator::register_invoke_method(std::string fun_name, Vertex
   invoke_function->is_template = generated_lambda->members.has_any_instance_var() || params.size() > 1;
   invoke_function->is_inline = true;
 
-  //TODO: need set function_in_which_created for all lambdas inside
-  //invoke_function->lambdas_inside = std::move(lambdas_inside);
-  //for (auto &l : invoke_function->lambdas_inside) {
-  //  l->function_in_which_lambda_was_created = invoke_function;
-  //}
-
   G->register_function(invoke_function);
-
-  return invoke_function;
 }
 
 LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(FunctionPtr base_fun, VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params) {

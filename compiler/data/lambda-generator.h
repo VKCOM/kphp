@@ -7,13 +7,18 @@ public:
   LambdaGenerator(FunctionPtr function, const Location &location, bool is_static = false);
 
   LambdaGenerator &add_uses(std::vector<VertexAdaptor<op_func_param>> uses);
-  LambdaGenerator &add_invoke_method(const VertexAdaptor<op_function> &function);
+  LambdaGenerator &add_invoke_method(const VertexAdaptor<op_function> &function, FunctionPtr already_created_function = {});
   LambdaGenerator &add_invoke_method_which_call_method(FunctionPtr called_method);
   LambdaGenerator &add_invoke_method_which_call_function(FunctionPtr called_function);
   LambdaGenerator &add_constructor_from_uses();
 
-  LambdaPtr generate(FunctionPtr parent_function);
+  LambdaGenerator &generate(FunctionPtr parent_function);
+  LambdaGenerator &require(DataStream<FunctionPtr> &os);
   LambdaPtr generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os);
+
+  LambdaPtr get_generated_lambda() const {
+    return generated_lambda;
+  }
 
 private:
   static LambdaPtr create_class(const std::string &name);
@@ -28,7 +33,7 @@ private:
 
   void add_uses_for_captured_class_from_array();
   std::vector<VertexAdaptor<op_var>> create_params_for_invoke_which_call_method(FunctionPtr called_method);
-  FunctionPtr register_invoke_method(std::string name, VertexAdaptor<op_function> fun);
+  void register_invoke_method(std::string fun_name, VertexAdaptor<op_function> fun);
   LambdaGenerator &create_invoke_fun_returning_call(FunctionPtr base_fun, VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params);
 
 private:

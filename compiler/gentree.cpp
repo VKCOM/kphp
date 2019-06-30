@@ -1555,7 +1555,13 @@ VertexPtr GenTree::get_anonymous_function(bool is_static/* = false*/) {
 
   if (auto anon_function = f.try_as<op_function>()) {
     // это constructor call
-    return generate_anonymous_class(anon_function, parsed_os, cur_function, is_static, std::move(uses_of_lambda));
+    kphp_assert(!functions_stack.empty());
+    lambda_generators.push_back(generate_anonymous_class(anon_function, cur_function, is_static, std::move(uses_of_lambda), anon_function->func_id));
+    auto res = lambda_generators.back()
+                                .get_generated_lambda()
+                                ->gen_constructor_call_pass_fields_as_args();
+
+    return res;
   }
 
   return {};
@@ -1653,9 +1659,10 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
   AutoLocation func_location(this);
 
   std::string func_name;
+  bool is_lambda = uses_of_lambda != nullptr;
 
   // имя функции — то, что идёт после 'function' (внутри класса сразу же полное$$имя)
-  if (uses_of_lambda != nullptr) {
+  if (is_lambda) {
     func_name = gen_anonymous_function_name(cur_function);   // cur_function пока ещё функция-родитель
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
@@ -1672,7 +1679,6 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->is_final = is_final;
-
   if (FunctionData::is_instance_access_type(access_type)) {
     kphp_assert(cur_class);
     cur_class->members.add_instance_method(cur_function, access_type);
@@ -1688,6 +1694,9 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
              "arguments and captured variables(in `use` clause) must have different names");
   // а дальше может идти ::: string в functions.txt
   cur_function->root->type_rule = get_type_rule();
+  if (is_lambda) {
+    cur_function->access_type = access_public;
+  }
 
   // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
@@ -1709,13 +1718,17 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
 
   // функция готова, регистрируем
   // конструктор регистрируем в самом конце, после парсинга всего класса
-  if (!cur_function->is_constructor()) {
+  if (!cur_function->is_constructor() && !is_lambda) {
     const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
                                     phpdoc_str.find("@kphp-lib-export") != std::string::npos;
     const bool auto_require = cur_function->is_extern()
                               || cur_function->is_instance_function()
                               || kphp_required_flag;
     G->register_and_require_function(cur_function, parsed_os, auto_require);
+  }
+
+  if (!is_lambda) {
+    require_lambdas();
   }
 
   if (uses_of_lambda != nullptr && !stage::has_error()) {
@@ -1840,19 +1853,18 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 }
 
 
-VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
-                                            DataStream<FunctionPtr> &os,
-                                            FunctionPtr cur_function,
-                                            bool is_static,
-                                            std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda) {
+LambdaGenerator GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
+                                                  FunctionPtr parent_function,
+                                                  bool is_static,
+                                                  std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda,
+                                                  FunctionPtr already_created_function /*= FunctionPtr{}*/) {
   auto anon_location = function->location;
 
-  return LambdaGenerator{cur_function, anon_location, is_static}
+  return LambdaGenerator{parent_function, anon_location, is_static}
     .add_uses(uses_of_lambda)
-    .add_invoke_method(function)
+    .add_invoke_method(function, already_created_function)
     .add_constructor_from_uses()
-    .generate_and_require(cur_function, os)
-    ->gen_constructor_call_pass_fields_as_args();
+    .generate(parent_function);
 }
 
 VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function) {
@@ -2251,6 +2263,7 @@ void GenTree::run() {
   set_location(cur_function->root->cmd(), seq_location);
 
   G->register_and_require_function(cur_function, parsed_os, true);  // global функция — поэтому required
+  require_lambdas();
 
   if (cur != end) {
     fprintf(stderr, "line %d: something wrong\n", line_num);

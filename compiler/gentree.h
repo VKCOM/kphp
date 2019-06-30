@@ -3,6 +3,7 @@
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/lambda-generator.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
 #include "compiler/vertex.h"
@@ -129,11 +130,11 @@ public:
   void check_class_member_modifier_mask(unsigned int mask, TokenType cur_tok);
   VertexPtr get_class_member(const vk::string_view &phpdoc_str);
 
-  static VertexPtr generate_anonymous_class(VertexAdaptor<op_function> function,
-                                            DataStream<FunctionPtr> &os,
-                                            FunctionPtr cur_function,
-                                            bool is_static,
-                                            std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda);
+  static LambdaGenerator generate_anonymous_class(VertexAdaptor<op_function> function,
+                                                  FunctionPtr parent_function,
+                                                  bool is_static,
+                                                  std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda,
+                                                  FunctionPtr already_created_function = FunctionPtr{});
 
   static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function);
 
@@ -144,6 +145,13 @@ private:
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
   VertexPtr get_static_field_list(const vk::string_view &phpdoc_str, AccessType access_type);
+
+  void require_lambdas() {
+    for (auto &generator : lambda_generators) {
+      generator.require(parsed_os);
+    }
+    lambda_generators.clear();
+  }
 
 public:
   int line_num;
@@ -158,6 +166,7 @@ private:
   vector<FunctionPtr> functions_stack;
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
+  std::vector<LambdaGenerator> lambda_generators;
 };
 
 void php_gen_tree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
