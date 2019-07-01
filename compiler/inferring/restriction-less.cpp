@@ -207,29 +207,29 @@ RestrictionLess::row RestrictionLess::parse_description(string const &descriptio
 }
 
 string RestrictionLess::get_actual_error_message() {
-  tinf::ExprNode *as_expr_0 = nullptr;
-  tinf::VarNode *as_var_0 = nullptr;
-  tinf::VarNode *as_var_1 = nullptr;
-  if (stacktrace.size() >= 2) {
-    as_expr_0 = dynamic_cast<tinf::ExprNode *>(stacktrace[0]);
-    as_var_0 = dynamic_cast<tinf::VarNode *>(stacktrace[0]);
-    as_var_1 = dynamic_cast<tinf::VarNode *>(stacktrace[1]);
-    if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop &&
-        as_var_1 && as_var_1->is_variable()) {
-      return string("Incorrect type of the following class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
-    }
+  tinf::ExprNode *as_expr_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::ExprNode *>(stacktrace[0]) : nullptr;
+  tinf::VarNode *as_var_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::VarNode *>(stacktrace[0]) : nullptr;
+  tinf::VarNode *as_var_1 = stacktrace.size() > 1 ? dynamic_cast<tinf::VarNode *>(stacktrace[1]) : nullptr;
+  tinf::TypeNode *as_type_2 = stacktrace.size() > 2 ? dynamic_cast<tinf::TypeNode *>(stacktrace[2]) : nullptr;
+
+  if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop && as_var_1 && as_var_1->is_variable()) {
+    return string("Incorrect type of the following class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
   }
-  if (!stacktrace.empty()) {
-    if (as_var_0 && !as_var_0->is_variable() && !as_var_0->is_return_value_from_function()) {
-      return string("Incorrect type of the ") + TermStringFormat::add_text_attribute(as_var_0->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_0->get_function_name() + "\n";
-    }
+
+  if (as_var_0 && as_var_0->is_argument_of_function()) {
+    return string("Incorrect type of the ") + TermStringFormat::add_text_attribute(as_var_0->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_0->get_function_name() + "\n";
   }
-  if (stacktrace.size() >= 3 && as_expr_0 && as_var_1 &&
-      dynamic_cast<tinf::TypeNode *>(stacktrace[2]) && dynamic_cast<tinf::TypeNode *>(stacktrace[2])->type_->ptype() == tp_var) {
+
+  if (as_expr_0 && as_var_1 && as_type_2 && as_type_2->type_->ptype() == tp_var) {
     return TermStringFormat::paint("Unexpected conversion to var one of the arguments of the following function:\n", TermStringFormat::red, false) + TermStringFormat::add_text_attribute(as_expr_0
                                                                                                                                                                                             ->get_location_text(), TermStringFormat::bold, false) + "\n";
   }
-  return "Mismatch of types\n";
+
+  if (as_var_0 && as_var_0->is_return_value_from_function()) {
+    return "Incorrect " + TermStringFormat::add_text_attribute("return type of " + as_var_0->get_function_name(), TermStringFormat::bold, false) + "\n";
+  }
+
+  return "Mismatch types\n";
 }
 
 string RestrictionLess::get_stacktrace_text() {
