@@ -124,17 +124,6 @@ void LexerData::flush_str() {
   }
 }
 
-const std::map<std::string, const char*> &config_func() {
-  static std::map<std::string, const char *> to
-    {{"attr_wrap",      "attrWrap"},
-     {"logout_hash",    "logoutHash"},
-     {"videocall_hash", "videocallHash"},
-     {"to_json",        "convertToJSON"},
-     {"lang",           "lang"}};
-
-  return to;
-}
-
 template<>
 bool LexerData::are_last_tokens(TokenType type1) {
   return !tokens.empty() &&
@@ -198,18 +187,6 @@ void LexerData::hack_last_tokens() {
     tokens.pop_back();
     tokens.erase(std::prev(tokens.end(), 2));
     return;
-  }
-
-  if (are_last_tokens(tok_var_name, tok_opbrk, tok_str, tok_clbrk, tok_oppar)) {
-    auto var_name = tokens[tokens.size() - 5].str_val;
-    auto str_name = tokens[tokens.size() - 3].str_val;
-    if (var_name == "config" && config_func().count(static_cast<string>(str_name))) {
-      remove_last_tokens(5);
-      tokens.emplace_back(tok_func_name);
-      tokens.back().str_val = config_func().find(static_cast<string>(str_name))->second;
-      tokens.emplace_back(tok_oppar);
-      return;
-    }
   }
 
   if (are_last_tokens(tok_new, tok_func_name, tok_oppar, any_token_tag{})) {
@@ -1246,7 +1223,6 @@ void lexer_init() {
   Singleton<TokenLexerString>::instance()->init();
   Singleton<TokenLexerHeredocString>::instance()->init();
   Singleton<TokenLexerPHP>::instance()->init();
-  config_func();
 }
 
 vector<Token> php_text_to_tokens(char *text, int text_length) {
