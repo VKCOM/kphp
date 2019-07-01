@@ -2,6 +2,7 @@
 import shutil
 import sys
 import os
+import os.path
 import re
 import itertools
 import argparse
@@ -90,7 +91,7 @@ def run_and_save_answer(cmd):
     return ans_path, perf_path
 
 
-def run_test_mode_php(path):
+def run_test_mode_php(path, tags):
     extensions = [
         ("display_errors", 0),
         ("log_errors", 1),
@@ -105,17 +106,22 @@ def run_test_mode_php(path):
         ("xdebug.var_display_max_depth", -1),
         ("xdebug.var_display_max_children", -1),
         ("xdebug.var_display_max_data", -1),
-        ("include_path", path.parent),
-        ("include_path", DIRECTORY_WITH_TESTS),
+        ("include_path", "%s:%s" % (DIRECTORY_WITH_TESTS, path.parent)),
     ]
     extensions_str = " ".join("-d {}='{}'".format(k, v) for (k, v) in extensions)
 
-    cmd = "php -n {extensions} {test}".format(test=path, extensions=extensions_str)
+    php_bin = "php"
+    if "php5" in tags :
+        php_bin = "/usr/bin/php5"
+        if not os.path.isfile(php_bin):
+            php_bin = "/usr/bin/php5.6"
+
+    cmd = "{php} -n {extensions} {test}".format(php=php_bin, test=path, extensions=extensions_str)
 
     return run_and_save_answer(cmd)
 
 
-def run_test_mode_hhvm(path):
+def run_test_mode_hhvm(path, tags):
     cmd = "hhvm  -v\"Eval.Jit=true\" {}".format(path)
     return run_and_save_answer(cmd)
 
@@ -124,7 +130,7 @@ def get_kphp_out_path():
     return add_temp_prefix("kphp_out")
 
 
-def run_test_mode_kphp(path):
+def run_test_mode_kphp(path, tags):
     path_to_main = add_temp_prefix("main")
     out = get_kphp_out_path()
     path_to_kphp = PATH_TO_PHP / "kphp.sh"
@@ -181,14 +187,14 @@ def perf_cmp(baseline, current, mode):
     return res
 
 
-def run_test_mode_helper(mode, test_path):
+def run_test_mode_helper(mode, test_path, tags):
     run_test_function = {
         "php": run_test_mode_php,
         "kphp": run_test_mode_kphp,
         "hhvm": run_test_mode_hhvm
     }[mode]
 
-    return run_test_function(test_path)
+    return run_test_function(test_path, tags)
 
 
 def die(keep_going=False):
@@ -298,7 +304,7 @@ class Test:
             if dead:
                 return None, out_s
 
-            cur_ans_path, cur_perf_path = run_test_mode_helper(mode, self.path)
+            cur_ans_path, cur_perf_path = run_test_mode_helper(mode, self.path, self.tags)
             if kphp_should_fail:
                 out_s += "Test [{path}] [{mode}]: {0}Compilation OK, but test has label: kphp_should_fail{1} \n".format(
                     BashColors.FAIL, BashColors.END_COLOR, path=self.short_path, mode=mode)

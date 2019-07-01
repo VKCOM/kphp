@@ -1,10 +1,6 @@
 @ok
 <?php
 
-#ifndef KittenPHP
-function tuple(...$args) { return $args; }
-#endif
-
 require_once("polyfills.php");
 
 class A {

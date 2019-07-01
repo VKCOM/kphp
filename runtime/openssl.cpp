@@ -1376,8 +1376,9 @@ private:
 
   time_t convert_asn1_time(ASN1_TIME *expires) const {
     ASN1_TIME_ptr epoch{ASN1_TIME_new()};
-    ASN1_TIME_set_string(epoch.get(), "700101000000");
-    int days, seconds;
+    ASN1_TIME_set(epoch.get(), 0);
+    int days = 0;
+    int seconds = 0;
     ASN1_TIME_diff(&days, &seconds, epoch.get(), expires);
 
     return (days * 24 * 60 * 60) + seconds;
