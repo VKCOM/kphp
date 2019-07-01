@@ -1,4 +1,4 @@
-@ok
+@ok php5
 <?php
   function inc_xor_str($a, $b) {
     $len = strlen($a);

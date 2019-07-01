@@ -446,17 +446,17 @@ function test8($mid, $sid_data) {
 }
 
 function test9() {
-  $MC = new Memcache;
-  $MC = $MC ? $MC : $MC;
-  $XMC = false ? $MC : false;
+//  $MC = new Memcache;
+//  $MC = $MC ? $MC : $MC;
+//  $XMC = false ? $MC : false;
 }
 
 function test10() {
-  if (true) {
-    return new Memcache;
-  } else {
-    return false;
-  }
+//  if (true) {
+//    return new Memcache;
+//  } else {
+//    return false;
+//  }
 }
 
 function test11($keys) {

@@ -1,4 +1,4 @@
-@ok benchmark
+@ok php5 benchmark
 <?php
   for ($i = 0; $i < 1000000; $i++) {
     $l += strlen (123456789.123456789);

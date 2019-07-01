@@ -1,4 +1,4 @@
-@ok
+@ok php5
 <?php
 
 function filesBinFromBase64($str) { // for storage-engine: secret packing

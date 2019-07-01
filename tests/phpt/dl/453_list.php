@@ -1,4 +1,4 @@
-@ok
+@ok php5
 <?php
   $test = '1:2:3';
   $gift = array();
