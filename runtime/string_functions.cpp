@@ -1,6 +1,7 @@
 #include "runtime/string_functions.h"
 
 #include <clocale>
+#include <endian.h>
 
 #include "common/unicode/unicode-utils.h"
 
@@ -904,6 +905,22 @@ string f$pack(const string &pattern, const array<var> &a) {
             case 'd': {
               double value = arg.to_float();
               static_SB.append((const char *)&value, sizeof(double));
+              break;
+            }
+            case 'J':
+            case 'P':
+            case 'Q': {
+              // по-умолчанию храним в текущем машинном порядоке (Q флаг)
+              unsigned long long value_byteordered = ULong(arg.to_string()).l;
+              if (format == 'P') {
+                // для P данные храним в little endian
+                value_byteordered = htole64(value_byteordered);
+              } else if (format == 'J') {
+                // для J данные храним в big endian
+                value_byteordered = htobe64(value_byteordered);
+              }
+
+              static_SB.append((const char *)&value_byteordered, sizeof(unsigned long long));
               break;
             }
             case 'q': {
@@ -2478,6 +2495,28 @@ array<var> f$unpack(const string &pattern, const string &data) {
               }
               value = *(double *)(data.c_str() + data_pos);
               data_pos += (int)sizeof(double);
+              break;
+            }
+            case 'J':
+            case 'P':
+            case 'Q': {
+              if (data_pos + (int)sizeof(unsigned long long) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+                return result;
+              }
+
+              // по-умолчанию данные хранятся в текущем машинном порядоке (Q флаг)
+              unsigned long long value_byteordered = *(unsigned long long *)(data.c_str() + data_pos);
+              if (format == 'P') {
+                // для P данные храним в little endian
+                value_byteordered = le64toh(value_byteordered);
+              } else if (format == 'J') {
+                // для J данные храним в big endian
+                value_byteordered = be64toh(value_byteordered);
+              }
+
+              value = f$strval(ULong(value_byteordered));
+              data_pos += (int)sizeof(unsigned long long);
               break;
             }
             case 'q': {
