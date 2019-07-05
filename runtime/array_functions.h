@@ -185,6 +185,9 @@ T f$array_pop(array<T> &a);
 template<class T>
 void f$array_reserve(array<T> &a, int int_size, int string_size, bool make_vector_if_possible = true);
 
+template<class T1, class T2>
+void f$array_reserve_from(array<T1> &a, const array<T2> &base);
+
 template<class T>
 bool f$array_is_vector(array<T> &a);
 
@@ -1128,6 +1131,12 @@ T f$array_pop(array<T> &a) {
 template<class T>
 void f$array_reserve(array<T> &a, int int_size, int string_size, bool make_vector_if_possible) {
   a.reserve(int_size, string_size, make_vector_if_possible);
+}
+
+template<class T1, class T2>
+void f$array_reserve_from(array<T1> &a, const array<T2> &base) {
+  auto size_info = base.size();
+  f$array_reserve(a, size_info.int_size, size_info.string_size, size_info.is_vector);
 }
 
 template<class T>

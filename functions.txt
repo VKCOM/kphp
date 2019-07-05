@@ -202,6 +202,7 @@ function array_map (callback ($x ::: ^2[]) ::: Any, $a ::: array) ::: array <^1(
 /** @kphp-extern-func-info cpp_template_call */
 function array_reduce ($a ::: array, callback($carry ::: lca<^3, ^2()>, $item ::: ^1[]) ::: Any, $initial ::: Any) ::: lca<^2(), ^3>;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
+function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
 function array_is_vector ($a ::: array) ::: bool;
 
 function empty ($val ::: Any) ::: bool;
