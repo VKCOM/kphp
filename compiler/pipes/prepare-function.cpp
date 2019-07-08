@@ -163,6 +163,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 
   if (infer_type) {             // при наличии @kphp-infer парсим все @param'ы
+    bool has_return_typehint = false;
+
     for (auto &tag : tags) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
       stage::set_line(tag.line_num);
       switch (tag.type) {
@@ -177,6 +179,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
             f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
           }
+          has_return_typehint = true;
           // hint для return'а не делаем совсем, чтобы не грубить вывод типов, только check
           break;
         }
@@ -240,6 +243,13 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       }
       stage::set_location(f->root->get_location());
       kphp_error(0, err_msg.c_str());
+    }
+
+    // если явного @return нет, то будто написано @return void
+    if (!has_return_typehint && !f->is_constructor()) {
+      VertexPtr doc_type = phpdoc_parse_type("void", f);
+      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+      f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
     }
   }
 }

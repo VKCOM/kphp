@@ -235,6 +235,10 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
         pos += 5;
         return create_type_help_vertex(tp_False);
       }
+      if (s.substr(pos, 6) == "future") {
+        pos += 6;
+        return parse_nested_type_rule(s, pos, tp_future);
+      }
       break;
     }
     case 'd': {
@@ -265,7 +269,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
       }
       if (s.substr(pos, 5) == "tuple") {
         pos += 5;
-        return parse_type_tuple(s, pos);
+        return parse_nested_type_rule(s, pos, tp_tuple);
       }
       break;
     }
@@ -289,7 +293,11 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case '\\': {
       if (s.substr(pos, 6) == "\\tuple") {
         pos += 6;
-        return parse_type_tuple(s, pos);
+        return parse_nested_type_rule(s, pos, tp_tuple);
+      }
+      if (s.substr(pos, 7) == "\\future") {
+        pos += 7;
+        return parse_nested_type_rule(s, pos, tp_future);
       }
     }
       /* fallthrough */
@@ -334,9 +342,9 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_t &pos) {
+VertexPtr PhpDocTypeRuleParser::parse_nested_type_rule(const vk::string_view &s, size_t &pos, PrimitiveType type_help) {
   CHECK(pos < s.size() && (s[pos] == '<' || s[pos] == '('),
-    "Failed to parse phpdoc type: expected '<' or '(' for tuple");
+    "Failed to parse phpdoc type: expected '<' or '('");
   ++pos;
   std::vector<VertexPtr> sub_types;
   while (true) {
@@ -350,15 +358,13 @@ VertexPtr PhpDocTypeRuleParser::parse_type_tuple(const vk::string_view &s, size_
       ++pos;
       break;
     }
-    CHECK(s[pos] == ',', "Failed to parse phpdoc type: expected ',' for tuple");
+    CHECK(s[pos] == ',', "Failed to parse phpdoc type: expected ','");
     ++pos;
   }
   auto type_rule = VertexAdaptor<op_type_expr_type>::create(sub_types);
-  type_rule->type_help = tp_tuple;
+  type_rule->type_help = type_help;
   return type_rule;
 }
-
-
 
 VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, size_t &pos) {
   size_t old_pos = pos;
