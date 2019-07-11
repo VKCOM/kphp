@@ -72,7 +72,7 @@ private:
   }
 
   template<size_t Index = 0, class ...Args>
-  vk::enable_if_t<Index == sizeof...(Args)> process_tuple(const std::tuple<Args...> &, InstanceToArrayProcessor &tuple_processor) {
+  vk::enable_if_t<Index == sizeof...(Args)> process_tuple(const std::tuple<Args...> &, InstanceToArrayProcessor &/*tuple_processor*/) {
   }
 
   template<class T>
