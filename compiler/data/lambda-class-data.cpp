@@ -125,6 +125,11 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
 
   auto func_param_callback = callback_it->as<op_func_param_callback>();
   VertexRange callback_params = get_function_params(func_param_callback);
+  if (!FunctionData::check_cnt_params(callback_params.size(), *template_of_invoke_method)) {
+    return "";
+  }
+
+  auto template_invoke_params = (*template_of_invoke_method)->get_params();
   for (int i = 0; i < callback_params.size(); ++i) {
     auto callback_param = callback_params[i];
 
@@ -141,7 +146,6 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
       continue;
     }
 
-    auto template_invoke_params = (*template_of_invoke_method)->get_params();
     auto &type_id = template_invoke_params[i + 1].as<op_func_param>()->template_type_id;
     switch (assum) {
       case assum_unknown:

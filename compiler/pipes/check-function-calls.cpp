@@ -44,13 +44,18 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   );
 
   for (int i = 0; i < call_params.size(); i++) {
-    if (func_params[i]->type() == op_func_param_callback) {
-      kphp_error_return(call_params[i]->type() == op_func_ptr,
+    if (auto func_param = func_params[i].try_as<op_func_param_callback>()) {
+      auto call_param = call_params[i].try_as<op_func_ptr>();
+      kphp_error_return(call_param,
                         format("Argument '%s' should be function pointer, but %s found [%s : %s]",
-                                func_params[i].as<op_func_param_callback>()->var()->get_c_string(),
+                                func_param->var()->get_c_string(),
                                 OpInfo::str(call_params[i]->type()).c_str(),
                                 f->file_id->file_name.c_str(), f->get_human_readable_name().c_str()
                         ));
+
+      if (!FunctionData::check_cnt_params(get_function_params(func_param).size(), call_param->get_func_id())) {
+        return;
+      }
     }
   }
 }

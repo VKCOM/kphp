@@ -75,7 +75,7 @@ public:
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
 
-  int min_argn = 0;
+  int min_argn = -1;
   bool is_vararg = false;
   bool has_variadic_param = false;
   bool should_be_sync = false;
@@ -155,6 +155,8 @@ public:
   }
 
   VertexRange get_params() const;
+
+  static bool check_cnt_params(int expected_cnt_params, FunctionPtr called_func);
 
   std::string local_name() const { return get_local_name_from_global_$$(name); }
 };

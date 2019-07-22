@@ -77,20 +77,16 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
     VertexRange cur_params = func_ptr_of_callable->get_params();
 
-    int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
     for (auto arg : cur_params) {
       auto param_arg = arg.try_as<op_func_param>();
       kphp_error_return(param_arg, "Callback function with callback parameter");
       kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
-
-      if (param_arg->has_default_value()) {
-        given_arguments_count--;
-      }
     }
 
     auto expected_arguments_count = get_function_params(func_params[i].as<op_func_param_callback>()).size();
-    kphp_error_act(given_arguments_count == expected_arguments_count,
-                   format("Wrong callback arguments count; given: %d, expected: %ld", given_arguments_count, expected_arguments_count), continue);
+    if (!FunctionData::check_cnt_params(expected_arguments_count, func_ptr_of_callable)) {
+      continue;
+    }
   }
 }
 } // namespace

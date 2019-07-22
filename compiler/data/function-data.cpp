@@ -138,6 +138,10 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 }
 
 void FunctionData::calc_min_argn() {
+  if (min_argn != -1) {
+    return;
+  }
+
   auto params = get_params();
   auto param_n = params.size();
   bool was_default = false;
@@ -225,6 +229,23 @@ bool FunctionData::is_imported_from_static_lib() const {
 
 VertexRange FunctionData::get_params() const {
   return ::get_function_params(root);
+}
+
+bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_func) {
+  if (!called_func) {
+    return false;
+  }
+
+  called_func->calc_min_argn();
+
+  int min_cnt_params = called_func->min_argn - called_func->has_implicit_this_arg();
+  int max_cnt_params = static_cast<int>(called_func->get_params().size()) - called_func->has_implicit_this_arg();
+  if (expected_cnt_params < min_cnt_params || max_cnt_params < expected_cnt_params) {
+    kphp_error(false, format("Wrong arguments count: %d (expected %d..%d)", expected_cnt_params, min_cnt_params, max_cnt_params));
+    return false;
+  }
+
+  return true;
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {
