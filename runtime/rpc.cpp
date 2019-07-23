@@ -3518,13 +3518,13 @@ int gen_create(tl_tree *t, void **IP, int max_size, int *vars_int) {
   }
 }
 
-int gen_field(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat);
+int gen_field_store(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat);
 
 int gen_array_store(tl_tree_array *a, void **IP, int max_size, int *vars_int) {
   php_assert (max_size > 10);
   int l = 0;
   for (int i = 0; i < a->args.count(); i++) {
-    l += gen_field(a->args[i], IP + l, max_size - l, vars_int, i, a->args.count() == 1);
+    l += gen_field_store(a->args[i], IP + l, max_size - l, vars_int, i, a->args.count() == 1);
   }
   php_assert (max_size > l + 1);
   IP[l++] = (void *)tlsub_ret_ok;
@@ -3548,7 +3548,7 @@ int gen_array_fetch(tl_tree_array *a, void **IP, int max_size, int *vars_int) {
 int gen_constructor_store(tl_combinator &c, void **IP, int max_size);
 int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size);
 
-int gen_field(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat) {
+int gen_field_store(const arg &arg, void **IP, int max_size, int *vars_int, int num, bool flat) {
   php_assert (max_size > 10);
   int l = 0;
   if (arg.exist_var_num >= 0) {
@@ -3705,7 +3705,7 @@ int gen_field_fetch(const arg &arg, void **IP, int max_size, int *vars_int, int 
   return l;
 }
 
-int gen_field_excl(const arg &arg, void **IP, int max_size, int *vars_int, int num) {
+int gen_field_excl_store(const arg &arg, void **IP, int max_size, int *vars_int, int num) {
   php_assert (max_size > 10);
   int l = 0;
   IP[l++] = (void *)tlcomb_store_field;
@@ -3721,6 +3721,29 @@ int gen_field_excl(const arg &arg, void **IP, int max_size, int *vars_int, int n
 
   IP[l++] = (void *)tls_arr_pop;
   return l;
+}
+
+static bool is_flat(const tl_combinator &c) {
+  php_assert(c.result->get_type() == NODE_TYPE_TYPE);
+  int not_optional_args_cnt = 0;
+  tl_type *t = ((tl_tree_type *)c.result)->type;
+  if (t->constructors_num != 1) {
+    return false;
+  }
+  int arg_idx = -1;
+  for (int i = 0; i < c.args.count(); i++) {
+    if (!(c.args.get_value(i).flags & FLAG_OPT_VAR)) {
+      arg_idx = i;
+      not_optional_args_cnt++;
+    }
+  }
+  if (not_optional_args_cnt != 1) {
+    return false;
+  }
+  if (strcasecmp(t->name.c_str(), c.name.c_str())) {
+    return false;
+  }
+  return (c.args.get_value(arg_idx).flags & FLAG_OPT_FIELD) == 0;
 }
 
 int gen_constructor_store(tl_combinator &c, void **IP, int max_size) {
@@ -3791,20 +3814,9 @@ int gen_constructor_store(tl_combinator &c, void **IP, int max_size) {
       break;
     }
     default: {
-      int z = 0;
-      if (c.result->get_type() == NODE_TYPE_TYPE) {
-        tl_type *t = ((tl_tree_type *)c.result)->type;
-        if (t->constructors_num == 1) {
-          for (int i = 0; i < c.args.count(); i++) {
-            if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-              z++;
-            }
-          }
-        }
-      }
       for (int i = 0; i < c.args.count(); i++) {
         if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-          l += gen_field(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+          l += gen_field_store(c.args[i], IP + l, max_size - l, vars_int, i + 1, is_flat(c));
         }
       }
       php_assert (max_size > 10);
@@ -3829,9 +3841,9 @@ int gen_function_store(tl_combinator &c, void **IP, int max_size) {
   for (int i = 0; i < c.args.count(); i++) {
     if (!(c.args[i].flags & FLAG_OPT_VAR)) {
       if (c.args[i].flags & FLAG_EXCL) {
-        l += gen_field_excl(c.args[i], IP + l, max_size - l, vars_int, i + 1);
+        l += gen_field_excl_store(c.args[i], IP + l, max_size - l, vars_int, i + 1);
       } else {
-        l += gen_field(c.args[i], IP + l, max_size - l, vars_int, i + 1, false);
+        l += gen_field_store(c.args[i], IP + l, max_size - l, vars_int, i + 1, false);
       }
     }
   }
@@ -3931,20 +3943,9 @@ int gen_constructor_fetch(tl_combinator &c, void **IP, int max_size) {
     }
     default: {
       IP[l++] = (void *)tlcomb_fetch_unknown_as_array_var;
-      int z = 0;
-      if (c.result->get_type() == NODE_TYPE_TYPE) {
-        tl_type *t = ((tl_tree_type *)c.result)->type;
-        if (t->constructors_num == 1) {
-          for (int i = 0; i < c.args.count(); i++) {
-            if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-              z++;
-            }
-          }
-        }
-      }
       for (int i = 0; i < c.args.count(); i++) {
         if (!(c.args[i].flags & FLAG_OPT_VAR)) {
-          l += gen_field_fetch(c.args[i], IP + l, max_size - l, vars_int, i + 1, z == 1);
+          l += gen_field_fetch(c.args[i], IP + l, max_size - l, vars_int, i + 1, is_flat(c));
         }
       }
       php_assert (max_size > 10 + l);
