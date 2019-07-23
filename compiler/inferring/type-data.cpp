@@ -456,14 +456,27 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false) {
 
 void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false) {
   TypeData *cur = this;
-  for (auto key : multi_key) {
+  auto last = multi_key.rbegin();
+  for (auto it = multi_key.begin(); it != multi_key.end(); it++) {
+    auto key = *it;
+    auto prev = cur;
     cur = cur->write_at(key);
     if (cur == nullptr) {
+      if (prev->ptype() == tp_var) {
+        TypeData tmp(tp_var);
+        tmp.set_lca(rhs);
+        if (tmp.ptype() == tp_Error) {
+          prev->set_ptype(tp_Error);
+          last = std::prev(multi_key.rend(), std::distance(it, multi_key.begin()));
+          cur = prev;
+          break;
+        }
+      }
       return;
     }
   }
   cur->set_lca(rhs, save_or_false);
-  for (MultiKey::reverse_iterator it = multi_key.rbegin(); it != multi_key.rend(); it++) {
+  for (auto it = last; it != multi_key.rend(); it++) {
     cur = cur->parent_;
     if (*it != Key::any_key()) {
       TypeData *any_value = cur->at_force(Key::any_key());
