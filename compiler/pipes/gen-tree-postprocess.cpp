@@ -83,12 +83,16 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
 }
 
 VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
+  stage::set_line(root->location.line);
   if (auto set_op = root.try_as<op_set>()) {
     if (set_op->lhs()->type() == op_list_ce) {
       auto list = VertexAdaptor<op_list>::create(set_op->lhs()->get_next(), set_op->rhs()).set_location(root);
       list->phpdoc_str = root.as<op_set>()->phpdoc_str;
       return list;
     }
+  }
+  if (root->type() == op_list_ce) {
+    kphp_error(0, "Unexpected list() not as left side of assignment\n");
   }
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
