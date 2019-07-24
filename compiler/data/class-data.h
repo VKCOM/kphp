@@ -128,6 +128,7 @@ private:
   template<class MemberT>
   const MemberT *find_by_local_name(const std::string &name) const {
     for (auto klass = get_self(); klass; klass = klass->parent_class) {
+      AutoLocker<Lockable *> locker(&(*klass));
       if (auto member = klass->members.find_by_local_name<MemberT>(name)) {
         return member;
       }
