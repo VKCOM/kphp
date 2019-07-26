@@ -40,7 +40,7 @@ VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexAdaptor<op_foreach>
     temp_var2->extra_type = op_ex_var_superlocal;
     foreach_param->temp_var() = temp_var2;
 
-    foreach_v->params() = foreach_param;
+    foreach_v->params_ref() = foreach_param;
   }
   return foreach_v;
 }
