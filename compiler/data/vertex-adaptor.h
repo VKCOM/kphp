@@ -43,11 +43,13 @@ public:
   }
 
   template<Operation FromOp>
-  VertexAdaptor &operator=(const VertexAdaptor<FromOp> &from) {
+  VertexAdaptor &operator=(const VertexAdaptor<FromOp> &from) & {
     static_assert(op_type_is_base_of(Op, FromOp), "Strange assignment to not base vertex");
     impl = static_cast<vertex_inner<Op> *> (from.impl);
     return *this;
   }
+
+  VertexAdaptor &operator=(const VertexAdaptor<Op> &) & = default;
 
   explicit operator bool() const {
     return impl != nullptr;
