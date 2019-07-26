@@ -5,11 +5,11 @@
 
 #include "compiler/threading/locks.h"
 
-struct TypeData;
+class TypeData;
 
 namespace tinf {
 
-struct Edge;
+class Edge;
 
 class TypeInferer;
 

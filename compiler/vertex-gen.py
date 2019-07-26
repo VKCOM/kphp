@@ -292,6 +292,15 @@ def output_vertex_type(type_data, data, schema):
 
     with open_file("vertex-" + name + '.h') as f:
         output_include_directive(f, base_name)
+
+        if "sons" in type_data:
+            for son_name, son_properties in type_data["sons"].items():
+                if isinstance(son_properties, int):
+                    continue
+                type_prop = son_properties["type"] if "type" in son_properties else None
+                if type_prop:
+                    output_include_directive(f, type_prop)
+
         output_class_header(f, base_name, name)
 
         output_extras(f, type_data)

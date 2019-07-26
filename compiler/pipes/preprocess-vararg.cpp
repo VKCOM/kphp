@@ -42,7 +42,7 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     VertexPtr va_list_var = create_va_list_var(root->location);
     new_params.emplace_back(VertexAdaptor<op_func_param>::create(va_list_var));
 
-    root.as<op_function>()->params() = VertexAdaptor<op_func_param_list>::create(new_params);
+    root.as<op_function>()->params_ref() = VertexAdaptor<op_func_param_list>::create(new_params);
 
     // если функция объявлена f($first) и использует func_get_args(), то она превратилась в f($VA_LIST)
     // и тут делаем { $first = isset($VA_LIST[0]) ? $VA_LIST[0] : null; } в начало тела f

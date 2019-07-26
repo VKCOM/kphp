@@ -1428,7 +1428,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
     W << "(" << BEGIN;
     {
       W << "auto bound_class = " << root->bound_class() << ";" << NL;
-      VertexRange params = invoke_method->root->params().as<op_func_param_list>()->params();
+      VertexRange params = invoke_method->get_params();
       kphp_assert(!params.empty());
       VertexRange params_without_first(std::next(params.begin()), params.end());
       W << "[bound_class] (" << FunctionParams(invoke_method, 1u, true) << ") " << BEGIN;

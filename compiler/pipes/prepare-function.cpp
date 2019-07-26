@@ -34,7 +34,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   using infer_mask = FunctionData::InferHint::infer_mask;
 
   int infer_type = 0;
-  VertexRange func_params = get_function_params(f->root);
+  VertexRange func_params = f->get_params();
   const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_str);
 
   std::unordered_map<std::string, int> name_to_function_param;

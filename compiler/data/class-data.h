@@ -27,7 +27,6 @@ public:
   int id{0};
   ClassType class_type{ClassType::klass}; // класс / интерфейс / трейт
   std::string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
-  VertexAdaptor<op_class> root;
 
   std::vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
   ClassPtr parent_class;                  // extends

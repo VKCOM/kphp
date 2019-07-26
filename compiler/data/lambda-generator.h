@@ -33,6 +33,7 @@ private:
 
 private:
   const Location created_location;
+  VertexAdaptor<op_func_name> lambda_class_name;
   LambdaPtr generated_lambda;
   std::vector<VertexAdaptor<op_func_param>> uses;
 };

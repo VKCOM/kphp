@@ -1669,7 +1669,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
     }
   }
 
-  auto func_root = VertexAdaptor<op_function>::create(func_name, VertexPtr{}, VertexPtr{});
+  auto func_root = VertexAdaptor<op_function>::create(func_name, VertexAdaptor<op_func_param_list>{}, VertexPtr{});
   set_location(func_root, func_location);
 
   // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
@@ -1686,7 +1686,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
   }
 
   // после имени функции — параметры, затем блок use для замыканий
-  CE(cur_function->root->params() = parse_cur_function_param_list());
+  CE(cur_function->root->params_ref() = parse_cur_function_param_list());
   CE(parse_function_uses(uses_of_lambda));
   kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
              "arguments and captured variables(in `use` clause) must have different names");
@@ -1805,12 +1805,8 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   set_location(name_vertex, AutoLocation(this));
   name_vertex->str_val = name_str;
 
-  auto class_vertex = VertexAdaptor<op_class>::create(name_vertex);
-  set_location(class_vertex, class_location);
-
   cur_class->file_id = processing_file;
   cur_class->phpdoc_str = phpdoc_str;
-  cur_class->root = class_vertex;
   cur_class->set_name_and_src_name(full_class_name);    // с полным неймспейсом и слешами
   cur_class->is_immutable = PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_immutable_class);
 

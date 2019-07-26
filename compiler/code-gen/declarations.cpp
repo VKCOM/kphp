@@ -93,7 +93,7 @@ FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_sty
 }
 FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_header, gen_out_style style) :
   function(function),
-  params(function->root->params().as<op_func_param_list>()->params()),
+  params(function->get_params()),
   in_header(in_header),
   style(style),
   shift(shift) {

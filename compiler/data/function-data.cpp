@@ -89,9 +89,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
   kphp_assert_msg(func->is_template, "function must be template");
-  auto param_list = func->root->params().as<op_func_param_list>();
-  VertexRange func_args = param_list->params();
-  auto func_args_n = static_cast<size_t>(func_args.size());
+  auto func_args_n = static_cast<size_t>(func->get_params().size());
 
   auto new_func_root = func->root.clone();
   new_func_root->name()->set_string(name_of_function_instance);
@@ -100,7 +98,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   new_function->is_template = false;
 
   for (size_t i = 0; i < func_args_n; ++i) {
-    VertexAdaptor<op_func_param> param = new_func_root->params().as<op_func_param_list>()->params()[i].as<op_func_param>();
+    auto param = new_function->get_params()[i].as<op_func_param>();
     auto id_classPtr_it = template_type_id_to_ClassPtr.find(param->template_type_id);
     if (id_classPtr_it == template_type_id_to_ClassPtr.end()) {
       kphp_error_act(template_type_id_to_ClassPtr.empty() || param->template_type_id == -1,

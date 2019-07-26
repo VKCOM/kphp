@@ -55,7 +55,7 @@ void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
 
 void check_func_call_params(VertexAdaptor<op_func_call> call) {
   FunctionPtr f = call->get_func_id();
-  VertexRange func_params = f->root->params().as<op_func_param_list>()->params();
+  VertexRange func_params = f->get_params();
 
   VertexRange call_params = call->args();
   int call_params_n = static_cast<int>(call_params.size());
@@ -75,7 +75,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
 
     kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
-    VertexRange cur_params = func_ptr_of_callable->root->params().as<op_func_param_list>()->params();
+    VertexRange cur_params = func_ptr_of_callable->get_params();
 
     int given_arguments_count = static_cast<int>(cur_params.size()) - static_cast<bool>(lambda_class);
     for (auto arg : cur_params) {
@@ -88,7 +88,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       }
     }
 
-    auto expected_arguments_count = func_params[i].as<op_func_param_callback>()->params().as<op_func_param_list>()->params().size();
+    auto expected_arguments_count = get_function_params(func_params[i].as<op_func_param_callback>()).size();
     kphp_error_act(given_arguments_count == expected_arguments_count,
                    format("Wrong callback arguments count; given: %d, expected: %ld", given_arguments_count, expected_arguments_count), continue);
   }

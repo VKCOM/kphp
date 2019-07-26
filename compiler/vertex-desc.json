@@ -41,8 +41,14 @@
   },
   {
     "sons": {
-      "name": 0,
-      "params": 1,
+      "name": {
+        "id": 0,
+        "type": "op_func_name"
+      },
+      "params": {
+        "id": 1,
+        "type": "op_func_param_list"
+      },
       "cmd": 2
     },
     "extras": [
@@ -470,7 +476,10 @@
   },
   {
     "sons": {
-      "params": 1,
+      "params": {
+        "id": 1,
+        "type": "op_func_param_list"
+      },
       "default_value": {
         "id": 2,
         "optional": true,
@@ -1684,19 +1693,6 @@
   {
     "name": "op_none",
     "base_name": "meta_op_base"
-  },
-  {
-    "sons": {
-      "name": 0
-    },
-    "name": "op_class",
-    "base_name": "meta_op_base",
-    "props": {
-      "rl": "rl_common",
-      "cnst": "cnst_not_func",
-      "type": "common_op",
-      "str": "class"
-    }
   },
   {
     "name": "op_clone",

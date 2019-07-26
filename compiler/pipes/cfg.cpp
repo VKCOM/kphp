@@ -51,7 +51,7 @@ public:
         v->set_var_id(new_var);
       }
 
-      VertexRange params = get_function_params(function->root);
+      VertexRange params = function->get_params();
       if (var->type() == VarData::var_local_t) {
         new_var->type() = VarData::var_local_t;
         function->local_var_ids.push_back(new_var);

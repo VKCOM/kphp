@@ -97,7 +97,7 @@ VertexPtr create_vertex(Operation op, Args&& ...args) {
 
 template<Operation Op>
 inline VertexRange get_function_params(VertexAdaptor<Op> func) {
-  return func->params().template as<op_func_param_list>()->params();
+  return func->params()->params();
 }
 
 // op_int_const string representation can be "123", "0x123", "0002", "-123", "0b0010101"

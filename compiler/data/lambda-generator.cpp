@@ -12,8 +12,8 @@
 
 LambdaGenerator::LambdaGenerator(FunctionPtr function, const Location &location, bool is_static/* = false*/)
   : created_location(location)
+  , lambda_class_name(create_name(gen_anonymous_function_name(function)))
 {
-  auto lambda_class_name = create_name(gen_anonymous_function_name(function));
   generated_lambda = create_class(lambda_class_name);
   generated_lambda->is_static = is_static || !function->is_instance_function();
 }
@@ -67,8 +67,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
 
 LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
   std::vector<VertexAdaptor<meta_op_func_param>> conv_uses(uses.begin(), uses.end());
-  auto name_location = generated_lambda->root->name()->location;
-  generated_lambda->create_constructor_with_args(name_location, conv_uses);
+  generated_lambda->create_constructor_with_args(created_location, conv_uses);
   generated_lambda->construct_function->is_template = !uses.empty();
 
   return *this;
@@ -98,7 +97,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 
   call_function->set_string(called_function->name);
   call_function->set_func_id(called_function);
-  return create_invoke_fun_returning_call(called_function, call_function, called_function->root->params().as<op_func_param_list>());
+  return create_invoke_fun_returning_call(called_function, call_function, called_function->root->params());
 }
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
@@ -131,17 +130,16 @@ LambdaPtr LambdaGenerator::generate(FunctionPtr parent_function) {
 }
 
 VertexAdaptor<op_func_name> LambdaGenerator::create_name(const std::string &name) {
-  auto lambda_class_name = VertexAdaptor<op_func_name>::create();
-  lambda_class_name->set_string(name);
-  set_location(lambda_class_name, created_location);
+  auto res_name = VertexAdaptor<op_func_name>::create();
+  res_name->set_string(name);
+  set_location(res_name, created_location);
 
-  return lambda_class_name;
+  return res_name;
 }
 
 LambdaPtr LambdaGenerator::create_class(VertexAdaptor<op_func_name> name) {
   LambdaPtr anon_class(new LambdaClassData());
   anon_class->set_name_and_src_name(LambdaClassData::get_lambda_namespace() + "\\" + name->get_string());
-  anon_class->root = VertexAdaptor<op_class>::create(name);
 
   return anon_class;
 }
@@ -241,7 +239,7 @@ FunctionPtr LambdaGenerator::register_invoke_method(VertexAdaptor<op_function> f
   invoke_function->update_location_in_body();
   generated_lambda->members.add_instance_method(invoke_function, AccessType::access_public);
 
-  auto params = get_function_params(fun);
+  auto params = invoke_function->get_params();
   invoke_function->is_template = generated_lambda->members.has_any_instance_var() || params.size() > 1;
   invoke_function->is_inline = true;
 
@@ -262,7 +260,7 @@ LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(FunctionPtr b
 
   set_location(created_location, call_function, return_call, lambda_body);
 
-  auto fun = VertexAdaptor<op_function>::create(generated_lambda->root->name(), invoke_params, lambda_body);
+  auto fun = VertexAdaptor<op_function>::create(lambda_class_name, invoke_params, lambda_body);
   fun->set_func_id(base_fun);
   add_invoke_method(fun);
 

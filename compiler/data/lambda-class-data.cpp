@@ -185,7 +185,6 @@ VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_ar
   auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
   constructor_call->set_string(name);
   constructor_call->set_func_id(construct_function);
-  set_location(constructor_call, root->location);
 
   return constructor_call;
 }

@@ -329,7 +329,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     }
   }
 
-  VertexRange params = root->params().as<op_func_param_list>()->args();
+  VertexRange params = root->params()->args();
   for (auto i : params.get_reversed_range()) {
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
     if (!param->type_declaration.empty()) {
