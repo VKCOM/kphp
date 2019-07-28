@@ -6,7 +6,7 @@ class CreateSwitchForeachVarsPass : public FunctionPassBase {
 private:
   VertexPtr process_switch(VertexAdaptor<op_switch> v);
 
-  VertexPtr process_foreach(VertexAdaptor<op_foreach> v);
+  VertexPtr process_foreach(VertexAdaptor<op_foreach_param> v);
 
 
 public:

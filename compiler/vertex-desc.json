@@ -618,11 +618,15 @@
   {
     "sons": {
       "xs": 0,
-      "x": 1,
+      "x": {
+        "id": 1,
+        "type": "op_var"
+      },
       "temp_var": 2,
       "key": {
         "id": 3,
-        "optional": true
+        "optional": true,
+        "type": "op_var"
       }
     },
     "name": "op_foreach_param",

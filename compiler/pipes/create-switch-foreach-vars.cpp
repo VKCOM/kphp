@@ -29,28 +29,28 @@ VertexPtr CreateSwitchForeachVarsPass::process_switch(VertexAdaptor<op_switch> s
   return switch_v;
 }
 
-VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexAdaptor<op_foreach> foreach_v) {
-  auto foreach_param = foreach_v->params();
-  auto x = foreach_param->x().as<op_var>();
-  //VertexPtr xs = foreach_param->xs();
+VertexPtr CreateSwitchForeachVarsPass::process_foreach(VertexAdaptor<op_foreach_param> foreach_param) {
+  if (!foreach_param->x()->ref_flag) {
+    auto temp_var = VertexAdaptor<op_var>::create();
+    temp_var->str_val = gen_unique_name("tmp_expr");
+    temp_var->extra_type = op_ex_var_superlocal;
 
-  if (!x->ref_flag) {
-    auto temp_var2 = VertexAdaptor<op_var>::create();
-    temp_var2->str_val = gen_unique_name("tmp_expr");
-    temp_var2->extra_type = op_ex_var_superlocal;
-    foreach_param->temp_var() = temp_var2;
-
-    foreach_v->params_ref() = foreach_param;
+    // TODO: why not create correct in gentree??
+    if (foreach_param->has_key()) {
+      return VertexAdaptor<op_foreach_param>::create(foreach_param->xs(), foreach_param->x(), temp_var, foreach_param->key());
+    } else {
+      return VertexAdaptor<op_foreach_param>::create(foreach_param->xs(), foreach_param->x(), temp_var);
+    }
   }
-  return foreach_v;
+  return foreach_param;
 }
 
 VertexPtr CreateSwitchForeachVarsPass::on_enter_vertex(VertexPtr v, LocalT *) {
   if (v->type() == op_switch) {
     return process_switch(v.as<op_switch>());
   }
-  if (v->type() == op_foreach) {
-    return process_foreach(v.as<op_foreach>());
+  if (v->type() == op_foreach_param) {
+    return process_foreach(v.as<op_foreach_param>());
   }
 
   return v;
