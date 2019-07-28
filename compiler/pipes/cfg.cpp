@@ -9,9 +9,9 @@
 
 class CFGData {
 private:
-  std::vector<VertexPtr> uninited_vars;
+  std::vector<VertexAdaptor<op_var>> uninited_vars;
   std::vector<VarPtr> todo_var;
-  std::vector<std::vector<std::vector<VertexPtr>>> todo_parts;
+  std::vector<std::vector<std::vector<VertexAdaptor<op_var>>>> todo_parts;
   FunctionPtr function;
 
 public:
@@ -19,7 +19,7 @@ public:
     : function(std::move(new_function))
   {}
 
-  void split_var(VarPtr var, std::vector<std::vector<VertexPtr>> &parts) {
+  void split_var(VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts) {
     assert (var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
     int parts_size = (int)parts.size();
     if (parts_size == 0) {
@@ -95,8 +95,8 @@ public:
     return function;
   }
 
-  void add_uninited_var(VertexPtr v) {
-    if (v && v->type() == op_var && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
+  void add_uninited_var(VertexAdaptor<op_var> v) {
+    if (v && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
       uninited_vars.push_back(v);
       v->get_var_id()->set_uninited_flag(true);
     }
@@ -169,7 +169,7 @@ public:
 
   void merge_same_type() {
     std::vector<MergeData> to_merge;
-    for (std::vector<std::vector<VertexPtr>> &parts : todo_parts) {
+    for (auto &parts : todo_parts) {
       to_merge.clear();
       to_merge.reserve(parts.size());
       for (int i = 0; i < parts.size(); i++) {
@@ -231,9 +231,9 @@ struct UsageData {
   Node node;
   UsageType type;
   bool weak_write_flag = false;
-  VertexPtr v;
+  VertexAdaptor<op_var> v;
 
-  UsageData(UsageType type, VertexPtr v) :
+  UsageData(UsageType type, VertexAdaptor<op_var> v) :
     type(type),
     v(v) {
   }
@@ -292,7 +292,7 @@ class CFG {
 
   VarSplitPtr get_var_split(VarPtr var, bool force);
   Node new_node();
-  UsagePtr new_usage(UsageType type, VertexPtr v);
+  UsagePtr new_usage(UsageType type, VertexAdaptor<op_var> v);
   void add_usage(Node node, UsagePtr usage);
   void add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag);
   void add_edge(Node from, Node to);
@@ -338,7 +338,7 @@ Node CFG::new_node() {
   return res;
 }
 
-UsagePtr CFG::new_usage(UsageType type, VertexPtr v) {
+UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
   VarPtr var = v->get_var_id();
   kphp_assert (var);
   VarSplitPtr var_split = get_var_split(var, false);
@@ -423,14 +423,14 @@ void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool 
   }
 
   if (auto set_op = tree_node.try_as<op_set>()) {
-    if (set_op->lhs()->type() == op_var) {
-      add_usage(writes, new_usage(usage_write_t, set_op->lhs()));
+    if (auto lhs_var = set_op->lhs().try_as<op_var>()) {
+      add_usage(writes, new_usage(usage_write_t, lhs_var));
       collect_vars_usage(set_op->rhs(), writes, reads, can_throw);
       return;
     }
   }
-  if (tree_node->type() == op_var) {
-    add_usage(reads, new_usage(usage_read_t, tree_node));
+  if (auto var_node = tree_node.try_as<op_var>()) {
+    add_usage(reads, new_usage(usage_read_t, var_node));
   }
   for (auto i : *tree_node) {
     collect_vars_usage(i, writes, reads, can_throw);
@@ -724,7 +724,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_var: {
       Node res = new_node();
-      UsagePtr usage = new_usage(write_flag ? usage_write_t : usage_read_t, tree_node);
+      UsagePtr usage = new_usage(write_flag ? usage_write_t : usage_read_t, tree_node.as<op_var>());
       if (usage) {
         usage->weak_write_flag = weak_write_flag;
       }
@@ -881,7 +881,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       Node writes = new_node();
       add_usage(writes, new_usage(usage_write_t, foreach_param->x()));
       if (!foreach_param->x()->ref_flag) {
-        add_usage(writes, new_usage(usage_write_t, foreach_param->temp_var()));
+        add_usage(writes, new_usage(usage_write_t, foreach_param->temp_var().as<op_var>()));
       }
       if (foreach_param->has_key()) {
         add_usage(writes, new_usage(usage_write_t, foreach_param->key()));
@@ -929,8 +929,8 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       {
         add_edge(vars_init, vars_read);
         for (auto i : switch_op->variables()) {
-          add_usage(vars_init, new_usage(usage_write_t, i));
-          add_usage(vars_read, new_usage(usage_read_t, i));
+          add_usage(vars_init, new_usage(usage_write_t, i.as<op_var>()));
+          add_usage(vars_read, new_usage(usage_read_t, i.as<op_var>()));
           add_subtree(vars_init, i, false);
           add_subtree(vars_read, i, false);
         }
@@ -1172,7 +1172,7 @@ void CFG::process_var(VarPtr var) {
     return;
   }
 
-  std::vector<std::vector<VertexPtr>> parts(parts_cnt);
+  std::vector<std::vector<VertexAdaptor<op_var>>> parts(parts_cnt);
   for (UsagePtr i : var_split->usage_gen) {
     if (node_was[i->node]) {
       UsagePtr u = dsu_get(&var_split->parent, i);
