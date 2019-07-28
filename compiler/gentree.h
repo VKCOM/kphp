@@ -52,7 +52,7 @@ public:
   int open_parent();
   void skip_phpdoc_tokens();
 
-  static VertexPtr embrace(VertexPtr v);
+  static VertexAdaptor<op_seq> embrace(VertexPtr v);
   PrimitiveType get_ptype();
   PrimitiveType get_func_param_type_help();
   VertexPtr get_type_rule_func();

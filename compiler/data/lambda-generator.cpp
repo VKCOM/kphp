@@ -32,19 +32,14 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
     uses.insert(uses.begin(), func_param);
   }
 
-  for (auto one_use : uses) {
-    if (auto param_as_use = one_use.try_as<op_func_param>()) {
-      auto variable_in_use = VertexAdaptor<op_var>::create();
-      variable_in_use->str_val = param_as_use->var()->get_string();
-      set_location(variable_in_use, param_as_use->location);
-      generated_lambda->members.add_instance_field(variable_in_use, {}, access_private, vk::string_view{});
+  for (auto param_as_use : uses) {
+    auto variable_in_use = VertexAdaptor<op_var>::create();
+    variable_in_use->str_val = param_as_use->var()->get_string();
+    set_location(variable_in_use, param_as_use->location);
+    generated_lambda->members.add_instance_field(variable_in_use, {}, access_private, vk::string_view{});
 
-      auto field = generated_lambda->members.get_instance_field(variable_in_use->get_string());
-      field->var->marked_as_const = true;
-    } else {
-      stage::set_location(one_use->get_location());
-      kphp_error(false, "it's not allowed using not variable in `use` clause");
-    }
+    auto field = generated_lambda->members.get_instance_field(variable_in_use->get_string());
+    field->var->marked_as_const = true;
   }
 
   this->uses = std::move(uses);
@@ -144,13 +139,13 @@ LambdaPtr LambdaGenerator::create_class(VertexAdaptor<op_func_name> name) {
   return anon_class;
 }
 
-VertexPtr LambdaGenerator::create_invoke_cmd(VertexAdaptor<op_function> function) {
-  auto new_cmd = function->cmd().clone();
+VertexAdaptor<op_seq> LambdaGenerator::create_invoke_cmd(VertexAdaptor<op_function> function) {
+  VertexPtr new_cmd = function->cmd().clone();
   // if we didn't do it early
   if (!function->get_func_id() || !function->get_func_id()->function_in_which_lambda_was_created) {
     add_this_to_captured_variables(new_cmd);
   }
-  return new_cmd;
+  return new_cmd.as<op_seq>();
 }
 
 VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAdaptor<op_function> function) {

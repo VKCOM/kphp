@@ -798,14 +798,11 @@ VertexPtr GenTree::get_expression() {
   return get_expression_impl(false);
 }
 
-VertexPtr GenTree::embrace(VertexPtr v) {
-  if (v->type() != op_seq) {
-    auto brace = VertexAdaptor<op_seq>::create(v);
-    ::set_location(brace, v->get_location());
-    return brace;
+VertexAdaptor<op_seq> GenTree::embrace(VertexPtr v) {
+  if (auto seq = v.try_as<op_seq>()) {
+    return seq;
   }
-
-  return v;
+  return VertexAdaptor<op_seq>::create(v).set_location(v);
 }
 
 VertexPtr GenTree::get_def_value() {
@@ -1212,8 +1209,7 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
 
   vector<VertexPtr> next = cmd->get_next();
   next.push_back(return_node);
-  auto seq = VertexAdaptor<op_seq>::create(next);
-  func->cmd() = seq;
+  func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
 }
 
 template<Operation Op, class FuncT, class ResultType>
@@ -1348,7 +1344,6 @@ VertexPtr GenTree::get_if() {
 
   VertexPtr second_node = get_statement();
   CE (!kphp_error(second_node, "Failed to parse 'if' body"));
-  second_node = embrace(second_node);
 
   VertexPtr third_node = VertexPtr();
   if (cur->type() == tok_else) {
@@ -1358,11 +1353,10 @@ VertexPtr GenTree::get_if() {
   }
 
   if (third_node) {
-    third_node = embrace(third_node);
-    auto v = VertexAdaptor<op_if>::create(first_node, second_node, third_node);
+    auto v = VertexAdaptor<op_if>::create(first_node, embrace(second_node), embrace(third_node));
     if_vertex = v;
   } else {
-    auto v = VertexAdaptor<op_if>::create(first_node, second_node);
+    auto v = VertexAdaptor<op_if>::create(first_node, embrace(second_node));
     if_vertex = v;
   }
   set_location(if_vertex, if_location);
@@ -1411,8 +1405,7 @@ VertexPtr GenTree::get_for() {
   VertexPtr cmd = get_statement();
   CE (!kphp_error(cmd, "Failed to parse 'for' statement"));
 
-  cmd = embrace(cmd);
-  auto for_vertex = VertexAdaptor<op_for>::create(pre_cond, cond, post_cond, cmd);
+  auto for_vertex = VertexAdaptor<op_for>::create(pre_cond, cond, post_cond, embrace(cmd));
   set_location(for_vertex, for_location);
   return for_vertex;
 }
@@ -1433,7 +1426,7 @@ VertexPtr GenTree::get_do() {
   CE (expect(tok_clpar, "')'"));
   CE (expect(tok_semicolon, "';'"));
 
-  auto do_vertex = VertexAdaptor<op_do>::create(second_node, first_node);
+  auto do_vertex = VertexAdaptor<op_do>::create(second_node, embrace(first_node));
   set_location(do_vertex, do_location);
   return do_vertex;
 }
@@ -1669,7 +1662,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
     }
   }
 
-  auto func_root = VertexAdaptor<op_function>::create(func_name, VertexAdaptor<op_func_param_list>{}, VertexPtr{});
+  auto func_root = VertexAdaptor<op_function>::create(func_name, VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{});
   set_location(func_root, func_location);
 
   // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
@@ -1697,7 +1690,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
   if (test_expect(tok_opbrc)) {
     CE(!kphp_error(!(cur_class && cur_class->is_interface()), format("methods in interface must have empty body: %s", cur_class->name.c_str())));
     is_top_of_the_function_ = true;
-    cur_function->root->cmd() = get_statement();
+    cur_function->root->cmd_ref() = get_statement().as<op_seq>();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
     if (cur_function->is_constructor()) {
       func_force_return(cur_function->root, ClassData::gen_vertex_this(Location(line_num)));
@@ -1708,7 +1701,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
     CE(!kphp_error((cur_class && cur_class->is_interface()) || processing_file->is_builtin(), "function must have non-empty body"));
     CE (expect(tok_semicolon, "';'"));
     cur_function->type = FunctionData::func_extern;
-    cur_function->root->cmd() = VertexAdaptor<op_seq>::create();
+    cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
   }
 
   // функция готова, регистрируем
@@ -2231,7 +2224,7 @@ void GenTree::run() {
   auto v_func_name = VertexAdaptor<op_func_name>::create();
   v_func_name->set_string(processing_file->main_func_name);
   auto v_func_params = VertexAdaptor<op_func_param_list>::create();
-  auto root = VertexAdaptor<op_function>::create(v_func_name, v_func_params, VertexPtr{});
+  auto root = VertexAdaptor<op_function>::create(v_func_name, v_func_params, VertexAdaptor<op_seq>{});
 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, FunctionData::func_global));
   processing_file->main_function = cur_function;
@@ -2246,7 +2239,7 @@ void GenTree::run() {
   seq_next.push_back(set_run_flag);
   get_seq(seq_next);
   seq_next.push_back(VertexAdaptor<op_return>::create());
-  cur_function->root->cmd() = VertexAdaptor<op_seq>::create(seq_next);
+  cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(seq_next);
   set_location(cur_function->root->cmd(), seq_location);
 
   G->register_and_require_function(cur_function, parsed_os, true);  // global функция — поэтому required

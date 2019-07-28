@@ -84,9 +84,9 @@ public:
     for (auto cs : switch_v->cases()) {
       VertexAdaptor<op_seq> seq;
       if (cs->type() == op_case) {
-        seq = cs.as<op_case>()->cmd().as<op_seq>();
+        seq = cs.as<op_case>()->cmd();
       } else if (cs->type() == op_default) {
-        seq = cs.as<op_default>()->cmd().as<op_seq>();
+        seq = cs.as<op_default>()->cmd();
       } else {
         kphp_fail();
       }

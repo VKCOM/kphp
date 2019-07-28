@@ -75,7 +75,7 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     if (!params_init.empty()) {
       VertexPtr seq = root.as<op_function>()->cmd();
       params_init.insert(params_init.end(), seq->begin(), seq->end());
-      root.as<op_function>()->cmd() = VertexAdaptor<op_seq>::create(params_init);
+      root.as<op_function>()->cmd_ref() = VertexAdaptor<op_seq>::create(params_init);
     }
   }
   return root;

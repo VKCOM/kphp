@@ -137,22 +137,22 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
     return check_static_function(interface_function, derived_classes);
   }
 
-  VertexPtr body_of_interface_method;
+  VertexAdaptor<op_seq> body_of_interface_method;
   for (auto derived : derived_classes) {
     auto is_instance_of_derived = GenTree::conv_to<tp_bool>(create_instanceof(ClassData::gen_vertex_this({}), derived));
 
-    VertexAdaptor<op_return> call_derived_method;
+    VertexAdaptor<op_seq> call_derived_method;
     if (check_that_signatures_are_same(derived, interface_function)) {
       auto generated_this = ClassData::gen_vertex_this({});
       VertexPtr this_var = generated_this;
       if (derived_classes.size() == 1) {
         this_var = create_instance_cast_to(generated_this, derived);
       }
-      call_derived_method = VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, interface_function));
+      call_derived_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, interface_function)));
     }
 
     if (body_of_interface_method) {
-      body_of_interface_method = VertexAdaptor<op_if>::create(is_instance_of_derived, call_derived_method, body_of_interface_method);
+      body_of_interface_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_if>::create(is_instance_of_derived, call_derived_method, body_of_interface_method));
     } else {
       body_of_interface_method = call_derived_method;
     }

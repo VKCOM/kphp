@@ -19,7 +19,7 @@ private:
   VertexAdaptor<op_func_name> create_name(const std::string &name);
   static LambdaPtr create_class(VertexAdaptor<op_func_name> name);
   VertexAdaptor<op_func_param_list> create_invoke_params(VertexAdaptor<op_function> function);
-  VertexPtr create_invoke_cmd(VertexAdaptor<op_function> function);
+  VertexAdaptor<op_seq> create_invoke_cmd(VertexAdaptor<op_function> function);
 
   void add_this_to_captured_variables(VertexPtr &root);
 

@@ -2,11 +2,12 @@
 
 #include <memory>
 
+#include "common/containers/final_action.h"
+
 #include "compiler/class-assumptions.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
-#include "common/containers/final_action.h"
 
 bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVertex<TransformToSmartInstanceof> &visit) {
   auto if_vertex = v.try_as<op_if>();
@@ -19,7 +20,7 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
   visit(if_vertex->cond());
   auto initial_state = variable_state;
 
-  visit_cmd(visit, if_vertex, name_of_derived_vertex, if_vertex->true_cmd());
+  visit_cmd(visit, if_vertex, name_of_derived_vertex, if_vertex->true_cmd_ref());
   variable_state = initial_state;
 
   if (!if_vertex->has_false_cmd()) {
@@ -34,18 +35,19 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
   }
 
   if (state.left_derived.size() == 1) {
-    auto condition_inside_false = get_instanceof_from_if(if_vertex->false_cmd().try_as<op_if>());
+    auto false_cmd = if_vertex->false_cmd();
+    auto condition_inside_false = false_cmd->size() == 1 ? get_instanceof_from_if(false_cmd->args()[0].try_as<op_if>()) : VertexAdaptor<op_instanceof>{};
     auto is_instanceof_the_same_variable = condition_inside_false && condition_inside_false->lhs()->get_string() == instance_var->get_string();
     if (!is_instanceof_the_same_variable) {
       auto derived_name_vertex = VertexAdaptor<op_string>::create();
       derived_name_vertex->set_string((*state.left_derived.begin())->name);
 
-      visit_cmd(visit, if_vertex, derived_name_vertex, if_vertex->false_cmd());
+      visit_cmd(visit, if_vertex, derived_name_vertex, if_vertex->false_cmd_ref());
       return true;
     }
   }
 
-  visit(if_vertex->false_cmd());
+  visit(if_vertex->false_cmd_ref());
   return true;
 }
 
@@ -56,7 +58,7 @@ void TransformToSmartInstanceof::visit_cmd(VisitVertex<TransformToSmartInstanceo
   auto &state = variable_state[instance_var->get_string()];
 
   auto set_instance_cast_to_tmp = generate_tmp_var_with_instance_cast(instance_var.clone(), name_of_derived_vertex, state.new_name);
-  cmd = VertexAdaptor<op_seq>::create(set_instance_cast_to_tmp, cmd).set_location(cmd);
+  cmd = VertexAdaptor<op_seq>::create(set_instance_cast_to_tmp, cmd.as<op_seq>()->args()).set_location(cmd);
   auto commands = cmd.as<op_seq>()->args();
 
   std::for_each(std::next(commands.begin()), commands.end(), visit);

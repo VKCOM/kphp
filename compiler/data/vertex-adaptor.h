@@ -92,6 +92,7 @@ public:
       return {};
     };
     static_assert(op_type_is_base_of(Op, to), "Strange downcast to not derived vertex");
+    static_assert(Op != to || Op == meta_op_base, "Useless cast");
     if (op_type_is_base_of(to, impl->type())) {
       return VertexAdaptor<to>{static_cast<vertex_inner<to> *>(impl)};
     }

@@ -66,7 +66,7 @@ struct TupleGetIndex {
 
 struct AsSeq {
   VertexPtr root;
-  AsSeq(VertexPtr root) :
+  AsSeq(VertexAdaptor<op_seq> root) :
     root(root) {
   }
 
@@ -119,10 +119,10 @@ struct Label {
 };
 
 struct CycleBody {
-  VertexPtr body;
+  VertexAdaptor<op_seq> body;
   int continue_label_id;
   int break_label_id;
-  CycleBody(VertexPtr body, int continue_label_id, int break_label_id) :
+  CycleBody(VertexAdaptor<op_seq> body, int continue_label_id, int break_label_id) :
     body(body),
     continue_label_id(continue_label_id),
     break_label_id(break_label_id) {
@@ -587,7 +587,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
 
 void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
   auto params = root->params();
-  VertexPtr cmd = root->cmd();
+  auto cmd = root->cmd();
 
   //foreach (xs as [key =>] x)
   if (params->x()->ref_flag) {
@@ -790,7 +790,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   for (auto i : root->cases()) {
     Operation tp = i->type();
     VertexPtr expr;
-    VertexPtr cmd;
+    VertexAdaptor<op_seq> cmd;
     if (tp == op_case) {
       auto cs = i.as<op_case>();
       expr = cs->expr();
@@ -1701,7 +1701,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
   string str;
   switch (tp) {
     case op_seq:
-      W << BEGIN << AsSeq(root) << END;
+      W << BEGIN << AsSeq(root.as<op_seq>()) << END;
       break;
     case op_seq_rval:
       compile_seq_rval(root, W);

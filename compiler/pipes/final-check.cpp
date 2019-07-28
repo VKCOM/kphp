@@ -291,7 +291,7 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
 
 bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalCheckPass> &visit) {
   if (v->type() == op_function) {
-    visit(v.as<op_function>()->cmd());
+    visit(v.as<op_function>()->cmd_ref());
     return true;
   }
 

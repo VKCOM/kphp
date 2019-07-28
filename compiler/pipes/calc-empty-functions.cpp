@@ -77,7 +77,7 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
       !f->root->params()->empty()) {
     f->body_seq = FunctionData::body_value::non_empty;
   } else {
-    f->body_seq = calc_seq_body_type(f->root->cmd().as<op_seq>());
+    f->body_seq = calc_seq_body_type(f->root->cmd());
   }
   return f->body_seq;
 }

@@ -1212,7 +1212,11 @@ void CFG::calc_used(Node v) {
 
 void CFG::drop_unused(VertexPtr &v) {
   if (!vertex_usage[v].used) {
-    v = VertexAdaptor<op_empty>::create();
+    if (v->type() == op_seq) {
+      v = VertexAdaptor<op_seq>::create();
+    } else {
+      v = VertexAdaptor<op_empty>::create();
+    }
     return;
   }
   for (auto &i : *v) {
@@ -1261,7 +1265,7 @@ void CFG::process_function(FunctionPtr function) {
 
   cur_dfs_mark++;
   calc_used(start);
-  drop_unused(function->root->cmd());
+  drop_unused(function->root->cmd_ref());
 
   for (auto var: splittable_vars) {
     if (var->type() != VarData::var_local_inplace_t) {

@@ -467,7 +467,8 @@ bool CollectMainEdgesPass::on_start(FunctionPtr function) {
 VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {
   if (v->type() == op_try) {
     auto try_v = v.as<op_try>();
-    if (try_v->exception()->type() == op_empty && try_v->catch_cmd()->type() == op_empty) {
+    if (try_v->exception()->type() == op_empty) {
+      kphp_assert(try_v->catch_cmd()->type() == op_seq && try_v->catch_cmd()->size() == 0);
       return try_v->try_cmd();
     }
   }
