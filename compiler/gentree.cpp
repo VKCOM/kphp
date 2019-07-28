@@ -867,7 +867,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_from_callback() {
 VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
   AutoLocation st_location(this);
   if (test_expect(tok_func_name) && ((cur + 1)->type() == tok_oppar)) { // callback
-    auto name = VertexAdaptor<op_func_name>::create();
+    auto name = VertexAdaptor<op_var>::create();
     set_location(name, st_location);
     name->str_val = static_cast<string>(cur->str_val);
     kphp_assert(name->str_val == "callback");

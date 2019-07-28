@@ -89,7 +89,7 @@ void RegisterVariablesPass::register_class_static_var(ClassPtr class_id, ClassMe
 }
 
 void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value) {
-  auto var_vertex = param->var().as<op_var>();
+  auto var_vertex = param->var();
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
   var->is_reference = var_vertex->ref_flag;

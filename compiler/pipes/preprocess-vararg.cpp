@@ -2,7 +2,7 @@
 
 #include "compiler/utils/string-utils.h"
 
-VertexPtr PreprocessVarargPass::create_va_list_var(Location loc) {
+VertexAdaptor<op_var> PreprocessVarargPass::create_va_list_var(Location loc) {
   auto result = VertexAdaptor<op_var>::create();
   result->str_val = "$VA_LIST";
   set_location(result, loc);
@@ -39,7 +39,7 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     int rest_start_pos = current_function->has_implicit_this_arg() ? 1 : 0;
     new_params.insert(new_params.begin(), old_params.begin(), old_params.begin() + rest_start_pos);
 
-    VertexPtr va_list_var = create_va_list_var(root->location);
+    auto va_list_var = create_va_list_var(root->location);
     new_params.emplace_back(VertexAdaptor<op_func_param>::create(va_list_var));
 
     root.as<op_function>()->params_ref() = VertexAdaptor<op_func_param_list>::create(new_params);

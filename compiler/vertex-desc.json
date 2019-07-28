@@ -145,7 +145,10 @@
   },
   {
     "sons": {
-      "var": 0,
+      "var": {
+        "id": 0,
+        "type": "op_var"
+      },
       "default_value": {
         "id": 1,
         "optional": true,

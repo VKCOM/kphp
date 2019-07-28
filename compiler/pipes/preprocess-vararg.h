@@ -4,7 +4,7 @@
 
 class PreprocessVarargPass : public FunctionPassBase {
 private:
-  VertexPtr create_va_list_var(Location loc);
+  VertexAdaptor<op_var> create_va_list_var(Location loc);
 
 public:
 
