@@ -101,8 +101,8 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
       find_dangerous_isset_warning(*bt, node, "[index]");
       return true;
     }
-    if (v->type() == op_var) {
-      VarPtr from_var = v.as<op_var>()->get_var_id();
+    if (auto var = v.try_as<op_var>()) {
+      VarPtr from_var = var->var_id;
       if (from_var && from_var->get_uninited_flag() && isset_is_dangerous(isset_flags, node->get_type())) {
         node->isset_was = -1;
         find_dangerous_isset_warning(*bt, node, "[uninited varialbe]");
@@ -115,8 +115,8 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
       }
       bt->pop_back();
     }
-    if (v->type() == op_func_call) {
-      FunctionPtr func = v.as<op_func_call>()->get_func_id();
+    if (auto call = v.try_as<op_func_call>()) {
+      FunctionPtr func = call->get_func_id();
       bt->push_back(node);
       if (find_dangerous_isset_dfs(isset_flags, tinf::get_tinf_node(func, -1), bt)) {
         return true;

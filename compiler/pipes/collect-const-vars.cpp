@@ -5,8 +5,8 @@
 #include "compiler/name-gen.h"
 
 int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
-  if (vertex->type() == op_var) {
-    return vertex->get_var_id()->dependency_level;
+  if (auto var = vertex.try_as<op_var>()) {
+    return var->var_id->dependency_level;
   }
   int max_dependency_level = 0;
   for (const auto &child: *vertex) {
@@ -106,7 +106,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
     }
   }
 
-  var->set_var_id(var_id);
+  var->var_id = var_id;
   return var;
 }
 

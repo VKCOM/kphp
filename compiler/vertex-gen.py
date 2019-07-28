@@ -80,13 +80,6 @@ def get_function_extra():
 """
 
 
-def get_variable_extra():
-    return """
-  virtual const VarPtr &get_var_id() const override { return var_; }
-  virtual void set_var_id(const VarPtr &var) override { var_ = var; }
-"""
-
-
 def output_extras(f, type_data):
     if "extras" in type_data:
         type_data.setdefault("extra_fields", {})
@@ -94,7 +87,6 @@ def output_extras(f, type_data):
         do_with_extras = {
             "string": ("str_val", "std::string", get_string_extra),
             "function": ("func_", "FunctionPtr", get_function_extra),
-            "variable": ("var_", "VarPtr", get_variable_extra)
         }
 
         for extra_name in type_data["extras"]:

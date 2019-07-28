@@ -45,20 +45,20 @@ VarPtr RegisterVariablesPass::get_local_var(const string &name, VarData::Type ty
 }
 void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex) {
   string name = var_vertex->str_val;
-  var_vertex->set_var_id(create_global_var(name));
+  var_vertex->var_id = create_global_var(name);
 
   FunctionPtr function_where_global_keyword_occured = var_vertex->location.get_function();
   if (function_where_global_keyword_occured && function_where_global_keyword_occured->type == FunctionData::func_global) {
-    var_vertex->get_var_id()->marked_as_global = true;
+    var_vertex->var_id->marked_as_global = true;
   }
 }
 bool RegisterVariablesPass::is_const(VertexPtr v) {
   return v->const_type == cnst_const_val ||
-         (v->type() == op_var && v->get_var_id()->is_constant()) ||
+         (v->type() == op_var && v.as<op_var>()->var_id->is_constant()) ||
          v->type() == op_define_val;
 }
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
-  return v->type() == op_var && v->get_var_id()->is_in_global_scope();
+  return v->type() == op_var && v.as<op_var>()->var_id->is_in_global_scope();
 }
 void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
   kphp_error(current_function->type == FunctionData::func_local, "keyword 'static' used in global function");
@@ -72,7 +72,7 @@ void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> v
       var->init_val = default_value;
     }
   }
-  var_vertex->set_var_id(var);
+  var_vertex->var_id = var;
 }
 
 void RegisterVariablesPass::register_class_static_var(ClassPtr class_id, ClassMemberStaticField &f) {
@@ -85,7 +85,7 @@ void RegisterVariablesPass::register_class_static_var(ClassPtr class_id, ClassMe
       var->init_val = f.init_val;
     }
   }
-  f.root->set_var_id(var);
+  f.root->var_id = var;
 }
 
 void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value) {
@@ -102,7 +102,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> para
       var->init_val = default_value;
     }
   }
-  var_vertex->set_var_id(var);
+  var_vertex->var_id = var;
 }
 void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   VarPtr var;
@@ -134,7 +134,7 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
                              : VarData::var_local_t;
     var = get_local_var(name, var_type);
   }
-  var_vertex->set_var_id(var);
+  var_vertex->var_id = var;
   var->marked_as_global |= var_vertex->extra_type == op_ex_var_superglobal;
 }
 void RegisterVariablesPass::visit_global_vertex(VertexAdaptor<op_global> global) {
@@ -170,10 +170,10 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
   }
 }
 void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
-  if (var->get_var_id()) {
+  if (var->var_id) {
     // автогенерённые через CREATE_VERTEX op_var типы, когда один VarData на несколько разных vertex'ов
-    kphp_assert (var->get_var_id()->is_constant() ||
-                 var->get_var_id()->type() == VarData::var_local_inplace_t);
+    kphp_assert (var->var_id->is_constant() ||
+                 var->var_id->type() == VarData::var_local_inplace_t);
     return;
   }
   register_var(var);
@@ -193,13 +193,13 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariabl
   } else if (root->type() == op_var) {
     visit_var(root.as<op_var>());
     local->need_recursion_flag = false;
-  } else if (root->type() == op_instance_prop) {
+  } else if (auto prop = root.try_as<op_instance_prop>()) {
     ClassPtr klass = resolve_class_of_arrow_access(current_function, root);
     if (klass) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
       auto m = klass->members.get_instance_field(root->get_string());
 
       if (m) {
-        root->set_var_id(m->var);
+        prop->var_id = m->var;
       } else {
         kphp_error(0, format("Invalid property access ...->%s: does not exist in class `%s`", root->get_c_string(), klass->get_name()));
       }

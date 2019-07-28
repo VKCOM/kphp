@@ -239,7 +239,7 @@ void ExprNodeRecalc::recalc_constructor_call(VertexAdaptor<op_constructor_call> 
 }
 
 void ExprNodeRecalc::recalc_var(VertexAdaptor<op_var> var) {
-  set_lca(var->get_var_id());
+  set_lca(var->var_id);
 }
 
 void ExprNodeRecalc::recalc_push_back_return(VertexAdaptor<op_push_back_return> pb) {
@@ -259,7 +259,7 @@ void ExprNodeRecalc::recalc_index(VertexAdaptor<op_index> index) {
 }
 
 void ExprNodeRecalc::recalc_instance_prop(VertexAdaptor<op_instance_prop> index) {
-  set_lca(index->get_var_id());
+  set_lca(index->var_id);
 }
 
 void ExprNodeRecalc::recalc_set(VertexAdaptor<op_set> set) {
@@ -597,7 +597,7 @@ static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
   switch (expr->type()) {
     case op_var:
       //Вывод должен совпадать с выводом в соответсвующей ветке в tinf::VarNode::get_description, чтобы детектились и убирались дубликаты в стектрейсе
-      return "$" + expr.as<op_var>()->get_var_id()->name + print_type(expr);
+      return "$" + expr.as<op_var>()->var_id->name + print_type(expr);
 
     case op_func_call: {
       string function_name = expr.as<op_func_call>()->get_func_id()->get_human_readable_name();

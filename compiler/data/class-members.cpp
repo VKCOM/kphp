@@ -48,7 +48,7 @@ const string &ClassMemberStaticField::local_name() const {
 }
 
 const TypeData *ClassMemberStaticField::get_inferred_type() const {
-  return tinf::get_type(root->get_var_id());
+  return tinf::get_type(root->var_id);
 }
 
 
@@ -81,7 +81,7 @@ ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor
   phpdoc_str(phpdoc_str) {
 
   var = G->create_var(local_name(), VarData::var_instance_t);
-  root->set_var_id(var);
+  root->var_id = var;
   var->init_val = def_val;
   var->class_id = klass;
   var->marked_as_const = klass->is_immutable || PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_const);

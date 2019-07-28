@@ -39,8 +39,8 @@ static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &depen
   for (auto child: *vertex) {
     add_dependent_declarations(child, dependent_vars);
   }
-  if (vertex->type() == op_var) {
-    dependent_vars.emplace(vertex->get_var_id());
+  if (auto var = vertex.try_as<op_var>()) {
+    dependent_vars.emplace(var->var_id);
   }
 }
 

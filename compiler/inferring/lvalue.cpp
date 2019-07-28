@@ -5,8 +5,8 @@
 #include "compiler/vertex.h"
 
 LValue as_lvalue(VertexPtr v) {
-  if (v->type() == op_instance_prop) {
-    return as_lvalue(v->get_var_id());
+  if (auto prop = v.try_as<op_instance_prop>()) {
+    return as_lvalue(prop->var_id);
   }
 
   int depth = 0;
@@ -20,17 +20,17 @@ LValue as_lvalue(VertexPtr v) {
   }
 
   tinf::Node *value = nullptr;
-  if (v->type() == op_var) {
-    value = tinf::get_tinf_node(v->get_var_id());
+  if (auto var = v.try_as<op_var>()) {
+    value = tinf::get_tinf_node(var->var_id);
   } else if (vk::any_of_equal(v->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     kphp_assert (depth == 0);
     return as_lvalue(v.as<meta_op_unary>()->expr());
   } else if (v->type() == op_array) {
     kphp_fail();
-  } else if (v->type() == op_func_call) {
-    value = tinf::get_tinf_node(v.as<op_func_call>()->get_func_id(), -1);
-  } else if (v->type() == op_instance_prop) {       // при $a->arr[] = 1; когда не работает верхнее условие
-    value = tinf::get_tinf_node(v->get_var_id());
+  } else if (auto call = v.try_as<op_func_call>()) {
+    value = tinf::get_tinf_node(call->get_func_id(), -1);
+  } else if (auto prop = v.try_as<op_instance_prop>()) {       // при $a->arr[] = 1; когда не работает верхнее условие
+    value = tinf::get_tinf_node(prop->var_id);
   } else {
     kphp_error (0, format("Bug in compiler: Trying to use [%s] as lvalue", OpInfo::str(v->type()).c_str()));
     kphp_fail();

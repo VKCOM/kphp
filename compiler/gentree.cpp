@@ -981,8 +981,10 @@ VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
 }
 
 VertexPtr GenTree::get_actual_value(VertexPtr v) {
-  if (v->type() == op_var && v->extra_type == op_ex_var_const && v->get_var_id()) {
-    return v->get_var_id()->init_val;
+  if (auto var = v.try_as<op_var>()) {
+    if (var->extra_type == op_ex_var_const && var->var_id) {
+      return var->var_id->init_val;
+    }
   }
   if (v->type() == op_define_val) {
     DefinePtr d = v.as<op_define_val>()->define_id;

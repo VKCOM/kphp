@@ -194,8 +194,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   }
   if (vertex->type() == op_unset || vertex->type() == op_isset) {
     for (auto v : vertex.as<meta_op_xset>()->args()) {
-      if (v->type() == op_var) {    // isset($var), unset($var)
-        VarPtr var = v.as<op_var>()->get_var_id();
+      if (auto var_vertex = v.try_as<op_var>()) {    // isset($var), unset($var)
+        VarPtr var = var_vertex->var_id;
         if (vertex->type() == op_unset) {
           kphp_error(!var->is_reference, "Unset of reference variables is not supported");
           if (var->is_in_global_scope()) {
@@ -306,8 +306,8 @@ bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalChec
           index_depth += "[.]";
         }
         string desc = "Using Unknown type : ";
-        if (v->type() == op_var) {
-          VarPtr var = v->get_var_id();
+        if (auto var_vertex = v.try_as<op_var>()) {
+          VarPtr var = var_vertex->var_id;
           desc += "variable [$" + var->name + "]" + index_depth;
         } else if (v->type() == op_func_call) {
           desc += "function [" + v.as<op_func_call>()->get_func_id()->name + "]" + index_depth;

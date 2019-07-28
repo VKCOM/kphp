@@ -18,7 +18,7 @@ void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
       if (key->type() == op_string || key->type() == op_int_const) {
         str = key->get_string();
       } else if (key->type() == op_var) {
-        VarPtr key_var = key.as<op_var>()->get_var_id();
+        VarPtr key_var = key.as<op_var>()->var_id;
         if (key_var->is_constant()) {
           VertexPtr init = key_var->init_val;
           if (init->type() == op_string) {
@@ -51,8 +51,8 @@ void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
   VertexPtr left = to_check->lhs();
   VertexPtr right = to_check->rhs();
   if (left->type() == op_var && right->type() == op_var) {
-    VarPtr lvar = left.as<op_var>()->get_var_id();
-    VarPtr rvar = right.as<op_var>()->get_var_id();
+    VarPtr lvar = left.as<op_var>()->var_id;
+    VarPtr rvar = right.as<op_var>()->var_id;
     if (lvar->name == rvar->name) {
       kphp_warning ("Assigning variable to itself\n");
     }
@@ -68,7 +68,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT * local) 
     return vertex;
   }
   if (vertex->type() == op_var) {
-    VarPtr var = vertex.as<op_var>()->get_var_id();
+    VarPtr var = vertex.as<op_var>()->var_id;
     if (var->is_constant()) {
       VertexPtr init = var->init_val;
       run_function_pass(init, this, local);

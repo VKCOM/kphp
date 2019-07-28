@@ -27,9 +27,9 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   casted_var->location = type_acceptor->location;
 
   VarPtr var_id = G->get_global_var(name, VarData::var_const_t, type_acceptor);
-  var_id->dependency_level = type_acceptor->get_var_id()->dependency_level + 1;
+  var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
   var_id->tinf_node.copy_type_from(required_type);
-  casted_var->set_var_id(var_id);
+  casted_var->var_id = var_id;
   type_acceptor = casted_var;
   return var_id;
 }
@@ -201,10 +201,12 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
     root = optimize_postfix_dec(root);
   } else if (root->type() == op_index) {
     root = optimize_index(root.as<op_index>());
-  } else if (root->type() == op_foreach_param) {
-    VertexPtr temp_var = root.as<op_foreach_param>()->temp_var();
-    if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // см. CreateSwitchForeachVarsPass
-      temp_var->get_var_id()->needs_const_iterator_flag = true;
+  } else if (auto param = root.try_as<op_foreach_param>()) {
+    if (!param->x()->ref_flag) {
+      auto temp_var = root.as<op_foreach_param>()->temp_var().as<op_var>();
+      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // см. CreateSwitchForeachVarsPass
+        temp_var->var_id->needs_const_iterator_flag = true;
+      }
     }
   }
 
@@ -243,8 +245,8 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, FunctionPassBase::Loc
 }
 
 bool OptimizationPass::user_recursion(VertexPtr root, LocalT *, VisitVertex<OptimizationPass> &visit) {
-  if (root->type() == op_var) {
-    VarPtr var = root->get_var_id();
+  if (auto var_vertex = root.try_as<op_var>()) {
+    VarPtr var = var_vertex->var_id;
     kphp_assert (var);
     if (var->init_val) {
       if (try_optimize_var(var)) {

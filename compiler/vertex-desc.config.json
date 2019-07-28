@@ -160,8 +160,7 @@
         "items": {
           "enum": [
             "function",
-            "string",
-            "variable"
+            "string"
           ]
         },
         "uniqueItems": true

@@ -156,12 +156,12 @@ public:
   static UBMergeData create_from_var(VertexAdaptor<op_var> var, bool index_flag) {
     UBMergeData res;
     if (var->rl_type == val_l) {
-      res.writes_.push_back(var->get_var_id());
+      res.writes_.push_back(var->var_id);
       if (index_flag) {
-        res.index_refs_.push_back(var->get_var_id());
+        res.index_refs_.push_back(var->var_id);
       }
     } else {
-      res.reads_.push_back(var->get_var_id());
+      res.reads_.push_back(var->var_id);
     }
     return res;
   }
@@ -229,8 +229,7 @@ void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
         while (xs->type() == op_index) {
           xs = xs.as<op_index>()->array();
         }
-        kphp_assert (xs->type() == op_var || xs->type() == op_instance_prop);
-        VarPtr var = xs->get_var_id();
+        VarPtr var = xs->type() == op_var ? xs.as<op_var>()->var_id : xs.as<op_instance_prop>()->var_id;
         foreach_vars->push_back(var);
         fix_ub(foreach_v->cmd(), foreach_vars);
         foreach_vars->pop_back();

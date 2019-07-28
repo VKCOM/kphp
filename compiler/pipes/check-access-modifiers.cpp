@@ -26,15 +26,15 @@ void CheckAccessModifiersPass::check_access(AccessType need_access, ClassPtr acc
 }
 
 VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  if (root->type() == op_var) {
-    VarPtr var_id = root->get_var_id();
+  if (auto var = root.try_as<op_var>()) {
+    VarPtr var_id = var->var_id;
     if (var_id->is_class_static_var()) {
       auto member = var_id->as_class_static_field();
       kphp_assert(member);
       check_access(member->access_type, var_id->class_id, "static field", member->local_name());
     }
-  } else if (root->type() == op_instance_prop) {
-    VarPtr var_id = root->get_var_id();
+  } else if (auto prop = root.try_as<op_instance_prop>()) {
+    VarPtr var_id = prop->var_id;
     if (var_id->is_class_instance_var()) {
       auto member = var_id->as_class_instance_field();
       kphp_assert(member);

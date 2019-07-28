@@ -7,14 +7,15 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/vertex.h"
 
 GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
   main_file_(main_file) {
 }
 
 void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W) {
-  if (v->type() == op_var) {
-    VarPtr var = v->get_var_id();
+  if (auto var_vertex = v.try_as<op_var>()) {
+    VarPtr var = var_vertex->var_id;
     if (externed_vars.insert(var).second) {
       W << VarExternDeclaration(var);
     }

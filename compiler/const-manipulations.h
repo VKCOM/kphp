@@ -168,8 +168,8 @@ protected:
   }
 
   bool on_var(VertexAdaptor<op_var> v) override {
-    if (v->get_var_id() && (v->extra_type == op_ex_var_const || v->get_var_id()->is_constant())) {
-      return visit(v->get_var_id()->init_val);
+    if (v->var_id && (v->extra_type == op_ex_var_const || v->var_id->is_constant())) {
+      return visit(v->var_id->init_val);
     }
 
     return false;

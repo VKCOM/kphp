@@ -47,8 +47,8 @@ struct FunctionParams {
   void compile(CodeGenerator &W) const;
 
 private:
-  void declare_cpp_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const;
-  void declare_txt_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const;
+  void declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
+  void declare_txt_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
 };
 
 struct InterfaceDeclaration {

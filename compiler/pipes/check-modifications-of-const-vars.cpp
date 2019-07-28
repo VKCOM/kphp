@@ -17,7 +17,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
     if (auto var_inited = lvalue.try_as<op_var>()) {
       bool const_var_initialization = var_inited->is_const || PhpDocTypeRuleParser::is_tag_in_phpdoc(set_op->phpdoc_str, php_doc_tag::kphp_const);
       if (const_var_initialization) {
-        var_inited->get_var_id()->marked_as_const = true;
+        var_inited->var_id->marked_as_const = true;
         return;
       }
     }
@@ -69,7 +69,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
     case op_var:
     case op_instance_prop: {
       if (write_flag) {
-        auto const_var = v->get_var_id();
+        auto const_var = v->type() == op_var ? v.as<op_var>()->var_id : v.as<op_instance_prop>()->var_id;
         if (const_var && const_var->marked_as_const) {
           const bool modification_allowed = const_var->class_id &&
                                             const_var->class_id->construct_function == current_function &&

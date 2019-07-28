@@ -17,13 +17,13 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
       xs = xs.as<op_index>()->array();
     }
     if (xs->type() == op_var) {
-      VarPtr xs_var = xs.as<op_var>()->get_var_id();
+      VarPtr xs_var = xs.as<op_var>()->var_id;
       foreach_vars.push_back(xs_var);
       local->to_remove++;
     }
     VertexPtr x = params->x();
     kphp_assert (x->type() == op_var);
-    VarPtr x_var = x.as<op_var>()->get_var_id();
+    VarPtr x_var = x.as<op_var>()->var_id;
     for (auto &foreach_var : foreach_vars) {
       if (x_var->name == foreach_var->name) {
         kphp_warning (format("Foreach value \"%s\" shadows array, key or value of outer foreach", x_var->name.c_str()));
@@ -45,7 +45,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
       local->to_remove++;
       VertexPtr key = params->key();
       kphp_assert (key->type() == op_var);
-      VarPtr key_var = key.as<op_var>()->get_var_id();
+      VarPtr key_var = key.as<op_var>()->var_id;
       for (auto &foreach_var : foreach_vars) {
         if (key_var->name == foreach_var->name) {
           kphp_warning (format("Foreach key \"%s\" shadows array, key or value of outer foreach", key_var->name.c_str()));
@@ -58,7 +58,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, CheckNestedF
     in_unset++;
   }
   if (vertex->type() == op_var && !in_unset) {
-    VarPtr var = vertex.as<op_var>()->get_var_id();
+    VarPtr var = vertex.as<op_var>()->var_id;
     for (int i = 0; i < forbidden_vars.size(); i++) {
       if (var->name == forbidden_vars[i]->name) {
         kphp_warning (format("Reference foreach value \"%s\" is used after foreach", var->name.c_str()));

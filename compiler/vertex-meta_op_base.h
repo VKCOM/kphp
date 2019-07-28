@@ -188,10 +188,6 @@ public:
 
   virtual void set_func_id(FunctionPtr func_ptr __attribute__((unused))) { kphp_fail_msg ("set_func_id is not supported"); }
 
-  virtual const VarPtr &get_var_id() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
-
-  virtual void set_var_id(const VarPtr &) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
-
   virtual const std::string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 
   virtual void set_string(std::string) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }

@@ -54,8 +54,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
         while (val->type() == op_index) {
           val = val.as<op_index>()->array();
         }
-        kphp_assert (val->type() == op_var || val->type() == op_instance_prop);
-        VarPtr from_var = val->get_var_id();
+        VarPtr from_var = (val->type() == op_var ? val.as<op_var>()->var_id : val.as<op_instance_prop>()->var_id);
         if (from_var->is_in_global_scope()) {
           data.global_ref_edges.emplace_back(from_var, to_var);
         } else if (from_var->is_reference) {
@@ -68,13 +67,13 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
   } else if (vertex->type() == op_constructor_call) {
     auto constructor_call = vertex.as<op_constructor_call>()->get_func_id();
     data.dep.push_back(constructor_call);
-  } else if (vertex->type() == op_var/* && vertex->rl_type == val_l*/) {
-    VarPtr var = vertex.as<op_var>()->get_var_id();
+  } else if (auto var_vertex = vertex.try_as<op_var>()) {
+    VarPtr var = var_vertex->var_id;
     if (var->is_in_global_scope()) {
       data.used_global_vars.push_back(var);
     }
-  } else if (vertex->type() == op_func_param) {
-    VarPtr var = vertex.as<op_func_param>()->var()->get_var_id();
+  } else if (auto param = vertex.try_as<op_func_param>()) {
+    VarPtr var = param->var()->var_id;
     if (var->is_reference) {
       data.used_ref_vars.push_back(var);
     }

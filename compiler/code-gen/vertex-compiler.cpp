@@ -557,8 +557,8 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   }
 
   TypeData const *type_data = xs->tinf_node.type_;
-  if (xs->type() == op_var) {
-    type_data = xs->get_var_id()->tinf_node.type_;
+  if (auto xs_var = xs.try_as<op_var>()) {
+    type_data = xs_var->var_id->tinf_node.type_;
   }
 
   PrimitiveType ptype = type_data->get_real_ptype();
@@ -1004,7 +1004,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
     auto params = func->get_params();
     kphp_assert(!params.empty());
     auto variadic_arg = std::prev(params.end());
-    auto name_of_variadic_param = VarName(variadic_arg->as<op_func_param>()->var()->get_var_id());
+    auto name_of_variadic_param = VarName(variadic_arg->as<op_func_param>()->var()->var_id);
     W << "if (!" << name_of_variadic_param << ".is_vector())" << BEGIN;
     W << "php_warning(\"pass associative array(" << name_of_variadic_param << ") to variadic function: " << FunctionName(func) << "\");" << NL;
     W << name_of_variadic_param << " = f$array_values(" << name_of_variadic_param << ");" << NL;
@@ -1157,16 +1157,18 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
  */
 inline int can_use_precomputed_hash_indexing_array(VertexPtr key) {
   // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
-  if (key->type() == op_var && key->extra_type == op_ex_var_const && key->get_var_id()->init_val->type() == op_string) {
-    const std::string &string_key = key->get_var_id()->init_val->get_string();
+  if (auto key_var = key.try_as<op_var>()) {
+    if (key->extra_type == op_ex_var_const && key_var->var_id->init_val->type() == op_string) {
+      const std::string &string_key = key_var->var_id->init_val->get_string();
 
-    // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
-    int int_val;
-    if (php_try_to_int(string_key.c_str(), (int)string_key.size(), &int_val)) {
-      return 0;
+      // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
+      int int_val;
+      if (php_try_to_int(string_key.c_str(), (int)string_key.size(), &int_val)) {
+        return 0;
+      }
+
+      return string_hash(string_key.c_str(), (int)string_key.size());
     }
-
-    return string_hash(string_key.c_str(), (int)string_key.size());
   }
 
   return 0;
@@ -1435,7 +1437,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
       {
         W << "return " << FunctionName(invoke_method) << "(bound_class";
         for (auto param : params_without_first) {
-          W << ", std::move(" << VarName(param.as<op_func_param>()->var()->get_var_id()) << ")";
+          W << ", std::move(" << VarName(param.as<op_func_param>()->var()->var_id) << ")";
         }
         W << ");" << NL;
       }
@@ -1749,7 +1751,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << "var()";
       break;
     case op_var:
-      W << VarName(root->get_var_id());
+      W << VarName(root.as<op_var>()->var_id);
       break;
     case op_string:
       compile_string(root.as<op_string>(), W);

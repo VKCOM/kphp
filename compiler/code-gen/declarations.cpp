@@ -102,23 +102,23 @@ FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_heade
   }
 }
 
-void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const {
+void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
   W << type << " ";
   if (var->ref_flag) {
     W << "&";
   }
-  auto var_ptr = var->get_var_id();
+  auto var_ptr = var->var_id;
   if (var_ptr->marked_as_const) {
     W << "const &";
   }
   W << VarName(var_ptr);
 }
 
-void FunctionParams::declare_txt_param(CodeGenerator &W, VertexPtr var, const TypeName &type) const {
+void FunctionParams::declare_txt_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
   if (var->ref_flag) {
     W << "&";
   }
-  W << "$" << var->get_var_id()->name << " :<=: " << type;
+  W << "$" << var->var_id->name << " :<=: " << type;
 }
 
 void FunctionParams::compile(CodeGenerator &W) const {
@@ -136,7 +136,7 @@ void FunctionParams::compile(CodeGenerator &W) const {
     }
 
     auto param = i.as<op_func_param>();
-    VertexPtr var = param->var();
+    auto var = param->var();
     TypeName type_gen(tinf::get_type(function, ii), style);
     switch (style) {
       case gen_out_style::cpp: {
@@ -203,8 +203,8 @@ void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W)
   for (auto child: *vertex) {
     declare_all_variables(child, W);
   }
-  if (vertex->type() == op_var) {
-    W << VarExternDeclaration(vertex->get_var_id());
+  if (auto var = vertex.try_as<op_var>()) {
+    W << VarExternDeclaration(var->var_id);
   }
 }
 

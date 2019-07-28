@@ -48,7 +48,7 @@ public:
       }
 
       for (auto v : parts[i]) {
-        v->set_var_id(new_var);
+        v->var_id = new_var;
       }
 
       VertexRange params = function->get_params();
@@ -98,19 +98,18 @@ public:
   void add_uninited_var(VertexAdaptor<op_var> v) {
     if (v && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
       uninited_vars.push_back(v);
-      v->get_var_id()->set_uninited_flag(true);
+      v->var_id->set_uninited_flag(true);
     }
   }
 
   void check_uninited() {
     for (auto v : uninited_vars) {
-      VarPtr var = v->get_var_id();
       if (tinf::get_type(v)->ptype() == tp_var) {
         continue;
       }
 
       stage::set_location(v->get_location());
-      kphp_warning (format("Variable [%s] may be used uninitialized", var->name.c_str()));
+      kphp_warning (format("Variable [%s] may be used uninitialized", v->var_id->name.c_str()));
     }
   }
 
@@ -173,7 +172,7 @@ public:
       to_merge.clear();
       to_merge.reserve(parts.size());
       for (int i = 0; i < parts.size(); i++) {
-        to_merge.emplace_back(MergeData{i, parts[i][0]->get_var_id()});
+        to_merge.emplace_back(MergeData{i, parts[i][0]->var_id});
       }
       sort_merge_data(to_merge);
 
@@ -184,14 +183,14 @@ public:
           std::vector<VarPtr> vars;
           vars.reserve(ids.size());
           for (int id : ids) {
-            vars.push_back(parts[id][0]->get_var_id());
+            vars.push_back(parts[id][0]->var_id);
           }
 
           const std::string &new_name = vars[0]->name;   // либо name, либо name$vN
           VarPtr new_var = merge_vars(vars, new_name);
           for (int id : ids) {
-            for (VertexPtr v : parts[id]) {
-              v->set_var_id(new_var);
+            for (auto v : parts[id]) {
+              v->var_id = new_var;
             }
           }
 
@@ -339,7 +338,7 @@ Node CFG::new_node() {
 }
 
 UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
-  VarPtr var = v->get_var_id();
+  VarPtr var = v->var_id;
   kphp_assert (var);
   VarSplitPtr var_split = get_var_split(var, false);
   if (!var_split) {
@@ -378,7 +377,7 @@ void CFG::add_edge(Node from, Node to) {
 
 void CFG::collect_ref_vars(VertexPtr v, std::unordered_set<VarPtr> &ref) {
   if (v->type() == op_var && v->ref_flag) {
-    ref.emplace(v->get_var_id());
+    ref.emplace(v.as<op_var>()->var_id);
   }
   for (auto i : *v) {
     collect_ref_vars(i, ref);
@@ -1060,8 +1059,8 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
 }
 
 bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
-  VarPtr var = usage->v->get_var_id();
-  VarPtr another_var = another_usage->v->get_var_id();
+  VarPtr var = usage->v->var_id;
+  VarPtr another_var = another_usage->v->var_id;
   if (var == another_var) {
     VarSplitPtr var_split = get_var_split(var, false);
     kphp_assert (var_split);
@@ -1074,7 +1073,7 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
 void CFG::compress_usages(std::vector<UsagePtr> &usages) {
   std::sort(usages.begin(), usages.end(),
             [](const UsagePtr &l, const UsagePtr &r) {
-              return l->v->get_var_id() < r->v->get_var_id();
+              return l->v->var_id < r->v->var_id;
             });
 
   std::vector<UsagePtr> res;
@@ -1115,7 +1114,7 @@ UsagePtr CFG::search_uninit_usage(Node v, VarPtr var) {
 
   bool write_usage_found = false;
   for (UsagePtr another_usage : node_usages[v]) {
-    if (another_usage->v->get_var_id() == var) {
+    if (another_usage->v->var_id == var) {
       if (another_usage->type == usage_write_t || another_usage->weak_write_flag) {
         write_usage_found = true;
       } else if (another_usage->type == usage_read_t) {

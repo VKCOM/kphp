@@ -309,7 +309,6 @@
   },
   {
     "extras": [
-      "variable",
       "string"
     ],
     "name": "op_var",
@@ -324,6 +323,10 @@
       "is_const": {
         "type": "bool",
         "default": "false"
+      },
+      "var_id": {
+        "type": "VarPtr",
+        "default": "{}"
       }
     }
   },
@@ -414,8 +417,7 @@
   },
   {
     "extras": [
-      "string",
-      "variable"
+      "string"
     ],
     "name": "op_instance_prop",
     "base_name": "meta_op_base",
@@ -427,6 +429,12 @@
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "op_instance_prop"
+    },
+    "extra_fields": {
+      "var_id": {
+        "type": "VarPtr",
+        "default": "{}"
+      }
     }
   },
   {

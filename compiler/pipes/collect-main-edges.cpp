@@ -301,23 +301,23 @@ void CollectMainEdgesPass::on_return(VertexAdaptor<op_return> v) {
 
 void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
   auto params = foreach_op->params();
-  VertexPtr xs, x, key, temp_var;
-  xs = params->xs();
-  x = params->x();
-  temp_var = params->temp_var();
+  auto xs = params->xs();
+  auto x = params->x();
+  VertexAdaptor<op_var> key;
   if (params->has_key()) {
     key = params->key();
   }
   if (x->ref_flag) {
     LValue xs_tinf = as_lvalue(xs);
     create_set(xs_tinf, tp_array);
-    create_set(params, x->get_var_id());
+    create_set(params, x->var_id);
   } else {
-    create_set(temp_var->get_var_id(), xs);
+    auto temp_var = params->temp_var().as<op_var>();
+    create_set(temp_var->var_id, xs);
   }
-  create_set(x->get_var_id(), params);
+  create_set(x->var_id, params);
   if (key) {
-    create_set(key->get_var_id(), tp_var);
+    create_set(key->var_id, tp_var);
   }
 }
 
@@ -363,12 +363,13 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
     return;
   }
   for (auto cur : *v) {
-    if (cur->type() == op_var && cur->get_var_id()->is_constant()) {
-      continue;
-    }
-
-    if (cur->type() == op_var && (ifi_tp == ifi_unset || ifi_tp == ifi_isset || ifi_tp == ifi_is_null)) {
-      create_set(cur, tp_var);
+    if (auto var = cur.try_as<op_var>()) {
+      if (var->var_id->is_constant()) {
+        continue;
+      }
+      if (ifi_tp == ifi_unset || ifi_tp == ifi_isset || ifi_tp == ifi_is_null) {
+        create_set(var, tp_var);
+      }
     }
 
     if ((cur->type() == op_var && ifi_tp != ifi_unset) || (ifi_tp > ifi_isset && cur->type() == op_index)) {
