@@ -47,7 +47,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
 
     case op_func_call:
     case op_constructor_call: {
-      FunctionPtr func = v->get_func_id();
+      FunctionPtr func = v.as<op_func_call>()->func_id;
       if (!func) {
         return;
       }

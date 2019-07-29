@@ -168,7 +168,7 @@ public:
 
   static UBMergeData create_from_func_ptr(VertexAdaptor<op_func_ptr> func_ptr) {
     UBMergeData res;
-    res.functions_.push_back(func_ptr->get_func_id());
+    res.functions_.push_back(func_ptr->func_id);
     return res;
   }
 };
@@ -194,8 +194,8 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
       *last_ub_error = last_ub_error_save;
       res |= data->merge_with(node_data, do_not_check);
     }
-    if (v->type() == op_func_call) {
-      FunctionPtr function = v.as<op_func_call>()->get_func_id();
+    if (auto call = v.try_as<op_func_call>()) {
+      FunctionPtr function = call->func_id;
       res |= data->called_by(function);
     }
     stage::set_location(save_location);

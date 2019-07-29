@@ -7,7 +7,7 @@
 
 VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::LocalT *local) {
   if (local->extern_func_call && vertex->type() == op_func_ptr) {
-    FunctionPtr callback_passed_to_extern_func = vertex->get_func_id();
+    FunctionPtr callback_passed_to_extern_func = vertex.as<op_func_ptr>()->func_id;
     kphp_assert(callback_passed_to_extern_func);
 
     if (callback_passed_to_extern_func->is_lambda()) {
@@ -33,7 +33,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
 
   //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
-    FunctionPtr other_function = call->get_func_id();
+    FunctionPtr other_function = call->func_id;
     data.dep.push_back(other_function);
     if (other_function->is_extern()) {
       local->extern_func_call = vertex.as<op_func_call>();
@@ -62,11 +62,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
         }
       }
     }
-  } else if (vertex->type() == op_func_ptr) {
-    data.dep.push_back(vertex.as<op_func_ptr>()->get_func_id());
-  } else if (vertex->type() == op_constructor_call) {
-    auto constructor_call = vertex.as<op_constructor_call>()->get_func_id();
-    data.dep.push_back(constructor_call);
+  } else if (auto ptr = vertex.try_as<op_func_ptr>()) {
+    data.dep.push_back(ptr->func_id);
   } else if (auto var_vertex = vertex.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     if (var->is_in_global_scope()) {
@@ -78,9 +75,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
       data.used_ref_vars.push_back(var);
     }
   } else if (vertex->type() == op_fork) {
-    VertexPtr func_call = vertex.as<op_fork>()->func_call();
-    kphp_error (func_call->type() == op_func_call, "Fork can be called only for function call.");
-    data.forks.push_back(func_call->get_func_id());
+    auto func_call = vertex.as<op_fork>()->func_call().as<op_func_call>();
+    data.forks.push_back(func_call->func_id);
   }
 
   return vertex;

@@ -55,7 +55,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
   set_location(invoke_function, created_location);
 
   auto invoke_fun = register_invoke_method(invoke_function);
-  invoke_fun->has_variadic_param = function->get_func_id() && function->get_func_id()->has_variadic_param;
+  invoke_fun->has_variadic_param = function->func_id && function->func_id->has_variadic_param;
 
   return *this;
 }
@@ -77,7 +77,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPt
   auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
   call_function->extra_type = op_ex_func_call_arrow;
   call_function->set_string(called_method->local_name());
-  call_function->set_func_id(called_method);
+  call_function->func_id = called_method;
 
   auto params_of_called_method = called_method->get_params();
   kphp_assert(!params_of_called_method.empty());
@@ -91,7 +91,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
   auto call_function = VertexAdaptor<op_func_call>::create(lambda_params);
 
   call_function->set_string(called_function->name);
-  call_function->set_func_id(called_function);
+  call_function->func_id = called_function;
   return create_invoke_fun_returning_call(called_function, call_function, called_function->root->params());
 }
 
@@ -142,7 +142,7 @@ LambdaPtr LambdaGenerator::create_class(VertexAdaptor<op_func_name> name) {
 VertexAdaptor<op_seq> LambdaGenerator::create_invoke_cmd(VertexAdaptor<op_function> function) {
   VertexPtr new_cmd = function->cmd().clone();
   // if we didn't do it early
-  if (!function->get_func_id() || !function->get_func_id()->function_in_which_lambda_was_created) {
+  if (!function->func_id || !function->func_id->function_in_which_lambda_was_created) {
     add_this_to_captured_variables(new_cmd);
   }
   return new_cmd.as<op_seq>();
@@ -154,7 +154,7 @@ VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAd
   auto params_range = get_function_params(function);
   auto params_begin = params_range.begin();
   auto params_end = params_range.end();
-  if (function->get_func_id() && (function->get_func_id()->function_in_which_lambda_was_created || function->get_func_id()->is_lambda())) {
+  if (function->func_id && (function->func_id->function_in_which_lambda_was_created || function->func_id->is_lambda())) {
     kphp_assert(!params_range.empty());
     // skip $this parameter, which was added to `function` previously
     std::advance(params_begin, 1);
@@ -256,7 +256,7 @@ LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(FunctionPtr b
   set_location(created_location, call_function, return_call, lambda_body);
 
   auto fun = VertexAdaptor<op_function>::create(lambda_class_name, invoke_params, lambda_body);
-  fun->set_func_id(base_fun);
+  fun->func_id = base_fun;
   add_invoke_method(fun);
 
   return *this;

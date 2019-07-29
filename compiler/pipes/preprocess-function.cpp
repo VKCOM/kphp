@@ -45,7 +45,7 @@ public:
         auto call_function = VertexAdaptor<op_func_call>::create(clone_root->expr()).set_location(clone_root);
         call_function->extra_type = op_ex_func_call_arrow;
         call_function->set_string(ClassData::NAME_OF_VIRT_CLONE);
-        call_function->set_func_id(virt_clone_func);
+        call_function->func_id = virt_clone_func;
 
         return call_function;
       }
@@ -156,7 +156,7 @@ private:
 
       if (instance_of_template_invoke) {
         VertexAdaptor<op_func_ptr> new_call_arg = VertexAdaptor<op_func_ptr>::create(call_arg);
-        new_call_arg->set_func_id(instance_of_template_invoke);
+        new_call_arg->func_id = instance_of_template_invoke;
         new_call_arg->set_string(invoke_name);
         ::set_location(new_call_arg, call_arg->location);
         call_arg = new_call_arg;
@@ -215,7 +215,7 @@ private:
     }
 
     call->set_string(name_of_function_instance);
-    call->set_func_id({});
+    call->func_id = {};
     if (auto instance = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, func, name_of_function_instance)) {
       set_func_id(call, instance);
     }
@@ -287,7 +287,7 @@ private:
         auto merge_arrays = VertexAdaptor<op_func_call>::create(array_from_varargs_passed_as_positional, unpacking_args_converted_to_array);
         merge_arrays->set_string("array_merge");
         merge_arrays.set_location(call);
-        merge_arrays->set_func_id(G->get_function("array_merge"));
+        merge_arrays->func_id = G->get_function("array_merge");
 
         new_call_args.emplace_back(merge_arrays);
       } else {
@@ -298,7 +298,7 @@ private:
     auto new_call = VertexAdaptor<op_func_call>::create(new_call_args);
     new_call->copy_location_and_flags(*call);
     new_call->extra_type = call->extra_type;
-    new_call->set_func_id(func);
+    new_call->func_id = func;
     new_call->str_val = call->str_val;
 
     return new_call;
@@ -344,14 +344,15 @@ private:
 
   VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
     kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
+    FunctionPtr &func_id = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
     kphp_assert (func);
-    kphp_assert (!call->get_func_id() || call->get_func_id() == func);
-    if (call->get_func_id() == func) {
+    kphp_assert (!func_id || func_id == func);
+    if (func_id == func) {
       return call;
     }
     //fprintf (stderr, "%s\n", func->name.c_str());
 
-    call->set_func_id(func);
+    func_id = func;
     if (call->type() == op_func_ptr) {
       if (!func->is_required) {
         std::string err = "function: `" + func->name + "` need tag @kphp-required, because used only as string passed to internal functions";
@@ -471,9 +472,10 @@ private:
    * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
    */
   VertexPtr try_set_func_id(VertexPtr call) {
-    if (call->get_func_id()) {
-      if (call->get_func_id()->is_lambda_with_uses()) {
-        LambdaPtr lambda_class = call->get_func_id()->class_id.as<LambdaClassData>();
+    FunctionPtr func_id = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
+    if (func_id) {
+      if (func_id->is_lambda_with_uses()) {
+        LambdaPtr lambda_class = func_id->class_id.as<LambdaClassData>();
         if (!lambda_class->construct_function->is_template) {
           return call;
         }

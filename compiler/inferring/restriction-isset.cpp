@@ -116,7 +116,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
       bt->pop_back();
     }
     if (auto call = v.try_as<op_func_call>()) {
-      FunctionPtr func = call->get_func_id();
+      FunctionPtr func = call->func_id;
       bt->push_back(node);
       if (find_dangerous_isset_dfs(isset_flags, tinf::get_tinf_node(func, -1), bt)) {
         return true;

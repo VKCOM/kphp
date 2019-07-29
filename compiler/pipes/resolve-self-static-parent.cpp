@@ -45,8 +45,8 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
   }
 
   // заменяем new A на new Classes\A, т.е. зарезолвленное полное имя класса
-  if (v->type() == op_constructor_call) {
-    if (!v->get_func_id()) {
+  if (auto call = v.try_as<op_constructor_call>()) {
+    if (!call->func_id) {
       const std::string &class_name = resolve_uses(current_function, v->get_string(), '\\');
       v->set_string(class_name);
       check_access_to_class_from_this_file(class_name);

@@ -230,7 +230,7 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, FunctionPassBase::Loc
       current_function->explicit_const_var_ids.emplace(var_id);
     }
   } else if (auto func_call = root.try_as<op_func_call>()) {
-    auto func = func_call->get_func_id();
+    auto func = func_call->func_id;
     if (!func->has_variadic_param && func->type != FunctionData::func_extern) {
       auto args = func_call->args();
       const auto &params = func->param_ids;

@@ -1010,7 +1010,7 @@ int GenTree::get_id_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr e
   int id = -1;
   if (auto fun_call = expr.try_as<op_func_call>()) {
     id = arg->int_val - 1;
-    if (auto func_id = fun_call->get_func_id()) {
+    if (auto func_id = fun_call->func_id) {
       if (id < 0 || id >= func_id->get_params().size()) {
         id = -1;
       }

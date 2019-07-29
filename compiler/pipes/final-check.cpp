@@ -54,7 +54,7 @@ void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
 }
 
 void check_func_call_params(VertexAdaptor<op_func_call> call) {
-  FunctionPtr f = call->get_func_id();
+  FunctionPtr f = call->func_id;
   VertexRange func_params = f->get_params();
 
   VertexRange call_params = call->args();
@@ -70,9 +70,12 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     }
 
     auto lambda_class = LambdaClassData::get_from(call_params[i]);
-    kphp_error_act(call_params[i]->type() == op_func_ptr || lambda_class, "Callable object expected", continue);
+    kphp_error_act(lambda_class || call_params[i]->type() == op_func_ptr, "Callable object expected", continue);
 
-    FunctionPtr func_ptr_of_callable = call_params[i]->get_func_id();
+    FunctionPtr func_ptr_of_callable =
+      call_params[i]->type() == op_func_ptr ?
+      call_params[i].as<op_func_ptr>()->func_id :
+      call_params[i].as<op_func_call>()->func_id;
 
     kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
     VertexRange cur_params = func_ptr_of_callable->get_params();
@@ -227,7 +230,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     FunctionPtr function_where_require = stage::get_function();
 
     if (function_where_require && function_where_require->type == FunctionData::func_local) {
-      FunctionPtr function_which_required = vertex->get_func_id();
+      FunctionPtr function_which_required = vertex.as<op_func_call>()->func_id;
       if (function_which_required == function_which_required->file_id->main_function) {
         kphp_assert(function_which_required->type == FunctionData::func_global);
 
@@ -248,7 +251,7 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
 }
 
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
-  if (call->get_func_id()->is_extern()) {
+  if (call->func_id->is_extern()) {
     auto &function_name = call->get_string();
     if (function_name == "instance_cache_fetch_immutable") {
       check_instance_cache_fetch_immutable_call(call);
@@ -295,8 +298,7 @@ bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalChec
     return true;
   }
 
-  if (v->type() == op_func_call || v->type() == op_var ||
-      v->type() == op_index || v->type() == op_constructor_call) {
+  if (vk::any_of_equal(v->type(), op_func_call, op_var, op_index, op_constructor_call)) {
     if (v->rl_type == val_r) {
       const TypeData *type = tinf::get_type(v);
       if (type->get_real_ptype() == tp_Unknown) {
@@ -309,10 +311,10 @@ bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalChec
         if (auto var_vertex = v.try_as<op_var>()) {
           VarPtr var = var_vertex->var_id;
           desc += "variable [$" + var->name + "]" + index_depth;
-        } else if (v->type() == op_func_call) {
-          desc += "function [" + v.as<op_func_call>()->get_func_id()->name + "]" + index_depth;
-        } else if (v->type() == op_constructor_call) {
-          desc += "constructor [" + v.as<op_constructor_call>()->get_func_id()->name + "]" + index_depth;
+        } else if (auto cons = v.try_as<op_constructor_call>()) {
+          desc += "constructor [" + cons->func_id->name + "]" + index_depth;
+        } else if (auto call = v.try_as<op_func_call>()) {
+          desc += "function [" + call->func_id->name + "]" + index_depth;
         } else {
           desc += "...";
         }

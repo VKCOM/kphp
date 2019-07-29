@@ -3,7 +3,7 @@
 #include "compiler/data/src-file.h"
 
 void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
-  FunctionPtr f = call->get_func_id();
+  FunctionPtr f = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
   kphp_assert(f);
   kphp_error_return(f->root, format("Function [%s] undeclared", f->get_human_readable_name().c_str()));
 
@@ -53,7 +53,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
                                 f->file_id->file_name.c_str(), f->get_human_readable_name().c_str()
                         ));
 
-      if (!FunctionData::check_cnt_params(get_function_params(func_param).size(), call_param->get_func_id())) {
+      if (!FunctionData::check_cnt_params(get_function_params(func_param).size(), call_param->func_id)) {
         return;
       }
     }

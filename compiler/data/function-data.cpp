@@ -18,7 +18,7 @@ FunctionPtr FunctionData::create_function(VertexAdaptor<op_function> root, func_
   static CachedProfiler cache("create_function");
   AutoProfiler prof{*cache};
   FunctionPtr function(new FunctionData());
-  root->set_func_id(function);
+  root->func_id = function;
 
   function->name = root->name()->get_string();
   function->root = root;

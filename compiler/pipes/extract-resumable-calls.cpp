@@ -57,7 +57,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
     return vertex;
   }
   func_call = (*replace).as<op_func_call>();
-  FunctionPtr func = func_call->get_func_id();
+  FunctionPtr func = func_call->func_id;
   if (!func->is_resumable) {
     return vertex;
   }

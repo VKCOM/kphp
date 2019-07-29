@@ -28,7 +28,7 @@ LValue as_lvalue(VertexPtr v) {
   } else if (v->type() == op_array) {
     kphp_fail();
   } else if (auto call = v.try_as<op_func_call>()) {
-    value = tinf::get_tinf_node(call->get_func_id(), -1);
+    value = tinf::get_tinf_node(call->func_id, -1);
   } else if (auto prop = v.try_as<op_instance_prop>()) {       // при $a->arr[] = 1; когда не работает верхнее условие
     value = tinf::get_tinf_node(prop->var_id);
   } else {

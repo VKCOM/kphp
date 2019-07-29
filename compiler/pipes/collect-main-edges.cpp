@@ -161,13 +161,13 @@ void CollectMainEdgesPass::add_type_help(VertexPtr v) {
 }
 
 void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> call, int id) {
-  const FunctionPtr call_function = call->get_func_id();
+  const FunctionPtr call_function = call->func_id;
   const VertexPtr ith_argument_of_call = call->args()[id];
   auto callback_param = call_function->get_params()[id].as<op_func_param_callback>();
 
   FunctionPtr callback_function;
-  if (ith_argument_of_call->type() == op_func_ptr) {
-    callback_function = ith_argument_of_call->get_func_id();
+  if (auto ptr = ith_argument_of_call.try_as<op_func_ptr>()) {
+    callback_function = ptr->func_id;
   }
 
   kphp_assert(callback_function);
@@ -191,7 +191,7 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
   if (!is_any) {
     auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
     fake_func_call->type_rule = callback_param->type_rule;
-    fake_func_call->set_func_id(call_function);
+    fake_func_call->func_id = call_function;
     create_less(as_rvalue(callback_function, -1), fake_func_call);
   } else {
     create_non_void(as_rvalue(callback_function, -1));
@@ -204,7 +204,7 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
     if (VertexPtr type_rule = callback_ith_arg->type_rule) {
       auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
       fake_func_call->type_rule = type_rule;
-      fake_func_call->set_func_id(call_function);
+      fake_func_call->func_id = call_function;
 
       int id_of_callbak_argument = callback_function->is_lambda() ? i + 1 : i;
       create_set(as_lvalue(callback_function, id_of_callbak_argument), fake_func_call);
@@ -213,7 +213,7 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
 }
 
 void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
-  FunctionPtr function = call->get_func_id();
+  FunctionPtr function = call->func_id;
   VertexRange function_params = function->get_params();
 
   //hardcoded hack
@@ -242,7 +242,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     rule->type_help = tp_future_queue;
     rule = VertexAdaptor<op_common_type_rule>::create(rule);
     fake_func_call->type_rule = rule;
-    fake_func_call->set_func_id(call->get_func_id());
+    fake_func_call->func_id = call->func_id;
 
     create_set(val, fake_func_call);
   }
@@ -273,7 +273,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
 }
 
 void CollectMainEdgesPass::on_constructor_call(VertexAdaptor<op_constructor_call> call) {
-  FunctionPtr function = call->get_func_id();
+  FunctionPtr function = call->func_id;
   VertexRange function_params = function->get_params();
 
   int ii = 0;
@@ -466,14 +466,6 @@ bool CollectMainEdgesPass::on_start(FunctionPtr function) {
 }
 
 VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {
-  if (v->type() == op_try) {
-    auto try_v = v.as<op_try>();
-    if (try_v->exception()->type() == op_empty) {
-      kphp_assert(try_v->catch_cmd()->type() == op_seq && try_v->catch_cmd()->size() == 0);
-      return try_v->try_cmd();
-    }
-  }
-
   if (v->type_rule) {
     add_type_rule(v);
   }

@@ -418,7 +418,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int s
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
   } else {
-    func = root->get_func_id();
+    func = root->func_id;
     if (state != 1 && state != 2 && W.get_context().resumable_flag && func->is_resumable) {
       kphp_error (0, format("Can't compile resumable function [%s] without async\n"
                             "Function is resumable because of calls chain:\n%s\n", func->get_human_readable_name().c_str(), func->get_resumable_path().c_str()));
@@ -457,7 +457,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int s
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
-  if (!root->get_func_id()->can_throw) {
+  if (!root->func_id->can_throw) {
     compile_func_call(root, W);
     return;
   }
@@ -491,7 +491,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
     W << lhs << " = ";
   }
   compile_func_call(func_call, W, 1);
-  FunctionPtr func = func_call->get_func_id();
+  FunctionPtr func = func_call->func_id;
   W << ";" << NL;
   if (lhs->type() != op_empty) {
     W << "TRY_WAIT" << MacroBegin{} << gen_unique_name("resumable_label") << ", " << lhs << ", "
@@ -870,7 +870,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 }
 
 void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
-  FunctionPtr func = func_root->get_func_id();
+  FunctionPtr func = func_root->func_id;
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
   W << "class " << FunctionClassName(func) << " : public Resumable " <<
     BEGIN <<
@@ -974,7 +974,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 }
 
 void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
-  FunctionPtr func = func_root->get_func_id();
+  FunctionPtr func = func_root->func_id;
 
   W.get_context().parent_func = func;
   W.get_context().resumable_flag = func->is_resumable;
@@ -1026,7 +1026,7 @@ static bool can_save_ref(VertexPtr v) {
     return true;
   }
   if (v->type() == op_func_call) {
-    FunctionPtr func = v.as<op_func_call>()->get_func_id();
+    FunctionPtr func = v.as<op_func_call>()->func_id;
     if (func->is_extern()) {
       //todo
       return false;
@@ -1413,7 +1413,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
       root->str_val == "is_real") {
     W << "(bool (*) (const var &))";
   }
-  if (root->get_func_id()->is_lambda()) {
+  if (root->func_id->is_lambda()) {
     /**
      * KPHP code like this:
      *   array_map(function ($x) { return $x; }, ['a', 'b']);
@@ -1426,7 +1426,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
      *     };
      *   }), const_array);
      */
-    FunctionPtr invoke_method = root->get_func_id();
+    FunctionPtr invoke_method = root->func_id;
     W << "(" << BEGIN;
     {
       W << "auto bound_class = " << root->bound_class() << ";" << NL;
@@ -1445,7 +1445,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
     }
     W << END << ")" << NL;
   } else {
-    W << FunctionName(root->get_func_id());
+    W << FunctionName(root->func_id);
   }
 }
 

@@ -11,8 +11,10 @@
 #include "compiler/vertex.h"
 
 LambdaPtr LambdaClassData::get_from(VertexPtr v) {
-  if (v->type() == op_func_ptr && v->get_func_id()) {
-    return get_from(v->get_func_id()->root);
+  if (auto func_ptr = v.try_as<op_func_ptr>()) {
+    if (func_ptr->func_id) {
+      return get_from(func_ptr->func_id->root);
+    }
   }
 
   if (tinf::Node *tinf_node = tinf::get_tinf_node(v)) {
@@ -21,8 +23,9 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
     }
   }
 
-  if (vk::any_of_equal(v->type(), op_function, op_constructor_call) && v->get_func_id()->class_id) {
-    return v->get_func_id()->class_id.try_as<LambdaClassData>();
+  if (vk::any_of_equal(v->type(), op_function, op_constructor_call)) {
+    FunctionPtr fun = v->type() == op_function ? v.as<op_function>()->func_id : v.as<op_constructor_call>()->func_id;
+    return fun->class_id.try_as<LambdaClassData>();
   } else if (vk::any_of_equal(v->type(), op_func_call, op_var)) {
     ClassPtr c;
     if (infer_class_of_expr(stage::get_function(), v, c) == assum_instance) {
@@ -93,7 +96,7 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     auto call_param = extern_function_call->args()[id_of_call_parameter];
     assum = infer_class_of_expr(function_context, call_param, klass_assumed);
 
-    auto extern_func_params = extern_function_call->get_func_id()->get_params();
+    auto extern_func_params = extern_function_call->func_id->get_params();
     return extern_func_params[id_of_call_parameter]->type_help;
   } else if (auto rule = type_rule.try_as<op_type_expr_type>()) {
     return rule->type_help;
@@ -113,7 +116,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   VertexRange call_params = extern_function_call->args();
   //int call_params_n = static_cast<int>(call_params.size());
 
-  VertexRange extern_func_params = extern_function_call->get_func_id()->get_params();
+  VertexRange extern_func_params = extern_function_call->func_id->get_params();
   auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p->type() == op_func_param_callback; });
   kphp_assert(callback_it != extern_func_params.end());
   auto callback_pos = static_cast<size_t>(std::distance(extern_func_params.begin(), callback_it));
@@ -188,7 +191,7 @@ VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_ar
   args.insert(args.begin(), VertexAdaptor<op_false>::create());
   auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
   constructor_call->set_string(name);
-  constructor_call->set_func_id(construct_function);
+  constructor_call->func_id = construct_function;
 
   return constructor_call;
 }

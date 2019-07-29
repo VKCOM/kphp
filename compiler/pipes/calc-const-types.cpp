@@ -33,8 +33,8 @@ void CalcConstTypePass::on_exit_edge(VertexPtr, LocalT *v_local, VertexPtr from,
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *local) {
   switch (OpInfo::cnst(v->type())) {
     case cnst_func:
-      if (v->get_func_id()) {
-        VertexPtr root = v->get_func_id()->root;
+      if (v.as<op_func_call>()->func_id) {
+        VertexPtr root = v.as<op_func_call>()->func_id->root;
         if (!root || !root->type_rule || root->type_rule.as<meta_op_type_rule>()->rule()->extra_type != op_ex_rule_const) {
           v->const_type = cnst_nonconst_val;
           break;

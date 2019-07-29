@@ -23,7 +23,7 @@ VertexPtr ExtractAsyncPass::on_enter_vertex(VertexPtr vertex, ExtractAsyncPass::
   if (!func_call) {
     return vertex;
   }
-  FunctionPtr func = func_call->get_func_id();
+  FunctionPtr func = func_call->func_id;
   if (!func->is_resumable) {
     return vertex;
   }

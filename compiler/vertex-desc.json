@@ -55,7 +55,6 @@
       }
     },
     "extras": [
-      "function",
       "string"
     ],
     "name": "op_function",
@@ -65,6 +64,12 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "function"
+    },
+    "extra_fields": {
+      "func_id": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      }
     }
   },
   {
@@ -374,7 +379,6 @@
   },
   {
     "extras": [
-      "function",
       "string"
     ],
     "name": "op_func_call",
@@ -384,11 +388,16 @@
       "cnst": "cnst_func",
       "type": "common_op",
       "str": "function call"
+    },
+    "extra_fields": {
+      "func_id": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      }
     }
   },
   {
     "extras": [
-      "function",
       "string"
     ],
     "sons": {
@@ -409,6 +418,12 @@
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "function ptr"
+    },
+    "extra_fields": {
+      "func_id": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      }
     }
   },
   {

@@ -40,8 +40,8 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
       kphp_assert(member);
       check_access(member->access_type, var_id->class_id, "field", member->local_name());
     }
-  } else if (vk::any_of_equal(root->type(), op_func_call, op_constructor_call)) {
-    FunctionPtr func_id = root.as<op_func_call>()->get_func_id();
+  } else if (auto call = root.try_as<op_func_call>()) {
+    FunctionPtr func_id = call->func_id;
     if (func_id->access_type != access_nonmember) {
       //TODO: this is hack, which should be fixed after functions with context are added to static methods list
       std::string real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));

@@ -34,8 +34,8 @@ is_func_id_t get_ifi_id(VertexPtr v) {
       return ifi_is_array;
     }
   }
-  if (v->type() == op_func_call) {
-    const string &name = v->get_func_id()->name;
+  if (auto call = v.try_as<op_func_call>()) {
+    const string &name = call->func_id->name;
     if (name.size() > 2 && name[0] == 'i' && name[1] == 's') {
       if (name == "is_bool") {
         return ifi_is_bool;

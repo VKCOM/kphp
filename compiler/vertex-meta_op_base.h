@@ -178,15 +178,13 @@ public:
 
   void init() {}
 
-  static void init_properties(OpProperties *p __attribute__((unused))) {}
+  static void init_properties(OpProperties *p __attribute__((unused))) {
+    p->op_str = "meta_op_base";
+  }
 
   const Operation &type() const { return type_; }
 
   const char *get_c_string() const { return get_string().c_str(); }
-
-  virtual const FunctionPtr &get_func_id() const { kphp_fail_msg ("get_func_id is not supported"); }
-
-  virtual void set_func_id(FunctionPtr func_ptr __attribute__((unused))) { kphp_fail_msg ("set_func_id is not supported"); }
 
   virtual const std::string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
 

@@ -161,7 +161,7 @@ void generate_body_of_interface_method(FunctionPtr interface_function) {
   auto &root = interface_function->root;
   auto declaration_location = get_location(root);
   root = VertexAdaptor<op_function>::create(root->name(), root->params(), body_of_interface_method);
-  root->set_func_id(interface_function);
+  root->func_id = interface_function;
   interface_function->type = FunctionData::func_local;
 
   std::function<void(VertexPtr)> update_location = [&](VertexPtr v) {

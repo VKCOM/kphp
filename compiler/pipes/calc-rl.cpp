@@ -56,7 +56,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
 
   auto call = root.as<op_func_call>();
 
-  VertexRange func_params = call->get_func_id()->get_params();
+  VertexRange func_params = call->func_id->get_params();
   auto func_param_it = func_params.begin();
 
   for (auto call_arg : call->args()) {

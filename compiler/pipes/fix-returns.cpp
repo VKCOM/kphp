@@ -12,8 +12,8 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
   };
 
   if (root->rl_type == val_r && is_void_expr(root)) {
-    if (root->type() == op_func_call) {
-      FunctionPtr fun = root.as<op_func_call>()->get_func_id();
+    if (auto call = root.try_as<op_func_call>()) {
+      FunctionPtr fun = call->func_id;
       kphp_error(0, format("Using result of void function %s", fun->get_human_readable_name().c_str()));
     } else {
       kphp_error(0, "Using result of void expression");

@@ -72,21 +72,12 @@ def get_string_extra():
   virtual bool has_get_string() const override { return true; }
 """
 
-
-def get_function_extra():
-    return """
-  virtual const FunctionPtr &get_func_id() const override { return func_; }
-  virtual void set_func_id(FunctionPtr func_ptr) override { func_ = func_ptr; }
-"""
-
-
 def output_extras(f, type_data):
     if "extras" in type_data:
         type_data.setdefault("extra_fields", {})
 
         do_with_extras = {
             "string": ("str_val", "std::string", get_string_extra),
-            "function": ("func_", "FunctionPtr", get_function_extra),
         }
 
         for extra_name in type_data["extras"]:
@@ -204,14 +195,15 @@ def output_props_dictionary(f, schema, props, cnt_spaces):
 
 
 def output_props(f, type_data, schema):
-    if "props" in type_data:
-        f.write("  static void init_properties(OpProperties *p) {\n")
-        f.write("    vertex_inner<{name}>::init_properties(p);\n".format(name=type_data["base_name"]))
+    if "props" not in type_data:
+        type_data["props"] = {}
+    f.write("  static void init_properties(OpProperties *p) {\n")
+    f.write("    vertex_inner<{name}>::init_properties(p);\n".format(name=type_data["base_name"]))
 
-        type_data["props"].update({"op_str": type_data["name"]})
-        output_props_dictionary(f, schema, type_data["props"], 4)
+    type_data["props"].update({"op_str": type_data["name"]})
+    output_props_dictionary(f, schema, type_data["props"], 4)
 
-        f.write("  }\n")
+    f.write("  }\n")
 
 
 def output_sons(f, type_data):

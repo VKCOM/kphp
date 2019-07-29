@@ -116,8 +116,8 @@ public:
       }
     }
 
-    if (root->type() == op_constructor_call) {
-      bool is_lambda = root->get_func_id() && root->get_func_id()->is_lambda();
+    if (auto constructor = root.try_as<op_constructor_call>()) {
+      bool is_lambda = constructor->func_id && constructor->func_id->is_lambda();
       if (!is_lambda && likely(!root->type_help)) {     // type_help <=> Memcache | Exception
         require_class(resolve_uses(current_function, root->get_string(), '/'));
       }

@@ -1,6 +1,7 @@
 #include "compiler/pipes/cfg.h"
 
 #include "compiler/data/function-data.h"
+#include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/utils/dsu.h"
@@ -305,7 +306,6 @@ class CFG {
 
   void calc_used(Node v);
   void confirm_usage(VertexPtr, bool recursive_flags);
-  void drop_unused(VertexPtr &v);
 
   UsagePtr search_uninit_usage(Node v, VarPtr var);
 
@@ -417,8 +417,8 @@ void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool 
     *can_throw = true;
   }
   //TODO: only if function has throws flag
-  if (tree_node->type() == op_func_call) {
-    *can_throw = tree_node->get_func_id()->can_throw;
+  if (auto call = tree_node.try_as<op_func_call>()) {
+    *can_throw = call->func_id->can_throw;
   }
 
   if (auto set_op = tree_node.try_as<op_set>()) {
@@ -632,7 +632,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_func_call:
     case op_constructor_call: {
-      FunctionPtr func = tree_node->get_func_id();
+      FunctionPtr func = tree_node.as<op_func_call>()->func_id;
 
       Node start, a, b;
       start = new_node();
@@ -1209,19 +1209,29 @@ void CFG::calc_used(Node v) {
   }
 }
 
-void CFG::drop_unused(VertexPtr &v) {
-  if (!vertex_usage[v].used) {
-    if (v->type() == op_seq) {
-      v = VertexAdaptor<op_seq>::create();
-    } else {
-      v = VertexAdaptor<op_empty>::create();
+class DropUnusedPass : public FunctionPassBase {
+  IdMap<VertexUsage> &vertex_usage;
+public:
+  explicit DropUnusedPass(IdMap<VertexUsage> &vertexUsage) :
+    vertex_usage(vertexUsage) {}
+
+  VertexPtr on_enter_vertex(VertexPtr v, LocalT *) {
+    if (auto try_op = v.try_as<op_try>()) {
+      if (!vertex_usage[try_op->exception()].used) {
+        kphp_assert(!vertex_usage[try_op->catch_cmd()].used);
+        return try_op->try_cmd();
+      }
     }
-    return;
+    if (!vertex_usage[v].used) {
+      if (v->type() == op_seq) {
+        return VertexAdaptor<op_seq>::create();
+      } else {
+        return VertexAdaptor<op_empty>::create();
+      }
+    }
+    return v;
   }
-  for (auto &i : *v) {
-    drop_unused(i);
-  }
-}
+};
 
 int CFG::register_vertices(VertexPtr v, int N) {
   set_index(v, N++);
@@ -1264,7 +1274,8 @@ void CFG::process_function(FunctionPtr function) {
 
   cur_dfs_mark++;
   calc_used(start);
-  drop_unused(function->root->cmd_ref());
+  DropUnusedPass pass{vertex_usage};
+  run_function_pass(function, &pass);
 
   for (auto var: splittable_vars) {
     if (var->type() != VarData::var_local_inplace_t) {
