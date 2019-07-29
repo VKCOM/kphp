@@ -232,7 +232,7 @@ void analyze_catch_of_var(FunctionPtr f, const std::string &var_name, VertexAdap
 /*
  * Из foreach($arr as $a), если $arr это массив инстансов, делаем вывод, что $a это инстанс того же класса.
  */
-static void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAdaptor<op_foreach_param> root, int depth) {
+static void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
   ClassPtr klass;
   AssumType iter_assum = infer_class_of_expr(f, root->xs(), klass, depth + 1);
 
@@ -653,15 +653,19 @@ inline AssumType infer_from_call(FunctionPtr f,
 
 inline AssumType infer_from_array(FunctionPtr f,
                                   VertexAdaptor<op_array> array,
-                                  ClassPtr &out_class) {
+                                  ClassPtr &out_class,
+                                  size_t depth) {
   kphp_assert(array);
   if (array->size() == 0) {
     return assum_unknown;
   }
 
   for (auto v : *array) {
+    if (auto double_arrow = v.try_as<op_double_arrow>()) {
+      v = double_arrow->value();
+    }
     ClassPtr inferred_class;
-    AssumType assum = infer_class_of_expr(f, v, inferred_class);
+    AssumType assum = infer_class_of_expr(f, v, inferred_class, depth + 1);
     if (assum != assum_instance) {
       return assum_not_instance;
     }
@@ -690,7 +694,6 @@ AssumType infer_from_instance_prop(FunctionPtr f,
   return calc_assumption_for_class_var(lhs_class, prop->str_val, out_class);
 }
 
-
 /*
  * Главная функция, вызывающаяся извне: возвращает assumption для любого выражения root внутри f.
  */
@@ -702,28 +705,28 @@ AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class
     case op_constructor_call:
       return infer_from_ctor(f, root.as<op_constructor_call>(), out_class);
     case op_var:
-      return infer_from_var(f, root.as<op_var>(), out_class, depth);
+      return infer_from_var(f, root.as<op_var>(), out_class, depth + 1);
     case op_instance_prop:
-      return infer_from_instance_prop(f, root.as<op_instance_prop>(), out_class, depth);
+      return infer_from_instance_prop(f, root.as<op_instance_prop>(), out_class, depth + 1);
     case op_func_call:
-      return infer_from_call(f, root.as<op_func_call>(), out_class, depth);
+      return infer_from_call(f, root.as<op_func_call>(), out_class, depth + 1);
     case op_index: {
       auto index = root.as<op_index>();
-      if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class, depth)) {
+      if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class, depth + 1)) {
         return assum_instance;
       } else {
         return assum_not_instance;
       }
     }
     case op_array:
-      return infer_from_array(f, root.as<op_array>(), out_class);
+      return infer_from_array(f, root.as<op_array>(), out_class, depth + 1);
     case op_conv_array:
     case op_conv_array_l:
-      return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), out_class, depth);
+      return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), out_class, depth + 1);
     case op_clone:
-      return infer_class_of_expr(f, root.as<op_clone>()->expr(), out_class, depth);
+      return infer_class_of_expr(f, root.as<op_clone>()->expr(), out_class, depth + 1);
     case op_seq_rval:
-      return infer_class_of_expr(f, root.as<op_seq_rval>()->back(), out_class, depth);
+      return infer_class_of_expr(f, root.as<op_seq_rval>()->back(), out_class, depth + 1);
     default:
       return assum_not_instance;
   }
