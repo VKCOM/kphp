@@ -1700,9 +1700,18 @@
   },
   {
     "sons": {
-      "try_cmd": 0,
-      "exception": 1,
-      "catch_cmd": 2
+      "try_cmd": {
+        "id": 0,
+        "type": "op_seq"
+      },
+      "exception": {
+        "id": 1,
+        "type": "op_var"
+      },
+      "catch_cmd": {
+        "id": 2,
+        "type": "op_seq"
+      }
     },
     "name": "op_try",
     "base_name": "meta_op_base",

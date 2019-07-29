@@ -2071,7 +2071,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       CE (expect(tok_clpar, "')'"));
       third_node = get_statement();
       CE (!kphp_error(third_node, "Cannot parse catch block"));
-      auto try_vertex = VertexAdaptor<op_try>::create(embrace(first_node), second_node, embrace(third_node));
+      auto try_vertex = VertexAdaptor<op_try>::create(embrace(first_node), second_node.as<op_var>(), embrace(third_node));
       set_location(try_vertex, try_location);
       return try_vertex;
     }

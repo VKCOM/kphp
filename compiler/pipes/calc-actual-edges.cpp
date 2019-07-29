@@ -28,9 +28,9 @@ bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v, LocalT *, VisitVertex
   if (v->type() == op_try) {
     VertexAdaptor<op_try> try_v = v.as<op_try>();
     inside_try++;
-    visit(try_v->try_cmd());
+    visit(try_v->try_cmd_ref());
     inside_try--;
-    visit(try_v->catch_cmd());
+    visit(try_v->catch_cmd_ref());
     return true;
   }
   return false;
