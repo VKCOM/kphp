@@ -17,6 +17,9 @@ class FunctionData : private vk::not_copyable {
   // внешний код должен использовать FunctionData::create_function()
   FunctionData() = default;
 
+private:
+  int min_argn = -1;
+
 public:
   // при @kphp-infer hint/check над функцией — все необходимые type rule хранятся в векторе infer_hints
   struct InferHint {
@@ -75,7 +78,6 @@ public:
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
 
-  int min_argn = -1;
   bool is_vararg = false;
   bool has_variadic_param = false;
   bool should_be_sync = false;
@@ -140,7 +142,7 @@ public:
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
 
-  void calc_min_argn();
+  int get_min_argn();
 
   bool is_lambda() const {
     return static_cast<bool>(function_in_which_lambda_was_created);

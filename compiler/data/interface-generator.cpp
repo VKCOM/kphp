@@ -54,8 +54,7 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
    * Class A    : min_argn = 1, max_argn = 3, default_argn = 2
    * check that : i_argn <= max_argn && (default_argn >= max_argn - i_argn)
    */
-  derived_method->calc_min_argn();
-  auto min_argn = derived_method->min_argn;
+  auto min_argn = derived_method->get_min_argn();
   auto derived_params = derived_method->get_params();
   auto max_argn = derived_params.size();
   auto default_argn = max_argn - min_argn;
@@ -77,8 +76,7 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     return VertexPtrFormatter::to_string(param->default_value());
   };
 
-  interface_function->calc_min_argn();
-  for (auto arg_id = interface_function->min_argn; arg_id < i_argn; ++arg_id) {
+  for (auto arg_id = interface_function->get_min_argn(); arg_id < i_argn; ++arg_id) {
     auto interface_repr = get_string_repr(interface_params[arg_id]);
     auto derived_repr = get_string_repr(derived_params[arg_id]);
 

@@ -26,9 +26,9 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   int func_params_n = static_cast<int>(func_params.size());
   int call_params_n = static_cast<int>(call_params.size());
 
-  kphp_error_return(call_params_n >= f->min_argn,
+  kphp_error_return(call_params_n >= f->get_min_argn(),
                     format("Not enough arguments in function [%s : %s] [found %d] [expected at least %d]",
-                            f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, f->min_argn)
+                            f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, f->get_min_argn())
   );
 
   kphp_error(call_params.begin() == call_params.end() || call_params[0]->type() != op_varg,

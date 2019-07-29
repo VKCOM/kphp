@@ -242,13 +242,47 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 }
 
+static void set_template_flag_if_has_callable_arg(FunctionPtr fun) {
+  auto params = fun->get_params();
+  auto param_n = static_cast<int>(params.size());
+  for (int i = 0; i < param_n; i++) {
+    auto param = params[i].as<meta_op_func_param>();
+
+    if (param->type_declaration == "callable") {
+      param->is_callable = true;
+      param->template_type_id = param_n + i;
+      param->type_declaration.clear();
+      fun->is_template = true;
+    }
+  }
+}
+
+static void check_default_args(FunctionPtr fun) {
+  bool was_default = false;
+
+  auto params = fun->get_params();
+  for (size_t i = 0; i < params.size(); i++) {
+    auto param = params[i].as<meta_op_func_param>();
+
+    if (param->has_default_value() && param->default_value()) {
+      was_default = true;
+      if (fun->type == FunctionData::func_local) {
+        kphp_error (!param->var()->ref_flag, format("Default value in reference function argument [function = %s]", fun->get_human_readable_name().c_str()));
+      }
+    } else {
+      kphp_error (!was_default, format("Default value expected [function = %s] [param_i = %zu]", fun->get_human_readable_name().c_str(), i));
+    }
+  }
+}
+
 void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Prepare function");
   stage::set_function(function);
   kphp_assert (function);
 
   parse_and_apply_function_kphp_phpdoc(function);
-  function->calc_min_argn();
+  set_template_flag_if_has_callable_arg(function);
+  check_default_args(function);
 
   if (stage::has_error()) {
     return;
