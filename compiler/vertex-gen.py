@@ -203,7 +203,7 @@ def output_create_function(f, data, name):
 def output_props_dictionary(f, schema, props, cnt_spaces):
     for prop_name in props:
         prop_value = props[prop_name]
-        if get_schema_properties(schema)[prop_name].get("type", "") == "string":
+        if prop_name == "op_str" or get_schema_properties(schema)[prop_name].get("type", "") == "string":
             prop_value = '"' + prop_value + '"'
 
         spaces = cnt_spaces * " "
@@ -216,6 +216,7 @@ def output_props(f, type_data, schema):
         f.write("  static void init_properties(OpProperties *p) {\n")
         f.write("    vertex_inner<{name}>::init_properties(p);\n".format(name=type_data["base_name"]))
 
+        type_data["props"].update({"op_str": type_data["name"]})
         output_props_dictionary(f, schema, type_data["props"], 4)
 
         f.write("  }\n")

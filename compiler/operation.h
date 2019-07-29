@@ -45,6 +45,7 @@ struct OpProperties {
 
   std::string description;
   std::string str;
+  std::string op_str;
 };
 
 struct OpInfo {
@@ -91,6 +92,10 @@ public:
 
   static inline const std::string &str(Operation op) {
     return properties(op).str;
+  }
+
+  static inline const char *op_str(Operation op) {
+    return properties(op).op_str.c_str();
   }
 
   static inline Operation base_op(Operation op) {

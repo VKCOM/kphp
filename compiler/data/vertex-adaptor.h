@@ -81,7 +81,8 @@ public:
       return {};
     };
     auto res = try_as<to>();
-    kphp_assert_msg(res, format("Can't cast VertexAdaptor<%d>(real type %d) to VertexAdaptor<%d>", Op, impl ? impl->type() : -1, to));
+    kphp_assert_msg(res, format("Can't cast VertexAdaptor<%s>(real type %s) to VertexAdaptor<%s>",
+                                OpInfo::op_str(Op), impl ? OpInfo::op_str(impl->type()) : "nullptr", OpInfo::op_str(to)));
     return res;
   }
 
