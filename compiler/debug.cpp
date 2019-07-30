@@ -201,7 +201,7 @@ std::string debugVertexMore(VertexPtr v) {
     case op_func_name:
       return v->get_string();
     case op_function:
-      return v.as<op_function>()->name()->get_string() + "()";
+      return v.as<op_function>()->func_id->name + "()";
     case op_var:
       return "$" + v->get_string();
     case op_instance_prop:

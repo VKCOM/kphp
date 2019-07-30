@@ -41,7 +41,17 @@ regexp::regexp(const char *regexp_string, int regexp_len) :
   init(regexp_string, regexp_len);
 }
 
-bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8) {
+#define regex_warning(function, file, format, ...) do {                               \
+  if (function || file) {                                                             \
+    const char *function_ = function ? function : "unknown_function";                 \
+    const char *file_ = file ? file : "unknown_file";                                 \
+    php_warning(format " [in function %s() at %s]", ##__VA_ARGS__, function_, file_); \
+  } else {                                                                            \
+    php_warning(format, ##__VA_ARGS__);                                               \
+  }                                                                                   \
+} while(0)
+
+bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8, const char *function, const char *file) {
 //  return false;
   int brackets_depth = 0;
   bool prev_is_group = false;
@@ -67,7 +77,7 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool
         prev_is_group = false;
         break;
       case 0:
-        php_warning("Regexp contains symbol with code 0 after %s", regexp_string);
+        regex_warning(function, file, "Regexp contains symbol with code 0 after %s", regexp_string);
         return false;
       case '(':
         brackets_depth++;
@@ -142,7 +152,7 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool
         }
 
         if (regexp_string[i] != '}') {
-          php_warning("Wrong regexp %s", regexp_string);
+          regex_warning(function, file, "Wrong regexp %s", regexp_string);
           return false;
         }
 
@@ -265,14 +275,14 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool
     }
   }
   if (brackets_depth != 0) {
-    php_warning("Brackets mismatch in regexp %s", regexp_string);
+    regex_warning(function, file, "Brackets mismatch in regexp %s", regexp_string);
     return false;
   }
 
   return true;
 }
 
-void regexp::init(const string &regexp_string) {
+void regexp::init(const string &regexp_string, const char *function, const char *file) {
   static char regexp_cache_storage[sizeof(array<regexp *>)];
   static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
@@ -303,7 +313,7 @@ void regexp::init(const string &regexp_string) {
     }
   }
 
-  init(regexp_string.c_str(), regexp_string.size());
+  init(regexp_string.c_str(), regexp_string.size(), function, file);
 
   if (!is_static) {
     regexp *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
@@ -323,9 +333,9 @@ void regexp::init(const string &regexp_string) {
   }
 }
 
-void regexp::init(const char *regexp_string, int regexp_len) {
+void regexp::init(const char *regexp_string, int regexp_len, const char *function, const char *file) {
   if (regexp_len == 0) {
-    php_warning("Empty regular expression");
+    regex_warning(function, file, "Empty regular expression");
     return;
   }
 
@@ -358,7 +368,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
       end_delimiter = start_delimiter;
       break;
     default:
-      php_warning("Wrong start delimiter in regular expression \"%s\"", regexp_string);
+      regex_warning(function, file, "Wrong start delimiter in regular expression \"%s\"", regexp_string);
       return;
   }
 
@@ -368,7 +378,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
   }
 
   if (regexp_end == 0) {
-    php_warning("No ending matching delimiter '%c' found in regexp: %s", end_delimiter, regexp_string);
+    regex_warning(function, file, "No ending matching delimiter '%c' found in regexp: %s", end_delimiter, regexp_string);
     return;
   }
 
@@ -413,7 +423,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
         can_use_RE2 = false;
         break;
       case 'S':
-        php_warning("study doesn't supported");
+        regex_warning(function, file, "Study doesn't supported");
         break;
       case 'U':
         pcre_options |= PCRE_UNGREEDY;
@@ -432,16 +442,16 @@ void regexp::init(const char *regexp_string, int regexp_len) {
         break;
 
       default:
-        php_warning("unknown modifier '%c' found", regexp_string[i]);
+        regex_warning(function, file, "Unknown modifier '%c' found", regexp_string[i]);
         clean();
         return;
     }
   }
 
-  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(static_SB.c_str(), static_SB.size(), is_utf8);
+  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(static_SB.c_str(), static_SB.size(), is_utf8, function, file);
 
   if (is_utf8 && !mb_UTF8_check(static_SB.c_str())) {
-    php_warning("Regexp \"%s\" contains not UTF-8 symbols", static_SB.c_str());
+    regex_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", static_SB.c_str());
     clean();
     return;
   }
@@ -450,7 +460,8 @@ void regexp::init(const char *regexp_string, int regexp_len) {
   if (can_use_RE2) {
     RE2_regexp = new RE2(re2::StringPiece(static_SB.c_str(), static_SB.size()), RE2_options);
     if (!RE2_regexp->ok()) {
-      php_warning("RE2 compilation of regexp \"%s\" failed. Error %d at %s", static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
+      regex_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s",
+        static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
 
       delete RE2_regexp;
       RE2_regexp = nullptr;
@@ -473,7 +484,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
     pcre_regexp = pcre_compile(static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 
     if (pcre_regexp == nullptr) {
-      php_warning("Regexp compilation failed: %s at offset %d", error, erroffset);
+      regex_warning(function, file, "Regexp compilation failed: %s at offset %d", error, erroffset);
       clean();
       return;
     }
@@ -508,7 +519,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
           }
 
           if (name.is_int()) {
-            php_warning("Numeric named subpatterns are not allowed");
+            regex_warning(function, file, "Numeric named subpatterns are not allowed");
           } else {
             subpattern_names[name_id] = name;
           }
@@ -520,7 +531,7 @@ void regexp::init(const char *regexp_string, int regexp_len) {
   subpatterns_count++;
 
   if (subpatterns_count > MAX_SUBPATTERNS) {
-    php_warning("Maximum number of subpatterns %d exceeded, %d subpatterns found", MAX_SUBPATTERNS, subpatterns_count);
+    regex_warning(function, file, "Maximum number of subpatterns %d exceeded, %d subpatterns found", MAX_SUBPATTERNS, subpatterns_count);
     clean();
     return;
   }

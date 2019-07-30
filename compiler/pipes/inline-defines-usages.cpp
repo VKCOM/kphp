@@ -5,9 +5,8 @@
 #include "compiler/name-gen.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
-  // defined('NAME') заменяем на true или false 
+  // defined('NAME') заменяем на true или false
   if (auto defined = root.try_as<op_defined>()) {
-
     kphp_error_act (
       (int)root->size() == 1 && defined->expr()->type() == op_string,
       "wrong arguments in 'defined'",
@@ -17,9 +16,9 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
     DefinePtr def = G->get_define(defined->expr()->get_string());
 
     if (def) {
-      root = VertexAdaptor<op_true>::create();
+      root = VertexAdaptor<op_true>::create().set_location(root);
     } else {
-      root = VertexAdaptor<op_false>::create();
+      root = VertexAdaptor<op_false>::create().set_location(root);
     }
   }
 
@@ -28,12 +27,12 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
     DefinePtr d = G->get_define(resolve_define_name(root->get_string()));
     if (d) {
       if (d->type() == DefineData::def_var) {
-        auto var = VertexAdaptor<op_var>::create();
+        auto var = VertexAdaptor<op_var>::create().set_location(root);
         var->extra_type = op_ex_var_superglobal;
         var->str_val = "d$" + d->name;
         root = var;
       } else {
-        auto def = VertexAdaptor<op_define_val>::create();
+        auto def = VertexAdaptor<op_define_val>::create().set_location(root);
         def->define_id = d;
         root = def;
       } 

@@ -51,7 +51,7 @@ private:
 
   int exec(const string &subject, int offset, bool second_try) const;
 
-  static bool is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8);
+  static bool is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8, const char *function, const char *file);
 
   static pcre_extra extra;
 
@@ -71,8 +71,8 @@ public:
   explicit regexp(const string &regexp_string);
   regexp(const char *regexp_string, int regexp_len);
 
-  void init(const string &regexp_string);
-  void init(const char *regexp_string, int regexp_len);
+  void init(const string &regexp_string, const char *function = nullptr, const char *file = nullptr);
+  void init(const char *regexp_string, int regexp_len, const char *function = nullptr, const char *file = nullptr);
 
 
   OrFalse<int> match(const string &subject, bool all_matches) const;

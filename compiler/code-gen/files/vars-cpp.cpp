@@ -8,6 +8,7 @@
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/stage.h"
 
@@ -21,7 +22,13 @@ struct InitVar {
 
     VertexPtr init_val = var->init_val;
     if (init_val->type() == op_conv_regexp) {
-      W << VarName(var) << ".init (" << var->init_val << ");" << NL;
+      const auto &location = get_location(init_val);
+      kphp_assert(location.function && location.file);
+      W << VarName(var) << ".init (" << var->init_val << ", ";
+      compile_string_raw(location.function->name, W);
+      W << ", ";
+      compile_string_raw(location.file->unified_file_name + ':' + std::to_string(location.line), W);
+      W << ");" << NL;
     } else {
       W << VarName(var) << " = " << var->init_val << ";" << NL;
     }
