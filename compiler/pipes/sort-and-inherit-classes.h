@@ -31,5 +31,5 @@ private:
 
 public:
   void execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os);
-  static void check_on_finish();
+  static void check_on_finish(DataStream<FunctionPtr> &os);
 };

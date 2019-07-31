@@ -90,6 +90,8 @@ public:
   bool cpp_template_call = false;
   bool is_resumable = false;
   bool is_final = false;
+  bool is_virtual_method = false;
+  bool is_overridden_method = false;
 
   ClassPtr class_id;
   ClassPtr context_class;

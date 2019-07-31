@@ -8,7 +8,7 @@ class CheckRequires final: public SyncPipeF<FunctionPtr, FunctionPtr> {
   using Base = SyncPipeF<FunctionPtr, FunctionPtr>;
 public:
   void on_finish(DataStream<FunctionPtr> &os) final {
-    SortAndInheritClassesF::check_on_finish();
+    SortAndInheritClassesF::check_on_finish(os);
     Base::on_finish(os);
   }
 };

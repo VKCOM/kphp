@@ -127,6 +127,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function, AccessType a
   function->access_type = access_type;
   function->class_id = klass;
   function->context_class = klass;
+  function->is_virtual_method = klass->is_interface();
 }
 
 void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType access_type) {
@@ -137,6 +138,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   function->access_type = access_type;
   function->class_id = klass;
   function->context_class = klass;
+  function->is_virtual_method = klass->is_interface();
 
   if (vk::string_view(function->name).ends_with("__construct")) {
     klass->construct_function = function;

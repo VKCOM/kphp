@@ -1,6 +1,6 @@
 #include "compiler/pipes/sort-and-inherit-classes.h"
 
-#include "common/algorithms/hashes.h"
+#include <unordered_map>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -10,6 +10,7 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 #include "compiler/utils/string-utils.h"
+#include "common/algorithms/hashes.h"
 
 /**
  * Через этот pass проходят функции вида
@@ -224,6 +225,83 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
   interface_class->derived_classes.emplace_back(child_class);
 }
 
+namespace {
+using name_to_classes_methods_t = std::unordered_map<std::string, std::vector<FunctionPtr>>;
+
+name_to_classes_methods_t collect_and_mark_methods_with_the_same_name(ClassPtr cur_klass) {
+  name_to_classes_methods_t name_to_methods;
+
+  for (auto derived : cur_klass->derived_classes) {
+    auto derived_methods = collect_and_mark_methods_with_the_same_name(derived);
+    for (auto &name_methods : derived_methods) {
+      auto &methods_with_the_same_name_in_derived = name_to_methods[name_methods.first];
+      methods_with_the_same_name_in_derived.insert(methods_with_the_same_name_in_derived.end(), name_methods.second.begin(), name_methods.second.end());
+    }
+  }
+
+  cur_klass->members.for_each([&](ClassMemberInstanceMethod &method) {
+    if (method.function->is_constructor()) {
+      return;
+    }
+
+    auto &methods_with_the_same_name_in_derived = name_to_methods[method.local_name()];
+    for (auto &derived_m : methods_with_the_same_name_in_derived) {
+      method.function->is_virtual_method = true;
+      method.function->is_overridden_method = false;
+      derived_m->is_overridden_method = true;
+    }
+
+    methods_with_the_same_name_in_derived.push_back(method.function);
+  });
+
+  return name_to_methods;
+}
+
+/**
+ * Imagine situation:
+ * class B { public function foo() {} }
+ *
+ * class D extends B {}
+ *
+ * class DD extends D { public function foo() {} }
+ * class DD2 extends D { public function foo() {} }
+ *
+ * in class D we need generate virtual method `foo` for choosing appropriate derived class
+ */
+void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<FunctionPtr> &os) {
+  auto method_klass = method->class_id;
+  for (auto parent = method_klass->parent_class; parent; parent = parent->parent_class) {
+    if (parent->is_interface() || parent->members.get_instance_method(method->local_name())) {
+      return;
+    }
+
+    auto new_name = parent->name + "$$" + method->local_name();
+
+    auto empty_parent_method_vertex = VertexAdaptor<op_function>::create(method->root->params().clone(), VertexAdaptor<op_seq>::create());
+    auto empty_parent_method = FunctionData::clone_from(new_name, method, empty_parent_method_vertex);
+    parent->members.add_instance_method(empty_parent_method, empty_parent_method->access_type);
+
+    empty_parent_method->is_virtual_method = true;
+    empty_parent_method->is_overridden_method = true;
+
+    G->register_and_require_function(empty_parent_method, os, true);
+  }
+}
+
+void mark_virtual_and_overridden_methods(ClassPtr cur_klass, DataStream<FunctionPtr> &os) {
+  name_to_classes_methods_t methods = collect_and_mark_methods_with_the_same_name(cur_klass);
+
+  for (auto &name_and_methods : methods) {
+    auto &methods_with_the_same_name = name_and_methods.second;
+    for (auto m : methods_with_the_same_name) {
+      if (m->is_overridden_method) {
+        generate_empty_virtual_method_in_parents(m, os);
+      }
+    }
+  }
+}
+} // namespace
+
 /**
  * Каждый класс поступает сюда один и ровно один раз — когда он и все его dependents
  * (родители, трейты, интерфейсы) тоже готовы.
@@ -287,10 +365,23 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   node->data.waiting.clear();
   node->data.done = true;
 }
-void SortAndInheritClassesF::check_on_finish() {
+void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   for (auto c : G->get_classes()) {
     auto node = ht.at(vk::std_hash(c->name));
     kphp_error(node->data.done, format("class `%s` has unresolved dependencies", c->name.c_str()));
+    kphp_error_return(c->implements.empty() || !c->parent_class,
+      format("You may not `extends` and `implements` simultaneously, class: %s", c->name.c_str()));
+
+    bool is_top_of_hierarchy = !c->parent_class && !c->derived_classes.empty();
+    if (is_top_of_hierarchy) {
+      mark_virtual_and_overridden_methods(c, os);
+    }
+
+    c->members.for_each([&c](ClassMemberInstanceField &field) {
+      if (c->parent_class && c->parent_class->get_instance_field(field.local_name())) {
+        kphp_error(false, format("You may not override instance field: `%s`, in class: `%s`", field.local_name().c_str(), c->name.c_str()));
+      }
+    });
 
     // For stable code generation of interface method body
     if (c->is_interface()) {
