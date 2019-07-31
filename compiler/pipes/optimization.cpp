@@ -21,14 +21,20 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   std::stringstream ss;
   ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
   const std::string name = ss.str();
+  bool is_new = true;
+  VarPtr var_id  = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
+  if (is_new) {
+    var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
+    var_id->tinf_node.copy_type_from(required_type);
+  } else {
+    kphp_assert(var_id->dependency_level > type_acceptor.as<op_var>()->var_id->dependency_level);
+  }
+
   auto casted_var = VertexAdaptor<op_var>::create();
   casted_var->str_val = name;
   casted_var->extra_type = op_ex_var_const;
   casted_var->location = type_acceptor->location;
 
-  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, type_acceptor);
-  var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
-  var_id->tinf_node.copy_type_from(required_type);
   casted_var->var_id = var_id;
   type_acceptor = casted_var;
   return var_id;

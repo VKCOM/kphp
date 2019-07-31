@@ -104,13 +104,22 @@ bool Scheduler::thread_process_node(Node *node) {
 void Scheduler::thread_execute(ThreadContext *tls) {
   set_thread_id(tls->thread_id);
 
-  auto process_node = [this](Node *node) { while(thread_process_node(node)) {} };
-  while (tls->run_flag) {
-    if (tls->node != nullptr) {
-      process_node(tls->node);
-    } else {
-      std::for_each(nodes.begin(), nodes.end(), process_node);
+  auto process_node = [this](Node *node) {
+    bool at_least_one_task_executed = false;
+    while (thread_process_node(node)) {
+      at_least_one_task_executed = true;
     }
-    usleep(250);
+    return at_least_one_task_executed;
+  };
+  while (tls->run_flag) {
+    bool at_least_one_task_executed = false;
+    if (tls->node != nullptr) {
+      at_least_one_task_executed = process_node(tls->node);
+    } else {
+      at_least_one_task_executed = std::count_if(nodes.begin(), nodes.end(), process_node) > 0;
+    }
+    if (!at_least_one_task_executed) {
+      usleep(250);
+    }
   }
 }

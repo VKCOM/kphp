@@ -285,7 +285,7 @@ VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
 }
 
 VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
-                                    VertexPtr init_val) {
+                                    VertexPtr init_val, bool *is_new_inserted) {
   TSHashTable<VarPtr>::HTNode *node = global_vars_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
@@ -297,6 +297,9 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
     }
   }
   VarPtr var = node->data;
+  if (is_new_inserted) {
+    *is_new_inserted = static_cast<bool>(new_var);
+  }
   if (!new_var) {
     kphp_assert_msg(var->name == name, "bug in compiler (hash collision)");
     if (init_val) {

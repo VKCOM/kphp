@@ -529,9 +529,14 @@ private:
 };
 
 void PreprocessFunctionF::execute(FunctionPtr function, OStreamT &os) {
-  PreprocessFunctionPass pass(*os.project_to_nth_data_stream<1>());
+  DataStream<FunctionPtr> tmp_stream{DataStreamMode::SYNC};
+  PreprocessFunctionPass pass(tmp_stream);
 
   run_function_pass(function, &pass);
+
+  for (auto fun: tmp_stream.flush()) {
+    *os.project_to_nth_data_stream<1>() << fun;
+  }
 
   if (!stage::has_error() && !function->is_template) {
     (*os.project_to_nth_data_stream<0>()) << function;

@@ -59,8 +59,8 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
 
-  vector<FunctionPtr> xall = tmp_stream.get_as_vector();
-  sort(xall.begin(), xall.end());
+  auto xall = tmp_stream.flush();
+  xall.sort();
   const vector<ClassPtr> &all_classes = G->get_classes();
 
   //TODO: delete W_ptr

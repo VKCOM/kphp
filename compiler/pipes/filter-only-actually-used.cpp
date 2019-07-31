@@ -117,7 +117,7 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
 } // namespace
 
 void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
-  auto all = tmp_stream.get_as_vector();
+  auto all = tmp_stream.flush_as_vector();
 
   // присваиваем FunctionData::id
   for (int id = 0; id < all.size(); ++id) {

@@ -57,19 +57,21 @@ string gen_const_string_name(const string &str) {
 
 string gen_const_regexp_name(const string &str) {
   auto h = vk::std_hash(str);
-  char tmp[50];
-  sprintf(tmp, "const_regexp$us%zx", h);
-  return tmp;
+  char tmp[50] {0};
+  const int l = snprintf(tmp, sizeof(tmp), "const_regexp$us%zx", h);
+  kphp_assert(l > 0 && l < sizeof(tmp));
+  return {tmp, static_cast<size_t>(l)};
 }
 
 bool is_array_suitable_for_hashing(VertexPtr vertex) {
   return vertex->type() == op_array && CheckConst::is_const(vertex);
 }
 
-string gen_const_array_name(const VertexAdaptor<op_array> &array) {
-  char tmp[50];
-  sprintf(tmp, "const_array$us%llx", ArrayHash::calc_hash(array));
-  return tmp;
+std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
+  char tmp[50] {0};
+  const int l = snprintf(tmp, sizeof(tmp), "const_array$us%llx", ArrayHash::calc_hash(array));
+  kphp_assert(l > 0 && l < sizeof(tmp));
+  return {tmp, static_cast<size_t>(l)};
 }
 
 string gen_unique_name(string prefix, bool flag) {

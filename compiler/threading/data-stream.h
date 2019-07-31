@@ -1,100 +1,64 @@
 #pragma once
-
-#include <cassert>
-#include <tuple>
-#include <unistd.h>
+#include <forward_list>
+#include <mutex>
 #include <vector>
 
 #include "common/algorithms/find.h"
 
 #include "compiler/scheduler/scheduler-base.h"
-#include "compiler/threading/locks.h"
+#include "compiler/stage.h"
+
+enum class DataStreamMode {
+  SYNC,
+  ASYNC
+};
 
 template<class DataT>
-class DataStream : Lockable {
+class DataStream {
 public:
   using DataType = DataT;
-private:
-  static const int MAX_STREAM_ELEMENTS = 250000;
-  DataType *data;
-  volatile int *ready;
-  volatile int write_i, read_i;
-  bool sink;
-public:
   using StreamType = DataStream<DataType>;
 
   template<size_t data_id>
   using NthDataType = DataType;
 
-  DataStream() :
-    write_i(0),
-    read_i(0),
-    sink(false) {
-    //FIXME
-    data = new DataType[MAX_STREAM_ELEMENTS]();
-    ready = new int[MAX_STREAM_ELEMENTS]();
-  }
-
-  bool empty() {
-    return read_i == write_i;
+  explicit DataStream(DataStreamMode sync_mode = DataStreamMode::ASYNC) :
+    sync_mode_(sync_mode)
+  {
   }
 
   bool get(DataType &result) {
-    while (true) {
-      int old_read_i = read_i;
-      if (old_read_i < write_i) {
-        if (__sync_bool_compare_and_swap(&read_i, old_read_i, old_read_i + 1)) {
-          while (!ready[old_read_i]) {
-            usleep(250);
-          }
-          result = std::move(data[old_read_i]);
-          return true;
-        }
-        usleep(250);
-      } else {
-        return false;
-      }
+    std::lock_guard<std::mutex> lock{mutex_};
+    if (!queue_.empty()) {
+      result = std::move(queue_.front());
+      queue_.pop_front();
+      return true;
     }
+    return false;
   }
 
   void operator<<(DataType input) {
-    if (!sink) {
+    if (sync_mode_ == DataStreamMode::ASYNC) {
       __sync_fetch_and_add(&tasks_before_sync_node, 1);
     }
-    while (true) {
-      int old_write_i = write_i;
-      assert(old_write_i < MAX_STREAM_ELEMENTS);
-      if (__sync_bool_compare_and_swap(&write_i, old_write_i, old_write_i + 1)) {
-        data[old_write_i] = std::move(input);
-        __sync_synchronize();
-        ready[old_write_i] = 1;
-        return;
-      }
-      usleep(250);
-    }
+    std::lock_guard<std::mutex> lock{mutex_};
+    queue_.push_front(std::move(input));
   }
 
-  int size() {
-    return write_i - read_i;
+  std::forward_list<DataType> flush() {
+    std::lock_guard<std::mutex> lock{mutex_};
+    return std::move(queue_);
   }
 
-  std::vector<DataType> get_as_vector() {
-    int old_read_i = read_i;
-    read_i = write_i;
-    return {std::make_move_iterator(data + old_read_i), std::make_move_iterator(data + write_i)};
+  std::vector<DataType> flush_as_vector() {
+    auto flushed = flush();
+    return {std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end())};
   }
 
-  void set_sink(bool new_sink) {
-    if (new_sink == sink) {
-      return;
-    }
-    sink = new_sink;
-    if (sink) {
-      __sync_fetch_and_sub(&tasks_before_sync_node, size());
-    } else {
-      __sync_fetch_and_add(&tasks_before_sync_node, size());
-    }
-  }
+private:
+  std::mutex mutex_;
+  std::forward_list<DataT> queue_;
+  const DataStreamMode sync_mode_{DataStreamMode::ASYNC};
 };
 
 

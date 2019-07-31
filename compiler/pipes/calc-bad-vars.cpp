@@ -329,7 +329,7 @@ void CalcBadVarsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
 
   stage::set_name("Calc bad vars (for UB check)");
-  auto tmp_vec = tmp_stream.get_as_vector();
+  auto tmp_vec = tmp_stream.flush_as_vector();
   CalcBadVars{}.run(tmp_vec);
   for (const auto &fun_dep : tmp_vec) {
     os << fun_dep.first;

@@ -72,7 +72,7 @@ public:
   DefinePtr get_define(const string &name);
 
   VarPtr create_var(const string &name, VarData::Type type);
-  VarPtr get_global_var(const string &name, VarData::Type type, VertexPtr init_val);
+  VarPtr get_global_var(const string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
   VarPtr create_local_var(FunctionPtr function, const string &name, VarData::Type type);
 
   const vector<SrcFilePtr> &get_main_files();
