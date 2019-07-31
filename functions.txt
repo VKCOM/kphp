@@ -751,6 +751,37 @@ function rpc_tl_pending_queries_count () ::: int;
 
 function set_tl_mode ($mode ::: int) ::: bool;
 
+/** @kphp-tl-class */
+interface RpcFunction {}
+
+/** @kphp-tl-class */
+interface RpcFunctionReturnResult {}
+
+// type ReqResult <=> RpcResponse
+/** @kphp-tl-class */
+interface RpcResponse {
+  /** @return @tl\RpcFunctionReturnResult */
+  public function getResult();
+  /** @return @tl\Types\rpcResponseHeader */
+  public function getHeader();
+  /** @return @tl\Types\rpcResponseError */
+  public function getError();
+  /** @return bool */
+  public function isError() ::: bool;
+}
+
+// todo instead of int (query_id) use future<RpcResponse> ?
+/** @kphp-extern-func-info tl_common_h_dep */
+function typed_rpc_tl_query_one ($connection ::: RPC, $query_function :<=: @tl\RpcFunction, $timeout ::: float = -1.0) ::: int;
+/** @kphp-extern-func-info tl_common_h_dep */
+function typed_rpc_tl_query ($connection ::: RPC, $query_functions :<=: array <@tl\RpcFunction>, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: array <int>;
+/** @kphp-extern-func-info tl_common_h_dep resumable */
+function typed_rpc_tl_query_result_one ($query_id :<=: int) ::: @tl\RpcResponse;
+/** @kphp-extern-func-info tl_common_h_dep resumable */
+function typed_rpc_tl_query_result ($query_ids :<=: array <int>) ::: array <@tl\RpcResponse>;
+/** @kphp-extern-func-info tl_common_h_dep */
+function typed_rpc_tl_query_result_synchronously ($query_ids :<=: array <int>) ::: array <@tl\RpcResponse>;
+
 /** @kphp-extern-func-info resumable */
 function wait ($id :<=: OrFalse<future>, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */

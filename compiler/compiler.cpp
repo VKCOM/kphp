@@ -37,6 +37,7 @@
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
+#include "compiler/pipes/check-tl-classes.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
@@ -201,13 +202,13 @@ bool compiler_execute(KphpEnviroment *env) {
 
 //  PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags(); return true;
 
-  DataStream<SrcFilePtr> file_stream;
+  DataStream<SrcFilePtr> src_file_stream;
 
   for (const auto &main_file : env->get_main_files()) {
-    G->register_main_file(main_file, file_stream);
+    G->register_main_file(main_file, src_file_stream);
   }
   if (!G->env().get_functions().empty()) {
-    G->require_file(G->env().get_functions(), LibPtr{}, file_stream);
+    G->require_file(G->env().get_functions(), LibPtr{}, src_file_stream);
   }
 
   static lockf_wrapper unique_file_lock;
@@ -224,8 +225,9 @@ bool compiler_execute(KphpEnviroment *env) {
     scheduler = s;
   }
 
-  PipeC<LoadFileF>::get()->set_input_stream(&file_stream);
+  G->try_load_tl_classes();
 
+  PipeC<LoadFileF>::get()->set_input_stream(&src_file_stream);
 
   SchedulerConstructor{scheduler}
     >> PipeC<LoadFileF>{}
@@ -281,6 +283,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<ExtractAsyncPass>{}
     >> PassC<CheckNestedForeachPass>{}
     >> PassC<CommonAnalyzerPass>{}
+    >> PassC<CheckTlClasses>{}
     >> PassC<CheckAccessModifiersPass>{}
     >> PassC<FinalCheckPass>{}
     >> SyncC<CodeGenF>{}

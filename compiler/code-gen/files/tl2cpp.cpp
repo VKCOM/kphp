@@ -3,12 +3,21 @@
 #include <string>
 
 #include "common/algorithms/string-algorithms.h"
-#include "common/tlo-parsing/tlo-parsing-tools.h"
+#include "common/tlo-parsing/flat-optimization.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+
+/*
+ * Что осталось для типизированного rpc
+ * todo: multiexclamation optimization + проверить, что с vkext совпадает
+ * todo: зависимые типы, сведение шаблонов через using -- (смотреть коммент в джире к KPHP-402)
+ *       (вероятно, потребует модификации get_php_class_of_tl_constructor)
+ */
 
 /* При генерации выделены 3 основные сущности, у каждой из которых есть методы store и fetch:
  * 1) Функция     - entry point любого tl запроса. Из него начинается де\сериализация любого запроса.
@@ -22,7 +31,7 @@
  *
  * @@@ Структуры для генерации @@@
  * Наименования начинаются с названия сущности, для которой генерится код (Function, Type, Constructor, Cell, Combinator, TypeExpr)
- * Структуры, с вызова compile() которых, всегда начинается генерация:
+ * Структуры, с вызова compile() которых, всегда (почти всегда - еще есть Cell) начинается генерация:
  * 1) <*>Decl - генерация объявления структуры.
  * 2) <*>Def  - генерация определения структуры.
  * где <*> - Function, Type или Constructor
@@ -54,30 +63,82 @@ using vk::tl::FLAG_BARE;
 
 static vk::tl::tl_scheme *tl;
 static vk::tl::combinator *cur_combinator;
-const bool DEBUG_MODE = false;
 
-const std::unordered_set<std::string> CUSTOM_IMPL_TYPES
-  {T_INTEGER_VARIABLE, T_TYPE, "Int", "Long", "Double", "String", "Bool",
-   "False", "Vector", "Maybe",
-   "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField", "Tuple"};
+const std::unordered_set<std::string> CUSTOM_IMPL_TYPES   // из tl_builtins.h
+  {T_INTEGER_VARIABLE, T_TYPE, "Int", "Long", "Double", "String", "Bool", "False", "Vector", "Maybe", "Tuple",
+   "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
+
+
+// tl-конструктору 'messages.chatInfoUser' соответствует php class VK\TL\Types\messages\chatInfoUser
+// todo понять, что с зависимыми типами; прокомментить про достижимость
+ClassPtr get_php_class_of_tl_constructor(vk::tl::combinator *c) {
+  std::string php_class_name;
+  switch (static_cast<unsigned int>(c->id)) {   // отдельно — 3 конструктора t_ReqResult
+    case TL__:
+      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseOk";
+      break;
+    case TL_REQ_RESULT_HEADER:
+      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseHeader";
+      break;
+    case TL_REQ_ERROR:
+      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseError";
+      break;
+    default:
+      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(c->name, '.', '\\');
+  }
+  return G->get_class(php_class_name);
+}
+
+// tl-функции 'messages.getChatInfo' соответствует php class VK\TL\Functions\messages\getChatInfo
+// если этот класс достижим компилятором — типизированный вариант для messages.getChatInfo нужен
+// (а если нет, то эта tl-функция типизированно гарантированно не вызывается)
+ClassPtr get_php_class_of_tl_function(vk::tl::combinator *f) {
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Functions\\" + replace_characters(f->name, '.', '\\');
+  return G->get_class(php_class_name);
+}
+
+// и наоборот: классу VK\TL\Functions\messages\getChatInfo соответствует tl-функция messages.getChatInfo
+std::string get_tl_function_of_php_class(ClassPtr klass) {
+  kphp_assert(is_php_class_a_tl_function(klass));
+  size_t pos = vk::string_view{klass->name}.find("Functions\\");
+  std::string after_ns_functions = static_cast<std::string>(vk::string_view{klass->name}.substr(pos + 10));
+  return replace_characters(after_ns_functions, '\\', '.');
+}
+
+// у tl-функции 'messages.getChatInfo' есть типизированный результат php class VK\TL\Functions\messages\getChatInfo_result
+// по идее, достижима функция <=> достижим результат
+ClassPtr get_php_class_of_tl_function_result(vk::tl::combinator *f) {
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Functions\\" + replace_characters(f->name, '.', '\\') + "_result";
+  return G->get_class(php_class_name);
+}
+
+// классы VK\TL\Functions\* implements RpcFunction — это те, что соответствуют tl-функциям
+bool is_php_class_a_tl_function(ClassPtr klass) {
+  return klass->is_tl_class && klass->implements.size() == 1 && vk::string_view{klass->implements.front()->name}.ends_with("RpcFunction");
+}
+
+// классы VK\TL\Types\* — не интерфейсные — соответствуют конструкторам
+// (или неполиморфмным типам, единственный конструктор которых заинлайнен)
+bool is_php_class_a_tl_constructor(ClassPtr klass) {
+  return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos;
+}
+
+// классы VK\TL\Types\* — интерфейсы — это полиморфные типы, конструкторы которых классы implements его
+bool is_php_class_a_tl_polymorphic_type(ClassPtr klass) {
+  return klass->is_tl_class && klass->is_interface() && klass->name.find("Types\\") != std::string::npos;
+}
 
 // Вспомогательные функции для генерации
-namespace {
-template<typename T>
-vk::tl::type *type_of(const T &type_expr) {
+inline namespace {
+vk::tl::type *type_of(const std::unique_ptr<vk::tl::type_expr_base> &type_expr) {
   if (auto casted = type_expr->template as<vk::tl::type_expr>()) {
     return tl->types[casted->type_id].get();
   }
   return nullptr;
 }
 
-vk::tl::arg *get_first_explicit_arg(vk::tl::combinator *combinator) {
-  for (const auto &arg : combinator->args) {
-    if (!(arg->flags & FLAG_OPT_VAR)) {
-      return arg.get();
-    }
-  }
-  return nullptr;
+vk::tl::type *type_of(const vk::tl::type_expr *type) {
+  return tl->types[type->type_id].get();
 }
 
 bool is_type_dependent(vk::tl::combinator *constructor) {
@@ -108,20 +169,6 @@ std::vector<std::string> get_not_optional_fields_masks(const vk::tl::combinator 
     }
   }
   return res;
-}
-
-std::string get_optional_args_for_decl(const std::unique_ptr<vk::tl::combinator> &constructor) {
-  std::vector<std::string> res;
-  for (const auto &arg : constructor->args) {
-    if (arg->flags & FLAG_OPT_VAR) {
-      if (type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
-        res.emplace_back("int " + arg->name);
-      } else {
-        res.emplace_back("T" + std::to_string(arg->var_num) + " " + arg->name);
-      }
-    }
-  }
-  return join(res, ", ");
 }
 
 std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl::combinator> &constructor) {
@@ -162,7 +209,7 @@ std::string get_template_declaration(const std::unique_ptr<vk::tl::combinator> &
       return "unsigned int " + s;
     }
   });
-  return "template<" + join(typenames, ", ") + ">";
+  return "template<" + vk::join(typenames, ", ") + ">";
 }
 
 std::string get_template_definition(const std::unique_ptr<vk::tl::combinator> &constructor) {
@@ -170,7 +217,53 @@ std::string get_template_definition(const std::unique_ptr<vk::tl::combinator> &c
   if (typenames.empty()) {
     return "";
   }
-  return "<" + join(typenames, ", ") + ">";
+  return "<" + vk::join(typenames, ", ") + ">";
+}
+
+std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class_instance = false, const std::string &type_name = "") {
+  std::string res;
+  switch (static_cast<unsigned int>(c->id)) {
+    case TL__:
+      res = G->env().get_tl_classname_prefix() + "Types$rpcResponseOk";
+      break;
+    case TL_REQ_RESULT_HEADER:
+      res = G->env().get_tl_classname_prefix() + "Types$rpcResponseHeader";
+      break;
+    case TL_REQ_ERROR:
+      res = G->env().get_tl_classname_prefix() + "Types$rpcResponseError";
+      break;
+    default:
+      std::string name = type_name.empty() ? c->name : type_name;
+      std::replace(name.begin(), name.end(), '.', '$');
+      std::vector<std::string> template_params;
+      for (const auto &arg : c->args) {
+        if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
+          kphp_assert(arg->flags & FLAG_OPT_VAR);
+          template_params.emplace_back(format("typename T%d::PhpType", arg->var_num));
+        }
+      }
+      std::string template_suf = template_params.empty() ? "" : "<" + vk::join(template_params, ", ") + ">";
+      res = G->env().get_tl_classname_prefix() + (c->is_constructor() ? "Types$" : "Functions$") + name + template_suf;
+  }
+  if (wrap_to_class_instance) {
+    return format("class_instance<%s>", res.c_str());
+  }
+  return res;
+}
+
+std::string get_php_runtime_type(const vk::tl::type *t) {
+  if (t->name == "ReqResult") {
+    return format("class_instance<%sRpcResponse>", G->env().get_tl_classname_prefix().c_str());
+  }
+  if (t->is_polymorphic()) {    // тогда пользуемся именем типа, а не конструктора
+    return get_php_runtime_type(t->constructors[0].get(), true, t->name);
+  }
+  return get_php_runtime_type(t->constructors[0].get(), true);
+}
+
+std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg) {
+  kphp_assert(!arg->name.empty());
+  return format("tl_object->$%s", arg->name.c_str());
 }
 } // namespace
 
@@ -190,62 +283,96 @@ static int hash_tl_const_str(const std::string &tl_name) {
   return string_hash(tl_name.c_str(), (int)tl_name.size());
 }
 
-static std::string cpp_tl_struct_name(std::string tl_name) {
+std::string cpp_tl_struct_name(const char *prefix, std::string tl_name, const std::string &template_args_postfix) {
   std::replace(tl_name.begin(), tl_name.end(), '.', '_');
-  return tl_name;
+  return std::string(prefix) + tl_name + template_args_postfix;
 }
 
 // Пример сгенеренного кода:
 /*
-void t_tree_stats_CountersTypesFilter::store(const var& tl_object) {
-  const string &constructor_name = f$strval(tl_arr_get(tl_object, tl_str$_, 0, -2147483553));
-  if (constructor_name == tl_str$tree_stats$countersTypesFilterList) {
+void t_tree_stats_CountersTypesFilter::store(const var &tl_object) {
+  const string &c_name = tl_arr_get(tl_object, tl_str$_, 0, -2147483553).to_string();
+  if (c_name == tl_str$tree_stats$countersTypesFilterList) {
     f$store_int(0xe6749cee);
     c_tree_stats_countersTypesFilterList::store(tl_object);
-  } else if (constructor_name == tl_str$tree_stats$countersTypesFilterRange) {
+  } else if (c_name == tl_str$tree_stats$countersTypesFilterRange) {
     f$store_int(0x9329d6e0);
     c_tree_stats_countersTypesFilterRange::store(tl_object);
   } else {
-    tl_storing_error(tl_object, "Constructor %s of type tree_stats.CountersTypesFilter was not found in TL scheme", constructor_name.c_str());
-    return;
+    CurrentProcessingQuery::get().raise_storing_error("Invalid constructor %s of type %s", c_name.c_str(), "tree_stats.CountersTypesFilter");
   }
 }
 */
 struct TypeStore {
   const std::unique_ptr<vk::tl::type> &type;
   std::string template_str;
+  bool typed_mode;
 
-  inline TypeStore(const std::unique_ptr<vk::tl::type> &type, string template_str) :
+  TypeStore(const std::unique_ptr<vk::tl::type> &type, string template_str, bool typed_mode = false) :
     type(type),
-    template_str(std::move(template_str)) {}
+    template_str(std::move(template_str)),
+    typed_mode(typed_mode) {}
 
-  inline void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator &W) const {
     auto store_params = get_optional_args_for_call(type->constructors[0]);
-    store_params.insert(store_params.begin(), "tl_object");
-    auto store_call = "store(" + join(store_params, ", ") + ")";
-    if (type->constructors_num == 1) {
-      W << "c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "::" << store_call << ";" << NL;
+    store_params.insert(store_params.begin(),
+                        typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
+    std::string store_call = (typed_mode ? "typed_store(" : "store(") + vk::join(store_params, ", ") + ");";
+
+    // неполиморфные типы — 1 конструктор — просто форвардят ::store() в конструктор, без всяких magic
+    if (!type->is_polymorphic()) {
+      W << cpp_tl_struct_name("c_", type->constructors[0]->name, template_str) << "::" << store_call << NL;
       return;
     }
-    W << "const string &constructor_name = f$strval(tl_arr_get(tl_object, " << register_tl_const_str("_") << ", 0, " << int_to_str(hash_tl_const_str("_"))
-      << "));" << NL;
+
     auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
-    for (const auto &c : type->constructors) {
-      if (c == type->constructors[0]) {
-        W << "if ";
-      } else {
-        W << END << " else if ";
+    // для полиморфных типов:
+    // типизированно: if'ы с dynamic_cast, примерно как интерфейсные методы
+    if (typed_mode) {
+      bool first = true;
+      for (const auto &c : type->constructors) {
+        ClassPtr php_class = get_php_class_of_tl_constructor(c.get());
+        if (!php_class) {
+          W << "// for " << c->name << " not found: " << get_php_runtime_type(c.get()) << NL;
+          continue;
+        }
+        std::string cpp_class = get_php_runtime_type(c.get());
+
+        W << (first ? "if " : " else if ");
+        first = false;
+
+        W << "(f$is_a<" << cpp_class << ">(tl_object)) " << BEGIN;
+        if (c.get() != default_constructor) {
+          W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
+        }
+        W << "const " << cpp_class << " *conv_obj = tl_object.template cast_to<" << cpp_class << ">().get();" << NL;
+        W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
       }
-      W << "(constructor_name == " << register_tl_const_str(c->name) << ") " << BEGIN;
-      if (c.get() != default_constructor) {
-        W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
+      W << (first ? "" : " else ") << BEGIN
+        << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+        << "tl_object.get_class(), \"" << type->name << "\");" << NL
+        << END << NL;
+
+      // нетипизированно: if'ы с проверкой constructor_name
+    } else {
+      bool first = true;
+      W << "const string &c_name = tl_arr_get(tl_object, "
+        << register_tl_const_str("_") << ", 0, " << int_to_str(hash_tl_const_str("_")) << ").to_string();" << NL;
+      for (const auto &c : type->constructors) {
+        W << (first ? "if " : " else if ");
+        first = false;
+
+        W << "(c_name == " << register_tl_const_str(c->name) << ") " << BEGIN;
+        if (c.get() != default_constructor) {
+          W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
+        }
+        W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
       }
-      W << "c_" << cpp_tl_struct_name(c->name) << template_str << "::" << store_call << ";" << NL;
+      W << (first ? "" : " else ") << BEGIN
+        << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+        << "c_name.c_str(), \"" << type->name << "\");" << NL
+        << END << NL;
     }
-    W << END << " else " << BEGIN
-      << "tl_storing_error(tl_object, \"Constructor %s of type " << type->name << " was not found in TL scheme\", constructor_name.c_str());" << NL
-      << "return;" << NL
-      << END << NL;
   }
 };
 
@@ -268,7 +395,7 @@ array<var> t_tree_stats_CountersTypesFilter::fetch() {
       break;
     }
     default: {
-      tl_fetching_error("Incorrect magic of type tree_stats.CountersTypesFilter: %08x", magic);
+      CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type tree_stats.CountersTypesFilter: %08x", magic);
     }
   }
   return result;
@@ -277,38 +404,73 @@ array<var> t_tree_stats_CountersTypesFilter::fetch() {
 struct TypeFetch {
   const std::unique_ptr<vk::tl::type> &type;
   std::string template_str;
+  bool typed_mode;
 
-  inline TypeFetch(const std::unique_ptr<vk::tl::type> &type, string template_str) :
+  inline TypeFetch(const std::unique_ptr<vk::tl::type> &type, string template_str, bool typed_mode = false) :
     type(type),
-    template_str(std::move(template_str)) {}
+    template_str(std::move(template_str)),
+    typed_mode(typed_mode) {}
 
   inline void compile(CodeGenerator &W) const {
     auto fetch_params = get_optional_args_for_call(type->constructors[0]);
-    auto fetch_call = "fetch(" + join(fetch_params, ", ") + ")";
-    if (type->constructors_num == 1) {
-      W << "if (!CurException.is_null()) return array<var>();" << NL;
-      W << "return c_" << cpp_tl_struct_name(type->constructors[0]->name) << template_str << "::" << fetch_call << ";" << NL;
+    std::string fetch_call;
+    if (!typed_mode) {
+      fetch_call = "fetch(" + vk::join(fetch_params, ", ") + ");";
+    } else {
+      fetch_params.insert(fetch_params.begin(), "result.get()");
+      fetch_call = "typed_fetch_to(" + vk::join(fetch_params, ", ") + ");";
+    }
+
+    // типы с однозначным конструктором фетчатся просто — делегируют fetch в конструктор
+    if (!type->is_polymorphic()) {
+      auto &constructor = type->constructors.front();
+      if (typed_mode) {
+        W << "if (!CurException.is_null()) return;" << NL;
+        W << get_php_runtime_type(constructor.get(), true) << " result;" << NL;
+        W << "result.alloc();" << NL;
+        // во все c_*.typed_fetch_to() приходит уже аллоцированный объект.
+        // Он всегда аллоцируется в t_*.typed_fetch_to().
+        W << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
+        W << "tl_object = result;" << NL;
+      } else {
+        W << "if (!CurException.is_null()) return array<var>();" << NL;
+        W << "return " << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
+      }
       return;
     }
-    W << (type->constructors[0]->is_flat(tl) ? "var " : "array<var> ");
-    W << "result;" << NL;
-    W << "if (!CurException.is_null()) return result;" << NL;
+
+    // полиформные типы фетчатся сложнее: сначала magic, потом switch(magic) на каждый конструктор
+    if (!typed_mode) {
+      W << "array<var> result;" << NL;
+    }
+    W << "if (!CurException.is_null()) return" << (typed_mode ? "" : " result") << ";" << NL;
     auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
     bool has_name = type->constructors_num > 1 && !(type->flags & FLAG_NOCONS);
     if (default_constructor != nullptr) {
       W << "int pos = tl_parse_save_pos();" << NL;
     }
-    W << "unsigned int magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+    W << "auto magic = static_cast<unsigned int>(f$fetch_int());" << NL;
     W << "switch(magic) " << BEGIN;
     for (const auto &c : type->constructors) {
       if (c.get() == default_constructor) {
         continue;
       }
+      if (typed_mode && !get_php_class_of_tl_constructor(c.get())) {
+        continue;
+      }
+      
       W << format("case 0x%08x: ", static_cast<unsigned int>(c->id)) << BEGIN;
-      W << "result = c_" << cpp_tl_struct_name(c->name) << template_str << "::" << fetch_call << ";" << NL;
-      if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << int_to_str(hash_tl_const_str("_")) << ");"
-          << NL;
+      if (!typed_mode) {
+        W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
+        if (has_name) {
+          W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << int_to_str(hash_tl_const_str("_")) << ");"
+            << NL;
+        }
+      } else {
+        W << get_php_runtime_type(c.get(), true) << " result;" << NL;
+        W << "result.alloc();" << NL;
+        W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
+        W << "tl_object = result;" << NL;
       }
       W << "break;" << NL;
       W << END << NL;
@@ -316,17 +478,26 @@ struct TypeFetch {
     W << "default: " << BEGIN;
     if (default_constructor != nullptr) {
       W << "tl_parse_restore_pos(pos);" << NL;
-      W << "result = c_" << cpp_tl_struct_name(default_constructor->name) << template_str << "::" << fetch_call << ";" << NL;
-      if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", "
-          << int_to_str(hash_tl_const_str("_")) << ");" << NL;
+      if (!typed_mode) {
+        W << "result = " << cpp_tl_struct_name("c_", default_constructor->name, template_str) << "::" << fetch_call << NL;
+        if (has_name) {
+          W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", "
+            << int_to_str(hash_tl_const_str("_")) << ");" << NL;
+        }
+      } else {
+        W << get_php_runtime_type(default_constructor, true) << " result;" << NL;
+        W << "result.alloc();" << NL;
+        W << cpp_tl_struct_name("c_", default_constructor->name, template_str) << "::" << fetch_call << NL;
+        W << "tl_object = result;" << NL;
       }
     } else {
-      W << "tl_fetching_error(\"Incorrect magic of type " << type->name << ": 0x%08x\", magic);" << NL;
+      W << "CurrentProcessingQuery::get().raise_fetching_error(\"Incorrect magic of type " << type->name << ": 0x%08x\", magic);" << NL;
     }
     W << END << NL;
     W << END << NL;
-    W << "return result;" << NL;
+    if (!typed_mode) {
+      W << "return result;" << NL;
+    }
   }
 };
 
@@ -342,9 +513,13 @@ std::string get_full_type(vk::tl::expr_base *type_expr, const std::string &var_n
   return ans.first;
 }
 
-std::string get_storer_call(const std::unique_ptr<vk::tl::arg> &arg, const std::string &var_num_access) {
-  std::string res = get_full_value(arg->type_expr.get(), var_num_access);
-  return res + format(".store(tl_arr_get(tl_object, %s, %d, %d))", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name));
+std::string get_storer_call(const std::unique_ptr<vk::tl::arg> &arg, const std::string &var_num_access, bool typed_mode) {
+  std::string target_expr = get_full_value(arg->type_expr.get(), var_num_access);
+  if (!typed_mode) {
+    return target_expr + format(".store(tl_arr_get(tl_object, %s, %d, %d))", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name));
+  } else {
+    return target_expr + format(".typed_store(%s)", get_tl_object_field_access(arg).c_str());
+  }
 }
 
 template<typename T>
@@ -387,17 +562,19 @@ std::string get_magic_fetching(const T &arg_type_expr, const char *error_msg) {
 struct TypeExprStore {
   const std::unique_ptr<vk::tl::arg> &arg;
   std::string var_num_access;
+  bool typed_mode;
 
-  inline TypeExprStore(const std::unique_ptr<vk::tl::arg> &arg, std::string var_num_access) :
+  TypeExprStore(const std::unique_ptr<vk::tl::arg> &arg, std::string var_num_access, bool typed_mode = false) :
     arg(arg),
-    var_num_access(std::move(var_num_access)) {}
+    var_num_access(std::move(var_num_access)),
+    typed_mode(typed_mode) {}
 
-  inline void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator &W) const {
     std::string magic_storing = get_magic_storing(arg->type_expr);
     if (!magic_storing.empty()) {
       W << magic_storing << NL;
     }
-    W << get_storer_call(arg, var_num_access) << ";" << NL;
+    W << get_storer_call(arg, var_num_access, typed_mode) << ";" << NL;
   }
 };
 
@@ -417,48 +594,41 @@ struct TypeExprStore {
       }
     }
  * 2) Обработка восклицательных знаков:
-    std::unique_ptr<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
-      std::unique_ptr<f_rpcProxy_diagonalTargets> result_fetcher(new f_rpcProxy_diagonalTargets());
+    unique_object<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
+      auto result_fetcher = make_unique_object<f_rpcProxy_diagonalTargets>();
       (void)tl_object;
       f$store_int(0xee090e42);
       t_Int().store(tl_arr_get(tl_object, tl_str$offset, 2, -1913876069));
       t_Int().store(tl_arr_get(tl_object, tl_str$limit, 3, 492966325));
-      string target_f_name = tl_arr_get(tl_arr_get(tl_object, tl_str$query, 4, 1563700686), tl_str$_, 0, -2147483553).as_string();
+      auto _cur_arg = tl_arr_get(tl_object, tl_str$query, 4, 1563700686);
+      string target_f_name = tl_arr_get(_cur_arg, tl_str$_, 0, -2147483553).as_string();
       if (!tl_storers_ht.has_key(target_f_name)) {
-        tl_storing_error(tl_object, "Function %s not found in tl-scheme", target_f_name.c_str());
-        return nullptr;
+        CurrentProcessingQuery::get().raise_storing_error("Function %s not found in tl-scheme", target_f_name.c_str());
+        return {};
       }
       const auto &storer_kv = tl_storers_ht.get_value(target_f_name);
-      result_fetcher->X.fetcher = storer_kv(tl_arr_get(tl_object, tl_str$query, 4, 1563700686));
+      result_fetcher->X.fetcher = storer_kv(_cur_arg);
       return std::move(result_fetcher);
     }
  * 3) Обработка основной части типового выражения в TypeExprStore / Fetch
 */
 struct CombinatorStore {
   vk::tl::combinator *combinator;
+  bool typed_mode;
 
-  inline explicit CombinatorStore(vk::tl::combinator *combinator) :
-    combinator(combinator) {}
+  inline explicit CombinatorStore(vk::tl::combinator *combinator, bool typed_mode = false) :
+    combinator(combinator),
+    typed_mode(typed_mode) {}
 
   inline void compile(CodeGenerator &W) const {
     cur_combinator = combinator;
     auto var_num_access = (combinator->is_function() ? "result_fetcher->" : "");
-    // Создаем локальные переменные для хранения филд масок, не явлюящихся параметрами типа
+    // Создаем локальные переменные для хранения филд масок, не являющихся параметрами типа
     if (combinator->is_constructor()) {
       auto fields_masks = get_not_optional_fields_masks(combinator);
       for (const auto &item : fields_masks) {
         W << "int " << item << "{0}; (void) " << item << ";" << NL;
       }
-    }
-    // Отдельно обрабатываем flat оптимизацию
-    if (combinator->is_flat(tl)) {
-      const auto &arg = get_first_explicit_arg(combinator);
-      auto magic_storing = get_magic_storing(arg->type_expr);
-      if (!magic_storing.empty()) {
-        W << magic_storing << NL;
-      }
-      W << get_full_value(arg->type_expr.get(), var_num_access) << ".store(tl_object);" << NL;
-      return;
     }
     W << "(void)tl_object;" << NL;
     if (combinator->is_function()) {
@@ -482,36 +652,45 @@ struct CombinatorStore {
         // полиморфно обрабатываются, так как запоминаем их все либо в локальные переменны либо в поля структуры
       }
       if (!(arg->flags & FLAG_EXCL)) {
-        W << TypeExprStore(arg, var_num_access);
+        W << TypeExprStore(arg, var_num_access, typed_mode);
       }
       //Обработка восклицательного знака
       if (arg->flags & FLAG_EXCL) {
+        kphp_assert(combinator->is_function());
         auto as_type_var = arg->type_expr->as<vk::tl::type_var>();
         kphp_assert(as_type_var);
-        std::string cur_arg = format("tl_arr_get(tl_object, %s, %d, %d)", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name));
-        std::string cur_f_name = format("tl_arr_get(%s, %s, 0, %d).as_string()", cur_arg.c_str(), register_tl_const_str("_").c_str(), hash_tl_const_str("_"));
-        if (DEBUG_MODE) {
-          W << R"(fprintf(stderr, "!!! exclamation processing...\n");)" << NL;
+        if (!typed_mode) {
+          W << "auto _cur_arg = "
+            << format("tl_arr_get(tl_object, %s, %d, %d)", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name))
+            << ";" << NL;
+          W << "string target_f_name = " << format("tl_arr_get(_cur_arg, %s, 0, %d).as_string()", register_tl_const_str("_").c_str(), hash_tl_const_str("_"))
+            << ";" << NL;
+          W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
+            << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
+            << "return {};" << NL
+            << END << NL;
+          W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
+          W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
+        } else {
+          W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN
+            << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
+            << "return {};" << NL
+            << END << NL;
+          W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
+            << get_tl_object_field_access(arg) << ".get().store();" << NL;
         }
-        W << "string target_f_name = " << cur_f_name << ";" << NL;
-        W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
-          << "tl_storing_error(tl_object, \"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
-          << "return nullptr;" << NL
-          << END << NL
-          << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
-        W << var_num_access << combinator->get_var_num_arg(as_type_var->var_num)->name <<
-          ".fetcher = storer_kv(" << cur_arg << ");" << NL;
       } else if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
         // Запоминаем филд маску для последующего использования
         // Может быть либо локальной переменной либо полем структуры
-        W << format("%s%s = f$intval(tl_arr_get(tl_object, %s, %d, %d));",
-                    var_num_access,
-                    combinator->get_var_num_arg(arg->var_num)->name.c_str(),
-                    register_tl_const_str(arg->name).c_str(),
-                    arg->idx,
-                    hash_tl_const_str(arg->name)) << NL;
-        if (DEBUG_MODE) {
-          W << R"(fprintf(stderr, "### fields_mask processing\n");)" << NL;
+        if (!typed_mode) {
+          W << format("%s%s = f$intval(tl_arr_get(tl_object, %s, %d, %d));",
+                      var_num_access,
+                      combinator->get_var_num_arg(arg->var_num)->name.c_str(),
+                      register_tl_const_str(arg->name).c_str(),
+                      arg->idx,
+                      hash_tl_const_str(arg->name)) << NL;
+        } else {
+          W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg) << ";" << NL;
         }
       }
       if (arg->flags & FLAG_OPT_FIELD) {
@@ -521,16 +700,22 @@ struct CombinatorStore {
   }
 };
 
-std::string get_fetcher_call(const std::unique_ptr<vk::tl::type_expr_base> &type_expr) {
-  return get_full_value(type_expr.get(), "") + ".fetch()";
+std::string get_fetcher_call(const std::unique_ptr<vk::tl::type_expr_base> &type_expr, bool typed_mode = false, const std::string &storage = "") {
+  if (!typed_mode) {
+    return get_full_value(type_expr.get(), "") + ".fetch()";
+  } else {
+    return get_full_value(type_expr.get(), "") + ".typed_fetch_to(" + storage + ")";
+  }
 }
 
 // Структура для генерации fetch любого type expression'а
 struct TypeExprFetch {
   const std::unique_ptr<vk::tl::arg> &arg;
+  bool typed_mode;
 
-  explicit inline TypeExprFetch(const std::unique_ptr<vk::tl::arg> &arg) :
-    arg(arg) {}
+  explicit inline TypeExprFetch(const std::unique_ptr<vk::tl::arg> &arg, bool typed_mode = false) :
+    arg(arg),
+    typed_mode(typed_mode) {}
 
   inline void compile(CodeGenerator &W) const {
     const auto magic_fetching = get_magic_fetching(arg->type_expr,
@@ -538,8 +723,13 @@ struct TypeExprFetch {
     if (!magic_fetching.empty()) {
       W << magic_fetching << NL;
     }
-    W << "result.set_value(" << register_tl_const_str(arg->name) << ", " << get_fetcher_call(arg->type_expr) << ", " << int_to_str(hash_tl_const_str(arg->name))
-      << ");" << NL;
+    if (!typed_mode) {
+      W << "result.set_value(" << register_tl_const_str(arg->name) << ", " << get_fetcher_call(arg->type_expr) << ", "
+        << int_to_str(hash_tl_const_str(arg->name))
+        << ");" << NL;
+    } else {
+      W << get_fetcher_call(arg->type_expr, true, get_tl_object_field_access(arg)) << ";" << NL;
+    }
   }
 };
 
@@ -568,11 +758,13 @@ struct TypeExprFetch {
 */
 struct CombinatorFetch {
   vk::tl::combinator *combinator;
+  bool typed_mode;
 
-  inline explicit CombinatorFetch(vk::tl::combinator *combinator) :
-    combinator(combinator) {}
+  explicit CombinatorFetch(vk::tl::combinator *combinator, bool typed_mode = false) :
+    combinator(combinator),
+    typed_mode(typed_mode) {}
 
-  inline void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator &W) const {
     cur_combinator = combinator;
     // Создаем локальные переменные для хранения филд масок
     if (combinator->is_constructor()) {
@@ -581,28 +773,37 @@ struct CombinatorFetch {
         W << "int " << item << "{0}; (void) " << item << ";" << NL;
       }
     }
-    // Отдельно обрабатываем flat оптимизацию
-    if (combinator->is_flat(tl)) {
-      const auto &arg = get_first_explicit_arg(combinator);
-      const auto magic_fetching = get_magic_fetching(arg->type_expr,
-                                                     format("Incorrect magic of arg: %s\\nin constructor %s", arg->name.c_str(), cur_combinator->name.c_str()));
-      if (!magic_fetching.empty()) {
-        W << magic_fetching << NL;
-      }
-      W << "return " << get_fetcher_call(arg->type_expr) << ";" << NL;
-      return;
-    }
     // fetch для функций - fetch возвращаемого значения, в отличии от fetch конструкторов
     if (combinator->is_function()) {
-      const auto &magic_fetching = get_magic_fetching(combinator->result,
-                                                      format("Incorrect magic in result of function: %s", cur_combinator->name.c_str()));
-      if (!magic_fetching.empty()) {
-        W << magic_fetching << NL;
+      // Если функция возвращает флатящийся тип, то после perform_flat_optimization() вместо него подставляется его внутренность.
+      // Но при фетчинге функции нам всегда нужен мэджик оригинального типа, даже если он флатится.
+      // Для этого было введено поле original_result_constructor_id у функций, в котором хранится мэджик реального типа, если результат флатится, и 0 иначе.
+      if (!combinator->original_result_constructor_id) {
+        const auto &magic_fetching = get_magic_fetching(combinator->result,
+                                                        format("Incorrect magic in result of function: %s", cur_combinator->name.c_str()));
+        if (!magic_fetching.empty()) {
+          W << magic_fetching << NL;
+        }
+      } else {
+        W << format("fetch_magic_if_not_bare(0x%08x, \"%s\");",
+                    combinator->original_result_constructor_id,
+                    ("Incorrect magic in result of function: " + cur_combinator->name).c_str())
+          << NL;
       }
-      W << "return " << get_fetcher_call(combinator->result) << ";" << NL;
+      if (!typed_mode) {
+        W << "return " << get_fetcher_call(combinator->result) << ";" << NL;
+      } else {
+        // для любой getChatInfo implements RpcFunction есть getChatInfo_result implements RpcFunctionReturnResult
+        W << get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
+          << "result.alloc();" << NL
+          << get_fetcher_call(combinator->result, true, "result->$value") << ";" << NL
+          << "return result;" << NL;
+      }
       return;
     }
-    W << "array<var> result;" << NL;
+    if (!typed_mode) {
+      W << "array<var> result;" << NL;
+    }
     for (const auto &arg : combinator->args) {
       // Если аргумент является параметром типа (обрамлен в {}), пропускаем его
       // Все такие аргументы хранятся в типе, как поля структуры
@@ -615,21 +816,23 @@ struct CombinatorFetch {
                     combinator->get_var_num_arg(arg->exist_var_num)->name.c_str(),
                     arg->exist_var_bit) << BEGIN;
       }
-      W << TypeExprFetch(arg);
+      W << TypeExprFetch(arg, typed_mode);
       if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
         // запоминаем филд маску для дальнейшего использования
-        // хранится либо в структуре либо в локальных переменных
-        W << combinator->get_var_num_arg(arg->var_num)->name << " = f$intval(result.get_value(" << register_tl_const_str(arg->name) << ", "
-          << int_to_str(hash_tl_const_str(arg->name)) << "));" << NL;
-        if (DEBUG_MODE) {
-          W << R"(fprintf(stderr, "### fields_mask processing\n");)" << NL;
+        if (!typed_mode) {
+          W << combinator->get_var_num_arg(arg->var_num)->name << " = f$intval(result.get_value(" << register_tl_const_str(arg->name) << ", "
+            << int_to_str(hash_tl_const_str(arg->name)) << "));" << NL;
+        } else {
+          W << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg) << ";" << NL;
         }
       }
       if (arg->flags & FLAG_OPT_FIELD) {
         W << END << NL;
       }
     }
-    W << "return result;" << NL;
+    if (!typed_mode) {
+      W << "return result;" << NL;
+    }
   }
 };
 
@@ -664,29 +867,33 @@ struct Cell {
   vk::tl::type_array *type_array;
   std::string name;
 
-  inline Cell(vk::tl::combinator *owner, vk::tl::type_array *type_array) :
+  Cell(vk::tl::combinator *owner, vk::tl::type_array *type_array) :
     owner(owner),
-    type_array(type_array) {
-    name = "cell_" + std::to_string(cells_cnt++);
-  }
+    type_array(type_array),
+    name("cell_" + std::to_string(cells_cnt++)) {}
 
-  inline void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator &W) const {
     cur_combinator = owner;
+    const bool needs_typed_fetch_store = is_flat() ? false : !!get_cell_php_class();
+
     for (const auto &arg : type_array->args) {
       kphp_assert(!(arg->flags & (FLAG_OPT_VAR | FLAG_OPT_FIELD)) && arg->type_expr->as<vk::tl::type_expr>());
     }
     W << "//" + owner->name << NL;
     // Когда ячейка массива состоит из одного элемента, генерится псевдоним на этот тип вместо новой структуры
-    if (type_array->args.size() == 1) {
+    if (is_flat()) {
       W << "using " << name << " = " << get_full_type(type_array->args[0]->type_expr.get(), "") << ";\n" << NL;
       return;
     }
     W << "struct " + name + " " << BEGIN;
-    W << "void store(const var& tl_object) " << BEGIN;
+    W << "using PhpType = " << (needs_typed_fetch_store ? get_cell_php_type() : "tl_undefined_php_type") << ";" << NL << NL;
+    
+    W << "void store(const var &tl_object) " << BEGIN;
     for (const auto &arg : type_array->args) {
       W << TypeExprStore(arg, "");
     }
     W << END << NL << NL;
+
     W << "array<var> fetch() " << BEGIN;
     W << "array<var> result;" << NL;
     for (const auto &arg : type_array->args) {
@@ -694,73 +901,180 @@ struct Cell {
     }
     W << "return result;" << NL;
     W << END << NL << NL;
+
+    if (needs_typed_fetch_store) {
+      W << "void typed_store(const PhpType &tl_object) " << BEGIN;
+      for (const auto &arg : type_array->args) {
+        W << TypeExprStore(arg, "", true);
+      }
+      W << END << NL << NL;
+
+      W << "void typed_fetch_to(PhpType &tl_object) " << BEGIN;
+      for (const auto &arg : type_array->args) {
+        W << TypeExprFetch(arg, true);
+      }
+      W << END << NL << NL;
+    }
+
     W << END << ";\n" << NL;
+  }
+
+  // не-flat ячейке соответствует php-класс, например: VK\TL\Types\search\restrictions__arg2_item
+  ClassPtr get_cell_php_class() const {
+    kphp_assert(!is_flat());          // для флат cell'ов генерится using на inner
+
+    int arg_idx = -1;
+    for (const auto &arg: owner->args) {
+      if (auto casted = dynamic_cast<vk::tl::type_array *>(arg->type_expr.get())) {
+        if (type_array_to_cell_name[casted] == name) {
+          arg_idx = arg->idx;
+          break;
+        }
+      }
+    }
+
+    std::string php_class_name = get_php_runtime_type(owner) + format("__arg%d_item", arg_idx);
+    return G->get_class(php_class_name);
+  }
+
+private:
+  bool is_flat() const {
+    return type_array->args.size() == 1;
+  }
+
+  std::string get_cell_php_type() const {
+    ClassPtr php_class = get_cell_php_class();
+    kphp_assert(php_class);
+    return format("class_instance<%s>", php_class->src_name.c_str());
   }
 };
 
 int Cell::cells_cnt = 0;
 std::unordered_map<vk::tl::type_array *, std::string> Cell::type_array_to_cell_name = std::unordered_map<vk::tl::type_array *, std::string>();
 
-struct ConstructorDecl {
+struct TlConstructorDecl {
   const std::unique_ptr<vk::tl::combinator> &constructor;
 
-  inline explicit ConstructorDecl(const std::unique_ptr<vk::tl::combinator> &constructor) :
+  static bool does_tl_constructor_need_typed_fetch_store(vk::tl::combinator *c) {
+    return !!get_php_class_of_tl_constructor(c);
+  }
+
+  static std::string get_optional_args_for_decl(const std::unique_ptr<vk::tl::combinator> &c) {
+    std::vector<std::string> res;
+    for (const auto &arg : c->args) {
+      if (arg->flags & FLAG_OPT_VAR) {
+        if (type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
+          res.emplace_back("int " + arg->name);
+        } else {
+          res.emplace_back("T" + std::to_string(arg->var_num) + " " + arg->name);
+        }
+      }
+    }
+    return vk::join(res, ", ");
+  }
+
+  explicit TlConstructorDecl(const std::unique_ptr<vk::tl::combinator> &constructor) :
     constructor(constructor) {}
 
   inline void compile(CodeGenerator &W) const {
+    const bool needs_typed_fetch_store = TlConstructorDecl::does_tl_constructor_need_typed_fetch_store(constructor.get());
+
     std::string template_decl = get_template_declaration(constructor);
     if (!template_decl.empty()) {
       W << template_decl << NL;
     }
-    W << "struct " << "c_" << cpp_tl_struct_name(constructor->name) << " " << BEGIN;
+    W << "struct " << cpp_tl_struct_name("c_", constructor->name) << " " << BEGIN;
     auto params = get_optional_args_for_decl(constructor);
-    W << "static void store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
-    W << "static " << (constructor->is_flat(tl) ? "var " : "array<var> ");
-    W << "fetch(" << params << ");" << NL;
+    W << "static void store(const var &tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
+    W << "static array<var> fetch(" << params << ");" << NL;
+
+    if (needs_typed_fetch_store) {
+      std::string php_type = get_php_runtime_type(constructor.get(), false);
+      W << "static void typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
+      W << "static void typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
+    }
     W << END << ";\n\n";
   }
 };
 
-struct ConstructorDef {
+struct TlConstructorDef {
   const std::unique_ptr<vk::tl::combinator> &constructor;
 
-  inline explicit ConstructorDef(const std::unique_ptr<vk::tl::combinator> &constructor) :
+  explicit TlConstructorDef(const std::unique_ptr<vk::tl::combinator> &constructor) :
     constructor(constructor) {}
 
   inline void compile(CodeGenerator &W) const {
+    const bool needs_typed_fetch_store = TlConstructorDecl::does_tl_constructor_need_typed_fetch_store(constructor.get());
+
     std::string template_decl = get_template_declaration(constructor);
     std::string template_def = get_template_definition(constructor);
-    auto full_struct_name = "c_" + cpp_tl_struct_name(constructor->name) + template_def;
-    if (!template_decl.empty()) {
-      W << template_decl << NL;
-    }
-    auto params = get_optional_args_for_decl(constructor);
+    auto full_struct_name = cpp_tl_struct_name("c_", constructor->name, template_def);
+    auto params = TlConstructorDecl::get_optional_args_for_decl(constructor);
+
+    W << template_decl << NL;
     W << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
     W << CombinatorStore(constructor.get());
     W << END << "\n\n";
+
     W << template_decl << NL;
-    W << (constructor->is_flat(tl) ? "var " : "array<var> ");
-    W << full_struct_name + "::fetch(" << params << ") " << BEGIN;
+    W << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
     W << CombinatorFetch(constructor.get());
     W << END << "\n\n";
+
+    if (needs_typed_fetch_store) {
+      std::string php_type = get_php_runtime_type(constructor.get(), false);
+
+      W << template_decl << NL;
+      W << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+      W << CombinatorStore(constructor.get(), true);
+      W << END << "\n\n";
+
+      W << template_decl << NL;
+      W << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+      W << CombinatorFetch(constructor.get(), true);
+      W << END << "\n\n";
+    }
   }
 };
 
-struct TypeDecl {
+struct TlTypeDecl {
   vk::tl::type *t;
 
-  inline explicit TypeDecl(vk::tl::type *t) :
+  // tl-типу 'messages.ChatInfoUser' соответствует:
+  // * либо php class VK\TL\Types\messages\chatInfoUser
+  // * либо php interface VK\TL\Types\messages\ChatInfoUser, если тип полиморфный
+  // todo понять, что с зависимыми типами; прокомментить про достижимость
+  static bool does_tl_type_need_typed_fetch_store(vk::tl::type *t) {
+    if (t->name == "ReqResult") {
+      // без этого сайт не компилится, пока typed rpc не подключен — т.к. типизированный t_ReqResult не компилится
+      bool typed_php_code_exists = !!G->get_class(G->env().get_tl_namespace_prefix() + "Types\\rpcResponseOk");
+      return typed_php_code_exists;
+    }
+    std::string php_interface_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(t->name, '.', '\\');
+    if (G->get_class(php_interface_name)) {
+      return true;
+    }
+    const size_t idx_last_slash = php_interface_name.rfind('\\');
+    php_interface_name[idx_last_slash + 1] = tolower(php_interface_name[idx_last_slash + 1]);
+    return !!G->get_class(php_interface_name);
+  }
+
+  explicit TlTypeDecl(vk::tl::type *t) :
     t(t) {}
 
   inline void compile(CodeGenerator &W) const {
     W << "/* ~~~~~~~~~ " << t->name << " ~~~~~~~~~ */\n" << NL;
-    std::string struct_name = "t_" + cpp_tl_struct_name(t->name);
+    const bool needs_typed_fetch_store = TlTypeDecl::does_tl_type_need_typed_fetch_store(t);
+
+    std::string struct_name = cpp_tl_struct_name("t_", t->name);
     const auto &constructor = t->constructors[0];
     std::string template_decl = get_template_declaration(constructor);
     if (!template_decl.empty()) {
       W << template_decl << NL;
     }
     W << "struct " << struct_name << " " << BEGIN;
+    W << "using PhpType = " << (needs_typed_fetch_store ? get_php_runtime_type(t) : "tl_undefined_php_type") << ";" << NL;
+    
     std::vector<std::string> constructor_params;
     std::vector<std::string> constructor_inits;
     for (const auto &arg : constructor->args) {
@@ -780,51 +1094,73 @@ struct TypeDecl {
       }
     }
     if (!constructor_params.empty()) {
-      W << "explicit " << struct_name << "(" << join(constructor_params, ", ") << ") : " << join(constructor_inits, ", ") << " {}\n" << NL;
+      W << "explicit " << struct_name << "(" << vk::join(constructor_params, ", ") << ") : " << vk::join(constructor_inits, ", ") << " {}\n" << NL;
     }
     W << "void store(const var& tl_object);" << NL;
-    W << (constructor->is_flat(tl) ? "var " : "array<var> ");
-    W << "fetch();" << NL;
+    W << "array<var> fetch();" << NL;
+    if (needs_typed_fetch_store) {
+      W << "void typed_store(const PhpType &tl_object);" << NL;
+      W << "void typed_fetch_to(PhpType &tl_object);" << NL;
+    }
     W << END << ";\n\n";
   }
 };
 
-struct TypeDef {
+struct TlTypeDef {
   vk::tl::type *t;
 
-  inline explicit TypeDef(vk::tl::type *t) :
+  explicit TlTypeDef(vk::tl::type *t) :
     t(t) {}
 
   inline void compile(CodeGenerator &W) const {
+    const bool needs_typed_fetch_store = TlTypeDecl::does_tl_type_need_typed_fetch_store(t);
+
     const auto &constructor = t->constructors[0];
-    std::string struct_name = "t_" + cpp_tl_struct_name(t->name);
+    std::string struct_name = cpp_tl_struct_name("t_", t->name);
     const auto &type = tl->types[constructor->type_id];
     std::string template_decl = get_template_declaration(constructor);
     std::string template_def = get_template_definition(constructor);
     auto full_struct_name = struct_name + template_def;
-    if (!template_decl.empty()) {
-      W << template_decl << NL;
-    }
-    W << "void " + full_struct_name + "::store(const var& tl_object) " << BEGIN;
+
+    W << template_decl << NL;
+    W << "void " << full_struct_name << "::store(const var &tl_object) " << BEGIN;
     W << TypeStore(type, template_def);
     W << END << "\n\n";
+
     W << template_decl << NL;
-    W << (constructor->is_flat(tl) ? "var " : "array<var> ");
-    W << full_struct_name + "::fetch() " << BEGIN;
+    W << "array<var> " << full_struct_name + "::fetch() " << BEGIN;
     W << TypeFetch(type, template_def);
     W << END << "\n\n";
+
+    if (needs_typed_fetch_store) {
+      W << template_decl << NL;
+      W << "void " << full_struct_name << "::typed_store(const PhpType &tl_object) " << BEGIN;
+      W << TypeStore(type, template_def, true);
+      W << END << "\n\n";
+
+      W << template_decl << NL;
+      W << "void " << full_struct_name + "::typed_fetch_to(PhpType &tl_object) " << BEGIN;
+      W << TypeFetch(type, template_def, true);
+      W << END << "\n\n";
+    }
   }
 };
 
-struct FunctionDecl {
+struct TlFunctionDecl {
   vk::tl::combinator *f;
 
-  explicit FunctionDecl(vk::tl::combinator *f) :
+  static bool does_tl_function_need_typed_fetch_store(vk::tl::combinator *f) {
+    return !!get_php_class_of_tl_function(f);
+  }
+
+  explicit TlFunctionDecl(vk::tl::combinator *f) :
     f(f) {}
 
   inline void compile(CodeGenerator &W) const {
     W << "/* ~~~~~~~~~ " << f->name << " ~~~~~~~~~ */\n" << NL;
-    std::string struct_name = "f_" + cpp_tl_struct_name(f->name);
+    const bool needs_typed_fetch_store = TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
+
+    std::string struct_name = cpp_tl_struct_name("f_", f->name);
     W << "struct " + struct_name + " : tl_func_base " << BEGIN;
     for (const auto &arg : f->args) {
       if (arg->flags & FLAG_OPT_VAR) {
@@ -833,44 +1169,48 @@ struct FunctionDecl {
         W << "int " << arg->name << "{0};" << NL;
       }
     }
-    W << "static std::unique_ptr<tl_func_base> store(const var& tl_object);" << NL;
+    W << "static unique_object<tl_func_base> store(const var &tl_object);" << NL;
     W << "var fetch();" << NL;
-    W << "size_t get_sizeof() const final " << BEGIN
-      << "return sizeof(" << struct_name << ");" << NL
-      << END << NL;
-    W << "const char *get_name() const final " << BEGIN
-      << "return \"" << f->name << "\";" << NL
-      << END << NL;
-    W << END << ";\n" << NL;
+    if (needs_typed_fetch_store) {
+      W << "static unique_object<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object);" << NL;
+      W << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> typed_fetch();" << NL;
+    }
+    W << END << ";" << NL << NL;
   }
 };
 
-struct FunctionDef {
+class TlFunctionDef {
   vk::tl::combinator *f;
 
-  explicit inline FunctionDef(vk::tl::combinator *f) :
+public:
+  explicit TlFunctionDef(vk::tl::combinator *f) :
     f(f) {}
 
   inline void compile(CodeGenerator &W) const {
-    std::string struct_name = "f_" + cpp_tl_struct_name(f->name);
-    W << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
-    if (DEBUG_MODE) {
-      if (f->name != "memcache.get" && f->name != "memcache.set") {
-        W << "fprintf(stderr, \"~~~ store fun (auto gen) : " << f->name << "\\n\");" << NL;
-      }
-    }
-    W << "std::unique_ptr<" << struct_name << "> result_fetcher(new " << struct_name << "());" << NL;
+    const bool needs_typed_fetch_store = TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
+    std::string struct_name = cpp_tl_struct_name("f_", f->name);
+
+    W << "unique_object<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
+    W << "auto result_fetcher = make_unique_object<" << struct_name << ">();" << NL;
     W << CombinatorStore(f);
     W << "return std::move(result_fetcher);" << NL;
     W << END << NL << NL;
+
     W << "var " << struct_name << "::fetch() " << BEGIN;
-    if (DEBUG_MODE) {
-      if (f->name != "memcache.get" && f->name != "memcache.set") {
-        W << "fprintf(stderr, \"~~~ fetch fun (auto gen) : " << f->name << "\\n\");" << NL;
-      }
-    }
     W << CombinatorFetch(f);
     W << END << NL << NL;
+
+    if (needs_typed_fetch_store) {
+      W << "unique_object<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
+      W << "auto result_fetcher = make_unique_object<" << struct_name << ">();" << NL;
+      W << CombinatorStore(f, true);
+      W << "return std::move(result_fetcher);" << NL;
+      W << END << NL << NL;
+
+      W << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> " << struct_name << "::typed_fetch() " << BEGIN;
+      W << CombinatorFetch(f, true);
+      W << END << NL << NL;
+    }
   }
 };
 
@@ -886,7 +1226,8 @@ public:
   std::vector<vk::tl::type *> target_types;
   std::vector<vk::tl::combinator *> target_functions;
   std::vector<Cell> cells;
-  std::unordered_set<std::string> dependencies;
+  IncludesCollector h_includes;
+  IncludesCollector cpp_includes;
   std::string name;
 
   Module() = default;
@@ -897,21 +1238,21 @@ public:
   void compile_tl_h_file(CodeGenerator &W) const {
     W << OpenFile(name + ".h", "tl");
     W << "#pragma once" << NL;
-    W << ExternInclude("PHP/tl/tl_init.h");
+    W << ExternInclude("runtime/tl/tl_builtins.h");
     W << ExternInclude("tl/tl_const_vars.h");
-    for (const auto &dep: dependencies) {
-      W << Include("tl/" + dep + ".h");
-    }
+    W << h_includes;
+
     W << NL;
+
     for (const auto &t : target_types) {
       for (const auto &constructor : t->constructors) {
-        W << ConstructorDecl(constructor);
+        W << TlConstructorDecl(constructor);
       }
     }
     for (const auto &t : target_types) {
-      W << TypeDecl(t);
+      W << TlTypeDecl(t);
       if (is_type_dependent(t)) {
-        W << TypeDef(t);
+        W << TlTypeDef(t);
       }
     }
     for (const auto &cell : cells) {
@@ -920,12 +1261,12 @@ public:
     for (const auto &t : target_types) {
       if (is_type_dependent(t)) {
         for (const auto &constructor : t->constructors) {
-          W << ConstructorDef(constructor);
+          W << TlConstructorDef(constructor);
         }
       }
     }
     for (const auto &f : target_functions) {
-      W << FunctionDecl(f);
+      W << TlFunctionDecl(f);
     }
     W << CloseFile();
   }
@@ -934,21 +1275,23 @@ public:
     W << OpenFile(name + ".cpp", "tl", false);
     W << ExternInclude("php_functions.h");
     W << Include("tl/" + name + ".h") << NL;
+    W << cpp_includes;
+
     for (const auto &t : target_types) {
       if (!is_type_dependent(t)) {
-        W << TypeDef(t);
+        W << TlTypeDef(t);
         for (const auto &constructor : t->constructors) {
-          W << ConstructorDef(constructor);
+          W << TlConstructorDef(constructor);
         }
       }
     }
     for (const auto &f: target_functions) {
-      W << FunctionDef(f);
+      W << TlFunctionDef(f);
     }
     W << CloseFile();
   }
 
-  inline void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator &W) const {
     compile_tl_h_file(W);
     compile_tl_cpp_file(W);
   }
@@ -957,11 +1300,23 @@ public:
     modules_with_functions.insert(name);
     target_functions.push_back(f.get());
     update_dependencies(f);
+
+    if (TlFunctionDecl::does_tl_function_need_typed_fetch_store(f.get())) {
+      h_includes.add_class_forward_declaration(get_php_class_of_tl_function(f.get()));
+      cpp_includes.add_class_include(get_php_class_of_tl_function(f.get()));
+      cpp_includes.add_class_include(get_php_class_of_tl_function_result(f.get()));
+    }
   }
 
   void add_obj(const std::unique_ptr<vk::tl::type> &t) {
     target_types.push_back(t.get());
     update_dependencies(t);
+
+    for (const auto &c : t->constructors) {
+      if (TlConstructorDecl::does_tl_constructor_need_typed_fetch_store(c.get())) {
+        h_includes.add_class_include(get_php_class_of_tl_constructor(c.get()));
+      }
+    }
   }
 
   void add_obj(const Cell &cell) {
@@ -969,24 +1324,23 @@ public:
     update_dependencies(cell);
   }
 
-  template<typename T>
-  static std::string get_module(const T &named) {
-    auto n = named->name.find('.');
-    if (n == std::string::npos) {
-      return "common";
-    }
-    return named->name.substr(0, n);
+  static std::string get_module_name(const std::string &type_or_comb_name) {
+    auto pos = type_or_comb_name.find('.');
+    return pos == std::string::npos ? "common" : type_or_comb_name.substr(0, pos);
   }
 
-  static std::string get_module(const Cell &cell) {
-    return get_module(cell.owner);
+  static void add_to_module(const std::unique_ptr<vk::tl::type> &t) {
+    ensure_existence(get_module_name(t->name)).add_obj(t);
   }
 
-  template<typename T>
-  static void add_to_module(const T &tl_obj) {
-    auto module_name = get_module(tl_obj);
-    ensure_existence(module_name).add_obj(tl_obj);
+  static void add_to_module(const std::unique_ptr<vk::tl::combinator> &c) {
+    ensure_existence(get_module_name(c->name)).add_obj(c);
   }
+
+  static void add_to_module(const Cell &cell) {
+    ensure_existence(get_module_name(cell.owner->name)).add_obj(cell);
+  }
+  
 private:
   static Module &ensure_existence(const std::string &module_name) {
     if (modules.find(module_name) == modules.end()) {
@@ -1005,11 +1359,11 @@ private:
   }
 
   void update_dependencies(const std::unique_ptr<vk::tl::type> &t) {
-    std::string type_module = get_module(t);
+    std::string type_module = get_module_name(t->name);
     for (const auto &c : t->constructors) {
       update_dependencies(c);
       if (type_module != name) {
-        ensure_existence(type_module).dependencies.insert(name);
+        ensure_existence(type_module).h_includes.add_raw_filename_include("tl/" + name + ".h");
       }
     }
   }
@@ -1022,9 +1376,9 @@ private:
 
   void collect_deps_from_type_tree(vk::tl::expr_base *expr) {
     if (auto as_type_expr = expr->as<vk::tl::type_expr>()) {
-      std::string expr_module = get_module(tl->types[as_type_expr->type_id]);
+      std::string expr_module = get_module_name(tl->types[as_type_expr->type_id]->name);
       if (name != expr_module) {
-        dependencies.insert(expr_module);
+        h_includes.add_raw_filename_include("tl/" + expr_module + ".h");
       }
       for (const auto &child : as_type_expr->children) {
         collect_deps_from_type_tree(child.get());
@@ -1097,10 +1451,10 @@ std::pair<std::string, std::string> get_full_type_expr_str(
       }
     }
   }
-  auto type_name = "t_" + (type->name != T_INTEGER_VARIABLE ? cpp_tl_struct_name(type->name) : cpp_tl_struct_name(tl->types[TL_INT]->name));
-  auto template_str = (!template_params.empty() ? "<" + join(template_params, ", ") + ">" : "");
+  auto type_name = (type->name != T_INTEGER_VARIABLE ? cpp_tl_struct_name("t_", type->name) : cpp_tl_struct_name("t_", tl->types[TL_INT]->name));
+  auto template_str = (!template_params.empty() ? "<" + vk::join(template_params, ", ") + ">" : "");
   auto full_type_name = type_name + template_str;
-  auto full_type_value = full_type_name + "(" + join(constructor_params, ", ") + ")";
+  auto full_type_value = full_type_name + "(" + vk::join(constructor_params, ", ") + ")";
   return {full_type_name, full_type_value};
 }
 
@@ -1185,6 +1539,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
                     format("Error while reading tlo: %s", tl_ptr.error().c_str()));
 
   tl = tl_ptr.value().get();
+  perform_flat_optimization(*tl);
   collect_target_objects();
   for (const auto &e : modules) {
     const Module &module = e.second;
@@ -1198,9 +1553,8 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << NL;
   // Указатель на gen$tl_fetch_wrapper прокидывается в рантайм и вызывается из fetch_function()
   // Это сделано для того, чтобы не тащить в рантайм t_ReqResult и все его зависимости
-  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
-    << "tl_exclamation_fetch_wrapper X;" << NL
-    << "X.fetcher = std::move(stored_fetcher);" << NL
+  W << "array<var> gen$tl_fetch_wrapper(unique_object<tl_func_base> stored_fetcher) " << BEGIN
+    << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
     << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
     << END << NL << NL;
   // Хэш таблица, содержащая все тл функции
@@ -1209,7 +1563,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << "void fill_tl_storers_ht() " << BEGIN;
   for (const auto &module_name : modules_with_functions) {
     for (const auto &f : modules[module_name].target_functions) {
-      W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&f_" << cpp_tl_struct_name(f->name) << "::store, "
+      W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
         << int_to_str(hash_tl_const_str(f->name)) << ");" << NL;
     }
   }

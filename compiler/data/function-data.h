@@ -57,6 +57,7 @@ public:
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
   std::set<ClassPtr> class_dep;
+  bool tl_common_h_dep = false;
   FunctionPtr function_in_which_lambda_was_created;
   //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
 

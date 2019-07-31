@@ -16,7 +16,10 @@
 #include "runtime/string_functions.h"
 #include "runtime/zlib.h"
 
-#include "PHP/tl/tl_init.h"
+#include "runtime/tl/tl_builtins.h"
+#include "runtime/tl/rpc_function.h"
+#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_request.h"
 
 static const int GZIP_PACKED = 0x3072cfa1;
 
@@ -39,7 +42,6 @@ static string rpc_data_copy_backup;
 
 tl_fetch_wrapper_ptr tl_fetch_wrapper;
 array<tl_storer_ptr> tl_storers_ht;
-static bool new_tl_mode_error_flag = false;
 
 template<class T>
 static inline T store_parse_number(const string &v) {
@@ -123,7 +125,7 @@ static void rpc_parse_save_backup() {
   rpc_data_len_backup = rpc_data_len;
 }
 
-static void rpc_parse_restore_previous() {
+void rpc_parse_restore_previous() {
   php_assert ((rpc_data_copy_backup.size() & 3) == 0);
 
   dl::enter_critical_section();//OK
@@ -134,6 +136,14 @@ static void rpc_parse_restore_previous() {
   rpc_data_begin = rpc_data_begin_backup;
   rpc_data = rpc_data_backup;
   rpc_data_len = rpc_data_len_backup;
+}
+
+const char *last_rpc_error_get() {
+  return last_rpc_error;
+}
+
+void last_rpc_error_reset() {
+  last_rpc_error = nullptr;
 }
 
 void rpc_parse(const int *new_rpc_data, int new_rpc_data_len) {
@@ -383,7 +393,6 @@ bool f$fetch_end() {
   return true;
 }
 
-
 rpc_connection::rpc_connection() :
   bool_value(false),
   host_num(-1),
@@ -460,6 +469,15 @@ static const int data_buf_header_reserved_size = sizeof(long long) + sizeof(int)
 int rpc_stored;
 static int rpc_pack_threshold;
 static int rpc_pack_from;
+
+void estimate_and_flush_overflow(int &bytes_sent) {
+  // estimate
+  bytes_sent += data_buf.size();
+  if (bytes_sent >= (1 << 15) && bytes_sent > data_buf.size()) {
+    f$rpc_flush();
+    bytes_sent = data_buf.size();
+  }
+}
 
 void f$store_gzip_pack_threshold(int pack_threshold_bytes) {
   rpc_pack_threshold = pack_threshold_bytes;
@@ -659,7 +677,6 @@ bool f$store_finish() {
 }
 
 bool f$rpc_clean(bool is_error) {
-  new_tl_mode_error_flag = false;
   data_buf.clean();
   f$store_int(-1); //reserve for TL_RPC_DEST_ACTOR
   store_long(-1); //reserve for actor_id
@@ -1812,9 +1829,6 @@ static char rpc_tl_results_storage[sizeof(array<tl_tree *>)];
 static array<tl_tree *> *rpc_tl_results = reinterpret_cast <array<tl_tree *> *> (rpc_tl_results_storage);
 static long long rpc_tl_results_last_query_num = -1;
 
-static char new_mode_rpc_tl_results_storage[sizeof(array<tl_func_base *>)];
-static array<tl_func_base *> *new_mode_rpc_tl_results = reinterpret_cast <array<tl_func_base *> *> (new_mode_rpc_tl_results_storage);
-
 enum tl_mode {
   SAFE_NEW_TL_MODE,
   FULL_OLD_TL_MODE,
@@ -1822,36 +1836,6 @@ enum tl_mode {
 };
 
 tl_mode cur_tl_mode = FULL_OLD_TL_MODE;
-
-void tl_storing_error(const var &tl_object, const char *format, ...) {
-  if (!new_tl_mode_error_flag) {
-    new_tl_mode_error_flag = true;
-    constexpr size_t BUFF_SZ = 1024;
-    char buff[BUFF_SZ];
-    va_list args;
-    va_start (args, format);
-    vsnprintf(buff, BUFF_SZ, format, args);
-    va_end(args);
-    php_warning("Storing error:\n%s\nIn %s serializing TL object:\n%s",
-                buff, new_tl_current_function_name, dump_tl_array(tl_object).c_str());
-  }
-}
-
-void tl_fetching_error(const char *format, ...) {
-  if (CurException.is_null()) {
-    constexpr size_t BUFF_SZ = 1024;
-    char buff[BUFF_SZ];
-    va_list args;
-    va_start(args, format);
-    int sz = vsnprintf(buff, BUFF_SZ, format, args);
-    php_assert(sz > 0);
-    va_end(args);
-    string msg = string(buff, static_cast<size_t>(sz));
-    php_warning("Fetching error:\n%s\nDeserializing result of function: %s", msg.c_str(), new_tl_current_function_name);
-    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__,
-                                             msg.append(string(" in result of ")).append(string(new_tl_current_function_name)), -1));
-  }
-}
 
 namespace new_tl_mode {
 bool try_fetch_rpc_error(array<var> &out_if_error) {
@@ -1880,35 +1864,38 @@ bool try_fetch_rpc_error(array<var> &out_if_error) {
   return false;
 }
 
-std::unique_ptr<tl_func_base> store_function(const var &tl_object) {
-  new_tl_current_function_name = "_unknown_";
+class_instance<RpcQuery> store_function(const var &tl_object) {
+  php_assert(CurException.is_null());
   if (!tl_object.is_array()) {
-    tl_storing_error(tl_object, "Not an array passed to function rpc_tl_query");
-    return nullptr;
+    CurrentProcessingQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
+    return {};
   }
   string fun_name = tl_arr_get(tl_object, UNDERSCORE, 0).to_string();
   if (!tl_storers_ht.has_key(fun_name)) {
-    tl_storing_error(tl_object, "Function \"%s\" not found in tl-scheme", fun_name.c_str());
-    return nullptr;
+    CurrentProcessingQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
+    return {};
   }
+  class_instance<RpcQuery> rpc_query;
+  rpc_query.alloc();
+  rpc_query.get()->tl_function_name = fun_name;
+  CurrentProcessingQuery::get().set_current_tl_function(fun_name);
   const auto &storer_kv = tl_storers_ht.get_value(fun_name);
-  new_tl_current_function_name = fun_name.c_str();
-  std::unique_ptr<tl_func_base> stored_fetcher = storer_kv(tl_object);
-  new_tl_current_function_name = nullptr;
-  if (new_tl_mode_error_flag) {
-    return nullptr;
-  }
-
-  return stored_fetcher;
+  rpc_query.get()->result_fetcher = make_unique_object<RpcRequestResultUntyped>(storer_kv(tl_object));
+  CurrentProcessingQuery::get().reset();
+  return rpc_query;
 }
 
-array<var> fetch_function(std::unique_ptr<tl_func_base> stored_fetcher) {
-  php_assert(stored_fetcher != nullptr);
+array<var> fetch_function(const class_instance<RpcQuery> &rpc_query) {
   array<var> new_tl_object;
   if (try_fetch_rpc_error(new_tl_object)) {
     return new_tl_object;       // тогда содержит ошибку (см. tl_fetch_error())
   }
+  php_assert(!rpc_query.is_null());
+  CurrentProcessingQuery::get().set_current_tl_function(rpc_query);
+  auto stored_fetcher = rpc_query.get()->result_fetcher->extract_untyped_fetcher();
+  php_assert(stored_fetcher);
   new_tl_object = tl_fetch_wrapper(std::move(stored_fetcher));
+  CurrentProcessingQuery::get().reset();
   if (!CurException.is_null()) {
     array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
     CurException = false;
@@ -1933,12 +1920,16 @@ bool f$set_tl_mode(int mode) {
 int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, int &bytes_sent, bool flush) {
   f$rpc_clean();
   tl_tree *result_tree = nullptr;
-  std::unique_ptr<tl_func_base> stored_fetcher;
+  class_instance<RpcQuery> rpc_query;
 
   switch (cur_tl_mode) {
     case FULL_NEW_TL_MODE:
-      stored_fetcher = new_tl_mode::store_function(tl_object);
-      if (stored_fetcher == nullptr) {
+      rpc_query = new_tl_mode::store_function(tl_object);
+      if (!CurException.is_null()) {
+        rpc_query.destroy();
+        CurException = false;
+      }
+      if (rpc_query.is_null()) {
         return 0;
       }
       break;
@@ -1950,8 +1941,12 @@ int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double time
       }
       old_data_buf.copy_raw_data(data_buf);
       f$rpc_clean();
-      stored_fetcher = new_tl_mode::store_function(tl_object);
-      if (stored_fetcher == nullptr) {
+      rpc_query = new_tl_mode::store_function(tl_object);
+      if (!CurException.is_null()) {
+        rpc_query.destroy();
+        CurException = false;
+      }
+      if (rpc_query.is_null()) {
         php_warning("NEW_TL_MODE_ERROR: error_flag=1 but old is ok storing %s", tl_current_function_name);
         fprintf(stderr, "--------- NEW_TL_MODE_ERROR: error_flag=1 but old is ok storing %s\n", tl_current_function_name);
         fprintf(stderr, "Input:\n%s\n", dump_tl_array(tl_object).c_str());
@@ -1975,11 +1970,7 @@ int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double time
   }
 
   if (bytes_estimating) {
-    bytes_sent += data_buf.size();//estimate
-    if (bytes_sent >= (1 << 15) && bytes_sent > (int)data_buf.size()) {
-      f$rpc_flush();
-      bytes_sent = data_buf.size();
-    }
+    estimate_and_flush_overflow(bytes_sent);
   }
   int query_id = rpc_send(c, timeout, ignore_answer);
   if (query_id <= 0) {
@@ -2000,13 +1991,13 @@ int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double time
   if (dl::query_num != rpc_tl_results_last_query_num) {
     new(rpc_tl_results_storage) array<tl_tree *>();
     rpc_tl_results_last_query_num = dl::query_num;
-    new(new_mode_rpc_tl_results_storage) array<tl_func_base *>();
   }
   if (result_tree) {
     rpc_tl_results->set_value(query_id, result_tree);
   }
-  if (stored_fetcher) {
-    new_mode_rpc_tl_results->set_value(query_id, stored_fetcher.release());
+  if (!rpc_query.is_null()) {
+    rpc_query.get()->query_id = query_id;
+    RpcPendingQueries::get().save(rpc_query);
   }
   return query_id;
 }
@@ -2020,7 +2011,7 @@ int f$rpc_tl_pending_queries_count() {
   if (dl::query_num != rpc_tl_results_last_query_num) {
     return 0;
   }
-  return cur_tl_mode == FULL_NEW_TL_MODE ? new_mode_rpc_tl_results->count() : rpc_tl_results->count();
+  return cur_tl_mode == FULL_NEW_TL_MODE ? RpcPendingQueries::get().count() : rpc_tl_results->count();
 }
 
 bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<var> &result) {
@@ -2079,7 +2070,7 @@ class rpc_tl_query_result_one_resumable : public Resumable {
 
   int query_id;
   tl_tree *T;
-  std::unique_ptr<tl_func_base> stored_fetcher;
+  class_instance<RpcQuery> rpc_query;
 protected:
   bool run() {
     bool ready;
@@ -2090,15 +2081,19 @@ protected:
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         php_assert (last_rpc_error != nullptr);
-        T->destroy();
+        if (!rpc_query.is_null()) {
+          rpc_query.get()->result_fetcher.reset();
+        }
+        if (T) {
+          T->destroy();
+        }
         RETURN(tl_fetch_error(last_rpc_error, TL_ERROR_UNKNOWN));
       }
       array<var> tl_object, new_tl_object;
 
       switch (cur_tl_mode) {
         case FULL_NEW_TL_MODE:
-          new_tl_current_function_name = stored_fetcher->get_name(); // get_name() возвращает const string literal => не будет висячего указателя
-          new_tl_object = new_tl_mode::fetch_function(std::move(stored_fetcher));
+          new_tl_object = new_tl_mode::fetch_function(rpc_query);
           rpc_parse_restore_previous();
           RETURN(new_tl_object);
 
@@ -2109,14 +2104,13 @@ protected:
             rpc_parse_restore_previous();
             RETURN(tl_object);
           }
-          if (stored_fetcher) {
+          if (!rpc_query.is_null()) {
             rpc_parse_restore_previous();
             rpc_parse_save_backup();
-            new_tl_current_function_name = stored_fetcher->get_name(); // get_name() возвращает const string literal => не будет висячего указателя
-            new_tl_object = new_tl_mode::fetch_function(std::move(stored_fetcher));
+            new_tl_object = new_tl_mode::fetch_function(rpc_query);
             if (!equals(tl_object, new_tl_object)) {
-              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", new_tl_current_function_name);
-              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", new_tl_current_function_name);
+              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", rpc_query.get()->tl_function_name.c_str());
+              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", rpc_query.get()->tl_function_name.c_str());
               fprintf(stderr, "Expected:\n%s\n", dump_tl_array(tl_object).c_str());
               fprintf(stderr, "Actual:\n%s\n", dump_tl_array(new_tl_object).c_str());
             }
@@ -2137,10 +2131,10 @@ protected:
   }
 
 public:
-  rpc_tl_query_result_one_resumable(int query_id, tl_tree *T, std::unique_ptr<tl_func_base> &&stored_fetcher) :
+  rpc_tl_query_result_one_resumable(int query_id, tl_tree *T, class_instance<RpcQuery> &&rpc_query) :
     query_id(query_id),
     T(T),
-    stored_fetcher(std::move(stored_fetcher)) {
+    rpc_query(std::move(rpc_query)) {
   }
 };
 
@@ -2156,19 +2150,19 @@ array<var> f$rpc_tl_query_result_one(int query_id) {
     return tl_fetch_error("There was no TL queries in current script run", TL_ERROR_INTERNAL);
   }
   tl_tree *T = nullptr;
-  std::unique_ptr<tl_func_base> stored_fetcher = nullptr;
+  class_instance<RpcQuery> rpc_query;
 
   switch (cur_tl_mode) {
-    case FULL_NEW_TL_MODE:
-      stored_fetcher = std::unique_ptr<tl_func_base>(new_mode_rpc_tl_results->get_value(query_id));
-      if (stored_fetcher == nullptr) {
+    case FULL_NEW_TL_MODE: {
+      rpc_query = RpcPendingQueries::get().withdraw(query_id);
+      if (rpc_query.is_null()) {
         resumable_finished = true;
         return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
       }
-      new_mode_rpc_tl_results->unset(query_id);
       break;
+    }
 
-    case SAFE_NEW_TL_MODE:
+    case SAFE_NEW_TL_MODE: {
       T = rpc_tl_results->get_value(query_id);
       if (T == nullptr) {
         resumable_finished = true;
@@ -2176,9 +2170,9 @@ array<var> f$rpc_tl_query_result_one(int query_id) {
       }
       rpc_tl_results->unset(query_id);
       // если по-новому не засторилось, stored_fetcher может быть null, об этом будет warning при фетче
-      stored_fetcher = std::unique_ptr<tl_func_base>(new_mode_rpc_tl_results->get_value(query_id));
-      new_mode_rpc_tl_results->unset(query_id);
+      rpc_query = RpcPendingQueries::get().withdraw(query_id);
       break;
+    }
 
     case FULL_OLD_TL_MODE:
     default:
@@ -2190,7 +2184,7 @@ array<var> f$rpc_tl_query_result_one(int query_id) {
       rpc_tl_results->unset(query_id);
   }
 
-  return start_resumable<array<var>>(new rpc_tl_query_result_one_resumable(query_id, T, std::move(stored_fetcher)));
+  return start_resumable<array<var>>(new rpc_tl_query_result_one_resumable(query_id, T, std::move(rpc_query)));
 }
 
 
@@ -4295,6 +4289,8 @@ static void reset_rpc_global_vars() {
 void init_rpc_lib() {
   php_assert (timeout_wakeup_id != -1);
 
+  CurrentProcessingQuery::get().reset();
+  RpcPendingQueries::get().hard_reset();
   reset_rpc_global_vars();
 
   rpc_parse(nullptr, 0);
@@ -4314,6 +4310,8 @@ void init_rpc_lib() {
 void free_rpc_lib() {
   reset_rpc_global_vars();
   clear_arr_space();
+  RpcPendingQueries::get().hard_reset();
+  CurrentProcessingQuery::get().reset();
 }
 
 int f$rpc_queue_create() {

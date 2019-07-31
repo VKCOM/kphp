@@ -2,20 +2,22 @@
 
 #include <memory>
 
+#include "runtime/unique_object.h"
 #include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
 
 extern const char *new_tl_current_function_name;
 
-void tl_storing_error(const var &tl_object, const char *format, ...) __attribute__ ((format (printf, 2, 3), noinline));
-
-void tl_fetching_error(const char *format, ...) __attribute__ ((format (printf, 1, 2), noinline));
-
 void process_rpc_answer(int request_id, char *result, int result_len);
 
 void process_rpc_error(int request_id, int error_code, const char *error_message);
 
+void rpc_parse_restore_previous();
+
+const char *last_rpc_error_get();
+
+void last_rpc_error_reset();
 
 void rpc_parse(const int *new_rpc_data, int new_rpc_data_len);
 
@@ -65,11 +67,17 @@ bool f$fetch_eof();//TODO remove parameters
 
 bool f$fetch_end();
 
+void estimate_and_flush_overflow(int &bytes_sent);
+
 struct tl_func_base;
-using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var&);
+using tl_storer_ptr = unique_object<tl_func_base>(*)(const var&);
 extern array<tl_storer_ptr> tl_storers_ht;
-using tl_fetch_wrapper_ptr = array<var>(*)(std::unique_ptr<tl_func_base>);
-extern tl_fetch_wrapper_ptr tl_fetch_wrapper;
+using tl_fetch_wrapper_ptr = array<var>(*)(unique_object<tl_func_base>);
+extern tl_fetch_wrapper_ptr tl_fetch_wrapper; // pointer to function below
+//array<var> gen$tl_fetch_wrapper(unique_object<tl_func_base> stored_fetcher) {
+//  tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));
+//  return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();
+//}
 
 inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
   tl_storers_ht = gen$ht;
@@ -192,6 +200,13 @@ bool f$store_long(const var &v);
 
 bool f$store_unsigned_long(const var &v);
 
+int tl_parse_int();
+
+long long tl_parse_long();
+
+double tl_parse_double();
+
+string tl_parse_string();
 
 int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double timeout = -1.0);
 

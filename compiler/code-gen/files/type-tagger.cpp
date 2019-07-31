@@ -18,6 +18,8 @@ void TypeTagger::compile(CodeGenerator &W) const {
 
   W << ExternInclude("php_functions.h");
 
+  // Be care, do not remove spaces from these types
+  // TODO fix it?
   std::set<std::string> sorted_types = {
     "bool",
     "int",
@@ -29,6 +31,8 @@ void TypeTagger::compile(CodeGenerator &W) const {
     "OrFalse < string >",
     "OrFalse < array< var > >",
     "array< array< var > >",
+    "class_instance<C$VK$TL$RpcResponse>",
+    "array< class_instance<C$VK$TL$RpcResponse> >"
   };
 
   IncludesCollector collector;

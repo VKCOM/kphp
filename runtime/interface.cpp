@@ -26,6 +26,7 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
@@ -2080,6 +2081,7 @@ static void free_runtime_libs() {
   free_files_lib();
   free_openssl_lib();
   free_rpc_lib();
+  free_typed_rpc_lib();
   free_streams_lib();
   free_udp_lib();
 

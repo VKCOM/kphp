@@ -1,6 +1,7 @@
 #include "compiler/code-gen/declarations.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/files/tl2cpp.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
@@ -264,6 +265,15 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << END << NL;
   }
 
+  // для rpc-функций генерим метод-член класса store(), который перевызывает сторилку из codegen tl2cpp
+  if (tl_gen::is_php_class_a_tl_function(klass)) {
+    W << NL;
+    W << "unique_object<tl_func_base> store() const final " << BEGIN;
+    std::string f_tl_cpp_struct_name = tl_gen::cpp_tl_struct_name("f_", tl_gen::get_tl_function_of_php_class(klass));
+    W << "return " << f_tl_cpp_struct_name << "::typed_store(this);" << NL;
+    W << END << NL;
+  }
+
   W << END << ";" << NL;
   W << CloseNamespace();
   W << CloseFile();
@@ -288,6 +298,20 @@ void ClassDeclaration::compile_includes(CodeGenerator &W) const {
   includes.add_implements_include(klass);
 
   W << includes;
+
+  if (tl_gen::is_php_class_a_tl_function(klass)) {
+    std::string tl_src_name = tl_gen::get_tl_function_of_php_class(klass);  // 'net.pid', 'rpcPing'
+    tl_src_name = tl_src_name.substr(0, tl_src_name.find('.'));  // 'net', ''
+    W << Include("tl/" + (tl_src_name.empty() ? "common" : tl_src_name) + ".h");
+  }
+}
+
+ClassForwardDeclaration::ClassForwardDeclaration(ClassPtr klass) :
+  klass(klass) {
+}
+
+void ClassForwardDeclaration::compile(CodeGenerator &W) const {
+  W << "struct " << klass->src_name << ";" << NL;
 }
 
 StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :

@@ -12,6 +12,7 @@
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
+#include "compiler/tl-classes.h"
 
 class CompilerCore {
 private:
@@ -25,7 +26,7 @@ private:
   KphpEnviroment *env_;
   TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
-
+  TlClasses tl_classes;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -87,6 +88,9 @@ public:
   void del_extra_files();
   void init_dest_dir();
   std::string get_subdir_name() const;
+
+  void try_load_tl_classes();
+  const TlClasses &get_tl_classes() const { return tl_classes; }
 
   Stats stats;
 };

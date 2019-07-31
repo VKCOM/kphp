@@ -30,6 +30,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-return",           kphp_return},
   {"@kphp-memcache-class",   kphp_memcache_class},
   {"@kphp-immutable-class",  kphp_immutable_class},
+  {"@kphp-tl-class",         kphp_tl_class},
   {"@kphp-const",            kphp_const},
 };
 
@@ -293,10 +294,18 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     }
       /* fallthrough */
     default: {
+      vk::string_view tl_namespace_prefix{"@tl\\"};
+      bool has_tl_namespace_prefix = s.substr(pos).starts_with(tl_namespace_prefix);
+      if (has_tl_namespace_prefix) {
+        pos += tl_namespace_prefix.size();
+      }
       if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z')) {
-        const vk::string_view &relative_class_name = extract_classname_from_pos(s, pos);
+        std::string relative_class_name = static_cast<std::string>(extract_classname_from_pos(s, pos));
         pos += relative_class_name.size();
-        const std::string &class_name = resolve_uses(current_function, static_cast<string>(relative_class_name), '\\');
+        if (has_tl_namespace_prefix) {
+          relative_class_name.insert(0, G->env().get_tl_namespace_prefix());
+        }
+        const std::string &class_name = resolve_uses(current_function, relative_class_name, '\\');
         ClassPtr klass = G->get_class(class_name);
         if (!klass) {
           unknown_classes_list.push_back(class_name);

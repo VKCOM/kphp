@@ -25,6 +25,7 @@ struct php_doc_tag {
     kphp_return,
     kphp_memcache_class,
     kphp_immutable_class,
+    kphp_tl_class,
     kphp_const,
   };
 

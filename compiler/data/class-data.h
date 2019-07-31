@@ -42,6 +42,7 @@ public:
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
   bool really_used{false};
+  bool is_tl_class{false};
 
   SrcFilePtr file_id;
   std::string src_name, header_name;
@@ -68,7 +69,7 @@ public:
   void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location);
 
   bool is_not_empty_class() const {
-    return members.has_any_instance_var() || is_builtin() || is_interface() || !implements.empty();
+    return members.has_any_instance_var() || is_builtin() || is_interface() || !implements.empty() || is_tl_class;
   }
 
   bool is_class() const { return class_type == ClassType::klass; }
@@ -86,7 +87,7 @@ public:
     return is_class() && !construct_function;
   }
 
-  void set_name_and_src_name(const std::string &name);
+  void set_name_and_src_name(const std::string &name, const vk::string_view &phpdoc_str);
 
   void debugPrint();
 

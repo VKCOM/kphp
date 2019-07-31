@@ -134,7 +134,7 @@ VertexAdaptor<op_func_name> LambdaGenerator::create_name(const std::string &name
 
 LambdaPtr LambdaGenerator::create_class(VertexAdaptor<op_func_name> name) {
   LambdaPtr anon_class(new LambdaClassData());
-  anon_class->set_name_and_src_name(LambdaClassData::get_lambda_namespace() + "\\" + name->get_string());
+  anon_class->set_name_and_src_name(LambdaClassData::get_lambda_namespace() + "\\" + name->get_string(), "");
 
   return anon_class;
 }

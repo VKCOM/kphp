@@ -70,7 +70,7 @@ public:
   inline T *operator->() __attribute__ ((always_inline));
   inline T *operator->() const __attribute__ ((always_inline));
 
-  inline T *get() const;
+  inline T *get() const __attribute__ ((always_inline));
 
   bool is_null() const { return !static_cast<bool>(o); }
   const char *get_class() const { return o ? o->get_class() : "null"; }

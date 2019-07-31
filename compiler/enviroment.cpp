@@ -623,3 +623,13 @@ std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename
 KphpEnviroment::color_settings KphpEnviroment::get_color_settings() const {
   return color_;
 }
+
+const std::string &KphpEnviroment::get_tl_namespace_prefix() const {
+  static std::string tl_namespace_name("VK\\TL\\");
+  return tl_namespace_name;
+}
+
+const std::string &KphpEnviroment::get_tl_classname_prefix() const {
+  static std::string tl_classname_prefix("C$VK$TL$");
+  return tl_classname_prefix;
+}

@@ -28,10 +28,16 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/tl/rpc_function.h"
+#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_request.h"
+#include "runtime/tl/rpc_response.h"
+#include "runtime/tl/tl_builtins.h"
+#include "runtime/typed_rpc.h"
+#include "runtime/unique_object.h"
 #include "runtime/url.h"
 #include "runtime/vkext.h"
 #include "runtime/vkext_stats.h"
 #include "runtime/zlib.h"
-#include "PHP/tl/tl_init.h"
 
 #endif // PHP_FUNCTIONS_H

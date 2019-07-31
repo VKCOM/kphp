@@ -1125,6 +1125,15 @@ VertexPtr GenTree::get_type_rule_() {
     arr->type_help = tp;
     set_location(arr, arr_location);
     res = arr;
+  } else if (tok == tok_at) {
+    next_cur();
+    vk::string_view tl_prefix {"tl\\"};
+    kphp_error(cur->str_val.starts_with(tl_prefix), "only tl namespaces allowed");
+    std::string class_name = G->env().get_tl_namespace_prefix() + cur->str_val.substr(tl_prefix.size());
+    auto rule = create_type_help_class_vertex(G->get_class(class_name));
+    kphp_error(rule->class_ptr, format("Unknown class %s in type rule", class_name.c_str()));
+    next_cur();
+    res = rule;
   } else if (tok == tok_func_name) {
     if (vk::any_of_equal(cur->str_val, "lca", "OrFalse")) {
       res = get_type_rule_func();
@@ -1782,7 +1791,14 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   string name_str = static_cast<string>(cur->str_val);
   next_cur();
 
-  string full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
+  std::string full_class_name;
+  if (processing_file->namespace_name.empty() && PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_tl_class)) {
+    kphp_assert(processing_file->is_builtin());
+    full_class_name = G->env().get_tl_namespace_prefix() + name_str;
+  } else {
+    full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
+  }
+
   kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
              "Class name is the same as one of 'use' at the top of the file");
 
@@ -1801,8 +1817,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   name_vertex->str_val = name_str;
 
   cur_class->file_id = processing_file;
-  cur_class->phpdoc_str = phpdoc_str;
-  cur_class->set_name_and_src_name(full_class_name);    // с полным неймспейсом и слешами
+  cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // с полным неймспейсом и слешами
   cur_class->is_immutable = PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_immutable_class);
 
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
@@ -1811,7 +1826,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
-    CE (!kphp_error(!cur_class->is_interface(), "constructor in interfaces have not been supported yet"));
+    CE (!kphp_error(!cur_class->is_interface(), "constructor in interfaces has not been supported yet"));
     G->register_and_require_function(constructor_method, parsed_os, true);
   } else if (cur_class->is_class()) {
     bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();

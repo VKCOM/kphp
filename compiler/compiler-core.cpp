@@ -442,6 +442,12 @@ bool CompilerCore::try_require_file(SrcFilePtr file) {
   return __sync_bool_compare_and_swap(&file->is_required, false, true);
 }
 
+void CompilerCore::try_load_tl_classes() {
+  if (!env().get_tl_schema_file().empty()) {
+    tl_classes.load_from(env().get_tl_schema_file());
+  }
+}
+
 CompilerCore *G;
 
 bool try_optimize_var(VarPtr var) {

@@ -151,6 +151,8 @@ public:
   const string &get_version() const;
   bool is_static_lib_mode() const;
   color_settings get_color_settings() const;
+  const string &get_tl_namespace_prefix() const;
+  const string &get_tl_classname_prefix() const;
 
   bool init();
   void debug() const;

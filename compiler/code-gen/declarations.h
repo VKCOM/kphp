@@ -53,18 +53,24 @@ private:
 
 struct InterfaceDeclaration {
   InterfacePtr interface;
-  InterfaceDeclaration(InterfacePtr interface);
+  explicit InterfaceDeclaration(InterfacePtr interface);
   void compile(CodeGenerator &W) const;
 };
 
 struct ClassDeclaration {
   ClassPtr klass;
-  ClassDeclaration(ClassPtr klass);
+  explicit ClassDeclaration(ClassPtr klass);
   void compile(CodeGenerator &W) const;
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
 private:
   void compile_includes(CodeGenerator &W) const;
   void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
+};
+
+struct ClassForwardDeclaration {
+  ClassPtr klass;
+  explicit ClassForwardDeclaration(ClassPtr klass);
+  void compile(CodeGenerator &W) const;
 };
 
 struct StaticLibraryRunGlobal {
