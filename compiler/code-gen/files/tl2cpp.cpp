@@ -357,7 +357,7 @@ struct TypeStore {
     } else {
       bool first = true;
       W << "const string &c_name = tl_arr_get(tl_object, "
-        << register_tl_const_str("_") << ", 0, " << int_to_str(hash_tl_const_str("_")) << ").to_string();" << NL;
+        << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << ").to_string();" << NL;
       for (const auto &c : type->constructors) {
         W << (first ? "if " : " else if ");
         first = false;
@@ -463,7 +463,7 @@ struct TypeFetch {
       if (!typed_mode) {
         W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
         if (has_name) {
-          W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << int_to_str(hash_tl_const_str("_")) << ");"
+          W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << ");"
             << NL;
         }
       } else {
@@ -482,7 +482,7 @@ struct TypeFetch {
         W << "result = " << cpp_tl_struct_name("c_", default_constructor->name, template_str) << "::" << fetch_call << NL;
         if (has_name) {
           W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", "
-            << int_to_str(hash_tl_const_str("_")) << ");" << NL;
+            << hash_tl_const_str("_") << ");" << NL;
         }
       } else {
         W << get_php_runtime_type(default_constructor, true) << " result;" << NL;
@@ -725,7 +725,7 @@ struct TypeExprFetch {
     }
     if (!typed_mode) {
       W << "result.set_value(" << register_tl_const_str(arg->name) << ", " << get_fetcher_call(arg->type_expr) << ", "
-        << int_to_str(hash_tl_const_str(arg->name))
+        << hash_tl_const_str(arg->name)
         << ");" << NL;
     } else {
       W << get_fetcher_call(arg->type_expr, true, get_tl_object_field_access(arg)) << ";" << NL;
@@ -821,7 +821,7 @@ struct CombinatorFetch {
         // запоминаем филд маску для дальнейшего использования
         if (!typed_mode) {
           W << combinator->get_var_num_arg(arg->var_num)->name << " = f$intval(result.get_value(" << register_tl_const_str(arg->name) << ", "
-            << int_to_str(hash_tl_const_str(arg->name)) << "));" << NL;
+            << hash_tl_const_str(arg->name) << "));" << NL;
         } else {
           W << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg) << ";" << NL;
         }
@@ -1564,7 +1564,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   for (const auto &module_name : modules_with_functions) {
     for (const auto &f : modules[module_name].target_functions) {
       W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
-        << int_to_str(hash_tl_const_str(f->name)) << ");" << NL;
+        << hash_tl_const_str(f->name) << ");" << NL;
     }
   }
   W << END << NL;
@@ -1589,7 +1589,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << "void tl_str_const_init() " << BEGIN;
   int i = 0;
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {
-    W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << std::to_string(const_string_shifts[i++]) << "]);" << NL;
+    W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;
   });
   W << END;
   W << CloseFile();

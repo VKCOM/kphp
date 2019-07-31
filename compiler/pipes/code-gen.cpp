@@ -187,8 +187,7 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
 
 string CodeGenF::get_subdir(const string &base) {
   int bucket = vk::std_hash(base) % 100;
-
-  return string("o_") + int_to_str(bucket);
+  return "o_" + std::to_string(bucket);
 }
 
 void CodeGenF::write_tl_schema(CodeGenerator &W) {
@@ -209,10 +208,7 @@ void CodeGenF::write_tl_schema(CodeGenerator &W) {
     W << "const char *builtin_tl_schema = " << NL << Indent(2);
     compile_string_raw(schema, W);
     W << ";" << NL;
-    W << "int builtin_tl_schema_length = ";
-    char buf[100];
-    sprintf(buf, "%d", schema_length);
-    W << string(buf) << ";" << NL;
+    W << "int builtin_tl_schema_length = " << schema_length << ";" << NL;
     W << CloseFile();
   }
 }

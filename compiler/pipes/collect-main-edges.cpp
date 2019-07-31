@@ -328,7 +328,7 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
       // делаем $cur = $list_array[$i]; хотелось бы array[i] выразить через rvalue multikey int_key, но
       // при составлении edges (from_node[from_at] = to_node) этот key теряется, поэтому через op_index
       auto ith_index = VertexAdaptor<op_int_const>::create();
-      ith_index->set_string(int_to_str(i));
+      ith_index->set_string(std::to_string(i));
       auto new_v = VertexAdaptor<op_index>::create(list->array(), ith_index);
       set_location(new_v, stage::get_location());
       create_set(cur, new_v);

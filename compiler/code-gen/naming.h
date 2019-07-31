@@ -10,7 +10,7 @@ struct LabelName {
   explicit LabelName(int label_id) : label_id(label_id) {}
 
   void compile(CodeGenerator &W) const {
-    W << "label" << int_to_str(label_id);
+    W << "label" << label_id;
   }
 };
 

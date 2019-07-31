@@ -7,7 +7,7 @@
 void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
   bool have_arrow = false;
   bool have_int_key = false;
-  std::set<string> used_keys;
+  std::set<std::string> used_keys;
   int id = 0;
   for (auto v : *to_check) {
     if (v->type() == op_double_arrow) {
@@ -42,8 +42,7 @@ void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
       if (have_arrow && have_int_key) {
         return;
       }
-      const string &str = int_to_str(id++);
-      used_keys.insert(str);
+      used_keys.insert(std::to_string(id++));
     }
   }
 }

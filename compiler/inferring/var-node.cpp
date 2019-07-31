@@ -52,17 +52,17 @@ string tinf::VarNode::get_function_name() {
     return "global scope";
   }
   if (var_->is_class_instance_var()) {
-    return string("class ") + var_->class_id->name + " : " + int_to_str(var_->as_class_instance_field()->root->location.line);
+    return string("class ") + var_->class_id->name + " : " + std::to_string(var_->as_class_instance_field()->root->location.line);
   }
   if (var_->is_class_static_var()) {
-    return string("class ") + var_->class_id->name + " : " + int_to_str(var_->as_class_static_field()->root->location.line);
+    return string("class ") + var_->class_id->name + " : " + std::to_string(var_->as_class_static_field()->root->location.line);
   }
   return "";
 }
 
 string tinf::VarNode::get_var_as_argument_name() {
   int actual_num = (function_ && function_->has_implicit_this_arg() ? param_i - 1 : param_i);
-  return "arg #" + int_to_str(actual_num) + " (" + get_var_name() + ")";
+  return "arg #" + std::to_string(actual_num) + " (" + get_var_name() + ")";
 }
 
 string tinf::VarNode::get_description() {

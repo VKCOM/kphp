@@ -55,7 +55,7 @@ void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << UnlockComments();
   W << UpdateLocation(var->init_val->location);
 
-  W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << int_to_str(shift) << "]);" << NL << NL;
+  W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 
   W << LockComments();
   stage::set_location(save_location);
@@ -133,13 +133,13 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
       continue;
     }
 
-    W << NL << "void const_vars_init_priority_" << std::to_string(dep_level) << "_file_" << std::to_string(part) << "()";
+    W << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part << "()";
     W << BEGIN;
 
     for (size_t ii = 0; ii < const_raw_string_vars.size(); ++ii) {
       VarPtr var = const_raw_string_vars[ii];
       if (var->dependency_level == dep_level) {
-        W << VarName(var) << ".assign_raw (&raw[" << std::to_string(const_string_shifts[ii]) << "]);" << NL;
+        W << VarName(var) << ".assign_raw (&raw[" << const_string_shifts[ii] << "]);" << NL;
       }
     }
 

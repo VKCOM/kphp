@@ -55,7 +55,7 @@ void TypeTagger::compile(CodeGenerator &W) const {
     kphp_assert(hashes.insert({hash, type}).second);
     W << "template<>" << NL;
     W << "int Storage::tagger<" << type << ">::get_tag() " << BEGIN;
-    W << "return " << int_to_str(hash) << ";" << NL;
+    W << "return " << hash << ";" << NL;
     W << END << NL << NL;
   }
 
@@ -63,7 +63,7 @@ void TypeTagger::compile(CodeGenerator &W) const {
   W << "typename Storage::loader<T>::loader_fun Storage::loader<T>::get_function(int tag)" << BEGIN;
   W << "switch(tag)" << BEGIN;
   for (const auto &hash_type : hashes) {
-    W << "case " << int_to_str(hash_type.first) << ":" << " return Storage::load_implementation_helper<" << hash_type.second << ", T>::load;" << NL;
+    W << "case " << hash_type.first << ":" << " return Storage::load_implementation_helper<" << hash_type.second << ", T>::load;" << NL;
   }
   W << END << NL;
   W << "php_assert(0);" << NL;

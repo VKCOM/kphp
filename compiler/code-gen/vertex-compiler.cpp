@@ -49,9 +49,9 @@ struct Operand {
 struct TupleGetIndex {
   VertexPtr tuple;
   std::string int_index;
-  TupleGetIndex(VertexPtr tuple, const std::string &int_index) :
+  TupleGetIndex(VertexPtr tuple, std::string int_index) :
     tuple(tuple),
-    int_index(int_index) {
+    int_index(std::move(int_index)) {
   }
 
   TupleGetIndex(VertexPtr tuple, VertexPtr key) :
@@ -1115,7 +1115,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
     }
 
     len_name = gen_unique_name("strlen");
-    W << "dl::size_type " << len_name << " = " << int_to_str(static_length);
+    W << "dl::size_type " << len_name << " = " << static_length;
     for (const auto &str : to_add) {
       W << " + max_string_size (" << str << ")";
     }
@@ -1126,14 +1126,14 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   if (complex_flag) {
     W << len_name;
   } else {
-    W << int_to_str(static_length);
+    W << static_length;
   }
   W << ", true)";
   for (const auto &str_info : info) {
     W << ".append_unsafe (";
     if (str_info.str_flag) {
       compile_string_raw(str_info.str, W);
-      W << ", " << int_to_str((int)str_info.len);
+      W << ", " << str_info.len;
     } else if (str_info.var_flag) {
       W << str_info.str;
     } else {
@@ -1185,7 +1185,7 @@ void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
     // вычисляем хеш строки 'somekey' на этапе компиляции, и вызовем array<T>::get_value(string, precomputed_hash)
     int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
     if (precomputed_hash) {
-      W << ", " << int_to_str(precomputed_hash);
+      W << ", " << precomputed_hash;
     }
     W << ")";
   }
@@ -1289,9 +1289,9 @@ void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
     if (cur->type() != op_lvalue_null) {
 
       if (ptype != tp_tuple) {
-        W << "assign (" << cur << ", " << arr << ".get_value (" << int_to_str(i) << "));" << NL;
+        W << "assign (" << cur << ", " << arr << ".get_value (" << i << "));" << NL;
       } else {
-        W << "assign (" << cur << ", " << TupleGetIndex(arr, int_to_str(i)) << ");" << NL;
+        W << "assign (" << cur << ", " << TupleGetIndex(arr, std::to_string(i)) << ");" << NL;
       }
     }
   }
@@ -1349,17 +1349,17 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   } else {
     W << "array <var>";
   }
-  char tmp[70];
-  sprintf(tmp, " (array_size (%d, %d, %s));", int_cnt + xx_cnt, string_cnt + xx_cnt, has_double_arrow ? "false" : "true");
-  W << (const char *)tmp << NL;
-
+  W << " (array_size ("
+    << int_cnt + xx_cnt << ", "
+    << string_cnt + xx_cnt << ", "
+    << (has_double_arrow ? "false" : "true") << "));" << NL;
   for (auto cur : root->args()) {
     W << arr_name;
     if (auto arrow = cur.try_as<op_double_arrow>()) {
       W << ".set_value (" << arrow->key() << ", " << arrow->value();
       int precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key());
       if (precomputed_hash) {
-        W << ", " << int_to_str(precomputed_hash);
+        W << ", " << precomputed_hash;
       }
       W << ")";
     } else {
@@ -1539,7 +1539,7 @@ void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W) {
   W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value();
   int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
   if (precomputed_hash) {
-    W << ", " << int_to_str(precomputed_hash);
+    W << ", " << precomputed_hash;
   }
   W << ")";
   // set_value для string/tuple нет отдельных (в отличие от compile_index()), т.к. при использовании их как lvalue
@@ -1564,7 +1564,7 @@ void compile_string_raw(VertexAdaptor<op_string> root, CodeGenerator &W) {
 void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W) {
   W << "string (";
   compile_string_raw(root, W);
-  W << ", " << int_to_str((int)root->str_val.size()) << ")";
+  W << ", " << root->str_val.size() << ")";
 }
 
 

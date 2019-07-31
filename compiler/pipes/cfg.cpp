@@ -40,7 +40,7 @@ public:
 
     for (int i = 0; i < parts_size; i++) {
       // name$v1, name$v2 и т.п., но name (0-я копия) как есть
-      const std::string &new_name = i ? var->name + "$v" + int_to_str(i) : var->name;
+      const std::string &new_name = i ? var->name + "$v" + std::to_string(i) : var->name;
       VarPtr new_var = G->create_var(new_name, var->type());
       new_var->holder_func = var->holder_func;
 

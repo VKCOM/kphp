@@ -388,7 +388,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_line_c: {
       auto v = VertexAdaptor<op_int_const>::create();
       set_location(v, AutoLocation(this));
-      v->str_val = int_to_str(stage::get_line());
+      v->str_val = std::to_string(stage::get_line());
       res = v;
       next_cur();
       break;

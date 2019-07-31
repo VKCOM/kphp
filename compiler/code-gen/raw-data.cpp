@@ -110,13 +110,13 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     shift += array_len_in_doubles;
 
     // ref_cnt, max_key
-    W << "{ .is = { .a = " << int_to_str(REF_CNT_FOR_CONST) << ", .b = " << int_to_str(array_size - 1) << "}},";
+    W << "{ .is = { .a = " << REF_CNT_FOR_CONST << ", .b = " << array_size - 1 << "}},";
 
     // end_.next, end_.prev
     W << "{ .is = { .a = 0, .b = 0}},";
 
     // int_size, int_buf_size
-    W << "{ .is = { .a = " << int_to_str(array_size) << ", .b = " << int_to_str(array_size) << "}},";
+    W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}},";
 
     // string_size, string_buf_size
     W << "{ .is = { .a = 0 , .b = -1 }}";

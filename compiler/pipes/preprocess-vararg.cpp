@@ -59,12 +59,12 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
       }
 
       auto id0 = VertexAdaptor<op_int_const>::create();
-      id0->str_val = int_to_str(i - rest_start_pos);
+      id0->str_val = std::to_string(i - rest_start_pos);
       auto isset_value = VertexAdaptor<op_index>::create(create_va_list_var(root->location), id0);
       auto isset = VertexAdaptor<op_isset>::create(isset_value);
 
       auto id1 = VertexAdaptor<op_int_const>::create();
-      id1->str_val = int_to_str(i - rest_start_pos);
+      id1->str_val = std::to_string(i - rest_start_pos);
       auto result_value = VertexAdaptor<op_index>::create(create_va_list_var(root->location), id1);
 
       auto expr = VertexAdaptor<op_ternary>::create(isset, result_value, def);

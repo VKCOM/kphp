@@ -216,7 +216,7 @@ std::string debugVertexMore(VertexPtr v) {
     case op_type_expr_type:
       return ptype_name(v->type_help);
     case op_seq:
-      return int_to_str(v->size());
+      return std::to_string(v->size());
     default:
       return "";
   }

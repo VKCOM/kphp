@@ -52,12 +52,6 @@ inline vk::string_view string_view_dup(const vk::string_view &s) {
   return vk::string_view(buf, buf + s.size());
 }
 
-inline std::string int_to_str(int x) {
-  char tmp[50];
-  sprintf(tmp, "%d", x);
-  return tmp;
-}
-
 inline std::vector<std::string> split(const std::string &s, char delimiter = ' ') {
   std::vector<std::string> res;
 
