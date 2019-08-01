@@ -49,7 +49,11 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
       return vertex;
     }
 
-    int cnt_func_params = other_function->param_ids.size() - other_function->has_variadic_param;
+    int cnt_func_params = other_function->param_ids.size();
+    if(other_function->has_variadic_param) {
+      cnt_func_params--;
+    }
+    cnt_func_params = std::min(cnt_func_params, static_cast<int>(call->args().size()));
     for (int ii = 0; ii < cnt_func_params; ++ii) {
       auto val = call->args()[ii];
       VarPtr to_var = other_function->param_ids[ii];

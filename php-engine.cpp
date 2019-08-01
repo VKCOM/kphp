@@ -3236,7 +3236,9 @@ void init_default() {
 int main(int argc, char *argv[]) {
   init_version_string(NAME_VERSION);
   dl_block_all_signals();
+#ifndef __SANITIZE_ADDRESS__
   set_core_dump_rlimit(1LL << 40);
+#endif
   max_special_connections = 1;
   static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
 

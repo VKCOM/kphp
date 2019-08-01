@@ -1,5 +1,6 @@
-@ok benchmark
+@benchmark
 <?php
+  // TODO sometimes php gives another result
   function hash2($n) {
     for ($i = 0; $i < $n; $i++) {
       $hash1["foo_".rand()] = 1;

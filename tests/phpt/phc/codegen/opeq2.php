@@ -12,4 +12,4 @@
   $x = ($y[f()] += 1);
   var_dump($x);
   var_dump($y);
-?> 
+?>

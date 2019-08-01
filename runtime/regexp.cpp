@@ -1036,7 +1036,7 @@ string f$preg_quote(const string &str, const string &delimiter) {
         static_SB.append_char('0');
         break;
       default:
-        if (str[i] == delimiter[0]) {
+        if (!delimiter.empty() && str[i] == delimiter[0]) {
           static_SB.append_char('\\');
         }
         static_SB.append_char(str[i]);

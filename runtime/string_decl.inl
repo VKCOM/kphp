@@ -30,8 +30,6 @@ private:
     size_type capacity;
     int ref_count;
 
-    inline static string_inner &empty_string();
-
     inline bool is_shared() const;
     inline void set_length_and_sharable(size_type n);
 
@@ -62,6 +60,8 @@ private:
   inline static char *create(const char *beg, const char *end);
   inline static char *create(size_type req, char c);
   inline static char *create(size_type req, bool b);
+
+  friend struct single_char;
 
 public:
   static const size_type max_size = ((size_type)-1 - sizeof(string_inner) - 1) / 4;

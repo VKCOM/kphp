@@ -6,10 +6,31 @@
 
 const string::size_type string::max_size __attribute__ ((weak));
 
-string::string_inner &string::string_inner::empty_string() {
-  static string::string_inner empty_string{0, 0, REF_CNT_FOR_CONST};
-  return empty_string;
-}
+struct single_char {
+private:
+  static constexpr std::size_t TAIL_SIZE = 4u;
+
+public:
+  string::string_inner inner{0, 0, REF_CNT_FOR_CONST};
+  char data[TAIL_SIZE]{'\0'};
+
+  static single_char construct_empty_string() {
+    static_assert(sizeof(single_char) == sizeof(string::string_inner) + TAIL_SIZE * sizeof(char), "Unexpected padding");
+    return single_char{};
+  }
+
+  static std::array<single_char, 256> construct_chars() {
+    static_assert(sizeof(single_char) == sizeof(string::string_inner) + TAIL_SIZE * sizeof(char), "Unexpected padding");
+
+    std::array<single_char, 256> chars;
+    for (std::size_t c = 0; c < chars.size(); ++c) {
+      chars[c].inner.size = 1;
+      chars[c].inner.capacity = 1;
+      chars[c].data[0] = static_cast<char>(c);
+    }
+    return chars;
+  }
+};
 
 bool string::string_inner::is_shared() const {
   return ref_count > 0;
@@ -125,24 +146,11 @@ void string::set_size(size_type new_size) {
 }
 
 string::string_inner &string::empty_string() {
-  return string_inner::empty_string();
+  static auto empty_string = single_char::construct_empty_string();
+  return empty_string.inner;
 }
 
 string::string_inner &string::single_char_str(char c) {
-  constexpr std::size_t TAIL_SIZE = 4u;
-  struct single_char {
-    string_inner inner{1, 1, REF_CNT_FOR_CONST};
-    char data[TAIL_SIZE]{'\0'};
-
-    static std::array<single_char, 256> construct_chars() {
-      std::array<single_char, 256> chars;
-      for (std::size_t c = 0; c < chars.size(); ++c) {
-        chars[c].data[0] = static_cast<char>(c);
-      }
-      return chars;
-    }
-  };
-  static_assert(sizeof(single_char) == sizeof(string_inner) + TAIL_SIZE * sizeof(char), "Unexpected padding");
   static auto chars = single_char::construct_chars();
   return chars[static_cast<std::uint8_t>(c)].inner;
 }
@@ -943,11 +951,10 @@ string::size_type string::find_first_of(const string &s, size_type pos) const {
 }
 
 int string::compare(const string &str) const {
-  dl::size_type my_size = size();
-  dl::size_type str_size = str.size();
-  int diff = (int)my_size - (int)str_size;
-  int res = memcmp(p, str.p, (diff < 0 ? my_size + 1 : str_size + 1));
-  return res ? res : diff;
+  const dl::size_type my_size = size();
+  const dl::size_type str_size = str.size();
+  const int res = memcmp(p, str.p, std::min(my_size, str_size));
+  return res ? res : static_cast<int>(my_size) - static_cast<int>(str_size);
 }
 
 

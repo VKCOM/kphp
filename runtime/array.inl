@@ -1460,7 +1460,7 @@ void array<T>::set_value(int int_key, const T &v) {
 template<class T>
 void array<T>::set_value(const string &string_key, const T &v) {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (!string_key.empty() && (unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
     set_value(int_val, v);
     return;
   }
