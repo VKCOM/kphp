@@ -32,8 +32,11 @@ struct one_of_is_unknown
 template<class T, class U>
 using enable_if_one_of_types_is_unknown = typename std::enable_if<one_of_is_unknown<T, U>::value, bool>::type;
 
+template<typename>
+struct is_class_instance;
+
 template<class T, class U>
-using disable_if_one_of_types_is_unknown = typename std::enable_if<!one_of_is_unknown<T, U>::value, bool>::type;
+using disable_if_one_of_types_is_unknown = typename std::enable_if<!one_of_is_unknown<T, U>::value && !(is_class_instance<T>{} && is_class_instance<U>{}), bool>::type;
 
 template<class T, class U>
 enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {

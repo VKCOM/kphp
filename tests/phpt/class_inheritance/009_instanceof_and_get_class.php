@@ -19,3 +19,5 @@ var_dump($d instanceof Derived1);
 var_dump($d instanceof Derived2);
 
 var_dump(get_class($d));
+var_dump(Derived1::class);
+

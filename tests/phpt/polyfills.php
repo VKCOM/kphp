@@ -46,4 +46,8 @@ function array_last_value(&$a) {
   return current($a);
 }
 
+function instance_cast($instance, $unused) {
+    return $instance;
+}
+
 #endif
