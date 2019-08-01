@@ -27,7 +27,7 @@ def yellow(text):
 
 
 def blue(text):
-    return "\033[34m{}\033[0m".format(text)
+    return "\033[1;34m{}\033[0m".format(text)
 
 
 class TestFile:

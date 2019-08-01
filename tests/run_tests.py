@@ -22,7 +22,7 @@ def yellow(text):
 
 
 def blue(text):
-    return "\033[34m{}\033[0m".format(text)
+    return "\033[1;34m{}\033[0m".format(text)
 
 
 def cyan(text):
@@ -209,12 +209,6 @@ if __name__ == "__main__":
 
     modes = get_modes()[args.mode]
     for mode_name, options in modes:
-        runner.add_test_group(
-            name="clean",
-            description="make clean",
-            cmd="make -C {} clean".format(root_engine_path)
-        )
-
         runner.add_test_group(
             name="make kphp",
             description="make kphp and runtime in {} mode".format(mode_name),
