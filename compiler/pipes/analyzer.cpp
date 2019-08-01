@@ -25,12 +25,6 @@ void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
             str = init->get_string();
           }
         }
-      } else if (key->type() == op_define_val) {
-        DefinePtr d = key.as<op_define_val>()->define_id;
-        VertexPtr dval = d->val;
-        if (dval->type() == op_string || dval->type() == op_int_const) {
-          str = dval->get_string();
-        }
       }
       if (!str.empty()) {
         if (used_keys.find(str) != used_keys.end()) {

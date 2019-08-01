@@ -138,4 +138,12 @@ public:
     ::set_location(get_location(v), *this);
     return *this;
   }
+
+  VertexAdaptor &set_location_recursively(VertexPtr v) {
+    set_location(v);
+    for (auto child: *impl) {
+      child.set_location_recursively(v);
+    }
+    return *this;
+  }
 };

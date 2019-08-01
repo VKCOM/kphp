@@ -54,8 +54,7 @@ void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex
 }
 bool RegisterVariablesPass::is_const(VertexPtr v) {
   return v->const_type == cnst_const_val ||
-         (v->type() == op_var && v.as<op_var>()->var_id->is_constant()) ||
-         v->type() == op_define_val;
+         (v->type() == op_var && v.as<op_var>()->var_id->is_constant());
 }
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
   return v->type() == op_var && v.as<op_var>()->var_id->is_in_global_scope();

@@ -42,7 +42,6 @@ private:
   void recalc_inc_dec(VertexAdaptor<meta_op_unary> expr);
   void recalc_noerr(VertexAdaptor<op_noerr> expr);
   void recalc_arithm(VertexAdaptor<meta_op_binary> expr);
-  void recalc_define_val(VertexAdaptor<op_define_val> define_val);
   void recalc_power(VertexAdaptor<op_pow> expr);
   void recalc_fork(VertexAdaptor<op_fork> fork);
   void recalc_expr(VertexPtr expr);
@@ -365,11 +364,6 @@ void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   }
 }
 
-void ExprNodeRecalc::recalc_define_val(VertexAdaptor<op_define_val> define_val) {
-  //TODO: fix?
-  set_lca(define_val->define_id->val);
-}
-
 void ExprNodeRecalc::recalc_power(VertexAdaptor<op_pow> expr) {
   VertexPtr base = expr->lhs();
   add_dependency(as_rvalue(base));
@@ -545,10 +539,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
 
     case op_pow:
       recalc_power(expr.as<op_pow>());
-      break;
-
-    case op_define_val:
-      recalc_define_val(expr.as<op_define_val>());
       break;
 
     case op_clone:

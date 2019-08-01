@@ -37,8 +37,6 @@ protected:
 
   virtual T on_instance_prop(VertexAdaptor<op_instance_prop> v) { return on_non_const(v); }
 
-  virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
-
   virtual T on_non_const(VertexPtr) { return T(); }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
@@ -116,9 +114,6 @@ protected:
 
       case op_func_name:
         return on_func_name(v.as<op_func_name>());
-
-      case op_define_val:
-        return on_define_val(v.as<op_define_val>());
 
       case op_double_arrow:
         return on_double_arrow(v.as<op_double_arrow>());
@@ -262,7 +257,8 @@ protected:
   }
 
   VertexPtr on_conv(VertexAdaptor<meta_op_unary> v) final {
-    return make_const(v->expr());
+    v->expr() = make_const(v->expr());
+    return v;
   }
 
   VertexPtr on_func_name(VertexAdaptor<op_func_name> v) final {
@@ -316,6 +312,7 @@ protected:
   }
 
   void on_conv(VertexAdaptor<meta_op_unary> v) final {
+    feed_hash_string(OpInfo::str(v->type()));
     return visit(v->expr());
   }
 
@@ -324,10 +321,6 @@ protected:
     feed_hash_string(type_str);
 
     return visit(v->expr());
-  }
-
-  void on_define_val(VertexAdaptor<op_define_val> v) final {
-    return visit(GenTree::get_actual_value(v));
   }
 
   void on_binary(VertexAdaptor<meta_op_binary> v) final {
@@ -394,15 +387,11 @@ protected:
   }
 
   std::string on_conv(VertexAdaptor<meta_op_unary> v) final {
-    return visit(v->expr());
+    return OpInfo::str(v->type()) + '(' + visit(v->expr()) + ')';
   }
 
   std::string on_unary(VertexAdaptor<meta_op_unary> v) final {
     return visit(v->expr()) + ':' + OpInfo::str(v->type());
-  }
-
-  std::string on_define_val(VertexAdaptor<op_define_val> v) final {
-    return visit(GenTree::get_actual_value(v));
   }
 
   std::string on_binary(VertexAdaptor<meta_op_binary> v) final {

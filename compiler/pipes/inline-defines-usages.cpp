@@ -22,7 +22,7 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
     }
   }
 
-  // значения константных дефайнов заменяем на op_define_val, а неконстантных — на переменную d$...
+  // значения константных дефайнов заменяем на саму переменную, а неконстантных — на переменную d$...
   if (root->type() == op_func_name) {
     DefinePtr d = G->get_define(resolve_define_name(root->get_string()));
     if (d) {
@@ -32,9 +32,7 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
         var->str_val = "d$" + d->name;
         root = var;
       } else {
-        auto def = VertexAdaptor<op_define_val>::create().set_location(root);
-        def->define_id = d;
-        root = def;
+        root = d->val.clone().set_location_recursively(root);
       } 
     }
   }

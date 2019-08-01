@@ -16,14 +16,6 @@ int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
 }
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   VertexPtr res = root;
-
-  if (root->type() == op_define_val) {
-    VertexPtr expr = GenTree::get_actual_value(root);
-    if (should_convert_to_const(expr)) {
-      res = create_const_variable(expr, root->location);
-    }
-  }
-
   if (root->const_type == cnst_const_val) {
     const_array_depth_ -= root->type() == op_array;
     if (should_convert_to_const(root)) {

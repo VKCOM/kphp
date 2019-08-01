@@ -1677,21 +1677,6 @@
     }
   },
   {
-    "extra_fields": {
-      "define_id": {
-        "type": "DefinePtr"
-      }
-    },
-    "name": "op_define_val",
-    "base_name": "meta_op_base",
-    "props": {
-      "rl": "rl_const",
-      "cnst": "cnst_not_func",
-      "type": "common_op",
-      "str": "define_val"
-    }
-  },
-  {
     "sons": {
       "try_cmd": {
         "id": 0,

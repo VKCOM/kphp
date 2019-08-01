@@ -1449,33 +1449,6 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
   }
 }
 
-
-void compile_define_val(VertexPtr root, CodeGenerator &W) {
-  DefinePtr d = root.as<op_define_val>()->define_id;
-
-  W << LockComments();
-  switch (d->val->type()) {
-    case op_int_const:
-    case op_uint_const:
-    case op_long_const:
-    case op_ulong_const:
-    case op_float_const:
-    case op_string:
-    case op_false:
-    case op_true:
-    case op_null:
-    case op_array:
-      W << d->val;
-      break;
-
-    default:
-      W << "(" << d->val << ")";
-      break;
-  }
-  W << UnlockComments();
-}
-
-
 void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
   W << "false";
   //TODO: it is not CodeGen part
@@ -1832,9 +1805,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_xset(root.as<meta_op_xset>(), W);
       break;
     case op_empty:
-      break;
-    case op_define_val:
-      compile_define_val(root.as<op_define_val>(), W);
       break;
     case op_defined:
       compile_defined(root.as<op_defined>(), W);
