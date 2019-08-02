@@ -117,13 +117,13 @@ class TestRunner:
             shutil.move(file, artifact.file)
 
     @staticmethod
-    def _wait_proc(proc):
+    def _wait_proc(proc, timeout=300):
         try:
-            stdout, stderr = proc.communicate(timeout=300)
+            stdout, stderr = proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             proc.kill()
             try:
-                stdout, stderr = proc.communicate(timeout=300)
+                stdout, stderr = proc.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:
                 return None, b"Zombie detected?! Proc can't be killed due timeout!"
 
@@ -255,7 +255,7 @@ class TestRunner:
         cmd = [self._kphp_path, include, "-d", os.path.abspath(self._kphp_build_tmp_dir), self._test_file_path]
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(cmd, cwd=self._kphp_build_tmp_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc)
+        kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=600)
         if fake_stderr:
             kphp_build_stderr = kphp_build_stderr + fake_stderr
 
