@@ -4,6 +4,7 @@
 
 #include "common/algorithms/hashes.h"
 
+#include "compiler/data/class-data.h"
 #include "compiler/inferring/public.h"
 
 namespace {
@@ -262,4 +263,17 @@ bool OptimizationPass::user_recursion(VertexPtr root, LocalT *, VisitVertex<Opti
     }
   }
   return false;
+}
+
+bool OptimizationPass::check_function(FunctionPtr function) {
+  if (function->type == FunctionData::func_class_holder) {
+    auto class_id = function->class_id;
+    class_id->members.for_each([](ClassMemberInstanceField &class_field) {
+      if (class_field.var->init_val) {
+        cast_const_array(class_field.var->init_val, class_field.var);
+      }
+    });
+  }
+
+  return default_check_function(function) && !function->is_extern();
 }

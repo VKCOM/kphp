@@ -21,10 +21,7 @@ public:
     return "Optimization";
   }
 
-  bool check_function(FunctionPtr function) {
-    return default_check_function(function) && !function->is_extern();
-  }
-
+  bool check_function(FunctionPtr function);
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
 
