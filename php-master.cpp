@@ -1621,11 +1621,11 @@ int php_master_version(connection *c) {
 }
 
 void php_master_rpc_stats() {
-  std::string res(1 << 12, 0);
+  std::string res(64*1024, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
   stats.statsd_prefix = nullptr;
-  sb_init(&stats.sb, &res[0], (1 << 12) - 2);
+  sb_init(&stats.sb, &res[0], static_cast<int>(res.size()) - 2);
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
   res += php_master_prepare_stats(true, -1);
