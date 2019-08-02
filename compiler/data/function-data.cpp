@@ -14,13 +14,13 @@
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
 
-FunctionPtr FunctionData::create_function(VertexAdaptor<op_function> root, func_type_t type) {
+FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
   AutoProfiler prof{*cache};
   FunctionPtr function(new FunctionData());
   root->func_id = function;
 
-  function->name = root->name()->get_string();
+  function->name = std::move(name);
   function->root = root;
   function->file_id = stage::get_file();
   function->type = type;
@@ -29,8 +29,8 @@ FunctionPtr FunctionData::create_function(VertexAdaptor<op_function> root, func_
   return function;
 }
 
-FunctionPtr FunctionData::clone_from(FunctionPtr other, VertexAdaptor<op_function> new_root) {
-  auto res = create_function(new_root, other->type);
+FunctionPtr FunctionData::clone_from(std::string new_name, FunctionPtr other, VertexAdaptor<op_function> new_root) {
+  auto res = create_function(new_name, new_root, other->type);
   res->root = new_root;
   res->is_required = false;
   res->file_id = other->file_id;
@@ -92,9 +92,8 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
   auto func_args_n = static_cast<size_t>(func->get_params().size());
 
   auto new_func_root = func->root.clone();
-  new_func_root->name()->set_string(name_of_function_instance);
 
-  auto new_function = FunctionData::clone_from(func, new_func_root);
+  auto new_function = FunctionData::clone_from(name_of_function_instance, func, new_func_root);
   new_function->is_template = false;
 
   for (size_t i = 0; i < func_args_n; ++i) {

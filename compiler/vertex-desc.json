@@ -41,22 +41,15 @@
   },
   {
     "sons": {
-      "name": {
-        "id": 0,
-        "type": "op_func_name"
-      },
       "params": {
-        "id": 1,
+        "id": 0,
         "type": "op_func_param_list"
       },
       "cmd": {
-        "id": 2,
+        "id": 1,
         "type": "op_seq"
       }
     },
-    "extras": [
-      "string"
-    ],
     "name": "op_function",
     "base_name": "meta_op_base",
     "props": {

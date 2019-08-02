@@ -8,7 +8,7 @@
 class SplitSwitchPass : public FunctionPassBase {
 private:
   int depth;
-  vector<VertexAdaptor<op_function>> new_functions;
+  vector<FunctionPtr> new_functions;
 
   static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
                                       const string &state_name, int cycle_depth) {
@@ -91,9 +91,7 @@ public:
         kphp_fail();
       }
 
-      string func_name_str = stage::get_function_name() + "$" + gen_unique_name("switch_func");
-      auto func_name = VertexAdaptor<op_func_name>::create();
-      func_name->str_val = func_name_str;
+      string func_name = stage::get_function_name() + "$" + gen_unique_name("switch_func");
 
       auto case_state = VertexAdaptor<op_var>::create();
       case_state->ref_flag = true;
@@ -115,13 +113,13 @@ public:
 
       auto case_state_param = VertexAdaptor<op_func_param>::create(case_state);
       auto func_params = VertexAdaptor<op_func_param_list>::create(case_state_param);
-      auto func = VertexAdaptor<op_function>::create(func_name, func_params, seq);
+      auto func = VertexAdaptor<op_function>::create(func_params, seq);
       func = prepare_switch_func(func, case_state_name, 1).as<op_function>();
       GenTree::func_force_return(func, VertexAdaptor<op_null>::create());
-      new_functions.push_back(func);
+      new_functions.push_back(FunctionData::create_function(func_name, func, FunctionData::func_switch));
 
       auto func_call = VertexAdaptor<op_func_call>::create(case_state_0);
-      func_call->str_val = func_name_str;
+      func_call->str_val = func_name;
 
       string case_res_name = gen_unique_name("switch_case_res");
       auto case_res = VertexAdaptor<op_var>::create();
@@ -174,7 +172,7 @@ public:
     return root;
   }
 
-  const vector<VertexAdaptor<op_function>> &get_new_functions() {
+  const vector<FunctionPtr> &get_new_functions() {
     return new_functions;
   }
 };
@@ -183,9 +181,8 @@ void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   SplitSwitchPass split_switch;
   run_function_pass(function, &split_switch);
 
-  for (auto new_func_root : split_switch.get_new_functions()) {
-    FunctionPtr function = FunctionData::create_function(new_func_root, FunctionData::func_switch);
-    G->register_and_require_function(function, os, true);   // switch-функции всегда require
+  for (auto f : split_switch.get_new_functions()) {
+    G->register_and_require_function(f, os, true);   // switch-функции всегда require
   }
 
   if (stage::has_error()) {

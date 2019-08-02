@@ -70,9 +70,6 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
   auto local_name = parent_method.local_name();
   auto parent_f = parent_method.function;
 
-  auto new_name = VertexAdaptor<op_func_name>::create();
-  new_name->set_string(replace_backslashes(child_class->name) + "$$" + local_name);
-
   auto parent_function_name = parent_f->name + "$$" + replace_backslashes(child_class->name);
   // it's equivalent to new_func_call->set_string("parent::" + local_name);
 
@@ -93,19 +90,18 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
   auto new_return = VertexAdaptor<op_return>::create(new_func_call);
   auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
   auto new_params = parent_f->root->params().clone();
-  auto func = VertexAdaptor<op_function>::create(new_name, new_params, new_cmd);
+  auto func = VertexAdaptor<op_function>::create(new_params, new_cmd);
   func->copy_location_and_flags(*parent_f->root);
 
   return func;
 }
 
+
 // клонировать функцию baseclassname$$fname в контекстную baseclassname$$fname$$contextclassname
 // (контекстные нужны для реализации статического наследования)
 FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name) {
   auto root = parent_f->root.clone();
-  root->name()->set_string(ctx_function_name);
-
-  auto context_function = FunctionData::clone_from(parent_f, root);
+  auto context_function = FunctionData::clone_from(ctx_function_name, parent_f, root);
 
   return context_function;
 }
@@ -126,7 +122,8 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   if (!child_class->members.has_static_method(local_name)) {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
 
-    FunctionPtr child_function = FunctionData::clone_from(parent_f, child_root);
+    string new_name = replace_backslashes(child_class->name) + "$$" + parent_method.local_name();
+    FunctionPtr child_function = FunctionData::clone_from(new_name, parent_f, child_root);
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
 
@@ -197,8 +194,7 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
 
     auto clone_function = [child_class, &function_stream](FunctionPtr from) {
       auto new_root = from->root.clone();
-      new_root->name()->set_string(child_class->name + "$$" + get_local_name_from_global_$$(from->name));
-      auto cloned_fun = FunctionData::clone_from(from, new_root);
+      auto cloned_fun = FunctionData::clone_from(child_class->name + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
       cloned_fun->class_id = child_class;
       G->register_and_require_function(cloned_fun, function_stream, true);
 

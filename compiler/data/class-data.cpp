@@ -68,13 +68,12 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(Location locatio
 }
 
 FunctionPtr ClassData::gen_holder_function(const std::string &name) {
-  auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = "$" + name;  // function-wrapper for class
+  std::string func_name = "$" + name;  // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();
   auto func_body = VertexAdaptor<op_seq>::create();
-  auto func_root = VertexAdaptor<op_function>::create(func_name, func_params, func_body);
+  auto func_root = VertexAdaptor<op_function>::create(func_params, func_body);
 
-  auto res = FunctionData::create_function(func_root, FunctionData::func_class_holder);
+  auto res = FunctionData::create_function(func_name, func_root, FunctionData::func_class_holder);
   res->class_id = ClassPtr{this};
   return res;
 }
@@ -94,8 +93,7 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
  * @return generated method
  */
 FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_body /** =true */) {
-  auto clone_func_name = VertexAdaptor<op_func_name>::create();
-  clone_func_name->set_string(replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE);
+  std::string clone_func_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
 
   std::vector<VertexAdaptor<meta_op_func_param>> params;
   patch_func_add_this(params, Location{});
@@ -110,8 +108,8 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
     body = VertexAdaptor<op_seq>::create();
   }
 
-  auto virt_clone_func = VertexAdaptor<op_function>::create(clone_func_name, param_list, body);
-  auto virt_clone_func_ptr = FunctionData::create_function(virt_clone_func, FunctionData::func_local);
+  auto virt_clone_func = VertexAdaptor<op_function>::create(param_list, body);
+  auto virt_clone_func_ptr = FunctionData::create_function(clone_func_name, virt_clone_func, FunctionData::func_local);
   virt_clone_func_ptr->file_id = file_id;
   virt_clone_func_ptr->update_location_in_body();
   virt_clone_func_ptr->assumptions_inited_return = 2;
@@ -135,8 +133,7 @@ void ClassData::create_constructor_with_args(Location location, std::vector<Vert
 }
 
 void ClassData::create_constructor_with_args(Location location, std::vector<VertexAdaptor<meta_op_func_param>> params, DataStream<FunctionPtr> &os, bool auto_required) {
-  auto func_name = VertexAdaptor<op_func_name>::create();
-  func_name->str_val = replace_backslashes(name) + "$$__construct";
+  std::string func_name = replace_backslashes(name) + "$$__construct";
 
   std::vector<VertexPtr> fields_initializers;
   for (auto param : params) {
@@ -150,12 +147,12 @@ void ClassData::create_constructor_with_args(Location location, std::vector<Vert
   auto func_root = VertexAdaptor<op_seq>::create(fields_initializers);
 
   patch_func_add_this(params, location);
-  auto func = VertexAdaptor<op_function>::create(func_name, VertexAdaptor<op_func_param_list>::create(params), func_root);
+  auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(params), func_root);
   func->location = location;
 
   GenTree::func_force_return(func, gen_vertex_this(location));
 
-  auto ctor_function = FunctionData::create_function(func, FunctionData::func_local);
+  auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
   ctor_function->update_location_in_body();
   ctor_function->is_inline = true;
   members.add_instance_method(ctor_function, access_public);

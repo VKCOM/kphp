@@ -102,8 +102,8 @@ public:
     unknown,
   } body_seq = body_value::unknown;
 
-  static FunctionPtr create_function(VertexAdaptor<op_function> root, func_type_t type);
-  static FunctionPtr clone_from(FunctionPtr other, VertexAdaptor<op_function> new_root);
+  static FunctionPtr create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type);
+  static FunctionPtr clone_from(std::string new_name, FunctionPtr other, VertexAdaptor<op_function> new_root);
 
   string get_resumable_path() const;
   static string get_human_readable_name(const std::string &name);

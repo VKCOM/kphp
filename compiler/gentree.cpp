@@ -1658,25 +1658,24 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
   expect(tok_function, "'function'");
   AutoLocation func_location(this);
 
-  auto func_name = VertexAdaptor<op_func_name>::create();
-  set_location(func_name, func_location);
+  std::string func_name;
 
   // имя функции — то, что идёт после 'function' (внутри класса сразу же полное$$имя)
   if (uses_of_lambda != nullptr) {
-    func_name->str_val = gen_anonymous_function_name(cur_function);   // cur_function пока ещё функция-родитель
+    func_name = gen_anonymous_function_name(cur_function);   // cur_function пока ещё функция-родитель
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
-    func_name->str_val = static_cast<string>(std::prev(cur)->str_val);
+    func_name = static_cast<string>(std::prev(cur)->str_val);
     if (cur_class) {        // fname внутри класса — это full$class$name$$fname
-      func_name->str_val = replace_backslashes(cur_class->name) + "$$" + func_name->str_val;
+      func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
     }
   }
 
-  auto func_root = VertexAdaptor<op_function>::create(func_name, VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{});
+  auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{});
   set_location(func_root, func_location);
 
   // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_root, FunctionData::func_local));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->is_final = is_final;
 
@@ -1852,7 +1851,7 @@ VertexPtr GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
                                             FunctionPtr cur_function,
                                             bool is_static,
                                             std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda) {
-  auto anon_location = function->name()->location;
+  auto anon_location = function->location;
 
   return LambdaGenerator{cur_function, anon_location, is_static}
     .add_uses(uses_of_lambda)
@@ -2237,12 +2236,11 @@ VertexPtr GenTree::get_seq() {
 }
 
 void GenTree::run() {
-  auto v_func_name = VertexAdaptor<op_func_name>::create();
-  v_func_name->set_string(processing_file->main_func_name);
   auto v_func_params = VertexAdaptor<op_func_param_list>::create();
-  auto root = VertexAdaptor<op_function>::create(v_func_name, v_func_params, VertexAdaptor<op_seq>{});
+  auto root = VertexAdaptor<op_function>::create(v_func_params, VertexAdaptor<op_seq>{});
+  set_location(root, AutoLocation{this});
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(root, FunctionData::func_global));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_global));
   processing_file->main_function = cur_function;
 
   if (test_expect(tok_namespace)) {
