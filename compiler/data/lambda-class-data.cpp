@@ -138,9 +138,10 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
 
     AssumType assum = assum_not_instance;
     ClassPtr klass_assumed;
+    auto lambda_param = template_invoke_params[i + 1].as<op_func_param>();
     if (auto type_rule = callback_param->type_rule) {
       kphp_assert(type_rule->type() == op_common_type_rule);
-      callback_param->type_help =
+      lambda_param->type_help =
         infer_type_of_callback_arg(type_rule.as<op_common_type_rule>()->rule(), extern_function_call, function_context, assum, klass_assumed);
     }
 
@@ -149,11 +150,11 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
       continue;
     }
 
-    auto &type_id = template_invoke_params[i + 1].as<op_func_param>()->template_type_id;
+    auto &type_id = lambda_param->template_type_id;
     switch (assum) {
       case assum_unknown:
       case assum_not_instance: {
-        kphp_assert(callback_param->type_help != tp_Unknown);
+        kphp_assert(lambda_param->type_help != tp_Unknown);
         type_id = -1;
         break;
       }
