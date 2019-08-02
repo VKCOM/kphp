@@ -31,8 +31,10 @@ private:
 
   struct UniqueObjectDeleter {
     void operator()(T *obj) const {
+      // dynamic_cast<void*> нужен, чтобы получить реальный адрес выделенного объекта
+      // (в случае множественного наследования, после move в одну из баз T, они могут не совпадать)
+      void *mem = reinterpret_cast<uint8_t *>(dynamic_cast<void*>(obj)) - sizeof(size_t);
       obj->~T();
-      void *mem = reinterpret_cast<uint8_t *>(obj) - sizeof(size_t);
       const size_t allocated_size = *static_cast<size_t *>(mem);
       php_assert(allocated_size >= sizeof(T));
       php_assert(allocated_size <= MAX_MEMORY);
