@@ -81,9 +81,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
     if (var->is_reference) {
       data.used_ref_vars.push_back(var);
     }
-  } else if (vertex->type() == op_fork) {
-    auto func_call = vertex.as<op_fork>()->func_call().as<op_func_call>();
-    data.forks.push_back(func_call->func_id);
+  } else if (auto fork = vertex.try_as<op_fork>()) {
+    data.forks.push_back(fork->func_call()->func_id);
   }
 
   return vertex;

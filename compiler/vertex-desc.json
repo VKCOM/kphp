@@ -1702,7 +1702,10 @@
   },
   {
     "sons": {
-      "func_call": 0
+      "func_call": {
+        "id": 0,
+        "type": "op_func_call"
+      }
     },
     "name": "op_fork",
     "base_name": "meta_op_base",
@@ -1715,8 +1718,15 @@
   },
   {
     "sons": {
-      "lhs": 0,
-      "func_call": 1
+      "func_call": {
+        "id": 0,
+        "type": "op_func_call"
+      },
+      "save_var": {
+        "id": 1,
+        "type": "op_var",
+        "optional": true
+      }
     },
     "name": "op_async",
     "base_name": "meta_op_base",

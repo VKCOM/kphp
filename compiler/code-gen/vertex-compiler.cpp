@@ -413,18 +413,25 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   }
 }
 
-void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, int state = 0) {
+enum class func_call_mode {
+  simple = 0, // just call
+  async_call, // call of resumable function inside another resumable function, but not in fork
+  fork_call // call using fork
+};
+
+void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
   FunctionPtr func;
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
   } else {
     func = root->func_id;
-    if (state != 1 && state != 2 && W.get_context().resumable_flag && func->is_resumable) {
-      kphp_error (0, format("Can't compile resumable function [%s] without async\n"
+    if (mode == func_call_mode::simple && W.get_context().resumable_flag && func->is_resumable) {
+      kphp_error (0, format("Can't compile call of resumable function [%s] in too complex expression\n"
+                            "Consider using a temporary variable for this call.\n"
                             "Function is resumable because of calls chain:\n%s\n", func->get_human_readable_name().c_str(), func->get_resumable_path().c_str()));
     }
 
-    if (state == 2) {
+    if (mode == func_call_mode::fork_call) {
       W << FunctionForkName(func);
     } else {
       W << FunctionName(func);
@@ -480,26 +487,23 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
 }
 
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
-  compile_func_call(root->func_call().as<op_func_call>(), W, 2);
+  compile_func_call(root->func_call(), W, func_call_mode::fork_call);
 }
 
 void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
-  VertexPtr lhs = root->lhs();
-  auto func_call = root->func_call().as<op_func_call>();
-  if (lhs->type() != op_empty) {
-    kphp_error (lhs->type() == op_var, "Can't save result of async call into non-var");
-    W << lhs << " = ";
+  auto func_call = root->func_call();
+  if (root->has_save_var()) {
+    W << root->save_var() << " = ";
   }
-  compile_func_call(func_call, W, 1);
+  compile_func_call(func_call, W, func_call_mode::async_call);
   FunctionPtr func = func_call->func_id;
   W << ";" << NL;
-  if (lhs->type() != op_empty) {
-    W << "TRY_WAIT" << MacroBegin{} << gen_unique_name("resumable_label") << ", " << lhs << ", "
-      << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
-  } else {
-    W << "TRY_WAIT_DROP_RESULT" << MacroBegin{} << gen_unique_name("resumable_label") << ", "
-      << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
+  W << (root->has_save_var() ? "TRY_WAIT" : "TRY_WAIT_DROP_RESULT");
+  W << MacroBegin{} << gen_unique_name("resumable_label") << ", ";
+  if (root->has_save_var()) {
+    W << root->save_var() << ", ";
   }
+  W << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
   if (func->can_throw) {
     W << NL;
     W << "CHECK_EXCEPTION" << MacroBegin{};
