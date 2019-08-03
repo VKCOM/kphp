@@ -365,6 +365,9 @@ function openssl_cipher_iv_length($method ::: string) ::: OrFalse<int>;
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: OrFalse<string>;
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: OrFalse<string>;
 
+define('PHP_QUERY_RFC1738', 1);
+define('PHP_QUERY_RFC3986', 2);
+
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
 function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
@@ -375,7 +378,7 @@ function base64url_decode_ulong ($str ::: string) ::: ULong;
 function base64url_encode_ulong ($val ::: ULong) ::: string;
 function base64url_decode_ulong_NN ($str ::: string) ::: ULong;
 function base64url_encode_ulong_NN ($val ::: ULong) ::: string;
-function http_build_query ($str ::: array) ::: string;
+function http_build_query ($str ::: array, $numeric_prefix ::: string = '', $arg_separator ::: string = '&', $enc_type ::: int = PHP_QUERY_RFC1738) ::: string;
 function rawurldecode ($str ::: string) ::: string;
 function rawurlencode ($str ::: string) ::: string;
 function urldecode ($str ::: string) ::: string;

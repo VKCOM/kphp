@@ -5,6 +5,9 @@
 #include "runtime/array_functions.h"
 #include "runtime/regexp.h"
 
+string AMPERSAND("&", 1);
+
+
 //string f$base64_decode (const string &s) {
 //  int result_len = (s.size() + 3) / 4 * 3;
 //  string res (result_len, false);
