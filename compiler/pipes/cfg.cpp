@@ -1231,6 +1231,16 @@ public:
     }
     return v;
   }
+
+  VertexPtr on_exit_vertex(VertexPtr v, LocalT *) {
+    if (auto do_op = v.try_as<op_do>()) {
+      if (do_op->cond()->type() == op_empty) {
+        do_op->cond() = VertexAdaptor<op_false>::create();
+      }
+    }
+    return v;
+  }
+
 };
 
 int CFG::register_vertices(VertexPtr v, int N) {
