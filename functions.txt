@@ -152,6 +152,10 @@ function get_engine_workers_number() ::: int;
 function getKeyByPos ($a ::: array, $n ::: int) ::: var;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[];
 function create_vector ($n ::: int, $x ::: Any) ::: array <^2>;//TODO version with 1 parameter
+function array_first_key ($a ::: array) ::: var;
+function array_first_value ($a ::: array) ::: ^1[];
+function array_last_key ($a ::: array) ::: var;
+function array_last_value ($a ::: array) ::: ^1[];
 
 function implode ($s ::: string, $v ::: array) ::: string;
 function explode ($delimiter ::: string, $str ::: string, $limit ::: int = INT_MAX) ::: array <string>;

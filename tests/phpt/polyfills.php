@@ -26,4 +26,24 @@ function instance_to_array($instance) {
     return $a;
 }
 
+function array_first_key(&$a) {
+  reset($a);
+  return key($a);
+}
+
+function array_first_value(&$a) {
+  reset($a);
+  return current($a);
+}
+
+function array_last_key(&$a) {
+  end($a);
+  return key($a);
+}
+
+function array_last_value(&$a) {
+  end($a);
+  return current($a);
+}
+
 #endif

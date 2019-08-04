@@ -253,6 +253,18 @@ inline array<T> f$create_vector(int n, const T &default_value);
 
 inline array<var> f$create_vector(int n);
 
+template<class T>
+var f$array_first_key(const array<T> &a);
+
+template<class T>
+T f$array_first_value(const array<T> &a);
+
+template<class T>
+var f$array_last_key(const array<T> &a);
+
+template<class T>
+T f$array_last_value(const array<T> &a);
+
 
 /*
  *
@@ -1381,6 +1393,26 @@ array<var> f$create_vector(int n) {
     res.push_back(empty_var);
   }
   return res;
+}
+
+template<class T>
+var f$array_first_key(const array<T> &a) {
+  return a.empty() ? var() : a.begin().get_key();
+}
+
+template<class T>
+T f$array_first_value(const array<T> &a) {
+  return a.empty() ? T() : a.begin().get_value(); // in PHP 'false' on empty, here T()
+}
+
+template<class T>
+var f$array_last_key(const array<T> &a) {
+  return a.empty() ? var() : (--a.end()).get_key();
+}
+
+template<class T>
+T f$array_last_value(const array<T> &a) {
+  return a.empty() ? T() : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
 }
 
 
