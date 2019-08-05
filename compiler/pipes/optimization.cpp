@@ -27,8 +27,6 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   if (is_new) {
     var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
     var_id->tinf_node.copy_type_from(required_type);
-  } else {
-    kphp_assert(var_id->dependency_level > type_acceptor.as<op_var>()->var_id->dependency_level);
   }
 
   auto casted_var = VertexAdaptor<op_var>::create();

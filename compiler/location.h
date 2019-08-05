@@ -16,5 +16,7 @@ public:
   SrcFilePtr get_file() const;
   FunctionPtr get_function() const;
   int get_line() const;
+
+  friend bool operator< (const Location &lhs, const Location &rhs);
 };
 

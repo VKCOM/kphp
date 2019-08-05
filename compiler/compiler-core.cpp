@@ -296,6 +296,15 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
       node->data = new_var;
     }
   }
+
+  if (init_val) {
+    AutoLocker<Lockable *> locker(node);
+    // to avoid of unstable locations, order them
+    if (node->data->init_val && node->data->init_val->get_location() < init_val->get_location()) {
+      std::swap(node->data->init_val, init_val);
+    }
+  }
+
   VarPtr var = node->data;
   if (is_new_inserted) {
     *is_new_inserted = static_cast<bool>(new_var);
