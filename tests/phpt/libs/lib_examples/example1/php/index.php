@@ -10,6 +10,7 @@ require_once "srcfile2.php";
 
 /**
  * @kphp-lib-export
+ * @return string
  */
 function get_str() {
     static $x = "hello world";
@@ -20,6 +21,7 @@ function get_str() {
  * @kphp-lib-export
  * @param int $x
  * @param int $y
+ * @return int
  */
 function minus1($x, $y) {
     echo "[example1] index: called minus1(", $x, ", ", $y, ")\n";
@@ -29,6 +31,7 @@ function minus1($x, $y) {
 /**
  * @kphp-lib-export
  * @param float $x
+ * @return float
  */
 function pow2($x = 1.23) {
     echo "[example1] index: called pow2(", $x, ")\n";
@@ -37,6 +40,7 @@ function pow2($x = 1.23) {
 
 /**
  * @kphp-lib-export
+ * @return int
  */
 function use_class_static_field() {
     echo "[example1] index: called use_class_static_field()\n";
@@ -48,6 +52,7 @@ function use_class_static_field() {
 
 /**
  * @kphp-lib-export
+ * @return int
  */
 function use_class_new() {
     echo "[example1] index: called use_class_new()\n";

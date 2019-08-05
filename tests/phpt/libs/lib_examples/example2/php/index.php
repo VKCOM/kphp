@@ -21,6 +21,7 @@ function set_value($x) {
 
 /**
  * @kphp-lib-export
+ * @return mixed
  */
 function get_value() {
     global $global_x;

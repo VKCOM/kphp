@@ -5,6 +5,7 @@ echo "[example1] srcfile: global run\n";
 /**
  * @kphp-lib-export
  * @param string $s
+ * @return string
  */
 function foo($s) {
     echo "[example1] srcfile: called foo('", $s, "')\n";
@@ -13,6 +14,7 @@ function foo($s) {
 
 /**
  * @kphp-lib-export
+ * @return int
  */
 function use_class_static_function() {
     echo "[example1] srcfile: called use_class_static_function()\n";
