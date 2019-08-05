@@ -80,9 +80,9 @@ class TestGroup:
 
 
 class TestRunner:
-    def __init__(self, report_hint):
+    def __init__(self, report_hint, no_report):
         self.test_list = []
-        self.no_report = False
+        self.no_report = no_report
         self.report_hint = report_hint
         self.show_stages = False
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     root_engine_path = os.path.relpath(root_engine_path, os.getcwd())
 
     args = parse_args()
-    runner = TestRunner("KPHP tests")
+    runner = TestRunner("KPHP tests", args.no_report)
 
     mode_name, options = get_modes()[args.mode]
     runner.add_test_group(
@@ -230,6 +230,8 @@ if __name__ == "__main__":
     if args.step == "zend-tests" and skip_zend_tests:
         print("Trying to use zend tests, but there is no zend repo directory", flush=True)
         sys.exit(1)
+    elif args.step and args.step != "zend-tests":
+        skip_zend_tests = True
 
     runner.add_test_group(
         name="zend-tests",
