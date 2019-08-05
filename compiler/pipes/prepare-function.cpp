@@ -185,14 +185,13 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         }
         case php_doc_tag::param: {
           kphp_error_return(!name_to_function_param.empty(), "Too many @param tags");
-          std::istringstream is(tag.value);
-          std::string type_help, var_name;
-          kphp_error(is >> type_help, "Failed to parse @param tag");
-          kphp_error(is >> var_name, "Failed to parse @param tag");
-
+          std::string type_help = tag.get_value_token();
+          std::string var_name = tag.get_value_token(type_help.size());
+          kphp_error_act(!type_help.empty(), "Failed to parse @param tag, type help is empty", continue);
+          kphp_error_act(!var_name.empty(), "Failed to parse @param tag, var name is empty", continue);
           auto func_param_it = name_to_function_param.find(var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(),
-            format("@param tag var name mismatch. found %s.", var_name.c_str()));
+            format("@param tag var name mismatch: found '%s'", var_name.c_str()));
           int param_i = func_param_it->second;
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();

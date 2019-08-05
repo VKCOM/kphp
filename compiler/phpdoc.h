@@ -37,7 +37,7 @@ public:
     return found ? it->second : unknown;
   }
 
-  const std::string get_value_token(unsigned long chars_offset = 0) const;
+  std::string get_value_token(size_t chars_offset = 0) const;
 
 public:
   std::string name;

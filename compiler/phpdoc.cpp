@@ -37,10 +37,11 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
 /*
  * Имея '@param $a A[] some description' — где this->value = '$a A[] some description' —
  * уметь вычленить первый токен '$a', потом по offset'у следующий 'A[]' и т.п. — до ближайшего пробела
+ * Также понимает конструкции вида @param A ...$a для variadic аргументов
  */
-const std::string php_doc_tag::get_value_token(unsigned long chars_offset) const {
-  unsigned long pos = 0;
-  unsigned long len = value.size();
+std::string php_doc_tag::get_value_token(size_t chars_offset) const {
+  size_t pos = 0;
+  size_t len = value.size();
   while (pos < len && value[pos] == ' ') {     // типа left trim: с самого начала пробелы не учитываем
     ++pos;
     ++chars_offset;
@@ -56,6 +57,12 @@ const std::string php_doc_tag::get_value_token(unsigned long chars_offset) const
   pos = value.find(' ', chars_offset);
   if (pos == std::string::npos) {
     return value.substr(chars_offset);
+  }
+
+  const vk::string_view varg_dots${" ...$"};
+  if (value.size() > pos + varg_dots$.size() && value.compare(pos, varg_dots$.size(), varg_dots$.data()) == 0) {
+    // оставляем '$' для следующего токена
+    pos += varg_dots$.size() - 1;
   }
 
   return value.substr(chars_offset, pos - chars_offset);
@@ -397,6 +404,14 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const vk::string_view &ty
   if (!res) {
     return res;
   }
+
+  const vk::string_view varg_dots{" ..."};
+  if (type_str.size() == pos + varg_dots.size() && type_str.ends_with(varg_dots)) {
+    pos += varg_dots.size();
+    res = VertexAdaptor<op_type_expr_type>::create(res);
+    res->type_help = tp_array;
+  }
+
   CHECK(pos == type_str.size(), "Failed to parse phpdoc type: something left at the end after parsing");
   return res;
 }
