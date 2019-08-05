@@ -133,12 +133,9 @@ def make_relpath(file_dir, file_path):
 
 
 def get_modes():
-    asan_mode = ("asan", "g=1 asan=1 php")
-    normal_mode = ("normal", "php")
     return {
-        "asan": [asan_mode],
-        "normal": [normal_mode],
-        "all": [asan_mode, normal_mode]
+        "asan": ("asan", "g=1 asan=1 php"),
+        "normal": ("normal", "php")
     }
 
 
@@ -190,6 +187,13 @@ def parse_args():
         help="specify testing mode, allowed: {}".format(", ".join(get_modes().keys()))
     )
 
+    parser.add_argument(
+        'step',
+        metavar='STEP',
+        type=str,
+        nargs='?',
+        help='testing step for ci pipeline')
+
     return parser.parse_args()
 
 
@@ -207,26 +211,32 @@ if __name__ == "__main__":
     args = parse_args()
     runner = TestRunner("KPHP tests")
 
-    modes = get_modes()[args.mode]
-    for mode_name, options in modes:
-        runner.add_test_group(
-            name="make kphp",
-            description="make kphp and runtime in {} mode".format(mode_name),
-            cmd="make -C {} -j{{jobs}} {}".format(root_engine_path, options)
-        )
+    mode_name, options = get_modes()[args.mode]
+    runner.add_test_group(
+        name="make-kphp",
+        description="make kphp and runtime in {} mode".format(mode_name),
+        cmd="make -C {} -j{{jobs}} {}".format(root_engine_path, options),
+        skip=args.step and args.step != "make-kphp"
+    )
 
-        runner.add_test_group(
-            name="kphp tests",
-            description="run kphp tests in {} mode".format(mode_name),
-            cmd="{} -j{{jobs}}".format(kphp_test_runner),
-        )
+    runner.add_test_group(
+        name="kphp-tests",
+        description="run kphp tests in {} mode".format(mode_name),
+        cmd="{} -j{{jobs}}".format(kphp_test_runner),
+        skip=args.step and args.step != "kphp-tests"
+    )
 
-        runner.add_test_group(
-            name="zend tests",
-            description="run php tests from zend repo in {} mode".format(mode_name),
-            cmd="{} -j{{jobs}} -d {} --from-list {}".format(kphp_test_runner, args.zend_repo, zend_test_list),
-            skip=not os.path.exists(args.zend_repo)
-        )
+    skip_zend_tests = not os.path.exists(args.zend_repo)
+    if args.step == "zend-tests" and skip_zend_tests:
+        print("Trying to use zend tests, but there is no zend repo directory", flush=True)
+        sys.exit(1)
+
+    runner.add_test_group(
+        name="zend-tests",
+        description="run php tests from zend repo in {} mode".format(mode_name),
+        cmd="{} -j{{jobs}} -d {} --from-list {}".format(kphp_test_runner, args.zend_repo, zend_test_list),
+        skip=skip_zend_tests
+    )
 
     runner.setup(args)
     runner.run_tests()
