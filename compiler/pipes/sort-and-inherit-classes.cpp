@@ -300,6 +300,27 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_klass, DataStream<Function
     }
   }
 }
+
+template<class ClassMemberT>
+class CheckParentDoesntHaveMemberWithSameName {
+private:
+  ClassPtr c;
+
+public:
+  explicit CheckParentDoesntHaveMemberWithSameName(ClassPtr cur_class) :
+    c(cur_class) {
+  }
+
+  void operator()(const ClassMemberT &member) const {
+    auto field_name = member.local_name();
+    auto par = c->parent_class;
+    bool parent_has_instance_or_static_field = par->get_instance_field(field_name) ||
+                                               (!std::is_same<ClassMemberT, ClassMemberConstant>{} && par->get_constant(field_name)) ||
+                                               (!std::is_same<ClassMemberT, ClassMemberStaticField>{} && par->get_static_field(field_name));
+    kphp_error(!parent_has_instance_or_static_field,
+               format("You may not override field: `%s`, in class: `%s`", field_name.c_str(), c->name.c_str()));
+  }
+};
 } // namespace
 
 /**
@@ -365,6 +386,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   node->data.waiting.clear();
   node->data.done = true;
 }
+
 void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   for (auto c : G->get_classes()) {
     auto node = ht.at(vk::std_hash(c->name));
@@ -377,11 +399,16 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       mark_virtual_and_overridden_methods(c, os);
     }
 
-    c->members.for_each([&c](ClassMemberInstanceField &field) {
-      if (c->parent_class && c->parent_class->get_instance_field(field.local_name())) {
-        kphp_error(false, format("You may not override instance field: `%s`, in class: `%s`", field.local_name().c_str(), c->name.c_str()));
-      }
-    });
+    if (c->parent_class) {
+      c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberInstanceField>{c});
+      c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberStaticField>{c});
+      c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberConstant>{c});
+
+      c->members.for_each([&c](const ClassMemberStaticMethod &m) {
+        kphp_error(!c->parent_class->get_instance_method(m.local_name()),
+                   format("Cannot make non static method `%s` static", m.function->get_human_readable_name().c_str()));
+      });
+    }
 
     // For stable code generation of interface method body
     if (c->is_interface()) {
