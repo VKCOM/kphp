@@ -294,7 +294,8 @@ void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
   if (!klass->derived_classes.empty()) {
     W << "virtual ";
   }
-  W << "const char *get_class() const " << (klass->implements.empty() ? "" : "final") << BEGIN;
+  const char * final_kw = (!klass->implements.empty() || klass->parent_class) && klass->derived_classes.empty() ? "final" : "";
+  W << "const char *get_class() const " << final_kw << BEGIN;
   {
     W << "return ";
     compile_string_raw(klass->name, W);

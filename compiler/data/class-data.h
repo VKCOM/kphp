@@ -122,6 +122,15 @@ public:
   static bool does_need_codegen(ClassPtr c);
   void mark_as_used();
 
+  ClassPtr get_top_parent() const {
+    auto klass = get_self();
+    while (klass->parent_class) {
+      klass = klass->parent_class;
+    }
+
+    return klass;
+  }
+
 private:
   bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 

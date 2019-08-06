@@ -12,12 +12,6 @@
 #include <unistd.h>
 #include <unordered_map>
 
-#include "common/algorithms/hashes.h"
-#include "common/crc32.h"
-#include "common/type_traits/function_traits.h"
-#include "common/version-string.h"
-#include "drinkless/dl-utils-lite.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
@@ -53,7 +47,7 @@
 #include "compiler/pipes/final-check.h"
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
-#include "compiler/pipes/generate-interface-methods.h"
+#include "compiler/pipes/generate-virtual-methods.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
@@ -79,6 +73,11 @@
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
+#include "common/algorithms/hashes.h"
+#include "common/crc32.h"
+#include "common/type_traits/function_traits.h"
+#include "common/version-string.h"
+#include "drinkless/dl-utils-lite.h"
 
 class lockf_wrapper {
   std::string locked_filename_;
@@ -238,7 +237,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CreateSwitchForeachVarsPass>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
-    >> PipeC<GenerateInterfaceMethods>{}
+    >> PipeC<GenerateVirtualMethods>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}

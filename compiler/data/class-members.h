@@ -173,6 +173,8 @@ public:
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);
   void add_constant(std::string const_name, VertexPtr value);
 
+  void safe_add_instance_method(FunctionPtr function, AccessType access_type);
+
   bool has_constant(const std::string &local_name) const;
   bool has_field(const std::string &local_name) const;
   bool has_instance_method(const std::string &local_name) const;

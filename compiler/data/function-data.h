@@ -105,7 +105,7 @@ public:
   } body_seq = body_value::unknown;
 
   static FunctionPtr create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type);
-  static FunctionPtr clone_from(std::string new_name, FunctionPtr other, VertexAdaptor<op_function> new_root);
+  static FunctionPtr clone_from(const std::string &new_name, FunctionPtr other, VertexAdaptor<op_function> new_root);
 
   string get_resumable_path() const;
   static string get_human_readable_name(const std::string &name);
@@ -144,6 +144,8 @@ public:
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
+  FunctionPtr move_virtual_to_self_method();
+  std::string get_name_of_self_method() const;
 
   int get_min_argn();
 

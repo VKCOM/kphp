@@ -57,7 +57,6 @@ Zend/tests/bug68652.phpt
 Zend/tests/bug68797.phpt
 Zend/tests/bug69676.phpt
 Zend/tests/bug69676_2.phpt
-Zend/tests/bug69754.phpt
 Zend/tests/bug69756.phpt
 Zend/tests/bug69758.phpt
 Zend/tests/bug69825.phpt

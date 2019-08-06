@@ -160,6 +160,10 @@ void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {
   append_member(hash_name, ClassMemberConstant(klass, const_name, value));
 }
 
+void ClassMembersContainer::safe_add_instance_method(FunctionPtr function, AccessType access_type) {
+  AutoLocker<Lockable *> locker(&(*klass));
+  add_instance_method(function, access_type);
+}
 
 bool ClassMembersContainer::has_constant(const string &local_name) const {
   const string &hash_name = local_name;

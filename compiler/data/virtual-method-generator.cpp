@@ -1,4 +1,4 @@
-#include "compiler/data/interface-generator.h"
+#include "compiler/data/virtual-method-generator.h"
 
 #include "common/termformat/termformat.h"
 
@@ -95,14 +95,6 @@ bool check_that_signatures_are_same(ClassPtr context_class, FunctionPtr interfac
   return check_that_signatures_are_same(interface_function, context_class, interface_method_in_derived);
 }
 
-bool check_that_function_is_abstract(FunctionPtr interface_function) {
-  auto interface_class = interface_function->class_id;
-
-  return interface_class &&
-         interface_class->is_interface() &&
-         interface_function->root->cmd()->empty();
-}
-
 void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr> &derived_classes) {
   for (auto derived : derived_classes) {
     auto static_in_derived = derived->members.get_static_method(interface_function->local_name());
@@ -110,59 +102,98 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
   }
 }
 
+bool derived_has_method(ClassPtr klass, const std::string &fun_name) {
+  auto has_method = [&](ClassPtr c) { return c->members.get_instance_method(fun_name); };
+
+  return has_method(klass) ||
+         std::any_of(klass->derived_classes.begin(), klass->derived_classes.end(), has_method);
+}
+
 } // namespace
 
 
 /**
- * generated AST for interface function will be like this:
+ * generated AST for virtual methods will be like this:
  *
- * function interface_function($param1, ...) {
+ * function virtual_function($param1, ...) {
  *   if ($this instanceof Derived_first) {
- *     return $this->interface_function($param1, ...);
+ *     return $this->virtual_function($param1, ...);
  *   } else if ($this instanceof Derived_second) {
- *     return $this->interface_function($param1, ...);
+ *     return $this->virtual_function($param1, ...);
  *   } else {
- *     return $this->interface_function($param1, ...);
+ *     return $this->SELF_virtual_function($param1, ...);
  *   }
  */
-void generate_body_of_interface_method(FunctionPtr interface_function) {
-  auto &derived_classes = interface_function->class_id->derived_classes;
+void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<FunctionPtr> &os) {
+  auto klass = virtual_function->class_id;
+  kphp_assert(klass);
+
+  auto &derived_classes = klass->derived_classes;
 
   if (derived_classes.empty()) {
     return;
   }
 
-  kphp_assert(check_that_function_is_abstract(interface_function));
-  if (interface_function->is_static_function()) {
-    return check_static_function(interface_function, derived_classes);
+  if (virtual_function->is_static_function()) {
+    kphp_assert(klass->is_interface());
+    return check_static_function(virtual_function, derived_classes);
   }
 
-  VertexAdaptor<op_seq> body_of_interface_method;
+  VertexAdaptor<op_seq> body_of_virtual_method;
+
+  if (!klass->is_interface()) {
+    if (!virtual_function->root->cmd()->empty()) {
+      auto self_method = virtual_function->move_virtual_to_self_method();
+      G->register_and_require_function(self_method, os, true);
+      auto this_var = ClassData::gen_vertex_this({});
+      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, self_method)));
+
+      kphp_assert(virtual_function->root->cmd()->empty());
+    } else {
+      auto params = virtual_function->get_params_as_vector_of_vars(1);
+
+      auto call_parent_method = VertexAdaptor<op_func_call>::create(params);
+      call_parent_method->set_string("parent::" + virtual_function->get_name_of_self_method());
+
+      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(call_parent_method));
+    }
+  }
+
   for (auto derived : derived_classes) {
+    if (!klass->is_interface()) {
+      auto fun_name = virtual_function->local_name();
+      if (!derived->members.get_instance_method(fun_name)) {
+        kphp_assert_msg(!derived_has_method(derived, fun_name),
+          format("derived class `%s` may not have method `%s` (bug in compiler)", derived->name.c_str(), virtual_function->get_human_readable_name().c_str()));
+        continue;
+      }
+    }
     auto is_instance_of_derived = GenTree::conv_to<tp_bool>(create_instanceof(ClassData::gen_vertex_this({}), derived));
 
     VertexAdaptor<op_seq> call_derived_method;
-    if (check_that_signatures_are_same(derived, interface_function)) {
-      auto generated_this = ClassData::gen_vertex_this({});
-      VertexPtr this_var = generated_this;
-      if (derived_classes.size() == 1) {
-        this_var = create_instance_cast_to(generated_this, derived);
-      }
-      call_derived_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, interface_function)));
+    if (!check_that_signatures_are_same(derived, virtual_function)) {
+      return;
     }
 
-    if (body_of_interface_method) {
-      body_of_interface_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_if>::create(is_instance_of_derived, call_derived_method, body_of_interface_method));
+    auto generated_this = ClassData::gen_vertex_this({});
+    VertexPtr this_var = generated_this;
+    if (!body_of_virtual_method && derived_classes.size() == 1) {
+      this_var = create_instance_cast_to(generated_this, derived);
+    }
+    call_derived_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, virtual_function)));
+
+    if (body_of_virtual_method) {
+      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_if>::create(is_instance_of_derived, call_derived_method, body_of_virtual_method));
     } else {
-      body_of_interface_method = call_derived_method;
+      body_of_virtual_method = call_derived_method;
     }
   }
 
-  auto &root = interface_function->root;
+  auto &root = virtual_function->root;
   auto declaration_location = get_location(root);
-  root = VertexAdaptor<op_function>::create(root->params(), body_of_interface_method);
-  root->func_id = interface_function;
-  interface_function->type = FunctionData::func_local;
+  root = VertexAdaptor<op_function>::create(root->params(), body_of_virtual_method);
+  root->func_id = virtual_function;
+  virtual_function->type = FunctionData::func_local;
 
   std::function<void(VertexPtr)> update_location = [&](VertexPtr v) {
     set_location(v, declaration_location);

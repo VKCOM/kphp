@@ -204,8 +204,9 @@ InterfacePtr ClassData::get_common_base_or_interface(ClassPtr other) const {
     }
 
     if (self->is_class() && other->is_interface()) {
-      kphp_assert(self->implements.size() == 1);
-      return self->implements[0]->get_common_base_or_interface(other);
+      auto top_parent = self->get_top_parent();
+      kphp_assert(top_parent->implements.size() == 1);
+      return top_parent->implements[0]->get_common_base_or_interface(other);
     }
   }
 
