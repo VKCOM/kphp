@@ -7,6 +7,7 @@
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_query.h"
+#include "common/type_traits/constexpr_if.h"
 
 #define TL_INT 0xa8509bda
 #define TL_LONG 0x22076cba
@@ -19,7 +20,7 @@
 #define TL_RESULT_FALSE 0x27930a7b
 #define TL_RESULT_TRUE 0x3f9c8ef8
 
-#define tl_undefined_php_type int
+#define tl_undefined_php_type nullptr_t
 
 const string tl_str_("");
 const string tl_str_underscore("_");
@@ -405,12 +406,11 @@ struct t_Maybe {
   // На текущий момент OrFalse не нужен если T::PhpType -- class_instance, bool, OrFalse или var (long (mixed в php-doc))
   using PhpType = typename std::conditional<is_OrFalse, OrFalse<typename T::PhpType>, typename T::PhpType>::type;
 
-  // todo: заюзать вкшный if constexpr
   // C++11 if constexpr
   template<typename S>
   typename std::enable_if<need_OrFalse<typename S::PhpType>::value, const typename S::PhpType &>::type
   get_store_target(const PhpType &v) {
-    return v.value;
+    return v.val();
   }
 
   template<typename S>
@@ -422,7 +422,7 @@ struct t_Maybe {
   template<typename S>
   typename std::enable_if<need_OrFalse<typename S::PhpType>::value, typename S::PhpType &>::type
   get_fetch_target(PhpType &v) {
-    return v.value;
+    return v.ref();
   }
 
   template<typename S>
@@ -507,9 +507,9 @@ struct tl_Dictionary_impl {
     int n = v.count();
     f$store_int(n);
     for (auto it = v.begin(); it != v.end(); ++it) {
-      KeyT().store(it.get_key());
+      KeyT().typed_store(it.get_key());
       store_magic_if_not_bare(inner_value_magic);
-      value_state.store(it.get_value());
+      value_state.typed_store(it.get_value());
     }
   }
 
@@ -528,7 +528,7 @@ struct tl_Dictionary_impl {
       const auto &key = KeyT().fetch();
       fetch_magic_if_not_bare(inner_value_magic, "Incorrect magic of inner type of some Dictionary");
       typename ValueT::PhpType elem;
-      value_state.fetch_to(elem);
+      value_state.typed_fetch_to(elem);
       out.set_value(key, std::move(elem));
       CHECK_EXCEPTION(return);
     }
@@ -592,7 +592,7 @@ struct t_Tuple {
         return;
       }
       store_magic_if_not_bare(inner_magic);
-      elem_state.store(v.get_value(i));
+      elem_state.typed_store(v.get_value(i));
     }
   }
 
@@ -606,7 +606,7 @@ struct t_Tuple {
     for (int i = 0; i < size; ++i) {
       typename T::PhpType elem;
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Tuple");
-      elem_state.fetch_to(elem);
+      elem_state.typed_fetch_to(elem);
       out.push_back(std::move(elem));
       CHECK_EXCEPTION(return);
     }
@@ -662,7 +662,7 @@ struct tl_array {
         return;
       }
       store_magic_if_not_bare(inner_magic);
-      cell.store(v.get_value(i));
+      cell.typed_store(v.get_value(i));
     }
   }
 
@@ -676,7 +676,7 @@ struct tl_array {
     for (int i = 0; i < size; ++i) {
       typename CellT::PhpType elem;
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");
-      cell.fetch_to(elem);
+      cell.typed_fetch_to(elem);
       v.push_back(std::move(elem));
       CHECK_EXCEPTION(return);
     }

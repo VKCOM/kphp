@@ -97,7 +97,7 @@ void IncludesCollector::add_raw_filename_include(const std::string &file_name) {
 }
 
 void IncludesCollector::compile(CodeGenerator &W) const {
-  for (auto lib_header : lib_headers_) {
+  for (const auto &lib_header : lib_headers_) {
     if (!prev_headers_.count(lib_header)) {
       W << LibInclude(lib_header);
     }

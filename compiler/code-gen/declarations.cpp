@@ -351,8 +351,8 @@ void ClassDeclaration::compile_includes(CodeGenerator &W) const {
 
   if (tl_gen::is_php_class_a_tl_function(klass)) {
     std::string tl_src_name = tl_gen::get_tl_function_of_php_class(klass);  // 'net.pid', 'rpcPing'
-    tl_src_name = tl_src_name.substr(0, tl_src_name.find('.'));  // 'net', ''
-    W << Include("tl/" + (tl_src_name.empty() ? "common" : tl_src_name) + ".h");
+    unsigned long pos = tl_src_name.find('.');
+    W << Include("tl/" + (pos == std::string::npos ? "common" : tl_src_name.substr(0, pos)) + ".h");
   }
 }
 

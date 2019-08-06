@@ -910,6 +910,7 @@ struct Cell {
       W << END << NL << NL;
 
       W << "void typed_fetch_to(PhpType &tl_object) " << BEGIN;
+      W << "tl_object.alloc();" << NL;
       for (const auto &arg : type_array->args) {
         W << TypeExprFetch(arg, true);
       }
@@ -932,8 +933,7 @@ struct Cell {
         }
       }
     }
-
-    std::string php_class_name = get_php_runtime_type(owner) + format("__arg%d_item", arg_idx);
+    std::string php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(owner->name, '.', '\\') + format("_arg%d_item", arg_idx);
     return G->get_class(php_class_name);
   }
 
@@ -1422,10 +1422,12 @@ std::pair<std::string, std::string> get_full_type_expr_str(
         }
       }
     }
-    std::string type = format("tl_array<%s, %s>", Cell::type_array_to_cell_name[as_type_array].c_str(), inner_magic.c_str());
+    kphp_assert(Cell::type_array_to_cell_name.count(as_type_array));
+    std::string cell_name = Cell::type_array_to_cell_name[as_type_array];
+    std::string type = format("tl_array<%s, %s>", cell_name.c_str(), inner_magic.c_str());
     return {type, type + format("(%s, %s())",
                                 get_full_value(as_type_array->multiplicity.get(), var_num_access).c_str(),
-                                Cell::type_array_to_cell_name[as_type_array].c_str())};
+                                cell_name.c_str())};
   }
   auto as_type_expr = type_expr->as<vk::tl::type_expr>();
   kphp_assert(as_type_expr);
@@ -1564,6 +1566,7 @@ void collect_target_objects() {
     for (const auto &arg : f->args) {
       collect_cells(arg->type_expr.get());
     }
+    collect_cells(f->result.get());
   }
 }
 
