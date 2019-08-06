@@ -229,3 +229,46 @@ template<typename T>
 T f$wait_result(OrFalse<int> resumable_id, double timeout = -1) {
   return f$wait_result<T>(resumable_id.val(), timeout);
 }
+
+template<typename T>
+class wait_result_multi_resumable : public Resumable {
+  using ReturnT = T;
+  array<int> resumable_ids;
+  T result;
+
+  array<int>::const_iterator resumable_it;
+  typename T::value_type next_waited_result;
+
+protected:
+  bool run() {
+    RESUMABLE_BEGIN
+      for (resumable_it = const_begin(resumable_ids); resumable_it != const_end(resumable_ids); ++resumable_it) {
+        next_waited_result = f$wait_result<typename T::value_type>(resumable_it.get_value());
+
+        TRY_WAIT(wait_result_multi_label, next_waited_result, typename T::value_type);
+        CHECK_EXCEPTION(RETURN(T()));
+
+        result.set_value(resumable_it.get_key(), next_waited_result);
+      }
+
+      RETURN(result);
+    RESUMABLE_END
+  }
+
+public:
+  explicit wait_result_multi_resumable(const array<int> &resumable_ids) :
+    resumable_ids(resumable_ids),
+    result(resumable_ids.size()) {
+  }
+};
+
+template<typename T>
+T f$wait_result_multi(const array<OrFalse<int>> &resumable_ids) {
+  auto ids = array<int>::convert_from(resumable_ids);
+  return f$wait_result_multi<T>(ids);
+}
+
+template<typename T>
+T f$wait_result_multi(const array<int> &resumable_ids) {
+  return start_resumable<T>(new wait_result_multi_resumable<T>(resumable_ids));
+}

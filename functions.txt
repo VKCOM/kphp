@@ -793,6 +793,8 @@ function typed_rpc_tl_query_result_synchronously ($query_ids :<=: array <int>) :
 function wait ($id :<=: OrFalse<future>, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
 function wait_result ($id :<=: OrFalse<future>, $timeout ::: float = -1.0) ::: OrFalse<^1[]>;
+/** @kphp-extern-func-info can_throw resumable cpp_template_call */
+function wait_result_multi ($resumables :<=: array<future>) ::: array < OrFalse < ^1[][] > >;
 function wait_synchronously ($id :<=: OrFalse<future>) ::: bool;
 /** @kphp-extern-func-info resumable */
 function wait_multiple ($id ::: Any) ::: bool;

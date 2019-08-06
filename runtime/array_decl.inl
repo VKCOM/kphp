@@ -30,6 +30,7 @@ class array : array_tag {
 
 public:
   typedef var key_type;
+  typedef T value_type;
 
   inline static bool is_int_key(const key_type &key);
 

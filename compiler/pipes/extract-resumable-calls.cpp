@@ -64,7 +64,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
   auto temp_var = VertexAdaptor<op_var>::create();
   temp_var->str_val = gen_unique_name("resumable_temp_var");
   VarPtr var = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
-  var->tinf_node.copy_type_from(tinf::get_type(func, -1));
+  var->tinf_node.copy_type_from(tinf::get_type(func_call));
   temp_var->var_id = var;
   auto set_op = VertexAdaptor<op_set>::create(temp_var, func_call);
 

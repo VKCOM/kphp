@@ -29,6 +29,8 @@ public:
     if (auto call = root.try_as<op_func_call>()) {
       if (call->str_val == "wait_result") {
         waitable_types.push_back(tinf::get_type(root));
+      } else if (call->str_val == "wait_result_multi") {
+        waitable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
       }
     }
     return root;
