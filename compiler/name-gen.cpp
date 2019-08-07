@@ -148,7 +148,7 @@ static const char *_err_instance_access(VertexPtr v, const char *desc) {
  * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
  */
 string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused)), VertexAdaptor<op_constructor_call> ctor_call) {
-  return replace_backslashes(ctor_call->get_string()) + "$$" + "__construct";
+  return replace_backslashes(ctor_call->get_string()) + "$$" + ClassData::NAME_OF_CONSTRUCT;
 }
 
 /*

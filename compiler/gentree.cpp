@@ -365,7 +365,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
       auto call = VertexAdaptor<op_func_call>::create(next);
       set_location(call, location);
 
-      call->set_string("__invoke");
+      call->set_string(ClassData::NAME_OF_INVOKE_METHOD);
 
       res = VertexAdaptor<op_arrow>::create(res, call);
       set_location(res, location);

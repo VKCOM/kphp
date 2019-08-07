@@ -111,7 +111,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
                                                               FunctionPtr function_context,
                                                               std::map<int, std::pair<AssumType, ClassPtr>> *template_type_id_to_ClassPtr /*= nullptr*/,
                                                               FunctionPtr *template_of_invoke_method /*= nullptr*/) const {
-  std::string invoke_method_name = replace_backslashes(construct_function->class_id->name) + "$$__invoke";
+  std::string invoke_method_name = replace_backslashes(construct_function->class_id->name) + "$$" + NAME_OF_INVOKE_METHOD;
 
   VertexRange call_params = extern_function_call->args();
   //int call_params_n = static_cast<int>(call_params.size());
@@ -199,7 +199,7 @@ VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_ar
 
 
 FunctionPtr LambdaClassData::get_template_of_invoke_function() const {
-  auto found_method = members.get_instance_method("__invoke");
+  auto found_method = members.get_instance_method(NAME_OF_INVOKE_METHOD);
 
   return (found_method && found_method->function->is_template) ? found_method->function : FunctionPtr();
 }

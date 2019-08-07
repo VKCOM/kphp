@@ -51,7 +51,10 @@ public:
 
   const TypeData *const type_data;
 
-  static const char * NAME_OF_VIRT_CLONE;
+  static const char *NAME_OF_VIRT_CLONE;
+  static const char *NAME_OF_CLONE;
+  static const char *NAME_OF_CONSTRUCT;
+  static const char *NAME_OF_INVOKE_METHOD;
 
   ClassData();
 

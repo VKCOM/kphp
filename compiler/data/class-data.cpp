@@ -11,7 +11,10 @@
 #include "compiler/vertex.h"
 #include "common/termformat/termformat.h"
 
-const char * ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
+const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
+const char *ClassData::NAME_OF_CLONE = "__clone";
+const char *ClassData::NAME_OF_CONSTRUCT = "__construct";
+const char *ClassData::NAME_OF_INVOKE_METHOD = "__invoke";
 
 ClassData::ClassData() :
   members(this),
@@ -133,7 +136,7 @@ void ClassData::create_default_constructor(Location location, DataStream<Functio
 }
 
 void ClassData::create_constructor(VertexAdaptor<op_function> func) {
-  std::string func_name = replace_backslashes(name) + "$$__construct";
+  std::string func_name = replace_backslashes(name) + "$$" + NAME_OF_CONSTRUCT;
   auto params = func->params()->get_next();
   patch_func_add_this(params, func->get_location());
   func->params_ref() = VertexAdaptor<op_func_param_list>::create(std::move(params));

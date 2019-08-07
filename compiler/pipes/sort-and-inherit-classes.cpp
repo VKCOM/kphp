@@ -28,7 +28,7 @@ public:
     if (auto call = root.try_as<op_constructor_call>()) {
       if (call->func_id && call->func_id->is_lambda()) {
         ClassPtr lambda_class = call->func_id->class_id;
-        FunctionPtr invoke_method = lambda_class->members.get_instance_method("__invoke")->function;
+        FunctionPtr invoke_method = lambda_class->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
         vector<VertexAdaptor<op_func_param>> uses_of_lambda;
 
         lambda_class->members.for_each([&](ClassMemberInstanceField &f) {

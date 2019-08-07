@@ -140,7 +140,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   function->context_class = klass;
   function->is_virtual_method = klass->is_interface();
 
-  if (vk::string_view(function->name).ends_with("__construct")) {
+  if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
     klass->construct_function = function;
   }
 }
@@ -194,7 +194,7 @@ bool ClassMembersContainer::has_any_instance_method() const {
 }
 
 FunctionPtr ClassMembersContainer::get_constructor() const {
-  if (auto construct_method = get_instance_method("__construct")) {
+  if (auto construct_method = get_instance_method(ClassData::NAME_OF_CONSTRUCT)) {
     return construct_method->function;
   }
   return {};

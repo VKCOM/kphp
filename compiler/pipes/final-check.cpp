@@ -103,9 +103,9 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
     check_class_immutableness(function->class_id);
   }
 
-  if (function->is_instance_function() && function->local_name() == "__clone") {
-    kphp_error_act(!function->is_resumable, "__clone method has to be not resumable", return false);
-    kphp_error_act(!function->can_throw, "__clone method should not throw exception", return false);
+  if (function->is_instance_function() && function->local_name() == ClassData::NAME_OF_CLONE) {
+    kphp_error_act(!function->is_resumable, format("%s method has to be not resumable", ClassData::NAME_OF_CLONE), return false);
+    kphp_error_act(!function->can_throw, format("%s method should not throw exception", ClassData::NAME_OF_CLONE), return false);
   }
 
   for (auto &static_var : function->static_var_ids) {

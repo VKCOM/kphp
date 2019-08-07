@@ -47,7 +47,6 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
 }
 
 LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_function> &function, FunctionPtr already_created_function/* = {}*/) {
-  std::string name = "__invoke";
   auto params = create_invoke_params(function);
   auto cmd = create_invoke_cmd(function);
   auto invoke_function = VertexAdaptor<op_function>::create(params, cmd);
@@ -57,7 +56,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
     already_created_function->root = invoke_function;
   }
 
-  register_invoke_method(name, invoke_function);
+  register_invoke_method(ClassData::NAME_OF_INVOKE_METHOD, invoke_function);
   invoke_function->func_id->has_variadic_param = function->func_id && function->func_id->has_variadic_param;
 
   return *this;
@@ -121,7 +120,7 @@ LambdaGenerator &LambdaGenerator::generate(FunctionPtr parent_function) {
 }
 
 LambdaGenerator &LambdaGenerator::require(DataStream<FunctionPtr> &os) {
-  auto invoke_method = generated_lambda->members.get_instance_method("__invoke");
+  auto invoke_method = generated_lambda->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD);
   kphp_assert(invoke_method && invoke_method->function && !invoke_method->function->is_required);
 
   auto constructor = generated_lambda->construct_function;

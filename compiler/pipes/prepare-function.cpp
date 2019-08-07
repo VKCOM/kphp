@@ -6,6 +6,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/lambda-class-data.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
@@ -309,6 +310,22 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   set_template_flag_if_has_callable_arg(function);
   check_default_args(function);
   apply_function_typehints(function);
+
+  auto is_function_name_allowed = [](const std::string &name) {
+    if (!vk::string_view{name}.starts_with("__")) {
+      return true;
+    }
+
+    static std::string allowed_magic_names[]{ClassData::NAME_OF_CONSTRUCT,
+                                             ClassData::NAME_OF_CLONE,
+                                             ClassData::NAME_OF_VIRT_CLONE,
+                                             ClassData::NAME_OF_INVOKE_METHOD};
+
+    return std::find(std::begin(allowed_magic_names), std::end(allowed_magic_names), name) != std::end(allowed_magic_names);
+  };
+
+  kphp_error(!function->class_id || is_function_name_allowed(function->local_name()),
+             format("KPHP doesn't support magic method: %s", function->get_human_readable_name().c_str()));
 
   if (stage::has_error()) {
     return;

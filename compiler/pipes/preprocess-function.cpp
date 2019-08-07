@@ -50,7 +50,7 @@ public:
         return call_function;
       }
 
-      if (klass->members.has_instance_method("__clone")) {
+      if (klass->members.has_instance_method(ClassData::NAME_OF_CLONE)) {
         auto location = clone_root->get_location();
 
         auto tmp_var = VertexAdaptor<op_var>::create();
@@ -62,7 +62,7 @@ public:
         auto set_clone_to_tmp = VertexAdaptor<op_set>::create(tmp_var, clone_root);
 
         auto call_of___clone = VertexAdaptor<op_func_call>::create(tmp_var);
-        call_of___clone->set_string("__clone");
+        call_of___clone->set_string(ClassData::NAME_OF_CLONE);
         call_of___clone->extra_type = op_ex_func_call_arrow;
 
         call_of___clone = try_set_func_id(call_of___clone).as<op_func_call>();
@@ -150,7 +150,7 @@ private:
         instance_of_template_invoke = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
       } else {
         kphp_assert(lambda_class->members.has_any_instance_method());
-        instance_of_template_invoke = lambda_class->members.get_instance_method("__invoke")->function;
+        instance_of_template_invoke = lambda_class->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
         invoke_name = instance_of_template_invoke->name;
       }
 
