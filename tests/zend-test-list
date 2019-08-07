@@ -398,7 +398,6 @@ ext/standard/tests/network/bug69523.phpt
 ext/standard/tests/network/bug72071.phpt
 ext/standard/tests/network/gethostbynamel_basic1.phpt
 ext/standard/tests/serialize/004.phpt
-ext/standard/tests/serialize/__serialize_006.phpt
 ext/standard/tests/serialize/bug24063.phpt
 ext/standard/tests/serialize/bug25378.phpt
 ext/standard/tests/serialize/bug43614.phpt
@@ -696,7 +695,6 @@ tests/basic/rfc1867_post_max_size.phpt
 tests/classes/constants_basic_005.phpt
 tests/classes/constants_error_002.phpt
 tests/classes/constants_scope_001.phpt
-tests/classes/destructor_visibility_002.phpt
 tests/classes/final.phpt
 tests/classes/interface_optional_arg.phpt
 tests/classes/interface_optional_arg_002.phpt
