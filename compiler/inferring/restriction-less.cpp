@@ -39,8 +39,8 @@ public:
 };
 
 bool RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType::is_same_vars(const tinf::Node *node, VertexPtr vertex) {
-  if (const tinf::VarNode *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
-    if (auto var = vertex.as<op_var>()) {
+  if (auto var_node = dynamic_cast<const tinf::VarNode *>(node)) {
+    if (auto var = vertex.try_as<op_var>()) {
       if (!var->var_id && !var_node->var_) {
         return true;
       }
