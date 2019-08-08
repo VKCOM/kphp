@@ -20,6 +20,7 @@
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
 
+#include "common/server/crash-dump.h"
 #include "common/server/signals.h"
 #include "common/wrappers/madvise.h"
 
@@ -440,7 +441,9 @@ void sigusr2_handler(int signum) {
 }
 
 void print_http_data() {
-  if (PHPScriptBase::current_script->data) {
+  if (!PHPScriptBase::current_script) {
+    write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
+  } else if (PHPScriptBase::current_script->data) {
     http_query_data *data = PHPScriptBase::current_script->data->http_data;
     if (data) {
       write_str(2, "\nuri\n");
@@ -455,7 +458,9 @@ void print_http_data() {
   }
 }
 
-void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *data __attribute__((unused))) {
+void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *ucontext) {
+  crash_dump_write(static_cast<ucontext_t *>(ucontext));
+
   write_str(2, engine_tag);
   char buf[13], *s = buf + 13;
   int t = (int)time(nullptr);
