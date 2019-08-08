@@ -12,7 +12,7 @@ protected:
   DataStream<In> tmp_stream;
 public:
   SyncPipeFBase() :
-    tmp_stream(DataStreamMode::SYNC) {}
+    tmp_stream(true) {}
 
   void execute(In input, DataStream<Out> &) {
     tmp_stream << std::move(input);

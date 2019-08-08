@@ -140,7 +140,7 @@ FunctionPtr FunctionData::move_virtual_to_self_method() {
   kphp_assert(class_id && !root->cmd()->empty());
 
   auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
-  auto self_function = clone_from(get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
+  auto self_function = clone_from(class_id->name + "$$" + get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
   class_id->members.safe_add_instance_method(self_function, access_type);
 
   root->cmd_ref() = VertexAdaptor<op_seq>::create();

@@ -531,7 +531,7 @@ private:
 };
 
 void PreprocessFunctionF::execute(FunctionPtr function, OStreamT &os) {
-  DataStream<FunctionPtr> tmp_stream{DataStreamMode::SYNC};
+  DataStream<FunctionPtr> tmp_stream{true};
   PreprocessFunctionPass pass(tmp_stream);
 
   run_function_pass(function, &pass);

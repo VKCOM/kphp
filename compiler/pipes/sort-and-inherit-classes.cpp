@@ -388,6 +388,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 }
 
 void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
+  DataStream<FunctionPtr> generated_empty_methods_in_parent{true};
   for (auto c : G->get_classes()) {
     auto node = ht.at(vk::std_hash(c->name));
     kphp_error(node->data.done, format("class `%s` has unresolved dependencies", c->name.c_str()));
@@ -396,7 +397,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
 
     bool is_top_of_hierarchy = !c->parent_class && !c->derived_classes.empty();
     if (is_top_of_hierarchy) {
-      mark_virtual_and_overridden_methods(c, os);
+      mark_virtual_and_overridden_methods(c, generated_empty_methods_in_parent);
     }
 
     if (c->parent_class) {
@@ -414,5 +415,9 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
     if (c->is_interface()) {
       std::sort(c->derived_classes.begin(), c->derived_classes.end());
     }
+  }
+
+  for (auto fun : generated_empty_methods_in_parent.flush()) {
+    os << fun;
   }
 }

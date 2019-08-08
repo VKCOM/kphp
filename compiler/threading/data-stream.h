@@ -8,11 +8,6 @@
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/stage.h"
 
-enum class DataStreamMode {
-  SYNC,
-  ASYNC
-};
-
 template<class DataT>
 class DataStream {
 public:
@@ -22,8 +17,8 @@ public:
   template<size_t data_id>
   using NthDataType = DataType;
 
-  explicit DataStream(DataStreamMode sync_mode = DataStreamMode::ASYNC) :
-    sync_mode_(sync_mode)
+  explicit DataStream(bool is_sink = false) :
+    is_sink_mode_(is_sink)
   {
   }
 
@@ -38,7 +33,7 @@ public:
   }
 
   void operator<<(DataType input) {
-    if (sync_mode_ == DataStreamMode::ASYNC) {
+    if (!is_sink_mode_) {
       __sync_fetch_and_add(&tasks_before_sync_node, 1);
     }
     std::lock_guard<std::mutex> lock{mutex_};
@@ -58,7 +53,7 @@ public:
 private:
   std::mutex mutex_;
   std::forward_list<DataT> queue_;
-  const DataStreamMode sync_mode_{DataStreamMode::ASYNC};
+  const bool is_sink_mode_;
 };
 
 

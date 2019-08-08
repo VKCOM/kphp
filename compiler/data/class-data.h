@@ -43,6 +43,7 @@ public:
   bool is_immutable{false};
   bool really_used{false};
   bool is_tl_class{false};
+  bool has_custom_constructor{false};
 
   SrcFilePtr file_id;
   std::string src_name, header_name;
@@ -65,7 +66,6 @@ public:
 
   void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
-  bool has_only_default_constructor() const;
 
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>

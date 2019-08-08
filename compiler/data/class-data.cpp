@@ -149,12 +149,6 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   members.add_instance_method(ctor_function, access_public);
 }
 
-bool ClassData::has_only_default_constructor() const {
-  kphp_assert(construct_function && construct_function->root);
-  bool constructor_contains_only_return_this_statement = construct_function->root->cmd()->size() == 1;
-  return constructor_contains_only_return_this_statement;
-}
-
 template<Operation Op>
 void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
   static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
@@ -241,12 +235,10 @@ void ClassData::check_parent_constructor() {
     return;
   }
 
-  if (has_only_default_constructor() && !parent_class->has_only_default_constructor()) {
-    kphp_error(false,
-               format("You must write `__constructor` in class: %s because one of your parent(%s) has constructor",
-                      TermStringFormat::paint_green(name).c_str(), TermStringFormat::paint_green(parent_class->name).c_str())
-    );
-  }
+  kphp_error(has_custom_constructor || !parent_class->has_custom_constructor,
+             format("You must write `__constructor` in class: %s because one of your parent(%s) has constructor",
+                    TermStringFormat::paint_green(name).c_str(), TermStringFormat::paint_green(parent_class->name).c_str())
+  );
 }
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {

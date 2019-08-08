@@ -1832,6 +1832,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
     CE (!kphp_error(!cur_class->is_interface(), "constructor in interfaces has not been supported yet"));
+    cur_class->has_custom_constructor = true;
     G->register_and_require_function(constructor_method, parsed_os, true);
   } else if (cur_class->is_class()) {
     bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();
