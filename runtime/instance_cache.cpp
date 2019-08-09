@@ -12,19 +12,19 @@
 
 namespace ic_impl_ {
 
-DeepSharedDetach::DeepSharedDetach() :
+DeepMoveFromScriptToCacheVisitor::DeepMoveFromScriptToCacheVisitor() :
   Basic(*this) {
 }
 
-DeepDestroy::DeepDestroy() :
+DeepDestroyFromCacheVisitor::DeepDestroyFromCacheVisitor() :
   Basic(*this) {
 }
 
-DeepInstanceClone::DeepInstanceClone() :
+ShallowMoveFromCacheToScriptVisitor::ShallowMoveFromCacheToScriptVisitor() :
   Basic(*this) {
 }
 
-bool DeepSharedDetach::process(string &str) {
+bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
   if (is_memory_limit_exceeded()) {
     str = string();
     return false;
@@ -41,7 +41,7 @@ bool DeepSharedDetach::process(string &str) {
   return true;
 }
 
-bool DeepDestroy::process(string &str) {
+bool DeepDestroyFromCacheVisitor::process(string &str) {
   // if string is constant, skip it, otherwise element was cached and should be destroyed
   if (!str.is_const_reference_counter()) {
     str.destroy_cached();
@@ -134,7 +134,7 @@ public:
     }
     auto it = storage_->find(key);
     if (it == storage_->end()) {
-      if (!DeepSharedDetach{}.process(key)) {
+      if (!DeepMoveFromScriptToCacheVisitor{}.process(key)) {
         detached_instance->memory_limit_warning();
         delete detached_instance;
         return false;
@@ -188,7 +188,7 @@ public:
       php_assert(storage_it->second.expiring_at == it->first);
 
       storage_->erase(storage_it);
-      DeepDestroy{}.process(it->second);
+      DeepDestroyFromCacheVisitor{}.process(it->second);
       it = expiration_trace_->erase(it);
     }
   }
@@ -257,7 +257,7 @@ private:
     detach_expiration_trace(it);
     string removing_key = it->first;
     auto next_it = storage_->erase(it);
-    DeepDestroy{}.process(removing_key);
+    DeepDestroyFromCacheVisitor{}.process(removing_key);
     return next_it;
   }
 

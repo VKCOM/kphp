@@ -184,6 +184,7 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << "struct " << interface->src_name << " : public " << parent_class << " " << BEGIN;
 
   ClassDeclaration::compile_get_class(W, interface);
+  ClassDeclaration::compile_accept_visitor_methods(W, interface);
 
   W << END << ";" << NL;
 
@@ -262,18 +263,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   if (klass->need_generate_accept_method()) {
     compile_get_class(W, klass);
-
-    W << NL;
-    W << "template<class Visitor>" << NL
-      << "static void accept(Visitor &&visitor) " << BEGIN;
-
-    for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
-      cur_klass->members.for_each([&](const ClassMemberInstanceField &f) {
-        // will generate visitor.template operator()<int>("field_name", &ClassName::field_name);
-        W << "visitor.template operator()<" << TypeName(tinf::get_type(f.var)) << ">(\"" << f.local_name() << "\", &" << klass->src_name << "::$" << f.local_name() << ");" << NL;
-      });
-    }
-    W << END << NL;
+    compile_accept_visitor_methods(W, klass);
   }
 
   // для rpc-функций генерим метод-член класса store(), который перевызывает сторилку из codegen tl2cpp
@@ -294,7 +284,7 @@ void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
   if (!klass->derived_classes.empty()) {
     W << "virtual ";
   }
-  const char * final_kw = (!klass->implements.empty() || klass->parent_class) && klass->derived_classes.empty() ? "final" : "";
+  const char *final_kw = klass->is_final() ? "final " : "";
   W << "const char *get_class() const " << final_kw << BEGIN;
   {
     W << "return ";
@@ -302,6 +292,52 @@ void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
     W << ";" << NL;
   }
   W << END << NL;
+}
+
+void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor) {
+  if (!klass->derived_classes.empty()) {
+    W << "virtual ";
+  }
+  W << "void accept(" << visitor << " &visitor) ";
+  if (klass->is_interface()) {
+    W << "= 0;" << NL;
+  } else {
+    const char *final_kw = klass->is_final() ? "final " : "";
+    W << final_kw << BEGIN
+      << "generic_accept(visitor);" << NL
+      << END << NL;
+  }
+}
+
+void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->need_instance_to_array_visitor && !klass->need_instance_cache_visitors) {
+    return;
+  }
+
+  W << NL;
+  if (!klass->is_interface()) {
+    W << "template<class Visitor>" << NL
+      << "void generic_accept(Visitor &&visitor) " << BEGIN;
+    for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
+      cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
+        // will generate visitor("field_name", $field_name);
+        W << "visitor(\"" << f.local_name() << "\", $" << f.local_name() << ");" << NL;
+      });
+    }
+    W << END << NL;
+  }
+
+  if (klass->need_instance_to_array_visitor) {
+    W << NL;
+    compile_accept_visitor(W, klass, "InstanceToArrayVisitor");
+  }
+
+  if (klass->need_instance_cache_visitors) {
+    W << NL;
+    compile_accept_visitor(W, klass, "DeepMoveFromScriptToCacheVisitor");
+    compile_accept_visitor(W, klass, "DeepDestroyFromCacheVisitor");
+    compile_accept_visitor(W, klass, "ShallowMoveFromCacheToScriptVisitor");
+  }
 }
 
 void ClassDeclaration::compile_includes(CodeGenerator &W) const {

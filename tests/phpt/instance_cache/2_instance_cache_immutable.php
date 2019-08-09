@@ -1,17 +1,10 @@
 @ok
 <?php
 
-require_once "instance_cache_stub.php";
+require_once "polyfills.php";
 
 /** @kphp-immutable-class */
 class X {
-  public function dump_me() {
-    var_dump($this->x_int);
-    var_dump($this->x_str);
-    var_dump($this->x_array);
-    var_dump($this->x_array_var);
-  }
-
   /** @var int */
   public $x_int = 1;
   /** @var string */
@@ -47,21 +40,6 @@ class Y {
     $this->y_string_or_false = 1 ? "or_false" : false;
     $this->y_tuple = tuple($or_false_str, $this->y_array_var, $this->y_array, $this->y_string, new X);
   }
-
-  public function dump_me() {
-    $this->x_instance->dump_me();
-    var_dump($this->y_string);
-    var_dump($this->y_array);
-    var_dump($this->y_array_var);
-    var_dump($this->y_string_or_false);
-    var_dump($this->y_tuple[0]);
-    var_dump($this->y_tuple[1]);
-    var_dump($this->y_tuple[2]);
-    var_dump($this->y_tuple[3]);
-    /** @var X */
-    $x = $this->y_tuple[4];
-    $x->dump_me();
-  }
 }
 
 /** @kphp-immutable-class */
@@ -91,10 +69,10 @@ function test_store_fetch() {
   var_dump(instance_cache_store("key_y1", new Y(1, "test_store_fetch")));
 
   $x = instance_cache_fetch_immutable(X::class, "key_x1");
-  $x->dump_me();
+  var_dump(instance_to_array($x));
 
   $y = instance_cache_fetch_immutable(Y::class, "key_y1");
-  $y->dump_me();
+  var_dump(instance_to_array($y));
 }
 
 function test_tree() {
@@ -104,12 +82,7 @@ function test_tree() {
   var_dump(instance_cache_store("tree_root", $root));
 
   $cached_root1 = instance_cache_fetch_immutable(TreeX::class, "tree_root");
-  assert_equal($cached_root1->value, 0);
-  /**@var TreeX[]*/
-  $children1 = $cached_root1->children[0][1];
-  assert_equal(count($children1), 1);
-  assert_equal($children1[0]->value, 1);
-  assert_equal(count($children1[0]->children), 0);
+  var_dump(instance_to_array($cached_root1));
 }
 
 function test_same_instance_in_array() {
@@ -119,9 +92,7 @@ function test_same_instance_in_array() {
   var_dump(instance_cache_store("vector", $vector));
 
   $cached_vector = instance_cache_fetch_immutable(VectorY::class, "vector");
-  assert_equal($cached_vector->elements[0]->y_string, "hello world <-first");
-  assert_equal($cached_vector->elements[1]->y_string, "hello world <-first");
-  assert_equal($cached_vector->elements[2]->y_string, "hello world <-second");
+  var_dump(instance_to_array($cached_vector));
 }
 
 test_store_fetch();

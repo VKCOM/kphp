@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
@@ -29,8 +30,8 @@ public:
   std::string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
 
   std::vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
-  ClassPtr parent_class;                  // extends
-  std::vector<InterfacePtr> implements;        // на будущее
+  ClassPtr parent_class;                       // extends
+  std::vector<InterfacePtr> implements;
   std::vector<ClassPtr> derived_classes;
   std::vector<ClassPtr> traits_uses;           // на будущее
 
@@ -47,6 +48,9 @@ public:
 
   SrcFilePtr file_id;
   std::string src_name, header_name;
+
+  std::atomic<bool> need_instance_to_array_visitor{false};
+  std::atomic<bool> need_instance_cache_visitors{false};
 
   ClassMembersContainer members;
 
@@ -124,15 +128,11 @@ public:
   bool is_interface_or_has_interface_member() const;
   static bool does_need_codegen(ClassPtr c);
   void mark_as_used();
+  bool is_final() const;
+  ClassPtr get_top_parent() const;
 
-  ClassPtr get_top_parent() const {
-    auto klass = get_self();
-    while (klass->parent_class) {
-      klass = klass->parent_class;
-    }
-
-    return klass;
-  }
+  void deeply_require_instance_to_array_visitor();
+  void deeply_require_instance_cache_visitor();
 
 private:
   bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const;
@@ -148,6 +148,9 @@ private:
 
     return {};
   }
+
+  template<std::atomic<bool> ClassData:: *field_ptr>
+  void set_atomic_field_deeply();
 };
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs);

@@ -304,3 +304,52 @@ void ClassData::mark_as_used() {
     implements[0]->mark_as_used();
   }
 }
+
+bool ClassData::is_final() const {
+  return (!implements.empty() || parent_class) && derived_classes.empty();
+}
+
+ClassPtr ClassData::get_top_parent() const {
+  auto klass = get_self();
+  while (klass->parent_class) {
+    klass = klass->parent_class;
+  }
+
+  return klass;
+}
+
+template<std::atomic<bool> ClassData:: *field_ptr>
+void ClassData::set_atomic_field_deeply() {
+  if (this->*field_ptr) {
+    return;
+  }
+
+  this->*field_ptr = true;
+  members.for_each([](ClassMemberInstanceField &field) {
+    std::unordered_set<ClassPtr> sub_classes;
+    field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+    for (auto klass : sub_classes) {
+      klass->set_atomic_field_deeply<field_ptr>();
+    }
+  });
+
+  for (auto child : derived_classes) {
+    child->set_atomic_field_deeply<field_ptr>();
+  }
+
+  for (auto parent_interface : implements) {
+    parent_interface->set_atomic_field_deeply<field_ptr>();
+  }
+
+  if (parent_class) {
+    parent_class->set_atomic_field_deeply<field_ptr>();
+  }
+}
+
+void ClassData::deeply_require_instance_to_array_visitor() {
+  set_atomic_field_deeply<&ClassData::need_instance_to_array_visitor>();
+}
+
+void ClassData::deeply_require_instance_cache_visitor() {
+  set_atomic_field_deeply<&ClassData::need_instance_cache_visitors>();
+}

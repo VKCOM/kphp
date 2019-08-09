@@ -27,20 +27,22 @@ void check_class_immutableness(ClassPtr klass) {
   });
 }
 
-void check_instance_cache_fetch_immutable_call(VertexAdaptor<op_func_call> call) {
-  kphp_assert(call->get_string() == "instance_cache_fetch_immutable");
+void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
-  kphp_error(klass->is_immutable,
-             format("Can not fetch instance of mutable class %s with instance_cache_fetch_immutable call", klass->name.c_str()));
+  klass->deeply_require_instance_cache_visitor();
+  if (call->get_string() == "instance_cache_fetch_immutable") {
+    kphp_error(klass->is_immutable,
+               format("Can not fetch instance of mutable class %s with instance_cache_fetch_immutable call", klass->name.c_str()));
+  }
 }
 
 void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
-  kphp_assert(call->get_string() == "instance_cache_store");
   auto type = tinf::get_type(call->args()[1]);
   kphp_error_return(type->ptype() == tp_Class,
                     "Can not store non-instance var with instance_cache_store call");
   auto klass = type->class_type();
+  klass->deeply_require_instance_cache_visitor();
   kphp_error(!klass->is_interface_or_has_interface_member(),
              "Can not store instance with interface inside with instance_cache_store call");
 }
@@ -48,9 +50,7 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
 void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
   auto type = tinf::get_type(call->args()[0]);
   kphp_error_return(type->ptype() == tp_Class, "You may not use instance_to_array with non-instance var");
-
-  auto klass = type->class_type();
-  kphp_error(!klass->is_interface_or_has_interface_member(), "You may not convert interface to array");
+  type->class_type()->deeply_require_instance_to_array_visitor();
 }
 
 void check_func_call_params(VertexAdaptor<op_func_call> call) {
@@ -253,8 +253,8 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   if (call->func_id->is_extern()) {
     auto &function_name = call->get_string();
-    if (function_name == "instance_cache_fetch_immutable") {
-      check_instance_cache_fetch_immutable_call(call);
+    if (function_name == "instance_cache_fetch" || function_name == "instance_cache_fetch_immutable") {
+      check_instance_cache_fetch_call(call);
     } else if (function_name == "instance_cache_store") {
       check_instance_cache_store_call(call);
     } else if (function_name == "instance_to_array") {

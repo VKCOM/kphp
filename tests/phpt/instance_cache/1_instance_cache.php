@@ -1,16 +1,9 @@
 @ok
 <?php
 
-require_once "instance_cache_stub.php";
+require_once "polyfills.php";
 
 class X {
-  public function dump_me() {
-    var_dump($this->x_int);
-    var_dump($this->x_str);
-    var_dump($this->x_array);
-    var_dump($this->x_array_var);
-  }
-
   /** @var int */
   public $x_int = 1;
   /** @var string */
@@ -45,21 +38,6 @@ class Y {
     $this->y_string_or_false = 1 ? "or_false" : false;
     $this->y_tuple = tuple($or_false_str, $this->y_array_var, $this->y_array, $this->y_string, new X);
   }
-
-  public function dump_me() {
-    $this->x_instance->dump_me();
-    var_dump($this->y_string);
-    var_dump($this->y_array);
-    var_dump($this->y_array_var);
-    var_dump($this->y_string_or_false);
-    var_dump($this->y_tuple[0]);
-    var_dump($this->y_tuple[1]);
-    var_dump($this->y_tuple[2]);
-    var_dump($this->y_tuple[3]);
-    /** @var X */
-    $x = $this->y_tuple[4];
-    $x->dump_me();
-  }
 }
 
 class TreeX {
@@ -86,10 +64,10 @@ function test_store_fetch() {
   var_dump(instance_cache_store("key_y1", new Y(1, "test_store_fetch")));
 
   $x = instance_cache_fetch(X::class, "key_x1");
-  $x->dump_me();
+  var_dump(instance_to_array($x));
 
   $y = instance_cache_fetch(Y::class, "key_y1");
-  $y->dump_me();
+  var_dump(instance_to_array($y));
 }
 
 function test_mismatch_classes() {
@@ -111,10 +89,10 @@ function test_delete() {
   var_dump(instance_cache_delete("key_y3_unknown"));
 
   $x = instance_cache_fetch(X::class, "key_x3");
-  $x->dump_me();
+  var_dump(instance_to_array($x));
 
   $y = instance_cache_fetch(Y::class, "key_y3");
-  $x->dump_me();
+  var_dump(instance_to_array($y));
 
   var_dump(instance_cache_delete("key_x3"));
   var_dump(instance_cache_delete("key_y3"));
@@ -134,10 +112,10 @@ function test_clear() {
   var_dump(instance_cache_store("key_y4", new Y(3, "test_clear")));
 
   $x = instance_cache_fetch(X::class, "key_x4");
-  $x->dump_me();
+  var_dump(instance_to_array($x));
 
   $y = instance_cache_fetch(Y::class, "key_y4");
-  $x->dump_me();
+  var_dump(instance_to_array($y));
 
   instance_cache_clear();
 
@@ -158,35 +136,18 @@ function test_tree() {
   var_dump(instance_cache_store("tree_root", $root));
 
   $cached_root1 = instance_cache_fetch(TreeX::class, "tree_root");
-  assert_equal($cached_root1->value, 0);
-  /**@var TreeX[]*/
-  $children1 = $cached_root1->children[0][1];
-  assert_equal(count($children1), 1);
-  assert_equal($children1[0]->value, 1);
-  assert_equal(count($children1[0]->children), 0);
 
+  var_dump(instance_to_array($cached_root1));
+
+#ifndef KittenPHP
+  if (false)
+#endif
   $root->value = 1;
-    /**@var TreeX[]*/
-  $children0 = $root->children[0][1];
-  $children0[0]->value = 2;
-  $children0[] = new TreeX;
-  $children0[1]->value = 3;
 
-  assert_equal($cached_root1->value, 0);
-  /**@var TreeX[]*/
-  $children1 = $cached_root1->children[0][1];
-  assert_equal(count($children1), 1);
-  assert_equal($children1[0]->value, 1);
-  assert_equal(count($children1[0]->children), 0);
+  var_dump(instance_to_array($cached_root1));
 
   $cached_root2 = instance_cache_fetch(TreeX::class, "tree_root");
-  assert_equal($cached_root2->value, 0);
-  /**@var TreeX[]*/
-  $children2 = $cached_root2->children[0][1];
-  var_dump(count($children2));
-  assert_equal(count($children2), 1);
-  assert_equal($children2[0]->value, 1);
-  assert_equal(count($children2[0]->children), 0);
+  var_dump(instance_to_array($cached_root2));
 }
 
 function test_loop_in_tree() {
@@ -195,29 +156,37 @@ function test_loop_in_tree() {
   $root->children = [tuple(0, [$root])];
 
   $result = instance_cache_store("tree_root_loop", $root);
-  assert_equal($result, false);
+#ifndef KittenPHP
+  var_dump(false);
+  if (false)
+#endif
+  var_dump($result);
 
   $cached_root1 = instance_cache_fetch(TreeX::class, "tree_root_loop");
-  assert_equal($cached_root1 == false, true);
+#ifndef KittenPHP
+  var_dump(true);
+  if (false)
+#endif
+  var_dump($cached_root1 == false);
 }
 
 function test_same_instance_in_array() {
   $vector = new VectorY;
   $y = new Y(10, " <-first");
+#ifndef KittenPHP
+  $vector->elements = [$y, clone $y, new Y(11, " <-second")];
+  if (false)
+#endif
   $vector->elements = [$y, $y, new Y(11, " <-second")];
 
   var_dump(instance_cache_store("vector", $vector));
 
   $cached_vector = instance_cache_fetch(VectorY::class, "vector");
-  assert_equal($cached_vector->elements[0]->y_string, "hello world <-first");
-  assert_equal($cached_vector->elements[1]->y_string, "hello world <-first");
-  assert_equal($cached_vector->elements[2]->y_string, "hello world <-second");
+  var_dump(instance_to_array($cached_vector));
 
   $cached_vector->elements[1]->y_string = "hello world <-second";
   $cached_vector->elements[2]->y_string = "hello world <-third";
-  assert_equal($cached_vector->elements[0]->y_string, "hello world <-first");
-  assert_equal($cached_vector->elements[1]->y_string, "hello world <-second");
-  assert_equal($cached_vector->elements[2]->y_string, "hello world <-third");
+  var_dump(instance_to_array($cached_vector));
 }
 
 function test_memory_limit_exceed() {
@@ -226,8 +195,12 @@ function test_memory_limit_exceed() {
     $vector->elements[] = new Y($i, " <-");
   }
 
-  assert_equal(instance_cache_store("large_vector", $vector) == false, true);
-  assert_equal(instance_cache_fetch(VectorY::class, "large_vector") == false, true);
+#ifndef KittenPHP
+  var_dump(false);
+  if (false)
+#endif
+  var_dump(instance_cache_store("large_vector", $vector));
+  var_dump(instance_cache_fetch(VectorY::class, "large_vector") == false);
 }
 
 test_empty_fetch();

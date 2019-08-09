@@ -50,18 +50,18 @@ function instance_cast($instance, $unused) {
     return $instance;
 }
 
-$cache = [];
+$instance_cache_storage = [];
 
 function instance_cache_store($key, $value) {
-  global $cache;
-  $cache[$key] = $value;
+  global $instance_cache_storage;
+  $instance_cache_storage[$key] = $value;
   return true;
 }
 
 function instance_cache_fetch($type, $key) {
-  global $cache;
-  if (isset($cache[$key])) {
-    $instance = $cache[$key];
+  global $instance_cache_storage;
+  if (isset($instance_cache_storage[$key])) {
+    $instance = $instance_cache_storage[$key];
     if (get_class($instance) == $type) {
       return $instance;
     }
@@ -74,16 +74,15 @@ function instance_cache_fetch_immutable($type, $key) {
 }
 
 function instance_cache_delete($key) {
-  global $cache;
-  $deleted = isset($cache[$key]);
-  unset($cache[$key]);
+  global $instance_cache_storage;
+  $deleted = isset($instance_cache_storage[$key]);
+  unset($instance_cache_storage[$key]);
   return $deleted;
 }
 
 function instance_cache_clear() {
-  global $cache;
-  $cache = [];
+  global $instance_cache_storage;
+  $instance_cache_storage = [];
   return true;
 }
-
 #endif

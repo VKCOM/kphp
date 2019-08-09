@@ -62,7 +62,9 @@ struct ClassDeclaration {
   explicit ClassDeclaration(ClassPtr klass);
   void compile(CodeGenerator &W) const;
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
+  static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
 private:
+  static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor);
   void compile_includes(CodeGenerator &W) const;
   void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
 };

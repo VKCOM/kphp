@@ -12,22 +12,20 @@
 //  6) All instances (with all members) are destroyed strictly before or after request,
 //    and shouldn't be destroyed while request.
 
-#include "runtime/instance-visitor.h"
 #include "runtime/kphp_core.h"
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/traits.h"
-#include "runtime/instance-visitor.h"
 
 namespace ic_impl_ {
 
 bool is_instance_cache_memory_limit_exceeded_();
 
 template<typename Child>
-class BasicProcessor {
+class BasicVisitor {
 public:
   template<typename T>
-  bool process(const char *, T &&value) {
-    return child_.process(std::forward<T>(value));
+  void operator()(const char *, T &&value) {
+    is_ok_ = child_.process(std::forward<T>(value));
   }
 
   template<typename T>
@@ -42,9 +40,8 @@ public:
   bool process(class_instance<I> &instance) {
     static_assert(!std::is_abstract<I>::value, "instance_cache doesn't support interfaces");
     if (!instance.is_null()) {
-      InstanceVisitor<I, Child> visitor{instance, child_};
-      instance->accept(visitor);
-      return visitor.is_ok();
+      instance->accept(child_);
+      return child_.is_ok();
     }
     return true;
   }
@@ -63,8 +60,10 @@ public:
     return true;
   }
 
+  bool is_ok() const { return is_ok_; }
+
 protected:
-  explicit BasicProcessor(Child &child) :
+  explicit BasicVisitor(Child &child) :
     child_(child) {
   }
 
@@ -82,7 +81,6 @@ protected:
     return res;
   }
 
-
 private:
   template<size_t Index = 0, typename ...Args>
   vk::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) {
@@ -95,15 +93,18 @@ private:
     return true;
   }
 
+  bool is_ok_{true};
   Child &child_;
 };
 
-class DeepSharedDetach : BasicProcessor<DeepSharedDetach> {
+class DeepMoveFromScriptToCacheVisitor : BasicVisitor<DeepMoveFromScriptToCacheVisitor> {
 public:
-  using Basic = BasicProcessor<DeepSharedDetach>;
+  using Basic = BasicVisitor<DeepMoveFromScriptToCacheVisitor>;
   using Basic::process;
+  using Basic::operator();
+  using Basic::is_ok;
 
-  DeepSharedDetach();
+  DeepMoveFromScriptToCacheVisitor();
 
   template<typename T>
   bool process(array<T> &arr) {
@@ -166,12 +167,14 @@ private:
   const uint8_t instance_depth_level_limit_{128u};
 };
 
-class DeepDestroy : BasicProcessor<DeepDestroy> {
+class DeepDestroyFromCacheVisitor : BasicVisitor<DeepDestroyFromCacheVisitor> {
 public:
-  using Basic = BasicProcessor<DeepDestroy>;
+  using Basic = BasicVisitor<DeepDestroyFromCacheVisitor>;
   using Basic::process;
+  using Basic::operator();
+  using Basic::is_ok;
 
-  DeepDestroy();
+  DeepDestroyFromCacheVisitor();
 
   template<typename T>
   bool process(array<T> &arr) {
@@ -193,12 +196,14 @@ public:
   bool process(string &str);
 };
 
-class DeepInstanceClone : BasicProcessor<DeepInstanceClone> {
+class ShallowMoveFromCacheToScriptVisitor : BasicVisitor<ShallowMoveFromCacheToScriptVisitor> {
 public:
-  using Basic = BasicProcessor<DeepInstanceClone>;
+  using Basic = BasicVisitor<ShallowMoveFromCacheToScriptVisitor>;
   using Basic::process;
+  using Basic::operator();
+  using Basic::is_ok;
 
-  DeepInstanceClone();
+  ShallowMoveFromCacheToScriptVisitor();
 
   template<typename I>
   bool process(class_instance<I> &instance) {
@@ -244,16 +249,16 @@ public:
 
   InstanceWrapperBase *clone_and_detach_shared_ref() const final {
     auto detached_instance = instance_;
-    DeepSharedDetach detach_processor;
+    DeepMoveFromScriptToCacheVisitor detach_processor;
     detach_processor.process(detached_instance);
     if (detach_processor.is_memory_limit_exceeded()) {
       memory_limit_warning();
-      DeepDestroy{}.process(detached_instance);
+      DeepDestroyFromCacheVisitor{}.process(detached_instance);
       return nullptr;
     }
     if (detach_processor.is_depth_limit_exceeded()) {
       php_warning("Depth limit exceeded on cloning instance of class '%s' into cache", get_class());
-      DeepDestroy{}.process(detached_instance);
+      DeepDestroyFromCacheVisitor{}.process(detached_instance);
       return nullptr;
     }
     return new InstanceWrapper<class_instance<I>>{detached_instance};
@@ -261,7 +266,7 @@ public:
 
   class_instance<I> deep_instance_clone() const {
     auto cloned_instance = instance_;
-    DeepInstanceClone{}.process(cloned_instance);
+    ShallowMoveFromCacheToScriptVisitor{}.process(cloned_instance);
     return cloned_instance;
   }
 
@@ -275,7 +280,7 @@ public:
 
   ~InstanceWrapper() final {
     if (!instance_.is_null()) {
-      DeepDestroy{}.process(instance_);
+      DeepDestroyFromCacheVisitor{}.process(instance_);
     }
   }
 
@@ -307,6 +312,10 @@ ClassInstanceType instance_cache_fetch(const string &class_name, const string &k
 }
 
 } // namespace ic_impl_
+
+using DeepMoveFromScriptToCacheVisitor = ic_impl_::DeepMoveFromScriptToCacheVisitor;
+using DeepDestroyFromCacheVisitor = ic_impl_::DeepDestroyFromCacheVisitor;
+using ShallowMoveFromCacheToScriptVisitor = ic_impl_::ShallowMoveFromCacheToScriptVisitor;
 
 void init_instance_cache_lib();
 void free_instance_cache_lib();
