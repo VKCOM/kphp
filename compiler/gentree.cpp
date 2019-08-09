@@ -1870,8 +1870,14 @@ LambdaGenerator GenTree::generate_anonymous_class(VertexAdaptor<op_function> fun
 
 VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function) {
   auto params = function->get_params_as_vector_of_vars(1);
-
   auto call_method = VertexAdaptor<op_func_call>::create(instance_var, params);
+
+  if (function->has_variadic_param) {
+    kphp_assert(!call_method->args().empty());
+    auto &last_param_passed_to_method = *std::prev(call_method->args().end());
+    last_param_passed_to_method = VertexAdaptor<op_varg>::create(params.back()).set_location(params.back());
+  }
+
   call_method->set_string(function->local_name());
   call_method->extra_type = op_ex_func_call_arrow;
 
