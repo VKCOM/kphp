@@ -240,7 +240,7 @@ name_to_classes_methods_t collect_and_mark_methods_with_the_same_name(ClassPtr c
   }
 
   cur_klass->members.for_each([&](ClassMemberInstanceMethod &method) {
-    if (method.function->is_constructor()) {
+    if (method.function->is_constructor() || method.function->access_type == AccessType::access_private) {
       return;
     }
 
