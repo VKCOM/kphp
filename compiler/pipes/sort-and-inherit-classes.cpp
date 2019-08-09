@@ -123,7 +123,14 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     return;
   }
 
-  if (!child_class->members.has_static_method(local_name)) {
+  if (auto child_method = child_class->members.get_static_method(local_name)) {
+    kphp_error_return(!parent_f->is_final,
+                      format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
+    kphp_error_return(parent_method.access_type != access_static_private,
+                      format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
+    kphp_error_return(parent_method.access_type == child_method->access_type,
+                      format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
+  } else {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
 
     string new_name = replace_backslashes(child_class->name) + "$$" + parent_method.local_name();
@@ -134,15 +141,6 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
 
     G->register_and_require_function(child_function, function_stream);
-  } else {
-    auto child_method = child_class->members.get_static_method(local_name);
-    kphp_assert(child_method);
-    kphp_error_return(!parent_f->is_final,
-                      format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
-    kphp_error_return(parent_method.access_type != access_static_private,
-                      format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
-    kphp_error_return(parent_method.access_type == child_method->access_type,
-                      format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
   }
 
   // контекстная функция имеет название baseclassname$$fname$$contextclassname
