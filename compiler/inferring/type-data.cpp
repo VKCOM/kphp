@@ -478,7 +478,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   cur->set_lca(rhs, save_or_false);
   for (auto it = last; it != multi_key.rend(); it++) {
     cur = cur->parent_;
-    if (*it != Key::any_key()) {
+    if (*it == Key::any_key()) {
       TypeData *any_value = cur->at_force(Key::any_key());
       TypeData *key_value = cur->write_at(*it);
       any_value->set_lca(key_value, true);
