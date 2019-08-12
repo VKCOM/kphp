@@ -84,27 +84,6 @@ struct AsSeq {
   }
 };
 
-struct AsList {
-  VertexPtr root;
-  string delim;
-  AsList(VertexPtr root, string delim) :
-    root(root),
-    delim(std::move(delim)) {
-  }
-
-  void compile(CodeGenerator &W) const {
-    bool first = true;
-    for (auto i : *root) {
-      if (first) {
-        first = false;
-      } else {
-        W << delim;
-      }
-      W << i;
-    }
-  }
-};
-
 struct Label {
   int label_id;
   Label(int label_id) :
@@ -343,9 +322,9 @@ void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
 
 void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
   W << "for (" <<
-    AsList(root->pre_cond(), ", ") << "; " <<
-    AsList(root->cond(), ", ") << "; " <<
-    AsList(root->post_cond(), ", ") << ") " <<
+    JoinValues(*root->pre_cond(), ", ") << "; " <<
+    JoinValues(*root->cond(), ", ") << "; " <<
+    JoinValues(*root->post_cond(), ", ") << ") " <<
     CycleBody(root->cmd(), root->continue_label_id, root->break_label_id);
 }
 
@@ -438,24 +417,19 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     W << "< " << TypeName(tp) << " >";
   }
   W << "(";
-  bool first = true;
-  for (auto i: root->args()) {
-    if (first) {
-      first = false;
-    } else {
+  auto args = root->args();
+  auto first_arg = args.begin();
+  if (!args.empty() && root->type() == op_constructor_call && (*first_arg)->type() == op_false) {
+    const TypeData *tp = tinf::get_type(root);
+    kphp_assert(tp->ptype() == tp_Class);
+    auto alloc_function = tp->class_type()->is_not_empty_class() ? "().alloc()" : "().empty_alloc()";
+    W << TypeName(tp) << alloc_function;
+    if (++first_arg != args.end()) {
       W << ", ";
     }
-
-    if (root->type() == op_constructor_call && i->type() == op_false && i == root->args()[0]) {
-      const TypeData *tp = tinf::get_type(root);
-      kphp_assert(tp->ptype() == tp_Class);
-      auto alloc_function = tp->class_type()->is_not_empty_class() ? "().alloc()" : "().empty_alloc()";
-      W << TypeName(tp) << alloc_function;
-      continue;
-    }
-
-    W << i;
   }
+
+  W << JoinValues(vk::make_iterator_range(first_arg, args.end()), ", ");
   W << ")";
 }
 
@@ -894,27 +868,18 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   //CONSTRUCTOR
   W << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
   if (!func->param_ids.empty()) {
-    W << " :" << NL <<
-      Indent(+2);
-    bool flag = false;
-    int i = 0;
-    for (auto var : func->param_ids) {
-      if (flag) {
-        W << "," << NL;
-      } else {
-        flag = true;
-      }
-      W << VarName(var) << "(" << VarName(var) << ")";
-      i++;
+    W << " :" << NL << Indent(+2);
+    W << JoinValues(func->param_ids, ",", join_mode::multiple_lines,
+                    [](CodeGenerator &W, VarPtr var) {
+                      W << VarName(var) << "(" << VarName(var) << ")";
+                    });
+    if (!func->local_var_ids.empty()) {
+      W << "," << NL;
     }
-    for (auto var : func->local_var_ids) {
-      if (flag) {
-        W << "," << NL;
-      } else {
-        flag = true;
-      }
-      W << VarName(var) << "()";
-    }
+    W << JoinValues(func->local_var_ids, ",", join_mode::multiple_lines,
+                    [](CodeGenerator &W, VarPtr var) {
+                      W << VarName(var) << "()";
+                    });
     W << Indent(-2);
   }
   W << " " << BEGIN << END << NL;
@@ -942,15 +907,10 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
     BEGIN;
   W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
     "(new " << FunctionClassName(func) << "(";
-  bool flag = false;
-  for (auto var : func->param_ids) {
-    if (flag) {
-      W << ", ";
-    } else {
-      flag = true;
-    }
-    W << VarName(var);
-  }
+
+  const auto var_name_gen = [](CodeGenerator &W, VarPtr var) { W << VarName(var); };
+  W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
+
   W << "));" << NL;
   W << END << NL;
 
@@ -959,15 +919,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
     BEGIN;
   W << "return fork_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
     "(new " << FunctionClassName(func) << "(";
-  flag = false;
-  for (auto var : func->param_ids) {
-    if (flag) {
-      W << ", ";
-    } else {
-      flag = true;
-    }
-    W << VarName(var);
-  }
+  W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
   W << "));" << NL;
   W << END << NL;
 
@@ -1228,53 +1180,41 @@ void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
 }
 
 void compile_var_dump(VertexPtr root, CodeGenerator &W) {
-  bool first = true;
-  for (auto i : *root) {
-    if (first) {
-      first = false;
-    } else {
-      W << ";" << NL;
-    }
-
-    W << "f$var_dump (" << i << ")";
-  }
+  W << JoinValues(*root, ";", join_mode::multiple_lines,
+                  [](CodeGenerator &W, VertexPtr v) {
+                    W << "f$var_dump (" << v << ")";
+                  });
 }
 
 void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
-  assert ((int)root->size() == 1 || root->type() == op_unset);
+  kphp_assert (root->size() == 1 || root->type() == op_unset);
 
-  bool first = true;
-  for (auto arg : root->args()) {
-    if (first) {
-      first = false;
-    } else {
-      W << ";" << NL;
-    }
-
+  const auto compile_set = [root](CodeGenerator &W, VertexPtr arg) {
     if (root->type() == op_unset && arg->type() == op_var) {
       W << "unset (" << arg << ")";
-      continue;
+      return;
     }
     if (root->type() == op_isset && arg->type() == op_var) {
       W << "(!f$is_null(" << arg << "))";
-      continue;
+      return;
     }
     if (auto index = arg.try_as<op_index>()) {
       kphp_assert (index->has_key());
-      VertexPtr arr = index->array(), id = index->key();
-      W << "(" << arr;
+      W << "(" << index->array();
       if (root->type() == op_isset) {
         W << ").isset (";
       } else if (root->type() == op_unset) {
         W << ").unset (";
       } else {
-        assert (0);
+        kphp_assert (0);
       }
-      W << id << ")";
-      continue;
+      W << index->key() << ")";
+      return;
     }
     kphp_error (0, "Some problems with isset/unset");
-  }
+  };
+
+  W << JoinValues(*root, ";", join_mode::multiple_lines, compile_set);
 }
 
 
@@ -1334,7 +1274,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     }
   }
   if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
-    W << TypeName(type) << "::create(" << AsList(root, ", ") << ")";
+    W << TypeName(type) << "::create(" << JoinValues(*root, ", ") << ")";
     return;
   }
 
@@ -1374,15 +1314,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
 }
 
 void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
-  W << "std::make_tuple(";
-  VertexRange args = root->args();
-  for (int i = 0; i < args.size(); ++i) {
-    if (i) {
-      W << ", ";
-    }
-    W << args[i];
-  }
-  W << ")";
+  W << "std::make_tuple(" << JoinValues(root->args(), ", ") << ")";
 }
 
 void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
@@ -1579,33 +1511,20 @@ void compile_as_printable(VertexPtr root, CodeGenerator &W) {
 }
 
 void compile_echo(VertexPtr root, CodeGenerator &W) {
-  bool first = true;
-
-  for (auto i : *root) {
-    if (first) {
-      first = false;
-    } else {
-      W << ";" << NL;
-    }
-
-    if (root->type() == op_dbg_echo) {
-      W << "dbg_echo (";
-    } else {
-      W << "print (";
-    }
-    compile_as_printable(i, W);
-    W << ")";
-  }
+  const char *func_print_name = root->type() == op_dbg_echo ? "dbg_echo" : "print";
+  W << JoinValues(*root, ";", join_mode::multiple_lines,
+                  [func_print_name](CodeGenerator &W, VertexPtr child) {
+                    W << func_print_name << " (";
+                    compile_as_printable(child, W);
+                    W << ")";
+                  });
 }
-
 
 void compile_print(VertexAdaptor<op_print> root, CodeGenerator &W) {
   W << "print (";
   compile_as_printable(root->expr(), W);
   W << ")";
 }
-
-
 
 void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W) {
   if (root->int_val != 0) {
@@ -1666,9 +1585,7 @@ void compile_cycle_op(VertexPtr root, CodeGenerator &W) {
 
 
 void compile_min_max(VertexPtr root, CodeGenerator &W) {
-  W << OpInfo::str(root->type()) << "< " << TypeName(tinf::get_type(root)) << " > (" <<
-    AsList(root, ", ") <<
-    ")";
+  W << OpInfo::str(root->type()) << "< " << TypeName(tinf::get_type(root)) << " > (" << JoinValues(*root, ", ") << ")";
 }
 
 void compile_common_op(VertexPtr root, CodeGenerator &W) {

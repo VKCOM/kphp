@@ -86,3 +86,55 @@ struct UnlockComments {
     W.get_writer().unlock_comments();
   }
 };
+
+enum class join_mode {
+  one_line,
+  multiple_lines
+};
+
+template<typename T, typename F>
+class JoinValuesImpl {
+public:
+  JoinValuesImpl(const T &values_container, const char *sep, join_mode mode, F &&value_gen) :
+    values_container_(values_container),
+    sep_(sep),
+    mode_(mode),
+    value_gen_(std::forward<F>(value_gen)) {
+  }
+
+  void compile(CodeGenerator &W) const {
+    auto it = std::begin(values_container_);
+    const auto last = std::end(values_container_);
+    for (; it != last;) {
+      value_gen_(W, *it);
+      if (++it != last) {
+        W << sep_;
+        if (mode_ == join_mode::multiple_lines) {
+          W << NL;
+        }
+      }
+    }
+  }
+
+private:
+  const T &values_container_;
+  const char *sep_{nullptr};
+  const join_mode mode_{join_mode::one_line};
+  F value_gen_;
+};
+
+template<typename T>
+struct ValueSelfGen {
+  using element_type = decltype(*std::begin(std::declval<T>()));
+
+  void operator()(CodeGenerator &W, const element_type &obj) const {
+    W << obj;
+  }
+};
+
+// TODO rename JoinValuesImpl -> JoinValues in c++17 and get rid of this function
+template<typename T, typename F = ValueSelfGen<T>>
+JoinValuesImpl<T, F> JoinValues(const T &values_container, const char *sep,
+                              join_mode mode = join_mode::one_line, F &&value_gen = {}) {
+  return JoinValuesImpl<T, F>{values_container, sep, mode, std::forward<F>(value_gen)};
+}
