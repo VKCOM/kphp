@@ -15,6 +15,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/vertex.h"
+#include "compiler/tl-classes.h"
 
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return VarDeclaration(var, true, false);
@@ -165,6 +166,137 @@ InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
   interface(interface) {
 }
 
+TlTemplateParamTypes::TlTemplateParamTypes(vk::tl::type *tl_type, const std::string &php_tl_class_name) :
+  tl_type(tl_type) {
+  int template_suf_start = php_tl_class_name.find("__");
+  kphp_assert(template_suf_start != std::string::npos);
+  template_params_suf = php_tl_class_name.substr(template_suf_start);
+  for (const auto &constructor : tl_type->constructors) {
+    for (const auto &arg : constructor->args) {
+      if (arg->flags & vk::tl::FLAG_OPT_VAR) {
+        continue;
+      }
+      cur_tl_constructor = constructor.get();
+      cur_tl_arg = arg.get();
+      std::vector<InnerParamTypeAccess> recursion_stack;
+      deduce_params_from_type_tree(arg->type_expr.get(), recursion_stack);
+      kphp_assert(recursion_stack.empty());
+    }
+  }
+}
+
+TlTemplateParamTypes::DeducingInfo::DeducingInfo(std::string deduced_type, vector<TlTemplateParamTypes::InnerParamTypeAccess> path) :
+  deduced_type(std::move(deduced_type)),
+  path_to_inner_param(std::move(path)) {}
+
+// Обходим дерево, игнорируя все вершины, кроме vk::tl::type_var и vk::tl::type_expr. Собираем пути до type_var'ов для того чтобы получить тип.
+// Пример того, что хотим получить:
+// ********************** tl-схема **********************
+// test1 {t1 : Type} {t2 : Type}
+//  x : (Either (Maybe (%Vector t1)) (Maybe (%VectorTotal t2)))
+// = Test t1 t2;
+// ********************** cl/C@VK@TL@Types@Test__int__graph_Vertex.h **********************
+//struct C$VK$TL$Types$Test__int__graph_Vertex : public abstract_refcountable_php_interface {
+//  using t1 = class_instance<C$VK$TL$Types$Either__maybe_array_int__VectorTotal__graph_Vertex>::ClassType::X::InnerType::ValueType;
+//  using t2 = class_instance<C$VK$TL$Types$Either__maybe_array_int__VectorTotal__graph_Vertex>::ClassType::Y::ClassType::t;
+//  virtual const char *get_class() const {
+//    return "VK\\TL\\Types\\Test__int__graph_Vertex";
+//  }
+//};
+// Считаем, что типовых переменных нет внутри tl массивов, т.е нет такого:
+//  test {t:Type} [x:t] = Test;
+// Все такие случаи (vector, tuple) написаны руками в tl_builtins.h
+void TlTemplateParamTypes::deduce_params_from_type_tree(vk::tl::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack) {
+  if (auto type_var = dynamic_cast<vk::tl::type_var *>(type_tree)) {
+    std::string type_var_name = cur_tl_constructor->get_var_num_arg(type_var->var_num)->name;
+    if (!deduced_params.count(type_var_name)) {
+      ClassPtr tl_constructor_php_class = tl_gen::get_php_class_of_tl_constructor(cur_tl_constructor, template_params_suf);
+      const TypeData *deduced_type = tl_constructor_php_class->members.get_instance_field(cur_tl_arg->name)->get_inferred_type();
+      deduced_params[type_var_name] = DeducingInfo(type_out(deduced_type), recursion_stack);
+      std::unordered_set<ClassPtr> classes;
+      deduced_type->get_all_class_types_inside(classes);
+      for (const auto &klass : classes) {
+        dependencies.add_class_forward_declaration(klass);
+      }
+    }
+    return;
+  }
+  if (auto type_expr = dynamic_cast<vk::tl::type_expr *>(type_tree)) {
+    int i = 0;
+    for (const auto &child : type_expr->children) {
+      if (auto casted_child = dynamic_cast<vk::tl::type_expr_base *>(child.get())) {
+        vk::tl::type *parent_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(type_expr->type_id);
+        kphp_assert(parent_tl_type);
+
+        InnerParamTypeAccess inner_access;
+        bool skip_maybe = false;
+        if (tl_gen::is_tl_type_a_php_array(parent_tl_type)) {
+          inner_access.drop_class_instance = false;
+          inner_access.inner_type_name = "ValueType";
+        } else if (parent_tl_type->name == "Maybe") {
+          auto child_type_expr = dynamic_cast<vk::tl::type_expr *>(casted_child);
+          kphp_assert(child_type_expr);
+          vk::tl::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
+          kphp_assert(child_tl_type);
+
+          // Maybe<int|string|array|double> -- с OrFalse
+          // Maybe<class_instance|bool|OrFalse|var> -- без OrFalse
+
+          if (tl_gen::is_tl_type_a_php_array(child_tl_type) || child_tl_type->id == TL_INT || child_tl_type->id == TL_DOUBLE || child_tl_type->id == TL_STRING) {
+            inner_access.drop_class_instance = false;
+            inner_access.inner_type_name = "InnerType";
+          } else {
+            skip_maybe = true;
+          }
+        } else {
+          inner_access.drop_class_instance = true;
+          inner_access.inner_type_name = parent_tl_type->constructors[0]->args[i]->name; // корректность такого проверяется в tl2cpp.cpp::check_constructor()
+
+          // todo: Сейчас в зависимости добавляются ВСЕ инстанциации шаблонного типа.
+          //       В идеале нужно добавлять только ту, которая соответстсвует текущему дереву type_expr.
+          //       Нужно придумать как ее адекватно выделить из этого списка.
+          auto range = G->get_tl_classes().get_php_classes().magic_to_classes.equal_range(parent_tl_type->id);
+          for (auto it = range.first; it != range.second; ++it) {
+            std::string name = "VK\\" + it->second.get().php_class_namespace + "\\" + it->second.get().php_class_name;
+            auto klass = G->get_class(name);
+            if (klass) {
+              dependencies.add_class_include(klass);
+            }
+          }
+
+        }
+        if (!skip_maybe) {
+          recursion_stack.emplace_back(inner_access);
+        }
+        deduce_params_from_type_tree(casted_child, recursion_stack);
+        if (!skip_maybe) {
+          recursion_stack.pop_back();
+        }
+      }
+      ++i;
+    }
+    return;
+  }
+}
+
+void TlTemplateParamTypes::compile(CodeGenerator &W) const {
+  for (const auto &item : deduced_params) {
+    const auto &info = item.second;
+    W << "using " << item.first << " = " << info.deduced_type;
+    for (const auto &step : info.path_to_inner_param) {
+      if (step.drop_class_instance) {
+        W << "::ClassType";
+      }
+      W << "::" << step.inner_type_name;
+    }
+    W << ";" << NL;
+  }
+}
+
+void TlTemplateParamTypes::compile_dependencies(CodeGenerator &W) {
+  W << dependencies;
+}
+
 void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(interface->header_name, interface->get_subdir());
   W << "#pragma once" << NL;
@@ -181,10 +313,27 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
 
   W << OpenNamespace() << NL;
 
+  vk::tl::type *cur_tl_type = nullptr;
+  bool does_need_tl_template_param_types =
+    tl_gen::is_php_class_a_tl_polymorphic_type(interface) &&
+    tl_gen::is_type_dependent(cur_tl_type = tl_gen::get_tl_type_of_php_class(interface), G->get_tl_classes().get_scheme().get());
+
+  TlTemplateParamTypes tl_template_types;
+  if (does_need_tl_template_param_types) {
+    tl_template_types = TlTemplateParamTypes(cur_tl_type, interface->name);
+    tl_template_types.compile_dependencies(W);
+    W << NL;
+  }
+
   W << "struct " << interface->src_name << " : public " << parent_class << " " << BEGIN;
+
+  if (does_need_tl_template_param_types) {
+    W << tl_template_types;
+  }
 
   ClassDeclaration::compile_get_class(W, interface);
   ClassDeclaration::compile_accept_visitor_methods(W, interface);
+
 
   W << END << ";" << NL;
 
@@ -228,6 +377,27 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     }
   });
 
+  bool does_need_tl_template_param_types = false;
+  vk::tl::combinator *cur_tl_constructor = nullptr;
+
+  if (tl_gen::is_php_class_a_tl_constructor(klass) && !tl_gen::is_php_class_a_tl_array_item(klass)) {
+    const auto &scheme = G->get_tl_classes().get_scheme();
+    cur_tl_constructor = tl_gen::get_tl_constructor_of_php_class(klass);
+    vk::tl::type *cur_tl_type = scheme->get_type_by_magic(cur_tl_constructor->type_id);
+    if (tl_gen::is_type_dependent(cur_tl_constructor, scheme.get())) {
+      does_need_tl_template_param_types = cur_tl_type->constructors_num == 1 && !strcasecmp(cur_tl_type->name.c_str(), cur_tl_constructor->name.c_str());
+    } else {
+      does_need_tl_template_param_types = false;
+    }
+  }
+
+  TlTemplateParamTypes tl_template_types;
+  if (does_need_tl_template_param_types) {
+    tl_template_types = TlTemplateParamTypes(G->get_tl_classes().get_scheme()->get_type_by_magic(cur_tl_constructor->type_id), klass->name);
+    tl_template_types.compile_dependencies(W);
+    W << NL;
+  }
+
   InterfacePtr interface;
   if (!klass->implements.empty()) {
     kphp_assert(klass->implements.size() == 1);
@@ -247,6 +417,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
   W << BEGIN;
+
+  if (does_need_tl_template_param_types) {
+    W << tl_template_types;
+  }
 
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << "{";
@@ -378,3 +552,4 @@ void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
       break;
   }
 }
+

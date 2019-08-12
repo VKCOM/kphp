@@ -6,6 +6,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/vertex-meta_op_base.h"
+#include "compiler/code-gen/includes.h"
 
 struct VarDeclaration {
   VarPtr var;
@@ -49,6 +50,39 @@ struct FunctionParams {
 private:
   void declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
   void declare_txt_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
+};
+
+struct TlTemplateParamTypes {
+  TlTemplateParamTypes() = default;
+  explicit TlTemplateParamTypes(vk::tl::type *tl_type, const std::string &php_tl_class_name);
+
+  void compile(CodeGenerator &W) const;
+  void compile_dependencies(CodeGenerator &W);
+private:
+  struct InnerParamTypeAccess {
+    bool drop_class_instance;
+    std::string inner_type_name;
+
+    InnerParamTypeAccess() = default;
+  };
+
+  struct DeducingInfo {
+    std::string deduced_type;
+    std::vector<InnerParamTypeAccess> path_to_inner_param;
+
+    DeducingInfo() = default;
+    DeducingInfo(std::string deduced_type, vector<TlTemplateParamTypes::InnerParamTypeAccess> path);
+  };
+
+  std::map<std::string, DeducingInfo> deduced_params;
+  IncludesCollector dependencies;
+  vk::tl::type *tl_type;
+  std::string template_params_suf;
+  // Deducing context
+  vk::tl::combinator *cur_tl_constructor;
+  vk::tl::arg *cur_tl_arg;
+
+  void deduce_params_from_type_tree(vk::tl::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack);
 };
 
 struct InterfaceDeclaration {

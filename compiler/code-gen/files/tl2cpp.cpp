@@ -1582,6 +1582,24 @@ void check_constructor(const std::unique_ptr<vk::tl::combinator> &c) {
   }
   kphp_error(var_nums == params_order,
              format("Strange tl scheme here: %s", c->name.c_str()));
+  // Также проверяем, что индексы аргументов типовых переменных в конструкторе совпадают с порядковым (слева направо, начиная с 0)
+  // номером соответстсвующей вершины-ребенка в типовом дереве
+  std::vector<int> indices_in_constructor;
+  for (int i = 0; i < c->args.size(); ++i) {
+    if (c->args[i]->is_type(tl)) {
+      indices_in_constructor.push_back(i);
+    }
+  }
+  std::vector<int> indices_in_type_tree;
+  int i = 0;
+  for (const auto &child : as_type_expr->children) {
+    if (dynamic_cast<vk::tl::type_var *>(child.get())) {
+      indices_in_type_tree.push_back(i);
+    }
+    ++i;
+  }
+  kphp_error(indices_in_constructor == indices_in_type_tree,
+             format("Strange tl scheme here: %s", c->name.c_str()));
 }
 
 void collect_cells(vk::tl::expr_base *expr) {

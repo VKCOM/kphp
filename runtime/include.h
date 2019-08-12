@@ -65,6 +65,8 @@ class OrFalseTag {
 template<class T>
 class OrFalse : public OrFalseTag {
 public:
+  using InnerType = T;
+
   T value;
   bool bool_value;
 

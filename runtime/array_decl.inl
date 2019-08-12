@@ -29,6 +29,8 @@ template<class T>
 class array : array_tag {
 
 public:
+  using ValueType = T;
+
   typedef var key_type;
   typedef T value_type;
 
