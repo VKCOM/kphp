@@ -91,6 +91,9 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
 }
 
 inline void ResolveSelfStaticParentPass::check_access_to_class_from_this_file(ClassPtr ref_class) {
+  if (current_function->is_virtual_method) {
+    return;
+  }
   if (ref_class && !ref_class->can_be_php_autoloaded) {
     kphp_error(ref_class->file_id == current_function->file_id,
                format("Class %s can be accessed only from file %s, as it is not autoloadable",
