@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfill/tuple-php-polyfill.php';
+require_once 'polyfills.php';
 require_once 'Classes/autoload.php';
 
 function getAll() {

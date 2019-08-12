@@ -1,6 +1,6 @@
 @kphp_should_fail
 <?php
-require_once 'polyfill/tuple-php-polyfill.php';
+require_once 'polyfills.php';
 
 // this fails until we support null as well as false
 

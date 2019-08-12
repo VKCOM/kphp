@@ -1,6 +1,6 @@
 @kphp_should_fail
 <?php
-require_once 'polyfill/tuple-php-polyfill.php';
+require_once 'polyfills.php';
 
 function getT() {
     return true ? false : tuple(1, 'str');

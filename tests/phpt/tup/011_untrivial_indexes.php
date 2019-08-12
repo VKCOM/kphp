@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfill/tuple-php-polyfill.php';
+require_once 'polyfills.php';
 
 define('IDX_0', 0);
 define('IDX_1', 1);
