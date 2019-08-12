@@ -780,7 +780,10 @@ function rpc_tl_pending_queries_count () ::: int;
 function set_tl_mode ($mode ::: int) ::: bool;
 
 /** @kphp-tl-class */
-interface RpcFunction {}
+interface RpcFunction {
+  /** @return string */
+  public function getTLFunctionName();
+}
 
 /** @kphp-tl-class */
 interface RpcFunctionReturnResult {}

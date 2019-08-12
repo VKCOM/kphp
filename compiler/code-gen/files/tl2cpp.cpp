@@ -62,15 +62,58 @@ using vk::tl::FLAG_BARE;
 
 static vk::tl::tl_scheme *tl;
 static vk::tl::combinator *cur_combinator;
+static const std::string VK_name_prefix = "VK\\";
 
 const std::unordered_set<std::string> CUSTOM_IMPL_TYPES   // из tl_builtins.h
   {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "False", "Vector", "Maybe", "Tuple",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
+vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
+  kphp_assert(is_php_class_a_tl_constructor(klass));
+  const auto &tl_scheme = G->get_tl_classes().get_scheme();
+
+  const auto &php_representations = G->get_tl_classes().get_php_classes().all_classes;
+  auto constructor_php_repr_iter = php_representations.find(klass->name.substr(VK_name_prefix.length()));
+  kphp_assert(constructor_php_repr_iter != php_representations.end());
+
+  const std::string &constructor_tl_name = constructor_php_repr_iter->second.get().tl_name;
+  std::string actual_constructor_tl_name;
+  if (constructor_tl_name == "rpcResponseOk") {
+    actual_constructor_tl_name = "_";
+  } else if (constructor_tl_name == "rpcResponseHeader") {
+    actual_constructor_tl_name = "reqResultHeader";
+  } else if (constructor_tl_name == "rpcResponseError") {
+    actual_constructor_tl_name = "reqError";
+  } else {
+    actual_constructor_tl_name = constructor_tl_name;
+  }
+  const auto &constructor_magic_iter = tl_scheme->magics.find(actual_constructor_tl_name);
+  kphp_assert(constructor_magic_iter != tl_scheme->magics.end());
+
+  vk::tl::combinator *res = tl_scheme->get_constructor_by_magic(constructor_magic_iter->second);
+  kphp_assert(res);
+  return res;
+}
+
+vk::tl::type *get_tl_type_of_php_class(ClassPtr klass) {
+  kphp_assert(is_php_class_a_tl_polymorphic_type(klass));
+  const auto &tl_scheme = G->get_tl_classes().get_scheme();
+
+  const auto &tl_type_php_representations = G->get_tl_classes().get_php_classes().types;
+  auto php_repr_iter = tl_type_php_representations.find(klass->name.substr(VK_name_prefix.length()));
+  kphp_assert(php_repr_iter != tl_type_php_representations.end());
+
+  auto tl_magic_iter = tl_scheme->magics.find(php_repr_iter->second.type_representation->tl_name);
+  kphp_assert(tl_magic_iter != tl_scheme->magics.end());
+
+  auto res_tl_type = tl_scheme->get_type_by_magic(tl_magic_iter->second);
+  kphp_assert(res_tl_type);
+  return res_tl_type;
+}
 
 // tl-конструктору 'messages.chatInfoUser' соответствует php class VK\TL\Types\messages\chatInfoUser
 // todo понять, что с зависимыми типами; прокомментить про достижимость
-ClassPtr get_php_class_of_tl_constructor(vk::tl::combinator *c) {
+ClassPtr get_php_class_of_tl_constructor(const vk::tl::combinator *c, const std::string &template_params_suf) {
   std::string php_class_name;
   switch (static_cast<unsigned int>(c->id)) {   // отдельно — 3 конструктора t_ReqResult
     case TL__:
@@ -83,7 +126,7 @@ ClassPtr get_php_class_of_tl_constructor(vk::tl::combinator *c) {
       php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseError";
       break;
     default:
-      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(c->name, '.', '\\');
+      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(c->name, '.', '\\') + template_params_suf;
   }
   return G->get_class(php_class_name);
 }
@@ -122,36 +165,38 @@ bool is_php_class_a_tl_constructor(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos;
 }
 
+bool is_php_class_a_tl_array_item(ClassPtr klass) {
+  return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos &&
+         klass->name.find("_arg") != std::string::npos && klass->name.find("_item") != std::string::npos;
+}
+
+bool is_tl_type_a_php_array(vk::tl::type *t) {
+  return t->id == TL_VECTOR || t->id == TL_TUPLE || t->id == TL_DICTIONARY ||
+         t->id == TL_INT_KEY_DICTIONARY || t->id == TL_LONG_KEY_DICTIONARY;
+}
+
 // классы VK\TL\Types\* — интерфейсы — это полиморфные типы, конструкторы которых классы implements его
 bool is_php_class_a_tl_polymorphic_type(ClassPtr klass) {
   return klass->is_tl_class && klass->is_interface() && klass->name.find("Types\\") != std::string::npos;
 }
-
 // Вспомогательные функции для генерации
-inline namespace {
-vk::tl::type *type_of(const std::unique_ptr<vk::tl::type_expr_base> &type_expr) {
+namespace {
+vk::tl::type *type_of(const std::unique_ptr<vk::tl::type_expr_base> &type_expr, const vk::tl::tl_scheme *scheme = tl) {
   if (auto casted = type_expr->template as<vk::tl::type_expr>()) {
-    return tl->types[casted->type_id].get();
+    auto type_it = scheme->types.find(casted->type_id);
+    if (type_it != scheme->types.end()) {
+      return type_it->second.get();
+    }
   }
   return nullptr;
 }
 
-vk::tl::type *type_of(const vk::tl::type_expr *type) {
-  return tl->types[type->type_id].get();
-}
-
-bool is_type_dependent(vk::tl::combinator *constructor) {
-  for (const auto &arg : constructor->args) {
-    auto arg_type = type_of(arg->type_expr);
-    if (arg_type && arg_type->name == "Type") {
-      return true;
-    }
+vk::tl::type *type_of(const vk::tl::type_expr *type, const vk::tl::tl_scheme *scheme = tl) {
+  auto type_it = scheme->types.find(type->type_id);
+  if (type_it != scheme->types.end()) {
+    return type_it->second.get();
   }
-  return false;
-}
-
-bool is_type_dependent(vk::tl::type *type) {
-  return is_type_dependent(type->constructors[0].get());
+  return nullptr;
 }
 
 bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
@@ -268,6 +313,20 @@ std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg) 
   return format("tl_object->$%s", arg->name.c_str());
 }
 } // namespace
+
+bool is_type_dependent(vk::tl::combinator *constructor, const vk::tl::tl_scheme *scheme) {
+  for (const auto &arg : constructor->args) {
+    auto arg_type = type_of(arg->type_expr, scheme);
+    if (arg_type && arg_type->name == "Type") {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool is_type_dependent(vk::tl::type *type, const vk::tl::tl_scheme *scheme) {
+  return is_type_dependent(type->constructors[0].get(), scheme);
+}
 
 static std::set<std::string> tl_const_vars;
 
@@ -1050,6 +1109,11 @@ struct TlTypeDecl {
       bool typed_php_code_exists = !!G->get_class(G->env().get_tl_namespace_prefix() + "Types\\rpcResponseOk");
       return typed_php_code_exists;
     }
+    if (t->name == "Either") {
+      auto &a = G->get_tl_classes().get_php_classes().types;
+      (void)a;
+      fprintf(stderr, "adsf");
+    }
     std::string php_interface_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(t->name, '.', '\\');
     if (G->get_class(php_interface_name)) {
       return true;
@@ -1251,7 +1315,7 @@ public:
     }
     for (const auto &t : target_types) {
       W << TlTypeDecl(t);
-      if (is_type_dependent(t)) {
+      if (is_type_dependent(t, tl)) {
         W << TlTypeDef(t);
       }
     }
@@ -1259,7 +1323,7 @@ public:
       W << cell;
     }
     for (const auto &t : target_types) {
-      if (is_type_dependent(t)) {
+      if (is_type_dependent(t, tl)) {
         for (const auto &constructor : t->constructors) {
           W << TlConstructorDef(constructor);
         }
@@ -1278,7 +1342,7 @@ public:
     W << cpp_includes;
 
     for (const auto &t : target_types) {
-      if (!is_type_dependent(t)) {
+      if (!is_type_dependent(t, tl)) {
         W << TlTypeDef(t);
         for (const auto &constructor : t->constructors) {
           W << TlConstructorDef(constructor);
