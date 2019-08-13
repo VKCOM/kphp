@@ -210,11 +210,20 @@ std::string FunctionData::get_human_readable_name(const std::string &name) {
 }
 
 string FunctionData::get_human_readable_name() const {
+  std::string result_name;
   if (access_type == access_nonmember) {
-    return name;
+    result_name = name;
+  } else {
+    result_name = is_lambda() ? "anonymous(...)" : get_human_readable_name(name);
   }
 
-  return is_lambda() ? "anonymous(...)" : get_human_readable_name(name);
+  if (instantiation_of_template_function_location.get_line() != -1) {
+    auto &file = instantiation_of_template_function_location.get_file()->file_name;
+    auto line = std::to_string(instantiation_of_template_function_location.line);
+    result_name += "(instantiated at: " + file + ": " + line + ")";
+  }
+
+  return result_name;
 }
 
 void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule) {

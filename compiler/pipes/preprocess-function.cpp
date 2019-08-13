@@ -148,6 +148,7 @@ private:
         invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, &template_of_invoke_method);
 
         instance_of_template_invoke = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
+        instance_of_template_invoke->instantiation_of_template_function_location = call_arg->get_location();
       } else {
         kphp_assert(lambda_class->members.has_any_instance_method());
         instance_of_template_invoke = lambda_class->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
@@ -217,6 +218,7 @@ private:
     call->set_string(name_of_function_instance);
     call->func_id = {};
     if (auto instance = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, func, name_of_function_instance)) {
+      instance->instantiation_of_template_function_location = call->get_location();
       set_func_id(call, instance);
     }
 

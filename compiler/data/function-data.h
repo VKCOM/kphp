@@ -98,6 +98,8 @@ public:
   AccessType access_type = access_nonmember;
   vk::string_view phpdoc_str;
 
+  Location instantiation_of_template_function_location;
+
   enum class body_value {
     empty,
     non_empty,
