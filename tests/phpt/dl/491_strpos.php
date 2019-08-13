@@ -106,3 +106,5 @@
   var_dump(strripos($foo, $foo, -1));
 
   var_dump(strripos($foo, substr ($foo, 0, strlen ($foo) - 1), -1));
+
+  var_dump(strpos("hello world", 1 ? 'o' : false));

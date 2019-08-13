@@ -1517,6 +1517,23 @@ OrFalse<string> f$stristr(const string &haystack, const string &needle, bool bef
   return haystack.substr(pos, haystack.size() - pos);
 }
 
+OrFalse<string> f$strrchr(const string &haystack, const string &needle) {
+  if (needle.empty()) {
+    php_warning("Parameter needle is empty in function strrchr");
+    return false;
+  }
+  if (needle.size() > 1) {
+    php_warning("Parameter needle contains more than one character, only the first is used");
+  }
+  const char needle_char = needle[0];
+  for (size_t pos = haystack.size(); pos != 0; --pos) {
+    if (haystack[pos - 1] == needle_char) {
+      return haystack.substr(pos - 1, haystack.size() - pos + 1);
+    }
+  }
+  return false;
+}
+
 int f$strncmp(const string &lhs, const string &rhs, int len) {
   if (len < 0) {
     return 0;

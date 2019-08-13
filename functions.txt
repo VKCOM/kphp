@@ -495,6 +495,7 @@ function strrpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: OrFals
 function strripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: OrFalse <int>;
 function strstr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: OrFalse <string>;
 function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: OrFalse <string>;
+function strrchr ($haystack ::: string, $needle ::: string) ::: OrFalse <string>;
 function strrev ($str ::: string) ::: string;
 function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;

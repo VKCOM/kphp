@@ -106,6 +106,8 @@ OrFalse<string> f$stristr(const string &haystack, const string &needle, bool bef
 
 inline OrFalse<string> f$stristr(const string &haystack, const var &needle, bool before_needle = false);
 
+OrFalse<string> f$strrchr(const string &haystack, const string &needle);
+
 inline int f$strlen(const string &s);
 
 int f$strncmp(const string &lhs, const string &rhs, int len);
@@ -291,7 +293,7 @@ OrFalse<string> f$stristr(const string &haystack, const var &needle, bool before
 
 template<class T>
 inline OrFalse<int> f$strpos(const string &haystack, const OrFalse<T> &needle, int offset) {
-  return f$strrpos(haystack, needle.val(), offset);
+  return f$strpos(haystack, needle.val(), offset);
 }
 
 OrFalse<int> f$strpos(const string &haystack, const var &needle, int offset) {
