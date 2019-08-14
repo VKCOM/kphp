@@ -85,4 +85,8 @@ function instance_cache_clear() {
   $instance_cache_storage = [];
   return true;
 }
+
+function cp1251($utf8_string) {
+  return vk_utf8_to_win($utf8_string);
+}
 #endif

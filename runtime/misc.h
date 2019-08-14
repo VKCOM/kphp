@@ -75,6 +75,8 @@ string f$var_export(const class_instance<T> &v, bool buffered = false) {
   return f$var_export(string(v.get_class(), (string::size_type)strlen(v.get_class())), buffered);
 }
 
+string f$cp1251(const string &utf8_string);
+
 
 /** For local usage only **/
 int f$system(const string &query);

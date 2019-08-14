@@ -328,6 +328,7 @@ function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
 function md5_file ($s ::: string, $raw_output ::: bool = false) ::: OrFalse <string>;
 function crc32 ($s ::: string) ::: int;
 function crc32_file ($s ::: string) ::: int;
+function cp1251 ($utf8_string ::: string) ::: CONST string;
 
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);
 define('X509_PURPOSE_SSL_SERVER'    ,     2);

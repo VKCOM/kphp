@@ -14,6 +14,7 @@
 #include "runtime/interface.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
+#include "runtime/vkext.h"
 
 string f$uniqid(const string &prefix, bool more_entropy) {
   if (!more_entropy) {
@@ -1531,6 +1532,10 @@ string f$var_export(const var &v, bool buffered) {
     f$ob_clean();
   }
   return string();
+}
+
+string f$cp1251(const string &utf8_string) {
+  return f$vk_utf8_to_win(utf8_string);
 }
 
 
