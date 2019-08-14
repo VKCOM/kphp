@@ -214,7 +214,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
   std::priority_queue<std::pair<long long, File *>> mtime_queue;
   std::unordered_map<File *, std::vector<File *>> reverse_includes;
 
-  std::vector<File *> files = cpp_dir.get_files();
+  const auto &files = cpp_dir.get_files();
 
   auto lib_version_it = std::find_if(files.begin(), files.end(), [](File *file) { return file->name == "_lib_version.h"; });
   kphp_assert(lib_version_it != files.end());
@@ -265,11 +265,9 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
 
 static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, const Index &cpp_dir,
                                      const std::forward_list<Index> &imported_headers) {
-  std::vector<File *> files = cpp_dir.get_files();
   std::unordered_map<File *, long long> dep_mtime = create_dep_mtime(cpp_dir, imported_headers);
-
   std::vector<File *> objs;
-  for (auto cpp_file : files) {
+  for (const auto &cpp_file : cpp_dir.get_files()) {
     if (cpp_file->ext == ".cpp") {
       File *obj_file = obj_dir.insert_file(cpp_file->name_without_ext + ".o");
       obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;

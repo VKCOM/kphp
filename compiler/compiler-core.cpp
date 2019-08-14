@@ -384,32 +384,15 @@ vector<LibPtr> CompilerCore::get_libs() {
 }
 
 void CompilerCore::load_index() {
-  string index_path = env().get_index();
-  if (index_path.empty()) {
-    return;
+  if (!env().get_no_index_file()) {
+    cpp_index.load_from_index_file();
   }
-  FILE *f = fopen(index_path.c_str(), "r");
-  if (f == nullptr) {
-    return;
-  }
-  cpp_index.load(f);
-  fclose(f);
 }
 
 void CompilerCore::save_index() {
-  string index_path = env().get_index();
-  if (index_path.empty()) {
-    return;
+  if (!env().get_no_index_file()) {
+    cpp_index.save_into_index_file();
   }
-  string tmp_index_path = index_path + ".tmp";
-  FILE *f = fopen(tmp_index_path.c_str(), "w");
-  if (f == nullptr) {
-    return;
-  }
-  cpp_index.save(f);
-  fclose(f);
-  int err = system(("mv " + tmp_index_path + " " + index_path).c_str());
-  kphp_error (err == 0, "Failed to rewrite index");
 }
 
 const Index &CompilerCore::get_index() {

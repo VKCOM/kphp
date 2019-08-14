@@ -18,7 +18,7 @@ private:
   string static_lib_name_;
 
   string base_dir_;
-  string index_;
+  bool no_index_file_{false};
   vector<string> includes_;
   string jobs_count_;
   int jobs_count_int_{0};
@@ -77,8 +77,6 @@ public:
   bool get_use_auto_dest() const;
   void set_functions(const string &functions);
   const string &get_functions() const;
-  void set_index(const string &index);
-  const string &get_index() const;
   void add_include(const string &include);
   const vector<string> &get_includes() const;
   void set_jobs_count(const string &jobs_count);
@@ -117,6 +115,8 @@ public:
   string get_tl_schema_file() const;
   void set_no_pch();
   bool get_no_pch() const;
+  void set_no_index_file();
+  bool get_no_index_file() const;
   bool get_stop_on_type_error() const;
   bool get_show_progress() const;
   void add_main_file(const string &main_file);

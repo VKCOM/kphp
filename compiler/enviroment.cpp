@@ -88,14 +88,6 @@ const string &KphpEnviroment::get_functions() const {
   return functions_;
 }
 
-void KphpEnviroment::set_index(const string &index) {
-  index_ = index;
-}
-
-const string &KphpEnviroment::get_index() const {
-  return index_;
-}
-
 void KphpEnviroment::add_include(const string &include) {
   includes_.push_back(include);
 }
@@ -238,6 +230,14 @@ void KphpEnviroment::set_no_pch() {
 
 bool KphpEnviroment::get_no_pch() const {
   return no_pch_;
+}
+
+void KphpEnviroment::set_no_index_file() {
+  no_index_file_ = true;
+}
+
+bool KphpEnviroment::get_no_index_file() const {
+  return no_index_file_;
 }
 
 bool KphpEnviroment::get_stop_on_type_error() const {
@@ -437,8 +437,11 @@ bool KphpEnviroment::init() {
   init_env_var(&base_dir_, "", "");
   as_dir(&base_dir_);
 
-  init_env_var(&index_, "", "");
-  as_file(&index_);
+  if (!no_index_file_) {
+    std::string no_index;
+    init_env_var(&no_index, "KPHP_NO_INDEX_FILE", "0");
+    env_str2bool(&no_index_file_, no_index);
+  }
 
   if (!no_pch_) {
     std::string no_pch;
@@ -562,11 +565,11 @@ void KphpEnviroment::init_dest_dirs() {
 }
 
 void KphpEnviroment::debug() const {
-  std::cerr << "HOME=[" << get_home() << "]\n" <<
+  std::cerr <<
+            "HOME=[" << get_home() << "]\n" <<
             "KPHP_BASE_DIR=[" << get_base_dir() << "]\n" <<
             "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
             "KPHP_FUNCTIONS=[" << get_functions() << "]\n" <<
-            "KPHP_INDEX=[" << get_index() << "]\n" <<
             "KPHP_JOBS_COUNT=[" << get_jobs_count() << "]\n" <<
             "KPHP_MODE=[" << get_mode() << "]\n" <<
             "KPHP_LINK_FILE=[" << get_link_file() << "]\n" <<
@@ -579,6 +582,7 @@ void KphpEnviroment::debug() const {
             "KPHP_TL_SCHEMA=[" << get_tl_schema_file() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
             "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
+            "KPHP_NO_INDEX_FILE=[" << get_no_index_file() << "]\n" <<
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<

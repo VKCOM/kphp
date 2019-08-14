@@ -12,6 +12,8 @@ class CodeGenerator;
 class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
   std::vector<const TypeData *> forkable_types;
   std::vector<const TypeData *> waitable_types;
+  std::once_flag dest_dir_synced;
+
   void prepare_generate_class(ClassPtr klass);
   void prepare_generate_function(FunctionPtr func);
   std::string get_subdir(const std::string &base);

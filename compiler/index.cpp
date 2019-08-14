@@ -5,6 +5,7 @@
 #include <linux/limits.h>
 #include <sys/stat.h>
 
+#include "common/containers/final_action.h"
 #include "common/wrappers/mkdir_recursive.h"
 #include "drinkless/dl-utils-lite.h"
 
@@ -19,6 +20,10 @@ bool is_dir(const string &path) {
   return S_ISDIR (s.st_mode);
 }
 
+int64_t get_mtime(const struct stat &sb) {
+  return sb.st_mtime * 1000000000ll + sb.st_mtim.tv_nsec;
+}
+
 //Index:
 //  holds some information about all files in given directory (and all its subdirs)
 //  can be synchronized with file system
@@ -27,27 +32,9 @@ bool is_dir(const string &path) {
 //
 //  for a start, files will be indexed by their names
 //               hashes will be used in future
-File::File() :
-  mtime(0),
-  crc64(-1),
-  crc64_with_comments(-1),
-  on_disk(false),
-  needed(false),
-  target(nullptr),
-  compile_with_debug_info_flag(true),
-  is_changed(false) {
-}
 
 File::File(const string &path) :
-  path(path),
-  mtime(0),
-  crc64(-1),
-  crc64_with_comments(-1),
-  on_disk(false),
-  needed(false),
-  target(nullptr),
-  compile_with_debug_info_flag(true),
-  is_changed(false) {
+  path(path) {
 }
 
 void File::set_mtime(long long mtime_value) {
@@ -74,7 +61,7 @@ long long File::upd_mtime() {
   }
   on_disk = true;
   //TODO: check if it is file
-  mtime = buf.st_mtime * 1000000000ll + buf.st_mtim.tv_nsec;
+  mtime = get_mtime(buf);
   //fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
   return 1;
 }
@@ -102,6 +89,7 @@ void Index::set_dir(const string &new_dir) {
   if (dir[dir.size() - 1] != '/') {
     dir += "/";
   }
+  index_file = dir + "index_file";
 }
 
 const string &Index::get_dir() const {
@@ -115,9 +103,13 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
   if (typeflag == FTW_D) {
     //skip
   } else if (typeflag == FTW_F) {
+    // ignore index file
+    if (current_index->index_file == fpath) {
+      return 0;
+    }
     File *f = current_index->insert_file(fpath);
     f->on_disk = true;
-    long long new_mtime = sb->st_mtime * 1000000000ll + sb->st_mtim.tv_nsec;
+    long long new_mtime = get_mtime(*sb);
     //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
     if (f->mtime != new_mtime) {
       f->crc64 = -1;
@@ -139,21 +131,20 @@ void Index::sync_with_dir(const string &new_dir) {
   current_index = this;
   int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
   dl_passert (err == 0, format("ftw [%s] failed", dir.c_str()));
-  vector<string> to_del;
-  for (const auto &path_and_file : files) {
-    if (!path_and_file.second->on_disk) {
-      to_del.push_back(path_and_file.first);
+
+  for (auto it = files.begin(); it != files.end();) {
+    if (it->second->on_disk) {
+      ++it;
+    } else {
+      delete it->second;
+      it = files.erase(it);
     }
-  }
-  for (const auto &path : to_del) {
-    remove_file(path);
   }
 }
 
 void Index::del_extra_files() {
-  vector<string> to_del;
-  for (const auto &path_and_file : files) {
-    File *file = path_and_file.second;
+  for (auto it = files.begin(); it != files.end();) {
+    File *file = it->second;
     if (!file->needed) {
       if (file->on_disk) {
         if (G->env().get_verbosity() > 0) {
@@ -166,20 +157,12 @@ void Index::del_extra_files() {
         }
       }
 
-      file->on_disk = false;
-      to_del.push_back(path_and_file.first);
+      delete file;
+      it = files.erase(it);
+    } else {
+      ++it;
     }
   }
-  for (const auto &path : to_del) {
-    remove_file(path);
-  }
-}
-
-void Index::remove_file(const string &path) {
-  auto it = files.find(path);
-  kphp_assert (it != files.end());
-  delete it->second;
-  files.erase(it);
 }
 
 void Index::create_subdir(const string &subdir) {
@@ -236,41 +219,75 @@ File *Index::insert_file(std::string path) {
   return f;
 }
 
-vector<File *> Index::get_files() const {
-  std::vector<File *> res;
-  res.reserve(files.size());
-
-  for (const auto &kv: files) {
-    res.emplace_back(kv.second);
+// stupid text version. to be improved
+void Index::save_into_index_file() {
+  if (index_file.empty()) {
+    return;
+  }
+  std::string index_file_tmp_name = index_file + "XXXXXX";
+  const int tmp_index_file_fd = mkstemp(&index_file_tmp_name[0]);
+  if (tmp_index_file_fd == -1) {
+    kphp_warning(format("Can't create tmp file for index file '%s': %s", index_file.c_str(), strerror(errno)));
+    return;
   }
 
-  return res;
-}
+  std::unique_ptr<FILE, int (*)(FILE *)> f{fdopen(tmp_index_file_fd, "w"), fclose};
+  kphp_assert(f);
+  auto file_deleter = vk::finally([&index_file_tmp_name]() { unlink(index_file_tmp_name.c_str()); });
 
-//stupid text version. to be improved
-void Index::save(FILE *f) {
-  dl_pcheck (fprintf(f, "%d\n", (int)files.size()));
-  for (const auto &path_and_file : files) {
-    File *file = path_and_file.second;
-    std::string path = file->path.substr(dir.length());
-    dl_pcheck (fprintf(f, "%s %llu %llu\n", path.c_str(),
-                       file->crc64, file->crc64_with_comments));
+  if (fprintf(f.get(), "%zu\n", files.size()) <= 0) {
+    kphp_warning(format("Can't write the number of files into tmp index file '%s'", index_file_tmp_name.c_str()));
+    return;
+  }
+
+  for (const auto &file : get_files()) {
+    const std::string path = file->path.substr(dir.length());
+    if (fprintf(f.get(), "%s %llu %llu\n", path.c_str(), file->crc64, file->crc64_with_comments) <= 0) {
+      kphp_warning (format("Can't write crc32 into tmp index file '%s'", index_file_tmp_name.c_str()));
+      return;
+    }
+  }
+
+  f.reset();
+  if (rename(index_file_tmp_name.c_str(), index_file.c_str()) == -1) {
+    kphp_warning(format("Can't rename '%s' into '%s': %s", index_file_tmp_name.c_str(), index_file.c_str(), strerror(errno)));
   }
 }
 
-void Index::load(FILE *f) {
-  int n;
-  int err = fscanf(f, "%d\n", &n);
-  dl_passert (err == 1, "Failed to load index");
-  for (int i = 0; i < n; i++) {
-    char tmp[501] = {0};
-    unsigned long long crc64;
-    unsigned long long crc64_with_comments;
-    int err = fscanf(f, "%500s %llu %llu", tmp, &crc64, &crc64_with_comments);
-    dl_passert (err == 3, "Failed to load index");
-    File *file = insert_file(tmp);
-    file->crc64 = crc64;
-    file->crc64_with_comments = crc64_with_comments;
+void Index::load_from_index_file() {
+  if (index_file.empty()) {
+    return;
+  }
+  std::unique_ptr<FILE, int (*)(FILE *)> f{fopen(index_file.c_str(), "r"), fclose};
+  if (!f) {
+    return;
+  }
+  struct stat statbuf;
+  if (fstat(fileno(f.get()), &statbuf) == -1) {
+    kphp_warning(format("Can't get stat from index file '%s': %s", index_file.c_str(), strerror(errno)));
+    return;
+  }
+
+  const uint64_t file_index_mtime = get_mtime(statbuf);
+  size_t files = 0;
+  if (fscanf(f.get(), "%zu\n", &files) != 1) {
+    kphp_warning(format("Can't read the number of files from index file '%s:1'", index_file.c_str()));
+    return;
+  }
+
+  char tmp[501] = {0};
+  unsigned long long crc64 = -1;
+  unsigned long long crc64_with_comments = -1;
+  for (size_t i = 0; i < files; i++) {
+    if (fscanf(f.get(), "%500s %llu %llu", tmp, &crc64, &crc64_with_comments) != 3) {
+      kphp_warning(format("Can't read crc32 from index file '%s:%zu'", index_file.c_str(), i + 2));
+      return;
+    }
+    File *file = get_file(tmp);
+    if (file && file->mtime < file_index_mtime) {
+      file->crc64 = crc64;
+      file->crc64_with_comments = crc64_with_comments;
+    }
   }
 }
 

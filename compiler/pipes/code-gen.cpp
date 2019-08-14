@@ -49,6 +49,11 @@ void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &os) {
       forkable_types.push_back(tinf::get_type(function, -1));
     }
   }
+
+  std::call_once(dest_dir_synced, [] {
+    G->init_dest_dir();
+    G->load_index();
+  });
   SyncPipeF<FunctionPtr, WriterData>::execute(function, os);
 }
 
@@ -68,9 +73,6 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   //TODO: delete W_ptr
   CodeGenerator *W_ptr = new CodeGenerator(os);
   CodeGenerator &W = *W_ptr;
-  
-  G->init_dest_dir();
-  G->load_index();
 
   vector<SrcFilePtr> main_files = G->get_main_files();
   std::unordered_set<FunctionPtr> main_functions(main_files.size());

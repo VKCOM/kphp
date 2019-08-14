@@ -318,18 +318,15 @@ bool compiler_execute(KphpEnviroment *env) {
   const int verbosity = G->env().get_verbosity();
 
   if (verbosity > 0) {
-    auto src_files = G->get_index().get_files();
-    src_files.erase(
-      std::remove_if(src_files.begin(), src_files.end(),
-                     [](File *file) {
-                       return !file->is_changed;
-                     }),
-      src_files.end());
-    if (!src_files.empty()) {
-      std::cerr << "\n";
+    bool got_changes = false;
+    for (const auto &file: G->get_index().get_files()) {
+      if (file->is_changed) {
+        std::cerr << "\nFile [" << file->path << "] changed";
+        got_changes = true;
+      }
     }
-    for (auto file: src_files) {
-      std::cerr << "File [" <<  file->path << "] changed\n";
+    if (got_changes) {
+      std::cerr << "\n";
     }
   }
 
