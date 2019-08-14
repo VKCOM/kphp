@@ -1,5 +1,6 @@
 #pragma once
 
+#include "runtime/allocator.h"
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
 #include "runtime/storage.h"
@@ -20,7 +21,7 @@ extern const char *last_wait_error;
       return false;\
 
 
-class Resumable {
+class Resumable : public ManagedThroughDlAllocator {
 protected:
   static Storage *input_;
   static Storage *output_;
@@ -29,9 +30,6 @@ protected:
   virtual bool run() = 0;
 
 public:
-  void *operator new(size_t size);
-  void operator delete(void *ptr, size_t size);
-
   Resumable();
 
   virtual ~Resumable();
@@ -272,3 +270,4 @@ template<typename T>
 T f$wait_result_multi(const array<int> &resumable_ids) {
   return start_resumable<T>(new wait_result_multi_resumable<T>(resumable_ids));
 }
+

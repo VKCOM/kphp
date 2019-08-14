@@ -75,8 +75,8 @@ public:
   template<Operation Op>
   void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location);
 
-  bool is_not_empty_class() const {
-    return members.has_any_instance_var() || is_builtin() || !derived_classes.empty() || !implements.empty() || parent_class || is_tl_class;
+  bool is_empty_class() const {
+    return !members.has_any_instance_var() && !is_builtin() && derived_classes.empty() && implements.empty() && !parent_class && !is_tl_class;
   }
 
   bool is_class() const { return class_type == ClassType::klass; }

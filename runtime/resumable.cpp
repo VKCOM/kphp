@@ -17,14 +17,6 @@ void debug_print_resumables();
 Storage *Resumable::input_;
 Storage *Resumable::output_;
 
-void *Resumable::operator new(size_t size) {
-  return dl::allocate(size);
-}
-
-void Resumable::operator delete(void *ptr, size_t size) {
-  dl::deallocate(ptr, size);
-}
-
 Resumable::Resumable() :
   pos__(nullptr) {
 }

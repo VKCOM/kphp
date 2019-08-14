@@ -238,14 +238,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   if (ClassPtr base = klass->parent_class) {
     auto final_keyword = klass->derived_classes.empty() ? " final" : "";
     W << final_keyword << " : public " << base->src_name;
-  } else if (klass->is_not_empty_class()) {
-    W << " : public refcountable_php_classes<" << klass->src_name;
-    if (interface) {
-      W << ", " << interface->src_name;
-    }
-    W << "> ";
-  } else {
+  } else if (klass->is_empty_class()) {
     W << " final : public refcountable_empty_php_classes ";
+  } else if (interface || !klass->derived_classes.empty()) {
+    auto base_name = interface ? interface->src_name.c_str() : "abstract_refcountable_php_interface";
+    W << ": public refcountable_polymorphic_php_classes<" << base_name << ">";
+  } else {
+    W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
   W << BEGIN;
 

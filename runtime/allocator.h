@@ -44,3 +44,25 @@ void *malloc_replace(size_t x);
 void free_replace(void *p);
 
 } // namespace dl
+
+class ManagedThroughDlAllocator {
+public:
+  void *operator new(size_t size) {
+    return dl::allocate(size);
+  }
+
+  void *operator new(size_t, void *ptr) {
+    return ptr;
+  }
+
+  void operator delete(void *ptr, size_t size) {
+    dl::deallocate(ptr, size);
+  }
+
+  void *operator new[](size_t count) = delete;
+  void operator delete[](void *ptr, size_t sz) = delete;
+  void operator delete[](void *ptr) = delete;
+
+protected:
+  ~ManagedThroughDlAllocator() = default;
+};

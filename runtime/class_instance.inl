@@ -26,9 +26,7 @@ template<class T>
 class_instance<T> class_instance<T>::alloc() {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
-  auto new_t = static_cast<T *>(dl::allocate(sizeof(T)));
-  new(new_t) T();
-  new (&o) vk::intrusive_ptr<T>(new_t);
+  new (&o) vk::intrusive_ptr<T>(new T{});
   return *this;
 }
 

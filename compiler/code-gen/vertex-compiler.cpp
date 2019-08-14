@@ -422,7 +422,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   if (!args.empty() && root->type() == op_constructor_call && (*first_arg)->type() == op_false) {
     const TypeData *tp = tinf::get_type(root);
     kphp_assert(tp->ptype() == tp_Class);
-    auto alloc_function = tp->class_type()->is_not_empty_class() ? "().alloc()" : "().empty_alloc()";
+    auto alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
     W << TypeName(tp) << alloc_function;
     if (++first_arg != args.end()) {
       W << ", ";

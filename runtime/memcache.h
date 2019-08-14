@@ -24,7 +24,7 @@ const int MEMCACHE_COMPRESSED = 2;
 class C$Memcache : public abstract_refcountable_php_interface {
 };
 
-class C$McMemcache final : public refcountable_php_classes<C$McMemcache, C$Memcache> {
+class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache> {
 public:
   class host {
   public:
@@ -40,7 +40,7 @@ public:
   array<host> hosts{array_size{1, 0, true}};
 };
 
-class C$RpcMemcache final : public refcountable_php_classes<C$RpcMemcache, C$Memcache> {
+class C$RpcMemcache final : public refcountable_polymorphic_php_classes<C$Memcache> {
 public:
   class host {
   public:
