@@ -243,9 +243,13 @@ name_to_classes_methods_t collect_and_mark_methods_with_the_same_name(ClassPtr c
     }
 
     auto &methods_with_the_same_name_in_derived = name_to_methods[method.local_name()];
-    for (auto &derived_m : methods_with_the_same_name_in_derived) {
+
+    if (!methods_with_the_same_name_in_derived.empty()) {
       method.function->is_virtual_method = true;
       method.function->is_overridden_method = false;
+    }
+
+    for (auto &derived_m : methods_with_the_same_name_in_derived) {
       derived_m->is_overridden_method = true;
     }
 
@@ -294,6 +298,9 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_klass, DataStream<Function
     for (auto m : methods_with_the_same_name) {
       if (m->is_overridden_method) {
         generate_empty_virtual_method_in_parents(m, os);
+      }
+      if (m->is_virtual_method && !m->root->cmd()->empty()) {
+        m->move_virtual_to_self_method();
       }
     }
   }

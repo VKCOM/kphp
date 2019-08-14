@@ -142,11 +142,12 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
   VertexAdaptor<op_seq> body_of_virtual_method;
 
   if (!klass->is_interface()) {
-    if (!virtual_function->root->cmd()->empty()) {
-      auto self_method = virtual_function->move_virtual_to_self_method();
-      G->register_and_require_function(self_method, os, true);
+    if (auto self_method = klass->get_instance_method(virtual_function->get_name_of_self_method())) {
+      if (klass == self_method->function->class_id) {
+        G->register_and_require_function(self_method->function, os, true);
+      }
       auto this_var = ClassData::gen_vertex_this({});
-      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, self_method)));
+      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, self_method->function)));
 
       kphp_assert(virtual_function->root->cmd()->empty());
     } else {

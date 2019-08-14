@@ -146,7 +146,7 @@ public:
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
-  FunctionPtr move_virtual_to_self_method();
+  void move_virtual_to_self_method();
   std::string get_name_of_self_method() const;
 
   int get_min_argn();
