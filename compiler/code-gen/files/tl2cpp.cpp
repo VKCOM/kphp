@@ -155,8 +155,7 @@ bool is_type_dependent(vk::tl::type *type) {
   return is_type_dependent(type->constructors[0].get());
 }
 
-template<typename T>
-bool is_magic_processing_needed(const T &type_expr) {
+bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
   const auto &type = tl->types[type_expr->type_id];
   return type->constructors_num == 1 && !(type_expr->flags & FLAG_BARE);
 }
@@ -522,8 +521,7 @@ std::string get_storer_call(const std::unique_ptr<vk::tl::arg> &arg, const std::
   }
 }
 
-template<typename T>
-std::string get_magic_storing(const T &arg_type_expr) {
+std::string get_magic_storing(const vk::tl::type_expr_base *arg_type_expr) {
   if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
     if (is_magic_processing_needed(arg_as_type_expr)) {
       return format("f$store_int(0x%08x);", static_cast<unsigned int>(type_of(arg_as_type_expr)->id));
@@ -534,8 +532,7 @@ std::string get_magic_storing(const T &arg_type_expr) {
   return "";
 }
 
-template<typename T>
-std::string get_magic_fetching(const T &arg_type_expr, const char *error_msg) {
+std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, const char *error_msg) {
   // Здесь нельзя использовать format, так как в аргументы этой функции иногда уже приходит результат format
   char buf[1000];
   if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
@@ -570,7 +567,7 @@ struct TypeExprStore {
     typed_mode(typed_mode) {}
 
   void compile(CodeGenerator &W) const {
-    std::string magic_storing = get_magic_storing(arg->type_expr);
+    std::string magic_storing = get_magic_storing(arg->type_expr.get());
     if (!magic_storing.empty()) {
       W << magic_storing << NL;
     }
@@ -683,7 +680,7 @@ struct CombinatorStore {
         // Запоминаем филд маску для последующего использования
         // Может быть либо локальной переменной либо полем структуры
         if (!typed_mode) {
-          W << format("%s%s = f$intval(tl_arr_get(tl_object, %s, %d, %d));",
+          W << format("%s%s = tl_arr_get(tl_object, %s, %d, %d).to_int();",
                       var_num_access,
                       combinator->get_var_num_arg(arg->var_num)->name.c_str(),
                       register_tl_const_str(arg->name).c_str(),
@@ -718,7 +715,7 @@ struct TypeExprFetch {
     typed_mode(typed_mode) {}
 
   inline void compile(CodeGenerator &W) const {
-    const auto magic_fetching = get_magic_fetching(arg->type_expr,
+    const auto magic_fetching = get_magic_fetching(arg->type_expr.get(),
                                                    format("Incorrect magic of arg: %s\\nin constructor: %s", arg->name.c_str(), cur_combinator->name.c_str()));
     if (!magic_fetching.empty()) {
       W << magic_fetching << NL;
@@ -779,7 +776,7 @@ struct CombinatorFetch {
       // Но при фетчинге функции нам всегда нужен мэджик оригинального типа, даже если он флатится.
       // Для этого было введено поле original_result_constructor_id у функций, в котором хранится мэджик реального типа, если результат флатится, и 0 иначе.
       if (!combinator->original_result_constructor_id) {
-        const auto &magic_fetching = get_magic_fetching(combinator->result,
+        const auto &magic_fetching = get_magic_fetching(combinator->result.get(),
                                                         format("Incorrect magic in result of function: %s", cur_combinator->name.c_str()));
         if (!magic_fetching.empty()) {
           W << magic_fetching << NL;
@@ -820,8 +817,8 @@ struct CombinatorFetch {
       if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
         // запоминаем филд маску для дальнейшего использования
         if (!typed_mode) {
-          W << combinator->get_var_num_arg(arg->var_num)->name << " = f$intval(result.get_value(" << register_tl_const_str(arg->name) << ", "
-            << hash_tl_const_str(arg->name) << "));" << NL;
+          W << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << register_tl_const_str(arg->name) << ", "
+            << hash_tl_const_str(arg->name) << ").to_int();" << NL;
         } else {
           W << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg) << ";" << NL;
         }
@@ -1413,9 +1410,16 @@ std::pair<std::string, std::string> get_full_type_expr_str(
       return {"tl_exclamation_fetch_wrapper", expr};
     }
   }
-  auto as_type_array = type_expr->as<vk::tl::type_array>();
-  if (as_type_array) {
-    std::string type = format("tl_array<%s>", Cell::type_array_to_cell_name[as_type_array].c_str());
+  if (auto as_type_array = type_expr->as<vk::tl::type_array>()) {
+    std::string inner_magic = "0";
+    if (as_type_array->args.size() == 1) {
+      if (auto casted = as_type_array->args[0]->type_expr->as<vk::tl::type_expr>()) {
+        if (is_magic_processing_needed(casted)) {
+          inner_magic = format("0x%08x", static_cast<unsigned int>(type_of(casted)->id));
+        }
+      }
+    }
+    std::string type = format("tl_array<%s, %s>", Cell::type_array_to_cell_name[as_type_array].c_str(), inner_magic.c_str());
     return {type, type + format("(%s, %s())",
                                 get_full_value(as_type_array->multiplicity.get(), var_num_access).c_str(),
                                 Cell::type_array_to_cell_name[as_type_array].c_str())};

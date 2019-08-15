@@ -617,7 +617,7 @@ struct t_Tuple {
   }
 };
 
-template<typename CellT>
+template<typename CellT, unsigned int inner_magic>
 struct tl_array {
   int size;
   CellT cell;
@@ -637,6 +637,7 @@ struct tl_array {
         CurrentProcessingQuery::get().raise_storing_error("Array[%d] not set", i);
         return;
       }
+      store_magic_if_not_bare(inner_magic);
       cell.store(v.get_value(i));
     }
   }
@@ -645,6 +646,7 @@ struct tl_array {
     array<var> result(array_size(size, 0, true));
     CHECK_EXCEPTION(return result);
     for (int i = 0; i < size; ++i) {
+      fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");
       result.push_back(cell.fetch());
       CHECK_EXCEPTION(return result);
     }
@@ -659,6 +661,7 @@ struct tl_array {
         CurrentProcessingQuery::get().raise_storing_error("Array[%d] not set", i);
         return;
       }
+      store_magic_if_not_bare(inner_magic);
       cell.store(v.get_value(i));
     }
   }
@@ -672,6 +675,7 @@ struct tl_array {
     v.reserve(size, 0, true);
     for (int i = 0; i < size; ++i) {
       typename CellT::PhpType elem;
+      fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");
       cell.fetch_to(elem);
       v.push_back(std::move(elem));
       CHECK_EXCEPTION(return);
