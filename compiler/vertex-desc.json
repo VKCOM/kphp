@@ -257,10 +257,6 @@
     "base_name": "meta_op_type_rule"
   },
   {
-    "name": "op_self",
-    "base_name": "meta_op_base"
-  },
-  {
     "name": "op_empty",
     "base_name": "meta_op_base",
     "props": {

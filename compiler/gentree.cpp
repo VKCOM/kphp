@@ -1134,10 +1134,6 @@ VertexPtr GenTree::get_type_rule_() {
       res = get_type_rule_func();
       kphp_error(res->size() == 1, format("Allowed only one arg_ref for 'instance<>', got %d", res->size()));
       kphp_error(res->back().try_as<op_type_expr_arg_ref>(), "Allowed only arg_ref for 'instance<>'");
-    } else if (cur->str_val == "self") {
-      //TODO: why no next_cur here?
-      auto self = VertexAdaptor<op_self>::create();
-      res = self;
     } else if (cur->str_val[0] == '\\' || ('A' <= cur->str_val[0] && cur->str_val[0] <= 'Z')) {
       auto rule = create_type_help_class_vertex(cur->str_val);
       kphp_error(rule->class_ptr, format("Unknown class %s in type rule", string(cur->str_val).c_str()));
