@@ -1138,12 +1138,6 @@ VertexPtr GenTree::get_type_rule_() {
       //TODO: why no next_cur here?
       auto self = VertexAdaptor<op_self>::create();
       res = self;
-    } else if (cur->str_val == "CONST") {
-      next_cur();
-      res = get_type_rule_();
-      if (res) {
-        res->extra_type = op_ex_rule_const;
-      }
     } else if (cur->str_val[0] == '\\' || ('A' <= cur->str_val[0] && cur->str_val[0] <= 'Z')) {
       auto rule = create_type_help_class_vertex(cur->str_val);
       kphp_error(rule->class_ptr, format("Unknown class %s in type rule", string(cur->str_val).c_str()));

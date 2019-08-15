@@ -114,6 +114,14 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         break;
       }
 
+      case php_doc_tag::kphp_pure_function: {
+        kphp_error(f->is_extern(), "@kphp-pure-function is supported only for built-in functions");
+        if (f->root->type_rule) {
+          f->root->type_rule.as<meta_op_type_rule>()->rule()->extra_type = op_ex_rule_const;
+        }
+        break;
+      }
+
       case php_doc_tag::kphp_lib_export: {
         f->kphp_lib_export = true;
         infer_type |= (infer_mask::check | infer_mask::hint);
