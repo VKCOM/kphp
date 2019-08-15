@@ -26,7 +26,7 @@ private:
 public:
   int id;
   tinf::ExprNode tinf_node;
-  VertexPtr type_rule;
+  VertexAdaptor<meta_op_type_rule> type_rule;
   Location location;
 
   OperationExtra extra_type : 4;

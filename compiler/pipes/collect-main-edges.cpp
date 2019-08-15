@@ -201,7 +201,7 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
   for (int i = 0; i < callback_args.size(); ++i) {
     auto callback_ith_arg = callback_args[i].as<op_func_param>();
 
-    if (VertexPtr type_rule = callback_ith_arg->type_rule) {
+    if (auto type_rule = callback_ith_arg->type_rule) {
       auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
       fake_func_call->type_rule = type_rule;
       fake_func_call->func_id = call_function;
@@ -240,8 +240,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     VertexPtr rule = VertexAdaptor<op_index>::create(ref);
     rule = VertexAdaptor<op_type_expr_type>::create(rule);
     rule->type_help = tp_future_queue;
-    rule = VertexAdaptor<op_common_type_rule>::create(rule);
-    fake_func_call->type_rule = rule;
+    fake_func_call->type_rule = VertexAdaptor<op_common_type_rule>::create(rule);
     fake_func_call->func_id = call->func_id;
 
     create_set(val, fake_func_call);

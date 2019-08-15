@@ -524,7 +524,7 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
 AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr &out_class) {
   if (f->is_extern()) {
     if (f->root->type_rule) {
-      auto rule_meta = f->root->type_rule.as<meta_op_type_rule>()->rule();
+      auto rule_meta = f->root->type_rule->rule();
       if (auto class_type_rule = rule_meta.try_as<op_type_expr_class>()) {
         out_class = class_type_rule->class_ptr;
         return assum_instance;

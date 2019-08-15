@@ -831,7 +831,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   }
 
   PrimitiveType tp = tp_Unknown;
-  VertexPtr type_rule;
+  VertexAdaptor<meta_op_type_rule> type_rule;
   if (!from_callback && cur->type() == tok_triple_colon) {
     tp = get_func_param_type_help();    // запишется в param->type_help, и при вызове будет неявный cast
   } else {
@@ -880,7 +880,7 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
     set_location(params, st_location);
     CE (expect(tok_clpar, "')'"));
 
-    VertexPtr type_rule = get_type_rule();
+    VertexAdaptor<meta_op_type_rule> type_rule = get_type_rule();
 
     VertexPtr def_val = get_def_value();
     kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
@@ -1173,19 +1173,19 @@ VertexPtr GenTree::get_type_rule_() {
   return res;
 }
 
-VertexPtr GenTree::get_type_rule() {
-  VertexPtr res, first;
+VertexAdaptor<meta_op_type_rule> GenTree::get_type_rule() {
+  VertexAdaptor<meta_op_type_rule> res;
 
   TokenType tp = cur->type();
   if (vk::any_of_equal(tp, tok_triple_colon, tok_triple_eq, tok_triple_lt, tok_triple_gt)) {
     AutoLocation rule_location(this);
     next_cur();
-    first = get_type_rule_();
+    VertexPtr first = get_type_rule_();
     CE(!kphp_error(first, "Cannot parse type rule"));
 
     VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], first);
     set_location(rule, rule_location);
-    res = rule;
+    res = rule.as<meta_op_type_rule>();
   }
   return res;
 }
@@ -1970,7 +1970,6 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
   VertexPtr res, first_node, second_node, third_node, forth_node, tmp_node;
   TokenType type = cur->type();
 
-  VertexPtr type_rule;
   is_top_of_the_function_ &= vk::any_of_equal(type, tok_global, tok_opbrc);
 
   switch (type) {
@@ -2177,8 +2176,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
           return res;
         }
       } else {
-        type_rule = get_type_rule();
-        res->type_rule = type_rule;
+        res->type_rule = get_type_rule();
         if (res->type() == op_set) {
           res.as<op_set>()->phpdoc_str = phpdoc_str;
         }

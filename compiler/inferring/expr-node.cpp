@@ -218,14 +218,14 @@ void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexAdaptor<op_func_call>
 void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr function = call->func_id;
   if (call->type_rule) {
-    apply_type_rule(call->type_rule.as<meta_op_type_rule>()->rule(), call);
+    apply_type_rule(call->type_rule->rule(), call);
     if (call->type_rule->type() == op_common_type_rule) {
       return;
     }
   }
 
   if (function->root->type_rule) {
-    apply_type_rule(function->root->type_rule.as<meta_op_type_rule>()->rule(), call);
+    apply_type_rule(function->root->type_rule->rule(), call);
   } else {
     set_lca(function, -1);
   }
