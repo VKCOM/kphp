@@ -691,7 +691,13 @@ AssumType infer_from_instance_prop(FunctionPtr f,
     return assum_not_instance;
   }
 
-  return calc_assumption_for_class_var(lhs_class, prop->str_val, out_class);
+  AssumType res_assum;
+  do {
+    res_assum = calc_assumption_for_class_var(lhs_class, prop->str_val, out_class);
+    lhs_class = lhs_class->parent_class;
+  } while (vk::any_of_equal(res_assum, assum_unknown, assum_not_instance) && lhs_class);
+
+  return res_assum;
 }
 
 /*
