@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common/smart_ptrs/intrusive_ptr.h"
-#include "common/type_traits/traits.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
@@ -34,7 +33,7 @@ public:
 
   class_instance(bool) {}
 
-  template<class Derived, class = vk::enable_if_t<std::is_base_of<T, Derived>{}>>
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
   class_instance(const class_instance<Derived> &d)
     : o(d.o) {
   }
@@ -46,7 +45,7 @@ public:
   template<class T2>
   class_instance(T2) = delete;
 
-  template<class Derived, class = vk::enable_if_t<std::is_base_of<T, Derived>{}>>
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
   class_instance& operator=(const class_instance<Derived> &d) {
     o = d.o;
     return *this;
@@ -80,12 +79,12 @@ public:
     return is_a_helper<D, T>();
   }
 
-  template<class D, class CurType, class Derived = vk::enable_if_t<std::is_polymorphic<CurType>{}, D>, class dummy = void>
+  template<class D, class CurType, class Derived = std::enable_if_t<std::is_polymorphic<CurType>{}, D>, class dummy = void>
   bool is_a_helper() const {
     return dynamic_cast<Derived *>(o.get());
   }
 
-  template<class D, class CurType, class Derived = vk::enable_if_t<!std::is_polymorphic<CurType>{}, D>>
+  template<class D, class CurType, class Derived = std::enable_if_t<!std::is_polymorphic<CurType>{}, D>>
   bool is_a_helper() const {
     return o && std::is_same<T, Derived>{};
   }

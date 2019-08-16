@@ -57,13 +57,13 @@ private:
   }
 
   template<size_t Index = 0, class ...Args>
-  vk::enable_if_t<Index != sizeof...(Args)> process_tuple(const std::tuple<Args...> &value, InstanceToArrayVisitor &tuple_visitor) {
+  std::enable_if_t<Index != sizeof...(Args)> process_tuple(const std::tuple<Args...> &value, InstanceToArrayVisitor &tuple_visitor) {
     tuple_visitor.process_impl("", std::get<Index>(value));
     process_tuple<Index + 1>(value, tuple_visitor);
   }
 
   template<size_t Index = 0, class ...Args>
-  vk::enable_if_t<Index == sizeof...(Args)> process_tuple(const std::tuple<Args...> &, InstanceToArrayVisitor &/*tuple_processor*/) {
+  std::enable_if_t<Index == sizeof...(Args)> process_tuple(const std::tuple<Args...> &, InstanceToArrayVisitor &/*tuple_processor*/) {
   }
 
   template<class T>

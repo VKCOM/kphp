@@ -265,7 +265,7 @@ void *operator new[](std::size_t size, const std::nothrow_t &) noexcept {
   return dl::malloc_replace(size);
 }
 
-void operator delete(void *mem) throw() {
+void operator delete(void *mem) noexcept {
   return dl::free_replace(mem);
 }
 
@@ -273,10 +273,20 @@ void operator delete(void *mem, const std::nothrow_t &) noexcept {
   return dl::free_replace(mem);
 }
 
-void operator delete[](void *mem) throw() {
+void operator delete[](void *mem) noexcept {
   return dl::free_replace(mem);
 }
 
 void operator delete[](void *mem, const std::nothrow_t &) noexcept {
   return dl::free_replace(mem);
 }
+
+#if __cplusplus >= 201402L
+void operator delete(void *mem, size_t) noexcept {
+  return dl::free_replace(mem);
+}
+
+void operator delete[](void *mem, size_t) noexcept {
+  return dl::free_replace(mem);
+}
+#endif

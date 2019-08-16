@@ -14,7 +14,6 @@
 
 #include "runtime/kphp_core.h"
 #include "common/mixin/not_copyable.h"
-#include "common/type_traits/traits.h"
 
 namespace ic_impl_ {
 
@@ -83,13 +82,13 @@ protected:
 
 private:
   template<size_t Index = 0, typename ...Args>
-  vk::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) {
+  std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) {
     bool res = child_.process(std::get<Index>(value));
     return process_tuple<Index + 1>(value) && res;
   }
 
   template<size_t Index = 0, typename ...Args>
-  vk::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...> &) {
+  std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...> &) {
     return true;
   }
 
@@ -214,7 +213,7 @@ public:
   bool process(var &) { return true; }
 
   template<typename T>
-  vk::enable_if_t<is_class_instance_inside<T>::value, bool> process(array<T> &arr) {
+  std::enable_if_t<is_class_instance_inside<T>::value, bool> process(array<T> &arr) {
     // begin mutates array implicitly, therefore call it separately
     auto first = arr.begin();
     return Basic::process_range(first, arr.end());

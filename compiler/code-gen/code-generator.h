@@ -1,10 +1,8 @@
 #pragma once
 #include <cinttypes>
+#include <memory>
 #include <string>
 #include <vector>
-
-#include "common/smart_ptrs/make_unique.h"
-#include "common/type_traits/traits.h"
 
 #include "compiler/code-gen/writer-data.h"
 #include "compiler/code-gen/writer.h"
@@ -43,7 +41,7 @@ public:
 
   void create_writer() {
     assert (writer == nullptr);
-    writer = vk::make_unique<Writer>(os);
+    writer = std::make_unique<Writer>(os);
   }
 
   void clear_writer() {
@@ -68,7 +66,7 @@ CodeGenerator &operator<<(CodeGenerator &c, const T &value) {
 }
 
 template<class T>
-vk::enable_if_t<std::is_constructible<vk::string_view, T>::value, CodeGenerator&> operator<<(CodeGenerator &c, const T &value) {
+std::enable_if_t<std::is_constructible<vk::string_view, T>::value, CodeGenerator&> operator<<(CodeGenerator &c, const T &value) {
   c.get_writer().append(value);
   return c;
 }

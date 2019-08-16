@@ -437,10 +437,10 @@ template<class T>
 inline bool equals(const class_instance<T> &lhs, const class_instance<T> &rhs);
 
 template<class T1, class T2>
-vk::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> equals(const class_instance<T1> &lhs, const class_instance<T2> &rhs);
+std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> equals(const class_instance<T1> &lhs, const class_instance<T2> &rhs);
 
 template<class T1, class T2>
-vk::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &);
+std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &);
 
 template<class T>
 inline bool equals(const var &lhs, const class_instance<T> &rhs);

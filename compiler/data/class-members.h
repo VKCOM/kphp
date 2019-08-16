@@ -14,7 +14,6 @@
 #include <string>
 
 #include "common/type_traits/function_traits.h"
-#include "common/type_traits/traits.h"
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"

@@ -1,7 +1,6 @@
 #include "runtime/instance_cache.h"
 
 #include "runtime/allocator.h"
-#include "common/smart_ptrs/make_unique.h"
 
 #include <chrono>
 #include <forward_list>
@@ -111,9 +110,9 @@ private:
   InstanceCache() {
     refresh();
     std::lock_guard<AllocReplaceSection> lock(alloc_replace_);
-    storage_ = vk::make_unique<Storage_>();
-    garbage_ = vk::make_unique<Garbage_>();
-    expiration_trace_ = vk::make_unique<ExpirationTrace_>();
+    storage_ = std::make_unique<Storage_>();
+    garbage_ = std::make_unique<Garbage_>();
+    expiration_trace_ = std::make_unique<ExpirationTrace_>();
   }
 
 public:

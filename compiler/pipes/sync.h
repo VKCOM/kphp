@@ -1,7 +1,5 @@
 #pragma once
 
-#include "common/type_traits/traits.h"
-
 #include "compiler/stage.h"
 #include "compiler/threading/data-stream.h"
 

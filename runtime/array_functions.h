@@ -642,7 +642,7 @@ array<T> f$array_filter(const array<T> &a, const T1 &callback) {
 }
 
 
-template<class T, class CallbackT, class R = typename std::result_of<vk::decay_t<CallbackT>(T)>::type>
+template<class T, class CallbackT, class R = typename std::result_of<std::decay_t<CallbackT>(T)>::type>
 array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
   array<R> result(a.size());
   for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
