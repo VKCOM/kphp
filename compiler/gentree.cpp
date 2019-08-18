@@ -927,12 +927,21 @@ VertexAdaptor<op_foreach_param> GenTree::get_foreach_param() {
     CE (!kphp_error(x, ""));
   }
 
-  auto empty = VertexAdaptor<op_empty>::create();
+  VertexPtr temp_var;
+  if (x->ref_flag) {
+    temp_var = VertexAdaptor<op_empty>::create();
+  } else {
+    auto temp = VertexAdaptor<op_var>::create();
+    temp->str_val = gen_unique_name("tmp_expr", cur_function);
+    temp->extra_type = op_ex_var_superlocal;
+    temp_var = temp;
+  }
+
   VertexAdaptor<op_foreach_param> res;
   if (key) {
-    res = VertexAdaptor<op_foreach_param>::create(xs, x, empty, key);
+    res = VertexAdaptor<op_foreach_param>::create(xs, x, temp_var, key);
   } else {
-    res = VertexAdaptor<op_foreach_param>::create(xs, x, empty);
+    res = VertexAdaptor<op_foreach_param>::create(xs, x, temp_var);
   }
   set_location(res, location);
   return res;
@@ -1439,16 +1448,18 @@ VertexPtr GenTree::get_switch() {
 
   CE (expect(tok_opbrc, "'{'"));
 
-  // they will be replaced by vars later.
-  // It can't be done now, gen_name is not working here.
-  auto temp_ver1 = VertexAdaptor<op_empty>::create();
-  switch_next.push_back(temp_ver1);
-  auto temp_ver2 = VertexAdaptor<op_empty>::create();
-  switch_next.push_back(temp_ver2);
-  auto temp_ver3 = VertexAdaptor<op_empty>::create();
-  switch_next.push_back(temp_ver3);
-  auto temp_ver4 = VertexAdaptor<op_empty>::create();
-  switch_next.push_back(temp_ver4);
+  auto create_var = [&](const string& name_prefix, PrimitiveType tp) {
+    auto v = VertexAdaptor<op_var>::create();
+    v->str_val = gen_unique_name(name_prefix, cur_function);
+    v->extra_type = op_ex_var_superlocal;
+    v->type_help = tp;
+    return v;
+  };
+
+  switch_next.push_back(create_var("switch_var", tp_var));
+  switch_next.push_back(create_var("switch_flag", tp_bool));
+  switch_next.push_back(create_var("ss", tp_string));
+  switch_next.push_back(create_var("ss_hash", tp_int));
 
   while (cur->type() != tok_clbrc) {
     skip_phpdoc_tokens();

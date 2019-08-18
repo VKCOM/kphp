@@ -74,7 +74,7 @@ std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   return {tmp, static_cast<size_t>(l)};
 }
 
-string gen_unique_name(string prefix, bool flag) {
+string gen_unique_name(string prefix, FunctionPtr function) {
   for (char &c : prefix) {
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
     } else {
@@ -82,10 +82,10 @@ string gen_unique_name(string prefix, bool flag) {
     }
   }
   prefix += "$u";
-  FunctionPtr function = stage::get_function();
-  if (!function || flag) {
+  if (!function) {
     return register_unique_name(prefix);
   }
+  kphp_assert(function);
   auto h = vk::std_hash(function->name);
   auto ph = vk::std_hash(prefix);
   auto &i = function->name_gen_map[ph];
@@ -93,6 +93,10 @@ string gen_unique_name(string prefix, bool flag) {
   sprintf(tmp, "%zx_%d", h, i);
   i++;
   return register_unique_name(prefix + tmp);
+}
+
+string gen_unique_name(string prefix) {
+  return gen_unique_name(prefix, stage::get_function());
 }
 
 string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
