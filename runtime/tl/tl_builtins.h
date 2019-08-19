@@ -310,7 +310,6 @@ struct t_Vector {
   using PhpElemT = typename T::PhpType;
 
   void typed_store(const PhpType &v) {
-    f$store_int(TL_VECTOR);
     int n = v.count();
     f$store_int(n);
     for (int i = 0; i < n; ++i) {

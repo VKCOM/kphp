@@ -15,8 +15,6 @@
 /*
  * Что осталось для типизированного rpc
  * todo: multiexclamation optimization + проверить, что с vkext совпадает
- * todo: зависимые типы, сведение шаблонов через using -- (смотреть коммент в джире к KPHP-402)
- *       (вероятно, потребует модификации get_php_class_of_tl_constructor)
  */
 
 /* При генерации выделены 3 основные сущности, у каждой из которых есть методы store и fetch:
@@ -68,8 +66,10 @@ const std::unordered_set<std::string> CUSTOM_IMPL_TYPES   // из tl_builtins.h
   {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "False", "Vector", "Maybe", "Tuple",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
+// найти по php-классу соответствующий конструктор в tl-схеме
+// например, class VK\TL\Types\messages\chatInfo => вернёт messages.chatInfo из схемы
+// это может быть и специализация конструктора зависимого типа: Types\vectorTotal__int вернёт tl-ный vectorTotal
 vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
-  kphp_assert(is_php_class_a_tl_constructor(klass));
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
 
   const auto &php_representations = G->get_tl_classes().get_php_classes().all_classes;
@@ -95,12 +95,15 @@ vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
   return res;
 }
 
-vk::tl::type *get_tl_type_of_php_class(ClassPtr klass) {
-  kphp_assert(is_php_class_a_tl_polymorphic_type(klass));
+// найти по php-интерфейсу соответствующий tl-ный ПОЛИМОРФНЫЙ тип
+// поскольку если тип не полиморфный, то вместо типов конструкторы (например, class messages\chatInfo)
+// то эта функция только для полиморфных типов (например, interface memcache\Value)
+vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
+  kphp_assert(is_php_class_a_tl_polymorphic_type(interface));
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
 
   const auto &tl_type_php_representations = G->get_tl_classes().get_php_classes().types;
-  auto php_repr_iter = tl_type_php_representations.find(klass->name.substr(VK_name_prefix.length()));
+  auto php_repr_iter = tl_type_php_representations.find(interface->name.substr(VK_name_prefix.length()));
   kphp_assert(php_repr_iter != tl_type_php_representations.end());
 
   auto tl_magic_iter = tl_scheme->magics.find(php_repr_iter->second.type_representation->tl_name);
@@ -111,23 +114,45 @@ vk::tl::type *get_tl_type_of_php_class(ClassPtr klass) {
   return res_tl_type;
 }
 
-// tl-конструктору 'messages.chatInfoUser' соответствует php class VK\TL\Types\messages\chatInfoUser
-// todo понять, что с зависимыми типами; прокомментить про достижимость
-ClassPtr get_php_class_of_tl_constructor(const vk::tl::combinator *c, const std::string &template_params_suf) {
-  std::string php_class_name;
-  switch (static_cast<unsigned int>(c->id)) {   // отдельно — 3 конструктора t_ReqResult
-    case TL__:
-      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseOk";
-      break;
-    case TL_REQ_RESULT_HEADER:
-      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseHeader";
-      break;
-    case TL_REQ_ERROR:
-      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\rpcResponseError";
-      break;
-    default:
-      php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(c->name, '.', '\\') + template_params_suf;
+// если конструктор от зависимого типа, например vectorTotal {t:Type} ..., то одному tl-конструктору соответствуют
+// много php-специализаций: vectorTotal__int и др.
+// данная функция получает конкретную специализацию такого конструктора с raw-суффиксом имени php-класса (e.g. "__int")
+ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tl::combinator *c, const std::string &specialization_suffix) {
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(c->name, '.', '\\') + specialization_suffix;
+  return G->get_class(php_class_name);
+}
+
+std::vector<ClassPtr> _get_all_php_classes_by_tl_magic(int magic, bool need_only_interfaces) {
+  std::vector<ClassPtr> classes;
+  auto range = G->get_tl_classes().get_php_classes().magic_to_classes.equal_range(magic);
+  for (auto it = range.first; it != range.second; ++it) {
+    const vk::tl::PhpClassRepresentation &php_representation = it->second.get();
+    ClassPtr klass = G->get_class(php_representation.get_full_php_class_name());
+    if (php_representation.is_interface == need_only_interfaces && klass) {
+      classes.emplace_back(klass);
+    }
   }
+  return classes;
+}
+
+// одному tl-конструктор соответствует либо один php-класс (в случае простых конструкторов, например likes.item)
+// либо несколько, если это конструктор с зависимыми типами, и появляются vectorTotal__int и другие специализации
+std::vector<ClassPtr> get_all_php_classes_of_tl_constructor(const vk::tl::combinator *c) {
+  return _get_all_php_classes_by_tl_magic(c->id, false);
+}
+
+// одному tl-типу соответствует либо один класс/интерфейс (в случае простых типов, например likes.Item)
+// либо несколько, если это тип с зависимыми типами, и появлятся Either_string_Vertex и другие специализации
+std::vector<ClassPtr> get_all_php_classes_of_tl_type(const vk::tl::type *t) {
+  return _get_all_php_classes_by_tl_magic(t->id, t->is_polymorphic());
+}
+
+// если тип с зависимыми типами, например VectorTotal t, то одному tl-типу соответствуют
+// много php-специализаций vectorTotal__int и т.п. (неполиморфные типы сращиваются с конструкторами в один класс как обычно)
+ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const std::string &specialization_suffix) {
+  kphp_assert(is_type_dependent(t, tl));
+  std::string lookup_name = t->is_polymorphic() ? t->name : t->constructors[0]->name;
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(lookup_name, '.', '\\') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
@@ -165,6 +190,9 @@ bool is_php_class_a_tl_constructor(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos;
 }
 
+// если в tl-схеме объявлены сложные [массивы], то для типизации для каждого массива есть отдельный php-класс
+// пример: isearch.typeInfo n:# data:n*[type:int probability:double] = isearch.TypeInfo
+// из него выделился class isearch\typeInfo_arg2_item { int type, double probability }
 bool is_php_class_a_tl_array_item(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos &&
          klass->name.find("_arg") != std::string::npos && klass->name.find("_item") != std::string::npos;
@@ -281,16 +309,21 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
       break;
     default:
       std::string name = type_name.empty() ? c->name : type_name;
-      std::replace(name.begin(), name.end(), '.', '$');
-      std::vector<std::string> template_params;
-      for (const auto &arg : c->args) {
-        if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
-          kphp_assert(arg->flags & FLAG_OPT_VAR);
-          template_params.emplace_back(format("typename T%d::PhpType", arg->var_num));
+      if (c->is_constructor() && is_type_dependent(c, tl)) {
+        std::vector<std::string> template_params;
+        for (const auto &arg : c->args) {
+          if (arg->is_type(tl)) {
+            kphp_assert(arg->flags & FLAG_OPT_VAR);
+            template_params.emplace_back(format("typename T%d::PhpType", arg->var_num));
+          }
         }
+        std::string template_suf = template_params.empty() ? "" : "<" + vk::join(template_params, ", ") + ">";
+        std::replace(name.begin(), name.end(), '.', '_');
+        res = "typename " + name + "__" + template_suf + "::type";
+      } else {
+        std::replace(name.begin(), name.end(), '.', '$');
+        res = G->env().get_tl_classname_prefix() + (c->is_constructor() ? "Types$" : "Functions$") + name;
       }
-      std::string template_suf = template_params.empty() ? "" : "<" + vk::join(template_params, ", ") + ">";
-      res = G->env().get_tl_classname_prefix() + (c->is_constructor() ? "Types$" : "Functions$") + name + template_suf;
   }
   if (wrap_to_class_instance) {
     return format("class_instance<%s>", res.c_str());
@@ -314,7 +347,8 @@ std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg) 
 }
 } // namespace
 
-bool is_type_dependent(vk::tl::combinator *constructor, const vk::tl::tl_scheme *scheme) {
+bool is_type_dependent(const vk::tl::combinator *constructor, const vk::tl::tl_scheme *scheme) {
+  kphp_assert(constructor->is_constructor());
   for (const auto &arg : constructor->args) {
     auto arg_type = type_of(arg->type_expr, scheme);
     if (arg_type && arg_type->name == "Type") {
@@ -324,7 +358,7 @@ bool is_type_dependent(vk::tl::combinator *constructor, const vk::tl::tl_scheme 
   return false;
 }
 
-bool is_type_dependent(vk::tl::type *type, const vk::tl::tl_scheme *scheme) {
+bool is_type_dependent(const vk::tl::type *type, const vk::tl::tl_scheme *scheme) {
   return is_type_dependent(type->constructors[0].get(), scheme);
 }
 
@@ -392,16 +426,18 @@ struct TypeStore {
     if (typed_mode) {
       bool first = true;
       for (const auto &c : type->constructors) {
-        ClassPtr php_class = get_php_class_of_tl_constructor(c.get());
-        if (!php_class) {
-          W << "// for " << c->name << " not found: " << get_php_runtime_type(c.get()) << NL;
-          continue;
+        // todo: Предполагать что для шаблонных такого нет. Потом сделаем чтобы вообще не было, дописав в пхп код дамми методы.
+        if (!is_type_dependent(type.get(), tl)) {
+          ClassPtr php_class = get_php_class_of_tl_constructor_specialization(c.get(), "");
+          if (!php_class) {
+            W << "// for " << c->name << " not found: " << get_php_runtime_type(c.get()) << NL;
+            continue;
+          }
         }
-        std::string cpp_class = get_php_runtime_type(c.get());
-
         W << (first ? "if " : " else if ");
         first = false;
 
+        std::string cpp_class = get_php_runtime_type(c.get());
         W << "(f$is_a<" << cpp_class << ">(tl_object)) " << BEGIN;
         if (c.get() != default_constructor) {
           W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
@@ -516,7 +552,8 @@ struct TypeFetch {
       if (c.get() == default_constructor) {
         continue;
       }
-      if (typed_mode && !get_php_class_of_tl_constructor(c.get())) {
+      if (typed_mode && !is_type_dependent(type.get(), tl) && !get_php_class_of_tl_constructor_specialization(c.get(), "")) {
+        //todo: Скоро сделаем так, что, если тип используется, то используются и все его конструкторы, догенерив пхп код
         continue;
       }
       
@@ -736,7 +773,7 @@ struct CombinatorStore {
             << "return {};" << NL
             << END << NL;
           W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
-            << get_tl_object_field_access(arg) << ".get().store();" << NL;
+            << get_tl_object_field_access(arg) << ".get()->store();" << NL;
         }
       } else if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
         // Запоминаем филд маску для последующего использования
@@ -1011,11 +1048,65 @@ private:
 int Cell::cells_cnt = 0;
 std::unordered_map<vk::tl::type_array *, std::string> Cell::type_array_to_cell_name = std::unordered_map<vk::tl::type_array *, std::string>();
 
+struct TlTemplatePhpTypeHelpers {
+  explicit TlTemplatePhpTypeHelpers(vk::tl::type *type) :
+    type(type), constructor(nullptr) {}
+
+  explicit TlTemplatePhpTypeHelpers(vk::tl::combinator *constructor) :
+    type(nullptr), constructor(constructor) {}
+
+  inline void compile(CodeGenerator &W) const {
+    int cnt = 0;
+    std::vector<std::string> type_var_names;
+    vk::tl::combinator *target_constructor = type ? type->constructors[0].get() : constructor;
+    for (const auto &arg : target_constructor->args) {
+      if (arg->is_type(tl)) {
+        ++cnt;
+        type_var_names.emplace_back(arg->name);
+      }
+    }
+    const std::string &struct_name = cpp_tl_struct_name("", type ? type->name : constructor->name, "__");
+    W << "template <" << vk::join(std::vector<std::string>(cnt, "typename"), ", ") << ">" << NL;
+    W << "struct " << struct_name << " " << BEGIN
+      << "using type = tl_undefined_php_type;" << NL
+      << END << ";" << NL << NL;
+    auto php_classes = type ? get_all_php_classes_of_tl_type(type) : get_all_php_classes_of_tl_constructor(constructor);
+    for (const auto &cur_php_class_template_instantiation : php_classes) {
+      const std::string &cur_instantiation_name = cur_php_class_template_instantiation->src_name;
+      std::vector<std::string> template_specialization_params = type_var_names;
+      std::string type_var_access;
+      if (type) {
+        type_var_access = cur_instantiation_name;
+      } else {
+        kphp_assert(constructor);
+        if (tl->get_type_by_magic(constructor->type_id)->name == "ReqResult") {
+          type_var_access = "C$VK$TL$RpcResponse";
+        } else {
+          int pos = cur_instantiation_name.find("__");
+          kphp_assert(pos != std::string::npos);
+          ClassPtr tl_type_php_class = get_php_class_of_tl_type_specialization(tl->get_type_by_magic(constructor->type_id), cur_instantiation_name.substr(pos));
+          kphp_assert(tl_type_php_class);
+          type_var_access = tl_type_php_class->src_name;
+        }
+      }
+      std::transform(template_specialization_params.begin(), template_specialization_params.end(), template_specialization_params.begin(),
+                     [&](const std::string &s) { return type_var_access + "::" += s; });
+      W << "template <>" << NL;
+      W << "struct " << struct_name << "<" << vk::join(template_specialization_params, ", ") << "> " << BEGIN;
+      W << "using type = " << cur_instantiation_name << ";" << NL;
+      W << END << ";" << NL << NL;
+    }
+  }
+private:
+  vk::tl::type *type;
+  vk::tl::combinator *constructor;
+};
+
 struct TlConstructorDecl {
   const std::unique_ptr<vk::tl::combinator> &constructor;
 
   static bool does_tl_constructor_need_typed_fetch_store(vk::tl::combinator *c) {
-    return !!get_php_class_of_tl_constructor(c);
+    return !get_all_php_classes_of_tl_constructor(c).empty();
   }
 
   static std::string get_optional_args_for_decl(const std::unique_ptr<vk::tl::combinator> &c) {
@@ -1037,6 +1128,10 @@ struct TlConstructorDecl {
 
   inline void compile(CodeGenerator &W) const {
     const bool needs_typed_fetch_store = TlConstructorDecl::does_tl_constructor_need_typed_fetch_store(constructor.get());
+
+    if (needs_typed_fetch_store && is_type_dependent(constructor.get(), tl)) {
+      W << TlTemplatePhpTypeHelpers(constructor.get());
+    }
 
     std::string template_decl = get_template_declaration(constructor);
     if (!template_decl.empty()) {
@@ -1109,18 +1204,7 @@ struct TlTypeDecl {
       bool typed_php_code_exists = !!G->get_class(G->env().get_tl_namespace_prefix() + "Types\\rpcResponseOk");
       return typed_php_code_exists;
     }
-    if (t->name == "Either") {
-      auto &a = G->get_tl_classes().get_php_classes().types;
-      (void)a;
-      fprintf(stderr, "adsf");
-    }
-    std::string php_interface_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(t->name, '.', '\\');
-    if (G->get_class(php_interface_name)) {
-      return true;
-    }
-    const size_t idx_last_slash = php_interface_name.rfind('\\');
-    php_interface_name[idx_last_slash + 1] = tolower(php_interface_name[idx_last_slash + 1]);
-    return !!G->get_class(php_interface_name);
+    return !get_all_php_classes_of_tl_type(t).empty();
   }
 
   explicit TlTypeDecl(vk::tl::type *t) :
@@ -1129,7 +1213,10 @@ struct TlTypeDecl {
   inline void compile(CodeGenerator &W) const {
     W << "/* ~~~~~~~~~ " << t->name << " ~~~~~~~~~ */\n" << NL;
     const bool needs_typed_fetch_store = TlTypeDecl::does_tl_type_need_typed_fetch_store(t);
-
+    if (needs_typed_fetch_store && is_type_dependent(t, tl) && t->is_polymorphic()) {
+      // Если тип не полиморфный, то пользуемся type helper'ами конструктора, которые точно должны быть сгенерены и доступны
+      W << TlTemplatePhpTypeHelpers(t);
+    }
     std::string struct_name = cpp_tl_struct_name("t_", t->name);
     const auto &constructor = t->constructors[0];
     std::string template_decl = get_template_declaration(constructor);
@@ -1378,7 +1465,8 @@ public:
 
     for (const auto &c : t->constructors) {
       if (TlConstructorDecl::does_tl_constructor_need_typed_fetch_store(c.get())) {
-        h_includes.add_class_include(get_php_class_of_tl_constructor(c.get()));
+        auto php_classes = get_all_php_classes_of_tl_constructor(c.get());
+        std::for_each(php_classes.begin(), php_classes.end(), [&](ClassPtr klass){ h_includes.add_class_include(klass); });
       }
     }
   }

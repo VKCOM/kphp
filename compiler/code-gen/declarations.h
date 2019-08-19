@@ -52,15 +52,15 @@ private:
   void declare_txt_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
 };
 
-struct TlTemplateParamTypes {
-  TlTemplateParamTypes() = default;
-  explicit TlTemplateParamTypes(vk::tl::type *tl_type, const std::string &php_tl_class_name);
+struct TlDependentTypesUsings {
+  TlDependentTypesUsings() = default;
+  explicit TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name);
 
   void compile(CodeGenerator &W) const;
   void compile_dependencies(CodeGenerator &W);
 private:
   struct InnerParamTypeAccess {
-    bool drop_class_instance;
+    bool drop_class_instance{false};
     std::string inner_type_name;
 
     InnerParamTypeAccess() = default;
@@ -71,16 +71,16 @@ private:
     std::vector<InnerParamTypeAccess> path_to_inner_param;
 
     DeducingInfo() = default;
-    DeducingInfo(std::string deduced_type, vector<TlTemplateParamTypes::InnerParamTypeAccess> path);
+    DeducingInfo(std::string deduced_type, vector<TlDependentTypesUsings::InnerParamTypeAccess> path);
   };
 
   std::map<std::string, DeducingInfo> deduced_params;
   IncludesCollector dependencies;
-  vk::tl::type *tl_type;
-  std::string template_params_suf;
+  vk::tl::type *tl_type{};
+  std::string specialization_suffix;
   // Deducing context
-  vk::tl::combinator *cur_tl_constructor;
-  vk::tl::arg *cur_tl_arg;
+  vk::tl::combinator *cur_tl_constructor{};
+  vk::tl::arg *cur_tl_arg{};
 
   void deduce_params_from_type_tree(vk::tl::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack);
 };
@@ -89,6 +89,8 @@ struct InterfaceDeclaration {
   InterfacePtr interface;
   explicit InterfaceDeclaration(InterfacePtr interface);
   void compile(CodeGenerator &W) const;
+private:
+  std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
 };
 
 struct ClassDeclaration {
@@ -101,6 +103,7 @@ private:
   static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor);
   void compile_includes(CodeGenerator &W) const;
   void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
+  std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
 };
 
 struct ClassForwardDeclaration {
