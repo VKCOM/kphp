@@ -138,7 +138,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType
   function->access_type = access_type;
   function->class_id = klass;
   function->context_class = klass;
-  function->is_virtual_method = klass->is_interface();
+  function->is_virtual_method |= klass->is_interface();
 
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
     klass->construct_function = function;

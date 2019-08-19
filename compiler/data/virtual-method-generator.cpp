@@ -150,6 +150,9 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
       body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, self_method->function)));
 
       kphp_assert(virtual_function->root->cmd()->empty());
+    } else if (virtual_function->local_name() == ClassData::NAME_OF_VIRT_CLONE) {
+      body_of_virtual_method = virtual_function->root->cmd();
+      virtual_function->root->cmd_ref() = VertexPtr{};
     } else {
       auto params = virtual_function->get_params_as_vector_of_vars(1);
 

@@ -32,7 +32,9 @@ public:
       auto assum = infer_class_of_expr(stage::get_function(), clone_root, klass);
       kphp_error_act(assum == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
       kphp_error_act(!klass->is_builtin(), format("`%s` class is forbidden for clonning", klass->name.c_str()), return clone_root);
-      if (klass->is_interface()) {
+      bool has_derived = !klass->derived_classes.empty();
+      bool clone_is_inside_virt_clone = current_function->local_name() == ClassData::NAME_OF_VIRT_CLONE;
+      if (klass->is_interface() || (has_derived && !clone_is_inside_virt_clone)) {
         /**
          * clone of interfaces are replaced with call of virtual method
          * which automatic calls clone of derived class

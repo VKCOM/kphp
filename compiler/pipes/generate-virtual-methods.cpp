@@ -1,5 +1,6 @@
 #include "compiler/pipes/generate-virtual-methods.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/virtual-method-generator.h"

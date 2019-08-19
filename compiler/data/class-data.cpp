@@ -96,7 +96,7 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
  * @param with_body when it's true, generates only empty body it's needed for interfaces
  * @return generated method
  */
-FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_body /** =true */) {
+FunctionPtr ClassData::add_virt_clone() {
   std::string clone_func_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
 
   std::vector<VertexAdaptor<meta_op_func_param>> params;
@@ -104,7 +104,7 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
   auto param_list = VertexAdaptor<op_func_param_list>::create(params);
 
   VertexAdaptor<op_seq> body;
-  if (with_body) {
+  if (!is_interface()) {
     auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
     auto return_clone_this = VertexAdaptor<op_return>::create(clone_this);
     body = VertexAdaptor<op_seq>::create(return_clone_this);
@@ -118,10 +118,10 @@ FunctionPtr ClassData::add_virt_clone(DataStream<FunctionPtr> &os, bool with_bod
   virt_clone_func_ptr->update_location_in_body();
   virt_clone_func_ptr->assumptions_inited_return = 2;
   virt_clone_func_ptr->assumption_for_return = Assumption{AssumType::assum_instance, {}, ClassPtr{this}};
-  virt_clone_func_ptr->is_inline = with_body;
+  virt_clone_func_ptr->is_inline = true;
+  virt_clone_func_ptr->is_virtual_method = !derived_classes.empty();
 
   members.add_instance_method(virt_clone_func_ptr, AccessType::access_public);
-  G->register_and_require_function(virt_clone_func_ptr, os, true);
 
   return virt_clone_func_ptr;
 }

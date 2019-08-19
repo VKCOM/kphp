@@ -13,9 +13,11 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/vertex-meta_op_base.h"
 
-class FunctionData : private vk::not_copyable {
+class FunctionData {
   // внешний код должен использовать FunctionData::create_function()
   FunctionData() = default;
+  FunctionData& operator=(const FunctionData &other) = default;
+  FunctionData(const FunctionData &other) = default;
 
 private:
   int min_argn = -1;
@@ -147,6 +149,7 @@ public:
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
   void move_virtual_to_self_method();
+  static std::string get_name_of_self_method(const std::string &name);
   std::string get_name_of_self_method() const;
 
   int get_min_argn();

@@ -214,9 +214,6 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
     });
   } else {
     child_class->implements.emplace_back(interface_class);
-    if (!child_class->is_builtin()) {
-      child_class->add_virt_clone(function_stream);
-    }
   }
 
   AutoLocker<Lockable *> locker(&(*interface_class));
@@ -352,10 +349,6 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
   if (!klass->phpdoc_str.empty()) {
     analyze_class_phpdoc(klass);
   }
-
-  if (klass->is_interface() && klass->str_dependents.empty() && !klass->is_builtin()) {
-    klass->add_virt_clone(function_stream, false);
-  }
 }
 
 inline void SortAndInheritClassesF::analyze_class_phpdoc(ClassPtr klass) {
@@ -394,6 +387,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 
 void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   DataStream<FunctionPtr> generated_empty_methods_in_parent{true};
+  std::vector<ClassPtr> polymorphic_classes;
   for (auto c : G->get_classes()) {
     auto node = ht.at(vk::std_hash(c->name));
     kphp_error(node->data.done, format("class `%s` has unresolved dependencies", c->name.c_str()));
@@ -416,10 +410,19 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       });
     }
 
+    if (!c->is_builtin() && c->is_polymorphic_class()) {
+      polymorphic_classes.emplace_back(c);
+    }
+
     // For stable code generation of interface method body
     if (c->is_interface()) {
       std::sort(c->derived_classes.begin(), c->derived_classes.end());
     }
+  }
+
+  for (auto c : polymorphic_classes) {
+      auto virt_clone = c->add_virt_clone();
+      G->register_and_require_function(virt_clone, generated_empty_methods_in_parent, true);
   }
 
   for (auto fun : generated_empty_methods_in_parent.flush()) {

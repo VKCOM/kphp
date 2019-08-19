@@ -326,6 +326,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
 
     static std::string allowed_magic_names[]{ClassData::NAME_OF_CONSTRUCT,
                                              ClassData::NAME_OF_CLONE,
+                                             FunctionData::get_name_of_self_method(ClassData::NAME_OF_CLONE),
                                              ClassData::NAME_OF_VIRT_CLONE,
                                              ClassData::NAME_OF_INVOKE_METHOD};
 

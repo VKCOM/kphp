@@ -66,7 +66,7 @@ public:
   static VertexAdaptor<op_var> gen_vertex_this(Location location);
   VertexAdaptor<op_var> gen_vertex_this_with_type_rule(Location location);
   FunctionPtr gen_holder_function(const std::string &name);
-  FunctionPtr add_virt_clone(DataStream<FunctionPtr> &os, bool with_body = true);
+  FunctionPtr add_virt_clone();
 
   void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
@@ -75,8 +75,12 @@ public:
   template<Operation Op>
   void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location);
 
+  bool is_polymorphic_class() const {
+    return !derived_classes.empty() || !implements.empty() || parent_class;
+  }
+
   bool is_empty_class() const {
-    return !members.has_any_instance_var() && !is_builtin() && derived_classes.empty() && implements.empty() && !parent_class && !is_tl_class;
+    return !members.has_any_instance_var() && !is_builtin() && !is_tl_class && !is_polymorphic_class();
   }
 
   bool is_class() const { return class_type == ClassType::klass; }

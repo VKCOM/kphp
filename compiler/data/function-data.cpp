@@ -30,23 +30,14 @@ FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_fun
 }
 
 FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr other, VertexAdaptor<op_function> new_root) {
-  auto res = create_function(new_name, new_root, other->type);
+  FunctionPtr res(new FunctionData(*other));
   res->root = new_root;
   res->is_required = false;
-  res->file_id = other->file_id;
-  res->class_id = other->class_id;
-  res->has_variadic_param = other->has_variadic_param;
-  res->tinf_state = other->tinf_state;
-  res->phpdoc_str = other->phpdoc_str;
-  res->min_argn = other->min_argn;
-  res->context_class = other->context_class;
-  res->access_type = other->access_type;
-  res->body_seq = other->body_seq;
-  res->is_template = other->is_template;
-  res->is_inline = other->is_inline;
-  res->function_in_which_lambda_was_created = other->function_in_which_lambda_was_created;
-  res->infer_hints = other->infer_hints;
+  res->name = new_name;
   res->update_location_in_body();
+  res->name_gen_map = {};
+
+  new_root->func_id = res;
 
   return res;
 }
@@ -139,13 +130,18 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 void FunctionData::move_virtual_to_self_method() {
   auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
   auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
+  self_function->is_virtual_method = false;
   class_id->members.safe_add_instance_method(self_function, access_type);
 
   root->cmd_ref() = VertexAdaptor<op_seq>::create();
 }
 
+std::string FunctionData::get_name_of_self_method(const std::string &name) {
+  return name + "$self";
+}
+
 std::string FunctionData::get_name_of_self_method() const {
-  return local_name() + "$self";
+  return get_name_of_self_method(local_name());
 }
 
 int FunctionData::get_min_argn() {
