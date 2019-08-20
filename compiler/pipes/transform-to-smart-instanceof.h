@@ -27,7 +27,6 @@ private:
   static VertexAdaptor<op_instanceof> get_instanceof_from_if(VertexAdaptor<op_if> if_vertex);
   bool fill_derived_classes(VertexPtr instance_var, VertexPtr name_of_derived_vertex, NewNameAndLeftDerived &state);
   void visit_cmd(VisitVertex<TransformToSmartInstanceof> &visit, VertexAdaptor<op_if> if_vertex, VertexPtr name_of_derived_vertex, VertexPtr &cmd);
-  static bool is_good_var_for_instanceof(VertexPtr v);
 
 private:
   std::map<std::string, NewNameAndLeftDerived> variable_state;

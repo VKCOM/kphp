@@ -14,6 +14,8 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
   auto condition = get_instanceof_from_if(if_vertex);
   if (!condition) {
     return false;
+  } if (condition->lhs()->type() != op_var) {
+    return false;
   }
 
   auto name_of_derived_vertex = condition->rhs();
@@ -65,12 +67,8 @@ void TransformToSmartInstanceof::visit_cmd(VisitVertex<TransformToSmartInstanceo
   std::for_each(std::next(commands.begin()), commands.end(), visit);
 }
 
-bool TransformToSmartInstanceof::is_good_var_for_instanceof(VertexPtr v) {
-  return vk::any_of_equal(v->type(), op_var);
-}
-
 VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {
-  if (!is_good_var_for_instanceof(v) || variable_state.empty()) {
+  if (v->type() != op_var || variable_state.empty()) {
     return v;
   }
 
