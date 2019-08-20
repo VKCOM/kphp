@@ -11,25 +11,8 @@
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
 
-static inline string gen_unique_name_inside_function(FunctionPtr function, const std::string &prefix, volatile int &x) {
-  AutoLocker<volatile int *> locker(&x);
-  auto h = vk::std_hash(function->name);
-  auto &i = function->name_gen_map[h];
-  char tmp[50];
-  sprintf(tmp, "%zx_%d", h, i);
-  i++;
-
-  return prefix + "$ut" + tmp;
-}
-
-string gen_shorthand_ternary_name(FunctionPtr function) {
-  static volatile int x = 0;
-  return gen_unique_name_inside_function(function, "shorthand_ternary_cond", x);
-}
-
 string gen_anonymous_function_name(FunctionPtr function) {
-  static volatile int x = 0;
-  return gen_unique_name_inside_function(function, "anon", x);
+  return gen_unique_name("anon", function);
 }
 
 bool is_anonymous_function_name(vk::string_view name) {

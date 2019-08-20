@@ -651,25 +651,17 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
   return res;
 }
 
-VertexPtr GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third) {
+VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third) {
   if (right) {
     return VertexAdaptor<op_ternary>::create(left, right, third);
   }
 
-  string left_name = gen_shorthand_ternary_name(cur_function);
-  auto left_var = VertexAdaptor<op_var>::create();
-  left_var->str_val = left_name;
-  left_var->extra_type = op_ex_var_superlocal;
+  auto cond_var = create_superlocal_var("shorthand_ternary_cond");
 
-  auto left_set = VertexAdaptor<op_set>::create(left_var, left);
-  auto left_set_bool = conv_to<tp_bool>(left_set);
+  auto cond = conv_to<tp_bool>(VertexAdaptor<op_set>::create(cond_var, left));
 
-  auto left_var_copy = VertexAdaptor<op_var>::create();
-  left_var_copy->str_val = left_name;
-  left_var_copy->extra_type = op_ex_var_superlocal;
-
-  auto left_var_move = VertexAdaptor<op_move>::create(left_var_copy);
-  return VertexAdaptor<op_ternary>::create(left_set_bool, left_var_move, third);
+  auto left_var_move = VertexAdaptor<op_move>::create(cond_var.clone());
+  return VertexAdaptor<op_ternary>::create(cond, left_var_move, third);
 }
 
 VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
@@ -777,9 +769,11 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
       right = conv_to<tp_int>(right);
     }
 
-    left = ternary
-           ? create_ternary_op_vertex(left, right, third)
-           : create_vertex(binary_op_tp, left, right);
+    if (ternary) {
+      left = create_ternary_op_vertex(left, right, third);
+    } else {
+      left = create_vertex(binary_op_tp, left, right);
+    }
 
     set_location(left, expr_location);
     if (!(left_to_right || ternary)) {
@@ -931,10 +925,7 @@ VertexAdaptor<op_foreach_param> GenTree::get_foreach_param() {
   if (x->ref_flag) {
     temp_var = VertexAdaptor<op_empty>::create();
   } else {
-    auto temp = VertexAdaptor<op_var>::create();
-    temp->str_val = gen_unique_name("tmp_expr", cur_function);
-    temp->extra_type = op_ex_var_superlocal;
-    temp_var = temp;
+    temp_var = create_superlocal_var("tmp_expr");
   }
 
   VertexAdaptor<op_foreach_param> res;
@@ -1434,6 +1425,15 @@ VertexPtr GenTree::get_do() {
   return do_vertex;
 }
 
+VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, PrimitiveType tp) {
+  auto v = VertexAdaptor<op_var>::create();
+  v->str_val = gen_unique_name(name_prefix, cur_function);
+  v->extra_type = op_ex_var_superlocal;
+  v->type_help = tp;
+  return v;
+}
+
+
 VertexPtr GenTree::get_switch() {
   AutoLocation switch_location(this);
   vector<VertexPtr> switch_next;
@@ -1448,18 +1448,10 @@ VertexPtr GenTree::get_switch() {
 
   CE (expect(tok_opbrc, "'{'"));
 
-  auto create_var = [&](const string &name_prefix, PrimitiveType tp) {
-    auto v = VertexAdaptor<op_var>::create();
-    v->str_val = gen_unique_name(name_prefix, cur_function);
-    v->extra_type = op_ex_var_superlocal;
-    v->type_help = tp;
-    return v;
-  };
-
-  switch_next.push_back(create_var("switch_var", tp_var));
-  switch_next.push_back(create_var("switch_flag", tp_bool));
-  switch_next.push_back(create_var("ss", tp_string));
-  switch_next.push_back(create_var("ss_hash", tp_int));
+  switch_next.push_back(create_superlocal_var("switch_var", tp_var));
+  switch_next.push_back(create_superlocal_var("switch_flag", tp_bool));
+  switch_next.push_back(create_superlocal_var("ss", tp_string));
+  switch_next.push_back(create_superlocal_var("ss_hash", tp_int));
 
   while (cur->type() != tok_clbrc) {
     skip_phpdoc_tokens();

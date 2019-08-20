@@ -42,6 +42,7 @@ public:
   };
 
   static inline void set_location(VertexPtr v, const AutoLocation &location);
+  VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, PrimitiveType tp = tp_Unknown);
 
   GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
@@ -69,7 +70,7 @@ public:
   static VertexPtr get_call_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());
-  VertexPtr create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
+  VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(vk::string_view klass_name);
   static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(ClassPtr klass);
 
