@@ -46,7 +46,7 @@ string tinf::VarNode::get_function_name() {
     }
   }
   if (function_) {
-    return string(function_->is_static_function() ? "static " : "") + "function: " + function_->get_human_readable_name();
+    return string(function_->modifiers.is_static() ? "static " : "") + "function: " + function_->get_human_readable_name();
   }
   if (var_->is_global_var()) {
     return "global scope";

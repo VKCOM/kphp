@@ -43,7 +43,7 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
                     "Can not store non-instance var with instance_cache_store call");
   auto klass = type->class_type();
   klass->deeply_require_instance_cache_visitor();
-  kphp_error(!klass->is_interface_or_has_interface_member(),
+  kphp_error(!klass->is_polymorphic_or_has_polymorphic_member(),
              "Can not store instance with interface inside with instance_cache_store call");
 }
 
@@ -103,7 +103,7 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
     check_class_immutableness(function->class_id);
   }
 
-  if (function->is_instance_function() && function->local_name() == ClassData::NAME_OF_CLONE) {
+  if (function->modifiers.is_instance() && function->local_name() == ClassData::NAME_OF_CLONE) {
     kphp_error_act(!function->is_resumable, format("%s method has to be not resumable", ClassData::NAME_OF_CLONE), return false);
     kphp_error_act(!function->can_throw, format("%s method should not throw exception", ClassData::NAME_OF_CLONE), return false);
   }

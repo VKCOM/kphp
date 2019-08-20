@@ -3,15 +3,15 @@
 #include <map>
 #include <set>
 
-#include "auto/compiler/vertex/vertex-op_function.h"
-#include "common/mixin/not_copyable.h"
-
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/vertex-meta_op_base.h"
+#include "auto/compiler/vertex/vertex-op_function.h"
+#include "common/mixin/not_copyable.h"
 
 class FunctionData {
   // внешний код должен использовать FunctionData::create_function()
@@ -92,13 +92,12 @@ public:
   bool cpp_template_call = false;
   bool cpp_variadic_call = false;
   bool is_resumable = false;
-  bool is_final = false;
   bool is_virtual_method = false;
   bool is_overridden_method = false;
 
   ClassPtr class_id;
   ClassPtr context_class;
-  AccessType access_type = access_nonmember;
+  FunctionModifiers modifiers = FunctionModifiers::nonmember();
   vk::string_view phpdoc_str;
 
   Location instantiation_of_template_function_location;
@@ -117,24 +116,8 @@ public:
   string get_human_readable_name() const;
   void add_kphp_infer_hint(InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule);
 
-  inline static bool is_instance_access_type(AccessType access_type) {
-    return vk::any_of_equal(access_type, access_public, access_protected, access_private);
-  }
-
-  inline static bool is_static_access_type(AccessType access_type) {
-    return vk::any_of_equal(access_type, access_static_public, access_static_protected, access_static_private);
-  }
-
-  inline bool is_instance_function() const {
-    return is_instance_access_type(access_type);
-  }
-
-  inline bool is_static_function() const {
-    return is_static_access_type(access_type);
-  }
-
   inline bool has_implicit_this_arg() const {
-    return is_instance_function();
+    return modifiers.is_instance();
   }
 
   inline bool is_extern() const {

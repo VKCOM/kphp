@@ -12,11 +12,12 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   return true;
 }
 
-void CheckAccessModifiersPass::check_access(AccessType need_access, ClassPtr access_class, const char *field_type, const std::string &name) {
-  if (need_access == access_static_private || need_access == access_private) {
+template<class MemberModifier>
+void CheckAccessModifiersPass::check_access(MemberModifier modifiers, ClassPtr access_class, const char *field_type, const std::string &name) {
+  if (modifiers.is_private()) {
     kphp_error(class_id == access_class || lambda_class_id == access_class, format("Can't access private %s %s", field_type, name.c_str()));
   }
-  if (need_access == access_static_protected || need_access == access_protected) {
+  if (modifiers.is_protected()) {
     auto is_ok = [&access_class](ClassPtr class_id) {
       return class_id && (class_id == access_class || class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
     };
@@ -31,24 +32,24 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
     if (var_id->is_class_static_var()) {
       auto member = var_id->as_class_static_field();
       kphp_assert(member);
-      check_access(member->access_type, var_id->class_id, "static field", member->local_name());
+      check_access(member->modifiers, var_id->class_id, "static field", member->local_name());
     }
   } else if (auto prop = root.try_as<op_instance_prop>()) {
     VarPtr var_id = prop->var_id;
     if (var_id->is_class_instance_var()) {
       auto member = var_id->as_class_instance_field();
       kphp_assert(member);
-      check_access(member->access_type, var_id->class_id, "field", member->local_name());
+      check_access(member->modifiers, var_id->class_id, "field", member->local_name());
     }
   } else if (auto call = root.try_as<op_func_call>()) {
     FunctionPtr func_id = call->func_id;
-    if (func_id->access_type != access_nonmember) {
+    if (func_id->modifiers.is_instance() || func_id->modifiers.is_static()) {
       //TODO: this is hack, which should be fixed after functions with context are added to static methods list
       std::string real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
       if (func_id->context_class->members.has_static_method(real_name)) {
-        check_access(func_id->access_type, func_id->class_id, "static method", func_id->get_human_readable_name());
+        check_access(func_id->modifiers, func_id->class_id, "static method", func_id->get_human_readable_name());
       } else if (func_id->context_class->members.has_instance_method(real_name)) {
-        check_access(func_id->access_type, func_id->class_id, "method", func_id->get_human_readable_name());
+        check_access(func_id->modifiers, func_id->class_id, "method", func_id->get_human_readable_name());
       }
     }
   }

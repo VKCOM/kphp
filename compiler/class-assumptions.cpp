@@ -434,7 +434,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
         ClassPtr klass = G->get_class(expr->get_string());
         kphp_assert(klass);
         assumption_add_for_return(f, assum_instance, klass);        // return A
-      } else if (expr->type() == op_var && expr->get_string() == "this" && f->is_instance_function()) {
+      } else if (expr->type() == op_var && expr->get_string() == "this" && f->modifiers.is_instance()) {
         assumption_add_for_return(f, assum_instance, f->class_id);  // return this
       } else if (auto call_vertex = expr.try_as<op_func_call>()) {
         if (auto fun = call_vertex->func_id) {
@@ -476,7 +476,7 @@ void init_assumptions_for_all_vars(ClassPtr c) {
  * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
  */
 AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class, size_t depth) {
-  if (f->is_instance_function() && var_name.size() == 4 && var_name == "this") {
+  if (f->modifiers.is_instance() && var_name.size() == 4 && var_name == "this") {
     out_class = f->class_id;
     return assum_instance;
   }

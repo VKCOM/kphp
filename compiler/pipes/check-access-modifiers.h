@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler/data/class-member-modifiers.h"
 #include "compiler/function-pass.h"
 
 class CheckAccessModifiersPass : public FunctionPassBase {
@@ -8,7 +9,8 @@ private:
   string class_name;
   ClassPtr class_id;
   ClassPtr lambda_class_id;
-  void check_access(AccessType need_access, ClassPtr access_class, const char *field_type, const std::string &name);
+  template<class MemberModifier>
+  void check_access(MemberModifier modifiers, ClassPtr access_class, const char *field_type, const std::string &name);
 public:
   string get_description() {
     return "Check access modifiers";

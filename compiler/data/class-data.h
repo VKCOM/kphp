@@ -3,6 +3,7 @@
 
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
+#include "compiler/data/class-modifiers.h"
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
@@ -52,6 +53,7 @@ public:
   std::atomic<bool> need_instance_to_array_visitor{false};
   std::atomic<bool> need_instance_cache_visitors{false};
 
+  ClassModifiers modifiers;
   ClassMembersContainer members;
 
   const TypeData *const type_data;
@@ -88,8 +90,9 @@ public:
   bool is_trait() const { return class_type == ClassType::trait; }
   virtual bool is_lambda() const { return false; }
 
-  bool is_parent_of(ClassPtr other);
-  InterfacePtr get_common_base_or_interface(ClassPtr other) const;
+  ClassPtr get_parent_or_interface() const;
+  bool is_parent_of(ClassPtr other) const;
+  ClassPtr get_common_base_or_interface(ClassPtr other) const;
   const ClassMemberInstanceMethod *get_instance_method(const std::string &local_name) const;
   const ClassMemberInstanceField *get_instance_field(const std::string &local_name) const;
   const ClassMemberStaticField *get_static_field(const std::string &local_name) const;
@@ -101,7 +104,7 @@ public:
   }
 
   virtual bool is_fully_static() const {
-    return is_class() && !construct_function;
+    return is_class() && !modifiers.is_abstract() && !construct_function;
   }
 
   void set_name_and_src_name(const std::string &name, const vk::string_view &phpdoc_str);
@@ -129,17 +132,16 @@ public:
 
   bool need_generate_accept_method() const;
   bool is_builtin() const;
-  bool is_interface_or_has_interface_member() const;
+  bool is_polymorphic_or_has_polymorphic_member() const;
   static bool does_need_codegen(ClassPtr c);
   void mark_as_used();
-  bool is_final() const;
-  ClassPtr get_top_parent() const;
+  bool has_no_derived_classes() const;
 
   void deeply_require_instance_to_array_visitor();
   void deeply_require_instance_cache_visitor();
 
 private:
-  bool has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const;
+  bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 
   template<class MemberT>
   const MemberT *find_by_local_name(const std::string &name) const {

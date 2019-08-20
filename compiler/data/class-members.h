@@ -13,29 +13,20 @@
 #include <set>
 #include <string>
 
-#include "common/type_traits/function_traits.h"
-
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/field-modifiers.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "common/type_traits/function_traits.h"
 
 class TypeData;
 
-enum AccessType {
-  access_nonmember = 0,
-  access_static_public,
-  access_static_private,
-  access_static_protected,
-  access_public,
-  access_private,
-  access_protected,
-};
-
 struct ClassMemberStaticMethod {
-  AccessType access_type;
+  FunctionModifiers modifiers;
   FunctionPtr function;
 
-  ClassMemberStaticMethod(FunctionPtr function, AccessType access_type) :
-    access_type(access_type),
+  ClassMemberStaticMethod(FunctionPtr function, FunctionModifiers modifiers) :
+    modifiers(modifiers),
     function(function) {}
 
   const std::string &global_name() const;
@@ -43,11 +34,11 @@ struct ClassMemberStaticMethod {
 };
 
 struct ClassMemberInstanceMethod {
-  AccessType access_type;
+  FunctionModifiers modifiers;
   FunctionPtr function;
 
-  ClassMemberInstanceMethod(FunctionPtr function, AccessType access_type) :
-    access_type(access_type),
+  ClassMemberInstanceMethod(FunctionPtr function, FunctionModifiers modifiers) :
+    modifiers(modifiers),
     function(function) {}
 
   const std::string &global_name() const;
@@ -55,13 +46,13 @@ struct ClassMemberInstanceMethod {
 };
 
 struct ClassMemberStaticField {
-  AccessType access_type;
+  FieldModifiers modifiers;
   std::string full_name;
   VertexAdaptor<op_var> root;
   VertexPtr init_val;          // op_empty в случае отсутствия значения, или какое-то выражение
   vk::string_view phpdoc_str;
 
-  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, const vk::string_view &phpdoc_str);
+  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str);
 
   const std::string &global_name() const;
   const std::string &local_name() const;
@@ -69,12 +60,12 @@ struct ClassMemberStaticField {
 };
 
 struct ClassMemberInstanceField {
-  AccessType access_type;
+  FieldModifiers modifiers;
   VertexAdaptor<op_var> root;
   VarPtr var;
   vk::string_view phpdoc_str;
 
-  ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);
+  ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str);
 
   const std::string &local_name() const;
   const TypeData *get_inferred_type() const;
@@ -166,13 +157,13 @@ public:
     return find_member([&local_name](const MemberT &f) { return f.local_name() == local_name; });
   }
 
-  void add_static_method(FunctionPtr function, AccessType access_type);
-  void add_instance_method(FunctionPtr function, AccessType access_type);
-  void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, const vk::string_view &phpdoc_str);
-  void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str);
+  void add_static_method(FunctionPtr function, FunctionModifiers modifiers);
+  void add_instance_method(FunctionPtr function, FunctionModifiers modifiers);
+  void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str);
+  void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str);
   void add_constant(std::string const_name, VertexPtr value);
 
-  void safe_add_instance_method(FunctionPtr function, AccessType access_type);
+  void safe_add_instance_method(FunctionPtr function, FunctionModifiers modifiers);
 
   bool has_constant(const std::string &local_name) const;
   bool has_field(const std::string &local_name) const;

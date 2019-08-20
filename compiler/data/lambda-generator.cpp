@@ -14,7 +14,7 @@ LambdaGenerator::LambdaGenerator(FunctionPtr function, const Location &location,
   : created_location(location)
 {
   generated_lambda = create_class(gen_anonymous_function_name(function));
-  generated_lambda->is_static = is_static || !function->is_instance_function();
+  generated_lambda->is_static = is_static || !function->modifiers.is_instance();
 }
 
 LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_param>> uses) {
@@ -35,7 +35,7 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
     auto variable_in_use = VertexAdaptor<op_var>::create();
     variable_in_use->str_val = param_as_use->var()->get_string();
     set_location(variable_in_use, param_as_use->location);
-    generated_lambda->members.add_instance_field(variable_in_use, {}, access_private, vk::string_view{});
+    generated_lambda->members.add_instance_field(variable_in_use, {}, FieldModifiers{}.set_private(), vk::string_view{});
 
     auto field = generated_lambda->members.get_instance_field(variable_in_use->get_string());
     field->var->marked_as_const = true;
@@ -74,7 +74,7 @@ LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
 }
 
 LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPtr called_method) {
-  generated_lambda->members.add_instance_field(get_var_of_captured_array_arg<op_var>(), {}, access_private, vk::string_view{});
+  generated_lambda->members.add_instance_field(get_var_of_captured_array_arg<op_var>(), {}, FieldModifiers{}.set_private(), vk::string_view{});
 
   add_uses_for_captured_class_from_array();
   auto lambda_params = create_params_for_invoke_which_call_method(called_method);
@@ -254,7 +254,7 @@ void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor
   }
   invoke_function->name = fun_name;
   invoke_function->update_location_in_body();
-  generated_lambda->members.add_instance_method(invoke_function, AccessType::access_public);
+  generated_lambda->members.add_instance_method(invoke_function, FunctionModifiers::instance_public());
 
   auto params = invoke_function->get_params();
   invoke_function->is_template = generated_lambda->members.has_any_instance_var() || params.size() > 1;

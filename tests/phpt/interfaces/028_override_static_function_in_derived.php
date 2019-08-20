@@ -1,4 +1,4 @@
-@kphp_should_fail
+@ok
 <?php
 interface IOne {
     public function one($x);

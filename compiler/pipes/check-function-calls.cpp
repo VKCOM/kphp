@@ -7,11 +7,11 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   kphp_assert(f);
   kphp_error_return(f->root, format("Function [%s] undeclared", f->get_human_readable_name().c_str()));
 
-  if (f->is_static_function()) {
+  if (f->modifiers.is_static()) {
     kphp_error_return(call->extra_type != op_ex_func_call_arrow,
                       format("Called static method %s() using -> (need to use ::)", f->get_human_readable_name().c_str()));
   }
-  if (f->is_instance_function() && !f->is_constructor() && !f->is_lambda()) {
+  if (f->modifiers.is_instance() && !f->is_constructor() && !f->is_lambda()) {
     kphp_error_return(call->extra_type == op_ex_func_call_arrow,
                       format("Called instance method %s() using :: (need to use ->)", f->get_human_readable_name().c_str()));
   }

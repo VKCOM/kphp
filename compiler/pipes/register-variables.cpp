@@ -121,9 +121,10 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
         klass = klass->parent_class;
       }
       kphp_error_return(klass, format("static field not found: %s", name.c_str()));
-      auto field = klass->members.find_by_local_name<ClassMemberStaticField>(var_name);
+      auto field = klass->members.get_static_field(var_name);
       kphp_error_return(field, format("field %s is not static in klass %s", var_name.c_str(), used_klass->name.c_str()));
-      kphp_error_return(klass == used_klass || field->access_type != access_static_private, format("Can't access private static field using derived class: %s", name.c_str()));
+      kphp_error_return(klass == used_klass || !field->modifiers.is_private(),
+                        format("Can't access private static field using derived class: %s", name.c_str()));
       name = replace_backslashes(klass->name) + "$$" + var_name;
     }
     var = get_global_var(name);

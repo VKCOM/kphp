@@ -32,7 +32,10 @@ template<class ClassMemberMethod>
 bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
   stage::set_line(get_location(interface_function->root).line);
   if (!interface_method_in_derived) {
-    auto msg = format("You should override interface method: `%s` in class: `%s`",
+    if (context_class->modifiers.is_abstract()) {
+      return true;
+    }
+    auto msg = format("You should override abstract method: `%s` in class: `%s`",
                       interface_function->get_human_readable_name().c_str(),
                       context_class->name.c_str());
 
@@ -134,14 +137,14 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
     return;
   }
 
-  if (virtual_function->is_static_function()) {
-    kphp_assert(klass->is_interface());
+  if (virtual_function->modifiers.is_static()) {
+    kphp_assert(klass->modifiers.is_abstract());
     return check_static_function(virtual_function, derived_classes);
   }
 
   VertexAdaptor<op_seq> body_of_virtual_method;
 
-  if (!klass->is_interface()) {
+  if (!virtual_function->modifiers.is_abstract()) {
     if (auto self_method = klass->get_instance_method(virtual_function->get_name_of_self_method())) {
       if (klass == self_method->function->class_id) {
         G->register_and_require_function(self_method->function, os, true);
@@ -153,7 +156,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
     } else if (virtual_function->local_name() == ClassData::NAME_OF_VIRT_CLONE) {
       body_of_virtual_method = virtual_function->root->cmd();
       virtual_function->root->cmd_ref() = VertexPtr{};
-    } else {
+    } else if (klass->parent_class && !klass->parent_class->modifiers.is_abstract()){
       auto params = virtual_function->get_params_as_vector_of_vars(1);
 
       auto call_parent_method = VertexAdaptor<op_func_call>::create(params);
@@ -164,7 +167,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
   }
 
   for (auto derived : derived_classes) {
-    if (!klass->is_interface()) {
+    if (!virtual_function->modifiers.is_abstract()) {
       auto fun_name = virtual_function->local_name();
       if (!derived->members.get_instance_method(fun_name)) {
         kphp_assert_msg(!derived_has_method(derived, fun_name),

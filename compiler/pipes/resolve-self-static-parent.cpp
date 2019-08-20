@@ -57,21 +57,25 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
           v.as<op_func_call>()->func_id = method;
 
           if (unresolved_class_name != "static" && found_method->function->is_virtual_method) {
-            kphp_error(current_function->is_instance_function(), "calling non-static function through static");
-            if ((found_method = ref_class->get_instance_method(found_method->function->get_name_of_self_method()))) {
-              v->set_string(found_method->local_name());
-              v.as<op_func_call>()->func_id = found_method->function;
+            kphp_error(current_function->modifiers.is_instance(), "calling non-static function through static");
+            if (auto self_found_method = ref_class->get_instance_method(found_method->function->get_name_of_self_method())) {
+              v->set_string(self_found_method->local_name());
+              v.as<op_func_call>()->func_id = self_found_method->function;
+            } else {
+              kphp_error(!found_method->modifiers.is_abstract(),
+                format("you cannot call abstract methods: %s", found_method->function->get_human_readable_name().c_str()));
             }
           }
           return v;
         }
       }
 
-      if (vk::any_of_equal(unresolved_class_name, "self", "parent", "static") && !current_function->is_static_function()) {
+      if (vk::any_of_equal(unresolved_class_name, "self", "parent", "static") && !current_function->modifiers.is_static()) {
         auto field_name = original_name.substr(pos + 2);
         bool get_field_using_self_or_parent = unresolved_class_name != "static" &&
                                               (ref_class->get_static_field(field_name) || ref_class->get_constant(field_name));
-        bool inside_lambda_in_static_method = current_function->function_in_which_lambda_was_created && current_function->function_in_which_lambda_was_created->is_static_function();
+        bool inside_lambda_in_static_method = current_function->function_in_which_lambda_was_created &&
+                                              current_function->function_in_which_lambda_was_created->modifiers.is_static();
         kphp_error_act(ref_class->derived_classes.empty() || get_field_using_self_or_parent || inside_lambda_in_static_method,
                        "using `self/parent/static` is prohibited in non static methods", return v);
       }

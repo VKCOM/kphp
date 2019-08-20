@@ -27,7 +27,7 @@
  */
 static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   bool function_has_kphp_doc = f->phpdoc_str.find("@kphp") != std::string::npos;
-  bool class_has_kphp_doc = (f->is_instance_function() || f->is_static_function()) && f->class_id->phpdoc_str.find("@kphp") != std::string::npos;
+  bool class_has_kphp_doc = (f->modifiers.is_instance() || f->modifiers.is_static()) && f->class_id->phpdoc_str.find("@kphp") != std::string::npos;
   if (!function_has_kphp_doc && !class_has_kphp_doc) {
     return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
   }

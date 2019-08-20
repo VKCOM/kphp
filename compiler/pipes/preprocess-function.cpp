@@ -32,9 +32,8 @@ public:
       auto assum = infer_class_of_expr(stage::get_function(), clone_root, klass);
       kphp_error_act(assum == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
       kphp_error_act(!klass->is_builtin(), format("`%s` class is forbidden for clonning", klass->name.c_str()), return clone_root);
-      bool has_derived = !klass->derived_classes.empty();
       bool clone_is_inside_virt_clone = current_function->local_name() == ClassData::NAME_OF_VIRT_CLONE;
-      if (klass->is_interface() || (has_derived && !clone_is_inside_virt_clone)) {
+      if (!klass->derived_classes.empty() && !clone_is_inside_virt_clone) {
         /**
          * clone of interfaces are replaced with call of virtual method
          * which automatic calls clone of derived class
@@ -122,7 +121,7 @@ private:
                 }
               });
             } else {
-              klass->members.add_instance_method(f_inst, f_inst->access_type);
+              klass->members.add_instance_method(f_inst, f_inst->modifiers);
             }
           }
 
@@ -505,7 +504,10 @@ private:
     FunctionPtr f = G->get_function(name);
 
     if (likely(!!f)) {
-      kphp_error(!f->is_static_function() || call->extra_type != op_ex_func_call_arrow, "It's not allowed to call static method through instance var");
+      kphp_error(!(f->modifiers.is_static() && f->modifiers.is_abstract()),
+                 format("you may not call abstract static method: %s", f->get_human_readable_name().c_str()));
+
+      kphp_error(!f->modifiers.is_static() || call->extra_type != op_ex_func_call_arrow, "It's not allowed to call static method through instance var");
       call = set_func_id(call, f);
     } else {
       print_why_cant_set_func_id_error(call, name);
@@ -518,7 +520,7 @@ private:
     if (call->type() == op_constructor_call) {
       ClassPtr klass = G->get_class(call->get_string());
       if (klass) {
-        kphp_error(0, format("Calling 'new %s()', but this class is %s", call->get_c_string(), klass->is_interface() ? "interface" : "fully static"));
+        kphp_error(0, format("Calling 'new %s()', but this class is %s", call->get_c_string(), klass->modifiers.is_abstract() ? "abstract/interface" : "fully static"));
       } else {
         kphp_error(0, format("Class %s does not exist", call->get_c_string()));
       }

@@ -1,4 +1,5 @@
 Zend/tests/021.phpt
+Zend/tests/abstract-static.phpt
 Zend/tests/add_001.phpt
 Zend/tests/add_005.phpt
 Zend/tests/add_006.phpt
@@ -36,8 +37,8 @@ Zend/tests/bug39438.phpt
 Zend/tests/bug40261.phpt
 Zend/tests/bug40809.phpt
 Zend/tests/bug41633_1.phpt
-Zend/tests/bug41961.phpt
 Zend/tests/bug43053.phpt
+Zend/tests/bug43703.phpt
 Zend/tests/bug43851.phpt
 Zend/tests/bug44184.phpt
 Zend/tests/bug44827.phpt
@@ -47,11 +48,13 @@ Zend/tests/bug45742.phpt
 Zend/tests/bug45910.phpt
 Zend/tests/bug45910_2.phpt
 Zend/tests/bug47596.phpt
-Zend/tests/bug48215.phpt
 Zend/tests/bug53632.phpt
 Zend/tests/bug55135.phpt
+Zend/tests/bug60573.phpt
+Zend/tests/bug60573_2.phpt
 Zend/tests/bug61095.phpt
 Zend/tests/bug61225.phpt
+Zend/tests/bug62956.phpt
 Zend/tests/bug63976.phpt
 Zend/tests/bug67111.phpt
 Zend/tests/bug67169.phpt
@@ -104,7 +107,6 @@ Zend/tests/heredoc_015.phpt
 Zend/tests/heredoc_016.phpt
 Zend/tests/indirect_method_call_003.phpt
 Zend/tests/inference_infinite_loop.phpt
-Zend/tests/inter_03.phpt
 Zend/tests/line_const_in_array.phpt
 Zend/tests/loop_free_on_return.phpt
 Zend/tests/lsb_001.phpt
@@ -113,6 +115,7 @@ Zend/tests/magic_methods_003.phpt
 Zend/tests/magic_methods_009.phpt
 Zend/tests/nowdoc_016.phpt
 Zend/tests/nowdoc_017.phpt
+Zend/tests/objects_004.phpt
 Zend/tests/objects_010.phpt
 Zend/tests/objects_011.phpt
 Zend/tests/selfParent_001.phpt
@@ -124,6 +127,8 @@ Zend/tests/str_offset_001.phpt
 Zend/tests/temporary_cleaning_008.phpt
 Zend/tests/ternary_associativity.phpt
 Zend/tests/type_declarations/nullable_null.phpt
+Zend/tests/type_declarations/parameter_type_variance.phpt
+Zend/tests/type_declarations/variance/parent_in_class_failure2.phpt
 Zend/tests/unset_cv01.phpt
 Zend/tests/unset_cv03.phpt
 Zend/tests/unset_cv11.phpt
@@ -517,6 +522,7 @@ ext/standard/tests/strings/sprintf_basic4.phpt
 ext/standard/tests/strings/sprintf_basic5.phpt
 ext/standard/tests/strings/sprintf_basic9.phpt
 ext/standard/tests/strings/str_split_basic.phpt
+ext/standard/tests/strings/strings001.phpt
 ext/standard/tests/strings/strip_tags.phpt
 ext/standard/tests/strings/strip_tags_array.phpt
 ext/standard/tests/strings/strip_tags_basic1.phpt
@@ -548,6 +554,13 @@ ext/standard/tests/strings/strncmp_variation3.phpt
 ext/standard/tests/strings/strpbrk_basic.phpt
 ext/standard/tests/strings/strpbrk_error.phpt
 ext/standard/tests/strings/strpos_number.phpt
+ext/standard/tests/strings/strrchr.phpt
+ext/standard/tests/strings/strrchr_basic.phpt
+ext/standard/tests/strings/strrchr_variation3.phpt
+ext/standard/tests/strings/strrchr_variation4.phpt
+ext/standard/tests/strings/strrchr_variation6.phpt
+ext/standard/tests/strings/strrchr_variation7.phpt
+ext/standard/tests/strings/strrchr_variation8.phpt
 ext/standard/tests/strings/strrev.phpt
 ext/standard/tests/strings/strrev_basic.phpt
 ext/standard/tests/strings/strripos_basic1.phpt
@@ -700,9 +713,13 @@ tests/classes/interface_optional_arg.phpt
 tests/classes/interface_optional_arg_002.phpt
 tests/classes/interfaces_001.phpt
 tests/classes/object_reference_001.phpt
+tests/classes/private_006b.phpt
 tests/classes/property_override_protectedStatic_protectedStatic.phpt
 tests/classes/property_override_publicStatic_publicStatic.phpt
 tests/classes/static_properties_001.phpt
+tests/classes/visibility_000c.phpt
+tests/classes/visibility_001c.phpt
+tests/classes/visibility_002c.phpt
 tests/func/001.phpt
 tests/func/004.phpt
 tests/func/006.phpt
@@ -725,6 +742,7 @@ tests/lang/022.phpt
 tests/lang/025.phpt
 tests/lang/026.phpt
 tests/lang/027.phpt
+tests/lang/032.phpt
 tests/lang/array_shortcut_001.phpt
 tests/lang/array_shortcut_002.phpt
 tests/lang/array_shortcut_003.phpt

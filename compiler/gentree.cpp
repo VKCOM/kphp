@@ -2,9 +2,6 @@
 
 #include <sstream>
 
-#include "common/algorithms/find.h"
-#include "common/type_traits/constexpr_if.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
@@ -19,19 +16,10 @@
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "common/algorithms/find.h"
+#include "common/type_traits/constexpr_if.h"
 
 #define CE(x) if (!(x)) {return {};}
-
-namespace ClassMemberModifier {
-enum {
-  cm_static = 1 << 0,
-  cm_public = 1 << 1,
-  cm_private = 1 << 2,
-  cm_protected = 1 << 3,
-  cm_final = 1 << 4,
-  cm_abstract = 1 << 5,
-};
-} // namespace ClassMemberModifier
 
 GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
   line_num(0),
@@ -1528,7 +1516,7 @@ bool GenTree::check_uses_and_args_are_not_intersecting(const std::vector<VertexA
 
 VertexPtr GenTree::get_anonymous_function(bool is_static/* = false*/) {
   std::vector<VertexAdaptor<op_func_param>> uses_of_lambda;
-  VertexPtr f = get_function(vk::string_view{}, access_nonmember, false, &uses_of_lambda);
+  VertexPtr f = get_function(vk::string_view{}, FunctionModifiers::nonmember(), &uses_of_lambda);
 
   if (auto anon_function = f.try_as<op_function>()) {
     // это constructor call
@@ -1545,69 +1533,59 @@ VertexPtr GenTree::get_anonymous_function(bool is_static/* = false*/) {
 }
 
 // парсим 'static public', 'final protected' и другие modifier'ы перед функцией/переменными класса
-unsigned int GenTree::parse_class_member_modifier_mask() {
-  unsigned int mask = 0;
+ClassMemberModifiers GenTree::parse_class_member_modifier_mask() {
+  auto modifiers = ClassMemberModifiers::nonmember();
   while (cur != end) {
     switch (cur->type()) {
       case tok_public:
-        mask |= ClassMemberModifier::cm_public;
+        modifiers.set_public();
         break;
       case tok_private:
-        mask |= ClassMemberModifier::cm_private;
+        modifiers.set_private();
         break;
       case tok_protected:
-        mask |= ClassMemberModifier::cm_protected;
+        modifiers.set_protected();
         break;
       case tok_static:
-        mask |= ClassMemberModifier::cm_static;
+        modifiers.set_static();
         break;
       case tok_final:
-        mask |= ClassMemberModifier::cm_final;
+        modifiers.set_final();
         break;
-        //case tok_abstract:
-        //  mask |= ClassMemberModifier::cm_abstract;
-        //  break;
-
+      case tok_abstract:
+        modifiers.set_abstract();
+        break;
       default:
-        return mask;
+        return modifiers;
     }
     next_cur();
   }
-  return mask;
-}
-
-void GenTree::check_class_member_modifier_mask(unsigned int mask, TokenType cur_tok) {
-  kphp_error(!(cur_tok == tok_var_name && (mask & ClassMemberModifier::cm_final)),
-             "Class fields can not be declared final");
-  kphp_error(!(cur_tok == tok_var_name && (mask & ClassMemberModifier::cm_abstract)),
-             "Class fields can not be declared abstract");
-  kphp_error(!((mask & ClassMemberModifier::cm_final) && (mask & ClassMemberModifier::cm_abstract)),
-             "Can not use final and abstract at the same time");
-  int access_mod = mask & (ClassMemberModifier::cm_public | ClassMemberModifier::cm_protected | ClassMemberModifier::cm_private);
-  kphp_error(!(access_mod & (access_mod - 1)),
-             "Mupliple access modifiers (e.g. public and private at the same time) are not allowed");
+  return modifiers;
 }
 
 VertexPtr GenTree::get_class_member(const vk::string_view &phpdoc_str) {
-  unsigned int mask = parse_class_member_modifier_mask();
+  auto modifiers = parse_class_member_modifier_mask();
+  if (!modifiers.is_static()) {
+    modifiers.set_instance();
+  }
+
+  if (!modifiers.is_public() && !modifiers.is_private() && !modifiers.is_protected()) {
+    modifiers.set_public();
+  }
 
   const TokenType cur_tok = cur == end ? tok_end : cur->type();
-  check_class_member_modifier_mask(mask, cur_tok);  // тут лучше продолжить парсить если ошибка, она напишется потом
-
-  const bool is_static = (mask & ClassMemberModifier::cm_static) != 0;
-  const AccessType access_type =
-    is_static
-    ? ((mask & ClassMemberModifier::cm_private) ? access_static_private :
-       (mask & ClassMemberModifier::cm_protected) ? access_static_protected : access_static_public)
-    : ((mask & ClassMemberModifier::cm_private) ? access_private :
-       (mask & ClassMemberModifier::cm_protected) ? access_protected : access_public);
 
   if (cur_tok == tok_function) {
-    return get_function(phpdoc_str, access_type, (mask & ClassMemberModifier::cm_final) != 0);
+    return get_function(phpdoc_str, modifiers);
   }
+
   if (cur_tok == tok_var_name) {
     kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
-    return is_static ? get_static_field_list(phpdoc_str, access_type) : get_instance_var_list(phpdoc_str, access_type);
+    kphp_error(!modifiers.is_final() && !modifiers.is_abstract(), "Class fields can not be declared final/abstract");
+    if (modifiers.is_static()) {
+      return get_static_field_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()});
+    }
+    return get_instance_var_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()});
   }
 
   kphp_error(0, "Expected 'function' or $var_name after class member modifiers");
@@ -1620,7 +1598,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
 
   CE(expect(tok_oppar, "'('"));
 
-  if (cur_function->is_instance_function()) {
+  if (cur_function->modifiers.is_instance()) {
     cur_class->patch_func_add_this(params_next, Location(line_num));
   }
 
@@ -1631,7 +1609,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
-VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType access_type, bool is_final, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
+VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
   expect(tok_function, "'function'");
   AutoLocation func_location(this);
 
@@ -1649,19 +1627,36 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
     }
   }
 
+  if (cur_class) {
+    if (modifiers.is_abstract()) {
+      kphp_error(cur_class->modifiers.is_abstract(), format("class: %s must be declared abstract, because of abstract method: %s",
+                                                            cur_class->name.c_str(), cur_function->get_human_readable_name().c_str()));
+
+      kphp_error(cur_class->is_class(), format("abstract methods could be only in abstract classes: %s", cur_class->name.c_str()));
+    }
+
+    if (cur_class->is_interface()) {
+      modifiers.set_abstract();
+    } else if (cur_class->modifiers.is_final()) {
+      modifiers.set_final();
+    }
+  }
+
   auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{});
   set_location(func_root, func_location);
 
   // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
   cur_function->phpdoc_str = phpdoc_str;
-  cur_function->is_final = is_final;
-  if (FunctionData::is_instance_access_type(access_type)) {
+  cur_function->modifiers = modifiers;
+
+  if (cur_function->modifiers.is_instance()) {
     kphp_assert(cur_class);
-    cur_class->members.add_instance_method(cur_function, access_type);
-  } else if (FunctionData::is_static_access_type(access_type)) {
+
+    cur_class->members.add_instance_method(cur_function, modifiers);
+  } else if (modifiers.is_static()) {
     kphp_assert(cur_class);
-    cur_class->members.add_static_method(cur_function, access_type);
+    cur_class->members.add_static_method(cur_function, modifiers);
   }
 
   // после имени функции — параметры, затем блок use для замыканий
@@ -1672,12 +1667,13 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
   // а дальше может идти ::: string в functions.txt
   cur_function->root->type_rule = get_type_rule();
   if (is_lambda) {
-    cur_function->access_type = access_public;
+    cur_function->modifiers.set_instance();
+    cur_function->modifiers.set_public();
   }
 
   // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
-    CE(!kphp_error(!(cur_class && cur_class->is_interface()), format("methods in interface must have empty body: %s", cur_class->name.c_str())));
+    CE(!kphp_error(!cur_function->modifiers.is_abstract(), format("abstract methods must have empty body: %s", cur_function->get_human_readable_name().c_str())));
     is_top_of_the_function_ = true;
     cur_function->root->cmd_ref() = get_statement().as<op_seq>();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
@@ -1687,7 +1683,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
       func_force_return(cur_function->root);
     }
   } else {
-    CE(!kphp_error((cur_class && cur_class->is_interface()) || processing_file->is_builtin(), "function must have non-empty body"));
+    CE(!kphp_error(cur_function->modifiers.is_abstract() || processing_file->is_builtin(), "function must have non-empty body"));
     CE (expect(tok_semicolon, "';'"));
     cur_function->type = FunctionData::func_extern;
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
@@ -1699,7 +1695,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, AccessType ac
     const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
                                     phpdoc_str.find("@kphp-lib-export") != std::string::npos;
     const bool auto_require = cur_function->is_extern()
-                              || cur_function->is_instance_function()
+                              || cur_function->modifiers.is_instance()
                               || kphp_required_flag;
     G->register_and_require_function(cur_function, parsed_os, auto_require);
   }
@@ -1765,6 +1761,19 @@ void GenTree::parse_extends_implements() {
 
 VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_type) {
   AutoLocation class_location(this);
+
+  ClassModifiers modifiers;
+  if (test_expect(tok_abstract)) {
+    modifiers.set_abstract();
+  } else if (test_expect(tok_final)) {
+    modifiers.set_final();
+  }
+
+  if (modifiers.is_abstract() || modifiers.is_final()) {
+    next_cur();
+    CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final keyword"));
+  }
+
   CE(vk::any_of_equal(cur->type(), tok_class, tok_interface));
   next_cur();
 
@@ -1791,7 +1800,11 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
   }
 
+  cur_class->modifiers = modifiers;
   cur_class->class_type = class_type;
+  if (cur_class->is_interface()) {
+    cur_class->modifiers.set_abstract();
+  }
   parse_extends_implements();
 
   auto name_vertex = VertexAdaptor<op_func_name>::create();
@@ -1808,10 +1821,10 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
-    CE (!kphp_error(!cur_class->is_interface(), "constructor in interfaces has not been supported yet"));
+    CE (!kphp_error(!cur_class->modifiers.is_abstract(), "constructor in interfaces/abstract classes has not been supported yet"));
     cur_class->has_custom_constructor = true;
     G->register_and_require_function(constructor_method, parsed_os, true);
-  } else if (cur_class->is_class()) {
+  } else if (!cur_class->modifiers.is_abstract() && cur_class->is_class()) {
     bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();
     non_static |= std::any_of(cur_class->str_dependents.begin(), cur_class->str_dependents.end(),
                               [](const ClassData::StrDependence &dep) {
@@ -1926,7 +1939,7 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
   }
 }
 
-VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, AccessType access_type) {
+VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
   cur--;      // он был $field_name, делаем перед, т.к. get_multi_call() делает next_cur()
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);
   CE (check_statement_end());
@@ -1936,13 +1949,13 @@ VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, Acce
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), access_type, phpdoc_str);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), modifiers, phpdoc_str);
         break;
       }
       case op_set: {
         auto set_expr = node.as<op_set>();
         kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
-        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), access_type, phpdoc_str);
+        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), modifiers, phpdoc_str);
         break;
       }
       default:
@@ -2009,8 +2022,11 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
     case tok_public:
     case tok_private:
     case tok_final:
+    case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {
         return get_class_member(phpdoc_str);
+      } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract)) {
+        return get_class(phpdoc_str, ClassType::klass);
       }
       next_cur();
       kphp_error(0, "Unexpected access modifier outside of class body");
@@ -2073,9 +2089,9 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
     }
     case tok_function:
       if (cur_class) {      // пропущен access modifier — значит, public
-        return get_function(phpdoc_str, access_public);
+        return get_class_member(phpdoc_str);
       }
-      return get_function(phpdoc_str, access_nonmember);
+      return get_function(phpdoc_str, FunctionModifiers::nonmember());
 
     case tok_try: {
       AutoLocation try_location(this);
@@ -2158,17 +2174,15 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
     }
     case tok_var: {
       next_cur();
-      get_instance_var_list(phpdoc_str, access_public);
+      get_instance_var_list(phpdoc_str, FieldModifiers{}.set_public());
       CE (check_statement_end());
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
     case tok_class:
-      res = get_class(phpdoc_str, ClassType::klass);
-      return res;
+      return get_class(phpdoc_str, ClassType::klass);
     case tok_interface:
-      res = get_class(phpdoc_str, ClassType::interface);
-      return res;
+      return get_class(phpdoc_str, ClassType::interface);
     default:
       res = get_expression();
       if (!res) {
@@ -2195,7 +2209,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
   kphp_fail();
 }
 
-VertexPtr GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, AccessType access_type) {
+VertexPtr GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
   kphp_error(cur_class, "var declaration is outside of class");
 
   const vk::string_view &var_name = cur->str_val;
@@ -2211,11 +2225,11 @@ VertexPtr GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, Acce
   var->str_val = static_cast<string>(var_name);
   set_location(var, AutoLocation(this));
 
-  cur_class->members.add_instance_field(var, def_val, access_type, phpdoc_str);
+  cur_class->members.add_instance_field(var, def_val, modifiers, phpdoc_str);
 
   if (test_expect(tok_comma)) {
     next_cur();
-    get_instance_var_list(phpdoc_str, access_type);
+    get_instance_var_list(phpdoc_str, modifiers);
   }
 
   return VertexPtr();

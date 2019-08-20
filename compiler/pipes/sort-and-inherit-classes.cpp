@@ -54,6 +54,129 @@ public:
 
 TSHashTable<SortAndInheritClassesF::wait_list> SortAndInheritClassesF::ht;
 
+namespace {
+/**
+ * Imagine situation:
+ * class B { public function foo() {} }
+ *
+ * class D extends B {}
+ *
+ * class DD extends D { public function foo() {} }
+ * class DD2 extends D { public function foo() {} }
+ *
+ * in class D we need generate virtual method `foo` for choosing appropriate derived class
+ */
+void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<FunctionPtr> &os) {
+  auto method_klass = method->class_id;
+  for (auto parent = method_klass->parent_class; parent; parent = parent->parent_class) {
+    if (parent->is_interface() || parent->members.get_instance_method(method->local_name())) {
+      return;
+    }
+
+    auto method_in_ancestor = parent->get_instance_method(method->local_name())->function;
+    kphp_error(method_in_ancestor->modifiers.is_abstract() == parent->modifiers.is_abstract(),
+      format("class: %s, must be declared abstract because of the method: %s", parent->name.c_str(), method_in_ancestor->get_human_readable_name().c_str()));
+
+    auto new_name = parent->name + "$$" + method->local_name();
+
+    auto empty_parent_method_vertex = VertexAdaptor<op_function>::create(method->root->params().clone(), VertexAdaptor<op_seq>::create());
+    auto empty_parent_method = FunctionData::clone_from(new_name, method, empty_parent_method_vertex);
+    parent->members.add_instance_method(empty_parent_method, empty_parent_method->modifiers);
+
+    empty_parent_method->is_virtual_method = true;
+    empty_parent_method->is_overridden_method = true;
+
+    G->register_and_require_function(empty_parent_method, os, true);
+  }
+}
+
+void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<FunctionPtr> &os) {
+  auto find_virtual_overridden = [&](ClassMemberInstanceMethod &method) {
+    if (!method.function || method.function->is_constructor() || method.function->modifiers.is_private()) {
+      return;
+    }
+
+    for (auto parent = cur_class->parent_class; parent; parent = parent->get_parent_or_interface()) {
+      if (auto parent_member = parent->members.get_instance_method(method.local_name())) {
+        auto parent_function = parent_member->function;
+
+        kphp_error(parent_function->modifiers.is_abstract() || !parent_function->modifiers.is_final(),
+                   format("You cannot override final method: %s", method.function->get_human_readable_name().c_str()));
+
+        kphp_error(parent_function->modifiers.access_modifier() == method.function->modifiers.access_modifier(),
+                   format("Can not change access type for method: %s", method.function->get_human_readable_name().c_str()));
+
+        method.function->is_overridden_method = true;
+        generate_empty_virtual_method_in_parents(method.function, os);
+
+        if (!parent_function->root->cmd()->empty()) {
+          parent_function->move_virtual_to_self_method();
+          parent_function->is_virtual_method = true;
+        }
+
+        return;
+      }
+    }
+  };
+
+  cur_class->members.for_each(find_virtual_overridden);
+  for (auto derived : cur_class->derived_classes) {
+    mark_virtual_and_overridden_methods(derived, os);
+  }
+}
+
+template<class ClassMemberT>
+class CheckParentDoesntHaveMemberWithSameName {
+private:
+  ClassPtr c;
+
+public:
+  explicit CheckParentDoesntHaveMemberWithSameName(ClassPtr cur_class) :
+    c(cur_class) {
+  }
+
+  void operator()(const ClassMemberT &member) const {
+    auto field_name = member.local_name();
+    auto par = c->parent_class;
+    bool parent_has_instance_or_static_field = par->get_instance_field(field_name) ||
+                                               (!std::is_same<ClassMemberT, ClassMemberConstant>{} && par->get_constant(field_name)) ||
+                                               (!std::is_same<ClassMemberT, ClassMemberStaticField>{} && par->get_static_field(field_name));
+    kphp_error(!parent_has_instance_or_static_field,
+               format("You may not override field: `%s`, in class: `%s`", field_name.c_str(), c->name.c_str()));
+  }
+};
+
+void copy_abstract_methods(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
+  if (!parent_class->modifiers.is_abstract() || !child_class->modifiers.is_abstract()) {
+    return;
+  }
+
+  auto clone_function = [child_class, &function_stream](FunctionPtr from) {
+    auto new_root = from->root.clone();
+    auto cloned_fun = FunctionData::clone_from(child_class->name + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
+    cloned_fun->class_id = child_class;
+    G->register_and_require_function(cloned_fun, function_stream, true);
+
+    return cloned_fun;
+  };
+
+  parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
+    if (m.function->modifiers.is_abstract() && !child_class->members.has_instance_method(m.local_name())) {
+      child_class->members.add_instance_method(clone_function(m.function), m.modifiers);
+    }
+  });
+
+  parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
+    if (m.function->modifiers.is_abstract() && !child_class->members.has_static_method(m.local_name())) {
+      child_class->members.add_static_method(clone_function(m.function), m.modifiers);
+    }
+  });
+}
+
+
+} // namespace
+
+
 // если все dependents класса уже обработаны, возвращает nullptr
 // если же какой-то из dependents (класс/интерфейс) ещё не обработан (его надо подождать), возвращает указатель на его
 auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
@@ -124,11 +247,11 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   }
 
   if (auto child_method = child_class->members.get_static_method(local_name)) {
-    kphp_error_return(!parent_f->is_final,
+    kphp_error_return(!parent_f->modifiers.is_final(),
                       format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
-    kphp_error_return(parent_method.access_type != access_static_private,
+    kphp_error_return(!(parent_method.modifiers.is_static() && parent_method.modifiers.is_private()),
                       format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
-    kphp_error_return(parent_method.access_type == child_method->access_type,
+    kphp_error_return(parent_method.modifiers.access_modifier() == child_method->modifiers.access_modifier(),
                       format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
   } else {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
@@ -138,7 +261,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
 
-    child_class->members.add_static_method(child_function, parent_f->access_type);    // пока наследование только статическое
+    child_class->members.add_static_method(child_function, parent_f->modifiers);    // пока наследование только статическое
 
     G->register_and_require_function(child_function, function_stream);
   }
@@ -157,8 +280,6 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   G->register_and_require_function(context_function, function_stream);
 }
 
-
-
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
@@ -166,8 +287,12 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   kphp_error_return(parent_class->is_class() && child_class->is_class(),
                     format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
 
+  kphp_error_return(!parent_class->modifiers.is_final(),
+                    format("You cannot extends final class: %s", child_class->name.c_str()));
+
   child_class->parent_class = parent_class;
   child_class->check_parent_constructor();
+  copy_abstract_methods(child_class, parent_class, function_stream);
 
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
@@ -176,10 +301,14 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
     });
     parent_class->members.for_each([&](const ClassMemberStaticField &f) {
       if (auto field = child_class->members.get_static_field(f.local_name())) {
-        kphp_error(f.access_type != access_static_private,
+        kphp_error(!f.modifiers.is_private(),
                    format("Can't redeclare private static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
-        kphp_error(f.access_type == field->access_type,
-                   format("Can't change access type for static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
+
+        kphp_error(f.modifiers == field->modifiers,
+                   format("Can't change access type for static field %s (%s) in class %s (%s)\n",
+                          f.local_name().c_str(), f.modifiers.to_string().c_str(),
+                          child_class->name.c_str(), field->modifiers.to_string().c_str())
+        );
       }
     });
   }
@@ -193,137 +322,18 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
 void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class, DataStream<FunctionPtr> &function_stream) {
   kphp_error(interface_class->is_interface(),
              format("Error implements %s and %s", child_class->name.c_str(), interface_class->name.c_str()));
+
   if (child_class->is_interface()) {
     child_class->parent_class = interface_class;
-
-    auto clone_function = [child_class, &function_stream](FunctionPtr from) {
-      auto new_root = from->root.clone();
-      auto cloned_fun = FunctionData::clone_from(child_class->name + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
-      cloned_fun->class_id = child_class;
-      G->register_and_require_function(cloned_fun, function_stream, true);
-
-      return cloned_fun;
-    };
-
-    interface_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-      child_class->members.add_instance_method(clone_function(m.function), m.access_type);
-    });
-
-    interface_class->members.for_each([&](const ClassMemberStaticMethod &m) {
-      child_class->members.add_static_method(clone_function(m.function), m.access_type);
-    });
   } else {
     child_class->implements.emplace_back(interface_class);
   }
 
+  copy_abstract_methods(child_class, interface_class, function_stream);
+
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);
 }
-
-namespace {
-using name_to_classes_methods_t = std::unordered_map<std::string, std::vector<FunctionPtr>>;
-
-name_to_classes_methods_t collect_and_mark_methods_with_the_same_name(ClassPtr cur_klass) {
-  name_to_classes_methods_t name_to_methods;
-
-  for (auto derived : cur_klass->derived_classes) {
-    auto derived_methods = collect_and_mark_methods_with_the_same_name(derived);
-    for (auto &name_methods : derived_methods) {
-      auto &methods_with_the_same_name_in_derived = name_to_methods[name_methods.first];
-      methods_with_the_same_name_in_derived.insert(methods_with_the_same_name_in_derived.end(), name_methods.second.begin(), name_methods.second.end());
-    }
-  }
-
-  cur_klass->members.for_each([&](ClassMemberInstanceMethod &method) {
-    if (method.function->is_constructor() || method.function->access_type == AccessType::access_private) {
-      return;
-    }
-
-    auto &methods_with_the_same_name_in_derived = name_to_methods[method.local_name()];
-
-    if (!methods_with_the_same_name_in_derived.empty()) {
-      method.function->is_virtual_method = true;
-      method.function->is_overridden_method = false;
-    }
-
-    for (auto &derived_m : methods_with_the_same_name_in_derived) {
-      derived_m->is_overridden_method = true;
-    }
-
-    methods_with_the_same_name_in_derived.push_back(method.function);
-  });
-
-  return name_to_methods;
-}
-
-/**
- * Imagine situation:
- * class B { public function foo() {} }
- *
- * class D extends B {}
- *
- * class DD extends D { public function foo() {} }
- * class DD2 extends D { public function foo() {} }
- *
- * in class D we need generate virtual method `foo` for choosing appropriate derived class
- */
-void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<FunctionPtr> &os) {
-  auto method_klass = method->class_id;
-  for (auto parent = method_klass->parent_class; parent; parent = parent->parent_class) {
-    if (parent->is_interface() || parent->members.get_instance_method(method->local_name())) {
-      return;
-    }
-
-    auto new_name = parent->name + "$$" + method->local_name();
-
-    auto empty_parent_method_vertex = VertexAdaptor<op_function>::create(method->root->params().clone(), VertexAdaptor<op_seq>::create());
-    auto empty_parent_method = FunctionData::clone_from(new_name, method, empty_parent_method_vertex);
-    parent->members.add_instance_method(empty_parent_method, empty_parent_method->access_type);
-
-    empty_parent_method->is_virtual_method = true;
-    empty_parent_method->is_overridden_method = true;
-
-    G->register_and_require_function(empty_parent_method, os, true);
-  }
-}
-
-void mark_virtual_and_overridden_methods(ClassPtr cur_klass, DataStream<FunctionPtr> &os) {
-  name_to_classes_methods_t methods = collect_and_mark_methods_with_the_same_name(cur_klass);
-
-  for (auto &name_and_methods : methods) {
-    auto &methods_with_the_same_name = name_and_methods.second;
-    for (auto m : methods_with_the_same_name) {
-      if (m->is_overridden_method) {
-        generate_empty_virtual_method_in_parents(m, os);
-      }
-      if (m->is_virtual_method && !m->root->cmd()->empty()) {
-        m->move_virtual_to_self_method();
-      }
-    }
-  }
-}
-
-template<class ClassMemberT>
-class CheckParentDoesntHaveMemberWithSameName {
-private:
-  ClassPtr c;
-
-public:
-  explicit CheckParentDoesntHaveMemberWithSameName(ClassPtr cur_class) :
-    c(cur_class) {
-  }
-
-  void operator()(const ClassMemberT &member) const {
-    auto field_name = member.local_name();
-    auto par = c->parent_class;
-    bool parent_has_instance_or_static_field = par->get_instance_field(field_name) ||
-                                               (!std::is_same<ClassMemberT, ClassMemberConstant>{} && par->get_constant(field_name)) ||
-                                               (!std::is_same<ClassMemberT, ClassMemberStaticField>{} && par->get_static_field(field_name));
-    kphp_error(!parent_has_instance_or_static_field,
-               format("You may not override field: `%s`, in class: `%s`", field_name.c_str(), c->name.c_str()));
-  }
-};
-} // namespace
 
 /**
  * Каждый класс поступает сюда один и ровно один раз — когда он и все его dependents
@@ -414,10 +424,8 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       polymorphic_classes.emplace_back(c);
     }
 
-    // For stable code generation of interface method body
-    if (c->is_interface()) {
-      std::sort(c->derived_classes.begin(), c->derived_classes.end());
-    }
+    // For stable code generation of polymorphic classes body
+    std::sort(c->derived_classes.begin(), c->derived_classes.end());
   }
 
   stage::die_if_global_errors();

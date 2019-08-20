@@ -32,8 +32,8 @@ string ClassMemberInstanceMethod::local_name() const {
 }
 
 
-inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, const vk::string_view &phpdoc_str) :
-  access_type(access_type),
+inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) :
+  modifiers(modifiers),
   full_name(replace_backslashes(klass->name) + "$$" + root->get_string()),
   root(root),
   init_val(init_val),
@@ -75,8 +75,8 @@ void ClassMemberInstanceField::process_phpdoc() {
   }
 }
 
-ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str) :
-  access_type(access_type),
+ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) :
+  modifiers(modifiers),
   root(root),
   phpdoc_str(phpdoc_str) {
 
@@ -119,40 +119,43 @@ inline bool ClassMembersContainer::member_exists(const string &hash_name) const 
 }
 
 
-void ClassMembersContainer::add_static_method(FunctionPtr function, AccessType access_type) {
+void ClassMembersContainer::add_static_method(FunctionPtr function, FunctionModifiers modifiers) {
   string hash_name = function->name + "()";     // не local_name из-за context-наследования, там коллизии
-  append_member(hash_name, ClassMemberStaticMethod(function, access_type));
+  append_member(hash_name, ClassMemberStaticMethod(function, modifiers));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
-  function->access_type = access_type;
+  function->modifiers = modifiers;
   function->class_id = klass;
   function->context_class = klass;
-  function->is_virtual_method = klass->is_interface();
+  function->is_virtual_method |= function->modifiers.is_abstract();
 }
 
-void ClassMembersContainer::add_instance_method(FunctionPtr function, AccessType access_type) {
+void ClassMembersContainer::add_instance_method(FunctionPtr function, FunctionModifiers modifiers) {
   string hash_name = function->local_name() + "()";
-  append_member(hash_name, ClassMemberInstanceMethod(function, access_type));
+  append_member(hash_name, ClassMemberInstanceMethod(function, modifiers));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
-  function->access_type = access_type;
+  function->modifiers = modifiers;
   function->class_id = klass;
   function->context_class = klass;
-  function->is_virtual_method |= klass->is_interface();
+  if (klass->is_interface()) {
+    function->modifiers.set_abstract();
+  }
+  function->is_virtual_method |= function->modifiers.is_abstract();
 
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
     klass->construct_function = function;
   }
 }
 
-void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, AccessType access_type, const vk::string_view &phpdoc_str) {
+void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) {
   string hash_name = "$" + root->str_val;
-  append_member(hash_name, ClassMemberStaticField(klass, root, init_val, access_type, phpdoc_str));
+  append_member(hash_name, ClassMemberStaticField(klass, root, init_val, modifiers, phpdoc_str));
 }
 
-void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, AccessType access_type, const vk::string_view &phpdoc_str) {
+void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) {
   string hash_name = "$" + root->str_val;
-  append_member(hash_name, ClassMemberInstanceField(klass, root, def_val, access_type, phpdoc_str));
+  append_member(hash_name, ClassMemberInstanceField(klass, root, def_val, modifiers, phpdoc_str));
 }
 
 void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {
@@ -160,9 +163,9 @@ void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {
   append_member(hash_name, ClassMemberConstant(klass, const_name, value));
 }
 
-void ClassMembersContainer::safe_add_instance_method(FunctionPtr function, AccessType access_type) {
+void ClassMembersContainer::safe_add_instance_method(FunctionPtr function, FunctionModifiers modifiers) {
   AutoLocker<Lockable *> locker(&(*klass));
-  add_instance_method(function, access_type);
+  add_instance_method(function, modifiers);
 }
 
 bool ClassMembersContainer::has_constant(const string &local_name) const {

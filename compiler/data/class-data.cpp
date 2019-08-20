@@ -104,7 +104,7 @@ FunctionPtr ClassData::add_virt_clone() {
   auto param_list = VertexAdaptor<op_func_param_list>::create(params);
 
   VertexAdaptor<op_seq> body;
-  if (!is_interface()) {
+  if (!modifiers.is_abstract()) {
     auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
     auto return_clone_this = VertexAdaptor<op_return>::create(clone_this);
     body = VertexAdaptor<op_seq>::create(return_clone_this);
@@ -121,7 +121,7 @@ FunctionPtr ClassData::add_virt_clone() {
   virt_clone_func_ptr->is_inline = true;
   virt_clone_func_ptr->is_virtual_method = !derived_classes.empty();
 
-  members.add_instance_method(virt_clone_func_ptr, AccessType::access_public);
+  members.add_instance_method(virt_clone_func_ptr, FunctionModifiers::instance_public());
 
   return virt_clone_func_ptr;
 }
@@ -146,7 +146,7 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
   ctor_function->update_location_in_body();
   ctor_function->is_inline = true;
-  members.add_instance_method(ctor_function, access_public);
+  members.add_instance_method(ctor_function, FunctionModifiers::instance_public());
 }
 
 template<Operation Op>
@@ -157,54 +157,47 @@ void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next,
   params_next.emplace(params_next.begin(), param_this);
 }
 
-bool ClassData::is_parent_of(ClassPtr other) {
-  return other->parent_class && (other->parent_class == ClassPtr{this} || is_parent_of(other->parent_class));
+ClassPtr ClassData::get_parent_or_interface() const {
+  if (parent_class) {
+    return parent_class;
+  }
+
+  return implements.size() == 1 ? implements[0] : ClassPtr{};
 }
 
-InterfacePtr ClassData::get_common_base_or_interface(ClassPtr other) const {
+bool ClassData::is_parent_of(ClassPtr other) const {
+  auto parent = other ? other->get_parent_or_interface() : ClassPtr{};
+  return parent && (parent == get_self() || is_parent_of(other->parent_class));
+}
+
+ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {
   if (!other) {
     return {};
   }
 
-  auto self = get_self();
-  if (self == other) {
-    return self;
+  if (get_self() == other) {
+    return get_self();
   }
 
-  if (class_type == other->class_type) {
-    switch (class_type) {
-      case ClassType::klass: {
-        if (implements.size() == other->implements.size() && implements.size() == 1) {
-          return implements[0]->get_common_base_or_interface(other->implements[0]);
-        }
-      }
-      /* fallthrough */
-      case ClassType::interface: {
-        // performance doesn't matter
-        for (; self && other; self = self->parent_class, other = other->parent_class) {
-          if (self == other) {
-            return self;
-          } else if (self->is_parent_of(other)) {
-            return self;
-          } else if (other->is_parent_of(self)) {
-            return other;
-          }
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  } else {
-    if (other->is_class()) {
-      std::swap(self, other);
+  auto get_parents_of = [&](ClassPtr klass) {
+    std::vector<ClassPtr> parents;
+    for (ClassPtr parent = klass; parent; parent = parent->get_parent_or_interface()) {
+      parents.emplace_back(parent);
     }
 
-    if (self->is_class() && other->is_interface()) {
-      auto top_parent = self->get_top_parent();
-      kphp_assert(top_parent->implements.size() == 1);
-      return top_parent->implements[0]->get_common_base_or_interface(other);
-    }
+    std::reverse(parents.begin(), parents.end());
+    return parents;
+  };
+
+  auto parents_of_self = get_parents_of(get_self());
+  auto parents_of_other = get_parents_of(other);
+
+  auto first_diff_iterators = std::mismatch(parents_of_self.begin(), parents_of_self.end(),
+                                            parents_of_other.begin(), parents_of_other.end());
+
+  auto mismatched_iter_in_self_parents = first_diff_iterators.first;
+  if (mismatched_iter_in_self_parents != parents_of_self.begin()) {
+    return *std::prev(mismatched_iter_in_self_parents);
   }
 
   return {};
@@ -260,22 +253,22 @@ bool ClassData::is_builtin() const {
   return file_id && file_id->is_builtin();
 }
 
-bool ClassData::is_interface_or_has_interface_member() const {
-  if (is_interface()) {
+bool ClassData::is_polymorphic_or_has_polymorphic_member() const {
+  if (is_polymorphic_class()) {
     return true;
   }
   std::unordered_set<ClassPtr> checked{get_self()};
-  return has_interface_member_dfs(checked);
+  return has_polymorphic_member_dfs(checked);
 }
 
-bool ClassData::has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) const {
+bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const {
   return nullptr != members.find_member(
     [&checked](const ClassMemberInstanceField &field) {
       std::unordered_set<ClassPtr> sub_classes;
       field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
       for (auto klass : sub_classes) {
         if (checked.insert(klass).second) {
-          if (klass->is_interface() || klass->has_interface_member_dfs(checked)) {
+          if (klass->is_polymorphic_class() || klass->has_polymorphic_member_dfs(checked)) {
             return true;
           }
         }
@@ -299,23 +292,14 @@ void ClassData::mark_as_used() {
   if (parent_class) {
     parent_class->mark_as_used();
   }
-  if (implements.size()) {
+  if (!implements.empty()) {
     kphp_assert(implements.size() == 1);
     implements[0]->mark_as_used();
   }
 }
 
-bool ClassData::is_final() const {
+bool ClassData::has_no_derived_classes() const {
   return (!implements.empty() || parent_class) && derived_classes.empty();
-}
-
-ClassPtr ClassData::get_top_parent() const {
-  auto klass = get_self();
-  while (klass->parent_class) {
-    klass = klass->parent_class;
-  }
-
-  return klass;
 }
 
 template<std::atomic<bool> ClassData:: *field_ptr>

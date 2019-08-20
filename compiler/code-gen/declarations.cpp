@@ -453,7 +453,7 @@ void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
   if (!klass->derived_classes.empty()) {
     W << "virtual ";
   }
-  const char *final_kw = klass->is_final() ? "final " : "";
+  const char *final_kw = klass->has_no_derived_classes() ? "final " : "";
   W << "const char *get_class() const " << final_kw << BEGIN;
   {
     W << "return ";
@@ -468,14 +468,10 @@ void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, 
     W << "virtual ";
   }
   W << "void accept(" << visitor << " &visitor) ";
-  if (klass->is_interface()) {
-    W << "= 0;" << NL;
-  } else {
-    const char *final_kw = klass->is_final() ? "final " : "";
-    W << final_kw << BEGIN
-      << "generic_accept(visitor);" << NL
-      << END << NL;
-  }
+  const char *final_kw = klass->has_no_derived_classes() ? "final " : "";
+  W << final_kw << BEGIN
+    << "generic_accept(visitor);" << NL
+    << END << NL;
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
@@ -484,17 +480,15 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
   }
 
   W << NL;
-  if (!klass->is_interface()) {
-    W << "template<class Visitor>" << NL
-      << "void generic_accept(Visitor &&visitor) " << BEGIN;
-    for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
-      cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
-        // will generate visitor("field_name", $field_name);
-        W << "visitor(\"" << f.local_name() << "\", $" << f.local_name() << ");" << NL;
-      });
-    }
-    W << END << NL;
+  W << "template<class Visitor>" << NL
+    << "void generic_accept(Visitor &&visitor) " << BEGIN;
+  for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
+    cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
+      // will generate visitor("field_name", $field_name);
+      W << "visitor(\"" << f.local_name() << "\", $" << f.local_name() << ");" << NL;
+    });
   }
+  W << END << NL;
 
   if (klass->need_instance_to_array_visitor) {
     W << NL;
