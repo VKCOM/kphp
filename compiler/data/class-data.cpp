@@ -285,7 +285,7 @@ bool ClassData::has_interface_member_dfs(std::unordered_set<ClassPtr> &checked) 
 }
 
 bool ClassData::does_need_codegen(ClassPtr c) {
-  return c && !c->is_fully_static() && !c->is_builtin() && c->really_used;
+  return c && !c->is_fully_static() && !c->is_builtin() && (c->really_used || c->is_tl_class);
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
