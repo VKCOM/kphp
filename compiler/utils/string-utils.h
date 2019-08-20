@@ -108,6 +108,16 @@ static inline std::string replace_characters(std::string s, char from, char to) 
   return s;
 }
 
+static inline std::string replace_non_alphanum(std::string s, char to = '_') {
+  for (char &c: s) {
+    if (!is_alphanum(c)) {
+      c = to;
+    }
+  }
+  return s;
+}
+
+
 static inline std::string replace_backslashes(const std::string &s) {
   return replace_characters(s, '\\', '$');
 }

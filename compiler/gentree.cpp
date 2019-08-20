@@ -1448,7 +1448,7 @@ VertexPtr GenTree::get_switch() {
 
   CE (expect(tok_opbrc, "'{'"));
 
-  auto create_var = [&](const string& name_prefix, PrimitiveType tp) {
+  auto create_var = [&](const string &name_prefix, PrimitiveType tp) {
     auto v = VertexAdaptor<op_var>::create();
     v->str_val = gen_unique_name(name_prefix, cur_function);
     v->extra_type = op_ex_var_superlocal;

@@ -152,7 +152,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       char tmp[50];
       sprintf(tmp, "%zx", vk::std_hash(full_file_name));
-      string func_name = gen_unique_name("src_" + new_file->short_file_name + tmp, FunctionPtr{});
+      string func_name = replace_non_alphanum("src_" + new_file->short_file_name + tmp);
       new_file->main_func_name = func_name;
       new_file->unified_file_name = unify_file_name(new_file->file_name);
       size_t last_slash = new_file->unified_file_name.rfind('/');

@@ -11,18 +11,6 @@
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
 
-string register_unique_name(const string &prefix) {
-  //static set <string> v;
-  //static volatile int x = 0;
-  //AutoLocker <volatile int *> locker (&x);
-  //if (v.count (prefix)) {
-  //fprintf (stderr, "%s\n", prefix.c_str());
-  //assert (0);
-  //}
-  //v.insert (prefix);
-  return prefix;
-}
-
 static inline string gen_unique_name_inside_function(FunctionPtr function, const std::string &prefix, volatile int &x) {
   AutoLocker<volatile int *> locker(&x);
   auto h = vk::std_hash(function->name);
@@ -74,29 +62,18 @@ std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   return {tmp, static_cast<size_t>(l)};
 }
 
-string gen_unique_name(string prefix, FunctionPtr function) {
-  for (char &c : prefix) {
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
-    } else {
-      c = '_';
-    }
-  }
-  prefix += "$u";
+string gen_unique_name(const string& prefix, FunctionPtr function) {
   if (!function) {
-    return register_unique_name(prefix);
+    function = stage::get_function();
   }
   kphp_assert(function);
   auto h = vk::std_hash(function->name);
   auto ph = vk::std_hash(prefix);
-  auto &i = function->name_gen_map[ph];
+  auto &index = function->name_gen_map[ph];
   char tmp[50];
-  sprintf(tmp, "%zx_%d", h, i);
-  i++;
-  return register_unique_name(prefix + tmp);
-}
-
-string gen_unique_name(string prefix) {
-  return gen_unique_name(prefix, stage::get_function());
+  sprintf(tmp, "$u%zx_%d", h, index);
+  index++;
+  return replace_non_alphanum(prefix) + tmp;
 }
 
 string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
