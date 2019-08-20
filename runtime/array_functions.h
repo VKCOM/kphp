@@ -976,8 +976,11 @@ bool f$in_array(const T1 &value, const array<T> &a, bool strict) {
 
 template<class T>
 array<T> f$array_fill(int start_index, int num, const T &value) {
-  if (num <= 0) {
-    php_warning("Parameter num of array_fill must be positive");
+  if (num < 0) {
+    php_warning("Parameter num of array_fill must not be negative");
+    return array<T>();
+  }
+  if (num == 0) {
     return array<T>();
   }
   array<T> result(array_size(num, 0, start_index == 0));
