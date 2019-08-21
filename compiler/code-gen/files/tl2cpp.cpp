@@ -63,7 +63,7 @@ static vk::tl::combinator *cur_combinator;
 static const std::string VK_name_prefix = "VK\\";
 
 const std::unordered_set<std::string> CUSTOM_IMPL_TYPES   // из tl_builtins.h
-  {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "False", "Vector", "Maybe", "Tuple",
+  {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "True", "False", "Vector", "Maybe", "Tuple",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
 // найти по php-классу соответствующий конструктор в tl-схеме

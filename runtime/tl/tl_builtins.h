@@ -264,6 +264,23 @@ struct t_Bool {
   }
 };
 
+struct t_True {
+  using PhpType = bool;
+
+  void store(const var & __attribute__((unused))) {}
+
+  array<var> fetch() {
+    return array<var>();
+  }
+
+  void typed_store(const PhpType & __attribute__((unused))) {}
+
+  void typed_fetch_to(PhpType &out) {
+    CHECK_EXCEPTION(return);
+    out = true;
+  }
+};
+
 template<typename T, unsigned int inner_magic>
 struct t_Vector {
   T elem_state;
