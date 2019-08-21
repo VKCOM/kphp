@@ -2109,10 +2109,14 @@ protected:
             rpc_parse_save_backup();
             new_tl_object = new_tl_mode::fetch_function(rpc_query);
             if (!equals(tl_object, new_tl_object)) {
-              php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", rpc_query.get()->tl_function_name.c_str());
-              fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", rpc_query.get()->tl_function_name.c_str());
-              fprintf(stderr, "Expected:\n%s\n", dump_tl_array(tl_object).c_str());
-              fprintf(stderr, "Actual:\n%s\n", dump_tl_array(new_tl_object).c_str());
+              // NANs inside! equals() returns false; don't spam 1kw
+              bool needs_warning = rpc_query.get()->tl_function_name != string("counterkeeper.getCounters");
+              if (needs_warning) {
+                php_warning("NEW_TL_MODE_ERROR: fetched responses not equal %s", rpc_query.get()->tl_function_name.c_str());
+                fprintf(stderr, "--------- NEW_TL_MODE_ERROR: fetched responses not equal %s\n", rpc_query.get()->tl_function_name.c_str());
+                fprintf(stderr, "Expected:\n%s\n", dump_tl_array(tl_object).c_str());
+                fprintf(stderr, "Actual:\n%s\n", dump_tl_array(new_tl_object).c_str());
+              }
             }
           } else {
             php_warning("NEW_TL_MODE_ERROR: stored_fetcher is null %s", tl_current_function_name);
