@@ -1465,7 +1465,37 @@ std::pair<std::string, std::string> get_full_type_expr_str(
   return {full_type_name, full_type_value};
 }
 
+// сейчас тут проверка следующая: если тип полиморфный, то он нигде не должен использоваться как bare
+// по идее, этой проверки тут БЫТЬ НЕ ДОЛЖНО: она должна быть на уровне генерации tlo; но пока тут
+// более того, она пока что ОТКЛЮЧЕНА: включить, когда починим tree_stats.CounterChangeRequestManualLimit и storage2.UploadBlockSliceLink
+void check_type_expr(vk::tl::expr_base *expr_base) {
+  if (false) {
+    if (auto array = expr_base->as<vk::tl::type_array>()) {
+      for (const auto &arg : array->args) {
+        check_type_expr(arg->type_expr.get());
+      }
+    } else if (auto type_expr = expr_base->as<vk::tl::type_expr>()) {
+      vk::tl::type *type = type_of(type_expr);
+      if (type->is_integer_variable() || type->name == T_TYPE) {
+        return;
+      }
+      kphp_error(!type->is_polymorphic() || !(type_expr->flags & FLAG_BARE),
+                 format("Polymorphic tl type %s can't be used as bare in tl scheme.", type->name.c_str()));
+      for (const auto &child : type_expr->children) {
+        check_type_expr(child.get());
+      }
+    }
+  }
+}
+
+void check_combinator(const std::unique_ptr<vk::tl::combinator> &c) {
+  for (const auto &arg : c->args) {
+    check_type_expr(arg->type_expr.get());
+  }
+}
+
 void check_constructor(const std::unique_ptr<vk::tl::combinator> &c) {
+  check_combinator(c);
   // Проверяем, что порядок неявных аргументов конструктора совпадает с их порядком в типе
   std::vector<int> var_nums;
   for (const auto &arg : c->args) {
@@ -1530,6 +1560,7 @@ void collect_target_objects() {
     const std::unique_ptr<vk::tl::combinator> &f = e.second;
     Module::add_to_module(f);
     cur_combinator = f.get();
+    check_combinator(f);
     for (const auto &arg : f->args) {
       collect_cells(arg->type_expr.get());
     }
