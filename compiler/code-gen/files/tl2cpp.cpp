@@ -52,7 +52,6 @@
  */
 namespace tl_gen {
 static const std::string T_TYPE = "Type";
-static const std::string T_INTEGER_VARIABLE = "#";
 
 using vk::tl::FLAG_OPT_FIELD;
 using vk::tl::FLAG_OPT_VAR;
@@ -65,7 +64,7 @@ static vk::tl::tl_scheme *tl;
 static vk::tl::combinator *cur_combinator;
 
 const std::unordered_set<std::string> CUSTOM_IMPL_TYPES   // из tl_builtins.h
-  {T_INTEGER_VARIABLE, T_TYPE, "Int", "Long", "Double", "String", "Bool", "False", "Vector", "Maybe", "Tuple",
+  {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "False", "Vector", "Maybe", "Tuple",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
 
@@ -157,13 +156,17 @@ bool is_type_dependent(vk::tl::type *type) {
 
 bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
   const auto &type = tl->types[type_expr->type_id];
-  return type->constructors_num == 1 && !(type_expr->flags & FLAG_BARE);
+  // полиморфные типы процессят magic внутри себя, а не снаружи, а для "#" вообще magic'а нет никогда
+  bool handles_magic_inside = type->is_integer_variable() ? true : type->is_polymorphic();
+  bool is_used_as_bare = type_expr->flags & FLAG_BARE;
+  // означает: тип полиморфный или с % — не нужно читать снаружи его magic
+  return !(handles_magic_inside || is_used_as_bare);
 }
 
 std::vector<std::string> get_not_optional_fields_masks(const vk::tl::combinator *constructor) {
   std::vector<std::string> res;
   for (const auto &arg : constructor->args) {
-    if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_INTEGER_VARIABLE && !(arg->flags & FLAG_OPT_VAR)) {
+    if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable() && !(arg->flags & FLAG_OPT_VAR)) {
       res.emplace_back(arg->name);
     }
   }
@@ -174,7 +177,7 @@ std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl
   std::vector<std::string> res;
   for (const auto &arg : constructor->args) {
     if (arg->flags & FLAG_OPT_VAR) {
-      if (type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
+      if (type_of(arg->type_expr)->is_integer_variable()) {
         res.emplace_back(arg->name);
       } else {
         res.emplace_back("std::move(" + arg->name + ")");
@@ -676,7 +679,7 @@ struct CombinatorStore {
           W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
             << get_tl_object_field_access(arg) << ".get().store();" << NL;
         }
-      } else if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
+      } else if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
         // Запоминаем филд маску для последующего использования
         // Может быть либо локальной переменной либо полем структуры
         if (!typed_mode) {
@@ -814,7 +817,7 @@ struct CombinatorFetch {
                     arg->exist_var_bit) << BEGIN;
       }
       W << TypeExprFetch(arg, typed_mode);
-      if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
+      if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
         // запоминаем филд маску для дальнейшего использования
         if (!typed_mode) {
           W << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << register_tl_const_str(arg->name) << ", "
@@ -960,7 +963,7 @@ struct TlConstructorDecl {
     std::vector<std::string> res;
     for (const auto &arg : c->args) {
       if (arg->flags & FLAG_OPT_VAR) {
-        if (type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
+        if (type_of(arg->type_expr)->is_integer_variable()) {
           res.emplace_back("int " + arg->name);
         } else {
           res.emplace_back("T" + std::to_string(arg->var_num) + " " + arg->name);
@@ -1076,7 +1079,7 @@ struct TlTypeDecl {
     std::vector<std::string> constructor_inits;
     for (const auto &arg : constructor->args) {
       if (arg->var_num != -1) {
-        if (type_of(arg->type_expr)->name == T_INTEGER_VARIABLE) {
+        if (type_of(arg->type_expr)->is_integer_variable()) {
           if (arg->flags & FLAG_OPT_VAR) {
             W << "int " << arg->name << "{0};" << NL;
             constructor_params.emplace_back("int " + arg->name);
@@ -1455,7 +1458,7 @@ std::pair<std::string, std::string> get_full_type_expr_str(
       }
     }
   }
-  auto type_name = (type->name != T_INTEGER_VARIABLE ? cpp_tl_struct_name("t_", type->name) : cpp_tl_struct_name("t_", tl->types[TL_INT]->name));
+  auto type_name = (!type->is_integer_variable() ? cpp_tl_struct_name("t_", type->name) : cpp_tl_struct_name("t_", tl->types[TL_INT]->name));
   auto template_str = (!template_params.empty() ? "<" + vk::join(template_params, ", ") + ">" : "");
   auto full_type_name = type_name + template_str;
   auto full_type_value = full_type_name + "(" + vk::join(constructor_params, ", ") + ")";
