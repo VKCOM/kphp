@@ -644,7 +644,7 @@ std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, cons
     for (const auto &arg : cur_combinator->args) {
       if (auto casted = arg->type_expr->as<vk::tl::type_var>()) {
         if ((arg->flags & FLAG_EXCL) && casted->var_num == arg_as_type_var->var_num) {
-          return R"(fetch_magic_if_not_bare(0, "");)";
+          return "";
         }
       }
     }
@@ -889,11 +889,16 @@ struct CombinatorFetch {
       if (!typed_mode) {
         W << "return " << get_fetcher_call(combinator->result) << ";" << NL;
       } else {
-        // для любой getChatInfo implements RpcFunction есть getChatInfo_result implements RpcFunctionReturnResult
-        W << get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
-          << "result.alloc();" << NL
-          << get_fetcher_call(combinator->result, true, "result->$value") << ";" << NL
-          << "return result;" << NL;
+        if (auto type_var = combinator->result->as<vk::tl::type_var>()) {
+          // multiexclamation оптимизация
+          W << "return " << cur_combinator->get_var_num_arg(type_var->var_num)->name << ".fetcher->typed_fetch();" << NL;
+        } else {
+          // для любой getChatInfo implements RpcFunction есть getChatInfo_result implements RpcFunctionReturnResult
+          W << get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
+            << "result.alloc();" << NL
+            << get_fetcher_call(combinator->result, true, "result->$value") << ";" << NL
+            << "return result;" << NL;
+        }
       }
       return;
     }
