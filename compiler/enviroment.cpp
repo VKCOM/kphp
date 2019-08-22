@@ -394,6 +394,8 @@ bool KphpEnviroment::init() {
     return false;
   }
 
+  init_env_var(&tl_schema_file_, "KPHP_TL_SCHEMA", "");
+
   if (is_static_lib_mode()) {
     if (main_files_.size() > 1) {
       printf("Multiple main directories are forbidden for static lib mode");
@@ -574,6 +576,7 @@ void KphpEnviroment::debug() const {
             "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<
             "KPHP_RUNTIME_SHA256_FILE=[" << get_runtime_sha256_file() << "]\n" <<
             "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256() << "]\n" <<
+            "KPHP_TL_SCHEMA=[" << get_tl_schema_file() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
             "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<

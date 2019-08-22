@@ -134,8 +134,8 @@ def make_relpath(file_dir, file_path):
 
 def get_modes():
     return {
-        "asan": ("asan", "g=1 asan=1 php"),
-        "normal": ("normal", "php")
+        "asan": ("asan", "g=1 asan=1 php tl2php"),
+        "normal": ("normal", "php tl2php")
     }
 
 
@@ -238,6 +238,24 @@ if __name__ == "__main__":
         description="run php tests from zend repo in {} mode".format(mode_name),
         cmd="{} -j{{jobs}} -d {} --from-list {}".format(kphp_test_runner, args.zend_repo, zend_test_list),
         skip=skip_zend_tests
+    )
+
+    tl2php_bin = os.path.join(root_engine_path, "objs/bin/tl2php")
+    combined_tlo = os.path.join(root_engine_path, "objs/bin/combined.tlo")
+    combined2_tl = os.path.join(root_engine_path, "objs/bin/combined2.tl")
+    tl_tests_dir = os.path.join(runner_dir, "TL-tests")
+    runner.add_test_group(
+        name="tl2php",
+        description="gen php classes with tests from tl schema in {} mode".format(mode_name),
+        cmd="{} -c {} -t -f -d {} {}".format(tl2php_bin, combined2_tl, tl_tests_dir, combined_tlo),
+        skip=args.step and args.step != "tl2php"
+    )
+
+    runner.add_test_group(
+        name="typed-tl-tests",
+        description="run typed tl tests in {} mode".format(mode_name),
+        cmd="KPHP_TL_SCHEMA={} {} -j{{jobs}} -d {}".format(os.path.abspath(combined_tlo), kphp_test_runner, tl_tests_dir),
+        skip=args.step and args.step != "typed-tl-tests"
     )
 
     runner.setup(args)
