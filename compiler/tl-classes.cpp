@@ -8,7 +8,7 @@
 
 
 void TlClasses::load_from(const std::string &tlo_schema) {
-  auto tl_expected_ptr = vk::tl::parse_tlo(tlo_schema.c_str());
+  auto tl_expected_ptr = vk::tl::parse_tlo(tlo_schema.c_str(), true);
   kphp_error_return(tl_expected_ptr.has_value(),
                     format("Error while reading tlo: %s", tl_expected_ptr.error().c_str()));
 

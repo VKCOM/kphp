@@ -1572,7 +1572,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     return;
   }
 
-  auto tl_ptr = vk::tl::parse_tlo(G->env().get_tl_schema_file().c_str());
+  auto tl_ptr = vk::tl::parse_tlo(G->env().get_tl_schema_file().c_str(), false);
   kphp_error_return(tl_ptr.has_value(),
                     format("Error while reading tlo: %s", tl_ptr.error().c_str()));
 
