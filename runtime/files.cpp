@@ -10,9 +10,10 @@
 
 #include "common/wrappers/mkdir_recursive.h"
 
-#include "interface.h"
-#include "streams.h"
-#include "string_functions.h"//php_buf, TODO
+#include "runtime/critical_section.h"
+#include "runtime/interface.h"
+#include "runtime/streams.h"
+#include "runtime/string_functions.h"//php_buf, TODO
 
 static int opened_fd{-1};
 

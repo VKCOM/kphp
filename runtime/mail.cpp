@@ -3,6 +3,7 @@
 
 #include <cstdio>
 
+#include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/string_functions.h"
 

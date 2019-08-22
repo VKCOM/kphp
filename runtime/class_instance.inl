@@ -14,8 +14,7 @@ template<class T>
 class_instance<T> class_instance<T>::clone() const {
   class_instance<T> res;
   if (o) {
-    res.alloc();
-    *res.o = *o;
+    res.alloc(*o);
     res.o->set_refcnt(1);
   }
 
@@ -23,10 +22,11 @@ class_instance<T> class_instance<T>::clone() const {
 }
 
 template<class T>
-class_instance<T> class_instance<T>::alloc() {
+template<class... Args>
+class_instance<T> class_instance<T>::alloc(Args &&... args) {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
-  new (&o) vk::intrusive_ptr<T>(new T{});
+  new (&o) vk::intrusive_ptr<T>(new T{std::forward<Args>(args)...});
   return *this;
 }
 

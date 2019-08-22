@@ -22,6 +22,7 @@
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "common/wrappers/openssl.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/files.h"
 #include "runtime/net_events.h"

@@ -194,6 +194,8 @@ public:
   inline int get_reference_counter() const;
   inline void set_reference_counter_to_const();
 
+  inline dl::size_type estimate_memory_usage() const;
+
   inline friend const var operator-(const string &lhs);
 
   inline friend const var operator+(const var &lhs, const var &rhs);

@@ -7,6 +7,7 @@
 #include "common/rpc-const.h"
 
 #include "PHP/common-net-functions.h"
+#include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/memcache.h"

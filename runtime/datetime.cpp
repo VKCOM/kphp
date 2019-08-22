@@ -4,6 +4,7 @@
 #include <ctime>
 #include <sys/time.h>
 
+#include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
 extern long timezone;

@@ -1707,6 +1707,22 @@ void var::set_reference_counter_to_const() {
   }
 }
 
+inline dl::size_type var::estimate_memory_usage() const {
+  switch (type) {
+    case NULL_TYPE:
+    case BOOLEAN_TYPE:
+    case INTEGER_TYPE:
+    case FLOAT_TYPE:
+      return 0;
+    case STRING_TYPE:
+      return as_string().estimate_memory_usage();
+    case ARRAY_TYPE:
+      return as_array().estimate_memory_usage();
+    default:
+      __builtin_unreachable();
+  }
+}
+
 const var operator+(const var &lhs, const var &rhs) {
   if (likely (lhs.type == var::INTEGER_TYPE && rhs.type == var::INTEGER_TYPE)) {
     return lhs.as_int() + rhs.as_int();

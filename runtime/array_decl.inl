@@ -103,6 +103,7 @@ private:
 
     inline static int choose_bucket(const int key, const int buf_size) __attribute__ ((always_inline));
 
+    inline static dl::size_type estimate_size(int &new_int_size, int &new_string_size, bool is_vector);
     inline static array_inner *create(int new_int_size, int new_string_size, bool is_vector);
 
     inline static array_inner *empty_array() __attribute__ ((always_inline));
@@ -129,6 +130,8 @@ private:
     inline bool has_key(int int_key, const string &string_key) const;
     inline bool isset_value(int int_key, const string &string_key) const;
     inline void unset_map_value(int int_key, const string &string_key);
+
+    dl::size_type estimate_memory_usage() const;
 
     inline array_inner() = delete;
     inline array_inner(const array_inner &other) = delete;
@@ -336,6 +339,8 @@ public:
   const T *get_const_vector_pointer() const; // unsafe
 
   void reserve(int int_size, int string_size, bool make_vector_if_possible);
+
+  dl::size_type estimate_memory_usage() const;
 
   template<typename U>
   static array<T> convert_from(const array<U> &);

@@ -12,6 +12,7 @@
 #include "PHP/php-engine-vars.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
+#include "runtime/critical_section.h"
 #include "runtime/curl.h"
 #include "runtime/datetime.h"
 #include "runtime/exception.h"
@@ -2100,6 +2101,7 @@ static void free_runtime_libs() {
 }
 
 void global_init_runtime_libs() {
+  global_init_instance_cache_lib();
   global_init_files_lib();
   global_init_interface_lib();
   global_init_openssl_lib();
@@ -2114,6 +2116,7 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size) {
+  dl::init_critical_section();
   dl::init_script_allocator(mem, mem_size);
   reset_global_interface_vars();
   init_runtime_libs();

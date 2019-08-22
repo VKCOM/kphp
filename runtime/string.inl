@@ -102,9 +102,12 @@ void string::string_inner::dispose() {
 }
 
 void string::string_inner::destroy() {
-  dl::deallocate((void *)this, (size_type)(sizeof(string_inner) + (capacity + 1)));
+  dl::deallocate(this, get_memory_usage());
 }
 
+inline string::size_type string::string_inner::get_memory_usage() const {
+  return static_cast<size_type>(sizeof(string_inner) + (capacity + 1));
+}
 
 char *string::string_inner::ref_copy() {
 //  fprintf (stderr, "inc ref cnt %d, %s\n", ref_count + 1, ref_data());
@@ -1023,6 +1026,10 @@ inline void string::destroy_cached() {
     inner()->dispose();
     p = nullptr;
   }
+}
+
+inline string::size_type string::estimate_memory_usage() const {
+  return inner()->get_memory_usage();
 }
 
 inline void string::destroy() {

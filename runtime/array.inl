@@ -213,7 +213,7 @@ typename array<T>::string_hash_entry *array<T>::array_inner::get_string_entries(
 
 
 template<class T>
-typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, int new_string_size, bool is_vector) {
+dl::size_type array<T>::array_inner::estimate_size(int &new_int_size, int &new_string_size, bool is_vector) {
   if (new_int_size + new_string_size > MAX_HASHTABLE_SIZE) {
     php_critical_error ("max array size exceeded");
   }
@@ -231,15 +231,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, 
   if (is_vector) {
     php_assert (new_string_size == 0);
     new_int_size += 2;
-
-    array_inner *p = (array_inner *)dl::allocate((dl::size_type)(sizeof(array_inner) + new_int_size * sizeof(T)));
-    p->ref_cnt = 0;
-    p->max_key = -1;
-    p->int_size = 0;
-    p->int_buf_size = new_int_size;
-    p->string_size = 0;
-    p->string_buf_size = -1;
-    return p;
+    return static_cast<dl::size_type>(sizeof(array_inner) + new_int_size * sizeof(T));
   }
 
   new_int_size = 2 * new_int_size + 3;
@@ -250,8 +242,25 @@ typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, 
   if (new_string_size % 5 == 0) {
     new_string_size += 2;
   }
+  return static_cast<dl::size_type>(sizeof(array_inner) + new_int_size * sizeof(int_hash_entry) + new_string_size * sizeof(string_hash_entry));
+}
 
-  array_inner *p = (array_inner *)dl::allocate0((dl::size_type)(sizeof(array_inner) + new_int_size * sizeof(int_hash_entry) + new_string_size * sizeof(string_hash_entry)));
+template<class T>
+typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, int new_string_size, bool is_vector) {
+  const dl::size_type mem_size = estimate_size(new_int_size, new_string_size, is_vector);
+
+  if (is_vector) {
+    array_inner *p = static_cast<array_inner *>(dl::allocate(mem_size));
+    p->ref_cnt = 0;
+    p->max_key = -1;
+    p->int_size = 0;
+    p->int_buf_size = new_int_size;
+    p->string_size = 0;
+    p->string_buf_size = -1;
+    return p;
+  }
+
+  array_inner *p = static_cast<array_inner *>(dl::allocate0(mem_size));
   p->ref_cnt = 0;
   p->max_key = -1;
   p->end()->next = p->get_pointer(p->end());
@@ -670,6 +679,17 @@ void array<T>::array_inner::unset_map_value(int int_key, const string &string_ke
   }
 }
 
+template<class T>
+dl::size_type array<T>::array_inner::estimate_memory_usage() const {
+  int int_elements = int_size;
+  int string_elements = 0;
+  const bool vector_structure = is_vector();
+  if (vector_structure) {
+    return estimate_size(int_elements, string_elements, vector_structure);
+  }
+  string_elements = string_size;
+  return estimate_size(++int_elements, ++string_elements, vector_structure);
+}
 
 template<class T>
 bool array<T>::is_vector() const {
@@ -819,6 +839,11 @@ void array<T>::reserve(int int_size, int string_size, bool make_vector_if_possib
       p = new_array;
     }
   }
+}
+
+template<class T>
+dl::size_type array<T>::estimate_memory_usage() const {
+  return p->estimate_memory_usage();
 }
 
 template<class T>

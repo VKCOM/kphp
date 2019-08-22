@@ -19,6 +19,7 @@ public:
   void reset() { ptr_.reset(); }
   T *operator->() { return ptr_.operator->(); }
   explicit operator bool() const { return !!ptr_; }
+  T *get() { return ptr_.get(); }
 
 private:
   template<typename S>

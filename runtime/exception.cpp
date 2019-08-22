@@ -1,5 +1,6 @@
 #include "runtime/exception.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
 array<array<string>> f$debug_backtrace() {

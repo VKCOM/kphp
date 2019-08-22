@@ -5,6 +5,7 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 
+#include "runtime/critical_section.h"
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"
 

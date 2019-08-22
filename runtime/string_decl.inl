@@ -44,6 +44,8 @@ private:
 
     inline void destroy();
 
+    inline size_type get_memory_usage() const;
+
     inline char *ref_copy();
 
     inline char *clone(size_type requested_cap);
@@ -174,6 +176,8 @@ public:
   inline bool is_const_reference_counter() const;
   inline void set_reference_counter_to_cache();
   inline void destroy_cached();
+
+  inline size_type estimate_memory_usage() const;
 
   inline void destroy() __attribute__((always_inline));
 

@@ -2905,7 +2905,7 @@ void start_server() {
   }
 }
 
-void set_instance_cache_memory_limit(int64_t limit);
+void set_instance_cache_memory_limit(dl::size_type limit);
 void read_tl_config(const char *file_name);
 void update_tl_config(const char *data, unsigned int len);
 void init_php_scripts();
@@ -3145,11 +3145,11 @@ int main_args_handler(int i) {
     }
     case 2003: {
       int64_t instance_cache_memory_limit = parse_memory_limit(optarg);
-      if (instance_cache_memory_limit <= 0) {
+      if (instance_cache_memory_limit <= 0 || instance_cache_memory_limit > std::numeric_limits<dl::size_type>::max()) {
         kprintf("couldn't parse instance-cache-memory-limit argument\n");
         return -1;
       }
-      set_instance_cache_memory_limit(instance_cache_memory_limit);
+      set_instance_cache_memory_limit(static_cast<dl::size_type>(instance_cache_memory_limit));
       return 0;
     }
     default:

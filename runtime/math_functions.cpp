@@ -2,6 +2,7 @@
 
 #include <sys/time.h> //gettimeofday
 
+#include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
 int f$bindec(const string &number) {

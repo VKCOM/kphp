@@ -2021,7 +2021,7 @@ void f$warning(const string &message) {
 }
 
 int f$memory_get_static_usage() {
-  return (int)dl::static_memory_used;
+  return (int)dl::get_heap_memory_used();
 }
 
 int f$memory_get_peak_usage(bool real_usage) {

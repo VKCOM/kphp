@@ -1,8 +1,8 @@
 #pragma once
 
-// This API inspired by APC and allow to cache any kind of instances between requests.
+// This API inspired by APC and allow to cache any kind of instances between requests and workers.
 // Highlights:
-//  1) All strings, arrays, instances are placed into common heap memory;
+//  1) All strings, arrays, instances are placed into common shared between workers memory;
 //  2) On store, all constant strings and arrays (check REF_CNT_FOR_CONST) are shallow copied as is,
 //    otherwise, a deep copy is used and the reference counter is set to special value (check REF_CNT_FOR_CACHE),
 //    therefore the reference counter of cached strings and arrays is REF_CNT_FOR_CACHE or REF_CNT_FOR_CONST;
@@ -11,13 +11,14 @@
 //  5) On fetch, all instances (and sub instances) are deeply cloned from instance cache;
 //  6) All instances (with all members) are destroyed strictly before or after request,
 //    and shouldn't be destroyed while request.
+#include <memory>
 
-#include "runtime/kphp_core.h"
 #include "common/mixin/not_copyable.h"
 
-namespace ic_impl_ {
+#include "runtime/kphp_core.h"
+#include "runtime/unique_object.h"
 
-bool is_instance_cache_memory_limit_exceeded_();
+namespace ic_impl_ {
 
 template<typename Child>
 class BasicVisitor {
@@ -107,43 +108,48 @@ public:
 
   template<typename T>
   bool process(array<T> &arr) {
-    if (is_memory_limit_exceeded()) {
+    if (arr.is_const_reference_counter()) {
+      return true;
+    }
+    if (memory_limit_exceeded_ || !memory_reserve(arr.estimate_memory_usage())) {
       arr = array<T>();
+      memory_limit_exceeded_ = true;
       return false;
     }
-    bool result = true;
-    if (!arr.is_const_reference_counter()) {
-      // begin mutates array implicitly, therefore call it separately
-      auto first = arr.begin();
-      result = Basic::process_range(first, arr.end());
-    }
-
+    // begin mutates array implicitly, therefore call it separately
+    auto first = arr.begin();
     // mutates may make array as constant again (e.g. empty array), therefore check again
-    if (!arr.is_const_reference_counter()) {
-      arr.set_reference_counter_to_cache();
+    if (arr.is_const_reference_counter()) {
+      php_assert(first == arr.end());
+      rollback_memory_reserve();
+      return true;
     }
-    return result;
+    arr.set_reference_counter_to_cache();
+    return Basic::process_range(first, arr.end());
   }
 
   template<typename I>
   bool process(class_instance<I> &instance) {
-    if (is_memory_limit_exceeded()) {
-      instance.destroy();
-      return false;
-    }
-    if (++instance_depth_level_ < instance_depth_level_limit_) {
-      if (!instance.is_null()) {
-        instance = instance.clone();
-        instance.set_reference_counter_to_cache();
-        Basic::process(instance);
-      }
-      --instance_depth_level_;
-      return true;
-    } else {
+    if (++instance_depth_level_ >= instance_depth_level_limit_) {
       instance.destroy();
       is_depth_limit_exceeded_ = true;
       return false;
     }
+
+    bool result = true;
+    if (!instance.is_null()) {
+      if (!memory_limit_exceeded_ && memory_reserve(instance.estimate_memory_usage())) {
+        instance = instance.clone();
+        instance.set_reference_counter_to_cache();
+        result = Basic::process(instance);
+      } else {
+        instance.destroy();
+        result = false;
+        memory_limit_exceeded_ = true;
+      }
+    }
+    --instance_depth_level_;
+    return result;
   }
 
   bool process(string &str);
@@ -152,15 +158,16 @@ public:
     return is_depth_limit_exceeded_;
   }
 
-  bool is_memory_limit_exceeded() {
-    if (!is_memory_limit_exceeded_) {
-      is_memory_limit_exceeded_ = is_instance_cache_memory_limit_exceeded_();
-    }
-    return is_memory_limit_exceeded_;
+  bool is_memory_limit_exceeded() const {
+    return memory_limit_exceeded_;
   }
 
+  bool memory_reserve(dl::size_type size);
+
 private:
-  bool is_memory_limit_exceeded_{false};
+  void rollback_memory_reserve();
+
+  bool memory_limit_exceeded_{false};
   bool is_depth_limit_exceeded_{false};
   uint8_t instance_depth_level_{0u};
   const uint8_t instance_depth_level_limit_{128u};
@@ -223,7 +230,7 @@ public:
 class InstanceWrapperBase : vk::not_copyable {
 public:
   virtual const char *get_class() const = 0;
-  virtual InstanceWrapperBase *clone_and_detach_shared_ref() const = 0;
+  virtual unique_object<InstanceWrapperBase> clone_and_detach_shared_ref() const = 0;
   virtual void memory_limit_warning() const = 0;
   virtual ~InstanceWrapperBase() = default;
 };
@@ -246,21 +253,22 @@ public:
     php_warning("Memory limit exceeded on cloning instance of class '%s' into cache", get_class());
   }
 
-  InstanceWrapperBase *clone_and_detach_shared_ref() const final {
+  unique_object<InstanceWrapperBase> clone_and_detach_shared_ref() const final {
     auto detached_instance = instance_;
     DeepMoveFromScriptToCacheVisitor detach_processor;
     detach_processor.process(detached_instance);
-    if (detach_processor.is_memory_limit_exceeded()) {
-      memory_limit_warning();
-      DeepDestroyFromCacheVisitor{}.process(detached_instance);
-      return nullptr;
-    }
     if (detach_processor.is_depth_limit_exceeded()) {
       php_warning("Depth limit exceeded on cloning instance of class '%s' into cache", get_class());
       DeepDestroyFromCacheVisitor{}.process(detached_instance);
-      return nullptr;
+      return {};
     }
-    return new InstanceWrapper<class_instance<I>>{detached_instance};
+    if (detach_processor.is_memory_limit_exceeded() ||
+        !detach_processor.memory_reserve(sizeof(size_t) + sizeof(InstanceWrapper<class_instance<I>>))) {
+      memory_limit_warning();
+      DeepDestroyFromCacheVisitor{}.process(detached_instance);
+      return {};
+    }
+    return make_unique_object<InstanceWrapper<class_instance<I>>>(detached_instance);
   }
 
   class_instance<I> deep_instance_clone() const {
@@ -316,9 +324,14 @@ using DeepMoveFromScriptToCacheVisitor = ic_impl_::DeepMoveFromScriptToCacheVisi
 using DeepDestroyFromCacheVisitor = ic_impl_::DeepDestroyFromCacheVisitor;
 using ShallowMoveFromCacheToScriptVisitor = ic_impl_::ShallowMoveFromCacheToScriptVisitor;
 
+void global_init_instance_cache_lib();
 void init_instance_cache_lib();
 void free_instance_cache_lib();
-void set_instance_cache_memory_limit(int64_t limit);
+void set_instance_cache_memory_limit(dl::size_type limit);
+// these functions should be called from master
+memory_resource::MemoryStats instance_cache_get_memory_stats();
+bool instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end);
+void instance_cache_purge_expired_elements();
 
 template<typename ClassInstanceType>
 bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int ttl = 0) {

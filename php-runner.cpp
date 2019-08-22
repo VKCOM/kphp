@@ -14,6 +14,7 @@
 
 #include "PHP/php-engine-vars.h"
 #include "runtime/allocator.h"
+#include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 
@@ -253,7 +254,7 @@ void PHPScriptBase::finish() {
     const auto &script_mem_stats = dl::get_script_memory_stats();
     kprintf ("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
              script_time + net_time, net_time, script_time, queries_cnt,
-             (int)dl::static_memory_used,
+             (int)dl::get_heap_memory_used(),
              (int)script_mem_stats.max_real_memory_used,
              (int)script_mem_stats.real_memory_used, buf);
   }

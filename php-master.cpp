@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "PHP/php-engine-vars.h"
 #include "common/algorithms/find.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
@@ -38,12 +37,12 @@
 #include "net/net-connections.h"
 #include "net/net-http-server.h"
 #include "net/net-memcache-server.h"
-#include "net/net-rpc-client.h"
-#include "net/net-rpc-common.h"
-#include "net/net-rpc-server.h"
 #include "net/net-socket.h"
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
+
+#include "PHP/php-engine-vars.h"
+#include "runtime/instance_cache.h"
 
 extern const char *engine_tag;
 
@@ -999,7 +998,7 @@ int run_worker() {
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
-  int logname_id = get_logname_id();
+  int worker_logname_id = get_logname_id();
   if (new_pid == 0) {
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
@@ -1051,10 +1050,10 @@ int run_worker() {
     //
 
     signal_fd = -1;
-
+    logname_id = worker_logname_id;
     if (logname_pattern) {
       char buf[100];
-      snprintf(buf, 100, logname_pattern, logname_id);
+      snprintf(buf, 100, logname_pattern, worker_logname_id);
       logname = strdup(buf);
     }
 
@@ -1071,7 +1070,7 @@ int run_worker() {
   worker->is_dying = 0;
   worker->generation = ++conn_generation;
   worker->start_time = my_now;
-  worker->logname_id = logname_id;
+  worker->logname_id = worker_logname_id;
   worker->last_activity_time = my_now;
 
 
@@ -1671,6 +1670,9 @@ std::string get_master_stats_html() {
   return html;
 }
 
+static long long int instance_cache_memory_swaps_ok = 0;
+static long long int instance_cache_memory_swaps_fail = 0;
+
 STATS_PROVIDER_TAGGED(workers, 100, STATS_TAG_KPHP_SERVER) {
   const auto worker_stats = WorkerStats::collect();
 
@@ -1687,6 +1689,16 @@ STATS_PROVIDER_TAGGED(workers, 100, STATS_TAG_KPHP_SERVER) {
     sprintf(stat_name, "running_workers_avg_%s", periods_desc[i]);
     add_histogram_stat_double(stats, stat_name, server_stats.misc[i].get_stat().running_workers_avg);
   }
+
+  const auto instance_cache_mem_stats = instance_cache_get_memory_stats();
+  add_histogram_stat_long(stats, "instance_cache_memory_limit", instance_cache_mem_stats.memory_limit);
+  add_histogram_stat_long(stats, "instance_cache_memory_used", instance_cache_mem_stats.memory_used);
+  add_histogram_stat_long(stats, "instance_cache_max_memory_used", instance_cache_mem_stats.max_memory_used);
+  add_histogram_stat_long(stats, "instance_cache_real_memory_used", instance_cache_mem_stats.real_memory_used);
+  add_histogram_stat_long(stats, "instance_cache_max_real_memory_used", instance_cache_mem_stats.max_real_memory_used);
+  add_histogram_stat_long(stats, "instance_cache_memory_reserved", instance_cache_mem_stats.reserved);
+  add_histogram_stat_long(stats, "instance_cache_memory_swaps_ok", instance_cache_memory_swaps_ok);
+  add_histogram_stat_long(stats, "instance_cache_memory_swaps_fail", instance_cache_memory_swaps_fail);
 }
 
 int php_master_http_execute (struct connection *c, int op) {
@@ -1870,6 +1882,19 @@ int update_mem_stats() {
   return 0;
 }
 
+void check_and_instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
+  const auto instance_cache_memory_stats = instance_cache_get_memory_stats();
+  if (instance_cache_memory_stats.real_memory_used >= 0.9 * instance_cache_memory_stats.memory_limit) {
+    if (instance_cache_try_swap_memory(active_workers_begin, active_workers_end)) {
+      vkprintf (0, "instance cache memory resource successfully swapped\n");
+      ++instance_cache_memory_swaps_ok;
+    } else {
+      vkprintf (0, "can't swap instance cache memory resource\n");
+      ++instance_cache_memory_swaps_fail;
+    }
+  }
+}
+
 static void cron() {
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;
@@ -1879,10 +1904,11 @@ static void cron() {
   dl_assert (err, "get_cpu_total failed");
 
   int running_workers = 0;
+  std::array<pid_t, MAX_WORKERS> active_workers{0};
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
-    bool err;
-    err = get_pid_info(w->pid, &w->my_info);
+    active_workers[w->logname_id] = w->pid;
+    const bool err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
     if (!err) {
       continue;
@@ -1911,6 +1937,9 @@ static void cron() {
 
   send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
   create_all_outbound_connections();
+
+  instance_cache_purge_expired_elements();
+  check_and_instance_cache_try_swap_memory(active_workers.data(), active_workers.data() + me_workers_n);
 }
 
 void run_master() {
@@ -1928,7 +1957,7 @@ void run_master() {
   preallocate_msg_buffers();
 
   while (true) {
-    vkprintf (2, "run_master iteration: begin\n");
+    vkprintf(2, "run_master iteration: begin\n");
     my_now = dl_time();
 
     changed = 0;
@@ -1969,7 +1998,7 @@ void run_master() {
     me->generation = generation;
 
     if (to_kill != 0 || to_run != 0) {
-      vkprintf (1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);
+      vkprintf(1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);
     }
     while (to_kill-- > 0) {
       kill_worker();
@@ -1985,14 +2014,14 @@ void run_master() {
     me->dying_workers_n = me_dying_workers_n;
 
     if (changed && other->valid_flag) {
-      vkprintf (1, "wakeup other master [pid = %d]\n", (int)other->pid);
+      vkprintf(1, "wakeup other master [pid = %d]\n", (int)other->pid);
       kill(other->pid, SIGPOLL);
     }
 
     shared_data_unlock(shared_data);
 
     if (to_exit) {
-      vkprintf (1, "all workers killed. exit\n");
+      vkprintf(1, "all workers killed. exit\n");
       _exit(0);
     }
 
@@ -2004,7 +2033,7 @@ void run_master() {
     }
 
 
-    vkprintf (2, "run_master iteration: end\n");
+    vkprintf(2, "run_master iteration: end\n");
 
     //timespec timeout;
     //timeout.tv_sec = failed ? 1 : 10;

@@ -6,6 +6,7 @@
 
 #include "common/resolver.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/net_events.h"
 #include "runtime/streams.h"

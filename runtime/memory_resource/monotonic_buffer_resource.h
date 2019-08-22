@@ -1,15 +1,54 @@
 #pragma once
-#include "runtime/memory_resource/memory_resource.h"
-
-#include "common/wrappers/likely.h"
-#include "runtime/php_assert.h"
-
 #include <algorithm>
 
+#include "common/wrappers/likely.h"
+
+#include "runtime/memory_resource/memory_resource.h"
+#include "runtime/memory_resource/details/universal_reallocate.h"
+#include "runtime/php_assert.h"
+
 namespace memory_resource {
-class monotonic_buffer_resource {
-public:
+
+class monotonic_buffer {
+protected:
   void init(void *buffer, size_type buffer_size);
+
+  const MemoryStats &get_memory_stats() const noexcept { return stats_; }
+
+  void register_allocation(void *mem, size_type size) {
+    if (mem) {
+      stats_.memory_used += size;
+      stats_.max_memory_used = std::max(stats_.max_memory_used, stats_.memory_used);
+      stats_.real_memory_used = static_cast<size_type>(memory_current_ - memory_begin_);
+      stats_.max_real_memory_used = std::max(stats_.real_memory_used, stats_.max_real_memory_used);
+    }
+  }
+
+  void register_deallocation(size_type size) {
+    stats_.memory_used -= size;
+    stats_.real_memory_used = static_cast<size_type>(memory_current_ - memory_begin_);
+  }
+
+  bool check_memory_piece(void *mem, size_type size) const {
+    return memory_begin_ <= static_cast<char *>(mem) &&
+           static_cast<char *>(mem) + size <= memory_end_;
+  }
+
+  void critical_dump(void *mem, size_type size) const;
+
+  MemoryStats stats_;
+
+  static_assert(sizeof(char) == 1, "sizeof char should be 1");
+  char *memory_current_{nullptr};
+  char *memory_begin_{nullptr};
+  char *memory_end_{nullptr};
+};
+
+
+class monotonic_buffer_resource : protected monotonic_buffer {
+public:
+  using monotonic_buffer::init;
+  using monotonic_buffer::get_memory_stats;
 
   void *allocate(size_type size) {
     void *mem = get_from_pool(size);
@@ -18,8 +57,12 @@ public:
     return mem;
   }
 
+  void *allocate0(size_type size) {
+    return memset(allocate(size), 0x00, size);
+  }
+
   void *reallocate(void *mem, size_type new_size, size_type old_size) {
-    return universal_reallocate(*this, mem, new_size, old_size);
+    return details::universal_reallocate(*this, mem, new_size, old_size);
   }
 
   void *try_expand(void *mem, size_type new_size, size_type old_size) {
@@ -37,25 +80,16 @@ public:
   void deallocate(void *mem, size_type size) {
     memory_debug("deallocate %d at %p\n", size, mem);
     if (put_memory_back(mem, size)) {
-      stats_.memory_used -= size;
-      stats_.real_memory_used -= size;
+      register_deallocation(size);
     }
   }
-
-  const MemoryStats &get_memory_stats() const noexcept { return stats_; }
 
 protected:
-  void critical_dump(void *mem, size_t size);
-
-  void check_memory_piece(void *mem, size_t size) {
-    if (unlikely(memory_begin_ > static_cast<char *>(mem) ||
-                 static_cast<char *>(mem) + size > memory_end_)) {
+  bool put_memory_back(void *mem, size_type size) {
+    if (unlikely(!check_memory_piece(mem, size))) {
       critical_dump(mem, size);
     }
-  }
 
-  bool put_memory_back(void *mem, size_type size) {
-    check_memory_piece(mem, size);
     const bool expandable = static_cast<char *>(mem) + size == memory_current_;
     if (expandable) {
       memory_current_ = static_cast<char *>(mem);
@@ -74,21 +108,6 @@ protected:
     memory_current_ += size;
     return mem;
   }
-
-  void register_allocation(void *mem, size_type size) {
-    if (mem) {
-      stats_.memory_used += size;
-      stats_.max_memory_used = std::max(stats_.max_memory_used, stats_.memory_used);
-      stats_.real_memory_used = static_cast<size_type>(memory_current_ - memory_begin_);
-      stats_.max_real_memory_used = std::max(stats_.real_memory_used, stats_.max_real_memory_used);
-    }
-  }
-
-  MemoryStats stats_;
-
-  static_assert(sizeof(char) == 1, "sizeof char should be 1");
-  char *memory_begin_{nullptr};
-  char *memory_current_{nullptr};
-  char *memory_end_{nullptr};
 };
+
 } // namespace memory_resource

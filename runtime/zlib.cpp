@@ -2,6 +2,7 @@
 
 #include <zlib.h>
 
+#include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
 static voidpf zlib_alloc(voidpf opaque, uInt items, uInt size) {

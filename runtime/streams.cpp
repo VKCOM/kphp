@@ -5,6 +5,7 @@
 #include <sys/select.h>
 
 #include "runtime/array_functions.h"
+#include "runtime/critical_section.h"
 
 static dl::size_type max_wrapper_name_size;
 

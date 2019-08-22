@@ -191,7 +191,7 @@ function test_same_instance_in_array() {
 
 function test_memory_limit_exceed() {
   $vector = new VectorY;
-  for ($i = 1; $i < 100000; ++$i) {
+  for ($i = 1; $i < 1000000; ++$i) {
     $vector->elements[] = new Y($i, " <-");
   }
 

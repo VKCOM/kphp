@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <wait.h>
 
-#include "runtime/allocator.h"
+#include "runtime/critical_section.h"
 #include "runtime/resumable.h"
 
 const char *engine_tag = "[";

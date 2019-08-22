@@ -57,14 +57,20 @@ public:
 
   inline class_instance &operator=(bool);
   inline class_instance clone() const;
-
-  inline class_instance<T> alloc() __attribute__((always_inline));
+  template<class... Args>
+  inline class_instance<T> alloc(Args &&... args) __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
   inline void destroy() { o.reset(); }
   int get_reference_counter() const { return o->get_refcnt(); }
 
   void set_reference_counter_to_cache();
   void destroy_cached();
+
+  constexpr static dl::size_type estimate_memory_usage() {
+    static_assert(!std::is_abstract<T>::value, "forbidden for interfaces");
+    static_assert(!std::is_empty<T>{}, "class T may not be empty");
+    return sizeof(T);
+  }
 
   inline T *operator->() __attribute__ ((always_inline));
   inline T *operator->() const __attribute__ ((always_inline));

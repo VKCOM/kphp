@@ -122,7 +122,7 @@ extern long long memory_used_to_recreate_script;
 #define SIGTERM_WAIT_TIMEOUT 0.1
 
 #define SIGSTAT (SIGRTMIN)
-#define MAX_WORKERS 1000
+#define MAX_WORKERS 999
 
 /***
   save of stdout/stderr fd

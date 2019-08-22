@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "PHP/php-engine-vars.h"
+#include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"

@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <re2/re2.h>
 
+#include "runtime/critical_section.h"
+
 int preg_replace_count_dummy;
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
