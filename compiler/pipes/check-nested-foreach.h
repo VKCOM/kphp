@@ -3,16 +3,11 @@
 #include "compiler/function-pass.h"
 
 class CheckNestedForeachPass : public FunctionPassBase {
-  vector<VarPtr> foreach_vars;
-  vector<VarPtr> forbidden_vars;
-  int in_unset;
+  vector<VarPtr> foreach_vars{};
+  vector<VarPtr> foreach_ref_vars{};
+  vector<VarPtr> foreach_key_vars{};
+  vector<VarPtr> errored_vars{};
 public:
-  struct LocalT : public FunctionPassBase::LocalT {
-    int to_remove;
-    VarPtr to_forbid;
-  };
-
-  void init();
 
   string get_description() {
     return "Try to detect common errors: nested foreach";

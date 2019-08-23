@@ -85,6 +85,7 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *local);
+  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local);
 
   bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<RegisterVariablesPass> &visit);
 

@@ -206,6 +206,16 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariabl
   return root;
 }
 
+VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root, LocalT *) {
+  if (auto foreach = root.try_as<op_foreach_param>()) {
+    if (foreach->x()->ref_flag) {
+      foreach->x()->var_id->is_foreach_reference = true;
+    }
+  }
+  return root;
+}
+
+
 void RegisterVariablesPass::visit_class(ClassPtr klass) {
   klass->members.for_each([&](ClassMemberStaticField &f) {
     register_class_static_var(klass, f);

@@ -34,6 +34,7 @@ public:
   bool needs_const_iterator_flag = false;
   bool marked_as_global = false;
   bool marked_as_const = false;
+  bool is_foreach_reference = false;
   int dependency_level = 0;
 
   void set_uninited_flag(bool f);

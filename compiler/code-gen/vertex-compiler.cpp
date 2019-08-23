@@ -954,7 +954,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   }
 
   for (auto var : func->local_var_ids) {
-    if (var->type() != VarData::var_local_inplace_t) {
+    if (var->type() != VarData::var_local_inplace_t && !var->is_foreach_reference) {
       W << VarDeclaration(var);
     }
   }
