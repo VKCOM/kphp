@@ -180,6 +180,14 @@ void *synchronized_pool_resource::allocate(size_type size) {
   return result;
 }
 
+void *synchronized_pool_resource::allocate0(size_type size) {
+  auto mem = allocate(size);
+  if (likely(mem != nullptr)) {
+    memset(mem, 0x00, size);
+  }
+  return mem;
+}
+
 void synchronized_pool_resource::deallocate(void *mem, size_type size) {
   php_assert(impl_);
   dl::CriticalSectionGuard critical_section;

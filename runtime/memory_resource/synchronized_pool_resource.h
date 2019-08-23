@@ -15,7 +15,7 @@ public:
   void hard_reset();
 
   void *allocate(size_type size);
-  void *allocate0(size_type size) { return memset(allocate(size), 0x00, size); }
+  void *allocate0(size_type size);
   void deallocate(void *mem, size_type size);
   void *reallocate(void *mem, size_type new_size, size_type old_size);
 

@@ -50,7 +50,11 @@ public:
   }
 
   void *allocate0(size_type size) {
-    return memset(allocate(size), 0x00, size);
+    auto mem = allocate(size);
+    if (likely(mem != nullptr)) {
+      memset(mem, 0x00, size);
+    }
+    return mem;
   }
 
   void *reallocate(void *mem, size_type new_size, size_type old_size) {
