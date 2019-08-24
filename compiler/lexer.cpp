@@ -254,6 +254,14 @@ void LexerData::hack_last_tokens() {
   }
 
   /**
+   * Хак для того, чтобы функции с такиим именами парсились в functions.txt,
+   * но при этом это было отдельными токенами, т.к. их надо парсить чуть по другому
+   */
+  if (are_last_tokens(tok_function, tok_var_dump) || are_last_tokens(tok_function, tok_dbg_echo) || are_last_tokens(tok_function, tok_print) || are_last_tokens(tok_function, tok_echo)) {
+    tokens.back() = {tok_func_name, tokens.back().str_val};
+  }
+
+  /**
    * Для случаев, когда встречаются ключевые слова после ->, const, это должны быть tok_func_name,
    * а не tok_array, tok_try и т.д.
    * например:

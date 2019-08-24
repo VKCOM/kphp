@@ -61,21 +61,35 @@ OrFalse<array<string>> f$gethostbynamel(const string &name);
 OrFalse<string> f$inet_pton(const string &address);
 
 
-int print(const char *s);
+void print(const char *s);
 
-int print(const char *s, int s_len);
+void print(const char *s, int s_len);
 
-int print(const string &s);
+void print(const string &s);
 
-int print(const string_buffer &sb);
+void print(const string_buffer &sb);
 
-int dbg_echo(const char *s);
+void dbg_echo(const char *s);
 
-int dbg_echo(const char *s, int s_len);
+void dbg_echo(const char *s, int s_len);
 
-int dbg_echo(const string &s);
+void dbg_echo(const string &s);
 
-int dbg_echo(const string_buffer &sb);
+void dbg_echo(const string_buffer &sb);
+
+static inline int f$print(const string& s) {
+  print(s);
+  return 1;
+}
+
+static inline void f$echo(const string& s) {
+  print(s);
+}
+
+static inline void f$dbg_echo(const string& s) {
+  dbg_echo(s);
+}
+
 
 
 bool f$get_magic_quotes_gpc();

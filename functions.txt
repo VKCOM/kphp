@@ -234,6 +234,10 @@ function is_object ($v ::: Any) ::: bool;
 function get_class ($v ::: Any) ::: string;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
+function print ($v ::: string) ::: int;
+function echo ($v ::: string) ::: void;
+function dbg_echo ($v ::: string) ::: void;
+function var_dump ($v ::: Any) ::: void;
 
 define('DATE_ATOM', "Y-m-d\TH:i:sP");
 define('DATE_COOKIE', "l, d-M-y H:i:s T");

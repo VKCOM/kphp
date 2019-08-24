@@ -1179,13 +1179,6 @@ void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
   W << END << ")";
 }
 
-void compile_var_dump(VertexPtr root, CodeGenerator &W) {
-  W << JoinValues(*root, ";", join_mode::multiple_lines,
-                  [](CodeGenerator &W, VertexPtr v) {
-                    W << "f$var_dump (" << v << ")";
-                  });
-}
-
 void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   kphp_assert (root->size() == 1 || root->type() == op_unset);
 
@@ -1477,55 +1470,6 @@ void compile_string_build(VertexAdaptor<op_string_build> root, CodeGenerator &W)
   compile_string_build_as_string(root, W);
 }
 
-void compile_as_printable(VertexPtr root, CodeGenerator &W) {
-  if (auto conv = root.try_as<op_conv_string>()) {
-    if (conv->expr()->type() == op_string) {
-      root = conv->expr();
-    }
-  }
-
-  if (root->type() == op_string) {
-    compile_string(root.as<op_string>(), W);
-    return;
-  }
-
-  if (root->type() == op_string_build) {
-    compile_string_build_as_string(root.as<op_string_build>(), W);
-    return;
-  }
-
-  if (auto conv = root.try_as<op_conv_string>()) {
-    if (conv->expr()->type() == op_string_build) {
-      compile_as_printable(conv->expr().as<op_string_build>(), W);
-      return;
-    }
-  }
-
-  if (root->type() != op_conv_string) {
-    W << "(";
-  }
-  W << root;
-  if (root->type() != op_conv_string) {
-    W << ")";
-  }
-}
-
-void compile_echo(VertexPtr root, CodeGenerator &W) {
-  const char *func_print_name = root->type() == op_dbg_echo ? "dbg_echo" : "print";
-  W << JoinValues(*root, ";", join_mode::multiple_lines,
-                  [func_print_name](CodeGenerator &W, VertexPtr child) {
-                    W << func_print_name << " (";
-                    compile_as_printable(child, W);
-                    W << ")";
-                  });
-}
-
-void compile_print(VertexAdaptor<op_print> root, CodeGenerator &W) {
-  W << "print (";
-  compile_as_printable(root->expr(), W);
-  W << ")";
-}
-
 void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W) {
   if (root->int_val != 0) {
     W << "goto " << LabelName(root->int_val);
@@ -1657,18 +1601,8 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_static:
       //already processed
       break;
-    case op_echo:
-    case op_dbg_echo:
-      compile_echo(root, W);
-      break;
     case op_throw:
       compile_throw(root.as<op_throw>(), W);
-      break;
-    case op_var_dump:
-      compile_var_dump(root, W);
-      break;
-    case op_print:
-      compile_print(root.as<op_print>(), W);
       break;
     case op_min:
     case op_max:

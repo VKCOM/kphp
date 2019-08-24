@@ -626,76 +626,76 @@ OrFalse<string> f$inet_pton(const string &address) {
 
 extern int run_once;
 
-int print(const char *s) {
+void print(const char *s) {
   if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     dprintf(kstdout, "%s", s);
     dl::leave_critical_section();
-    return 1;
+    return;
   }
   *coub << s;
-  return 1;
+  return;
 }
 
-int print(const char *s, int s_len) {
+void print(const char *s, int s_len) {
   if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     write(kstdout, s, s_len);
     dl::leave_critical_section();
-    return 1;
+    return;
   }
   coub->append(s, s_len);
-  return 1;
+  return;
 }
 
-int print(const string &s) {
+void print(const string &s) {
   if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     write(kstdout, s.c_str(), s.size());
     dl::leave_critical_section();
-    return 1;
+    return;
   }
   *coub << s;
-  return 1;
+  return;
 }
 
-int print(const string_buffer &sb) {
+void print(const string_buffer &sb) {
   if (run_once && ob_cur_buffer == 0) {
     dl::enter_critical_section();//OK
     write(kstdout, sb.buffer(), sb.size());
     dl::leave_critical_section();
-    return 1;
+    return;
   }
   coub->append(sb.buffer(), sb.size());
-  return 1;
+  return;
 }
 
-int dbg_echo(const char *s) {
+void dbg_echo(const char *s) {
   dl::enter_critical_section();//OK
   dprintf(kstderr, "%s", s);
   dl::leave_critical_section();
-  return 1;
+  return;
 }
 
-int dbg_echo(const char *s, int s_len) {
+void dbg_echo(const char *s, int s_len) {
   dl::enter_critical_section();//OK
   write(kstderr, s, s_len);
   dl::leave_critical_section();
-  return 1;
+  return;
 }
 
-int dbg_echo(const string &s) {
+void dbg_echo(const string &s) {
   dl::enter_critical_section();//OK
   write(kstderr, s.c_str(), s.size());
   dl::leave_critical_section();
-  return 1;
+  return;
 }
 
-int dbg_echo(const string_buffer &sb) {
+void dbg_echo(const string_buffer &sb) {
   dl::enter_critical_section();//OK
   write(kstderr, sb.buffer(), sb.size());
   dl::leave_critical_section();
-  return 1;
+  return;
 }
 
 

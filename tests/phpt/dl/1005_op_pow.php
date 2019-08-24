@@ -113,15 +113,15 @@ function test_string() {
 }
 
 function test_false() {
-    echo $x_var = false ** 2;
-    echo $x_var = 2 ** false;
-    echo $x_var = 2.5 ** false;
-    echo $x_var = false ** 2.5;
-
-    echo $x_var = false ** false, "\n";
-    echo $x_var = !false ** false, "\n";
-    echo $x_var = false ** !false, "\n";
-    echo $x_var = !false ** !false, "\n";
+    if (1) echo $x_var = false ** 2;
+    if (1) echo $x_var = 2 ** false;
+    if (1) echo $x_var = 2.5 ** false;
+    if (1) echo $x_var = false ** 2.5;
+    
+    if (1) echo $x_var = false ** false, "\n";
+    if (1) echo $x_var = !false ** false, "\n";
+    if (1) echo $x_var = false ** !false, "\n";
+    if (1) echo $x_var = !false ** !false, "\n";
 
     $x_var /*:= var */;
     $x_var /*:= var */;

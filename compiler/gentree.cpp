@@ -539,8 +539,8 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       first_node = get_expression();
       CE (!kphp_error(first_node, "Failed to get print argument"));
-      first_node = conv_to<tp_string>(first_node);
-      auto print = VertexAdaptor<op_print>::create(first_node);
+      auto print = VertexAdaptor<op_func_call>::create(first_node);
+      print->str_val = "print";
       set_location(print, print_location);
       res = print;
       break;
@@ -1207,22 +1207,25 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
 }
 
 template<Operation Op, class FuncT, class ResultType>
-VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f) {
-  TokenType type = cur->type();
+VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool braces) {
   AutoLocation seq_location(this);
   next_cur();
+
+  if (braces) {
+    CE (expect(tok_oppar, "'('"));
+  }
 
   std::vector<ResultType> next;
   bool ok_next = gen_list<op_err>(&next, f, tok_comma);
   CE (!kphp_error(ok_next, "Failed get_multi_call"));
+  if (braces) {
+    CE (expect(tok_clpar, "')'"));
+  }
 
   std::vector<VertexAdaptor<Op>> new_next;
   new_next.reserve(next.size());
 
   for (VertexPtr next_elem : next) {
-    if (type == tok_echo || type == tok_dbg_echo) {
-      next_elem = conv_to<tp_string>(next_elem);
-    }
     new_next.emplace_back(VertexAdaptor<Op>::create(next_elem).set_location(next_elem));
   }
   auto seq = VertexAdaptor<op_seq>::create(new_next);
@@ -1991,14 +1994,25 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
     case tok_break:
       res = get_break_continue<op_break>();
       return res;
-    case tok_unset:
-      res = get_func_call<op_unset, op_err>();
+    case tok_unset: {
+      auto res = get_multi_call<op_unset>(&GenTree::get_expression, true);
       CE (check_statement_end());
+      if (res->size() == 1) {
+        return res->args()[0];
+      }
       return res;
-    case tok_var_dump:
-      res = get_func_call<op_var_dump, op_err>();
+    }
+    case tok_var_dump: {
+      auto res = get_multi_call<op_func_call>(&GenTree::get_expression, true);
+      for (VertexPtr x : res->args()) {
+        x.as<op_func_call>()->str_val = "var_dump";
+      }
       CE (check_statement_end());
+      if (res->size() == 1) {
+        return res->args()[0];
+      }
       return res;
+    }
     case tok_define:
       res = get_func_call<op_define, op_err>();
       CE (check_statement_end());
@@ -2032,14 +2046,22 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       next_cur();
       kphp_error(0, "Expected function or variable after keyword `static`");
       return {};
-    case tok_echo:
-      res = get_multi_call<op_echo>(&GenTree::get_expression);
+    case tok_echo: {
+      auto res = get_multi_call<op_func_call>(&GenTree::get_expression);
+      for (VertexPtr x : res->args()) {
+        x.as<op_func_call>()->str_val = "echo";
+      }
       CE (check_statement_end());
       return res;
-    case tok_dbg_echo:
-      res = get_multi_call<op_dbg_echo>(&GenTree::get_expression);
+    }
+    case tok_dbg_echo: {
+      auto res = get_multi_call<op_func_call>(&GenTree::get_expression);
+      for (VertexPtr x : res->args()) {
+        x.as<op_func_call>()->str_val = "dbg_echo";
+      }
       CE (check_statement_end());
       return res;
+    }
     case tok_throw: {
       AutoLocation throw_location(this);
       next_cur();
@@ -2098,7 +2120,8 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       set_location(html_code, AutoLocation(this));
       html_code->str_val = static_cast<string>(cur->str_val);
 
-      auto echo_cmd = VertexAdaptor<op_echo>::create(html_code);
+      auto echo_cmd = VertexAdaptor<op_func_call>::create(html_code);
+      echo_cmd->str_val = "print";
       set_location(echo_cmd, AutoLocation(this));
       next_cur();
       return echo_cmd;
