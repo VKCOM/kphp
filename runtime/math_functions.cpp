@@ -181,15 +181,6 @@ int f$mt_getrandmax() {
 }
 
 
-var f$min(const var &a) {
-  return f$min(a.as_array("min"));
-}
-
-var f$max(const var &a) {
-  return f$max(a.as_array("max"));
-}
-
-
 var f$abs(const var &v) {
   var num = v.to_numeric();
   if (num.is_int()) {

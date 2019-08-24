@@ -105,6 +105,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             f->is_resumable = true;
           } else if (token == "cpp_template_call") {
             f->cpp_template_call = true;
+          } else if (token == "cpp_variadic_call") {
+            f->cpp_variadic_call = true;
           } else if (token == "tl_common_h_dep") {
             f->tl_common_h_dep = true;
           } else {

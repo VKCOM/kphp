@@ -48,8 +48,6 @@ require_once, tok_require_once
 isset, tok_isset
 print, tok_print
 var_dump, tok_var_dump
-min, tok_min
-max, tok_max
 unset, tok_unset
 var, tok_var
 __CLASS__, tok_class_c

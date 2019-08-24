@@ -36,8 +36,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_dbg_echo] = "tok_dbg_echo";
   TOKEN_TYPE_NAMES[tok_var_dump] = "tok_var_dump";
   TOKEN_TYPE_NAMES[tok_function] = "tok_function";
-  TOKEN_TYPE_NAMES[tok_min] = "tok_min";
-  TOKEN_TYPE_NAMES[tok_max] = "tok_max";
   TOKEN_TYPE_NAMES[tok_varg] = "tok_varg";
   TOKEN_TYPE_NAMES[tok_array] = "tok_array";
   TOKEN_TYPE_NAMES[tok_tuple] = "tok_tuple";

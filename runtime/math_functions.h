@@ -30,10 +30,6 @@ int f$mt_rand(int l, int r);
 int f$mt_getrandmax();
 
 
-var f$min(const var &a);
-
-var f$max(const var &a);
-
 template<class T>
 inline T f$min(const array<T> &a);
 
@@ -41,16 +37,16 @@ template<class T>
 inline T f$max(const array<T> &a);
 
 template<class T>
-inline T f$min(const T &v1, const T &v2);
+inline T f$min(const T &arg1);
 
-template<class RetT, class T1, class T2, class T3, class... Args>
-inline RetT f$min(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args);
+template<class T, class... Args>
+inline T f$min(const T &arg1, const T &arg2, Args&&... args);
 
 template<class T>
-inline T f$max(const T &v1, const T &v2);
+inline T f$max(const T &arg1);
 
-template<class RetT, class T1, class T2, class T3, class... Args>
-inline RetT f$max(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args);
+template<class T, class... Args>
+inline T f$max(const T &arg1, const T &arg2, Args&&... args);
 
 
 const int PHP_ROUND_HALF_UP = 123423141;
@@ -152,31 +148,23 @@ T f$max(const array<T> &a) {
 }
 
 template<class T>
-T f$min(const T &v1, const T &v2) {
-  if (lt(v1, v2)) {
-    return v1;
-  }
-  return v2;
+T f$min(const T &arg1) {
+  return arg1;
 }
 
-template<class RetT, class T1, class T2, class T3, class... Args>
-inline RetT f$min(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args) {
-  return f$min<RetT>(f$min<RetT>(std::forward<T1>(arg1), std::forward<T2>(arg2)),
-                     std::forward<T3>(arg3), std::forward<Args>(args)...);
+template<class T, class ...Args>
+T f$min(const T &arg1, const T &arg2, Args&& ...args) {
+  return f$min<T>(lt(arg1, arg2) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
 template<class T>
-T f$max(const T &v1, const T &v2) {
-  if (gt(v1, v2)) {
-    return v1;
-  }
-  return v2;
+T f$max(const T &arg1) {
+  return arg1;
 }
 
-template<class RetT, class T1, class T2, class T3, class... Args>
-inline RetT f$max(T1 &&arg1, T2 &&arg2, T3 &&arg3, Args &&... args) {
-  return f$max<RetT>(f$max<RetT>(std::forward<T1>(arg1), std::forward<T2>(arg2)),
-                     std::forward<T3>(arg3), std::forward<Args>(args)...);
+template<class T, class ...Args>
+T f$max(const T &arg1, const T &arg2, Args&& ...args) {
+  return f$max<T>(gt(arg1, arg2) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
 double f$acos(double v) {

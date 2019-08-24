@@ -35,7 +35,6 @@ private:
   void recalc_double_arrow(VertexAdaptor<op_double_arrow> arrow);
   void recalc_foreach_param(VertexAdaptor<op_foreach_param> param);
   void recalc_conv_array(VertexAdaptor<meta_op_unary> conv);
-  void recalc_min_max(VertexAdaptor<meta_op_builtin_func> func);
   void recalc_array(VertexAdaptor<op_array> array);
   void recalc_tuple(VertexAdaptor<op_tuple> tuple);
   void recalc_plus_minus(VertexAdaptor<meta_op_unary> expr);
@@ -290,17 +289,6 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   }
 }
 
-void ExprNodeRecalc::recalc_min_max(VertexAdaptor<meta_op_builtin_func> func) {
-  VertexRange args = func->args();
-  if (args.size() == 1) {
-    set_lca(args[0], &MultiKey::any_key(1));
-  } else {
-    for (auto i : args) {
-      set_lca(i);
-    }
-  }
-}
-
 void ExprNodeRecalc::recalc_array(VertexAdaptor<op_array> array) {
   recalc_ptype<tp_array>();
   for (auto i : array->args()) {
@@ -494,11 +482,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_conv_array:
     case op_conv_array_l:
       recalc_conv_array(expr.as<meta_op_unary>());
-      break;
-
-    case op_min:
-    case op_max:
-      recalc_min_max(expr.as<meta_op_builtin_func>());
       break;
 
     case op_array:

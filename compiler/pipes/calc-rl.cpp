@@ -40,8 +40,6 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
       return;
     case op_array: //TODO: in fact it is wrong
     case op_tuple:
-    case op_min:
-    case op_max:
     case op_defined:
       rl_calc_all<val_r>(root);
       return;

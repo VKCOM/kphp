@@ -111,7 +111,7 @@ public:
   template<PrimitiveType ToT>
   static VertexPtr conv_to_lval(VertexPtr x);
   template<Operation Op, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
-  VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool braces = false);
+  VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
   VertexPtr get_return();
   VertexPtr get_exit();
   template<Operation Op>

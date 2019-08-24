@@ -418,6 +418,13 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   }
   W << "(";
   auto args = root->args();
+  if (func && func->cpp_variadic_call) {
+    if (args.size() == 1) {
+      if (auto array = GenTree::get_actual_value(args[0]).try_as<op_array>()) {
+        args = array->args();
+      }
+    }
+  }
   auto first_arg = args.begin();
   if (!args.empty() && root->type() == op_constructor_call && (*first_arg)->type() == op_false) {
     const TypeData *tp = tinf::get_type(root);
@@ -1523,10 +1530,6 @@ void compile_cycle_op(VertexPtr root, CodeGenerator &W) {
 }
 
 
-void compile_min_max(VertexPtr root, CodeGenerator &W) {
-  W << OpInfo::str(root->type()) << "< " << TypeName(tinf::get_type(root)) << " > (" << JoinValues(*root, ", ") << ")";
-}
-
 void compile_common_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();
   string str;
@@ -1598,10 +1601,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_throw:
       compile_throw(root.as<op_throw>(), W);
-      break;
-    case op_min:
-    case op_max:
-      compile_min_max(root, W);
       break;
     case op_continue:
     case op_break:

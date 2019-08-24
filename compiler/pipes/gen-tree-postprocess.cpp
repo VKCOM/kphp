@@ -125,6 +125,16 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
       return process_require_lib(call);
     }
 
+    if (name == "min" || name == "max") {
+      auto args = call->args();
+      if (args.size() == 1) {
+        if (kphp_error(args[0]->type() != op_varg, "Argument unpacking is not allowed as only argument of min/max")) {
+          return call;
+        }
+        args[0] = VertexAdaptor<op_varg>::create(args[0]);
+      }
+    }
+
     if (vk::any_of_equal(name, "func_get_args", "func_get_arg", "func_num_args")) {
       current_function->is_vararg = true;
       current_function->has_variadic_param = true;

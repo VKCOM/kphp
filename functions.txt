@@ -201,6 +201,17 @@ function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_k
 function array_pad ($a ::: array, $size ::: int, $value ::: Any) ::: array< lca< ^1[], ^3 > >;
 function array_column ($a :>=: array< array< Any > >, $column_key, $index_key = null) ::: OrFalse< array< ^1[][] > >;
 
+/**
+ * @kphp-extern-func-info cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function min (...$a) ::: ^1[];
+/**
+ * @kphp-extern-func-info cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function max (...$a) ::: ^1[];
+
 define('ARRAY_FILTER_USE_KEY', 1);
 
 function array_filter ($a ::: array, callback ($x ::: ^1[]) ::: bool = TODO) ::: ^1;

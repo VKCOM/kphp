@@ -177,15 +177,6 @@
     }
   },
   {
-    "name": "meta_op_builtin_func",
-    "base_name": "meta_op_varg",
-    "props": {
-      "rl": "rl_func",
-      "cnst": "cnst_const_func",
-      "type": "common_op"
-    }
-  },
-  {
     "extras": [
       "string"
     ],
@@ -794,20 +785,6 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "return"
-    }
-  },
-  {
-    "name": "op_min",
-    "base_name": "meta_op_builtin_func",
-    "props": {
-      "str": "f$min"
-    }
-  },
-  {
-    "name": "op_max",
-    "base_name": "meta_op_builtin_func",
-    "props": {
-      "str": "f$max"
     }
   },
   {

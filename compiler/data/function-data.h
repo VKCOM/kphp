@@ -90,6 +90,7 @@ public:
   bool is_inline = false;
   bool can_throw = false;
   bool cpp_template_call = false;
+  bool cpp_variadic_call = false;
   bool is_resumable = false;
   bool is_final = false;
   bool is_virtual_method = false;

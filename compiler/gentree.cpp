@@ -605,25 +605,6 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_defined:
       res = get_func_call<op_defined, op_err>();
       break;
-    case tok_min: {
-      auto min_v = get_func_call<op_min, op_err>().as<op_min>();
-      VertexRange args = min_v->args();
-      if (args.size() == 1) {
-        args[0] = GenTree::conv_to(args[0], tp_array);
-      }
-      res = min_v;
-      break;
-    }
-    case tok_max: {
-      auto max_v = get_func_call<op_max, op_err>().as<op_max>();
-      VertexRange args = max_v->args();
-      if (args.size() == 1) {
-        args[0] = GenTree::conv_to(args[0], tp_array);
-      }
-      res = max_v;
-      break;
-    }
-
     case tok_oppar:
       next_cur();
       res = get_expression();
@@ -1207,18 +1188,18 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
 }
 
 template<Operation Op, class FuncT, class ResultType>
-VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool braces) {
+VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool parenthesis) {
   AutoLocation seq_location(this);
   next_cur();
 
-  if (braces) {
+  if (parenthesis) {
     CE (expect(tok_oppar, "'('"));
   }
 
   std::vector<ResultType> next;
   bool ok_next = gen_list<op_err>(&next, f, tok_comma);
   CE (!kphp_error(ok_next, "Failed get_multi_call"));
-  if (braces) {
+  if (parenthesis) {
     CE (expect(tok_clpar, "')'"));
   }
 

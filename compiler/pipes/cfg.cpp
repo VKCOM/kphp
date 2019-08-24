@@ -556,8 +556,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
   stage::set_location(tree_node->location);
   bool recursive_flag = false;
   switch (tree_node->type()) {
-    case op_min:
-    case op_max:
     case op_array:
     case op_tuple:
     case op_seq_comma:
