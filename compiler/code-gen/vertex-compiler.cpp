@@ -1180,34 +1180,29 @@ void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
 }
 
 void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
-  kphp_assert (root->size() == 1 || root->type() == op_unset);
-
-  const auto compile_set = [root](CodeGenerator &W, VertexPtr arg) {
-    if (root->type() == op_unset && arg->type() == op_var) {
-      W << "unset (" << arg << ")";
-      return;
+  auto arg = root->expr();
+  if (root->type() == op_unset && arg->type() == op_var) {
+    W << "unset (" << arg << ")";
+    return;
+  }
+  if (root->type() == op_isset && arg->type() == op_var) {
+    W << "(!f$is_null(" << arg << "))";
+    return;
+  }
+  if (auto index = arg.try_as<op_index>()) {
+    kphp_assert (index->has_key());
+    W << "(" << index->array();
+    if (root->type() == op_isset) {
+      W << ").isset (";
+    } else if (root->type() == op_unset) {
+      W << ").unset (";
+    } else {
+      kphp_assert (0);
     }
-    if (root->type() == op_isset && arg->type() == op_var) {
-      W << "(!f$is_null(" << arg << "))";
-      return;
-    }
-    if (auto index = arg.try_as<op_index>()) {
-      kphp_assert (index->has_key());
-      W << "(" << index->array();
-      if (root->type() == op_isset) {
-        W << ").isset (";
-      } else if (root->type() == op_unset) {
-        W << ").unset (";
-      } else {
-        kphp_assert (0);
-      }
-      W << index->key() << ")";
-      return;
-    }
-    kphp_error (0, "Some problems with isset/unset");
-  };
-
-  W << JoinValues(*root, ";", join_mode::multiple_lines, compile_set);
+    W << index->key() << ")";
+    return;
+  }
+  kphp_error (0, "Some problems with isset/unset");
 }
 
 

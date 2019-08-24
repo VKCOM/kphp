@@ -195,26 +195,25 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
       kphp_error (0 <= index && index < tuple_size, format("Can't get element %ld of tuple of length %zd", index, tuple_size));
     }
   }
-  if (vertex->type() == op_unset || vertex->type() == op_isset) {
-    for (auto v : vertex.as<meta_op_xset>()->args()) {
-      if (auto var_vertex = v.try_as<op_var>()) {    // isset($var), unset($var)
-        VarPtr var = var_vertex->var_id;
-        if (vertex->type() == op_unset) {
-          kphp_error(!var->is_reference, "Unset of reference variables is not supported");
-          if (var->is_in_global_scope()) {
-            FunctionPtr f = stage::get_function();
-            if (f->type != FunctionData::func_global && f->type != FunctionData::func_switch) {
-              kphp_error(0, "Unset of global variables in functions is not supported");
-            }
+  if (auto xset = vertex.try_as<meta_op_xset>()) {
+    auto v = xset->expr();
+    if (auto var_vertex = v.try_as<op_var>()) {    // isset($var), unset($var)
+      VarPtr var = var_vertex->var_id;
+      if (vertex->type() == op_unset) {
+        kphp_error(!var->is_reference, "Unset of reference variables is not supported");
+        if (var->is_in_global_scope()) {
+          FunctionPtr f = stage::get_function();
+          if (f->type != FunctionData::func_global && f->type != FunctionData::func_switch) {
+            kphp_error(0, "Unset of global variables in functions is not supported");
           }
-        } else {
-          kphp_error(!var->is_constant(), "Can't use isset on const variable");
         }
-      } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
-        const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
-        PrimitiveType ptype = arrayType->get_real_ptype();
-        kphp_error(ptype == tp_array || ptype == tp_var, "Can't use isset/unset by[idx] for not an array");
+      } else {
+        kphp_error(!var->is_constant(), "Can't use isset on const variable");
       }
+    } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
+      const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
+      PrimitiveType ptype = arrayType->get_real_ptype();
+      kphp_error(ptype == tp_array || ptype == tp_var, "Can't use isset/unset by[idx] for not an array");
     }
   }
   if (vertex->type() == op_func_call) {
