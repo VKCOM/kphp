@@ -658,6 +658,7 @@ void add_logname_id(int id) {
 }
 
 void delete_worker(worker_info_t *w) {
+  w->generation = ++conn_generation;
   add_logname_id(w->logname_id);
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
