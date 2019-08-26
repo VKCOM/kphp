@@ -147,7 +147,7 @@ def parse_args():
         "--jobs",
         type=int,
         dest="jobs",
-        default=(multiprocessing.cpu_count() // 2) or 1,
+        default=multiprocessing.cpu_count(),
         help="number of jobs to some tests"
     )
 
@@ -188,11 +188,19 @@ def parse_args():
     )
 
     parser.add_argument(
-        'step',
-        metavar='STEP',
+        "--use-distcc",
+        action='store_true',
+        dest="use_distcc",
+        default=False,
+        help="use distcc for building kphp tests"
+    )
+
+    parser.add_argument(
+        'steps',
+        metavar='STEPS',
         type=str,
-        nargs='?',
-        help='testing step for ci pipeline')
+        nargs='*',
+        help='testing steps for ci pipeline')
 
     return parser.parse_args()
 
@@ -211,51 +219,77 @@ if __name__ == "__main__":
     args = parse_args()
     runner = TestRunner("KPHP tests", args.no_report)
 
+    distcc_options = ""
+    if args.use_distcc:
+        distcc_host_list = make_relpath(runner_dir, "distcc-host-list")
+        distcc_options = "--distcc-host-list {}".format(distcc_host_list);
+
     mode_name, options = get_modes()[args.mode]
     runner.add_test_group(
         name="make-kphp",
         description="make kphp and runtime in {} mode".format(mode_name),
-        cmd="make -C {} -j{{jobs}} {}".format(root_engine_path, options),
-        skip=args.step and args.step != "make-kphp"
+        cmd="make -C {engine_root} -j{{jobs}} {options}".format(
+            engine_root=root_engine_path,
+            options=options
+        ),
+        skip=args.steps and "make-kphp" not in args.steps
     )
 
     runner.add_test_group(
         name="kphp-tests",
         description="run kphp tests in {} mode".format(mode_name),
-        cmd="{} -j{{jobs}}".format(kphp_test_runner),
-        skip=args.step and args.step != "kphp-tests"
+        cmd="{kphp_runner} -j{{jobs}} {distcc_options}".format(
+            kphp_runner=kphp_test_runner,
+            distcc_options=distcc_options
+        ),
+        skip=args.steps and "kphp-tests" not in args.steps
     )
 
     skip_zend_tests = not os.path.exists(args.zend_repo)
-    if args.step == "zend-tests" and skip_zend_tests:
+    if "zend-tests" in args.steps and skip_zend_tests:
         print("Trying to use zend tests, but there is no zend repo directory", flush=True)
         sys.exit(1)
-    elif args.step and args.step != "zend-tests":
+    elif args.steps and "zend-tests" not in args.steps:
         skip_zend_tests = True
 
     runner.add_test_group(
         name="zend-tests",
         description="run php tests from zend repo in {} mode".format(mode_name),
-        cmd="{} -j{{jobs}} -d {} --from-list {}".format(kphp_test_runner, args.zend_repo, zend_test_list),
+        cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options}".format(
+            kphp_runner=kphp_test_runner,
+            zend_repo=args.zend_repo,
+            zend_tests=zend_test_list,
+            distcc_options=distcc_options
+        ),
         skip=skip_zend_tests
     )
 
     tl2php_bin = os.path.join(root_engine_path, "objs/bin/tl2php")
     combined_tlo = os.path.join(root_engine_path, "objs/bin/combined.tlo")
     combined2_tl = os.path.join(root_engine_path, "objs/bin/combined2.tl")
-    tl_tests_dir = os.path.join(runner_dir, "TL-tests")
+    tl_tests_dir = make_relpath(runner_dir, "TL-tests")
     runner.add_test_group(
         name="tl2php",
         description="gen php classes with tests from tl schema in {} mode".format(mode_name),
-        cmd="{} -c {} -t -f -d {} {}".format(tl2php_bin, combined2_tl, tl_tests_dir, combined_tlo),
-        skip=args.step and args.step != "tl2php"
+        cmd="{tl2php} -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
+            tl2php=tl2php_bin,
+            combined2_tl=combined2_tl,
+            tl_tests_dir=tl_tests_dir,
+            combined_tlo=combined_tlo
+        ),
+        skip=args.steps and "tl2php" not in args.steps
     )
 
     runner.add_test_group(
         name="typed-tl-tests",
         description="run typed tl tests in {} mode".format(mode_name),
-        cmd="KPHP_TL_SCHEMA={} {} -j{{jobs}} -d {}".format(os.path.abspath(combined_tlo), kphp_test_runner, tl_tests_dir),
-        skip=args.step and args.step != "typed-tl-tests"
+        cmd="KPHP_TL_SCHEMA={combined_tlo} {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options} || echo 'TODO: remove this echo later!'".format(
+            combined_tlo=os.path.abspath(combined_tlo),
+            kphp_runner=kphp_test_runner,
+            tl_tests_dir=tl_tests_dir,
+            distcc_options=distcc_options
+        ),
+        skip=args.steps and "typed-tl-tests" not in args.steps
     )
 
     runner.setup(args)

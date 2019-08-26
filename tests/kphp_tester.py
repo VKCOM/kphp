@@ -85,7 +85,7 @@ class TestArtifacts:
 
 
 class TestRunner:
-    def __init__(self, test_file, kphp_path, tests_dir):
+    def __init__(self, test_file, kphp_path, tests_dir, distcc_hosts):
         self._test_file = test_file
 
         self.artifacts = TestArtifacts()
@@ -101,6 +101,7 @@ class TestRunner:
         self._kphp_build_tmp_dir = os.path.join(self._working_dir, "kphp_build")
         self._kphp_runtime_tmp_dir = os.path.join(self._working_dir, "kphp_runtime")
         self._kphp_runtime_bin = os.path.join(self._kphp_build_tmp_dir, "server")
+        self._distcc_hosts = distcc_hosts
 
     def _create_artifacts_dir(self):
         os.makedirs(self._artifacts_dir, exist_ok=True)
@@ -125,6 +126,7 @@ class TestRunner:
             try:
                 stdout, stderr = proc.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:
+                os.system("kill -9 {}".format(proc.pid))
                 return None, b"Zombie detected?! Proc can't be killed due timeout!"
 
             stderr = (stderr or b"") + b"\n\nKilled due timeout\n"
@@ -248,8 +250,15 @@ class TestRunner:
 
         asan_log_name = "kphp_build_asan_log"
         env, asan_glob_mask = self._prepare_asan_env(self._kphp_build_tmp_dir, asan_log_name)
-        env["KPHP_JOBS_COUNT"] = "2"
         env["KPHP_THREADS_COUNT"] = "3"
+        if self._distcc_hosts:
+            env["KPHP_JOBS_COUNT"] = "20"
+            env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)
+            env["DISTCC_DIR"] = self._kphp_build_tmp_dir
+            env["DISTCC_LOG"] = os.path.join(self._kphp_build_tmp_dir, "distcc.log")
+            env["CXX"] = "distcc x86_64-linux-gnu-g++"
+        else:
+            env["KPHP_JOBS_COUNT"] = "2"
 
         include = " ".join("-I {}".format(include_dir) for include_dir in self._include_dirs)
         cmd = [self._kphp_path, include, "-d", os.path.abspath(self._kphp_build_tmp_dir), self._test_file_path]
@@ -445,11 +454,11 @@ class TestResult:
         return self.failed_stage_msg is not None
 
 
-def run_test(kphp_path, tests_dir, test):
+def run_test(kphp_path, tests_dir, distcc_hosts, test):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = TestRunner(test, kphp_path, tests_dir)
+    runner = TestRunner(test, kphp_path, tests_dir, distcc_hosts)
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():
@@ -463,6 +472,9 @@ def run_test(kphp_path, tests_dir, test):
             with open(runner.artifacts.kphp_build_stderr.file) as f:
                 if not test.out_regex.search(f.read()):
                     return TestResult.failed(test, runner.artifacts, "unexpected kphp build fail")
+
+        if runner.artifacts.kphp_build_asan_log.file:
+            return TestResult.failed(test, runner.artifacts, "got asan log")
 
         runner.artifacts.kphp_build_stderr.file = None
         return TestResult.passed(test, runner.artifacts)
@@ -485,7 +497,7 @@ def run_test(kphp_path, tests_dir, test):
     return TestResult.skipped(test)
 
 
-def main(tests_dir, kphp_path, jobs, test_tags, no_report, passed_list, test_list):
+def run_all_tests(tests_dir, kphp_path, jobs, test_tags, no_report, passed_list, test_list, distcc_hosts):
     hack_reference_exit = []
     signal.signal(signal.SIGINT, lambda sig, frame: hack_reference_exit.append(1))
 
@@ -499,7 +511,7 @@ def main(tests_dir, kphp_path, jobs, test_tags, no_report, passed_list, test_lis
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, kphp_path, tests_dir), tests):
+        for test_result in pool.imap_unordered(partial(run_test, kphp_path, tests_dir, distcc_hosts), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
@@ -591,10 +603,18 @@ def parse_args():
         default=None,
         help='run tests from list')
 
+    parser.add_argument(
+        '--distcc-host-list',
+        metavar='FILE',
+        type=str,
+        dest='distcc_host_list',
+        default=None,
+        help='list of available distcc hosts')
+
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     if not os.path.exists(args.tests_dir):
         print("Can't find tests dir '{}'".format(args.test_list))
@@ -608,10 +628,24 @@ if __name__ == "__main__":
         print("Can't find test list file '{}'".format(args.test_list))
         sys.exit(1)
 
-    main(tests_dir=os.path.normpath(args.tests_dir),
-         kphp_path=os.path.normpath(args.kphp_path),
-         jobs=args.jobs,
-         test_tags=args.test_tags,
-         no_report=args.no_report,
-         passed_list=args.passed_list,
-         test_list=args.test_list)
+    distcc_hosts = []
+    if args.distcc_host_list:
+        if not os.path.exists(args.distcc_host_list):
+            print("Can't find distcc host list file '{}'".format(args.test_list))
+            sys.exit(1)
+
+        with open(args.distcc_host_list) as f:
+            distcc_hosts = f.readlines()
+
+    run_all_tests(tests_dir=os.path.normpath(args.tests_dir),
+                  kphp_path=os.path.normpath(args.kphp_path),
+                  jobs=args.jobs,
+                  test_tags=args.test_tags,
+                  no_report=args.no_report,
+                  passed_list=args.passed_list,
+                  test_list=args.test_list,
+                  distcc_hosts=distcc_hosts)
+
+
+if __name__ == "__main__":
+    main()

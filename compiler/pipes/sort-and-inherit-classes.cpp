@@ -420,6 +420,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
     }
   }
 
+  stage::die_if_global_errors();
   for (auto c : polymorphic_classes) {
       auto virt_clone = c->add_virt_clone();
       G->register_and_require_function(virt_clone, generated_empty_methods_in_parent, true);
