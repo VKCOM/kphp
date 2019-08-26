@@ -37,6 +37,8 @@ static void print_why_tinf_occured_error(
     kphp_error(0, format("Type Error: tuples are read-only (tuple %s)\n",
                           desc1.c_str()));
 
+  } else if (ptype_before_error == tp_void || because_of_type->ptype() == tp_void) {
+    kphp_error(0, format("Type Error: mixing void and non-void expressions (%s and %s)\n", desc1.c_str(), desc2.c_str()));
   } else {
     kphp_error (0, format("Type Error [%s] updated by [%s]\n", desc1.c_str(), desc2.c_str()));
   }
