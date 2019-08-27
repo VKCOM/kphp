@@ -46,6 +46,22 @@ function array_last_value(&$a) {
   return current($a);
 }
 
+function array_keys_as_strings($a) {
+  $keys = [];
+  foreach ($a as $key => $value) {
+    array_push($keys, (string)$key);
+  }
+  return $keys;
+}
+
+function array_keys_as_ints($a) {
+  $keys = [];
+  foreach ($a as $key => $value) {
+    array_push($keys, (int)$key);
+  }
+  return $keys;
+}
+
 function instance_cast($instance, $unused) {
     return $instance;
 }
@@ -89,4 +105,5 @@ function instance_cache_clear() {
 function cp1251($utf8_string) {
   return vk_utf8_to_win($utf8_string);
 }
+
 #endif

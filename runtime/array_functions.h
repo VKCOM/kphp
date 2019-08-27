@@ -116,6 +116,12 @@ template<class T>
 array<typename array<T>::key_type> f$array_keys(const array<T> &a);
 
 template<class T>
+array<string> f$array_keys_as_strings(const array<T> &a);
+
+template<class T>
+array<int> f$array_keys_as_ints(const array<T> &a);
+
+template<class T>
 array<T> f$array_values(const array<T> &a);
 
 template<class T>
@@ -899,27 +905,37 @@ var f$array_rand(const array<T> &a, int num) {
   return result;
 }
 
-
-template<class T>
-array<typename array<T>::key_type> f$array_keys(const array<T> &a) {
-  array<typename array<T>::key_type> result(array_size(a.count(), 0, true));
-
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    result.push_back(it.get_key());
+template<class T, class F>
+auto transform_to_vector(const array<T> &a, const F &op) {
+  array<typename vk::function_traits<F>::ResultType> result(array_size(a.count(), 0, true));
+  for (auto it = a.begin(); it != a.end(); ++it) {
+    result.push_back(op(it));
   }
-
   return result;
 }
 
 template<class T>
+array<typename array<T>::key_type> f$array_keys(const array<T> &a) {
+  using Iterator = typename array<T>::const_iterator;
+  return transform_to_vector(a, [](Iterator it) { return it.get_key(); });
+}
+
+template<class T>
+array<string> f$array_keys_as_strings(const array<T> &a) {
+  using Iterator = typename array<T>::const_iterator;
+  return transform_to_vector(a, [](Iterator it) { return it.get_key().to_string(); });
+}
+
+template<class T>
+array<int> f$array_keys_as_ints(const array<T> &a) {
+  using Iterator = typename array<T>::const_iterator;
+  return transform_to_vector(a, [](Iterator it) { return it.get_key().to_int(); });
+}
+
+template<class T>
 array<T> f$array_values(const array<T> &a) {
-  array<T> result(array_size(a.count(), 0, true));
-
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    result.push_back(it.get_value());
-  }
-
-  return result;
+  using Iterator = typename array<T>::const_iterator;
+  return transform_to_vector(a, [](Iterator it) { return it.get_value(); });
 }
 
 template<class T>

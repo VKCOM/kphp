@@ -182,6 +182,8 @@ function array_key_exists ($v ::: Any, $a ::: array) ::: bool;
 function array_search ($val ::: Any, $a ::: array, $strict ::: bool = false) ::: var;
 function array_rand ($a ::: array, $num ::: int = 1) ::: var;
 function array_keys ($a ::: array) ::: array <var>;
+function array_keys_as_strings ($a ::: array) ::: array <string>;
+function array_keys_as_ints ($a ::: array) ::: array <int>;
 function array_values ($a ::: array) ::: ^1;
 function array_unique ($a ::: array) ::: ^1;
 function array_count_values ($a ::: array) ::: array <int>;
