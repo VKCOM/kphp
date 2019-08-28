@@ -14,9 +14,6 @@ void TlClasses::load_from(const std::string &tlo_schema) {
 
   std::unique_ptr<vk::tl::tl_scheme> scheme = std::move(std::move(tl_expected_ptr).value());
   std::string error;
-  if (!vk::tl::rename_req_result_type(*scheme, error)) {
-    kphp_error_return(false, error.c_str());
-  }
   if (!vk::tl::replace_anonymous_args(*scheme, error)) {
     kphp_error_return(false, error.c_str());
   }

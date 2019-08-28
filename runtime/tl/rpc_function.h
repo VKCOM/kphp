@@ -33,7 +33,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
 // ответ исполнения функции — ReqResult в tl-схеме — это rpcResponseOk|rpcResponseHeader|rpcResponseError
 // (если это ok или header, то их body можно зафетчить тем фетчером, что вернул store)
 struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
-  using X = class_instance<C$VK$TL$RpcFunction>;
+  using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
   virtual void accept(InstanceToArrayVisitor &) {}
 

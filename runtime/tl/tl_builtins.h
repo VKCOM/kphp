@@ -267,13 +267,13 @@ struct t_Bool {
 struct t_True {
   using PhpType = bool;
 
-  void store(const var & __attribute__((unused))) {}
+  void store(const var &__attribute__((unused))) {}
 
   array<var> fetch() {
     return array<var>();
   }
 
-  void typed_store(const PhpType & __attribute__((unused))) {}
+  void typed_store(const PhpType &__attribute__((unused))) {}
 
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
@@ -523,7 +523,12 @@ struct tl_Dictionary_impl {
     int n = v.count();
     f$store_int(n);
     for (auto it = v.begin(); it != v.end(); ++it) {
-      KeyT().typed_store(it.get_key());
+      KeyT().typed_store(vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_String>::value>{},
+                                          [&] { return it.get_key().as_string(); },
+                                          [&] { return vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_Int>::value>{},
+                                                               [&]() { return it.get_key().as_int(); },
+                                                               [&]() { return it.get_key(); }); }
+                                                               ));
       store_magic_if_not_bare(inner_value_magic);
       value_state.typed_store(it.get_value());
     }
@@ -541,7 +546,8 @@ struct tl_Dictionary_impl {
       return;
     }
     for (int i = 0; i < n; ++i) {
-      const auto &key = KeyT().fetch();
+      typename KeyT::PhpType key;
+      KeyT().typed_fetch_to(key);
       fetch_magic_if_not_bare(inner_value_magic, "Incorrect magic of inner type of some Dictionary");
       typename ValueT::PhpType elem;
       value_state.typed_fetch_to(elem);
