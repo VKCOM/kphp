@@ -25,6 +25,11 @@ template<class T, class TT, class T1>
 void sort(TT *begin_init, TT *end_init, const T1 &compare);
 }
 
+enum class overwrite_element {
+  YES,
+  NO
+};
+
 template<class T>
 class array : array_tag {
 
@@ -116,9 +121,23 @@ private:
 
     inline const var get_var(int int_key) const;
     inline const T get_value(int int_key) const;
-    inline T &push_back_vector_value(const T &v) /*__attribute__ ((always_inline))*/;//unsafe //TODO receive T
-    inline T &set_vector_value(int int_key, const T &v) /*__attribute__ ((always_inline))*/;//unsafe
-    inline T &set_map_value(int int_key, const T &v, bool save_value) /*__attribute__ ((always_inline))*/;
+
+    template<class ...Args>
+    inline T &emplace_back_vector_value(Args &&... args) noexcept;
+    inline T &push_back_vector_value(const T &v); //unsafe
+
+    inline T &set_vector_value(int int_key, const T &v); //unsafe
+
+    template<overwrite_element policy, class ...Args>
+    inline T &emplace_int_key_map_value(int int_key, Args &&... args) noexcept;
+    template<overwrite_element policy>
+    inline T &set_map_value(int int_key, const T &v);
+
+    template<overwrite_element policy, class STRING, class ...Args>
+    inline T &emplace_string_key_map_value(int int_key, STRING &&string_key, Args &&... args) noexcept;
+    template<overwrite_element policy>
+    inline T &set_map_value(int int_key, const string &string_key, const T &v);
+
     inline bool has_key(int int_key) const;
     inline bool isset_value(int int_key) const;
     inline void unset_vector_value();
@@ -128,7 +147,6 @@ private:
     inline const T get_value(int int_key, const string &string_key) const;
     inline const T &get_vector_value(int int_key) const;//unsafe
     inline T &get_vector_value(int int_key);//unsafe
-    inline T &set_map_value(int int_key, const string &string_key, const T &v, bool save_value) /*__attribute__ ((always_inline))*/;
     inline bool has_key(int int_key, const string &string_key) const;
     inline bool isset_value(int int_key, const string &string_key) const;
     inline void unset_map_value(int int_key, const string &string_key);
@@ -152,6 +170,9 @@ private:
 
   template<class T1>
   inline void copy_from(const array<T1> &other);
+
+  template<class T1>
+  inline void move_from(array<T1> &&other) noexcept;
 
   inline void destroy() __attribute__ ((always_inline));
 
@@ -212,6 +233,9 @@ public:
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array(const array<T1> &other) __attribute__ ((always_inline));
 
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
+  inline array(array<T1> &&other) noexcept __attribute__ ((always_inline));
+
   template<class... Args>
   inline static array create(Args &&... args) __attribute__ ((always_inline));
 
@@ -221,6 +245,9 @@ public:
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array &operator=(const array<T1> &other) __attribute__ ((always_inline));
+
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
+  inline array &operator=(array<T1> &&other) noexcept;
 
   inline ~array() /*__attribute__ ((always_inline))*/;
 

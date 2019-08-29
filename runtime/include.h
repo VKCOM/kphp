@@ -4,11 +4,12 @@
 #include <cmath>
 #include <type_traits>
 
+#include "common/wrappers/likely.h"
+
 #include "common-php-functions.h"
 #include "runtime/declarations.h"
+#include "runtime/or_false.h"
 #include "runtime/php_assert.h"
-#include "common/type_traits/is_constructible.h"
-#include "common/wrappers/likely.h"
 
 #define COMMA ,
 
@@ -18,10 +19,15 @@ class convert_to {
 public:
   static inline const T &convert(const T &val);
 
+  static inline T &&convert(T &&val);
+
   static inline T convert(const Unknown &val);
 
-  template<class T1>
-  static inline T convert(const T1 &val);
+  template<class T1,
+    class = std::enable_if_t<!std::is_same<std::decay_t<T1>, Unknown>::value>,
+    class = std::enable_if_t<!std::is_same<std::decay_t<T1>, T>::value>
+  >
+  static inline T convert(T1 &&val);
 };
 
 template<class T, class U>
@@ -59,94 +65,6 @@ disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
 }
 
-class OrFalseTag {
-};
-
-template<class T>
-class OrFalse : public OrFalseTag {
-public:
-  using InnerType = T;
-
-  T value;
-  bool bool_value;
-
-  OrFalse() :
-    value(),
-    bool_value() {
-  }
-
-  OrFalse(bool x) :
-    value(),
-    bool_value(x) {
-    php_assert(!x);
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  OrFalse(const T1 &x):
-    value(x),
-    bool_value(true) {
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  OrFalse(const OrFalse<T1> &other):
-    value(other.value),
-    bool_value(other.bool_value) {
-  }
-
-
-  OrFalse &operator=(bool x) {
-    value = T();
-    bool_value = x;
-    php_assert(!x);
-    return *this;
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  inline OrFalse &operator=(const OrFalse<T1> &other) {
-    value = other.value;
-    bool_value = other.bool_value;
-    return *this;
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  inline OrFalse &operator=(const T1 &x) {
-    value = x;
-    bool_value = true;
-    return *this;
-  }
-
-
-  T &ref() {
-    bool_value = true;
-    return value;
-  }
-
-  T &val() {
-    return value;
-  }
-
-  const T &val() const {
-    return value;
-  }
-};
-
-template<class T>
-using enable_if_t_is_or_false = typename std::enable_if<std::is_base_of<OrFalseTag, T>::value>::type;
-
-template<class T, class T2>
-using enable_if_t_is_or_false_t2 = typename std::enable_if<std::is_same<T, OrFalse<T2>>::value>::type;
-
-template<class T>
-using enable_if_t_is_or_false_string = enable_if_t_is_or_false_t2<T, string>;
-
-template<>
-class OrFalse<bool>;
-
-template<>
-class OrFalse<var>;
-
-template<class T>
-class OrFalse<OrFalse<T>>;
 
 using std::swap;
 using std::min;

@@ -425,6 +425,8 @@ inline string f$strval(const double &val);
 
 inline string f$strval(const string &val);
 
+inline string &&f$strval(string &&val);
+
 template<class T>
 inline string f$strval(const array<T> &val);
 
@@ -435,10 +437,14 @@ template<class T>
 inline string f$strval(const OrFalse<T> &val);
 
 template<class T>
+inline string f$strval(OrFalse<T> &&val);
+
+template<class T>
 inline string f$strval(const class_instance<T> &val);
 
 inline string f$strval(const var &val);
 
+inline string f$strval(var &&val);
 
 template<class T>
 inline array<T> f$arrayval(const T &val);
@@ -447,12 +453,20 @@ template<class T>
 inline const array<T> &f$arrayval(const array<T> &val);
 
 template<class T>
+inline array<T> &&f$arrayval(array<T> &&val);
+
+template<class T>
 inline array<var> f$arrayval(const class_instance<T> &val);
 
 inline array<var> f$arrayval(const var &val);
 
+inline array<var> f$arrayval(var &&val);
+
 template<class T>
 inline array<var> f$arrayval(const OrFalse<T> &val);
+
+template<class T>
+inline array<var> f$arrayval(OrFalse<T> &&val);
 
 
 inline bool &boolval_ref(bool &val);
@@ -1419,6 +1433,10 @@ string f$strval(const string &val) {
   return val;
 }
 
+string &&f$strval(string &&val) {
+  return std::move(val);
+}
+
 template<class T>
 string f$strval(const array<T> &) {
   php_warning("Convertion from array to string");
@@ -1437,6 +1455,11 @@ string f$strval(const OrFalse<T> &val) {
 }
 
 template<class T>
+string f$strval(OrFalse<T> &&val) {
+  return val.bool_value ? f$strval(std::move(val.val())) : f$strval(false);
+}
+
+template<class T>
 string f$strval(const class_instance<T> &val) {
   return string(val.get_class());
 }
@@ -1445,6 +1468,9 @@ string f$strval(const var &val) {
   return val.to_string();
 }
 
+string f$strval(var &&val) {
+  return val.is_string() ? std::move(val.as_string()) : val.to_string();
+}
 
 template<class T>
 array<T> f$arrayval(const T &val) {
@@ -1459,6 +1485,11 @@ const array<T> &f$arrayval(const array<T> &val) {
 }
 
 template<class T>
+array<T> &&f$arrayval(array<T> &&val) {
+  return std::move(val);
+}
+
+template<class T>
 array<var> f$arrayval(const class_instance<T> &) {
   php_warning("Can not convert class instance to array");
   return array<var>();
@@ -1468,9 +1499,18 @@ array<var> f$arrayval(const var &val) {
   return val.to_array();
 }
 
+array<var> f$arrayval(var &&val) {
+  return val.is_array() ? std::move(val.as_array()) : val.to_array();
+}
+
 template<class T>
-inline array<var> f$arrayval(const OrFalse<T> &val) {
+array<var> f$arrayval(const OrFalse<T> &val) {
   return val.bool_value ? f$arrayval(val.val()) : f$arrayval(false);
+}
+
+template<class T>
+array<var> f$arrayval(OrFalse<T> &&val) {
+  return val.bool_value ? f$arrayval(std::move(val.val())) : f$arrayval(false);
 }
 
 bool &boolval_ref(bool &val) {
@@ -1617,50 +1657,55 @@ const T &convert_to<T>::convert(const T &val) {
 }
 
 template<class T>
+T &&convert_to<T>::convert(T &&val) {
+  return std::move(val);
+}
+
+template<class T>
 T convert_to<T>::convert(const Unknown &) {
   return T();
 }
 
 template<class T>
-template<class T1>
-T convert_to<T>::convert(const T1 &val) {
-  return val;
+template<class T1, class, class>
+T convert_to<T>::convert(T1 &&val) {
+  return T(std::forward<T1>(val));
 }
 
 template<>
-template<class T1>
-bool convert_to<bool>::convert(const T1 &val) {
-  return f$boolval(val);
+template<class T1, class, class>
+bool convert_to<bool>::convert(T1 &&val) {
+  return f$boolval(std::forward<T1>(val));
 }
 
 template<>
-template<class T1>
-int convert_to<int>::convert(const T1 &val) {
-  return f$intval(val);
+template<class T1, class, class>
+int convert_to<int>::convert(T1 &&val) {
+  return f$intval(std::forward<T1>(val));
 }
 
 template<>
-template<class T1>
-double convert_to<double>::convert(const T1 &val) {
-  return f$floatval(val);
+template<class T1, class, class>
+double convert_to<double>::convert(T1 &&val) {
+  return f$floatval(std::forward<T1>(val));
 }
 
 template<>
-template<class T1>
-string convert_to<string>::convert(const T1 &val) {
-  return f$strval(val);
+template<class T1, class, class>
+string convert_to<string>::convert(T1 &&val) {
+  return f$strval(std::forward<T1>(val));
 }
 
 template<>
-template<class T1>
-array<var> convert_to<array<var>>::convert(const T1 &val) {
-  return f$arrayval(val);
+template<class T1, class, class>
+array<var> convert_to<array<var>>::convert(T1 &&val) {
+  return f$arrayval(std::forward<T1>(val));
 }
 
 template<>
-template<class T1>
-var convert_to<var>::convert(const T1 &val) {
-  return var(val);
+template<class T1, class, class>
+var convert_to<var>::convert(T1 &&val) {
+  return var{std::forward<T1>(val)};
 }
 
 

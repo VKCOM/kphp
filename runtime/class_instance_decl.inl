@@ -38,6 +38,11 @@ public:
     : o(d.o) {
   }
 
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
+  class_instance(class_instance<Derived> &&d) noexcept
+    : o(std::move(d.o)) {
+  }
+
   class_instance& operator=(const class_instance &) = default;
   class_instance& operator=(class_instance &&) noexcept = default;
 
@@ -48,6 +53,12 @@ public:
   template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
   class_instance& operator=(const class_instance<Derived> &d) {
     o = d.o;
+    return *this;
+  }
+
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
+  class_instance& operator=(class_instance<Derived> &&d) noexcept {
+    o = std::move(d.o);
     return *this;
   }
 
