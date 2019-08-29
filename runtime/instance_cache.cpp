@@ -3,9 +3,7 @@
 #include <chrono>
 #include <forward_list>
 #include <map>
-#include <memory>
 #include <mutex>
-#include <set>
 #include <sys/mman.h>
 #include <unordered_set>
 
@@ -113,7 +111,8 @@ template<typename T>
 using InterProcessAllocator_ = memory_resource::resource_allocator<T, memory_resource::synchronized_pool_resource>;
 using ElementStorage_ = std::map<string, vk::intrusive_ptr<ElementHolder>, std::less<string>,
   InterProcessAllocator_<std::pair<const string, vk::intrusive_ptr<ElementHolder>>>>;
-using ProcessingKeys_ = std::set<string, std::less<string>, InterProcessAllocator_<const string>>;
+using ProcessingKeys_ = std::map<string, std::chrono::nanoseconds, std::less<string>,
+  InterProcessAllocator_<std::pair<const string, std::chrono::nanoseconds>>>;
 using ExpirationTrace_ = std::multimap<std::chrono::nanoseconds, string, std::less<std::chrono::nanoseconds>,
   InterProcessAllocator_<std::pair<const std::chrono::nanoseconds, string>>>;
 
@@ -518,9 +517,14 @@ private:
       return true;
     }
     // 2) if it is being processed right now
-    if (current_->data->processing_keys.count(key)) {
-      ic_debug("skip '%s' because it is being processed now\n", key.c_str());
-      return true;
+    auto processing_key_it = current_->data->processing_keys.find(key);
+    if (processing_key_it != current_->data->processing_keys.end()) {
+      // processing worker may die and doesn't remove key
+      if (now_ - processing_key_it->second < std::chrono::seconds{3}) {
+        ic_debug("skip '%s' because it is being processed now\n", key.c_str());
+        return true;
+      }
+      ic_debug("override '%s', looks like previous processing worker has died\n", key.c_str());
     }
     return false;
   }
@@ -558,11 +562,18 @@ private:
   }
 
   bool start_key_processing(const string &key) {
+    ic_debug("start processing '%s'\n", key.c_str());
+
+    auto processing_key_it = current_->data->processing_keys.find(key);
+    if (processing_key_it != current_->data->processing_keys.end()) {
+      processing_key_it->second = now_;
+      return true;
+    }
+
     if (!current_->memory_resource.reserve(ProcessingKeys_::allocator_type::max_value_type_size())) {
       return false;
     }
-    ic_debug("start processing '%s'\n", key.c_str());
-    php_assert(current_->data->processing_keys.insert(key).second);
+    php_assert(current_->data->processing_keys.emplace(key, now_).second);
     return true;
   }
 
