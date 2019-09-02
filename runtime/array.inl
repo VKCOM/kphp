@@ -405,8 +405,8 @@ T &array<T>::array_inner::set_vector_value(int int_key, const T &v) {
 }
 
 template<class T>
-template<overwrite_element policy, class ...Args>
-T &array<T>::array_inner::emplace_int_key_map_value(int int_key, Args &&... args) noexcept {
+template<class ...Args>
+T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, int int_key, Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   int bucket = choose_bucket(int_key, int_buf_size);
   while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
@@ -439,9 +439,8 @@ T &array<T>::array_inner::emplace_int_key_map_value(int int_key, Args &&... args
 }
 
 template<class T>
-template<overwrite_element policy>
-T &array<T>::array_inner::set_map_value(int int_key, const T &v) {
-  return emplace_int_key_map_value<policy>(int_key, v);
+T &array<T>::array_inner::set_map_value(overwrite_element policy, int int_key, const T &v) {
+  return emplace_int_key_map_value(policy, int_key, v);
 }
 
 template<class T>
@@ -583,8 +582,8 @@ const T array<T>::array_inner::get_value(int int_key, const string &string_key) 
 }
 
 template<class T>
-template<overwrite_element policy, class STRING, class ...Args>
-T &array<T>::array_inner::emplace_string_key_map_value(int int_key, STRING &&string_key, Args &&... args) noexcept {
+template<class STRING, class ...Args>
+T &array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy, int int_key, STRING &&string_key, Args &&... args) noexcept {
   static_assert(std::is_same<std::decay_t<STRING>, string>::value, "string_key should be string");
 
   string_hash_entry *string_entries = get_string_entries();
@@ -616,9 +615,8 @@ T &array<T>::array_inner::emplace_string_key_map_value(int int_key, STRING &&str
 }
 
 template<class T>
-template<overwrite_element policy>
-T &array<T>::array_inner::set_map_value(int int_key, const string &string_key, const T &v) {
-  return emplace_string_key_map_value<policy>(int_key, string_key, v);
+T &array<T>::array_inner::set_map_value(overwrite_element policy, int int_key, const string &string_key, const T &v) {
+  return emplace_string_key_map_value(policy, int_key, string_key, v);
 }
 
 template<class T>
@@ -761,9 +759,9 @@ bool array<T>::mutate_if_map_shared(int mul) {
 
     for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
-        new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, it->value);
+        new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
       } else {
-        new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->value);
+        new_array->set_map_value(overwrite_element::YES, it->int_key, it->value);
       }
     }
 
@@ -810,11 +808,11 @@ void array<T>::mutate_if_map_needed_int() {
 
     for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
-        new_array->template emplace_string_key_map_value<overwrite_element::YES>(
-          it->int_key, std::move(it->string_key), std::move(it->value));
+        new_array->emplace_string_key_map_value(overwrite_element::YES,
+                                                it->int_key, std::move(it->string_key), std::move(it->value));
       } else {
-        new_array->template emplace_int_key_map_value<overwrite_element::YES>(
-          it->int_key, std::move(it->value));
+        new_array->emplace_int_key_map_value(overwrite_element::YES,
+                                             it->int_key, std::move(it->value));
       }
     }
 
@@ -837,11 +835,11 @@ void array<T>::mutate_if_map_needed_string() {
 
     for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
-        new_array->template emplace_string_key_map_value<overwrite_element::YES>(
-          it->int_key, std::move(it->string_key), std::move(it->value));
+        new_array->emplace_string_key_map_value(overwrite_element::YES,
+                                                it->int_key, std::move(it->string_key), std::move(it->value));
       } else {
-        new_array->template emplace_int_key_map_value<overwrite_element::YES>(
-          it->int_key, std::move(it->value));
+        new_array->emplace_int_key_map_value(overwrite_element::YES,
+                                             it->int_key, std::move(it->value));
       }
     }
 
@@ -871,15 +869,15 @@ void array<T>::reserve(int int_size, int string_size, bool make_vector_if_possib
 
       if (is_vector()) {
         for (int it = 0; it != p->int_size; it++) {
-          new_array->template set_map_value<overwrite_element::YES>(it, ((T *)p->int_entries)[it]);
+          new_array->set_map_value(overwrite_element::YES, it, ((T *)p->int_entries)[it]);
         }
         php_assert (new_array->max_key == p->max_key);
       } else {
         for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
           if (p->is_string_hash_entry(it)) {
-            new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, it->value);
+            new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
           } else {
-            new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->value);
+            new_array->set_map_value(overwrite_element::YES, it->int_key, it->value);
           }
         }
       }
@@ -1202,11 +1200,11 @@ void array<T>::convert_to_map() {
   const bool move_values = p->ref_cnt == 0;
   if (move_values) {
     for (int it = 0; it != p->int_size; it++) {
-      new_array->template emplace_int_key_map_value<overwrite_element::YES>(it, std::move(elements[it]));
+      new_array->emplace_int_key_map_value(overwrite_element::YES, it, std::move(elements[it]));
     }
   } else {
     for (int it = 0; it != p->int_size; it++) {
-      new_array->template set_map_value<overwrite_element::YES>(it, elements[it]);
+      new_array->set_map_value(overwrite_element::YES, it, elements[it]);
     }
   }
 
@@ -1235,9 +1233,9 @@ void array<T>::copy_from(const array<T1> &other) {
   } else {
     for (const typename array<T1>::string_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
-        new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, convert_to<T>::convert(it->value));
+        new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, convert_to<T>::convert(it->value));
       } else {
-        new_array->template set_map_value<overwrite_element::YES>(it->int_key, convert_to<T>::convert(it->value));
+        new_array->set_map_value(overwrite_element::YES, it->int_key, convert_to<T>::convert(it->value));
       }
     }
   }
@@ -1272,11 +1270,11 @@ void array<T>::move_from(array<T1> &&other) noexcept {
   } else {
     for (auto it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
-        new_array->template emplace_string_key_map_value<overwrite_element::YES>(
-          it->int_key, std::move(it->string_key), convert_to<T>::convert(std::move(it->value)));
+        new_array->emplace_string_key_map_value(overwrite_element::YES, it->int_key,
+                                                std::move(it->string_key), convert_to<T>::convert(std::move(it->value)));
       } else {
-        new_array->template emplace_int_key_map_value<overwrite_element::YES>(
-          it->int_key, convert_to<T>::convert(std::move(it->value)));
+        new_array->emplace_int_key_map_value(overwrite_element::YES,
+                                             it->int_key, convert_to<T>::convert(std::move(it->value)));
       }
     }
   }
@@ -1419,7 +1417,7 @@ T &array<T>::operator[](int int_key) {
     mutate_if_map_needed_int();
   }
 
-  return p->template set_map_value<overwrite_element::NO>(int_key, array_inner::empty_T);
+  return p->set_map_value(overwrite_element::NO, int_key, array_inner::empty_T);
 }
 
 template<class T>
@@ -1430,7 +1428,7 @@ T &array<T>::operator[](const string &string_key) {
   }
 
   mutate_to_map_if_vector_or_map_need_string();
-  return p->template set_map_value<overwrite_element::NO>(string_key.hash(), string_key, array_inner::empty_T);
+  return p->set_map_value(overwrite_element::NO, string_key.hash(), string_key, array_inner::empty_T);
 }
 
 template<class T>
@@ -1476,7 +1474,7 @@ T &array<T>::operator[](const const_iterator &it) {
       mutate_if_map_needed_int();
     }
 
-    return p->template set_map_value<overwrite_element::NO>(key, array_inner::empty_T);
+    return p->set_map_value(overwrite_element::NO, key, array_inner::empty_T);
   } else {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
     bool is_string_entry = it.self->is_string_hash_entry(entry);
@@ -1502,9 +1500,9 @@ T &array<T>::operator[](const const_iterator &it) {
     }
 
     if (is_string_entry) {
-      return p->template set_map_value<overwrite_element::NO>(entry->int_key, entry->string_key, array_inner::empty_T);
+      return p->set_map_value(overwrite_element::NO, entry->int_key, entry->string_key, array_inner::empty_T);
     } else {
-      return p->template set_map_value<overwrite_element::NO>(entry->int_key, array_inner::empty_T);
+      return p->set_map_value(overwrite_element::NO, entry->int_key, array_inner::empty_T);
     }
   }
 }
@@ -1530,7 +1528,7 @@ T &array<T>::operator[](const iterator &it) {
       mutate_if_map_needed_int();
     }
 
-    return p->template set_map_value<overwrite_element::NO>(key, array_inner::empty_T);
+    return p->set_map_value(overwrite_element::NO, key, array_inner::empty_T);
   } else {
     const string_hash_entry *entry = (const string_hash_entry *)it.entry;
     bool is_string_entry = it.self->is_string_hash_entry(entry);
@@ -1556,9 +1554,9 @@ T &array<T>::operator[](const iterator &it) {
     }
 
     if (is_string_entry) {
-      return p->template set_map_value<overwrite_element::NO>(entry->int_key, entry->string_key, array_inner::empty_T);
+      return p->set_map_value(overwrite_element::NO, entry->int_key, entry->string_key, array_inner::empty_T);
     } else {
-      return p->template set_map_value<overwrite_element::NO>(entry->int_key, array_inner::empty_T);
+      return p->set_map_value(overwrite_element::NO, entry->int_key, array_inner::empty_T);
     }
   }
 }
@@ -1583,7 +1581,7 @@ void array<T>::emplace_value(int int_key, Args &&... args) noexcept {
     mutate_if_map_needed_int();
   }
 
-  p->template emplace_int_key_map_value<overwrite_element::YES>(int_key, std::forward<Args>(args)...);
+  p->emplace_int_key_map_value(overwrite_element::YES, int_key, std::forward<Args>(args)...);
 }
 
 template<class T>
@@ -1606,8 +1604,8 @@ void array<T>::emplace_value(const string &string_key, Args &&... args) noexcept
   }
 
   mutate_to_map_if_vector_or_map_need_string();
-  p->template emplace_string_key_map_value<overwrite_element::YES>(
-    string_key.hash(), string_key, std::forward<Args>(args)...);
+  p->emplace_string_key_map_value(overwrite_element::YES,
+                                  string_key.hash(), string_key, std::forward<Args>(args)...);
 }
 
 template<class T>
@@ -1623,13 +1621,13 @@ void array<T>::set_value(const string &string_key, const T &v) noexcept {
 template<class T>
 void array<T>::set_value(const string &string_key, const T &v, int precomuted_hash) noexcept {
   mutate_to_map_if_vector_or_map_need_string();
-  p->template emplace_string_key_map_value<overwrite_element::YES>(precomuted_hash, string_key, v);
+  p->emplace_string_key_map_value(overwrite_element::YES, precomuted_hash, string_key, v);
 }
 
 template<class T>
 void array<T>::set_value(const string &string_key, T &&v, int precomuted_hash) noexcept {
   mutate_to_map_if_vector_or_map_need_string();
-  p->template emplace_string_key_map_value<overwrite_element::YES>(precomuted_hash, string_key, std::move(v));
+  p->emplace_string_key_map_value(overwrite_element::YES, precomuted_hash, string_key, std::move(v));
 }
 
 
@@ -1710,7 +1708,7 @@ void array<T>::set_value(const const_iterator &it) {
       mutate_if_map_needed_int();
     }
 
-    p->template set_map_value<overwrite_element::YES>(key, *(T *)it.entry);
+    p->set_map_value(overwrite_element::YES, key, *(T *)it.entry);
   } else {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
     bool is_string_entry = it.self->is_string_hash_entry(entry);
@@ -1737,9 +1735,9 @@ void array<T>::set_value(const const_iterator &it) {
     }
 
     if (is_string_entry) {
-      p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, entry->value);
+      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
     } else {
-      p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->value);
+      p->set_map_value(overwrite_element::YES, entry->int_key, entry->value);
     }
   }
 }
@@ -1766,7 +1764,7 @@ void array<T>::set_value(const iterator &it) {
       mutate_if_map_needed_int();
     }
 
-    p->template set_map_value<overwrite_element::YES>(key, *(T *)it.entry);
+    p->set_map_value(overwrite_element::YES, key, *(T *)it.entry);
   } else {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
     bool is_string_entry = it.self->is_string_hash_entry(entry);
@@ -1793,9 +1791,9 @@ void array<T>::set_value(const iterator &it) {
     }
 
     if (is_string_entry) {
-      p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, entry->value);
+      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
     } else {
-      p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->value);
+      p->set_map_value(overwrite_element::YES, entry->int_key, entry->value);
     }
   }
 }
@@ -2242,7 +2240,7 @@ void array<T>::merge_with(const array<T1> &other) {
         p->push_back_vector_value(*reinterpret_cast<const T1 *>(it.entry));
       } else {
         mutate_if_map_needed_int();
-        p->template set_map_value<overwrite_element::YES>(get_next_key(), *reinterpret_cast<const T1 *>(it.entry));
+        p->set_map_value(overwrite_element::YES, get_next_key(), *reinterpret_cast<const T1 *>(it.entry));
       }
     } else {
       const typename array<T1>::string_hash_entry *entry = (const typename array<T1>::string_hash_entry *)it.entry;
@@ -2250,14 +2248,14 @@ void array<T>::merge_with(const array<T1> &other) {
 
       if (it.self->is_string_hash_entry(entry)) {
         mutate_to_map_if_vector_or_map_need_string();
-        p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, value);
+        p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, value);
       } else {
         if (is_vector()) {
           mutate_if_vector_needed_int();
           p->push_back_vector_value(value);
         } else {
           mutate_if_map_needed_int();
-          p->template set_map_value<overwrite_element::YES>(get_next_key(), value);
+          p->set_map_value(overwrite_element::YES, get_next_key(), value);
         }
       }
     }
@@ -2278,15 +2276,15 @@ const array<T> array<T>::operator+(const array<T> &other) const {
       }
     } else {
       for (int i = 0; i < size; i++) {
-        result.p->template set_map_value<overwrite_element::YES>(i, it[i]);
+        result.p->set_map_value(overwrite_element::YES, i, it[i]);
       }
     }
   } else {
     for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
-        result.p->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, it->value);
+        result.p->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
       } else {
-        result.p->template set_map_value<overwrite_element::YES>(it->int_key, it->value);
+        result.p->set_map_value(overwrite_element::YES, it->int_key, it->value);
       }
     }
   }
@@ -2301,15 +2299,15 @@ const array<T> array<T>::operator+(const array<T> &other) const {
       }
     } else {
       for (int i = 0; i < size; i++) {
-        result.p->template set_map_value<overwrite_element::NO>(i, it[i]);
+        result.p->set_map_value(overwrite_element::NO, i, it[i]);
       }
     }
   } else {
     for (const string_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
-        result.p->template set_map_value<overwrite_element::NO>(it->int_key, it->string_key, it->value);
+        result.p->set_map_value(overwrite_element::NO, it->int_key, it->string_key, it->value);
       } else {
-        result.p->template set_map_value<overwrite_element::NO>(it->int_key, it->value);
+        result.p->set_map_value(overwrite_element::NO, it->int_key, it->value);
       }
     }
   }
@@ -2358,7 +2356,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
       T *it = (T *)p->int_entries;
 
       for (int i = 0; i != p->int_size; i++) {
-        new_array->template set_map_value<overwrite_element::YES>(i, it[i]);
+        new_array->set_map_value(overwrite_element::YES, i, it[i]);
       }
 
       p->dispose();
@@ -2377,9 +2375,9 @@ array<T> &array<T>::operator+=(const array<T> &other) {
 
       for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
         if (p->is_string_hash_entry(it)) {
-          new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, it->value);
+          new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
         } else {
-          new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->value);
+          new_array->set_map_value(overwrite_element::YES, it->int_key, it->value);
         }
       }
 
@@ -2393,14 +2391,14 @@ array<T> &array<T>::operator+=(const array<T> &other) {
     T *it = (T *)other.p->int_entries;
 
     for (int i = 0; i < size; i++) {
-      p->template set_map_value<overwrite_element::NO>(i, it[i]);
+      p->set_map_value(overwrite_element::NO, i, it[i]);
     }
   } else {
     for (string_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
-        p->template set_map_value<overwrite_element::NO>(it->int_key, it->string_key, it->value);
+        p->set_map_value(overwrite_element::NO, it->int_key, it->string_key, it->value);
       } else {
-        p->template set_map_value<overwrite_element::NO>(it->int_key, it->value);
+        p->set_map_value(overwrite_element::NO, it->int_key, it->value);
       }
     }
   }
@@ -2416,7 +2414,7 @@ T &array<T>::emplace_back(Args &&... args) noexcept {
     return p->emplace_back_vector_value(std::forward<Args>(args)...);
   } else {
     mutate_if_map_needed_int();
-    return p->template emplace_int_key_map_value<overwrite_element::YES>(get_next_key(), std::forward<Args>(args)...);
+    return p->emplace_int_key_map_value(overwrite_element::YES, get_next_key(), std::forward<Args>(args)...);
   }
 }
 
@@ -2438,21 +2436,21 @@ void array<T>::push_back(const const_iterator &it) {
       p->push_back_vector_value(*(T *)it.entry);
     } else {
       mutate_if_map_needed_int();
-      p->template set_map_value<overwrite_element::YES>(get_next_key(), *(T *)it.entry);
+      p->set_map_value(overwrite_element::YES, get_next_key(), *(T *)it.entry);
     }
   } else {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
 
     if (it.self->is_string_hash_entry(entry)) {
       mutate_to_map_if_vector_or_map_need_string();
-      p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, entry->value);
+      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
     } else {
       if (is_vector()) {
         mutate_if_vector_needed_int();
         p->push_back_vector_value(entry->value);
       } else {
         mutate_if_map_needed_int();
-        p->template set_map_value<overwrite_element::YES>(get_next_key(), entry->value);
+        p->set_map_value(overwrite_element::YES, get_next_key(), entry->value);
       }
     }
   }
@@ -2466,21 +2464,21 @@ void array<T>::push_back(const iterator &it) {
       p->push_back_vector_value(*(T *)it.entry);
     } else {
       mutate_if_map_needed_int();
-      p->template set_map_value<overwrite_element::YES>(get_next_key(), *(T *)it.entry);
+      p->set_map_value(overwrite_element::YES, get_next_key(), *(T *)it.entry);
     }
   } else {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
 
     if (it.self->is_string_hash_entry(entry)) {
       mutate_to_map_if_vector_or_map_need_string();
-      p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, entry->value);
+      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
     } else {
       if (is_vector()) {
         mutate_if_vector_needed_int();
         p->push_back_vector_value(entry->value);
       } else {
         mutate_if_map_needed_int();
-        p->template set_map_value<overwrite_element::YES>(get_next_key(), entry->value);
+        p->set_map_value(overwrite_element::YES, get_next_key(), entry->value);
       }
     }
   }
@@ -2708,12 +2706,12 @@ T array<T>::shift() {
     it = p->next(it);
     while (it != p->end()) {
       if (p->is_string_hash_entry(it)) {
-        new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, it->value);
+        new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
       } else {
         if (is_v) {
           new_array->push_back_vector_value(it->value);
         } else {
-          new_array->template set_map_value<overwrite_element::YES>(new_array->max_key + 1, it->value);
+          new_array->set_map_value(overwrite_element::YES, new_array->max_key + 1, it->value);
         }
       }
 
@@ -2746,17 +2744,17 @@ int array<T>::unshift(const T &val) {
     if (is_v) {
       new_array->push_back_vector_value(val);
     } else {
-      new_array->template set_map_value<overwrite_element::YES>(0, val);
+      new_array->set_map_value(overwrite_element::YES, 0, val);
     }
 
     while (it != p->end()) {
       if (p->is_string_hash_entry(it)) {
-        new_array->template set_map_value<overwrite_element::YES>(it->int_key, it->string_key, it->value);
+        new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
       } else {
         if (is_v) {
           new_array->push_back_vector_value(it->value);
         } else {
-          new_array->template set_map_value<overwrite_element::YES>(new_array->max_key + 1, it->value);
+          new_array->set_map_value(overwrite_element::YES, new_array->max_key + 1, it->value);
         }
       }
 

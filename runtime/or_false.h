@@ -1,12 +1,27 @@
 #pragma once
 
 #include "common/type_traits/is_constructible.h"
+#include "common/type_traits/list_of_types.h"
 
 #include "runtime/php_assert.h"
 
 template<class T>
+class OrFalse;
+
+template<class T>
+struct is_or_false : std::false_type {
+};
+
+template<class T>
+struct is_or_false<OrFalse<T>> : std::true_type {
+};
+
+template<class T>
 class OrFalse {
 public:
+  static_assert(!vk::list_of_types<bool, var>::template in_list<T>(), "Usages OrFalse<bool> and OrFalse<var> are forbidden");
+  static_assert(!is_or_false<T>::value, "Usage OrFalse<OrFalse> is forbidden");
+
   using InnerType = T;
 
   T value;
@@ -98,14 +113,6 @@ public:
 };
 
 template<class T>
-class is_or_false : std::false_type {
-};
-
-template<class T>
-class is_or_false<OrFalse<T>> : std::true_type {
-};
-
-template<class T>
 using enable_if_t_is_or_false = typename std::enable_if<is_or_false<std::decay_t<T>>::value>::type;
 
 template<class T, class T2>
@@ -113,12 +120,3 @@ using enable_if_t_is_or_false_t2 = typename std::enable_if<std::is_same<T, OrFal
 
 template<class T>
 using enable_if_t_is_or_false_string = enable_if_t_is_or_false_t2<T, string>;
-
-template<>
-class OrFalse<bool>;
-
-template<>
-class OrFalse<var>;
-
-template<class T>
-class OrFalse<OrFalse<T>>;

@@ -130,15 +130,13 @@ private:
     inline T &emplace_vector_value(int int_key, Args &&... args) noexcept;
     inline T &set_vector_value(int int_key, const T &v); //unsafe
 
-    template<overwrite_element policy, class ...Args>
-    inline T &emplace_int_key_map_value(int int_key, Args &&... args) noexcept;
-    template<overwrite_element policy>
-    inline T &set_map_value(int int_key, const T &v);
+    template<class ...Args>
+    inline T &emplace_int_key_map_value(overwrite_element policy, int int_key, Args &&... args) noexcept;
+    inline T &set_map_value(overwrite_element policy, int int_key, const T &v);
 
-    template<overwrite_element policy, class STRING, class ...Args>
-    inline T &emplace_string_key_map_value(int int_key, STRING &&string_key, Args &&... args) noexcept;
-    template<overwrite_element policy>
-    inline T &set_map_value(int int_key, const string &string_key, const T &v);
+    template<class STRING, class ...Args>
+    inline T &emplace_string_key_map_value(overwrite_element policy, int int_key, STRING &&string_key, Args &&... args) noexcept;
+    inline T &set_map_value(overwrite_element policy, int int_key, const string &string_key, const T &v);
 
     inline bool has_key(int int_key) const;
     inline bool isset_value(int int_key) const;
