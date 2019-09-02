@@ -308,9 +308,6 @@ class TestRunner:
         if not ignore_stderr:
             self._move_to_artifacts("kphp_runtime_stderr", kphp_server_proc, content=kphp_runtime_stderr)
 
-        if not os.listdir(self._kphp_runtime_tmp_dir):
-            shutil.rmtree(self._kphp_runtime_tmp_dir, ignore_errors=True)
-
         return kphp_server_proc.returncode == 0
 
     def compare_php_and_kphp_stdout(self):
