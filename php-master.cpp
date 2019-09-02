@@ -1897,21 +1897,24 @@ void check_and_instance_cache_try_swap_memory(const pid_t *active_workers_begin,
 }
 
 static void cron() {
+  // write stats at the beginning to avoid spikes in graphs
+  send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+  create_all_outbound_connections();
+
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;
   unsigned long long stime = 0;
-  bool err;
-  err = get_cpu_total(&cpu_total);
-  dl_assert (err, "get_cpu_total failed");
+  const bool get_cpu_err = get_cpu_total(&cpu_total);
+  dl_assert (get_cpu_err, "get_cpu_total failed");
 
   int running_workers = 0;
   std::array<pid_t, MAX_WORKERS> active_workers{0};
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
     active_workers[w->logname_id] = w->pid;
-    const bool err = get_pid_info(w->pid, &w->my_info);
+    const bool get_pid_info_err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
-    if (!err) {
+    if (!get_pid_info_err) {
       continue;
     }
 
@@ -1935,9 +1938,6 @@ static void cron() {
     last_full_stats = my_now;
     create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
   }
-
-  send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
-  create_all_outbound_connections();
 
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory(active_workers.data(), active_workers.data() + me_workers_n);
