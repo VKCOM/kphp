@@ -18,9 +18,6 @@ public:
   explicit inline Long(double f);
   explicit inline Long(const string &s);
   explicit inline Long(const var &v);
-
-  inline Long(const Long &other);
-  inline Long &operator=(Long other);
 };
 
 inline Long f$labs(Long lhs);
@@ -92,9 +89,6 @@ public:
   explicit inline ULong(double f);
   explicit inline ULong(const string &s);
   explicit inline ULong(const var &v);
-
-  inline ULong(const ULong &other);
-  inline ULong &operator=(ULong other);
 };
 
 inline ULong f$uldiv(ULong lhs, ULong rhs);
@@ -164,9 +158,6 @@ public:
   explicit inline UInt(double f);
   explicit inline UInt(const string &s);
   explicit inline UInt(const var &v);
-
-  inline UInt(const UInt &other);
-  inline UInt &operator=(UInt other);
 };
 
 inline UInt f$uidiv(UInt lhs, UInt rhs);
@@ -331,15 +322,6 @@ Long::Long(const var &v) {
   } else {
     l = v.to_int();
   }
-}
-
-Long::Long(const Long &other) :
-  l(other.l) {
-}
-
-Long &Long::operator=(Long other) {
-  l = other.l;
-  return *this;
 }
 
 Long f$labs(Long lhs) {
@@ -580,15 +562,6 @@ ULong::ULong(const var &v) {
   }
 }
 
-ULong::ULong(const ULong &other) :
-  l(other.l) {
-}
-
-ULong &ULong::operator=(ULong other) {
-  l = other.l;
-  return *this;
-}
-
 ULong f$uldiv(ULong lhs, ULong rhs) {
   if (rhs.l == 0) {
     php_warning("ULong division by zero");
@@ -810,15 +783,6 @@ UInt::UInt(const var &v) {
   } else {
     l = (unsigned int)v.to_int();
   }
-}
-
-UInt::UInt(const UInt &other) :
-  l(other.l) {
-}
-
-UInt &UInt::operator=(UInt other) {
-  l = other.l;
-  return *this;
 }
 
 UInt f$uidiv(UInt lhs, UInt rhs) {
