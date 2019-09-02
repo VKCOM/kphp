@@ -126,6 +126,8 @@ private:
     inline T &emplace_back_vector_value(Args &&... args) noexcept;
     inline T &push_back_vector_value(const T &v); //unsafe
 
+    template<class ...Args>
+    inline T &emplace_vector_value(int int_key, Args &&... args) noexcept;
     inline T &set_vector_value(int int_key, const T &v); //unsafe
 
     template<overwrite_element policy, class ...Args>
@@ -165,6 +167,7 @@ private:
   inline void mutate_if_vector_needed_int();
   inline void mutate_if_map_needed_int();
   inline void mutate_if_map_needed_string();
+  inline void mutate_to_map_if_vector_or_map_need_string();
 
   inline void convert_to_map();
 
@@ -261,13 +264,31 @@ public:
   T &operator[](const const_iterator &it);
   T &operator[](const iterator &it);
 
-  void set_value(int int_key, const T &v);
-  void set_value(const string &s, const T &v);
-  void set_value(const string &s, const T &v, int precomuted_hash);
-  void set_value(const var &v, const T &value);
+  template<class ...Args>
+  void emplace_value(int int_key, Args &&... args) noexcept;
+  void set_value(int int_key, T &&v) noexcept;
+  void set_value(int int_key, const T &v) noexcept;
 
+  template<class ...Args>
+  void emplace_value(const string &string_key, Args &&... args) noexcept;
+  void set_value(const string &string_key, T &&v) noexcept;
+  void set_value(const string &string_key, const T &v) noexcept;
+
+  void set_value(const string &string_key, T &&v, int precomuted_hash) noexcept;
+  void set_value(const string &string_key, const T &v, int precomuted_hash) noexcept;
+
+  template<class ...Args>
+  void emplace_value(const var &var_key, Args &&... args) noexcept;
+  void set_value(const var &v, T &&value) noexcept;
+  void set_value(const var &v, const T &value) noexcept;
+
+
+  template<class OrFalseT, class ...Args>
+  void emplace_value(const OrFalse<OrFalseT> &key, Args &&... args) noexcept;
   template<class OrFalseT>
-  void set_value(const OrFalse<OrFalseT> &key, const T &value);
+  void set_value(const OrFalse<OrFalseT> &key, T &&value) noexcept;
+  template<class OrFalseT>
+  void set_value(const OrFalse<OrFalseT> &key, const T &value) noexcept;
 
   void set_value(const const_iterator &it);
   void set_value(const iterator &it);
@@ -287,10 +308,16 @@ public:
   const T get_value(const const_iterator &it) const;
   const T get_value(const iterator &it) const;
 
-  void push_back(const T &v);
+  template<class ...Args>
+  T &emplace_back(Args &&... args) noexcept;
+  void push_back(T &&v) noexcept;
+  void push_back(const T &v) noexcept;
+
   void push_back(const const_iterator &it);
   void push_back(const iterator &it);
+
   const T push_back_return(const T &v);
+  const T push_back_return(T &&v);
 
   inline void fill_vector(int num, const T &value);
 

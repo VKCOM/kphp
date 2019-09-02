@@ -93,6 +93,16 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
 
 } // namespace dl
 
+namespace {
+
+inline bool try_as_int_key(const string &string_key, int &int_key) {
+  return !string_key.empty()
+         && static_cast<unsigned int>(string_key[0] - '-') < 13u
+         && string_key.try_to_int(&int_key);
+}
+
+} // namespace
+
 template<class T>
 typename array<T>::key_type array<T>::int_hash_entry::get_key() const {
   return key_type(int_key);
@@ -358,11 +368,11 @@ const T array<T>::array_inner::get_value(int int_key) const {
 template<class T>
 template<class ...Args>
 inline T &array<T>::array_inner::emplace_back_vector_value(Args &&... args) noexcept {
+  static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   php_assert (int_size < int_buf_size);
   new(&((T *)int_entries)[int_size]) T(std::forward<Args>(args)...);
   max_key++;
   int_size++;
-
   return reinterpret_cast<T *>(int_entries)[max_key];
 }
 
@@ -382,15 +392,22 @@ const T &array<T>::array_inner::get_vector_value(int int_key) const {
 }
 
 template<class T>
-T &array<T>::array_inner::set_vector_value(int int_key, const T &v) {
-  reinterpret_cast<T *>(int_entries)[int_key] = v;
+template<class ...Args>
+T &array<T>::array_inner::emplace_vector_value(int int_key, Args &&... args) noexcept {
+  static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
+  reinterpret_cast<T *>(int_entries)[int_key] = T(std::forward<Args>(args)...);
   return get_vector_value(int_key);
 }
 
+template<class T>
+T &array<T>::array_inner::set_vector_value(int int_key, const T &v) {
+  return emplace_vector_value(int_key, v);
+}
 
 template<class T>
 template<overwrite_element policy, class ...Args>
 T &array<T>::array_inner::emplace_int_key_map_value(int int_key, Args &&... args) noexcept {
+  static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   int bucket = choose_bucket(int_key, int_buf_size);
   while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
     if (unlikely (++bucket == int_buf_size)) {
@@ -830,6 +847,15 @@ void array<T>::mutate_if_map_needed_string() {
 
     p->dispose();
     p = new_array;
+  }
+}
+
+template<class T>
+void array<T>::mutate_to_map_if_vector_or_map_need_string() {
+  if (is_vector()) {
+    convert_to_map();
+  } else {
+    mutate_if_map_needed_string();
   }
 }
 
@@ -1399,16 +1425,11 @@ T &array<T>::operator[](int int_key) {
 template<class T>
 T &array<T>::operator[](const string &string_key) {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (try_as_int_key(string_key, int_val)) {
     return (*this)[int_val];
   }
 
-  if (is_vector()) {
-    convert_to_map();
-  } else {
-    mutate_if_map_needed_string();
-  }
-
+  mutate_to_map_if_vector_or_map_need_string();
   return p->template set_map_value<overwrite_element::NO>(string_key.hash(), string_key, array_inner::empty_T);
 }
 
@@ -1542,17 +1563,17 @@ T &array<T>::operator[](const iterator &it) {
   }
 }
 
-
 template<class T>
-void array<T>::set_value(int int_key, const T &v) {
+template<class ...Args>
+void array<T>::emplace_value(int int_key, Args &&... args) noexcept {
   if (is_vector()) {
     if ((unsigned int)int_key <= (unsigned int)p->int_size) {
       if ((unsigned int)int_key == (unsigned int)p->int_size) {
         mutate_if_vector_needed_int();
-        p->push_back_vector_value(v);
+        p->emplace_back_vector_value(std::forward<Args>(args)...);
       } else {
         mutate_if_vector_shared();
-        p->set_vector_value(int_key, v);
+        p->emplace_vector_value(int_key, std::forward<Args>(args)...);
       }
       return;
     }
@@ -1562,53 +1583,73 @@ void array<T>::set_value(int int_key, const T &v) {
     mutate_if_map_needed_int();
   }
 
-  p->template set_map_value<overwrite_element::YES>(int_key, v);
+  p->template emplace_int_key_map_value<overwrite_element::YES>(int_key, std::forward<Args>(args)...);
 }
 
 template<class T>
-void array<T>::set_value(const string &string_key, const T &v) {
-  int int_val;
-  if (!string_key.empty() && (unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
-    set_value(int_val, v);
+void array<T>::set_value(int int_key, T &&v) noexcept {
+  emplace_value(int_key, std::move(v));
+}
+
+template<class T>
+void array<T>::set_value(int int_key, const T &v) noexcept {
+  emplace_value(int_key, v);
+}
+
+template<class T>
+template<class ...Args>
+void array<T>::emplace_value(const string &string_key, Args &&... args) noexcept {
+  int int_val = 0;
+  if (try_as_int_key(string_key, int_val)) {
+    emplace_value(int_val, std::forward<Args>(args)...);
     return;
   }
 
-  if (is_vector()) {
-    convert_to_map();
-  } else {
-    mutate_if_map_needed_string();
-  }
-
-  p->template set_map_value<overwrite_element::YES>(string_key.hash(), string_key, v);
+  mutate_to_map_if_vector_or_map_need_string();
+  p->template emplace_string_key_map_value<overwrite_element::YES>(
+    string_key.hash(), string_key, std::forward<Args>(args)...);
 }
 
 template<class T>
-void array<T>::set_value(const string &string_key, const T &v, int precomuted_hash) {
-  if (is_vector()) {
-    convert_to_map();
-  } else {
-    mutate_if_map_needed_string();
-  }
-
-  p->template set_map_value<overwrite_element::YES>(precomuted_hash, string_key, v);
+void array<T>::set_value(const string &string_key, T &&v) noexcept {
+  emplace_value(string_key, std::move(v));
 }
 
 template<class T>
-void array<T>::set_value(const var &v, const T &value) {
-  switch (v.type) {
+void array<T>::set_value(const string &string_key, const T &v) noexcept {
+  emplace_value(string_key, v);
+}
+
+template<class T>
+void array<T>::set_value(const string &string_key, const T &v, int precomuted_hash) noexcept {
+  mutate_to_map_if_vector_or_map_need_string();
+  p->template emplace_string_key_map_value<overwrite_element::YES>(precomuted_hash, string_key, v);
+}
+
+template<class T>
+void array<T>::set_value(const string &string_key, T &&v, int precomuted_hash) noexcept {
+  mutate_to_map_if_vector_or_map_need_string();
+  p->template emplace_string_key_map_value<overwrite_element::YES>(precomuted_hash, string_key, std::move(v));
+}
+
+
+template<class T>
+template<class ...Args>
+void array<T>::emplace_value(const var &var_key, Args &&... args) noexcept {
+  switch (var_key.type) {
     case var::NULL_TYPE:
-      return set_value(string(), value);
+      return emplace_value(string(), std::forward<Args>(args)...);
     case var::BOOLEAN_TYPE:
-      return set_value(v.as_bool(), value);
+      return emplace_value(static_cast<int>(var_key.as_bool()), std::forward<Args>(args)...);
     case var::INTEGER_TYPE:
-      return set_value(v.as_int(), value);
+      return emplace_value(var_key.as_int(), std::forward<Args>(args)...);
     case var::FLOAT_TYPE:
-      return set_value((int)v.as_double(), value);
+      return emplace_value(static_cast<int>(var_key.as_double()), std::forward<Args>(args)...);
     case var::STRING_TYPE:
-      return set_value(v.as_string(), value);
+      return emplace_value(var_key.as_string(), std::forward<Args>(args)...);
     case var::ARRAY_TYPE:
       php_warning("Illegal offset type array");
-      return set_value(v.as_array().to_int(), value);
+      return emplace_value(var_key.as_array().to_int(), std::forward<Args>(args)...);
     default:
       php_assert (0);
       exit(1);
@@ -1616,13 +1657,35 @@ void array<T>::set_value(const var &v, const T &value) {
 }
 
 template<class T>
-template<class OrFalseT>
-void array<T>::set_value(const OrFalse<OrFalseT> &key, const T &value) {
-  if (!key.bool_value) {
-    return set_value(false, value);
-  }
+void array<T>::set_value(const var &v, T &&value) noexcept {
+  emplace_value(v, std::move(value));
+}
 
-  set_value(key.val(), value);
+template<class T>
+void array<T>::set_value(const var &v, const T &value) noexcept {
+  emplace_value(v, value);
+}
+
+template<class T>
+template<class OrFalseT, class ...Args>
+void array<T>::emplace_value(const OrFalse<OrFalseT> &key, Args &&... args) noexcept {
+  if (!key.bool_value) {
+    set_value(false, std::forward<Args>(args)...);
+  } else {
+    set_value(key.val(), std::forward<Args>(args)...);
+  }
+}
+
+template<class T>
+template<class OrFalseT>
+void array<T>::set_value(const OrFalse<OrFalseT> &key, T &&value) noexcept {
+  emplace_value(key, std::move(value));
+}
+
+template<class T>
+template<class OrFalseT>
+void array<T>::set_value(const OrFalse<OrFalseT> &key, const T &value) noexcept {
+  emplace_value(key, value);
 }
 
 template<class T>
@@ -1752,7 +1815,7 @@ const var array<T>::get_var(int int_key) const {
 template<class T>
 const var array<T>::get_var(const string &string_key) const {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (try_as_int_key(string_key, int_val)) {
     return p->get_var(int_val);
   }
 
@@ -1790,7 +1853,7 @@ const T array<T>::get_value(int int_key) const {
 template<class T>
 const T array<T>::get_value(const string &string_key) const {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (try_as_int_key(string_key, int_val)) {
     return p->get_value(int_val);
   }
 
@@ -1867,7 +1930,7 @@ bool array<T>::has_key(int int_key) const {
 template<class T>
 bool array<T>::has_key(const string &string_key) const {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (try_as_int_key(string_key, int_val)) {
     return p->has_key(int_val);
   }
 
@@ -1938,7 +2001,7 @@ bool array<T>::isset(int int_key) const {
 template<class T>
 bool array<T>::isset(const string &string_key) const {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (try_as_int_key(string_key, int_val)) {
     return p->isset_value(int_val);
   }
 
@@ -2023,7 +2086,7 @@ void array<T>::unset(int int_key) {
 template<class T>
 void array<T>::unset(const string &string_key) {
   int int_val;
-  if ((unsigned int)(string_key[0] - '-') < 13u && string_key.try_to_int(&int_val)) {
+  if (try_as_int_key(string_key, int_val)) {
     return unset(int_val);
   }
 
@@ -2186,12 +2249,7 @@ void array<T>::merge_with(const array<T1> &other) {
       const T1 &value = entry->value;
 
       if (it.self->is_string_hash_entry(entry)) {
-        if (is_vector()) {
-          convert_to_map();
-        } else {
-          mutate_if_map_needed_string();
-        }
-
+        mutate_to_map_if_vector_or_map_need_string();
         p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, value);
       } else {
         if (is_vector()) {
@@ -2350,16 +2408,26 @@ array<T> &array<T>::operator+=(const array<T> &other) {
   return *this;
 }
 
-
 template<class T>
-void array<T>::push_back(const T &v) {
+template<class ...Args>
+T &array<T>::emplace_back(Args &&... args) noexcept {
   if (is_vector()) {
     mutate_if_vector_needed_int();
-    p->push_back_vector_value(v);
+    return p->emplace_back_vector_value(std::forward<Args>(args)...);
   } else {
     mutate_if_map_needed_int();
-    p->template set_map_value<overwrite_element::YES>(get_next_key(), v);
+    return p->template emplace_int_key_map_value<overwrite_element::YES>(get_next_key(), std::forward<Args>(args)...);
   }
+}
+
+template<class T>
+void array<T>::push_back(T &&v) noexcept {
+  emplace_back(std::move(v));
+}
+
+template<class T>
+void array<T>::push_back(const T &v) noexcept {
+  emplace_back(v);
 }
 
 template<class T>
@@ -2376,12 +2444,7 @@ void array<T>::push_back(const const_iterator &it) {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
 
     if (it.self->is_string_hash_entry(entry)) {
-      if (is_vector()) {
-        convert_to_map();
-      } else {
-        mutate_if_map_needed_string();
-      }
-
+      mutate_to_map_if_vector_or_map_need_string();
       p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, entry->value);
     } else {
       if (is_vector()) {
@@ -2409,12 +2472,7 @@ void array<T>::push_back(const iterator &it) {
     string_hash_entry *entry = (string_hash_entry *)it.entry;
 
     if (it.self->is_string_hash_entry(entry)) {
-      if (is_vector()) {
-        convert_to_map();
-      } else {
-        mutate_if_map_needed_string();
-      }
-
+      mutate_to_map_if_vector_or_map_need_string();
       p->template set_map_value<overwrite_element::YES>(entry->int_key, entry->string_key, entry->value);
     } else {
       if (is_vector()) {
@@ -2430,13 +2488,12 @@ void array<T>::push_back(const iterator &it) {
 
 template<class T>
 const T array<T>::push_back_return(const T &v) {
-  if (is_vector()) {
-    mutate_if_vector_needed_int();
-    return p->push_back_vector_value(v);
-  } else {
-    mutate_if_map_needed_int();
-    return p->template set_map_value<overwrite_element::YES>(get_next_key(), v);
-  }
+  return emplace_back(v);
+}
+
+template<class T>
+const T array<T>::push_back_return(T &&v) {
+  return emplace_back(std::move(v));
 }
 
 template<class T>
