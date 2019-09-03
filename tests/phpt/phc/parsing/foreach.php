@@ -13,19 +13,19 @@
 	{
 		echo "$y => $z\n";
 	}
-	foreach($x as &$y)
+	foreach($x as &$yy)
 	{
 		print_r ($x);
-		echo "$y\n";
+		echo "$yy\n";
 		print_r ($x);
 	}
 	
 	unset ($y);
 
-	foreach($x as $y => &$z)
+	foreach($x as $y => &$zz)
 	{
 		print_r ($x);
-		echo "$y => $z\n";
+		echo "$y => $zz\n";
 		print_r ($x);
 	}
 ?>

@@ -12,13 +12,13 @@
 
 	// same again with referenced val
 	echo ("=============================================\n");
-	foreach ($a as $key => &$val)
+	foreach ($a as $key => &$ref)
 	{
 		print_r ($key);
-		print_r ($val);
+		print_r ($ref);
 		print_r ($a);
 	}
-	unset ($val);
+	unset ($ref);
 	// add some unsets
 	echo ("=============================================\n");
 	foreach ($a as $key => $val)

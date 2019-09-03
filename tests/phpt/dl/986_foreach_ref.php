@@ -13,17 +13,8 @@ foreach($x as &$y) {
 
 echo "-----------<stage 2>-----------\n";
 
-#ifndef KittenPHP
 foreach($x as $y1 => &$z) {
   print_r ($x);
   echo "$y1 => $z\n";
-  print_r ($x);
-}
-return;
-#endif
-
-foreach($x as $y => &$z) {
-  print_r ($x);
-  echo "$y => $z\n";
   print_r ($x);
 }

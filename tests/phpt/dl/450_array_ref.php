@@ -16,9 +16,9 @@ function g(&$y, $x) {
 
 $c = array (3, 4);
 
-foreach ($c as &$x) {
+foreach ($c as &$xx) {
   $d = $c;
-  $x = 5;
+  $xx = 5;
 #ifndef KittenPHP
   $d = [$c[0], $c[1]];
 #endif

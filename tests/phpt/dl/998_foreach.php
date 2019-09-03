@@ -5,11 +5,11 @@ $vect = array(1, 2, 3, 4, 5);
 
 $a = $vect;
 print_r ($a);
-foreach ($a as $a_key=>&$a_val) {
-  print_r ($a_val);
+foreach ($a as $a_key=>&$a_ref) {
+  print_r ($a_ref);
   print_r ($a_key);
   $a_key = $a_key + 1;
-  $a_val = $a_val + 1;
+  $a_ref = $a_ref + 1;
 }
 print_r ($a);
 
@@ -26,9 +26,9 @@ print_r ($a);
 
 $a = $vect;
 print_r ($a);
-foreach ($a as &$a_val) {
-  print_r ($a_val);
-  $a_val = $a_val + 1;
+foreach ($a as &$a_ref) {
+  print_r ($a_ref);
+  $a_ref = $a_ref + 1;
 }
 print_r ($a);
 
