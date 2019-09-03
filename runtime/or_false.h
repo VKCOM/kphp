@@ -113,10 +113,10 @@ public:
 };
 
 template<class T>
-using enable_if_t_is_or_false = typename std::enable_if<is_or_false<std::decay_t<T>>::value>::type;
+using enable_if_t_is_or_false = std::enable_if_t<is_or_false<std::decay_t<T>>::value>;
 
 template<class T, class T2>
-using enable_if_t_is_or_false_t2 = typename std::enable_if<std::is_same<T, OrFalse<T2>>::value>::type;
+using enable_if_t_is_or_false_t2 = std::enable_if_t<std::is_same<T, OrFalse<T2>>::value>;
 
 template<class T>
 using enable_if_t_is_or_false_string = enable_if_t_is_or_false_t2<T, string>;
