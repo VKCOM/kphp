@@ -22,11 +22,9 @@
 class TypeData;
 
 struct ClassMemberStaticMethod {
-  FunctionModifiers modifiers;
   FunctionPtr function;
 
-  ClassMemberStaticMethod(FunctionPtr function, FunctionModifiers modifiers) :
-    modifiers(modifiers),
+  explicit ClassMemberStaticMethod(FunctionPtr function) :
     function(function) {}
 
   const std::string &global_name() const;
@@ -34,11 +32,9 @@ struct ClassMemberStaticMethod {
 };
 
 struct ClassMemberInstanceMethod {
-  FunctionModifiers modifiers;
   FunctionPtr function;
 
-  ClassMemberInstanceMethod(FunctionPtr function, FunctionModifiers modifiers) :
-    modifiers(modifiers),
+  explicit ClassMemberInstanceMethod(FunctionPtr function) :
     function(function) {}
 
   const std::string &global_name() const;
@@ -157,13 +153,13 @@ public:
     return find_member([&local_name](const MemberT &f) { return f.local_name() == local_name; });
   }
 
-  void add_static_method(FunctionPtr function, FunctionModifiers modifiers);
-  void add_instance_method(FunctionPtr function, FunctionModifiers modifiers);
+  void add_static_method(FunctionPtr function);
+  void add_instance_method(FunctionPtr function);
   void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str);
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str);
   void add_constant(std::string const_name, VertexPtr value);
 
-  void safe_add_instance_method(FunctionPtr function, FunctionModifiers modifiers);
+  void safe_add_instance_method(FunctionPtr function);
 
   bool has_constant(const std::string &local_name) const;
   bool has_field(const std::string &local_name) const;

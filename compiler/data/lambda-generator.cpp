@@ -254,7 +254,8 @@ void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor
   }
   invoke_function->name = fun_name;
   invoke_function->update_location_in_body();
-  generated_lambda->members.add_instance_method(invoke_function, FunctionModifiers::instance_public());
+  invoke_function->modifiers = FunctionModifiers::instance_public();
+  generated_lambda->members.add_instance_method(invoke_function);
 
   auto params = invoke_function->get_params();
   invoke_function->is_template = generated_lambda->members.has_any_instance_var() || params.size() > 1;

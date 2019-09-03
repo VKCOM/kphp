@@ -119,23 +119,21 @@ inline bool ClassMembersContainer::member_exists(const string &hash_name) const 
 }
 
 
-void ClassMembersContainer::add_static_method(FunctionPtr function, FunctionModifiers modifiers) {
+void ClassMembersContainer::add_static_method(FunctionPtr function) {
   string hash_name = function->name + "()";     // не local_name из-за context-наследования, там коллизии
-  append_member(hash_name, ClassMemberStaticMethod(function, modifiers));
+  append_member(hash_name, ClassMemberStaticMethod(function));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
-  function->modifiers = modifiers;
   function->class_id = klass;
   function->context_class = klass;
   function->is_virtual_method |= function->modifiers.is_abstract();
 }
 
-void ClassMembersContainer::add_instance_method(FunctionPtr function, FunctionModifiers modifiers) {
+void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   string hash_name = function->local_name() + "()";
-  append_member(hash_name, ClassMemberInstanceMethod(function, modifiers));
+  append_member(hash_name, ClassMemberInstanceMethod(function));
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
-  function->modifiers = modifiers;
   function->class_id = klass;
   function->context_class = klass;
   if (klass->is_interface()) {
@@ -163,9 +161,9 @@ void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {
   append_member(hash_name, ClassMemberConstant(klass, const_name, value));
 }
 
-void ClassMembersContainer::safe_add_instance_method(FunctionPtr function, FunctionModifiers modifiers) {
+void ClassMembersContainer::safe_add_instance_method(FunctionPtr function) {
   AutoLocker<Lockable *> locker(&(*klass));
-  add_instance_method(function, modifiers);
+  add_instance_method(function);
 }
 
 bool ClassMembersContainer::has_constant(const string &local_name) const {

@@ -1653,10 +1653,10 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
   if (cur_function->modifiers.is_instance()) {
     kphp_assert(cur_class);
 
-    cur_class->members.add_instance_method(cur_function, modifiers);
+    cur_class->members.add_instance_method(cur_function);
   } else if (modifiers.is_static()) {
     kphp_assert(cur_class);
-    cur_class->members.add_static_method(cur_function, modifiers);
+    cur_class->members.add_static_method(cur_function);
   }
 
   // после имени функции — параметры, затем блок use для замыканий

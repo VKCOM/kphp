@@ -120,8 +120,9 @@ FunctionPtr ClassData::add_virt_clone() {
   virt_clone_func_ptr->assumption_for_return = Assumption{AssumType::assum_instance, {}, ClassPtr{this}};
   virt_clone_func_ptr->is_inline = true;
   virt_clone_func_ptr->is_virtual_method = !derived_classes.empty();
+  virt_clone_func_ptr->modifiers = FunctionModifiers::instance_public();
 
-  members.add_instance_method(virt_clone_func_ptr, FunctionModifiers::instance_public());
+  members.add_instance_method(virt_clone_func_ptr);
 
   return virt_clone_func_ptr;
 }
@@ -146,7 +147,8 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
   ctor_function->update_location_in_body();
   ctor_function->is_inline = true;
-  members.add_instance_method(ctor_function, FunctionModifiers::instance_public());
+  ctor_function->modifiers = FunctionModifiers::instance_public();
+  members.add_instance_method(ctor_function);
 }
 
 template<Operation Op>

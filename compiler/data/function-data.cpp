@@ -131,7 +131,7 @@ void FunctionData::move_virtual_to_self_method() {
   auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
   auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
   self_function->is_virtual_method = false;
-  class_id->members.safe_add_instance_method(self_function, modifiers);
+  class_id->members.safe_add_instance_method(self_function);
 
   root->cmd_ref() = VertexAdaptor<op_seq>::create();
 }

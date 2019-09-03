@@ -121,7 +121,7 @@ private:
                 }
               });
             } else {
-              klass->members.add_instance_method(f_inst, f_inst->modifiers);
+              klass->members.add_instance_method(f_inst);
             }
           }
 

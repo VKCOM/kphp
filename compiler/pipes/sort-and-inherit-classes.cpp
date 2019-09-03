@@ -81,7 +81,7 @@ void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<Fun
 
     auto empty_parent_method_vertex = VertexAdaptor<op_function>::create(method->root->params().clone(), VertexAdaptor<op_seq>::create());
     auto empty_parent_method = FunctionData::clone_from(new_name, method, empty_parent_method_vertex);
-    parent->members.add_instance_method(empty_parent_method, empty_parent_method->modifiers);
+    parent->members.add_instance_method(empty_parent_method);
 
     empty_parent_method->is_virtual_method = true;
     empty_parent_method->is_overridden_method = true;
@@ -162,13 +162,13 @@ void copy_abstract_methods(ClassPtr child_class, ClassPtr parent_class, DataStre
 
   parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
     if (m.function->modifiers.is_abstract() && !child_class->members.has_instance_method(m.local_name())) {
-      child_class->members.add_instance_method(clone_function(m.function), m.modifiers);
+      child_class->members.add_instance_method(clone_function(m.function));
     }
   });
 
   parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
     if (m.function->modifiers.is_abstract() && !child_class->members.has_static_method(m.local_name())) {
-      child_class->members.add_static_method(clone_function(m.function), m.modifiers);
+      child_class->members.add_static_method(clone_function(m.function));
     }
   });
 }
@@ -249,9 +249,9 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   if (auto child_method = child_class->members.get_static_method(local_name)) {
     kphp_error_return(!parent_f->modifiers.is_final(),
                       format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
-    kphp_error_return(!(parent_method.modifiers.is_static() && parent_method.modifiers.is_private()),
+    kphp_error_return(!(parent_method.function->modifiers.is_static() && parent_method.function->modifiers.is_private()),
                       format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
-    kphp_error_return(parent_method.modifiers.access_modifier() == child_method->modifiers.access_modifier(),
+    kphp_error_return(parent_method.function->modifiers.access_modifier() == child_method->function->modifiers.access_modifier(),
                       format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
   } else {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
@@ -261,7 +261,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
 
-    child_class->members.add_static_method(child_function, parent_f->modifiers);    // пока наследование только статическое
+    child_class->members.add_static_method(child_function);    // пока наследование только статическое
 
     G->register_and_require_function(child_function, function_stream);
   }

@@ -62,7 +62,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
               v->set_string(self_found_method->local_name());
               v.as<op_func_call>()->func_id = self_found_method->function;
             } else {
-              kphp_error(!found_method->modifiers.is_abstract(),
+              kphp_error(!found_method->function->modifiers.is_abstract(),
                 format("you cannot call abstract methods: %s", found_method->function->get_human_readable_name().c_str()));
             }
           }
