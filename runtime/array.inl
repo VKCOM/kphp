@@ -1256,6 +1256,7 @@ void array<T>::move_from(array<T1> &&other) noexcept {
 
   if (other.p->ref_cnt > 0) {
     copy_from(other);
+    other = array<T1>{};
     return;
   }
 
