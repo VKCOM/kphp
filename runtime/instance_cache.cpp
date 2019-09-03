@@ -331,6 +331,10 @@ public:
       return false;
     }
 
+    // request_cache_ placed in script memory
+    // get element here, because lock enable critical section,
+    // and if we get out of script memory in critical section, and it may lead crash
+    auto &cached_element_ptr = request_cache_[key];
     std::unique_lock<inter_process_mutex> shared_data_lock{current_->data->mutex};
     {
       AllocReplacementSection section{current_->memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
@@ -338,8 +342,6 @@ public:
         return false;
       }
     }
-    // request_cache_ placed in script memory
-    auto &cached_element_ptr = request_cache_[key];
     AllocReplacementSection section{current_->memory_resource};
     string key_in_shared_memory = key;
     if (!DeepMoveFromScriptToCacheVisitor{}.process(key_in_shared_memory)) {
