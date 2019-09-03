@@ -19,12 +19,21 @@ namespace impl_ {
 // use template, because C$rpcResponseError is unknown on runtime compilation
 template<class C$rpcResponseError_>
 class rpcResponseErrorFactory : public RpcErrorFactory {
+private:
+  rpcResponseErrorFactory() = default;
+
   class_instance<C$VK$TL$RpcResponse> make_error(const string &error, int error_code) const final {
     class_instance<C$rpcResponseError_> err;
     err.alloc();
     err.get()->$error = error;
     err.get()->$error_code = error_code;
     return err;
+  }
+
+public:
+  static const RpcErrorFactory &get() {
+    const static rpcResponseErrorFactory self;
+    return self;
   }
 };
 } // namespace impl_
