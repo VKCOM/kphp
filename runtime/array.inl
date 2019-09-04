@@ -2504,6 +2504,16 @@ void array<T>::fill_vector(int num, const T &value) {
   p->int_size = num;
 }
 
+template<class T>
+void array<T>::memcpy_vector(int num, const void *src_buf) {
+  php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
+  mutate_if_vector_shared();
+
+  memcpy(p->int_entries, src_buf, num * sizeof(T));
+  p->max_key = num - 1;
+  p->int_size = num;
+}
+
 
 template<class T>
 int array<T>::get_next_key() const {

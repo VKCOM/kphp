@@ -115,6 +115,36 @@ inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char *error_
   }
 }
 
+template<class T>
+inline void fetch_raw_vector_T(array<T> &out __attribute__ ((unused)), int n_elems __attribute__ ((unused))) {
+  php_assert(0 && "never called in runtime");
+}
+
+template<>
+inline void fetch_raw_vector_T<int>(array<int> &out, int n_elems) {
+  f$fetch_raw_vector_int(out, n_elems);
+}
+
+template<>
+inline void fetch_raw_vector_T<double>(array<double> &out, int n_elems) {
+  f$fetch_raw_vector_double(out, n_elems);
+}
+
+template<class T>
+inline void store_raw_vector_T(const array<T> &v __attribute__ ((unused))) {
+  php_assert(0 && "never called in runtime");
+}
+
+template<>
+inline void store_raw_vector_T<int>(const array<int> &v) {
+  f$store_raw_vector_int(v);
+}
+
+template<>
+inline void store_raw_vector_T<double>(const array<double> &v) {
+  f$store_raw_vector_double(v);
+}
+
 struct t_Int {
   void store(const var &tl_object) {
     f$store_int(f$intval(tl_object));
@@ -127,12 +157,12 @@ struct t_Int {
 
   using PhpType = int;
 
-  void typed_store(const PhpType &value) {
-    f$store_int(f$safe_intval(value));
+  void typed_store(const PhpType &v) {
+    f$store_int(f$safe_intval(v));
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -157,8 +187,8 @@ struct t_Long {
 
   using PhpType = var;
 
-  void typed_store(const PhpType &value) {
-    f$store_long(value);
+  void typed_store(const PhpType &v) {
+    f$store_long(v);
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -179,12 +209,12 @@ struct t_Double {
 
   using PhpType = double;
 
-  void typed_store(const PhpType &value) {
-    f$store_double(f$floatval(value));
+  void typed_store(const PhpType &v) {
+    f$store_double(f$floatval(v));
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -209,12 +239,12 @@ struct t_String {
 
   using PhpType = string;
 
-  void typed_store(const PhpType &value) {
-    f$store_string(f$strval(value));
+  void typed_store(const PhpType &v) {
+    f$store_string(f$strval(v));
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -249,8 +279,8 @@ struct t_Bool {
 
   using PhpType = bool;
 
-  void typed_store(const PhpType &value) {
-    f$store_int(value ? TL_BOOL_TRUE : TL_BOOL_FALSE);
+  void typed_store(const PhpType &v) {
+    f$store_int(v ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -329,6 +359,12 @@ struct t_Vector {
   void typed_store(const PhpType &v) {
     int n = v.count();
     f$store_int(n);
+
+    if ((std::is_same<T, t_Int>{} || std::is_same<T, t_Double>{}) && inner_magic == 0 && v.is_vector()) {
+      store_raw_vector_T<typename T::PhpType>(v);
+      return;
+    }
+
     for (int i = 0; i < n; ++i) {
       if (!v.isset(i)) {
         CurrentProcessingQuery::get().raise_storing_error("Vector[%d] not set", i);
@@ -339,8 +375,8 @@ struct t_Vector {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -351,6 +387,12 @@ struct t_Vector {
       return;
     }
     out.reserve(n, 0, true);
+
+    if ((std::is_same<T, t_Int>{} || std::is_same<T, t_Double>{}) && inner_magic == 0) {
+      fetch_raw_vector_T<typename T::PhpType>(out, n);
+      return;
+    }
+
     for (int i = 0; i < n; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Vector");
       PhpElemT cur_elem;
@@ -534,8 +576,8 @@ struct tl_Dictionary_impl {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -608,6 +650,11 @@ struct t_Tuple {
   using PhpType = array<typename T::PhpType>;
 
   void typed_store(const PhpType &v) {
+    if ((std::is_same<T, t_Int>{} || std::is_same<T, t_Double>{}) && inner_magic == 0 && v.is_vector() && v.count() == size) {
+      store_raw_vector_T<typename T::PhpType>(v);
+      return;
+    }
+
     for (int i = 0; i < size; ++i) {
       if (!v.isset(i)) {
         CurrentProcessingQuery::get().raise_storing_error("Tuple[%d] not set", i);
@@ -618,13 +665,19 @@ struct t_Tuple {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out.reserve(size, 0, true);
+
+    if ((std::is_same<T, t_Int>{} || std::is_same<T, t_Double>{}) && inner_magic == 0) {
+      fetch_raw_vector_T<typename T::PhpType>(out, size);
+      return;
+    }
+
     for (int i = 0; i < size; ++i) {
       typename T::PhpType elem;
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Tuple");
@@ -639,12 +692,12 @@ struct t_Tuple {
   }
 };
 
-template<typename CellT, unsigned int inner_magic>
+template<typename T, unsigned int inner_magic>
 struct tl_array {
   int size;
-  CellT cell;
+  T cell;
 
-  tl_array(int size, CellT cell) :
+  tl_array(int size, T cell) :
     size(size),
     cell(std::move(cell)) {}
 
@@ -675,9 +728,14 @@ struct tl_array {
     return result;
   }
 
-  using PhpType = array<typename CellT::PhpType>;
+  using PhpType = array<typename T::PhpType>;
 
   void typed_store(const PhpType &v) {
+    if ((std::is_same<T, t_Int>{} || std::is_same<T, t_Double>{}) && inner_magic == 0 && v.is_vector() && v.count() == size) {
+      store_raw_vector_T<typename T::PhpType>(v);
+      return;
+    }
+
     for (int i = 0; i < size; ++i) {
       if (!v.isset(i)) {
         CurrentProcessingQuery::get().raise_storing_error("Array[%d] not set", i);
@@ -688,18 +746,24 @@ struct tl_array {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &value) {
-    typed_store(value.val());
+  void typed_store(const OrFalse<PhpType> &v) {
+    typed_store(v.val());
   }
 
-  void typed_fetch_to(PhpType &v) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
-    v.reserve(size, 0, true);
+    out.reserve(size, 0, true);
+
+    if ((std::is_same<T, t_Int>{} || std::is_same<T, t_Double>{}) && inner_magic == 0) {
+      fetch_raw_vector_T<typename T::PhpType>(out, size);
+      return;
+    }
+
     for (int i = 0; i < size; ++i) {
-      typename CellT::PhpType elem;
+      typename T::PhpType elem;
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");
       cell.typed_fetch_to(elem);
-      v.push_back(std::move(elem));
+      out.push_back(std::move(elem));
       CHECK_EXCEPTION(return);
     }
   }

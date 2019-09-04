@@ -67,6 +67,10 @@ bool f$fetch_eof();//TODO remove parameters
 
 bool f$fetch_end();
 
+void f$fetch_raw_vector_int(array<int> &out, int n_elems);
+
+void f$fetch_raw_vector_double(array<double> &out, int n_elems);
+
 void estimate_and_flush_overflow(int &bytes_sent);
 
 struct tl_func_base;
@@ -127,6 +131,10 @@ bool store_error(int error_code, const char *error_text);
 bool f$store_error(int error_code, const string &error_text);
 
 bool f$store_raw(const string &data);
+
+void f$store_raw_vector_int(const array<int> &vector);
+
+void f$store_raw_vector_double(const array<double> &vector);
 
 bool f$store_int(int v);
 

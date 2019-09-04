@@ -318,6 +318,7 @@ public:
   const T push_back_return(T &&v);
 
   inline void fill_vector(int num, const T &value);
+  inline void memcpy_vector(int num, const void *src_buf);
 
   inline int get_next_key() const __attribute__ ((always_inline));
 

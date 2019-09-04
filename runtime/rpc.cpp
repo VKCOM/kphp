@@ -319,6 +319,20 @@ double f$fetch_double() {
   return result;
 }
 
+void f$fetch_raw_vector_int(array<int> &out, int n_elems) {
+  int rpc_data_buf_offset = sizeof(int) * n_elems / 4;
+  TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
+  out.memcpy_vector(n_elems, rpc_data);
+  rpc_data += rpc_data_buf_offset;
+}
+
+void f$fetch_raw_vector_double(array<double> &out, int n_elems) {
+  int rpc_data_buf_offset = sizeof(double) * n_elems / 4;
+  TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
+  out.memcpy_vector(n_elems, rpc_data);
+  rpc_data += rpc_data_buf_offset;
+}
+
 static inline const char *f$fetch_string_raw(int *string_len) {
   TRY_CALL_VOID_(check_rpc_data_len(1), return nullptr);
   const char *str = reinterpret_cast <const char *> (rpc_data);
@@ -520,6 +534,14 @@ bool f$store_raw(const string &data) {
   }
   data_buf.append(data.c_str(), data_len);
   return true;
+}
+
+void f$store_raw_vector_int(const array<int> &vector) {
+  data_buf.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(int) * vector.count());
+}
+
+void f$store_raw_vector_double(const array<double> &vector) {
+  data_buf.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
 }
 
 bool store_header(long long cluster_id, int flags) {
