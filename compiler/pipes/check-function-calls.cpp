@@ -27,7 +27,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   int call_params_n = static_cast<int>(call_params.size());
 
   kphp_error_return(call_params_n >= f->get_min_argn(),
-                    format("Not enough arguments in function [%s : %s] [found %d] [expected at least %d]",
+                    format("Not enough arguments in function call [%s : %s] [found %d] [expected at least %d]",
                             f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, f->get_min_argn())
   );
 
@@ -38,7 +38,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   );
 
   kphp_error_return(func_params_n >= call_params_n,
-                    format("Too much arguments in function [%s : %s] [found %d] [expected %d]",
+                    format("Too much arguments in function call [%s : %s] [found %d] [expected %d]",
                             f->file_id->file_name.c_str(), f->get_human_readable_name().c_str(), call_params_n, func_params_n
                     )
   );
