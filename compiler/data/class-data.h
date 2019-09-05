@@ -75,7 +75,13 @@ public:
 
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>
-  void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location);
+  void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
+    static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
+    auto vertex_this = gen_vertex_this_with_type_rule(location);
+    auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
+    params_next.emplace(params_next.begin(), param_this);
+  }
+
 
   bool is_polymorphic_class() const {
     return !derived_classes.empty() || !implements.empty() || parent_class;

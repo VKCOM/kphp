@@ -91,7 +91,7 @@ public:
   VertexPtr get_expression();
   VertexPtr get_statement(const vk::string_view &phpdoc_str = vk::string_view{});
   VertexPtr get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
-  VertexPtr get_use();
+  void get_use();
   void get_seq(std::vector<VertexPtr> &seq_next);
   VertexPtr get_seq();
 

@@ -151,14 +151,6 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   members.add_instance_method(ctor_function);
 }
 
-template<Operation Op>
-void ClassData::patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
-  static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
-  auto vertex_this = gen_vertex_this_with_type_rule(location);
-  auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
-  params_next.emplace(params_next.begin(), param_this);
-}
-
 ClassPtr ClassData::get_parent_or_interface() const {
   if (parent_class) {
     return parent_class;

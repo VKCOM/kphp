@@ -1735,8 +1735,8 @@ bool GenTree::check_statement_end() {
   return expect (tok_semicolon, "';'");
 }
 
-static inline bool is_class_name_allowed(const string &name) {
-  static std::set<std::string> disallowed_names{"rpc_connection", "Long", "ULong", "UInt"};
+static inline bool is_class_name_allowed(const vk::string_view &name) {
+  static std::set<vk::string_view> disallowed_names{"rpc_connection", "Long", "ULong", "UInt"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }
@@ -1779,7 +1779,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 
   CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
 
-  string name_str = static_cast<string>(cur->str_val);
+  auto name_str = cur->str_val;
   next_cur();
 
   std::string full_class_name;
@@ -1787,7 +1787,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     kphp_assert(processing_file->is_builtin());
     full_class_name = G->env().get_tl_namespace_prefix() + name_str;
   } else {
-    full_class_name = processing_file->namespace_name.empty() ? name_str : processing_file->namespace_name + "\\" + name_str;
+    full_class_name = processing_file->namespace_name.empty() ? std::string{name_str} : processing_file->namespace_name + "\\" + name_str;
   }
 
   kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
@@ -1797,7 +1797,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
   if (!is_class_name_allowed(name_str)) {
-    kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.c_str()));
+    kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.data()));
   }
 
   cur_class->modifiers = modifiers;
@@ -1809,7 +1809,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 
   auto name_vertex = VertexAdaptor<op_func_name>::create();
   set_location(name_vertex, AutoLocation(this));
-  name_vertex->str_val = name_str;
+  name_vertex->str_val = static_cast<std::string>(name_str);
 
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // с полным неймспейсом и слешами
@@ -1874,38 +1874,36 @@ VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr ins
   return call_method;
 }
 
-VertexPtr GenTree::get_use() {
+void GenTree::get_use() {
   kphp_assert(test_expect(tok_use));
-  next_cur();
-  while (true) {
-    if (!test_expect(tok_func_name)) {
-      expect(tok_func_name, "<namespace path>");
+
+  do {
+    next_cur();
+    auto name = cur->str_val;
+    if (!expect(tok_func_name, "<namespace path>")) {
+      return;
     }
-    string name = static_cast<string>(cur->str_val);
+
     kphp_assert(!name.empty());
+
     if (name[0] == '\\') {
       name = name.substr(1);
     }
-    string alias = name.substr(name.rfind('\\') + 1);
+    auto alias = name.substr(name.rfind('\\') + 1);
     kphp_error(!alias.empty(), "KPHP doesn't support use of global namespace");
-    next_cur();
+
     if (test_expect(tok_as)) {
       next_cur();
-      if (!test_expect(tok_func_name)) {
-        expect(tok_func_name, "<use alias>");
+      alias = cur->str_val;
+      if (!expect(tok_func_name, "<use alias>")) {
+        return;
       }
-      alias = static_cast<string>(cur->str_val);
-      next_cur();
     }
-    kphp_error(processing_file->namespace_uses.emplace(alias, name).second,
-               "Duplicate 'use' at the top of the file");
-    if (!test_expect(tok_comma)) {
-      break;
-    }
-    next_cur();
-  }
-  expect2(tok_semicolon, tok_comma, "';' or ','");
-  return VertexPtr();
+
+    kphp_error(processing_file->namespace_uses.emplace(alias, name).second, "Duplicate 'use' at the top of the file");
+  } while (test_expect(tok_comma));
+
+  expect(tok_semicolon, "';'");
 }
 
 void GenTree::parse_namespace_and_uses_at_top_of_file() {
@@ -2169,8 +2167,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       AutoLocation const_location(this);
       kphp_error(!cur_class && cur_function && cur_function->type == FunctionData::func_global, "'use' can be declared only in global scope");
       get_use();
-      auto empty = VertexAdaptor<op_empty>::create();
-      return empty;
+      return VertexAdaptor<op_empty>::create();
     }
     case tok_var: {
       next_cur();

@@ -84,7 +84,7 @@ string resolve_uses(FunctionPtr current_function, string class_name, char delim)
       auto uses_it = current_function->file_id->namespace_uses.find(class_name_start);
 
       if (uses_it != current_function->file_id->namespace_uses.end()) {
-        class_name = uses_it->second + class_name.substr(class_name_start.length());
+        class_name = static_cast<std::string>(uses_it->second) + class_name.substr(class_name_start.length());
       } else {
         class_name = current_function->file_id->namespace_name + "\\" + class_name;
       }
