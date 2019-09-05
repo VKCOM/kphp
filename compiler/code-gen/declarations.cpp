@@ -14,8 +14,8 @@
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
-#include "compiler/vertex.h"
 #include "compiler/tl-classes.h"
+#include "compiler/vertex.h"
 
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return VarDeclaration(var, true, false);
@@ -175,7 +175,7 @@ TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std:
   specialization_suffix = php_tl_class_name.substr(template_suf_start);
   for (const auto &constructor : tl_type->constructors) {
     for (const auto &arg : constructor->args) {
-      if (arg->flags & vk::tl::FLAG_OPT_VAR) {
+      if (arg->is_optional()) {
         continue;
       }
       cur_tl_constructor = constructor.get();
@@ -241,11 +241,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
           kphp_assert(child_type_expr);
           vk::tl::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
           kphp_assert(child_tl_type);
-
-          // Maybe<int|string|array|double> -- с OrFalse
-          // Maybe<class_instance|bool|OrFalse|var> -- без OrFalse
-
-          if (tl_gen::is_tl_type_a_php_array(child_tl_type) || child_tl_type->id == TL_INT || child_tl_type->id == TL_DOUBLE || child_tl_type->id == TL_STRING) {
+          if (tl_gen::is_tl_type_wrapped_to_OrFalse(child_tl_type)) {
             inner_access.drop_class_instance = false;
             inner_access.inner_type_name = "InnerType";
           } else {
@@ -254,10 +250,6 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
         } else {
           inner_access.drop_class_instance = true;
           inner_access.inner_type_name = parent_tl_type->constructors[0]->args[i]->name; // корректность такого проверяется в tl2cpp.cpp::check_constructor()
-
-          // todo: Сейчас в зависимости добавляются ВСЕ инстанциации шаблонного типа.
-          //       В идеале нужно добавлять только ту, которая соответстсвует текущему дереву type_expr.
-          //       Нужно придумать как ее адекватно выделить из этого списка.
           auto php_classes = tl_gen::get_all_php_classes_of_tl_type(parent_tl_type);
           std::for_each(php_classes.begin(), php_classes.end(), [&](ClassPtr klass){ dependencies.add_class_include(klass); });
         }

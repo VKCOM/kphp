@@ -283,7 +283,7 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="typed-tl-tests",
         description="run typed tl tests in {} mode".format(mode_name),
-        cmd="KPHP_TL_SCHEMA={combined_tlo} {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options} || echo 'TODO: remove this echo later!'".format(
+        cmd="KPHP_TL_SCHEMA={combined_tlo} {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
             tl_tests_dir=tl_tests_dir,

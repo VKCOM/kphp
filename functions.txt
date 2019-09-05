@@ -818,7 +818,6 @@ interface RpcResponse {
   public function isError() ::: bool;
 }
 
-// todo instead of int (query_id) use future<RpcResponse> ?
 /** @kphp-extern-func-info tl_common_h_dep */
 function typed_rpc_tl_query_one ($connection ::: RPC, $query_function :<=: @tl\RpcFunction, $timeout ::: float = -1.0) ::: int;
 /** @kphp-extern-func-info tl_common_h_dep */

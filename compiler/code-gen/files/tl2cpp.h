@@ -29,6 +29,7 @@ bool is_php_class_a_tl_constructor(ClassPtr klass);
 bool is_php_class_a_tl_polymorphic_type(ClassPtr klass);
 bool is_php_class_a_tl_array_item(ClassPtr klass);
 bool is_tl_type_a_php_array(const vk::tl::type *t);
+bool is_tl_type_wrapped_to_OrFalse(const vk::tl::type *type);
 
 bool is_type_dependent(const vk::tl::type *type, const vk::tl::tl_scheme *);
 bool is_type_dependent(const vk::tl::combinator *constructor, const vk::tl::tl_scheme *);

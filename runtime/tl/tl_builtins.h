@@ -2,12 +2,13 @@
 
 #include <memory>
 
+#include "common/type_traits/constexpr_if.h"
+
 #include "runtime/include.h"
 #include "runtime/interface.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_query.h"
-#include "common/type_traits/constexpr_if.h"
 
 #define TL_INT 0xa8509bda
 #define TL_LONG 0x22076cba
@@ -161,17 +162,9 @@ struct t_Int {
     f$store_int(f$safe_intval(v));
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_int();
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };
 
@@ -213,17 +206,9 @@ struct t_Double {
     f$store_double(f$floatval(v));
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_double();
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };
 
@@ -243,17 +228,9 @@ struct t_String {
     f$store_string(f$strval(v));
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_string();
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };
 
@@ -375,10 +352,6 @@ struct t_Vector {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     int n = f$fetch_int();
@@ -400,10 +373,6 @@ struct t_Vector {
       out.push_back(std::move(cur_elem));
       CHECK_EXCEPTION(return);
     }
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };
 
@@ -576,10 +545,6 @@ struct tl_Dictionary_impl {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     int n = f$fetch_int();
@@ -596,10 +561,6 @@ struct tl_Dictionary_impl {
       out.set_value(key, std::move(elem));
       CHECK_EXCEPTION(return);
     }
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };
 
@@ -665,10 +626,6 @@ struct t_Tuple {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out.reserve(size, 0, true);
@@ -685,10 +642,6 @@ struct t_Tuple {
       out.push_back(std::move(elem));
       CHECK_EXCEPTION(return);
     }
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };
 
@@ -746,10 +699,6 @@ struct tl_array {
     }
   }
 
-  void typed_store(const OrFalse<PhpType> &v) {
-    typed_store(v.val());
-  }
-
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out.reserve(size, 0, true);
@@ -766,9 +715,5 @@ struct tl_array {
       out.push_back(std::move(elem));
       CHECK_EXCEPTION(return);
     }
-  }
-
-  void typed_fetch_to(OrFalse<PhpType> &out) {
-    typed_fetch_to(out.ref());
   }
 };

@@ -45,12 +45,8 @@
 namespace tl_gen {
 static const std::string T_TYPE = "Type";
 
-using vk::tl::FLAG_OPT_FIELD;
-using vk::tl::FLAG_OPT_VAR;
 using vk::tl::FLAG_DEFAULT_CONSTRUCTOR;
 using vk::tl::FLAG_NOCONS;
-using vk::tl::FLAG_EXCL;
-using vk::tl::FLAG_BARE;
 
 static vk::tl::tl_scheme *tl;
 static const vk::tl::combinator *cur_combinator;
@@ -204,6 +200,12 @@ bool is_tl_type_a_php_array(const vk::tl::type *t) {
          t->id == TL_INT_KEY_DICTIONARY || t->id == TL_LONG_KEY_DICTIONARY;
 }
 
+bool is_tl_type_wrapped_to_OrFalse(const vk::tl::type *type) {
+  // Maybe<int|string|array|double> -- с OrFalse
+  // Maybe<class_instance|bool|OrFalse|var> -- без OrFalse
+  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING) || type->is_integer_variable();
+}
+
 // классы VK\TL\Types\* — интерфейсы — это полиморфные типы, конструкторы которых классы implements его
 bool is_php_class_a_tl_polymorphic_type(ClassPtr klass) {
   return klass->is_tl_class && klass->is_interface() && klass->name.find("Types\\") != std::string::npos;
@@ -232,7 +234,7 @@ bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
   const auto &type = tl->types[type_expr->type_id];
   // полиморфные типы процессят magic внутри себя, а не снаружи, а для "#" вообще magic'а нет никогда
   bool handles_magic_inside = type->is_integer_variable() ? true : type->is_polymorphic();
-  bool is_used_as_bare = type_expr->flags & FLAG_BARE;
+  bool is_used_as_bare = type_expr->is_bare();
   // означает: тип полиморфный или с % — не нужно читать снаружи его magic
   return !(handles_magic_inside || is_used_as_bare);
 }
@@ -240,7 +242,7 @@ bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
 std::vector<std::string> get_not_optional_fields_masks(const vk::tl::combinator *constructor) {
   std::vector<std::string> res;
   for (const auto &arg : constructor->args) {
-    if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable() && !(arg->flags & FLAG_OPT_VAR)) {
+    if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable() && !arg->is_optional()) {
       res.emplace_back(arg->name);
     }
   }
@@ -250,7 +252,7 @@ std::vector<std::string> get_not_optional_fields_masks(const vk::tl::combinator 
 std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl::combinator> &constructor) {
   std::vector<std::string> res;
   for (const auto &arg : constructor->args) {
-    if (arg->flags & FLAG_OPT_VAR) {
+    if (arg->is_optional()) {
       if (type_of(arg->type_expr)->is_integer_variable()) {
         res.emplace_back(arg->name);
       } else {
@@ -266,7 +268,7 @@ std::vector<std::string> get_template_params(const vk::tl::combinator *construct
   std::vector<std::string> typenames;
   for (const auto &arg : constructor->args) {
     if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
-      kphp_assert(arg->flags & FLAG_OPT_VAR);
+      kphp_assert(arg->is_optional());
       typenames.emplace_back(format("T%d", arg->var_num));
       typenames.emplace_back(format("inner_magic%d", arg->var_num));
     }
@@ -297,6 +299,7 @@ std::string get_template_definition(const vk::tl::combinator *constructor) {
   return "<" + vk::join(typenames, ", ") + ">";
 }
 
+
 std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class_instance = false, const std::string &type_name = "") {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string res;
@@ -305,7 +308,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
     std::vector<std::string> template_params;
     for (const auto &arg : c_from_renamed->args) {
       if (arg->is_type(tl)) {
-        kphp_assert(arg->flags & FLAG_OPT_VAR);
+        kphp_assert(arg->is_optional());
         template_params.emplace_back(format("typename T%d::PhpType", arg->var_num));
       }
     }
@@ -330,9 +333,18 @@ std::string get_php_runtime_type(const vk::tl::type *t) {
   return get_php_runtime_type(t_from_renamed->constructors[0].get(), true);
 }
 
-std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg) {
+enum class field_rw_type {
+  READ,
+  WRITE
+};
+
+std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg, field_rw_type rw_type) {
   kphp_assert(!arg->name.empty());
-  return format("tl_object->$%s", arg->name.c_str());
+  std::string or_false_inner_access;
+  if (arg->is_fields_mask_optional() && is_tl_type_wrapped_to_OrFalse(type_of(arg->type_expr))) {
+    or_false_inner_access = rw_type == field_rw_type::READ ? ".val()" : ".ref()";
+  }
+  return format("tl_object->$%s", arg->name.c_str()) + or_false_inner_access;
 }
 } // namespace
 
@@ -432,14 +444,6 @@ struct TypeStore {
     if (typed_mode) {
       bool first = true;
       for (const auto &c : type->constructors) {
-        // todo: Предполагать что для шаблонных такого нет. Потом сделаем чтобы вообще не было, дописав в пхп код дамми методы.
-        if (!is_type_dependent(type, tl)) {
-          ClassPtr php_class = get_php_class_of_tl_constructor_specialization(c.get(), "");
-          if (!php_class) {
-            W << "// for " << c->name << " not found: " << get_php_runtime_type(c.get()) << NL;
-            continue;
-          }
-        }
         W << (first ? "if " : " else if ");
         first = false;
 
@@ -486,7 +490,7 @@ struct TypeStore {
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
   array<var> result;
-  if (!CurException.is_null()) return result;
+  CHECK_EXCEPTION(return result);
   auto magic = static_cast<unsigned int>(f$fetch_int());
   switch(magic) {
     case 0x0a29cd5d: {
@@ -508,7 +512,7 @@ array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
  * Типизированно:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_fetch_to(PhpType &tl_object) {
-  if (!CurException.is_null()) return;
+  CHECK_EXCEPTION(return);
   auto magic = static_cast<unsigned int>(f$fetch_int());
   switch(magic) {
     case 0x0a29cd5d: {
@@ -555,7 +559,7 @@ struct TypeFetch {
     if (!type->is_polymorphic()) {
       auto &constructor = type->constructors.front();
       if (typed_mode) {
-        W << "if (!CurException.is_null()) return;" << NL;
+        W << "CHECK_EXCEPTION(return);" << NL;
         W << get_php_runtime_type(constructor.get(), true) << " result;" << NL;
         W << "result.alloc();" << NL;
         // во все c_*.typed_fetch_to() приходит уже аллоцированный объект.
@@ -563,7 +567,7 @@ struct TypeFetch {
         W << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
         W << "tl_object = result;" << NL;
       } else {
-        W << "if (!CurException.is_null()) return array<var>();" << NL;
+        W << "CHECK_EXCEPTION(return array<var>());" << NL;
         W << "return " << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
       }
       return;
@@ -573,7 +577,7 @@ struct TypeFetch {
     if (!typed_mode) {
       W << "array<var> result;" << NL;
     }
-    W << "if (!CurException.is_null()) return" << (typed_mode ? "" : " result") << ";" << NL;
+    W << "CHECK_EXCEPTION(return" << (typed_mode ? "" : " result") << ");" << NL;
     auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
     bool has_name = type->constructors_num > 1 && !(type->flags & FLAG_NOCONS);
     if (default_constructor != nullptr) {
@@ -585,11 +589,6 @@ struct TypeFetch {
       if (c.get() == default_constructor) {
         continue;
       }
-      if (typed_mode && !is_type_dependent(type, tl) && !get_php_class_of_tl_constructor_specialization(c.get(), "")) {
-        //todo: Скоро сделаем так, что, если тип используется, то используются и все его конструкторы, догенерив пхп код
-        continue;
-      }
-
       W << format("case 0x%08x: ", static_cast<unsigned int>(c->id)) << BEGIN;
       if (!typed_mode) {
         W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
@@ -649,7 +648,7 @@ std::string get_storer_call(const std::unique_ptr<vk::tl::arg> &arg, const std::
   if (!typed_mode) {
     return target_expr + format(".store(tl_arr_get(tl_object, %s, %d, %d))", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name));
   } else {
-    return target_expr + format(".typed_store(%s)", get_tl_object_field_access(arg).c_str());
+    return target_expr + format(".typed_store(%s)", get_tl_object_field_access(arg, field_rw_type::READ).c_str());
   }
 }
 
@@ -676,7 +675,7 @@ std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, cons
   } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tl::type_var>()) {
     for (const auto &arg : cur_combinator->args) {
       if (auto casted = arg->type_expr->as<vk::tl::type_var>()) {
-        if ((arg->flags & FLAG_EXCL) && casted->var_num == arg_as_type_var->var_num) {
+        if (arg->is_forwarded_function() && casted->var_num == arg_as_type_var->var_num) {
           return "";
         }
       }
@@ -766,11 +765,11 @@ struct CombinatorStore {
     for (const auto &arg : combinator->args) {
       // Если аргумент является параметром типа (обрамлен в {}), пропускаем его
       // Все такие аргументы хранятся в типе, как поля структуры
-      if (arg->flags & FLAG_OPT_VAR) {
+      if (arg->is_optional()) {
         continue;
       }
       // Если поле необязательное и зависит от филд маски
-      if (arg->flags & FLAG_OPT_FIELD) {
+      if (arg->is_fields_mask_optional()) {
         // 2 случая:
         //      1) Зависимость от значения, которым параметризуется тип (имеет смысл только для конструкторов)
         //      2) Зависимость от значения, которое получаем из явных аргументов
@@ -779,12 +778,23 @@ struct CombinatorStore {
                     combinator->get_var_num_arg(arg->exist_var_num)->name.c_str(),
                     arg->exist_var_bit) << BEGIN;
         // полиморфно обрабатываются, так как запоминаем их все либо в локальные переменны либо в поля структуры
+        if (typed_mode) {
+          // Проверяем, что не забыли проставить поле под филд маской
+          std::string value_check = get_value_absence_check_for_optional_arg(arg.get());
+          if (!value_check.empty()) {
+            W << "if (" << value_check << ") " << BEGIN;
+            W << format("CurrentProcessingQuery::get().raise_storing_error(\"Optional field %%s of %%s is not set, but corresponding fields mask bit is set\", \"%s\", \"%s\");",
+                        arg->name.c_str(), combinator->name.c_str()) << NL;
+            W << "return" << (combinator->is_function() ? " {};" : ";") << NL;
+            W << END << NL;
+          }
+        }
       }
-      if (!(arg->flags & FLAG_EXCL)) {
+      if (!arg->is_forwarded_function()) {
         W << TypeExprStore(arg, var_num_access, typed_mode);
       }
       //Обработка восклицательного знака
-      if (arg->flags & FLAG_EXCL) {
+      if (arg->is_forwarded_function()) {
         kphp_assert(combinator->is_function());
         auto as_type_var = arg->type_expr->as<vk::tl::type_var>();
         kphp_assert(as_type_var);
@@ -806,7 +816,7 @@ struct CombinatorStore {
             << "return {};" << NL
             << END << NL;
           W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
-            << get_tl_object_field_access(arg) << ".get()->store();" << NL;
+            << get_tl_object_field_access(arg, field_rw_type::READ) << ".get()->store();" << NL;
         }
       } else if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
         // Запоминаем филд маску для последующего использования
@@ -819,12 +829,32 @@ struct CombinatorStore {
                       arg->idx,
                       hash_tl_const_str(arg->name)) << NL;
         } else {
-          W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg) << ";" << NL;
+          W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg, field_rw_type::READ) << ";" << NL;
         }
       }
-      if (arg->flags & FLAG_OPT_FIELD) {
+      if (arg->is_fields_mask_optional()) {
         W << END << NL;
       }
+    }
+  }
+private:
+  std::string get_value_absence_check_for_optional_arg(const vk::tl::arg *arg) const {
+    kphp_assert(arg->is_fields_mask_optional());
+    auto type = type_of(arg->type_expr);
+    std::string check_target = "tl_object->$" + arg->name;
+    if (is_tl_type_wrapped_to_OrFalse(type_of(arg->type_expr))) {
+      // Если оборачивается в OrFalse под филд маской
+      return "!" + check_target + ".bool_value";
+    } else if (type->id == TL_LONG) {
+      // Если это var (mixed)
+      return "equals(" + check_target + ", false)";
+    } else if (!CUSTOM_IMPL_TYPES.count(type->name)) {
+      // Если это class_instance
+      return check_target + ".is_null()";
+    } else {
+      // Иначе это bool или OrFalse, которые не оборачиваются в OrFalse под филд маской,
+      // поэтому мы не можем проверить записал ли разработчик значение
+      return "";
     }
   }
 };
@@ -833,6 +863,7 @@ std::string get_fetcher_call(const std::unique_ptr<vk::tl::type_expr_base> &type
   if (!typed_mode) {
     return get_full_value(type_expr.get(), "") + ".fetch()";
   } else {
+    kphp_assert(!storage.empty());
     return get_full_value(type_expr.get(), "") + ".typed_fetch_to(" + storage + ")";
   }
 }
@@ -857,7 +888,7 @@ struct TypeExprFetch {
         << hash_tl_const_str(arg->name)
         << ");" << NL;
     } else {
-      W << get_fetcher_call(arg->type_expr, true, get_tl_object_field_access(arg)) << ";" << NL;
+      W << get_fetcher_call(arg->type_expr, true, get_tl_object_field_access(arg, field_rw_type::WRITE)) << ";" << NL;
     }
   }
 };
@@ -941,11 +972,11 @@ struct CombinatorFetch {
     for (const auto &arg : combinator->args) {
       // Если аргумент является параметром типа (обрамлен в {}), пропускаем его
       // Все такие аргументы хранятся в типе, как поля структуры
-      if (arg->flags & FLAG_OPT_VAR) {
+      if (arg->is_optional()) {
         continue;
       }
       // Если поле необязательное и зависит от филд маски
-      if (arg->flags & FLAG_OPT_FIELD) {
+      if (arg->is_fields_mask_optional()) {
         W << format("if (%s & (1 << %d)) ",
                     combinator->get_var_num_arg(arg->exist_var_num)->name.c_str(),
                     arg->exist_var_bit) << BEGIN;
@@ -957,10 +988,10 @@ struct CombinatorFetch {
           W << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << register_tl_const_str(arg->name) << ", "
             << hash_tl_const_str(arg->name) << ").to_int();" << NL;
         } else {
-          W << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg) << ";" << NL;
+          W << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg, field_rw_type::READ) << ";" << NL;
         }
       }
-      if (arg->flags & FLAG_OPT_FIELD) {
+      if (arg->is_fields_mask_optional()) {
         W << END << NL;
       }
     }
@@ -1036,7 +1067,7 @@ struct TlConstructorDecl {
   static std::string get_optional_args_for_decl(const vk::tl::combinator *c) {
     std::vector<std::string> res;
     for (const auto &arg : c->args) {
-      if (arg->flags & FLAG_OPT_VAR) {
+      if (arg->is_optional()) {
         if (type_of(arg->type_expr)->is_integer_variable()) {
           res.emplace_back("int " + arg->name);
         } else {
@@ -1144,7 +1175,6 @@ struct TlTypeDecl {
   // tl-типу 'messages.ChatInfoUser' соответствует:
   // * либо php class VK\TL\Types\messages\chatInfoUser
   // * либо php interface VK\TL\Types\messages\ChatInfoUser, если тип полиморфный
-  // todo понять, что с зависимыми типами; прокомментить про достижимость
   static bool does_tl_type_need_typed_fetch_store(const vk::tl::type *t) {
     if (t->name == "ReqResult") {
       // без этого сайт не компилится, пока typed rpc не подключен — т.к. типизированный t_ReqResult не компилится
@@ -1178,14 +1208,14 @@ struct TlTypeDecl {
     for (const auto &arg : constructor->args) {
       if (arg->var_num != -1) {
         if (type_of(arg->type_expr)->is_integer_variable()) {
-          if (arg->flags & FLAG_OPT_VAR) {
+          if (arg->is_optional()) {
             W << "int " << arg->name << "{0};" << NL;
             constructor_params.emplace_back("int " + arg->name);
             constructor_inits.emplace_back(format("%s(%s)", arg->name.c_str(), arg->name.c_str()));
           }
         } else if (type_of(arg->type_expr)->name == T_TYPE) {
           W << format("T%d %s;", arg->var_num, arg->name.c_str()) << NL;
-          kphp_assert(arg->flags & FLAG_OPT_VAR);
+          kphp_assert(arg->is_optional());
           constructor_params.emplace_back(format("T%d %s", arg->var_num, arg->name.c_str()));
           constructor_inits.emplace_back(format("%s(std::move(%s))", arg->name.c_str(), arg->name.c_str()));
         }
@@ -1260,7 +1290,7 @@ struct TlFunctionDecl {
     std::string struct_name = cpp_tl_struct_name("f_", f->name);
     W << "struct " + struct_name + " : tl_func_base " << BEGIN;
     for (const auto &arg : f->args) {
-      if (arg->flags & FLAG_OPT_VAR) {
+      if (arg->is_optional()) {
         W << "tl_exclamation_fetch_wrapper " << arg->name << ";" << NL;
       } else if (arg->var_num != -1) {
         W << "int " << arg->name << "{0};" << NL;
@@ -1561,7 +1591,7 @@ void check_type_expr(vk::tl::expr_base *expr_base) {
       if (type->is_integer_variable() || type->name == T_TYPE) {
         return;
       }
-      kphp_error(!type->is_polymorphic() || !(type_expr->flags & FLAG_BARE),
+      kphp_error(!type->is_polymorphic() || !type_expr->is_bare(),
                  format("Polymorphic tl type %s can't be used as bare in tl scheme.", type->name.c_str()));
       for (const auto &child : type_expr->children) {
         check_type_expr(child.get());
@@ -1581,7 +1611,7 @@ void check_constructor(const std::unique_ptr<vk::tl::combinator> &c) {
   // Проверяем, что порядок неявных аргументов конструктора совпадает с их порядком в типе
   std::vector<int> var_nums;
   for (const auto &arg : c->args) {
-    if ((arg->flags & FLAG_OPT_VAR) && arg->var_num != -1) {
+    if (arg->is_optional() && arg->var_num != -1) {
       var_nums.push_back(arg->var_num);
     }
   }
