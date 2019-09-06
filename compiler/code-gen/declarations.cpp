@@ -71,6 +71,7 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   FunctionParams params_gen(function, in_header, style);
 
   switch (style) {
+    case gen_out_style::tagger:
     case gen_out_style::cpp:
       W << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
       break;
@@ -141,6 +142,7 @@ void FunctionParams::compile(CodeGenerator &W) const {
     auto var = param->var();
     TypeName type_gen(tinf::get_type(function, ii), style);
     switch (style) {
+      case gen_out_style::tagger:
       case gen_out_style::cpp: {
         declare_cpp_param(W, var, type_gen);
         if (param->has_default_value() && param->default_value() && in_header) {
@@ -534,6 +536,7 @@ StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
 
 void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
   switch (style) {
+    case gen_out_style::tagger:
     case gen_out_style::cpp:
       W << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
       break;

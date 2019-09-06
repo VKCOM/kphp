@@ -14,6 +14,7 @@
 #include "compiler/stage.h"
 #include "compiler/threading/format.h"
 #include "compiler/threading/tls.h"
+#include "compiler/code-gen/gen-out-style.h"
 
 /*** TypeData ***/
 // read/write/lookup at
@@ -146,7 +147,7 @@ public:
 bool operator<(const TypeData &a, const TypeData &b);
 bool operator==(const TypeData &a, const TypeData &b);
 
-std::string type_out(const TypeData *type, bool cpp_out = true);
+std::string type_out(const TypeData *type, gen_out_style style = gen_out_style::cpp);
 std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);

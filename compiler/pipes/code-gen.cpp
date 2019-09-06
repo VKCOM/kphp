@@ -24,13 +24,18 @@
 class CollectForkableTypes : public FunctionPassBase {
 public:
   std::vector<const TypeData *> waitable_types;
+  std::vector<const TypeData *> forkable_types;
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
     if (auto call = root.try_as<op_func_call>()) {
-      if (call->str_val == "wait_result") {
-        waitable_types.push_back(tinf::get_type(root));
-      } else if (call->str_val == "wait_result_multi") {
-        waitable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
+      if (call->func_id->is_resumable) {
+        if (call->str_val == "wait_result") {
+          waitable_types.push_back(tinf::get_type(root));
+        } else if (call->str_val == "wait_result_multi") {
+          forkable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
+          waitable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
+        }
+        forkable_types.push_back(tinf::get_type(root));
       }
     }
     return root;
@@ -40,14 +45,11 @@ public:
 void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &os) {
   CollectForkableTypes pass;
   run_function_pass(function, &pass);
-  if (!pass.waitable_types.empty() || function->is_resumable){
+  if (!pass.waitable_types.empty() || !pass.forkable_types.empty()){
     static volatile int lock = 0;
     AutoLocker<volatile int*> locker(&lock);
     waitable_types.insert(waitable_types.end(), pass.waitable_types.begin(), pass.waitable_types.end());
-    forkable_types.insert(forkable_types.end(), pass.waitable_types.begin(), pass.waitable_types.end());
-    if (function->is_resumable) {
-      forkable_types.push_back(tinf::get_type(function, -1));
-    }
+    forkable_types.insert(forkable_types.end(), pass.forkable_types.begin(), pass.forkable_types.end());
   }
 
   std::call_once(dest_dir_synced, [] {

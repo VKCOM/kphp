@@ -625,39 +625,43 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
   }
 }
 
-void type_out_impl(const TypeData *type, std::string &res, bool cpp_out) {
-  const PrimitiveType tp = type->get_real_ptype();
+static void type_out_impl(const TypeData *type, std::string &res, gen_out_style style) {
+  PrimitiveType tp = type->get_real_ptype();
   const bool or_false = type->use_or_false() && tp != tp_bool;
 
   if (or_false) {
     res += "OrFalse < ";
   }
 
-  if (cpp_out) {
-    get_cpp_style_type(type, res);
+  if (style == gen_out_style::tagger && (tp == tp_future || tp == tp_future_queue)) {
+    res += "int";
   } else {
-    res += ptype_name(tp);
-  }
-
-  const bool need_any_key = vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue);
-  const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
-  if (anykey_value) {
-    res += "< ";
-    type_out_impl(anykey_value, res, cpp_out);
-    res += " >";
-  }
-
-  const bool need_all_subkeys = tp == tp_tuple;
-  if (need_all_subkeys) {
-    res += "<";
-    for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
-      if (subkey != type->lookup_begin()) {
-        res += " , ";
-      }
-      kphp_assert(subkey->first.is_int_key());
-      type_out_impl(type->const_read_at(subkey->first), res, cpp_out);
+    if (style == gen_out_style::cpp || style == gen_out_style::tagger) {
+      get_cpp_style_type(type, res);
+    } else {
+      res += ptype_name(tp);
     }
-    res += ">";
+
+    const bool need_any_key = vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue);
+    const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
+    if (anykey_value) {
+      res += "< ";
+      type_out_impl(anykey_value, res, style);
+      res += " >";
+    }
+
+    const bool need_all_subkeys = tp == tp_tuple;
+    if (need_all_subkeys) {
+      res += "<";
+      for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
+        if (subkey != type->lookup_begin()) {
+          res += " , ";
+        }
+        kphp_assert(subkey->first.is_int_key());
+        type_out_impl(type->const_read_at(subkey->first), res, style);
+      }
+      res += ">";
+    }
   }
 
   if (or_false) {
@@ -665,9 +669,9 @@ void type_out_impl(const TypeData *type, std::string &res, bool cpp_out) {
   }
 }
 
-std::string type_out(const TypeData *type, bool cpp_out) {
+std::string type_out(const TypeData *type, gen_out_style style) {
   std::string res;
-  type_out_impl(type, res, cpp_out);
+  type_out_impl(type, res, style);
   return res;
 }
 

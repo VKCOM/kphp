@@ -38,7 +38,7 @@ void TypeTagger::compile(CodeGenerator &W) const {
   IncludesCollector collector;
 
   for (auto type : forkable_types) {
-    sorted_types.insert(type_out(type));
+    sorted_types.insert(type_out(type, gen_out_style::tagger));
     collector.add_all_class_types(*type);
   }
   for (auto type : waitable_types) {
@@ -71,7 +71,7 @@ void TypeTagger::compile(CodeGenerator &W) const {
 
   std::set<std::string> waitable_types_str;
   for (auto type : waitable_types) {
-    waitable_types_str.insert(type_out(type));
+    waitable_types_str.insert(type_out(type, gen_out_style::tagger));
   }
   if (!waitable_types_str.empty()) {
     W << "auto unused_loaders_list __attribute__((unused)) = " << BEGIN;

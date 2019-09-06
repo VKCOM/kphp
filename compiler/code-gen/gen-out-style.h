@@ -2,5 +2,6 @@
 
 enum class gen_out_style {
   cpp,
-  txt
+  txt,
+  tagger
 };

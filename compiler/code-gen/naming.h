@@ -37,7 +37,7 @@ struct TypeName {
   }
 
   void compile(CodeGenerator &W) const {
-    string s = type_out(type, style == gen_out_style::cpp);
+    string s = type_out(type, style);
     if (W.get_context().inside_macro) {
       while (s.find(',') != string::npos) {
         s = s.replace(s.find(','), 1, " COMMA ");   // такое есть у tuple'ов
