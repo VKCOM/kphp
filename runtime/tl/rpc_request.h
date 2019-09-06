@@ -17,7 +17,7 @@ public:
 
   string tl_function_name() const {
     string tl_name {storing_function_.get()->get_class()};
-    const string tl_class_prefix {"TL\\Functions\\"};
+    const string tl_class_prefix {"\\Functions\\"};
     const size_t pos = tl_name.find(tl_class_prefix);
     if (pos != string::npos) {
       tl_name = tl_name.substr(pos + tl_class_prefix.size(), tl_name.size() - (pos + tl_class_prefix.size()));
