@@ -63,12 +63,15 @@ class ElementHolder : private vk::thread_safe_refcnt<ElementHolder> {
 private:
   ElementHolder(std::chrono::nanoseconds now, int ttl,
                 unique_object<InstanceWrapperBase> &&instance,
-                memory_resource::synchronized_pool_resource &mem_resource) :
+                memory_resource::synchronized_pool_resource &mem_resource,
+                InstanceCacheStats &stats) :
     stored_at(now),
     expiring_at(ttl > 0 ? now + std::chrono::seconds{ttl} : std::chrono::nanoseconds::max()),
     inserted_by_process(getpid()),
     instance_wrapper(std::move(instance)),
-    resource(mem_resource) {
+    resource(mem_resource),
+    cache_stats(stats) {
+    ++cache_stats.elements_created;
   }
 
 public:
@@ -77,6 +80,7 @@ public:
 
   void release() {
     if (--refcnt == 0) {
+      ++cache_stats.elements_destroyed;
       auto &mem_resource = resource;
       this->~ElementHolder();
       mem_resource.deallocate(this, sizeof(ElementHolder));
@@ -85,13 +89,14 @@ public:
 
   static vk::intrusive_ptr<ElementHolder> construct(std::chrono::nanoseconds now, int ttl,
                                                     unique_object<InstanceWrapperBase> &&instance,
-                                                    memory_resource::synchronized_pool_resource &resource) {
+                                                    memory_resource::synchronized_pool_resource &resource,
+                                                    InstanceCacheStats &stats) {
     if (!instance || !resource.reserve(sizeof(ElementHolder))) {
       return {};
     }
     void *mem = resource.allocate(sizeof(ElementHolder));
     php_assert(mem);
-    return vk::intrusive_ptr<ElementHolder>{new(mem) ElementHolder{now, ttl, std::move(instance), resource}};
+    return vk::intrusive_ptr<ElementHolder>{new(mem) ElementHolder{now, ttl, std::move(instance), resource, stats}};
   }
 
   // check that left less than (total_time * ratio) time
@@ -105,6 +110,7 @@ public:
   bool try_return_null_early{true};
   unique_object<InstanceWrapperBase> instance_wrapper;
   memory_resource::synchronized_pool_resource &resource;
+  InstanceCacheStats &cache_stats;
 };
 
 template<typename T>
@@ -127,6 +133,7 @@ struct SharedDataStorages {
   ElementStorage_ storage;
   ExpirationTrace_ expiration_trace;
   ProcessingKeys_ processing_keys;
+  InstanceCacheStats stats;
 };
 
 class SharedMemoryData : vk::not_copyable {
@@ -353,13 +360,14 @@ public:
       shared_data_lock.unlock();
       // move instance from script memory into cache memory
       auto cached_instance_wrapper = instance_wrapper.clone_and_detach_shared_ref();
-      auto element = ElementHolder::construct(now_, ttl, std::move(cached_instance_wrapper), current_->memory_resource);
+      auto element = ElementHolder::construct(now_, ttl, std::move(cached_instance_wrapper), current_->memory_resource, current_->data->stats);
       shared_data_lock.lock();
       finish_key_processing(key_in_shared_memory);
       auto inserted_element = insert_element(std::move(key_in_shared_memory), std::move(element));
       cached_element_ptr.reset(inserted_element.get());
       if (inserted_element) {
         ic_debug("element '%s' was successfully inserted\n", key.c_str());
+        ++current_->data->stats.elements_stored;
         return true;
       }
     } else {
@@ -383,6 +391,7 @@ public:
       auto it = current_->data->storage.find(key);
       if (it == current_->data->storage.end()) {
         ic_debug("can't fetch '%s' because it is absent\n", key.c_str());
+        ++current_->data->stats.elements_missed;
         return nullptr;
       }
 
@@ -390,10 +399,12 @@ public:
       // so that it starts to update data before other processes
       if (it->second->try_return_null_early && it->second->is_left_less_than(now_, 0.1)) {
         it->second->try_return_null_early = false;
+        ++current_->data->stats.elements_missed_earlier;
         ic_debug("can't fetch '%s' because less than 10%% of total time is left\n", key.c_str());
         return nullptr;
       }
       element = it->second;
+      ++current_->data->stats.elements_fetched;
     }
 
     ic_debug("fetch '%s' from inter process cache\n", key.c_str());
@@ -452,9 +463,11 @@ public:
       current_data.data->storage.erase(storage_it);
       DeepDestroyFromCacheVisitor{}.process(it->second);
       it = current_data.data->expiration_trace.erase(it);
+      ++current_data.data->stats.elements_expired;
     }
   }
 
+  // this function should be called only from master
   void set_memory_limit(dl::size_type limit) {
     total_memory_limit_ = limit;
   }
@@ -489,21 +502,13 @@ public:
     data_manager_.free();
   }
 
-  void print_debug_report() {
-    auto mem_stats = current_->memory_resource.get_memory_stats();
-    std::lock_guard<inter_process_mutex> shared_data_lock{current_->data->mutex};
-    fprintf(stderr, "-----------Debug report-----------\n");
-    fprintf(stderr, "  timestamp now: %ld\n", now_.count());
-    fprintf(stderr, "  elements in cache: %zu\n", current_->data->storage.size());
-    fprintf(stderr, "  elements in expiration trace: %zu\n", current_->data->expiration_trace.size());
-    fprintf(stderr, "  used elements: %zu\n", used_elements_.size());
-    fprintf(stderr, "  total memory limit: %u\n", total_memory_limit_);
-    fprintf(stderr, "  memory used: %u\n", mem_stats.memory_used);
-    fprintf(stderr, "  max memory used: %u\n", mem_stats.max_memory_used);
-    fprintf(stderr, "  real memory used: %u\n", mem_stats.real_memory_used);
-    fprintf(stderr, "  max real memory used: %u\n", mem_stats.max_real_memory_used);
-    fprintf(stderr, "  memory reserved: %u\n", mem_stats.reserved);
-    fprintf(stderr, "----------------------------------\n");
+  // this function should be called only from master
+  InstanceCacheStats get_stats() {
+    auto &current_data = data_manager_.get_current_memory_data();
+    std::lock_guard<inter_process_mutex> shared_data_lock{current_data.data->mutex};
+    InstanceCacheStats result = current_data.data->stats;
+    result.elements_cached = current_data.data->storage.size();
+    return result;
   }
 
 private:
@@ -516,6 +521,7 @@ private:
         !it->second->is_left_less_than(now_, 0.9) &&
         it->second->inserted_by_process != getpid()) {
       ic_debug("skip '%s' because it was recently updated\n", key.c_str());
+      ++current_->data->stats.elements_storing_skipped_due_recent_update;
       return true;
     }
     // 2) if it is being processed right now
@@ -524,6 +530,7 @@ private:
       // processing worker may die and doesn't remove key
       if (now_ - processing_key_it->second < std::chrono::seconds{3}) {
         ic_debug("skip '%s' because it is being processed now\n", key.c_str());
+        ++current_->data->stats.elements_storing_skipped_due_processing;
         return true;
       }
       ic_debug("override '%s', looks like previous processing worker has died\n", key.c_str());
@@ -709,8 +716,14 @@ void free_instance_cache_lib() {
   ic_impl_::InstanceCache::get().free(logname_id);
 }
 
+// should be called only from master
 void set_instance_cache_memory_limit(dl::size_type limit) {
   ic_impl_::InstanceCache::get().set_memory_limit(limit);
+}
+
+// should be called only from master
+InstanceCacheStats instance_cache_get_stats() {
+  return ic_impl_::InstanceCache::get().get_stats();
 }
 
 // should be called only from master

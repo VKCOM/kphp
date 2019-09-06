@@ -43,15 +43,15 @@ extern int die_on_fail;
 extern double load_time;
 //uptime
 struct acc_stats_t {
-  long tot_queries;
-  double worked_time;
-  double net_time;
-  double script_time;
-  long tot_script_queries;
-  double tot_idle_time;
-  double tot_idle_percent;
-  double a_idle_percent;
-  int cnt;
+  long tot_queries{0};
+  double worked_time{0};
+  double net_time{0};
+  double script_time{0};
+  long tot_script_queries{0};
+  double tot_idle_time{0};
+  double tot_idle_percent{0};
+  double a_idle_percent{0};
+  int cnt{0};
 };
 extern acc_stats_t worker_acc_stats;
 

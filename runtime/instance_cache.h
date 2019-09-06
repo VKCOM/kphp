@@ -327,10 +327,31 @@ using ShallowMoveFromCacheToScriptVisitor = ic_impl_::ShallowMoveFromCacheToScri
 void global_init_instance_cache_lib();
 void init_instance_cache_lib();
 void free_instance_cache_lib();
+
+// these function should be called from master
 void set_instance_cache_memory_limit(dl::size_type limit);
-// these functions should be called from master
+
+struct InstanceCacheStats {
+  uint64_t elements_stored{0};
+  uint64_t elements_storing_skipped_due_recent_update{0};
+  uint64_t elements_storing_skipped_due_processing{0};
+
+  uint64_t elements_fetched{0};
+  uint64_t elements_missed{0};
+  uint64_t elements_missed_earlier{0};
+
+  uint64_t elements_expired{0};
+  uint64_t elements_created{0};
+  uint64_t elements_destroyed{0};
+  uint64_t elements_cached{0};
+};
+// these function should be called from master
+InstanceCacheStats instance_cache_get_stats();
+// these function should be called from master
 memory_resource::MemoryStats instance_cache_get_memory_stats();
+// these function should be called from master
 bool instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end);
+// these function should be called from master
 void instance_cache_purge_expired_elements();
 
 template<typename ClassInstanceType>

@@ -115,13 +115,13 @@ void mem_info_add(mem_info_t *dst, const mem_info_t &other) {
 
 
 /*** Stats ***/
-long tot_workers_started;
-long tot_workers_dead;
-long tot_workers_strange_dead;
-long workers_killed;
-long workers_hung;
-long workers_terminated;
-long workers_failed;
+static long tot_workers_started{0};
+static long tot_workers_dead{0};
+static long tot_workers_strange_dead{0};
+static long workers_killed{0};
+static long workers_hung{0};
+static long workers_terminated{0};
+static long workers_failed{0};
 
 void acc_stats_update(acc_stats_t *to, const acc_stats_t &from) {
   to->tot_queries += from.tot_queries;
@@ -301,7 +301,7 @@ struct Stats {
   mem_info_t mem_info = mem_info_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc[periods_n];
-  acc_stats_t acc_stats = acc_stats_t();
+  acc_stats_t acc_stats;
 
   Stats() {
     for (int i = 0; i < periods_n; i++) {
@@ -606,6 +606,7 @@ static int worker_ids[MAX_WORKERS];
 static int worker_ids_n;
 static Stats server_stats;
 static unsigned long long dead_stime, dead_utime;
+static acc_stats_t dead_acc_stats;
 static int me_workers_n;
 static int me_running_workers_n;
 static int me_dying_workers_n;
@@ -664,6 +665,7 @@ void delete_worker(worker_info_t *w) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
+  acc_stats_update(&dead_acc_stats, w->stats->acc_stats);
   worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
@@ -1411,7 +1413,6 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   static char buf[1000];
 
   acc_stats_t acc_stats;
-  memset(&acc_stats, 0, sizeof(acc_stats));
 
   double min_uptime = 1e9;
   double max_uptime = -1;
@@ -1650,6 +1651,7 @@ struct WorkerStats {
     return result;
   }
 };
+
 std::string get_master_stats_html() {
   const auto worker_stats = WorkerStats::collect();
 
@@ -1673,33 +1675,83 @@ std::string get_master_stats_html() {
 
 static long long int instance_cache_memory_swaps_ok = 0;
 static long long int instance_cache_memory_swaps_fail = 0;
+static const double FULL_STATS_PERIOD = 5.0;
 
-STATS_PROVIDER_TAGGED(workers, 100, STATS_TAG_KPHP_SERVER) {
-  const auto worker_stats = WorkerStats::collect();
+double update_qps() {
+  static double rps = 0;
+  static double prev_now = my_now;
+  static acc_stats_t prev_acc_stats;
 
+  const auto delta_queries = server_stats.acc_stats.tot_queries - prev_acc_stats.tot_queries;
+  const auto delta_time = server_stats.acc_stats.worked_time - prev_acc_stats.worked_time;
+  if (delta_queries > 0) {
+    rps = static_cast<double>(delta_queries) / delta_time;
+    prev_now = my_now;
+    prev_acc_stats = server_stats.acc_stats;
+  } else if (my_now - prev_now >= FULL_STATS_PERIOD * 2) {
+    rps = 0;
+  }
+  return rps;
+}
+
+STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   if (engine_tag) {
     add_histogram_stat_long(stats, "kphp_version", atoll(engine_tag));
   }
-  add_histogram_stat_long(stats, "total_workers", worker_stats.total_workers_n);
-  add_histogram_stat_long(stats, "free_workers", worker_stats.total_workers_n - worker_stats.running_workers_n);
-  add_histogram_stat_long(stats, "working_workers", worker_stats.running_workers_n);
-  add_histogram_stat_long(stats, "working_but_waiting_workers", worker_stats.paused_workers_n);
 
-  char stat_name[32] = {0};
-  for (size_t i = 1; i <= 3; ++i) {
-    sprintf(stat_name, "running_workers_avg_%s", periods_desc[i]);
-    add_histogram_stat_double(stats, stat_name, server_stats.misc[i].get_stat().running_workers_avg);
-  }
+  add_histogram_stat_long(stats, "uptime", get_uptime());
+
+  const auto worker_stats = WorkerStats::collect();
+  add_histogram_stat_long(stats, "workers.current.total", worker_stats.total_workers_n);
+  add_histogram_stat_long(stats, "workers.current.free", worker_stats.total_workers_n - worker_stats.running_workers_n);
+  add_histogram_stat_long(stats, "workers.current.working", worker_stats.running_workers_n);
+  add_histogram_stat_long(stats, "workers.current.working_but_waiting", worker_stats.paused_workers_n);
+
+  add_histogram_stat_long(stats, "workers.total.started", tot_workers_started);
+  add_histogram_stat_long(stats, "workers.total.dead", tot_workers_dead);
+  add_histogram_stat_long(stats, "workers.total.strange_dead", tot_workers_strange_dead);
+  add_histogram_stat_long(stats, "workers.total.killed", workers_killed);
+  add_histogram_stat_long(stats, "workers.total.hung", workers_hung);
+  add_histogram_stat_long(stats, "workers.total.terminated", workers_terminated);
+  add_histogram_stat_long(stats, "workers.total.failed", workers_failed);
+
+  const auto workers_stats = server_stats.misc[1].get_stat();
+  add_histogram_stat_double(stats, "workers.running.avg_1m", workers_stats.running_workers_avg);
+  add_histogram_stat_long(stats, "workers.running.max_1m", workers_stats.running_workers_max);
+
+  const auto cpu_stats = server_stats.cpu[1].get_stat();
+  add_histogram_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
+  add_histogram_stat_double(stats, "cpu.utime", cpu_stats.cpu_u_usage);
 
   const auto instance_cache_mem_stats = instance_cache_get_memory_stats();
-  add_histogram_stat_long(stats, "instance_cache_memory_limit", instance_cache_mem_stats.memory_limit);
-  add_histogram_stat_long(stats, "instance_cache_memory_used", instance_cache_mem_stats.memory_used);
-  add_histogram_stat_long(stats, "instance_cache_max_memory_used", instance_cache_mem_stats.max_memory_used);
-  add_histogram_stat_long(stats, "instance_cache_real_memory_used", instance_cache_mem_stats.real_memory_used);
-  add_histogram_stat_long(stats, "instance_cache_max_real_memory_used", instance_cache_mem_stats.max_real_memory_used);
-  add_histogram_stat_long(stats, "instance_cache_memory_reserved", instance_cache_mem_stats.reserved);
-  add_histogram_stat_long(stats, "instance_cache_memory_swaps_ok", instance_cache_memory_swaps_ok);
-  add_histogram_stat_long(stats, "instance_cache_memory_swaps_fail", instance_cache_memory_swaps_fail);
+  add_histogram_stat_long(stats, "instance_cache.memory.limit", instance_cache_mem_stats.memory_limit);
+  add_histogram_stat_long(stats, "instance_cache.memory.used", instance_cache_mem_stats.memory_used);
+  add_histogram_stat_long(stats, "instance_cache.memory.used_max", instance_cache_mem_stats.max_memory_used);
+  add_histogram_stat_long(stats, "instance_cache.memory.real_used", instance_cache_mem_stats.real_memory_used);
+  add_histogram_stat_long(stats, "instance_cache.memory.real_used_max", instance_cache_mem_stats.max_real_memory_used);
+  add_histogram_stat_long(stats, "instance_cache.memory.reserved", instance_cache_mem_stats.reserved);
+  add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
+  add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
+
+  const auto instance_cache_element_stats = instance_cache_get_stats();
+  add_histogram_stat_long(stats, "instance_cache.elements.stored", instance_cache_element_stats.elements_stored);
+  add_histogram_stat_long(stats, "instance_cache.elements.storing_skipped_due_recent_update",
+                          instance_cache_element_stats.elements_storing_skipped_due_recent_update);
+  add_histogram_stat_long(stats, "instance_cache.elements.storing_skipped_due_processing",
+                          instance_cache_element_stats.elements_storing_skipped_due_processing);
+  add_histogram_stat_long(stats, "instance_cache.elements.fetched", instance_cache_element_stats.elements_fetched);
+  add_histogram_stat_long(stats, "instance_cache.elements.missed", instance_cache_element_stats.elements_missed);
+  add_histogram_stat_long(stats, "instance_cache.elements.missed_earlier", instance_cache_element_stats.elements_missed_earlier);
+  add_histogram_stat_long(stats, "instance_cache.elements.expired", instance_cache_element_stats.elements_expired);
+  add_histogram_stat_long(stats, "instance_cache.elements.created", instance_cache_element_stats.elements_created);
+  add_histogram_stat_long(stats, "instance_cache.elements.destroyed", instance_cache_element_stats.elements_destroyed);
+  add_histogram_stat_long(stats, "instance_cache.elements.cached", instance_cache_element_stats.elements_cached);
+
+  add_histogram_stat_long(stats, "requests.total_incoming_queries", server_stats.acc_stats.tot_queries);
+  add_histogram_stat_long(stats, "requests.total_outgoing_queries", server_stats.acc_stats.tot_script_queries);
+  add_histogram_stat_double(stats, "requests.script_time", server_stats.acc_stats.script_time);
+  add_histogram_stat_double(stats, "requests.net_time", server_stats.acc_stats.net_time);
+  add_histogram_stat_double(stats, "requests.queries_per_second", update_qps());
 }
 
 int php_master_http_execute (struct connection *c, int op) {
@@ -1907,6 +1959,7 @@ static void cron() {
   const bool get_cpu_err = get_cpu_total(&cpu_total);
   dl_assert (get_cpu_err, "get_cpu_total failed");
 
+  server_stats.acc_stats = dead_acc_stats;
   int running_workers = 0;
   std::array<pid_t, MAX_WORKERS> active_workers{0};
   for (int i = 0; i < me_workers_n; i++) {
@@ -1923,6 +1976,7 @@ static void cron() {
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
     running_workers += w->stats->istats.is_running;
+    acc_stats_update(&server_stats.acc_stats, w->stats->acc_stats);
   }
   MiscStatTimestamp misc_timestamp{my_now, running_workers};
   server_stats.update(misc_timestamp);
@@ -1934,7 +1988,7 @@ static void cron() {
 
   create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
   static double last_full_stats = -1;
-  if (last_full_stats + MAX_HANGING_TIME * 0.25 < my_now) {
+  if (last_full_stats + FULL_STATS_PERIOD < my_now) {
     last_full_stats = my_now;
     create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
   }
