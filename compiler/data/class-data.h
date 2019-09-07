@@ -66,7 +66,6 @@ public:
   ClassData();
 
   static VertexAdaptor<op_var> gen_vertex_this(Location location);
-  VertexAdaptor<op_var> gen_vertex_this_with_type_rule(Location location);
   FunctionPtr gen_holder_function(const std::string &name);
   FunctionPtr add_virt_clone();
 
@@ -77,7 +76,7 @@ public:
   template<Operation Op>
   void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
     static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
-    auto vertex_this = gen_vertex_this_with_type_rule(location);
+    auto vertex_this = gen_vertex_this(location);
     auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
     params_next.emplace(params_next.begin(), param_this);
   }

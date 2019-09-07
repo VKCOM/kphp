@@ -111,20 +111,22 @@ private:
       if (!f_inst || f_inst->is_template) {
         f_inst = FunctionData::generate_instance_of_template_function(template_type_id_to_ClassPtr, func, name_of_function_instance);
         if (f_inst) {
-          ClassPtr klass = f_inst->class_id;
-          if (klass) {
+          if (auto klass = f_inst->class_id) {
             AutoLocker<Lockable *> locker(&(*klass));
-            if (klass->members.get_instance_method(f_inst->local_name())) {
-              klass->members.for_each([&](ClassMemberInstanceMethod &m) {
-                if (m.global_name() == f_inst->name) {
-                  m.function = f_inst;
-                }
-              });
+            if (f_inst->modifiers.is_instance()) {
+              if (auto instance_method = klass->members.get_instance_method(f_inst->local_name())) {
+                instance_method->function = f_inst;
+              } else {
+                klass->members.add_instance_method(f_inst);
+              }
             } else {
-              klass->members.add_instance_method(f_inst);
+              if (auto static_method = klass->members.get_static_method(f_inst->local_name())) {
+                static_method->function = f_inst;
+              } else {
+                klass->members.add_static_method(f_inst);
+              }
             }
           }
-
           kphp_assert(!f_inst->is_required);
           G->require_function(f_inst, instance_of_function_template_stream);
         }

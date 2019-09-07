@@ -1,18 +1,18 @@
 #include "compiler/data/class-members.h"
 
-#include "common/algorithms/hashes.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/debug.h"
+#include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "common/algorithms/hashes.h"
 
 const string &ClassMemberStaticMethod::global_name() const {
   return function->name;
@@ -136,6 +136,11 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
 
   function->class_id = klass;
   function->context_class = klass;
+
+  auto rule_this_var = GenTree::create_type_help_class_vertex(klass);
+  auto this_var = function->root->params()->args()[0].as<op_func_param>()->var();
+  this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
+
   if (klass->is_interface()) {
     function->modifiers.set_abstract();
   }
@@ -219,5 +224,15 @@ const ClassMemberInstanceField *ClassMembersContainer::get_instance_field(const 
 
 const ClassMemberConstant *ClassMembersContainer::get_constant(const string &local_name) const {
   return find_by_local_name<ClassMemberConstant>(local_name);
+}
+
+ClassMemberInstanceMethod *ClassMembersContainer::get_instance_method(const string &local_name) {
+  const auto *container = this;
+  return const_cast<ClassMemberInstanceMethod *>(container->get_instance_method(local_name));
+}
+
+ClassMemberStaticMethod *ClassMembersContainer::get_static_method(const string &local_name) {
+  const auto *container = this;
+  return const_cast<ClassMemberStaticMethod *>(container->get_static_method(local_name));
 }
 

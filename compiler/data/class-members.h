@@ -175,6 +175,9 @@ public:
   const ClassMemberStaticField *get_static_field(const std::string &local_name) const;
   const ClassMemberInstanceField *get_instance_field(const std::string &local_name) const;
   const ClassMemberConstant *get_constant(const std::string &local_name) const;
+
+  ClassMemberStaticMethod *get_static_method(const std::string &local_name);
+  ClassMemberInstanceMethod *get_instance_method(const std::string &local_name);
 };
 
 /*

@@ -63,14 +63,6 @@ std::string ClassData::get_namespace() const {
   return file_id->namespace_name;
 }
 
-VertexAdaptor<op_var> ClassData::gen_vertex_this_with_type_rule(Location location) {
-  auto this_var = gen_vertex_this(location);
-  auto rule_this_var = GenTree::create_type_help_class_vertex(ClassPtr{this});
-
-  this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
-  return this_var;
-}
-
 FunctionPtr ClassData::gen_holder_function(const std::string &name) {
   std::string func_name = "$" + name;  // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();

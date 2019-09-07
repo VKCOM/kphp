@@ -1650,15 +1650,6 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->modifiers = modifiers;
 
-  if (cur_function->modifiers.is_instance()) {
-    kphp_assert(cur_class);
-
-    cur_class->members.add_instance_method(cur_function);
-  } else if (modifiers.is_static()) {
-    kphp_assert(cur_class);
-    cur_class->members.add_static_method(cur_function);
-  }
-
   // после имени функции — параметры, затем блок use для замыканий
   CE(cur_function->root->params_ref() = parse_cur_function_param_list());
   CE(parse_function_uses(uses_of_lambda));
@@ -1689,22 +1680,29 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
   }
 
-  // функция готова, регистрируем
-  // конструктор регистрируем в самом конце, после парсинга всего класса
-  if (!cur_function->is_constructor() && !is_lambda) {
-    const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
-                                    phpdoc_str.find("@kphp-lib-export") != std::string::npos;
-    const bool auto_require = cur_function->is_extern()
-                              || cur_function->modifiers.is_instance()
-                              || kphp_required_flag;
-    G->register_and_require_function(cur_function, parsed_os, auto_require);
-  }
-
   if (!is_lambda) {
-    require_lambdas();
-  }
+    if (cur_function->modifiers.is_instance()) {
+      kphp_assert(cur_class);
 
-  if (uses_of_lambda != nullptr && !stage::has_error()) {
+      cur_class->members.add_instance_method(cur_function);
+    } else if (modifiers.is_static()) {
+      kphp_assert(cur_class);
+      cur_class->members.add_static_method(cur_function);
+    }
+
+    // функция готова, регистрируем
+    // конструктор регистрируем в самом конце, после парсинга всего класса
+    if (!cur_function->is_constructor()) {
+      const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
+                                      phpdoc_str.find("@kphp-lib-export") != std::string::npos;
+      const bool auto_require = cur_function->is_extern()
+                                || cur_function->modifiers.is_instance()
+                                || kphp_required_flag;
+      G->register_and_require_function(cur_function, parsed_os, auto_require);
+    }
+
+    require_lambdas();
+  } else if (!stage::has_error()) {
     return cur_function->root;
   }
 
