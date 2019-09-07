@@ -300,7 +300,6 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
                     format("You cannot extends final class: %s", child_class->name.c_str()));
 
   child_class->parent_class = parent_class;
-  child_class->check_parent_constructor();
   copy_abstract_methods(child_class, parent_class, function_stream);
 
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
@@ -364,6 +363,15 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         break;
     }
   }
+
+  if (klass->is_fully_static()) {
+    auto parent = klass->parent_class;
+    if (klass->members.has_any_instance_var() || klass->members.has_any_instance_method() || (parent && !parent->is_fully_static())) {
+      klass->create_default_constructor(Location{klass->location_line_num}, function_stream);
+    }
+  }
+
+  klass->check_parent_constructor();
 
   if (!klass->phpdoc_str.empty()) {
     analyze_class_phpdoc(klass);

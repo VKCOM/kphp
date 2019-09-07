@@ -1812,6 +1812,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // с полным неймспейсом и слешами
   cur_class->is_immutable = PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_immutable_class);
+  cur_class->location_line_num = line_num;
 
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
@@ -1822,16 +1823,6 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     CE (!kphp_error(!cur_class->modifiers.is_abstract(), "constructor in interfaces/abstract classes has not been supported yet"));
     cur_class->has_custom_constructor = true;
     G->register_and_require_function(constructor_method, parsed_os, true);
-  } else if (!cur_class->modifiers.is_abstract() && cur_class->is_class()) {
-    bool non_static = cur_class->members.has_any_instance_var() || cur_class->members.has_any_instance_method();
-    non_static |= std::any_of(cur_class->str_dependents.begin(), cur_class->str_dependents.end(),
-                              [](const ClassData::StrDependence &dep) {
-                                return vk::any_of_equal(dep.type, ClassType::interface, ClassType::klass);
-                              });
-
-    if (non_static) {
-      cur_class->create_default_constructor(Location(line_num), parsed_os);
-    }
   }
 
   G->register_class(cur_class);

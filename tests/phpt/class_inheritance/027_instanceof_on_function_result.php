@@ -1,9 +1,15 @@
 @ok
 <?php
 
-interface I {}
-class A implements I {}
-class B implements I {}
+interface I {
+    public function foo();
+}
+class A implements I {
+    public function foo() {}
+}
+class B implements I {
+    public function foo() {}
+}
 
 function foo() {
     var_dump("foo");

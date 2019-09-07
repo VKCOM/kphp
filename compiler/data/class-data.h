@@ -48,6 +48,7 @@ public:
   bool has_custom_constructor{false};
 
   SrcFilePtr file_id;
+  int location_line_num{-1};
   std::string src_name, header_name;
 
   std::atomic<bool> need_instance_to_array_visitor{false};
