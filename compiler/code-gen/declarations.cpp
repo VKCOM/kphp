@@ -433,7 +433,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   if (tl_gen::is_php_class_a_tl_function(klass)) {
     W << NL;
     W << "unique_object<tl_func_base> store() const final " << BEGIN;
-    std::string f_tl_cpp_struct_name = tl_gen::cpp_tl_struct_name("f_", tl_gen::get_tl_function_of_php_class(klass));
+    std::string f_tl_cpp_struct_name = tl_gen::cpp_tl_struct_name("f_", tl_gen::get_tl_function_name_of_php_class(klass));
     W << "return " << f_tl_cpp_struct_name << "::typed_store(this);" << NL;
     W << END << NL;
   }
@@ -508,7 +508,7 @@ void ClassDeclaration::compile_includes(CodeGenerator &W) const {
   W << includes;
 
   if (tl_gen::is_php_class_a_tl_function(klass)) {
-    std::string tl_src_name = tl_gen::get_tl_function_of_php_class(klass);  // 'net.pid', 'rpcPing'
+    std::string tl_src_name = tl_gen::get_tl_function_name_of_php_class(klass);  // 'net.pid', 'rpcPing'
     unsigned long pos = tl_src_name.find('.');
     W << Include("tl/" + (pos == std::string::npos ? "common" : tl_src_name.substr(0, pos)) + ".h");
   }

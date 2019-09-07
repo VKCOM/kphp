@@ -315,7 +315,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
       if (has_tl_namespace_prefix) {
         pos += tl_namespace_prefix.size();
       }
-      if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z')) {
+      if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z') || (has_tl_namespace_prefix && ((s[pos] >= 'a' && s[pos] <= 'z') || s[pos] == '_'))) {
         std::string relative_class_name = static_cast<std::string>(extract_classname_from_pos(s, pos));
         pos += relative_class_name.size();
         if (has_tl_namespace_prefix) {

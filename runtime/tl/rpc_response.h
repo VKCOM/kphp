@@ -16,14 +16,14 @@ public:
 };
 
 namespace impl_ {
-// use template, because C$rpcResponseError is unknown on runtime compilation
-template<class C$VK$TL$common$Types$rpcResponseError_>
+// use template, because _common\Types\rpcResponseError is unknown on runtime compilation
+template<class C$VK$TL$_common$Types$rpcResponseError_>
 class rpcResponseErrorFactory : public RpcErrorFactory {
 private:
   rpcResponseErrorFactory() = default;
 
   class_instance<C$VK$TL$RpcResponse> make_error(const string &error, int error_code) const final {
-    class_instance<C$VK$TL$common$Types$rpcResponseError_> err;
+    class_instance<C$VK$TL$_common$Types$rpcResponseError_> err;
     err.alloc();
     err.get()->$error = error;
     err.get()->$error_code = error_code;
@@ -39,5 +39,5 @@ public:
 } // namespace impl_
 
 // появляется после codegen из tl-схемы, при сборке сайта
-struct C$VK$TL$common$Types$rpcResponseError;
-using rpcResponseErrorFactory = impl_::rpcResponseErrorFactory<C$VK$TL$common$Types$rpcResponseError>;
+struct C$VK$TL$_common$Types$rpcResponseError;
+using rpcResponseErrorFactory = impl_::rpcResponseErrorFactory<C$VK$TL$_common$Types$rpcResponseError>;

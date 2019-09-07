@@ -22,7 +22,7 @@ ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tl::combinator
 ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const std::string &specialization_suffix);
 
 ClassPtr get_php_class_of_tl_function(const vk::tl::combinator *f);
-std::string get_tl_function_of_php_class(ClassPtr klass);
+std::string get_tl_function_name_of_php_class(ClassPtr klass);
 
 bool is_php_class_a_tl_function(ClassPtr klass);
 bool is_php_class_a_tl_constructor(ClassPtr klass);

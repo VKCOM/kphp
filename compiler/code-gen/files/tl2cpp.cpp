@@ -56,7 +56,7 @@ const std::unordered_set<std::string> CUSTOM_IMPL_TYPES   // из tl_builtins.h
   {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "True", "False", "Vector", "Maybe", "Tuple",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
-// Переименованная тл схема нужна во всех функциях, которые по какому-то tl объекту достают php объект. Примерный список таких:
+// Переименованная тл схема нужна во всех функциях, которые по какому-то tl объекту достают php объект или наоборот. Примерный список таких:
 // 1) TlTemplateTypeHelpers
 // 2) get_php_runtime_type(...)
 // 3) get_php_class_of_tl_*(...)
@@ -69,8 +69,13 @@ vk::tl::combinator *get_this_from_renamed_tl_scheme(const vk::tl::combinator *c)
          G->get_tl_classes().get_scheme()->get_constructor_by_magic(c->id) : G->get_tl_classes().get_scheme()->get_function_by_magic(c->id);
 }
 
+std::string get_php_namespace(const std::string &tl_name) {
+  size_t dot_pos = tl_name.find('.');
+  return dot_pos == std::string::npos ? vk::tl::PhpClasses::common_engine_namespace() : tl_name.substr(0, dot_pos);
+}
+
 // найти по php-классу соответствующий конструктор в tl-схеме
-// например, class VK\TL\Types\messages\chatInfo => вернёт messages.chatInfo из схемы
+// например, class VK\TL\messages\Types\messages_chatInfo => вернёт messages.chatInfo из схемы
 // это может быть и специализация конструктора зависимого типа: Types\vectorTotal__int вернёт tl-ный vectorTotal
 vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
@@ -88,8 +93,8 @@ vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
 }
 
 // найти по php-интерфейсу соответствующий tl-ный ПОЛИМОРФНЫЙ тип
-// поскольку если тип не полиморфный, то вместо типов конструкторы (например, class messages\chatInfo)
-// то эта функция только для полиморфных типов (например, interface memcache\Value)
+// поскольку если тип не полиморфный, то вместо типов конструкторы (например, class messages_chatInfo)
+// то эта функция только для полиморфных типов (например, interface memcache_Value)
 vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
   kphp_assert(is_php_class_a_tl_polymorphic_type(interface));
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
@@ -111,7 +116,8 @@ vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
 // данная функция получает конкретную специализацию такого конструктора с raw-суффиксом имени php-класса (e.g. "__int")
 ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tl::combinator *c, const std::string &specialization_suffix) {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c);
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(c_from_renamed->name, '.', '\\') + specialization_suffix;
+  std::string php_namespace = get_php_namespace(c_from_renamed->name);
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Types\\" + replace_characters(c_from_renamed->name, '.', '_') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
@@ -147,41 +153,56 @@ std::vector<ClassPtr> get_all_php_classes_of_tl_type(const vk::tl::type *t) {
 ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const std::string &specialization_suffix) {
   auto t_from_renamed = get_this_from_renamed_tl_scheme(t);
   kphp_assert(is_type_dependent(t_from_renamed, G->get_tl_classes().get_scheme().get()));
+  std::string php_namespace = get_php_namespace(t_from_renamed->name);
   std::string lookup_name = t_from_renamed->is_polymorphic() ? t_from_renamed->name : t_from_renamed->constructors[0]->name;
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Types\\" + replace_characters(lookup_name, '.', '\\') + specialization_suffix;
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Types\\" + replace_characters(lookup_name, '.', '_') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
-// tl-функции 'messages.getChatInfo' соответствует php class VK\TL\Functions\messages\getChatInfo
+// tl-функции 'messages.getChatInfo' соответствует php class VK\TL\messages\Functions\messages_getChatInfo
 // если этот класс достижим компилятором — типизированный вариант для messages.getChatInfo нужен
 // (а если нет, то эта tl-функция типизированно гарантированно не вызывается)
 ClassPtr get_php_class_of_tl_function(const vk::tl::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Functions\\" + replace_characters(f_from_renamed->name, '.', '\\');
+  std::string php_namespace = get_php_namespace(f_from_renamed->name);
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_');
   return G->get_class(php_class_name);
 }
 
-// и наоборот: классу VK\TL\Functions\messages\getChatInfo соответствует tl-функция messages.getChatInfo
-std::string get_tl_function_of_php_class(ClassPtr klass) {
+// и наоборот: классу VK\TL\messages\Functions\messages_getChatInfo соответствует tl-функция messages.getChatInfo
+std::string get_tl_function_name_of_php_class(ClassPtr klass) {
   kphp_assert(is_php_class_a_tl_function(klass));
-  size_t pos = vk::string_view{klass->name}.find("Functions\\");
-  std::string after_ns_functions = static_cast<std::string>(vk::string_view{klass->name}.substr(pos + 10));
-  return replace_characters(after_ns_functions, '\\', '.');
+  size_t functions_ns_pos = vk::string_view{klass->name}.find("Functions\\");
+  std::string after_ns_functions = static_cast<std::string>(vk::string_view{klass->name}.substr(functions_ns_pos + 10));
+  size_t underscore_pos = klass->name.find('_');
+  if (underscore_pos == std::string::npos) {
+    return after_ns_functions;
+  }
+  // Если есть '_', то надо понять какой из них заменить на '.', тк есть имена и с '_' до '.', и после (expr.earth_distance, smart_alerts.sendMessage)
+  std::string tmp = klass->name.substr(G->env().get_tl_namespace_prefix().length());
+  std::string php_namespace = tmp.substr(0, tmp.find('\\'));
+  if (php_namespace == vk::tl::PhpClasses::common_engine_namespace()) {
+    return after_ns_functions;
+  }
+  after_ns_functions.at(php_namespace.length()) = '.';
+  return after_ns_functions;
 }
 
-// у tl-функции 'messages.getChatInfo' есть типизированный результат php class VK\TL\Functions\messages\getChatInfo_result
+// у tl-функции 'messages.getChatInfo' есть типизированный результат php class VK\TL\messages\Functions\messages_getChatInfo_result
 // по идее, достижима функция <=> достижим результат
 ClassPtr get_php_class_of_tl_function_result(const vk::tl::combinator *f) {
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + "Functions\\" + replace_characters(f->name, '.', '\\') + "_result";
+  auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
+  std::string php_namespace = get_php_namespace(f_from_renamed->name);
+  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_') + "_result";
   return G->get_class(php_class_name);
 }
 
-// классы VK\TL\Functions\* implements RpcFunction — это те, что соответствуют tl-функциям
+// классы VK\TL\*\Functions\* implements RpcFunction — это те, что соответствуют tl-функциям
 bool is_php_class_a_tl_function(ClassPtr klass) {
   return klass->is_tl_class && klass->implements.size() == 1 && vk::string_view{klass->implements.front()->name}.ends_with("RpcFunction");
 }
 
-// классы VK\TL\Types\* — не интерфейсные — соответствуют конструкторам
+// классы VK\TL\*\Types\* — не интерфейсные — соответствуют конструкторам
 // (или неполиморфмным типам, единственный конструктор которых заинлайнен)
 bool is_php_class_a_tl_constructor(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos;
@@ -189,7 +210,7 @@ bool is_php_class_a_tl_constructor(ClassPtr klass) {
 
 // если в tl-схеме объявлены сложные [массивы], то для типизации для каждого массива есть отдельный php-класс
 // пример: isearch.typeInfo n:# data:n*[type:int probability:double] = isearch.TypeInfo
-// из него выделился class isearch\typeInfo_arg2_item { int type, double probability }
+// из него выделился class isearch\isearch_typeInfo_arg2_item { int type, double probability }
 bool is_php_class_a_tl_array_item(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos &&
          klass->name.find("_arg") != std::string::npos && klass->name.find("_item") != std::string::npos;
@@ -316,8 +337,9 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
     std::replace(name.begin(), name.end(), '.', '_');
     res = "typename " + name + "__" + template_suf + "::type";
   } else {
-    std::replace(name.begin(), name.end(), '.', '$');
-    res = G->env().get_tl_classname_prefix() + (c_from_renamed->is_constructor() ? "Types$" : "Functions$") + name;
+    std::string php_namespace = get_php_namespace(name);
+    std::replace(name.begin(), name.end(), '.', '_');
+    res = G->env().get_tl_classname_prefix() + php_namespace + "$" + (c_from_renamed->is_constructor() ? "Types$" : "Functions$") + name;
   }
   if (wrap_to_class_instance) {
     return format("class_instance<%s>", res.c_str());
@@ -1178,7 +1200,7 @@ struct TlTypeDecl {
   static bool does_tl_type_need_typed_fetch_store(const vk::tl::type *t) {
     if (t->name == "ReqResult") {
       // без этого сайт не компилится, пока typed rpc не подключен — т.к. типизированный t_ReqResult не компилится
-      bool typed_php_code_exists = !!G->get_class(G->env().get_tl_namespace_prefix() + "Types\\rpcResponseOk");
+      bool typed_php_code_exists = !!G->get_class(vk::tl::PhpClasses::rpc_response_ok_with_tl_full_namespace());
       return typed_php_code_exists;
     }
     return !get_all_php_classes_of_tl_type(t).empty();

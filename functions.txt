@@ -810,9 +810,9 @@ interface RpcFunctionReturnResult {}
 interface RpcResponse {
   /** @return @tl\RpcFunctionReturnResult */
   public function getResult();
-  /** @return @tl\Types\rpcResponseHeader */
+  /** @return @tl\_common\Types\rpcResponseHeader */
   public function getHeader();
-  /** @return @tl\Types\rpcResponseError */
+  /** @return @tl\_common\Types\rpcResponseError */
   public function getError();
   /** @return bool */
   public function isError() ::: bool;
