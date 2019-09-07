@@ -1,3 +1,4 @@
+#include <atomic>
 #include "compiler/pipes/extract-async.h"
 
 bool ExtractAsyncPass::check_function(FunctionPtr function) {
@@ -31,7 +32,19 @@ VertexPtr ExtractAsyncPass::on_enter_vertex(VertexPtr vertex, ExtractAsyncPass::
   if (!lhs) {
     async = VertexAdaptor<op_async>::create(func_call);
   } else {
-    if (kphp_error (lhs->type() == op_var, "Can't save result of resumable function into non-var inside another resumable function")) {
+    if (lhs->type() != op_var) {
+      static std::atomic<int> errors_count;
+      int cnt = ++errors_count;
+      if (cnt >= 10) {
+        if (cnt == 10) {
+          kphp_error(0, "Too many same errors about resumable functions, will skip others");
+        }
+      } else {
+        kphp_error(0, (format("Can't save result of resumable function %s into non-var inside another resumable function\n"
+                              "Consider using a temporary variable for this call.\n"
+                              "Function is resumable because of calls chain:\n",
+                              func->get_human_readable_name().c_str()) + func->get_resumable_path()).c_str());
+      }
       return vertex;
     }
     async = VertexAdaptor<op_async>::create(func_call, lhs.as<op_var>());

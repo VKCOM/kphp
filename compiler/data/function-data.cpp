@@ -13,6 +13,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
+#include "common/termformat/termformat.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
@@ -173,7 +174,7 @@ string FunctionData::get_resumable_path() const {
     f = f->fork_prev;
   }
   std::reverse(names.begin(), names.end());
-  names.push_back(name);
+  names.push_back(TermStringFormat::paint(name, TermStringFormat::red));
   f = wait_prev;
   while (f) {
     names.push_back(f->name);

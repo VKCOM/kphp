@@ -1,3 +1,4 @@
+#include <queue>
 #include "compiler/pipes/calc-bad-vars.h"
 
 #include "compiler/compiler-core.h"
@@ -161,28 +162,31 @@ private:
     merge_bad_vars.run(call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
   }
 
-  template<class GraphT, class WasT, class VertexT, class ParentT>
-  void mark(const GraphT &graph, WasT &was, VertexT vertex, ParentT &parents) {
-    if (was[vertex]) {
-      return;
-    }
-    was[vertex] = 1;
-    for (const auto &next : graph[vertex]) {
-      if (!was[next]) {
-        parents[next] = vertex;
-        mark(graph, was, next, parents);
+  static void mark(const IdMap<vector<FunctionPtr>> &graph, IdMap<char> &was, FunctionPtr start, IdMap<FunctionPtr> &parents) {
+    was[start] = 1;
+    std::queue<FunctionPtr> q;
+    q.push(start);
+    while (!q.empty()) {
+      auto vertex = q.front();
+      q.pop();
+      for (const auto &next : graph[vertex]) {
+        if (!was[next]) {
+          parents[next] = vertex;
+          was[next] = true;
+          q.push(next);
+        }
       }
     }
   }
 
 
-  void calc_resumable(const FuncCallGraph &call_graph, const vector<DepData> &dep_data) {
+  static void calc_resumable(const FuncCallGraph &call_graph, const vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
         fork->is_resumable = true;
       }
     }
-    IdMap<char> from_resumable(call_graph.n);
+    IdMap<char> from_resumable(call_graph.n); // char to prevent vector<bool> inside
     IdMap<char> into_resumable(call_graph.n);
     IdMap<FunctionPtr> from_parents(call_graph.n);
     IdMap<FunctionPtr> to_parents(call_graph.n);

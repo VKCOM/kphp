@@ -401,10 +401,20 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   } else {
     func = root->func_id;
     if (mode == func_call_mode::simple && W.get_context().resumable_flag && func->is_resumable) {
-      kphp_error (0, format("Can't compile call of resumable function [%s] in too complex expression\n"
-                            "Consider using a temporary variable for this call.\n"
-                            "Function is resumable because of calls chain:\n%s\n", func->get_human_readable_name().c_str(), func->get_resumable_path().c_str()));
+      static std::atomic<int> errors_count;
+      int cnt = ++errors_count;
+      if (cnt >= 10) {
+        if (cnt == 10) {
+          kphp_error(0, "Too many same errors about resumable functions, will skip others");
+        }
+      } else {
+        kphp_error (0, (format("Can't compile call of resumable function [%s] in too complex expression\n"
+                               "Consider using a temporary variable for this call.\n"
+                               "Function is resumable because of calls chain:\n",
+                               func->get_human_readable_name().c_str()) + func->get_resumable_path()).c_str());
+      }
     }
+
 
     if (mode == func_call_mode::fork_call) {
       W << FunctionForkName(func);
