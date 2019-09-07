@@ -146,29 +146,38 @@ public:
   }
 };
 
+void clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &function_stream) {
+  if (from->modifiers.is_instance() && to_class->members.has_instance_method(from->local_name())) {
+    return;
+  } else if (from->modifiers.is_static() && to_class->members.has_static_method(from->local_name())) {
+    return;
+  }
+
+  auto new_root = from->root.clone();
+  auto cloned_fun = FunctionData::clone_from(to_class->name + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
+  if (from->modifiers.is_instance()) {
+    to_class->members.add_instance_method(cloned_fun);
+  } else if (from->modifiers.is_static()) {
+    to_class->members.add_static_method(cloned_fun);
+  }
+
+  G->register_and_require_function(cloned_fun, function_stream, true);
+};
+
 void copy_abstract_methods(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
   if (!parent_class->modifiers.is_abstract() || !child_class->modifiers.is_abstract()) {
     return;
   }
 
-  auto clone_function = [child_class, &function_stream](FunctionPtr from) {
-    auto new_root = from->root.clone();
-    auto cloned_fun = FunctionData::clone_from(child_class->name + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
-    cloned_fun->class_id = child_class;
-    G->register_and_require_function(cloned_fun, function_stream, true);
-
-    return cloned_fun;
-  };
-
   parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-    if (m.function->modifiers.is_abstract() && !child_class->members.has_instance_method(m.local_name())) {
-      child_class->members.add_instance_method(clone_function(m.function));
+    if (m.function->modifiers.is_abstract()) {
+      clone_method(m.function, child_class, function_stream);
     }
   });
 
   parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
-    if (m.function->modifiers.is_abstract() && !child_class->members.has_static_method(m.local_name())) {
-      child_class->members.add_static_method(clone_function(m.function));
+    if (m.function->modifiers.is_abstract()) {
+      clone_method(m.function, child_class, function_stream);
     }
   });
 }
