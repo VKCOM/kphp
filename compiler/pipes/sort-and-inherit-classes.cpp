@@ -96,7 +96,7 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
       return;
     }
 
-    for (auto parent = cur_class->parent_class; parent; parent = parent->get_parent_or_interface()) {
+    for (auto parent = cur_class->get_parent_or_interface(); parent; parent = parent->get_parent_or_interface()) {
       if (auto parent_member = parent->members.get_instance_method(method.local_name())) {
         auto parent_function = parent_member->function;
 
@@ -404,7 +404,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
     kphp_error_return(c->implements.empty() || !c->parent_class,
       format("You may not `extends` and `implements` simultaneously, class: %s", c->name.c_str()));
 
-    bool is_top_of_hierarchy = !c->parent_class && !c->derived_classes.empty();
+    bool is_top_of_hierarchy = !c->get_parent_or_interface() && !c->derived_classes.empty();
     if (is_top_of_hierarchy) {
       mark_virtual_and_overridden_methods(c, generated_empty_methods_in_parent);
     }
