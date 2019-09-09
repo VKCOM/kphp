@@ -288,7 +288,7 @@ class TestRunner:
         asan_log_name = "kphp_runtime_asan_log"
         env, asan_glob_mask = self._prepare_asan_env(self._kphp_runtime_tmp_dir, asan_log_name)
 
-        cmd = [self._kphp_runtime_bin, "-o"]
+        cmd = [self._kphp_runtime_bin, "-o", "--disable-sql"]
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
         kphp_server_proc = subprocess.Popen(cmd,
