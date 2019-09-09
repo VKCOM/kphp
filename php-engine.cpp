@@ -2907,8 +2907,6 @@ void start_server() {
 }
 
 void set_instance_cache_memory_limit(dl::size_type limit);
-void read_tl_config(const char *file_name);
-void update_tl_config(const char *data, unsigned int len);
 void init_php_scripts();
 void global_init_php_scripts();
 
@@ -2991,9 +2989,6 @@ void init_logname(const char *src) {
 }
 
 /** main arguments parsing **/
-const char *builtin_tl_schema __attribute__((weak));
-int builtin_tl_schema_length __attribute__((weak)) = -1;
-
 int main_args_handler(int i) {
   switch (i) {
     case 'D': {
@@ -3067,11 +3062,8 @@ int main_args_handler(int i) {
       return 0;
     }
     case 'T': {
-      if (builtin_tl_schema_length == -1) {
-        read_tl_config(optarg);
-      } else {
-        kprintf("Ignoring given tl schema: builtin one will be used\n");
-      }
+      // do nothing, tl schema is compiled, not provided in runtime
+      kprintf("Ignoring tl schema: kphp codegenerates and compiles it\n");
       return 0;
     }
     case 't': {
@@ -3198,7 +3190,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("once", no_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
   parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
-  parse_option("tl-schema", required_argument, 'T', "name of file with TL config %s", builtin_tl_schema_length == -1 ? "" : "(will be ignored)");
+  parse_option("tl-schema", required_argument, 'T', "(deprecated) name of file with TL config (will be ignored)");
   parse_option("time-limit", required_argument, 't', "time limit for script in seconds");
   parse_option_alias("crc32c", 'C');
   parse_option("small-acsess-log", optional_argument, 'U', "don't write get data in log. If used twice (or with value 2), disables access log.");
@@ -3253,9 +3245,6 @@ int run_main(int argc, char **argv, php_mode mode) {
     parse_main_args_till_option(argc, argv, "--Xkphp-options");
   }
 
-  if (builtin_tl_schema_length != -1) {
-    update_tl_config(builtin_tl_schema, builtin_tl_schema_length);
-  }
   parse_main_args(argc, argv);
 
   load_time = -dl_time();

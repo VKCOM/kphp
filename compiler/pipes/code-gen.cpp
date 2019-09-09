@@ -164,7 +164,6 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(TypeTagger(std::move(forkable_types), std::move(waitable_types)));
   }
 
-  write_tl_schema(W);
   //TODO: use Async for that
   tl_gen::write_tl_query_handlers(W);
   write_lib_version(W);
@@ -194,29 +193,6 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
 string CodeGenF::get_subdir(const string &base) {
   int bucket = vk::std_hash(base) % 100;
   return "o_" + std::to_string(bucket);
-}
-
-void CodeGenF::write_tl_schema(CodeGenerator &W) {
-  string schema;
-  int schema_length = -1;
-  if (!G->env().get_tl_schema_file().empty()) {
-    FILE *f = fopen(G->env().get_tl_schema_file().c_str(), "r");
-    const int MAX_SCHEMA_LEN = 1024 * 1024;
-    static char buf[MAX_SCHEMA_LEN + 1];
-    kphp_assert (f && "can't open tl schema file");
-    schema_length = fread(buf, 1, sizeof(buf), f);
-    kphp_assert (schema_length > 0 && schema_length < MAX_SCHEMA_LEN);
-    schema.assign(buf, buf + schema_length);
-    kphp_assert (!fclose(f));
-  }
-  if (!G->env().is_static_lib_mode()) {
-    W << OpenFile("_tl_schema.cpp", "", false);
-    W << "const char *builtin_tl_schema = " << NL << Indent(2);
-    compile_string_raw(schema, W);
-    W << ";" << NL;
-    W << "int builtin_tl_schema_length = " << schema_length << ";" << NL;
-    W << CloseFile();
-  }
 }
 
 void CodeGenF::write_lib_version(CodeGenerator &W) {

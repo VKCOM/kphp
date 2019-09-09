@@ -63,7 +63,7 @@ int f$fetch_string_as_int();
 
 var f$fetch_memcache_value();
 
-bool f$fetch_eof();//TODO remove parameters
+bool f$fetch_eof();
 
 bool f$fetch_end();
 

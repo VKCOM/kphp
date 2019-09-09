@@ -17,7 +17,6 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
   void prepare_generate_class(ClassPtr klass);
   void prepare_generate_function(FunctionPtr func);
   std::string get_subdir(const std::string &base);
-  void write_tl_schema(CodeGenerator &W);
   void write_lib_version(CodeGenerator &W);
   size_t calc_count_of_parts(size_t cnt_global_vars);
 

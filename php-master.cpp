@@ -1402,8 +1402,6 @@ int return_one_key_val(connection *c, const char *val, int vlen) {
 
 int update_mem_stats();
 
-extern unsigned tl_schema_crc32;
-
 std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   std::string res, header;
   header = server_stats.to_string(me == nullptr ? 0 : (int)me->pid, false, true);
@@ -1476,8 +1474,6 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   sprintf(buf, "workers_terminated\t%ld\n", workers_terminated);
   header += buf;
   sprintf(buf, "workers_failed\t%ld\n", workers_failed);
-  header += buf;
-  sprintf(buf, "tl_schema_crc32\t%08x\n", tl_schema_crc32);
   header += buf;
 
   if (full_flag) {

@@ -32,13 +32,6 @@ const string tl_str_result("result");
 const int tl_str_underscore_hash = string_hash("_", 1);
 const int tl_str_result_hash = string_hash("result", 6);
 
-inline std::string dump_tl_array(const var &v) {
-  do_var_dump(v, 0);
-  string to_print = f$ob_get_contents();
-  f$ob_clean();
-  return to_print.c_str();
-}
-
 int tl_parse_save_pos();
 bool tl_parse_restore_pos(int pos);
 
@@ -97,7 +90,7 @@ inline var tl_arr_get(const var &arr, const string &str_key, int num_key, int pr
   if (!str_v.is_null()) {
     return str_v;
   }
-  CurrentProcessingQuery::get().raise_storing_error("Field %s (#%d) not found while storing %s", str_key.c_str(), num_key, new_tl_current_function_name);
+  CurrentProcessingQuery::get().raise_storing_error("Field %s (#%d) not found", str_key.c_str(), num_key);
   return var();
 }
 
