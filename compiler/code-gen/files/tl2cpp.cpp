@@ -454,6 +454,12 @@ struct TypeStore {
                         typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
     std::string store_call = (typed_mode ? "typed_store(" : "store(") + vk::join(store_params, ", ") + ");";
 
+    if (typed_mode) {
+      W << "if (tl_object.is_null()) " << BEGIN
+        << "CurrentProcessingQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");" << NL
+        << "return;" << NL
+        << END << NL;
+    }
     // неполиморфные типы — 1 конструктор — просто форвардят ::store() в конструктор, без всяких magic
     if (!type->is_polymorphic()) {
       W << cpp_tl_struct_name("c_", type->constructors[0]->name, template_str) << "::" << store_call << NL;
