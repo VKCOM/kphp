@@ -30,10 +30,17 @@ template<typename T>
 class SyncPipeF<T, T> : public sync_detail::SyncPipeFBase<T, T> {
 public:
   using need_profiler = std::false_type;
+
+  virtual bool forward_to_next_pipe(const T &) {
+    return true;
+  }
+
   void on_finish(DataStream<T> &os) override {
     stage::die_if_global_errors();
     for (auto &element: this->tmp_stream.flush()) {
-      os << std::move(element);
+      if (forward_to_next_pipe(element)) {
+        os << std::move(element);
+      }
     }
   }
 };
