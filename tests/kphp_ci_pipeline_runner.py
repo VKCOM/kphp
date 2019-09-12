@@ -147,7 +147,7 @@ def parse_args():
         "--jobs",
         type=int,
         dest="jobs",
-        default=multiprocessing.cpu_count(),
+        default=(multiprocessing.cpu_count() // 2) or 1,
         help="number of jobs to some tests"
     )
 

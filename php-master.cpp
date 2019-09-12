@@ -555,13 +555,6 @@ static void sigusr1_handler(const int sig) {
   local_pending_signals |= (1ll << sig);
 }
 
-struct worker_stats_t {
-  long long total_cpu_time;
-  long long used_cpu_time;
-  long long total_queries;
-  long long total_time;
-};
-
 enum master_state_t {
   mst_on,
   mst_off
@@ -1322,11 +1315,6 @@ conn_query_functions stats_cq_func = [] {
   return res;
 }();
 
-struct stats_query_data {
-  worker_info_t *worker;
-  int pipe_out_packet_num;
-};
-
 int delete_stats_query(conn_query *q) {
   vkprintf (2, "delete_stats_query(%p,%p)\n", q, q->requester);
 
@@ -1673,22 +1661,44 @@ static long long int instance_cache_memory_swaps_ok = 0;
 static long long int instance_cache_memory_swaps_fail = 0;
 static const double FULL_STATS_PERIOD = 5.0;
 
-double update_qps() {
-  static double rps = 0;
-  static double prev_now = my_now;
-  static acc_stats_t prev_acc_stats;
-
-  const auto delta_queries = server_stats.acc_stats.tot_queries - prev_acc_stats.tot_queries;
-  const auto delta_time = server_stats.acc_stats.worked_time - prev_acc_stats.worked_time;
-  if (delta_queries > 0) {
-    rps = static_cast<double>(delta_queries) / delta_time;
-    prev_now = my_now;
-    prev_acc_stats = server_stats.acc_stats;
-  } else if (my_now - prev_now >= FULL_STATS_PERIOD * 2) {
-    rps = 0;
+class QPSCalculator {
+public:
+  explicit QPSCalculator(double cooldown_period) :
+    cooldown_period_(cooldown_period) {
   }
-  return rps;
-}
+
+  void update(double time_point, const acc_stats_t &new_acc_stats) {
+    if (!prev_acc_stats_.tot_queries) {
+      prev_acc_stats_ = new_acc_stats;
+      prev_time_ = time_point;
+      return;
+    }
+
+    const auto delta_incoming_queries = new_acc_stats.tot_queries - prev_acc_stats_.tot_queries;
+    if (delta_incoming_queries > 0) {
+      const auto delta_time = time_point - prev_time_;
+      incoming_qps_ = static_cast<double>(delta_incoming_queries) / delta_time;
+      const auto delta_outgoing_queries = new_acc_stats.tot_script_queries - prev_acc_stats_.tot_script_queries;
+      outgoing_qps_ = static_cast<double>(delta_outgoing_queries) / delta_time;
+      prev_time_ = time_point;
+      prev_acc_stats_ = new_acc_stats;
+    } else if (time_point - prev_time_ >= cooldown_period_) {
+      incoming_qps_ = 0;
+      outgoing_qps_ = 0;
+      prev_time_ = time_point;
+    }
+  }
+
+  double get_incoming_qps() const { return incoming_qps_; }
+  double get_outgoing_qps() const { return outgoing_qps_; }
+
+private:
+  double incoming_qps_{0};
+  double outgoing_qps_{0};
+  double prev_time_{0};
+  acc_stats_t prev_acc_stats_;
+  const double cooldown_period_{0};
+};
 
 STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   if (engine_tag) {
@@ -1699,7 +1709,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   const auto worker_stats = WorkerStats::collect();
   add_histogram_stat_long(stats, "workers.current.total", worker_stats.total_workers_n);
-  add_histogram_stat_long(stats, "workers.current.free", worker_stats.total_workers_n - worker_stats.running_workers_n);
   add_histogram_stat_long(stats, "workers.current.working", worker_stats.running_workers_n);
   add_histogram_stat_long(stats, "workers.current.working_but_waiting", worker_stats.paused_workers_n);
 
@@ -1747,7 +1756,11 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "requests.total_outgoing_queries", server_stats.acc_stats.tot_script_queries);
   add_histogram_stat_double(stats, "requests.script_time", server_stats.acc_stats.script_time);
   add_histogram_stat_double(stats, "requests.net_time", server_stats.acc_stats.net_time);
-  add_histogram_stat_double(stats, "requests.queries_per_second", update_qps());
+
+  static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
+  qps_calculator.update(my_now, server_stats.acc_stats);
+  add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
+  add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
 }
 
 int php_master_http_execute (struct connection *c, int op) {
