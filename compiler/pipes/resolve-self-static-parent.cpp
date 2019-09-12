@@ -43,6 +43,10 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
       ClassPtr ref_class = G->get_class(class_name);
       check_access_to_class_from_this_file(ref_class);
 
+      if (ref_class && ref_class->is_trait()) {
+        kphp_error(current_function->class_id && current_function->class_id->is_trait(), format("you may not use trait directly: %s", ref_class->get_name()));
+      }
+
       if (ref_class && !ref_class->is_builtin()) {
         if (auto found_method = ref_class->get_instance_method(original_name.substr(pos + 2))) {
           auto method = found_method->function;

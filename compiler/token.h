@@ -35,6 +35,7 @@ enum TokenType {
   tok_switch,
   tok_class,
   tok_interface,
+  tok_trait,
   tok_extends,
   tok_implements,
   tok_namespace,

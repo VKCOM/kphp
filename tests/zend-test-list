@@ -1,5 +1,7 @@
 Zend/tests/021.phpt
 Zend/tests/abstract-static.phpt
+Zend/tests/abstract_inheritance_001.phpt
+Zend/tests/abstract_inheritance_002.phpt
 Zend/tests/add_001.phpt
 Zend/tests/add_005.phpt
 Zend/tests/add_006.phpt
@@ -38,6 +40,7 @@ Zend/tests/bug40261.phpt
 Zend/tests/bug40809.phpt
 Zend/tests/bug41633_1.phpt
 Zend/tests/bug43053.phpt
+Zend/tests/bug43200_2.phpt
 Zend/tests/bug43703.phpt
 Zend/tests/bug43851.phpt
 Zend/tests/bug44184.phpt
@@ -60,6 +63,7 @@ Zend/tests/bug67111.phpt
 Zend/tests/bug67169.phpt
 Zend/tests/bug67985.phpt
 Zend/tests/bug68797.phpt
+Zend/tests/bug69420.phpt
 Zend/tests/bug69676.phpt
 Zend/tests/bug69676_2.phpt
 Zend/tests/bug69754.phpt
@@ -70,6 +74,7 @@ Zend/tests/bug69871.phpt
 Zend/tests/bug69893.phpt
 Zend/tests/bug70121.phpt
 Zend/tests/bug70478.phpt
+Zend/tests/bug70958.phpt
 Zend/tests/bug71470.phpt
 Zend/tests/bug71756.phpt
 Zend/tests/bug71914.phpt
@@ -107,6 +112,7 @@ Zend/tests/heredoc_015.phpt
 Zend/tests/heredoc_016.phpt
 Zend/tests/indirect_method_call_003.phpt
 Zend/tests/inference_infinite_loop.phpt
+Zend/tests/inter_03.phpt
 Zend/tests/line_const_in_array.phpt
 Zend/tests/loop_free_on_return.phpt
 Zend/tests/lsb_001.phpt
@@ -126,6 +132,21 @@ Zend/tests/shift_002.phpt
 Zend/tests/str_offset_001.phpt
 Zend/tests/temporary_cleaning_008.phpt
 Zend/tests/ternary_associativity.phpt
+Zend/tests/traits/bug55372.phpt
+Zend/tests/traits/bug74607a.phpt
+Zend/tests/traits/bugs/overridding-conflicting-methods.phpt
+Zend/tests/traits/conflict002.phpt
+Zend/tests/traits/flattening001.phpt
+Zend/tests/traits/inheritance001.phpt
+Zend/tests/traits/inheritance002.phpt
+Zend/tests/traits/interface_001.phpt
+Zend/tests/traits/language001.phpt
+Zend/tests/traits/language007.phpt
+Zend/tests/traits/language012.phpt
+Zend/tests/traits/language013.phpt
+Zend/tests/traits/no_static_arg_binding.phpt
+Zend/tests/traits/static_001.phpt
+Zend/tests/traits/static_003.phpt
 Zend/tests/type_declarations/nullable_null.phpt
 Zend/tests/type_declarations/parameter_type_variance.phpt
 Zend/tests/type_declarations/variance/parent_in_class_failure2.phpt

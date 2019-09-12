@@ -26,15 +26,17 @@ public:
       class_name(std::move(class_name)) {}
   };
 
+private:
+  std::vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
+
+public:
   int id{0};
   ClassType class_type{ClassType::klass}; // класс / интерфейс / трейт
   std::string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
 
-  std::vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
   ClassPtr parent_class;                       // extends
   std::vector<InterfacePtr> implements;
   std::vector<ClassPtr> derived_classes;
-  std::vector<ClassPtr> traits_uses;           // на будущее
 
   FunctionPtr construct_function;
   vk::string_view phpdoc_str;
@@ -75,7 +77,7 @@ public:
 
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>
-  void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
+  static void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
     static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
     auto vertex_this = gen_vertex_this(location);
     auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
@@ -145,6 +147,11 @@ public:
 
   void deeply_require_instance_to_array_visitor();
   void deeply_require_instance_cache_visitor();
+
+  void add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name);
+  const std::vector<StrDependence> &get_str_dependents() const {
+    return str_dependents;
+  }
 
 private:
   bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;

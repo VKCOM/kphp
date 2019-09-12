@@ -188,6 +188,7 @@ void CompilerCore::register_function(FunctionPtr function) {
 }
 
 void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require /*= false*/) {
+  kphp_assert(!vk::contains(function->name, '\\'));
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
     bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
     kphp_error(!f || was_previously_required,

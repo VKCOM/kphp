@@ -1599,7 +1599,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   CE(expect(tok_oppar, "'('"));
 
   if (cur_function->modifiers.is_instance()) {
-    cur_class->patch_func_add_this(params_next, Location(line_num));
+    ClassData::patch_func_add_this(params_next, Location(line_num));
   }
 
   bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
@@ -1628,12 +1628,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
   }
 
   if (cur_class) {
-    if (modifiers.is_abstract()) {
-      kphp_error(cur_class->modifiers.is_abstract(), format("class: %s must be declared abstract, because of abstract method: %s",
-                                                            cur_class->name.c_str(), cur_function->get_human_readable_name().c_str()));
-
-      kphp_error(cur_class->is_class(), format("abstract methods could be only in abstract classes: %s", cur_class->name.c_str()));
-    }
+    kphp_error(!(modifiers.is_abstract() && cur_class->is_interface()), format("abstract methods may not be declared in interfaces: %s", cur_class->name.c_str()));
 
     if (cur_class->is_interface()) {
       modifiers.set_abstract();
@@ -1743,16 +1738,15 @@ void GenTree::parse_extends_implements() {
   if (test_expect(tok_extends)) {     // extends идёт раньше implements, менять местами нельзя
     next_cur();                       // (в php тоже так)
     kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
-    auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(cur->str_val), '\\');
-    cur_class->str_dependents.emplace_back(cur_class->class_type, full_class_name);
+    kphp_error(!cur_class->is_trait(), "Traits may not extend each other");
+    cur_class->add_str_dependent(cur_function, cur_class->class_type, cur->str_val);
     next_cur();
   }
 
   if (test_expect(tok_implements)) {
     next_cur();
     kphp_error(test_expect(tok_func_name), "Class name expected after 'implements'");
-    string full_class_name = resolve_uses(cur_function, static_cast<std::string>(cur->str_val), '\\');
-    cur_class->str_dependents.emplace_back(ClassType::interface, full_class_name);
+    cur_class->add_str_dependent(cur_function, ClassType::interface, cur->str_val);
     next_cur();
   }
 }
@@ -1772,7 +1766,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final keyword"));
   }
 
-  CE(vk::any_of_equal(cur->type(), tok_class, tok_interface));
+  CE(vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait));
   next_cur();
 
   CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
@@ -1861,6 +1855,17 @@ VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr ins
   call_method->extra_type = op_ex_func_call_arrow;
 
   return call_method;
+}
+
+void GenTree::get_traits_uses() {
+  next_cur();
+  auto name = cur->str_val;
+  if (!expect(tok_func_name, "trait name expected")|| !expect(tok_semicolon, "`;` expected")) {
+    return;
+  }
+
+  kphp_error(!cur_class->is_interface(), "You may not use traits inside interface");
+  cur_class->add_str_dependent(cur_function, ClassType::trait, name);
 }
 
 void GenTree::get_use() {
@@ -2154,8 +2159,12 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
     }
     case tok_use: {
       AutoLocation const_location(this);
-      kphp_error(!cur_class && cur_function && cur_function->type == FunctionData::func_global, "'use' can be declared only in global scope");
-      get_use();
+      if (cur_class) {
+        get_traits_uses();
+      } else {
+        kphp_error(cur_function && cur_function->type == FunctionData::func_global, "'use' can be declared only in global scope");
+        get_use();
+      }
       return VertexAdaptor<op_empty>::create();
     }
     case tok_var: {
@@ -2169,6 +2178,8 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return get_class(phpdoc_str, ClassType::klass);
     case tok_interface:
       return get_class(phpdoc_str, ClassType::interface);
+    case tok_trait:
+      return get_class(phpdoc_str, ClassType::trait);
     default:
       res = get_expression();
       if (!res) {

@@ -115,6 +115,9 @@ public:
   }
 
   VertexAdaptor<Op> clone() const {
+    if (impl == nullptr) {
+      return {};
+    }
     return VertexAdaptor<Op>(clone_vertex(*this).template as<Op>());
   }
 

@@ -60,13 +60,20 @@ string gen_unique_name(const string& prefix, FunctionPtr function) {
 }
 
 string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
+  if (current_function->class_id && current_function->class_id->is_trait()) {
+    bool use_trait_inside_another_trait = current_function->type == FunctionData::func_class_holder;
+    if (!use_trait_inside_another_trait) {
+      return {};
+    }
+  }
+
   if (class_name[0] != '\\') {
     if (class_name == "parent") {
       // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов
       if (auto parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name()) {
         class_name = *parent_class_name;
       } else {
-        kphp_error(false, "Using parent:: in class that extends nothing");
+        kphp_error_act(false, "Using parent:: in class that extends nothing", return {});
       }
     } else if (class_name == "static") {
       auto parent_function = current_function->get_this_or_topmost_if_lambda();
@@ -258,6 +265,10 @@ string get_full_static_member_name(FunctionPtr function, const string &name, boo
 
   string prefix_name = name.substr(0, pos$$);
   string class_name = resolve_uses(function, prefix_name, '$');
+  if (class_name.empty()) {
+    return {};
+  }
+
   string fun_name = name.substr(pos$$ + 2);
   string new_name = class_name + "$$" + fun_name;
   if (!function->is_lambda() && append_with_context) {

@@ -146,15 +146,15 @@ public:
   }
 };
 
-void clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &function_stream) {
+bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &function_stream) {
   if (from->modifiers.is_instance() && to_class->members.has_instance_method(from->local_name())) {
-    return;
+    return false;
   } else if (from->modifiers.is_static() && to_class->members.has_static_method(from->local_name())) {
-    return;
+    return false;
   }
 
   auto new_root = from->root.clone();
-  auto cloned_fun = FunctionData::clone_from(to_class->name + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
+  auto cloned_fun = FunctionData::clone_from(replace_backslashes(to_class->name) + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
   if (from->modifiers.is_instance()) {
     to_class->members.add_instance_method(cloned_fun);
   } else if (from->modifiers.is_static()) {
@@ -162,6 +162,7 @@ void clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
   }
 
   G->register_and_require_function(cloned_fun, function_stream, true);
+  return true;
 };
 
 void copy_abstract_methods(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
@@ -182,14 +183,13 @@ void copy_abstract_methods(ClassPtr child_class, ClassPtr parent_class, DataStre
   });
 }
 
-
 } // namespace
 
 
 // если все dependents класса уже обработаны, возвращает nullptr
 // если же какой-то из dependents (класс/интерфейс) ещё не обработан (его надо подождать), возвращает указатель на его
 auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
-  for (const auto &dep : klass->str_dependents) {
+  for (const auto &dep : klass->get_str_dependents()) {
     auto node = ht.at(vk::std_hash(dep.class_name));
     kphp_assert(node);
     if (!node->data.done) {
@@ -292,7 +292,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
-  
+
   kphp_error_return(parent_class->is_class() && child_class->is_class(),
                     format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
 
@@ -343,12 +343,50 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
   interface_class->derived_classes.emplace_back(child_class);
 }
 
+void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream) {
+  for (size_t i = 0; i < traits.size(); ++i) {
+    auto check_other_traits_doesnt_contain_method_and_clone = [&](FunctionPtr method) {
+      if (!clone_method(method, ready_class, function_stream)) {
+        return;
+      }
+
+      for (size_t j = i + 1; j < traits.size(); ++j) {
+        if (traits[j]->members.has_instance_method(method->local_name()) || traits[j]->members.has_static_method(method->local_name())) {
+          kphp_error(false, format("in class: %s, you have methods collision: %s", ready_class->get_name(), method->get_human_readable_name().c_str()));
+        }
+      }
+    };
+
+    traits[i]->members.for_each([&](ClassMemberInstanceMethod &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
+    traits[i]->members.for_each([&](ClassMemberStaticMethod   &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
+
+    traits[i]->members.for_each([&](const ClassMemberInstanceField &f) {
+      ready_class->members.add_instance_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str);
+    });
+
+    traits[i]->members.for_each([&](const ClassMemberStaticField &f) {
+      ready_class->members.add_static_field(f.root.clone(), f.init_val.clone(), f.modifiers, f.phpdoc_str);
+    });
+  }
+
+  if (ready_class->is_class()) {
+    ready_class->members.for_each([&](ClassMemberInstanceMethod &m) {
+      if (m.function->modifiers.is_abstract()) {
+        kphp_error(ready_class->modifiers.is_abstract(), format("class: %s must be declared abstract, because of abstract method: %s",
+                                                                ready_class->get_name(), m.function->get_human_readable_name().c_str()));
+      }
+    });
+  }
+}
+
 /**
  * Каждый класс поступает сюда один и ровно один раз — когда он и все его dependents
  * (родители, трейты, интерфейсы) тоже готовы.
  */
 void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream) {
-  for (const auto &dep : klass->str_dependents) {
+  stage::set_file(klass->file_id);
+  std::vector<TraitPtr> traits;
+  for (const auto &dep : klass->get_str_dependents()) {
     ClassPtr dep_class = G->get_class(dep.class_name);
 
     switch (dep.type) {
@@ -359,11 +397,11 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         inherit_class_from_interface(klass, dep_class, function_stream);
         break;
       case ClassType::trait:
-        kphp_assert(0 && "mixin traits is not supported yet");
+        traits.emplace_back(dep_class);
         break;
     }
   }
-
+  clone_members_from_traits(std::move(traits), klass, function_stream);
   if (klass->is_fully_static()) {
     auto parent = klass->parent_class;
     if (klass->members.has_any_instance_var() || klass->members.has_any_instance_method() || (parent && !parent->is_fully_static())) {

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/abstract methods could be only in abstract classes/
+/abstract methods may not be declared in interfaces/
 <?php
 
 interface A {

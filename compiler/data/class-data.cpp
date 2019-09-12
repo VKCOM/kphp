@@ -1,15 +1,19 @@
 #include "compiler/data/class-data.h"
 
+#include <string>
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 #include "common/termformat/termformat.h"
+#include "common/wrappers/string_view.h"
 
 const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char *ClassData::NAME_OF_CLONE = "__clone";
@@ -64,7 +68,7 @@ std::string ClassData::get_namespace() const {
 }
 
 FunctionPtr ClassData::gen_holder_function(const std::string &name) {
-  std::string func_name = "$" + name;  // function-wrapper for class
+  std::string func_name = "$" + replace_backslashes(name);  // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_params, func_body);
@@ -264,7 +268,7 @@ bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked
 }
 
 bool ClassData::does_need_codegen(ClassPtr c) {
-  return c && !c->is_fully_static() && !c->is_builtin() && (c->really_used || c->is_tl_class);
+  return c && !c->is_fully_static() && !c->is_builtin() && !c->is_trait() && (c->really_used || c->is_tl_class);
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
@@ -322,4 +326,9 @@ void ClassData::deeply_require_instance_to_array_visitor() {
 
 void ClassData::deeply_require_instance_cache_visitor() {
   set_atomic_field_deeply<&ClassData::need_instance_cache_visitors>();
+}
+
+void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name) {
+  auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(class_name), '\\');
+  str_dependents.emplace_back(type, full_class_name);
 }

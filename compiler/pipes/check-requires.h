@@ -7,7 +7,12 @@
 class CheckRequires final: public SyncPipeF<FunctionPtr, FunctionPtr> {
   using Base = SyncPipeF<FunctionPtr, FunctionPtr>;
 public:
+  bool forward_to_next_pipe(const FunctionPtr &f) final {
+    return !(f->class_id && f->class_id->is_trait());
+  }
+
   void on_finish(DataStream<FunctionPtr> &os) final {
+    stage::die_if_global_errors();
     SortAndInheritClassesF::check_on_finish(os);
     Base::on_finish(os);
   }

@@ -67,7 +67,12 @@ std::string assumption_debug(const Assumption &assumption) {
   }
 }
 
+void check_assumption(ClassPtr klass, const char *description) {
+  kphp_error(!(klass && klass->is_trait()), format("You may not use trait(%s) as a type-hint: %s", klass->get_name(), description));
+}
+
 void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
+  check_assumption(klass, format("var: `%s` in function: `%s`", var_name.c_str(), f->get_human_readable_name().c_str()));
   bool exists = false;
 
   for (auto &a : f->assumptions_for_vars) {
@@ -96,6 +101,7 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &v
 }
 
 void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
+  check_assumption(klass, format("in function: `%s`", f->get_human_readable_name().c_str()));
   const Assumption &a = f->assumption_for_return;
 
   if (a.assum_type != assum_unknown) {
@@ -110,6 +116,7 @@ void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
 }
 
 void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_name, ClassPtr klass) {
+  check_assumption(klass, format("var: `%s`, in class: `%s`", var_name.c_str(), klass->get_name()));
   bool exists = false;
 
   for (const auto &a : c->assumptions_for_vars) {

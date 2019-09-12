@@ -124,6 +124,7 @@ class SrcFile;
 using VarPtr = Id<VarData>;
 using ClassPtr = Id<ClassData>;
 using InterfacePtr = Id<ClassData>;
+using TraitPtr = Id<ClassData>;
 using LambdaPtr = Id<LambdaClassData>;
 using DefinePtr = Id<DefineData>;
 using FunctionPtr = Id<FunctionData>;

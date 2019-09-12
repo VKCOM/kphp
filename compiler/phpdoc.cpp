@@ -326,6 +326,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
         if (!klass) {
           unknown_classes_list.push_back(class_name);
         }
+        kphp_error(!(klass && klass->is_trait()), format("You may not use trait(%s) as a type-hint", klass->get_name()));
         return GenTree::create_type_help_class_vertex(klass);
       }
     }

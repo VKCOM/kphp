@@ -522,7 +522,11 @@ private:
     if (call->type() == op_constructor_call) {
       ClassPtr klass = G->get_class(call->get_string());
       if (klass) {
-        kphp_error(0, format("Calling 'new %s()', but this class is %s", call->get_c_string(), klass->modifiers.is_abstract() ? "abstract/interface" : "fully static"));
+        const char *type_of_incorrect_class = klass->modifiers.is_abstract() ? "abstract/interface" :
+                                              klass->is_trait() ? "trait" :
+                                              "fully static";
+
+        kphp_error(0, format("Calling 'new %s()', but this class is %s", call->get_c_string(), type_of_incorrect_class));
       } else {
         kphp_error(0, format("Class %s does not exist", call->get_c_string()));
       }

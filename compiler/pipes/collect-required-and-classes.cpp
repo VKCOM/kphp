@@ -45,7 +45,7 @@ private:
   }
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {
-    for (const auto &dep : cur_class->str_dependents) {
+    for (const auto &dep : cur_class->get_str_dependents()) {
       require_class(replace_characters(dep.class_name, '\\', '/'));
     }
     // значения констант класса могут содержать константы других классов, которым нужно require_class()
@@ -105,7 +105,10 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
-      require_function(get_full_static_member_name(current_function, root->get_string(), true));
+      auto full_static_name = get_full_static_member_name(current_function, root->get_string(), true);
+      if (!full_static_name.empty()) {
+        require_function(full_static_name);
+      }
     }
 
     if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {

@@ -28,6 +28,7 @@ case, tok_case
 switch, tok_switch
 class, tok_class
 interface, tok_interface
+trait, tok_trait
 const, tok_const
 default, tok_default
 do, tok_do
