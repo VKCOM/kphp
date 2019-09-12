@@ -470,7 +470,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
         tmp.set_lca(rhs);
         if (tmp.ptype() == tp_Error) {
           prev->set_ptype(tp_Error);
-          last = std::prev(multi_key.rend(), std::distance(it, multi_key.begin()));
+          last = std::prev(multi_key.rend(), std::distance(multi_key.begin(), it));
           cur = prev;
           break;
         }
