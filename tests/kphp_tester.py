@@ -266,7 +266,7 @@ class TestRunner:
         kphp_compilation_proc = subprocess.Popen(cmd, cwd=self._kphp_build_tmp_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=600)
         if fake_stderr:
-            kphp_build_stderr = kphp_build_stderr + fake_stderr
+            kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
 
         self._move_asan_logs_to_artifacts(asan_glob_mask, kphp_compilation_proc, asan_log_name)
         ignore_stderr = self._can_be_ignored(
