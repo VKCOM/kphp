@@ -26,6 +26,7 @@ private:
   };
 
   row parse_description(std::string const &description);
+  void remove_duplicates_from_stacktrace(std::vector<row> &rows) const;
 
   tinf::Node *actual_;
   tinf::Node *expected_;

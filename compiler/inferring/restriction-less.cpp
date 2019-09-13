@@ -207,12 +207,15 @@ RestrictionLess::row RestrictionLess::parse_description(string const &descriptio
 }
 
 string RestrictionLess::get_actual_error_message() {
-  tinf::ExprNode *as_expr_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::ExprNode *>(stacktrace[0]) : nullptr;
-  tinf::VarNode *as_var_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::VarNode *>(stacktrace[0]) : nullptr;
-  tinf::VarNode *as_var_1 = stacktrace.size() > 1 ? dynamic_cast<tinf::VarNode *>(stacktrace[1]) : nullptr;
-  tinf::TypeNode *as_type_2 = stacktrace.size() > 2 ? dynamic_cast<tinf::TypeNode *>(stacktrace[2]) : nullptr;
+  auto as_expr_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::ExprNode *>(stacktrace[0]) : nullptr;
+  auto as_var_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::VarNode *>(stacktrace[0]) : nullptr;
+  auto as_var_1 = stacktrace.size() > 1 ? dynamic_cast<tinf::VarNode *>(stacktrace[1]) : nullptr;
+  auto as_type_2 = stacktrace.size() > 2 ? dynamic_cast<tinf::TypeNode *>(stacktrace[2]) : nullptr;
 
-  if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop && as_var_1 && as_var_1->is_variable()) {
+  if (as_expr_0 &&
+      (as_expr_0->get_expr()->type() == op_instance_prop ||
+      (as_expr_0->get_expr()->type() == op_var && as_expr_0->get_expr().as<op_var>()->var_id && as_expr_0->get_expr().as<op_var>()->var_id->is_class_instance_var())) &&
+       as_var_1 && as_var_1->is_variable()) {
     return string("Incorrect type of the following class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
   }
 
@@ -245,27 +248,45 @@ string RestrictionLess::get_stacktrace_text() {
     }
     rows.push_back(cur);
   }
+
+  remove_duplicates_from_stacktrace(rows);
+
+  int width[3] = {10, 15, 30};
+  for (auto &row : rows) {
+    width[0] = std::max(width[0], (int)row.col[0].length());
+    width[1] = std::max(width[1], (int)row.col[1].length() - TermStringFormat::get_length_without_symbols(row.col[1]));
+    width[2] = std::max(width[2], (int)row.col[2].length());
+  }
+  std::stringstream ss;
+  for (auto &row : rows) {
+    ss << std::setw(width[1] + 3 + TermStringFormat::get_length_without_symbols(row.col[1])) << std::left << row.col[1];
+    ss << std::setw(width[2]) << std::left << row.col[2] << std::endl;
+  }
+  return ss.str();
+}
+
+void RestrictionLess::remove_duplicates_from_stacktrace(vector<row> &rows) const {
   auto ith_row = [&](int idx) -> row { return (idx < rows.size() ? rows[idx] : row()); };
 
   // Если это ошибка несовпадения phpdoc у переменной инстанса, то первым в стектрейсе идёт ->var_name, убираем
   if (vk::string_view{rows[0].col[1]}.starts_with("->")) {
-    auto as_expr_0 = dynamic_cast<tinf::ExprNode *>(stacktrace[0]);
+    auto as_expr_0 = dynamic_cast<tinf::ExprNode *>(this->stacktrace[0]);
     if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop) {
       rows.erase(rows.begin());
     }
   }
   // Удаление дубликатов при вызове статически отнаследованных функций (2 случая)
-  // 1) Дублирование аргумента, в котором произошла ошибка:
-  //  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
-  //  0-th arg ($x)                             at static function: VK\D :: demo (inherited from VK\A)
-  //  $x                                        at .../VK/A.php: VK\D :: demo : 20
-  //  0-th arg ($x)                             at static function: VK\D :: demo
-  //
-  // 2) Дубирование return'а:
-  //  VK\B :: calc(...) (inherited from VK\A)   at .../dev.php: src_dev3b832f7b\u : 12
-  //  return ...                                at static function: VK\B :: calc
-  //  VK\B :: calc(...) (inherited from VK\A)   at .../VK/A.php: VK\B :: calc : -1
-  //  return ...                                at static function: VK\B :: calc (inherited from VK\A)
+// 1) Дублирование аргумента, в котором произошла ошибка:
+//  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
+//  0-th arg ($x)                             at static function: VK\D :: demo (inherited from VK\A)
+//  $x                                        at .../VK/A.php: VK\D :: demo : 20
+//  0-th arg ($x)                             at static function: VK\D :: demo
+//
+// 2) Дубирование return'а:
+//  VK\B :: calc(...) (inherited from VK\A)   at .../dev.php: src_dev3b832f7b\u : 12
+//  return ...                                at static function: VK\B :: calc
+//  VK\B :: calc(...) (inherited from VK\A)   at .../VK/A.php: VK\B :: calc : -1
+//  return ...                                at static function: VK\B :: calc (inherited from VK\A)
   for (int i = 0; i < rows.size(); ++i) {
     if (ith_row(i).col[0] == "as expression:" && ith_row(i + 1).col[0] == "as argument:" &&
         ith_row(i + 2).col[0] == "as expression:" && ith_row(i + 3).col[0] == "as argument:" &&
@@ -287,18 +308,6 @@ string RestrictionLess::get_stacktrace_text() {
       }
     }
   }
-  int width[3] = {10, 15, 30};
-  for (auto &row : rows) {
-    width[0] = std::max(width[0], (int)row.col[0].length());
-    width[1] = std::max(width[1], (int)row.col[1].length() - TermStringFormat::get_length_without_symbols(row.col[1]));
-    width[2] = std::max(width[2], (int)row.col[2].length());
-  }
-  std::stringstream ss;
-  for (auto &row : rows) {
-    ss << std::setw(width[1] + 3 + TermStringFormat::get_length_without_symbols(row.col[1])) << std::left << row.col[1];
-    ss << std::setw(width[2]) << std::left << row.col[2] << std::endl;
-  }
-  return ss.str();
 }
 
 bool RestrictionLess::check_broken_restriction_impl() {
