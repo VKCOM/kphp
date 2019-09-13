@@ -74,7 +74,8 @@ void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<Fun
     }
 
     auto method_in_ancestor = parent->get_instance_method(method->local_name())->function;
-    kphp_error(method_in_ancestor->modifiers.is_abstract() == parent->modifiers.is_abstract(),
+
+    kphp_error(!method_in_ancestor->modifiers.is_abstract() || parent->modifiers.is_abstract(),
       format("class: %s, must be declared abstract because of the method: %s", parent->name.c_str(), method_in_ancestor->get_human_readable_name().c_str()));
 
     auto new_name = parent->name + "$$" + method->local_name();

@@ -210,11 +210,7 @@ const ClassMemberConstant *ClassData::get_constant(const std::string &local_name
 }
 
 void ClassData::check_parent_constructor() {
-  if (!construct_function || !construct_function->root) {
-    return;
-  }
-
-  if (!parent_class || !parent_class->construct_function || !parent_class->construct_function->root) {
+  if (!parent_class || !parent_class->construct_function) {
     return;
   }
 
