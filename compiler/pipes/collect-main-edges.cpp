@@ -399,9 +399,12 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
   }
 
   if (function->is_extern()) {
-    PrimitiveType ret_type = function->root->type_help;
-    if (ret_type == tp_Unknown) {
-      ret_type = tp_var;
+
+    auto ret_type = PrimitiveType::tp_var;
+    if (auto rule = function->root->type_rule.try_as<op_common_type_rule>()) {
+      if (auto type_of_rule = rule->rule().try_as<op_type_expr_type>()) {
+        ret_type = type_of_rule->type_help;
+      }
     }
     create_set(as_lvalue(function, -1), ret_type);
 
