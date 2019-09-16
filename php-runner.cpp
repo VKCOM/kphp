@@ -213,6 +213,7 @@ void PHPScriptBase::finish() {
   assert (state == rst_finished || state == rst_error);
   run_state_t save_state = state;
 
+  const auto &script_mem_stats = dl::get_script_memory_stats();
   state = rst_uncleared;
   update_net_time();
   worker_acc_stats.tot_queries++;
@@ -220,12 +221,16 @@ void PHPScriptBase::finish() {
   worker_acc_stats.net_time += net_time;
   worker_acc_stats.script_time += script_time;
   worker_acc_stats.tot_script_queries += queries_cnt;
+  worker_acc_stats.script_max_memory_used =
+    std::max(worker_acc_stats.script_max_memory_used, static_cast<long>(script_mem_stats.max_memory_used));
+  worker_acc_stats.script_max_real_memory_used =
+    std::max(worker_acc_stats.script_max_real_memory_used, static_cast<long>(script_mem_stats.max_real_memory_used));
 
   if (save_state == rst_error) {
     assert (error_message != nullptr);
     kprintf ("Critical error during script execution: %s\n", error_message);
   }
-  if (save_state == rst_error || dl::get_script_memory_stats().real_memory_used >= 100000000) {
+  if (save_state == rst_error || script_mem_stats.real_memory_used >= 100000000) {
     if (data != nullptr) {
       http_query_data *http_data = data->http_data;
       if (http_data != nullptr) {
@@ -251,7 +256,6 @@ void PHPScriptBase::finish() {
         }
       }
     }
-    const auto &script_mem_stats = dl::get_script_memory_stats();
     kprintf ("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
              script_time + net_time, net_time, script_time, queries_cnt,
              (int)dl::get_heap_memory_used(),

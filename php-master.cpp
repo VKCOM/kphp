@@ -111,6 +111,8 @@ void mem_info_add(mem_info_t *dst, const mem_info_t &other) {
   dst->vm += other.vm;
   dst->rss_peak += other.rss_peak;
   dst->rss += other.rss;
+  // do not accumulate rss_file and rss_shmem,
+  // because they are about shared memory and accumulated value will show strange stat
 }
 
 
@@ -132,6 +134,8 @@ void acc_stats_update(acc_stats_t *to, const acc_stats_t &from) {
   to->tot_idle_time += from.tot_idle_time;
   to->tot_idle_percent += from.tot_idle_percent;
   to->a_idle_percent += from.a_idle_percent;
+  to->script_max_memory_used = std::max(to->script_max_memory_used, from.script_max_memory_used);
+  to->script_max_real_memory_used = std::max(to->script_max_real_memory_used, from.script_max_real_memory_used);
   to->cnt++;
 }
 
@@ -659,6 +663,9 @@ void delete_worker(worker_info_t *w) {
     dead_stime += w->my_info.stime;
   }
   acc_stats_update(&dead_acc_stats, w->stats->acc_stats);
+  // ignore dead workers script memory usage
+  dead_acc_stats.script_max_real_memory_used = 0;
+  dead_acc_stats.script_max_memory_used = 0;
   worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
@@ -1761,6 +1768,26 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   qps_calculator.update(my_now, server_stats.acc_stats);
   add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
   add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
+
+  update_mem_stats();
+  unsigned long long max_vms = 0;
+  unsigned long long max_rss = 0;
+  unsigned long long max_shared = 0;
+  for (int i = 0; i < me_workers_n; i++) {
+    worker_info_t *w = workers[i];
+    if (!w->is_dying) {
+      const mem_info_t &mem_stats = w->stats->mem_info;
+      max_vms = std::max(max_vms, mem_stats.vm_peak);
+      max_rss = std::max(max_rss, mem_stats.rss_peak);
+      max_shared = std::max(max_shared, mem_stats.rss_shmem + mem_stats.rss_file);
+    }
+  }
+
+  add_histogram_stat_long(stats, "memory.script_usage_max", server_stats.acc_stats.script_max_memory_used);
+  add_histogram_stat_long(stats, "memory.script_real_usage_max", server_stats.acc_stats.script_max_real_memory_used);
+  add_histogram_stat_long(stats, "memory.vms_max", max_vms * 1024);
+  add_histogram_stat_long(stats, "memory.rss_max", max_rss * 1024);
+  add_histogram_stat_long(stats, "memory.shared_max", max_shared * 1024);
 }
 
 int php_master_http_execute (struct connection *c, int op) {

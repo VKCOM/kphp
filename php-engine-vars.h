@@ -51,6 +51,8 @@ struct acc_stats_t {
   double tot_idle_time{0};
   double tot_idle_percent{0};
   double a_idle_percent{0};
+  long script_max_memory_used{0};
+  long script_max_real_memory_used{0};
   int cnt{0};
 };
 extern acc_stats_t worker_acc_stats;
