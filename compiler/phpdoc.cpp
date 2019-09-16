@@ -170,12 +170,6 @@ bool PhpDocTypeRuleParser::is_tag_in_phpdoc(const vk::string_view &phpdoc, php_d
                      });
 }
 
-VertexPtr PhpDocTypeRuleParser::create_type_help_vertex(PrimitiveType type) {
-  auto type_rule = VertexAdaptor<op_type_expr_type>::create();
-  type_rule->type_help = type;
-  return type_rule;
-}
-
 /*
  * Имея строку '(\VK\A|false)[]' и pos=1 — найти, где заканчивается имя класса. ('\VK\A' оно в данном случае)
  */
@@ -204,7 +198,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 's': {
       if (s.substr(pos, 6) == "string") {
         pos += 6;
-        return create_type_help_vertex(tp_string);
+        return GenTree::create_type_help_vertex(tp_string);
       }
       if (s.substr(pos, 4) == "self") {
         pos += 4;
@@ -215,33 +209,33 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 'i': {
       if (s.substr(pos, 7) == "integer") {
         pos += 7;
-        return create_type_help_vertex(tp_int);
+        return GenTree::create_type_help_vertex(tp_int);
       }
       if (s.substr(pos, 3) == "int") {
         pos += 3;
-        return create_type_help_vertex(tp_int);
+        return GenTree::create_type_help_vertex(tp_int);
       }
       break;
     }
     case 'b': {
       if (s.substr(pos, 7) == "boolean") {
         pos += 7;
-        return create_type_help_vertex(tp_bool);
+        return GenTree::create_type_help_vertex(tp_bool);
       }
       if (s.substr(pos, 4) == "bool") {
         pos += 4;
-        return create_type_help_vertex(tp_bool);
+        return GenTree::create_type_help_vertex(tp_bool);
       }
       break;
     }
     case 'f': {
       if (s.substr(pos, 5) == "float") {
         pos += 5;
-        return create_type_help_vertex(tp_float);
+        return GenTree::create_type_help_vertex(tp_float);
       }
       if (s.substr(pos, 5) == "false") {
         pos += 5;
-        return create_type_help_vertex(tp_False);
+        return GenTree::create_type_help_vertex(tp_False);
       }
       if (s.substr(pos, 6) == "future") {
         pos += 6;
@@ -252,28 +246,28 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 'd': {
       if (s.substr(pos, 6) == "double") {
         pos += 6;
-        return create_type_help_vertex(tp_float);
+        return GenTree::create_type_help_vertex(tp_float);
       }
       break;
     }
     case 'm': {
       if (s.substr(pos, 5) == "mixed") {
         pos += 5;
-        return create_type_help_vertex(tp_var);
+        return GenTree::create_type_help_vertex(tp_var);
       }
       break;
     }
     case 'n': {
       if (s.substr(pos, 4) == "null") {
         pos += 4;
-        return create_type_help_vertex(tp_var);
+        return GenTree::create_type_help_vertex(tp_var);
       }
       break;
     }
     case 't': {
       if (s.substr(pos, 4) == "true") {
         pos += 4;
-        return create_type_help_vertex(tp_bool);
+        return GenTree::create_type_help_vertex(tp_bool);
       }
       if (s.substr(pos, 5) == "tuple") {
         pos += 5;
@@ -284,17 +278,14 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
     case 'a': {
       if (s.substr(pos, 5) == "array") {
         pos += 5;
-        auto res = VertexAdaptor<op_type_expr_type>::create(create_type_help_vertex(tp_Unknown));
-        res->type_help = tp_array;
-        return res;
+        return GenTree::create_type_help_vertex(tp_array, {GenTree::create_type_help_vertex(tp_Unknown)});
       }
       break;
     }
     case 'v': {
       if (s.substr(pos, 4) == "void") {
         pos += 4;
-        VertexPtr v = create_type_help_vertex(tp_void);
-        return v;
+        return GenTree::create_type_help_vertex(tp_void);
       }
       break;
     }
@@ -343,9 +334,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array(const vk::string_view &s, size_
   }
   while (pos < s.size() && s[pos] == '[') {
     CHECK(pos + 1 < s.size() && s[pos + 1] == ']', "Failed to parse phpdoc type: unmatching []");
-    auto new_res = VertexAdaptor<op_type_expr_type>::create(res);
-    new_res->type_help = tp_array;
-    res = new_res;
+    res = GenTree::create_type_help_vertex(tp_array, {res});
     pos += 2;
   }
   return res;
@@ -370,9 +359,7 @@ VertexPtr PhpDocTypeRuleParser::parse_nested_type_rule(const vk::string_view &s,
     CHECK(s[pos] == ',', "Failed to parse phpdoc type: expected ','");
     ++pos;
   }
-  auto type_rule = VertexAdaptor<op_type_expr_type>::create(sub_types);
-  type_rule->type_help = type_help;
-  return type_rule;
+  return GenTree::create_type_help_vertex(type_help, sub_types);
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, size_t &pos) {
@@ -410,8 +397,7 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const vk::string_view &ty
   const vk::string_view varg_dots{" ..."};
   if (type_str.size() == pos + varg_dots.size() && type_str.ends_with(varg_dots)) {
     pos += varg_dots.size();
-    res = VertexAdaptor<op_type_expr_type>::create(res);
-    res->type_help = tp_array;
+    res = GenTree::create_type_help_vertex(tp_array, {res});
   }
 
   CHECK(pos == type_str.size(), "Failed to parse phpdoc type: something left at the end after parsing");

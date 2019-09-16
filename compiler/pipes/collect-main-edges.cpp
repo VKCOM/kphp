@@ -4,6 +4,7 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/gentree.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/lvalue.h"
@@ -237,9 +238,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
     auto ref = VertexAdaptor<op_type_expr_arg_ref>::create();
     ref->int_val = 2;
-    VertexPtr rule = VertexAdaptor<op_index>::create(ref);
-    rule = VertexAdaptor<op_type_expr_type>::create(rule);
-    rule->type_help = tp_future_queue;
+    auto rule = GenTree::create_type_help_vertex(tp_future_queue, {VertexAdaptor<op_index>::create(ref)});
     fake_func_call->type_rule = VertexAdaptor<op_common_type_rule>::create(rule);
     fake_func_call->func_id = call->func_id;
 

@@ -76,6 +76,7 @@ public:
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(vk::string_view klass_name);
   static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(ClassPtr klass);
+  static VertexAdaptor<op_type_expr_type> create_type_help_vertex(PrimitiveType type, const std::vector<VertexPtr> &children = {});
 
   VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
   VertexAdaptor<op_func_param> get_func_param_from_callback();

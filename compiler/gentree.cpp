@@ -644,6 +644,12 @@ VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(ClassPt
   return type_rule;
 }
 
+VertexAdaptor<op_type_expr_type> GenTree::create_type_help_vertex(PrimitiveType type, const std::vector<VertexPtr> &children) {
+  auto type_rule = VertexAdaptor<op_type_expr_type>::create(children);
+  type_rule->type_help = type;
+  return type_rule;
+}
+
 VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary) {
   AutoLocation expr_location(this);
   next_cur();
@@ -1083,10 +1089,8 @@ VertexPtr GenTree::get_type_rule_() {
       CE (expect(tok_gt, "'>'"));
     }
 
-    auto arr = VertexAdaptor<op_type_expr_type>::create(next);
-    arr->type_help = tp;
-    set_location(arr, arr_location);
-    res = arr;
+    res = GenTree::create_type_help_vertex(tp, next);
+    set_location(res, arr_location);
   } else if (tok == tok_at) {
     next_cur();
     vk::string_view tl_prefix {"tl\\"};
