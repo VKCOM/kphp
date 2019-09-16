@@ -43,7 +43,7 @@ private:
   std::unordered_set<ClassPtr> classes_;
   std::set<std::string> internal_headers_;
   std::set<std::string> lib_headers_;
-  std::unordered_set<ClassPtr> fwd_declarations_;
+  std::set<ClassPtr> fwd_declarations_;
 
   std::unordered_set<ClassPtr> prev_classes_;
   std::set<std::string> prev_headers_;
