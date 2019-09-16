@@ -8,7 +8,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
-#include "compiler/vertex.h"
+#include "compiler/utils/string-utils.h"
 
 using std::vector;
 using std::string;
@@ -182,6 +182,35 @@ vk::string_view PhpDocTypeRuleParser::extract_classname_from_pos(const vk::strin
   return str.substr(pos, pos_end - pos);
 }
 
+VertexPtr PhpDocTypeRuleParser::parse_classname(const vk::string_view &s, size_t &pos) {
+  bool has_tl_namespace_prefix = false;
+  if (s[pos] == '@') {
+    vk::string_view tl_namespace_prefix{"@tl\\"};
+    if (!s.substr(pos).starts_with(tl_namespace_prefix)) {
+      return {};
+    }
+    pos += tl_namespace_prefix.size();
+    has_tl_namespace_prefix = true;
+  }
+
+  if (s[pos] == '\\' || is_alpha(s[pos])) {
+    std::string relative_class_name = static_cast<std::string>(extract_classname_from_pos(s, pos));
+    pos += relative_class_name.size();
+    if (has_tl_namespace_prefix) {
+      relative_class_name.insert(0, G->env().get_tl_namespace_prefix());
+    }
+    const std::string &class_name = resolve_uses(current_function, relative_class_name, '\\');
+    ClassPtr klass = G->get_class(class_name);
+    if (!klass) {
+      unknown_classes_list.push_back(class_name);
+    }
+    kphp_error(!(klass && klass->is_trait()), format("You may not use trait(%s) as a type-hint", klass->get_name()));
+    return GenTree::create_type_help_class_vertex(klass);
+  }
+
+  return {};
+}
+
 VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size_t &pos) {
   CHECK(pos < s.size(), "Failed to parse phpdoc type: unexpected end");
   switch (s[pos]) {
@@ -298,30 +327,15 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type(const vk::string_view &s, size
         pos += 7;
         return parse_nested_type_rule(s, pos, tp_future);
       }
-    }
-      /* fallthrough */
-    default: {
-      vk::string_view tl_namespace_prefix{"@tl\\"};
-      bool has_tl_namespace_prefix = s.substr(pos).starts_with(tl_namespace_prefix);
-      if (has_tl_namespace_prefix) {
-        pos += tl_namespace_prefix.size();
-      }
-      if (s[pos] == '\\' || (s[pos] >= 'A' && s[pos] <= 'Z') || (has_tl_namespace_prefix && ((s[pos] >= 'a' && s[pos] <= 'z') || s[pos] == '_'))) {
-        std::string relative_class_name = static_cast<std::string>(extract_classname_from_pos(s, pos));
-        pos += relative_class_name.size();
-        if (has_tl_namespace_prefix) {
-          relative_class_name.insert(0, G->env().get_tl_namespace_prefix());
-        }
-        const std::string &class_name = resolve_uses(current_function, relative_class_name, '\\');
-        ClassPtr klass = G->get_class(class_name);
-        if (!klass) {
-          unknown_classes_list.push_back(class_name);
-        }
-        kphp_error(!(klass && klass->is_trait()), format("You may not use trait(%s) as a type-hint", klass->get_name()));
-        return GenTree::create_type_help_class_vertex(klass);
-      }
+      break;
     }
   }
+
+  VertexPtr class_type_rule = parse_classname(s, pos);
+  if (class_type_rule) {
+    return class_type_rule;
+  }
+
   string error_msg = "Failed to parse phpdoc type: Unknown type name [" + static_cast<string>(s) + "]";
   CHECK(0, error_msg.c_str());
   return VertexPtr();
@@ -381,7 +395,10 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression(const vk::string_view &s, 
     res = rule;
   }
   if (res->type() == op_type_expr_lca) {
-    kphp_error(!has_raw_bool, format("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)"));
+    if (has_raw_bool) {
+      stage::set_location(current_function->root->location);
+      kphp_error(0, format("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)"));
+    }
   }
   return res;
 }

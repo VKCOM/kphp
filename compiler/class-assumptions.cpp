@@ -138,21 +138,6 @@ void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_
  * Если это класс, то он не может быть смешан с другими классами и типами (парсинг ругнётся) (но A|false это ок).
  */
 AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klass, FunctionPtr current_function) {
-  // в нашей репке очень много уже невалидных phpdoc'ов по типу '@param [type] $actor', на которых парсинг будет ругаться
-  // до появления инстансов они не парсились, т.к. @kphp- не содержат; а сейчас начнут выдавать ошибку,
-  // если внутри таких функций есть ->обращения; надо бы эти phpdoc'и все править, но пока что с этим как-то жить
-  // и вот чтобы не реагировать на ошибки, то не парсим очередной @param, если там, видимо, нет имени класса
-  bool seems_classname_inside = false;
-  for (char c : type_str) {
-    if (c >= 'A' && c <= 'Z') {
-      seems_classname_inside = true;
-      break;
-    }
-  }
-  if (!seems_classname_inside && type_str != "self") {
-    return assum_not_instance;
-  }
-
   VertexPtr type_rule = phpdoc_parse_type(type_str, current_function);
   if (!type_rule) {      // если всё-таки проник некорректный phpdoc-тип внутрь, чтоб не закрешилось
     return assum_not_instance;

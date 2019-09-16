@@ -55,6 +55,7 @@ class PhpDocTypeRuleParser {
   std::vector<std::string> unknown_classes_list;
 
   vk::string_view extract_classname_from_pos(const vk::string_view &str, size_t pos);
+  VertexPtr parse_classname(const vk::string_view &s, size_t &pos);
   VertexPtr parse_simple_type(const vk::string_view &s, size_t &pos);
   VertexPtr parse_type_array(const vk::string_view &s, size_t &pos);
   VertexPtr parse_nested_type_rule(const vk::string_view &s, size_t &pos, PrimitiveType type_help);
