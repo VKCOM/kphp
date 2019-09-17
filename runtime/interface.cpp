@@ -1253,7 +1253,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
     real_longopts[longopts_count].has_arg = (count == 0 ? no_argument : (count == 1 ? required_argument : optional_argument));
     longopts_count++;
   }
-  real_longopts[longopts_count] = option{};
+  real_longopts[longopts_count] = option();
 
   array<var> result;
 
