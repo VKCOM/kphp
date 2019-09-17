@@ -16,7 +16,7 @@
    KPHP_FUNCTIONS ?= "$KPHP_PATH/PHP/functions.txt"
    KPHP_LIB_VERSION ?= "$KPHP_PATH/objs/PHP/php_lib_version.o"
    KPHP_MODE ?= "server";
-   ---KPHP_LINK_FILE_NAME = $KPHP_MODE == "cli" ? "php-cli.a" : "php-server.a"
+   ---KPHP_LINK_FILE_NAME = $KPHP_MODE == "cli" ? "php-main-cli.a" : "php-main-server.a"
    KPHP_LINK_FILE ?= $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME
  */
 
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
   parse_option("include-dir", required_argument, 'I', "Directory where php files will be searched");
   parse_option("jobs-num", required_argument, 'j', "Specifies the number of jobs (commands) to run simultaneously by make. By default equals to 1");
   parse_option("link-with", required_argument, 'l', "Link with <file>. Equals to $KPHP_LINK_FILE. $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME is used by default");
-  parse_option("mode", required_argument, 'M', "server, net, cli or lib. If <mode> == server/net, then $KPHP_LINK_FILE_NAME=php-server.a. If <mode> == cli, then $KPHP_LINK_FILE_NAME=php-cli.a. If <mode> == lib, then create static archive from php code");
+  parse_option("mode", required_argument, 'M', "server, net, cli or lib. If <mode> == server/net, then $KPHP_LINK_FILE_NAME=php-main-server.a. If <mode> == cli, then $KPHP_LINK_FILE_NAME=php-main-cli.a. If <mode> == lib, then create static archive from php code");
   parse_option("make", no_argument, 'm', "Run make");
   parse_option("output-file", required_argument, 'o', "Place output into <file>");
   parse_option("output-lib-dir", required_argument, 'O', "Directory for placing out static lib and header. Equals to $KPHP_OUT_LIB_DIR. <main dir>/lib is used by default. Compatible only with <mode> == lib");

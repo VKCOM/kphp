@@ -48,6 +48,7 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
+#include "PHP/php-engine.h"
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-lease.h"
 #include "PHP/php-master.h"
@@ -3157,11 +3158,15 @@ int main_args_handler(int i) {
   }
 }
 
-void parse_main_args_end(int argc, char *argv[]) {
+void parse_main_args_till_option(int argc, char *argv[], const char *till_option = nullptr) {
   if (run_once) {
     arg_add(argv[0]);
     while (optind != argc) {
-      arg_add(argv[optind++]);
+      const char *opt = argv[optind++];
+      if (till_option && !strcmp(till_option, opt)) {
+        return;
+      }
+      arg_add(opt);
     }
   } else if (argc != optind) {
     usage_and_exit();
@@ -3203,7 +3208,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("use-madvise-dontneed", no_argument, 2002, "Use madvise MADV_DONTNEED for script memory above limit");
   parse_option("instance-cache-memory-limit", required_argument, 2003, "memory limit for instance_cache");
   parse_engine_options_long(argc, argv, main_args_handler);
-  parse_main_args_end(argc, argv);
+  parse_main_args_till_option(argc, argv);
 }
 
 
@@ -3233,7 +3238,7 @@ void init_default() {
   prctl(PR_SET_DUMPABLE, 1);
 }
 
-int main(int argc, char *argv[]) {
+int run_main(int argc, char **argv, php_mode mode) {
   init_version_string(NAME_VERSION);
   dl_block_all_signals();
 #ifndef __SANITIZE_ADDRESS__
@@ -3241,6 +3246,12 @@ int main(int argc, char *argv[]) {
 #endif
   max_special_connections = 1;
   static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
+
+  if (mode == php_mode::cli) {
+    run_once = 1;
+    disable_access_log = 2;
+    parse_main_args_till_option(argc, argv, "--Xkphp-options");
+  }
 
   if (builtin_tl_schema_length != -1) {
     update_tl_config(builtin_tl_schema, builtin_tl_schema_length);
