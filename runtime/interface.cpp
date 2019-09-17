@@ -1235,7 +1235,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
     php_argv[php_argc++] = iter.get_value().c_str();
   }
 
-  option real_longopts[longopts.count()];
+  option real_longopts[longopts.count() + 1];
   int longopts_count = 0;
   for (array<string>::iterator iter = longopts.begin(); iter != longopts.end(); ++iter) {
     string opt = iter.get_value();
@@ -1253,6 +1253,7 @@ OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
     real_longopts[longopts_count].has_arg = (count == 0 ? no_argument : (count == 1 ? required_argument : optional_argument));
     longopts_count++;
   }
+  real_longopts[longopts_count] = option{};
 
   array<var> result;
 
