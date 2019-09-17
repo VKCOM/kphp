@@ -49,28 +49,28 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
     ptp = tp_bool;
   }
 
-  int check_mask;
+  int check_mask = ifi_is_null;
 
   switch (ptp) {
     case tp_tuple:
     case tp_array: {
-      check_mask = ifi_is_array;
+      check_mask |= ifi_is_array;
       break;
     }
     case tp_bool: {
-      check_mask = ifi_is_scalar | ifi_is_bool;
+      check_mask |= ifi_is_scalar | ifi_is_bool;
       break;
     }
     case tp_int: {
-      check_mask = ifi_is_scalar | ifi_is_numeric | ifi_is_integer | ifi_is_long;
+      check_mask |= ifi_is_scalar | ifi_is_numeric | ifi_is_integer | ifi_is_long;
       break;
     }
     case tp_float: {
-      check_mask = ifi_is_scalar | ifi_is_numeric | ifi_is_float;
+      check_mask |= ifi_is_scalar | ifi_is_numeric | ifi_is_float;
       break;
     }
     case tp_string: {
-      check_mask = ifi_is_scalar | ifi_is_string;
+      check_mask |= ifi_is_scalar | ifi_is_string;
       break;
     }
     default: {
