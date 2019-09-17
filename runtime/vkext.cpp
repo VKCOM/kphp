@@ -530,8 +530,11 @@ string f$vk_flex(const string &name, const string &case_name, int sex, const str
     }
     while (isf) {
       php_assert (tt >= 0);
-      if (cur_lang->nodes[tt].tail_len >= 0 && (!cur_lang->nodes[tt].hyphen || hyphen)) {
+      if (cur_lang->nodes[tt].tail_len >= 0) {
         best = tt;
+      }
+      if (cur_lang->nodes[tt].hyphen >= 0 && hyphen) {
+        best = cur_lang->nodes[tt].hyphen;
       }
       unsigned char c;
       if (pp == p - 1) {
