@@ -21,6 +21,7 @@
 #include "runtime/misc.h"
 #include "runtime/mysql.h"
 #include "runtime/net_events.h"
+#include "runtime/on_kphp_warning_callback.h"
 #include "runtime/openssl.h"
 #include "runtime/refcountable_php_classes.h"
 #include "runtime/regexp.h"

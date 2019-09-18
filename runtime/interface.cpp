@@ -21,6 +21,7 @@
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
 #include "runtime/net_events.h"
+#include "runtime/on_kphp_warning_callback.h"
 #include "runtime/openssl.h"
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"
@@ -2086,6 +2087,7 @@ static void free_runtime_libs() {
   free_typed_rpc_lib();
   free_streams_lib();
   free_udp_lib();
+  OnKphpWarningCallback::get().reset();
 
   free_instance_cache_lib();
 

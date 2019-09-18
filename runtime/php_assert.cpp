@@ -15,6 +15,7 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/kphp_backtrace.h"
+#include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
 
 const char *engine_tag = "[";
@@ -73,7 +74,8 @@ void php_warning(char const *message, ...) {
   if (php_warning_level == 0 || php_disable_warnings) {
     return;
   }
-
+  static const int BUF_SIZE = 1000;
+  static char buf[BUF_SIZE];
   static const int warnings_time_period = 300;
   static const int warnings_time_limit = 1000;
 
@@ -105,8 +107,8 @@ void php_warning(char const *message, ...) {
   va_start (args, message);
 
   fprintf(stderr, "%s%d%sWarning: ", engine_tag, cur_time, engine_pid);
-  vfprintf(stderr, message, args);
-  fprintf(stderr, "\n");
+  vsnprintf(buf, BUF_SIZE, message, args);
+  fprintf(stderr, "%s\n", buf);
   va_end (args);
 
   if (php_warning_level >= 1) {
@@ -135,6 +137,9 @@ void php_warning(char const *message, ...) {
   }
 
   dl::leave_critical_section();
+  if (!dl::in_critical_section) {
+    OnKphpWarningCallback::get().invoke_callback(string(buf));
+  }
   if (die_on_fail) {
     fprintf(stderr, "_exiting in php_warning, since such option is enabled\n");
     raise(SIGUSR2);

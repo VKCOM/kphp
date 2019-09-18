@@ -106,4 +106,12 @@ function cp1251($utf8_string) {
   return vk_utf8_to_win($utf8_string);
 }
 
+function register_kphp_on_warning_callback($callback) {
+  $handler = function ($errno, $message) use($callback) {
+    $stacktrace = array_map(function($o) { return $o['function']; }, debug_backtrace());
+    $callback($message, $stacktrace);
+  };
+  set_error_handler($handler);
+}
+
 #endif
