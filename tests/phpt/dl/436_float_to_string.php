@@ -1,4 +1,4 @@
-@ok php5 benchmark
+@ok benchmark
 <?php
   for ($i = 0; $i < 1000000; $i++) {
     $l += strlen (123456789.123456789);
@@ -99,13 +99,10 @@
   var_dump ((string)0.9999999999999999999);
   var_dump ((string)0.99999999999999999999);
   var_dump ((string)0.01);
-  var_dump ((string)-0.0);
   var_dump ((string)-0.01);
   var_dump ((string)-0.0111111111111111111111111111);
   var_dump ((string)0.);
   var_dump ((string).0);
-  var_dump ((string)-.0);
-  var_dump ((string)-0.);
   var_dump ((string)1.0e-100);
   var_dump ((string)1.0e100);
   var_dump ((string)12345678901234567890123457.);
@@ -175,7 +172,6 @@
   var_dump ((string).12);
   var_dump ((string).1);
   var_dump ((string)(-0));
-  var_dump ((string)(-0.0));
 //  var_dump ((string)(-.0000000000000000000012345678901234567890 * 1e-999));
   var_dump ((string)(-.0000000000000000000012345678901234567890 * 1e-100));
   var_dump ((string)-.0000000000000000000012345678901234567890);

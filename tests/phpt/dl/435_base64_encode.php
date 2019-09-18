@@ -1,4 +1,4 @@
-@ok php5
+@ok
 <?php
 
 function filesBinFromBase64($str) { // for storage-engine: secret packing
@@ -90,12 +90,10 @@ $res = filesDecodeAudioExtra($extra, $source, $mid);
 var_dump ($extra, $res);
 
 $s_zero = ' ';
-$s_zero[1] = '';
 
 var_dump ($s_zero);
 
 $s_zero = '12345';
-$s_zero[1] = '';
 
 var_dump ($s_zero);
 
@@ -121,12 +119,10 @@ var_dump ($s_zero);
 
 
 $s_zero = ' ';
-$s_zero[10] = '';
 
 var_dump ($s_zero);
 
 $s_zero = '12345';
-$s_zero[10] = '';
 
 var_dump ($s_zero);
 

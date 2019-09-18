@@ -1,4 +1,4 @@
-@ok php5
+@ok
 <?php
 
 error_reporting(0);
@@ -14,13 +14,11 @@ function substr_compare_helper($s1, $s2, $o = 0, $l = 1000, $c = false) {
 }
 
 function substr_compare_test_less() {
-    substr_compare_helper("", "a"); 
     substr_compare_helper("a", "b"); 
     substr_compare_helper("aabcde", "bcde", 1); 
 }
 
 function substr_compare_test_eq() {
-    substr_compare_helper("", ""); 
     substr_compare_helper("a", "a"); 
     substr_compare_helper("abcde", "abcde"); 
 

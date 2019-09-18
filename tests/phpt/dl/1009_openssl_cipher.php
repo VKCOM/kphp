@@ -1,4 +1,4 @@
-@ok openssl php5
+@ok openssl
 <?php
 
 function test_openssl_get_cipher_methods($aliases) {
@@ -9,8 +9,10 @@ function test_openssl_get_cipher_methods($aliases) {
         return stristr($method, "gcm") === false && stristr($method, "ccm") === false;
     });
 #endif
-    $kphp_methods = array_values($kphp_methods);
-    var_dump($kphp_methods);
+    $kphp_methods = array_unique(array_map('strtolower', array_values($kphp_methods)));
+    sort($kphp_methods);
+    // when KPHP uses openssl 1.1.1 as PHP7 does we will uncomment the next line
+    // echo implode("\n", $kphp_methods);
 }
 
 function test_basic_encrypt_decrypt() {

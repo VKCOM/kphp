@@ -1,4 +1,4 @@
-@ok php5
+@ok
 <?php
   function inc_xor_str($a, $b) {
     $len = strlen($a);
@@ -17,7 +17,6 @@
 
   var_dump (inc_xor_str ("38", "37"));
 
-  var_dump ($a[-1]);
   var_dump ($a[0]);
   var_dump ($a[1]);
   var_dump ($a[2]);
@@ -27,7 +26,6 @@
   @var_dump ($a["1asd"]);
   @var_dump ($a["12asd"]);
 
-  var_dump (isset ($a[-1]));
   var_dump (isset ($a[0]));
   var_dump (isset ($a[1]));
   var_dump (isset ($a[2]));

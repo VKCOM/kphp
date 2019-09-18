@@ -1,4 +1,4 @@
-@ok php5
+@ok
 <?php
   var_dump (array ("result" => array ("result" => 1, "_" => "resultTrue"), "_" => "_") === array ("result" => array ("result" => 2, "_" => "resultTrue"), "_" => "_"));
 
@@ -532,7 +532,7 @@
       echo "line:".__LINE__." " . gettype ($x) . " " . gettype ($y) . " $x >= $y: "; var_dump ($x >= $y);
     }
 
-  $arr3 = array ("0xa", "1e1", "     10e-0", "10e+0", "   1e1", "1e10", "10000000000", "123456789012345678901234567890", "123456789012345678901234567891", "0", "-0", 10, ".1e2", "", false, 012);
+  $arr3 = array ("1e1", "     10e-0", "10e+0", "   1e1", "1e10", "10000000000", "123456789012345678901234567890", "123456789012345678901234567891", "0", "-0", 10, ".1e2", "", false, 012);
   foreach ($arr3 as $x)
     foreach ($arr3 as $y) {
       echo "line:".__LINE__." " . gettype ($x) . " " . gettype ($y) . " $x < $y: "; var_dump ($x < $y);

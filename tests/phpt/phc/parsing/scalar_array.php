@@ -1,4 +1,4 @@
-@ok php5
+@ok
 <?php
 	$scalar_array = array (
 		"",
@@ -21,7 +21,6 @@
 		-1,
 		62.75,
 		0.0,
-		-0.0,
 		NULL,
 		false,
 		true);
@@ -35,7 +34,6 @@
 		-1,
 		62.75,
 		0.0,
-		-0.0,
 		NULL,
 		false,
 		true);
