@@ -22,14 +22,18 @@ void CalcRealDefinesValuesF::on_finish(DataStream<FunctionPtr> &os) {
     process_define(define);
   }
 
+  stage::die_if_global_errors();
   Base::on_finish(os);
 }
 
 void CalcRealDefinesValuesF::process_define_recursive(VertexPtr root) {
   if (root->type() == op_func_name) {
-    DefinePtr define = G->get_define(resolve_define_name(root->get_string()));
+    auto define_name = resolve_define_name(root->get_string());
+    DefinePtr define = G->get_define(define_name);
     if (define) {
       process_define(define);
+    } else {
+      kphp_error(0, format("Can't find definition for '%s'", define_name.c_str()));
     }
   }
   for (auto i : *root) {

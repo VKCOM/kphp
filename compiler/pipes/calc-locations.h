@@ -8,5 +8,7 @@ public:
     return "Calc locations";
   }
 
+  bool on_start(FunctionPtr function);
+
   VertexPtr on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *);
 };
