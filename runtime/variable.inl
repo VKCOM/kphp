@@ -1484,13 +1484,6 @@ bool var::isset(const var &v) const {
   }
 }
 
-bool var::isset(const array<var>::const_iterator &it) const {
-  return as_array().isset(it);
-}
-
-bool var::isset(const array<var>::iterator &it) const {
-  return as_array().isset(it);
-}
 
 
 void var::unset(int int_key) {
@@ -1541,15 +1534,6 @@ void var::unset(const var &v) {
       __builtin_unreachable();
   }
 }
-
-void var::unset(const array<var>::const_iterator &it) {
-  return as_array().unset(it);
-}
-
-void var::unset(const array<var>::iterator &it) {
-  return as_array().unset(it);
-}
-
 
 array<var>::const_iterator var::begin() const {
   if (likely (type == ARRAY_TYPE)) {

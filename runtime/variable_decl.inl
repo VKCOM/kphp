@@ -122,14 +122,10 @@ public:
   inline bool isset(int int_key) const;
   inline bool isset(const string &string_key) const;
   inline bool isset(const var &v) const;
-  inline bool isset(const array<var>::const_iterator &it) const;
-  inline bool isset(const array<var>::iterator &it) const;
 
   inline void unset(int int_key);
   inline void unset(const string &string_key);
   inline void unset(const var &v);
-  inline void unset(const array<var>::const_iterator &it);
-  inline void unset(const array<var>::iterator &it);
 
   inline void destroy();
   inline ~var();

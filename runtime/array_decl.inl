@@ -331,14 +331,10 @@ public:
   bool isset(int int_key) const;
   bool isset(const string &s) const;
   bool isset(const var &v) const;
-  bool isset(const const_iterator &it) const;
-  bool isset(const iterator &it) const;
 
   void unset(int int_key);
   void unset(const string &s);
   void unset(const var &v);
-  void unset(const const_iterator &it);
-  void unset(const iterator &it);
 
   inline bool empty() const __attribute__ ((always_inline));
   inline int count() const __attribute__ ((always_inline));
