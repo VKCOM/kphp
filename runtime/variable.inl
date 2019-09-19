@@ -1210,7 +1210,13 @@ var &var::operator[](const array<var>::iterator &it) {
 void var::set_value(int int_key, const var &v) {
   if (unlikely (type != ARRAY_TYPE)) {
     if (type == STRING_TYPE) {
-      const char c = (v.to_string())[0];
+      auto rhs_string = v.to_string();
+      if (rhs_string.empty()) {
+        php_warning("Cannot assign an empty string to a string offset, index = %d", int_key);
+        return;
+      }
+
+      const char c = rhs_string[0];
 
       if (int_key >= 0) {
         const int l = as_string().size();
