@@ -1435,47 +1435,33 @@ bool var::isset(int int_key) const {
 
 bool var::isset(const string &string_key) const {
   if (unlikely (type != ARRAY_TYPE)) {
+    int int_key{std::numeric_limits<int>::max()};
+
     if (type == STRING_TYPE) {
-      int int_val;
-      if (!string_key.try_to_int(&int_val)) {
+      if (!string_key.try_to_int(&int_key)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
         return false;
       }
-      return (dl::size_type)int_val < as_string().size();
     }
 
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
-      php_warning("Cannot use variable of type %s as array in isset", get_type_c_str());
-    }
-    return false;
+    return isset(int_key);
   }
 
   return as_array().isset(string_key);
 }
 
 bool var::isset(const var &v) const {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
-      return (dl::size_type)(v.to_int()) < as_string().size();
-    }
-
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
-      php_warning("Cannot use variable of type %s as array in isset", get_type_c_str());
-    }
-    return false;
-  }
-
   switch (v.type) {
     case NULL_TYPE:
-      return as_array().isset(string());
+      return isset(string());
     case BOOLEAN_TYPE:
-      return as_array().isset(v.as_bool());
+      return isset(static_cast<int>(v.as_bool()));
     case INTEGER_TYPE:
-      return as_array().isset(v.as_int());
+      return isset(v.as_int());
     case FLOAT_TYPE:
-      return as_array().isset((int)v.as_double());
+      return isset(static_cast<int>(v.as_double()));
     case STRING_TYPE:
-      return as_array().isset(v.as_string());
+      return isset(v.as_string());
     case ARRAY_TYPE:
       php_warning("Illegal offset type array");
       return false;
@@ -1483,8 +1469,6 @@ bool var::isset(const var &v) const {
       __builtin_unreachable();
   }
 }
-
-
 
 void var::unset(int int_key) {
   if (unlikely (type != ARRAY_TYPE)) {
