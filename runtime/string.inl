@@ -764,22 +764,18 @@ inline bool string::try_to_int(int *val) const {
 }
 
 bool string::try_to_float(double *val) const {
-  if (empty()) {
+  if (empty() || (size() >= 2 && p[0] == '0' && vk::any_of_equal(p[1], 'x', 'X'))) {
     return false;
   }
-  char *end_ptr = NULL;
+  char *end_ptr{nullptr};
   *val = strtod(p, &end_ptr);
   return (end_ptr == p + size());
 }
 
 
 var string::to_numeric() const {
-  char *end_ptr;
-  double res = strtod(p, &end_ptr);
-  if (end_ptr == p) {
-    return 0;
-  }
-  int int_res = (int)res;
+  double res = to_float();
+  int int_res = static_cast<int>(res);
   if (int_res == res) {
     return int_res;
   }
@@ -817,14 +813,8 @@ int string::to_int() const {
 }
 
 double string::to_float() const {
-  char *end_ptr = NULL;
-  double res = strtod(p, &end_ptr);
-//  if (*end_ptr) {
-//    php_warning ("Part of the string \"%s\" was ignored while converting to float", c_str());
-//  }
-  if (end_ptr == p) {
-    return 0.0;
-  }
+  double res{0};
+  try_to_float(&res); // it's ok if float number was parsed partially
   return res;
 }
 
@@ -865,16 +855,6 @@ bool string::is_numeric() const {
   const char *s = c_str();
   while (isspace(*s)) {
     s++;
-  }
-
-  if (*s == '0' && s[1] == 'x') {
-    s += 2;
-    while (*s) {
-      if (!dl::is_hex_digit(*s++)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   if (*s == '+' || *s == '-') {
