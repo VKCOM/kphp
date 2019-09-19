@@ -961,11 +961,20 @@ int string::compare(const string &str) const {
 }
 
 
-const string string::get_value(int int_key) const {
-  if ((dl::size_type)int_key >= size()) {
-    return string();
+dl::size_type string::get_correct_index(int index) const {
+  if (index >= 0) {
+    return index;
   }
-  return string(1, p[int_key]);
+
+  return static_cast<dl::size_type>(index + size());
+}
+
+const string string::get_value(int int_key) const {
+  auto true_key = get_correct_index(int_key);
+  if (true_key >= size()) {
+    return {};
+  }
+  return string(1, p[true_key]);
 }
 
 const string string::get_value(const string &string_key) const {
@@ -974,10 +983,7 @@ const string string::get_value(const string &string_key) const {
     php_warning("\"%s\" is illegal offset for string", string_key.c_str());
     int_val = string_key.to_int();
   }
-  if ((dl::size_type)int_val >= size()) {
-    return string();
-  }
-  return string(1, p[int_val]);
+  return get_value(int_val);
 }
 
 const string string::get_value(const var &v) const {

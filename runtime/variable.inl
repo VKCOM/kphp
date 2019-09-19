@@ -1421,7 +1421,7 @@ const var var::push_back_return(const var &v) {
 bool var::isset(int int_key) const {
   if (unlikely (type != ARRAY_TYPE)) {
     if (type == STRING_TYPE) {
-      return (dl::size_type)int_key < as_string().size();
+      return as_string().get_correct_index(int_key) < as_string().size();
     }
 
     if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {

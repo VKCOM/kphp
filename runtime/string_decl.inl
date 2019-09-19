@@ -167,6 +167,7 @@ public:
 
   inline int compare(const string &str) const;
 
+  inline dl::size_type get_correct_index(int index) const;
   inline const string get_value(int int_key) const;
   inline const string get_value(const string &string_key) const;
   inline const string get_value(const var &v) const;
