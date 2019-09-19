@@ -1292,11 +1292,19 @@ bool var::empty() const {
 int var::count() const {
   switch (type) {
     case NULL_TYPE:
+      php_warning("count(): Parameter is null, but an array expected");
       return 0;
     case BOOLEAN_TYPE:
+      php_warning("count(): Parameter is bool, but an array expected");
+      return 1;
     case INTEGER_TYPE:
+      php_warning("count(): Parameter is int, but an array expected");
+      return 1;
     case FLOAT_TYPE:
+      php_warning("count(): Parameter is float, but an array expected");
+      return 1;
     case STRING_TYPE:
+      php_warning("count(): Parameter is string, but an array expected");
       return 1;
     case ARRAY_TYPE:
       return as_array().count();
