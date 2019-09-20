@@ -2232,6 +2232,7 @@ OrFalse<int> f$substr_compare(const string &main_str, const string &str, int off
     return false;
   }
 
+  // > and >= signs depend on version of PHP7.2 and could vary unpredictably. We put `>=` sign which corresponds to behaviour of PHP7.2.16
   if (offset >= str_len) {
     php_warning("The start position cannot exceed initial string length in substr_compare function call");
     return false;

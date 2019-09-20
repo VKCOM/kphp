@@ -14,12 +14,16 @@ function substr_compare_helper($s1, $s2, $o = 0, $l = 1000, $c = false) {
 }
 
 function substr_compare_test_less() {
+    substr_compare_helper("abc", "", 3); 
+    substr_compare_helper("", "b", 0); 
     substr_compare_helper("a", "b"); 
     substr_compare_helper("aabcde", "bcde", 1); 
 }
 
 function substr_compare_test_eq() {
-    substr_compare_helper("a", "a"); 
+    substr_compare_helper("abc", "", 3); 
+    substr_compare_helper("", "", 0);
+    substr_compare_helper("a", "a");
     substr_compare_helper("abcde", "abcde"); 
 
     substr_compare_helper("aaaa", "aa", 2); 
