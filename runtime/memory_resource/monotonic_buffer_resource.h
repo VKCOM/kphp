@@ -31,7 +31,7 @@ protected:
 
   bool check_memory_piece(void *mem, size_type size) const {
     return memory_begin_ <= static_cast<char *>(mem) &&
-           static_cast<char *>(mem) + size <= memory_end_;
+           static_cast<char *>(mem) + size <= memory_current_;
   }
 
   void critical_dump(void *mem, size_type size) const;

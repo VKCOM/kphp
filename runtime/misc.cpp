@@ -565,9 +565,9 @@ string f$serialize(const var &v) {
   return static_SB.str();
 }
 
-static int do_unserialize(const char *s, int s_len, var &v) {
-  if (!v.is_null()) {
-    v.destroy();
+static int do_unserialize(const char *s, int s_len, var &out_var_value) {
+  if (!out_var_value.is_null()) {
+    out_var_value = var{};
   }
   switch (s[0]) {
     case 'N':
@@ -577,7 +577,7 @@ static int do_unserialize(const char *s, int s_len, var &v) {
       break;
     case 'b':
       if (s[1] == ':' && ((unsigned int)(s[2] - '0') < 2u) && s[3] == ';') {
-        new(&v) var((bool)(s[2] - '0'));
+        out_var_value = static_cast<bool>(s[2] - '0');
         return 4;
       }
       break;
@@ -587,7 +587,7 @@ static int do_unserialize(const char *s, int s_len, var &v) {
         char *end_ptr;
         double floatval = strtod(s, &end_ptr);
         if (*end_ptr == ';' && end_ptr > s) {
-          new(&v) var(floatval);
+          out_var_value = floatval;
           return (int)(end_ptr - s + 3);
         }
       }
@@ -601,7 +601,7 @@ static int do_unserialize(const char *s, int s_len, var &v) {
             int intval;
             if (php_try_to_int(s, j, &intval)) {
               s += j + 1;
-              new(&v) var(intval);
+              out_var_value = intval;
               return j + 3;
             }
 
@@ -613,7 +613,7 @@ static int do_unserialize(const char *s, int s_len, var &v) {
               k++;
             }
             if (k == j) {
-              new(&v) var(s, j);
+              out_var_value = var(s, j);
               return j + 3;
             }
             return 0;
@@ -633,7 +633,7 @@ static int do_unserialize(const char *s, int s_len, var &v) {
           s += j + 2;
 
           if (s[len] == '"' && s[len + 1] == ';') {
-            new(&v) var(s, len);
+            out_var_value = var(s, len);
             return len + 6 + j;
           }
         }
@@ -729,7 +729,7 @@ static int do_unserialize(const char *s, int s_len, var &v) {
           }
 
           if (s[0] == '}') {
-            new(&v) var(res);
+            out_var_value = std::move(res);
             return (int)(s - s_begin + 1);
           }
         }
