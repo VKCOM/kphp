@@ -198,6 +198,10 @@ void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> ca
     create_non_void(as_rvalue(callback_function, -1));
   }
 
+  if (callback_function->is_extern()) {
+    return;
+  }
+
   VertexRange callback_args = get_function_params(callback_param);
   for (int i = 0; i < callback_args.size(); ++i) {
     auto callback_ith_arg = callback_args[i].as<op_func_param>();
