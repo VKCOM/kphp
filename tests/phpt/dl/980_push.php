@@ -1,11 +1,6 @@
 @ok
 <?php
 
-$is_kphp = true;
-#ifndef KittenPHP
-$is_kphp = false;
-#endif
-
 $scalar_array = array (
   "",
   "a",
@@ -27,7 +22,7 @@ $scalar_array = array (
   -1,
   62.75,
   0.0,
-  $is_kphp ? -0.0 : 0.0,
+  -0.0,
   NULL,
   false,
   true);
@@ -41,7 +36,7 @@ $short_scalar_array = array (
   -1,
   62.75,
   0.0,
-  $is_kphp ? -0.0 : 0.0,
+  -0.0,
   NULL,
   false,
   true);
