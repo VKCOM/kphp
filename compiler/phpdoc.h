@@ -74,5 +74,29 @@ public:
   static void run_tipa_unit_tests_parsing_tags();
 };
 
+class PhpDocTypeRuleParserUsingLexer {
+  FunctionPtr current_function;
+  std::vector<Token> tokens;
+  std::vector<Token>::const_iterator cur_tok;
+  std::vector<std::string> unknown_classes_list;
+
+  VertexPtr parse_classname(const std::string &phpdoc_class_name);
+  VertexPtr parse_simple_type();
+  VertexPtr parse_arg_ref();
+  VertexPtr parse_type_array();
+  std::vector<VertexPtr> parse_nested_type_rules();
+  VertexPtr parse_nested_one_type_rule();
+  VertexPtr parse_type_expression();
+
+public:
+  explicit PhpDocTypeRuleParserUsingLexer(FunctionPtr current_function) :
+    current_function(current_function) {}
+
+  VertexPtr parse_from_phpdoc_tag_string(const vk::string_view &phpdoc_tag_str);
+
+  const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
+};
+
 std::vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc);
 VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function);
+VertexPtr phpdoc_parse_type_using_lexer(const vk::string_view &type_str, FunctionPtr current_function);

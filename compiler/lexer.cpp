@@ -38,7 +38,8 @@ LexerData::LexerData() :
   code_len(0),
   in_gen_str(false),
   str_begin(nullptr),
-  str_cur(nullptr) {}
+  str_cur(nullptr),
+  dont_hack_last_tokens(false) {}
 
 LexerData::~LexerData() {
 }
@@ -149,6 +150,10 @@ bool LexerData::are_last_tokens(any_token_tag, Args ...args) {
 }
 
 void LexerData::hack_last_tokens() {
+  if (dont_hack_last_tokens) {
+    return;
+  }
+
   TokenType casts[][2] = {
     {tok_int,    tok_conv_int},
     {tok_float,  tok_conv_float},
@@ -275,6 +280,10 @@ void LexerData::hack_last_tokens() {
       return;
     }
   }
+}
+
+void LexerData::set_dont_hack_last_tokens() {
+  dont_hack_last_tokens = true;
 }
 
 std::vector<Token> &&LexerData::move_tokens() {
@@ -1161,6 +1170,56 @@ Helper<TokenLexer> *TokenLexerPHP::gen_helper() {
 TokenLexerPHP::TokenLexerPHP() {
 }
 
+void TokenLexerPHPDoc::add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp) {
+  h->add_simple_rule(str, new TokenLexerToken(tp, (int)str.size()));
+}
+
+Helper<TokenLexer> *TokenLexerPHPDoc::gen_helper() {
+  struct TokenLexerPHPDocStopParsing : TokenLexer {
+    int parse(LexerData *lexer_data) const {
+      lexer_data->add_token(0, tok_end);
+      lexer_data->pass(1);
+      return 1;
+    }
+  };
+
+  auto h = new Helper<TokenLexer>(new TokenLexerPHPDocStopParsing());
+
+  h->add_rule("[a-zA-Z_$\\]", Singleton<TokenLexerName>::instance());
+  h->add_rule("[0-9]|.[0-9]", Singleton<TokenLexerNum>::instance());
+  h->add_rule(" |\t|\n|\r", Singleton<TokenLexerSkip>::instance());
+
+  add_rule(h, "<", tok_lt);
+  add_rule(h, ">", tok_gt);
+  add_rule(h, "(", tok_oppar);
+  add_rule(h, ")", tok_clpar);
+  add_rule(h, "[", tok_opbrk);
+  add_rule(h, "]", tok_clbrk);
+  add_rule(h, "{", tok_opbrc);
+  add_rule(h, "}", tok_clbrc);
+  add_rule(h, ":", tok_colon);
+  add_rule(h, ";", tok_semicolon);
+  add_rule(h, ".", tok_dot);
+  add_rule(h, ",", tok_comma);
+  add_rule(h, "-", tok_minus);
+  add_rule(h, "@", tok_at);
+  add_rule(h, "&", tok_and);
+  add_rule(h, "*", tok_times);
+  add_rule(h, "|", tok_or);
+  add_rule(h, "^", tok_xor);
+  add_rule(h, "!", tok_log_not);
+  add_rule(h, "?", tok_question);
+  add_rule(h, "::", tok_double_colon);
+  add_rule(h, "=>", tok_double_arrow);
+  add_rule(h, "->", tok_arrow);
+  add_rule(h, "...", tok_varg);
+
+  return h;
+}
+
+TokenLexerPHPDoc::TokenLexerPHPDoc() {
+}
+
 TokenLexerGlobal::TokenLexerGlobal() {
   php_lexer = Singleton<TokenLexerPHP>::instance();
   assert (php_lexer != nullptr);
@@ -1231,6 +1290,7 @@ void lexer_init() {
   Singleton<TokenLexerString>::instance()->init();
   Singleton<TokenLexerHeredocString>::instance()->init();
   Singleton<TokenLexerPHP>::instance()->init();
+  Singleton<TokenLexerPHPDoc>::instance()->init();
 }
 
 vector<Token> php_text_to_tokens(char *text, int text_length) {
@@ -1251,5 +1311,32 @@ vector<Token> php_text_to_tokens(char *text, int text_length) {
   auto tokens = lexer_data.move_tokens();
   tokens.emplace_back(tok_end);
   return tokens;
+}
+
+vector<Token> phpdoc_to_tokens(const char *text, int text_length) {
+  LexerData lexer_data;
+  lexer_data.set_code(const_cast<char*>(text), text_length);
+  lexer_data.set_dont_hack_last_tokens();   // future(int) — не нужно (int) как op_conv_int
+
+  while (true) {
+    if (*lexer_data.get_code() == 0) {
+      break;
+    }
+    if (Singleton<TokenLexerPHPDoc>::instance()->parse(&lexer_data) == 1) {
+      break;
+    }
+
+    // обычный паттерн для phpdoc переменной — это "some_type|(or | complex) $var any comment ..."
+    // т.е. $var внутри самого phpdoc-типа не встречается, и когда встретили — стоп, потому что зачем дальше
+    // исключение — когда "$var some_type|(or | complex) any comment ..." (то токенайзим всё)
+    if (lexer_data.are_last_tokens(tok_var_name) && lexer_data.get_num_tokens() > 1) {
+      break;
+    }
+  }
+
+  if (!lexer_data.are_last_tokens(tok_end)) {
+    lexer_data.add_token(0, tok_end);
+  }
+  return lexer_data.move_tokens();
 }
 

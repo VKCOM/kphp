@@ -6,6 +6,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
+#include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
@@ -426,13 +427,282 @@ VertexPtr PhpDocTypeRuleParser::parse_from_type_string(const vk::string_view &ty
   return res;
 }
 
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_classname(const std::string &phpdoc_class_name) {
+  const std::string &class_name = resolve_uses(current_function, phpdoc_class_name, '\\');
+  ClassPtr klass = G->get_class(class_name);
+  if (!klass) {
+    unknown_classes_list.push_back(class_name);
+  }
+  if (klass && klass->is_trait()) {
+    throw std::runtime_error("You may not use trait as a type-hint");
+  }
+
+  cur_tok++;
+  return GenTree::create_type_help_class_vertex(klass);
+}
+
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_simple_type() {
+  TokenType cur_type = cur_tok->type();
+  // некоторые слова не являются ключевыми словами (токенами), но трактуются именно так в phpdoc
+  if (cur_type == tok_func_name) {
+    if (cur_tok->str_val == "integer") {
+      cur_type = tok_int;
+    } else if (cur_tok->str_val == "double") {
+      cur_type = tok_float;
+    } else if (cur_tok->str_val == "boolean") {
+      cur_type = tok_bool;
+    } else if (cur_tok->str_val == "\\tuple") {
+      cur_type = tok_tuple;
+    }
+  }
+
+  switch (cur_type) {
+    case tok_end:
+      throw std::runtime_error("unexpected end");
+    case tok_oppar: {
+      cur_tok++;
+      VertexPtr v = parse_type_expression();
+      if (cur_tok->type() != tok_clpar) {
+        throw std::runtime_error("unmatching ()");
+      }
+      cur_tok++;
+      return v;
+    }
+    case tok_int:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_int);
+    case tok_bool:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_bool);
+    case tok_float:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_float);
+    case tok_string:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_string);
+    case tok_false:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_False);
+    case tok_true:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_bool);
+    case tok_null:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_var);
+    case tok_mixed:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_var);
+    case tok_var:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_var);
+    case tok_void:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_void);
+    case tok_tuple:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_tuple, parse_nested_type_rules());
+    case tok_callable:
+      cur_tok++;
+      return VertexAdaptor<op_type_expr_callable>::create(VertexPtr{});
+    case tok_array:
+      cur_tok++;
+      if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {   // array<...>
+        return GenTree::create_type_help_vertex(tp_array, {parse_nested_one_type_rule()});
+      }
+      return GenTree::create_type_help_vertex(tp_array, {GenTree::create_type_help_vertex(tp_Unknown)});
+    case tok_at: {      // @tl\...
+      cur_tok++;
+      if (!cur_tok->str_val.starts_with("tl\\")) {
+        throw std::runtime_error("Invalid magic namespace after '@'");
+      }
+      return parse_classname(G->env().get_tl_namespace_prefix() + std::string(cur_tok->str_val).substr(3));
+    }
+    case tok_xor:       // ^1, ^2[*] (для functions.txt)
+      cur_tok++;
+      return parse_arg_ref();
+
+    case tok_func_name:
+      // tok_future не существует, это строка
+      if (vk::any_of_equal(cur_tok->str_val, "future", "\\future")) {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_future, {parse_nested_one_type_rule()});
+      }
+      // аналогично future_queue
+      if (cur_tok->str_val == "future_queue") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_future_queue, {parse_nested_one_type_rule()});
+      }
+      // плюс некоторые специальные типы, которые не являются токенами, но имеют смысл в phpdoc / functions.txt
+      if (cur_tok->str_val == "Any") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_Any);
+      }
+      if (cur_tok->str_val == "UInt") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_UInt);
+      }
+      if (cur_tok->str_val == "Long") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_Long);
+      }
+      if (cur_tok->str_val == "ULong") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_ULong);
+      }
+      if (cur_tok->str_val == "RPC") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_RPC);
+      }
+      if (cur_tok->str_val == "regexp") {
+        cur_tok++;
+        return GenTree::create_type_help_vertex(tp_regexp);
+      }
+      // (для functions.txt) OrFalse<int>
+      if (cur_tok->str_val == "OrFalse") {    // todo нужно ли? (или |)
+        cur_tok++;
+        return VertexAdaptor<op_type_expr_or_false>::create(parse_nested_one_type_rule());
+      }
+      // (для functions.txt) lca<int, ^1, ...> / lca(int, ^1, ...)  // todo нужно ли? (или |)
+      if (cur_tok->str_val == "lca") {
+        cur_tok++;
+        return VertexAdaptor<op_type_expr_lca>::create(parse_nested_type_rules());
+      }
+      // (для functions.txt) instance<^2>
+      if (cur_tok->str_val == "instance") {
+        cur_tok++;
+        return VertexAdaptor<op_type_expr_instance>::create(parse_nested_one_type_rule());
+      }
+      // иначе это трактуем как имя класса (в т.ч. с маленькой буквы)
+      // работают абсолютное, относительное имя, self (учитывает use'ы файла current_function)
+      return parse_classname(std::string(cur_tok->str_val));
+
+    default:
+      throw std::runtime_error(format("can't parse '%s'", std::string(cur_tok->str_val).c_str()));
+  }
+}
+
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_arg_ref() {   // ^1, ^2[]
+  if (cur_tok->type() != tok_int_const) {
+    throw std::runtime_error("Invalid number after ^");
+  }
+  auto v = VertexAdaptor<op_type_expr_arg_ref>::create();
+  v->int_val = std::stoi(std::string(cur_tok->str_val));
+
+  VertexPtr res = v;
+  cur_tok++;
+  while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_clbrk) {
+    res = VertexAdaptor<op_index>::create(res);
+    cur_tok += 2;
+  }
+  while (cur_tok->type() == tok_oppar && (cur_tok + 1)->type() == tok_clpar) {
+    res = VertexAdaptor<op_type_expr_callback_call>::create(res);
+    cur_tok += 2;
+  }
+
+  return res;
+}
+
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_type_array() {
+  VertexPtr res = parse_simple_type();
+
+  while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_clbrk) {
+    res = GenTree::create_type_help_vertex(tp_array, {res});
+    cur_tok += 2;
+  }
+  if (cur_tok->type() == tok_varg) {      // "int ...$args" аналогично "int [] $args", даже парсит "(int|false) ..."
+    cur_tok++;
+    res = GenTree::create_type_help_vertex(tp_array, {res});
+  }
+
+  return res;
+}
+
+std::vector<VertexPtr> PhpDocTypeRuleParserUsingLexer::parse_nested_type_rules() {
+  if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
+    throw std::runtime_error("expected '<' or '('");
+  }
+  cur_tok++;
+  std::vector<VertexPtr> sub_types;
+  while (true) {
+    sub_types.emplace_back(parse_type_expression());
+
+    if (vk::any_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
+      cur_tok++;
+      break;
+    } else if (cur_tok->type() == tok_comma) {
+      cur_tok++;
+    } else {
+      throw std::runtime_error("expected '>' or ')' or ','");
+    }
+  }
+  return sub_types;
+}
+
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_nested_one_type_rule() {
+  if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
+    throw std::runtime_error("expected '<' or '('");
+  }
+  cur_tok++;
+
+  VertexPtr sub_type = parse_type_expression();
+  if (vk::none_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
+    throw std::runtime_error("expected '>' or ')'");
+  }
+  cur_tok++;
+
+  return sub_type;
+}
+
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_type_expression() {
+  VertexPtr result = parse_type_array();
+  bool is_raw_bool = result->type() == op_type_expr_type && result->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
+  while (cur_tok->type() == tok_or) {
+    cur_tok++;
+    // lhs|rhs => lca(lhs,rhs)
+    VertexPtr rhs = parse_type_array();
+    result = VertexAdaptor<op_type_expr_lca>::create(result, rhs);
+
+    is_raw_bool |= rhs->type() == op_type_expr_type && rhs->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
+    if (is_raw_bool) {
+      throw std::runtime_error("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)");
+    }
+  }
+  return result;
+}
+
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_from_phpdoc_tag_string(const vk::string_view &phpdoc_tag_str) {
+  tokens = phpdoc_to_tokens(const_cast<char*>(phpdoc_tag_str.data()), phpdoc_tag_str.size());
+  kphp_assert(tokens.back().type() == tok_end);
+  cur_tok = tokens.begin();
+
+  try {
+    return parse_type_expression();
+  } catch (std::runtime_error &ex) {
+    stage::set_location(current_function->root->location);
+    kphp_error(0, format("Failed to parse phpdoc: %s\n%s", std::string(phpdoc_tag_str).c_str(), ex.what()));
+    return {};
+  }
+}
+
 VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function) {
+  return phpdoc_parse_type_using_lexer(type_str, current_function);
   PhpDocTypeRuleParser parser(current_function);
   VertexPtr doc_type = parser.parse_from_type_string(type_str);
 
   kphp_error_act(parser.get_unknown_classes().empty(),
                  format("Could not find class in phpdoc: %s\nProbably, this class is used only in phpdoc and never created in reachable code",
                         parser.get_unknown_classes().begin()->c_str()),
+                 return {});
+
+  return doc_type;
+}
+
+VertexPtr phpdoc_parse_type_using_lexer(const vk::string_view &type_str, FunctionPtr current_function) {
+  PhpDocTypeRuleParserUsingLexer parser(current_function);
+  VertexPtr doc_type = parser.parse_from_phpdoc_tag_string(std::string(type_str));
+
+  kphp_error_act(parser.get_unknown_classes().empty(),
+                 format("Could not find class in phpdoc: %s", parser.get_unknown_classes().begin()->c_str()),
                  return {});
 
   return doc_type;
