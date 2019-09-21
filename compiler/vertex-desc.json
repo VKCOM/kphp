@@ -209,6 +209,10 @@
     "base_name": "meta_op_unary"
   },
   {
+    "name": "op_type_expr_callable",
+    "base_name": "meta_op_unary"
+  },
+  {
     "name": "op_type_expr_class",
     "base_name": "meta_op_base",
     "extra_fields": {

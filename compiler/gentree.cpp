@@ -789,7 +789,7 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   AutoLocation st_location(this);
   const Token *tok_type_declaration = nullptr;
-  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array)) {
+  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array, tok_callable)) {
     tok_type_declaration = &*cur;
     next_cur();
   }
@@ -1020,6 +1020,9 @@ PrimitiveType GenTree::get_ptype() {
       break;
     case tok_tuple:
       tp = tp_tuple;
+      break;
+    case tok_void:
+      tp = tp_void;
       break;
     case tok_func_name:
       tp = get_ptype_by_name(static_cast<string>(cur->str_val));

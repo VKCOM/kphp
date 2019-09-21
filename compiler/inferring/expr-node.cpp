@@ -20,6 +20,7 @@ private:
   void apply_type_rule_instance(VertexAdaptor<op_type_expr_instance> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_or_false(VertexAdaptor<op_type_expr_or_false> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexAdaptor<op_func_call> expr);
+  void apply_type_rule_callable(VertexAdaptor<op_type_expr_callable> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr);
   void apply_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
   void apply_instance_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
@@ -100,6 +101,11 @@ void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_ca
   } else {
     recalc_ptype<tp_Error>();
   }
+}
+
+void ExprNodeRecalc::apply_type_rule_callable(VertexAdaptor<op_type_expr_callable> type_rule __attribute__ ((unused)), VertexAdaptor<op_func_call> expr __attribute__ ((unused))) {
+  // ключевое слово callable, написанное в phpdoc/type declaration, никак на вывод типов не влияет
+  // (влияет только на шаблонность функции по тому параметру)
 }
 
 void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr) {
@@ -194,6 +200,9 @@ void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexAdaptor<op_func_call>
       break;
     case op_type_expr_callback_call:
       apply_type_rule_callback_call(rule.as<op_type_expr_callback_call>(), expr);
+      break;
+    case op_type_expr_callable:
+      apply_type_rule_callable(rule.as<op_type_expr_callable>(), expr);
       break;
     case op_type_expr_type:
       apply_type_rule_type(rule.as<op_type_expr_type>(), expr);

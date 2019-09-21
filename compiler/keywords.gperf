@@ -63,6 +63,9 @@ float, tok_float
 double, tok_float
 string, tok_string
 object, tok_object
+callable, tok_callable
+void, tok_void
+mixed, tok_mixed
 bool, tok_bool
 false, tok_false
 true, tok_true

@@ -138,7 +138,10 @@ enum TokenType {
   tok_float,
   tok_string,
   tok_object,
+  tok_callable,
   tok_bool,
+  tok_void,
+  tok_mixed,
 
   tok_conv_int,
   tok_conv_float,
