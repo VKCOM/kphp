@@ -1156,7 +1156,7 @@ void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   PrimitiveType ptype = tinf::get_type(arr)->get_real_ptype();
   kphp_assert(vk::any_of_equal(ptype, tp_array, tp_var, tp_tuple));
 
-  for (int i = list.size() - 1; i >= 0; --i) {    // именно в обратную сторону, поведение как в php
+  for (int i = 0; i < static_cast<int>(list.size()); ++i) {
     VertexPtr cur = list[i];
     if (cur->type() != op_lvalue_null) {
 
