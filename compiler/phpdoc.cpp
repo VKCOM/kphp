@@ -760,6 +760,64 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdo
   return {doc_type, std::move(var_name)};
 }
 
+/*
+ * Имея на входе полный phpdoc / ** ... * / с кучей тегов внутри,
+ * найти первый @tag и распарсить всё что справа.
+ * Возвращает result — у него есть operator bool, нашёлся/распарсился ли такой тег
+ */
+PhpDocTagParseResult phpdoc_find_tag(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
+  if (auto found_tag = phpdoc_find_tag_as_string(phpdoc, tag_type)) {
+    return phpdoc_parse_type_and_var_name(*found_tag, current_function);
+  }
+  return {VertexPtr{}, std::string()};
+}
+
+/*
+ * Имея на входе полный phpdoc / ** ... * /,
+ * найти все @tag и распарсить всё что справа (имеет смысл для @param, т.е. которых много).
+ */
+std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
+  std::vector<PhpDocTagParseResult> result;
+  for (const auto &tag : parse_php_doc(phpdoc)) {
+    if (tag.type == tag_type) {
+      if (auto parsed = phpdoc_parse_type_and_var_name(tag.value, current_function)) {
+        result.emplace_back(std::move(parsed));
+      }
+    }
+  }
+  return result;
+}
+
+/*
+ * Имея на входе полный phpdoc / ** ... * /,
+ * найти первый @tag и просто вернуть то, что справа, как строку.
+ */
+vk::optional<std::string> phpdoc_find_tag_as_string(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type) {
+  for (const auto &tag : parse_php_doc(phpdoc)) {
+    if (tag.type == tag_type) {
+      return tag.value;
+    }
+  }
+  return {};
+}
+
+/*
+ * Имея на входе полный phpdoc / ** ... * /,
+ * найти все @tag и вернуть то, что справа, как строки (имеет смысл для @kphp-template, т.е. которых много)
+ */
+std::vector<std::string> phpdoc_find_tag_as_string_multi(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type) {
+  std::vector<std::string> result;
+  for (const auto &tag : parse_php_doc(phpdoc)) {
+    if (tag.type == tag_type) {
+      result.emplace_back(tag.value);
+    }
+  }
+  return result;
+}
+
+bool phpdoc_tag_exists(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type) {
+  return static_cast<bool>(phpdoc_find_tag_as_string(phpdoc, tag_type));
+}
 
 void PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags() {
   struct ParsingTagsTest {

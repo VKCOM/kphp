@@ -67,12 +67,7 @@ std::string assumption_debug(const Assumption &assumption) {
   }
 }
 
-void check_assumption(ClassPtr klass, const char *description) {
-  kphp_error(!(klass && klass->is_trait()), format("You may not use trait(%s) as a type-hint: %s", klass->get_name(), description));
-}
-
 void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
-  check_assumption(klass, format("var: `%s` in function: `%s`", var_name.c_str(), f->get_human_readable_name().c_str()));
   bool exists = false;
 
   for (auto &a : f->assumptions_for_vars) {
@@ -101,7 +96,6 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &v
 }
 
 void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
-  check_assumption(klass, format("in function: `%s`", f->get_human_readable_name().c_str()));
   const Assumption &a = f->assumption_for_return;
 
   if (a.assum_type != assum_unknown) {
@@ -116,7 +110,6 @@ void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
 }
 
 void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_name, ClassPtr klass) {
-  check_assumption(klass, format("var: `%s`, in class: `%s`", var_name.c_str(), klass->get_name()));
   bool exists = false;
 
   for (const auto &a : c->assumptions_for_vars) {
@@ -134,37 +127,31 @@ void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_
 }
 
 /*
- * Анализ phpdoc-типов вида 'A', '\VK\A[]', 'int' и т.п. на предмет того, что это класс.
- * Если это класс, то он не может быть смешан с другими классами и типами (парсинг ругнётся) (но A|false это ок).
+ * Распарсив содержимое тега после @param/@return/@var в виде VertexPtr type_expr, пробуем найти там класс
+ * Разбираем простые случаи: A|false, A[]; более сложные, когда класс внутри tuple — не интересуют
  */
-AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klass, FunctionPtr current_function) {
-  VertexPtr type_rule = phpdoc_parse_type(type_str, current_function);
-  if (!type_rule) {      // если всё-таки проник некорректный phpdoc-тип внутрь, чтоб не закрешилось
-    return assum_not_instance;
-  }
+AssumType assumption_create_from_phpdoc(const PhpDocTagParseResult &result, ClassPtr &out_class) {
+  VertexPtr expr = result.type_expr;
 
-  // phpdoc-тип в виде строки сейчас представлен в виде дерева vertex'ов; допускаем 'A', 'A[]', 'A|false', 'false|\A'
-  // другие, более сложные, по типу '(A|int)', не разбираем и считаем assum_not_instance
-  if (auto lca_rule = type_rule.try_as<op_type_expr_lca>()) {
+  if (auto lca_rule = expr.try_as<op_type_expr_lca>()) {
     VertexRange or_rules = lca_rule->args();
-    if (or_rules[1]->type_help == tp_False || or_rules[1]->type_help == tp_bool) {
-      type_rule = or_rules[0];      // из 'A|false', 'A[]|false', 'A|bool' достаём 'A' / 'A[]'
-    } else if (or_rules[0]->type_help == tp_False || or_rules[0]->type_help == tp_bool) {
-      type_rule = or_rules[1];      // аналогично, только false в начале
+    if (or_rules[1]->type_help == tp_False) {
+      expr = or_rules[0];      // из 'A|false', 'A[]|false' достаём 'A' / 'A[]'
+    } else if (or_rules[0]->type_help == tp_False) {
+      expr = or_rules[1];      // аналогично, только false в начале
     }
   }
 
-  if (type_rule->type_help == tp_Class) {
-    out_klass = type_rule.as<op_type_expr_class>()->class_ptr;
+  if (expr->type_help == tp_Class) {
+    out_class = expr.as<op_type_expr_class>()->class_ptr;
     return assum_instance;
-  } else if (type_rule->type_help == tp_array && type_rule.as<op_type_expr_type>()->args()[0]->type_help == tp_Class) {
-    out_klass = type_rule.as<op_type_expr_type>()->args()[0].as<op_type_expr_class>()->class_ptr;
+  } else if (expr->type_help == tp_array && expr.as<op_type_expr_type>()->args()[0]->type_help == tp_Class) {
+    out_class = expr.as<op_type_expr_type>()->args()[0].as<op_type_expr_class>()->class_ptr;
     return assum_instance_array;
   }
 
   return assum_not_instance;
 }
-
 
 /*
  * Анализ следующего паттерна. Если есть переменная $a, то при присваивании ей можно написать
@@ -172,13 +159,11 @@ AssumType parse_phpdoc_classname(const std::string &type_str, ClassPtr &out_klas
  * Т.е. имя класса есть, а название переменной может отсутствовать (но это в контексте конкретной переменной, это ок).
  */
 void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const vk::string_view &phpdoc_str) {
-  int param_i = 0;
-  std::string param_var_name, type_str;
-  while (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, param_var_name, type_str, param_i++)) {
-    if (!param_var_name.empty() || !var_name.empty()) {
+  for (const auto &parsed : phpdoc_find_tag_multi(phpdoc_str, php_doc_tag::var, f)) {
+    if (!parsed.var_name.empty() || !var_name.empty()) {
       ClassPtr klass;
-      AssumType assum = parse_phpdoc_classname(type_str, klass, f);
-      assumption_add_for_var(f, assum, param_var_name.empty() ? var_name : param_var_name, klass);
+      AssumType assum = assumption_create_from_phpdoc(parsed, klass);
+      assumption_add_for_var(f, assum, parsed.var_name.empty() ? var_name : parsed.var_name, klass);
     }
   }
 }
@@ -189,12 +174,12 @@ void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const 
  * Распознаём такие phpdoc'и у объявления var'ов внутри классов.
  */
 void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const vk::string_view &phpdoc_str) {
-  std::string type_str, param_var_name;
-  ClassPtr klass;
-  if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, param_var_name, type_str)) {
-    AssumType assum = parse_phpdoc_classname(type_str, klass, c->file_id->main_function);
+  FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
+  if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
+    ClassPtr klass;
+    AssumType assum = assumption_create_from_phpdoc(parsed, klass);
 
-    if (klass && (param_var_name.empty() || var_name == param_var_name)) {
+    if (klass && (parsed.var_name.empty() || var_name == parsed.var_name)) {
       assumption_add_for_var(c, assum, var_name, klass);
     }
   }
@@ -310,13 +295,11 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
  */
 void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> root) {
   if (!f->phpdoc_str.empty()) {
-    int param_i = 0;
-    std::string param_var_name, type_str;
-    while (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::param, param_var_name, type_str, param_i++)) {
-      if (!param_var_name.empty() && !type_str.empty()) {
+    for (const auto &parsed : phpdoc_find_tag_multi(f->phpdoc_str, php_doc_tag::param, f)) {
+      if (!parsed.var_name.empty()) {
         ClassPtr klass;
-        AssumType assum = parse_phpdoc_classname(type_str, klass, f);
-        assumption_add_for_var(f, assum, param_var_name, klass);
+        AssumType assum = assumption_create_from_phpdoc(parsed, klass);
+        assumption_add_for_var(f, assum, parsed.var_name, klass);
       }
     }
   }
@@ -326,7 +309,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
     if (!param->type_declaration.empty() && param->type_declaration != "array") {
       ClassPtr klass = G->get_class(resolve_uses(f, param->type_declaration, '\\'));
-      kphp_error(klass, format("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
+      kphp_error(klass && !klass->is_trait(), format("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
       assumption_add_for_var(f, assum_instance, param->var()->get_string(), klass);
     }
   }
@@ -405,10 +388,9 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
 //  printf("[%d] init_assumptions_for_return of %s\n", get_thread_id(), f->name.c_str());
 
   if (!f->phpdoc_str.empty()) {
-    std::string type_str, dummy;
-    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::returns, dummy, type_str)) {
+    if (auto parsed = phpdoc_find_tag(f->phpdoc_str, php_doc_tag::returns, f)) {
       ClassPtr klass;
-      AssumType assum = parse_phpdoc_classname(type_str, klass, f);
+      AssumType assum = assumption_create_from_phpdoc(parsed, klass);
       assumption_add_for_return(f, assum, klass);       // 'self' тоже работает
       return;
     }
