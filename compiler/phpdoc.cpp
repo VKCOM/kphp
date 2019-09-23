@@ -684,6 +684,23 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_from_phpdoc_tag_string(const vk:
   }
 }
 
+VertexPtr PhpDocTypeRuleParserUsingLexer::parse_from_tokens(const std::vector<Token> &phpdoc_tokens, std::vector<Token>::const_iterator &tok_iter) {
+  tokens = phpdoc_tokens;
+  kphp_assert(tokens.back().type() == tok_end);
+  cur_tok = tok_iter;
+
+  try {
+    VertexPtr v = parse_type_expression();
+    tok_iter = cur_tok;
+    return v;
+  } catch (std::runtime_error &ex) {
+    stage::set_location(current_function->root->location);
+    // todo куда сообщение об ошибке, плюс удалить дубликат
+    kphp_error(0, format("Failed to parse phpdoc: %s\n%s", "todo", ex.what()));
+    return {};
+  }
+}
+
 VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function) {
   return phpdoc_parse_type_using_lexer(type_str, current_function);
   PhpDocTypeRuleParser parser(current_function);
@@ -706,6 +723,41 @@ VertexPtr phpdoc_parse_type_using_lexer(const vk::string_view &type_str, Functio
                  return {});
 
   return doc_type;
+}
+
+/*
+ * Имея phpdoc-строку после тега @param/@return/@var, т.е. вида
+ * "int|false $a maybe comment" или "$var tuple(int, string) maybe comment" или "A[] maybe comment"
+ * распарсить тип (превратив в дерево для type_rule) и имя переменной, если оно есть
+ */
+PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdoc_tag_str, FunctionPtr current_function) {
+  PhpDocTypeRuleParserUsingLexer parser(current_function);
+  std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str.data(), phpdoc_tag_str.size());
+  std::string var_name;
+
+  // $var_name phpdoc|type maybe comment
+  if (tokens.front().type() == tok_var_name) {
+    var_name = std::string(tokens.front().str_val);
+    if (tokens.size() <= 2) {     // tok_end и всё
+      return {VertexPtr{}, std::move(var_name)};
+    }
+  }
+
+  stage::set_location(current_function->root->location);
+  std::vector<Token>::const_iterator tok_iter = var_name.empty() ? tokens.begin() : tokens.begin() + 1;
+  VertexPtr doc_type = parser.parse_from_tokens(tokens, tok_iter);
+
+  kphp_error(parser.get_unknown_classes().empty(),
+             format("Could not find class in phpdoc: %s", parser.get_unknown_classes().begin()->c_str()));
+
+  if (var_name.empty()) {
+    // phpdoc|type $var_name maybe comment
+    if (tok_iter->type() == tok_var_name) {   // tok_iter — сразу после окончания парсинга
+      var_name = std::string(tok_iter->str_val);
+    }
+  }
+
+  return {doc_type, std::move(var_name)};
 }
 
 

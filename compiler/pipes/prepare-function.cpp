@@ -41,7 +41,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   std::unordered_map<std::string, int> name_to_function_param;
   int param_i = 0;
   for (auto param : func_params) {
-    name_to_function_param.emplace("$" + param.as<meta_op_func_param>()->var()->get_string(), param_i++);
+    name_to_function_param.emplace(param.as<meta_op_func_param>()->var()->get_string(), param_i++);
   }
 
   // phpdoc класса может влиять на phpdoc функции
@@ -143,7 +143,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
           is_first_time = false;
 
-          auto func_param_it = name_to_function_param.find(var_name);
+          auto func_param_it = name_to_function_param.find(var_name.substr(1));
           kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
@@ -158,7 +158,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
       case php_doc_tag::kphp_const: {
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
-          auto func_param_it = name_to_function_param.find(var_name);
+          auto func_param_it = name_to_function_param.find(var_name.substr(1));
           kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-const tag var name mismatch. found %s.", var_name.c_str()));
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
@@ -196,19 +196,19 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         }
         case php_doc_tag::param: {
           kphp_error_return(!name_to_function_param.empty(), "Too many @param tags");
-          std::string type_help = tag.get_value_token();
-          std::string var_name = tag.get_value_token(type_help.size());
-          kphp_error_act(!type_help.empty(), "Failed to parse @param tag, type help is empty", continue);
-          kphp_error_act(!var_name.empty(), "Failed to parse @param tag, var name is empty", continue);
-          auto func_param_it = name_to_function_param.find(var_name);
+          PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f);
+          kphp_error_act(doc_parsed, format("Failed to parse @param %s", tag.value.c_str()), continue);
+
+          auto func_param_it = name_to_function_param.find(doc_parsed.var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(),
-            format("@param tag var name mismatch: found '%s'", var_name.c_str()));
+            format("@param tag var name mismatch: found $%s", doc_parsed.var_name.c_str()));
           int param_i = func_param_it->second;
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
           name_to_function_param.erase(func_param_it);
 
-          if (type_help == "callable") {
+          // если в phpdoc написано "callable" у этого @param
+          if (doc_parsed.type_expr->type() == op_type_expr_callable) {
             f->is_template = true;
             cur_func_param->template_type_id = id_of_kphp_template;
             cur_func_param->is_callable = true;
@@ -216,23 +216,20 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             continue;
           }
 
-          VertexPtr doc_type = phpdoc_parse_type(type_help, f);
-          kphp_error_act(doc_type, format("Failed to parse type '%s'", type_help.c_str()), continue);
-
           if (infer_type & infer_mask::check) {
-            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_parsed.type_expr);
             f->add_kphp_infer_hint(infer_mask::check, param_i, type_rule);
           }
           if (infer_type & infer_mask::hint) {
-            auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_type);
+            auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_parsed.type_expr);
             f->add_kphp_infer_hint(infer_mask::hint, param_i, type_rule);
           }
           if (infer_type & infer_mask::cast) {
-            kphp_error(doc_type->type() == op_type_expr_type && doc_type.as<op_type_expr_type>()->args().empty(),
-                       format("Too hard rule '%s' for cast", type_help.c_str()));
+            kphp_error(doc_parsed.type_expr->type() == op_type_expr_type && doc_parsed.type_expr.as<op_type_expr_type>()->args().empty(),
+                       format("Too hard rule for cast"));
             kphp_error(cur_func_param->type_help == tp_Unknown,
-                       format("Duplicate type rule for argument '%s'", var_name.c_str()));
-            cur_func_param->type_help = doc_type.as<op_type_expr_type>()->type_help;
+                       format("Duplicate type rule for argument '%s'", doc_parsed.var_name.c_str()));
+            cur_func_param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
           }
 
           break;
@@ -244,12 +241,12 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
     // проверяем, что все @param заданы
     if (f->has_implicit_this_arg()) {
-      name_to_function_param.erase(name_to_function_param.find("$this"));
+      name_to_function_param.erase(name_to_function_param.find("this"));
     }
     if (!name_to_function_param.empty()) {
       std::string err_msg = "Specify @param for arguments: ";
       for (const auto &name_and_function_param : name_to_function_param) {
-        err_msg += name_and_function_param.first + " ";
+        err_msg += "$" + name_and_function_param.first + " ";
       }
       stage::set_location(f->root->get_location());
       kphp_error(0, err_msg.c_str());

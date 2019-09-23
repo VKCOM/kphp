@@ -74,6 +74,13 @@ public:
   static void run_tipa_unit_tests_parsing_tags();
 };
 
+struct PhpDocTagParseResult {
+  VertexPtr type_expr;      // op_type_expr_*
+  std::string var_name;     // без начального "$", может быть пустым, если отсутствует в phpdoc
+
+  operator bool() const { return !!type_expr; }
+};
+
 class PhpDocTypeRuleParserUsingLexer {
   FunctionPtr current_function;
   std::vector<Token> tokens;
@@ -93,6 +100,7 @@ public:
     current_function(current_function) {}
 
   VertexPtr parse_from_phpdoc_tag_string(const vk::string_view &phpdoc_tag_str);
+  VertexPtr parse_from_tokens(const std::vector<Token> &phpdoc_tokens, std::vector<Token>::const_iterator &tok_iter);
 
   const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
 };
@@ -100,3 +108,4 @@ public:
 std::vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc);
 VertexPtr phpdoc_parse_type(const vk::string_view &type_str, FunctionPtr current_function);
 VertexPtr phpdoc_parse_type_using_lexer(const vk::string_view &type_str, FunctionPtr current_function);
+PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdoc_tag_str, FunctionPtr current_function);
