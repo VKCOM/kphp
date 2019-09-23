@@ -70,6 +70,10 @@ std::string php_doc_tag::get_value_token(size_t chars_offset) const {
 }
 
 vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
+  if (phpdoc.empty()) {
+    return {};
+  }
+
   int line_num_of_function_declaration = stage::get_line();
 
   vector<string> lines(1);
@@ -97,21 +101,22 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
     lines.back() += c;
   }
   vector<php_doc_tag> result;
-  result.push_back(php_doc_tag());
   for (int i = 0; i < lines.size(); i++) {
-    if (lines[i][0] != '@') {
-      result.back().value += ' ' + lines[i];
-    } else {
-      result.push_back(php_doc_tag());
+    if (lines[i][0] == '@') {
+      result.emplace_back(php_doc_tag());
       size_t pos = lines[i].find(' ');
       result.back().name = lines[i].substr(0, pos);
       result.back().type = php_doc_tag::get_doc_type(result.back().name);
       if (pos != string::npos) {
-        result.back().value = lines[i].substr(pos + 1);
+        int ltrim_pos = pos + 1;
+        while (lines[i][ltrim_pos] == ' ') {
+          ltrim_pos++;
+        }
+        result.back().value = lines[i].substr(ltrim_pos);
       }
     }
 
-    if (line_num_of_function_declaration > 0) {
+    if (line_num_of_function_declaration > 0 && !result.empty()) {
       int new_line_num = line_num_of_function_declaration - (static_cast<int>(lines.size()) - i);
       // We have one line with closing php-doc before function declaration
       // e.g. ....
