@@ -62,15 +62,12 @@ const string &ClassMemberInstanceField::local_name() const {
  * С инстансами это тоже работает, т.е. / ** @var \AnotherClass * / будет тоже проверяться при выводе типов.
  */
 void ClassMemberInstanceField::process_phpdoc() {
-  if (!phpdoc_str.empty()) {
-    std::string var_name, type_str;
-    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, var_name, type_str)) {
-      auto klass = var->class_id;
-      VertexPtr doc_type = phpdoc_parse_type(type_str, klass->file_id->main_function);
-      if (!kphp_error(doc_type, format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), local_name().c_str()))) {
-        doc_type->location = root->location;
-        root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(doc_type);
-      }
+  if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
+    auto klass = var->class_id;
+    auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, klass->file_id->main_function);
+    if (!kphp_error(parsed, format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), local_name().c_str()))) {
+      parsed.type_expr->location = root->location;
+      root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr);
     }
   }
 }
