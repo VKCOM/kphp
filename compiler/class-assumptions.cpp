@@ -316,9 +316,8 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
 }
 
 bool parse_kphp_return_doc(FunctionPtr f) {
-  std::string type_str, dummy;
-
-  if (!PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::kphp_return, dummy, type_str)) {
+  auto type_str = phpdoc_find_tag_as_string(f->phpdoc_str, php_doc_tag::kphp_return);
+  if (!type_str) {
     return true;
   }
 
@@ -328,49 +327,50 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     return false;
   }
 
-  int param_i = 0;
-  std::string template_type_of_arg;
-  std::string template_arg_name;
-  while (true) {
-    bool kphp_template_found = PhpDocTypeRuleParser::find_tag_in_phpdoc(f->phpdoc_str, php_doc_tag::kphp_template,
-                                                                        template_arg_name, template_type_of_arg, param_i++);
-    if (!kphp_template_found) {
-      break;
+  // нам нужно именно as_string и сами распарсим, т.к. "T $arg" нельзя превратить в дерево type_expr, класса T нет
+  for (const auto &kphp_template_str : phpdoc_find_tag_as_string_multi(f->phpdoc_str, php_doc_tag::kphp_template)) {
+    // @kphp-template $arg нам не подходит, мы ищем именно
+    // @kphp-template T $arg (т.к. через T выражен @kphp-return)
+    if (kphp_template_str.empty() || kphp_template_str[0] == '$') {
+      continue;
+    }
+    auto vector_T_var_name = split_skipping_delimeters(kphp_template_str);    // ["T", "$arg"]
+    kphp_assert(vector_T_var_name.size() > 1);
+    std::string template_type_of_arg = vector_T_var_name[0];
+    std::string template_arg_name = vector_T_var_name[1].substr(1);
+    kphp_error_act(!template_arg_name.empty() && !template_type_of_arg.empty(), "wrong format of @kphp-template", return false);
+
+    auto type_and_field_name = split_skipping_delimeters(*type_str, ":");
+    kphp_error_act(vk::any_of_equal(type_and_field_name.size(), 1, 2), "wrong kphp-return supplied", return false);
+
+    std::string T_type_name = std::move(type_and_field_name[0]);
+    std::string field_name = type_and_field_name.size() > 1 ? std::move(type_and_field_name.back()) : "";
+
+    bool return_type_eq_arg_type = template_type_of_arg == T_type_name;
+    bool return_type_arr_of_arg_type = (template_type_of_arg + "[]") == T_type_name;
+    bool return_type_element_of_arg_type = template_type_of_arg == (T_type_name + "[]");
+    if (vk::string_view(field_name).ends_with("[]")) {
+      field_name.erase(std::prev(field_name.end(), 2), field_name.end());
+      return_type_arr_of_arg_type = true;
     }
 
-    if (!template_arg_name.empty() && !template_type_of_arg.empty()) {
-      auto type_and_field_name = split_skipping_delimeters(type_str, ":");
-      kphp_error_act(vk::any_of_equal(type_and_field_name.size(), 1, 2), "wrong kphp-return supplied", return false);
+    if (return_type_eq_arg_type || return_type_arr_of_arg_type || return_type_element_of_arg_type) {
+      ClassPtr klass;
+      AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
 
-      type_str = std::move(type_and_field_name[0]);
-      std::string field_name = type_and_field_name.size() > 1 ? std::move(type_and_field_name.back()) : "";
-
-      bool return_type_eq_arg_type = template_type_of_arg == type_str;
-      bool return_type_arr_of_arg_type = (template_type_of_arg + "[]") == type_str;
-      bool return_type_element_of_arg_type = template_type_of_arg == (type_str + "[]");
-      if (vk::string_view(field_name).ends_with("[]")) {
-        field_name.erase(std::prev(field_name.end(), 2), field_name.end());
-        return_type_arr_of_arg_type = true;
+      if (!field_name.empty()) {
+        kphp_error_act(klass, format("try to get type of field(%s) of non-instance", field_name.c_str()), return false);
+        assum = calc_assumption_for_class_var(klass, field_name, klass);
       }
 
-      if (return_type_eq_arg_type || return_type_arr_of_arg_type || return_type_element_of_arg_type) {
-        ClassPtr klass;
-        AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
-
-        if (!field_name.empty()) {
-          kphp_error_act(klass, format("try to get type of field(%s) of non-instance", field_name.c_str()), return false);
-          assum = calc_assumption_for_class_var(klass, field_name, klass);
-        }
-
-        if (assum == assum_instance && return_type_arr_of_arg_type) {
-          assumption_add_for_return(f, assum_instance_array, klass);
-        } else if (assum == assum_instance_array && return_type_element_of_arg_type && field_name.empty()) {
-          assumption_add_for_return(f, assum_instance, klass);
-        } else {
-          assumption_add_for_return(f, assum, klass);
-        }
-        return true;
+      if (assum == assum_instance && return_type_arr_of_arg_type) {
+        assumption_add_for_return(f, assum_instance_array, klass);
+      } else if (assum == assum_instance_array && return_type_element_of_arg_type && field_name.empty()) {
+        assumption_add_for_return(f, assum_instance, klass);
+      } else {
+        assumption_add_for_return(f, assum, klass);
       }
+      return true;
     }
   }
 
