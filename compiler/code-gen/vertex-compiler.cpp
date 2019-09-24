@@ -14,16 +14,12 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
+#include "common/wrappers/field_getter.h"
 
 struct Operand {
   VertexPtr root;
   Operation parent_type;
   bool is_left;
-  Operand(VertexPtr root, Operation parent_type, bool is_left) :
-    root(root),
-    parent_type(parent_type),
-    is_left(is_left) {
-  }
 
   void compile(CodeGenerator &W) const {
     int priority = OpInfo::priority(parent_type);
@@ -65,17 +61,9 @@ struct TupleGetIndex {
 };
 
 struct AsSeq {
-  VertexPtr root;
-  AsSeq(VertexAdaptor<op_seq> root) :
-    root(root) {
-  }
+  VertexAdaptor<op_seq> root;
 
   void compile(CodeGenerator &W) const {
-    if (root->type() != op_seq) {
-      W << root << ";" << NL;
-      return;
-    }
-
     for (auto i : *root) {
       if (vk::none_of_equal(i->type(), op_var, op_empty)) {
         W << i << ";" << NL;
@@ -86,13 +74,10 @@ struct AsSeq {
 
 struct Label {
   int label_id;
-  Label(int label_id) :
-    label_id(label_id) {
-  }
 
   void compile(CodeGenerator &W) const {
     if (label_id != 0) {
-      W << NL << LabelName(label_id) << ":;" << NL;
+      W << NL << LabelName{label_id} << ":;" << NL;
     }
   }
 };
@@ -101,31 +86,23 @@ struct CycleBody {
   VertexAdaptor<op_seq> body;
   int continue_label_id;
   int break_label_id;
-  CycleBody(VertexAdaptor<op_seq> body, int continue_label_id, int break_label_id) :
-    body(body),
-    continue_label_id(continue_label_id),
-    break_label_id(break_label_id) {
-  }
 
   void compile(CodeGenerator &W) const {
     W << BEGIN <<
-      AsSeq(body) <<
-      Label(continue_label_id) <<
+      AsSeq{body} <<
+      Label{continue_label_id} <<
       END <<
-      Label(break_label_id);
+      Label{break_label_id};
   }
 };
 
-
-
 void compile_prefix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
-  W << OpInfo::str(root->type()) << Operand(root->expr(), root->type(), true);
+  W << OpInfo::str(root->type()) << Operand{root->expr(), root->type(), true};
 }
 
 void compile_postfix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
-  W << Operand(root->expr(), root->type(), true) << OpInfo::str(root->type());
+  W << Operand{root->expr(), root->type(), true} << OpInfo::str(root->type());
 }
-
 
 void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   if (root->type() == op_conv_regexp) {
@@ -137,10 +114,10 @@ void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
 
 void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
   if (root->rl_type == val_none) {
-    W << "NOERR_VOID" << MacroBegin{} << Operand(root->expr(), root->type(), true) << MacroEnd{};
+    W << "NOERR_VOID" << MacroBegin{} << Operand{root->expr(), root->type(), true} << MacroEnd{};
   } else {
     const TypeData *res_tp = tinf::get_type(root);
-    W << "NOERR" << MacroBegin{} << Operand(root->expr(), root->type(), true) << ", " << TypeName(res_tp) << MacroEnd{};
+    W << "NOERR" << MacroBegin{} << Operand{root->expr(), root->type(), true} << ", " << TypeName(res_tp) << MacroEnd{};
   }
 }
 
@@ -171,9 +148,9 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
     W << OpInfo::str(root->type());
   }
   W << " (" <<
-    Operand(root->lhs(), root->type(), true) <<
+    Operand{root->lhs(), root->type(), true} <<
     ", " <<
-    Operand(root->rhs(), root->type(), false) <<
+    Operand{root->rhs(), root->type(), false} <<
     ")";
 }
 
@@ -229,9 +206,9 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
     }
   }
 
-  W << Operand(lhs, root->type(), true) <<
+  W << Operand{lhs, root->type(), true} <<
     " " << root_type_str << " " <<
-    Operand(rhs, root->type(), false);
+    Operand{rhs, root->type(), false};
 }
 
 void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
@@ -248,12 +225,12 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
     res_tp = tinf::get_type(root);
   }
 
-  W << Operand(cond, root->type(), true) << " ? ";
+  W << Operand{cond, root->type(), true} << " ? ";
 
   if (res_tp != nullptr) {
     W << TypeName(res_tp) << "(";
   }
-  W << Operand(true_expr, root->type(), true);
+  W << Operand{true_expr, root->type(), true};
   if (res_tp != nullptr) {
     W << ")";
   }
@@ -263,7 +240,7 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
   if (res_tp != nullptr) {
     W << TypeName(res_tp) << "(";
   }
-  W << Operand(false_expr, root->type(), true);
+  W << Operand{false_expr, root->type(), true};
   if (res_tp != nullptr) {
     W << ")";
   }
@@ -273,7 +250,7 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator &W) {
 void compile_if(VertexAdaptor<op_if> root, CodeGenerator &W) {
   W << "if (" << root->cond() << ") " <<
     BEGIN <<
-    AsSeq(root->true_cmd()) <<
+    AsSeq{root->true_cmd()} <<
     END;
 
   if (root->has_false_cmd()) {
@@ -283,18 +260,18 @@ void compile_if(VertexAdaptor<op_if> root, CodeGenerator &W) {
 
 void compile_while(VertexAdaptor<op_while> root, CodeGenerator &W) {
   W << "while (" << root->cond() << ") " <<
-    CycleBody(root->cmd(), root->continue_label_id, root->break_label_id);
+    CycleBody{root->cmd(), root->continue_label_id, root->break_label_id};
 }
 
 
 void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
   W << "do " <<
     BEGIN <<
-    AsSeq(root->cmd()) <<
-    Label(root->continue_label_id) <<
+    AsSeq{root->cmd()} <<
+    Label{root->continue_label_id} <<
     END << " while (";
     W << root->cond();
-  W << ");" << NL << Label(root->break_label_id);
+  W << ");" << NL << Label{root->break_label_id};
 }
 
 
@@ -325,7 +302,7 @@ void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
     JoinValues(*root->pre_cond(), ", ") << "; " <<
     JoinValues(*root->cond(), ", ") << "; " <<
     JoinValues(*root->post_cond(), ", ") << ") " <<
-    CycleBody(root->cmd(), root->continue_label_id, root->break_label_id);
+    CycleBody{root->cmd(), root->continue_label_id, root->break_label_id};
 }
 
 //TODO: some interface for context?
@@ -591,10 +568,10 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
     return;
   }
 
-  W << AsSeq(cmd) << NL <<
-    Label(root->continue_label_id) <<
+  W << AsSeq{cmd} << NL <<
+    Label{root->continue_label_id} <<
     END <<
-    Label(root->break_label_id) << NL;
+    Label{root->break_label_id} << NL;
   if (!params->x()->ref_flag) {
     VertexPtr temp_var = params->temp_var();
     W << "clear_array(" << temp_var << ");" << NL;
@@ -603,30 +580,20 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
 }
 
 struct CaseInfo {
-  unsigned int hash;
-  bool is_default;
+  unsigned int hash{0};
+  bool is_default{false};
   string goto_name;
-  CaseInfo *next;
+  CaseInfo *next{nullptr};
   VertexPtr v;
   VertexPtr expr;
   VertexPtr cmd;
 
-  inline CaseInfo() :
-    hash(0),
-    is_default(false),
-    next(nullptr) {}
+  CaseInfo() = default;
 
-  inline CaseInfo(VertexPtr root) :
-    hash(0),
-    next(nullptr),
+  explicit CaseInfo(VertexPtr root) :
+    is_default(root->type() == op_default),
     v(root) {
-    if (v->type() == op_default) {
-      is_default = true;
-      cmd = v.as<op_default>()->cmd();
-    } else {
-      is_default = false;
-      auto cs = v.as<op_case>();
-
+    if (auto cs = v.try_as<op_case>()) {
       expr = cs->expr();
       cmd = cs->cmd();
 
@@ -634,43 +601,41 @@ struct CaseInfo {
       kphp_assert (val->type() == op_string);
       const string &s = val.as<op_string>()->str_val;
       hash = string_hash(s.c_str(), (int)s.size());
+    } else {
+      cmd = v.as<op_default>()->cmd();
     }
   }
 };
 
 
 void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  vector<CaseInfo> cases;
+  auto cases_vertices = root->cases();
+  vector<CaseInfo> cases(cases_vertices.size());
+  std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
 
-  for (auto i : root->cases()) {
-    cases.push_back(CaseInfo(i));
-  }
-  int n = (int)cases.size();
+  auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
+  auto default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
 
-  CaseInfo *default_case = nullptr;
-  for (int i = 0; i < n; i++) {
-    if (cases[i].is_default) {
-      kphp_error_return (default_case == nullptr, "Several default cases in switch");
-      default_case = &cases[i];
-    }
-  }
-
-  std::map<unsigned int, int> prev;
-  for (int i = n - 1; i >= 0; i--) {
+  int n = static_cast<int>(cases.size());
+  std::map<unsigned int, int> hash_to_last_id;
+  for (int i = n - 1; i >= 0; --i) {
     if (cases[i].is_default) {
       continue;
     }
-    std::pair<unsigned int, int> new_val(cases[i].hash, i);
-    auto insert_res = prev.insert(new_val);
-    if (insert_res.second == false) {
-      int next_i = insert_res.first->second;
-      insert_res.first->second = i;
-      cases[i].next = &cases[next_i];
-    } else {
+
+    auto insert_res = hash_to_last_id.insert({cases[i].hash, i});
+    bool inserted = insert_res.second;
+    if (inserted) {
       cases[i].next = default_case;
+    } else {
+      auto prev_hash_and_id = insert_res.first;
+      int next_i = prev_hash_and_id->second;
+      prev_hash_and_id->second = i;
+      cases[i].next = &cases[next_i];
     }
-    CaseInfo *next = cases[i].next;
-    if (next != nullptr && next->goto_name.empty()) {
+
+    auto next = cases[i].next;
+    if (next && next->goto_name.empty()) {
       next->goto_name = gen_unique_name("switch_goto");
     }
   }
@@ -681,50 +646,43 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << root->ss_hash() << " = " << root->ss() << ".hash();" << NL;
   W << root->switch_flag() << " = false;" << NL;
 
-  W << "switch (" << root->ss_hash() << ") " <<
-    BEGIN;
-  for (int i = 0; i < n; i++) {
-    CaseInfo *cur = &cases[i];
-    if (cur->is_default) {
+  W << "switch (" << root->ss_hash() << ") " << BEGIN;
+  for (const auto &one_case : cases) {
+    if (one_case.is_default) {
       W << "default:" << NL;
-    } else if (cur->goto_name.empty()) {
-      char buf[100];
-      sprintf(buf, "0x%x", cur->hash);
-
-      W << "case " << (const char *)buf << ":" << NL;
-    }
-    if (!cur->goto_name.empty()) {
-      W << cur->goto_name << ":;" << NL;
-    }
-
-    if (!cur->is_default) {
-      W << "if (!" << root->switch_flag() << ") " <<
-        BEGIN <<
-        "if (!equals (" << root->ss() << ", " << cur->expr << ")) " <<
-        BEGIN;
-      string next_goto;
-      if (cur->next != nullptr) {
-        next_goto = cur->next->goto_name;
-        W << "goto " << next_goto << ";" << NL;
-      } else {
-        W << "break;" << NL;
+      if (!one_case.goto_name.empty()) {
+        W << one_case.goto_name << ":;" << NL;
       }
-      W << END <<
-        " else " <<
-        BEGIN <<
-        root->switch_flag() << " = true;" << NL <<
-        END << NL <<
-        END << NL;
-    } else {
       W << root->switch_flag() << " = true;" << NL;
+    } else {
+      if (one_case.goto_name.empty()) {
+        W << "case " << format("0x%x", one_case.hash) << ":" << NL;
+      } else {
+        W << one_case.goto_name << ":;" << NL;
+      }
+      W << "if (!" << root->switch_flag() << ") " << BEGIN;
+      {
+        W << "if (!equals (" << root->ss() << ", " << one_case.expr << ")) " << BEGIN;
+
+        if (one_case.next) {
+          W << "goto " << one_case.next->goto_name << ";" << NL;
+        } else {
+          W << "break;" << NL;
+        }
+
+        W << END << " else " << BEGIN;
+        W << root->switch_flag() << " = true;" << NL;
+        W << END << NL;
+      }
+      W << END << NL;
     }
-    W << cur->cmd << NL;
+    W << one_case.cmd << NL;
   }
   W << END << NL;
 
-  W << Label(root->continue_label_id) <<
+  W << Label{root->continue_label_id} <<
     END <<
-    Label(root->break_label_id);
+    Label{root->break_label_id};
 }
 
 void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
@@ -736,124 +694,95 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << "static_cast<void>(" << root->switch_flag() << ");" << NL;
 
   std::set<string> used;
-  for (auto i : root->cases()) {
-    Operation tp = i->type();
-    VertexPtr cmd;
-    if (tp == op_case) {
-      auto cs = i.as<op_case>();
+  for (auto one_case : root->cases()) {
+    VertexAdaptor<op_seq> cmd;
+    if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
 
       VertexPtr val = GenTree::get_actual_value(cs->expr());
-      kphp_assert (val->type() == op_int_const || is_const_int(val));
       W << "case ";
       if (val->type() == op_int_const) {
-        string str = val.as<op_int_const>()->str_val;
+        const string &str = val.as<op_int_const>()->str_val;
         W << str;
-        kphp_error (!used.count(str),
-                    format("Switch: repeated cases found [%s]", str.c_str()));
-        used.insert(str);
+        kphp_error(used.insert(str).second, format("Switch: repeated cases found [%s]", str.c_str()));
       } else {
-        compile_vertex(val, W);
+        kphp_assert(is_const_int(val));
+        W << val;
       }
-    } else if (tp == op_default) {
-      W << "default";
-      cmd = i.as<op_default>()->cmd();
     } else {
-      kphp_fail();
+      W << "default";
+      cmd = one_case.as<op_default>()->cmd();
     }
     W << ": " << cmd << NL;
   }
-  W << Label(root->continue_label_id) <<
-    END <<
-    Label(root->break_label_id);
+
+  W << Label{root->continue_label_id} << END;
+  W << Label{root->break_label_id};
 }
 
 
 void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  string goto_name;
+  string goto_name_if_default_in_the_middle;
 
   W << "do " << BEGIN;
   W << "static_cast<void>(" << root->ss() << ");" << NL;
   W << "static_cast<void>(" << root->ss_hash() << ");" << NL;
-  W << root->switch_var() << " = " << root->expr() << ";" << NL <<
-    root->switch_flag() << " = false;" << NL;
+  W << root->switch_var()  << " = " << root->expr() << ";" << NL;
+  W << root->switch_flag() << " = false;" << NL;
 
-  for (auto i : root->cases()) {
-    Operation tp = i->type();
-    VertexPtr expr;
+  for (const auto &one_case : root->cases()) {
     VertexAdaptor<op_seq> cmd;
-    if (tp == op_case) {
-      auto cs = i.as<op_case>();
-      expr = cs->expr();
+    if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-    } else if (tp == op_default) {
-      cmd = i.as<op_default>()->cmd();
+      W << "if (" << root->switch_flag() << " || eq2(" << root->switch_var() << ", " << cs->expr() << "))" << BEGIN;
+      W << root->switch_flag() << " = true;" << NL;
     } else {
-      kphp_fail();
+      cmd = one_case.as<op_default>()->cmd();
+      W << "if (" << root->switch_flag() << ") " << BEGIN;
+      goto_name_if_default_in_the_middle = gen_unique_name("switch_goto");
+      W << goto_name_if_default_in_the_middle + ": ";
     }
 
-    W << "if (" << root->switch_flag();
-
-    if (tp == op_case) {
-      W << " || eq2 (" << root->switch_var() << ", " << expr << ")";
-    }
-    W << ") " <<
-      BEGIN;
-    if (tp == op_default) {
-      goto_name = gen_unique_name("switch_goto");
-      W << goto_name + ": ";
-    }
-
-    W << root->switch_flag() << " = true;" << NL <<
-      AsSeq(cmd) <<
-      END << NL;
+    W << AsSeq{cmd};
+    W << END << NL;
   }
 
+  if (!goto_name_if_default_in_the_middle.empty()) {
+    W << "if (" << root->switch_flag() << ") " << BEGIN;
+    W << "break;" << NL;
+    W << END << NL;
 
-  if (!goto_name.empty()) {
-    W << "if (" << root->switch_flag() << ") " <<
-      BEGIN <<
-      "break;" << NL <<
-      END << NL <<
-      root->switch_flag() << " = true;" << NL <<
-      "goto " << goto_name << ";" << NL;
+    W << root->switch_flag() << " = true;" << NL;
+    W << "goto " << goto_name_if_default_in_the_middle << ";" << NL;
   }
 
-
-  W << Label(root->continue_label_id) <<
-    END << " while (0)" <<
-    Label(root->break_label_id);
+  W << Label{root->continue_label_id} << END;
+  W << " while(false);" << NL;
+  W << Label{root->break_label_id};
 }
 
 
 void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  kphp_assert(root->ss()->type() == op_var);
-  kphp_assert(root->ss_hash()->type() == op_var);
-  kphp_assert(root->switch_var()->type() == op_var);
-  kphp_assert(root->switch_flag()->type() == op_var);
-  int cnt_int = 0, cnt_str = 0, cnt_default = 0;
+  kphp_assert(vk::all_of_equal(op_var, root->ss()->type(), root->ss_hash()->type(), root->switch_var()->type(), root->switch_flag()->type()));
+  bool all_cases_are_ints = true;
+  bool all_cases_are_strings = true;
+  bool has_default = false;
 
-  for (auto i : root->cases()) {
-    if (i->type() == op_default) {
-      cnt_default++;
-    } else {
-      auto cs = i.as<op_case>();
-      VertexPtr val = GenTree::get_actual_value(cs->expr());
-      if (val->type() == op_int_const || is_const_int(val)) {
-        cnt_int++;
-      } else if (val->type() == op_string) {
-        cnt_str++;
-      } else {
-        cnt_str++;
-        cnt_int++;
-      }
+  for (auto one_case : root->cases()) {
+    if (one_case->type() == op_default) {
+      kphp_error_return(!has_default, "Switch: several `default` cases found");
+      has_default = true;
+      continue;
     }
-  }
-  kphp_error_return (cnt_default <= 1, "Switch: several default cases found");
 
-  if (!cnt_int) {
+    auto val = GenTree::get_actual_value(one_case.as<op_case>()->expr());
+    all_cases_are_ints    &= is_const_int(val);
+    all_cases_are_strings &= (val->type() == op_string);
+  }
+
+  if (all_cases_are_strings) {
     compile_switch_str(root, W);
-  } else if (!cnt_str) {
+  } else if (all_cases_are_ints) {
     compile_switch_int(root, W);
   } else {
     compile_switch_var(root, W);
@@ -909,7 +838,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   }
   W << "RESUMABLE_BEGIN" << NL << Indent(+2);
 
-  W << AsSeq(func_root->cmd()) << NL;
+  W << AsSeq{func_root->cmd()} << NL;
 
   W << Indent(-2) <<
     "RESUMABLE_END" << NL <<
@@ -979,7 +908,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
     W << name_of_variadic_param << " = f$array_values(" << name_of_variadic_param << ");" << NL;
     W << END << NL;
   }
-  W << AsSeq(func_root->cmd()) << END << NL;
+  W << AsSeq{func_root->cmd()} << END << NL;
 }
 
 struct StrlenInfo {
@@ -1484,7 +1413,7 @@ void compile_string_build(VertexAdaptor<op_string_build> root, CodeGenerator &W)
 
 void compile_break_continue(VertexAdaptor<meta_op_goto> root, CodeGenerator &W) {
   if (root->int_val != 0) {
-    W << "goto " << LabelName(root->int_val);
+    W << "goto " << LabelName{root->int_val};
   } else {
     if (root->type() == op_break) {
       W << "break";
@@ -1545,7 +1474,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
   string str;
   switch (tp) {
     case op_seq:
-      W << BEGIN << AsSeq(root.as<op_seq>()) << END;
+      W << BEGIN << AsSeq{root.as<op_seq>()} << END;
       break;
     case op_seq_rval:
       compile_seq_rval(root, W);
