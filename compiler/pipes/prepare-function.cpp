@@ -298,8 +298,8 @@ static void apply_function_typehints(FunctionPtr function) {
   for (int i = 0; i < func_params.size(); ++i) {
     auto param = func_params[i].try_as<op_func_param>();
     if (param && param->type_declaration == "array") {
-      auto doc_type = phpdoc_parse_type(param->type_declaration, function);
-      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+      auto parsed = phpdoc_parse_type_and_var_name(param->type_declaration, function);
+      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
       function->add_kphp_infer_hint(infer_mask::check, i, type_rule);
     }
   }
