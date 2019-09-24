@@ -7,6 +7,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
@@ -72,10 +73,14 @@ private:
 
   // если /** @var Photo */ над полем инстанса, видим класс Photo даже если нет явного вызова конструктора
   inline void require_all_classes_in_phpdoc(const vk::string_view &phpdoc_str) {
-    std::string param_var_name, type_str;
-    if (PhpDocTypeRuleParser::find_tag_in_phpdoc(phpdoc_str, php_doc_tag::var, param_var_name, type_str, 0)) {
-      PhpDocTypeRuleParser parser(current_function);
-      parser.parse_from_type_string(type_str);
+    if (auto type_and_var_name = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
+      // здесь вручную бьём на токены, а НЕ вызываем phpdoc_parse_type_and_var_name()
+      // потому что классов пока нет, и нам как раз нужно извлечь неизвестные классы
+      std::vector<Token> tokens = phpdoc_to_tokens(type_and_var_name->c_str(), type_and_var_name->size());
+      std::vector<Token>::const_iterator cur_tok = tokens.begin();
+      PhpDocTypeRuleParserUsingLexer parser(current_function);
+      parser.parse_from_tokens(tokens, cur_tok);
+
       for (const auto &class_name : parser.get_unknown_classes()) {
         require_class(replace_characters(class_name, '\\', '/'));
       }
