@@ -180,14 +180,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       stage::set_line(tag.line_num);
       switch (tag.type) {
         case php_doc_tag::returns: {
-          std::istringstream is(tag.value);
-          std::string type_help;
-          kphp_error(is >> type_help, "Failed to parse @return/@returns tag");
-          VertexPtr doc_type = phpdoc_parse_type(type_help, f);
-          kphp_error_act(doc_type, format("Failed to parse type '%s'", type_help.c_str()), break);
-          
+          PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f);
+          kphp_error_act(doc_parsed, format("Failed to parse @return %s", tag.value.c_str()), break);
+
           if (infer_type & infer_mask::check) {
-            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_parsed.type_expr);
             f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
           }
           has_return_typehint = true;
@@ -254,8 +251,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
     // если явного @return нет, то будто написано @return void
     if (!has_return_typehint && !f->is_constructor()) {
-      VertexPtr doc_type = phpdoc_parse_type("void", f);
-      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_type);
+      auto parsed = phpdoc_parse_type_and_var_name("void", f);
+      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
       f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
     }
   }
