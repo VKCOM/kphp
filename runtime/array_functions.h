@@ -2,8 +2,8 @@
 
 #include <climits>
 
-#include "common/vector-product.h"
 #include "common/type_traits/function_traits.h"
+#include "common/vector-product.h"
 
 #include "runtime/kphp_core.h"
 #include "runtime/string_functions.h"
@@ -51,6 +51,15 @@ T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const 
                 const T &a7 = T(), const T &a8 = T(), const T &a9 = T(),
                 const T &a10 = T(), const T &a11 = T(), const T &a12 = T());
 
+template<class T>
+T f$array_replace(const T &base_array, const T &replacements = T());
+
+template<class T>
+T f$array_replace(const T &base_array,
+  const T &replacements_1, const T &replacements_2, const T &replacements_3 = T(),
+  const T &replacements_4 = T(), const T &replacements_5 = T(), const T &replacements_6 = T(),
+  const T &replacements_7 = T(), const T &replacements_8 = T(), const T &replacements_9 = T(),
+  const T &replacements_10 = T(), const T &replacements_11 = T());
 
 template<class T, class T1>
 array<T> f$array_intersect_key(const array<T> &a1, const array<T1> &a2);
@@ -703,6 +712,25 @@ T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4, const T &a5,
   return result;
 }
 
+template<class T>
+T f$array_replace(const T &base_array, const T &replacements) {
+  auto result = T::convert_from(base_array);
+  for (auto it = replacements.begin(); it != replacements.end(); ++it) {
+    result.set_value(it);
+  }
+  return result;
+}
+
+template<class T>
+T f$array_replace(const T &base_array,
+                  const T &replacements_1, const T &replacements_2, const T &replacements_3,
+                  const T &replacements_4, const T &replacements_5, const T &replacements_6,
+                  const T &replacements_7, const T &replacements_8, const T &replacements_9,
+                  const T &replacements_10, const T &replacements_11) {
+  return f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(
+           base_array, replacements_1), replacements_2), replacements_3), replacements_4), replacements_5), replacements_6),
+           replacements_7), replacements_8),replacements_9), replacements_10), replacements_11);
+}
 
 template<class T, class T1>
 array<T> f$array_intersect_key(const array<T> &a1, const array<T1> &a2) {
