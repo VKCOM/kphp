@@ -40,7 +40,7 @@ private:
   int subpatterns_count;
   int named_subpatterns_count;
   bool is_utf8;
-  bool is_static;
+  bool use_heap_memory;
 
   string *subpattern_names;
 

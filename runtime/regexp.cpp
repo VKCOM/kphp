@@ -15,7 +15,7 @@ regexp::regexp() :
   subpatterns_count(0),
   named_subpatterns_count(0),
   is_utf8(false),
-  is_static(false),
+  use_heap_memory(false),
   subpattern_names(nullptr),
   pcre_regexp(nullptr),
   RE2_regexp(nullptr) {
@@ -25,7 +25,7 @@ regexp::regexp(const string &regexp_string) :
   subpatterns_count(0),
   named_subpatterns_count(0),
   is_utf8(false),
-  is_static(false),
+  use_heap_memory(false),
   subpattern_names(nullptr),
   pcre_regexp(nullptr),
   RE2_regexp(nullptr) {
@@ -36,7 +36,7 @@ regexp::regexp(const char *regexp_string, int regexp_len) :
   subpatterns_count(0),
   named_subpatterns_count(0),
   is_utf8(false),
-  is_static(false),
+  use_heap_memory(false),
   subpattern_names(nullptr),
   pcre_regexp(nullptr),
   RE2_regexp(nullptr) {
@@ -289,9 +289,9 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
 
-  is_static = (dl::get_script_memory_stats().memory_limit == 0);
+  use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
 
-  if (!is_static) {
+  if (!use_heap_memory) {
     if (dl::query_num != regexp_last_query_num) {
       new(regexp_cache_storage) array<regexp *>();
       regexp_last_query_num = dl::query_num;
@@ -299,12 +299,12 @@ void regexp::init(const string &regexp_string, const char *function, const char 
 
     regexp *re = regexp_cache->get_value(regexp_string);
     if (re != nullptr) {
-      php_assert (!re->is_static);
+      php_assert (!re->use_heap_memory);
 
       subpatterns_count = re->subpatterns_count;
       named_subpatterns_count = re->named_subpatterns_count;
       is_utf8 = re->is_utf8;
-      is_static = re->is_static;
+      use_heap_memory = re->use_heap_memory;
 
       subpattern_names = re->subpattern_names;
 
@@ -317,14 +317,14 @@ void regexp::init(const string &regexp_string, const char *function, const char 
 
   init(regexp_string.c_str(), regexp_string.size(), function, file);
 
-  if (!is_static) {
+  if (!use_heap_memory) {
     regexp *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
     new(re) regexp();
 
     re->subpatterns_count = subpatterns_count;
     re->named_subpatterns_count = named_subpatterns_count;
     re->is_utf8 = is_utf8;
-    re->is_static = is_static;
+    re->use_heap_memory = use_heap_memory;
 
     re->subpattern_names = subpattern_names;
 
@@ -386,9 +386,9 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
 
   static_SB.clean().append(regexp_string + 1, regexp_end - 1);
 
-  is_static = (dl::get_script_memory_stats().memory_limit == 0);
+  use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
 
-  dl::replace_malloc_with_script_allocator = !is_static;
+  dl::replace_malloc_with_script_allocator = !use_heap_memory;
 
   is_utf8 = false;
   int pcre_options = 0;
@@ -516,7 +516,7 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
           int name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
           string name(name_table + 2, (dl::size_type)strlen(name_table + 2));
 
-          if (is_static) {
+          if (use_heap_memory) {
             name.set_reference_counter_to_const();
           }
 
@@ -534,6 +534,13 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
 
   if (subpatterns_count > MAX_SUBPATTERNS) {
     regex_warning(function, file, "Maximum number of subpatterns %d exceeded, %d subpatterns found", MAX_SUBPATTERNS, subpatterns_count);
+    subpatterns_count = 0;
+
+    delete RE2_regexp;
+    RE2_regexp = nullptr;
+
+    delete[] subpattern_names;
+    subpattern_names = nullptr;
     clean();
     return;
   }
@@ -542,18 +549,18 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
 }
 
 void regexp::clean() {
-  if (!is_static) {
+  if (!use_heap_memory) {
     //from cache
     dl::replace_malloc_with_script_allocator = false;
     return;
   }
 
-  dl::replace_malloc_with_script_allocator = !is_static;
+  dl::replace_malloc_with_script_allocator = !use_heap_memory;
 
   subpatterns_count = 0;
   named_subpatterns_count = 0;
   is_utf8 = false;
-  is_static = false;
+  use_heap_memory = false;
 
   if (pcre_regexp != nullptr) {
     pcre_free(pcre_regexp);
@@ -579,7 +586,7 @@ int regexp::pcre_last_error;
 int regexp::exec(const string &subject, int offset, bool second_try) const {
   if (RE2_regexp && !second_try) {
     dl::enter_critical_section();//OK
-    dl::replace_malloc_with_script_allocator = !is_static;
+    dl::replace_malloc_with_script_allocator = !use_heap_memory;
     if (!RE2_regexp->Match(re2::StringPiece(subject.c_str(), (int)subject.size()), offset, (int)subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count)) {
       dl::replace_malloc_with_script_allocator = false;
       dl::leave_critical_section();
