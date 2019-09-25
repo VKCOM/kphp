@@ -84,8 +84,9 @@ extern int rpc_stopped;
 /** script **/
 #define IMM_STATS_DESC_LEN 128
 struct php_immediate_stats_t {
-  int is_running;
-  int is_wait_net;
+  bool is_running;
+  bool is_wait_net;
+  bool is_ready_for_accept;
   double timestamp;
   char desc[IMM_STATS_DESC_LEN];
   double custom_timestamp;

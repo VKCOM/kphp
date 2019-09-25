@@ -1628,6 +1628,7 @@ struct WorkerStats {
   int total_workers_n{0};
   int running_workers_n{0};
   int paused_workers_n{0};
+  int ready_for_accept_workers_n{0};
 
   static WorkerStats collect() {
     WorkerStats result;
@@ -1637,6 +1638,7 @@ struct WorkerStats {
         result.total_workers_n++;
         result.running_workers_n += w->stats->istats.is_running;
         result.paused_workers_n += w->stats->istats.is_wait_net;
+        result.ready_for_accept_workers_n += w->stats->istats.is_ready_for_accept;
       }
     }
     return result;
@@ -1718,6 +1720,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "workers.current.total", worker_stats.total_workers_n);
   add_histogram_stat_long(stats, "workers.current.working", worker_stats.running_workers_n);
   add_histogram_stat_long(stats, "workers.current.working_but_waiting", worker_stats.paused_workers_n);
+  add_histogram_stat_long(stats, "workers.current.ready_for_accept", worker_stats.ready_for_accept_workers_n);
 
   add_histogram_stat_long(stats, "workers.total.started", tot_workers_started);
   add_histogram_stat_long(stats, "workers.total.dead", tot_workers_dead);

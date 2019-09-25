@@ -24,6 +24,7 @@
 #include "common/server/crash-dump.h"
 #include "common/server/signals.h"
 #include "common/wrappers/madvise.h"
+#include "net/net-connections.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -642,16 +643,16 @@ static void upd_server_status(server_status_t server_status, const char *desc, i
   php_immediate_stats_t *imm = get_new_imm_stats();
   switch (server_status) {
     case ss_idle:
-      imm->is_running = 0;
-      imm->is_wait_net = 0;
+      imm->is_running = false;
+      imm->is_wait_net = false;
       break;
     case ss_wait_net:
-      imm->is_running = 1;
-      imm->is_wait_net = 1;
+      imm->is_running = true;
+      imm->is_wait_net = true;
       break;
     case ss_running:
-      imm->is_running = 1;
-      imm->is_wait_net = 0;
+      imm->is_running = true;
+      imm->is_wait_net = false;
       break;
     case ss_custom:
       break;
@@ -674,7 +675,9 @@ static void upd_server_status(server_status_t server_status, const char *desc, i
 }
 
 php_immediate_stats_t *get_imm_stats() {
-  return &imm_stats[imm_stats_i];
+  php_immediate_stats_t *istats = &imm_stats[imm_stats_i];
+  istats->is_ready_for_accept = active_special_connections != max_special_connections;
+  return istats;
 }
 
 void custom_server_status(const char *status, int status_len) {
