@@ -1041,10 +1041,11 @@ PrimitiveType GenTree::get_func_param_type_help() {
   kphp_assert(cur->type() == tok_triple_colon);
 
   next_cur();
-  PrimitiveType res = get_ptype();
-  kphp_error (res != tp_Error, "Cannot parse type");
+  PhpDocTypeRuleParserUsingLexer parser(cur_function);
+  VertexPtr type_expr = parser.parse_from_tokens(tokens, cur);
+  kphp_error(type_expr->type() == op_type_expr_type, "Incorrect type_help after :::");
 
-  return res;
+  return type_expr->type_help;
 }
 
 VertexPtr GenTree::get_type_rule_func() {
@@ -1156,10 +1157,12 @@ VertexAdaptor<meta_op_type_rule> GenTree::get_type_rule() {
   if (vk::any_of_equal(tp, tok_triple_colon, tok_triple_eq, tok_triple_lt, tok_triple_gt)) {
     AutoLocation rule_location(this);
     next_cur();
-    VertexPtr first = get_type_rule_();
-    CE(!kphp_error(first, "Cannot parse type rule"));
 
-    VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], first);
+    PhpDocTypeRuleParserUsingLexer parser(cur_function);
+    VertexPtr type_expr = parser.parse_from_tokens(tokens, cur);
+    CE(!kphp_error(type_expr, "Cannot parse type rule"));
+
+    VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], type_expr);
     set_location(rule, rule_location);
     res = rule.as<meta_op_type_rule>();
   }

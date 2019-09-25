@@ -837,20 +837,20 @@ function typed_rpc_tl_query_result ($query_ids :<=: array <int>) ::: array <@tl\
 function typed_rpc_tl_query_result_synchronously ($query_ids :<=: array <int>) ::: array <@tl\RpcResponse>;
 
 /** @kphp-extern-func-info resumable */
-function wait ($id :<=: OrFalse<future>, $timeout ::: float = -1.0) ::: bool;
+function wait ($id :<=: OrFalse<future(Any)>, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result ($id :<=: OrFalse<future>, $timeout ::: float = -1.0) ::: OrFalse<^1[]>;
+function wait_result ($id :<=: OrFalse<future(Any)>, $timeout ::: float = -1.0) ::: OrFalse<^1[]>;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result_multi ($resumables :<=: array<future>) ::: array < OrFalse < ^1[][] > >;
-function wait_synchronously ($id :<=: OrFalse<future>) ::: bool;
+function wait_result_multi ($resumables :<=: array<future(Any)>) ::: array < OrFalse < ^1[][] > >;
+function wait_synchronously ($id :<=: OrFalse<future(Any)>) ::: bool;
 /** @kphp-extern-func-info resumable */
 function wait_multiple ($id ::: Any) ::: bool;
-function wait_queue_create ($request_ids :<=: array< OrFalse<future> > = []) ::: future_queue<^1[][]>;
-function wait_queue_push (&$queue_id :<=: future_queue, $request_ids :<=: OrFalse< future >) ::: void;
-function wait_queue_empty ($queue_id :<=: future_queue) ::: bool;
+function wait_queue_create ($request_ids :<=: array< OrFalse<future(Any)> > = []) ::: future_queue<^1[][]>;
+function wait_queue_push (&$queue_id :<=: future_queue(Any), $request_ids :<=: OrFalse<future(Any)>) ::: void;
+function wait_queue_empty ($queue_id :<=: future_queue(Any)) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id :<=: future_queue, $timeout ::: float = -1.0) ::: OrFalse< future<^1[]> >;
-function wait_queue_next_synchronously ($queue_id :<=: future_queue) ::: OrFalse< future<^1[]> >;
+function wait_queue_next ($queue_id :<=: future_queue(Any), $timeout ::: float = -1.0) ::: OrFalse< future<^1[]> >;
+function wait_queue_next_synchronously ($queue_id :<=: future_queue(Any)) ::: OrFalse< future<^1[]> >;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */
