@@ -290,7 +290,7 @@ class CFG {
   void create_cfg_end_try(Node to);
   void create_cfg_register_exception(Node from);
 
-  VarSplitPtr get_var_split(VarPtr var, bool force);
+  VarSplitPtr get_var_split(VarPtr var, bool force = false);
   Node new_node();
   UsagePtr new_usage(UsageType type, VertexAdaptor<op_var> v);
   void add_usage(Node node, UsagePtr usage);
@@ -340,7 +340,7 @@ Node CFG::new_node() {
 UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
   VarPtr var = v->var_id;
   kphp_assert (var);
-  VarSplitPtr var_split = get_var_split(var, false);
+  VarSplitPtr var_split = get_var_split(var);
   if (!var_split) {
     return {};
   }
@@ -1060,7 +1060,7 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
   VarPtr var = usage->v->var_id;
   VarPtr another_var = another_usage->v->var_id;
   if (var == another_var) {
-    VarSplitPtr var_split = get_var_split(var, false);
+    VarSplitPtr var_split = get_var_split(var);
     kphp_assert (var_split);
     dsu_uni(&var_split->parent, usage, another_usage);
     return true;
@@ -1137,7 +1137,7 @@ UsagePtr CFG::search_uninit_usage(Node v, VarPtr var) {
 }
 
 void CFG::process_var(VarPtr var) {
-  VarSplitPtr var_split = get_var_split(var, false);
+  VarSplitPtr var_split = get_var_split(var);
   kphp_assert (var_split);
 
   if (var->type() != VarData::var_param_t) {
