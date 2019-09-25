@@ -80,34 +80,14 @@ var::var(const char *s, int len) :
 
 template<typename T, typename>
 var::var(const Optional<T> &v) {
-  switch (v.value_state()) {
-    case OptionalState::has_value:
-      init_from(v.val());
-      return;
-    case OptionalState::false_value:
-      init_from(false);
-      return;
-    case OptionalState::null_value:
-      return;
-    default:
-      __builtin_unreachable();
-  }
+  auto init_from_lambda = [this](const auto &v) { this->init_from(v); };
+  call_fun_on_optional_value(init_from_lambda, v);
 }
 
 template<typename T, typename>
 var::var(Optional<T> &&v) {
-  switch (v.value_state()) {
-    case OptionalState::has_value:
-      init_from(std::move(v.val()));
-      return;
-    case OptionalState::false_value:
-      init_from(false);
-      return;
-    case OptionalState::null_value:
-      return;
-    default:
-      __builtin_unreachable();
-  }
+   auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
+   call_fun_on_optional_value(init_from_lambda, std::move(v));
 }
 
 var::var(const var &v) {
@@ -141,30 +121,14 @@ var &var::operator=(T &&v) {
 
 template<typename T, typename>
 var &var::operator=(const Optional<T> &v) {
-  switch (v.value_state()) {
-    case OptionalState::has_value:
-      return assign_from(v.val());
-    case OptionalState::false_value:
-      return assign_from(false);
-    case OptionalState::null_value:
-      return *this = var{};
-    default:
-      __builtin_unreachable();
-  }
+  auto assign_from_lambda = [this](const auto &v) -> var& { return this->assign_from(v); };
+  return call_fun_on_optional_value(assign_from_lambda, v);
 }
 
 template<typename T, typename>
 var &var::operator=(Optional<T> &&v) {
-  switch (v.value_state()) {
-    case OptionalState::has_value:
-      return assign_from(std::move(v.val()));
-    case OptionalState::false_value:
-      return assign_from(false);
-    case OptionalState::null_value:
-      return *this = var{};
-    default:
-      __builtin_unreachable();
-  }
+  auto assign_from_lambda = [this](auto &&v) -> var& { return this->assign_from(std::move(v)); };
+  return call_fun_on_optional_value(assign_from_lambda, std::move(v));
 }
 
 var &var::assign(const char *other, int len) {
@@ -2381,16 +2345,8 @@ bool equals(bool lhs, const class_instance<T> &rhs) {
 
 template<class T>
 string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
-  switch (v.value_state()) {
-    case OptionalState::has_value:
-      return sb << v.val();
-    case OptionalState::false_value:
-      return sb << false;
-    case OptionalState::null_value:
-      return sb;
-    default:
-      __builtin_unreachable();
-  }
+  auto write_lambda = [&sb](const auto &v) -> string_buffer& { return sb << v; };
+  return call_fun_on_optional_value(write_lambda, v);
 }
 
 string_buffer &operator<<(string_buffer &sb, const var &v) {

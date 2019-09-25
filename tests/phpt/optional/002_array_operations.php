@@ -23,7 +23,7 @@ function test_array_functions($hint, $arr, $opt_string) {
   echo "array_pad $hint: "; var_dump(array_pad($arr, 5, $opt_string));
 
   // TODO KPHP-485
-  if ($opt_string !== null) {
+  if (!is_null($opt_string)) {
     echo "array_column $hint: "; var_dump(array_column([$arr, $arr], $opt_string));
   }
 

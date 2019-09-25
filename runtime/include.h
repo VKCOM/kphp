@@ -8,6 +8,7 @@
 
 #include "common-php-functions.h"
 #include "runtime/declarations.h"
+#include "runtime/kphp_type_traits.h"
 #include "runtime/optional.h"
 #include "runtime/php_assert.h"
 
@@ -65,6 +66,13 @@ disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
 }
 
+template<class T>
+inline bool f$is_null(const T &v);
+template<class T>
+inline bool f$is_null(const class_instance<T> &v);
+template<class T>
+inline bool f$is_null(const Optional<T> &v);
+inline bool f$is_null(const var &v);
 
 using std::swap;
 using std::min;

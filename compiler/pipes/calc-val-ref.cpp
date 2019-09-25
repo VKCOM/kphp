@@ -2,12 +2,15 @@
 
 #include "compiler/inferring/public.h"
 
-bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_last) {
+bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first) {
   switch (op) {
     case op_push_back:
     case op_push_back_return:
-    case op_set_value:
+    case op_index:
       return !is_last;
+
+    case op_set_value:
+      return is_first;
 
     case op_list:
       return is_last;
@@ -45,17 +48,13 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
     case op_conv_int:
     case op_conv_int_l:
     case op_conv_float:
-    case op_conv_array: // ?
-    case op_conv_array_l: // ?
     case op_conv_string_l:
     case op_conv_uint:
     case op_conv_long:
     case op_conv_ulong:
       // case op_conv_bool нет намеренно, чтобы f$boolval(Optional<T>) не превращался в дефолтный T
 
-    case op_isset:
     case op_unset:
-    case op_index:
     case op_switch:
       return true;
 
@@ -65,18 +64,16 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
 }
 void CalcValRefPass::on_enter_edge(VertexPtr, LocalT *local, VertexPtr dest_vertex, LocalT *) {
   if (local->allowed && dest_vertex->rl_type != val_none && dest_vertex->rl_type != val_error) {
-    const TypeData *tp = tinf::get_type(dest_vertex);
-
-    if (tp->ptype() != tp_Unknown && tp->use_or_false()) {
+    if (tinf::get_type(dest_vertex)->use_optional()) {
       dest_vertex->val_ref_flag = dest_vertex->rl_type;
     }
   }
 }
 
 bool CalcValRefPass::user_recursion(VertexPtr v, CalcValRefPass::LocalT *local, VisitVertex<CalcValRefPass> &visit) {
-  for (VertexPtr &child : *v) {
-    local->allowed = is_allowed_for_getting_val_or_ref(v->type(), &child == &v->back());
-    visit(child);
+  for (auto child_it = v->begin(); child_it != v->end(); ++child_it) {
+    local->allowed = is_allowed_for_getting_val_or_ref(v->type(), child_it == std::prev(v->end()), child_it == v->begin());
+    visit(*child_it);
   }
   return true;
 }

@@ -2,6 +2,8 @@
 #include <tuple>
 #include <type_traits>
 
+#include "common/type_traits/list_of_types.h"
+
 #include "runtime/declarations.h"
 
 template<typename>

@@ -390,7 +390,6 @@ ext/standard/tests/general_functions/header_redirection_011.phpt
 ext/standard/tests/general_functions/header_redirection_012.phpt
 ext/standard/tests/general_functions/header_redirection_013.phpt
 ext/standard/tests/general_functions/header_redirection_014.phpt
-ext/standard/tests/general_functions/isset_basic2.phpt
 ext/standard/tests/general_functions/ob_get_flush_error.phpt
 ext/standard/tests/general_functions/ob_get_length_basic.phpt
 ext/standard/tests/general_functions/php_uname_basic.phpt

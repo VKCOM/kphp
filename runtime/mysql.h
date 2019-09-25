@@ -34,7 +34,7 @@ int f$mysqli_errno(const class_instance<C$mysqli> &db);
 
 int f$mysqli_affected_rows(const class_instance<C$mysqli> &db);
 
-var f$mysqli_fetch_array(int query_id_var, int result_type);
+Optional<array<var>> f$mysqli_fetch_array(int query_id_var, int result_type);
 
 int f$mysqli_insert_id(const class_instance<C$mysqli> &db);
 

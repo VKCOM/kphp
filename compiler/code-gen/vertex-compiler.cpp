@@ -1483,7 +1483,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << "true";
       break;
     case op_null:
-      W << "var()";
+      W << "Optional<bool>{}";
       break;
     case op_var:
       W << VarName(root.as<op_var>()->var_id);

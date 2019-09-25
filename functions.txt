@@ -599,7 +599,7 @@ function mysqli_error($dn :<=: \mysqli) ::: string;
 define('MYSQLI_ASSOC', 1);
 
 function mysqli_affected_rows($dn :<=: \mysqli) ::: int;
-function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: var;
+function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: var[] | null;
 function mysqli_insert_id($dn :<=: \mysqli) ::: int;
 function mysqli_num_rows($query_id ::: int) ::: int;
 function mysqli_query($dn :<=: \mysqli, $query ::: string) ::: var;

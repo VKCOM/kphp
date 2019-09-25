@@ -4,6 +4,7 @@
 
 enum PrimitiveType {
   tp_Unknown,
+  tp_Null,
   tp_False,
   tp_bool,
   tp_int,
@@ -30,4 +31,5 @@ enum PrimitiveType {
 const char *ptype_name(PrimitiveType id);
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b);
 bool can_store_false(PrimitiveType tp);
+bool can_store_null(PrimitiveType tp);
 

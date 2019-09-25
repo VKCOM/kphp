@@ -49,3 +49,10 @@ echo "lib_user: use_other_lib(): ", use_other_lib(), "\n";
 
 echo "lib_user: get_static_array(): ";
 var_dump(get_static_array());
+
+var_dump(return_int_or_false(0));
+var_dump(return_int_or_false_or_null(0));
+var_dump(return_int_or_null(0));
+var_dump(return_false_or_null(0));
+var_dump(return_null(0));
+var_dump(return_false(0));

@@ -27,19 +27,8 @@ private:
 
   template<typename T>
   void process_impl(const char *field_name, const Optional<T> &value) {
-    switch (value.value_state()) {
-      case OptionalState::has_value:
-        process_impl(field_name, value.val());
-        return;
-      case OptionalState::false_value:
-        add_value(field_name, var{false});
-        return;
-      case OptionalState::null_value:
-        add_value(field_name, var{});
-        return;
-      default:
-        __builtin_unreachable();
-    }
+    auto process_impl_lambda = [=](const auto &v) { return this->process_impl(field_name, v); };
+    call_fun_on_optional_value(process_impl_lambda, value);
   }
 
   template<class T>

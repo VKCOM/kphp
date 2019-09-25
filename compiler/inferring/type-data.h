@@ -68,6 +68,7 @@ private:
 
   enum flag_id_t {
     write_flag_e = 1,
+    or_null_flag_e = 2,
     or_false_flag_e = 4,
     error_flag_e = 8
   };
@@ -105,6 +106,15 @@ public:
   bool or_false_flag() const;
   void set_or_false_flag(bool f);
   bool use_or_false() const;
+  bool can_store_false() const;
+
+  bool or_null_flag() const;
+  void set_or_null_flag(bool f);
+  bool use_or_null() const;
+  bool can_store_null() const;
+
+  bool use_optional() const;
+
   void set_write_flag(bool f);
   bool error_flag() const;
   void set_error_flag(bool f);
@@ -123,8 +133,8 @@ public:
 
   const TypeData *const_read_at(const Key &key) const;
   const TypeData *const_read_at(const MultiKey &multi_key) const;
-  void set_lca(const TypeData *rhs, bool save_or_false = true);
-  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true);
+  void set_lca(const TypeData *rhs, bool save_optional = true);
+  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_optional = true);
   void set_lca(PrimitiveType ptype);
   void fix_inf_array();
   bool should_proxy_error_flag_to_parent() const;
@@ -135,7 +145,7 @@ public:
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);
   static TypeData *create_for_class(ClassPtr klass);
-  static TypeData *create_array_type_data(const TypeData* element_type, bool or_false_flag = false);
+  static TypeData *create_array_type_data(const TypeData* element_type, bool optional_flag = false);
   //FIXME:??
   static void inc_generation();
   static generation_t current_generation();

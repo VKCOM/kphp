@@ -310,7 +310,7 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   //FIXME: (extra dependenty)
   add_dependency(as_rvalue(arg));
   if (tinf::get_type(arg)->get_real_ptype() == tp_array) {
-    set_lca(drop_or_false(as_rvalue(arg)));
+    set_lca(drop_optional(as_rvalue(arg)));
     // foreach/array_map/(array) на tuple'ах и инстнсах — ошибка
   } else if (vk::any_of_equal(tinf::get_type(arg)->ptype(), tp_tuple, tp_Class)) {
     set_lca(TypeData::get_type(tp_Error));
@@ -340,7 +340,7 @@ void ExprNodeRecalc::recalc_tuple(VertexAdaptor<op_tuple> tuple) {
 }
 
 void ExprNodeRecalc::recalc_plus_minus(VertexAdaptor<meta_op_unary> expr) {
-  set_lca(drop_or_false(as_rvalue(expr->expr())));
+  set_lca(drop_optional(as_rvalue(expr->expr())));
   if (new_type()->ptype() == tp_string) {
     recalc_ptype<tp_var>();
   }
@@ -348,7 +348,7 @@ void ExprNodeRecalc::recalc_plus_minus(VertexAdaptor<meta_op_unary> expr) {
 
 void ExprNodeRecalc::recalc_inc_dec(VertexAdaptor<meta_op_unary> expr) {
   //or false ???
-  set_lca(drop_or_false(as_rvalue(expr->expr())));
+  set_lca(drop_optional(as_rvalue(expr->expr())));
 }
 
 void ExprNodeRecalc::recalc_noerr(VertexAdaptor<op_noerr> expr) {
@@ -371,13 +371,13 @@ void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   if (tinf::get_type(lhs)->ptype() == tp_bool) {
     recalc_ptype<tp_int>();
   } else {
-    set_lca(drop_or_false(as_rvalue(lhs)));
+    set_lca(drop_optional(as_rvalue(lhs)));
   }
 
   if (tinf::get_type(rhs)->ptype() == tp_bool) {
     recalc_ptype<tp_int>();
   } else {
-    set_lca(drop_or_false(as_rvalue(rhs)));
+    set_lca(drop_optional(as_rvalue(rhs)));
   }
 
   if (new_type()->ptype() == tp_string) {
@@ -391,7 +391,7 @@ void ExprNodeRecalc::recalc_power(VertexAdaptor<op_pow> expr) {
   VertexPtr exponent = expr->rhs();
   if (is_positive_constexpr_int(exponent)) {
     recalc_ptype<tp_int>();
-    set_lca(drop_or_false(as_rvalue(base)));
+    set_lca(drop_optional(as_rvalue(base)));
   } else {
     recalc_ptype<tp_var>();
   }
@@ -525,8 +525,11 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     case op_conv_var:
-    case op_null:
       recalc_ptype<tp_var>();
+      break;
+
+    case op_null:
+      recalc_ptype<tp_Null>();
       break;
 
     case op_plus:

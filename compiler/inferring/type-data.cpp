@@ -84,6 +84,10 @@ const TypeData *TypeData::get_type(PrimitiveType array, PrimitiveType type) {
 TypeData::TypeData(PrimitiveType ptype) :
   ptype_(ptype),
   generation_(current_generation()) {
+  if (ptype_ == tp_Null) {
+    set_or_null_flag(true);
+    ptype_ = tp_Unknown;
+  }
   if (ptype_ == tp_False) {
     set_or_false_flag(true);
     ptype_ = tp_Unknown;
@@ -154,8 +158,8 @@ PrimitiveType TypeData::ptype() const {
 }
 
 PrimitiveType TypeData::get_real_ptype() const {
-  PrimitiveType p = ptype();
-  if (p == tp_Unknown && or_false_flag()) {
+  const PrimitiveType p = ptype();
+  if (p == tp_Unknown && (or_null_flag() || or_false_flag())) {
     return tp_bool;
   }
   return p;
@@ -265,6 +269,26 @@ void TypeData::set_or_false_flag(bool f) {
   set_flag<or_false_flag_e>(f);
 }
 
+bool TypeData::or_null_flag() const {
+  return get_flag<or_null_flag_e>();
+}
+
+void TypeData::set_or_null_flag(bool f) {
+  set_flag<or_null_flag_e>(f);
+}
+
+bool TypeData::use_or_null() const {
+  return !::can_store_null(ptype()) && or_null_flag();
+}
+
+bool TypeData::use_optional() const {
+  return use_or_false() || use_or_null();
+}
+
+bool TypeData::can_store_null() const {
+  return ::can_store_null(ptype()) || or_null_flag();
+}
+
 void TypeData::set_write_flag(bool f) {
   set_flag<write_flag_e>(f);
 }
@@ -278,7 +302,11 @@ void TypeData::set_error_flag(bool f) {
 }
 
 bool TypeData::use_or_false() const {
-  return !can_store_false(ptype()) && or_false_flag();
+  return !::can_store_false(ptype()) && or_false_flag() && ptype() != tp_Unknown;
+}
+
+bool TypeData::can_store_false() const {
+  return ::can_store_false(ptype()) || or_false_flag();
 }
 
 bool TypeData::structured() const {
@@ -382,7 +410,7 @@ TypeData::lookup_iterator TypeData::lookup_end() const {
   return subkeys_values.end();
 }
 
-void TypeData::set_lca(const TypeData *rhs, bool save_or_false) {
+void TypeData::set_lca(const TypeData *rhs, bool save_optional) {
   if (rhs == nullptr) {
     return;
   }
@@ -406,14 +434,21 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false) {
   }
 
   lhs->set_ptype(new_ptype);
-  TypeData::flags_t mask = save_or_false ? -1 : ~or_false_flag_e;
-  TypeData::flags_t new_flags = lhs->flags_ | (rhs->flags_ & mask);
+  TypeData::flags_t new_flags = rhs->flags_;
+  if (!save_optional) {
+    new_flags &= ~(or_false_flag_e|or_null_flag_e);
+  }
+  new_flags |= lhs->flags_;
 
   lhs->set_flags(new_flags);
-  if (new_ptype == tp_void && (new_flags & or_false_flag_e)) {
+  if (new_ptype == tp_void && (new_flags & (or_false_flag_e|or_null_flag_e))) {
     lhs->set_ptype(tp_Error);
   }
 
+  // TODO: allow to mix class instance with null
+  if (new_ptype == tp_Class && (new_flags & or_null_flag_e)) {
+    lhs->set_ptype(tp_Error);
+  }
   if (rhs->ptype() == tp_Class) {
     lhs->set_class_type(rhs->class_type());
   }
@@ -444,7 +479,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false) {
   }
 }
 
-void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false) {
+void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_optional) {
   TypeData *cur = this;
   auto last = multi_key.rbegin();
   for (auto it = multi_key.begin(); it != multi_key.end(); it++) {
@@ -465,7 +500,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
       return;
     }
   }
-  cur->set_lca(rhs, save_or_false);
+  cur->set_lca(rhs, save_optional);
   for (auto it = last; it != multi_key.rend(); it++) {
     cur = cur->parent_;
     if (*it == Key::any_key()) {
@@ -612,21 +647,70 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
   }
 }
 
-static void type_out_impl(const TypeData *type, std::string &res, gen_out_style style) {
-  PrimitiveType tp = type->get_real_ptype();
-  const bool or_false = type->use_or_false() && tp != tp_bool;
+inline void get_txt_style_type(const TypeData *type, std::string &res) {
+  const PrimitiveType tp = type->get_real_ptype();
+  switch (tp) {
+    case tp_Class:
+      res += type->class_type()->name;
+      break;
+    case tp_bool:
+      res += "boolean";
+      break;
+    case tp_RPC: {
+      res += "rpc_connection";
+      break;
+    }
+    default :
+      res += ptype_name(tp);
+      break;
+  }
+}
 
-  if (or_false) {
+static bool try_get_txt_or_false_or_null_for_unknown(const TypeData *type, std::string &res) {
+  if (type->ptype() == tp_Unknown) {
+    if (type->or_false_flag()) {
+      res += "false";
+    }
+    if (type->or_null_flag()) {
+      if (type->or_false_flag()) {
+        res += "|";
+      }
+      res += "null";
+    }
+    if (type->or_false_flag() || type->or_null_flag()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static void get_txt_or_false_or_null(const TypeData *type, std::string &res) {
+  if (type->use_or_null()) {
+    res += "|null";
+  }
+  if (type->use_or_false()) {
+    res += "|false";
+  }
+}
+
+static void type_out_impl(const TypeData *type, std::string &res, gen_out_style style) {
+  if (style == gen_out_style::txt && try_get_txt_or_false_or_null_for_unknown(type, res)) {
+    return;
+  }
+
+  const bool use_optional = style != gen_out_style::txt && type->use_optional();
+  if (use_optional) {
     res += "Optional < ";
   }
 
-  if (style == gen_out_style::tagger && (tp == tp_future || tp == tp_future_queue)) {
+  const PrimitiveType tp = type->get_real_ptype();
+  if (style == gen_out_style::tagger && vk::any_of_equal(tp, tp_future, tp_future_queue)) {
     res += "int";
   } else {
-    if (style == gen_out_style::cpp || style == gen_out_style::tagger) {
+    if (vk::any_of_equal(style, gen_out_style::cpp, gen_out_style::tagger)) {
       get_cpp_style_type(type, res);
     } else {
-      res += ptype_name(tp);
+      get_txt_style_type(type, res);
     }
 
     const bool need_any_key = vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue);
@@ -651,8 +735,12 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
     }
   }
 
-  if (or_false) {
+  if (use_optional) {
     res += " >";
+  }
+
+  if (style == gen_out_style::txt) {
+    get_txt_or_false_or_null(type, res);
   }
 }
 
@@ -663,19 +751,7 @@ std::string type_out(const TypeData *type, gen_out_style style) {
 }
 
 std::string colored_type_out(const TypeData *type) {
-  std::string type_str = type_out(type);
-  if (vk::string_view(type_str).starts_with("std::")) {
-    type_str = type_str.substr(5);
-  }
-
-  // заменяем class_instance<C$VK$A> на \VK\A для читаемости (при выводе в консольку)
-  std::regex class_instance_regex(R"(class_instance\s*<\s*C(.*?)\s*>)");
-  std::smatch matched;
-  while (std::regex_search(type_str, matched, class_instance_regex)) {
-    std::string class_name = replace_characters(matched[1].str(), '$', '\\');
-    type_str = type_str.replace(matched.position(), matched[0].length(), class_name);
-  }
-
+  std::string type_str = type_out(type, gen_out_style::txt);
   return TermStringFormat::paint(type_str, TermStringFormat::green);
 }
 
@@ -683,12 +759,13 @@ int type_strlen(const TypeData *type) {
   PrimitiveType tp = type->ptype();
   switch (tp) {
     case tp_Unknown:
-      if (type->use_or_false()) {
-        return STRLEN_FALSE;
+      if (type->or_null_flag() || type->or_false_flag()) {
+        return STRLEN_EMPTY;
       }
       return STRLEN_UNKNOWN;
+    case tp_Null:
     case tp_False:
-      return STRLEN_FALSE_;
+      return STRLEN_EMPTY;
     case tp_bool:
       return STRLEN_BOOL_;
     case tp_int:
@@ -732,20 +809,20 @@ int type_strlen(const TypeData *type) {
   return STRLEN_ERROR;
 }
 
-bool can_store_false(const TypeData *type) {
-  return can_store_false(type->ptype()) || type->or_false_flag();
-}
-
 bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
   if (type1->ptype() == tp_var || type2->ptype() == tp_var) {
     return true;
   }
-  if (can_store_false(type1) && can_store_false(type2)) {
+  if (type1->can_store_false() && type2->can_store_false()) {
+    return true;
+  }
+  if (type1->can_store_null() && type2->can_store_null()) {
     return true;
   }
   return type1->ptype() == type2->ptype();
 }
 
+// compare types in sense of cpp type out
 bool is_equal_types(const TypeData *type1, const TypeData *type2) {
   if (type1 == nullptr) {
     return type2 == nullptr;
@@ -759,9 +836,9 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
   if (tp1 != tp2) {
     return false;
   }
-  const bool or_false1 = type1->use_or_false() && tp1 != tp_bool;
-  const bool or_false2 = type2->use_or_false() && tp2 != tp_bool;
-  if (or_false1 != or_false2) {
+  const bool is_optional1 = type1->use_optional();
+  const bool is_optional2 = type2->use_optional();
+  if (is_optional1 != is_optional2) {
     return false;
   }
 
@@ -797,14 +874,17 @@ size_t TypeData::get_tuple_max_index() const {
   kphp_assert(ptype() == tp_tuple);
   return subkeys_values.size();
 }
+
 TypeData *TypeData::create_for_class(ClassPtr klass) {
   TypeData *result = new TypeData(tp_Class);
   result->class_type_ = klass;
   return result;
 }
-TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool or_false_flag /* =false */) {
+
+TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool optional_flag /* = false */) {
   TypeData *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
-  res->set_or_false_flag(or_false_flag);
+  res->set_or_false_flag(optional_flag);
+  res->set_or_null_flag(optional_flag);
   return res;
 }

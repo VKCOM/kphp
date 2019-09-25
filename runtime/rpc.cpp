@@ -179,17 +179,13 @@ bool f$rpc_parse(const var &new_rpc_data) {
   return f$rpc_parse(new_rpc_data.to_string());
 }
 
+bool f$rpc_parse(bool new_rpc_data) {
+  return f$rpc_parse(var{new_rpc_data});
+}
+
 bool f$rpc_parse(const Optional<string> &new_rpc_data) {
-  switch (new_rpc_data.value_state()) {
-    case OptionalState::has_value:
-      return f$rpc_parse(new_rpc_data.val());
-    case OptionalState::false_value:
-      return f$rpc_parse(var{false});
-    case OptionalState::null_value:
-      return f$rpc_parse(var{});
-    default:
-      __builtin_unreachable();
-  }
+  auto rpc_parse_lambda = [](const auto &v) { return f$rpc_parse(v); };
+  return call_fun_on_optional_value(rpc_parse_lambda, new_rpc_data);
 }
 
 int rpc_get_pos() {

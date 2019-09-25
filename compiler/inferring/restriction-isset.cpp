@@ -40,13 +40,13 @@ void RestrictionIsset::find_dangerous_isset_warning(const vector<tinf::Node *> &
 }
 
 bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
-  PrimitiveType ptp = tp->ptype();
-  if (isset_flags & ifi_isset) {
-    return ptp != tp_var;
+  if (tp->use_optional()) {
+    return false;
   }
 
-  if (tp->use_or_false()) {
-    ptp = tp_bool;
+  const PrimitiveType ptp = tp->get_real_ptype();
+  if (isset_flags & ifi_isset) {
+    return ptp != tp_var;
   }
 
   int check_mask = ifi_is_null;

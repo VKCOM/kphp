@@ -109,12 +109,9 @@ function test_get_global_vars_memory_stats() {
   $all_vars = $non_empty_vars;
   $all_vars["ClassWithStaticVars::\$const_array"] = 0;
   $all_vars["ClassWithStaticVars::\$const_string"] = 0;
-  $all_vars["ClassWithStaticVars::\$null"] = 0;
   $all_vars["ClassWithStaticVars::\$empty_instance"] = 0;
   $all_vars["\$const_string"] = 0;
   $all_vars["static_vars::\$const_string"] = 0;
-  $all_vars["\$null"] = 0;
-  $all_vars["static_vars::\$null"] = 0;
   $all_vars["\$const_array"] = 0;
   $all_vars["static_vars::\$const_array"] = 0;
   $all_vars["\$empty_instance"] = 0;

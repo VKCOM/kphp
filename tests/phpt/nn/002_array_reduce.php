@@ -35,4 +35,4 @@ var_dump(array_reduce($z, "addall", NULL));
 var_dump(array_reduce(array(1, 2, 3), function($carry, $item) {
   if ($carry === NULL) return $item;
   return $carry + $item;
-}, 7));
+}, 1 ? 7 : null));

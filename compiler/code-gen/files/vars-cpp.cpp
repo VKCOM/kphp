@@ -164,7 +164,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
         PrimitiveType ptype = type_data->ptype();
         if (vk::any_of_equal(ptype, tp_array, tp_var, tp_string)) {
           W << VarName(var);
-          if (type_data->use_or_false()) {
+          if (type_data->use_optional()) {
             W << ".val()";
           }
           W << ".set_reference_counter_to_const();" << NL;

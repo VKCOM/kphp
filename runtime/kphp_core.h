@@ -97,9 +97,6 @@ inline bool gt(const Optional<T1> &lhs, const T2 &rhs);
 template<class T1, class T2>
 inline bool gt(const T1 &lhs, const Optional<T2> &rhs);
 
-template<class T>
-inline bool gt(const Optional<T> &lhs, const Optional<T> &rhs);
-
 template<class T1, class T2>
 inline bool gt(const Optional<T1> &lhs, const Optional<T2> &rhs);
 
@@ -463,10 +460,16 @@ inline array<var> f$arrayval(const var &val);
 inline array<var> f$arrayval(var &&val);
 
 template<class T>
-inline array<var> f$arrayval(const Optional<T> &val);
+inline array<T> f$arrayval(const Optional<T> &val);
 
 template<class T>
-inline array<var> f$arrayval(Optional<T> &&val);
+inline array<T> f$arrayval(Optional<T> &&val);
+
+template<class T>
+inline array<T> f$arrayval(const Optional<array<T>> &val);
+
+template<class T>
+inline array<T> f$arrayval(Optional<array<T>> &&val);
 
 
 inline bool &boolval_ref(bool &val);
@@ -511,10 +514,15 @@ inline array<T> &arrayval_ref(array<T> &val, const char *function);
 inline array<var> &arrayval_ref(var &val, const char *function);
 
 template<class T>
+inline array<T> &arrayval_ref(Optional<array<T>> &val, const char *function);
+
+template<class T>
 inline const array<T> &arrayval_ref(const array<T> &val, const char *function);
 
 inline const array<var> &arrayval_ref(const var &val, const char *function);
 
+template<class T>
+inline const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function);
 
 template<class T1, class T2>
 bool eq2(const Optional<T1> &lhs, const T2 &rhs);
@@ -558,14 +566,6 @@ template<class T>
 inline bool f$is_numeric(const Optional<T> &v);
 inline bool f$is_numeric(const string &v);
 inline bool f$is_numeric(const var &v);
-
-template<class T, class = enable_for_bool_int_double_string_array<T>>
-inline bool f$is_null(const T &v);
-template<class T>
-inline bool f$is_null(const class_instance<T> &v);
-template<class T>
-inline bool f$is_null(const Optional<T> &v);
-inline bool f$is_null(const var &v);
 
 template<class T>
 inline bool f$is_bool(const T &v);
@@ -855,24 +855,79 @@ bool lt(const T1 &lhs, const T2 &rhs) {
   return lhs < rhs;
 }
 
+template<class FunT, class T, class ...Args>
+decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args) {
+  switch (opt.value_state()) {
+    case OptionalState::has_value:
+      return fun(opt.val(), std::forward<Args>(args)...);
+    case OptionalState::false_value:
+      return fun(false, std::forward<Args>(args)...);
+    case OptionalState::null_value:
+      return fun(var{}, std::forward<Args>(args)...);
+    default:
+      __builtin_unreachable();
+  }
+}
+
+template<class FunT, class T, class ...Args>
+decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args) {
+  switch (opt.value_state()) {
+    case OptionalState::has_value:
+      return fun(std::move(opt.val()), std::forward<Args>(args)...);
+    case OptionalState::false_value:
+      return fun(false, std::forward<Args>(args)...);
+    case OptionalState::null_value:
+      return fun(var{}, std::forward<Args>(args)...);
+    default:
+      __builtin_unreachable();
+  }
+}
+
+namespace {
+template<class T1, class T2>
+bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto lt_lambda = [](const auto &l, const auto &r) { return lt(l, r);};
+  return call_fun_on_optional_value(lt_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs) {
+  auto lt_reversed_args_lambda = [](const auto &l, const auto &r) { return lt(r, l);};
+  return call_fun_on_optional_value(lt_reversed_args_lambda, rhs, lhs);
+}
+
+template<class T1, class T2>
+bool optional_leq_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto leq_lambda = [](const auto &l, const auto &r) { return leq(l, r);};
+  return call_fun_on_optional_value(leq_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+enable_if_t_is_not_optional<T1, bool> optional_leq_impl(const T1 &lhs, const Optional<T2> &rhs) {
+  auto leq_reversed_args_lambda = [](const auto &l, const auto &r) { return leq(r, l);};
+  return call_fun_on_optional_value(leq_reversed_args_lambda, rhs, lhs);
+}
+
+} // namespace
+
 template<class T1, class T2>
 bool lt(const Optional<T1> &lhs, const T2 &rhs) {
-  return lhs.has_value() ? lt(lhs.val(), rhs) : lt(false, rhs);
+  return optional_lt_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool lt(const T1 &lhs, const Optional<T2> &rhs) {
-  return rhs.has_value() ? lt(lhs, rhs.val()) : lt(lhs, false);
+  return optional_lt_impl(lhs, rhs);
 }
 
 template<class T>
 bool lt(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return lhs.has_value() ? lt(lhs.val(), rhs) : lt(false, rhs);
+  return optional_lt_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool lt(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return lhs.has_value() ? lt(lhs.val(), rhs) : lt(false, rhs);
+  return optional_lt_impl(lhs, rhs);
 }
 
 template<class T>
@@ -907,22 +962,17 @@ bool gt(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool gt(const Optional<T1> &lhs, const T2 &rhs) {
-  return lhs.has_value() ? gt(lhs.val(), rhs) : gt(false, rhs);
+  return lt(rhs, lhs);
 }
 
 template<class T1, class T2>
 bool gt(const T1 &lhs, const Optional<T2> &rhs) {
-  return rhs.has_value() ? gt(lhs, rhs.val()) : gt(lhs, false);
-}
-
-template<class T>
-bool gt(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return lhs.has_value() ? gt(lhs.val(), rhs) : gt(false, rhs);
+  return lt(rhs, lhs);
 }
 
 template<class T1, class T2>
 bool gt(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return lhs.has_value() ? gt(lhs.val(), rhs) : gt(false, rhs);
+  return lt(rhs, lhs);
 }
 
 template<class T>
@@ -957,22 +1007,22 @@ bool leq(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool leq(const Optional<T1> &lhs, const T2 &rhs) {
-  return lhs.has_value() ? leq(lhs.val(), rhs) : leq(false, rhs);
+  return optional_leq_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool leq(const T1 &lhs, const Optional<T2> &rhs) {
-  return rhs.has_value() ? leq(lhs, rhs.val()) : leq(lhs, false);
+  return optional_leq_impl(lhs, rhs);
 }
 
 template<class T>
 bool leq(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return lhs.has_value() ? leq(lhs.val(), rhs) : leq(false, rhs);
+  return optional_leq_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool leq(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return lhs.has_value() ? leq(lhs.val(), rhs) : leq(false, rhs);
+  return optional_leq_impl(lhs, rhs);
 }
 
 template<class T>
@@ -1007,22 +1057,22 @@ bool geq(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool geq(const Optional<T1> &lhs, const T2 &rhs) {
-  return lhs.has_value() ? geq(lhs.val(), rhs) : geq(false, rhs);
+  return optional_leq_impl(rhs, lhs);
 }
 
 template<class T1, class T2>
 bool geq(const T1 &lhs, const Optional<T2> &rhs) {
-  return rhs.has_value() ? geq(lhs, rhs.val()) : geq(lhs, false);
+  return optional_leq_impl(rhs, lhs);
 }
 
 template<class T>
 bool geq(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return lhs.has_value() ? geq(lhs.val(), rhs) : geq(false, rhs);
+  return optional_leq_impl(rhs, lhs);
 }
 
 template<class T1, class T2>
 bool geq(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return lhs.has_value() ? geq(lhs.val(), rhs) : geq(false, rhs);
+  return optional_leq_impl(rhs, lhs);
 }
 
 template<class T>
@@ -1124,9 +1174,9 @@ double divide(const var &lhs, const var &rhs) {
 }
 
 
-double divide(bool lhs, bool) {
+double divide(bool lhs, bool rhs) {
   php_warning("Both arguments of operator '/' are bool");
-  return lhs;
+  return divide(static_cast<int>(lhs), static_cast<int>(rhs));
 }
 
 template<class T>
@@ -1136,9 +1186,9 @@ double divide(bool lhs, const T &rhs) {
 }
 
 template<class T>
-double divide(const T &lhs, bool) {
+double divide(const T &lhs, bool rhs) {
   php_warning("Second argument of operator '/' is bool");
-  return f$floatval(lhs);
+  return divide(f$floatval(lhs), static_cast<int>(rhs));
 }
 
 template<class T>
@@ -1496,32 +1546,63 @@ array<var> f$arrayval(var &&val) {
   return val.is_array() ? std::move(val.as_array()) : val.to_array();
 }
 
+namespace {
+
+template<typename T>
+std::enable_if_t<vk::is_type_in_list<T, bool, var>{}, array<T>> false_cast_to_array() {
+  return f$arrayval(T{false});
+}
+
+template<typename T>
+std::enable_if_t<!vk::is_type_in_list<T, bool, var>{}, array<T>> false_cast_to_array() {
+  php_warning("Dangerous cast false to array, the result will be different from PHP");
+  return array<T>{};
+}
+
+} // namespace
+
 template<class T>
-array<var> f$arrayval(const Optional<T> &val) {
+array<T> f$arrayval(const Optional<T> &val) {
   switch (val.value_state()) {
     case OptionalState::has_value:
       return f$arrayval(val.val());
     case OptionalState::false_value:
-      return f$arrayval(false);
+      return false_cast_to_array<T>();
     case OptionalState::null_value:
-      return array<var>{};
+      return array<T>{};
     default:
       __builtin_unreachable();
   }
 }
 
 template<class T>
-array<var> f$arrayval(Optional<T> &&val) {
+array<T> f$arrayval(Optional<T> &&val) {
   switch (val.value_state()) {
     case OptionalState::has_value:
       return f$arrayval(std::move(val.val()));
     case OptionalState::false_value:
-      return f$arrayval(false);
+      return false_cast_to_array<T>();
     case OptionalState::null_value:
-      return array<var>{};
+      return array<T>{};
     default:
       __builtin_unreachable();
   }
+}
+
+template<class T>
+array<T> f$arrayval(const Optional<array<T>> &val) {
+  if (val.value_state() == OptionalState::false_value) {
+    return false_cast_to_array<T>();
+  }
+  return val.val();
+}
+
+template<class T>
+array<T> f$arrayval(Optional<array<T>> &&val) {
+  if (val.value_state() == OptionalState::false_value) {
+    return false_cast_to_array<T>();
+  }
+  return std::move(val.val());
 }
 
 bool &boolval_ref(bool &val) {
@@ -1602,6 +1683,14 @@ array<var> &arrayval_ref(var &val, const char *function) {
 }
 
 template<class T>
+array<T> &arrayval_ref(Optional<array<T>> &val, const char *function) {
+  if (unlikely(!val.has_value())) {
+    php_warning("%s() expects parameter to be array, null or false is given", function);
+  }
+  return val.ref();
+}
+
+template<class T>
 const array<T> &arrayval_ref(const array<T> &val, const char *) {
   return val;
 }
@@ -1610,71 +1699,68 @@ const array<var> &arrayval_ref(const var &val, const char *function) {
   return val.as_array(function);
 }
 
+template<class T>
+const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function) {
+  if (unlikely(!val.has_value())) {
+    php_warning("%s() expects parameter to be array, null or false is given", function);
+  }
+  return val.val();
+}
+
+namespace {
+
+template<class T1, class T2>
+bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto eq2_lambda = [](const auto &l, const auto &r) { return eq2(r, l);};
+  return call_fun_on_optional_value(eq2_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto equals_lambda = [](const auto &l, const auto &r) { return equals(r, l);};
+  return call_fun_on_optional_value(equals_lambda, lhs, rhs);
+}
+
+} // namespace
+
 template<class T1, class T2>
 bool eq2(const Optional<T1> &lhs, const T2 &rhs) {
-  return lhs.has_value() ? eq2(lhs.val(), rhs) : eq2(false, rhs);
+  return optional_eq2_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool eq2(const T1 &lhs, const Optional<T2> &rhs) {
-  return eq2(rhs, lhs);
+  return optional_eq2_impl(rhs, lhs);
 }
 
 template<class T1, class T2>
 bool eq2(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return lhs.has_value() ? eq2(rhs, lhs.val()) : eq2(rhs, false);
+  return optional_eq2_impl(lhs, rhs);
 }
 
 template<class T>
 bool eq2(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return lhs.has_value() ? eq2(rhs, lhs.val()) : eq2(rhs, false);
+  return optional_eq2_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool equals(const Optional<T1> &lhs, const T2 &rhs) {
-  switch (lhs.value_state()) {
-    case OptionalState::has_value:
-      return equals(lhs.val(), rhs);
-    case OptionalState::false_value:
-      return equals(false, rhs);
-    case OptionalState::null_value:
-      return f$is_null(rhs);
-    default:
-      __builtin_unreachable();
-  }
+  return optional_equals_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
 bool equals(const T1 &lhs, const Optional<T2> &rhs) {
-  return equals(rhs, lhs);
+  return optional_equals_impl(rhs, lhs);
 }
 
 template<class T1, class T2>
 bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  switch (lhs.value_state()) {
-    case OptionalState::has_value:
-      return equals(rhs, lhs.val());
-    case OptionalState::false_value:
-      return equals(rhs, false);
-    case OptionalState::null_value:
-      return f$is_null(rhs);
-    default:
-      __builtin_unreachable();
-  }
+  return optional_equals_impl(lhs, rhs);
 }
 
 template<class T>
 bool equals(const Optional<T> &lhs, const Optional<T> &rhs) {
-  switch (lhs.value_state()) {
-    case OptionalState::has_value:
-      return equals(rhs, lhs.val());
-    case OptionalState::false_value:
-      return equals(rhs, false);
-    case OptionalState::null_value:
-      return f$is_null(rhs);
-    default:
-      __builtin_unreachable();
-  }
+  return optional_equals_impl(lhs, rhs);
 }
 
 template<class T>
@@ -1770,16 +1856,8 @@ int f$count(const var &v) {
 
 template<class T>
 int f$count(const Optional<T> &a) {
-  switch (a.value_state()) {
-    case OptionalState::has_value:
-      return f$count(a.val());
-    case OptionalState::false_value:
-      return f$count(false);
-    case OptionalState::null_value:
-      return f$count(var{});
-    default:
-      __builtin_unreachable();
-  }
+  auto count_lambda = [](const auto &v) { return f$count(v);};
+  return call_fun_on_optional_value(count_lambda, a);
 }
 
 template<class T>
@@ -1824,7 +1902,7 @@ inline bool f$is_numeric(const Optional<T> &v) {
 }
 
 
-template<class T, class>
+template<class T>
 bool f$is_null(const T &) {
   return false;
 }
@@ -1896,16 +1974,8 @@ bool f$is_scalar(const T &) {
 
 template<class T>
 inline bool f$is_scalar(const Optional<T> &v) {
-  switch (v.value_state()) {
-    case OptionalState::has_value:
-      return f$is_scalar(v.val());
-    case OptionalState::false_value:
-      return true;
-    case OptionalState::null_value:
-      return false;
-    default:
-      __builtin_unreachable();
-  }
+  auto is_scalar_lambda = [](const auto &v) { return f$is_scalar(v);};
+  return call_fun_on_optional_value(is_scalar_lambda, v);
 }
 
 bool f$is_scalar(const var &v) {

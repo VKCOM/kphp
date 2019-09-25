@@ -124,7 +124,7 @@ bool RestrictionLess::is_less(const TypeData *given, const TypeData *expected, c
     type_of_to_node->set_lca(given);
   }
 
-  return type_out(type_of_to_node.get()) != type_out(expected);
+  return type_out(type_of_to_node.get(), gen_out_style::txt) != type_out(expected, gen_out_style::txt);
 }
 
 void RestrictionLess::find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type) {

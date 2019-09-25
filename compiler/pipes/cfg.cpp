@@ -157,14 +157,14 @@ public:
     std::sort(to_merge.begin(), to_merge.end(),
       [](const MergeData &a, const MergeData &b) {
         // типы отличаются — сортируем по ним, иначе по имени (name$vN < name$vM при N<M, name < name$vN)
-        const int eq = type_out(tinf::get_type(a.var)).compare(type_out(tinf::get_type(b.var)));
+        const int eq = type_out(tinf::get_type(a.var), gen_out_style::txt).compare(type_out(tinf::get_type(b.var), gen_out_style::txt));
         return eq == 0 ? a.var->name < b.var->name : eq < 0;
     });
   }
 
   static bool eq_merge_data(const MergeData &a, const MergeData &b) {
-    return type_out(tinf::get_type(a.var)) ==
-           type_out(tinf::get_type(b.var));
+    return type_out(tinf::get_type(a.var), gen_out_style::txt) ==
+           type_out(tinf::get_type(b.var), gen_out_style::txt);
   }
 
   void merge_same_type() {

@@ -321,6 +321,7 @@ function test1() {
 
 
   //Warning on the next line
+  $ttt = null;
   $x = isset ($ttt);
   $x /*:= bool*/;
 }
@@ -528,13 +529,13 @@ function test14() {
 
 
 function test16() {
-  $a = 1;
+  $a = 1 ? 1 : null;
   isset ($a);
-  $a /*:= var*/;
+  $a /*:= int|null*/;
 
   $a = array (array(1, 2, 3));
   is_array ($a[1]);
-  $a /*:= array <var>*/;
+  $a /*:= int[][]*/;
 
   $a = array (1, 2, 3);
   isset ($a[1]);
@@ -574,7 +575,7 @@ function test16() {
 
 
   $a = array(1);
-  $b = 123;
+  $b = 1 ? 123 : null;
   $c = $a[1];
   function test16_ref (&$x) {
   }
@@ -586,9 +587,9 @@ function test16() {
 
   $a = array (1);
   $b = $a[1];
-  $c = $b;
+  $c = 1 ? $b : false;
   if ($c === false) {}
-  $c /*:= var*/;
+  $c /*:= int|false*/;
 
   function check_var16($x) {
     is_array ($x);

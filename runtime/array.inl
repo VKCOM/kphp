@@ -460,14 +460,9 @@ bool array<T>::array_inner::has_key(int int_key) const {
 }
 
 template<class T>
-bool array<T>::array_inner::isset_value(int int_key) const {
-  return has_key(int_key);
-}
-
-template<>
-inline bool array<var>::array_inner::isset_value(int int_key) const {
+inline bool array<T>::array_inner::isset_value(int int_key) const {
   if (is_vector()) {
-    return ((unsigned int)int_key < (unsigned int)int_size && !((var *)int_entries)[int_key].is_null());
+    return ((unsigned int)int_key < (unsigned int)int_size && !f$is_null((((T *)int_entries)[int_key])));
   }
 
   int bucket = choose_bucket(int_key, int_buf_size);
@@ -477,7 +472,7 @@ inline bool array<var>::array_inner::isset_value(int int_key) const {
     }
   }
 
-  return int_entries[bucket].next != EMPTY_POINTER && !int_entries[bucket].value.is_null();
+  return int_entries[bucket].next != EMPTY_POINTER && !f$is_null(int_entries[bucket].value);
 }
 
 template<class T>
@@ -637,12 +632,7 @@ bool array<T>::array_inner::has_key(int int_key, const string &string_key) const
 }
 
 template<class T>
-bool array<T>::array_inner::isset_value(int int_key, const string &string_key) const {
-  return has_key(int_key, string_key);
-}
-
-template<>
-inline bool array<var>::array_inner::isset_value(int int_key, const string &string_key) const {
+inline bool array<T>::array_inner::isset_value(int int_key, const string &string_key) const {
   if (is_vector()) {
     return false;
   }
@@ -655,7 +645,7 @@ inline bool array<var>::array_inner::isset_value(int int_key, const string &stri
     }
   }
 
-  return string_entries[bucket].next != EMPTY_POINTER && !string_entries[bucket].value.is_null();
+  return string_entries[bucket].next != EMPTY_POINTER && !f$is_null(string_entries[bucket].value);
 }
 
 template<class T>
@@ -1668,19 +1658,8 @@ void array<T>::set_value(const var &v, const T &value) noexcept {
 template<class T>
 template<class OptionalT, class ...Args>
 void array<T>::emplace_value(const Optional<OptionalT> &key, Args &&... args) noexcept {
-  switch (key.value_state()) {
-    case OptionalState::has_value:
-      set_value(key.val(), std::forward<Args>(args)...);
-      return;
-    case OptionalState::false_value:
-      set_value(false, std::forward<Args>(args)...);
-      return;
-    case OptionalState::null_value:
-      set_value(var{}, std::forward<Args>(args)...);
-      return;
-    default:
-      __builtin_unreachable();
-  }
+  auto set_value_lambda = [this](auto &&... args) { return this->set_value(std::forward<decltype(args)>(args)...);};
+  return call_fun_on_optional_value(set_value_lambda, key, std::forward<Args>(args)...);
 }
 
 template<class T>

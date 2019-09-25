@@ -146,6 +146,64 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     }
   }
 }
+
+void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_vertex) {
+  auto lhs_type = tinf::get_type(binary_vertex->lhs());
+  auto rhs_type = tinf::get_type(binary_vertex->rhs());
+
+  switch (binary_vertex->type()) {
+    case op_add:
+    case op_set_add:
+      if (vk::any_of_equal(tp_array, lhs_type->get_real_ptype(), rhs_type->get_real_ptype())) {
+        kphp_error(vk::none_of_equal(tp_Unknown, lhs_type->ptype(), rhs_type->ptype()),
+                   fmt_format("Can't use '{}' operation between {} and {} types",
+                              OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
+        return;
+      }
+
+    // fall through
+    case op_mul:
+    case op_sub:
+    case op_div:
+    case op_mod:
+    case op_pow:
+    case op_and:
+    case op_or:
+    case op_xor:
+    case op_shl:
+    case op_shr:
+
+    case op_set_mul:
+    case op_set_sub:
+    case op_set_div:
+    case op_set_mod:
+    case op_set_pow:
+    case op_set_and:
+    case op_set_or:
+    case op_set_xor:
+    case op_set_shl:
+    case op_set_shr: {
+      kphp_error((lhs_type->ptype() != tp_Unknown || lhs_type->or_false_flag()) &&
+                 (rhs_type->ptype() != tp_Unknown || rhs_type->or_false_flag()),
+                 fmt_format("Got '{}' operation between {} and {} types",
+                            OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
+      return;
+    }
+
+    case op_eq3:
+    case op_neq3:
+      // TODO: === and !== between class instance and null works incorrect
+      if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
+        kphp_error(!lhs_type->or_null_flag() && !rhs_type->or_null_flag(),
+                   fmt_format("Got '{}' operation between {} and {} types",
+                              OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
+      }
+      return;
+
+    default:
+      return;
+  }
+}
 } // namespace
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
@@ -184,8 +242,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_eq3) {
     const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
-    if ((type_left->ptype() == tp_float && !type_left->or_false_flag()) ||
-        (type_right->ptype() == tp_float && !type_right->or_false_flag())) {
+    if ((type_left->ptype() == tp_float && !type_left->or_false_flag() && !type_left->or_null_flag()) ||
+        (type_right->ptype() == tp_float && !type_right->or_false_flag() && !type_right->or_null_flag())) {
       kphp_warning("Using === with float operand");
     }
     if (!can_be_same_type(type_left, type_right)) {
@@ -239,12 +297,15 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_index && vertex.as<op_index>()->has_key()) {
     VertexPtr arr = vertex.as<op_index>()->array();
     VertexPtr key = vertex.as<op_index>()->key();
-    const TypeData *arrayType = tinf::get_type(arr);
-    if (arrayType->ptype() == tp_tuple) {
+    const TypeData *array_type = tinf::get_type(arr);
+    if (array_type->ptype() == tp_tuple) {
       long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
-      size_t tuple_size = arrayType->get_tuple_max_index();
+      size_t tuple_size = array_type->get_tuple_max_index();
       kphp_error (0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
     }
+    const TypeData *key_type = tinf::get_type(key);
+    kphp_error(key_type->ptype() != tp_Unknown || key_type->or_false_flag(),
+               fmt_format("Can't get array element by key with {} type", colored_type_out(key_type)));
   }
   if (auto xset = vertex.try_as<meta_op_xset>()) {
     auto v = xset->expr();
@@ -260,6 +321,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
         }
       } else {
         kphp_error(!var->is_constant(), "Can't use isset on const variable");
+        const TypeData *type_info = tinf::get_type(var);
+        kphp_error(type_info->can_store_null(),
+                   fmt_format("isset({}) will be always true (inferred {})", var->get_human_readable_name(), colored_type_out(type_info)));
       }
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
@@ -291,12 +355,17 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
 
         for (VarPtr global_var : function_which_required->global_var_ids) {
           if (!global_var->marked_as_global) {
-            kphp_warning(("require file with global variable not marked as global: " + global_var->name).c_str());
+            kphp_warning(fmt_format("require file with global variable not marked as global: {}", global_var->name));
           }
         }
       }
     }
   }
+
+  if (auto binary_vertex = vertex.try_as<meta_op_binary>()) {
+    check_null_usage_in_binary_operations(binary_vertex);
+  }
+
   //TODO: may be this should be moved to tinf_check
   return vertex;
 }
@@ -320,8 +389,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_get_global_vars_memory_stats_call();
     }else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
-      kphp_error(arg_type->get_real_ptype() == tp_var,
-                 fmt_format("is_null() will be always false for {}", type_out(arg_type)));
+      kphp_error(arg_type->can_store_null(),
+                 fmt_format("is_null() will be always false for {}", colored_type_out(arg_type)));
     }
   }
 

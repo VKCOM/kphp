@@ -201,6 +201,10 @@ int f$abs(const Optional<int> &v) {
   return f$abs(val(v));
 }
 
+int f$abs(const Optional<bool> &v) {
+  return f$abs(static_cast<int>(val(v)));
+}
+
 double f$abs(const Optional<double> &v) {
   return f$abs(val(v));
 }

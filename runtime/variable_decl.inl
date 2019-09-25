@@ -30,9 +30,11 @@ class var {
 
   template<typename T>
   inline void init_from(T &&v);
+  inline void init_from(var v) { copy_from(std::move(v)); }
 
   template<typename T>
   inline var &assign_from(T &&v);
+  inline var &assign_from(var v) { return (*this = std::move(v)); }
 
   template<typename T>
   auto get_type_and_value_ptr(const array<T> &) { return std::make_pair(ARRAY_TYPE  , &as_array());  }

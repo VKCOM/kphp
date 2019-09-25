@@ -5,7 +5,7 @@
   $is_kphp = false;
 #endif
 
-  $a = null;
+  $a = 1 ? null : 2;
   $b = true;
   $c = 13;
   $d = 17.0;

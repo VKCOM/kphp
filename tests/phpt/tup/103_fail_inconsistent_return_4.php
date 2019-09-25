@@ -7,7 +7,7 @@ require_once 'polyfills.php';
 function getMe($arg) {
     return $arg
         ? tuple(1, 'str')
-        : null;
+        : 1;
 }
 
 function demo() {

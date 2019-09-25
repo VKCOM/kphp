@@ -157,7 +157,7 @@ VertexPtr OptimizationPass::fix_int_const(VertexPtr root) {
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
   VertexPtr expr = root.as<meta_op_unary>()->expr();
   const TypeData *tp = tinf::get_type(expr);
-  if (tp->use_or_false() == false) {
+  if (!tp->use_optional()) {
     VertexPtr res;
     if (vk::any_of_equal(root->type(), op_conv_int, op_conv_int_l) && tp->ptype() == tp_int) {
       res = expr;

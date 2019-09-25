@@ -48,7 +48,6 @@ $cur_feed_types_raw = ($cur_feed_types_raw == '*' ? true : array ());
 $a = null; if (isset ($a)) {}
 
 $tt = isset ($a);
-$tttt = isset ($a[0]);
 
 $x = (true ? true : false);
 $x = (true ? true : false);

@@ -62,6 +62,8 @@ double f$abs(double v);
 
 int f$abs(const Optional<int> &v);
 
+int f$abs(const Optional<bool> &v);
+
 double f$abs(const Optional<double> &v);
 
 

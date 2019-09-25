@@ -283,24 +283,24 @@ int f$mysqli_affected_rows(const class_instance<C$mysqli> &db) {
   return db->affected_rows;
 }
 
-var f$mysqli_fetch_array(int query_id, int result_type) {
+Optional<array<var>> f$mysqli_fetch_array(int query_id, int result_type) {
   if (result_type != 1) {
     php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
   }
   if (query_id <= 0 || query_id > DB_Proxy->biggest_query_id) {
-    return var();
+    return Optional<array<var>>{};
   }
 
   array<array<var>> &query_result = DB_Proxy->query_results[query_id];
   int &cur = DB_Proxy->cur_pos[query_id];
   if (cur >= (int)query_result.count()) {
-    return var();
+    return Optional<array<var>>{};
   }
   array<var> result = query_result[cur++];
   if (cur >= (int)query_result.count()) {
     query_result = DB_Proxy->query_results[0];
   }
-  return result;
+  return Optional<array<var>>{std::move(result)};
 }
 
 int f$mysqli_insert_id(const class_instance<C$mysqli> &db) {

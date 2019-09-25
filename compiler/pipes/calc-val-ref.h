@@ -12,7 +12,7 @@ public:
     return default_check_function(function) && !function->is_extern();
   }
 
-  bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last);
+  bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first);
 
   struct LocalT : public FunctionPassBase::LocalT {
     bool allowed;

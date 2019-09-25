@@ -24,29 +24,28 @@
 	f ($p[0]);
 	var_dump ($p);
 
+  echo "\n";
 	// It only happens with references
 	$p = NULL;
 	var_dump ($p);
 	$t = $p[0];
 	var_dump ($p);
 
-
-
+  echo "\n";
 	// The array doesnt need to be NULL, just missing the index.
 	$p = array (1 => 17);
 	var_dump ($p);
 	f ($p[2]);
 	var_dump ($p);
 
+  echo "\n";
 	// The array doesnt need to be NULL, just missing the index.
-	$p = array (1 => 17);
+	$p = array (1 => "17");
 	var_dump ($p);
 	$t = $p[2];
 	var_dump ($p);
 
-
-
-
+  echo "\n";
 	$x = array (4 => "d");
 	var_dump ($x);
 	$y = $x[$p[0]];

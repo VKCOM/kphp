@@ -10,6 +10,7 @@
 const char *ptype_name(PrimitiveType id) {
   switch (id) {
     case tp_Unknown:       return "Unknown";
+    case tp_Null:          return "Null";
     case tp_False:         return "False";
     case tp_bool:          return "bool";
     case tp_int:           return "int";
@@ -36,11 +37,19 @@ const char *ptype_name(PrimitiveType id) {
 }
 
 bool can_store_false(PrimitiveType tp) {
-  return vk::any_of_equal(tp, tp_False, tp_bool, tp_var, tp_Class, tp_RPC, tp_Any);
+  kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
+  return vk::any_of_equal(tp, tp_bool, tp_var, tp_Class, tp_RPC, tp_Any);
 }
 
+bool can_store_null(PrimitiveType tp) {
+  kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
+  return vk::any_of_equal(tp, tp_var, tp_Any);
+}
 
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
+  kphp_assert(vk::none_of_equal(a, tp_False, tp_Null));
+  kphp_assert(vk::none_of_equal(b, tp_False, tp_Null));
+
   if (a == b) {
     return a;
   }

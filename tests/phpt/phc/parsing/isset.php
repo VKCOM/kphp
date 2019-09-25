@@ -13,7 +13,8 @@
 	{
 		echo "x, y set.\n";
 	}
-	
+
+	$z = null;
 	if(isset($z))
 	{
 		echo "z is set";
