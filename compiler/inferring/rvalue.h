@@ -5,45 +5,22 @@
 #include "compiler/inferring/public.h"
 
 struct RValue {
-  const TypeData *type;
-  tinf::Node *node;
-  const MultiKey *key;
-  bool drop_or_false;
-  RValue() :
-    type(nullptr),
-    node(nullptr),
-    key(nullptr),
-    drop_or_false(false) {
-  }
+  RValue() = default;
 
   explicit RValue(const TypeData *type, const MultiKey *key = nullptr) :
     type(type),
-    node(nullptr),
-    key(key),
-    drop_or_false(false) {
+    key(key) {
   }
 
   explicit RValue(tinf::Node *node, const MultiKey *key = nullptr) :
-    type(nullptr),
     node(node),
-    key(key),
-    drop_or_false(false) {
+    key(key) {
   }
 
-  RValue(const RValue &from) :
-    type(from.type),
-    node(from.node),
-    key(from.key),
-    drop_or_false(from.drop_or_false) {
-  }
-
-  RValue &operator=(const RValue &from) {
-    type = from.type;
-    node = from.node;
-    key = from.key;
-    drop_or_false = from.drop_or_false;
-    return *this;
-  }
+  const TypeData *type{nullptr};
+  tinf::Node *node{nullptr};
+  const MultiKey *key{nullptr};
+  bool drop_or_false{false};
 };
 
 
