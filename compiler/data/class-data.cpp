@@ -30,7 +30,7 @@ void ClassData::set_name_and_src_name(const string &name, const vk::string_view 
   this->src_name = std::string("C$").append(replace_backslashes(name));
   this->header_name = replace_characters(src_name + ".h", '$', '@');
   this->phpdoc_str = phpdoc_str;
-  this->is_tl_class = !phpdoc_str.empty() && PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_tl_class);
+  this->is_tl_class = !phpdoc_str.empty() && phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_tl_class);
 
   size_t pos = name.find_last_of('\\');
   std::string namespace_name = pos == std::string::npos ? "" : name.substr(0, pos);

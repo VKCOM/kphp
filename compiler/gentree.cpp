@@ -1765,7 +1765,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   next_cur();
 
   std::string full_class_name;
-  if (processing_file->namespace_name.empty() && PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_tl_class)) {
+  if (processing_file->namespace_name.empty() && phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_tl_class)) {
     kphp_assert(processing_file->is_builtin());
     full_class_name = G->env().get_tl_namespace_prefix() + name_str;
   } else {
@@ -1795,7 +1795,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
 
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // с полным неймспейсом и слешами
-  cur_class->is_immutable = PhpDocTypeRuleParser::is_tag_in_phpdoc(phpdoc_str, php_doc_tag::kphp_immutable_class);
+  cur_class->is_immutable = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_immutable_class);
   cur_class->location_line_num = line_num;
 
   VertexPtr body_vertex = get_statement();    // это пустой op_seq

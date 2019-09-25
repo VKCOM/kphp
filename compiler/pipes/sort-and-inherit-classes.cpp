@@ -418,8 +418,8 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
 }
 
 inline void SortAndInheritClassesF::analyze_class_phpdoc(ClassPtr klass) {
-  if (PhpDocTypeRuleParser::is_tag_in_phpdoc(klass->phpdoc_str, php_doc_tag::kphp_memcache_class)) {
-      G->set_memcache_class(klass);
+  if (phpdoc_tag_exists(klass->phpdoc_str, php_doc_tag::kphp_memcache_class)) {
+    G->set_memcache_class(klass);
   }
 }
 

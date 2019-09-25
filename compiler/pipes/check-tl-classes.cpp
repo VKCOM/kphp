@@ -14,7 +14,7 @@ void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresen
                     format("Tl-class '%s' is%s expected to be an interface", class_id->name.c_str(), repr.is_interface ? "" : " not"));
 
   for (const auto &child : class_id->derived_classes) {
-    kphp_error_return(PhpDocTypeRuleParser::is_tag_in_phpdoc(child->phpdoc_str, php_doc_tag::kphp_tl_class),
+    kphp_error_return(phpdoc_tag_exists(child->phpdoc_str, php_doc_tag::kphp_tl_class),
                       format("Class '%s' is expected to be tl-class, because it inherits from tl-class '%s'",
                              child->name.c_str(), class_id->name.c_str()));
   }
