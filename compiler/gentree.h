@@ -58,10 +58,7 @@ public:
   void skip_phpdoc_tokens();
 
   static VertexAdaptor<op_seq> embrace(VertexPtr v);
-  PrimitiveType get_ptype();
   PrimitiveType get_func_param_type_help();
-  VertexPtr get_type_rule_func();
-  VertexPtr get_type_rule_();
   VertexAdaptor<meta_op_type_rule> get_type_rule();
 
   static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag = 0);

@@ -7,28 +7,6 @@
 
 #include "compiler/stage.h"
 
-std::map<std::string, PrimitiveType> name_to_ptype;
-
-void get_ptype_by_name_init() {
-  for (int tp_id = 0; tp_id < ptype_size; tp_id++) {
-    auto tp = static_cast<PrimitiveType>(tp_id);
-    name_to_ptype[ptype_name(tp)] = tp;
-  }
-}
-
-PrimitiveType get_ptype_by_name(const std::string &s) {
-  static bool inited = false;
-  if (!inited) {
-    get_ptype_by_name_init();
-    inited = true;
-  }
-  auto it = name_to_ptype.find(s);
-  if (it == name_to_ptype.end()) {
-    return tp_Error;
-  }
-  return it->second;
-}
-
 const char *ptype_name(PrimitiveType id) {
   switch (id) {
     case tp_Unknown:       return "Unknown";

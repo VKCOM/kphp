@@ -28,7 +28,6 @@ enum PrimitiveType {
 };
 
 const char *ptype_name(PrimitiveType id);
-PrimitiveType get_ptype_by_name(const std::string &s);
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b);
 bool can_store_false(PrimitiveType tp);
 
