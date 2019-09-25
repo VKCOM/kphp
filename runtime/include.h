@@ -8,7 +8,7 @@
 
 #include "common-php-functions.h"
 #include "runtime/declarations.h"
-#include "runtime/or_false.h"
+#include "runtime/optional.h"
 #include "runtime/php_assert.h"
 
 #define COMMA ,
