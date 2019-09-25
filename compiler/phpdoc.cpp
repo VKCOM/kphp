@@ -231,8 +231,8 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_regexp);
       }
-      // (для functions.txt) OrFalse<int>
-      if (cur_tok->str_val == "OrFalse") {    // todo нужно ли? (или |)
+      // (для functions.txt) OrFalse<int> (нужно оставить, пока есть /*:= в коде сайта)
+      if (cur_tok->str_val == "OrFalse") {
         cur_tok++;
         return VertexAdaptor<op_type_expr_or_false>::create(parse_nested_one_type_rule());
       }

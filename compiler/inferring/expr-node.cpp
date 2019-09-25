@@ -109,7 +109,15 @@ void ExprNodeRecalc::apply_type_rule_callable(VertexAdaptor<op_type_expr_callabl
 }
 
 void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr) {
-  set_lca(rule->type_help);
+  // по идее, должно быть просто set_lca(rule->type_help), но отдельно не даём смешивать void|false
+  if (rule->type_help == tp_False) {
+    if (new_type()->ptype() != tp_void) {
+      recalc_ptype<tp_False>();
+    }
+  } else {
+    set_lca(rule->type_help);
+  }
+
   if (!rule->empty()) {
     switch (rule->type_help) {
       case tp_array:

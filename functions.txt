@@ -92,13 +92,13 @@ $argv ::: var;
 
 function ob_clean() ::: void;
 function ob_end_clean() ::: bool;
-function ob_get_clean() ::: OrFalse <string>;
+function ob_get_clean() ::: string | false;
 function ob_get_contents() ::: string;
 function ob_start ($x ::: string = "") ::: void;
 function ob_flush () ::: void;
 function ob_end_flush () ::: bool;
-function ob_get_flush () ::: OrFalse <string>;
-function ob_get_length () ::: OrFalse <int>;
+function ob_get_flush () ::: string | false;
+function ob_get_length () ::: int | false;
 function ob_get_level () ::: int;
 
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
@@ -133,7 +133,7 @@ function error_get_last() ::: var;
 function error_reporting ($e ::: int = TODO) ::: int;
 function warning ($message ::: string) ::: void;
 
-function ini_get ($s ::: string) ::: OrFalse <string>;
+function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
 function memory_get_usage ($real_usage ::: bool = false) ::: int;
@@ -206,7 +206,7 @@ function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 /** @kphp-extern-func-info cpp_template_call */
 function array_pad ($a ::: array, $size ::: int, $value ::: Any) ::: array< lca< ^1[], ^3 > >;
-function array_column ($a :>=: array< array< Any > >, $column_key, $index_key = null) ::: OrFalse< array< ^1[][] > >;
+function array_column ($a :>=: array< array< Any > >, $column_key, $index_key = null) ::: array< ^1[][] > | false;
 
 /**
  * @kphp-extern-func-info cpp_template_call cpp_variadic_call
@@ -280,16 +280,16 @@ function localtime ($timestamp ::: int = INT_MIN, $is_associative ::: bool = fal
 function microtime ($get_as_float ::: bool = false) ::: var;//TODO
 function mktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
 function strftime ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
-function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: OrFalse <int>;
+function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: int | false;
 function time() ::: int;
 
 function debug_backtrace() ::: array <array <string> >;
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
-function posix_getpwuid($uid ::: int) ::: OrFalse <array <var> >;
-function getopt ($options ::: string, $longopt ::: array = array()) ::: OrFalse <array <var> >;
-function gethostbynamel ($name ::: string) ::: OrFalse <array <string> >;
-function inet_pton ($address ::: string) ::: OrFalse <string>;
+function posix_getpwuid($uid ::: int) ::: array <var> | false;
+function getopt ($options ::: string, $longopt ::: array = array()) ::: array <var> | false;
+function gethostbynamel ($name ::: string) ::: array <string> | false;
+function inet_pton ($address ::: string) ::: string | false;
 
 function pack ($pattern ::: string, ...$args) ::: string;
 function unpack ($pattern ::: string, $data ::: string) ::: array <var>;
@@ -301,7 +301,7 @@ define('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
 function serialize ($v ::: Any) ::: string;
 /** @kphp-pure-function */
 function unserialize ($v ::: string) ::: var;
-function json_encode ($v ::: Any, $options ::: int = 0) ::: OrFalse<string>;
+function json_encode ($v ::: Any, $options ::: int = 0) ::: string | false;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 
 define('PREG_PATTERN_ORDER', 1);
@@ -311,13 +311,13 @@ define('PREG_SPLIT_NO_EMPTY', 8);
 define('PREG_SPLIT_DELIM_CAPTURE', 16);
 define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 
-function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: OrFalse <int>;//TODO
-function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0) ::: OrFalse <int>;//TODO
+function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
+function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0) ::: int | false;//TODO
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
 function preg_replace_callback ($regex ::: regexp, callback($x ::: array<string>) ::: string, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
-function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: OrFalse < array <var> >;
+function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: array <var> | false;
 
 define('SORT_REGULAR', 0);
 define('SORT_NUMERIC', 1);
@@ -350,7 +350,7 @@ function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false)
 function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
 function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
 function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
-function md5_file ($s ::: string, $raw_output ::: bool = false) ::: OrFalse <string>;
+function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
 function crc32 ($s ::: string) ::: int;
 function crc32_file ($s ::: string) ::: int;
 /** @kphp-pure-function */
@@ -383,18 +383,18 @@ define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
 
 function openssl_public_encrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
 function openssl_private_decrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
-function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: OrFalse <string>;
-function openssl_pkey_get_public ($key ::: string) ::: OrFalse <string>;
+function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
+function openssl_pkey_get_public ($key ::: string) ::: string | false;
 function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
-function openssl_random_pseudo_bytes ($length ::: int) ::: OrFalse <string>;
-function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: OrFalse< array<var> >;
+function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: array<var> | false;
 function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: var;
 
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: array<string>;
-function openssl_cipher_iv_length($method ::: string) ::: OrFalse<int>;
-function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: OrFalse<string>;
-function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: OrFalse<string>;
+function openssl_cipher_iv_length($method ::: string) ::: int | false;
+function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;
+function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;
 
 define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);
@@ -403,7 +403,7 @@ function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
 function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
 function gzuncompress ($str ::: string) ::: string;
-function base64_decode ($str ::: string, $strict ::: bool = false) ::: OrFalse <string>;
+function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
 function base64_encode ($str ::: string) ::: string;
 function base64url_decode_ulong ($str ::: string) ::: ULong;
 function base64url_encode_ulong ($val ::: ULong) ::: string;
@@ -498,8 +498,8 @@ function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
 function strnatcmp ($str1 ::: string, $str2 ::: string) ::: int;
 function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
 
-function ip2long ($ip ::: string) ::: OrFalse <int>;
-function ip2ulong ($ip ::: string) ::: OrFalse <string>;
+function ip2long ($ip ::: string) ::: int | false;
+function ip2ulong ($ip ::: string) ::: string | false;
 function long2ip ($ip) ::: string;
 
 function get_magic_quotes_gpc() ::: bool;
@@ -524,29 +524,29 @@ function sprintf ($format ::: string, ...$args) ::: string;
 function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
 function fprintf ($stream, $format ::: string, ...$args) ::: int;
 
-function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: OrFalse <int>;
-function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: OrFalse <array <var> >;
+function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
+function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: array <var> | false;
 
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
 //function strtr ($subject, $from, $to);
 function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: lca < ^3, string>;
 function str_split ($str ::: string, $split_length ::: int = 1) ::: array <string>;
 function strlen ($str ::: string) ::: int;
-function strpbrk ($haystack ::: string, $char_list ::: string) ::: OrFalse <string>;
-function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: OrFalse <int>;
-function stripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: OrFalse <int>;
-function strrpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: OrFalse <int>;
-function strripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: OrFalse <int>;
-function strstr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: OrFalse <string>;
-function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: OrFalse <string>;
-function strrchr ($haystack ::: string, $needle ::: string) ::: OrFalse <string>;
+function strpbrk ($haystack ::: string, $char_list ::: string) ::: string | false;
+function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function stripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strrpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strstr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
 function strrev ($str ::: string) ::: string;
 function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;
-function substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX) ::: OrFalse <string>;
+function substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX) ::: string | false;
 function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = INT_MAX) ::: int;
-function substr_replace ($str ::: string, $replacement ::: string, $start ::: int, $length ::: int = INT_MAX) ::: OrFalse <string>;
-function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = INT_MAX, $case_insensitivity ::: bool = false) ::: OrFalse <int>;
+function substr_replace ($str ::: string, $replacement ::: string, $start ::: int, $length ::: int = INT_MAX) ::: string | false;
+function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
 
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
@@ -562,14 +562,14 @@ define('LC_NUMERIC', 1);
 define('LC_TIME', 2);
 define('LC_MESSAGES', 5);
 
-function setlocale ($category ::: int, $locale ::: string) ::: OrFalse <string>;
+function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
-function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: OrFalse <string>;
+function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
 function mb_check_encoding ($str ::: string, $encoding ::: string = "1251") ::: bool;
 function mb_strlen ($str ::: string, $encoding ::: string = "1251") ::: int;
-function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: OrFalse <int>;
-function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: OrFalse <int>;
+function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
+function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
 function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
 function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
 function mb_substr ($str ::: string, $start ::: int, $length ::: var = INT_MAX, $encoding ::: string = "1251") ::: string;
@@ -611,11 +611,11 @@ function chmod ($name ::: string, $mode ::: int) ::: bool;
 function clearstatcache() ::: void;
 function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
-function file ($name ::: string) ::: OrFalse <array <string> >;
-function file_get_contents ($name ::: string) ::: OrFalse <string>;
-function file_put_contents ($name ::: string, $content ::: var, $flags ::: int = 0) ::: OrFalse <int>;
+function file ($name ::: string) ::: array <string> | false;
+function file_get_contents ($name ::: string) ::: string | false;
+function file_put_contents ($name ::: string, $content ::: var, $flags ::: int = 0) ::: int | false;
 function file_exists ($name ::: string) ::: bool;
-function filesize ($name ::: string) ::: OrFalse <int>;
+function filesize ($name ::: string) ::: int | false;
 function is_dir ($name ::: string) ::: bool;
 function is_file ($name ::: string) ::: bool;
 function is_readable ($name ::: string) ::: bool;
@@ -623,10 +623,10 @@ function is_writeable ($name ::: string) ::: bool;
 function mkdir ($name ::: string, $mode ::: int = 0777, $recursive ::: bool = false) ::: bool;
 function php_uname ($mode ::: string = "a") ::: string;
 function rename ($oldname ::: string, $newname ::: string) ::: bool;
-function realpath ($path ::: string) ::: OrFalse <string>;
-function tempnam ($dir ::: string, $prefix ::: string) ::: OrFalse <string>;
+function realpath ($path ::: string) ::: string | false;
+function tempnam ($dir ::: string, $prefix ::: string) ::: string | false;
 function unlink ($name ::: string) ::: bool;
-function scandir ($directory ::: string) ::: OrFalse <array <string> >;
+function scandir ($directory ::: string) ::: array <string> | false;
 function sleep ($seconds ::: int) ::: void;
 function usleep ($micro_seconds ::: int) ::: void;
 
@@ -655,7 +655,7 @@ function new_RpcMemcache($fake ::: bool = false) ::: Memcache;
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
 function vk_win_to_utf8 ($text ::: string, $escape ::: bool = true) ::: string;
 function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;
-function vk_json_encode ($v ::: Any) ::: OrFalse<string>;
+function vk_json_encode ($v ::: Any) ::: string | false;
 /** @kphp-extern-func-info can_throw */
 function vk_json_encode_safe ($v ::: Any) ::: string;
 function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
@@ -672,16 +672,16 @@ function vk_sp_words_only ($str ::: string) ::: string;
 function vk_stats_merge_deviation($n1 ::: int, $sum1 ::: Long, $nsigma21 ::: float,
 	                          $n2 ::: int, $sum2 ::: Long, $nsigma22 ::: float) ::: float;
 function vk_stats_add_deviation($count ::: int, $sum ::: Long, $nsigma2 ::: float, $val ::: int) ::: float;
-function vk_stats_decompress_sample($sample ::: string) ::: OrFalse<string>;
-function vk_stats_merge_samples($samples ::: array) ::: OrFalse<string>;
-function vk_stats_parse_sample($sample ::: string) ::: OrFalse< array<int> >;
+function vk_stats_decompress_sample($sample ::: string) ::: string | false;
+function vk_stats_merge_samples($samples ::: array) ::: string | false;
+function vk_stats_parse_sample($sample ::: string) ::: array<int> | false;
 
-function vk_stats_hll_merge($str ::: var) ::: OrFalse<string>;
-function vk_stats_hll_count($hll ::: string) ::: OrFalse<float>;
-function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: OrFalse<string>;
-function vk_stats_hll_add($hll ::: string, $a ::: array) ::: OrFalse<string>;
-function vk_stats_hll_pack($hll ::: string) ::: OrFalse<string>;
-function vk_stats_hll_unpack($hll ::: string) ::: OrFalse<string>;
+function vk_stats_hll_merge($str ::: var) ::: string | false;
+function vk_stats_hll_count($hll ::: string) ::: float | false;
+function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: string | false;
+function vk_stats_hll_add($hll ::: string, $a ::: array) ::: string | false;
+function vk_stats_hll_pack($hll ::: string) ::: string | false;
+function vk_stats_hll_unpack($hll ::: string) ::: string | false;
 function vk_stats_hll_is_packed($hll ::: string) ::: bool;
 
 /** @kphp-extern-func-info cpp_template_call */
@@ -758,16 +758,16 @@ function rpc_send ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
 function rpc_send_noflush ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
 function rpc_flush () ::: void;
 /** @kphp-extern-func-info resumable */
-function rpc_get ($request_id ::: int) ::: OrFalse <string>;
-function rpc_get_synchronously ($request_id ::: int) ::: OrFalse <string>;
+function rpc_get ($request_id ::: int) ::: string | false;
+function rpc_get_synchronously ($request_id ::: int) ::: string | false;
 /** @kphp-extern-func-info resumable */
 function rpc_get_and_parse ($request_id ::: int) ::: bool;
 function rpc_queue_create ($request_ids ::: Any = TODO) ::: int;
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
-function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: OrFalse<int>;
-function rpc_queue_next_synchronously ($queue_id ::: int) ::: OrFalse<int>;
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
+function rpc_queue_next_synchronously ($queue_id ::: int) ::: int | false;
 /** @kphp-extern-func-info resumable */
 function rpc_wait ($request_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
@@ -776,7 +776,7 @@ function rpc_wait_multiple ($request_id ::: int) ::: bool;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_get ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw resumable */
-function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: OrFalse <array <var> >;
+function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: array <var> | false;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_delete ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
@@ -837,20 +837,20 @@ function typed_rpc_tl_query_result ($query_ids :<=: array <int>) ::: array <@tl\
 function typed_rpc_tl_query_result_synchronously ($query_ids :<=: array <int>) ::: array <@tl\RpcResponse>;
 
 /** @kphp-extern-func-info resumable */
-function wait ($id :<=: OrFalse<future(Any)>, $timeout ::: float = -1.0) ::: bool;
+function wait ($id :<=: future<Any> | false, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result ($id :<=: OrFalse<future(Any)>, $timeout ::: float = -1.0) ::: OrFalse<^1[]>;
+function wait_result ($id :<=: future(Any) | false, $timeout ::: float = -1.0) ::: ^1[] | false;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result_multi ($resumables :<=: array<future(Any)>) ::: array < OrFalse < ^1[][] > >;
-function wait_synchronously ($id :<=: OrFalse<future(Any)>) ::: bool;
+function wait_result_multi ($resumables :<=: array<future(Any)>) ::: array < ^1[][] > | false;
+function wait_synchronously ($id :<=: future<Any> | false) ::: bool;
 /** @kphp-extern-func-info resumable */
 function wait_multiple ($id ::: Any) ::: bool;
-function wait_queue_create ($request_ids :<=: array< OrFalse<future(Any)> > = []) ::: future_queue<^1[][]>;
-function wait_queue_push (&$queue_id :<=: future_queue(Any), $request_ids :<=: OrFalse<future(Any)>) ::: void;
+function wait_queue_create ($request_ids :<=: array< future<Any> | false > = []) ::: future_queue<^1[][]>;
+function wait_queue_push (&$queue_id :<=: future_queue(Any), $request_ids :<=: future<Any> | false) ::: void;
 function wait_queue_empty ($queue_id :<=: future_queue(Any)) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id :<=: future_queue(Any), $timeout ::: float = -1.0) ::: OrFalse< future<^1[]> >;
-function wait_queue_next_synchronously ($queue_id :<=: future_queue(Any)) ::: OrFalse< future<^1[]> >;
+function wait_queue_next ($queue_id :<=: future_queue(Any), $timeout ::: float = -1.0) ::: future<^1[]> | false;
+function wait_queue_next_synchronously ($queue_id :<=: future_queue(Any)) ::: future<^1[]> | false;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */
@@ -881,14 +881,14 @@ define('SEEK_END', 1);
 define('SEEK_CUR', 2);
 
 function fopen ($filename ::: string, $mode ::: string);
-function fwrite ($stream, $text ::: string) ::: OrFalse <int>;
+function fwrite ($stream, $text ::: string) ::: int | false;
 function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
 function rewind ($stream) ::: bool;
-function ftell ($stream) ::: OrFalse <int>;
-function fread ($stream, $length ::: int) ::: OrFalse <string>;
-function fgetc ($stream) ::: OrFalse <string>;
-function fgets ($stream, $length ::: int = -1) ::: OrFalse <string>;
-function fpassthru ($stream) ::: OrFalse <int>;
+function ftell ($stream) ::: int | false;
+function fread ($stream, $length ::: int) ::: string | false;
+function fgetc ($stream) ::: string | false;
+function fgets ($stream, $length ::: int = -1) ::: string | false;
+function fpassthru ($stream) ::: int | false;
 function fflush ($stream) ::: bool;
 function feof ($stream) ::: bool;
 function fclose ($stream) ::: bool;
@@ -903,7 +903,7 @@ function stream_socket_client ($url ::: string, &$error_number ::: var = TODO, &
 function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
 function stream_set_write_buffer ($stream, $size ::: int) ::: bool;
 function stream_set_read_buffer ($stream, $size ::: int) ::: bool;
-function stream_select (&$read, &$write, &$except, $tv_sec, $tv_usec ::: int = 0) ::: OrFalse <int>;
+function stream_select (&$read, &$write, &$except, $tv_sec, $tv_usec ::: int = 0) ::: int | false;
 
 
 function is_uploaded_file ($filename ::: string) ::: bool;
