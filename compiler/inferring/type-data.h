@@ -69,7 +69,6 @@ private:
 
   enum flag_id_t {
     write_flag_e = 1,
-    read_flag_e = 2,
     or_false_flag_e = 4,
     error_flag_e = 8
   };
