@@ -236,11 +236,6 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return VertexAdaptor<op_type_expr_or_false>::create(parse_nested_one_type_rule());
       }
-      // (для functions.txt) lca<int, ^1, ...> / lca(int, ^1, ...)  // todo нужно ли? (или |)
-      if (cur_tok->str_val == "lca") {
-        cur_tok++;
-        return VertexAdaptor<op_type_expr_lca>::create(parse_nested_type_rules());
-      }
       // (для functions.txt) instance<^2>
       if (cur_tok->str_val == "instance") {
         cur_tok++;
