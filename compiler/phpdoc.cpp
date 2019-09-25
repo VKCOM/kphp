@@ -250,7 +250,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
   }
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[]
+VertexPtr PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*]
   if (cur_tok->type() != tok_int_const) {
     throw std::runtime_error("Invalid number after ^");
   }
@@ -259,9 +259,9 @@ VertexPtr PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[]
 
   VertexPtr res = v;
   cur_tok++;
-  while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_clbrk) {
+  while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_times && (cur_tok + 2)->type() == tok_clbrk) {
     res = VertexAdaptor<op_index>::create(res);
-    cur_tok += 2;
+    cur_tok += 3;
   }
   while (cur_tok->type() == tok_oppar && (cur_tok + 1)->type() == tok_clpar) {
     res = VertexAdaptor<op_type_expr_callback_call>::create(res);
