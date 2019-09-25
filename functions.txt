@@ -14,7 +14,7 @@ class Exception {
     public function getCode () ::: int;
     public function getFile () ::: string;
     public function getLine () ::: int;
-    public function getTrace () ::: array < array < string > >;
+    public function getTrace () ::: string[][];
     public function getTraceAsString () ::: string;
 };
 
@@ -102,7 +102,7 @@ function ob_get_length () ::: int | false;
 function ob_get_level () ::: int;
 
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
-function headers_list () ::: array <string>;
+function headers_list () ::: string[];
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function register_shutdown_function (callback() ::: void) ::: void;
@@ -151,16 +151,16 @@ function get_engine_workers_number() ::: int;
 
 function getKeyByPos ($a ::: array, $n ::: int) ::: var;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
-function create_vector ($n ::: int, $x ::: Any) ::: array <^2>;//TODO version with 1 parameter
+function create_vector ($n ::: int, $x ::: Any) ::: ^2[];//TODO version with 1 parameter
 function array_first_key ($a ::: array) ::: var;
 function array_first_value ($a ::: array) ::: ^1[*];
 function array_last_key ($a ::: array) ::: var;
 function array_last_value ($a ::: array) ::: ^1[*];
 
 function implode ($s ::: string, $v ::: array) ::: string;
-function explode ($delimiter ::: string, $str ::: string, $limit ::: int = INT_MAX) ::: array <string>;
+function explode ($delimiter ::: string, $str ::: string, $limit ::: int = INT_MAX) ::: string[];
 
-function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: array <^1>;
+function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
 
 function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
 /** @kphp-extern-func-info cpp_template_call */
@@ -188,25 +188,25 @@ function array_unshift (&$a ::: array, $val ::: Any) ::: int;
 function array_key_exists ($v ::: Any, $a ::: array) ::: bool;
 function array_search ($val ::: Any, $a ::: array, $strict ::: bool = false) ::: var;
 function array_rand ($a ::: array, $num ::: int = 1) ::: var;
-function array_keys ($a ::: array) ::: array <var>;
-function array_keys_as_strings ($a ::: array) ::: array <string>;
-function array_keys_as_ints ($a ::: array) ::: array <int>;
+function array_keys ($a ::: array) ::: var[];
+function array_keys_as_strings ($a ::: array) ::: string[];
+function array_keys_as_ints ($a ::: array) ::: int[];
 function array_values ($a ::: array) ::: ^1;
 function array_unique ($a ::: array) ::: ^1;
-function array_count_values ($a ::: array) ::: array <int>;
-function array_flip ($a ::: array) ::: array <var>;
+function array_count_values ($a ::: array) ::: int[];
+function array_flip ($a ::: array) ::: var[];
 function in_array ($value ::: Any, $a ::: array, $strict ::: bool = false) ::: bool;
-function array_fill ($start_index ::: int, $num ::: int, $value ::: Any) ::: array <^3>;
-function array_fill_keys ($a ::: array, $value ::: Any) ::: array <^2>;
+function array_fill ($start_index ::: int, $num ::: int, $value ::: Any) ::: ^3[];
+function array_fill_keys ($a ::: array, $value ::: Any) ::: ^2[];
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
-function range ($from, $to, $step ::: int = 1) ::: array <var>;//TODO
+function range ($from, $to, $step ::: int = 1) ::: var[];//TODO
 function array_push (&$a ::: array, $val2 ::: Any, $val3 ::: Any = TODO, $val4 ::: Any = TODO, $val5 ::: Any = TODO, $val6 ::: Any = TODO) ::: int;
 function array_pop (&$a ::: array) ::: ^1[*];
 function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 /** @kphp-extern-func-info cpp_template_call */
 function array_pad ($a ::: array, $size ::: int, $value ::: Any) ::: array< ^1[*] | ^3 >;
-function array_column ($a :>=: array< array< Any > >, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
+function array_column ($a :>=: Any[][], $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
 
 /**
  * @kphp-extern-func-info cpp_template_call cpp_variadic_call
@@ -222,7 +222,7 @@ function max (...$a) ::: ^1[*];
 define('ARRAY_FILTER_USE_KEY', 1);
 
 function array_filter ($a ::: array, callback ($x ::: ^1[*]) ::: bool = TODO) ::: ^1;
-function array_map (callback ($x ::: ^2[*]) ::: Any, $a ::: array) ::: array <^1()>;
+function array_map (callback ($x ::: ^2[*]) ::: Any, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
 function array_reduce ($a ::: array, callback($carry ::: ^3 | ^2(), $item ::: ^1[*]) ::: Any, $initial ::: Any) ::: ^2() | ^3;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
@@ -273,7 +273,7 @@ function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
 function date ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function date_default_timezone_set ($s ::: string) ::: bool;
 function date_default_timezone_get() ::: string;
-function getdate ($timestamp ::: int = INT_MIN) ::: array <var>;
+function getdate ($timestamp ::: int = INT_MIN) ::: var[];
 function gmdate ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function gmmktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
 function localtime ($timestamp ::: int = INT_MIN, $is_associative ::: bool = false);
@@ -283,16 +283,16 @@ function strftime ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: int | false;
 function time() ::: int;
 
-function debug_backtrace() ::: array <array <string> >;
+function debug_backtrace() ::: string[][];
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
-function posix_getpwuid($uid ::: int) ::: array <var> | false;
-function getopt ($options ::: string, $longopt ::: array = array()) ::: array <var> | false;
-function gethostbynamel ($name ::: string) ::: array <string> | false;
+function posix_getpwuid($uid ::: int) ::: var[] | false;
+function getopt ($options ::: string, $longopt ::: array = array()) ::: var[] | false;
+function gethostbynamel ($name ::: string) ::: string[] | false;
 function inet_pton ($address ::: string) ::: string | false;
 
 function pack ($pattern ::: string, ...$args) ::: string;
-function unpack ($pattern ::: string, $data ::: string) ::: array <var>;
+function unpack ($pattern ::: string, $data ::: string) ::: var[];
 
 define('JSON_UNESCAPED_UNICODE', 1);
 define('JSON_FORCE_OBJECT', 16);
@@ -314,10 +314,10 @@ define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0) ::: int | false;//TODO
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
-function preg_replace_callback ($regex ::: regexp, callback($x ::: array<string>) ::: string, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
+function preg_replace_callback ($regex ::: regexp, callback($x ::: string[]) ::: string, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
-function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: array <var> | false;
+function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: var[] | false;
 
 define('SORT_REGULAR', 0);
 define('SORT_NUMERIC', 1);
@@ -345,7 +345,7 @@ function mt_srand ($seed ::: int = INT_MIN) ::: void;
 function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
 function mt_getrandmax() ::: int;
 
-function hash_algos () ::: array <string>;
+function hash_algos () ::: string[];
 function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
 function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
 function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
@@ -388,10 +388,10 @@ function openssl_pkey_get_public ($key ::: string) ::: string | false;
 function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
 function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
-function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: array<var> | false;
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: var[] | false;
 function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: var;
 
-function openssl_get_cipher_methods($aliases ::: bool = false) ::: array<string>;
+function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 function openssl_cipher_iv_length($method ::: string) ::: int | false;
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;
@@ -525,12 +525,12 @@ function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
 function fprintf ($stream, $format ::: string, ...$args) ::: int;
 
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
-function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: array <var> | false;
+function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: var[] | false;
 
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
 //function strtr ($subject, $from, $to);
 function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
-function str_split ($str ::: string, $split_length ::: int = 1) ::: array <string>;
+function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
 function strlen ($str ::: string) ::: int;
 function strpbrk ($haystack ::: string, $char_list ::: string) ::: string | false;
 function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
@@ -611,7 +611,7 @@ function chmod ($name ::: string, $mode ::: int) ::: bool;
 function clearstatcache() ::: void;
 function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
-function file ($name ::: string) ::: array <string> | false;
+function file ($name ::: string) ::: string[] | false;
 function file_get_contents ($name ::: string) ::: string | false;
 function file_put_contents ($name ::: string, $content ::: var, $flags ::: int = 0) ::: int | false;
 function file_exists ($name ::: string) ::: bool;
@@ -626,7 +626,7 @@ function rename ($oldname ::: string, $newname ::: string) ::: bool;
 function realpath ($path ::: string) ::: string | false;
 function tempnam ($dir ::: string, $prefix ::: string) ::: string | false;
 function unlink ($name ::: string) ::: bool;
-function scandir ($directory ::: string) ::: array <string> | false;
+function scandir ($directory ::: string) ::: string[] | false;
 function sleep ($seconds ::: int) ::: void;
 function usleep ($micro_seconds ::: int) ::: void;
 
@@ -674,7 +674,7 @@ function vk_stats_merge_deviation($n1 ::: int, $sum1 ::: Long, $nsigma21 ::: flo
 function vk_stats_add_deviation($count ::: int, $sum ::: Long, $nsigma2 ::: float, $val ::: int) ::: float;
 function vk_stats_decompress_sample($sample ::: string) ::: string | false;
 function vk_stats_merge_samples($samples ::: array) ::: string | false;
-function vk_stats_parse_sample($sample ::: string) ::: array<int> | false;
+function vk_stats_parse_sample($sample ::: string) ::: int[] | false;
 
 function vk_stats_hll_merge($str ::: var) ::: string | false;
 function vk_stats_hll_count($hll ::: string) ::: float | false;
@@ -776,7 +776,7 @@ function rpc_wait_multiple ($request_id ::: int) ::: bool;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_get ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw resumable */
-function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: array <var> | false;
+function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: var[] | false;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_delete ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
@@ -793,12 +793,12 @@ function rpc_mc_increment ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
 function rpc_tl_query_one ($rpc_conn ::: RPC, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
-function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: array <int>;
+function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info resumable */
-function rpc_tl_query_result_one ($query_id ::: int) ::: array <var>;
+function rpc_tl_query_result_one ($query_id ::: int) ::: var[];
 /** @kphp-extern-func-info resumable */
-function rpc_tl_query_result ($query_ids ::: array) ::: array <array <var> >;
-function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: array <array <var> >;
+function rpc_tl_query_result ($query_ids ::: array) ::: var[][];
+function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: var[][];
 function rpc_tl_pending_queries_count () ::: int;
 
 function set_tl_mode ($mode ::: int) ::: bool;
@@ -828,20 +828,20 @@ interface RpcResponse {
 /** @kphp-extern-func-info tl_common_h_dep */
 function typed_rpc_tl_query_one ($connection ::: RPC, $query_function :<=: @tl\RpcFunction, $timeout ::: float = -1.0) ::: int;
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query ($connection ::: RPC, $query_functions :<=: array <@tl\RpcFunction>, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: array <int>;
+function typed_rpc_tl_query ($connection ::: RPC, $query_functions :<=: @tl\RpcFunction[], $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info tl_common_h_dep resumable */
 function typed_rpc_tl_query_result_one ($query_id :<=: int) ::: @tl\RpcResponse;
 /** @kphp-extern-func-info tl_common_h_dep resumable */
-function typed_rpc_tl_query_result ($query_ids :<=: array <int>) ::: array <@tl\RpcResponse>;
+function typed_rpc_tl_query_result ($query_ids :<=: int[]) ::: @tl\RpcResponse[];
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query_result_synchronously ($query_ids :<=: array <int>) ::: array <@tl\RpcResponse>;
+function typed_rpc_tl_query_result_synchronously ($query_ids :<=: int[]) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info resumable */
 function wait ($id :<=: future<Any> | false, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
 function wait_result ($id :<=: future(Any) | false, $timeout ::: float = -1.0) ::: ^1[*] | false;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result_multi ($resumables :<=: array<future(Any)>) ::: array < ^1[*][*] > | false;
+function wait_result_multi ($resumables :<=: future(Any)[]) ::: (^1[*][*] | false)[];
 function wait_synchronously ($id :<=: future<Any> | false) ::: bool;
 /** @kphp-extern-func-info resumable */
 function wait_multiple ($id ::: Any) ::: bool;
@@ -1170,7 +1170,7 @@ function raise_sigsegv () ::: void;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cast($instance ::: Any, $to_type ::: string) ::: instance<^2>;
 
-function instance_to_array($instance ::: Any) ::: array<var>;
+function instance_to_array($instance ::: Any) ::: var[];
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
