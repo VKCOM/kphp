@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <utility>
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
@@ -99,7 +101,7 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
   return result;
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_classname(const std::string &phpdoc_class_name) {
+VertexPtr PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_name) {
   const std::string &class_name = resolve_uses(current_function, phpdoc_class_name, '\\');
   ClassPtr klass = G->get_class(class_name);
   if (!klass) {
@@ -113,7 +115,7 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_classname(const std::string &php
   return GenTree::create_type_help_class_vertex(klass);
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_simple_type() {
+VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
   TokenType cur_type = cur_tok->type();
   // некоторые слова не являются ключевыми словами (токенами), но трактуются именно так в phpdoc
   if (cur_type == tok_func_name) {
@@ -253,7 +255,7 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_simple_type() {
   }
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_arg_ref() {   // ^1, ^2[]
+VertexPtr PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[]
   if (cur_tok->type() != tok_int_const) {
     throw std::runtime_error("Invalid number after ^");
   }
@@ -274,7 +276,7 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_arg_ref() {   // ^1, ^2[]
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_type_array() {
+VertexPtr PhpDocTypeRuleParser::parse_type_array() {
   VertexPtr res = parse_simple_type();
 
   while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_clbrk) {
@@ -289,7 +291,7 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_type_array() {
   return res;
 }
 
-std::vector<VertexPtr> PhpDocTypeRuleParserUsingLexer::parse_nested_type_rules() {
+std::vector<VertexPtr> PhpDocTypeRuleParser::parse_nested_type_rules() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '<' or '('");
   }
@@ -310,7 +312,7 @@ std::vector<VertexPtr> PhpDocTypeRuleParserUsingLexer::parse_nested_type_rules()
   return sub_types;
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_nested_one_type_rule() {
+VertexPtr PhpDocTypeRuleParser::parse_nested_one_type_rule() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '<' or '('");
   }
@@ -325,7 +327,7 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_nested_one_type_rule() {
   return sub_type;
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_type_expression() {
+VertexPtr PhpDocTypeRuleParser::parse_type_expression() {
   VertexPtr result = parse_type_array();
   bool is_raw_bool = result->type() == op_type_expr_type && result->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
   while (cur_tok->type() == tok_or) {
@@ -342,19 +344,17 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_type_expression() {
   return result;
 }
 
-VertexPtr PhpDocTypeRuleParserUsingLexer::parse_from_tokens(const std::vector<Token> &phpdoc_tokens, std::vector<Token>::const_iterator &tok_iter) {
-  tokens = phpdoc_tokens;
-  kphp_assert(tokens.back().type() == tok_end);
+VertexPtr PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
   cur_tok = tok_iter;
+  VertexPtr v = parse_type_expression();      // может кинуть исключение
+  tok_iter = cur_tok;
+  return v;                                   // не null, раз исключения не было
+}
 
+VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
   try {
-    VertexPtr v = parse_type_expression();
-    tok_iter = cur_tok;
-    return v;
-  } catch (std::runtime_error &ex) {
-    stage::set_location(current_function->root->location);
-    // todo куда сообщение об ошибке, плюс удалить дубликат
-    kphp_error(0, format("Failed to parse phpdoc: %s\n%s", "todo", ex.what()));
+    return parse_from_tokens(tok_iter);
+  } catch (std::runtime_error &) {
     return {};
   }
 }
@@ -365,26 +365,38 @@ VertexPtr PhpDocTypeRuleParserUsingLexer::parse_from_tokens(const std::vector<To
  * распарсить тип (превратив в дерево для type_rule) и имя переменной, если оно есть
  */
 PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdoc_tag_str, FunctionPtr current_function) {
-  PhpDocTypeRuleParserUsingLexer parser(current_function);
   std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str.data(), phpdoc_tag_str.size());
+  std::vector<Token>::const_iterator tok_iter = tokens.begin();
   std::string var_name;
 
   // $var_name phpdoc|type maybe comment
   if (tokens.front().type() == tok_var_name) {
     var_name = std::string(tokens.front().str_val);
+    tok_iter++;
     if (tokens.size() <= 2) {     // tok_end и всё
       return {VertexPtr{}, std::move(var_name)};
     }
   }
 
-  stage::set_location(current_function->root->location);
-  std::vector<Token>::const_iterator tok_iter = var_name.empty() ? tokens.begin() : tokens.begin() + 1;
-  VertexPtr doc_type = parser.parse_from_tokens(tokens, tok_iter);
+  PhpDocTypeRuleParser parser(current_function);
+  VertexPtr doc_type;
+  try {
+    doc_type = parser.parse_from_tokens(tok_iter);
+  } catch (std::runtime_error &ex) {
+    stage::set_location(current_function->root->location);
+    kphp_error(doc_type, format("%s: %s\n%s",
+                                TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse phpdoc tag", TermStringFormat::bold)).c_str(),
+                                TermStringFormat::add_text_attribute(std::string(phpdoc_tag_str), TermStringFormat::underline).c_str(),
+                                ex.what()));
+  }
 
-  kphp_error(parser.get_unknown_classes().empty(),
-             format("Could not find class in phpdoc: %s", parser.get_unknown_classes().begin()->c_str()));
+  if (!parser.get_unknown_classes().empty()) {
+    stage::set_location(current_function->root->location);
+    kphp_error(0, format("Could not find class in phpdoc: %s", parser.get_unknown_classes().begin()->c_str()));
+  }
 
   if (var_name.empty()) {
+    kphp_assert(tok_iter != tokens.end());
     // phpdoc|type $var_name maybe comment
     if (tok_iter->type() == tok_var_name) {   // tok_iter — сразу после окончания парсинга
       var_name = std::string(tok_iter->str_val);

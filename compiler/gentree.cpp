@@ -2,6 +2,9 @@
 
 #include <sstream>
 
+#include "common/algorithms/find.h"
+#include "common/type_traits/constexpr_if.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
@@ -16,8 +19,6 @@
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "common/algorithms/find.h"
-#include "common/type_traits/constexpr_if.h"
 
 #define CE(x) if (!(x)) {return {};}
 
@@ -1000,8 +1001,8 @@ PrimitiveType GenTree::get_func_param_type_help() {
   kphp_assert(cur->type() == tok_triple_colon);
 
   next_cur();
-  PhpDocTypeRuleParserUsingLexer parser(cur_function);
-  VertexPtr type_expr = parser.parse_from_tokens(tokens, cur);
+  PhpDocTypeRuleParser parser(cur_function);
+  VertexPtr type_expr = parser.parse_from_tokens_silent(cur);
   kphp_error(type_expr->type() == op_type_expr_type, "Incorrect type_help after :::");
 
   return type_expr->type_help;
@@ -1015,8 +1016,8 @@ VertexAdaptor<meta_op_type_rule> GenTree::get_type_rule() {
     AutoLocation rule_location(this);
     next_cur();
 
-    PhpDocTypeRuleParserUsingLexer parser(cur_function);
-    VertexPtr type_expr = parser.parse_from_tokens(tokens, cur);
+    PhpDocTypeRuleParser parser(cur_function);
+    VertexPtr type_expr = parser.parse_from_tokens_silent(cur);
     CE(!kphp_error(type_expr, "Cannot parse type rule"));
 
     VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], type_expr);

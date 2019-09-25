@@ -181,7 +181,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       switch (tag.type) {
         case php_doc_tag::returns: {
           PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f);
-          kphp_error_act(doc_parsed, format("Failed to parse @return %s", tag.value.c_str()), break);
+          if (!doc_parsed) {
+            continue;
+          }
 
           if (infer_type & infer_mask::check) {
             auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_parsed.type_expr);
@@ -194,7 +196,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         case php_doc_tag::param: {
           kphp_error_return(!name_to_function_param.empty(), "Too many @param tags");
           PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f);
-          kphp_error_act(doc_parsed, format("Failed to parse @param %s", tag.value.c_str()), continue);
+          if (!doc_parsed) {
+            continue;
+          }
 
           auto func_param_it = name_to_function_param.find(doc_parsed.var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(),

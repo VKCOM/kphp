@@ -78,8 +78,8 @@ private:
       // потому что классов пока нет, и нам как раз нужно извлечь неизвестные классы
       std::vector<Token> tokens = phpdoc_to_tokens(type_and_var_name->c_str(), type_and_var_name->size());
       std::vector<Token>::const_iterator cur_tok = tokens.begin();
-      PhpDocTypeRuleParserUsingLexer parser(current_function);
-      parser.parse_from_tokens(tokens, cur_tok);
+      PhpDocTypeRuleParser parser(current_function);
+      parser.parse_from_tokens_silent(cur_tok);
 
       for (const auto &class_name : parser.get_unknown_classes()) {
         require_class(replace_characters(class_name, '\\', '/'));

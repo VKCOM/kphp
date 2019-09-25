@@ -54,12 +54,21 @@ struct PhpDocTagParseResult {
   VertexPtr type_expr;      // op_type_expr_*
   std::string var_name;     // без начального "$", может быть пустым, если отсутствует в phpdoc
 
-  operator bool() const { return !!type_expr; }
+  operator bool() const { return static_cast<bool>(type_expr); }
 };
 
-class PhpDocTypeRuleParserUsingLexer {
+class PhpDocTypeRuleParser {
+public:
+  explicit PhpDocTypeRuleParser(FunctionPtr current_function) :
+    current_function(current_function) {}
+
+  VertexPtr parse_from_tokens(std::vector<Token>::const_iterator &tok_iter);
+  VertexPtr parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept;
+
+  const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
+
+private:
   FunctionPtr current_function;
-  std::vector<Token> tokens;
   std::vector<Token>::const_iterator cur_tok;
   std::vector<std::string> unknown_classes_list;
 
@@ -70,14 +79,6 @@ class PhpDocTypeRuleParserUsingLexer {
   std::vector<VertexPtr> parse_nested_type_rules();
   VertexPtr parse_nested_one_type_rule();
   VertexPtr parse_type_expression();
-
-public:
-  explicit PhpDocTypeRuleParserUsingLexer(FunctionPtr current_function) :
-    current_function(current_function) {}
-
-  VertexPtr parse_from_tokens(const std::vector<Token> &phpdoc_tokens, std::vector<Token>::const_iterator &tok_iter);
-
-  const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
 };
 
 std::vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc);
