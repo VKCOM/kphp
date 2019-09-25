@@ -1,5 +1,5 @@
 @kphp_should_fail
-/param tag var name mismatch: found '\$'/
+/Variable name expected/
 <?php
 
 /**

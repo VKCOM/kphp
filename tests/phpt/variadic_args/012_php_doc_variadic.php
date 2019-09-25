@@ -66,7 +66,7 @@ function get_varg_in_phpdoc_but_array($args) {
 /**
  * @kphp-infer
  * @param int $arg
- * @return int ...$
+ * @return int
  */
 function return_varg_doc($arg) {
   return $arg;

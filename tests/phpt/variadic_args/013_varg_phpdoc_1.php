@@ -1,5 +1,4 @@
-@kphp_should_fail
-/Failed to parse phpdoc type: something left at the end after parsing/
+@ok
 <?php
 
 /**

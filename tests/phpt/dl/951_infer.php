@@ -174,7 +174,7 @@ function test_OrFalse() {
   $arr1 = array (1);
   $arr1 /*:= array <int>*/;
   $arr2 = array (false);
-  $arr2 /*:= array <OrFalse < Unknown > >*/;
+  $arr2 /*:= array <OrFalse < Any > >*/;
   $arr3 = array_merge ($arr1, $arr2);
   $arr3 /*:= array <OrFalse < int > >*/;
 
@@ -208,7 +208,7 @@ function odd ($x) {
 //one set
 function test1() {
 
-  //$a /*:= Unknown*/;
+  //$a /*:= Any*/;
   
   $a = 1;
   $a /*:= int*/;
@@ -220,7 +220,7 @@ function test1() {
   $a /*:= string*/;
   
   $a = false;
-  $a /*:= OrFalse < Unknown >*/;
+  $a /*:= OrFalse < Any >*/;
   
   if (1) {
     $a = 1;
@@ -237,7 +237,7 @@ function test1() {
   $a /*:= array <var>*/;
 
   $a = array();
-  $a /*:= array <Unknown>*/;
+  $a /*:= array <Any>*/;
 
   if (1) {
     $a = array();

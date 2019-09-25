@@ -1,5 +1,4 @@
-@kphp_should_fail
-/param tag var name mismatch/
+@ok
 <?php
 
 /**

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Incorrect return type of function: ints/
+/Variable name expected/
 <?php
 
 /**
