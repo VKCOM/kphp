@@ -81,21 +81,21 @@ $arrr = [
 ];
 
 /**
- * @return A|false
+ * @return A | false
  */
 function getAOrFalse($returnFalse) {
     return $returnFalse ? false : new A();
 }
 
 /**
- * @return A[]|false
+ * @return A[] | false
  */
 function getAArrOrFalse($returnFalse) {
     return $returnFalse ? false : [new A()];
 }
 
 /**
- * @param A|false $a
+ * @param A | false $a
  */
 function printAVal($a) {
     if($a) {

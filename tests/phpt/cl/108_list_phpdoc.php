@@ -8,7 +8,7 @@ require_once 'Classes/autoload.php';
 use Classes\A;
 use Classes\B;
 
-/** @return A[] */
+/** @return A [] */
 function getAArr() {
   return array(new A(), new A);
 }

@@ -8,7 +8,7 @@ class Y {
 
 /** @kphp-immutable-class */
 class X {
-  /** @var Y|false */
+  /** @var Y | false */
   public $y = false;
 }
 

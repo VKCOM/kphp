@@ -10,7 +10,7 @@ function getAArr() {
 }
 
 /**
- * @param $aArr A[] this is a arr
+ * @param $aArr A [] this is a arr
  */
 function printAForeach($aArr) {
   foreach ($aArr as $a)
@@ -18,7 +18,7 @@ function printAForeach($aArr) {
 }
 
 /**
- * @param A[] $aArr this is a arr
+ * @param A [] $aArr this is a arr
  */
 function printAForeach2($aArr) {
   foreach ($aArr as $a)

@@ -25,7 +25,7 @@ class Y {
   public $y_array_var;
   /** @var string|false */
   public $y_string_or_false;
-  /** @var tuple<string|false,array,int[],string,X> */
+  /** @var tuple<string | false, array, int[], string, X> */
   public $y_tuple;
 
   public function __construct($i, $s, $or_false_str = false) {
@@ -43,7 +43,7 @@ class Y {
 class TreeX {
   /** @var int */
   public $value = 0;
-  /** @var tuple<int,TreeX[]>[] */
+  /** @var tuple<int, TreeX[]> [] */
   public $children = [];
 }
 

@@ -13,7 +13,7 @@ function getA() {
     return $a;
 }
 
-/** @return Classes\A[] */
+/** @return Classes\A [] */
 function getAArr() {
     sched_yield();
     $a1 = new Classes\A;
