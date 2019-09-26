@@ -1,5 +1,7 @@
 @ok
 <?php
+
+function zero_folding() {
 echo '0 + 0 = '; var_dump (0 + 0);
 echo '0 - 0 = '; var_dump (0 - 0);
 echo '0 * 0 = '; var_dump (0 * 0);
@@ -56,7 +58,6 @@ echo '0 <= 5 = '; var_dump (0 <= 5);
 echo '0 >= 5 = '; var_dump (0 >= 5);
 echo '0 && 5 = '; var_dump (0 && 5);
 echo '0 || 5 = '; var_dump (0 || 5);
-#break_file
 echo '0 << 5 = '; var_dump (0 << 5);
 echo '0 >> 5 = '; var_dump (0 >> 5);
 echo '0 + -1 = '; var_dump (0 + -1);
@@ -197,7 +198,6 @@ echo '0 + 6.702 = '; var_dump (0 + 6.702);
 echo '0 - 6.702 = '; var_dump (0 - 6.702);
 #echo '0 / 6.702 = '; var_dump (0 / 6.702);
 echo '0 * 6.702 = '; var_dump (0 * 6.702);
-#break_file
 echo '0 % 6.702 = '; @var_dump (0 % 6.702);
 echo '0 ^ 6.702 = '; var_dump (0 ^ 6.702);
 echo '0 & 6.702 = '; var_dump (0 & 6.702);
@@ -256,6 +256,11 @@ echo '0 || 0x786F = '; var_dump (0 || 0x786F);
 echo '0 >> 0x786F = '; var_dump (0 >> 0x786F);
 echo '~ 0 = '; var_dump (~ 0);
 echo '! 0 = '; var_dump (! 0);
+}
+
+zero_folding();
+
+function one_folding() {
 echo '1 + 0 = '; var_dump (1 + 0);
 echo '1 - 0 = '; var_dump (1 - 0);
 echo '1 * 0 = '; var_dump (1 * 0);
@@ -339,7 +344,6 @@ echo '1 - -10000 = '; var_dump (1 - -10000);
 #echo '1 / -10000 = '; var_dump (1 / -10000);
 echo '1 * -10000 = '; var_dump (1 * -10000);
 echo '1 % -10000 = '; var_dump (1 % -10000);
-#break_file
 echo '1 ^ -10000 = '; var_dump (1 ^ -10000);
 echo '1 & -10000 = '; var_dump (1 & -10000);
 echo '1 | -10000 = '; var_dump (1 | -10000);
@@ -482,7 +486,6 @@ echo '1 == 40.4e3 = '; var_dump (1 == 40.4e3);
 echo '1 === 40.4e3 = '; var_dump (1 === 40.4e3);
 echo '1 != 40.4e3 = '; var_dump (1 != 40.4e3);
 echo '1 <> 40.4e3 = '; var_dump (1 <> 40.4e3);
-#break_file
 echo '1 !== 40.4e3 = '; var_dump (1 !== 40.4e3);
 echo '1 <= 40.4e3 = '; var_dump (1 <= 40.4e3);
 echo '1 >= 40.4e3 = '; var_dump (1 >= 40.4e3);
@@ -512,6 +515,11 @@ echo '1 || 0x786F = '; var_dump (1 || 0x786F);
 echo '1 >> 0x786F = '; var_dump (1 >> 0x786F);
 echo '~ 1 = '; var_dump (~ 1);
 echo '! 1 = '; var_dump (! 1);
+}
+
+one_folding();
+
+function five_folding() {
 echo '5 + 0 = '; var_dump (5 + 0);
 echo '5 - 0 = '; var_dump (5 - 0);
 echo '5 * 0 = '; var_dump (5 * 0);
@@ -624,7 +632,6 @@ echo '5 === true = '; var_dump (5 === true);
 echo '5 != true = '; var_dump (5 != true);
 echo '5 <> true = '; var_dump (5 <> true);
 echo '5 !== true = '; var_dump (5 !== true);
-#break_file
 echo '5 <= true = '; var_dump (5 <= true);
 echo '5 >= true = '; var_dump (5 >= true);
 echo '5 && true = '; var_dump (5 && true);
@@ -766,8 +773,12 @@ echo '5 || 0x786F = '; var_dump (5 || 0x786F);
 #echo '5 << 0x786F = '; var_dump (5 << 0x786F);
 echo '5 >> 0x786F = '; var_dump (5 >> 0x786F);
 echo '~ 5 = '; var_dump (~ 5);
-#break_file
 echo '! 5 = '; var_dump (! 5);
+}
+
+five_folding();
+
+function minus_one_folding() {
 echo '-1 + 0 = '; var_dump (-1 + 0);
 echo '-1 - 0 = '; var_dump (-1 - 0);
 echo '-1 * 0 = '; var_dump (-1 * 0);
@@ -908,7 +919,6 @@ echo '-1 + "String" = '; var_dump (-1 + "String");
 echo '-1 - "String" = '; var_dump (-1 - "String");
 echo '-1 * "String" = '; var_dump (-1 * "String");
 echo '-1 ^ "String" = '; var_dump (-1 ^ "String");
-#break_file
 echo '-1 & "String" = '; var_dump (-1 & "String");
 echo '-1 | "String" = '; var_dump (-1 | "String");
 echo '-1 . "String" = '; var_dump (-1 . "String");
@@ -1023,6 +1033,11 @@ echo '-1 || 0x786F = '; var_dump (-1 || 0x786F);
 echo '-1 >> 0x786F = '; var_dump (-1 >> 0x786F);
 echo '~ -1 = '; var_dump (~ -1);
 echo '! -1 = '; var_dump (! -1);
+}
+
+minus_one_folding();
+
+function minus_10000_folding() {
 echo '-10000 + 0 = '; var_dump (-10000 + 0);
 echo '-10000 - 0 = '; var_dump (-10000 - 0);
 echo '-10000 * 0 = '; var_dump (-10000 * 0);
@@ -1050,7 +1065,6 @@ echo '-10000 ^ 1 = '; var_dump (-10000 ^ 1);
 echo '-10000 & 1 = '; var_dump (-10000 & 1);
 echo '-10000 | 1 = '; var_dump (-10000 | 1);
 echo '-10000 . 1 = '; var_dump (-10000 . 1);
-#break_file
 echo '-10000 == 1 = '; var_dump (-10000 == 1);
 echo '-10000 === 1 = '; var_dump (-10000 === 1);
 echo '-10000 != 1 = '; var_dump (-10000 != 1);
@@ -1192,7 +1206,6 @@ echo '-10000 <> "num3" = '; var_dump (-10000 <> "num3");
 echo '-10000 !== "num3" = '; var_dump (-10000 !== "num3");
 echo '-10000 <= "num3" = '; var_dump (-10000 <= "num3");
 echo '-10000 >= "num3" = '; var_dump (-10000 >= "num3");
-#break_file
 echo '-10000 && "num3" = '; var_dump (-10000 && "num3");
 echo '-10000 || "num3" = '; var_dump (-10000 || "num3");
 #echo '-10000 << "num3" = '; var_dump (-10000 << "num3");
@@ -1279,6 +1292,11 @@ echo '-10000 || 0x786F = '; var_dump (-10000 || 0x786F);
 echo '-10000 >> 0x786F = '; var_dump (-10000 >> 0x786F);
 echo '~ -10000 = '; var_dump (~ -10000);
 echo '! -10000 = '; var_dump (! -10000);
+}
+
+minus_10000_folding();
+
+function true_folding() {
 echo 'true + 0 = '; var_dump (true + 0);
 echo 'true - 0 = '; var_dump (true - 0);
 echo 'true * 0 = '; var_dump (true * 0);
@@ -1334,7 +1352,6 @@ echo 'true !== 5 = '; var_dump (true !== 5);
 echo 'true <= 5 = '; var_dump (true <= 5);
 echo 'true >= 5 = '; var_dump (true >= 5);
 echo 'true && 5 = '; var_dump (true && 5);
-#break_file
 echo 'true || 5 = '; var_dump (true || 5);
 #echo 'true << 5 = '; var_dump (true << 5);
 echo 'true >> 5 = '; var_dump (true >> 5);
@@ -1476,7 +1493,6 @@ echo 'true + 6.702 = '; var_dump (true + 6.702);
 echo 'true - 6.702 = '; var_dump (true - 6.702);
 #echo 'true / 6.702 = '; var_dump (true / 6.702);
 echo 'true * 6.702 = '; var_dump (true * 6.702);
-#break_file
 echo 'true % 6.702 = '; @var_dump (true % 6.702);
 echo 'true ^ 6.702 = '; var_dump (true ^ 6.702);
 echo 'true & 6.702 = '; var_dump (true & 6.702);
@@ -1534,6 +1550,11 @@ echo 'true || 0x786F = '; var_dump (true || 0x786F);
 #echo 'true << 0x786F = '; var_dump (true << 0x786F);
 echo 'true >> 0x786F = '; var_dump (true >> 0x786F);
 echo '! true = '; var_dump (! true);
+}
+
+true_folding();
+
+function false_folding() {
 echo 'false + 0 = '; var_dump (false + 0);
 echo 'false - 0 = '; var_dump (false - 0);
 echo 'false * 0 = '; var_dump (false * 0);
@@ -1618,7 +1639,6 @@ echo 'false - -10000 = '; var_dump (false - -10000);
 echo 'false * -10000 = '; var_dump (false * -10000);
 echo 'false % -10000 = '; var_dump (false % -10000);
 echo 'false ^ -10000 = '; var_dump (false ^ -10000);
-#break_file
 echo 'false & -10000 = '; var_dump (false & -10000);
 echo 'false | -10000 = '; var_dump (false | -10000);
 echo 'false . -10000 = '; var_dump (false . -10000);
@@ -1760,7 +1780,6 @@ echo 'false == 40.4e3 = '; var_dump (false == 40.4e3);
 echo 'false === 40.4e3 = '; var_dump (false === 40.4e3);
 echo 'false != 40.4e3 = '; var_dump (false != 40.4e3);
 echo 'false <> 40.4e3 = '; var_dump (false <> 40.4e3);
-#break_file
 echo 'false !== 40.4e3 = '; var_dump (false !== 40.4e3);
 echo 'false <= 40.4e3 = '; var_dump (false <= 40.4e3);
 echo 'false >= 40.4e3 = '; var_dump (false >= 40.4e3);
@@ -1789,6 +1808,11 @@ echo 'false || 0x786F = '; var_dump (false || 0x786F);
 #echo 'false << 0x786F = '; var_dump (false << 0x786F);
 echo 'false >> 0x786F = '; var_dump (false >> 0x786F);
 echo '! false = '; var_dump (! false);
+}
+
+false_folding();
+
+function string_folding() {
 echo '"String" + 0 = '; var_dump ("String" + 0);
 echo '"String" - 0 = '; var_dump ("String" - 0);
 echo '"String" * 0 = '; var_dump ("String" * 0);
@@ -1902,7 +1926,6 @@ echo '"String" != true = '; var_dump ("String" != true);
 echo '"String" <> true = '; var_dump ("String" <> true);
 echo '"String" !== true = '; var_dump ("String" !== true);
 echo '"String" <= true = '; var_dump ("String" <= true);
-#break_file
 echo '"String" >= true = '; var_dump ("String" >= true);
 echo '"String" && true = '; var_dump ("String" && true);
 echo '"String" || true = '; var_dump ("String" || true);
@@ -2044,7 +2067,11 @@ echo '"String" || 0x786F = '; var_dump ("String" || 0x786F);
 echo '"String" >> 0x786F = '; var_dump ("String" >> 0x786F);
 #echo '~ "String" = '; var_dump (~ "String");
 #echo '! "String" = '; var_dump (! "String");
-#break_file
+}
+
+string_folding();
+
+function string_num3_folding() {
 echo '"num3" + 0 = '; var_dump ("num3" + 0);
 echo '"num3" - 0 = '; var_dump ("num3" - 0);
 echo '"num3" * 0 = '; var_dump ("num3" * 0);
@@ -2186,7 +2213,6 @@ echo '"num3" - "String" = '; var_dump ("num3" - "String");
 echo '"num3" * "String" = '; var_dump ("num3" * "String");
 #echo '"num3" ^ "String" = '; var_dump ("num3" ^ "String");
 #echo '"num3" & "String" = '; var_dump ("num3" & "String");
-#break_file
 #echo '"num3" | "String" = '; var_dump ("num3" | "String");
 echo '"num3" . "String" = '; var_dump ("num3" . "String");
 echo '"num3" == "String" = '; var_dump ("num3" == "String");
@@ -2300,6 +2326,11 @@ echo '"num3" || 0x786F = '; var_dump ("num3" || 0x786F);
 echo '"num3" >> 0x786F = '; var_dump ("num3" >> 0x786F);
 #echo '~ "num3" = '; var_dump (~ "num3");
 #echo '! "num3" = '; var_dump (! "num3");
+}
+
+string_num3_folding();
+
+function string_3_folding() {
 echo '"3" + 0 = '; var_dump ("3" + 0);
 echo '"3" - 0 = '; var_dump ("3" - 0);
 echo '"3" * 0 = '; var_dump ("3" * 0);
@@ -2328,7 +2359,6 @@ echo '"3" & 1 = '; var_dump ("3" & 1);
 echo '"3" | 1 = '; var_dump ("3" | 1);
 echo '"3" . 1 = '; var_dump ("3" . 1);
 echo '"3" == 1 = '; var_dump ("3" == 1);
-#break_file
 echo '"3" === 1 = '; var_dump ("3" === 1);
 echo '"3" != 1 = '; var_dump ("3" != 1);
 echo '"3" <> 1 = '; var_dump ("3" <> 1);
@@ -2470,7 +2500,6 @@ echo '"3" !== "num3" = '; var_dump ("3" !== "num3");
 echo '"3" <= "num3" = '; var_dump ("3" <= "num3");
 echo '"3" >= "num3" = '; var_dump ("3" >= "num3");
 echo '"3" && "num3" = '; var_dump ("3" && "num3");
-#break_file
 echo '"3" || "num3" = '; var_dump ("3" || "num3");
 #echo '"3" << "num3" = '; var_dump ("3" << "num3");
 echo '"3" >> "num3" = '; var_dump ("3" >> "num3");
@@ -2556,6 +2585,11 @@ echo '"3" || 0x786F = '; var_dump ("3" || 0x786F);
 echo '"3" >> 0x786F = '; var_dump ("3" >> 0x786F);
 #echo '~ "3" = '; var_dump (~ "3");
 #echo '! "3" = '; var_dump (! "3");
+}
+
+string_3_folding();
+
+function float6_702_folding() {
 echo '6.702 + 0 = '; var_dump (6.702 + 0);
 echo '6.702 - 0 = '; var_dump (6.702 - 0);
 echo '6.702 * 0 = '; var_dump (6.702 * 0);
@@ -2612,7 +2646,6 @@ echo '6.702 <= 5 = '; var_dump (6.702 <= 5);
 echo '6.702 >= 5 = '; var_dump (6.702 >= 5);
 echo '6.702 && 5 = '; var_dump (6.702 && 5);
 echo '6.702 || 5 = '; var_dump (6.702 || 5);
-#break_file
 #echo '6.702 << 5 = '; var_dump (6.702 << 5);
 #echo '6.702 >> 5 = '; var_dump (6.702 >> 5);
 echo '6.702 + -1 = '; var_dump (6.702 + -1);
@@ -2754,7 +2787,6 @@ echo '6.702 - 6.702 = '; var_dump (6.702 - 6.702);
 #echo '6.702 / 6.702 = '; var_dump (6.702 / 6.702);
 echo '6.702 * 6.702 = '; var_dump (6.702 * 6.702);
 echo '6.702 % 6.702 = '; @var_dump (6.702 % 6.702);
-#break_file
 echo '6.702 ^ 6.702 = '; var_dump (6.702 ^ 6.702);
 echo '6.702 & 6.702 = '; var_dump (6.702 & 6.702);
 echo '6.702 | 6.702 = '; var_dump (6.702 | 6.702);
@@ -2812,6 +2844,11 @@ echo '6.702 || 0x786F = '; var_dump (6.702 || 0x786F);
 #echo '6.702 >> 0x786F = '; var_dump (6.702 >> 0x786F);
 echo '~ 6.702 = '; var_dump (~ 6.702);
 echo '! 6.702 = '; var_dump (! 6.702);
+}
+
+float6_702_folding();
+
+function float40_4e3_folding() {
 echo '40.4e3 + 0 = '; var_dump (40.4e3 + 0);
 echo '40.4e3 - 0 = '; var_dump (40.4e3 - 0);
 echo '40.4e3 * 0 = '; var_dump (40.4e3 * 0);
@@ -2896,7 +2933,6 @@ echo '40.4e3 - -10000 = '; var_dump (40.4e3 - -10000);
 echo '40.4e3 * -10000 = '; var_dump (40.4e3 * -10000);
 echo '40.4e3 % -10000 = '; var_dump (40.4e3 % -10000);
 echo '40.4e3 ^ -10000 = '; var_dump (40.4e3 ^ -10000);
-#break_file
 echo '40.4e3 & -10000 = '; var_dump (40.4e3 & -10000);
 echo '40.4e3 | -10000 = '; var_dump (40.4e3 | -10000);
 echo '40.4e3 . -10000 = '; var_dump (40.4e3 . -10000);
@@ -3038,7 +3074,6 @@ echo '40.4e3 == 40.4e3 = '; var_dump (40.4e3 == 40.4e3);
 echo '40.4e3 === 40.4e3 = '; var_dump (40.4e3 === 40.4e3);
 echo '40.4e3 != 40.4e3 = '; var_dump (40.4e3 != 40.4e3);
 echo '40.4e3 <> 40.4e3 = '; var_dump (40.4e3 <> 40.4e3);
-#break_file
 echo '40.4e3 !== 40.4e3 = '; var_dump (40.4e3 !== 40.4e3);
 echo '40.4e3 <= 40.4e3 = '; var_dump (40.4e3 <= 40.4e3);
 echo '40.4e3 >= 40.4e3 = '; var_dump (40.4e3 >= 40.4e3);
@@ -3068,6 +3103,11 @@ echo '40.4e3 || 0x786F = '; var_dump (40.4e3 || 0x786F);
 #echo '40.4e3 >> 0x786F = '; var_dump (40.4e3 >> 0x786F);
 echo '~ 40.4e3 = '; var_dump (~ 40.4e3);
 echo '! 40.4e3 = '; var_dump (! 40.4e3);
+}
+
+float40_4e3_folding();
+
+function hex_folding() {
 echo '0x786F + 0 = '; var_dump (0x786F + 0);
 echo '0x786F - 0 = '; var_dump (0x786F - 0);
 echo '0x786F * 0 = '; var_dump (0x786F * 0);
@@ -3180,7 +3220,6 @@ echo '0x786F === true = '; var_dump (0x786F === true);
 echo '0x786F != true = '; var_dump (0x786F != true);
 echo '0x786F <> true = '; var_dump (0x786F <> true);
 echo '0x786F !== true = '; var_dump (0x786F !== true);
-#break_file
 echo '0x786F <= true = '; var_dump (0x786F <= true);
 echo '0x786F >= true = '; var_dump (0x786F >= true);
 echo '0x786F && true = '; var_dump (0x786F && true);
@@ -3323,4 +3362,8 @@ echo '0x786F || 0x786F = '; var_dump (0x786F || 0x786F);
 echo '0x786F >> 0x786F = '; var_dump (0x786F >> 0x786F);
 echo '~ 0x786F = '; var_dump (~ 0x786F);
 echo '! 0x786F = '; var_dump (! 0x786F);
+}
+
+hex_folding();
+
 ?>
