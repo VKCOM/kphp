@@ -915,23 +915,25 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       create_cfg_enter_cycle();
 
       auto switch_op = tree_node.as<op_switch>();
-      Node cond_start, cond_finish;
-      create_cfg(switch_op->expr(), &cond_start, &cond_finish);
+      Node cond_start;
+      Node cond_finish;
+      create_cfg(switch_op->condition(), &cond_start, &cond_finish);
 
       Node prev_finish;
       Node prev_var_finish = cond_finish;
 
       Node vars_init = new_node();
       Node vars_read = new_node();
-      {
-        add_edge(vars_init, vars_read);
-        for (auto i : switch_op->variables()) {
-          add_usage(vars_init, new_usage(usage_write_t, i.as<op_var>()));
-          add_usage(vars_read, new_usage(usage_read_t, i.as<op_var>()));
-          add_subtree(vars_init, i, false);
-          add_subtree(vars_read, i, false);
-        }
-      }
+
+      add_edge(vars_init, vars_read);
+      auto add_usages_for_switch_var = [&](VertexAdaptor<op_var> switch_var) {
+        add_usage(vars_init, new_usage(usage_write_t, switch_var));
+        add_usage(vars_read, new_usage(usage_read_t, switch_var));
+        add_subtree(vars_init, switch_var, false);
+        add_subtree(vars_read, switch_var, false);
+      };
+      add_usages_for_switch_var(switch_op->condition_on_switch());
+      add_usages_for_switch_var(switch_op->matched_with_one_case());
 
       bool was_default = false;
       Node default_start;
@@ -953,33 +955,30 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         add_edge(prev_finish, cur_start);
         prev_finish = cur_finish;
 
-        Node cur_var_start, cur_var_finish;
         if (is_default) {
           default_start = cur_start;
           was_default = true;
         } else {
+          Node cur_var_start, cur_var_finish;
           create_cfg(expr, &cur_var_start, &cur_var_finish);
           add_edge(cur_var_finish, cur_start);
           add_edge(prev_var_finish, cur_var_start);
           prev_var_finish = cur_var_finish;
         }
+
+        add_subtree(cond_start, i, false);
       }
       Node finish = new_node();
       add_edge(prev_finish, finish);
-      if (!was_default) {
-        add_edge(prev_var_finish, finish);
-      }
       if (was_default) {
         add_edge(prev_var_finish, default_start);
+      } else {
+        add_edge(prev_var_finish, finish);
       }
 
       add_edge(vars_read, cond_start);
       *res_start = vars_init;
       *res_finish = finish;
-
-      for (auto i : switch_op->cases()) {
-        add_subtree(cond_start, i, false);
-      }
 
       create_cfg_exit_cycle(finish, finish);
       break;

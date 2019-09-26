@@ -1417,21 +1417,15 @@ VertexPtr GenTree::get_switch() {
   next_cur();
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
-  VertexPtr switch_val = get_expression();
+  auto switch_val = get_expression();
   CE (!kphp_error(switch_val, "Failed to parse 'switch' expression"));
-  switch_next.push_back(switch_val);
   CE (expect(tok_clpar, "')'"));
 
   CE (expect(tok_opbrc, "'{'"));
 
-  switch_next.push_back(create_superlocal_var("switch_var", tp_var));
-  switch_next.push_back(create_superlocal_var("switch_flag", tp_bool));
-  switch_next.push_back(create_superlocal_var("ss", tp_string));
-  switch_next.push_back(create_superlocal_var("ss_hash", tp_int));
-
   while (cur->type() != tok_clbrc) {
     skip_phpdoc_tokens();
-    TokenType cur_type = cur->type();
+    auto cur_type = cur->type();
     VertexPtr case_val;
 
     AutoLocation case_location(this);
@@ -1441,26 +1435,16 @@ VertexPtr GenTree::get_switch() {
       CE (!kphp_error(case_val, "Failed to parse 'case' value"));
 
       CE (expect2(tok_colon, tok_semicolon, "':'"));
-    }
-    if (cur_type == tok_default) {
+    } else {
+      CE(test_expect(tok_default));
       next_cur();
       CE (expect2(tok_colon, tok_semicolon, "':'"));
     }
 
     AutoLocation seq_location(this);
     vector<VertexPtr> seq_next;
-    while (cur != end) {
-      if (cur->type() == tok_clbrc) {
-        break;
-      }
-      if (cur->type() == tok_case) {
-        break;
-      }
-      if (cur->type() == tok_default) {
-        break;
-      }
-      VertexPtr cmd = get_statement();
-      if (cmd) {
+    while (cur != end && vk::none_of_equal(cur->type(), tok_clbrc, tok_case, tok_default)) {
+      if (auto cmd = get_statement()) {
         seq_next.push_back(cmd);
       }
     }
@@ -1468,17 +1452,16 @@ VertexPtr GenTree::get_switch() {
     auto seq = VertexAdaptor<op_seq>::create(seq_next);
     set_location(seq, seq_location);
     if (cur_type == tok_case) {
-      auto case_block = VertexAdaptor<op_case>::create(case_val, seq);
-      set_location(case_block, case_location);
-      switch_next.push_back(case_block);
-    } else if (cur_type == tok_default) {
-      auto case_block = VertexAdaptor<op_default>::create(seq);
-      set_location(case_block, case_location);
-      switch_next.push_back(case_block);
+      switch_next.emplace_back(VertexAdaptor<op_case>::create(case_val, seq));
+    } else {
+      switch_next.emplace_back(VertexAdaptor<op_default>::create(seq));
     }
+    set_location(switch_next.back(), case_location);
   }
 
-  auto switch_vertex = VertexAdaptor<op_switch>::create(switch_next);
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", tp_var);
+  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", tp_bool);
+  auto switch_vertex = VertexAdaptor<op_switch>::create(switch_val, temp_var_condition_on_switch, temp_var_matched_with_one_case, switch_next);
   set_location(switch_vertex, switch_location);
 
   CE (expect(tok_clbrc, "'}'"));

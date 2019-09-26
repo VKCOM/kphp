@@ -606,11 +606,15 @@
   },
   {
     "sons": {
-      "expr": 0,
-      "switch_var": 1,
-      "switch_flag": 2,
-      "ss": 3,
-      "ss_hash": 4
+      "condition": 0,
+      "condition_on_switch" : {
+        "id": 1,
+        "type": "op_var"
+      },
+      "matched_with_one_case" : {
+        "id": 2,
+        "type": "op_var"
+      }
     },
     "name": "op_switch",
     "base_name": "meta_op_cycle",
@@ -618,12 +622,8 @@
       "str": "switch"
     },
     "ranges": {
-      "variables": [
-        1,
-        5
-      ],
       "cases": [
-        5,
+        3,
         0
       ]
     }

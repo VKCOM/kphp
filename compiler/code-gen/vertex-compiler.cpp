@@ -607,7 +607,6 @@ struct CaseInfo {
   }
 };
 
-
 void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   auto cases_vertices = root->cases();
   vector<CaseInfo> cases(cases_vertices.size());
@@ -640,29 +639,30 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     }
   }
 
-  W << BEGIN;
-  W << "static_cast<void>(" << root->switch_var() << ");" << NL;
-  W << root->ss() << " = f$strval (" << root->expr() << ");" << NL;
-  W << root->ss_hash() << " = " << root->ss() << ".hash();" << NL;
-  W << root->switch_flag() << " = false;" << NL;
+  auto temp_var_strval_of_condition = root->condition_on_switch();
+  auto temp_var_matched_with_a_case = root->matched_with_one_case();
 
-  W << "switch (" << root->ss_hash() << ") " << BEGIN;
+  W << BEGIN;
+  W << temp_var_strval_of_condition << " = f$strval (" << root->condition() << ");" << NL;
+  W << temp_var_matched_with_a_case << " = false;" << NL;
+
+  W << "switch (" << temp_var_strval_of_condition << ".as_string().hash()) " << BEGIN;
   for (const auto &one_case : cases) {
     if (one_case.is_default) {
       W << "default:" << NL;
       if (!one_case.goto_name.empty()) {
         W << one_case.goto_name << ":;" << NL;
       }
-      W << root->switch_flag() << " = true;" << NL;
+      W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       if (one_case.goto_name.empty()) {
         W << "case " << format("0x%x", one_case.hash) << ":" << NL;
       } else {
         W << one_case.goto_name << ":;" << NL;
       }
-      W << "if (!" << root->switch_flag() << ") " << BEGIN;
+      W << "if (!" << temp_var_matched_with_a_case << ") " << BEGIN;
       {
-        W << "if (!equals (" << root->ss() << ", " << one_case.expr << ")) " << BEGIN;
+        W << "if (!equals (" << temp_var_strval_of_condition << ".as_string(), " << one_case.expr << ")) " << BEGIN;
 
         if (one_case.next) {
           W << "goto " << one_case.next->goto_name << ";" << NL;
@@ -671,7 +671,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
         }
 
         W << END << " else " << BEGIN;
-        W << root->switch_flag() << " = true;" << NL;
+        W << temp_var_matched_with_a_case << " = true;" << NL;
         W << END << NL;
       }
       W << END << NL;
@@ -686,13 +686,10 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 }
 
 void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  W << "switch (f$intval (" << root->expr() << "))" <<
-    BEGIN;
-  W << "static_cast<void>(" << root->ss() << ");" << NL;
-  W << "static_cast<void>(" << root->ss_hash() << ");" << NL;
-  W << "static_cast<void>(" << root->switch_var() << ");" << NL;
-  W << "static_cast<void>(" << root->switch_flag() << ");" << NL;
+  W << "switch (f$intval (" << root->condition() << "))" << BEGIN;
 
+  W << "static_cast<void>(" << root->condition_on_switch() << ");" << NL;
+  W << "static_cast<void>(" << root->matched_with_one_case() << ");" << NL;
   std::set<string> used;
   for (auto one_case : root->cases()) {
     VertexAdaptor<op_seq> cmd;
@@ -724,21 +721,22 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   string goto_name_if_default_in_the_middle;
 
+  auto temp_var_condition_on_switch = root->condition_on_switch();
+  auto temp_var_matched_with_a_case = root->matched_with_one_case();
+
   W << "do " << BEGIN;
-  W << "static_cast<void>(" << root->ss() << ");" << NL;
-  W << "static_cast<void>(" << root->ss_hash() << ");" << NL;
-  W << root->switch_var()  << " = " << root->expr() << ";" << NL;
-  W << root->switch_flag() << " = false;" << NL;
+  W << temp_var_condition_on_switch << " = " << root->condition() << ";" << NL;
+  W << temp_var_matched_with_a_case << " = false;" << NL;
 
   for (const auto &one_case : root->cases()) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << root->switch_flag() << " || eq2(" << root->switch_var() << ", " << cs->expr() << "))" << BEGIN;
-      W << root->switch_flag() << " = true;" << NL;
+      W << "if (" << temp_var_matched_with_a_case << " || eq2(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
+      W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       cmd = one_case.as<op_default>()->cmd();
-      W << "if (" << root->switch_flag() << ") " << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
       goto_name_if_default_in_the_middle = gen_unique_name("switch_goto");
       W << goto_name_if_default_in_the_middle + ": ";
     }
@@ -748,11 +746,11 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   }
 
   if (!goto_name_if_default_in_the_middle.empty()) {
-    W << "if (" << root->switch_flag() << ") " << BEGIN;
+    W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
     W << "break;" << NL;
     W << END << NL;
 
-    W << root->switch_flag() << " = true;" << NL;
+    W << temp_var_matched_with_a_case << " = true;" << NL;
     W << "goto " << goto_name_if_default_in_the_middle << ";" << NL;
   }
 
@@ -763,7 +761,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 
 void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  kphp_assert(vk::all_of_equal(op_var, root->ss()->type(), root->ss_hash()->type(), root->switch_var()->type(), root->switch_flag()->type()));
+  kphp_assert(root->condition_on_switch()->type() == op_var && root->matched_with_one_case()->type() == op_var);
   bool all_cases_are_ints = true;
   bool all_cases_are_strings = true;
   bool has_default = false;
