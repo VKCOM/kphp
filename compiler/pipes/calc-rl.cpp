@@ -194,6 +194,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
       VertexPtr lhs = root.as<op_instance_prop>()->instance();
       switch (expected_rl_type) {
         case val_l:
+          rl_calc(lhs, val_r);    // даже когда ..a..->b это lvalue, считаем ..a.. rvalue
           break;
         case val_r:
         case val_none:
