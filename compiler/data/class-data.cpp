@@ -156,8 +156,11 @@ ClassPtr ClassData::get_parent_or_interface() const {
 }
 
 bool ClassData::is_parent_of(ClassPtr other) const {
-  auto parent = other ? other->get_parent_or_interface() : ClassPtr{};
-  return parent && (parent == get_self() || is_parent_of(other->parent_class));
+  if (get_self() == other) {
+    return true;
+  }
+
+  return other && is_parent_of(other->get_parent_or_interface());
 }
 
 ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {

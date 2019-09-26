@@ -47,9 +47,12 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
         kphp_error(current_function->class_id && current_function->class_id->is_trait(), format("you may not use trait directly: %s", ref_class->get_name()));
       }
 
-      if (ref_class && !ref_class->is_builtin()) {
+      if (ref_class && !ref_class->is_builtin() && current_function->class_id) {
         if (auto found_method = ref_class->get_instance_method(original_name.substr(pos + 2))) {
           auto method = found_method->function;
+          kphp_error(ref_class->is_parent_of(current_function->get_this_or_topmost_if_lambda()->class_id),
+            format("Call of instance method(%s) statically", method->get_human_readable_name().c_str()));
+
           VertexPtr this_vertex = ClassData::gen_vertex_this(v->location);
           if (current_function->is_lambda()) {
             this_vertex = VertexAdaptor<op_instance_prop>::create(this_vertex).set_location(v);

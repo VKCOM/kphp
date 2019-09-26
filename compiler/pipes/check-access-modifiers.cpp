@@ -19,7 +19,7 @@ void CheckAccessModifiersPass::check_access(MemberModifier modifiers, ClassPtr a
   }
   if (modifiers.is_protected()) {
     auto is_ok = [&access_class](ClassPtr class_id) {
-      return class_id && (class_id == access_class || class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
+      return class_id && (class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
     };
     kphp_error(is_ok(class_id) || is_ok(lambda_class_id),
                format("Can't access protected %s %s", field_type, name.c_str()));
