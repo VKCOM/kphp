@@ -1,5 +1,4 @@
-@pass
-<?php 
+<?php
   switch ($x) {
     case '_dummy_':
     print "25\n";

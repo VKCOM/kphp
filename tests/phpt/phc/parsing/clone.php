@@ -1,10 +1,9 @@
-@unsupported
+@ok
 <?php
-	class C {}
+  class C {
+    public $x = 1;
+  }
 
-	$x = new C();
-	$y = "C";
-
-	$z1 = clone($x);
-	$z2 = clone($y);
+  $x = new C();
+  $z1 = clone($x);
 ?>

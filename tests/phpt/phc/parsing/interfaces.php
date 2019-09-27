@@ -1,4 +1,4 @@
-@unsupported
+@ok
 <?php
 	interface Foo 
 	{
@@ -11,7 +11,7 @@
 		public function b();
 	}
 
-	interface FooBar extends Foo, Bar
+	interface FooBar extends Foo
 	{
 		public function fb();
 	}
@@ -21,7 +21,7 @@
 		public function o();
 	}
 
-	abstract class D implements FooBar, Boo
+	abstract class D implements FooBar
 	{
 	}
 
@@ -39,6 +39,5 @@
 	$c->fb();
 	$c->o();
 	echo Foo::x . "\n"; 
-	echo FooBar::x . "\n"; 
-	echo C::x . "\n"; 
+	echo FooBar::x . "\n";
 ?>

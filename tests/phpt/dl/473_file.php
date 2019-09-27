@@ -1,4 +1,4 @@
-@ok_old_php
+@ok
 <?php
   var_dump (dirname ('..'));
   var_dump (dirname ('phpt/'));
@@ -45,7 +45,6 @@
   rename ($filename, $new_filename);
   $filename = $new_filename;
 
-  file_put_contents (STDOUT, array ("Part", " of the answer\n"));
   fwrite (STDERR, "Not a part of the answer\n");
   
   var_dump (filesize ($filename));

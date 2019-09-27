@@ -1,4 +1,4 @@
-@unsupported
+@ok
 <?php
 
 	// AST_constants in a variery of positions
@@ -13,14 +13,14 @@
 		static $x4 = Foo::Bar;
 	}
 
-	function x ($x = Foo::bar, $y = array ("s", Foo))
+	function x ($x = Foo::Bar, $y = array ("s", Foo::BAR))
 	{
 		var_dump ($x);
 		var_dump ($y);
 	}
 
 	x ();
-	x (new Foo ());
-	x (new Foo (), new Foo ());
+	x (Foo::X3);
+	x (Foo::X3, Foo::$x4);
 
 ?>

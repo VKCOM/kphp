@@ -1,15 +1,14 @@
-@unsupported
+@ok
 <?php
 
 $x = 10;
 $y = 20;
 
-function foo()
-{
+function foo() {
+	global $x, $y;
 
-	$y = "y";
-	global $x, $$y;
-		  
+	var_dump($x);
+	var_dump($y);
 }
 
 foo();

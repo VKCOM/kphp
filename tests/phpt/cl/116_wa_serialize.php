@@ -1,6 +1,7 @@
-@wa
+@ok wa
 <?php
 require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 $a = new Classes\A();
-echo serialize($a);
+echo serialize(instance_to_array($a));

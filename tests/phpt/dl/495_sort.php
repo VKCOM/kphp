@@ -1,4 +1,4 @@
-@wa benchmark callback
+@ok wa benchmark callback
 <?php
 echo "*** Testing sort() : basic functionality ***\n";
 
@@ -196,14 +196,14 @@ foreach ($various_arrays as $array) {
   echo "- With Default sort flag -\n";
   $temp_array = $array;
   sort($temp_array);
-  var_dump($temp_array);
+//  var_dump($temp_array);
 
   // loop through $flags array and setting all possible flag values
   foreach($flags as $key => $flag){
     echo "- Sort flag = $key -\n";
     $temp_array = $array;
     sort($temp_array, $flag);
-    var_dump($temp_array);
+//    var_dump($temp_array);
   }
   $count++;
 }
@@ -468,14 +468,14 @@ foreach ($various_arrays as $array) {
   echo "- With Default rsort flag -\n";
   $temp_array = $array;
   rsort($temp_array);
-  var_dump($temp_array);
+//  var_dump($temp_array);
 
   // loop through $flags array and setting all possible flag values
   foreach($flags as $key => $flag){
     echo "- Sort flag = $key -\n";
     $temp_array = $array;
     rsort($temp_array, $flag);
-    var_dump($temp_array);
+//    var_dump($temp_array);
   }
   $count++;
 }

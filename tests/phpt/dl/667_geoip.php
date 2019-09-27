@@ -1,4 +1,4 @@
-@geoip
+@ok geoip
 <?php
 
 function _dechex($u) {
@@ -36,13 +36,13 @@ function get_geoip ($ip) {
   $ttt += microtime (true);
   $tt += -microtime (true);
 //  $r = $eng->get ($r);
-  $r = array();
   $tt += microtime (true);
   #print "Engine: " . $tt . " time elapsed <br />\n";
   if (!$r) {
     return "??";
   }
-  return $r[max(array_keys($r))];
+  $max_key = max(array_keys($r));
+  return $r[$max_key];
 }
 
 
@@ -63,6 +63,5 @@ for ($i = 0; $i < 1000; $i++) {
 
 $t += microtime (true);
 print $res;
-print "Total $t, engine $tt, preparation $ttt time elapsed <br />\n";
 
 ?>

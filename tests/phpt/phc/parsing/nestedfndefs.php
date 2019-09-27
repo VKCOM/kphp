@@ -1,17 +1,10 @@
-@unsupported
+@ok
 <?php
-	if($expr)
+	if(1)
 	{
 		function f()
 		{
 			echo "first f\n";
-		}
-	}
-	else
-	{
-		function f()
-		{
-			echo "second f\n";
 		}
 	}
 

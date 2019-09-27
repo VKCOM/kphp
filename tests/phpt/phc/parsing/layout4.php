@@ -1,4 +1,4 @@
-@todo
+@ok
 <?php
 	$arr = array(
 		125,

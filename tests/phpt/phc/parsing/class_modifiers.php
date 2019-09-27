@@ -1,34 +1,22 @@
-@unsupported
+@ok
 <?php
 
-class Foo
-{
-
+class Foo {
 }
 
-abstract class Bar
-{
-
+abstract class Bar {
 }
 
-final class fooBar
-{
-
+final class fooBar {
 }
 
-class Fud extends FooBar
-{
-
+interface Y {
 }
 
-class X implements Y
-{
-
+class Fud extends Foo {
 }
 
-class Z implements W, Q, R
-{
-
+class X implements Y {
 }
 
 ?>

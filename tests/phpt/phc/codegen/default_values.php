@@ -1,4 +1,4 @@
-@unsupported
+@ok
 <?php
 	function f($a, $b = 2, $c = 3)
 	{

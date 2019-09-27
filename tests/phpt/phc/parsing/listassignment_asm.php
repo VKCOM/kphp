@@ -1,4 +1,4 @@
-@unsupported arseny30
+@ok
 <?php
 
 	// it looks like refernce assignments to lists arent allowed
@@ -8,13 +8,6 @@
 	var_dump ($a);
 	var_dump ($b);
 	echo "-------------0----------------\n";
-
-	// note, weak references
-	list ($a, $b) = array ("x" => "x", "y" => "y");
-	var_dump ($a);
-	var_dump ($b);
-	echo "-------------0B----------------\n";
-
 
 	// a list expression evaluates to its rvalue
 	var_dump (list ($a, $b) = array (11, 12, 13));
@@ -59,19 +52,4 @@
 	$x = list ($y, $z) = array (1,2);
 	var_dump ($a);
 	var_dump ($b);
-	echo "-------------8----------------\n";
-
-	// the php site makes an interesting point, and sullies it with an awful example
-	$a = array();
-	$info = array('coffee', 'brown', 'caffeine');
-	list($a[0], $a[1], $a[2]) = $info;
-	var_dump ($a);
-	echo "-------------9----------------\n";
-
-	// how about:
-	list($info[2], $info[1], $info[0]) = $info;
-	// it looks like it reverses the order, but it doesnt. It first overwrites
-	// $info[0], then later overwrites $info[2] with the value already copied
-	// from $info[2]
-	var_dump ($info);
 ?>

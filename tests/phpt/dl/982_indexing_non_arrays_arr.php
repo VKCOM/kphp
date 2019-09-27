@@ -1,4 +1,4 @@
-@pass
+@ok pass
 <?php
 
 	$scalar_array = array (

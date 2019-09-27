@@ -1,4 +1,4 @@
-@todo
+@ok
 <?php
 	$x = __LINE__;
 //	echo "$x\n";

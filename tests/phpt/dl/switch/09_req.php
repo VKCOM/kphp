@@ -1,4 +1,3 @@
-@pass
 <?php
 switch ($act) {
 case "one":

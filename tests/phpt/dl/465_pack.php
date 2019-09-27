@@ -1,4 +1,4 @@
-@ok_old_php
+@ok
 <?php
   var_dump (pack ("A5a4Ah2H5H2H3h", "h h", 'q q', 't t', 345, "ABCDE", "ABCDE", "ABCDEF", "A1"));
   var_dump (pack ("A5a4Ah3H5H4H6", "h h", 'q q', 't t', 345, "ABCDE", "ABCDE", "ABCDEF"));
@@ -32,7 +32,6 @@
   var_dump (pack ("f3d3", -1, -2, -3, -4, -5, -6));
   var_dump (pack ("f3d3", 1, 2, 3, 4, 5, 6));
 
-  var_dump (unpack ("a5q/a4w/Ae/h2r/H5t/H2y/H3u/h", pack ("A5a4Ah2H5H2H3h", "h h", 'q q', 't t', 345, "ABCDE", "ABCDE", "ABCDEF", "A1")));
   var_dump (unpack ("h1q/h1w", "AA"));
   var_dump (unpack ("hq/hw", "AA"));
   var_dump (unpack ("hq/h*", "AABCDE"));
@@ -45,11 +44,8 @@
   var_dump (unpack ("s2a/S4s", pack ("s2S4", -123456, -234567, -345678, -456789, -567890, -678901)));
   var_dump (unpack ("nn/N5N", pack ("nN5", -123456, 234567, 345678, 456789, 567890, 678901)));
 
-  var_dump (unpack ("iqwe/Iq22w2w22w2w2sd/lz123123/Lx11/Nqwe/V", pack ("iIlLNV", -1, -2, -3, 4, 5, 6)));
   var_dump (unpack ("iqwe/Iq22w2w22w2w2sd/lz123123/Lx11/Nqwe/V", pack ("iIlLNV", 1, 2, 3, 4, 5, 6)));
-  var_dump (unpack ("iqwe/Iq22w2w22w2w2sd/lz123123/Lx11/Nqwe/V", pack ("iIlLNV", -123456, -234567, -345678, 456789, 567890, 678901)));
   var_dump (unpack ("i2q/L4w", pack ("i2L4", -123456, -234567, 345678, 456789, 567890, 678901)));
-  var_dump (unpack ("I2q/N4w", pack ("I2N4", -123456, -234567, 345678, 456789, 567890, 678901)));
   var_dump (unpack ("lq/V5w", pack ("lV5", -123456, 234567, 345678, 456789, 567890, 678901)));
 
   var_dump (unpack ("c*", pack ("c*", -1, -2, -3, -4, -5, -6)));

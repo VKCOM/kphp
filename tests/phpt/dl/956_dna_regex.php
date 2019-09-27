@@ -1,4 +1,4 @@
-@ok_but_too_long benchmark_but_too_long
+@ok benchmark_but_too_long
 <?php
 #
 # The Computer Language Shootout

@@ -1,4 +1,4 @@
-@pass
+@ok pass
 <?php
   $a = "!!!!";
   echo "require_f imported";

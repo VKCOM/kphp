@@ -1,4 +1,4 @@
-@benchmark
+@ok benchmark
 <?php
   // TODO sometimes php gives another result
   function hash2($n) {

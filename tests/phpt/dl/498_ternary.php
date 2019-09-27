@@ -1,4 +1,4 @@
-@wa
+@ok wa
 <?php
 $arg = 'T';
 echo ( $arg == 'B' ) ? 'bus' :

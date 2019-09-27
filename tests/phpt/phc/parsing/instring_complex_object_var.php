@@ -1,4 +1,4 @@
-@unsupported
+@ok
 <?php
 	class C
 	{

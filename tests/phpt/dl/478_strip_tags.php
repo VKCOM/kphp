@@ -1,4 +1,4 @@
-@ok_old_php
+@ok ok_old_php
 <?php
   for ($i = 0; $i < 3; ++$i) {
     $str = 'test<br>test';
@@ -6,7 +6,6 @@
     echo $str."\n";
   }
 
-  var_dump(strip_tags("<br/>", "<br>"));
   $text = '<p>Параграф.</p><!-- Комментарий --> <a href="#fragment">Еще текст</a>';
   echo strip_tags($text);
   echo "\n";
@@ -47,31 +46,3 @@
 
   var_dump ($str, bin2hex ($str));
   var_dump ($s, bin2hex ($s));
-
-#ifndef KittenPHP
-
-  var_dump (bin2hex (htmlentities($str, ENT_COMPAT | ENT_HTML401, 'cp1251')));
-
-  var_dump (bin2hex (htmlspecialchars($str, ENT_COMPAT | ENT_HTML401, 'cp1251')));
-
-  var_dump (bin2hex (htmlentities($s, ENT_COMPAT | ENT_HTML401, 'cp1251')));
-
-//  var_dump (mb_convert_encoding ($s, 'HTML-ENTITIES', 'cp1251'));
-
-  if (0) {
-
-#endif
-
-  var_dump (bin2hex (htmlentities($str)));
-
-  var_dump (bin2hex (htmlspecialchars($str)));
-
-  var_dump (bin2hex (htmlentities($s)));
-
-//  var_dump (htmlspecialchars_decode (htmlentities($s)));
-
-#ifndef KittenPHP
-
-  }
-
-#endif

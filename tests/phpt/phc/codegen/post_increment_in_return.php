@@ -1,4 +1,4 @@
-@wa UB
+@ok wa UB
 <?php
 	$i = 0;
 
