@@ -153,7 +153,7 @@ protected:
         int k = (int)(request_id.val() - first_request_id);
         php_assert ((unsigned int)k < (unsigned int)query_names.count());
 
-        bool parse_result = f$rpc_get_and_parse(request_id.val(), -1);
+        bool parse_result = rpc_get_and_parse(request_id.val(), -1);
         php_assert (resumable_finished);
         if (!parse_result) {
           continue;
@@ -256,7 +256,7 @@ OrFalse<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T>
       int k = (int)(request_id - first_request_id);
       php_assert ((unsigned int)k < (unsigned int)query_names.count());
 
-      bool parse_result = f$rpc_get_and_parse(request_id, -1);
+      bool parse_result = rpc_get_and_parse(request_id, -1);
       php_assert (resumable_finished);
       if (!parse_result) {
         continue;

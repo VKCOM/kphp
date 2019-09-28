@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "runtime/unique_object.h"
 #include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
+#include "runtime/unique_object.h"
 
 extern const char *new_tl_current_function_name;
 
@@ -183,6 +183,7 @@ OrFalse<string> f$rpc_get(int request_id, double timeout = -1.0);
 
 OrFalse<string> f$rpc_get_synchronously(int request_id);
 
+bool rpc_get_and_parse(int request_id, double timeout);
 bool f$rpc_get_and_parse(int request_id, double timeout = -1.0);
 
 

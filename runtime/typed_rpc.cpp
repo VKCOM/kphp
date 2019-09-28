@@ -45,7 +45,7 @@ private:
 
     RESUMABLE_BEGIN
       last_rpc_error_reset();
-      ready = f$rpc_get_and_parse(query_.get()->query_id, -1);
+      ready = rpc_get_and_parse(query_.get()->query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         php_assert (last_rpc_error_get());

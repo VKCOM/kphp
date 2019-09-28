@@ -735,7 +735,7 @@ var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout, 
   }
 
   wait_synchronously(request_id);
-  if (!f$rpc_get_and_parse(request_id, timeout)) {
+  if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -801,7 +801,7 @@ bool rpc_mc_run_set(int op, const rpc_connection &conn, const string &key, const
   }
 
   wait_synchronously(request_id);
-  if (!f$rpc_get_and_parse(request_id, timeout)) {
+  if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -844,7 +844,7 @@ var rpc_mc_run_increment(int op, const rpc_connection &conn, const string &key, 
   }
 
   wait_synchronously(request_id);
-  if (!f$rpc_get_and_parse(request_id, timeout)) {
+  if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }
@@ -886,7 +886,7 @@ bool f$rpc_mc_delete(const rpc_connection &conn, const string &key, double timeo
   }
 
   wait_synchronously(request_id);
-  if (!f$rpc_get_and_parse(request_id, timeout)) {
+  if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
   }

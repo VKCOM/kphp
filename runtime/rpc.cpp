@@ -13,12 +13,11 @@
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/string_functions.h"
-#include "runtime/zlib.h"
-
-#include "runtime/tl/tl_builtins.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_query.h"
 #include "runtime/tl/rpc_request.h"
+#include "runtime/tl/tl_builtins.h"
+#include "runtime/zlib.h"
 
 static const int GZIP_PACKED = 0x3072cfa1;
 
@@ -1056,8 +1055,19 @@ public:
   }
 };
 
+bool drop_tl_query_info(int query_id) {
+  auto query = RpcPendingQueries::get().withdraw(query_id);
+  if (query.is_null()) {
+    php_warning("Result of TL query with id %d has already been taken or id is incorrect", query_id);
+    return false;
+  }
+  return true;
+}
 
 OrFalse<string> f$rpc_get(int request_id, double timeout) {
+  if (!drop_tl_query_info(request_id)) {
+    return false;
+  }
   return start_resumable<OrFalse<string>>(new rpc_get_resumable(request_id, timeout));
 }
 
@@ -1122,6 +1132,13 @@ public:
 };
 
 bool f$rpc_get_and_parse(int request_id, double timeout) {
+  if (!drop_tl_query_info(request_id)) {
+    return false;
+  }
+  return rpc_get_and_parse(request_id, timeout);
+}
+
+bool rpc_get_and_parse(int request_id, double timeout) {
   return start_resumable<bool>(new rpc_get_and_parse_resumable(request_id, timeout));
 }
 
@@ -1382,7 +1399,7 @@ protected:
 
     RESUMABLE_BEGIN
       last_rpc_error = nullptr;
-      ready = f$rpc_get_and_parse(query_id, -1);
+      ready = rpc_get_and_parse(query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         php_assert (last_rpc_error != nullptr);
