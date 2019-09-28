@@ -16,6 +16,12 @@ template<class T>
 struct is_or_false<OrFalse<T>> : std::true_type {
 };
 
+enum class OrFalseOrNullState : uint8_t {
+  has_value = 0,
+  false_value = 1,
+  null_value = 2
+};
+
 template<class T>
 class OrFalse {
 public:
@@ -24,92 +30,95 @@ public:
 
   using InnerType = T;
 
-  T value;
-  bool bool_value;
-
-  OrFalse() noexcept :
-    value(),
-    bool_value() {
-  }
+  OrFalse() = default;
 
   OrFalse(bool x) noexcept :
-    value(),
-    bool_value(x) {
+    value_state_(OrFalseOrNullState::false_value) {
     php_assert(!x);
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse(T1 &&x) noexcept :
-    value(std::forward<T1>(x)),
-    bool_value(true) {
+    value_(std::forward<T1>(x)),
+    value_state_(OrFalseOrNullState::has_value) {
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse(const OrFalse<T1> &other) noexcept :
-    value(other.value),
-    bool_value(other.bool_value) {
+    value_(other.val()),
+    value_state_(other.value_status()) {
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse(OrFalse<T1> &&other) noexcept :
-    value(std::move(other.value)),
-    bool_value(other.bool_value) {
-    other.bool_value = false;
+    value_(std::move(other.val())),
+    value_state_(other.value_status()) {
   }
 
   OrFalse &operator=(bool x) noexcept {
     php_assert(!x);
-    value = T();
-    bool_value = x;
+    value_ = T();
+    value_state_ = OrFalseOrNullState::false_value;
     return *this;
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse &operator=(const OrFalse<T1> &other) noexcept {
-    value = T(other.value);
-    bool_value = other.bool_value;
+    value_ = T(other.val());
+    value_state_ = other.value_status();
     return *this;
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse &operator=(OrFalse<T1> &&other) noexcept {
-    value = T(std::move(other.value));
-    bool_value = other.bool_value;
-    other.bool_value = false;
+    value_ = T(std::move(other.val()));
+    value_state_ = other.value_status();
     return *this;
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   OrFalse &operator=(T1 &&x) noexcept {
-    value = T(std::forward<T1>(x));
-    bool_value = true;
+    value_ = T(std::forward<T1>(x));
+    value_state_ = OrFalseOrNullState::has_value;
     return *this;
   }
 
   OrFalse &operator=(T &&x) noexcept {
-    value = std::move(x);
-    bool_value = true;
+    value_ = std::move(x);
+    value_state_ = OrFalseOrNullState::has_value;
     return *this;
   }
 
   OrFalse &operator=(const T &x) noexcept {
-    value = x;
-    bool_value = true;
+    value_ = x;
+    value_state_ = OrFalseOrNullState::has_value;
     return *this;
   }
 
   T &ref() noexcept {
-    bool_value = true;
-    return value;
+    value_state_ = OrFalseOrNullState::has_value;
+    return value_;
   }
 
   T &val() noexcept {
-    return value;
+    return value_;
   }
 
   const T &val() const noexcept {
-    return value;
+    return value_;
   }
+
+  bool has_value() const noexcept {
+    return value_state_ == OrFalseOrNullState::has_value;
+  }
+
+  OrFalseOrNullState value_status() const noexcept {
+    return value_state_;
+  }
+
+private:
+  T value_{};
+  OrFalseOrNullState value_state_{OrFalseOrNullState::false_value};
 };
 
 template<class T>

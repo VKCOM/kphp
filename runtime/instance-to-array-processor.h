@@ -24,10 +24,18 @@ private:
 
   template<typename T>
   void process_impl(const char *field_name, const OrFalse<T> &value) {
-    if (value.bool_value) {
-      process_impl(field_name, value.val());
-    } else {
-      add_value(field_name, var{false});
+    switch (value.value_status()) {
+      case OrFalseOrNullState::has_value:
+        process_impl(field_name, value.val());
+        return;
+      case OrFalseOrNullState::false_value:
+        add_value(field_name, var{false});
+        return;
+      case OrFalseOrNullState::null_value:
+        add_value(field_name, var{});
+        return;
+      default:
+        __builtin_unreachable();
     }
   }
 

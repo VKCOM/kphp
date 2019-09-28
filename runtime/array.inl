@@ -1668,10 +1668,18 @@ void array<T>::set_value(const var &v, const T &value) noexcept {
 template<class T>
 template<class OrFalseT, class ...Args>
 void array<T>::emplace_value(const OrFalse<OrFalseT> &key, Args &&... args) noexcept {
-  if (!key.bool_value) {
-    set_value(false, std::forward<Args>(args)...);
-  } else {
-    set_value(key.val(), std::forward<Args>(args)...);
+  switch (key.value_status()) {
+    case OrFalseOrNullState::has_value:
+      set_value(key.val(), std::forward<Args>(args)...);
+      return;
+    case OrFalseOrNullState::false_value:
+      set_value(false, std::forward<Args>(args)...);
+      return;
+    case OrFalseOrNullState::null_value:
+      set_value(var{}, std::forward<Args>(args)...);
+      return;
+    default:
+      __builtin_unreachable();
   }
 }
 

@@ -1478,7 +1478,7 @@ struct CipherCtx {
   bool update(string data) {
     if (action_ == decrypt && !(options_ & OPENSSL_RAW_DATA)) {
       OrFalse<string> decoding_data = f$base64_decode(data, true);
-      if (!decoding_data.bool_value) {
+      if (!decoding_data.has_value()) {
         php_warning("Failed to base64 decode the input");
         return false;
       }

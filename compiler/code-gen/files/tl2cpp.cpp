@@ -868,7 +868,7 @@ private:
     std::string check_target = "tl_object->$" + arg->name;
     if (is_tl_type_wrapped_to_OrFalse(type_of(arg->type_expr))) {
       // Если оборачивается в OrFalse под филд маской
-      return "!" + check_target + ".bool_value";
+      return "!" + check_target + ".has_value()";
     } else if (type->id == TL_LONG) {
       // Если это var (mixed)
       return "equals(" + check_target + ", false)";

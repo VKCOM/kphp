@@ -576,8 +576,8 @@ OrFalse<array<class_instance<T>>> f$array_column(const array<array<class_instanc
 template<class T>
 OrFalse<array<class_instance<T>>> f$array_column(const array<OrFalse<array<class_instance<T>>>> &a, const var &column_key) {
   auto element_transformer = [] (array<class_instance<T>> &dest, const OrFalse<array<class_instance<T>>> &source, const var &column_key, const var &index_key) {
-    if (source.bool_value) {
-      back_inserter_class_instance(dest, source.value, column_key, index_key);
+    if (source.has_value()) {
+      back_inserter_class_instance(dest, source.val(), column_key, index_key);
     }
   };
 
@@ -585,15 +585,15 @@ OrFalse<array<class_instance<T>>> f$array_column(const array<OrFalse<array<class
 }
 
 template<class T>
-OrFalse<array<T>>  f$array_column(const array<array<T>> &a, const var &column_key, const var &index_key = {}) {
+OrFalse<array<T>> f$array_column(const array<array<T>> &a, const var &column_key, const var &index_key = {}) {
   return array_column_helper(a, column_key, index_key, extract_array_column<T>);
 
 }
 
 template<class T>
-OrFalse<array<T>>  f$array_column(const array<OrFalse<array<T>>> &a, const var &column_key, const var &index_key = {}) {
+OrFalse<array<T>> f$array_column(const array<OrFalse<array<T>>> &a, const var &column_key, const var &index_key = {}) {
   auto element_transformer = [] (array<T> &dest, const OrFalse<array<T>> &source, const var &column_key, const var &index_key) {
-    if (source.bool_value) {
+    if (source.has_value()) {
       extract_array_column(dest, source.val(), column_key, index_key);
     }
   };
@@ -622,7 +622,7 @@ inline OrFalse<array<var>> f$array_column(const var &a, const var &column_key, c
 
 template<class T>
 inline auto f$array_column(const OrFalse<T> &a, const var &column_key, const var &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
-  if (!a.bool_value) {
+  if (!a.has_value()) {
     php_warning("first parameter of array_column must be array");
     return false;
   }

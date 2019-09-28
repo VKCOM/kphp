@@ -459,15 +459,4 @@ inline bool equals(const var &lhs, const class_instance<T> &rhs);
 template<class T>
 inline bool equals(bool lhs, const class_instance<T> &rhs);
 
-template<class T>
-bool eq2(const var &v, const OrFalse<T> &value);
-
-template<class T>
-bool eq2(const OrFalse<T> &value, const var &v);
-
-template<class T>
-bool equals(const OrFalse<T> &value, const var &v);
-
-template<class T>
-bool equals(const var &v, const OrFalse<T> &value);
 

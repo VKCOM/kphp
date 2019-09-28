@@ -180,7 +180,16 @@ bool f$rpc_parse(const var &new_rpc_data) {
 }
 
 bool f$rpc_parse(const OrFalse<string> &new_rpc_data) {
-  return new_rpc_data.bool_value ? f$rpc_parse(new_rpc_data.val()) : f$rpc_parse(var(false));
+  switch (new_rpc_data.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return f$rpc_parse(new_rpc_data.val());
+    case OrFalseOrNullState::false_value:
+      return f$rpc_parse(var{false});
+    case OrFalseOrNullState::null_value:
+      return f$rpc_parse(var{});
+    default:
+      __builtin_unreachable();
+  }
 }
 
 int rpc_get_pos() {

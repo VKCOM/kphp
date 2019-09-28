@@ -200,7 +200,7 @@ string f$str_replace(const var &search, const var &replace, const string &subjec
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_or_false_string<SubjectT>>
 SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int &replace_count = str_replace_count_dummy) {
-  return f$str_replace(search, replace, subject.value, replace_count);
+  return f$str_replace(search, replace, subject.val(), replace_count);
 }
 
 var f$str_replace(const var &search, const var &replace, const var &subject, int &replace_count = str_replace_count_dummy);

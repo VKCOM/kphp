@@ -31,7 +31,7 @@ public:
 
   template<typename T>
   bool process(OrFalse<T> &value) {
-    return value.bool_value ? child_.process(value.val()) : true;
+    return value.has_value() ? child_.process(value.val()) : true;
   }
 
   template<typename I>

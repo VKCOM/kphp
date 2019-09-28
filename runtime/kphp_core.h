@@ -516,36 +516,29 @@ inline const array<T> &arrayval_ref(const array<T> &val, const char *function);
 inline const array<var> &arrayval_ref(const var &val, const char *function);
 
 
-template<class T>
-bool eq2(const OrFalse<T> &v, bool value);
+template<class T1, class T2>
+bool eq2(const OrFalse<T1> &lhs, const T2 &rhs);
+
+template<class T1, class T2>
+bool eq2(const T1 &lhs, const OrFalse<T2> &rhs);
+
+template<class T1, class T2>
+bool eq2(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs);
 
 template<class T>
-bool eq2(bool value, const OrFalse<T> &v);
+bool eq2(const OrFalse<T> &lhs, const OrFalse<T> &rhs);
+
+template<class T1, class T2>
+bool equals(const OrFalse<T1> &lhs, const T2 &rhs);
+
+template<class T1, class T2>
+bool equals(const T1 &lhs, const OrFalse<T2> &rhs);
+
+template<class T1, class T2>
+bool equals(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs);
 
 template<class T>
-bool eq2(const OrFalse<T> &v, const OrFalse<T> &value);
-
-template<class T, class T1>
-bool eq2(const OrFalse<T> &v, const OrFalse<T1> &value);
-
-template<class T, class T1>
-bool eq2(const OrFalse<T> &v, const T1 &value);
-
-template<class T, class T1>
-bool eq2(const T1 &value, const OrFalse<T> &v);
-
-template<class T>
-bool equals(const OrFalse<T> &value, const OrFalse<T> &v);
-
-template<class T, class T1>
-bool equals(const OrFalse<T1> &value, const OrFalse<T> &v);
-
-template<class T, class T1>
-bool equals(const T1 &value, const OrFalse<T> &v);
-
-template<class T, class T1>
-bool equals(const OrFalse<T> &v, const T1 &value);
-
+bool equals(const OrFalse<T> &lhs, const OrFalse<T> &rhs);
 
 template<class T, class = enable_for_bool_int_double<T>>
 inline bool f$empty(const T &v);
@@ -864,22 +857,22 @@ bool lt(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool lt(const OrFalse<T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? lt(lhs.value, rhs) : lt(false, rhs);
+  return lhs.has_value() ? lt(lhs.val(), rhs) : lt(false, rhs);
 }
 
 template<class T1, class T2>
 bool lt(const T1 &lhs, const OrFalse<T2> &rhs) {
-  return rhs.bool_value ? lt(lhs, rhs.value) : lt(lhs, false);
+  return rhs.has_value() ? lt(lhs, rhs.val()) : lt(lhs, false);
 }
 
 template<class T>
 bool lt(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
-  return lhs.bool_value ? lt(lhs.value, rhs) : lt(false, rhs);
+  return lhs.has_value() ? lt(lhs.val(), rhs) : lt(false, rhs);
 }
 
 template<class T1, class T2>
 bool lt(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
-  return lhs.bool_value ? lt(lhs.value, rhs) : lt(false, rhs);
+  return lhs.has_value() ? lt(lhs.val(), rhs) : lt(false, rhs);
 }
 
 template<class T>
@@ -914,22 +907,22 @@ bool gt(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool gt(const OrFalse<T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? gt(lhs.value, rhs) : gt(false, rhs);
+  return lhs.has_value() ? gt(lhs.val(), rhs) : gt(false, rhs);
 }
 
 template<class T1, class T2>
 bool gt(const T1 &lhs, const OrFalse<T2> &rhs) {
-  return rhs.bool_value ? gt(lhs, rhs.value) : gt(lhs, false);
+  return rhs.has_value() ? gt(lhs, rhs.val()) : gt(lhs, false);
 }
 
 template<class T>
 bool gt(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
-  return lhs.bool_value ? gt(lhs.value, rhs) : gt(false, rhs);
+  return lhs.has_value() ? gt(lhs.val(), rhs) : gt(false, rhs);
 }
 
 template<class T1, class T2>
 bool gt(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
-  return lhs.bool_value ? gt(lhs.value, rhs) : gt(false, rhs);
+  return lhs.has_value() ? gt(lhs.val(), rhs) : gt(false, rhs);
 }
 
 template<class T>
@@ -964,22 +957,22 @@ bool leq(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool leq(const OrFalse<T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? leq(lhs.value, rhs) : leq(false, rhs);
+  return lhs.has_value() ? leq(lhs.val(), rhs) : leq(false, rhs);
 }
 
 template<class T1, class T2>
 bool leq(const T1 &lhs, const OrFalse<T2> &rhs) {
-  return rhs.bool_value ? leq(lhs, rhs.value) : leq(lhs, false);
+  return rhs.has_value() ? leq(lhs, rhs.val()) : leq(lhs, false);
 }
 
 template<class T>
 bool leq(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
-  return lhs.bool_value ? leq(lhs.value, rhs) : leq(false, rhs);
+  return lhs.has_value() ? leq(lhs.val(), rhs) : leq(false, rhs);
 }
 
 template<class T1, class T2>
 bool leq(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
-  return lhs.bool_value ? leq(lhs.value, rhs) : leq(false, rhs);
+  return lhs.has_value() ? leq(lhs.val(), rhs) : leq(false, rhs);
 }
 
 template<class T>
@@ -1014,22 +1007,22 @@ bool geq(const T1 &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool geq(const OrFalse<T1> &lhs, const T2 &rhs) {
-  return lhs.bool_value ? geq(lhs.value, rhs) : geq(false, rhs);
+  return lhs.has_value() ? geq(lhs.val(), rhs) : geq(false, rhs);
 }
 
 template<class T1, class T2>
 bool geq(const T1 &lhs, const OrFalse<T2> &rhs) {
-  return rhs.bool_value ? geq(lhs, rhs.value) : geq(lhs, false);
+  return rhs.has_value() ? geq(lhs, rhs.val()) : geq(lhs, false);
 }
 
 template<class T>
 bool geq(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
-  return lhs.bool_value ? geq(lhs.value, rhs) : geq(false, rhs);
+  return lhs.has_value() ? geq(lhs.val(), rhs) : geq(false, rhs);
 }
 
 template<class T1, class T2>
 bool geq(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
-  return lhs.bool_value ? geq(lhs.value, rhs) : geq(false, rhs);
+  return lhs.has_value() ? geq(lhs.val(), rhs) : geq(false, rhs);
 }
 
 template<class T>
@@ -1311,7 +1304,7 @@ bool f$boolval(const std::tuple<Args...> &) {
 
 template<class T>
 bool f$boolval(const OrFalse<T> &val) {
-  return val.bool_value ? f$boolval(val.val()) : false;
+  return val.has_value() ? f$boolval(val.val()) : false;
 }
 
 bool f$boolval(const var &val) {
@@ -1346,7 +1339,7 @@ int f$intval(const var &val) {
 
 template<class T>
 inline int f$intval(const OrFalse<T> &val) {
-  return val.bool_value ? f$intval(val.val()) : 0;
+  return val.has_value() ? f$intval(val.val()) : 0;
 }
 
 
@@ -1413,7 +1406,7 @@ double f$floatval(const var &val) {
 
 template<class T>
 inline double f$floatval(const OrFalse<T> &val) {
-  return val.bool_value ? f$floatval(val.val()) : 0;
+  return val.has_value() ? f$floatval(val.val()) : 0;
 }
 
 
@@ -1451,12 +1444,12 @@ string f$strval(const std::tuple<Args...> &) {
 
 template<class T>
 string f$strval(const OrFalse<T> &val) {
-  return val.bool_value ? f$strval(val.val()) : f$strval(false);
+  return val.has_value() ? f$strval(val.val()) : f$strval(false);
 }
 
 template<class T>
 string f$strval(OrFalse<T> &&val) {
-  return val.bool_value ? f$strval(std::move(val.val())) : f$strval(false);
+  return val.has_value() ? f$strval(std::move(val.val())) : f$strval(false);
 }
 
 template<class T>
@@ -1505,12 +1498,30 @@ array<var> f$arrayval(var &&val) {
 
 template<class T>
 array<var> f$arrayval(const OrFalse<T> &val) {
-  return val.bool_value ? f$arrayval(val.val()) : f$arrayval(false);
+  switch (val.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return f$arrayval(val.val());
+    case OrFalseOrNullState::false_value:
+      return f$arrayval(false);
+    case OrFalseOrNullState::null_value:
+      return array<var>{};
+    default:
+      __builtin_unreachable();
+  }
 }
 
 template<class T>
 array<var> f$arrayval(OrFalse<T> &&val) {
-  return val.bool_value ? f$arrayval(std::move(val.val())) : f$arrayval(false);
+  switch (val.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return f$arrayval(std::move(val.val()));
+    case OrFalseOrNullState::false_value:
+      return f$arrayval(false);
+    case OrFalseOrNullState::null_value:
+      return array<var>{};
+    default:
+      __builtin_unreachable();
+  }
 }
 
 bool &boolval_ref(bool &val) {
@@ -1599,57 +1610,72 @@ const array<var> &arrayval_ref(const var &val, const char *function) {
   return val.as_array(function);
 }
 
+template<class T1, class T2>
+bool eq2(const OrFalse<T1> &lhs, const T2 &rhs) {
+  return lhs.has_value() ? eq2(lhs.val(), rhs) : eq2(false, rhs);
+}
 
-template<class T>
-bool eq2(const OrFalse<T> &v, bool value) {
-  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
+template<class T1, class T2>
+bool eq2(const T1 &lhs, const OrFalse<T2> &rhs) {
+  return eq2(rhs, lhs);
+}
+
+template<class T1, class T2>
+bool eq2(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
+  return lhs.has_value() ? eq2(rhs, lhs.val()) : eq2(rhs, false);
 }
 
 template<class T>
-bool eq2(bool value, const OrFalse<T> &v) {
-  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
+bool eq2(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
+  return lhs.has_value() ? eq2(rhs, lhs.val()) : eq2(rhs, false);
+}
+
+template<class T1, class T2>
+bool equals(const OrFalse<T1> &lhs, const T2 &rhs) {
+  switch (lhs.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return equals(lhs.val(), rhs);
+    case OrFalseOrNullState::false_value:
+      return equals(false, rhs);
+    case OrFalseOrNullState::null_value:
+      return f$is_null(rhs);
+    default:
+      __builtin_unreachable();
+  }
+}
+
+template<class T1, class T2>
+bool equals(const T1 &lhs, const OrFalse<T2> &rhs) {
+  return equals(rhs, lhs);
+}
+
+template<class T1, class T2>
+bool equals(const OrFalse<T1> &lhs, const OrFalse<T2> &rhs) {
+  switch (lhs.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return equals(rhs, lhs.val());
+    case OrFalseOrNullState::false_value:
+      return equals(rhs, false);
+    case OrFalseOrNullState::null_value:
+      return f$is_null(rhs);
+    default:
+      __builtin_unreachable();
+  }
 }
 
 template<class T>
-bool eq2(const OrFalse<T> &v, const OrFalse<T> &value) {
-  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
+bool equals(const OrFalse<T> &lhs, const OrFalse<T> &rhs) {
+  switch (lhs.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return equals(rhs, lhs.val());
+    case OrFalseOrNullState::false_value:
+      return equals(rhs, false);
+    case OrFalseOrNullState::null_value:
+      return f$is_null(rhs);
+    default:
+      __builtin_unreachable();
+  }
 }
-
-template<class T, class T1>
-bool eq2(const OrFalse<T> &v, const OrFalse<T1> &value) {
-  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
-}
-
-template<class T, class T1>
-bool eq2(const OrFalse<T> &v, const T1 &value) {
-  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
-}
-
-template<class T, class T1>
-bool eq2(const T1 &value, const OrFalse<T> &v) {
-  return likely (v.bool_value) ? eq2(v.value, value) : eq2(false, value);
-}
-
-template<class T>
-bool equals(const OrFalse<T> &value, const OrFalse<T> &v) {
-  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
-}
-
-template<class T, class T1>
-bool equals(const OrFalse<T1> &value, const OrFalse<T> &v) {
-  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
-}
-
-template<class T, class T1>
-bool equals(const T1 &value, const OrFalse<T> &v) {
-  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
-}
-
-template<class T, class T1>
-bool equals(const OrFalse<T> &v, const T1 &value) {
-  return likely (v.bool_value) ? equals(v.value, value) : equals(false, value);
-}
-
 
 template<class T>
 const T &convert_to<T>::convert(const T &val) {
@@ -1735,9 +1761,8 @@ bool f$empty(const var &v) {
 
 template<class T>
 bool f$empty(const OrFalse<T> &a) {
-  return a.bool_value ? f$empty(a.val()) : true;
+  return a.has_value() ? f$empty(a.val()) : true;
 }
-
 
 int f$count(const var &v) {
   return v.count();
@@ -1745,7 +1770,16 @@ int f$count(const var &v) {
 
 template<class T>
 int f$count(const OrFalse<T> &a) {
-  return a.bool_value ? f$count(a.val()) : f$count(false);
+  switch (a.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return f$count(a.val());
+    case OrFalseOrNullState::false_value:
+      return f$count(false);
+    case OrFalseOrNullState::null_value:
+      return f$count(var{});
+    default:
+      __builtin_unreachable();
+  }
 }
 
 template<class T>
@@ -1786,7 +1820,7 @@ bool f$is_numeric(const var &v) {
 
 template<class T>
 inline bool f$is_numeric(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_numeric(v.val()) : false;
+  return v.has_value() ? f$is_numeric(v.val()) : false;
 }
 
 
@@ -1802,7 +1836,7 @@ bool f$is_null(const class_instance<T> &v) {
 
 template<class T>
 inline bool f$is_null(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_null(v.val()) : false;
+  return v.has_value() ? f$is_null(v.val()) : v.value_status() == OrFalseOrNullState::null_value;
 }
 
 bool f$is_null(const var &v) {
@@ -1817,7 +1851,7 @@ bool f$is_bool(const T &) {
 
 template<class T>
 inline bool f$is_bool(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_bool(v.val()) : true;
+  return v.has_value() ? f$is_bool(v.val()) : v.value_status() == OrFalseOrNullState::false_value;
 }
 
 bool f$is_bool(const var &v) {
@@ -1832,7 +1866,7 @@ bool f$is_int(const T &) {
 
 template<class T>
 inline bool f$is_int(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_int(v.val()) : false;
+  return v.has_value() ? f$is_int(v.val()) : false;
 }
 
 bool f$is_int(const var &v) {
@@ -1847,7 +1881,7 @@ bool f$is_float(const T &) {
 
 template<class T>
 inline bool f$is_float(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_float(v.val()) : false;
+  return v.has_value() ? f$is_float(v.val()) : false;
 }
 
 bool f$is_float(const var &v) {
@@ -1862,7 +1896,16 @@ bool f$is_scalar(const T &) {
 
 template<class T>
 inline bool f$is_scalar(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_scalar(v.val()) : true;
+  switch (v.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return f$is_scalar(v.val());
+    case OrFalseOrNullState::false_value:
+      return true;
+    case OrFalseOrNullState::null_value:
+      return false;
+    default:
+      __builtin_unreachable();
+  }
 }
 
 bool f$is_scalar(const var &v) {
@@ -1877,7 +1920,7 @@ bool f$is_string(const T &) {
 
 template<class T>
 inline bool f$is_string(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_string(v.val()) : false;
+  return v.has_value() ? f$is_string(v.val()) : false;
 }
 
 bool f$is_string(const var &v) {
@@ -1896,7 +1939,7 @@ bool f$is_array(const var &v) {
 
 template<class T>
 inline bool f$is_array(const OrFalse<T> &v) {
-  return v.bool_value ? f$is_array(v.val()) : false;
+  return v.has_value() ? f$is_array(v.val()) : false;
 }
 
 template<class T>
@@ -2167,26 +2210,26 @@ array<var>::const_iterator const_begin(const var &x) {
 
 template<class T>
 typename array<T>::iterator begin(OrFalse<array<T>> &x) {
-  if (!x.bool_value) {
-    php_warning("Invalid argument supplied for foreach(), false is given");
+  if (unlikely(!x.has_value())) {
+    php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
-  return x.value.begin();
+  return x.val().begin();
 }
 
 template<class T>
 typename array<T>::const_iterator begin(const OrFalse<array<T>> &x) {
-  if (!x.bool_value) {
-    php_warning("Invalid argument supplied for foreach(), false is given");
+  if (unlikely(!x.has_value())) {
+    php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
-  return x.value.begin();
+  return x.val().begin();
 }
 
 template<class T>
 typename array<T>::const_iterator const_begin(const OrFalse<array<T>> &x) {
-  if (!x.bool_value) {
-    php_warning("Invalid argument supplied for foreach(), false is given");
+  if (unlikely(!x.has_value())) {
+    php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
-  return x.value.begin();
+  return x.val().begin();
 }
 
 
@@ -2220,26 +2263,26 @@ array<var>::const_iterator const_end(const var &x) {
 
 template<class T>
 typename array<T>::iterator end(OrFalse<array<T>> &x) {
-  if (!x.bool_value) {
-    php_warning("Invalid argument supplied for foreach(), false is given");
+  if (unlikely(!x.has_value())) {
+    php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
-  return x.value.end();
+  return x.val().end();
 }
 
 template<class T>
 typename array<T>::const_iterator end(const OrFalse<array<T>> &x) {
-  if (!x.bool_value) {
-    php_warning("Invalid argument supplied for foreach(), false is given");
+  if (unlikely(!x.has_value())) {
+    php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
-  return x.value.end();
+  return x.val().end();
 }
 
 template<class T>
 typename array<T>::const_iterator const_end(const OrFalse<array<T>> &x) {
-  if (!x.bool_value) {
-    php_warning("Invalid argument supplied for foreach(), false is given");
+  if (unlikely(!x.has_value())) {
+    php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
-  return x.value.end();
+  return x.val().end();
 }
 
 
@@ -2254,8 +2297,7 @@ void clear_array(array<T> &a) {
 
 template<class T>
 void clear_array(OrFalse<array<T>> &a) {
-  a.value.clear();
-  a.bool_value = false;
+  a = false;
 }
 
 template<class T>

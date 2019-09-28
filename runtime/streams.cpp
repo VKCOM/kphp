@@ -526,10 +526,10 @@ OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter
     length = -1;
   }
   OrFalse<string> buf_or_false = length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1);
-  if (!buf_or_false.bool_value) {
+  if (!buf_or_false.has_value()) {
     return false;
   }
-  string buffer = buf_or_false.value;
+  string buffer = buf_or_false.val();
   array<var> answer;
   int current_id = 0;
   string_buffer tmp_buffer;
@@ -598,13 +598,13 @@ OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter
                   goto quit_loop_2;
                 } else {
                   OrFalse<string> new_buffer_or_false = f$fgets(stream);
-                  if (!new_buffer_or_false.bool_value) {
+                  if (!new_buffer_or_false.has_value()) {
                     if ((size_t)temp_len > (size_t)(limit - buf)) {
                       goto quit_loop_2;
                     }
                     return answer;
                   }
-                  new_buffer = new_buffer_or_false.value;
+                  new_buffer = new_buffer_or_false.val();
                 }
                 temp_len += new_buffer.size();
                 buf_len = new_buffer.size();

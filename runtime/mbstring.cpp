@@ -309,10 +309,10 @@ string f$mb_substr(const string &str, int start, const var &length_var, const st
 
   if (encoding_num == 1251) {
     OrFalse<string> res = f$substr(str, start, length);
-    if (!res.bool_value) {
+    if (!res.has_value()) {
       return string();
     }
-    return res.value;
+    return res.val();
   }
 
   int len = mb_UTF8_strlen(str.c_str());

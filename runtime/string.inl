@@ -623,8 +623,8 @@ string &string::finish_append() {
 
 template<class T>
 string &string::append_unsafe(const OrFalse<T> &v) {
-  if (v.bool_value) {
-    return append_unsafe(v.value);
+  if (v.has_value()) {
+    return append_unsafe(v.val());
   }
   return *this;
 }
@@ -1131,5 +1131,5 @@ dl::size_type max_string_size(const array<T> &) {
 
 template<class T>
 dl::size_type max_string_size(const OrFalse<T> &v) {
-  return v.bool_value ? max_string_size(v.value) : 0;
+  return v.has_value() ? max_string_size(v.val()) : 0;
 }

@@ -83,20 +83,33 @@ var::var(const char *s, int len) :
 
 template<typename T, typename>
 var::var(const OrFalse<T> &v) {
-  if (v.bool_value) {
-    init_from(v.value);
-  } else {
-    init_from(false);
+  switch (v.value_status()) {
+    case OrFalseOrNullState::has_value:
+      init_from(v.val());
+      return;
+    case OrFalseOrNullState::false_value:
+      init_from(false);
+      return;
+    case OrFalseOrNullState::null_value:
+      return;
+    default:
+      __builtin_unreachable();
   }
 }
 
 template<typename T, typename>
 var::var(OrFalse<T> &&v) {
-  if (v.bool_value) {
-    v.bool_value = false;
-    init_from(std::move(v.value));
-  } else {
-    init_from(false);
+  switch (v.value_status()) {
+    case OrFalseOrNullState::has_value:
+      init_from(std::move(v.val()));
+      return;
+    case OrFalseOrNullState::false_value:
+      init_from(false);
+      return;
+    case OrFalseOrNullState::null_value:
+      return;
+    default:
+      __builtin_unreachable();
   }
 }
 
@@ -131,19 +144,30 @@ var &var::operator=(T &&v) {
 
 template<typename T, typename>
 var &var::operator=(const OrFalse<T> &v) {
-  if (v.bool_value) {
-    return assign_from(v.value);
+  switch (v.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return assign_from(v.val());
+    case OrFalseOrNullState::false_value:
+      return assign_from(false);
+    case OrFalseOrNullState::null_value:
+      return *this = var{};
+    default:
+      __builtin_unreachable();
   }
-  return assign_from(false);
 }
 
 template<typename T, typename>
 var &var::operator=(OrFalse<T> &&v) {
-  if (v.bool_value) {
-    v.bool_value = false;
-    return assign_from(std::move(v.value));
+  switch (v.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return assign_from(std::move(v.val()));
+    case OrFalseOrNullState::false_value:
+      return assign_from(false);
+    case OrFalseOrNullState::null_value:
+      return *this = var{};
+    default:
+      __builtin_unreachable();
   }
-  return assign_from(false);
 }
 
 var &var::assign(const char *other, int len) {
@@ -2358,34 +2382,18 @@ bool equals(bool lhs, const class_instance<T> &rhs) {
   return equals(rhs, lhs);
 }
 
-
-template<class T>
-bool eq2(const var &v, const OrFalse<T> &value) {
-  return likely (value.bool_value) ? eq2(value.value, v) : eq2(false, v);
-}
-
-template<class T>
-bool eq2(const OrFalse<T> &value, const var &v) {
-  return likely (value.bool_value) ? eq2(value.value, v) : eq2(false, v);
-}
-
-template<class T>
-bool equals(const OrFalse<T> &value, const var &v) {
-  return likely (value.bool_value) ? equals(value.value, v) : equals(false, v);
-}
-
-template<class T>
-bool equals(const var &v, const OrFalse<T> &value) {
-  return likely (value.bool_value) ? equals(value.value, v) : equals(false, v);
-}
-
 template<class T>
 string_buffer &operator<<(string_buffer &sb, const OrFalse<T> &v) {
-  if (!v.bool_value) {
-    return sb << false;
+  switch (v.value_status()) {
+    case OrFalseOrNullState::has_value:
+      return sb << v.val();
+    case OrFalseOrNullState::false_value:
+      return sb << false;
+    case OrFalseOrNullState::null_value:
+      return sb;
+    default:
+      __builtin_unreachable();
   }
-
-  return sb << v.val();
 }
 
 string_buffer &operator<<(string_buffer &sb, const var &v) {
