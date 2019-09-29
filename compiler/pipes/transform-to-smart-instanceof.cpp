@@ -12,9 +12,7 @@
 bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVertex<TransformToSmartInstanceof> &visit) {
   auto if_vertex = v.try_as<op_if>();
   auto condition = get_instanceof_from_if(if_vertex);
-  if (!condition) {
-    return false;
-  } if (condition->lhs()->type() != op_var) {
+  if (!condition || condition->lhs()->type() != op_var) {
     return false;
   }
 
@@ -29,9 +27,9 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
     return true;
   }
 
-  auto _ = vk::finally([this, &initial_state] () mutable { variable_state = std::move(initial_state); });
-  auto instance_var = condition->lhs();
-  auto &state = variable_state[instance_var->get_string()];
+  auto _ = vk::finally([this, &initial_state] { variable_state = std::move(initial_state); });
+  auto instance_var = condition->lhs().as<op_var>();
+  auto &state = variable_state[instance_var->str_val];
   if (!fill_derived_classes(instance_var, name_of_derived_vertex, state)) {
     return true;
   }
@@ -39,7 +37,7 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
   if (state.left_derived.size() == 1) {
     auto false_cmd = if_vertex->false_cmd();
     auto condition_inside_false = false_cmd->size() == 1 ? get_instanceof_from_if(false_cmd->args()[0].try_as<op_if>()) : VertexAdaptor<op_instanceof>{};
-    auto is_instanceof_the_same_variable = condition_inside_false && condition_inside_false->lhs()->get_string() == instance_var->get_string();
+    auto is_instanceof_the_same_variable = condition_inside_false && condition_inside_false->lhs()->get_string() == instance_var->str_val;
     bool left_derived_is_abstract = !(*state.left_derived.begin())->parent_class || (*state.left_derived.begin())->parent_class->modifiers.is_abstract();
     if (left_derived_is_abstract && !is_instanceof_the_same_variable) {
       auto derived_name_vertex = VertexAdaptor<op_string>::create();
@@ -107,10 +105,10 @@ VertexAdaptor<op_instanceof> TransformToSmartInstanceof::get_instanceof_from_if(
     }
   }
 
-  return VertexAdaptor<op_instanceof>{};
+  return {};
 }
 
-bool TransformToSmartInstanceof::fill_derived_classes(VertexPtr instance_var, VertexPtr name_of_derived_vertex, TransformToSmartInstanceof::NewNameAndLeftDerived &state) {
+bool TransformToSmartInstanceof::fill_derived_classes(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived_vertex, TransformToSmartInstanceof::NewNameAndLeftDerived &state) {
   if (state.left_derived.empty()) {
     InterfacePtr interface_class;
     auto assum = infer_class_of_expr(current_function, instance_var, interface_class);
