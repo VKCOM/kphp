@@ -408,18 +408,12 @@ struct t_Maybe {
     }
   }
 
-  template<typename>
-  struct is_array : std::false_type {
+  template<typename S>
+  struct need_Optional : vk::is_type_in_list<S, int, double, string> {
   };
 
   template<typename S>
-  struct is_array<array<S>> : std::true_type {
-  };
-
-  template<typename S>
-  struct need_Optional {
-    static constexpr bool value = std::is_same<S, int>::value || std::is_same<S, double>::value || std::is_same<S, string>::value
-                                  || is_array<S>::value;
+  struct need_Optional<array<S>> : std::true_type {
   };
 
   static constexpr bool is_Optional = need_Optional<typename T::PhpType>::value;
@@ -428,25 +422,25 @@ struct t_Maybe {
 
   // C++11 if constexpr
   template<typename S>
-  typename std::enable_if<need_Optional<typename S::PhpType>::value, const typename S::PhpType &>::type
+  std::enable_if_t<need_Optional<typename S::PhpType>::value, const typename S::PhpType &>
   get_store_target(const PhpType &v) {
     return v.val();
   }
 
   template<typename S>
-  typename std::enable_if<!need_Optional<typename S::PhpType>::value, const typename S::PhpType &>::type
+  std::enable_if_t<!need_Optional<typename S::PhpType>::value, const typename S::PhpType &>
   get_store_target(const PhpType &v) {
     return v;
   }
 
   template<typename S>
-  typename std::enable_if<need_Optional<typename S::PhpType>::value, typename S::PhpType &>::type
+  std::enable_if_t<need_Optional<typename S::PhpType>::value, typename S::PhpType &>
   get_fetch_target(PhpType &v) {
     return v.ref();
   }
 
   template<typename S>
-  typename std::enable_if<!need_Optional<typename S::PhpType>::value, typename S::PhpType &>::type
+  std::enable_if_t<!need_Optional<typename S::PhpType>::value, typename S::PhpType &>
   get_fetch_target(PhpType &v) {
     return v;
   }

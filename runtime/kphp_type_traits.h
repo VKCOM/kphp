@@ -4,6 +4,14 @@
 
 #include "runtime/declarations.h"
 
+template<typename>
+struct is_array : std::false_type {
+};
+
+template<typename S>
+struct is_array<array<S>> : std::true_type {
+};
+
 template<typename T, typename T1>
 struct is_constructible_or_unknown : std::is_constructible<T, T1> {
 };
@@ -15,15 +23,13 @@ struct is_constructible_or_unknown<T, Unknown> : std::true_type {
 template<typename T, typename T1>
 using enable_if_constructible_or_unknown = std::enable_if_t<is_constructible_or_unknown<T, T1>::value>;
 
-using list_bool_int_double = vk::list_of_types<bool, int, double>;
-
-using list_bool_int_double_array = vk::list_of_types<bool, int, double, array_tag>;
+template<class T>
+using enable_for_bool_int_double = vk::enable_if_in_list<T, vk::list_of_types<bool, int, double>>;
 
 template<class T>
-using enable_for_bool_int_double = vk::enable_if_in_list<T, list_bool_int_double>;
-
-template<class T>
-using enable_for_bool_int_double_array = vk::enable_if_base_in_list<T, list_bool_int_double_array>;
+using enable_for_bool_int_double_string_array = std::enable_if_t<
+  vk::is_type_in_list<T, bool, int, double, string>::value || is_array<T>::value
+>;
 
 template<typename T>
 struct is_class_instance_inside : std::false_type {

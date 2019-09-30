@@ -5,8 +5,7 @@
 #endif
 
 template<typename T>
-struct is_type_acceptable_for_var
-  : std::integral_constant<bool, vk::list_of_types<bool, int, double, string>::template in_list<T>()> {
+struct is_type_acceptable_for_var : vk::is_type_in_list<T, bool, int, double, string> {
 };
 
 template<typename T>

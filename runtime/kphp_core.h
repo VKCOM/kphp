@@ -559,7 +559,7 @@ inline bool f$is_numeric(const Optional<T> &v);
 inline bool f$is_numeric(const string &v);
 inline bool f$is_numeric(const var &v);
 
-template<class T, class = enable_for_bool_int_double_array<T>>
+template<class T, class = enable_for_bool_int_double_string_array<T>>
 inline bool f$is_null(const T &v);
 template<class T>
 inline bool f$is_null(const class_instance<T> &v);
@@ -1930,7 +1930,7 @@ bool f$is_string(const var &v) {
 
 template<class T>
 inline bool f$is_array(const T &) {
-  return std::is_base_of<array_tag, T>::value;
+  return is_array<T>::value;
 }
 
 bool f$is_array(const var &v) {

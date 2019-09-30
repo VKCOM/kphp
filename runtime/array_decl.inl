@@ -31,7 +31,7 @@ enum class overwrite_element {
 };
 
 template<class T>
-class array : array_tag {
+class array {
 
 public:
   using ValueType = T;
