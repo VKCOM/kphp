@@ -1,4 +1,4 @@
-@ok wa benchmark_but_wa
+@ok benchmark
 <?php
   var_dump (php_uname());
   var_dump (php_uname('s'));

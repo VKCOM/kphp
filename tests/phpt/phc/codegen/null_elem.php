@@ -1,4 +1,4 @@
-@ok wa
+@ok
 <?php
   $arr = null;
 	$x = $arr[1];

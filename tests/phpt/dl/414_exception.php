@@ -1,4 +1,4 @@
-@ok wa
+@ok
 <?php
   function f() {
     func_get_args();

@@ -1,4 +1,4 @@
-@ok wa
+@ok
 <?php
   $str = "abacaba asdas nasdn ansdn andsn d";
   var_dump (mb_strtolower($str, 'UTF-8'));

@@ -1,4 +1,4 @@
-@ok wa benchmark callback
+@ok benchmark callback
 <?php
 echo "*** Testing sort() : basic functionality ***\n";
 
