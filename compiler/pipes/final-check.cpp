@@ -220,6 +220,11 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
                fmt_format("Accessing ->property of non-instance {}", colored_type_out(lhs_type)));
   }
 
+  if (vertex->type() == op_fork) {
+    const VertexAdaptor<op_func_call> &func_call = vertex.as<op_fork>()->func_call();
+    kphp_error(!func_call->func_id->is_extern(), "fork of builtin function is forbidden");
+  }
+
   if (G->env().get_warnings_level() >= 2 && vertex->type() == op_func_call) {
     FunctionPtr function_where_require = stage::get_function();
 

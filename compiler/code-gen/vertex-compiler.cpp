@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+#include "common/wrappers/field_getter.h"
+
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/naming.h"
@@ -14,7 +16,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
-#include "common/wrappers/field_getter.h"
 
 struct Operand {
   VertexPtr root;
