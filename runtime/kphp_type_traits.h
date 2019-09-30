@@ -5,7 +5,15 @@
 #include "runtime/declarations.h"
 
 template<typename T, typename T1>
-using enable_if_constructible_or_unknown = typename std::enable_if<std::is_same<T1, Unknown>::value || std::is_constructible<T, T1>::value>::type;
+struct is_constructible_or_unknown : std::is_constructible<T, T1> {
+};
+
+template<typename T>
+struct is_constructible_or_unknown<T, Unknown> : std::true_type {
+};
+
+template<typename T, typename T1>
+using enable_if_constructible_or_unknown = std::enable_if_t<is_constructible_or_unknown<T, T1>::value>;
 
 using list_bool_int_double = vk::list_of_types<bool, int, double>;
 

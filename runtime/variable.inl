@@ -46,114 +46,57 @@ void var::copy_from(var &&other) {
   other.type = NULL_TYPE;
 }
 
+template<typename T>
+void var::init_from(T &&v) {
+  auto type_and_value_ref = get_type_and_value_ptr(v);
+  type = type_and_value_ref.first;
+  auto *value_ptr = type_and_value_ref.second;
+  using ValueType = std::decay_t<decltype(*value_ptr)>;
+  new(value_ptr) ValueType(std::forward<T>(v));
+}
+
+template<typename T>
+var &var::assign_from(T &&v) {
+  auto type_and_value_ref = get_type_and_value_ptr(v);
+  if (type == type_and_value_ref.first) {
+    *type_and_value_ref.second = std::forward<T>(v);
+  } else {
+    destroy();
+    init_from(std::forward<T>(v));
+  }
+  return *this;
+}
+
+template<typename T, typename>
+var::var(T &&v) {
+  init_from(std::forward<T>(v));
+}
+
 var::var(const Unknown &u __attribute__((unused))) :
   type(NULL_TYPE) {
   php_assert ("Unknown used!!!" && 0);
 }
 
-var::var(bool b) :
-  type(BOOLEAN_TYPE) {
-  as_bool() = b;
+var::var(const char *s, int len) :
+  var(string{s, static_cast<string::size_type>(len)}){
 }
 
-var::var(int i) :
-  type(INTEGER_TYPE) {
-  as_int() = i;
-}
-
-var::var(double f) :
-  type(FLOAT_TYPE) {
-  as_double() = f;
-}
-
-var::var(const string &s_) :
-  type(STRING_TYPE) {
-  new(&as_string()) string(s_);
-}
-
-var::var(string &&s_) :
-  type(STRING_TYPE) {
-  new(&as_string()) string(std::move(s_));
-}
-
-var::var(const char *s_, int len) :
-  type(STRING_TYPE) {
-  new(&as_string()) string(s_, len);
-}
-
-template<class T, class>
-var::var(const array<T> &a_):
-  type(ARRAY_TYPE) {
-  new(&as_array()) array<var>(a_);
-}
-
-template<class T, class>
-var::var(array<T> &&a_):
-  type(ARRAY_TYPE) {
-  new(&as_array()) array<var>(std::move(a_));
-}
-
-var::var(const OrFalse<int> &v) {
+template<typename T, typename>
+var::var(const OrFalse<T> &v) {
   if (v.bool_value) {
-    type = INTEGER_TYPE;
-    as_int() = v.value;
+    init_from(v.value);
   } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
+    init_from(false);
   }
 }
 
-var::var(const OrFalse<double> &v) {
-  if (v.bool_value) {
-    type = FLOAT_TYPE;
-    as_double() = v.value;
-  } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-}
-
-var::var(const OrFalse<string> &v) {
-  if (v.bool_value) {
-    type = STRING_TYPE;
-    new(&as_string()) string(v.value);
-  } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-}
-
-var::var(OrFalse<string> &&v) {
+template<typename T, typename>
+var::var(OrFalse<T> &&v) {
   if (v.bool_value) {
     v.bool_value = false;
-    type = STRING_TYPE;
-    new(&as_string()) string(std::move(v.value));
+    init_from(std::move(v.value));
   } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-}
-
-template<class T, class>
-var::var(const OrFalse<array<T>> &v) {
-  if (v.bool_value) {
-    type = ARRAY_TYPE;
-    new(&as_array()) array<var>(v.value);
-  } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-}
-
-template<class T, class>
-var::var(OrFalse<array<T>> &&v) {
-  if (v.bool_value) {
-    v.bool_value = false;
-    type = ARRAY_TYPE;
-    new(&as_array()) array<var>(std::move(v.value));
-  } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
+    init_from(false);
   }
 }
 
@@ -163,90 +106,6 @@ var::var(const var &v) {
 
 var::var(var &&v) {
   copy_from(std::move(v));
-}
-
-var &var::operator=(bool other) {
-  if (type != BOOLEAN_TYPE) {
-    destroy();
-    type = BOOLEAN_TYPE;
-  }
-  as_bool() = other;
-  return *this;
-}
-
-var &var::operator=(int other) {
-  if (type != INTEGER_TYPE) {
-    destroy();
-    type = INTEGER_TYPE;
-  }
-  as_int() = other;
-  return *this;
-}
-
-var &var::operator=(double other) {
-  if (type != FLOAT_TYPE) {
-    destroy();
-    type = FLOAT_TYPE;
-  }
-  as_double() = other;
-  return *this;
-}
-
-var &var::operator=(const string &other) {
-  if (type == STRING_TYPE) {
-    as_string() = other;
-  } else {
-    destroy();
-    type = STRING_TYPE;
-    new(&as_string()) string(other);
-  }
-  return *this;
-}
-
-var &var::operator=(string &&other) {
-  if (type == STRING_TYPE) {
-    as_string() = std::move(other);
-  } else {
-    destroy();
-    type = STRING_TYPE;
-    new(&as_string()) string(std::move(other));
-  }
-  return *this;
-}
-
-var &var::assign(const char *other, int len) {
-  if (type == STRING_TYPE) {
-    as_string().assign(other, len);
-  } else {
-    destroy();
-    type = STRING_TYPE;
-    new(&as_string()) string(other, len);
-  }
-  return *this;
-}
-
-template<class T, class>
-var &var::operator=(const array<T> &other) {
-  if (type == ARRAY_TYPE) {
-    as_array() = other;
-  } else {
-    destroy();
-    type = ARRAY_TYPE;
-    new(&as_array()) array<var>(other);
-  }
-  return *this;
-}
-
-template<class T, class>
-var &var::operator=(array<T> &&other) {
-  if (type == ARRAY_TYPE) {
-    as_array() = std::move(other);
-  } else {
-    destroy();
-    type = ARRAY_TYPE;
-    new(&as_array()) array<var>(std::move(other));
-  }
-  return *this;
 }
 
 var &var::operator=(const var &other) {
@@ -265,79 +124,35 @@ var &var::operator=(var &&other) {
   return *this;
 }
 
-
-var &var::operator=(const OrFalse<int> &other) {
-  destroy();
-
-  if (other.bool_value) {
-    type = INTEGER_TYPE;
-    as_int() = other.value;
-  } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-
-  return *this;
+template<typename T, typename>
+var &var::operator=(T &&v) {
+  return assign_from(std::forward<T>(v));
 }
 
-var &var::operator=(const OrFalse<double> &other) {
-  destroy();
-
-  if (other.bool_value) {
-    type = FLOAT_TYPE;
-    as_double() = other.value;
-  } else {
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
+template<typename T, typename>
+var &var::operator=(const OrFalse<T> &v) {
+  if (v.bool_value) {
+    return assign_from(v.value);
   }
-
-  return *this;
+  return assign_from(false);
 }
 
-var &var::operator=(const OrFalse<string> &other) {
-  if (other.bool_value) {
-    *this = other.value;
+template<typename T, typename>
+var &var::operator=(OrFalse<T> &&v) {
+  if (v.bool_value) {
+    v.bool_value = false;
+    return assign_from(std::move(v.value));
+  }
+  return assign_from(false);
+}
+
+var &var::assign(const char *other, int len) {
+  if (type == STRING_TYPE) {
+    as_string().assign(other, len);
   } else {
     destroy();
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-  return *this;
-}
-
-var &var::operator=(OrFalse<string> &&other) {
-  if (other.bool_value) {
-    other.bool_value = false;
-    *this = std::move(other.value);
-  } else {
-    destroy();
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-  return *this;
-}
-
-template<class T, class>
-var &var::operator=(const OrFalse<array<T>> &other) {
-  if (other.bool_value) {
-    *this = other.value;
-  } else {
-    destroy();
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
-  }
-  return *this;
-}
-
-template<class T, class>
-var &var::operator=(OrFalse<array<T>> &&other) {
-  if (other.bool_value) {
-    other.bool_value = false;
-    *this = std::move(other.value);
-  } else {
-    destroy();
-    type = BOOLEAN_TYPE;
-    as_bool() = false;
+    type = STRING_TYPE;
+    new(&as_string()) string(other, len);
   }
   return *this;
 }

@@ -4,6 +4,15 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
+template<typename T>
+struct is_type_acceptable_for_var
+  : std::integral_constant<bool, vk::list_of_types<bool, int, double, string>::template in_list<T>()> {
+};
+
+template<typename T>
+struct is_type_acceptable_for_var<array<T>> : is_constructible_or_unknown<var, T> {
+};
+
 class var {
   enum var_type {
     NULL_TYPE,
@@ -20,53 +29,45 @@ class var {
   inline void copy_from(const var &other);
   inline void copy_from(var &&other);
 
+  template<typename T>
+  inline void init_from(T &&v);
+
+  template<typename T>
+  inline var &assign_from(T &&v);
+
+  template<typename T>
+  auto get_type_and_value_ptr(const array<T> &) { return std::make_pair(ARRAY_TYPE  , &as_array());  }
+  auto get_type_and_value_ptr(const bool     &) { return std::make_pair(BOOLEAN_TYPE, &as_bool());   }
+  auto get_type_and_value_ptr(const int      &) { return std::make_pair(INTEGER_TYPE, &as_int());    }
+  auto get_type_and_value_ptr(const double   &) { return std::make_pair(FLOAT_TYPE  , &as_double()); }
+  auto get_type_and_value_ptr(const string   &) { return std::make_pair(STRING_TYPE , &as_string()); }
+
 public:
   var(const void *) = delete; // deprecate conversion from pointer to boolean
   inline var() = default;
   inline var(const Unknown &u);
-  inline var(bool b);
-  inline var(int i);
-  inline var(double f);
-  inline var(const string &s);
-  inline var(string &&s);
   inline var(const char *s, int len);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var(const array<T> &a);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var(array<T> &&a);
   inline var(const var &v);
   inline var(var &&v);
 
-  inline var(const OrFalse<int> &v);
-  inline var(const OrFalse<double> &v);
-  inline var(const OrFalse<string> &v);
-  inline var(OrFalse<string> &&v);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var(const OrFalse<array<T>> &v);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var(OrFalse<array<T>> &&v);
+  template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<std::decay_t<T>>::value>>
+  inline var(T &&v);
+  template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
+  inline var(const OrFalse<T> &v);
+  template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
+  inline var(OrFalse<T> &&v);
 
-  inline var &operator=(bool other);
-  inline var &operator=(int other);
-  inline var &operator=(double other);
-  inline var &operator=(const string &other);
-  inline var &operator=(string &&other);
-  inline var &assign(const char *other, int len);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var &operator=(const array<T> &other);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var &operator=(array<T> &&other);
   inline var &operator=(const var &other);
   inline var &operator=(var &&other);
 
-  inline var &operator=(const OrFalse<int> &other);
-  inline var &operator=(const OrFalse<double> &other);
-  inline var &operator=(const OrFalse<string> &other);
-  inline var &operator=(OrFalse<string> &&other);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var &operator=(const OrFalse<array<T>> &other);
-  template<class T, class = enable_if_constructible_or_unknown<var, T>>
-  inline var &operator=(OrFalse<array<T>> &&other);
+  template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<std::decay_t<T>>::value>>
+  inline var &operator=(T &&v);
+  template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
+  inline var &operator=(const OrFalse<T> &v);
+  template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
+  inline var &operator=(OrFalse<T> &&v);
+
+  inline var &assign(const char *other, int len);
 
   inline const var operator-() const;
   inline const var operator+() const;
