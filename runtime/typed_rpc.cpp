@@ -127,7 +127,7 @@ private:
   array<class_instance<C$VK$TL$RpcResponse>> unsorted_results_;
   const RpcErrorFactory &error_factory_;
   int queue_id_{-1};
-  OrFalse<int> query_id_;
+  Optional<int> query_id_;
 };
 } // namespace
 

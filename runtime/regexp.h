@@ -75,12 +75,12 @@ public:
   void init(const char *regexp_string, int regexp_len, const char *function = nullptr, const char *file = nullptr);
 
 
-  OrFalse<int> match(const string &subject, bool all_matches) const;
-  OrFalse<int> match(const string &subject, var &matches, bool all_matches, int offset = 0) const;
+  Optional<int> match(const string &subject, bool all_matches) const;
+  Optional<int> match(const string &subject, var &matches, bool all_matches, int offset = 0) const;
 
-  OrFalse<int> match(const string &subject, var &matches, int flags, bool all_matches, int offset = 0) const;
+  Optional<int> match(const string &subject, var &matches, int flags, bool all_matches, int offset = 0) const;
 
-  OrFalse<array<var>> split(const string &subject, int limit, int flags) const;
+  Optional<array<var>> split(const string &subject, int limit, int flags) const;
 
   template<class T>
   var replace(const T &replace_val, const string &subject, int limit, int &replace_count) const;
@@ -100,43 +100,43 @@ inline void preg_add_match(array<string> &v, const string &match, const string &
 inline int preg_get_backref(const char **str, int *backref);
 
 
-inline OrFalse<int> f$preg_match(const regexp &regex, const string &subject);
+inline Optional<int> f$preg_match(const regexp &regex, const string &subject);
 
-inline OrFalse<int> f$preg_match_all(const regexp &regex, const string &subject);
+inline Optional<int> f$preg_match_all(const regexp &regex, const string &subject);
 
-inline OrFalse<int> f$preg_match(const regexp &regex, const string &subject, var &matches);
+inline Optional<int> f$preg_match(const regexp &regex, const string &subject, var &matches);
 
-inline OrFalse<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches);
+inline Optional<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches);
 
-inline OrFalse<int> f$preg_match(const regexp &regex, const string &subject, var &matches, int flags, int offset = 0);
+inline Optional<int> f$preg_match(const regexp &regex, const string &subject, var &matches, int flags, int offset = 0);
 
-inline OrFalse<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches, int flags);
+inline Optional<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches, int flags);
 
-inline OrFalse<int> f$preg_match(const string &regex, const string &subject);
+inline Optional<int> f$preg_match(const string &regex, const string &subject);
 
-inline OrFalse<int> f$preg_match_all(const string &regex, const string &subject);
+inline Optional<int> f$preg_match_all(const string &regex, const string &subject);
 
-inline OrFalse<int> f$preg_match(const string &regex, const string &subject, var &matches);
+inline Optional<int> f$preg_match(const string &regex, const string &subject, var &matches);
 
-inline OrFalse<int> f$preg_match_all(const string &regex, const string &subject, var &matches);
+inline Optional<int> f$preg_match_all(const string &regex, const string &subject, var &matches);
 
-inline OrFalse<int> f$preg_match(const string &regex, const string &subject, var &matches, int flags, int offset = 0);
+inline Optional<int> f$preg_match(const string &regex, const string &subject, var &matches, int flags, int offset = 0);
 
-inline OrFalse<int> f$preg_match_all(const string &regex, const string &subject, var &matches, int flags);
+inline Optional<int> f$preg_match_all(const string &regex, const string &subject, var &matches, int flags);
 
-inline OrFalse<int> f$preg_match(const var &regex, const string &subject);
+inline Optional<int> f$preg_match(const var &regex, const string &subject);
 
-inline OrFalse<int> f$preg_match_all(const var &regex, const string &subject);
+inline Optional<int> f$preg_match_all(const var &regex, const string &subject);
 
-inline OrFalse<int> f$preg_match(const var &regex, const string &subject, var &matches);
+inline Optional<int> f$preg_match(const var &regex, const string &subject, var &matches);
 
-inline OrFalse<int> f$preg_match_all(const var &regex, const string &subject, var &matches);
+inline Optional<int> f$preg_match_all(const var &regex, const string &subject, var &matches);
 
-inline OrFalse<int> f$preg_match(const var &regex, const string &subject, var &matches, int flags);
+inline Optional<int> f$preg_match(const var &regex, const string &subject, var &matches, int flags);
 
-inline OrFalse<int> f$preg_match_all(const var &regex, const string &subject, var &matches, int flags);
+inline Optional<int> f$preg_match_all(const var &regex, const string &subject, var &matches, int flags);
 
-template<class T1, class T2, class T3, class = enable_if_t_is_or_false<T3>>
+template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
 inline var f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int limit = -1, int &replace_count = preg_replace_count_dummy);
 
 inline var f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int limit = -1, int &replace_count = preg_replace_count_dummy);
@@ -173,11 +173,11 @@ var f$preg_replace_callback(const var &regex, const T &replace_val, const string
 template<class T>
 var f$preg_replace_callback(const var &regex, const T &replace_val, const var &subject, int limit = -1, int &replace_count = preg_replace_count_dummy);
 
-inline OrFalse<array<var>> f$preg_split(const regexp &regex, const string &subject, int limit = -1, int flags = 0);
+inline Optional<array<var>> f$preg_split(const regexp &regex, const string &subject, int limit = -1, int flags = 0);
 
-inline OrFalse<array<var>> f$preg_split(const string &regex, const string &subject, int limit = -1, int flags = 0);
+inline Optional<array<var>> f$preg_split(const string &regex, const string &subject, int limit = -1, int flags = 0);
 
-inline OrFalse<array<var>> f$preg_split(const var &regex, const string &subject, int limit = -1, int flags = 0);
+inline Optional<array<var>> f$preg_split(const var &regex, const string &subject, int limit = -1, int flags = 0);
 
 string f$preg_quote(const string &str, const string &delimiter = string());
 
@@ -338,75 +338,75 @@ void preg_add_match(array<string> &v, const string &match, const string &name) {
   v.push_back(match);
 }
 
-OrFalse<int> f$preg_match(const regexp &regex, const string &subject) {
+Optional<int> f$preg_match(const regexp &regex, const string &subject) {
   return regex.match(subject, false);
 }
 
-OrFalse<int> f$preg_match_all(const regexp &regex, const string &subject) {
+Optional<int> f$preg_match_all(const regexp &regex, const string &subject) {
   return regex.match(subject, true);
 }
 
-OrFalse<int> f$preg_match(const regexp &regex, const string &subject, var &matches) {
+Optional<int> f$preg_match(const regexp &regex, const string &subject, var &matches) {
   return regex.match(subject, matches, false);
 }
 
-OrFalse<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches) {
+Optional<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches) {
   return regex.match(subject, matches, true);
 }
 
-OrFalse<int> f$preg_match(const regexp &regex, const string &subject, var &matches, int flags, int offset) {
+Optional<int> f$preg_match(const regexp &regex, const string &subject, var &matches, int flags, int offset) {
   return regex.match(subject, matches, flags, false, offset);
 }
 
-OrFalse<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches, int flags) {
+Optional<int> f$preg_match_all(const regexp &regex, const string &subject, var &matches, int flags) {
   return regex.match(subject, matches, flags, true);
 }
 
-OrFalse<int> f$preg_match(const string &regex, const string &subject) {
+Optional<int> f$preg_match(const string &regex, const string &subject) {
   return f$preg_match(regexp(regex), subject);
 }
 
-OrFalse<int> f$preg_match_all(const string &regex, const string &subject) {
+Optional<int> f$preg_match_all(const string &regex, const string &subject) {
   return f$preg_match_all(regexp(regex), subject);
 }
 
-OrFalse<int> f$preg_match(const string &regex, const string &subject, var &matches) {
+Optional<int> f$preg_match(const string &regex, const string &subject, var &matches) {
   return f$preg_match(regexp(regex), subject, matches);
 }
 
-OrFalse<int> f$preg_match_all(const string &regex, const string &subject, var &matches) {
+Optional<int> f$preg_match_all(const string &regex, const string &subject, var &matches) {
   return f$preg_match_all(regexp(regex), subject, matches);
 }
 
-OrFalse<int> f$preg_match(const string &regex, const string &subject, var &matches, int flags, int offset) {
+Optional<int> f$preg_match(const string &regex, const string &subject, var &matches, int flags, int offset) {
   return f$preg_match(regexp(regex), subject, matches, flags, offset);
 }
 
-OrFalse<int> f$preg_match_all(const string &regex, const string &subject, var &matches, int flags) {
+Optional<int> f$preg_match_all(const string &regex, const string &subject, var &matches, int flags) {
   return f$preg_match_all(regexp(regex), subject, matches, flags);
 }
 
-OrFalse<int> f$preg_match(const var &regex, const string &subject) {
+Optional<int> f$preg_match(const var &regex, const string &subject) {
   return f$preg_match(regexp(regex.to_string()), subject);
 }
 
-OrFalse<int> f$preg_match_all(const var &regex, const string &subject) {
+Optional<int> f$preg_match_all(const var &regex, const string &subject) {
   return f$preg_match_all(regexp(regex.to_string()), subject);
 }
 
-OrFalse<int> f$preg_match(const var &regex, const string &subject, var &matches) {
+Optional<int> f$preg_match(const var &regex, const string &subject, var &matches) {
   return f$preg_match(regexp(regex.to_string()), subject, matches);
 }
 
-OrFalse<int> f$preg_match_all(const var &regex, const string &subject, var &matches) {
+Optional<int> f$preg_match_all(const var &regex, const string &subject, var &matches) {
   return f$preg_match_all(regexp(regex.to_string()), subject, matches);
 }
 
-OrFalse<int> f$preg_match(const var &regex, const string &subject, var &matches, int flags) {
+Optional<int> f$preg_match(const var &regex, const string &subject, var &matches, int flags) {
   return f$preg_match(regexp(regex.to_string()), subject, matches, flags);
 }
 
-OrFalse<int> f$preg_match_all(const var &regex, const string &subject, var &matches, int flags) {
+Optional<int> f$preg_match_all(const var &regex, const string &subject, var &matches, int flags) {
   return f$preg_match_all(regexp(regex.to_string()), subject, matches, flags);
 }
 
@@ -598,15 +598,15 @@ var f$preg_replace_callback(const var &regex, const T &replace_val, const var &s
   }
 }
 
-OrFalse<array<var>> f$preg_split(const regexp &regex, const string &subject, int limit, int flags) {
+Optional<array<var>> f$preg_split(const regexp &regex, const string &subject, int limit, int flags) {
   return regex.split(subject, limit, flags);
 }
 
-OrFalse<array<var>> f$preg_split(const string &regex, const string &subject, int limit, int flags) {
+Optional<array<var>> f$preg_split(const string &regex, const string &subject, int limit, int flags) {
   return f$preg_split(regexp(regex), subject, limit, flags);
 }
 
-OrFalse<array<var>> f$preg_split(const var &regex, const string &subject, int limit, int flags) {
+Optional<array<var>> f$preg_split(const var &regex, const string &subject, int limit, int flags) {
   return f$preg_split(regexp(regex.to_string()), subject, limit, flags);
 }
 

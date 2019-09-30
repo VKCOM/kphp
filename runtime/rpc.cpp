@@ -179,13 +179,13 @@ bool f$rpc_parse(const var &new_rpc_data) {
   return f$rpc_parse(new_rpc_data.to_string());
 }
 
-bool f$rpc_parse(const OrFalse<string> &new_rpc_data) {
+bool f$rpc_parse(const Optional<string> &new_rpc_data) {
   switch (new_rpc_data.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       return f$rpc_parse(new_rpc_data.val());
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       return f$rpc_parse(var{false});
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       return f$rpc_parse(var{});
     default:
       __builtin_unreachable();
@@ -1015,7 +1015,7 @@ void process_rpc_error(int request_id, int error_code __attribute__((unused)), c
 
 
 class rpc_get_resumable : public Resumable {
-  using ReturnT = OrFalse<string>;
+  using ReturnT = Optional<string>;
   int resumable_id;
   double timeout;
 
@@ -1073,16 +1073,16 @@ bool drop_tl_query_info(int query_id) {
   return true;
 }
 
-OrFalse<string> f$rpc_get(int request_id, double timeout) {
+Optional<string> f$rpc_get(int request_id, double timeout) {
   if (!drop_tl_query_info(request_id)) {
     return false;
   }
-  return start_resumable<OrFalse<string>>(new rpc_get_resumable(request_id, timeout));
+  return start_resumable<Optional<string>>(new rpc_get_resumable(request_id, timeout));
 }
 
-OrFalse<string> f$rpc_get_synchronously(int request_id) {
+Optional<string> f$rpc_get_synchronously(int request_id) {
   wait_synchronously(request_id);
-  OrFalse<string> result = f$rpc_get(request_id);
+  Optional<string> result = f$rpc_get(request_id);
   php_assert (resumable_finished);
   return result;
 }
@@ -1459,7 +1459,7 @@ class rpc_tl_query_result_resumable : public Resumable {
   const array<int> query_ids;
   array<array<var>> tl_objects_unsorted;
   int queue_id;
-  OrFalse<int> query_id;
+  Optional<int> query_id;
 
 protected:
   bool run() {
@@ -1610,11 +1610,11 @@ bool f$rpc_queue_empty(int queue_id) {
   return f$wait_queue_empty(queue_id);
 }
 
-OrFalse<int> f$rpc_queue_next(int queue_id, double timeout) {
+Optional<int> f$rpc_queue_next(int queue_id, double timeout) {
   return f$wait_queue_next(queue_id, timeout);
 }
 
-OrFalse<int> f$rpc_queue_next_synchronously(int queue_id) {
+Optional<int> f$rpc_queue_next_synchronously(int queue_id) {
   return f$wait_queue_next_synchronously(queue_id);
 }
 

@@ -86,7 +86,7 @@ int f$printf(const string &format, const array<var> &a);
 
 string f$rtrim(const string &s, const string &what = WHAT);
 
-OrFalse<string> f$setlocale(int category, const string &locale);
+Optional<string> f$setlocale(int category, const string &locale);
 
 string f$sprintf(const string &format, const array<var> &a);
 
@@ -98,15 +98,15 @@ int f$strcmp(const string &lhs, const string &rhs);
 
 string f$strip_tags(const string &str, const string &allow = string());
 
-OrFalse<int> f$stripos(const string &haystack, const string &needle, int offset = 0);
+Optional<int> f$stripos(const string &haystack, const string &needle, int offset = 0);
 
-inline OrFalse<int> f$stripos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int> f$stripos(const string &haystack, const var &needle, int offset = 0);
 
-OrFalse<string> f$stristr(const string &haystack, const string &needle, bool before_needle = false);
+Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle = false);
 
-inline OrFalse<string> f$stristr(const string &haystack, const var &needle, bool before_needle = false);
+inline Optional<string> f$stristr(const string &haystack, const var &needle, bool before_needle = false);
 
-OrFalse<string> f$strrchr(const string &haystack, const string &needle);
+Optional<string> f$strrchr(const string &haystack, const string &needle);
 
 inline int f$strlen(const string &s);
 
@@ -114,28 +114,28 @@ int f$strncmp(const string &lhs, const string &rhs, int len);
 
 int f$strnatcmp(const string &lhs, const string &rhs);
 
-OrFalse<string> f$strpbrk(const string &haystack, const string &char_list);
+Optional<string> f$strpbrk(const string &haystack, const string &char_list);
 
-OrFalse<int> f$strpos(const string &haystack, const string &needle, int offset = 0);
+Optional<int> f$strpos(const string &haystack, const string &needle, int offset = 0);
 
-inline OrFalse<int> f$strpos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int> f$strpos(const string &haystack, const var &needle, int offset = 0);
 
 template<class T>
-inline OrFalse<int> f$strpos(const string &haystack, const OrFalse<T> &needle, int offset = 0);
+inline Optional<int> f$strpos(const string &haystack, const Optional<T> &needle, int offset = 0);
 
-OrFalse<int> f$strrpos(const string &haystack, const string &needle, int offset = 0);
+Optional<int> f$strrpos(const string &haystack, const string &needle, int offset = 0);
 
-inline OrFalse<int> f$strrpos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int> f$strrpos(const string &haystack, const var &needle, int offset = 0);
 
-OrFalse<int> f$strripos(const string &haystack, const string &needle, int offset = 0);
+Optional<int> f$strripos(const string &haystack, const string &needle, int offset = 0);
 
-inline OrFalse<int> f$strripos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int> f$strripos(const string &haystack, const var &needle, int offset = 0);
 
 string f$strrev(const string &str);
 
-OrFalse<string> f$strstr(const string &haystack, const string &needle, bool before_needle = false);
+Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle = false);
 
-inline OrFalse<string> f$strstr(const string &haystack, const var &needle, bool before_needle = false);
+inline Optional<string> f$strstr(const string &haystack, const var &needle, bool before_needle = false);
 
 string f$strtolower(const string &str);
 
@@ -198,7 +198,7 @@ string f$str_replace(const array<T1> &search, const array<T2> &replace, const st
 
 string f$str_replace(const var &search, const var &replace, const string &subject, int &replace_count = str_replace_count_dummy);
 
-template<class T1, class T2, class SubjectT, class = enable_if_t_is_or_false_string<SubjectT>>
+template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
 SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int &replace_count = str_replace_count_dummy) {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
@@ -207,13 +207,13 @@ var f$str_replace(const var &search, const var &replace, const var &subject, int
 
 array<string> f$str_split(const string &str, int split_length = 1);
 
-OrFalse<string> f$substr(const string &str, int start, int length = INT_MAX);
+Optional<string> f$substr(const string &str, int start, int length = INT_MAX);
 
 int f$substr_count(const string &haystack, const string &needle, int offset = 0, int length = INT_MAX);
 
-OrFalse<string> f$substr_replace(const string &str, const string &replacement, int start, int length = INT_MAX);
+Optional<string> f$substr_replace(const string &str, const string &replacement, int start, int length = INT_MAX);
 
-OrFalse<int> f$substr_compare(const string &main_str, const string &str, int offset, int length = INT_MAX, bool case_insensitivity = false);
+Optional<int> f$substr_compare(const string &main_str, const string &str, int offset, int length = INT_MAX, bool case_insensitivity = false);
 
 string f$trim(const string &s, const string &what = WHAT);
 
@@ -275,7 +275,7 @@ int f$strlen(const string &s) {
   return (int)s.size();
 }
 
-OrFalse<int> f$stripos(const string &haystack, const var &needle, int offset) {
+Optional<int> f$stripos(const string &haystack, const var &needle, int offset) {
   if (needle.is_string()) {
     return f$stripos(haystack, needle.to_string(), offset);
   } else {
@@ -283,7 +283,7 @@ OrFalse<int> f$stripos(const string &haystack, const var &needle, int offset) {
   }
 }
 
-OrFalse<string> f$stristr(const string &haystack, const var &needle, bool before_needle) {
+Optional<string> f$stristr(const string &haystack, const var &needle, bool before_needle) {
   if (needle.is_string()) {
     return f$stristr(haystack, needle.to_string(), before_needle);
   } else {
@@ -292,11 +292,11 @@ OrFalse<string> f$stristr(const string &haystack, const var &needle, bool before
 }
 
 template<class T>
-inline OrFalse<int> f$strpos(const string &haystack, const OrFalse<T> &needle, int offset) {
+inline Optional<int> f$strpos(const string &haystack, const Optional<T> &needle, int offset) {
   return f$strpos(haystack, needle.val(), offset);
 }
 
-OrFalse<int> f$strpos(const string &haystack, const var &needle, int offset) {
+Optional<int> f$strpos(const string &haystack, const var &needle, int offset) {
   if (needle.is_string()) {
     return f$strpos(haystack, needle.to_string(), offset);
   } else {
@@ -304,7 +304,7 @@ OrFalse<int> f$strpos(const string &haystack, const var &needle, int offset) {
   }
 }
 
-OrFalse<int> f$strrpos(const string &haystack, const var &needle, int offset) {
+Optional<int> f$strrpos(const string &haystack, const var &needle, int offset) {
   if (needle.is_string()) {
     return f$strrpos(haystack, needle.to_string(), offset);
   } else {
@@ -312,7 +312,7 @@ OrFalse<int> f$strrpos(const string &haystack, const var &needle, int offset) {
   }
 }
 
-OrFalse<int> f$strripos(const string &haystack, const var &needle, int offset) {
+Optional<int> f$strripos(const string &haystack, const var &needle, int offset) {
   if (needle.is_string()) {
     return f$strripos(haystack, needle.to_string(), offset);
   } else {
@@ -320,7 +320,7 @@ OrFalse<int> f$strripos(const string &haystack, const var &needle, int offset) {
   }
 }
 
-OrFalse<string> f$strstr(const string &haystack, const var &needle, bool before_needle) {
+Optional<string> f$strstr(const string &haystack, const var &needle, bool before_needle) {
   if (needle.is_string()) {
     return f$strstr(haystack, needle.to_string(), before_needle);
   } else {

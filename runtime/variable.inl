@@ -82,15 +82,15 @@ var::var(const char *s, int len) :
 }
 
 template<typename T, typename>
-var::var(const OrFalse<T> &v) {
+var::var(const Optional<T> &v) {
   switch (v.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       init_from(v.val());
       return;
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       init_from(false);
       return;
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       return;
     default:
       __builtin_unreachable();
@@ -98,15 +98,15 @@ var::var(const OrFalse<T> &v) {
 }
 
 template<typename T, typename>
-var::var(OrFalse<T> &&v) {
+var::var(Optional<T> &&v) {
   switch (v.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       init_from(std::move(v.val()));
       return;
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       init_from(false);
       return;
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       return;
     default:
       __builtin_unreachable();
@@ -143,13 +143,13 @@ var &var::operator=(T &&v) {
 }
 
 template<typename T, typename>
-var &var::operator=(const OrFalse<T> &v) {
+var &var::operator=(const Optional<T> &v) {
   switch (v.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       return assign_from(v.val());
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       return assign_from(false);
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       return *this = var{};
     default:
       __builtin_unreachable();
@@ -157,13 +157,13 @@ var &var::operator=(const OrFalse<T> &v) {
 }
 
 template<typename T, typename>
-var &var::operator=(OrFalse<T> &&v) {
+var &var::operator=(Optional<T> &&v) {
   switch (v.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       return assign_from(std::move(v.val()));
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       return assign_from(false);
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       return *this = var{};
     default:
       __builtin_unreachable();
@@ -2383,13 +2383,13 @@ bool equals(bool lhs, const class_instance<T> &rhs) {
 }
 
 template<class T>
-string_buffer &operator<<(string_buffer &sb, const OrFalse<T> &v) {
+string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
   switch (v.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       return sb << v.val();
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       return sb << false;
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       return sb;
     default:
       __builtin_unreachable();

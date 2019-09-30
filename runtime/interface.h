@@ -13,7 +13,7 @@ void f$ob_clean();
 
 bool f$ob_end_clean();
 
-OrFalse<string> f$ob_get_clean();
+Optional<string> f$ob_get_clean();
 
 string f$ob_get_contents();
 
@@ -23,9 +23,9 @@ void f$ob_flush();
 
 bool f$ob_end_flush();
 
-OrFalse<string> f$ob_get_flush();
+Optional<string> f$ob_get_flush();
 
-OrFalse<int> f$ob_get_length();
+Optional<int> f$ob_get_length();
 
 int f$ob_get_level();
 
@@ -47,18 +47,18 @@ void finish(int exit_code);
 __attribute__((noreturn))
 void f$exit(const var &v = 0);
 
-OrFalse<int> f$ip2long(const string &ip);
+Optional<int> f$ip2long(const string &ip);
 
-OrFalse<string> f$ip2ulong(const string &ip);
+Optional<string> f$ip2ulong(const string &ip);
 
 string f$long2ip(int num);
 
 template<class T>
 inline string f$long2ip(const T &v);//shut up warning on converting to int
 
-OrFalse<array<string>> f$gethostbynamel(const string &name);
+Optional<array<string>> f$gethostbynamel(const string &name);
 
-OrFalse<string> f$inet_pton(const string &address);
+Optional<string> f$inet_pton(const string &address);
 
 
 void print(const char *s);
@@ -150,9 +150,9 @@ void read_engine_tag(const char *file_name);
 
 bool f$ini_set(const string &s, const string &value);
 
-OrFalse<string> f$ini_get(const string &s);
+Optional<string> f$ini_get(const string &s);
 
-OrFalse<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
+Optional<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
 
 void global_init_runtime_libs();
 void global_init_script_allocator();

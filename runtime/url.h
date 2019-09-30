@@ -3,7 +3,7 @@
 #include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 
-OrFalse<string> f$base64_decode(const string &s, bool strict = false);
+Optional<string> f$base64_decode(const string &s, bool strict = false);
 
 string f$base64_encode(const string &s);
 

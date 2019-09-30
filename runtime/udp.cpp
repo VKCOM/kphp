@@ -150,7 +150,7 @@ static int udp_get_fd(const Stream &stream) {
   return opened_udp_sockets->get_value(stream_key);
 }
 
-static OrFalse<int> udp_fwrite(const Stream &stream, const string &data) {
+static Optional<int> udp_fwrite(const Stream &stream, const string &data) {
   int sock_fd = udp_get_fd(stream);
   if (sock_fd == -1) {
     return false;

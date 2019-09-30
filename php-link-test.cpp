@@ -5,13 +5,13 @@
 
 template<> int Storage::tagger<bool>::get_tag() { return 0; }
 template<> int Storage::tagger<int>::get_tag() { return 0; }
-template<> int Storage::tagger<OrFalse<int>>::get_tag() { return 0; }
+template<> int Storage::tagger<Optional<int>>::get_tag() { return 0; }
 template<> int Storage::tagger<void>::get_tag() { return 0; }
 template<> int Storage::tagger<thrown_exception>::get_tag() { return 0; }
 template<> int Storage::tagger<var>::get_tag() { return 0; }
 template<> int Storage::tagger<array<var>>::get_tag() { return 0; }
-template<> int Storage::tagger<OrFalse<string>>::get_tag() { return 0; }
-template<> int Storage::tagger<OrFalse<array<var>>>::get_tag() { return 0; }
+template<> int Storage::tagger<Optional<string>>::get_tag() { return 0; }
+template<> int Storage::tagger<Optional<array<var>>>::get_tag() { return 0; }
 template<> int Storage::tagger<array<array<var>>>::get_tag() { return 0; }
 template<> int Storage::tagger<class_instance<C$VK$TL$RpcResponse>>::get_tag() { return 0; }
 template<> int Storage::tagger<array<class_instance<C$VK$TL$RpcResponse>>>::get_tag() { return 0; }

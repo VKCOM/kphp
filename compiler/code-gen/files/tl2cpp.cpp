@@ -222,9 +222,9 @@ bool is_tl_type_a_php_array(const vk::tl::type *t) {
          t->id == TL_INT_KEY_DICTIONARY || t->id == TL_LONG_KEY_DICTIONARY;
 }
 
-bool is_tl_type_wrapped_to_OrFalse(const vk::tl::type *type) {
-  // Maybe<int|string|array|double> -- с OrFalse
-  // Maybe<class_instance|bool|OrFalse|var> -- без OrFalse
+bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
+  // Maybe<int|string|array|double> -- с Optional
+  // Maybe<class_instance|bool|Optional|var> -- без Optional
   return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING) || type->is_integer_variable();
 }
 
@@ -363,11 +363,11 @@ enum class field_rw_type {
 
 std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg, field_rw_type rw_type) {
   kphp_assert(!arg->name.empty());
-  std::string or_false_inner_access;
-  if (arg->is_fields_mask_optional() && is_tl_type_wrapped_to_OrFalse(type_of(arg->type_expr))) {
-    or_false_inner_access = rw_type == field_rw_type::READ ? ".val()" : ".ref()";
+  std::string optional_inner_access;
+  if (arg->is_fields_mask_optional() && is_tl_type_wrapped_to_Optional(type_of(arg->type_expr))) {
+    optional_inner_access = rw_type == field_rw_type::READ ? ".val()" : ".ref()";
   }
-  return fmt_format("tl_object->${}", arg->name) + or_false_inner_access;
+  return fmt_format("tl_object->${}", arg->name) + optional_inner_access;
 }
 } // namespace
 
@@ -866,8 +866,8 @@ private:
     kphp_assert(arg->is_fields_mask_optional());
     auto type = type_of(arg->type_expr);
     std::string check_target = "tl_object->$" + arg->name;
-    if (is_tl_type_wrapped_to_OrFalse(type_of(arg->type_expr))) {
-      // Если оборачивается в OrFalse под филд маской
+    if (is_tl_type_wrapped_to_Optional(type_of(arg->type_expr))) {
+      // Если оборачивается в Optional под филд маской
       return "!" + check_target + ".has_value()";
     } else if (type->id == TL_LONG) {
       // Если это var (mixed)
@@ -876,7 +876,7 @@ private:
       // Если это class_instance
       return check_target + ".is_null()";
     } else {
-      // Иначе это bool или OrFalse, которые не оборачиваются в OrFalse под филд маской,
+      // Иначе это bool или Optional, которые не оборачиваются в Optional под филд маской,
       // поэтому мы не можем проверить записал ли разработчик значение
       return "";
     }

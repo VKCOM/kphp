@@ -555,7 +555,7 @@ string f$strftime(const string &format, int timestamp) {
   return string(php_buf, (dl::size_type)strlen(php_buf));
 }
 
-OrFalse<int> f$strtotime(const string &time_str, int timestamp) {
+Optional<int> f$strtotime(const string &time_str, int timestamp) {
   if (timestamp == INT_MIN) {
     timestamp = (int)time(nullptr);
   }

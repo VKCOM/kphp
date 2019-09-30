@@ -121,7 +121,7 @@ public:
   inline string &append_unsafe(const array<T> &a) __attribute__((always_inline));
 
   template<class T>
-  inline string &append_unsafe(const OrFalse<T> &v) __attribute__((always_inline));
+  inline string &append_unsafe(const Optional<T> &v) __attribute__((always_inline));
 
 
   inline void push_back(char c);
@@ -216,4 +216,4 @@ template<class T>
 inline dl::size_type max_string_size(const array<T> &) __attribute__((always_inline));
 
 template<class T>
-inline dl::size_type max_string_size(const OrFalse<T> &v) __attribute__((always_inline));
+inline dl::size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));

@@ -32,11 +32,11 @@ bool f$copy(const string &from, const string &to);
 
 string f$dirname(const string &name);
 
-OrFalse<array<string>> f$file(const string &name);
+Optional<array<string>> f$file(const string &name);
 
 bool f$file_exists(const string &name);
 
-OrFalse<int> f$filesize(const string &name);
+Optional<int> f$filesize(const string &name);
 
 bool f$is_dir(const string &name);
 
@@ -52,15 +52,15 @@ string f$php_uname(const string &name = LETTER_a);
 
 bool f$rename(const string &oldname, const string &newname);
 
-OrFalse<string> f$realpath(const string &path);
+Optional<string> f$realpath(const string &path);
 
-OrFalse<string> f$tempnam(const string &dir, const string &prefix);
+Optional<string> f$tempnam(const string &dir, const string &prefix);
 
 bool f$unlink(const string &name);
 
-OrFalse<array<string>> f$scandir(const string &directory);
+Optional<array<string>> f$scandir(const string &directory);
 
-OrFalse<string> file_file_get_contents(const string &name);
+Optional<string> file_file_get_contents(const string &name);
 
 
 void global_init_files_lib();

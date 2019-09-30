@@ -631,7 +631,7 @@ int regexp::exec(const string &subject, int offset, bool second_try) const {
 }
 
 
-OrFalse<int> regexp::match(const string &subject, bool all_matches __attribute__((unused))) const {
+Optional<int> regexp::match(const string &subject, bool all_matches __attribute__((unused))) const {
   pcre_last_error = 0;
 
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
@@ -675,7 +675,7 @@ OrFalse<int> regexp::match(const string &subject, bool all_matches __attribute__
   return result;
 }
 
-OrFalse<int> regexp::match(const string &subject, var &matches, bool all_matches, int offset) const {
+Optional<int> regexp::match(const string &subject, var &matches, bool all_matches, int offset) const {
   pcre_last_error = 0;
 
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
@@ -764,7 +764,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, bool all_matches
   return result;
 }
 
-OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool all_matches, int offset) const {
+Optional<int> regexp::match(const string &subject, var &matches, int flags, bool all_matches, int offset) const {
   pcre_last_error = 0;
 
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
@@ -894,7 +894,7 @@ OrFalse<int> regexp::match(const string &subject, var &matches, int flags, bool 
   return result;
 }
 
-OrFalse<array<var>> regexp::split(const string &subject, int limit, int flags) const {
+Optional<array<var>> regexp::split(const string &subject, int limit, int flags) const {
   pcre_last_error = 0;
 
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {

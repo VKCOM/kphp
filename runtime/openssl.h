@@ -25,7 +25,7 @@ string f$sha1(const string &s, bool raw_output = false);
 
 string f$md5(const string &s, bool raw_output = false);
 
-OrFalse<string> f$md5_file(const string &file_name, bool raw_output = false);
+Optional<string> f$md5_file(const string &file_name, bool raw_output = false);
 
 int f$crc32(const string &s);
 
@@ -40,27 +40,27 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
 
 bool f$openssl_private_decrypt(const string &data, var &result, const string &key);
 
-OrFalse<string> f$openssl_pkey_get_private(const string &key, const string &passphrase = string());
+Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase = string());
 
-OrFalse<string> f$openssl_pkey_get_public(const string &key);
+Optional<string> f$openssl_pkey_get_public(const string &key);
 
 bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int algo = OPENSSL_ALGO_SHA1);
 
 int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int algo = OPENSSL_ALGO_SHA1);
 
-OrFalse<string> f$openssl_random_pseudo_bytes(int length);
+Optional<string> f$openssl_random_pseudo_bytes(int length);
 
-OrFalse<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = true);
+Optional<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = true);
 
 var f$openssl_x509_checkpurpose(const string &data, int purpose);
 
 array<string> f$openssl_get_cipher_methods(bool aliases = false);
 
-OrFalse<int> f$openssl_cipher_iv_length(const string &method);
+Optional<int> f$openssl_cipher_iv_length(const string &method);
 
-OrFalse<string> f$openssl_encrypt(const string &data, const string &method,
+Optional<string> f$openssl_encrypt(const string &data, const string &method,
                                   const string &key, int options = 0, const string &iv = string());
-OrFalse<string> f$openssl_decrypt(const string &data, const string &method,
+Optional<string> f$openssl_decrypt(const string &data, const string &method,
                                   const string &key, int options = 0, const string &iv = string());
 
 void global_init_openssl_lib();

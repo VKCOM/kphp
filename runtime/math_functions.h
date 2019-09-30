@@ -60,9 +60,9 @@ int f$abs(int v);
 
 double f$abs(double v);
 
-int f$abs(const OrFalse<int> &v);
+int f$abs(const Optional<int> &v);
 
-double f$abs(const OrFalse<double> &v);
+double f$abs(const Optional<double> &v);
 
 
 inline double f$acos(double v);

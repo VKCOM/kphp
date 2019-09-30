@@ -24,7 +24,7 @@ bool f$rpc_parse(const string &new_rpc_data);
 
 bool f$rpc_parse(const var &new_rpc_data);
 
-bool f$rpc_parse(const OrFalse<string> &new_rpc_data);
+bool f$rpc_parse(const Optional<string> &new_rpc_data);
 
 int rpc_get_pos();
 
@@ -178,9 +178,9 @@ int f$rpc_send_noflush(const rpc_connection &conn, double timeout = -1.0);
 
 void f$rpc_flush();
 
-OrFalse<string> f$rpc_get(int request_id, double timeout = -1.0);
+Optional<string> f$rpc_get(int request_id, double timeout = -1.0);
 
-OrFalse<string> f$rpc_get_synchronously(int request_id);
+Optional<string> f$rpc_get_synchronously(int request_id);
 
 bool rpc_get_and_parse(int request_id, double timeout);
 bool f$rpc_get_and_parse(int request_id, double timeout = -1.0);
@@ -194,9 +194,9 @@ int f$rpc_queue_push(int queue_id, const var &request_ids);
 
 bool f$rpc_queue_empty(int queue_id);
 
-OrFalse<int> f$rpc_queue_next(int queue_id, double timeout = -1);
+Optional<int> f$rpc_queue_next(int queue_id, double timeout = -1);
 
-OrFalse<int> f$rpc_queue_next_synchronously(int queue_id);
+Optional<int> f$rpc_queue_next_synchronously(int queue_id);
 
 bool f$store_unsigned_int(const var &v);
 

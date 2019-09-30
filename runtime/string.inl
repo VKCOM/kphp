@@ -622,7 +622,7 @@ string &string::finish_append() {
 }
 
 template<class T>
-string &string::append_unsafe(const OrFalse<T> &v) {
+string &string::append_unsafe(const Optional<T> &v) {
   if (v.has_value()) {
     return append_unsafe(v.val());
   }
@@ -1130,6 +1130,6 @@ dl::size_type max_string_size(const array<T> &) {
 }
 
 template<class T>
-dl::size_type max_string_size(const OrFalse<T> &v) {
+dl::size_type max_string_size(const Optional<T> &v) {
   return v.has_value() ? max_string_size(v.val()) : 0;
 }

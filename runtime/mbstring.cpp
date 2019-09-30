@@ -255,7 +255,7 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
   }
 }
 
-OrFalse<int> f$mb_strpos(const string &haystack, const string &needle, int offset, const string &encoding) {
+Optional<int> f$mb_strpos(const string &haystack, const string &needle, int offset, const string &encoding) {
   if (offset < 0) {
     php_warning("Wrong offset = %d in function mb_strpos", offset);
     return false;
@@ -283,7 +283,7 @@ OrFalse<int> f$mb_strpos(const string &haystack, const string &needle, int offse
   return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, (dl::size_type)(s - (haystack.c_str() + UTF8_offset))) + offset;
 }
 
-OrFalse<int> f$mb_stripos(const string &haystack, const string &needle, int offset, const string &encoding) {
+Optional<int> f$mb_stripos(const string &haystack, const string &needle, int offset, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_stripos", encoding.c_str());
@@ -308,7 +308,7 @@ string f$mb_substr(const string &str, int start, const var &length_var, const st
   }
 
   if (encoding_num == 1251) {
-    OrFalse<string> res = f$substr(str, start, length);
+    Optional<string> res = f$substr(str, start, length);
     if (!res.has_value()) {
       return string();
     }

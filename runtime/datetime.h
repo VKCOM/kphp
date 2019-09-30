@@ -28,7 +28,7 @@ int f$mktime(int h = INT_MIN, int m = INT_MIN, int s = INT_MIN, int month = INT_
 
 string f$strftime(const string &format, int timestamp = INT_MIN);
 
-OrFalse<int> f$strtotime(const string &time_str, int timestamp = INT_MIN);
+Optional<int> f$strtotime(const string &time_str, int timestamp = INT_MIN);
 
 int f$time();
 

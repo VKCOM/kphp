@@ -45,7 +45,7 @@ string f$uniqid(const string &prefix, bool more_entropy) {
 }
 
 
-OrFalse<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) {
+Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) {
   iconv_t cd;
   if ((cd = iconv_open(output_encoding.c_str(), input_encoding.c_str())) == (iconv_t)-1) {
     php_warning("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());
@@ -467,7 +467,7 @@ int f$posix_getuid() {
   return result;
 }
 
-OrFalse<array<var>> f$posix_getpwuid(int uid) {
+Optional<array<var>> f$posix_getpwuid(int uid) {
   dl::enter_critical_section();//OK
   passwd *pwd = getpwuid(uid);
   dl::leave_critical_section();
@@ -1032,7 +1032,7 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
   }
 }
 
-OrFalse<string> f$json_encode(const var &v, int options, bool simple_encode) {
+Optional<string> f$json_encode(const var &v, int options, bool simple_encode) {
   bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
   if (has_unsupported_option) {
     php_warning("Wrong parameter options = %d in function json_encode", options);

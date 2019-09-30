@@ -282,7 +282,7 @@ static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
   streams_var = result;
 }
 
-OrFalse<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec_var, int tv_usec) {
+Optional<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec_var, int tv_usec) {
   struct timeval tv, *timeout = nullptr;
   if (!tv_sec_var.is_null()) {
     int tv_sec = tv_sec_var.to_int();
@@ -351,7 +351,7 @@ Stream f$fopen(const string &stream, const string &mode) {
   STREAM_FUNCTION_BODY(fopen, false)(url, mode);
 }
 
-OrFalse<int> f$fwrite(const Stream &stream, const string &text) {
+Optional<int> f$fwrite(const Stream &stream, const string &text) {
   STREAM_FUNCTION_BODY(fwrite, false)(stream, text);
 }
 
@@ -363,23 +363,23 @@ bool f$rewind(const Stream &stream) {
   return f$fseek(stream, 0, 0) == 0;
 }
 
-OrFalse<int> f$ftell(const Stream &stream) {
+Optional<int> f$ftell(const Stream &stream) {
   STREAM_FUNCTION_BODY(ftell, false)(stream);
 }
 
-OrFalse<string> f$fread(const Stream &stream, int length) {
+Optional<string> f$fread(const Stream &stream, int length) {
   STREAM_FUNCTION_BODY(fread, false)(stream, length);
 }
 
-OrFalse<string> f$fgetc(const Stream &stream) {
+Optional<string> f$fgetc(const Stream &stream) {
   STREAM_FUNCTION_BODY(fgetc, false)(stream);
 }
 
-OrFalse<string> f$fgets(const Stream &stream, int length) {
+Optional<string> f$fgets(const Stream &stream, int length) {
   STREAM_FUNCTION_BODY(fgets, false)(stream, length);
 }
 
-OrFalse<int> f$fpassthru(const Stream &stream) {
+Optional<int> f$fpassthru(const Stream &stream) {
   STREAM_FUNCTION_BODY(fpassthru, false)(stream);
 }
 
@@ -395,16 +395,16 @@ bool f$fclose(const Stream &stream) {
   STREAM_FUNCTION_BODY(fclose, false)(stream);
 }
 
-OrFalse<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args) {
+Optional<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args) {
   return f$vfprintf(stream, format, args);
 }
 
-OrFalse<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args) {
+Optional<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args) {
   string text = f$vsprintf(format, args);
   return f$fwrite(stream, text);
 }
 
-OrFalse<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
+Optional<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
                        string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
@@ -497,7 +497,7 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
 }
 
 
-OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter, string enclosure, string escape) {
+Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -525,11 +525,11 @@ OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter
   } else if (length == 0) {
     length = -1;
   }
-  OrFalse<string> buf_or_false = length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1);
-  if (!buf_or_false.has_value()) {
+  Optional<string> buf_optional = length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1);
+  if (!buf_optional.has_value()) {
     return false;
   }
-  string buffer = buf_or_false.val();
+  string buffer = buf_optional.val();
   array<var> answer;
   int current_id = 0;
   string_buffer tmp_buffer;
@@ -597,14 +597,14 @@ OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter
                 if (stream.is_null()) {
                   goto quit_loop_2;
                 } else {
-                  OrFalse<string> new_buffer_or_false = f$fgets(stream);
-                  if (!new_buffer_or_false.has_value()) {
+                  Optional<string> new_buffer_optional = f$fgets(stream);
+                  if (!new_buffer_optional.has_value()) {
                     if ((size_t)temp_len > (size_t)(limit - buf)) {
                       goto quit_loop_2;
                     }
                     return answer;
                   }
-                  new_buffer = new_buffer_or_false.val();
+                  new_buffer = new_buffer_optional.val();
                 }
                 temp_len += new_buffer.size();
                 buf_len = new_buffer.size();
@@ -745,11 +745,11 @@ OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter
   return answer;
 }
 
-OrFalse<string> f$file_get_contents(const string &stream) {
+Optional<string> f$file_get_contents(const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false)(url);
 }
 
-OrFalse<int> f$file_put_contents(const string &stream, const var &content_var, int flags) {
+Optional<int> f$file_put_contents(const string &stream, const var &content_var, int flags) {
   string content;
   if (content_var.is_array()) {
     content = f$implode(string(), content_var.to_array());

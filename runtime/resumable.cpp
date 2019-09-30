@@ -967,7 +967,7 @@ static void wait_queue_next(int queue_id, double timeout) {
   return;
 }
 
-OrFalse<int> wait_queue_next_synchronously(int queue_id) {
+Optional<int> wait_queue_next_synchronously(int queue_id) {
   wait_queue *q = get_wait_queue(queue_id);
   wait_queue_skip_gotten(q);
 
@@ -990,7 +990,7 @@ OrFalse<int> wait_queue_next_synchronously(int queue_id) {
 static int wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable : public Resumable {
-  using ReturnT = OrFalse<int>;
+  using ReturnT = Optional<int>;
   int queue_id;
   event_timer *timer;
 protected:
@@ -1032,7 +1032,7 @@ void process_wait_queue_timeout(event_timer *timer) {
   resumable_run_ready(wait_queue_resumable_id);
 }
 
-OrFalse<int> f$wait_queue_next(int queue_id, double timeout) {
+Optional<int> f$wait_queue_next(int queue_id, double timeout) {
   resumable_finished = true;
 
 //  fprintf (stderr, "Waiting for queue %d\n", queue_id);
@@ -1058,7 +1058,7 @@ OrFalse<int> f$wait_queue_next(int queue_id, double timeout) {
   if (timeout == 0.0) {
     wait_net(0);
 
-    return q->first_finished_function == -2 ? OrFalse<int>{false} : OrFalse<int>{-q->first_finished_function};
+    return q->first_finished_function == -2 ? Optional<int>{false} : Optional<int>{-q->first_finished_function};
   }
 
   bool has_timeout = true;
@@ -1074,7 +1074,7 @@ OrFalse<int> f$wait_queue_next(int queue_id, double timeout) {
     wait_queue_next(queue_id, timeout);
 
     q = get_wait_queue(queue_id);//can change in scheduler
-    return q->first_finished_function == -2 ? OrFalse<int>{false} : OrFalse<int>{-q->first_finished_function};
+    return q->first_finished_function == -2 ? Optional<int>{false} : Optional<int>{-q->first_finished_function};
   }
 
   wait_queue_resumable *res = new wait_queue_resumable(queue_id);
@@ -1087,7 +1087,7 @@ OrFalse<int> f$wait_queue_next(int queue_id, double timeout) {
   return false;
 }
 
-OrFalse<int> f$wait_queue_next_synchronously(int queue_id) {
+Optional<int> f$wait_queue_next_synchronously(int queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %d in function wait_queue_next_synchronously", queue_id);

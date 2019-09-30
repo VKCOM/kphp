@@ -63,7 +63,7 @@ bool f$ob_end_clean() {
   return true;
 }
 
-OrFalse<string> f$ob_get_clean() {
+Optional<string> f$ob_get_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -116,7 +116,7 @@ bool f$ob_end_flush() {
   return f$ob_end_clean();
 }
 
-OrFalse<string> f$ob_get_flush() {
+Optional<string> f$ob_get_flush() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -126,7 +126,7 @@ OrFalse<string> f$ob_get_flush() {
   return result;
 }
 
-OrFalse<int> f$ob_get_length() {
+Optional<int> f$ob_get_length() {
   if (ob_cur_buffer == 0) {
     return false;
   }
@@ -550,7 +550,7 @@ void f$exit(const var &v) {
 
 
 
-OrFalse<int> f$ip2long(const string &ip) {
+Optional<int> f$ip2long(const string &ip) {
   struct in_addr result;
   if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
     return false;
@@ -558,7 +558,7 @@ OrFalse<int> f$ip2long(const string &ip) {
   return (int)ntohl(result.s_addr);
 }
 
-OrFalse<string> f$ip2ulong(const string &ip) {
+Optional<string> f$ip2ulong(const string &ip) {
   struct in_addr result;
   if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
     return false;
@@ -580,7 +580,7 @@ string f$long2ip(int num) {
   return static_SB.str();
 }
 
-OrFalse<array<string>> f$gethostbynamel(const string &name) {
+Optional<array<string>> f$gethostbynamel(const string &name) {
   dl::enter_critical_section();//OK
   struct hostent *hp = gethostbyname(name.c_str());
   if (hp == nullptr || hp->h_addr_list == nullptr) {
@@ -600,7 +600,7 @@ OrFalse<array<string>> f$gethostbynamel(const string &name) {
   return result;
 }
 
-OrFalse<string> f$inet_pton(const string &address) {
+Optional<string> f$inet_pton(const string &address) {
   int af, size;
   if (strchr(address.c_str(), ':')) {
     af = AF_INET6;
@@ -1126,7 +1126,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     }
   } else {
     int file_size;
-    OrFalse<string> tmp_name;
+    Optional<string> tmp_name;
     if (v$_FILES.count() < MAX_FILES) {
       if (dl::query_num != uploaded_files_last_query_num) {
         new(uploaded_files_storage) array<int>();
@@ -1224,7 +1224,7 @@ void f$parse_multipart(const string &post, const string &boundary) {
 static char arg_vars_storage[sizeof(array<string>)];
 static array<string> *arg_vars = nullptr;
 
-OrFalse<array<var>> f$getopt(const string &options, array<string> longopts) {
+Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
   if (!arg_vars) {
     return false;
   }
@@ -1638,7 +1638,7 @@ void ini_set(const char *key, const char *value) {
   ini_vars->set_value(string(key, (dl::size_type)strlen(key)), string(value, (dl::size_type)strlen(value)));
 }
 
-OrFalse<string> f$ini_get(const string &s) {
+Optional<string> f$ini_get(const string &s) {
   if (ini_vars != nullptr && ini_vars->has_key(s)) {
     return ini_vars->get_value(s);
   }
@@ -1703,7 +1703,7 @@ static Stream php_fopen(const string &stream, const string &mode) {
   return false;
 }
 
-static OrFalse<int> php_fwrite(const Stream &stream, const string &text) {
+static Optional<int> php_fwrite(const Stream &stream, const string &text) {
   if (eq2(stream, STDOUT)) {
     print(text);
     return (int)text.size();
@@ -1744,7 +1744,7 @@ static int php_fseek(const Stream &stream, int offset __attribute__((unused)), i
   return -1;
 }
 
-static OrFalse<int> php_ftell(const Stream &stream) {
+static Optional<int> php_ftell(const Stream &stream) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use ftell with stream %s", stream.to_string().c_str());
     return false;
@@ -1765,7 +1765,7 @@ static OrFalse<int> php_ftell(const Stream &stream) {
   return false;
 }
 
-static OrFalse<string> php_fread(const Stream &stream, int length __attribute__((unused))) {
+static Optional<string> php_fread(const Stream &stream, int length __attribute__((unused))) {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
     return false;
@@ -1796,7 +1796,7 @@ static OrFalse<string> php_fread(const Stream &stream, int length __attribute__(
   return false;
 }
 
-static OrFalse<string> php_fgetc(const Stream &stream) {
+static Optional<string> php_fgetc(const Stream &stream) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
@@ -1829,7 +1829,7 @@ static OrFalse<string> php_fgetc(const Stream &stream) {
   return false;
 }
 
-static OrFalse<string> php_fgets(const Stream &stream, int length) {
+static Optional<string> php_fgets(const Stream &stream, int length) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
@@ -1868,7 +1868,7 @@ static OrFalse<string> php_fgets(const Stream &stream, int length) {
   return false;
 }
 
-static OrFalse<int> php_fpassthru(const Stream &stream) {
+static Optional<int> php_fpassthru(const Stream &stream) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fpassthru with stream %s", stream.to_string().c_str());
     return false;
@@ -1927,7 +1927,7 @@ static bool php_feof(const Stream &stream) {
   return true;
 }
 
-static OrFalse<string> php_file_get_contents(const string &url) {
+static Optional<string> php_file_get_contents(const string &url) {
   if (eq2(url, STDOUT) || eq2(url, STDERR)) {
     php_warning("Can't use file_get_contents with stream %s", url.c_str());
     return false;
@@ -1946,7 +1946,7 @@ static OrFalse<string> php_file_get_contents(const string &url) {
   return false;
 }
 
-static OrFalse<int> php_file_put_contents(const string &url, const string &content, int flags __attribute__((unused))) {
+static Optional<int> php_file_put_contents(const string &url, const string &content, int flags __attribute__((unused))) {
   if (eq2(url, STDOUT)) {
     print(content);
     return (int)content.size();

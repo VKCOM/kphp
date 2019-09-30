@@ -612,7 +612,7 @@ string f$vk_flex(const string &name, const string &case_name, int sex, const str
   return string(buff, (dl::size_type)strlen(buff));
 }
 
-OrFalse<string> f$vk_json_encode(const var &v) {
+Optional<string> f$vk_json_encode(const var &v) {
   return f$json_encode(v, 0, true);
 }
 

@@ -19,19 +19,19 @@ struct stream_functions {
 
   Stream (*stream_socket_client)(const string &url, int &error_number, string &error_description, double timeout, int flags, const var &context);
 
-  OrFalse<int> (*fwrite)(const Stream &stream, const string &data);
+  Optional<int> (*fwrite)(const Stream &stream, const string &data);
 
   int (*fseek)(const Stream &stream, int offset, int whence);
 
-  OrFalse<int> (*ftell)(const Stream &stream);
+  Optional<int> (*ftell)(const Stream &stream);
 
-  OrFalse<string> (*fread)(const Stream &stream, int length);
+  Optional<string> (*fread)(const Stream &stream, int length);
 
-  OrFalse<string> (*fgetc)(const Stream &stream);
+  Optional<string> (*fgetc)(const Stream &stream);
 
-  OrFalse<string> (*fgets)(const Stream &stream, int length);
+  Optional<string> (*fgets)(const Stream &stream, int length);
 
-  OrFalse<int> (*fpassthru)(const Stream &stream);
+  Optional<int> (*fpassthru)(const Stream &stream);
 
   bool (*fflush)(const Stream &stream);
 
@@ -39,9 +39,9 @@ struct stream_functions {
 
   bool (*fclose)(const Stream &stream);
 
-  OrFalse<string> (*file_get_contents)(const string &url);
+  Optional<string> (*file_get_contents)(const string &url);
 
-  OrFalse<int> (*file_put_contents)(const string &url, const string &content, int flags);
+  Optional<int> (*file_put_contents)(const string &url, const string &content, int flags);
 
   bool (*context_set_option)(var &context, const string &option, const var &value);
 
@@ -56,21 +56,21 @@ void register_stream_functions(const stream_functions *functions, bool is_defaul
 
 Stream f$fopen(const string &stream, const string &mode);
 
-OrFalse<int> f$fwrite(const Stream &stream, const string &text);
+Optional<int> f$fwrite(const Stream &stream, const string &text);
 
 int f$fseek(const Stream &stream, int offset, int whence = 0);
 
 bool f$rewind(const Stream &stream);
 
-OrFalse<int> f$ftell(const Stream &stream);
+Optional<int> f$ftell(const Stream &stream);
 
-OrFalse<string> f$fread(const Stream &stream, int length);
+Optional<string> f$fread(const Stream &stream, int length);
 
-OrFalse<string> f$fgetc(const Stream &stream);
+Optional<string> f$fgetc(const Stream &stream);
 
-OrFalse<string> f$fgets(const Stream &stream, int length = -1);
+Optional<string> f$fgets(const Stream &stream, int length = -1);
 
-OrFalse<int> f$fpassthru(const Stream &stream);
+Optional<int> f$fpassthru(const Stream &stream);
 
 bool f$fflush(const Stream &stream);
 
@@ -78,19 +78,19 @@ bool f$feof(const Stream &stream);
 
 bool f$fclose(const Stream &stream);
 
-OrFalse<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args);
+Optional<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args);
 
-OrFalse<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args);
+Optional<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args);
 
-OrFalse<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter = string(",", 1),
+Optional<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter = string(",", 1),
                        string enclosure = string("\"", 1), string escape_char = string("\\", 1));
 
-OrFalse<array<var>> f$fgetcsv(const Stream &stream, int length = 0, string delimiter = string(",", 1),
+Optional<array<var>> f$fgetcsv(const Stream &stream, int length = 0, string delimiter = string(",", 1),
                               string enclosure = string("\"", 1), string escape_char = string("\\", 1));
 
-OrFalse<string> f$file_get_contents(const string &stream);
+Optional<string> f$file_get_contents(const string &stream);
 
-OrFalse<int> f$file_put_contents(const string &stream, const var &content_var, int flags = 0);
+Optional<int> f$file_put_contents(const string &stream, const var &content_var, int flags = 0);
 
 
 var f$stream_context_create(const var &options = array<var>());
@@ -113,7 +113,7 @@ int f$stream_set_write_buffer(const Stream &stream, int size);
 
 int f$stream_set_read_buffer(const Stream &stream, int size);
 
-OrFalse<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec, int tv_usec = 0);
+Optional<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec, int tv_usec = 0);
 
 
 void init_streams_lib();

@@ -417,36 +417,36 @@ struct t_Maybe {
   };
 
   template<typename S>
-  struct need_OrFalse {
+  struct need_Optional {
     static constexpr bool value = std::is_same<S, int>::value || std::is_same<S, double>::value || std::is_same<S, string>::value
                                   || is_array<S>::value;
   };
 
-  static constexpr bool is_OrFalse = need_OrFalse<typename T::PhpType>::value;
-  // На текущий момент OrFalse не нужен если T::PhpType -- class_instance, bool, OrFalse или var (long (mixed в php-doc))
-  using PhpType = typename std::conditional<is_OrFalse, OrFalse<typename T::PhpType>, typename T::PhpType>::type;
+  static constexpr bool is_Optional = need_Optional<typename T::PhpType>::value;
+  // На текущий момент Optional не нужен если T::PhpType -- class_instance, bool, Optional или var (long (mixed в php-doc))
+  using PhpType = typename std::conditional<is_Optional, Optional<typename T::PhpType>, typename T::PhpType>::type;
 
   // C++11 if constexpr
   template<typename S>
-  typename std::enable_if<need_OrFalse<typename S::PhpType>::value, const typename S::PhpType &>::type
+  typename std::enable_if<need_Optional<typename S::PhpType>::value, const typename S::PhpType &>::type
   get_store_target(const PhpType &v) {
     return v.val();
   }
 
   template<typename S>
-  typename std::enable_if<!need_OrFalse<typename S::PhpType>::value, const typename S::PhpType &>::type
+  typename std::enable_if<!need_Optional<typename S::PhpType>::value, const typename S::PhpType &>::type
   get_store_target(const PhpType &v) {
     return v;
   }
 
   template<typename S>
-  typename std::enable_if<need_OrFalse<typename S::PhpType>::value, typename S::PhpType &>::type
+  typename std::enable_if<need_Optional<typename S::PhpType>::value, typename S::PhpType &>::type
   get_fetch_target(PhpType &v) {
     return v.ref();
   }
 
   template<typename S>
-  typename std::enable_if<!need_OrFalse<typename S::PhpType>::value, typename S::PhpType &>::type
+  typename std::enable_if<!need_Optional<typename S::PhpType>::value, typename S::PhpType &>::type
   get_fetch_target(PhpType &v) {
     return v;
   }

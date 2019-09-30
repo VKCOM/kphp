@@ -988,7 +988,7 @@ string f$rtrim(const string &s, const string &what) {
   return string(s.c_str(), len);
 }
 
-OrFalse<string> f$setlocale(int category, const string &locale) {
+Optional<string> f$setlocale(int category, const string &locale) {
   const char *loc = locale.c_str();
   if (locale[0] == '0' && locale.size() == 1) {
     loc = nullptr;
@@ -1251,7 +1251,7 @@ int f$strcmp(const string &lhs, const string &rhs) {
   return lhs.compare(rhs);
 }
 
-OrFalse<int> f$stripos(const string &haystack, const string &needle, int offset) {
+Optional<int> f$stripos(const string &haystack, const string &needle, int offset) {
   if (offset < 0) {
     php_warning("Wrong offset = %d in function stripos", offset);
     return false;
@@ -1499,7 +1499,7 @@ string f$strip_tags(const string &str, const string &allow) {
   return static_SB.str();
 }
 
-OrFalse<string> f$stristr(const string &haystack, const string &needle, bool before_needle) {
+Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle) {
   if ((int)needle.size() == 0) {
     php_warning("Parameter needle is empty in function stristr");
     return false;
@@ -1517,7 +1517,7 @@ OrFalse<string> f$stristr(const string &haystack, const string &needle, bool bef
   return haystack.substr(pos, haystack.size() - pos);
 }
 
-OrFalse<string> f$strrchr(const string &haystack, const string &needle) {
+Optional<string> f$strrchr(const string &haystack, const string &needle) {
   if (needle.empty()) {
     php_warning("Parameter needle is empty in function strrchr");
     return false;
@@ -1707,7 +1707,7 @@ int f$strnatcmp(const string &lhs, const string &rhs) {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
 
-OrFalse<string> f$strpbrk(const string &haystack, const string &char_list) {
+Optional<string> f$strpbrk(const string &haystack, const string &char_list) {
   const char *pos = strpbrk(haystack.c_str(), char_list.c_str());
   if (pos == nullptr) {
     return false;
@@ -1716,7 +1716,7 @@ OrFalse<string> f$strpbrk(const string &haystack, const string &char_list) {
   return string(pos, (dl::size_type)(haystack.size() - (pos - haystack.c_str())));
 }
 
-OrFalse<int> f$strpos(const string &haystack, const string &needle, int offset) {
+Optional<int> f$strpos(const string &haystack, const string &needle, int offset) {
   if (offset < 0) {
     php_warning("Wrong offset = %d in function strpos", offset);
     return false;
@@ -1744,7 +1744,7 @@ OrFalse<int> f$strpos(const string &haystack, const string &needle, int offset) 
   return (int)(s - haystack.c_str());
 }
 
-OrFalse<int> f$strrpos(const string &haystack, const string &needle, int offset) {
+Optional<int> f$strrpos(const string &haystack, const string &needle, int offset) {
   const char *end = haystack.c_str() + haystack.size();
   if (offset < 0) {
     offset += (int)haystack.size() + 1;
@@ -1773,7 +1773,7 @@ OrFalse<int> f$strrpos(const string &haystack, const string &needle, int offset)
   return (int)(s - haystack.c_str());
 }
 
-OrFalse<int> f$strripos(const string &haystack, const string &needle, int offset) {
+Optional<int> f$strripos(const string &haystack, const string &needle, int offset) {
   const char *end = haystack.c_str() + haystack.size();
   if (offset < 0) {
     offset += (int)haystack.size() + 1;
@@ -1813,7 +1813,7 @@ string f$strrev(const string &str) {
   return res;
 }
 
-OrFalse<string> f$strstr(const string &haystack, const string &needle, bool before_needle) {
+Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle) {
   if ((int)needle.size() == 0) {
     php_warning("Parameter needle is empty in function strstr");
     return false;
@@ -2110,7 +2110,7 @@ array<string> f$str_split(const string &str, int split_length) {
   return result;
 }
 
-OrFalse<string> f$substr(const string &str, int start, int length) {
+Optional<string> f$substr(const string &str, int start, int length) {
   int str_len = str.size();
 
   if (length < 0 && -length > str_len) {
@@ -2182,7 +2182,7 @@ int f$substr_count(const string &haystack, const string &needle, int offset, int
   } while (true);
 }
 
-OrFalse<string> f$substr_replace(const string &str, const string &replacement, int start, int length) {
+Optional<string> f$substr_replace(const string &str, const string &replacement, int start, int length) {
   int str_len = str.size();
 
   if (length < 0 && -length > str_len) {
@@ -2224,7 +2224,7 @@ OrFalse<string> f$substr_replace(const string &str, const string &replacement, i
   return str.substr(0, start).append(replacement).append(str.substr(start + length, str.size() - (start + length)));
 }
 
-OrFalse<int> f$substr_compare(const string &main_str, const string &str, int offset, int length /* = INT_MAX */, bool case_insensitivity /* = false */) {
+Optional<int> f$substr_compare(const string &main_str, const string &str, int offset, int length /* = INT_MAX */, bool case_insensitivity /* = false */) {
   int str_len = main_str.size();
 
   if (length < 0) {

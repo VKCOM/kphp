@@ -23,13 +23,13 @@ void TypeTagger::compile(CodeGenerator &W) const {
   std::set<std::string> sorted_types = {
     "bool",
     "int",
-    "OrFalse < int >",
+    "Optional < int >",
     "void",
     "thrown_exception",
     "var",
     "array< var >",
-    "OrFalse < string >",
-    "OrFalse < array< var > >",
+    "Optional < string >",
+    "Optional < array< var > >",
     "array< array< var > >",
     "class_instance<C$VK$TL$RpcResponse>",
     "array< class_instance<C$VK$TL$RpcResponse> >"

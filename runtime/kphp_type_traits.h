@@ -34,7 +34,7 @@ struct is_class_instance_inside<class_instance<I>> : std::true_type {
 };
 
 template<typename T>
-struct is_class_instance_inside<OrFalse<T>> : is_class_instance_inside<T> {
+struct is_class_instance_inside<Optional<T>> : is_class_instance_inside<T> {
 };
 
 template<typename T>

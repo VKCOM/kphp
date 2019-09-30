@@ -5,7 +5,7 @@
 string f$uniqid(const string &prefix = string(), bool more_entropy = false);
 
 
-OrFalse<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str);
+Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str);
 
 
 void f$sleep(const int &seconds);
@@ -31,7 +31,7 @@ var f$getimagesize(const string &name);
 
 int f$posix_getpid();
 int f$posix_getuid();
-OrFalse<array<var>> f$posix_getpwuid(int uid);
+Optional<array<var>> f$posix_getpwuid(int uid);
 
 
 string f$serialize(const var &v);
@@ -44,7 +44,7 @@ const unsigned int JSON_FORCE_OBJECT = 16;
 const unsigned int JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
 const unsigned int JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
-OrFalse<string> f$json_encode(const var &v, int options = 0, bool simple_encode = false);
+Optional<string> f$json_encode(const var &v, int options = 0, bool simple_encode = false);
 
 string f$vk_json_encode_safe(const var &v, bool simple_encode = true);
 

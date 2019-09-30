@@ -53,9 +53,9 @@ public:
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<std::decay_t<T>>::value>>
   inline var(T &&v);
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var(const OrFalse<T> &v);
+  inline var(const Optional<T> &v);
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var(OrFalse<T> &&v);
+  inline var(Optional<T> &&v);
 
   inline var &operator=(const var &other);
   inline var &operator=(var &&other);
@@ -63,9 +63,9 @@ public:
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<std::decay_t<T>>::value>>
   inline var &operator=(T &&v);
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var &operator=(const OrFalse<T> &v);
+  inline var &operator=(const Optional<T> &v);
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var &operator=(OrFalse<T> &&v);
+  inline var &operator=(Optional<T> &&v);
 
   inline var &assign(const char *other, int len);
 

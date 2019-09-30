@@ -543,7 +543,7 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
     // You could specify php-doc that some var is `Interface class` but always assign to that var only one class.
     // In this situation we will infer that type of this var is concrete class not Interface
     // create_less(cl->type_data, var);
-  } else if (assum == assum_instance_array) {     // cl[] <= var <= OrFalse<cl[]>
+  } else if (assum == assum_instance_array) {     // cl[] <= var <= Optional<cl[]>
     create_less(var, TypeData::create_array_type_data(cl->type_data, true));
     create_less(TypeData::create_array_type_data(cl->type_data), var);
   }

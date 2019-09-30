@@ -197,11 +197,11 @@ double f$abs(double v) {
   return std::abs(v);
 }
 
-int f$abs(const OrFalse<int> &v) {
+int f$abs(const Optional<int> &v) {
   return f$abs(val(v));
 }
 
-double f$abs(const OrFalse<double> &v) {
+double f$abs(const Optional<double> &v) {
   return f$abs(val(v));
 }
 

@@ -108,7 +108,7 @@ template<class T>
 bool f$array_key_exists(const var &v, const array<T> &a);
 
 template<class T1, class T2>
-bool f$array_key_exists(const OrFalse<T1> &v, const array<T2> &a);
+bool f$array_key_exists(const Optional<T1> &v, const array<T2> &a);
 
 template<class K, class T, class = vk::enable_if_in_list<K, vk::list_of_types<double, bool>>>
 bool f$array_key_exists(K, const array<T> &);
@@ -540,7 +540,7 @@ void extract_array_column_instance(array<class_instance<T>> &dest, const array<c
 }
 
 template<class T, class FunT, class ResT = vk::decay_function_arg_t<FunT, 0>>
-OrFalse<ResT> array_column_helper(const array<T> &a, var column_key, var index_key, FunT &&element_transformer) {
+Optional<ResT> array_column_helper(const array<T> &a, var column_key, var index_key, FunT &&element_transformer) {
   ResT result;
 
   if (!column_key.is_string() && !column_key.is_numeric()) {
@@ -569,13 +569,13 @@ OrFalse<ResT> array_column_helper(const array<T> &a, var column_key, var index_k
 }
 
 template<class T>
-OrFalse<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const var &column_key) {
+Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const var &column_key) {
   return array_column_helper(a, column_key, {}, extract_array_column_instance<T>);
 }
 
 template<class T>
-OrFalse<array<class_instance<T>>> f$array_column(const array<OrFalse<array<class_instance<T>>>> &a, const var &column_key) {
-  auto element_transformer = [] (array<class_instance<T>> &dest, const OrFalse<array<class_instance<T>>> &source, const var &column_key, const var &index_key) {
+Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>> &a, const var &column_key) {
+  auto element_transformer = [] (array<class_instance<T>> &dest, const Optional<array<class_instance<T>>> &source, const var &column_key, const var &index_key) {
     if (source.has_value()) {
       back_inserter_class_instance(dest, source.val(), column_key, index_key);
     }
@@ -585,14 +585,14 @@ OrFalse<array<class_instance<T>>> f$array_column(const array<OrFalse<array<class
 }
 
 template<class T>
-OrFalse<array<T>> f$array_column(const array<array<T>> &a, const var &column_key, const var &index_key = {}) {
+Optional<array<T>> f$array_column(const array<array<T>> &a, const var &column_key, const var &index_key = {}) {
   return array_column_helper(a, column_key, index_key, extract_array_column<T>);
 
 }
 
 template<class T>
-OrFalse<array<T>> f$array_column(const array<OrFalse<array<T>>> &a, const var &column_key, const var &index_key = {}) {
-  auto element_transformer = [] (array<T> &dest, const OrFalse<array<T>> &source, const var &column_key, const var &index_key) {
+Optional<array<T>> f$array_column(const array<Optional<array<T>>> &a, const var &column_key, const var &index_key = {}) {
+  auto element_transformer = [] (array<T> &dest, const Optional<array<T>> &source, const var &column_key, const var &index_key) {
     if (source.has_value()) {
       extract_array_column(dest, source.val(), column_key, index_key);
     }
@@ -601,7 +601,7 @@ OrFalse<array<T>> f$array_column(const array<OrFalse<array<T>>> &a, const var &c
   return array_column_helper(a, column_key, index_key, std::move(element_transformer));
 }
 
-inline OrFalse<array<var>> f$array_column(const array<var> &a, const var &column_key, const var &index_key = {}) {
+inline Optional<array<var>> f$array_column(const array<var> &a, const var &column_key, const var &index_key = {}) {
   auto element_transformer = [] (array<var> &dest, const var &source, const var &column_key, const var &index_key) {
     if (source.is_array()) {
       extract_array_column(dest, source.as_array(), column_key, index_key);
@@ -611,7 +611,7 @@ inline OrFalse<array<var>> f$array_column(const array<var> &a, const var &column
   return array_column_helper(a, column_key, index_key, std::move(element_transformer));
 }
 
-inline OrFalse<array<var>> f$array_column(const var &a, const var &column_key, const var &index_key = {}) {
+inline Optional<array<var>> f$array_column(const var &a, const var &column_key, const var &index_key = {}) {
   if (!a.is_array()) {
     php_warning("first parameter of array_column must be array");
     return false;
@@ -621,7 +621,7 @@ inline OrFalse<array<var>> f$array_column(const var &a, const var &column_key, c
 }
 
 template<class T>
-inline auto f$array_column(const OrFalse<T> &a, const var &column_key, const var &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+inline auto f$array_column(const Optional<T> &a, const var &column_key, const var &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   if (!a.has_value()) {
     php_warning("first parameter of array_column must be array");
     return false;
@@ -885,7 +885,7 @@ bool f$array_key_exists(const var &v, const array<T> &a) {
 }
 
 template<class T1, class T2>
-bool f$array_key_exists(const OrFalse<T1> &v, const array<T2> &a) {
+bool f$array_key_exists(const Optional<T1> &v, const array<T2> &a) {
   return f$array_key_exists(var(v), a);
 }
 

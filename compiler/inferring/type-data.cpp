@@ -630,7 +630,7 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
   const bool or_false = type->use_or_false() && tp != tp_bool;
 
   if (or_false) {
-    res += "OrFalse < ";
+    res += "Optional < ";
   }
 
   if (style == gen_out_style::tagger && (tp == tp_future || tp == tp_future_queue)) {

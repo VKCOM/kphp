@@ -86,7 +86,7 @@ var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& v$this);
 var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);
 
 template<class T>
-OrFalse<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
+Optional<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
 
 bool f$rpc_mc_set(const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
@@ -128,12 +128,12 @@ const int ENGINE_MC_GET_QUERY = 0x62408e9e;
 extern const char *mc_method;
 
 class rpc_mc_multiget_resumable : public Resumable {
-  using ReturnT = OrFalse<array<var>>;
+  using ReturnT = Optional<array<var>>;
 
   int queue_id;
   int first_request_id;
   int keys_n;
-  OrFalse<int> request_id;
+  Optional<int> request_id;
   array<string> query_names;
   array<var> result;
   bool return_false_if_not_found;
@@ -197,7 +197,7 @@ public:
 
 
 template<class T>
-OrFalse<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
+Optional<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
   mc_method = "multiget";
   resumable_finished = true;
 
@@ -285,5 +285,5 @@ OrFalse<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T>
     return result;
   }
 
-  return start_resumable<OrFalse<array<var>>>(new rpc_mc_multiget_resumable(queue_id, first_request_id, keys_n, query_names, return_false_if_not_found));
+  return start_resumable<Optional<array<var>>>(new rpc_mc_multiget_resumable(queue_id, first_request_id, keys_n, query_names, return_false_if_not_found));
 }

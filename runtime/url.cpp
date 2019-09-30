@@ -43,7 +43,7 @@ static const short base64_reverse_table[256] = {
 /* Function f$base64_decode ported from https://github.com/php/php-src/blob/master/ext/standard/base64.c#L130
  * "This product includes PHP software, freely available from <http://www.php.net/software/>".
 */
-OrFalse<string> f$base64_decode(const string &s, bool strict) {
+Optional<string> f$base64_decode(const string &s, bool strict) {
   /* run through the whole string, converting as we go */
   string::size_type result_len = (s.size() + 3) / 4 * 3;
   string result(result_len, false);

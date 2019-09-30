@@ -241,7 +241,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
           kphp_assert(child_type_expr);
           vk::tl::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
           kphp_assert(child_tl_type);
-          if (tl_gen::is_tl_type_wrapped_to_OrFalse(child_tl_type)) {
+          if (tl_gen::is_tl_type_wrapped_to_Optional(child_tl_type)) {
             inner_access.drop_class_instance = false;
             inner_access.inner_type_name = "InnerType";
           } else {

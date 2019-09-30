@@ -62,11 +62,11 @@ bool f$wait(int resumable_id, double timeout = -1.0);
 
 bool f$wait_multiple(int resumable_id);
 
-inline bool f$wait_synchronously(OrFalse<int> resumable_id) { return f$wait_synchronously(resumable_id.val());}
+inline bool f$wait_synchronously(Optional<int> resumable_id) { return f$wait_synchronously(resumable_id.val());}
 
-inline bool f$wait(OrFalse<int> resumable_id, double timeout = -1.0) { return f$wait(resumable_id.val(), timeout); }
+inline bool f$wait(Optional<int> resumable_id, double timeout = -1.0) { return f$wait(resumable_id.val(), timeout); }
 
-inline bool f$wait_multiple(OrFalse<int> resumable_id) { return f$wait_multiple(resumable_id.val());};
+inline bool f$wait_multiple(Optional<int> resumable_id) { return f$wait_multiple(resumable_id.val());};
 
 inline bool f$wait_multiple(const var &resumable_id) { return f$wait_multiple(resumable_id.to_int());};
 
@@ -106,9 +106,9 @@ int wait_queue_push_unsafe(int queue_id, int resumable_id);
 
 bool f$wait_queue_empty(int queue_id);
 
-OrFalse<int> f$wait_queue_next(int queue_id, double timeout = -1.0);
-OrFalse<int> wait_queue_next_synchronously(int queue_id);
-OrFalse<int> f$wait_queue_next_synchronously(int queue_id);
+Optional<int> f$wait_queue_next(int queue_id, double timeout = -1.0);
+Optional<int> wait_queue_next_synchronously(int queue_id);
+Optional<int> f$wait_queue_next_synchronously(int queue_id);
 
 void global_init_resumable_lib();
 
@@ -224,7 +224,7 @@ T f$wait_result(int resumable_id, double timeout = -1) {
 }
 
 template<typename T>
-T f$wait_result(OrFalse<int> resumable_id, double timeout = -1) {
+T f$wait_result(Optional<int> resumable_id, double timeout = -1) {
   return f$wait_result<T>(resumable_id.val(), timeout);
 }
 
@@ -261,7 +261,7 @@ public:
 };
 
 template<typename T>
-T f$wait_result_multi(const array<OrFalse<int>> &resumable_ids) {
+T f$wait_result_multi(const array<Optional<int>> &resumable_ids) {
   auto ids = array<int>::convert_from(resumable_ids);
   return f$wait_result_multi<T>(ids);
 }

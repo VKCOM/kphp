@@ -1666,16 +1666,16 @@ void array<T>::set_value(const var &v, const T &value) noexcept {
 }
 
 template<class T>
-template<class OrFalseT, class ...Args>
-void array<T>::emplace_value(const OrFalse<OrFalseT> &key, Args &&... args) noexcept {
+template<class OptionalT, class ...Args>
+void array<T>::emplace_value(const Optional<OptionalT> &key, Args &&... args) noexcept {
   switch (key.value_status()) {
-    case OrFalseOrNullState::has_value:
+    case OptionalState::has_value:
       set_value(key.val(), std::forward<Args>(args)...);
       return;
-    case OrFalseOrNullState::false_value:
+    case OptionalState::false_value:
       set_value(false, std::forward<Args>(args)...);
       return;
-    case OrFalseOrNullState::null_value:
+    case OptionalState::null_value:
       set_value(var{}, std::forward<Args>(args)...);
       return;
     default:
@@ -1684,14 +1684,14 @@ void array<T>::emplace_value(const OrFalse<OrFalseT> &key, Args &&... args) noex
 }
 
 template<class T>
-template<class OrFalseT>
-void array<T>::set_value(const OrFalse<OrFalseT> &key, T &&value) noexcept {
+template<class OptionalT>
+void array<T>::set_value(const Optional<OptionalT> &key, T &&value) noexcept {
   emplace_value(key, std::move(value));
 }
 
 template<class T>
-template<class OrFalseT>
-void array<T>::set_value(const OrFalse<OrFalseT> &key, const T &value) noexcept {
+template<class OptionalT>
+void array<T>::set_value(const Optional<OptionalT> &key, const T &value) noexcept {
   emplace_value(key, value);
 }
 

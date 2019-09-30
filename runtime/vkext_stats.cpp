@@ -146,7 +146,7 @@ static int decode_sample(void *buff, int len, sample_t *sample) {
   return 1;
 }
 
-OrFalse<string> f$vk_stats_decompress_sample(const string &s) {
+Optional<string> f$vk_stats_decompress_sample(const string &s) {
   int max_size = get_encoded_sample_max_size((void *)s.c_str(), s.size());
   if (max_size < 0) {
     return false;
@@ -174,7 +174,7 @@ int check_sample(sample_t *sample, int len) {
   return 1;
 }
 
-OrFalse<string> f$vk_stats_merge_samples(const array<var> &a) {
+Optional<string> f$vk_stats_merge_samples(const array<var> &a) {
   int max_size = -1;
   for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {
     if (!it.get_value().is_string()) {
@@ -212,7 +212,7 @@ OrFalse<string> f$vk_stats_merge_samples(const array<var> &a) {
   return result;
 }
 
-OrFalse<array<int>> f$vk_stats_parse_sample(const string &str) {
+Optional<array<int>> f$vk_stats_parse_sample(const string &str) {
   sample_t *s = (sample_t *)str.c_str();
   if (!check_sample(s, str.size())) {
     return false;
@@ -237,7 +237,7 @@ static int get_hll_size(const string &hll) {
   return hll[0] == HLL_PACK_CHAR ? (1 << 8) : (1 << (hll[1] - '0'));
 }
 
-OrFalse<string> f$vk_stats_hll_merge(const array<var> &a) {
+Optional<string> f$vk_stats_hll_merge(const array<var> &a) {
   string result;
   char *result_buff = 0;
   int result_len = -1;
@@ -310,7 +310,7 @@ static int unpack_hll(const string &hll, char *res) {
 }
 
 
-OrFalse<double> hll_count(const string &hll, int m) {
+Optional<double> hll_count(const string &hll, int m) {
   double pow_2_32 = (1LL << 32);
   double alpha_m = 0.7213 / (1.0 + 1.079 / m);
   char const *s;
@@ -355,7 +355,7 @@ OrFalse<double> hll_count(const string &hll, int m) {
 
 extern "C" void hll_add_shifted(unsigned char *a, int hll_size, long long value);
 
-OrFalse<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
+Optional<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
   if (!is_hll_unpacked(hll)) {
     return false;
   }
@@ -370,14 +370,14 @@ OrFalse<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
   return string(hll_buf, hll.size());
 }
 
-OrFalse<string> f$vk_stats_hll_create(const array<var> &a, int size) {
+Optional<string> f$vk_stats_hll_create(const array<var> &a, int size) {
   if (size != (1 << 8) && size != (1 << 14)) {
     return false;
   }
   return f$vk_stats_hll_add(string((string::size_type)size, (char)HLL_FIRST_RANK_CHAR), a);
 }
 
-OrFalse<double> f$vk_stats_hll_count(const string &hll) {
+Optional<double> f$vk_stats_hll_count(const string &hll) {
   int size = get_hll_size(hll);
   if (size == (1 << 8) || size == (1 << 14)) {
     return hll_count(hll, size);
@@ -411,14 +411,14 @@ string hll_pack(const string &s, int len) {
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-OrFalse<string> f$vk_stats_hll_pack(const string &hll) {
+Optional<string> f$vk_stats_hll_pack(const string &hll) {
   if (!is_hll_unpacked(hll)) {
     return false;
   }
   return hll_pack(hll, hll.size());
 }
 
-OrFalse<string> f$vk_stats_hll_unpack(const string &hll) {
+Optional<string> f$vk_stats_hll_unpack(const string &hll) {
   if (is_hll_unpacked(hll)) {
     return false;
   }

@@ -173,7 +173,7 @@ string f$dirname(const string &name) {
   return string(result_c_str, (dl::size_type)strlen(result_c_str));;
 }
 
-OrFalse<array<string>> f$file(const string &name) {
+Optional<array<string>> f$file(const string &name) {
   struct stat stat_buf;
   dl::enter_critical_section();//OK
   int file_fd = open_safe(name.c_str(), O_RDONLY);
@@ -235,7 +235,7 @@ bool f$file_exists(const string &name) {
   return result;
 }
 
-OrFalse<int> f$filesize(const string &name) {
+Optional<int> f$filesize(const string &name) {
   struct stat stat_buf;
   dl::enter_critical_section();//OK
   int file_fd = open(name.c_str(), O_RDONLY);
@@ -378,7 +378,7 @@ bool f$rename(const string &oldname, const string &newname) {
   return result;
 }
 
-OrFalse<string> f$realpath(const string &path) {
+Optional<string> f$realpath(const string &path) {
   char real_path[PATH_MAX];
 
   dl::enter_critical_section();//OK
@@ -393,7 +393,7 @@ OrFalse<string> f$realpath(const string &path) {
   return string(real_path, (dl::size_type)strlen(real_path));
 }
 
-static OrFalse<string> full_realpath(const string &path) { // realpath resolving only dirname to work with unexisted files
+static Optional<string> full_realpath(const string &path) { // realpath resolving only dirname to work with unexisted files
   static char full_realpath_cache_storage[sizeof(array<string>)];
   static array<string> *full_realpath_cache = reinterpret_cast <array<string> *> (full_realpath_cache_storage);
   static long long full_realpath_last_query_num = -1;
@@ -447,7 +447,7 @@ static OrFalse<string> full_realpath(const string &path) { // realpath resolving
   return false;
 }
 
-OrFalse<string> f$tempnam(const string &dir, const string &prefix) {
+Optional<string> f$tempnam(const string &dir, const string &prefix) {
   string prefix_new = f$basename(prefix);
   prefix_new.shrink(5);
   if (prefix_new.empty()) {
@@ -455,7 +455,7 @@ OrFalse<string> f$tempnam(const string &dir, const string &prefix) {
   }
 
   string dir_new;
-  OrFalse<string> dir_real;
+  Optional<string> dir_real;
   if (dir.empty() || !f$boolval(dir_real = f$realpath(dir))) {
     dl::enter_critical_section();//OK
     const char *s = getenv("TMPDIR");
@@ -516,7 +516,7 @@ bool f$unlink(const string &name) {
   return result;
 }
 
-OrFalse<array<string>> f$scandir(const string &directory) {
+Optional<array<string>> f$scandir(const string &directory) {
   dirent **namelist;
   int namelist_size = scandir(directory.c_str(), &namelist, nullptr, alphasort);
   if (namelist_size < 0) {
@@ -546,13 +546,13 @@ static long long opened_files_last_query_num = -1;
 static bool file_fclose(const Stream &stream);
 
 static FILE *get_file(const Stream &stream) {
-  OrFalse<string> filename_or_false = full_realpath(stream.to_string());
-  if (!f$boolval(filename_or_false)) {
+  Optional<string> filename_optional = full_realpath(stream.to_string());
+  if (!f$boolval(filename_optional)) {
     php_warning("Wrong file \"%s\" specified", stream.to_string().c_str());
     return nullptr;
   }
 
-  string filename = filename_or_false.val();
+  string filename = filename_optional.val();
   if (dl::query_num != opened_files_last_query_num || !opened_files->has_key(filename)) {
     php_warning("File \"%s\" is not opened", filename.c_str());
   }
@@ -567,12 +567,12 @@ static Stream file_fopen(const string &filename, const string &mode) {
     opened_files_last_query_num = dl::query_num;
   }
 
-  OrFalse<string> real_filename_or_false = full_realpath(filename);
-  if (!f$boolval(real_filename_or_false)) {
+  Optional<string> real_filename_optional = full_realpath(filename);
+  if (!f$boolval(real_filename_optional)) {
     php_warning("Wrong file \"%s\" specified", filename.c_str());
     return false;
   }
-  string real_filename = real_filename_or_false.val();
+  string real_filename = real_filename_optional.val();
   if (opened_files->has_key(real_filename)) {
     php_warning("File \"%s\" already opened. Closing previous one", real_filename.c_str());
     file_fclose(real_filename);
@@ -591,7 +591,7 @@ static Stream file_fopen(const string &filename, const string &mode) {
   return real_filename;
 }
 
-static OrFalse<int> file_fwrite(const Stream &stream, const string &text) {
+static Optional<int> file_fwrite(const Stream &stream, const string &text) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -631,7 +631,7 @@ static int file_fseek(const Stream &stream, int offset, int whence) {
   return res;
 }
 
-static OrFalse<int> file_ftell(const Stream &stream) {
+static Optional<int> file_ftell(const Stream &stream) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -643,7 +643,7 @@ static OrFalse<int> file_ftell(const Stream &stream) {
   return result;
 }
 
-static OrFalse<string> file_fread(const Stream &stream, int length) {
+static Optional<string> file_fread(const Stream &stream, int length) {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
     return false;
@@ -669,7 +669,7 @@ static OrFalse<string> file_fread(const Stream &stream, int length) {
   return res;
 }
 
-static OrFalse<string> file_fgetc(const Stream &stream) {
+static Optional<string> file_fgetc(const Stream &stream) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -691,7 +691,7 @@ static OrFalse<string> file_fgetc(const Stream &stream) {
   return string(1, static_cast<char>(result));
 }
 
-static OrFalse<string> file_fgets(const Stream &stream, int length) {
+static Optional<string> file_fgets(const Stream &stream, int length) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -719,7 +719,7 @@ static OrFalse<string> file_fgets(const Stream &stream, int length) {
   return res;
 }
 
-static OrFalse<int> file_fpassthru(const Stream &stream) {
+static Optional<int> file_fpassthru(const Stream &stream) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -766,12 +766,12 @@ static bool file_feof(const Stream &stream) {
 }
 
 static bool file_fclose(const Stream &stream) {
-  OrFalse<string> filename_or_false = full_realpath(stream.to_string());
-  if (!f$boolval(filename_or_false)) {
+  Optional<string> filename_optional = full_realpath(stream.to_string());
+  if (!f$boolval(filename_optional)) {
     php_warning("Wrong file \"%s\" specified", stream.to_string().c_str());
     return false;
   }
-  string filename = filename_or_false.val();
+  string filename = filename_optional.val();
   if (dl::query_num == opened_files_last_query_num && opened_files->has_key(filename)) {
     dl::enter_critical_section();//NOT OK: opened_files
     int result = fclose(opened_files->get_value(filename));
@@ -783,7 +783,7 @@ static bool file_fclose(const Stream &stream) {
 }
 
 
-OrFalse<string> file_file_get_contents(const string &name) {
+Optional<string> file_file_get_contents(const string &name) {
   dl::size_type offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;
@@ -832,7 +832,7 @@ OrFalse<string> file_file_get_contents(const string &name) {
   return res;
 }
 
-static OrFalse<int> file_file_put_contents(const string &name, const string &content, int flags) {
+static Optional<int> file_file_put_contents(const string &name, const string &content, int flags) {
   dl::size_type offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;

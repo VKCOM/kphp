@@ -281,12 +281,12 @@ public:
   void set_value(const var &v, const T &value) noexcept;
 
 
-  template<class OrFalseT, class ...Args>
-  void emplace_value(const OrFalse<OrFalseT> &key, Args &&... args) noexcept;
-  template<class OrFalseT>
-  void set_value(const OrFalse<OrFalseT> &key, T &&value) noexcept;
-  template<class OrFalseT>
-  void set_value(const OrFalse<OrFalseT> &key, const T &value) noexcept;
+  template<class OptionalT, class ...Args>
+  void emplace_value(const Optional<OptionalT> &key, Args &&... args) noexcept;
+  template<class OptionalT>
+  void set_value(const Optional<OptionalT> &key, T &&value) noexcept;
+  template<class OptionalT>
+  void set_value(const Optional<OptionalT> &key, const T &value) noexcept;
 
   void set_value(const const_iterator &it);
   void set_value(const iterator &it);

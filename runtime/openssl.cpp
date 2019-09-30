@@ -141,7 +141,7 @@ string f$md5(const string &s, bool raw_output) {
   return res;
 }
 
-OrFalse<string> f$md5_file(const string &file_name, bool raw_output) {
+Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   dl::enter_critical_section();//OK
   struct stat stat_buf;
   int read_fd = open(file_name.c_str(), O_RDONLY);
@@ -443,8 +443,8 @@ bool f$openssl_private_decrypt(const string &data, var &result, const string &ke
   return false;
 }
 
-OrFalse<string> f$openssl_pkey_get_private(const string &key, const string &passphrase) {
-  OrFalse<string> result = false;
+Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase) {
+  Optional<string> result = false;
   dl::enter_critical_section(); // NOT OK: openssl_pkey
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_private_evp(key, passphrase, from_cache)) {
@@ -456,8 +456,8 @@ OrFalse<string> f$openssl_pkey_get_private(const string &key, const string &pass
   return result;
 }
 
-OrFalse<string> f$openssl_pkey_get_public(const string &key) {
-  OrFalse<string> result = false;
+Optional<string> f$openssl_pkey_get_public(const string &key) {
+  Optional<string> result = false;
   dl::enter_critical_section(); // NOT OK: openssl_pkey
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache)) {
@@ -599,7 +599,7 @@ int f$openssl_verify(const string &data, const string &signature, const string &
   return err;
 }
 
-OrFalse<string> f$openssl_random_pseudo_bytes(int length) {
+Optional<string> f$openssl_random_pseudo_bytes(int length) {
   if (length <= 0) {
     return false;
   }
@@ -688,7 +688,7 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
   string capath = GET_OPTION("capath").to_string();
   string cipher_list = GET_OPTION("ciphers").to_string();
   string local_cert = GET_OPTION("local_cert").to_string();
-  OrFalse<string> local_cert_file_path = local_cert.empty() ? false : f$realpath(local_cert);
+  Optional<string> local_cert_file_path = local_cert.empty() ? false : f$realpath(local_cert);
 #undef GET_OPTION
 
   if (host.empty()) {
@@ -980,7 +980,7 @@ static bool process_ssl_error(ssl_connection *c, int result) {
   }
 }
 
-static OrFalse<int> ssl_fwrite(const Stream &stream, const string &data) {
+static Optional<int> ssl_fwrite(const Stream &stream, const string &data) {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr || c->sock == -1) {
     return false;
@@ -1016,7 +1016,7 @@ static OrFalse<int> ssl_fwrite(const Stream &stream, const string &data) {
   }
 }
 
-static OrFalse<string> ssl_fread(const Stream &stream, int length) {
+static Optional<string> ssl_fread(const Stream &stream, int length) {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
     return false;
@@ -1290,7 +1290,7 @@ public:
     return res;
   }
 
-  OrFalse<array<var>> parse(bool shortnames = true) const {
+  Optional<array<var>> parse(bool shortnames = true) const {
     if (!x509_) {
       return false;
     }
@@ -1390,7 +1390,7 @@ private:
   X509_ptr x509_;
 };
 
-OrFalse<array<var>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
+Optional<array<var>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
   return X509_parser(data).parse(shortnames);
 }
 
@@ -1477,7 +1477,7 @@ struct CipherCtx {
 
   bool update(string data) {
     if (action_ == decrypt && !(options_ & OPENSSL_RAW_DATA)) {
-      OrFalse<string> decoding_data = f$base64_decode(data, true);
+      Optional<string> decoding_data = f$base64_decode(data, true);
       if (!decoding_data.has_value()) {
         php_warning("Failed to base64 decode the input");
         return false;
@@ -1547,7 +1547,7 @@ void openssl_add_method(const EVP_CIPHER *cipher_type, const char *from, const c
   }
 }
 
-OrFalse<string> eval_cipher(CipherCtx::cipher_action action, const string &data, const string &method,
+Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data, const string &method,
                             const string &key, int options, const string &iv) {
   CipherCtx cipher{method, options, action};
   if (cipher && cipher.init(key, iv) && cipher.update(data) && cipher.finalize()) {
@@ -1566,7 +1566,7 @@ array<string> f$openssl_get_cipher_methods(bool aliases) {
   return return_value;
 }
 
-OrFalse<int> f$openssl_cipher_iv_length(const string &method) {
+Optional<int> f$openssl_cipher_iv_length(const string &method) {
   if (method.empty()) {
     php_warning("Unknown cipher algorithm");
     return false;
@@ -1579,10 +1579,10 @@ OrFalse<int> f$openssl_cipher_iv_length(const string &method) {
   return EVP_CIPHER_iv_length(cipher_type);
 }
 
-OrFalse<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
+Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
   return eval_cipher(CipherCtx::encrypt, data, method, key, options, iv);
 }
 
-OrFalse<string> f$openssl_decrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
+Optional<string> f$openssl_decrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
   return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv);
 }

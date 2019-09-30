@@ -21,4 +21,4 @@ class string;
 class string_buffer;
 
 template<typename T>
-class OrFalse;
+class Optional;
