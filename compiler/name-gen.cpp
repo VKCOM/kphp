@@ -129,7 +129,7 @@ string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused
  */
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   if (auto klass = resolve_class_of_arrow_access(function, arrow_call)) {
-    if (auto method = klass->get_instance_method(arrow_call->get_string())) {
+    if (auto method = klass->get_instance_method(get_local_name_from_global_$$(arrow_call->get_string()))) {
       return method->function->name;
     }
   }
