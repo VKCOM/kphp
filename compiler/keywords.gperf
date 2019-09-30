@@ -76,6 +76,9 @@ null, tok_null
 xor, tok_log_xor_let
 and, tok_log_and_let
 or, tok_log_or_let
+XOR, tok_log_xor_let
+AND, tok_log_and_let
+OR, tok_log_or_let
 define, tok_define
 DEFINE, tok_define
 defined, tok_defined
