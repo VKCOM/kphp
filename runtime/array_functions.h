@@ -110,6 +110,8 @@ bool f$array_key_exists(const var &v, const array<T> &a);
 template<class T1, class T2>
 bool f$array_key_exists(const OrFalse<T1> &v, const array<T2> &a);
 
+template<class K, class T, class = vk::enable_if_in_list<K, vk::list_of_types<double, bool>>>
+bool f$array_key_exists(K, const array<T> &);
 
 template<class T, class T1>
 typename array<T>::key_type f$array_search(const T1 &val, const array<T> &a, bool strict = false);
@@ -876,6 +878,9 @@ bool f$array_key_exists(const string &string_key, const array<T> &a) {
 
 template<class T>
 bool f$array_key_exists(const var &v, const array<T> &a) {
+  if (!v.is_int() && !v.is_string() && !v.is_null()) {
+    return false;
+  }
   return a.has_key(v);
 }
 
@@ -884,6 +889,10 @@ bool f$array_key_exists(const OrFalse<T1> &v, const array<T2> &a) {
   return f$array_key_exists(var(v), a);
 }
 
+template<class K, class T, class>
+bool f$array_key_exists(K, const array<T> &) {
+  return false;
+}
 
 template<class T, class T1>
 typename array<T>::key_type f$array_search(const T1 &val, const array<T> &a, bool strict) {
