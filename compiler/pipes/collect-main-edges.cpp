@@ -369,7 +369,7 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
       if (var->var_id->is_constant()) {
         continue;
       }
-      if (ifi_tp == ifi_unset || ifi_tp == ifi_isset || ifi_tp == ifi_is_null) {
+      if (ifi_tp == ifi_unset || ifi_tp == ifi_isset) {
         create_set(var, tp_var);
       }
     }

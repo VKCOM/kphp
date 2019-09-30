@@ -258,6 +258,10 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_instance_cache_store_call(call);
     } else if (function_name == "instance_to_array") {
       check_instance_to_array_call(call);
+    } else if (function_name == "is_null") {
+      const TypeData *arg_type = tinf::get_type(call->args()[0]);
+      kphp_error(arg_type->get_real_ptype() == tp_var,
+                 format("is_null() will be always false for %s", type_out(arg_type).c_str()));
     }
   }
 
