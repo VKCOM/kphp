@@ -7,6 +7,7 @@
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
+#include "compiler/vertex.h"
 
 enum class ClassType {
   klass,
@@ -76,13 +77,15 @@ public:
   void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
 
+  static auto gen_param_this(Location location) {
+    return VertexAdaptor<op_func_param>::create(gen_vertex_this(location));
+  }
+
   // function fname(args) => function fname($this ::: class_instance, args)
   template<Operation Op>
   static void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
     static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
-    auto vertex_this = gen_vertex_this(location);
-    auto param_this = VertexAdaptor<op_func_param>::create(vertex_this);
-    params_next.emplace(params_next.begin(), param_this);
+    params_next.emplace(params_next.begin(), gen_param_this(location));
   }
 
 

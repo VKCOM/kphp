@@ -11,7 +11,6 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex.h"
 #include "common/termformat/termformat.h"
 #include "common/wrappers/string_view.h"
 
@@ -95,9 +94,7 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
 FunctionPtr ClassData::add_virt_clone() {
   std::string clone_func_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
 
-  std::vector<VertexAdaptor<meta_op_func_param>> params;
-  patch_func_add_this(params, Location{});
-  auto param_list = VertexAdaptor<op_func_param_list>::create(params);
+  auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
 
   VertexAdaptor<op_seq> body;
   if (!modifiers.is_abstract()) {
@@ -134,9 +131,8 @@ void ClassData::create_default_constructor(Location location, DataStream<Functio
 
 void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   std::string func_name = replace_backslashes(name) + "$$" + NAME_OF_CONSTRUCT;
-  auto params = func->params()->get_next();
-  patch_func_add_this(params, func->get_location());
-  func->params_ref() = VertexAdaptor<op_func_param_list>::create(std::move(params));
+  auto this_param = gen_param_this(func->get_location());
+  func->params_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->params()->params());
 
   GenTree::func_force_return(func, gen_vertex_this(func->location));
 
