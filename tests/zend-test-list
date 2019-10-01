@@ -74,6 +74,7 @@ Zend/tests/bug69871.phpt
 Zend/tests/bug69893.phpt
 Zend/tests/bug70121.phpt
 Zend/tests/bug70478.phpt
+Zend/tests/bug70804.phpt
 Zend/tests/bug70958.phpt
 Zend/tests/bug71470.phpt
 Zend/tests/bug71756.phpt
@@ -85,6 +86,7 @@ Zend/tests/bug72543.phpt
 Zend/tests/bug74810.phpt
 Zend/tests/bug78271.phpt
 Zend/tests/class_properties_dynamic.phpt
+Zend/tests/closure_006.phpt
 Zend/tests/closure_008.phpt
 Zend/tests/closure_021.phpt
 Zend/tests/closure_037.phpt
@@ -130,17 +132,21 @@ Zend/tests/self_mod.phpt
 Zend/tests/shift_001.phpt
 Zend/tests/shift_002.phpt
 Zend/tests/str_offset_001.phpt
+Zend/tests/str_offset_003.phpt
 Zend/tests/temporary_cleaning_008.phpt
 Zend/tests/ternary_associativity.phpt
 Zend/tests/traits/bug55372.phpt
 Zend/tests/traits/bug74607a.phpt
+Zend/tests/traits/bugs/abstract-methods03.phpt
 Zend/tests/traits/bugs/overridding-conflicting-methods.phpt
 Zend/tests/traits/conflict002.phpt
 Zend/tests/traits/flattening001.phpt
+Zend/tests/traits/flattening002.phpt
 Zend/tests/traits/inheritance001.phpt
 Zend/tests/traits/inheritance002.phpt
 Zend/tests/traits/interface_001.phpt
 Zend/tests/traits/language001.phpt
+Zend/tests/traits/language006.phpt
 Zend/tests/traits/language007.phpt
 Zend/tests/traits/language012.phpt
 Zend/tests/traits/language013.phpt
@@ -398,6 +404,7 @@ ext/standard/tests/math/bug28228.phpt
 ext/standard/tests/math/bug30069.phpt
 ext/standard/tests/math/bug30695.phpt
 ext/standard/tests/math/bug45712.phpt
+ext/standard/tests/math/ceil_basic.phpt
 ext/standard/tests/math/cos_variation.phpt
 ext/standard/tests/math/deg2rad_variation.phpt
 ext/standard/tests/math/exp_basic.phpt
