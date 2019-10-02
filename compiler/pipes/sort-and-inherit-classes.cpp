@@ -4,6 +4,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
@@ -55,42 +56,6 @@ public:
 TSHashTable<SortAndInheritClassesF::wait_list> SortAndInheritClassesF::ht;
 
 namespace {
-/**
- * Imagine situation:
- * class B { public function foo() {} }
- *
- * class D extends B {}
- *
- * class DD extends D { public function foo() {} }
- * class DD2 extends D { public function foo() {} }
- *
- * in class D we need generate virtual method `foo` for choosing appropriate derived class
- */
-void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<FunctionPtr> &os) {
-  auto method_klass = method->class_id;
-  for (auto parent = method_klass->parent_class; parent; parent = parent->parent_class) {
-    if (parent->is_interface() || parent->members.get_instance_method(method->local_name())) {
-      return;
-    }
-
-    auto method_in_ancestor = parent->get_instance_method(method->local_name())->function;
-
-    kphp_error(!method_in_ancestor->modifiers.is_abstract() || parent->modifiers.is_abstract(),
-      fmt_format("class: {}, must be declared abstract because of the method: {}", parent->name, method_in_ancestor->get_human_readable_name()));
-
-    auto new_name = parent->name + "$$" + method->local_name();
-
-    auto empty_parent_method_vertex = VertexAdaptor<op_function>::create(method->root->params().clone(), VertexAdaptor<op_seq>::create());
-    auto empty_parent_method = FunctionData::clone_from(new_name, method, empty_parent_method_vertex);
-    parent->members.add_instance_method(empty_parent_method);
-
-    empty_parent_method->is_virtual_method = true;
-    empty_parent_method->is_overridden_method = true;
-
-    G->register_and_require_function(empty_parent_method, os, true);
-  }
-}
-
 void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<FunctionPtr> &os) {
   auto find_virtual_overridden = [&](ClassMemberInstanceMethod &method) {
     if (!method.function || method.function->is_constructor() || method.function->modifiers.is_private()) {
@@ -108,10 +73,9 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
                    fmt_format("Can not change access type for method: {}", method.function->get_human_readable_name()));
 
         method.function->is_overridden_method = true;
-        generate_empty_virtual_method_in_parents(method.function, os);
 
         if (!parent_function->root->cmd()->empty()) {
-          parent_function->move_virtual_to_self_method();
+          parent_function->move_virtual_to_self_method(os);
           parent_function->is_virtual_method = true;
         }
 
@@ -155,7 +119,7 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
   }
 
   auto new_root = from->root.clone();
-  auto cloned_fun = FunctionData::clone_from(replace_backslashes(to_class->name) + "$$" + get_local_name_from_global_$$(from->name), from, new_root);
+  auto cloned_fun = FunctionData::clone_from(replace_backslashes(to_class->name) + "$$" + from->local_name(), from, new_root);
   if (from->modifiers.is_instance()) {
     to_class->members.add_instance_method(cloned_fun);
   } else if (from->modifiers.is_static()) {
@@ -451,17 +415,24 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 }
 
 void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
-  DataStream<FunctionPtr> generated_empty_methods_in_parent{true};
-  std::vector<ClassPtr> polymorphic_classes;
-  for (auto c : G->get_classes()) {
+  DataStream<FunctionPtr> generated_self_methods{true};
+  auto classes = G->get_classes();
+  for (auto c : classes) {
     auto node = ht.at(vk::std_hash(c->name));
     kphp_error(node->data.done, fmt_format("class `{}` has unresolved dependencies", c->name));
     kphp_error_return(c->implements.empty() || !c->parent_class,
-      fmt_format("You may not `extends` and `implements` simultaneously, class: {}", c->name));
+                      fmt_format("You may not `extends` and `implements` simultaneously, class: {}", c->name));
 
+    if (!c->is_builtin() && c->is_polymorphic_class()) {
+      auto virt_clone = c->add_virt_clone();
+      G->register_and_require_function(virt_clone, generated_self_methods, true);
+    }
+  }
+
+  for (auto c : classes) {
     bool is_top_of_hierarchy = !c->get_parent_or_interface() && !c->derived_classes.empty();
     if (is_top_of_hierarchy) {
-      mark_virtual_and_overridden_methods(c, generated_empty_methods_in_parent);
+      mark_virtual_and_overridden_methods(c, generated_self_methods);
     }
 
     if (c->parent_class) {
@@ -475,21 +446,13 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       });
     }
 
-    if (!c->is_builtin() && c->is_polymorphic_class()) {
-      polymorphic_classes.emplace_back(c);
-    }
-
     // For stable code generation of polymorphic classes body
     std::sort(c->derived_classes.begin(), c->derived_classes.end());
   }
 
   stage::die_if_global_errors();
-  for (auto c : polymorphic_classes) {
-      auto virt_clone = c->add_virt_clone();
-      G->register_and_require_function(virt_clone, generated_empty_methods_in_parent, true);
-  }
 
-  for (auto fun : generated_empty_methods_in_parent.flush()) {
+  for (auto fun : generated_self_methods.flush()) {
     os << fun;
   }
 }

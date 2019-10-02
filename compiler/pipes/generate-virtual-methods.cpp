@@ -11,7 +11,7 @@ void GenerateVirtualMethods::execute(FunctionPtr function, DataStream<FunctionPt
   kphp_assert(function);
 
   if (function->is_virtual_method) {
-    generate_body_of_virtual_method(function, os);
+    generate_body_of_virtual_method(function);
   }
 
   if (stage::has_error()) {

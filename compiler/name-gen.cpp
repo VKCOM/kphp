@@ -116,7 +116,11 @@ string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused
  */
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   if (auto klass = resolve_class_of_arrow_access(function, arrow_call)) {
-    if (auto method = klass->get_instance_method(get_local_name_from_global_$$(arrow_call->get_string()))) {
+    vk::string_view name_of_func_called{arrow_call->get_string()};
+    if (name_of_func_called.starts_with(replace_backslashes(klass->name))) {
+      name_of_func_called = name_of_func_called.substr(klass->name.size() + strlen("$$"));
+    }
+    if (auto method = klass->get_instance_method(name_of_func_called)) {
       return method->function->name;
     }
   }

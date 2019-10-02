@@ -142,7 +142,7 @@ public:
                                                   std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda,
                                                   FunctionPtr already_created_function = FunctionPtr{});
 
-  static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function);
+  static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function, vk::string_view function_name);
 
   VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
   void parse_extends_implements();

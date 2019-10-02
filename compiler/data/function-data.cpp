@@ -128,17 +128,18 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
   return res_params;
 }
 
-void FunctionData::move_virtual_to_self_method() {
+void FunctionData::move_virtual_to_self_method(DataStream<FunctionPtr> &os) {
   auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
   auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
-  self_function->is_virtual_method = false;
   class_id->members.safe_add_instance_method(self_function);
+  self_function->is_virtual_method = false;
 
   root->cmd_ref() = VertexAdaptor<op_seq>::create();
+  G->register_and_require_function(self_function, os, true);
 }
 
 std::string FunctionData::get_name_of_self_method(vk::string_view name) {
-  return std::string{name} + "$self";
+  return std::string{name} + "_self$";
 }
 
 std::string FunctionData::get_name_of_self_method() const {

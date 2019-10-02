@@ -1192,8 +1192,8 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
       } else {
         VertexPtr key_val = GenTree::get_actual_value(key);
         if (tp == tp_string && key_val->type() == op_string) {
-          string key = key_val.as<op_string>()->str_val;
-          if (php_is_int(key.c_str(), (int)key.size())) {
+          const string &key_str = key_val.as<op_string>()->str_val;
+          if (php_is_int(key_str.c_str(), (int)key_str.size())) {
             int_cnt++;
           } else {
             string_cnt++;

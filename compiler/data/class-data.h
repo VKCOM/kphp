@@ -7,6 +7,7 @@
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 #include "common/algorithms/hashes.h"
 
@@ -147,6 +148,8 @@ public:
     return nullptr;
   }
 
+  std::vector<ClassPtr> get_all_inheritors() const;
+
   bool is_builtin() const;
   bool is_polymorphic_or_has_polymorphic_member() const;
   static bool does_need_codegen(ClassPtr c);
@@ -166,10 +169,10 @@ private:
   bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 
   template<class MemberT>
-  const MemberT *find_by_local_name(vk::string_view name) const {
+  const MemberT *find_by_local_name(vk::string_view local_name) const {
     for (auto klass = get_self(); klass; klass = klass->get_parent_or_interface()) {
       AutoLocker<Lockable *> locker(&(*klass));
-      if (auto member = klass->members.find_by_local_name<MemberT>(name)) {
+      if (auto member = klass->members.find_by_local_name<MemberT>(local_name)) {
         return member;
       }
     }

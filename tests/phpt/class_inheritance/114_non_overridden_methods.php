@@ -1,5 +1,5 @@
 @kphp_should_fail
-/must be declared abstract/
+/You should override abstract method/
 <?php
 
 abstract class A {

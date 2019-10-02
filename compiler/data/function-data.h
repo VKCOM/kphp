@@ -9,6 +9,7 @@
 #include "compiler/data/function-modifiers.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/var-node.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 #include "auto/compiler/vertex/vertex-op_function.h"
 #include "common/mixin/not_copyable.h"
@@ -132,7 +133,7 @@ public:
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
-  void move_virtual_to_self_method();
+  void move_virtual_to_self_method(DataStream<FunctionPtr> &os);
   static std::string get_name_of_self_method(vk::string_view name);
   std::string get_name_of_self_method() const;
 

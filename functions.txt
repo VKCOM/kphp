@@ -132,6 +132,7 @@ function set_server_status ($status ::: string) ::: bool;
 function error_get_last() ::: var;
 function error_reporting ($e ::: int = TODO) ::: int;
 function warning ($message ::: string) ::: void;
+function critical_error($message ::: string) ::: void;
 function register_kphp_on_warning_callback(callback($warning_message ::: string, $stacktrace ::: string[]) ::: void) ::: void;
 
 function ini_get ($s ::: string) ::: string | false;

@@ -112,7 +112,6 @@ FunctionPtr ClassData::add_virt_clone() {
   virt_clone_func_ptr->assumptions_inited_return = 2;
   virt_clone_func_ptr->assumption_for_return = Assumption{AssumType::assum_instance, {}, ClassPtr{this}};
   virt_clone_func_ptr->is_inline = true;
-  virt_clone_func_ptr->is_virtual_method = !derived_classes.empty();
   virt_clone_func_ptr->modifiers = FunctionModifiers::instance_public();
 
   members.add_instance_method(virt_clone_func_ptr);
@@ -228,6 +227,15 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {
   this_var->is_const = true;
 
   return this_var;
+}
+
+std::vector<ClassPtr> ClassData::get_all_inheritors() const {
+  std::vector<ClassPtr> inheritors{get_self()};
+  for (int last_derived_indx = 0; last_derived_indx != inheritors.size(); ++last_derived_indx) {
+    auto &new_derived = inheritors[last_derived_indx]->derived_classes;
+    inheritors.insert(inheritors.end(), new_derived.begin(), new_derived.end());
+  }
+  return inheritors;
 }
 
 bool ClassData::is_builtin() const {

@@ -1,29 +1,27 @@
 #include "compiler/data/virtual-method-generator.h"
 
-#include "common/termformat/termformat.h"
+#include <queue>
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
+#include "compiler/debug.h"
 #include "compiler/gentree.h"
 #include "compiler/stage.h"
+#include "common/termformat/termformat.h"
 
 namespace {
 
-template<Operation op>
-VertexAdaptor<op> create_call_with_var_and_class_name_params(VertexAdaptor<op_var> instance_var, ClassPtr klass) {
+VertexAdaptor<op_func_call> create_call_with_var_and_class_name_params(VertexAdaptor<op_var> instance_var, ClassPtr klass) {
   auto class_name = VertexAdaptor<op_func_name>::create();
   class_name->set_string("\\" + klass->name + "::class");
 
-  return VertexAdaptor<op>::create(instance_var, class_name);
-}
-
-VertexAdaptor<op_instanceof> create_instanceof(VertexAdaptor<op_var> instance_var, ClassPtr derived) {
-  return create_call_with_var_and_class_name_params<op_instanceof>(instance_var, derived);
+  return VertexAdaptor<op_func_call>::create(instance_var, class_name);
 }
 
 VertexAdaptor<op_func_call> create_instance_cast_to(VertexAdaptor<op_var> instance_var, ClassPtr derived) {
-  auto cast_to_derived = create_call_with_var_and_class_name_params<op_func_call>(instance_var, derived);
+  auto cast_to_derived = create_call_with_var_and_class_name_params(instance_var, derived);
   cast_to_derived->set_string("instance_cast");
   return cast_to_derived;
 }
@@ -32,13 +30,8 @@ template<class ClassMemberMethod>
 bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
   stage::set_line(get_location(interface_function->root).line);
   if (!interface_method_in_derived) {
-    if (context_class->modifiers.is_abstract()) {
-      return true;
-    }
-    kphp_error(false, fmt_format("You should override abstract method: `{}` in class: `{}`",
-                                 interface_function->get_human_readable_name(),
-                                 context_class->name));
-    return false;
+    kphp_assert(context_class->modifiers.is_abstract());
+    return true;
   }
 
   FunctionPtr derived_method = interface_method_in_derived->function;
@@ -73,7 +66,10 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
 
   auto get_string_repr = [] (VertexPtr v) {
     auto param = v.try_as<op_func_param>();
-    kphp_assert(param && param->has_default_value());
+    kphp_assert(param);
+    if (!param->has_default_value()) {
+      return std::string{"NoDefault"};
+    }
     return VertexPtrFormatter::to_string(param->default_value());
   };
 
@@ -103,11 +99,49 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
   }
 }
 
-bool derived_has_method(ClassPtr klass, vk::string_view fun_name) {
-  auto has_method = [&](ClassPtr c) { return c->members.get_instance_method(fun_name); };
+VertexAdaptor<op_case> gen_case_on_hash(ClassPtr derived, VertexAdaptor<op_seq> cmd) {
+  auto hash_of_derived = VertexAdaptor<op_int_const>::create();
+  hash_of_derived->str_val = std::to_string(derived->get_hash());
 
-  return has_method(klass) ||
-         std::any_of(klass->derived_classes.begin(), klass->derived_classes.end(), has_method);
+  return VertexAdaptor<op_case>::create(hash_of_derived, cmd);
+}
+
+VertexAdaptor<op_case> gen_case_calling_methods_on_derived_class(ClassPtr derived, FunctionPtr virtual_function) {
+  FunctionPtr concrete_method_of_derived;
+  if (auto method_of_derived = derived->members.get_instance_method(virtual_function->local_name())) {
+    concrete_method_of_derived = method_of_derived->function;
+  } else {
+    if (virtual_function->class_id == derived->get_parent_or_interface() && virtual_function->modifiers.is_abstract()) {
+      kphp_error(false, fmt_format("You should override abstract method: `{}` in class: `{}`",
+                                   virtual_function->get_human_readable_name(),
+                                   derived->name));
+      return {};
+    }
+
+    if (auto method_from_ancestor = derived->get_instance_method(virtual_function->local_name())) {
+      concrete_method_of_derived = method_from_ancestor->function;
+    }
+  }
+
+  if (!concrete_method_of_derived || concrete_method_of_derived->modifiers.is_abstract()) {
+    return {};
+  }
+
+  if (!concrete_method_of_derived->file_id->is_builtin() && concrete_method_of_derived->is_virtual_method) {
+    auto &members_of_derived_class = concrete_method_of_derived->class_id->members;
+    concrete_method_of_derived = members_of_derived_class.get_instance_method(virtual_function->get_name_of_self_method())->function;
+  }
+
+  if (!check_that_signatures_are_same(concrete_method_of_derived->class_id, virtual_function)) {
+    return {};
+  }
+
+  VertexPtr this_var = create_instance_cast_to(ClassData::gen_vertex_this({}), derived);
+  // generate concrete_method call, with arguments from virtual_functions, because of Derived can have extra default params:
+  auto call_self_method_of_derived = GenTree::generate_call_on_instance_var(this_var, virtual_function, concrete_method_of_derived->local_name());
+  auto call_derived_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(call_self_method_of_derived));
+
+  return gen_case_on_hash(derived, call_derived_method);
 }
 
 } // namespace
@@ -117,15 +151,23 @@ bool derived_has_method(ClassPtr klass, vk::string_view fun_name) {
  * generated AST for virtual methods will be like this:
  *
  * function virtual_function($param1, ...) {
- *   if ($this instanceof Derived_first) {
- *     return $this->virtual_function($param1, ...);
- *   } else if ($this instanceof Derived_second) {
- *     return $this->virtual_function($param1, ...);
- *   } else {
- *     return $this->SELF_virtual_function($param1, ...);
+ *   switch ($this->get_virt_hash()) {
+ *   case 0xDEADBEAF: { // hash of Derived1
+ *     $tmp = instance_cast<Derived1>($this);
+ *     $tmp->virtual_function($param1, ...);
+ *     break;
+ *   }
+ *   case 0x02280228: { // hash of Derived 2
+ *     $tmp = instance_cast<Derived2>($this);
+ *     $tmp->virtual_function($param1, ...);
+ *     break;
+ *   }
+ *   default: {
+ *     php_warning("call method(Interface::virtual_function) on empty class
+ *     exit(0);
  *   }
  */
-void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<FunctionPtr> &os) {
+void generate_body_of_virtual_method(FunctionPtr virtual_function) {
   auto klass = virtual_function->class_id;
   kphp_assert(klass);
 
@@ -140,59 +182,36 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
     return check_static_function(virtual_function, derived_classes);
   }
 
-  VertexAdaptor<op_seq> body_of_virtual_method;
-
   if (!virtual_function->modifiers.is_abstract()) {
-    if (auto self_method = klass->get_instance_method(virtual_function->get_name_of_self_method())) {
-      if (klass == self_method->function->class_id) {
-        G->register_and_require_function(self_method->function, os, true);
-      }
-      auto this_var = ClassData::gen_vertex_this({});
-      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, self_method->function)));
+    kphp_assert(klass->members.has_instance_method(virtual_function->get_name_of_self_method()));
+    kphp_assert(virtual_function->root->cmd()->empty());
+  }
 
-      kphp_assert(virtual_function->root->cmd()->empty());
-    } else if (virtual_function->local_name() == ClassData::NAME_OF_VIRT_CLONE) {
-      body_of_virtual_method = virtual_function->root->cmd();
-      virtual_function->root->cmd_ref() = VertexPtr{};
-    } else if (klass->parent_class && !klass->parent_class->modifiers.is_abstract()){
-      auto params = virtual_function->get_params_as_vector_of_vars(1);
-
-      auto call_parent_method = VertexAdaptor<op_func_call>::create(params);
-      call_parent_method->set_string("parent::" + virtual_function->get_name_of_self_method());
-
-      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(call_parent_method));
+  std::vector<VertexPtr> cases;
+  for (auto inheritor : klass->get_all_inheritors()) {
+    if (auto case_for_cur_class = gen_case_calling_methods_on_derived_class(inheritor, virtual_function)) {
+      cases.emplace_back(case_for_cur_class);
     }
   }
 
-  for (auto derived : derived_classes) {
-    if (!virtual_function->modifiers.is_abstract()) {
-      auto fun_name = virtual_function->local_name();
-      if (!derived->members.get_instance_method(fun_name)) {
-        kphp_assert_msg(!derived_has_method(derived, fun_name),
-                        fmt_format("derived class `{}` may not have method `{}` (bug in compiler)", derived->name, virtual_function->get_human_readable_name()));
-        continue;
-      }
-    }
-    auto is_instance_of_derived = GenTree::conv_to<tp_bool>(create_instanceof(ClassData::gen_vertex_this({}), derived));
+  if (!cases.empty()) {
+    auto message_that_class_is_empty = VertexAdaptor<op_string>::create();
+    message_that_class_is_empty->str_val = fmt_format("call method({}) on empty class", virtual_function->get_human_readable_name());
 
-    VertexAdaptor<op_seq> call_derived_method;
-    if (!check_that_signatures_are_same(derived, virtual_function)) {
-      return;
-    }
+    auto warn_on_default = VertexAdaptor<op_func_call>::create(message_that_class_is_empty);
+    warn_on_default->str_val = "critical_error";
 
-    auto generated_this = ClassData::gen_vertex_this({});
-    VertexPtr this_var = generated_this;
-    if (!body_of_virtual_method && derived_classes.size() == 1) {
-      this_var = create_instance_cast_to(generated_this, derived);
-    }
-    call_derived_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(GenTree::generate_call_on_instance_var(this_var, virtual_function)));
-
-    if (body_of_virtual_method) {
-      body_of_virtual_method = VertexAdaptor<op_seq>::create(VertexAdaptor<op_if>::create(is_instance_of_derived, call_derived_method, body_of_virtual_method));
-    } else {
-      body_of_virtual_method = call_derived_method;
-    }
+    auto call_of_exit = VertexAdaptor<op_seq>::create(warn_on_default, GenTree::generate_exit_zero(), VertexAdaptor<op_return>::create());
+    cases.emplace_back(VertexAdaptor<op_default>::create(call_of_exit));
+  } else {
+    // just keep empty body, when there is no inheritors for interface method
+    return;
   }
+
+  auto get_hash_of_this = VertexAdaptor<op_func_call>::create(ClassData::gen_vertex_this({}));
+  get_hash_of_this->set_string("get_hash_of_class");
+
+  auto body_of_virtual_method = VertexAdaptor<op_seq>::create(GenTree::create_switch_vertex(virtual_function, get_hash_of_this, std::move(cases)));
 
   auto &root = virtual_function->root;
   auto declaration_location = get_location(root);

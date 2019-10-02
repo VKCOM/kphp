@@ -328,6 +328,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
                                              ClassData::NAME_OF_CLONE,
                                              FunctionData::get_name_of_self_method(ClassData::NAME_OF_CLONE),
                                              ClassData::NAME_OF_VIRT_CLONE,
+                                             FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE),
                                              ClassData::NAME_OF_INVOKE_METHOD};
 
     return std::find(std::begin(allowed_magic_names), std::end(allowed_magic_names), name) != std::end(allowed_magic_names);

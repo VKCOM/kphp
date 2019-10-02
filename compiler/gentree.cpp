@@ -1712,7 +1712,7 @@ LambdaGenerator GenTree::generate_anonymous_class(VertexAdaptor<op_function> fun
     .generate(parent_function);
 }
 
-VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function) {
+VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function, vk::string_view function_name) {
   auto params = function->get_params_as_vector_of_vars(1);
   auto call_method = VertexAdaptor<op_func_call>::create(instance_var, params);
 
@@ -1722,7 +1722,7 @@ VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr ins
     last_param_passed_to_method = VertexAdaptor<op_varg>::create(params.back()).set_location(params.back());
   }
 
-  call_method->set_string(std::string{function->local_name()});
+  call_method->set_string(std::string{function_name});
   call_method->extra_type = op_ex_func_call_arrow;
 
   return call_method;
