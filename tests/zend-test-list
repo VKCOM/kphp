@@ -733,7 +733,9 @@ tests/basic/rfc1867_post_max_size.phpt
 tests/classes/constants_basic_005.phpt
 tests/classes/constants_error_002.phpt
 tests/classes/constants_scope_001.phpt
+tests/classes/constants_visibility_001.phpt
 tests/classes/final.phpt
+tests/classes/interface_constant_inheritance_005.phpt
 tests/classes/interface_optional_arg.phpt
 tests/classes/interface_optional_arg_002.phpt
 tests/classes/interfaces_001.phpt

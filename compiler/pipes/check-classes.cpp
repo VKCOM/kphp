@@ -23,7 +23,6 @@ void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
 }
 
 inline void CheckClassesF::analyze_class(ClassPtr klass) {
-  //printf("Check class %s\n", klass->name.c_str());
   check_static_fields_inited(klass);
   if (ClassData::does_need_codegen(klass)) {
     check_instance_fields_inited(klass);

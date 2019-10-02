@@ -3,6 +3,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/name-gen.h"
+#include "compiler/pipes/check-access-modifiers.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   // defined('NAME') заменяем на true или false
@@ -32,6 +33,10 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
         var->str_val = "d$" + d->name;
         root = var;
       } else {
+        if (d->class_id) {
+          auto access_class = d->class_id;
+          check_access(class_id, lambda_class_id, FieldModifiers{d->access}, access_class, "const", d->name);
+        }
         root = d->val.clone().set_location_recursively(root);
       } 
     }
@@ -56,6 +61,8 @@ bool InlineDefinesUsagesPass::on_start(FunctionPtr function) {
       }
     });
   }
+  class_id = function->class_id;
+  lambda_class_id = function->get_this_or_topmost_if_lambda()->class_id;
 
   return true;
 }

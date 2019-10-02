@@ -6,6 +6,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"
+#include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -217,6 +218,25 @@ private:
   int in_concat = 0;
 };
 
+struct CheckConstAccess final
+  : CheckConst {
+private:
+  ClassPtr caller_class_id;
+public:
+  void check(VertexPtr v, ClassPtr class_id) {
+    caller_class_id = class_id;
+    visit(v);
+  }
+
+  bool on_func_name(VertexAdaptor<op_func_name> v) final {
+    auto define = G->get_define(resolve_define_name(v->str_val));
+    if (define->class_id) {
+      check_access(caller_class_id, ClassPtr{nullptr}, FieldModifiers{define->access}, define->class_id, "const", define->name);
+    }
+
+    return true;
+  }
+};
 
 struct MakeConst final
   : ConstManipulations<VertexPtr> {

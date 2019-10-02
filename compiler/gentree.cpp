@@ -1682,7 +1682,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
-  cur_class->members.add_constant("class", generate_constant_field_class_value());    // A::class
+  cur_class->members.add_constant("class", generate_constant_field_class_value(), AccessModifiers::public_);    // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
     CE (!kphp_error(!cur_class->modifiers.is_abstract(), "constructor in interfaces/abstract classes has not been supported yet"));
@@ -1911,6 +1911,18 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
     case tok_protected:
     case tok_public:
     case tok_private:
+      if (std::next(cur, 1)->type() == tok_const) {
+        next_cur();
+
+        auto access = AccessModifiers::public_;
+        if (type == tok_protected) {
+          access = AccessModifiers::protected_;
+        } else if (type == tok_private) {
+          access = AccessModifiers::private_;
+        }
+        return get_const_after_explicit_access_modifier(access);
+      }
+    // fall through
     case tok_final:
     case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {
@@ -2026,34 +2038,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return res;
     }
     case tok_const: {
-      AutoLocation const_location(this);
-      next_cur();
-
-      bool has_access_modifier = std::distance(tokens.begin(), cur) > 1 && vk::any_of_equal(std::prev(cur, 2)->type(), tok_public, tok_private, tok_protected);
-      bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
-      bool const_in_class = !!cur_class;
-      string const_name{cur->str_val};
-
-      CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
-      CE (!kphp_error(test_expect(tok_func_name), "expected constant name"));
-      CE (!kphp_error(!has_access_modifier, "unexpected const after private/protected/public keyword"));
-
-      next_cur();
-      CE (expect(tok_eq1, "'='"));
-      VertexPtr v = get_expression();
-      CE (check_statement_end());
-
-      if (const_in_class) {
-        cur_class->members.add_constant(const_name, v);
-        return VertexAdaptor<op_empty>::create();
-      }
-
-      auto name = VertexAdaptor<op_string>::create();
-      name->str_val = const_name;
-      auto def = VertexAdaptor<op_define>::create(name, v);
-      set_location(def, const_location);
-
-      return def;
+      return get_const(AccessModifiers::public_);
     }
     case tok_use: {
       AutoLocation const_location(this);
@@ -2102,6 +2087,43 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return res;
   }
   kphp_fail();
+}
+
+VertexPtr GenTree::get_const_after_explicit_access_modifier(AccessModifiers access) {
+  CE(!kphp_error(cur_class, "Access modifier for const allowed in class only"));
+  if (cur_class->is_interface()) {
+    CE(!kphp_error(access == AccessModifiers::public_, "const access modifier in interface must be public"));
+  }
+
+  return get_const(access);
+}
+
+VertexPtr GenTree::get_const(AccessModifiers access) {
+  AutoLocation const_location(this);
+  next_cur();
+
+  bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
+  bool const_in_class = !!cur_class;
+  std::string const_name{cur->str_val};
+
+  CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
+  CE (expect(tok_func_name, "constant name"));
+
+  CE (expect(tok_eq1, "'='"));
+  VertexPtr v = get_expression();
+  CE (check_statement_end());
+
+  if (const_in_class) {
+    cur_class->members.add_constant(const_name, v, access);
+    return VertexAdaptor<op_empty>::create();
+  }
+
+  auto name = VertexAdaptor<op_string>::create();
+  name->str_val = const_name;
+  auto def = VertexAdaptor<op_define>::create(name, v);
+  set_location(def, const_location);
+
+  return def;
 }
 
 VertexPtr GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {

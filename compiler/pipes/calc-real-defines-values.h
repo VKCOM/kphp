@@ -11,6 +11,7 @@ private:
   std::vector<string*> stack;
 
   CheckConstWithDefines check_const;
+  CheckConstAccess check_const_access;
   MakeConst make_const;
 
   void process_define_recursive(VertexPtr root);

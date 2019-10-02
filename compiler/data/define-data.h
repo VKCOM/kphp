@@ -3,6 +3,7 @@
 #include "common/algorithms/find.h"
 #include "common/mixin/not_copyable.h"
 
+#include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
@@ -16,6 +17,8 @@ public:
 
   int id;
   DefineType type_;
+  ClassPtr class_id; // класс в котором определён const, в случае define тут будет пусто
+  AccessModifiers access = AccessModifiers::public_;
 
   VertexPtr val;
   std::string name;

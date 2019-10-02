@@ -64,6 +64,9 @@ void CalcRealDefinesValuesF::process_define(DefinePtr def) {
   stack.pop_back();
 
   if (check_const.is_const(def->val)) {
+    if (def->class_id) {
+      check_const_access.check(def->val, def->class_id);
+    }
     def->type() = DefineData::def_const;
     def->val = make_const.make_const(def->val);
     def->val->const_type = cnst_const_val;

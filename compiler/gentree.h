@@ -159,6 +159,9 @@ private:
     lambda_generators.clear();
   }
 
+  VertexPtr get_const_after_explicit_access_modifier(AccessModifiers access);
+  VertexPtr get_const(AccessModifiers access);
+
 public:
   int line_num;
 

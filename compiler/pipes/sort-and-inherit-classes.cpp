@@ -283,6 +283,12 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
         );
       }
     });
+    parent_class->members.for_each([&](const ClassMemberConstant &c) {
+      if (auto child_const = child_class->get_constant(c.local_name())) {
+        kphp_error(child_const->access == c.access,
+                   fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
+      }
+    });
   }
 
   if (child_class->parent_class) {

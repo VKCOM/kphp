@@ -25,6 +25,8 @@ VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
     current_function->class_id->members.for_each([&](const ClassMemberConstant &c) {
       DefineData *data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
       data->file_id = current_function->class_id->file_id;
+      data->access = c.access;
+      data->class_id = current_function->class_id;
       G->register_define(DefinePtr(data));
     });
   }
