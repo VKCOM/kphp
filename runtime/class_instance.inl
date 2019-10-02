@@ -11,14 +11,23 @@ class_instance<T> &class_instance<T>::operator=(bool) {
 }
 
 template<class T>
-class_instance<T> class_instance<T>::clone() const {
+class_instance<T> class_instance<T>::clone_impl(std::true_type /*is empty*/) const {
+  return class_instance<T>{}.empty_alloc();
+}
+
+template<class T>
+class_instance<T> class_instance<T>::clone_impl(std::false_type /*is empty*/) const {
   class_instance<T> res;
   if (o) {
     res.alloc(*o);
     res.o->set_refcnt(1);
   }
-
   return res;
+}
+
+template<class T>
+class_instance<T> class_instance<T>::clone() const {
+  return clone_impl(std::is_empty<T>{});
 }
 
 template<class T>

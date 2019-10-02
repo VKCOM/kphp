@@ -121,6 +121,10 @@ public:
 
   template<class Derived>
   friend class class_instance;
+
+private:
+  class_instance<T> clone_impl(std::true_type /*is empty*/) const;
+  class_instance<T> clone_impl(std::false_type /*is empty*/) const;
 };
 
 template<typename>
