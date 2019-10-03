@@ -250,7 +250,7 @@ void Index::save_into_index_file() {
 
   f.reset();
   if (rename(index_file_tmp_name.c_str(), index_file.c_str()) == -1) {
-    kphp_warning(format("Can't rename '%s' into '%s': %s", index_file_tmp_name.c_str(), index_file.c_str(), strerror(errno)));
+    kphp_warning(fmt_format("Can't rename '{}' into '{}': {}", index_file_tmp_name, index_file, strerror(errno)));
   }
 }
 

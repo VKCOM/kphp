@@ -811,8 +811,8 @@ struct CombinatorStore {
           std::string value_check = get_value_absence_check_for_optional_arg(arg.get());
           if (!value_check.empty()) {
             W << "if (" << value_check << ") " << BEGIN;
-            W << format("CurrentProcessingQuery::get().raise_storing_error(\"Optional field %%s of %%s is not set, but corresponding fields mask bit is set\", \"%s\", \"%s\");",
-                        arg->name.c_str(), combinator->name.c_str()) << NL;
+            W << fmt_format(R"(CurrentProcessingQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
+                            arg->name, combinator->name) << NL;
             W << "return" << (combinator->is_function() ? " {};" : ";") << NL;
             W << END << NL;
           }
@@ -850,10 +850,10 @@ struct CombinatorStore {
         // Запоминаем филд маску для последующего использования
         // Может быть либо локальной переменной либо полем структуры
         if (!typed_mode) {
-          W << format("%s%s = tl_arr_get(tl_object, %s, %d, %d).to_int();",
+          W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}).to_int();",
                       var_num_access,
-                      combinator->get_var_num_arg(arg->var_num)->name.c_str(),
-                      register_tl_const_str(arg->name).c_str(),
+                      combinator->get_var_num_arg(arg->var_num)->name,
+                      register_tl_const_str(arg->name),
                       arg->idx,
                       hash_tl_const_str(arg->name)) << NL;
         } else {

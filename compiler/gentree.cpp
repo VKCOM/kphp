@@ -1640,7 +1640,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
   if (!is_class_name_allowed(name_str)) {
-    kphp_error (false, format("Sorry, kPHP doesn't support class name %s", name_str.data()));
+    kphp_error (false, fmt_format("Sorry, kPHP doesn't support class name {}", name_str));
   }
 
   cur_class->modifiers = modifiers;

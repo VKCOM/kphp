@@ -314,9 +314,9 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
                    format("Can't redeclare private static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
 
         kphp_error(f.modifiers == field->modifiers,
-                   format("Can't change access type for static field %s (%s) in class %s (%s)\n",
-                          f.local_name().c_str(), f.modifiers.to_string().c_str(),
-                          child_class->name.c_str(), field->modifiers.to_string().c_str())
+                   fmt_format("Can't change access type for static field {} ({}) in class {} ({})\n",
+                              f.local_name(), f.modifiers.to_string(),
+                              child_class->name, field->modifiers.to_string())
         );
       }
     });

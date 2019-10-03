@@ -82,9 +82,9 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &v
           }
         }
       }
-      kphp_error(ok, format("%s()::$%s is both %s and %s\n", f->get_human_readable_name().c_str(), var_name.c_str(),
-                            a.klass ? a.klass->name.c_str() : "[primitive]",
-                            klass ? klass->name.c_str() : "[primitive]"));
+      kphp_error(ok, fmt_format("{}()::${} is both {} and {}\n", f->get_human_readable_name(), var_name,
+                                a.klass ? a.klass->name : "[primitive]",
+                                  klass ?   klass->name : "[primitive]"));
       exists = true;
     }
   }
@@ -100,9 +100,9 @@ void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
 
   if (a.assum_type != assum_unknown) {
     kphp_error(a.assum_type == assum && a.klass == klass,
-               format("%s() returns both %s and %s\n", f->get_human_readable_name().c_str(),
-                       a.klass ? a.klass->name.c_str() : "[primitive]",
-                       klass ? klass->name.c_str() : "[primitive]"));
+               fmt_format("{}() returns both {} and {}\n", f->get_human_readable_name(),
+                       a.klass ? a.klass->name : "[primitive]",
+                         klass ?   klass->name : "[primitive]"));
   }
 
   f->assumption_for_return = Assumption(assum, "", klass);
@@ -115,7 +115,7 @@ void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_
   for (const auto &a : c->assumptions_for_vars) {
     if (a.var_name == var_name) {
       kphp_error(a.assum_type == assum && a.klass == klass,
-                 format("%s::$%s is both %s and %s\n", var_name.c_str(), c->name.c_str(), a.klass->name.c_str(), klass->name.c_str()));
+                 fmt_format("{}::${} is both {} and {}\n", var_name, c->name, a.klass->name, klass->name));
       exists = true;
     }
   }

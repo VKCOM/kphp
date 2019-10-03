@@ -84,10 +84,10 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     auto derived_repr = get_string_repr(derived_params[arg_id]);
 
     kphp_error(interface_repr == derived_repr,
-      format("default value of interface parameter:`%s` may not differ from value of derived parameter: `%s`, in function: %s",
-             TermStringFormat::paint(interface_repr, TermStringFormat::green).c_str(),
-             TermStringFormat::paint(derived_repr, TermStringFormat::green).c_str(),
-             TermStringFormat::paint(derived_method->get_human_readable_name(), TermStringFormat::red).c_str()));
+      fmt_format("default value of interface parameter:`{}` may not differ from value of derived parameter: `{}`, in function: {}",
+                 TermStringFormat::paint(interface_repr, TermStringFormat::green),
+                 TermStringFormat::paint(derived_repr, TermStringFormat::green),
+                 TermStringFormat::paint(derived_method->get_human_readable_name(), TermStringFormat::red)));
   }
 
   return true;

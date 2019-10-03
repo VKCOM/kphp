@@ -19,10 +19,10 @@ void check_class_immutableness(ClassPtr klass) {
     field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
     for (auto sub_class : sub_classes) {
       kphp_error(sub_class->is_immutable,
-                 format("Field %s of immutable class %s should be immutable too, but class %s is mutable",
-                        TermStringFormat::paint(field.local_name(), TermStringFormat::red).c_str(),
-                        TermStringFormat::paint(klass->name, TermStringFormat::red).c_str(),
-                        TermStringFormat::paint(sub_class->name, TermStringFormat::red).c_str()));
+                 fmt_format("Field {} of immutable class {} should be immutable too, but class {} is mutable",
+                            TermStringFormat::paint(field.local_name(), TermStringFormat::red),
+                            TermStringFormat::paint(klass->name, TermStringFormat::red),
+                            TermStringFormat::paint(sub_class->name, TermStringFormat::red)));
     }
   });
 }
@@ -154,10 +154,10 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) || (type_right->ptype() == tp_array)) {
-      kphp_warning (format("%s %s %s is strange operation",
-                            OpInfo::str(vertex->type()).c_str(),
-                            type_out(type_left).c_str(),
-                            type_out(type_right).c_str()));
+      kphp_warning(fmt_format("{} {} {} is strange operation",
+                              OpInfo::str(vertex->type()),
+                              type_out(type_left),
+                              type_out(type_right)));
     }
   }
 

@@ -20,14 +20,14 @@ static void print_why_tinf_occured_error(
   std::string desc2 = node2 ? node2->get_description() : "unknown";
 
   if (mix_class && mix_class2 && mix_class != mix_class2) {
-    kphp_error(0, format("Type Error: mix classes %s and %s: %s and %s\n",
-                          mix_class->name.c_str(), mix_class2->name.c_str(),
-                          desc1.c_str(), desc2.c_str()));
+    kphp_error(0, fmt_format("Type Error: mix classes {} and {}: {} and {}\n",
+                             mix_class->name, mix_class2->name,
+                             desc1, desc2));
 
   } else if (mix_class || mix_class2) {
-    kphp_error(0, format("Type Error: mix class %s with non-class: %s and %s\n",
-                          mix_class ? mix_class->name.c_str() : mix_class2->name.c_str(),
-                          desc1.c_str(), desc2.c_str()));
+    kphp_error(0, fmt_format("Type Error: mix class {} with non-class: {} and {}\n",
+                             mix_class ? mix_class->name : mix_class2->name,
+                             desc1, desc2));
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
     kphp_error(0, format("Type Error: inconsistent tuples %s and %s\n",

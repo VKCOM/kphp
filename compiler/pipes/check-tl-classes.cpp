@@ -25,8 +25,8 @@ void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresen
                       format("Tl-class '%s' must inherit '%s'", class_id->name.c_str(), expected.c_str()));
     const vk::string_view got{class_id->implements.front()->name};
     kphp_error_return(got.ends_with(expected),
-                      format("Tl-class '%s' must inherit '%s', but it inherits '%s'",
-                             class_id->name.c_str(), expected.c_str(), got.data()));
+                      fmt_format("Tl-class '{}' must inherit '{}', but it inherits '{}'",
+                                 class_id->name, expected, got));
   }
 
   for (const auto &field : repr.class_fields) {

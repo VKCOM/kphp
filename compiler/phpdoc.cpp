@@ -379,10 +379,10 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdo
     doc_type = parser.parse_from_tokens(tok_iter);
   } catch (std::runtime_error &ex) {
     stage::set_location(current_function->root->location);
-    kphp_error(doc_type, format("%s: %s\n%s",
-                                TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse phpdoc tag", TermStringFormat::bold)).c_str(),
-                                TermStringFormat::add_text_attribute(std::string(phpdoc_tag_str), TermStringFormat::underline).c_str(),
-                                ex.what()));
+    kphp_error(doc_type, fmt_format("{}: {}\n{}",
+                                    TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse phpdoc tag", TermStringFormat::bold)),
+                                    TermStringFormat::add_text_attribute(std::string(phpdoc_tag_str), TermStringFormat::underline),
+                                    ex.what()));
   }
 
   if (!parser.get_unknown_classes().empty()) {

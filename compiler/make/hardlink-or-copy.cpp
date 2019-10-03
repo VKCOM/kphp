@@ -41,14 +41,14 @@ static void hard_link_or_copy_impl(const std::string &from, const std::string &t
     const ssize_t s = sendfile(tmp_fd, from_fd, nullptr, file_stat.st_size);
     close(from_fd);
     close(tmp_fd);
-    kphp_error_return(s != -1, format("Can't copy file from '%s' to '%s': %s", from.c_str(), tmp_file.c_str(), strerror(errno)));
+    kphp_error_return(s != -1, fmt_format("Can't copy file from '{}' to '{}': {}", from, tmp_file, strerror(errno)));
     kphp_assert(s == file_stat.st_size);
     hard_link_or_copy_impl(tmp_file, to, replace, false);
     unlink(tmp_file.c_str());
     return;
   }
 
-  kphp_error(0, format("Can't copy file from '%s' to '%s': %s", from.c_str(), to.c_str(), strerror(errno)));
+  kphp_error(0, fmt_format("Can't copy file from '{}' to '{}': {}", from, to, strerror(errno)));
 }
 
 void hard_link_or_copy(const std::string &from, const std::string &to, bool replace) {

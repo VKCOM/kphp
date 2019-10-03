@@ -48,8 +48,8 @@ inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
     }
 
     kphp_error(f.init_val || allow_no_default_value,
-               format("static %s::$%s is not inited at declaration (inferred %s)",
-                       klass->name.c_str(), f.local_name().c_str(), colored_type_out(f.get_inferred_type()).c_str()));
+               fmt_format("static {}::${} is not inited at declaration (inferred {})",
+                          klass->name, f.local_name(), colored_type_out(f.get_inferred_type())));
   });
 }
 
