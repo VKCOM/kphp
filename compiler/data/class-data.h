@@ -101,10 +101,10 @@ public:
   ClassPtr get_parent_or_interface() const;
   bool is_parent_of(ClassPtr other) const;
   ClassPtr get_common_base_or_interface(ClassPtr other) const;
-  const ClassMemberInstanceMethod *get_instance_method(const std::string &local_name) const;
-  const ClassMemberInstanceField *get_instance_field(const std::string &local_name) const;
-  const ClassMemberStaticField *get_static_field(const std::string &local_name) const;
-  const ClassMemberConstant *get_constant(const std::string &local_name) const;
+  const ClassMemberInstanceMethod *get_instance_method(vk::string_view local_name) const;
+  const ClassMemberInstanceField *get_instance_field(vk::string_view local_name) const;
+  const ClassMemberStaticField *get_static_field(vk::string_view local_name) const;
+  const ClassMemberConstant *get_constant(vk::string_view local_name) const;
   void check_parent_constructor();
 
   ClassPtr get_self() const {
@@ -115,7 +115,7 @@ public:
     return is_class() && !modifiers.is_abstract() && !construct_function;
   }
 
-  void set_name_and_src_name(const std::string &name, const vk::string_view &phpdoc_str);
+  void set_name_and_src_name(const std::string &name, vk::string_view phpdoc_str);
 
   void debugPrint();
 
@@ -157,7 +157,7 @@ private:
   bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 
   template<class MemberT>
-  const MemberT *find_by_local_name(const std::string &name) const {
+  const MemberT *find_by_local_name(vk::string_view name) const {
     for (auto klass = get_self(); klass; klass = klass->parent_class) {
       AutoLocker<Lockable *> locker(&(*klass));
       if (auto member = klass->members.find_by_local_name<MemberT>(name)) {

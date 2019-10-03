@@ -23,7 +23,7 @@ VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
   // во-вторых, это константы класса — они не добавляются никуда в ast дерево, хранятся отдельно
   if (root->type() == op_function && current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](const ClassMemberConstant &c) {
-      DefineData *data = new DefineData(c.global_name(), c.value, DefineData::def_unknown);
+      DefineData *data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
       data->file_id = current_function->class_id->file_id;
       G->register_define(DefinePtr(data));
     });

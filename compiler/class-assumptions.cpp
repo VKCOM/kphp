@@ -30,9 +30,9 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class);
+AssumType calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class);
 
-AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class) {
+AssumType assumption_get_for_var(FunctionPtr f, vk::string_view var_name, ClassPtr &out_class) {
   for (const auto &a : f->assumptions_for_vars) {
     if (a.var_name == var_name) {
       out_class = a.klass;
@@ -43,7 +43,7 @@ AssumType assumption_get_for_var(FunctionPtr f, const std::string &var_name, Cla
   return assum_unknown;
 }
 
-AssumType assumption_get_for_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
+AssumType assumption_get_for_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class) {
   for (const auto &a : c->assumptions_for_vars) {
     if (a.var_name == var_name) {
       out_class = a.klass;
@@ -67,7 +67,7 @@ std::string assumption_debug(const Assumption &assumption) {
   }
 }
 
-void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &var_name, ClassPtr klass) {
+void assumption_add_for_var(FunctionPtr f, AssumType assum, vk::string_view var_name, ClassPtr klass) {
   bool exists = false;
 
   for (auto &a : f->assumptions_for_vars) {
@@ -90,7 +90,7 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, const std::string &v
   }
 
   if (!exists) {
-    f->assumptions_for_vars.emplace_back(assum, var_name, klass);
+    f->assumptions_for_vars.emplace_back(assum, std::string{var_name}, klass);
     //printf("%s() %s\n", f->name.c_str(), assumption_debug(f->assumptions_for_vars.back()).c_str());
   }
 }
@@ -109,7 +109,7 @@ void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
   //printf("%s() returns %s\n", f->name.c_str(), assumption_debug(f->assumption_for_return).c_str());
 }
 
-void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_name, ClassPtr klass) {
+void assumption_add_for_var(ClassPtr c, AssumType assum, vk::string_view var_name, ClassPtr klass) {
   bool exists = false;
 
   for (const auto &a : c->assumptions_for_vars) {
@@ -121,7 +121,7 @@ void assumption_add_for_var(ClassPtr c, AssumType assum, const std::string &var_
   }
 
   if (!exists) {
-    c->assumptions_for_vars.emplace_back(assum, var_name, klass);
+    c->assumptions_for_vars.emplace_back(assum, std::string{var_name}, klass);
     //printf("%s::%s\n", c->name.c_str(), assumption_debug(c->assumptions_for_vars.back()).c_str());
   }
 }
@@ -158,7 +158,7 @@ AssumType assumption_create_from_phpdoc(const PhpDocTagParseResult &result, Clas
  * / ** @var A * / $a = ...;
  * Т.е. имя класса есть, а название переменной может отсутствовать (но это в контексте конкретной переменной, это ок).
  */
-void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const vk::string_view &phpdoc_str) {
+void analyze_phpdoc_with_type(FunctionPtr f, vk::string_view var_name, const vk::string_view &phpdoc_str) {
   for (const auto &parsed : phpdoc_find_tag_multi(phpdoc_str, php_doc_tag::var, f)) {
     if (!parsed.var_name.empty() || !var_name.empty()) {
       ClassPtr klass;
@@ -173,7 +173,7 @@ void analyze_phpdoc_with_type(FunctionPtr f, const std::string &var_name, const 
  * / ** @var A * / var $aInstance;
  * Распознаём такие phpdoc'и у объявления var'ов внутри классов.
  */
-void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const vk::string_view &phpdoc_str) {
+void analyze_phpdoc_with_type(ClassPtr c, vk::string_view var_name, const vk::string_view &phpdoc_str) {
   FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
   if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
     ClassPtr klass;
@@ -189,7 +189,7 @@ void analyze_phpdoc_with_type(ClassPtr c, const std::string &var_name, const vk:
 /*
  * Из $a = ...rhs... определяем, что за тип присваивается $a
  */
-void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const VertexPtr &rhs, size_t depth) {
+void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
   ClassPtr klass;
   AssumType assum = infer_class_of_expr(f, rhs, klass, depth + 1);
 
@@ -202,14 +202,14 @@ void analyze_set_to_var(FunctionPtr f, const std::string &var_name, const Vertex
  * Из catch($ex) определяем, что $ex это Exception
  * Пользовательских классов исключений и наследования исключений у нас нет, и пока не планируется.
  */
-void analyze_catch_of_var(FunctionPtr f, const std::string &var_name, VertexAdaptor<op_try> root __attribute__((unused))) {
+void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_try> root __attribute__((unused))) {
   assumption_add_for_var(f, assum_instance, var_name, G->get_class("Exception"));
 }
 
 /*
  * Из foreach($arr as $a), если $arr это массив инстансов, делаем вывод, что $a это инстанс того же класса.
  */
-static void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
+static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
   ClassPtr klass;
   AssumType iter_assum = infer_class_of_expr(f, root->xs(), klass, depth + 1);
 
@@ -222,9 +222,8 @@ static void analyze_foreach(FunctionPtr f, const std::string &var_name, VertexAd
  * Из global $MC делаем вывод, что это Memcache.
  * Здесь зашиты global built-in переменные в нашем коде с заранее известными именами
  */
-void analyze_global_var(FunctionPtr f, const std::string &var_name) {
-  if (var_name == "MC" || var_name == "MC_Local" || var_name == "MC_Ads" || var_name == "MC_Log"
-      || var_name == "PMC" || var_name == "mc_fast" || var_name == "MC_Config" || var_name == "MC_Stats") {
+void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
+  if (vk::any_of_equal(var_name, "MC", "MC_Local", "MC_Ads", "MC_Log", "PMC", "mc_fast", "MC_Config", "MC_Stats")) {
     assumption_add_for_var(f, assum_instance, var_name, G->get_memcache_class());
   }
 }
@@ -234,7 +233,7 @@ void analyze_global_var(FunctionPtr f, const std::string &var_name) {
  * Если есть запись $a->... (где $a это локальная переменная) то надо понять, что такое $a.
  * Собственно, этим и занимается эта функция: комплексно анализирует использования переменной и вызывает то, что выше.
  */
-void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_name, VertexPtr root, size_t depth) {
+void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, VertexPtr root, size_t depth) {
   switch (root->type()) {
     case op_set: {
       auto set = root.as<op_set>();
@@ -250,7 +249,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, const std::string &var_nam
 
     case op_list: {
       if (!root.as<op_list>()->phpdoc_str.empty()) {
-        analyze_phpdoc_with_type(f, std::string(), root.as<op_list>()->phpdoc_str);
+        analyze_phpdoc_with_type(f, {}, root.as<op_list>()->phpdoc_str);
       }
       return;
     }
@@ -449,8 +448,8 @@ void init_assumptions_for_all_vars(ClassPtr c) {
  * Высокоуровневая функция, определяющая, что такое $a внутри f.
  * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
  */
-AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, ClassPtr &out_class, size_t depth) {
-  if (f->modifiers.is_instance() && var_name.size() == 4 && var_name == "this") {
+AssumType calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, ClassPtr &out_class, size_t depth) {
+  if (f->modifiers.is_instance() && var_name == "this") {
     out_class = f->class_id;
     return assum_instance;
   }
@@ -481,13 +480,12 @@ AssumType calc_assumption_for_var(FunctionPtr f, const std::string &var_name, Cl
 
   auto pos = var_name.find("$$");
   if (pos != std::string::npos) {   // static переменная класса, просто используется внутри функции
-    ClassPtr of_class = G->get_class(replace_characters(var_name.substr(0, pos), '$', '\\'));
-    if (of_class) {
+    if (auto of_class = G->get_class(replace_characters(std::string{var_name.substr(0, pos)}, '$', '\\'))) {
       return calc_assumption_for_class_var(of_class, var_name.substr(pos + 2), out_class);
     }
   }
 
-  f->assumptions_for_vars.emplace_back(assum_not_instance, var_name, ClassPtr());
+  f->assumptions_for_vars.emplace_back(assum_not_instance, std::string{var_name}, ClassPtr());
   return assum_not_instance;
 }
 
@@ -536,7 +534,7 @@ AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> 
  * Высокоуровневая функция, определяющая, что такое ->nested внутри инстанса $a класса c.
  * Выключает кеширование и единождый вызов init на класс.
  */
-AssumType calc_assumption_for_class_var(ClassPtr c, const std::string &var_name, ClassPtr &out_class) {
+AssumType calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class) {
   if (c->assumptions_inited_vars == 0) {
     if (__sync_bool_compare_and_swap(&c->assumptions_inited_vars, 0, 1)) {
       init_assumptions_for_all_vars(c);   // как инстанс-переменные, так и статические

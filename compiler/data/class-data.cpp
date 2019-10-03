@@ -25,7 +25,7 @@ ClassData::ClassData() :
   type_data(TypeData::create_for_class(ClassPtr(this))) {
 }
 
-void ClassData::set_name_and_src_name(const string &name, const vk::string_view &phpdoc_str) {
+void ClassData::set_name_and_src_name(const string &name, vk::string_view phpdoc_str) {
   this->name = name;
   this->src_name = std::string("C$").append(replace_backslashes(name));
   this->header_name = replace_characters(src_name + ".h", '$', '@');
@@ -47,19 +47,19 @@ void ClassData::debugPrint() {
   printf("=== %s %s\n", str_class_type, name.c_str());
 
   members.for_each([](ClassMemberConstant &m) {
-    printf("const %s\n", m.local_name().c_str());
+    fmt_print("const {}\n", m.local_name());
   });
   members.for_each([](ClassMemberStaticField &m) {
-    printf("static $%s\n", m.local_name().c_str());
+    fmt_print("static ${}\n", m.local_name());
   });
   members.for_each([](ClassMemberStaticMethod &m) {
-    printf("static %s()\n", m.local_name().c_str());
+    fmt_print("static {}()\n", m.local_name());
   });
   members.for_each([](ClassMemberInstanceField &m) {
-    printf("var $%s\n", m.local_name().c_str());
+    fmt_print("var ${}\n", m.local_name());
   });
   members.for_each([](ClassMemberInstanceMethod &m) {
-    printf("method %s()\n", m.local_name().c_str());
+    fmt_print("method {}()\n", m.local_name());
   });
 }
 
@@ -196,19 +196,19 @@ ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {
   return {};
 }
 
-const ClassMemberInstanceMethod *ClassData::get_instance_method(const std::string &local_name) const {
+const ClassMemberInstanceMethod *ClassData::get_instance_method(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberInstanceMethod>(local_name);
 }
 
-const ClassMemberInstanceField *ClassData::get_instance_field(const std::string &local_name) const {
+const ClassMemberInstanceField *ClassData::get_instance_field(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberInstanceField>(local_name);
 }
 
-const ClassMemberStaticField *ClassData::get_static_field(const std::string &local_name) const {
+const ClassMemberStaticField *ClassData::get_static_field(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberStaticField>(local_name);
 }
 
-const ClassMemberConstant *ClassData::get_constant(const std::string &local_name) const {
+const ClassMemberConstant *ClassData::get_constant(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberConstant>(local_name);
 }
 

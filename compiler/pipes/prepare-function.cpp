@@ -319,8 +319,8 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   check_default_args(function);
   apply_function_typehints(function);
 
-  auto is_function_name_allowed = [](const std::string &name) {
-    if (!vk::string_view{name}.starts_with("__")) {
+  auto is_function_name_allowed = [](vk::string_view name) {
+    if (!name.starts_with("__")) {
       return true;
     }
 

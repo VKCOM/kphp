@@ -33,7 +33,7 @@ public:
 
         lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
           auto new_var_use = VertexAdaptor<op_var>::create();
-          new_var_use->set_string(f.local_name());
+          new_var_use->set_string(std::string{f.local_name()});
           set_location(new_var_use, f.root->location);
           auto func_param = VertexAdaptor<op_func_param>::create(new_var_use);
           set_location(func_param, f.root->location);
@@ -143,7 +143,7 @@ public:
                                                (!std::is_same<ClassMemberT, ClassMemberConstant>{} && par->get_constant(field_name)) ||
                                                (!std::is_same<ClassMemberT, ClassMemberStaticField>{} && par->get_static_field(field_name));
     kphp_error(!parent_has_instance_or_static_field,
-               format("You may not override field: `%s`, in class: `%s`", field_name.c_str(), c->name.c_str()));
+               fmt_format("You may not override field: `{}`, in class: `{}`", field_name, c->name));
   }
 };
 
@@ -204,7 +204,6 @@ auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltyp
 // делаем функцию childclassname$$localname, которая выглядит как
 // function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
 VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
-  auto local_name = parent_method.local_name();
   auto parent_f = parent_method.function;
 
   auto parent_function_name = parent_f->name + "$$" + replace_backslashes(child_class->name);
@@ -311,7 +310,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
     parent_class->members.for_each([&](const ClassMemberStaticField &f) {
       if (auto field = child_class->members.get_static_field(f.local_name())) {
         kphp_error(!f.modifiers.is_private(),
-                   format("Can't redeclare private static field %s in class %s\n", f.local_name().c_str(), child_class->name.c_str()));
+                   fmt_format("Can't redeclare private static field {} in class {}\n", f.local_name(), child_class->name));
 
         kphp_error(f.modifiers == field->modifiers,
                    fmt_format("Can't change access type for static field {} ({}) in class {} ({})\n",

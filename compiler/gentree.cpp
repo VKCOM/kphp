@@ -1702,7 +1702,7 @@ VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr ins
     last_param_passed_to_method = VertexAdaptor<op_varg>::create(params.back()).set_location(params.back());
   }
 
-  call_method->set_string(function->local_name());
+  call_method->set_string(std::string{function->local_name()});
   call_method->extra_type = op_ex_func_call_arrow;
 
   return call_method;

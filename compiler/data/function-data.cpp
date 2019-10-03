@@ -137,8 +137,8 @@ void FunctionData::move_virtual_to_self_method() {
   root->cmd_ref() = VertexAdaptor<op_seq>::create();
 }
 
-std::string FunctionData::get_name_of_self_method(const std::string &name) {
-  return name + "$self";
+std::string FunctionData::get_name_of_self_method(vk::string_view name) {
+  return std::string{name} + "$self";
 }
 
 std::string FunctionData::get_name_of_self_method() const {

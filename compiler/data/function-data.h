@@ -133,7 +133,7 @@ public:
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
   void move_virtual_to_self_method();
-  static std::string get_name_of_self_method(const std::string &name);
+  static std::string get_name_of_self_method(vk::string_view name);
   std::string get_name_of_self_method() const;
 
   int get_min_argn();
@@ -154,5 +154,5 @@ public:
 
   static bool check_cnt_params(int expected_cnt_params, FunctionPtr called_func);
 
-  std::string local_name() const { return get_local_name_from_global_$$(name); }
+  vk::string_view local_name() const & { return get_local_name_from_global_$$(name); }
 };

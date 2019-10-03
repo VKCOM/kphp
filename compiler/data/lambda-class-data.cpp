@@ -40,7 +40,7 @@ void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
   members.for_each([=](const ClassMemberInstanceField &field) {
     AssumType assum = AssumType::assum_unknown;
     ClassPtr inferred_class;
-    std::string local_name = field.local_name();
+    auto local_name = field.local_name();
     if (local_name == LambdaClassData::get_parent_this_name()) {
       if (parent_function->is_lambda()) {
         assum = assumption_get_for_var(parent_function->class_id, LambdaClassData::get_parent_this_name(), inferred_class);
@@ -51,7 +51,7 @@ void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
     if (assum == AssumType::assum_unknown) {
       assum = calc_assumption_for_var(parent_function, local_name, inferred_class);
     }
-    assumptions_for_vars.emplace_back(assum, field.local_name(), inferred_class);
+    assumptions_for_vars.emplace_back(assum, std::string{field.local_name()}, inferred_class);
   });
 }
 
@@ -179,7 +179,7 @@ VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
     if (field.local_name() == LambdaClassData::get_parent_this_name()) {
       res->set_string("this");
     } else {
-      res->set_string(field.local_name());
+      res->set_string(std::string{field.local_name()});
     }
     res->location = field.root->location;
     args.emplace_back(res);

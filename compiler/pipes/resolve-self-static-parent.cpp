@@ -60,13 +60,13 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
           }
           v = VertexAdaptor<op_func_call>::create(this_vertex, v->get_next()).set_location(v);
           v->extra_type = op_ex_func_call_arrow;
-          v->set_string(method->local_name());
+          v->set_string(std::string{method->local_name()});
           v.as<op_func_call>()->func_id = method;
 
           if (unresolved_class_name != "static" && found_method->function->is_virtual_method) {
             kphp_error(current_function->modifiers.is_instance(), "calling non-static function through static");
             if (auto self_found_method = ref_class->get_instance_method(found_method->function->get_name_of_self_method())) {
-              v->set_string(self_found_method->local_name());
+              v->set_string(std::string{self_found_method->local_name()});
               v.as<op_func_call>()->func_id = self_found_method->function;
             } else {
               kphp_error(!found_method->function->modifiers.is_abstract(),

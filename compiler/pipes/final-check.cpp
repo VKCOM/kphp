@@ -20,7 +20,7 @@ void check_class_immutableness(ClassPtr klass) {
     for (auto sub_class : sub_classes) {
       kphp_error(sub_class->is_immutable,
                  fmt_format("Field {} of immutable class {} should be immutable too, but class {} is mutable",
-                            TermStringFormat::paint(field.local_name(), TermStringFormat::red),
+                            TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
                             TermStringFormat::paint(klass->name, TermStringFormat::red),
                             TermStringFormat::paint(sub_class->name, TermStringFormat::red)));
     }

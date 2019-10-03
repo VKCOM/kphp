@@ -105,7 +105,7 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
   }
 }
 
-bool derived_has_method(ClassPtr klass, const std::string &fun_name) {
+bool derived_has_method(ClassPtr klass, vk::string_view fun_name) {
   auto has_method = [&](ClassPtr c) { return c->members.get_instance_method(fun_name); };
 
   return has_method(klass) ||

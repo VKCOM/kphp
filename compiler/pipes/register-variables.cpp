@@ -80,7 +80,7 @@ void RegisterVariablesPass::register_class_static_var(ClassPtr class_id, ClassMe
   kphp_assert(var->is_class_static_var());
 
   if (f.init_val->type() != op_empty) {
-    if (!kphp_error(is_const(f.init_val), format("Default value of %s::$%s is not constant", class_id->name.c_str(), f.local_name().c_str()))) {
+    if (!kphp_error(is_const(f.init_val), fmt_format("Default value of {}::${} is not constant", class_id->name, f.local_name()))) {
       var->init_val = f.init_val;
     }
   }

@@ -13,16 +13,16 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
 }
 
 template<class MemberModifier>
-void CheckAccessModifiersPass::check_access(MemberModifier modifiers, ClassPtr access_class, const char *field_type, const std::string &name) {
+void CheckAccessModifiersPass::check_access(MemberModifier modifiers, ClassPtr access_class, const char *field_type, vk::string_view name) {
   if (modifiers.is_private()) {
-    kphp_error(class_id == access_class || lambda_class_id == access_class, format("Can't access private %s %s", field_type, name.c_str()));
+    kphp_error(class_id == access_class || lambda_class_id == access_class, fmt_format("Can't access private {} {}", field_type, name));
   }
   if (modifiers.is_protected()) {
     auto is_ok = [&access_class](ClassPtr class_id) {
       return class_id && (class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
     };
     kphp_error(is_ok(class_id) || is_ok(lambda_class_id),
-               format("Can't access protected %s %s", field_type, name.c_str()));
+               fmt_format("Can't access protected {} {}", field_type, name));
   }
 }
 
@@ -45,7 +45,7 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
     FunctionPtr func_id = call->func_id;
     if (func_id->modifiers.is_instance() || func_id->modifiers.is_static()) {
       //TODO: this is hack, which should be fixed after functions with context are added to static methods list
-      std::string real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
+      auto real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
       if (func_id->context_class->members.has_static_method(real_name)) {
         check_access(func_id->modifiers, func_id->class_id, "static method", func_id->get_human_readable_name());
       } else if (func_id->context_class->members.has_instance_method(real_name)) {

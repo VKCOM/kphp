@@ -14,25 +14,39 @@
 #include "compiler/vertex.h"
 #include "common/algorithms/hashes.h"
 
-const string &ClassMemberStaticMethod::global_name() const {
+vk::string_view ClassMemberStaticMethod::global_name() const & {
   return function->name;
 }
 
-string ClassMemberStaticMethod::local_name() const {
+vk::string_view ClassMemberStaticMethod::local_name() const & {
   return function->local_name();
 }
 
+std::string ClassMemberStaticMethod::hash_name(vk::string_view name) {
+  return std::string{name} + "()";
+}
+
+std::string ClassMemberStaticMethod::get_hash_name() const {
+  return hash_name(global_name());
+}
 
 const string &ClassMemberInstanceMethod::global_name() const {
   return function->name;
 }
 
-string ClassMemberInstanceMethod::local_name() const {
+vk::string_view ClassMemberInstanceMethod::local_name() const & {
   return function->local_name();
 }
 
+std::string ClassMemberInstanceMethod::hash_name(vk::string_view name) {
+  return ClassMemberStaticMethod::hash_name(name);
+}
 
-inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) :
+std::string ClassMemberInstanceMethod::get_hash_name() const {
+  return hash_name(local_name());
+}
+
+inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, vk::string_view phpdoc_str) :
   modifiers(modifiers),
   full_name(replace_backslashes(klass->name) + "$$" + root->get_string()),
   root(root),
@@ -43,17 +57,32 @@ const string &ClassMemberStaticField::global_name() const {
   return full_name;
 }
 
-const string &ClassMemberStaticField::local_name() const {
+vk::string_view ClassMemberStaticField::local_name() const & {
   return root->str_val;
+}
+
+std::string ClassMemberStaticField::hash_name(vk::string_view name) {
+  return "$" + name;
+}
+
+std::string ClassMemberStaticField::get_hash_name() const {
+  return hash_name(local_name());
 }
 
 const TypeData *ClassMemberStaticField::get_inferred_type() const {
   return tinf::get_type(root->var_id);
 }
 
-
-const string &ClassMemberInstanceField::local_name() const {
+vk::string_view ClassMemberInstanceField::local_name() const & {
   return root->str_val;
+}
+
+std::string ClassMemberInstanceField::hash_name(vk::string_view name) {
+  return ClassMemberStaticField::hash_name(name);
+}
+
+std::string ClassMemberInstanceField::get_hash_name() const {
+  return hash_name(local_name());
 }
 
 /**
@@ -65,19 +94,19 @@ void ClassMemberInstanceField::process_phpdoc() {
   if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
     auto klass = var->class_id;
     auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, klass->file_id->main_function);
-    if (!kphp_error(parsed, format("Failed to parse phpdoc of %s::$%s", klass->name.c_str(), local_name().c_str()))) {
+    if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}::${}", klass->name, local_name()))) {
       parsed.type_expr->location = root->location;
       root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr);
     }
   }
 }
 
-ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) :
+ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) :
   modifiers(modifiers),
   root(root),
   phpdoc_str(phpdoc_str) {
 
-  var = G->create_var(local_name(), VarData::var_instance_t);
+  var = G->create_var(string{local_name()}, VarData::var_instance_t);
   root->var_id = var;
   var->init_val = def_val;
   var->class_id = klass;
@@ -93,32 +122,38 @@ inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, const string &co
   define_name = "c#" + replace_backslashes(klass->name) + "$$" + const_name;
 }
 
-const string &ClassMemberConstant::global_name() const {
+vk::string_view ClassMemberConstant::global_name() const & {
   return define_name;
 }
 
-string ClassMemberConstant::local_name() const {
+vk::string_view ClassMemberConstant::local_name() const & {
   return get_local_name_from_global_$$(define_name);
 }
 
+vk::string_view ClassMemberConstant::hash_name(vk::string_view name) {
+  return name;
+}
+
+std::string ClassMemberConstant::get_hash_name() const {
+  return std::string{hash_name(local_name())};
+}
 
 template <class MemberT>
-void ClassMembersContainer::append_member(const string &hash_name, const MemberT &member) {
-  auto hash_num = vk::std_hash(hash_name);
+void ClassMembersContainer::append_member(MemberT &&member) {
+  auto hash_num = vk::std_hash(member.get_hash_name());
   kphp_error(names_hashes.insert(hash_num).second,
-             format("Redeclaration of %s::%s", klass->name.c_str(), hash_name.c_str()));
-  get_all_of<MemberT>().push_back(member);
+             format("Redeclaration of %s::%s", klass->name.c_str(), member.get_hash_name().c_str()));
+  get_all_of<MemberT>().push_back(std::forward<MemberT>(member));
   //printf("append %s::%s\n", klass->name.c_str(), hash_name.c_str());
 }
 
-inline bool ClassMembersContainer::member_exists(const string &hash_name) const {
-  return names_hashes.find(vk::std_hash(hash_name)) != names_hashes.end();
+inline bool ClassMembersContainer::member_exists(vk::string_view hash_name) const {
+  return vk::contains(names_hashes, vk::std_hash(hash_name));
 }
 
 
 void ClassMembersContainer::add_static_method(FunctionPtr function) {
-  string hash_name = function->name + "()";     // не local_name из-за context-наследования, там коллизии
-  append_member(hash_name, ClassMemberStaticMethod(function));
+  append_member(ClassMemberStaticMethod{function});
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
   function->class_id = klass;
@@ -127,8 +162,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function) {
 }
 
 void ClassMembersContainer::add_instance_method(FunctionPtr function) {
-  string hash_name = function->local_name() + "()";
-  append_member(hash_name, ClassMemberInstanceMethod(function));
+  append_member(ClassMemberInstanceMethod{function});
   // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
 
   function->class_id = klass;
@@ -148,19 +182,16 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   }
 }
 
-void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) {
-  string hash_name = "$" + root->str_val;
-  append_member(hash_name, ClassMemberStaticField(klass, root, init_val, modifiers, phpdoc_str));
+void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, vk::string_view phpdoc_str) {
+  append_member(ClassMemberStaticField{klass, root, init_val, modifiers, phpdoc_str});
 }
 
-void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const vk::string_view &phpdoc_str) {
-  string hash_name = "$" + root->str_val;
-  append_member(hash_name, ClassMemberInstanceField(klass, root, def_val, modifiers, phpdoc_str));
+void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) {
+  append_member(ClassMemberInstanceField{klass, root, def_val, modifiers, phpdoc_str});
 }
 
-void ClassMembersContainer::add_constant(string const_name, VertexPtr value) {
-  const string &hash_name = const_name;
-  append_member(hash_name, ClassMemberConstant(klass, const_name, value));
+void ClassMembersContainer::add_constant(const std::string &const_name, VertexPtr value) {
+  append_member(ClassMemberConstant{klass, const_name, value});
 }
 
 void ClassMembersContainer::safe_add_instance_method(FunctionPtr function) {
@@ -168,24 +199,20 @@ void ClassMembersContainer::safe_add_instance_method(FunctionPtr function) {
   add_instance_method(function);
 }
 
-bool ClassMembersContainer::has_constant(const string &local_name) const {
-  const string &hash_name = local_name;
-  return member_exists(hash_name);
+bool ClassMembersContainer::has_constant(vk::string_view local_name) const {
+  return member_exists(ClassMemberConstant::hash_name(local_name));
 }
 
-bool ClassMembersContainer::has_field(const string &local_name) const {
-  string hash_name = "$" + local_name;
-  return member_exists(hash_name);          // либо static, либо instance field — оба не могут существовать с одним именем
+bool ClassMembersContainer::has_field(vk::string_view local_name) const {
+  return member_exists(ClassMemberStaticField::hash_name(local_name));          // либо static, либо instance field — оба не могут существовать с одним именем
 }
 
-bool ClassMembersContainer::has_instance_method(const string &local_name) const {
-  string hash_name = local_name + "()";
-  return member_exists(hash_name);          // либо static, либо instance method — не может быть двух с одним именем
+bool ClassMembersContainer::has_instance_method(vk::string_view local_name) const {
+  return member_exists(ClassMemberInstanceMethod::hash_name(local_name));          // либо static, либо instance method — не может быть двух с одним именем
 }
 
-bool ClassMembersContainer::has_static_method(const string &local_name) const {
-  string hash_name = replace_backslashes(klass->name) + "$$" + local_name + "()";
-  return member_exists(hash_name);
+bool ClassMembersContainer::has_static_method(vk::string_view local_name) const {
+  return member_exists(ClassMemberStaticMethod::hash_name(replace_backslashes(klass->name) + "$$" + local_name));
 }
 
 bool ClassMembersContainer::has_any_instance_var() const {
@@ -203,32 +230,32 @@ FunctionPtr ClassMembersContainer::get_constructor() const {
   return {};
 }
 
-const ClassMemberStaticMethod *ClassMembersContainer::get_static_method(const string &local_name) const {
+const ClassMemberStaticMethod *ClassMembersContainer::get_static_method(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberStaticMethod>(local_name);
 }
 
-const ClassMemberInstanceMethod *ClassMembersContainer::get_instance_method(const string &local_name) const {
+const ClassMemberInstanceMethod *ClassMembersContainer::get_instance_method(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberInstanceMethod>(local_name);
 }
 
-const ClassMemberStaticField *ClassMembersContainer::get_static_field(const string &local_name) const {
+const ClassMemberStaticField *ClassMembersContainer::get_static_field(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberStaticField>(local_name);
 }
 
-const ClassMemberInstanceField *ClassMembersContainer::get_instance_field(const string &local_name) const {
+const ClassMemberInstanceField *ClassMembersContainer::get_instance_field(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberInstanceField>(local_name);
 }
 
-const ClassMemberConstant *ClassMembersContainer::get_constant(const string &local_name) const {
+const ClassMemberConstant *ClassMembersContainer::get_constant(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberConstant>(local_name);
 }
 
-ClassMemberInstanceMethod *ClassMembersContainer::get_instance_method(const string &local_name) {
+ClassMemberInstanceMethod *ClassMembersContainer::get_instance_method(vk::string_view local_name) {
   const auto *container = this;
   return const_cast<ClassMemberInstanceMethod *>(container->get_instance_method(local_name));
 }
 
-ClassMemberStaticMethod *ClassMembersContainer::get_static_method(const string &local_name) {
+ClassMemberStaticMethod *ClassMembersContainer::get_static_method(vk::string_view local_name) {
   const auto *container = this;
   return const_cast<ClassMemberStaticMethod *>(container->get_static_method(local_name));
 }
