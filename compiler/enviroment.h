@@ -32,6 +32,7 @@ private:
   int print_resumable_graph_{0};
   int enable_profiler_{0};
   string tl_schema_file_;
+  bool gen_tl_internals_{false};
   bool no_pch_{false};
   bool stop_on_type_error_{true};
   bool show_progress_{true};
@@ -111,6 +112,8 @@ public:
   bool get_error_on_warns() const;
   void set_tl_schema_file(const string &tl_schema_file);
   string get_tl_schema_file() const;
+  void set_gen_tl_internals();
+  bool get_gen_tl_internals() const;
   void set_no_pch();
   bool get_no_pch() const;
   void set_no_index_file();

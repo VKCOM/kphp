@@ -271,7 +271,7 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="tl2php",
         description="gen php classes with tests from tl schema in {} mode".format(mode_name),
-        cmd="{tl2php} -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
+        cmd="{tl2php} -i -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
             tl2php=tl2php_bin,
             combined2_tl=combined2_tl,
             tl_tests_dir=tl_tests_dir,
@@ -283,7 +283,7 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="typed-tl-tests",
         description="run typed tl tests in {} mode".format(mode_name),
-        cmd="KPHP_TL_SCHEMA={combined_tlo} {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
+        cmd="KPHP_TL_SCHEMA={combined_tlo} KPHP_GEN_TL_INTERNALS=1 {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
             tl_tests_dir=tl_tests_dir,

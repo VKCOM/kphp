@@ -440,7 +440,7 @@ bool CompilerCore::try_require_file(SrcFilePtr file) {
 
 void CompilerCore::try_load_tl_classes() {
   if (!env().get_tl_schema_file().empty()) {
-    tl_classes.load_from(env().get_tl_schema_file());
+    tl_classes.load_from(env().get_tl_schema_file(), G->env().get_gen_tl_internals());
   }
 }
 

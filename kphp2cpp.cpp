@@ -117,6 +117,9 @@ int parse_args_f(int i) {
     case 2008:
       env->set_enable_global_vars_memory_stats();
       break;
+    case 2009:
+      env->set_gen_tl_internals();
+      break;
     default:
       return -1;
   }
@@ -160,6 +163,7 @@ int main(int argc, char *argv[]) {
   parse_option("no-pch", no_argument, 2006, "Forbid to use precompile header");
   parse_option("no-index-file", no_argument, 2007, "Forbid to use index file");
   parse_option("enable-global-vars-memory-stats", no_argument, 2008, "Enable an ability to get global vars memory stats");
+  parse_option("gen-tl-internals", no_argument, 2009, "Generate storers and fetchers for internal tl functions. Useless if --tl-schema is not provided");
   parse_engine_options_long(argc, argv, parse_args_f);
 
 

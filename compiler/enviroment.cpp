@@ -7,10 +7,11 @@
 #include <sstream>
 #include <unistd.h>
 
-#include "compiler/stage.h"
-#include "compiler/utils/string-utils.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
+
+#include "compiler/stage.h"
+#include "compiler/utils/string-utils.h"
 
 /*** Enviroment ***/
 
@@ -455,6 +456,7 @@ bool KphpEnviroment::init() {
   get_bool_option_from_env(stop_on_type_error_, "KPHP_STOP_ON_TYPE_ERROR", true);
   get_bool_option_from_env(show_progress_, "KPHP_SHOW_PROGRESS", true);
   get_bool_option_from_env(enable_global_vars_memory_stats_, "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", false);
+  get_bool_option_from_env(gen_tl_internals_, "KPHP_GEN_TL_INTERNALS", false);
 
   init_env_var(&jobs_count_, "KPHP_JOBS_COUNT", "100");
   env_str2int(&jobs_count_int_, jobs_count_);
@@ -577,6 +579,7 @@ void KphpEnviroment::debug() const {
             "KPHP_NO_INDEX_FILE=[" << get_no_index_file() << "]\n" <<
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
             "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
+            "KPHP_GEN_TL_INTERNALS=[" << get_gen_tl_internals() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
             "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
@@ -641,4 +644,12 @@ const std::string &KphpEnviroment::get_tl_namespace_prefix() const {
 const std::string &KphpEnviroment::get_tl_classname_prefix() const {
   static std::string tl_classname_prefix("C$VK$TL$");
   return tl_classname_prefix;
+}
+
+void KphpEnviroment::set_gen_tl_internals() {
+  gen_tl_internals_ = true;
+}
+
+bool KphpEnviroment::get_gen_tl_internals() const {
+  return gen_tl_internals_;
 }

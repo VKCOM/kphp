@@ -1341,6 +1341,9 @@ public:
     std::string struct_name = cpp_tl_struct_name("f_", f->name);
 
     W << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
+    if (!G->env().get_gen_tl_internals() && f->is_internal_function()) { // todo: удалить, когда убедимся что в проде нет этого варнинга
+      W << "php_warning(\"### DEPRECATED TL FEATURE ###:\\nStoring of internal tl function " << f->name << "\");" << NL;
+    }
     W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f);
     W << "return std::move(result_fetcher);" << NL;
@@ -1352,6 +1355,9 @@ public:
 
     if (needs_typed_fetch_store) {
       W << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
+      if (!G->env().get_gen_tl_internals() && f->is_internal_function()) { // todo: удалить, когда убедимся что в проде нет этого варнинга
+        W << "php_warning(\"### DEPRECATED TL FEATURE ###:\\nTyped storing of internal tl function " << f->name << "\");" << NL;
+      }
       W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
       W << CombinatorStore(f, true);
       W << "return std::move(result_fetcher);" << NL;
@@ -1678,6 +1684,10 @@ void collect_target_objects() {
     return CUSTOM_IMPL_TYPES.find(t->name) != CUSTOM_IMPL_TYPES.end()
            || t->name == "engine.Query";                        // это единственный тип с !X, надо бы его удалить из схемы
   };
+  auto should_exclude_tl_function = [](const std::unique_ptr<vk::tl::combinator> &f) {
+    (void) f;
+    return false; // !G->env().get_gen_tl_internals() && f->is_internal_function(); // todo: раскомментить, когда убедимся, что на проде нигде не вызываются internal'ы
+  };
 
   for (const auto &e : tl->types) {
     const std::unique_ptr<vk::tl::type> &t = e.second;
@@ -1692,9 +1702,11 @@ void collect_target_objects() {
 
   for (const auto &e : tl->functions) {
     const std::unique_ptr<vk::tl::combinator> &f = e.second;
-    Module::add_to_module(f);
-    cur_combinator = f.get();
-    check_combinator(f);
+    if (!should_exclude_tl_function(f)) {
+      Module::add_to_module(f);
+      cur_combinator = f.get();
+      check_combinator(f);
+    }
   }
 }
 
