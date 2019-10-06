@@ -292,7 +292,6 @@ class CFG {
   void create_cfg_end_try(Node to);
   void create_cfg_register_exception(Node from);
 
-  VarSplitPtr get_var_split(VarPtr var, bool force = false);
   Node new_node();
   UsagePtr new_usage(UsageType type, VertexAdaptor<op_var> v);
   void add_usage(Node node, UsagePtr usage);
@@ -321,18 +320,6 @@ public:
   void run(CFGData *new_data);
 };
 
-VarSplitPtr CFG::get_var_split(VarPtr var, bool force) {
-  if (get_index(var) < 0) {
-    return {};
-  }
-  VarSplitPtr res = var_split_data[var];
-  if (!res && force) {
-    res = VarSplitPtr(new VarSplitData());
-    var_split_data[var] = res;
-  }
-  return res;
-}
-
 Node CFG::new_node() {
   Node res;
   node_gen.init_id(&res);
@@ -342,10 +329,11 @@ Node CFG::new_node() {
 UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
   VarPtr var = v->var_id;
   kphp_assert (var);
-  VarSplitPtr var_split = get_var_split(var);
-  if (!var_split) {
+  if (get_index(var) < 0) {    // non-splittable var
     return {};
   }
+  VarSplitPtr var_split = var_split_data[var];
+  kphp_assert(var_split);
   UsagePtr res = UsagePtr(new UsageData(type, v));
   var_split->usage_gen.init_id(&res);
   var_split->parent[res] = res;
@@ -1064,7 +1052,7 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
   VarPtr var = usage->v->var_id;
   VarPtr another_var = another_usage->v->var_id;
   if (var == another_var) {
-    VarSplitPtr var_split = get_var_split(var);
+    VarSplitPtr var_split = var_split_data[var];
     kphp_assert (var_split);
     dsu_uni(&var_split->parent, usage, another_usage);
     return true;
@@ -1141,7 +1129,7 @@ UsagePtr CFG::search_uninit_usage(Node v, VarPtr var) {
 }
 
 void CFG::process_var(VarPtr var) {
-  VarSplitPtr var_split = get_var_split(var);
+  VarSplitPtr var_split = var_split_data[var];
   kphp_assert (var_split);
 
   if (var->type() != VarData::var_param_t) {
@@ -1266,7 +1254,7 @@ void CFG::process_function(FunctionPtr function) {
   int var_i = 0;
   for (auto var_id : splittable_vars) {
     set_index(var_id, var_i++);
-    get_var_split(var_id, true);
+    var_split_data[var_id] = VarSplitPtr(new VarSplitData());
   }
 
   int vertex_n = register_vertices(function->root, 0);
