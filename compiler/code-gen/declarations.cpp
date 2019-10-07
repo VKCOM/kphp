@@ -395,9 +395,9 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   }
 
   W << NL << "struct " << klass->src_name;
-  if (ClassPtr base = klass->parent_class) {
+  if (ClassData::does_need_codegen(klass->parent_class)) {
     auto final_keyword = klass->derived_classes.empty() ? " final" : "";
-    W << final_keyword << " : public " << base->src_name;
+    W << final_keyword << " : public " << klass->parent_class->src_name;
   } else if (klass->is_empty_class()) {
     W << " final : public refcountable_empty_php_classes ";
   } else if (interface || !klass->derived_classes.empty()) {

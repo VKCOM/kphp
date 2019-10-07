@@ -77,7 +77,7 @@ void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
     }
   }
 
-  if (klass->parent_class) {
+  if (ClassData::does_need_codegen(klass->parent_class)) {
     classes_.emplace(klass->parent_class);
   }
 }

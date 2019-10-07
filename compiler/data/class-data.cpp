@@ -288,7 +288,7 @@ void ClassData::mark_as_used() {
 }
 
 bool ClassData::has_no_derived_classes() const {
-  return (!implements.empty() || parent_class) && derived_classes.empty();
+  return (!implements.empty() || does_need_codegen(parent_class)) && derived_classes.empty();
 }
 
 template<std::atomic<bool> ClassData:: *field_ptr>
