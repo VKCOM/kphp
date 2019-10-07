@@ -65,6 +65,7 @@ extern int http_sfd;
 extern long long rpc_failed, rpc_sent, rpc_received, rpc_received_news_subscr, rpc_received_news_redirect;
 extern int rpc_port;
 extern int rpc_sfd;
+extern long long rpc_client_actor;
 extern int rpc_client_port;
 extern const char *rpc_client_host;
 

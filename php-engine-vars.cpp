@@ -38,6 +38,7 @@ long long rpc_failed, rpc_sent, rpc_received, rpc_received_news_subscr, rpc_rece
 int rpc_port = -1;
 int rpc_sfd = -1;
 int rpc_client_port = -1;
+long long rpc_client_actor = -1;
 const char *rpc_client_host = nullptr;
 
 /** sigterm **/

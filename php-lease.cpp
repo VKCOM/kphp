@@ -112,18 +112,29 @@ static void rpc_send_ready(connection *c) {
   int q[100], qn = 0;
   qn += 2;
   bool use_ready_v2 = (is_staging != 0);
+  int magic = use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY;
+
+  q[qn++] = -1; // will be replaced by op
+  if (get_current_target() == rpc_main_target && rpc_client_actor != -1) { // we don't want to update all tasks
+    *reinterpret_cast<long long*>(&q[qn]) = 0;
+    qn += 2;
+    q[qn++] = TL_RPC_DEST_ACTOR;
+    *reinterpret_cast<long long*>(&q[qn]) = rpc_client_actor;
+    qn += 2;
+    q[qn++] = magic;
+    magic = RPC_INVOKE_REQ;
+  }
   if (use_ready_v2) {
     q[qn++] = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;
   }
-  q[qn++] = -1;
-  q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
-  q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
+  q[qn++] = static_cast<int>(inet_sockaddr_address(&c->local_endpoint));
+  q[qn++] = static_cast<int>(inet_sockaddr_port(&c->local_endpoint));
   q[qn++] = pid; // pid
   q[qn++] = now - get_uptime(); // start_time
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
-  send_rpc_query(c, use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY, -1, q, qn * 4);
+  send_rpc_query(c, magic, -1, q, qn * 4);
 }
 
 

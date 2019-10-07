@@ -1175,8 +1175,6 @@ void php_worker_free_script(php_worker *worker) {
   worker->state = phpq_finish;
 }
 
-int get_current_target();
-
 void php_worker_finish(php_worker *worker) {
   vkprintf (2, "free php script [req_id = %016llx]\n", worker->req_id);
   lease_on_worker_finish(worker);
@@ -3001,6 +2999,7 @@ int main_args_handler(int i) {
       value = eq + 1;
       *eq = 0;
       ini_set(key, value);
+      *eq = '=';
       return 0;
     }
     case 'l': {
@@ -3024,14 +3023,21 @@ int main_args_handler(int i) {
       return 0;
     }
     case 'w': {
-      rpc_client_host = strdup(optarg);
-      char *colon = strrchr((char *)rpc_client_host, ':');
+      char *colon = strrchr(optarg, ':');
       if (colon == nullptr) {
         kprintf ("-w option, can't find ':'\n");
         return -1;
       }
-      *colon++ = 0;
-      rpc_client_port = atoi(colon);
+      rpc_client_host = strndup(optarg, colon - optarg);
+      char *at = strchr(colon, '@');
+      if (at) {
+        *at = 0;
+      }
+      rpc_client_port = atoi(colon + 1);
+      if (at) {
+        *at = '@';
+        rpc_client_actor = atoi(at + 1);
+      }
       return 0;
     }
     case 'E': {
