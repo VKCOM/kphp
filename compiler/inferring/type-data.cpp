@@ -81,20 +81,9 @@ const TypeData *TypeData::get_type(PrimitiveType array, PrimitiveType type) {
   return array_types[type];
 }
 
-TypeData::TypeData() :
-  ptype_(tp_Unknown),
-  flags_(0),
-  generation_(current_generation()),
-  parent_(nullptr),
-  anykey_value(nullptr) {
-}
-
 TypeData::TypeData(PrimitiveType ptype) :
   ptype_(ptype),
-  flags_(0),
-  generation_(current_generation()),
-  parent_(nullptr),
-  anykey_value(nullptr) {
+  generation_(current_generation()) {
   if (ptype_ == tp_False) {
     set_or_false_flag(true);
     ptype_ = tp_Unknown;
@@ -106,8 +95,6 @@ TypeData::TypeData(const TypeData &from) :
   class_type_(from.class_type_),
   flags_(from.flags_),
   generation_(from.generation_),
-  parent_(nullptr),
-  anykey_value(nullptr),
   subkeys_values(from.subkeys_values) {
   if (from.anykey_value != nullptr) {
     anykey_value = from.anykey_value->clone();

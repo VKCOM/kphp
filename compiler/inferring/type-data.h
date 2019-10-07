@@ -51,18 +51,17 @@ private:
     inline unsigned int size() const { return (unsigned int)values_pairs.size(); }
   };
 
-  PrimitiveType ptype_;
+  PrimitiveType ptype_{tp_Unknown};
   ClassPtr class_type_;
-  flags_t flags_;
+  flags_t flags_{0};
   generation_t generation_;
 
-  TypeData *parent_;
-  TypeData *anykey_value;
+  TypeData *parent_{nullptr};
+  TypeData *anykey_value{nullptr};
   SubkeysValues subkeys_values;
 
   static TLS<generation_t> current_generation_;
-  TypeData();
-  explicit TypeData(PrimitiveType ptype);
+  explicit TypeData(PrimitiveType ptype = tp_Unknown);
 
   TypeData *at(const Key &key) const;
   TypeData *at_force(const Key &key);
