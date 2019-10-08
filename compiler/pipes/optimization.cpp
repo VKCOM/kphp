@@ -163,6 +163,8 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
       res = expr;
     } else if (root->type() == op_conv_bool && tp->ptype() == tp_bool) {
       res = expr;
+    } else if (root->type() == op_conv_bool && tp->ptype() == tp_tuple) {
+      kphp_warning("Converting tuple to bool is always true");
     } else if (root->type() == op_conv_float && tp->ptype() == tp_float) {
       res = expr;
     } else if (vk::any_of_equal(root->type(), op_conv_string, op_conv_string_l) && tp->ptype() == tp_string) {
