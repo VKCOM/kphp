@@ -218,7 +218,7 @@ string::string(const string &str) :
 
 string::string(string &&str) noexcept :
   p(str.p) {
-  str.p = nullptr;
+  str.p = empty_string().ref_data();
 }
 
 string::string(const char *s, size_type n) :
@@ -328,11 +328,11 @@ string &string::operator=(const string &str) {
 }
 
 string &string::operator=(string &&str) noexcept {
-  char *str_copy = str.p;
-  destroy();
-  p = str_copy;
-  str.p = nullptr;
-
+  if (this != &str) {
+    destroy();
+    p = str.p;
+    str.p = empty_string().ref_data();
+  }
   return *this;
 }
 

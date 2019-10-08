@@ -1323,7 +1323,7 @@ array<T>::array(const array<T> &other) :
 template<class T>
 array<T>::array(array<T> &&other) noexcept :
   p(other.p) {
-  other.p = nullptr;
+  other.p = array_inner::empty_array();
 }
 
 template<class T>
@@ -1348,7 +1348,7 @@ inline array<T> array<T>::create(Args &&... args) {
 
 template<class T>
 array<T> &array<T>::operator=(const array &other) {
-  typename array::array_inner *other_copy = other.p->ref_copy();
+  auto other_copy = other.p->ref_copy();
   destroy();
   p = other_copy;
   return *this;
@@ -1356,10 +1356,10 @@ array<T> &array<T>::operator=(const array &other) {
 
 template<class T>
 array<T> &array<T>::operator=(array &&other) noexcept {
-  if (other.p != p) {
+  if (this != &other) {
     destroy();
     p = other.p;
-    other.p = nullptr;
+    other.p = array_inner::empty_array();
   }
   return *this;
 }

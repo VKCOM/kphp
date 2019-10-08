@@ -41,9 +41,7 @@ void var::copy_from(var &&other) {
     default:
       storage = other.storage;
   }
-
   type = other.type;
-  other.type = NULL_TYPE;
 }
 
 template<typename T>
@@ -72,8 +70,7 @@ var::var(T &&v) {
   init_from(std::forward<T>(v));
 }
 
-var::var(const Unknown &u __attribute__((unused))) :
-  type(NULL_TYPE) {
+var::var(const Unknown &u __attribute__((unused))) {
   php_assert ("Unknown used!!!" && 0);
 }
 
