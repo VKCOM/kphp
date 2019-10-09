@@ -136,6 +136,13 @@ void acc_stats_update(acc_stats_t *to, const acc_stats_t &from) {
   to->a_idle_percent += from.a_idle_percent;
   to->script_max_memory_used = std::max(to->script_max_memory_used, from.script_max_memory_used);
   to->script_max_real_memory_used = std::max(to->script_max_real_memory_used, from.script_max_real_memory_used);
+  to->memory_limit_script_errors_cnt += from.memory_limit_script_errors_cnt;
+  to->timeout_script_errors_cnt += from.timeout_script_errors_cnt;
+  to->exception_script_errors_cnt += from.exception_script_errors_cnt;
+  to->worker_terminate_script_errors_cnt += from.worker_terminate_script_errors_cnt;
+  to->stack_overflow_script_errors_cnt += from.stack_overflow_script_errors_cnt;
+  to->php_assert_script_errors_cnt += from.php_assert_script_errors_cnt;
+  to->unclassified_script_errors_cnt += from.unclassified_script_errors_cnt;
   to->cnt++;
 }
 
@@ -328,7 +335,7 @@ struct Stats {
   }
 
   void update(const CpuStatTimestamp &cpu_timestamp) {
-    for (auto & i_cpu : cpu) {
+    for (auto &i_cpu : cpu) {
       i_cpu.add_timestamp(cpu_timestamp);
     }
   }
@@ -358,7 +365,7 @@ struct Stats {
 //    sprintf (buffer, "is_paused = %d\n", istats.is_wait_net);
 
     std::string cpu_vals;
-    for (auto & i_cpu : cpu) {
+    for (auto &i_cpu : cpu) {
       CpuStat s = i_cpu.get_stat();
 
       sprintf(buffer, " %6.2lf%%", cpu_cnt * (s.cpu_usage * 100));
@@ -412,29 +419,29 @@ void init_mutex(pthread_mutex_t *mutex) {
 }
 
 void shared_data_init(shared_data_t *data) {
-  vkprintf (2, "Init shared data: begin\n");
+  vkprintf(2, "Init shared data: begin\n");
   init_mutex(&data->main_mutex);
 
   data->magic = SHARED_DATA_MAGIC;
   data->is_inited = 1;
-  vkprintf (2, "Init shared data: end\n");
+  vkprintf(2, "Init shared data: end\n");
 }
 
 
 shared_data_t *get_shared_data(const char *name) {
   int ret;
-  vkprintf (2, "Get shared data: begin\n");
+  vkprintf(2, "Get shared data: begin\n");
   int fid = shm_open(name, O_RDWR, 0777);
   int init_flag = 0;
   if (fid == -1) {
     if (errno == ENOENT) {
-      vkprintf (1, "shared memory entry is not exists\n");
-      vkprintf (1, "create shared memory\n");
+      vkprintf(1, "shared memory entry is not exists\n");
+      vkprintf(1, "create shared memory\n");
       fid = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0777);
       if (fid == -1) {
-        vkprintf (1, "failed to create shared memory\n");
+        vkprintf(1, "failed to create shared memory\n");
         assert (errno == EEXIST && "failed to created shared memory for unknown reason");
-        vkprintf (1, "somebody created it before us! so lets just open it\n");
+        vkprintf(1, "somebody created it before us! so lets just open it\n");
         fid = shm_open(name, O_RDWR, 0777);
         assert (fid != -1 && "failed to open shared memory");
       } else {
@@ -455,7 +462,7 @@ shared_data_t *get_shared_data(const char *name) {
     shared_data_init(data);
   } else {
     if (data->is_inited == 0) {
-      vkprintf (1, "somebody is trying to init shared data right now. lets wait for a second\n");
+      vkprintf(1, "somebody is trying to init shared data right now. lets wait for a second\n");
       sleep(1);
     }
     assert (data->is_inited == 1 && "shared data is not inited yet");
@@ -464,7 +471,7 @@ shared_data_t *get_shared_data(const char *name) {
     assert (data->magic == SHARED_DATA_MAGIC && "wrong magic in shared data");
   }
 
-  vkprintf (1, "Get shared data: end\n");
+  vkprintf(1, "Get shared data: end\n");
   return data;
 }
 
@@ -472,7 +479,7 @@ void shared_data_lock(shared_data_t *data) {
   int err = pthread_mutex_lock(&data->main_mutex);
   if (err != 0) {
     if (err == EOWNERDEAD) {
-      vkprintf (1, "owner of shared memory mutex is dead. trying to make mutex and memory consitent\n");
+      vkprintf(1, "owner of shared memory mutex is dead. trying to make mutex and memory consitent\n");
 
       err = pthread_mutex_consistent_np(&data->main_mutex);
       assert (err == 0 && "failed to make mutex constistent_np");
@@ -493,7 +500,7 @@ void master_data_remove_if_dead(master_data_t *master) {
     if (start_time != master->start_time) {
       master->valid_flag = 0;
       dl_assert (me == nullptr || master != me, dl_pstr("[start_time = %llu] [master->start_time = %llu]",
-                                                     start_time, master->start_time));
+                                                        start_time, master->start_time));
     }
   }
 }
@@ -688,13 +695,13 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
 
   dl_assert (shmem_name.size() < NAME_MAX, "too long name for shared memory file");
   dl_assert (socket_name.size() < NAME_MAX, "too long socket name (for fd transfer)");
-  kprintf ("[%s] [%s]\n", shmem_name.c_str(), socket_name.c_str());
+  kprintf("[%s] [%s]\n", shmem_name.c_str(), socket_name.c_str());
 
   http_fd = new_http_fd;
   http_fd_port = new_http_fd_port;
   try_get_http_fd = new_try_get_http_fd;
 
-  vkprintf (1, "start master: begin\n");
+  vkprintf(1, "start master: begin\n");
 
   sigemptyset(&empty_mask);
 
@@ -724,7 +731,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
   int attempts_to_start = 2;
   int is_inited = 0;
   while (attempts_to_start-- > 0) {
-    vkprintf (1, "attemt to init master. [left attempts = %d]\n", attempts_to_start);
+    vkprintf(1, "attemt to init master. [left attempts = %d]\n", attempts_to_start);
     shared_data_lock(shared_data);
 
     shared_data_update(shared_data);
@@ -738,7 +745,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
     shared_data_unlock(shared_data);
 
     if (!is_inited) {
-      vkprintf (1, "other restart is in progress. sleep 5 seconds. [left attempts = %d]\n", attempts_to_start);
+      vkprintf(1, "other restart is in progress. sleep 5 seconds. [left attempts = %d]\n", attempts_to_start);
       sleep(5);
     } else {
       break;
@@ -746,17 +753,17 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
   }
 
   if (!is_inited) {
-    vkprintf (0, "Failed to init master. It seems that two other masters are running\n");
+    vkprintf(0, "Failed to init master. It seems that two other masters are running\n");
     _exit(1);
   }
 
-  vkprintf (1, "start master: end\n");
+  vkprintf(1, "start master: end\n");
 
   run_master();
 }
 
 void terminate_worker(worker_info_t *w) {
-  vkprintf (1, "kill_worker: send SIGTERM to [pid = %d]\n", (int)w->pid);
+  vkprintf(1, "kill_worker: send SIGTERM to [pid = %d]\n", (int)w->pid);
   kill(w->pid, SIGTERM);
   w->is_dying = 1;
   w->kill_time = my_now + 35;
@@ -790,7 +797,7 @@ void kill_hanging_workers() {
   if (last_terminated + 30 < my_now) {
     for (i = 0; i < me_workers_n; i++) {
       if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME <= my_now) {
-        vkprintf (1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+        vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         workers_hung++;
         terminate_worker(workers[i]);
         last_terminated = my_now;
@@ -801,7 +808,7 @@ void kill_hanging_workers() {
 
   for (i = 0; i < me_workers_n; i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
-      vkprintf (1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
+      vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       kill(workers[i]->pid, SIGKILL);
       workers_killed++;
 
@@ -968,7 +975,7 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
     PR_DATA (reader)->worker_generation = worker->generation;
     PR_DATA (reader)->pipe_info = info;
   } else {
-    vkprintf (0, "failed to create pipe_reader [fd = %d]", pipe);
+    vkprintf(0, "failed to create pipe_reader [fd = %d]", pipe);
   }
   info->reader = reader;
 
@@ -1005,7 +1012,7 @@ int run_worker() {
   if (new_pid == 0) {
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
-      vkprintf (0, "parent is dead just after start\n");
+      vkprintf(0, "parent is dead just after start\n");
       exit(123);
     }
 
@@ -1065,7 +1072,7 @@ int run_worker() {
 
   dl_restore_signal_mask();
 
-  vkprintf (1, "new worker launched [pid = %d]\n", (int)new_pid);
+  vkprintf(1, "new worker launched [pid = %d]\n", (int)new_pid);
 
   worker_info_t *worker = workers[me_workers_n++] = new_worker();
   worker->pid = new_pid;
@@ -1093,7 +1100,7 @@ int run_worker() {
 void remove_worker(pid_t pid) {
   int i;
 
-  vkprintf (2, "remove workers [pid = %d]\n", (int)pid);
+  vkprintf(2, "remove workers [pid = %d]\n", (int)pid);
   for (i = 0; i < me_workers_n; i++) {
     if (workers[i]->pid == pid) {
       if (workers[i]->is_dying) {
@@ -1112,7 +1119,7 @@ void remove_worker(pid_t pid) {
       me_workers_n--;
       workers[i] = workers[me_workers_n];
 
-      vkprintf (1, "worker_removed: [running = %d] [dying = %d]\n", me_running_workers_n, me_dying_workers_n);
+      vkprintf(1, "worker_removed: [running = %d] [dying = %d]\n", me_running_workers_n, me_dying_workers_n);
       return;
     }
   }
@@ -1277,7 +1284,7 @@ memcache_server_functions php_master_methods = [] {
 }();
 
 /*** HTTP interface for server-status ***/
-int php_master_http_execute (struct connection *c, int op);
+int php_master_http_execute(struct connection *c, int op);
 
 http_server_functions php_http_master_methods = [] {
   auto res = http_server_functions();
@@ -1323,7 +1330,7 @@ conn_query_functions stats_cq_func = [] {
 }();
 
 int delete_stats_query(conn_query *q) {
-  vkprintf (2, "delete_stats_query(%p,%p)\n", q, q->requester);
+  vkprintf(2, "delete_stats_query(%p,%p)\n", q, q->requester);
 
   delete_conn_query(q);
   zfree(q, sizeof(*q));
@@ -1342,7 +1349,7 @@ conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
 
   q->cq_type = &stats_cq_func;
   q->timer.wakeup_time = precise_now + 1;
-  vkprintf (2, "create stats query [q = %p] [requester = %p]\n", q, q->requester);
+  vkprintf(2, "create stats query [q = %p] [requester = %p]\n", q, q->requester);
 
   insert_conn_query(q);
 
@@ -1366,7 +1373,7 @@ void create_stats_queries(connection *c, int op, int worker_pid) {
       dl_assert (pipe_info != nullptr, "bug in code");
       sigqueue(workers[i]->pid, SIGSTAT, to_send);
       pipe_info->pipe_out_packet_num++;
-      vkprintf (1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
+      vkprintf(1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
       if (c != nullptr) {
         create_stats_query(c, pipe_info);
       }
@@ -1613,7 +1620,7 @@ int php_master_version(connection *c) {
 }
 
 void php_master_rpc_stats() {
-  std::string res(64*1024, 0);
+  std::string res(64 * 1024, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
   stats.statsd_prefix = nullptr;
@@ -1772,6 +1779,14 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
   add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
 
+  add_histogram_stat_long(stats, "terminated_requests.memory_limit_exceeded", server_stats.acc_stats.memory_limit_script_errors_cnt);
+  add_histogram_stat_long(stats, "terminated_requests.timeout", server_stats.acc_stats.timeout_script_errors_cnt);
+  add_histogram_stat_long(stats, "terminated_requests.exception", server_stats.acc_stats.exception_script_errors_cnt);
+  add_histogram_stat_long(stats, "terminated_requests.worker_terminate", server_stats.acc_stats.worker_terminate_script_errors_cnt);
+  add_histogram_stat_long(stats, "terminated_requests.stack_overflow", server_stats.acc_stats.stack_overflow_script_errors_cnt);
+  add_histogram_stat_long(stats, "terminated_requests.php_assert", server_stats.acc_stats.php_assert_script_errors_cnt);
+  add_histogram_stat_long(stats, "terminated_requests.unclassified", server_stats.acc_stats.unclassified_script_errors_cnt);
+
   update_mem_stats();
   unsigned long long max_vms = 0;
   unsigned long long max_rss = 0;
@@ -1793,12 +1808,12 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "memory.shared_max", max_shared * 1024);
 }
 
-int php_master_http_execute (struct connection *c, int op) {
+int php_master_http_execute(struct connection *c, int op) {
   struct hts_data *D = HTS_DATA(c);
   char ReqHdr[MAX_HTTP_HEADER_SIZE];
 
-  vkprintf (1, "in php_master_http_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
-            c->fd, op, D->header_size, D->data_size, D->http_ver);
+  vkprintf(1, "in php_master_http_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
+           c->fd, op, D->header_size, D->data_size, D->http_ver);
 
   if (D->query_type != htqt_get) {
     D->query_flags &= ~QF_KEEPALIVE;
@@ -1806,24 +1821,24 @@ int php_master_http_execute (struct connection *c, int op) {
   }
 
   assert (D->header_size <= MAX_HTTP_HEADER_SIZE);
-  assert (read_in (&c->In, &ReqHdr, D->header_size) == D->header_size);
+  assert (read_in(&c->In, &ReqHdr, D->header_size) == D->header_size);
 
   assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
-  vkprintf (1, "===============\n%.*s\n==============\n", D->header_size, ReqHdr);
-  vkprintf (1, "%d,%d,%d,%d\n", D->host_offset, D->host_size, D->uri_offset, D->uri_size);
+  vkprintf(1, "===============\n%.*s\n==============\n", D->header_size, ReqHdr);
+  vkprintf(1, "%d,%d,%d,%d\n", D->host_offset, D->host_size, D->uri_offset, D->uri_size);
 
-  vkprintf (1, "hostname: '%.*s'\n", D->host_size, ReqHdr + D->host_offset);
-  vkprintf (1, "URI: '%.*s'\n", D->uri_size, ReqHdr + D->uri_offset);
+  vkprintf(1, "hostname: '%.*s'\n", D->host_size, ReqHdr + D->host_offset);
+  vkprintf(1, "URI: '%.*s'\n", D->uri_size, ReqHdr + D->uri_offset);
 
   const char *allowed_query = "/server-status";
   if (D->uri_size == strlen(allowed_query) && strncmp(ReqHdr + D->uri_offset, allowed_query, static_cast<size_t>(D->uri_size)) == 0) {
     std::string stat_html = get_master_stats_html();
     write_basic_http_header(c, 200, 0, static_cast<int>(stat_html.length()), nullptr, "text/plain; charset=UTF-8");
-    write_out (&c->Out, stat_html.c_str(), static_cast<int>(stat_html.length()));
+    write_out(&c->Out, stat_html.c_str(), static_cast<int>(stat_html.length()));
     return 0;
   }
-  
+
   D->query_flags |= QF_ERROR;
   return -404;
 }
@@ -1831,12 +1846,12 @@ int php_master_http_execute (struct connection *c, int op) {
 
 /*** Main loop functions ***/
 void run_master_off() {
-  vkprintf (2, "state: mst_off\n");
+  vkprintf(2, "state: mst_off\n");
   assert (other->valid_flag);
-  vkprintf (2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
+  vkprintf(2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
   if (other->valid_flag && other->ask_http_fd_generation > me->generation) {
-    vkprintf (1, "send http fd\n");
+    vkprintf(1, "send http fd\n");
     send_fd_via_socket(*http_fd);
     //TODO: process errors
     me->sent_http_fd_generation = generation;
@@ -1855,7 +1870,7 @@ void run_master_off() {
 }
 
 void run_master_on() {
-  vkprintf (2, "state: mst_on\n");
+  vkprintf(2, "state: mst_on\n");
 
   static double prev_attempt = 0;
   if (!master_sfd_inited && !other->valid_flag && prev_attempt + 1 < my_now) {
@@ -1867,7 +1882,7 @@ void run_master_on() {
 
         failed_cnt++;
         if (failed_cnt > 2000) {
-          vkprintf (-1, "cannot open master server socket at port %d: %m\n", master_port);
+          vkprintf(-1, "cannot open master server socket at port %d: %m\n", master_port);
           exit(1);
         }
       } else {
@@ -1883,7 +1898,7 @@ void run_master_on() {
   if (need_http_fd) {
     int can_ask_http_fd = other->valid_flag && other->own_http_fd && other->http_fd_port == me->http_fd_port;
     if (!can_ask_http_fd) {
-      vkprintf (1, "Get http_fd via try_get_http_fd()\n");
+      vkprintf(1, "Get http_fd via try_get_http_fd()\n");
       assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
       *http_fd = try_get_http_fd();
       assert (*http_fd != -1 && "failed to get http_fd");
@@ -1891,15 +1906,15 @@ void run_master_on() {
       need_http_fd = false;
     } else {
       if (me->ask_http_fd_generation != 0 && other->sent_http_fd_generation > me->generation) {
-        vkprintf (1, "read http fd\n");
+        vkprintf(1, "read http fd\n");
         *http_fd = receive_fd(socket_fd);
-        vkprintf (1, "http_fd = %d\n", *http_fd);
+        vkprintf(1, "http_fd = %d\n", *http_fd);
 
         if (*http_fd == -1) {
-          vkprintf (1, "wait for a second...\n");
+          vkprintf(1, "wait for a second...\n");
           sleep(1);
           *http_fd = receive_fd(socket_fd);
-          vkprintf (1, "http_fd = %d\n", *http_fd);
+          vkprintf(1, "http_fd = %d\n", *http_fd);
         }
 
 
@@ -1913,7 +1928,7 @@ void run_master_on() {
         dl_assert (receive_fd_attempts_cnt < 4, dl_pstr("failed to receive http_fd: %d attempts are done\n", receive_fd_attempts_cnt));
         receive_fd_attempts_cnt++;
 
-        vkprintf (1, "ask for http_fd\n");
+        vkprintf(1, "ask for http_fd\n");
         if (socket_fd != -1) {
           close(socket_fd);
         }
@@ -1932,7 +1947,7 @@ void run_master_on() {
       int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
 
       if (set_to_kill > 0) {
-        vkprintf (1, "[set_to_kill = %d]\n", set_to_kill);
+        vkprintf(1, "[set_to_kill = %d]\n", set_to_kill);
         me->to_kill = set_to_kill;
         me->to_kill_generation = generation;
         changed = 1;
@@ -1943,21 +1958,21 @@ void run_master_on() {
 
 int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
   //empty
-  vkprintf (2, "signal_epoll_handler\n");
+  vkprintf(2, "signal_epoll_handler\n");
   signalfd_siginfo fdsi;
   //fprintf (stderr, "A\n");
   int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
   //fprintf (stderr, "B\n");
   if (s == -1) {
     if (0 && errno == EAGAIN) {
-      vkprintf (1, "strange... no signal found\n");
+      vkprintf(1, "strange... no signal found\n");
       return 0;
     }
     dl_passert (0, "read signalfd_siginfo");
   }
   dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
 
-  vkprintf (2, "some signal received\n");
+  vkprintf(2, "some signal received\n");
   return 0;
 }
 
@@ -1978,10 +1993,10 @@ void check_and_instance_cache_try_swap_memory(const pid_t *active_workers_begin,
   const auto instance_cache_memory_stats = instance_cache_get_memory_stats();
   if (instance_cache_memory_stats.real_memory_used >= 0.9 * instance_cache_memory_stats.memory_limit) {
     if (instance_cache_try_swap_memory(active_workers_begin, active_workers_end)) {
-      vkprintf (0, "instance cache memory resource successfully swapped\n");
+      vkprintf(0, "instance cache memory resource successfully swapped\n");
       ++instance_cache_memory_swaps_ok;
     } else {
-      vkprintf (0, "can't swap instance cache memory resource\n");
+      vkprintf(0, "can't swap instance cache memory resource\n");
       ++instance_cache_memory_swaps_fail;
     }
   }

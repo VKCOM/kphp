@@ -2,9 +2,10 @@
 
 #include <ucontext.h>
 
+#include "drinkless/dl-utils-lite.h"
+
 #include "PHP/php-engine-vars.h"
 #include "PHP/php_script.h"
-#include "drinkless/dl-utils-lite.h"
 
 enum run_state_t {
   rst_finished,
@@ -16,6 +17,17 @@ enum run_state_t {
   rst_running,
   rst_empty,
   rst_query_running
+};
+
+enum script_error_t {
+  no_error,
+  memory_limit,
+  timeout,
+  exception,
+  worker_terminate,
+  stack_overflow,
+  php_assert,
+  unclassified_error
 };
 
 enum query_type {
@@ -66,7 +78,7 @@ void php_script_query_readed(void *ptr);
 void php_script_query_answered(void *ptr);
 run_state_t php_script_get_state(void *ptr);
 void *php_script_create(size_t mem_size, size_t stack_size);
-void php_script_terminate(void *ptr, const char *error_message);
+void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type);
 void php_script_set_timeout(double t);
 const char *php_script_get_error(void *ptr);
 long long php_script_memory_get_total_usage(void *ptr);
@@ -96,6 +108,7 @@ public:
 
   run_state_t state;
   const char *error_message;
+  script_error_t error_type;
   void *query;
   char *run_stack, *protected_end, *run_stack_end, *run_mem;
   size_t mem_size, stack_size;
@@ -106,7 +119,7 @@ public:
   script_result *res;
 
   static void cur_run();
-  static void error(const char *error_message);
+  static void error(const char *error_message, script_error_t error_type);
 
   void check_tl();
 

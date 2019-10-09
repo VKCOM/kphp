@@ -12,29 +12,29 @@
 #include <ucontext.h>
 #include <unistd.h>
 
+#include "common/kernel-version.h"
+#include "common/kprintf.h"
+#include "common/server/crash-dump.h"
+#include "common/server/signals.h"
+#include "common/wrappers/madvise.h"
+#include "net/net-connections.h"
+
 #include "PHP/php-engine-vars.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 
-#include "common/kernel-version.h"
-#include "common/kprintf.h"
-
-#include "common/server/crash-dump.h"
-#include "common/server/signals.h"
-#include "common/wrappers/madvise.h"
-#include "net/net-connections.h"
-
 query_stats_t query_stats;
 long long query_stats_id = 1;
 
 using std::exception;
 
-void PHPScriptBase::error(const char *error_message) {
+void PHPScriptBase::error(const char *error_message, script_error_t error_type) {
   assert (is_running == true);
   current_script->state = rst_error;
   current_script->error_message = error_message;
+  current_script->error_type = error_type;
   is_running = false;
   setcontext(&PHPScriptBase::exit_context);
 }
@@ -42,6 +42,7 @@ void PHPScriptBase::error(const char *error_message) {
 void PHPScriptBase::check_tl() {
   if (tl_flag) {
     state = rst_error;
+    error_type = timeout;
     error_message = "Timeout exit";
     pause();
   }
@@ -65,6 +66,7 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
   queries_cnt(0),
   state(rst_empty),
   error_message(nullptr),
+  error_type(no_error),
   query(nullptr),
   run_stack(nullptr),
   protected_end(nullptr),
@@ -213,9 +215,10 @@ run_state_t PHPScriptBase::iterate() {
 void PHPScriptBase::finish() {
   assert (state == rst_finished || state == rst_error);
   run_state_t save_state = state;
-
+  error_t save_error_type = error_type;
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = rst_uncleared;
+  error_type = no_error;
   update_net_time();
   worker_acc_stats.tot_queries++;
   worker_acc_stats.worked_time += script_time + net_time;
@@ -226,7 +229,13 @@ void PHPScriptBase::finish() {
     std::max(worker_acc_stats.script_max_memory_used, static_cast<long>(script_mem_stats.max_memory_used));
   worker_acc_stats.script_max_real_memory_used =
     std::max(worker_acc_stats.script_max_real_memory_used, static_cast<long>(script_mem_stats.max_real_memory_used));
-
+  worker_acc_stats.memory_limit_script_errors_cnt += save_error_type == memory_limit;
+  worker_acc_stats.timeout_script_errors_cnt += save_error_type == timeout;
+  worker_acc_stats.exception_script_errors_cnt += save_error_type == exception;
+  worker_acc_stats.worker_terminate_script_errors_cnt += save_error_type == worker_terminate;
+  worker_acc_stats.stack_overflow_script_errors_cnt += save_error_type == stack_overflow;
+  worker_acc_stats.php_assert_script_errors_cnt += save_error_type == php_assert;
+  worker_acc_stats.unclassified_script_errors_cnt += save_error_type == unclassified_error;
   if (save_state == rst_error) {
     assert (error_message != nullptr);
     kprintf ("Critical error during script execution: %s\n", error_message);
@@ -346,7 +355,7 @@ void PHPScriptBase::run() {
                               f$Exception$$getTraceAsString(e).c_str());
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "-------------------------------\n\n");
-    error(msg);
+    error(msg, exception);
   }
 }
 
@@ -424,7 +433,7 @@ void sigalrm_handler(int signum) {
   PHPScriptBase::tl_flag = true;
   if (PHPScriptBase::is_running) {
     kwrite_str(2, "timeout exit\n");
-    PHPScriptBase::error("timeout exit");
+    PHPScriptBase::error("timeout exit", timeout);
     assert ("unreachable point" && 0);
   }
 }
@@ -441,7 +450,7 @@ void sigusr2_handler(int signum) {
   PHPScriptBase::ml_flag = true;
   if (PHPScriptBase::is_running) {
     kwrite_str(2, "memory limit exit\n");
-    PHPScriptBase::error("memory limit exit");
+    PHPScriptBase::error("memory limit exit", memory_limit);
     assert ("unreachable point" && 0);
   }
 }
@@ -492,7 +501,7 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
       kwrite_str(2, "In critical section: calling _exit (124)\n");
       _exit(124);
     } else {
-      PHPScriptBase::error("sigsegv(stack overflow)");
+      PHPScriptBase::error("sigsegv(stack overflow)", stack_overflow);
     }
   } else {
     write_str(2, "Error -2: Segmentation fault");
@@ -581,8 +590,9 @@ void *php_script_create(size_t mem_size, size_t stack_size) {
   return (void *)(new PHPScriptBase(mem_size, stack_size));
 }
 
-void php_script_terminate(void *ptr, const char *error_message) {
+void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type) {
   ((PHPScriptBase *)ptr)->state = rst_error;
+  ((PHPScriptBase *)ptr)->error_type = error_type;
   ((PHPScriptBase *)ptr)->error_message = error_message;
 }
 

@@ -53,6 +53,13 @@ struct acc_stats_t {
   double a_idle_percent{0};
   long script_max_memory_used{0};
   long script_max_real_memory_used{0};
+  unsigned memory_limit_script_errors_cnt{0};
+  unsigned timeout_script_errors_cnt{0};
+  unsigned exception_script_errors_cnt{0};
+  unsigned worker_terminate_script_errors_cnt{0};
+  unsigned stack_overflow_script_errors_cnt{0};
+  unsigned php_assert_script_errors_cnt{0};
+  unsigned unclassified_script_errors_cnt{0};
   int cnt{0};
 };
 extern acc_stats_t worker_acc_stats;

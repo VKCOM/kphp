@@ -5,11 +5,12 @@
 #include <cstdio>
 #include <cstring>
 
+#include "common/precise-time.h"
+
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-runner.h"
 #include "PHP/php_script.h"
 #include "runtime/allocator.h"
-#include "common/precise-time.h"
 
 extern long long cur_qres_id, first_qres_id;
 
@@ -981,7 +982,7 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
 }
 
 void script_error_() {
-  PHPScriptBase::error("script_error called");
+  PHPScriptBase::error("script_error called", unclassified_error);
 }
 
 void http_set_result_(const char *headers, int headers_len, const char *body, int body_len, int exit_code) {

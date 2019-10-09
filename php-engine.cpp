@@ -1045,7 +1045,7 @@ void php_worker_run(php_worker *worker) {
   int f = 1;
   while (f) {
     if (worker->terminate_flag) {
-      php_script_terminate(php_script, worker->error_message);
+      php_script_terminate(php_script, worker->error_message, worker_terminate);
     }
 
 //    fprintf (stderr, "state = %d, f = %d\n", php_script_get_state (php_script), f);
