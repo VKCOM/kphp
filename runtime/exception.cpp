@@ -1,5 +1,7 @@
 #include "runtime/exception.h"
 
+#include "common/fast-backtrace.h"
+
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 

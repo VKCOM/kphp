@@ -11,7 +11,10 @@
 #include <unistd.h>
 #include <wait.h>
 
+#include "common/fast-backtrace.h"
+
 #include "runtime/critical_section.h"
+#include "runtime/kphp_backtrace.h"
 #include "runtime/resumable.h"
 
 const char *engine_tag = "[";
@@ -35,45 +38,10 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift) {
       fprintf(stderr, "%p\n", buffer[i]);
     }
   } else if (php_warning_level == 2) {
-    char **strings = backtrace_symbols(buffer, nptrs);
-
-    if (strings != nullptr) {
-      for (int i = 0; i < nptrs; i++) {
-        char *mangled_name = nullptr, *offset_begin = nullptr, *offset_end = nullptr;
-        for (char *p = strings[i]; *p; ++p) {
-          if (*p == '(') {
-            mangled_name = p;
-          } else if (*p == '+' && mangled_name != nullptr) {
-            offset_begin = p;
-          } else if (*p == ')' && offset_begin != nullptr) {
-            offset_end = p;
-            break;
-          }
-        }
-        if (offset_end != nullptr) {
-          size_t copy_name_len = offset_begin - mangled_name;
-          char *copy_name = (char *)malloc(copy_name_len);
-          if (copy_name != nullptr) {
-            memcpy(copy_name, mangled_name + 1, copy_name_len - 1);
-            copy_name[copy_name_len - 1] = 0;
-
-            int status;
-            char *real_name = abi::__cxa_demangle(copy_name, nullptr, nullptr, &status);
-            if (status < 0) {
-              real_name = copy_name;
-            }
-            fprintf(stderr, "(%d) %.*s : %s+%.*s%s\n", i + num_shift, (int)(mangled_name - strings[i]), strings[i], real_name, (int)(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
-            if (status == 0) {
-              free(real_name);
-            }
-
-            free(copy_name);
-          }
-        }
-      }
-
-      free(strings);
-    } else {
+    bool was_printed = get_demangled_backtrace(buffer, nptrs, num_shift, [](const char *, const char *trace_str) {
+      fprintf(stderr, "%s", trace_str);
+    });
+    if (!was_printed) {
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
   } else if (php_warning_level == 3) {

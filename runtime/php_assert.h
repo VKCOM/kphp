@@ -4,8 +4,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "common/fast-backtrace.h"
-
 extern int die_on_fail;
 
 extern const char *engine_tag;
