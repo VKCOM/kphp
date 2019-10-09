@@ -1,6 +1,5 @@
 #pragma once
 #include "runtime/refcountable_php_classes.h"
-#include "runtime/unique_object.h"
 
 struct tl_func_base;
 
@@ -17,7 +16,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual void accept(InstanceToArrayVisitor &) {}
 
   virtual ~C$VK$TL$RpcFunction() = default;
-  virtual unique_object<tl_func_base> store() const = 0;
+  virtual std::unique_ptr<tl_func_base> store() const = 0;
 };
 
 // у каждой tl-функции есть отдельный класс-результат implements RpcFunctionReturnResult,

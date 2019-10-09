@@ -7,7 +7,7 @@
 #include "runtime/rpc.h"
 
 namespace {
-class_instance<C$VK$TL$RpcResponse> fetch_result(unique_object<RpcRequestResult> result_fetcher, const RpcErrorFactory &error_factory) {
+class_instance<C$VK$TL$RpcResponse> fetch_result(std::unique_ptr<RpcRequestResult> result_fetcher, const RpcErrorFactory &error_factory) {
   php_assert(result_fetcher && !result_fetcher->empty());
 
   auto rpc_error = error_factory.fetch_error_if_possible();
@@ -144,7 +144,7 @@ int typed_rpc_tl_query_impl(const rpc_connection &connection,
     return 0;
   }
 
-  unique_object<RpcRequestResult> stored_fetcher = req.store_request();
+  std::unique_ptr<RpcRequestResult> stored_fetcher = req.store_request();
   if (!stored_fetcher) {
     return 0;
   }

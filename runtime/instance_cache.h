@@ -11,12 +11,10 @@
 //  5) On fetch, all instances (and sub instances) are deeply cloned from instance cache;
 //  6) All instances (with all members) are destroyed strictly before or after request,
 //    and shouldn't be destroyed while request.
-#include <memory>
 
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/kphp_core.h"
-#include "runtime/unique_object.h"
 
 namespace ic_impl_ {
 
@@ -227,10 +225,10 @@ public:
   }
 };
 
-class InstanceWrapperBase : vk::not_copyable {
+class InstanceWrapperBase : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
   virtual const char *get_class() const = 0;
-  virtual unique_object<InstanceWrapperBase> clone_and_detach_shared_ref() const = 0;
+  virtual std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref() const = 0;
   virtual void memory_limit_warning() const = 0;
   virtual ~InstanceWrapperBase() = default;
 };
@@ -253,7 +251,7 @@ public:
     php_warning("Memory limit exceeded on cloning instance of class '%s' into cache", get_class());
   }
 
-  unique_object<InstanceWrapperBase> clone_and_detach_shared_ref() const final {
+  std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref() const final {
     auto detached_instance = instance_;
     DeepMoveFromScriptToCacheVisitor detach_processor;
     detach_processor.process(detached_instance);
@@ -268,7 +266,7 @@ public:
       DeepDestroyFromCacheVisitor{}.process(detached_instance);
       return {};
     }
-    return make_unique_object<InstanceWrapper<class_instance<I>>>(detached_instance);
+    return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(detached_instance);
   }
 
   class_instance<I> deep_instance_clone() const {

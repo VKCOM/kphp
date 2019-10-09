@@ -35,7 +35,7 @@ const int tl_str_result_hash = string_hash("result", 6);
 int tl_parse_save_pos();
 bool tl_parse_restore_pos(int pos);
 
-struct tl_func_base {
+struct tl_func_base : ManagedThroughDlAllocator {
   virtual var fetch() = 0;
   virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
     // все функции, вызывающиеся типизированно, кодогенерированно переопределяют этот метод
@@ -46,8 +46,8 @@ struct tl_func_base {
   }
 
   // каждая плюсовая tl-функция ещё обладает
-  // static unique_object<tl_func_base> store(const var &tl_object);
-  // static unique_object<tl_func_base> typed_store(const C$VK$TL$Functions$thisfunction *tl_object);
+  // static std::unique_ptr<tl_func_base> store(const var &tl_object);
+  // static std::unique_ptr<tl_func_base> typed_store(const C$VK$TL$Functions$thisfunction *tl_object);
   // они не виртуальные, т.к. static, но кодогенерятся в каждой
   // каждая из них создаёт инстанс себя (fetcher), на котором вызываются fetch()/typed_fetch(), когда ответ получен
 
@@ -55,9 +55,9 @@ struct tl_func_base {
 };
 
 struct tl_exclamation_fetch_wrapper {
-  unique_object<tl_func_base> fetcher;
+  std::unique_ptr<tl_func_base> fetcher;
 
-  explicit tl_exclamation_fetch_wrapper(unique_object<tl_func_base> fetcher) :
+  explicit tl_exclamation_fetch_wrapper(std::unique_ptr<tl_func_base> fetcher) :
     fetcher(std::move(fetcher)) {}
 
   tl_exclamation_fetch_wrapper() = default;
@@ -75,7 +75,7 @@ struct tl_exclamation_fetch_wrapper {
   }
 };
 
-using tl_storer_ptr = unique_object<tl_func_base>(*)(const var &);
+using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var &);
 
 inline var tl_arr_get(const var &arr, const string &str_key, int num_key, int precomputed_hash = 0) {
   if (!arr.is_array()) {

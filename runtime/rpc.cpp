@@ -1258,7 +1258,7 @@ class_instance<RpcQuery> store_function(const var &tl_object) {
   rpc_query.get()->tl_function_name = fun_name;
   CurrentProcessingQuery::get().set_current_tl_function(fun_name);
   const auto &storer_kv = tl_storers_ht.get_value(fun_name);
-  rpc_query.get()->result_fetcher = make_unique_object<RpcRequestResultUntyped>(storer_kv(tl_object));
+  rpc_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(storer_kv(tl_object));
   CurrentProcessingQuery::get().reset();
   return rpc_query;
 }

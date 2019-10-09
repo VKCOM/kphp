@@ -5,7 +5,6 @@
 #include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
-#include "runtime/unique_object.h"
 
 extern const char *new_tl_current_function_name;
 
@@ -74,11 +73,11 @@ void f$fetch_raw_vector_double(array<double> &out, int n_elems);
 void estimate_and_flush_overflow(int &bytes_sent);
 
 struct tl_func_base;
-using tl_storer_ptr = unique_object<tl_func_base>(*)(const var&);
+using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var&);
 extern array<tl_storer_ptr> tl_storers_ht;
-using tl_fetch_wrapper_ptr = array<var>(*)(unique_object<tl_func_base>);
+using tl_fetch_wrapper_ptr = array<var>(*)(std::unique_ptr<tl_func_base>);
 extern tl_fetch_wrapper_ptr tl_fetch_wrapper; // pointer to function below
-//array<var> gen$tl_fetch_wrapper(unique_object<tl_func_base> stored_fetcher) {
+//array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) {
 //  tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));
 //  return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();
 //}

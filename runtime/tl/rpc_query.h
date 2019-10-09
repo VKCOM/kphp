@@ -1,12 +1,11 @@
 #pragma once
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
-#include "runtime/unique_object.h"
 
 class RpcRequestResult;
 
 struct RpcQuery : refcountable_php_classes<RpcQuery> {
-  unique_object<RpcRequestResult> result_fetcher;
+  std::unique_ptr<RpcRequestResult> result_fetcher;
   string tl_function_name;
   int query_id{0};
 };

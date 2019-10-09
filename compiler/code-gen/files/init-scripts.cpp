@@ -32,7 +32,7 @@ void StaticInit::compile(CodeGenerator &W) const {
   W << "void const_vars_init();" << NL << NL;
 
   W << "void tl_str_const_init();" << NL;
-  W << "array<var> gen$tl_fetch_wrapper(unique_object<tl_func_base>);" << NL;
+  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>);" << NL;
   W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
   W << "void fill_tl_storers_ht();" << NL << NL;
   if (G->env().is_static_lib_mode()) {

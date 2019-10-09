@@ -34,7 +34,6 @@
 #include "runtime/tl/rpc_response.h"
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/typed_rpc.h"
-#include "runtime/unique_object.h"
 #include "runtime/url.h"
 #include "runtime/vkext.h"
 #include "runtime/vkext_stats.h"

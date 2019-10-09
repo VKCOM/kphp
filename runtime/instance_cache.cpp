@@ -62,7 +62,7 @@ private:
 class ElementHolder : private vk::thread_safe_refcnt<ElementHolder> {
 private:
   ElementHolder(std::chrono::nanoseconds now, int ttl,
-                unique_object<InstanceWrapperBase> &&instance,
+                std::unique_ptr<InstanceWrapperBase> &&instance,
                 memory_resource::synchronized_pool_resource &mem_resource,
                 InstanceCacheStats &stats) :
     stored_at(now),
@@ -88,7 +88,7 @@ public:
   }
 
   static vk::intrusive_ptr<ElementHolder> construct(std::chrono::nanoseconds now, int ttl,
-                                                    unique_object<InstanceWrapperBase> &&instance,
+                                                    std::unique_ptr<InstanceWrapperBase> &&instance,
                                                     memory_resource::synchronized_pool_resource &resource,
                                                     InstanceCacheStats &stats) {
     if (!instance || !resource.reserve(sizeof(ElementHolder))) {
@@ -108,7 +108,7 @@ public:
   const std::chrono::nanoseconds expiring_at{std::chrono::nanoseconds::max()};
   const pid_t inserted_by_process{0};
   bool try_return_null_early{true};
-  unique_object<InstanceWrapperBase> instance_wrapper;
+  std::unique_ptr<InstanceWrapperBase> instance_wrapper;
   memory_resource::synchronized_pool_resource &resource;
   InstanceCacheStats &cache_stats;
 };

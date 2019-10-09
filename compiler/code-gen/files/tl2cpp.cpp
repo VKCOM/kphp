@@ -745,8 +745,8 @@ struct TypeExprStore {
       }
     }
  * 2) Обработка восклицательных знаков:
-    unique_object<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
-      auto result_fetcher = make_unique_object<f_rpcProxy_diagonalTargets>();
+    std::unique_ptr<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
+      auto result_fetcher = make_unique_on_script_memory<f_rpcProxy_diagonalTargets>();
       (void)tl_object;
       f$store_int(0xee090e42);
       t_Int().store(tl_arr_get(tl_object, tl_str$offset, 2, -1913876069));
@@ -1318,10 +1318,10 @@ struct TlFunctionDecl {
         W << "int " << arg->name << "{0};" << NL;
       }
     }
-    W << "static unique_object<tl_func_base> store(const var &tl_object);" << NL;
+    W << "static std::unique_ptr<tl_func_base> store(const var &tl_object);" << NL;
     W << "var fetch();" << NL;
     if (needs_typed_fetch_store) {
-      W << "static unique_object<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object);" << NL;
+      W << "static std::unique_ptr<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object);" << NL;
       W << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> typed_fetch();" << NL;
     }
     W << END << ";" << NL << NL;
@@ -1339,8 +1339,8 @@ public:
     const bool needs_typed_fetch_store = TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
     std::string struct_name = cpp_tl_struct_name("f_", f->name);
 
-    W << "unique_object<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
-    W << "auto result_fetcher = make_unique_object<" << struct_name << ">();" << NL;
+    W << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
+    W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f);
     W << "return std::move(result_fetcher);" << NL;
     W << END << NL << NL;
@@ -1350,8 +1350,8 @@ public:
     W << END << NL << NL;
 
     if (needs_typed_fetch_store) {
-      W << "unique_object<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
-      W << "auto result_fetcher = make_unique_object<" << struct_name << ">();" << NL;
+      W << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
+      W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
       W << CombinatorStore(f, true);
       W << "return std::move(result_fetcher);" << NL;
       W << END << NL << NL;
@@ -1722,7 +1722,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << NL;
   // Указатель на gen$tl_fetch_wrapper прокидывается в рантайм и вызывается из fetch_function()
   // Это сделано для того, чтобы не тащить в рантайм t_ReqResult и все его зависимости
-  W << "array<var> gen$tl_fetch_wrapper(unique_object<tl_func_base> stored_fetcher) " << BEGIN
+  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
     << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
     << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
     << END << NL << NL;

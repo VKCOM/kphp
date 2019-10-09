@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <memory>
 
 #include "runtime/memory_resource/memory_resource.h"
 
@@ -63,3 +64,9 @@ public:
 protected:
   ~ManagedThroughDlAllocator() = default;
 };
+
+template<typename T, typename... Args>
+inline auto make_unique_on_script_memory(Args &&... args) {
+  static_assert(std::is_base_of<ManagedThroughDlAllocator, T>{}, "ManagedThroughDlAllocator should be base for T");
+  return std::make_unique<T>(std::forward<Args>(args)...);
+}

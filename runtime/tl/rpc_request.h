@@ -2,7 +2,6 @@
 #include <utility>
 
 #include "runtime/php_assert.h"
-#include "runtime/unique_object.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_response.h"
 #include "runtime/tl/tl_builtins.h"
@@ -28,26 +27,26 @@ public:
 
   bool empty() const { return storing_function_.is_null(); }
 
-  virtual unique_object<RpcRequestResult> store_request() const = 0;
+  virtual std::unique_ptr<RpcRequestResult> store_request() const = 0;
   virtual ~RpcRequest() = default;
 
 protected:
   class_instance<C$VK$TL$RpcFunction> storing_function_;
 };
 
-class RpcRequestResult {
+class RpcRequestResult : public ManagedThroughDlAllocator {
 public:
-  explicit RpcRequestResult(unique_object<tl_func_base> &&result_fetcher)
+  explicit RpcRequestResult(std::unique_ptr<tl_func_base> &&result_fetcher)
     : result_fetcher_(std::move(result_fetcher)) {}
 
   bool empty() const { return !result_fetcher_; }
 
   virtual class_instance<C$VK$TL$RpcResponse> fetch_typed_response() = 0;
-  virtual unique_object<tl_func_base> extract_untyped_fetcher() = 0;
+  virtual std::unique_ptr<tl_func_base> extract_untyped_fetcher() = 0;
   virtual ~RpcRequestResult() = default;
 
 protected:
-  unique_object<tl_func_base> result_fetcher_; // то что возвращает store()
+  std::unique_ptr<tl_func_base> result_fetcher_; // то что возвращает store()
 };
 
 class RpcRequestResultUntyped final : public RpcRequestResult {
@@ -59,7 +58,7 @@ public:
     return {};
   }
 
-  unique_object<tl_func_base> extract_untyped_fetcher() final {
+  std::unique_ptr<tl_func_base> extract_untyped_fetcher() final {
     return std::move(result_fetcher_);
   }
 };
@@ -77,7 +76,7 @@ public:
     return $response;
   }
 
-  unique_object<tl_func_base> extract_untyped_fetcher() final {
+  std::unique_ptr<tl_func_base> extract_untyped_fetcher() final {
     php_assert(!"Forbidden to call for typed rpc requests");
     return {};
   }
@@ -89,16 +88,16 @@ class KphpRpcRequest final : public RpcRequest {
 public:
   using RpcRequest::RpcRequest;
 
-  unique_object<RpcRequestResult> store_request() const final {
+  std::unique_ptr<RpcRequestResult> store_request() const final {
     php_assert(CurException.is_null());
     CurrentProcessingQuery::get().set_current_tl_function(tl_function_name());
-    unique_object<tl_func_base> stored_fetcher = storing_function_.get()->store();
+    std::unique_ptr<tl_func_base> stored_fetcher = storing_function_.get()->store();
     CurrentProcessingQuery::get().reset();
     if (!CurException.is_null()) {
       CurException = false;
       return {};
     }
-    return make_unique_object<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));
+    return make_unique_on_script_memory<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));
   }
 };
 } // namespace impl_
