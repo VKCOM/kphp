@@ -1663,7 +1663,7 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
         compile_conv_op(root.as<meta_op_unary>(), W);
         break;
       default:
-        printf("%d: %d\n", tp, root->type());
+        fmt_print("{}: {}\n", tp, root->type());
         assert (0);
         break;
     }

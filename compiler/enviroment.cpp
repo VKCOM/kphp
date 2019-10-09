@@ -1,16 +1,16 @@
 #include "compiler/enviroment.h"
 
+#include <fmt/format.h>
 #include <fstream>
 #include <iostream>
 #include <openssl/sha.h>
 #include <sstream>
 #include <unistd.h>
 
-#include "common/version-string.h"
-
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
 #include "compiler/utils/string-utils.h"
+#include "common/version-string.h"
+#include "common/wrappers/fmt_format.h"
 
 /*** Enviroment ***/
 
@@ -360,7 +360,7 @@ void KphpEnviroment::update_cxx_flags_sha256() {
 
   char hash_str[SHA256_DIGEST_LENGTH * 2 + 1] = {0};
   for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-    sprintf(hash_str + (i * 2), "%02x", hash[i]);
+    fmt_format_to(hash_str + (i * 2), "{:02x}", hash[i]);
   }
   cxx_flags_sha256_.assign(hash_str, SHA256_DIGEST_LENGTH);
 }
@@ -369,7 +369,7 @@ bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd(tmp, PATH_MAX);
   if (cur_dir == nullptr) {
-    printf("Failed to get current directory");
+    fmt_print("Failed to get current directory");
     return false;
   }
   cur_dir_ = cur_dir;
@@ -390,7 +390,7 @@ bool KphpEnviroment::init() {
   } else if (mode_ == "cli") {
     link_file_name = "php-main-cli.a";
   } else if (!is_static_lib_mode()) {
-    printf("Unknown $KPHP_MODE=%s\n", mode_.c_str());
+    fmt_print("Unknown $KPHP_MODE={}\n", mode_);
     return false;
   }
 
@@ -398,22 +398,22 @@ bool KphpEnviroment::init() {
 
   if (is_static_lib_mode()) {
     if (main_files_.size() > 1) {
-      printf("Multiple main directories are forbidden for static lib mode");
+      fmt_print("Multiple main directories are forbidden for static lib mode");
       return false;
     }
     if (!tl_schema_file_.empty()) {
-      printf("tl-schema is forbidden for static lib mode");
+      fmt_print("tl-schema is forbidden for static lib mode");
       return false;
     }
     std::string lib_dir = get_full_path(main_files_.back());
     std::size_t last_slash = lib_dir.rfind('/');
     if (last_slash == std::string::npos) {
-      printf("Bad lib directory");
+      fmt_print("Bad lib directory");
       return false;
     }
     static_lib_name_ = lib_dir.substr(last_slash + 1);
     if (static_lib_name_.empty()) {
-      printf("Got empty static lib name");
+      fmt_print("Got empty static lib name");
       return false;
     }
     as_dir(&lib_dir);
@@ -424,7 +424,7 @@ bool KphpEnviroment::init() {
   }
   else {
     if (!static_lib_out_dir_.empty()) {
-      printf("Output dir is allowed only for static lib mode");
+      fmt_print("Output dir is allowed only for static lib mode");
       return false;
     }
     init_env_var(&link_file_, "KPHP_LINK_FILE", get_path() + "objs/PHP/" + link_file_name);
@@ -452,7 +452,7 @@ bool KphpEnviroment::init() {
   init_env_var(&jobs_count_, "KPHP_JOBS_COUNT", "100");
   env_str2int(&jobs_count_int_, jobs_count_);
   if (jobs_count_int_ <= 0) {
-    printf("Incorrect jobs_count=%s\n", jobs_count_.c_str());
+    fmt_print("Incorrect jobs_count={}\n", jobs_count_);
     return false;
   }
 
@@ -465,7 +465,7 @@ bool KphpEnviroment::init() {
   init_env_var(&threads_count_, "KPHP_THREADS_COUNT", "16");
   env_str2int(&threads_count_int_, threads_count_);
   if (threads_count_int_ <= 0 || threads_count_int_ > 100) {
-    printf("Incorrect threads_count=%s\n", threads_count_.c_str());
+    fmt_print("Incorrect threads_count={}\n", threads_count_);
     return false;
   }
 
@@ -494,7 +494,7 @@ bool KphpEnviroment::init() {
   } else if (color_settings_str == "yes") {
     color_ = colored;
   } else {
-    fprintf(stderr, "Unknown color settings %s, fallback to auto\n", color_settings_str.c_str());
+    fmt_fprintf(stderr, "Unknown color settings {}, fallback to auto\n", color_settings_str);
     color_ = auto_colored;
   }
 

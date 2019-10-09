@@ -20,18 +20,11 @@ bool is_anonymous_function_name(vk::string_view name) {
 }
 
 string gen_const_string_name(const string &str) {
-  auto h = vk::std_hash(str);
-  char tmp[50];
-  sprintf(tmp, "const_string$us%zx", h);
-  return tmp;
+  return fmt_format("const_string$us{:x}", vk::std_hash(str));
 }
 
 string gen_const_regexp_name(const string &str) {
-  auto h = vk::std_hash(str);
-  char tmp[50] {0};
-  const int l = snprintf(tmp, sizeof(tmp), "const_regexp$us%zx", h);
-  kphp_assert(l > 0 && l < sizeof(tmp));
-  return {tmp, static_cast<size_t>(l)};
+  return fmt_format("const_regexp$us{:x}", vk::std_hash(str));
 }
 
 bool is_array_suitable_for_hashing(VertexPtr vertex) {
@@ -39,10 +32,7 @@ bool is_array_suitable_for_hashing(VertexPtr vertex) {
 }
 
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
-  char tmp[50] {0};
-  const int l = snprintf(tmp, sizeof(tmp), "const_array$us%lx", ArrayHash::calc_hash(array));
-  kphp_assert(l > 0 && l < sizeof(tmp));
-  return {tmp, static_cast<size_t>(l)};
+  return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
 }
 
 string gen_unique_name(const string& prefix, FunctionPtr function) {
@@ -53,10 +43,7 @@ string gen_unique_name(const string& prefix, FunctionPtr function) {
   auto h = vk::std_hash(function->name);
   auto ph = vk::std_hash(prefix);
   auto &index = function->name_gen_map[ph];
-  char tmp[50];
-  sprintf(tmp, "$u%zx_%d", h, index);
-  index++;
-  return replace_non_alphanum(prefix) + tmp;
+  return replace_non_alphanum(prefix) + fmt_format("$u{:x}_{}", h, index++);
 }
 
 string resolve_uses(FunctionPtr current_function, string class_name, char delim) {

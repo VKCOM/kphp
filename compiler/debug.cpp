@@ -224,9 +224,9 @@ std::string debugVertexMore(VertexPtr v) {
 
 void debugPrintVertexTree(VertexPtr root, int level) {
   for (int i = 0; i < level; ++i) {
-    printf("  ");
+    fmt_print("  ");
   }
-  printf("%s %s\n", debugOperationName(root->type()).c_str(), debugVertexMore(root).c_str());
+  fmt_print("{} {}\n", debugOperationName(root->type()), debugVertexMore(root));
 
   for (auto i : *root) {
     debugPrintVertexTree(i, level + 1);
@@ -234,7 +234,7 @@ void debugPrintVertexTree(VertexPtr root, int level) {
 }
 
 void debugPrintFunction(FunctionPtr function) {
-  printf("--- %s\n", function->name.c_str());
+  fmt_print("--- {}\n", function->name);
   debugPrintVertexTree(function->root, 0);
 }
 

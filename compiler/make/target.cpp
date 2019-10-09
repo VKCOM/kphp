@@ -3,6 +3,8 @@
 #include <cassert>
 #include <string>
 
+#include "common/wrappers/fmt_format.h"
+
 void Target::set_mtime(long long new_mtime) {
   assert(mtime == 0);
   mtime = new_mtime;
@@ -10,7 +12,7 @@ void Target::set_mtime(long long new_mtime) {
 
 bool Target::upd_mtime(long long new_mtime) {
   if (new_mtime < mtime) {
-    printf("Trying to decrease mtime\n");
+    fmt_print("Trying to decrease mtime\n");
     return false;
   }
   mtime = new_mtime;
@@ -62,7 +64,7 @@ bool Target::after_run_success() {
   if (mtime < 0) {
     return false;
   } else if (mtime == 0) {
-    fprintf(stdout, "Failed to generate target [%s]\n", file->path.c_str());
+    fmt_print("Failed to generate target [{}]\n", file->path);
     return false;
   }
   return upd_mtime(file->mtime);

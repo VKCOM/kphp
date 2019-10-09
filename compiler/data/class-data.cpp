@@ -44,7 +44,7 @@ void ClassData::debugPrint() {
   const char *str_class_type =
     is_interface() ? "interface" :
     is_trait() ? "trait" : "class";
-  printf("=== %s %s\n", str_class_type, name.c_str());
+  fmt_print("=== {} {}\n", str_class_type, name);
 
   members.for_each([](ClassMemberConstant &m) {
     fmt_print("const {}\n", m.local_name());

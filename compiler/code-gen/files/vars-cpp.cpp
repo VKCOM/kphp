@@ -202,7 +202,6 @@ void VarsCpp::compile(CodeGenerator &W) const {
 
   W << "void const_vars_init() " << BEGIN;
 
-  char init_fun[128] = {0};
   const auto longest_dep_mask = std::max_element(
     dep_masks.begin(), dep_masks.end(),
     [](const std::vector<bool> &l, const std::vector<bool> &r) {
@@ -211,13 +210,11 @@ void VarsCpp::compile(CodeGenerator &W) const {
   for (int dep_level = 0; dep_level < longest_dep_mask->size(); ++dep_level) {
     for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
       if (dep_masks[part_id].size() > dep_level && dep_masks[part_id][dep_level]) {
-        const int s = snprintf(init_fun, sizeof(init_fun),
-                               "const_vars_init_priority_%d_file_%zu();", dep_level, part_id);
-        kphp_assert(s > 0 && s < sizeof(init_fun));
+        auto init_fun = fmt_format("const_vars_init_priority_{}_file_{}();", dep_level, part_id);
         // function declaration
-        W << "void " << vk::string_view{init_fun, static_cast<size_t>(s)} << NL;
+        W << "void " << init_fun << NL;
         // function call
-        W << vk::string_view{init_fun, static_cast<size_t>(s)} << NL;
+        W << init_fun << NL;
       }
     }
   }

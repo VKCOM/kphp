@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 
+#include "common/wrappers/fmt_format.h"
+
 TLS<std::list<ProfilerRaw>> profiler;
 
 void profiler_print_all() {
@@ -34,21 +36,21 @@ void profiler_print_all() {
 
   for (const auto &prof : all) {
     if (prof.get_count() > 0 && prof.get_ticks() > 0) {
-      fprintf(stderr, "%60s:\t%lf %lld %lld\n",
-        prof.name.c_str(),
-        prof.get_time(),
-        prof.get_count(),
-        prof.get_ticks() / std::max(1ll, prof.get_count())
+      fmt_fprintf(stderr, "{:>60}:\t{} {} {}\n",
+                  prof.name,
+                  prof.get_time(),
+                  prof.get_count(),
+                  prof.get_ticks() / std::max(1ll, prof.get_count())
       );
     }
   }
 
   for (const auto &prof : all) {
     if (prof.get_count() > 0 && prof.get_memory() > 0) {
-      fprintf(stderr, "%60s:\t%.5lfMb %lld %.5lf\n",
-        prof.name.c_str(),
-        (double)prof.get_memory() / (1 << 20),
-        prof.get_count(), (double)prof.get_memory() / prof.get_count()
+      fmt_fprintf(stderr, "{:>60}:\t{:.5f}Mb {} {:.5f}\n",
+                  prof.name,
+                  (double)prof.get_memory() / (1 << 20),
+                  prof.get_count(), (double)prof.get_memory() / prof.get_count()
       );
     }
   }

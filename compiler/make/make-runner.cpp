@@ -125,20 +125,20 @@ bool MakeRunner::finish_job(int pid, int return_code, int by_signal) {
   Target *target = it->second;
   if (G->env().get_stats_file() != nullptr) {
     double passed = dl_time() - target->start_time;
-    fprintf(G->env().get_stats_file(), "%lfs %s\n", passed, target->get_name().c_str());
+    fmt_fprintf(G->env().get_stats_file(), "{}s {}\n", passed, target->get_name());
   }
   jobs.erase(it);
   if (return_code != 0) {
     if (!fail_flag) {
-      fprintf(stdout, "pid [%d] failed or terminated : ", pid);
+      fmt_fprintf(stdout, "pid [{}] failed or terminated : ", pid);
       if (return_code != -1) {
-        fprintf(stdout, "return code %d\n", return_code);
+        fmt_fprintf(stdout, "return code {}\n", return_code);
       } else if (by_signal != -1) {
-        fprintf(stdout, "killed by signal %d\n", by_signal);
+        fmt_fprintf(stdout, "killed by signal {}\n", by_signal);
       } else {
-        fprintf(stdout, "killed by unknown reason\n");
+        fmt_fprintf(stdout, "killed by unknown reason\n");
       }
-      fprintf(stdout, "Failed [%s]\n", target->get_cmd().c_str());
+      fmt_fprintf(stdout, "Failed [{}]\n", target->get_cmd());
     }
     target->after_run_fail();
     return false;
@@ -154,7 +154,7 @@ void MakeRunner::on_fail() {
   if (fail_flag) {
     return;
   }
-  fprintf(stdout, "Make failed. Waiting for %d children\n", (int)jobs.size());
+  fmt_fprintf(stdout, "Make failed. Waiting for {} children\n", (int)jobs.size());
   fail_flag = true;
   for (const auto &pid_and_target : jobs) {
     int err = kill(pid_and_target.first, SIGINT);
@@ -172,7 +172,7 @@ void MakeRunner::sigint_handler(int sig __attribute__((unused))) {
 
 bool MakeRunner::make_target(Target *target, int jobs_count) {
   if (jobs_count < 1) {
-    printf("Invalid jobs_count [%d]\n", jobs_count);
+    fmt_print("Invalid jobs_count [{}]\n", jobs_count);
     return false;
   }
   signal_flag = 0;
@@ -193,8 +193,8 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
   while (true) {
     int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
     if (old_perc != perc) {
-      fprintf(stderr, "%3d%% [total jobs %d] [left jobs %d] [running jobs %d] [waiting jobs %d]\n",
-              perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);
+      fmt_fprintf(stderr, "{:3}% [total jobs {}] [left jobs {}] [running jobs {}] [waiting jobs {}]\n",
+                  perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);
       old_perc = perc;
     }
     if (jobs.empty() && (fail_flag || pending_jobs.empty())) {
@@ -240,7 +240,7 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
           } else if (WIFSIGNALED (status)) {
             by_signal = WTERMSIG (status);
           } else {
-            printf("Something strange happened with pid [%d]\n", pid);
+            fmt_print("Something strange happened with pid [{}]\n", pid);
           }
           if (!finish_job(pid, return_code, by_signal)) {
             on_fail();

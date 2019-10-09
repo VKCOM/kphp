@@ -8,6 +8,7 @@
 #include "compiler/code-gen/writer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/stage.h"
+#include "common/wrappers/fmt_format.h"
 
 struct CGContext {
   std::vector<std::string> catch_labels;
@@ -71,29 +72,20 @@ std::enable_if_t<std::is_constructible<vk::string_view, T>::value, CodeGenerator
   return c;
 }
 
-template<class T>
-CodeGenerator &append_integer_through_snprintf(CodeGenerator &c, const char *format, T value) {
-  char buffer[32]{0};
-  const int len = snprintf(buffer, sizeof(buffer), format, value);
-  kphp_assert(len > 0 && len < sizeof(buffer));
-  c.get_writer().append(vk::string_view{buffer, static_cast<size_t>(len)});
-  return c;
-}
-
 inline CodeGenerator &operator<<(CodeGenerator &c, int64_t value) {
-  return append_integer_through_snprintf(c, "%" PRId64, value);
+  return c << std::to_string(value);
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, uint64_t value) {
-  return append_integer_through_snprintf(c, "%" PRIu64, value);
+  return c << std::to_string(value);
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, int32_t value) {
-  return append_integer_through_snprintf(c, "%" PRId32, value);
+  return c << std::to_string(value);
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, uint32_t value) {
-  return append_integer_through_snprintf(c, "%" PRIu32, value);
+  return c << std::to_string(value);
 }
 
 inline CodeGenerator& operator<<(CodeGenerator &c, char value) {

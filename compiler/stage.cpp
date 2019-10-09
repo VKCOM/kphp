@@ -37,7 +37,7 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   if (assert_level == WRN_ASSERT_LEVEL && G->env().get_warnings_file()) {
     file = G->env().get_warnings_file();
   }
-  fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n%s [gen by %s at %d]\n", get_assert_level_desc(assert_level), file_name, line_number);
+  fmt_fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n{} [gen by {} at {}]\n", get_assert_level_desc(assert_level), file_name, line_number);
   stage::print(file);
   string correct_description;
   if (!stage::should_be_colored(file)) {
@@ -45,11 +45,11 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   } else {
     correct_description = full_description;
   }
-  fprintf(file, "%s\n\n", correct_description.c_str());
+  fmt_fprintf(file, "{}\n\n", correct_description);
   if (assert_level == FATAL_ASSERT_LEVEL) {
-    fprintf(file, "Compilation failed.\n"
-                  "It is probably happened due to incorrect or unsupported PHP input.\n"
-                  "But it is still bug in compiler.\n");
+    fmt_fprintf(file, "Compilation failed.\n"
+                      "It is probably happened due to incorrect or unsupported PHP input.\n"
+                      "But it is still bug in compiler.\n");
     abort();
   }
   if (assert_level == CE_ASSERT_LEVEL) {
@@ -116,18 +116,18 @@ static TLS<StageInfo> stage_info;
 } // namespace stage
 
 void stage::print(FILE *f) {
-  fprintf(f, "In stage = [%s]:\n", get_name().c_str());
-  fprintf(f, "  ");
+  fmt_fprintf(f, "In stage = [{}]:\n", get_name());
+  fmt_fprintf(f, "  ");
   print_file(f);
-  fprintf(f, "  ");
+  fmt_fprintf(f, "  ");
   print_function(f);
-  fprintf(f, "  ");
+  fmt_fprintf(f, "  ");
   print_line(f);
   print_comment(f);
 }
 
 void stage::print_file(FILE *f) {
-  fprintf(f, "[file = %s]\n", get_file_name().c_str());
+  fmt_fprintf(f, "[file = {}]\n", get_file_name());
 }
 
 void stage::print_function(FILE *f) {
@@ -136,19 +136,19 @@ void stage::print_function(FILE *f) {
   if (should_be_colored(f)) {
     function_name_str = TermStringFormat::add_text_attribute(function_name_str, TermStringFormat::bold);
   }
-  fprintf(f, "[function = %s]\n", function_name_str.c_str());
+  fmt_fprintf(f, "[function = {}]\n", function_name_str);
 }
 
 void stage::print_line(FILE *f) {
   if (get_line() > 0) {
-    fprintf(f, "[line = %d]\n", get_line());
+    fmt_fprintf(f, "[line = {}]\n", get_line());
   }
 }
 
 void stage::print_comment(FILE *f) {
   if (get_line() > 0) {
     vk::string_view comment = get_file()->get_line(get_line());
-    fprintf(f, "//%4d:", get_line());
+    fmt_fprintf(f, "//{:4}:", get_line());
     int last_printed = ':';
     for (int j = 0, nj = comment.size(); j < nj; j++) {
       int c = comment.begin()[j];
@@ -199,7 +199,7 @@ bool stage::has_global_error() {
 
 void stage::die_if_global_errors() {
   if (stage::has_global_error()) {
-    printf("Compilation terminated due to errors\n");
+    fmt_print("Compilation terminated due to errors\n");
     exit(1);
   }
 }

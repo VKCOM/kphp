@@ -150,7 +150,7 @@ static std::forward_list<File> collect_imported_libs() {
   for (File &file: imported_libs) {
     kphp_error_act(file.upd_mtime() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
     if (G->env().get_verbosity() >= 1) {
-      fprintf(stderr, "Use static lib [%s]\n", file.path.c_str());
+      fmt_fprintf(stderr, "Use static lib [{}]\n", file.path);
     }
   }
 
@@ -277,7 +277,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
       objs.push_back(obj_file);
     }
   }
-  fprintf(stderr, "objs cnt = %zu\n", objs.size());
+  fmt_fprintf(stderr, "objs cnt = {}\n", objs.size());
 
   std::map<string, vector<File *>> subdirs;
   std::vector<File *> tmp_objs;
@@ -306,7 +306,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
   }
-  fprintf(stderr, "objs cnt = %zu\n", objs.size());
+  fmt_fprintf(stderr, "objs cnt = {}\n", objs.size());
   return objs;
 }
 

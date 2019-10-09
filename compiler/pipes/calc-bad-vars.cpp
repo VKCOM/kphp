@@ -223,7 +223,7 @@ private:
           if (!next->is_resumable) {
             continue;
           }
-          fprintf(stderr, "%s -> %s\n", func->name.c_str(), next->name.c_str());
+          fmt_fprintf(stderr, "{} -> {}\n", func->name, next->name);
         }
       }
     }

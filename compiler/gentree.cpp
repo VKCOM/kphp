@@ -2130,7 +2130,7 @@ void GenTree::run() {
   require_lambdas();
 
   if (cur != end) {
-    fprintf(stderr, "line %d: something wrong\n", line_num);
+    fmt_fprintf(stderr, "line {}: something wrong\n", line_num);
     kphp_error (0, "Cannot compile (probably problems with brace balance)");
   }
 }
