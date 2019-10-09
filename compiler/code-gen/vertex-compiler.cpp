@@ -157,7 +157,7 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   auto &root_type_str = OpInfo::str(root->type());
-  kphp_error_return (root_type_str[0] != '@', format("Unexpected %s\n", root_type_str.c_str() + 1));
+  kphp_error_return (root_type_str[0] != '@', fmt_format("Unexpected {}\n", vk::string_view{root_type_str}.substr(1)));
 
   auto lhs = root->lhs();
   auto rhs = root->rhs();
@@ -385,10 +385,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
           kphp_error(0, "Too many same errors about resumable functions, will skip others");
         }
       } else {
-        kphp_error (0, (format("Can't compile call of resumable function [%s] in too complex expression\n"
-                               "Consider using a temporary variable for this call.\n"
-                               "Function is resumable because of calls chain:\n",
-                               func->get_human_readable_name().c_str()) + func->get_resumable_path()).c_str());
+        kphp_error (0, fmt_format("Can't compile call of resumable function [{}] in too complex expression\n"
+                                  "Consider using a temporary variable for this call.\n"
+                                  "Function is resumable because of calls chain:\n"
+                                  "{}",
+                                  func->get_human_readable_name(), func->get_resumable_path()));
       }
     }
 
@@ -532,7 +533,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   PrimitiveType ptype = type_data->get_real_ptype();
 
   if (vk::none_of_equal(ptype, tp_array, tp_var)) {
-    kphp_error_return(false, format("%s (%s)", "Invalid argument supplied for foreach()", ptype_name(ptype)));
+    kphp_error_return(false, fmt_format("Invalid argument supplied for foreach() ({})", ptype_name(ptype)));
   }
 
   W << BEGIN;
@@ -656,7 +657,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       if (one_case.goto_name.empty()) {
-        W << "case " << format("0x%x", one_case.hash) << ":" << NL;
+        W << "case " << fmt_format("{:#x}", one_case.hash) << ":" << NL;
       } else {
         W << one_case.goto_name << ":;" << NL;
       }
@@ -701,7 +702,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       if (val->type() == op_int_const) {
         const string &str = val.as<op_int_const>()->str_val;
         W << str;
-        kphp_error(used.insert(str).second, format("Switch: repeated cases found [%s]", str.c_str()));
+        kphp_error(used.insert(str).second, fmt_format("Switch: repeated cases found [{}]", str));
       } else {
         kphp_assert(is_const_int(val));
         W << val;
@@ -946,7 +947,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
 
     int value_length = type_strlen(type);
     if (value_length == STRLEN_ERROR) {
-      kphp_error (0, format("Cannot convert type [%s] to string", type_out(type).c_str()));
+      kphp_error (0, fmt_format("Cannot convert type [{}] to string", type_out(type)));
       ok = false;
       ii++;
       continue;
@@ -965,7 +966,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       } else {
         if (value_length & STRLEN_WARNING_FLAG) {
           value_length &= ~STRLEN_WARNING_FLAG;
-          kphp_warning (format("Suspicious convertion of type [%s] to string", type_out(type).c_str()));
+          kphp_warning (fmt_format("Suspicious convertion of type [{}] to string", type_out(type)));
         }
 
         kphp_assert (value_length >= 0);
@@ -1357,7 +1358,7 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       TypeName(tinf::get_type(index->key())) <<
       MacroEnd{};
   } else {
-    kphp_error (0, format("Safe version of [%s] is not supported", OpInfo::str(root->type()).c_str()));
+    kphp_error (0, fmt_format("Safe version of [{}] is not supported", OpInfo::str(root->type())));
     kphp_fail();
   }
 
@@ -1430,7 +1431,7 @@ void compile_conv_l(VertexAdaptor<op_conv_l> root, CodeGenerator &W) {
     }
     W << OpInfo::str(op_conv_l) << " (" << val << ", R\"(" << fun_name << ")\")";
   } else {
-    kphp_error (0, format("Trying to pass incompatible type as reference to '%s'", root->get_c_string()));
+    kphp_error (0, fmt_format("Trying to pass incompatible type as reference to '{}'", root->get_string()));
   }
 }
 

@@ -4,7 +4,7 @@
 
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 
 WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc) :
   lines(),
@@ -37,7 +37,7 @@ void WriterData::add_location(SrcFilePtr file, int line) {
   }
   kphp_error (
     !lines.back().file || lines.back().file == file,
-    format("%s|%s", file->file_name.c_str(), lines.back().file->file_name.c_str())
+    fmt_format("{}|{}", file->file_name, lines.back().file->file_name)
   );
   lines.back().file = file;
   if (line != -1) {
@@ -110,7 +110,7 @@ void WriterData::dump(std::string &dest_str, const std::vector<Line>::iterator &
           while (cur_id < id) {
             cur_id++;
             if (cur_id + 10 > id) {
-              dest_str += format("//%d: ", cur_id);
+              dest_str += fmt_format("//{}: ", cur_id);
               vk::string_view comment = file->get_line(cur_id);
               char last_printed = ':';
               for (char c : comment) {

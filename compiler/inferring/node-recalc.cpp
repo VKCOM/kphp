@@ -30,17 +30,15 @@ static void print_why_tinf_occured_error(
                              desc1, desc2));
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
-    kphp_error(0, format("Type Error: inconsistent tuples %s and %s\n",
-                          desc1.c_str(), desc2.c_str()));
+    kphp_error(0, fmt_format("Type Error: inconsistent tuples {} and {}\n", desc1, desc2));
 
   } else if (ptype_before_error != tp_tuple && because_of_type->ptype() == tp_tuple) {
-    kphp_error(0, format("Type Error: tuples are read-only (tuple %s)\n",
-                          desc1.c_str()));
+    kphp_error(0, fmt_format("Type Error: tuples are read-only (tuple {})\n", desc1));
 
   } else if (ptype_before_error == tp_void || because_of_type->ptype() == tp_void) {
-    kphp_error(0, format("Type Error: mixing void and non-void expressions (%s and %s)\n", desc1.c_str(), desc2.c_str()));
+    kphp_error(0, fmt_format("Type Error: mixing void and non-void expressions ({} and {})\n", desc1, desc2));
   } else {
-    kphp_error (0, format("Type Error [%s] updated by [%s]\n", desc1.c_str(), desc2.c_str()));
+    kphp_error (0, fmt_format("Type Error [{}] updated by [{}]\n", desc1, desc2));
   }
 }
 

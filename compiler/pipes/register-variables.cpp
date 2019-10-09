@@ -12,10 +12,7 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
   auto it = registred_vars.insert(make_pair(name, var));
   if (it.second == false) {
     VarPtr old_var = it.first->second;
-    kphp_error (
-      old_var == var,
-      format("conflict in variable names [%s]", old_var->name.c_str())
-    );
+    kphp_error(old_var == var, fmt_format("conflict in variable names [{}]", old_var->name));
   } else {
     kphp_assert(in_param_list == 0);
     current_function->global_var_ids.push_back(var);
@@ -25,11 +22,11 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
 VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type type, bool create_flag) {
   auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
-    kphp_error (!create_flag, format("Redeclaration of local variable: %s", name.c_str()));
+    kphp_error (!create_flag, fmt_format("Redeclaration of local variable: {}", name));
     return it->second;
   }
   VarPtr var = G->create_local_var(current_function, name, type);
-  kphp_error (registred_vars.insert(make_pair(name, var)).second, format("Redeclaration of local variable: %s", name.c_str()));
+  kphp_error (registred_vars.insert(make_pair(name, var)).second, fmt_format("Redeclaration of local variable: {}", name));
 
   return var;
 }
@@ -67,7 +64,7 @@ void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> v
   kphp_assert(var->is_function_static_var());
 
   if (default_value) {
-    if (!kphp_error(is_const(default_value), format("Default value of [%s] is not constant", name.c_str()))) {
+    if (!kphp_error(is_const(default_value), fmt_format("Default value of [{}] is not constant", name))) {
       var->init_val = default_value;
     }
   }
@@ -97,7 +94,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> para
   if (default_value) {
     if (!kphp_error (
       is_const(default_value) || is_global_var(default_value),
-      format("Default value of [%s] is not constant", name.c_str()))) {
+      fmt_format("Default value of [{}] is not constant", name))) {
       var->init_val = default_value;
     }
   }
@@ -120,11 +117,11 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
       while (klass && !klass->members.has_field(var_name)) {
         klass = klass->parent_class;
       }
-      kphp_error_return(klass, format("static field not found: %s", name.c_str()));
+      kphp_error_return(klass, fmt_format("static field not found: {}", name));
       auto field = klass->members.get_static_field(var_name);
       kphp_error_return(field, fmt_format("field {} is not static in klass {}", var_name, used_klass->name));
       kphp_error_return(klass == used_klass || !field->modifiers.is_private(),
-                        format("Can't access private static field using derived class: %s", name.c_str()));
+                        fmt_format("Can't access private static field using derived class: {}", name));
       name = replace_backslashes(klass->name) + "$$" + var_name;
     }
     var = get_global_var(name);
@@ -198,7 +195,7 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariabl
       if (auto m = klass->get_instance_field(root->get_string())) {
         prop->var_id = m->var;
       } else {
-        kphp_error(0, format("Invalid property access ...->%s: does not exist in class `%s`", root->get_c_string(), klass->get_name()));
+        kphp_error(0, fmt_format("Invalid property access ...->{}: does not exist in class `{}`", root->get_string(), klass->get_name()));
       }
     }
   }

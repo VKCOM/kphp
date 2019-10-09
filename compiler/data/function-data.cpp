@@ -244,7 +244,7 @@ bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_
   int min_cnt_params = called_func->get_min_argn() - called_func->has_implicit_this_arg();
   int max_cnt_params = static_cast<int>(called_func->get_params().size()) - called_func->has_implicit_this_arg();
   if (expected_cnt_params < min_cnt_params || max_cnt_params < expected_cnt_params) {
-    kphp_error(false, format("Wrong arguments count: %d (expected %d..%d)", expected_cnt_params, min_cnt_params, max_cnt_params));
+    kphp_error(false, fmt_format("Wrong arguments count: {} (expected {}..{})", expected_cnt_params, min_cnt_params, max_cnt_params));
     return false;
   }
 

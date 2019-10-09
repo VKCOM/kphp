@@ -110,7 +110,7 @@ public:
       }
 
       stage::set_location(v->get_location());
-      kphp_warning (format("Variable [%s] may be used uninitialized", v->var_id->name.c_str()));
+      kphp_warning (fmt_format("Variable [{}] may be used uninitialized", v->var_id->name));
     }
   }
 

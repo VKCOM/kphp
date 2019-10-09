@@ -35,7 +35,7 @@ Node *get_tinf_node(FunctionPtr function, int id) {
     __sync_synchronize();
   }
 
-  kphp_assert_msg (-1 <= id && id + 1 < (int)function->tinf_nodes.size(), format("Bad tinf node id for function %s\n", function->name.c_str()));
+  kphp_assert_msg (-1 <= id && id + 1 < (int)function->tinf_nodes.size(), fmt_format("Bad tinf node id for function {}\n", function->name));
   return &function->tinf_nodes[id + 1];
 }
 

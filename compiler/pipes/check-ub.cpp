@@ -208,8 +208,7 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
       if (supported) {
         v->extra_type = op_ex_safe_version;
       } else {
-        kphp_warning (format("Dangerous undefined behaviour %s, [var = %s]",
-                              OpInfo::str(v->type()).c_str(), (*last_ub_error)->name.c_str()));
+        kphp_warning (fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->name));
       }
     }
   }
@@ -246,8 +245,7 @@ void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
   fix_ub_dfs(v, &data);
   int err = data.check_index_refs(*foreach_vars);
   if (err > 0) {
-    kphp_warning (format("Dangerous undefined behaviour %s, [foreach var = %s]",
-                          OpInfo::str(v->type()).c_str(), (*last_ub_error)->name.c_str()));
+    kphp_warning (fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->name));
   }
 }
 

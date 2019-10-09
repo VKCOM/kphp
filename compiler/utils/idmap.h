@@ -39,7 +39,7 @@ template<class IndexType>
 DataType &IdMap<DataType>::operator[](const IndexType &i) {
   int index = get_index(i);
   assert(index >= 0 && "maybe you've forgotten pass function to stream");
-  kphp_assert_msg(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
+  kphp_assert_msg(index < (int)data.size(), fmt_format("{} of {}\n", index, (int)data.size()));
   return data[index];
 }
 
@@ -48,7 +48,7 @@ template<class IndexType>
 const DataType &IdMap<DataType>::operator[](const IndexType &i) const {
   int index = get_index(i);
   assert(index >= 0);
-  kphp_assert_msg(index < (int)data.size(), format("%d of %d\n", index, (int)data.size()));
+  kphp_assert_msg(index < (int)data.size(), fmt_format("{} of {}\n", index, (int)data.size()));
   return data[index];
 }
 

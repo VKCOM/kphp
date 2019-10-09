@@ -30,8 +30,8 @@ inline void CheckClassesF::analyze_class(ClassPtr klass) {
   }
   if (klass->can_be_php_autoloaded && !klass->is_builtin()) {
     kphp_error(klass->file_id->main_function->body_seq == FunctionData::body_value::empty,
-               format("class %s can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
-                      klass->name.c_str()));
+               fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
+                          klass->name));
   }
 }
 

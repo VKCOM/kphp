@@ -308,7 +308,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
     if (!param->type_declaration.empty() && param->type_declaration != "array") {
       ClassPtr klass = G->get_class(resolve_uses(f, param->type_declaration, '\\'));
-      kphp_error(klass && !klass->is_trait(), format("Class %s near $%s does not exist or never created", param->type_declaration.c_str(), param->var()->get_c_string()));
+      kphp_error(klass && !klass->is_trait(), fmt_format("Class {} near ${} does not exist or never created", param->type_declaration, param->var()->get_string()));
       assumption_add_for_var(f, assum_instance, param->var()->get_string(), klass);
     }
   }
@@ -358,7 +358,7 @@ bool parse_kphp_return_doc(FunctionPtr f) {
       AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
 
       if (!field_name.empty()) {
-        kphp_error_act(klass, format("try to get type of field(%s) of non-instance", field_name.c_str()), return false);
+        kphp_error_act(klass, fmt_format("try to get type of field({}) of non-instance", field_name), return false);
         assum = calc_assumption_for_class_var(klass, field_name, klass);
       }
 
@@ -579,7 +579,7 @@ inline AssumType infer_from_call(FunctionPtr f,
 
   const FunctionPtr ptr = G->get_function(fname);
   if (!ptr) {
-    kphp_error(0, format("%s() is undefined, can not infer class", fname.c_str()));
+    kphp_error(0, fmt_format("{}() is undefined, can not infer class", fname));
     return assum_unknown;
   }
 

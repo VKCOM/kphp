@@ -33,7 +33,7 @@ void CalcRealDefinesValuesF::process_define_recursive(VertexPtr root) {
     if (define) {
       process_define(define);
     } else {
-      kphp_error(0, format("Can't find definition for '%s'", define_name.c_str()));
+      kphp_error(0, fmt_format("Can't find definition for '{}'", define_name));
     }
   }
   for (auto i : *root) {
@@ -85,5 +85,5 @@ void CalcRealDefinesValuesF::print_error_infinite_define(DefinePtr cur_def) {
     stream << *stack[i] << " -> ";
   }
   stream << cur_def->name;
-  kphp_error(0, format("Recursive define dependency:\n%s\n", stream.str().c_str()));
+  kphp_error(0, fmt_format("Recursive define dependency:\n{}\n", stream.str()));
 }

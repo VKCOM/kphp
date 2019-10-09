@@ -1,7 +1,7 @@
 #include "compiler/tl-classes.h"
 
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/data/class-data.h"
 #include "common/tlo-parsing/replace-anonymous-args.h"
 #include "common/tlo-parsing/flat-optimization.h"
@@ -10,7 +10,7 @@
 void TlClasses::load_from(const std::string &tlo_schema) {
   auto tl_expected_ptr = vk::tl::parse_tlo(tlo_schema.c_str(), true);
   kphp_error_return(tl_expected_ptr.has_value(),
-                    format("Error while reading tlo: %s", tl_expected_ptr.error().c_str()));
+                    fmt_format("Error while reading tlo: {}", tl_expected_ptr.error()));
 
   std::unique_ptr<vk::tl::tl_scheme> scheme = std::move(std::move(tl_expected_ptr).value());
   std::string error;

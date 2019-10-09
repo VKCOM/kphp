@@ -9,7 +9,7 @@
 #include "common/algorithms/find.h"
 
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 
 static void hard_link_or_copy_impl(const std::string &from, const std::string &to, bool replace, bool allow_copy) noexcept {
   if (!link(from.c_str(), to.c_str())) {
@@ -19,7 +19,7 @@ static void hard_link_or_copy_impl(const std::string &from, const std::string &t
   if (errno == EEXIST) {
     if (replace) {
       kphp_error_return(!unlink(to.c_str()),
-                        format("Can't remove file '%s': %s", to.c_str(), strerror(errno)));
+                        fmt_format("Can't remove file '{}': {}", to, strerror(errno)));
       hard_link_or_copy_impl(from, to, false, allow_copy);
     }
     return;
@@ -29,14 +29,14 @@ static void hard_link_or_copy_impl(const std::string &from, const std::string &t
   if (vk::any_of_equal(errno, EXDEV, EPERM) && allow_copy) {
     struct stat file_stat;
     kphp_error_return (!stat(from.c_str(), &file_stat),
-                       format("Can't get file stat '%s': %s", from.c_str(), strerror(errno)));
+                       fmt_format("Can't get file stat '{}': {}", from, strerror(errno)));
 
     std::string tmp_file = to + ".XXXXXX";
     int tmp_fd = mkstemp(&tmp_file[0]);
     kphp_error_return(tmp_fd != -1,
-                      format("Can't create tmp file '%s': %s", tmp_file.c_str(), strerror(errno)));
+                      fmt_format("Can't create tmp file '{}': {}", tmp_file, strerror(errno)));
     kphp_error_return(fchmod(tmp_fd, file_stat.st_mode) != -1,
-                      format("Can't change permissions of tmp file '%s': %s", tmp_file.c_str(), strerror(errno)));
+                      fmt_format("Can't change permissions of tmp file '{}': {}", tmp_file, strerror(errno)));
     int from_fd = open(from.c_str(), O_RDONLY);
     const ssize_t s = sendfile(tmp_fd, from_fd, nullptr, file_stat.st_size);
     close(from_fd);

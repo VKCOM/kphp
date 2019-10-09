@@ -22,7 +22,7 @@ VarNodeRecalc::VarNodeRecalc(tinf::VarNode *node, tinf::TypeInferer *inferer) :
 
 void VarNodeRecalc::do_recalc() {
   if (inferer_->is_finished()) {
-    kphp_error (0, format("%s: %d\n", "", node_->recalc_cnt_));
+    kphp_error (0, fmt_format(": {}\n", node_->recalc_cnt_));
     kphp_fail();
   }
   for (auto e : node_->get_next()) {

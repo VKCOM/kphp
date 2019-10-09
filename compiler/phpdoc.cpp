@@ -246,7 +246,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       return parse_classname(std::string(cur_tok->str_val));
 
     default:
-      throw std::runtime_error(format("can't parse '%s'", std::string(cur_tok->str_val).c_str()));
+      throw std::runtime_error(fmt_format("can't parse '{}'", cur_tok->str_val));
   }
 }
 
@@ -387,7 +387,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdo
 
   if (!parser.get_unknown_classes().empty()) {
     stage::set_location(current_function->root->location);
-    kphp_error(0, format("Could not find class in phpdoc: %s", parser.get_unknown_classes().begin()->c_str()));
+    kphp_error(0, fmt_format("Could not find class in phpdoc: {}", *parser.get_unknown_classes().begin()));
   }
 
   if (var_name.empty()) {

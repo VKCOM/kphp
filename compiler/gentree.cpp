@@ -61,7 +61,7 @@ bool GenTree::test_expect(TokenType tp) {
 
 #define expect(tp, msg) ({ \
   bool res__;\
-  if (kphp_error (test_expect (tp), format ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str()))) {\
+  if (kphp_error (test_expect (tp), fmt_format ("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str()))) {\
     res__ = false;\
   } else {\
     next_cur();\
@@ -71,7 +71,7 @@ bool GenTree::test_expect(TokenType tp) {
 })
 
 #define expect2(tp1, tp2, msg) ({ \
-  kphp_error (test_expect (tp1) || test_expect (tp2), format ("Expected %s, found '%s'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str())); \
+  kphp_error (test_expect (tp1) || test_expect (tp2), fmt_format ("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str())); \
   if (cur != end) {next_cur();} \
   1;\
 })
@@ -491,7 +491,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       res = get_expression();
       CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_arrow, op_index, op_conv_array) ,
-        format("It's not allowed using `...` in this place (op: %s)", OpInfo::str(res->type()).c_str())));
+        fmt_format("It's not allowed using `...` in this place (op: {})", OpInfo::str(res->type()))));
       res = VertexAdaptor<op_varg>::create(res).set_location(res);
       break;
     }
@@ -716,7 +716,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
                       : get_binary_op(op_priority_cur + left_to_right,
                                       till_ternary && op_priority_cur >= OpInfo::ternaryP);
     if (!right && !ternary) {
-      kphp_error (0, format("Failed to parse second argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
+      kphp_error (0, fmt_format("Failed to parse second argument in [{}]", OpInfo::str(binary_op_tp)));
       return {};
     }
 
@@ -725,7 +725,7 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
       CE (expect(tok_colon, "':'"));
       third = get_expression_impl(true);
       if (!third) {
-        kphp_error (0, format("Failed to parse third argument in [%s]", OpInfo::str(binary_op_tp).c_str()));
+        kphp_error (0, fmt_format("Failed to parse third argument in [{}]", OpInfo::str(binary_op_tp)));
         return {};
       }
       if (right) {
@@ -1479,7 +1479,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
   }
 
   if (cur_class) {
-    kphp_error(!(modifiers.is_abstract() && cur_class->is_interface()), format("abstract methods may not be declared in interfaces: %s", cur_class->name.c_str()));
+    kphp_error(!(modifiers.is_abstract() && cur_class->is_interface()), fmt_format("abstract methods may not be declared in interfaces: {}", cur_class->name));
 
     if (cur_class->is_interface()) {
       modifiers.set_abstract();
@@ -1510,7 +1510,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
 
   // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
-    CE(!kphp_error(!cur_function->modifiers.is_abstract(), format("abstract methods must have empty body: %s", cur_function->get_human_readable_name().c_str())));
+    CE(!kphp_error(!cur_function->modifiers.is_abstract(), fmt_format("abstract methods must have empty body: {}", cur_function->get_human_readable_name())));
     is_top_of_the_function_ = true;
     cur_function->root->cmd_ref() = get_statement().as<op_seq>();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
@@ -1767,7 +1767,7 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
   }
   string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
   kphp_error (processing_file->namespace_name == expected_namespace_name,
-              format("Wrong namespace name, expected %s", expected_namespace_name.c_str()));
+              fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
 
   next_cur();
   expect (tok_semicolon, "';'");

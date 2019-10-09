@@ -12,7 +12,7 @@
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/threading/tls.h"
 #include "compiler/code-gen/gen-out-style.h"
 
@@ -157,7 +157,7 @@ template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag(bool f) {
   bool old_f = get_flag<FLAG>();
   if (old_f) {
-    kphp_assert_msg (f, format("It is forbidden to remove flag %d", FLAG));
+    kphp_assert_msg (f, fmt_format("It is forbidden to remove flag {}", FLAG));
   } else if (f) {
     flags_ |= FLAG;
     on_changed();

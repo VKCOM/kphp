@@ -61,7 +61,7 @@ FunctionPtr CompilerCore::get_function(const string &name) {
   }
 
   FunctionPtr f = node->data;
-  kphp_assert_msg(f->name == name, format("Bug in compiler: hash collision: `%s' and `%s`", f->name.c_str(), name.c_str()));
+  kphp_assert_msg(f->name == name, fmt_format("Bug in compiler: hash collision: `{}' and `{}`", f->name, name));
   return f;
 }
 
@@ -192,8 +192,8 @@ void CompilerCore::register_and_require_function(FunctionPtr function, DataStrea
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
     bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
     kphp_error(!f || was_previously_required,
-               format("Redeclaration of function %s(), the previous declaration was in [%s]",
-                      function->get_human_readable_name().c_str(), f->file_id->file_name.c_str()));
+               fmt_format("Redeclaration of function {}(), the previous declaration was in [{}]",
+                          function->get_human_readable_name(), f->file_id->file_name));
     f = function;
 
     if (was_previously_required || force_require) {
@@ -206,8 +206,8 @@ void CompilerCore::register_class(ClassPtr cur_class) {
   TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(vk::std_hash(cur_class->name));
   AutoLocker<Lockable *> locker(node);
   kphp_error (!node->data,
-              format("Redeclaration of class [%s], the previous declaration was in [%s]",
-                     cur_class->name.c_str(), node->data->file_id->file_name.c_str()));
+              fmt_format("Redeclaration of class [{}], the previous declaration was in [{}]",
+                         cur_class->name, node->data->file_id->file_name));
   node->data = cur_class;
 }
 
@@ -222,7 +222,7 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 
 void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFilePtr> &os) {
   SrcFilePtr res = register_file(file_name, LibPtr{});
-  kphp_error (file_name.empty() || res, format("Cannot load main file [%s]", file_name.c_str()));
+  kphp_error (file_name.empty() || res, fmt_format("Cannot load main file [{}]", file_name));
 
   if (res && try_require_file(res)) {
     main_files.push_back(res);
@@ -232,7 +232,7 @@ void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFil
 
 SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */) {
   SrcFilePtr file = register_file(file_name, owner_lib);
-  kphp_error (file || !error_if_not_exists, format("Cannot load file [%s]", file_name.c_str()));
+  kphp_error (file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
   if (file && try_require_file(file)) {
     os << file;
   }
@@ -255,7 +255,7 @@ ClassPtr CompilerCore::get_memcache_class() {
 
 void CompilerCore::set_memcache_class(ClassPtr klass) {
   kphp_error(!memcache_class || memcache_class == klass,
-             format("Duplicate Memcache realization %s and %s", memcache_class->name.c_str(), klass->name.c_str()));
+             fmt_format("Duplicate Memcache realization {} and {}", memcache_class->name, klass->name));
   memcache_class = klass;
 }
 
@@ -265,8 +265,8 @@ bool CompilerCore::register_define(DefinePtr def_id) {
 
   kphp_error_act (
     !node->data,
-    format("Redeclaration of define [%s], the previous declaration was in [%s]",
-           def_id->name.c_str(), node->data->file_id->file_name.c_str()),
+    fmt_format("Redeclaration of define [{}], the previous declaration was in [{}]",
+               def_id->name, node->data->file_id->file_name),
     return false
   );
 

@@ -140,15 +140,15 @@ static std::forward_list<File> collect_imported_libs() {
       std::string lib_runtime_sha256 = KphpEnviroment::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
 
       kphp_error_act(binary_runtime_sha256 == lib_runtime_sha256,
-                     format("Mismatching between sha256 of binary runtime '%s' and lib runtime '%s'",
-                            G->env().get_runtime_sha256_file().c_str(), lib->runtime_lib_sha256_file().c_str()),
+                     fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'",
+                                G->env().get_runtime_sha256_file(), lib->runtime_lib_sha256_file()),
                      continue);
       imported_libs.emplace_front(lib->static_archive_path());
     }
   }
 
   for (File &file: imported_libs) {
-    kphp_error_act(file.upd_mtime() > 0, format("Can't read mtime of link_file [%s]", file.path.c_str()), continue);
+    kphp_error_act(file.upd_mtime() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
     if (G->env().get_verbosity() >= 1) {
       fprintf(stderr, "Use static lib [%s]\n", file.path.c_str());
     }
@@ -164,7 +164,7 @@ static long long get_imported_header_mtime(const std::string &header_path, const
       return header->mtime;
     }
   }
-  kphp_error(false, format("Can't file lib header file '%s'", header_path.c_str()));
+  kphp_error(false, fmt_format("Can't file lib header file '{}'", header_path));
   return 0;
 }
 
@@ -183,7 +183,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviro
   MakeSetup make;
   File php_functions_h(kphp_env.get_path() + "PHP/" + header_filename);
   kphp_error_act(php_functions_h.upd_mtime() > 0,
-                 format("Can't read mtime of '%s'", php_functions_h.path.c_str()),
+                 fmt_format("Can't read mtime of '{}'", php_functions_h.path),
                  return {});
 
   File *php_functions_h_gch = obj_dir->insert_file(kphp_env.get_dest_objs_dir() + gch_filename);
@@ -200,7 +200,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviro
   const bool dir_created = mkdir_recursive(gch_dir.c_str(), 0777);
   umask(old_mask);
   kphp_error_act(dir_created,
-                 format("Can't create tmp dir '%s': %s", gch_dir.c_str(), strerror(errno)),
+                 fmt_format("Can't create tmp dir '{}': {}", gch_dir, strerror(errno)),
                  return {});
 
   hard_link_or_copy(php_functions_h.path, gch_dir + header_filename, false);
@@ -223,7 +223,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
   for (const auto &file : files) {
     for (const auto &include : file->includes) {
       File *header = cpp_dir.get_file(include);
-      kphp_assert_msg(header != nullptr, format("Can't find header %s required by %s", include.c_str(), file->name.c_str()));
+      kphp_assert_msg(header != nullptr, fmt_format("Can't find header {} required by {}", include, file->name));
       kphp_assert(header->on_disk);
       reverse_includes[header].push_back(file);
     }
@@ -301,7 +301,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
     for (File *f : deps) {
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
-    std::string intermediate_file_name = format("%s_%zx.o", name_and_files.first.c_str(), hash);
+    auto intermediate_file_name = fmt_format("{}_{:x}.o", name_and_files.first, hash);
     File *obj_file = obj_dir.insert_file(intermediate_file_name);
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);

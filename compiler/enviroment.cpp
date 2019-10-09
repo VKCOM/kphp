@@ -9,7 +9,7 @@
 #include "common/version-string.h"
 
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/utils/string-utils.h"
 
 /*** Enviroment ***/
@@ -626,13 +626,13 @@ void KphpEnviroment::debug() const {
 std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename) {
   std::ifstream runtime_sha256_file(filename.c_str());
   kphp_error(runtime_sha256_file,
-             format("Can't open runtime sha256 file '%s'", filename.c_str()));
+             fmt_format("Can't open runtime sha256 file '{}'", filename));
 
   constexpr std::streamsize SHA256_LEN = 64;
   char runtime_sha256[SHA256_LEN] = {0};
   runtime_sha256_file.read(runtime_sha256, SHA256_LEN);
   kphp_error(runtime_sha256_file.gcount() == SHA256_LEN,
-             format("Can't read runtime sha256 from file '%s'", filename.c_str()));
+             fmt_format("Can't read runtime sha256 from file '{}'", filename));
   return std::string(runtime_sha256, runtime_sha256 + SHA256_LEN);
 }
 

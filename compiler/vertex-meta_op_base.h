@@ -184,11 +184,9 @@ public:
 
   const Operation &type() const { return type_; }
 
-  const char *get_c_string() const { return get_string().c_str(); }
+  virtual const std::string &get_string() const { kphp_fail_msg (fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_))); }
 
-  virtual const std::string &get_string() const { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
-
-  virtual void set_string(std::string) { kphp_fail_msg (format("not supported [%d:%s]", type_, OpInfo::str(type_).c_str())); }
+  virtual void set_string(std::string) { kphp_fail_msg (fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_))); }
 
   virtual bool has_get_string() const { return false; }
 

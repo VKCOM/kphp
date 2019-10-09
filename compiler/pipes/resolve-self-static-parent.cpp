@@ -44,14 +44,14 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
       check_access_to_class_from_this_file(ref_class);
 
       if (ref_class && ref_class->is_trait()) {
-        kphp_error(current_function->class_id && current_function->class_id->is_trait(), format("you may not use trait directly: %s", ref_class->get_name()));
+        kphp_error(current_function->class_id && current_function->class_id->is_trait(), fmt_format("you may not use trait directly: {}", ref_class->get_name()));
       }
 
       if (ref_class && !ref_class->is_builtin() && current_function->class_id) {
         if (auto found_method = ref_class->get_instance_method(original_name.substr(pos + 2))) {
           auto method = found_method->function;
           kphp_error(ref_class->is_parent_of(current_function->get_this_or_topmost_if_lambda()->class_id),
-            format("Call of instance method(%s) statically", method->get_human_readable_name().c_str()));
+            fmt_format("Call of instance method({}) statically", method->get_human_readable_name()));
 
           VertexPtr this_vertex = ClassData::gen_vertex_this(v->location);
           if (current_function->is_lambda()) {
@@ -70,7 +70,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
               v.as<op_func_call>()->func_id = self_found_method->function;
             } else {
               kphp_error(!found_method->function->modifiers.is_abstract(),
-                format("you cannot call abstract methods: %s", found_method->function->get_human_readable_name().c_str()));
+                fmt_format("you cannot call abstract methods: {}", found_method->function->get_human_readable_name()));
             }
           }
           return v;
@@ -107,7 +107,7 @@ inline void ResolveSelfStaticParentPass::check_access_to_class_from_this_file(Cl
   }
   if (ref_class && !ref_class->can_be_php_autoloaded) {
     kphp_error(ref_class->file_id == current_function->file_id,
-               format("Class %s can be accessed only from file %s, as it is not autoloadable",
-                      ref_class->name.c_str(), ref_class->file_id->unified_file_name.c_str()));
+               fmt_format("Class {} can be accessed only from file {}, as it is not autoloadable",
+                          ref_class->name, ref_class->file_id->unified_file_name));
   }
 }

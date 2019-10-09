@@ -35,11 +35,9 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     if (context_class->modifiers.is_abstract()) {
       return true;
     }
-    auto msg = format("You should override abstract method: `%s` in class: `%s`",
-                      interface_function->get_human_readable_name().c_str(),
-                      context_class->name.c_str());
-
-    kphp_error(false, msg);
+    kphp_error(false, fmt_format("You should override abstract method: `{}` in class: `{}`",
+                                 interface_function->get_human_readable_name(),
+                                 context_class->name));
     return false;
   }
 
@@ -66,11 +64,11 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
   auto i_argn = interface_params.size();
 
   if (!(i_argn <= max_argn && (default_argn >= max_argn - i_argn))) {
-    auto msg = format("Count of arguments are different in interface method: `%s` and in class: `%s`",
-                      interface_function->get_human_readable_name().c_str(),
-                      context_class->name.c_str());
+    kphp_error(false, fmt_format("Count of arguments are different in interface method: `{}` and in class: `{}`",
+                                 interface_function->get_human_readable_name(),
+                                 context_class->name));
 
-    kphp_error_act(false, msg, return false);
+    return false;
   }
 
   auto get_string_repr = [] (VertexPtr v) {
@@ -171,7 +169,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function, DataStream<Fu
       auto fun_name = virtual_function->local_name();
       if (!derived->members.get_instance_method(fun_name)) {
         kphp_assert_msg(!derived_has_method(derived, fun_name),
-          format("derived class `%s` may not have method `%s` (bug in compiler)", derived->name.c_str(), virtual_function->get_human_readable_name().c_str()));
+                        fmt_format("derived class `{}` may not have method `{}` (bug in compiler)", derived->name, virtual_function->get_human_readable_name()));
         continue;
       }
     }

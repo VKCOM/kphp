@@ -159,7 +159,7 @@ void ExprNodeRecalc::apply_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, Vert
 }
 
 void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
-  const char *err_msg = nullptr;
+  std::string err_msg;
 
   if (auto vertex = GenTree::get_call_arg_ref(arg, expr)) {
     auto class_name = GenTree::get_constexpr_string(vertex);
@@ -172,16 +172,16 @@ void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_type_expr_arg_ref> 
           err_msg = "class passed as type-string may not be static";
         }
       } else {
-        err_msg = format("bad %d parameter: can't find class %s", arg->int_val, class_name->c_str());
+        err_msg = fmt_format("bad {} parameter: can't find class {}", arg->int_val, *class_name);
       }
     } else {
-      err_msg = format("bad %d parameter: expected constant nonempty string with class name", arg->int_val);
+      err_msg = fmt_format("bad {} parameter: expected constant nonempty string with class name", arg->int_val);
     }
   } else {
     err_msg = "error in type rule";
   }
 
-  if (err_msg) {
+  if (!err_msg.empty()) {
     kphp_error(false, err_msg);
     recalc_ptype<tp_Error>();
   }

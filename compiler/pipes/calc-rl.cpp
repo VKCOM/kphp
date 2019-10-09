@@ -156,7 +156,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         }
         case val_l:
-          kphp_error (0, format("trying to use result of [%s] as lvalue", OpInfo::str(tp).c_str()));
+          kphp_error (0, fmt_format("trying to use result of [{}] as lvalue", OpInfo::str(tp)));
           break;
         default:
         kphp_fail();

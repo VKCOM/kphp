@@ -5,7 +5,7 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/threading/hash-table.h"
 
 static TSHashTable<Key *> int_keys_ht;
@@ -55,7 +55,7 @@ Key Key::int_key(int key) {
 
 std::string Key::to_string() const {
   if (is_int_key()) {
-    return format("%d", (id - 1) / 2);
+    return fmt_format("{}", (id - 1) / 2);
   }
   if (is_string_key()) {
     return *string_key_names_ht.at(id)->data;

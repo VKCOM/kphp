@@ -33,21 +33,21 @@ bool SrcFile::load() {
   int err;
 
   int fid = open(file_name.c_str(), O_RDONLY);
-  kphp_assert_msg (fid >= 0, format("failed to open file [%s] : %m", file_name.c_str()));
+  kphp_assert_msg (fid >= 0, fmt_format("failed to open file [{}] : {}", file_name, strerror(errno)));
 
   struct stat buf;
   err = fstat(fid, &buf);
   kphp_assert_msg(err >= 0, "fstat failed : %m");
 
-  kphp_assert_msg(buf.st_size < 100000000, format("file [%s] is too big [%lu]\n", file_name.c_str(), buf.st_size));
+  kphp_assert_msg(buf.st_size < 100000000, fmt_format("file [{}] is too big [{}]\n", file_name, buf.st_size));
   int file_size = (int)buf.st_size;
   text = string(file_size, ' ');
   err = (int)read(fid, &text[0], file_size);
-  kphp_assert_msg(err >= 0, format("Can't read file [%s]: %m", file_name.c_str()));
+  kphp_assert_msg(err >= 0, fmt_format("Can't read file [{}]: {}", file_name, strerror(errno)));
 
   for (int i = 0; i < file_size; i++) {
     if (unlikely (text[i] == 0)) {
-      kphp_warning(format("symbol with code zero was replaced by space in file [%s] at [%d]", file_name.c_str(), i));
+      kphp_warning(fmt_format("symbol with code zero was replaced by space in file [{}] at [{}]", file_name, i));
       text[i] = ' ';
     }
   }

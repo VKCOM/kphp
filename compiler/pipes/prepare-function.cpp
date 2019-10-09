@@ -88,7 +88,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         std::string token;
         while (is >> token) {
           if (!f->disabled_warnings.insert(token).second) {
-            kphp_warning(format("Warning '%s' has been disabled twice", token.c_str()));
+            kphp_warning(fmt_format("Warning '{}' has been disabled twice", token));
           }
         }
         break;
@@ -110,7 +110,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           } else if (token == "tl_common_h_dep") {
             f->tl_common_h_dep = true;
           } else {
-            kphp_error(0, format("Unknown @kphp-extern-func-info %s", token.c_str()));
+            kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));
           }
         }
         break;
@@ -144,7 +144,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           is_first_time = false;
 
           auto func_param_it = name_to_function_param.find(var_name.substr(1));
-          kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-template tag var name mismatch. found %s.", var_name.c_str()));
+          kphp_error_return(func_param_it != name_to_function_param.end(), fmt_format("@kphp-template tag var name mismatch. found {}.", var_name));
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
           name_to_function_param.erase(func_param_it);
@@ -159,7 +159,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       case php_doc_tag::kphp_const: {
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
           auto func_param_it = name_to_function_param.find(var_name.substr(1));
-          kphp_error_return(func_param_it != name_to_function_param.end(), format("@kphp-const tag var name mismatch. found %s.", var_name.c_str()));
+          kphp_error_return(func_param_it != name_to_function_param.end(), fmt_format("@kphp-const tag var name mismatch. found {}.", var_name));
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
           cur_func_param->var()->is_const = true;
@@ -202,7 +202,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
           auto func_param_it = name_to_function_param.find(doc_parsed.var_name);
           kphp_error_return(func_param_it != name_to_function_param.end(),
-            format("@param tag var name mismatch: found $%s", doc_parsed.var_name.c_str()));
+            fmt_format("@param tag var name mismatch: found ${}", doc_parsed.var_name));
           int param_i = func_param_it->second;
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
@@ -227,9 +227,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
           if (infer_type & infer_mask::cast) {
             kphp_error(doc_parsed.type_expr->type() == op_type_expr_type && doc_parsed.type_expr.as<op_type_expr_type>()->args().empty(),
-                       format("Too hard rule for cast"));
+                       "Too hard rule for cast");
             kphp_error(cur_func_param->type_help == tp_Unknown,
-                       format("Duplicate type rule for argument '%s'", doc_parsed.var_name.c_str()));
+                       fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
             cur_func_param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
           }
 
@@ -287,10 +287,10 @@ static void check_default_args(FunctionPtr fun) {
     if (param->has_default_value() && param->default_value()) {
       was_default = true;
       if (fun->type == FunctionData::func_local) {
-        kphp_error (!param->var()->ref_flag, format("Default value in reference function argument [function = %s]", fun->get_human_readable_name().c_str()));
+        kphp_error (!param->var()->ref_flag, fmt_format("Default value in reference function argument [function = {}]", fun->get_human_readable_name()));
       }
     } else {
-      kphp_error (!was_default, format("Default value expected [function = %s] [param_i = %zu]", fun->get_human_readable_name().c_str(), i));
+      kphp_error (!was_default, fmt_format("Default value expected [function = {}] [param_i = {}]", fun->get_human_readable_name(), i));
     }
   }
 }
@@ -334,7 +334,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   };
 
   kphp_error(!function->class_id || is_function_name_allowed(function->local_name()),
-             format("KPHP doesn't support magic method: %s", function->get_human_readable_name().c_str()));
+             fmt_format("KPHP doesn't support magic method: {}", function->get_human_readable_name()));
 
   if (stage::has_error()) {
     return;

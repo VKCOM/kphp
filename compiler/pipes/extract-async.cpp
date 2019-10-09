@@ -40,10 +40,11 @@ VertexPtr ExtractAsyncPass::on_enter_vertex(VertexPtr vertex, ExtractAsyncPass::
           kphp_error(0, "Too many same errors about resumable functions, will skip others");
         }
       } else {
-        kphp_error(0, (format("Can't save result of resumable function %s into non-var inside another resumable function\n"
-                              "Consider using a temporary variable for this call.\n"
-                              "Function is resumable because of calls chain:\n",
-                              func->get_human_readable_name().c_str()) + func->get_resumable_path()).c_str());
+        kphp_error(0, fmt_format("Can't save result of resumable function {} into non-var inside another resumable function\n"
+                                 "Consider using a temporary variable for this call.\n"
+                                 "Function is resumable because of calls chain:\n"
+                                 "{}",
+                                 func->get_human_readable_name(), func->get_resumable_path()));
       }
       return vertex;
     }

@@ -218,8 +218,8 @@ void ClassData::check_parent_constructor() {
   }
 
   kphp_error(has_custom_constructor || !parent_class->has_custom_constructor,
-             format("You must write `__constructor` in class: %s because one of your parent(%s) has constructor",
-                    TermStringFormat::paint_green(name).c_str(), TermStringFormat::paint_green(parent_class->name).c_str())
+             fmt_format("You must write `__constructor` in class: {} because one of your parent({}) has constructor",
+                        TermStringFormat::paint_green(name), TermStringFormat::paint_green(parent_class->name))
   );
 }
 
@@ -275,8 +275,9 @@ bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
 }
 
 void ClassData::mark_as_used() {
-  if (really_used)
+  if (really_used) {
     return;
+  }
   really_used = true;
   if (parent_class) {
     parent_class->mark_as_used();
@@ -291,7 +292,7 @@ bool ClassData::has_no_derived_classes() const {
   return (!implements.empty() || does_need_codegen(parent_class)) && derived_classes.empty();
 }
 
-template<std::atomic<bool> ClassData:: *field_ptr>
+template<std::atomic<bool> ClassData::*field_ptr>
 void ClassData::set_atomic_field_deeply() {
   if (this->*field_ptr) {
     return;

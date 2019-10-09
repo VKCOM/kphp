@@ -115,7 +115,7 @@ bool TransformToSmartInstanceof::fill_derived_classes(VertexPtr instance_var, Ve
     InterfacePtr interface_class;
     auto assum = infer_class_of_expr(current_function, instance_var, interface_class);
     kphp_error_act(assum == AssumType::assum_instance,
-      format("variable is not an instance: `%s`", instance_var->get_string().c_str()),return false);
+      fmt_format("variable is not an instance: `{}`", instance_var->get_string()),return false);
     state.left_derived = {interface_class->derived_classes.begin(), interface_class->derived_classes.end()};
   }
 

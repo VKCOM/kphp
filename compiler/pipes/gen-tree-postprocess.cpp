@@ -18,13 +18,13 @@ VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, Verte
 VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   kphp_error_act (!G->env().is_static_lib_mode(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
   VertexRange args = require_lib_call->args();
-  kphp_error_act (args.size() == 1, format("require_lib expected 1 arguments, got %zu", args.size()), return require_lib_call);
+  kphp_error_act (args.size() == 1, fmt_format("require_lib expected 1 arguments, got {}", args.size()), return require_lib_call);
   auto lib_name_node = args[0];
   kphp_error_act (lib_name_node->type() == op_string, "First argument of require_lib must be a string", return require_lib_call);
 
   std::string lib_require_name = lib_name_node->get_string();
   kphp_error_act (!lib_require_name.empty() && lib_require_name.back() != '/',
-                  format("require_lib got bad lib name '%s'", lib_require_name.c_str()), return require_lib_call);
+                  fmt_format("require_lib got bad lib name '{}'", lib_require_name), return require_lib_call);
 
   size_t txt_file_index = std::numeric_limits<size_t>::max();
   const std::string functions_txt = lib_require_name + "/lib/functions.txt";
@@ -57,7 +57,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   if (lib != registered_lib) {
     lib.clear();
   }
-  kphp_error_act (new_vertex, format("Can't find '%s' lib", lib_require_name.c_str()), return require_lib_call);
+  kphp_error_act (new_vertex, fmt_format("Can't find '{}' lib", lib_require_name), return require_lib_call);
   return new_vertex;
 }
 } // namespace
@@ -113,7 +113,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
 
     if (name == "call_user_func_array") {
       auto args = call->args();
-      kphp_error (args.size() == 2, format("call_user_func_array expected 2 arguments, got %d", (int)root->size()));
+      kphp_error (args.size() == 2, fmt_format("call_user_func_array expected 2 arguments, got {}", (int)root->size()));
       kphp_error_act (args[0]->type() == op_string, "First argument of call_user_func_array must be a const string", return root);
       auto arg = VertexAdaptor<op_varg>::create(args[1]).set_location(args[1]);
       auto new_root = VertexAdaptor<op_func_call>::create(arg).set_location(arg);

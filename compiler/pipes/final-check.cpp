@@ -33,7 +33,7 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   klass->deeply_require_instance_cache_visitor();
   if (call->get_string() == "instance_cache_fetch_immutable") {
     kphp_error(klass->is_immutable,
-               format("Can not fetch instance of mutable class %s with instance_cache_fetch_immutable call", klass->name.c_str()));
+               fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch_immutable call", klass->name));
   }
 }
 
@@ -77,7 +77,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       call_params[i].as<op_func_ptr>()->func_id :
       call_params[i].as<op_func_call>()->func_id;
 
-    kphp_error_act(func_ptr_of_callable->root, format("Unknown callback function [%s]", func_ptr_of_callable->get_human_readable_name().c_str()), continue);
+    kphp_error_act(func_ptr_of_callable->root, fmt_format("Unknown callback function [{}]", func_ptr_of_callable->get_human_readable_name()), continue);
     VertexRange cur_params = func_ptr_of_callable->get_params();
 
     for (auto arg : cur_params) {
@@ -104,8 +104,8 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   }
 
   if (function->modifiers.is_instance() && function->local_name() == ClassData::NAME_OF_CLONE) {
-    kphp_error_act(!function->is_resumable, format("%s method has to be not resumable", ClassData::NAME_OF_CLONE), return false);
-    kphp_error_act(!function->can_throw, format("%s method should not throw exception", ClassData::NAME_OF_CLONE), return false);
+    kphp_error_act(!function->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE), return false);
+    kphp_error_act(!function->can_throw, fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE), return false);
   }
 
   for (auto &static_var : function->static_var_ids) {
@@ -120,7 +120,7 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
 
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_func_name) {
-    kphp_error (0, format("Unexpected %s (maybe, it should be a define?)", vertex->get_c_string()));
+    kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
   if (vertex->type() == op_addr) {
     kphp_error (0, "Getting references is unsupported");
@@ -130,13 +130,10 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_float && !type_left->or_false_flag()) ||
         (type_right->ptype() == tp_float && !type_right->or_false_flag())) {
-      kphp_warning(format("Using === with float operand"));
+      kphp_warning("Using === with float operand");
     }
     if (!can_be_same_type(type_left, type_right)) {
-      kphp_warning(format("=== with %s and %s as operands will be always false",
-                           type_out(type_left).c_str(),
-                           type_out(type_right).c_str()));
-
+      kphp_warning(fmt_format("=== with {} and {} as operands will be always false", type_out(type_left), type_out(type_right)));
     }
   }
   if (vertex->type() == op_add) {
@@ -144,9 +141,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) ^ (type_right->ptype() == tp_array)) {
       if (type_left->ptype() != tp_var && type_right->ptype() != tp_var) {
-        kphp_warning (format("%s + %s is strange operation",
-                              type_out(type_left).c_str(),
-                              type_out(type_right).c_str()));
+        kphp_warning (fmt_format("{} + {} is strange operation", type_out(type_left), type_out(type_right)));
       }
     }
   }
@@ -180,9 +175,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     } else if (arrayType->ptype() == tp_tuple) {
       size_t list_size = vertex.as<op_list>()->list().size();
       size_t tuple_size = arrayType->get_tuple_max_index();
-      kphp_error (list_size <= tuple_size, format("Can't assign tuple of length %zd to list of length %zd", tuple_size, list_size));
+      kphp_error (list_size <= tuple_size, fmt_format("Can't assign tuple of length {} to list of length {}", tuple_size, list_size));
     } else {
-      kphp_error (arrayType->ptype() == tp_var, format("Can not compile list with '%s'", ptype_name(arrayType->ptype())));
+      kphp_error (arrayType->ptype() == tp_var, fmt_format("Can not compile list with '{}'", ptype_name(arrayType->ptype())));
     }
   }
   if (vertex->type() == op_index && vertex.as<op_index>()->has_key()) {
@@ -192,7 +187,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     if (arrayType->ptype() == tp_tuple) {
       long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
       size_t tuple_size = arrayType->get_tuple_max_index();
-      kphp_error (0 <= index && index < tuple_size, format("Can't get element %ld of tuple of length %zd", index, tuple_size));
+      kphp_error (0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
     }
   }
   if (auto xset = vertex.try_as<meta_op_xset>()) {
@@ -222,7 +217,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_instance_prop) {
     const TypeData *lhs_type = tinf::get_type(vertex.as<op_instance_prop>()->instance());
     kphp_error(lhs_type->ptype() == tp_Class,
-               format("Accessing ->property of non-instance %s", colored_type_out(lhs_type).c_str()));
+               fmt_format("Accessing ->property of non-instance {}", colored_type_out(lhs_type)));
   }
 
   if (G->env().get_warnings_level() >= 2 && vertex->type() == op_func_call) {
@@ -261,7 +256,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     } else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->get_real_ptype() == tp_var,
-                 format("is_null() will be always false for %s", type_out(arg_type).c_str()));
+                 fmt_format("is_null() will be always false for {}", type_out(arg_type)));
     }
   }
 
@@ -273,8 +268,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
  */
 inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
   kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_var,
-             format("static $%s is not inited at declaration (inferred %s)",
-                     static_var->name.c_str(), colored_type_out(tinf::get_type(static_var)).c_str()));
+             fmt_format("static ${} is not inited at declaration (inferred {})", static_var->name, colored_type_out(tinf::get_type(static_var))));
 }
 
 void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {

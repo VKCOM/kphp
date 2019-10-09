@@ -4,7 +4,7 @@
 
 #include "compiler/operation.h"
 #include "compiler/stage.h"
-#include "compiler/threading/format.h"
+#include "common/wrappers/fmt_format.h"
 
 template<Operation Op>
 class vertex_inner;

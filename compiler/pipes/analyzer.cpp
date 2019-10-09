@@ -28,7 +28,7 @@ void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
       }
       if (!str.empty()) {
         if (used_keys.find(str) != used_keys.end()) {
-          kphp_warning(format("Duplicate key '%s' in array", str.c_str()));
+          kphp_warning(fmt_format("Duplicate key '{}' in array", str));
         }
         used_keys.insert(str);
       }
@@ -71,7 +71,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT * local) 
   if (local->from_seq) {
     if (OpInfo::P[vertex->type()].rl == rl_op && OpInfo::P[vertex->type()].cnst == cnst_const_func) {
       if (vk::none_of_equal(vertex->type(), op_log_and, op_log_or, op_ternary, op_log_and_let, op_log_or_let, op_unset)) {
-        kphp_warning(format("Statement has no effect [op = %s]", OpInfo::P[vertex->type()].str.c_str()));
+        kphp_warning(fmt_format("Statement has no effect [op = {}]", OpInfo::P[vertex->type()].str));
       }
     }
   }

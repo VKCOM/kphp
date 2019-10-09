@@ -142,7 +142,7 @@ template <class MemberT>
 void ClassMembersContainer::append_member(MemberT &&member) {
   auto hash_num = vk::std_hash(member.get_hash_name());
   kphp_error(names_hashes.insert(hash_num).second,
-             format("Redeclaration of %s::%s", klass->name.c_str(), member.get_hash_name().c_str()));
+             fmt_format("Redeclaration of {}::{}", klass->name, member.get_hash_name()));
   get_all_of<MemberT>().push_back(std::forward<MemberT>(member));
   //printf("append %s::%s\n", klass->name.c_str(), hash_name.c_str());
 }

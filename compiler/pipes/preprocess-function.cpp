@@ -31,7 +31,7 @@ public:
       ClassPtr klass;
       auto assum = infer_class_of_expr(stage::get_function(), clone_root, klass);
       kphp_error_act(assum == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
-      kphp_error_act(!klass->is_builtin(), format("`%s` class is forbidden for clonning", klass->name.c_str()), return clone_root);
+      kphp_error_act(!klass->is_builtin(), fmt_format("`{}` class is forbidden for clonning", klass->name), return clone_root);
       bool clone_is_inside_virt_clone = current_function->local_name() == ClassData::NAME_OF_VIRT_CLONE;
       if (!klass->derived_classes.empty() && !clone_is_inside_virt_clone) {
         /**
@@ -80,7 +80,7 @@ public:
     if (auto instanceof = root.try_as<op_instanceof>()) {
       auto str_repr_of_class = GenTree::get_actual_value(instanceof->rhs())->get_string();
       instanceof->derived_class = G->get_class(str_repr_of_class);
-      kphp_error(instanceof->derived_class, format("Can't find class: %s", str_repr_of_class.c_str()));
+      kphp_error(instanceof->derived_class, fmt_format("Can't find class: {}", str_repr_of_class));
     }
 
     if (vk::any_of_equal(root->type(), op_func_call, op_func_ptr, op_constructor_call)) {
@@ -184,7 +184,7 @@ private:
           if (i < call->args().size()) {
             call_arg = call->args()[i];
           } else {
-            kphp_error_act(param->has_default_value(), format("missed %dth argument in function call: %s", i, call->get_string().c_str()), return call);
+            kphp_error_act(param->has_default_value(), fmt_format("missed {}th argument in function call: {}", i, call->get_string()), return call);
             call_arg = param->default_value();
           }
 
@@ -259,7 +259,7 @@ private:
     kphp_assert(func_args_n > 0);
 
     kphp_error_act(func_args_n - 1 <= call_args_n,
-                   format("function takes: %d arguments; passed only %d", func_args_n, call_args_n),
+                   fmt_format("function takes: {} arguments; passed only {}", func_args_n, call_args_n),
                    return {});
     std::advance(variadic_args_start, func_args_n - 1);
 
@@ -286,7 +286,7 @@ private:
             unpacking_args_converted_to_array.emplace_back(GenTree::conv_to<tp_array>(unpack_as_varg->array()));
           } else {
             const std::string &s = (*unpack_arg_it)->has_get_string() ? (*unpack_arg_it)->get_string() : "";
-            kphp_error_act(false, format("It's prohibited using something after argument unpacking: `%s`", s.c_str()), return {});
+            kphp_error_act(false, fmt_format("It's prohibited using something after argument unpacking: `{}`", s), return {});
           }
         }
         auto merge_arrays = VertexAdaptor<op_func_call>::create(array_from_varargs_passed_as_positional, unpacking_args_converted_to_array);
@@ -321,7 +321,7 @@ private:
     }
 
     kphp_error_act(!vk::string_view{*name_of_class_method}.starts_with("__"),
-      format("Call methods with prefix `__` are prohibited: `%s`", name_of_class_method->c_str()),
+      fmt_format("Call methods with prefix `__` are prohibited: `{}`", *name_of_class_method),
       return false);
 
     ClassPtr captured_class;
@@ -507,7 +507,7 @@ private:
 
     if (likely(!!f)) {
       kphp_error(!(f->modifiers.is_static() && f->modifiers.is_abstract()),
-                 format("you may not call abstract static method: %s", f->get_human_readable_name().c_str()));
+                 fmt_format("you may not call abstract static method: {}", f->get_human_readable_name()));
 
       kphp_error(!f->modifiers.is_static() || call->extra_type != op_ex_func_call_arrow, "It's not allowed to call static method through instance var");
       call = set_func_id(call, f);
@@ -526,16 +526,16 @@ private:
                                               klass->is_trait() ? "trait" :
                                               "fully static";
 
-        kphp_error(0, format("Calling 'new %s()', but this class is %s", call->get_c_string(), type_of_incorrect_class));
+        kphp_error(0, fmt_format("Calling 'new {}()', but this class is {}", call->get_string(), type_of_incorrect_class));
       } else {
-        kphp_error(0, format("Class %s does not exist", call->get_c_string()));
+        kphp_error(0, fmt_format("Class {} does not exist", call->get_string()));
       }
     } else if (call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow) {
       ClassPtr klass;
       infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
-      kphp_error(0, format("Unknown function ->%s() of %s\n", call->get_c_string(), klass ? klass->name.c_str() : "Unknown class"));
+      kphp_error(0, fmt_format("Unknown function ->{}() of {}\n", call->get_string(), klass ? klass->name.c_str() : "Unknown class"));
     } else {
-      kphp_error(0, format("Unknown function %s()\n", unexisting_func_name.c_str()));
+      kphp_error(0, fmt_format("Unknown function {}()\n", unexisting_func_name));
     }
   }
 };

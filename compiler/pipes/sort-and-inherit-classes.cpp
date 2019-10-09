@@ -76,7 +76,7 @@ void generate_empty_virtual_method_in_parents(FunctionPtr method, DataStream<Fun
     auto method_in_ancestor = parent->get_instance_method(method->local_name())->function;
 
     kphp_error(!method_in_ancestor->modifiers.is_abstract() || parent->modifiers.is_abstract(),
-      format("class: %s, must be declared abstract because of the method: %s", parent->name.c_str(), method_in_ancestor->get_human_readable_name().c_str()));
+      fmt_format("class: {}, must be declared abstract because of the method: {}", parent->name, method_in_ancestor->get_human_readable_name()));
 
     auto new_name = parent->name + "$$" + method->local_name();
 
@@ -102,10 +102,10 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
         auto parent_function = parent_member->function;
 
         kphp_error(parent_function->modifiers.is_abstract() || !parent_function->modifiers.is_final(),
-                   format("You cannot override final method: %s", method.function->get_human_readable_name().c_str()));
+                   fmt_format("You cannot override final method: {}", method.function->get_human_readable_name()));
 
         kphp_error(parent_function->modifiers.access_modifier() == method.function->modifiers.access_modifier(),
-                   format("Can not change access type for method: %s", method.function->get_human_readable_name().c_str()));
+                   fmt_format("Can not change access type for method: {}", method.function->get_human_readable_name()));
 
         method.function->is_overridden_method = true;
         generate_empty_virtual_method_in_parents(method.function, os);
@@ -257,11 +257,11 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
 
   if (auto child_method = child_class->members.get_static_method(local_name)) {
     kphp_error_return(!parent_f->modifiers.is_final(),
-                      format("Can not override method marked as 'final': %s", parent_f->get_human_readable_name().c_str()));
+                      fmt_format("Can not override method marked as 'final': {}", parent_f->get_human_readable_name()));
     kphp_error_return(!(parent_method.function->modifiers.is_static() && parent_method.function->modifiers.is_private()),
-                      format("Can not override private method: %s", parent_f->get_human_readable_name().c_str()));
+                      fmt_format("Can not override private method: {}", parent_f->get_human_readable_name()));
     kphp_error_return(parent_method.function->modifiers.access_modifier() == child_method->function->modifiers.access_modifier(),
-                      format("Can not change access type for method: %s", child_method->function->get_human_readable_name().c_str()));
+                      fmt_format("Can not change access type for method: {}", child_method->function->get_human_readable_name()));
   } else {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
 
@@ -294,10 +294,10 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   stage::set_function(FunctionPtr{});
 
   kphp_error_return(parent_class->is_class() && child_class->is_class(),
-                    format("Error extends %s and %s", child_class->name.c_str(), parent_class->name.c_str()));
+                    fmt_format("Error extends {} and {}", child_class->name, parent_class->name));
 
   kphp_error_return(!parent_class->modifiers.is_final(),
-                    format("You cannot extends final class: %s", child_class->name.c_str()));
+                    fmt_format("You cannot extends final class: {}", child_class->name));
 
   child_class->parent_class = parent_class;
   copy_abstract_methods(child_class, parent_class, function_stream);
@@ -329,7 +329,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
 
 void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class, DataStream<FunctionPtr> &function_stream) {
   kphp_error(interface_class->is_interface(),
-             format("Error implements %s and %s", child_class->name.c_str(), interface_class->name.c_str()));
+             fmt_format("Error implements {} and {}", child_class->name, interface_class->name));
 
   if (child_class->is_interface()) {
     child_class->parent_class = interface_class;
@@ -352,7 +352,7 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
 
       for (size_t j = i + 1; j < traits.size(); ++j) {
         if (traits[j]->members.has_instance_method(method->local_name()) || traits[j]->members.has_static_method(method->local_name())) {
-          kphp_error(false, format("in class: %s, you have methods collision: %s", ready_class->get_name(), method->get_human_readable_name().c_str()));
+          kphp_error(false, fmt_format("in class: {}, you have methods collision: {}", ready_class->get_name(), method->get_human_readable_name()));
         }
       }
     };
@@ -372,8 +372,8 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
   if (ready_class->is_class()) {
     ready_class->members.for_each([&](ClassMemberInstanceMethod &m) {
       if (m.function->modifiers.is_abstract()) {
-        kphp_error(ready_class->modifiers.is_abstract(), format("class: %s must be declared abstract, because of abstract method: %s",
-                                                                ready_class->get_name(), m.function->get_human_readable_name().c_str()));
+        kphp_error(ready_class->modifiers.is_abstract(), fmt_format("class: {} must be declared abstract, because of abstract method: {}",
+                                                                    ready_class->get_name(), m.function->get_human_readable_name()));
       }
     });
   }
@@ -455,9 +455,9 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   std::vector<ClassPtr> polymorphic_classes;
   for (auto c : G->get_classes()) {
     auto node = ht.at(vk::std_hash(c->name));
-    kphp_error(node->data.done, format("class `%s` has unresolved dependencies", c->name.c_str()));
+    kphp_error(node->data.done, fmt_format("class `{}` has unresolved dependencies", c->name));
     kphp_error_return(c->implements.empty() || !c->parent_class,
-      format("You may not `extends` and `implements` simultaneously, class: %s", c->name.c_str()));
+      fmt_format("You may not `extends` and `implements` simultaneously, class: {}", c->name));
 
     bool is_top_of_hierarchy = !c->get_parent_or_interface() && !c->derived_classes.empty();
     if (is_top_of_hierarchy) {
@@ -471,7 +471,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
 
       c->members.for_each([&c](const ClassMemberStaticMethod &m) {
         kphp_error(!c->parent_class->get_instance_method(m.local_name()),
-                   format("Cannot make non static method `%s` static", m.function->get_human_readable_name().c_str()));
+                   fmt_format("Cannot make non static method `{}` static", m.function->get_human_readable_name()));
       });
     }
 

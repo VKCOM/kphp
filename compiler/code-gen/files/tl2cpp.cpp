@@ -290,8 +290,8 @@ std::vector<std::string> get_template_params(const vk::tl::combinator *construct
   for (const auto &arg : constructor->args) {
     if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
       kphp_assert(arg->is_optional());
-      typenames.emplace_back(format("T%d", arg->var_num));
-      typenames.emplace_back(format("inner_magic%d", arg->var_num));
+      typenames.emplace_back(fmt_format("T{}", arg->var_num));
+      typenames.emplace_back(fmt_format("inner_magic{}", arg->var_num));
     }
   }
   return typenames;
@@ -330,7 +330,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
     for (const auto &arg : c_from_renamed->args) {
       if (arg->is_type(tl)) {
         kphp_assert(arg->is_optional());
-        template_params.emplace_back(format("typename T%d::PhpType", arg->var_num));
+        template_params.emplace_back(fmt_format("typename T{}::PhpType", arg->var_num));
       }
     }
     std::string template_suf = template_params.empty() ? "" : "<" + vk::join(template_params, ", ") + ">";
@@ -342,7 +342,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
     res = G->env().get_tl_classname_prefix() + php_namespace + "$" + (c_from_renamed->is_constructor() ? "Types$" : "Functions$") + name;
   }
   if (wrap_to_class_instance) {
-    return format("class_instance<%s>", res.c_str());
+    return fmt_format("class_instance<{}>", res);
   }
   return res;
 }
@@ -366,7 +366,7 @@ std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg, 
   if (arg->is_fields_mask_optional() && is_tl_type_wrapped_to_OrFalse(type_of(arg->type_expr))) {
     or_false_inner_access = rw_type == field_rw_type::READ ? ".val()" : ".ref()";
   }
-  return format("tl_object->$%s", arg->name.c_str()) + or_false_inner_access;
+  return fmt_format("tl_object->${}", arg->name) + or_false_inner_access;
 }
 } // namespace
 
@@ -478,7 +478,7 @@ struct TypeStore {
         std::string cpp_class = get_php_runtime_type(c.get());
         W << "(f$is_a<" << cpp_class << ">(tl_object)) " << BEGIN;
         if (c.get() != default_constructor) {
-          W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
+          W << fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(c->id)) << NL;
         }
         W << "const " << cpp_class << " *conv_obj = tl_object.template cast_to<" << cpp_class << ">().get();" << NL;
         W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
@@ -499,7 +499,7 @@ struct TypeStore {
 
         W << "(c_name == " << register_tl_const_str(c->name) << ") " << BEGIN;
         if (c.get() != default_constructor) {
-          W << format("f$store_int(0x%08x);", static_cast<unsigned int>(c->id)) << NL;
+          W << fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(c->id)) << NL;
         }
         W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
       }
@@ -617,7 +617,7 @@ struct TypeFetch {
       if (c.get() == default_constructor) {
         continue;
       }
-      W << format("case 0x%08x: ", static_cast<unsigned int>(c->id)) << BEGIN;
+      W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(c->id)) << BEGIN;
       if (!typed_mode) {
         W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
         if (has_name) {
@@ -674,31 +674,27 @@ std::string get_full_type(vk::tl::expr_base *type_expr, const std::string &var_n
 std::string get_storer_call(const std::unique_ptr<vk::tl::arg> &arg, const std::string &var_num_access, bool typed_mode) {
   std::string target_expr = get_full_value(arg->type_expr.get(), var_num_access);
   if (!typed_mode) {
-    return target_expr + format(".store(tl_arr_get(tl_object, %s, %d, %d))", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name));
+    return target_expr + fmt_format(".store(tl_arr_get(tl_object, {}, {}, {}))", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name));
   } else {
-    return target_expr + format(".typed_store(%s)", get_tl_object_field_access(arg, field_rw_type::READ).c_str());
+    return target_expr + fmt_format(".typed_store({})", get_tl_object_field_access(arg, field_rw_type::READ));
   }
 }
 
 std::string get_magic_storing(const vk::tl::type_expr_base *arg_type_expr) {
   if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
     if (is_magic_processing_needed(arg_as_type_expr)) {
-      return format("f$store_int(0x%08x);", static_cast<unsigned int>(type_of(arg_as_type_expr)->id));
+      return fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(type_of(arg_as_type_expr)->id));
     }
   } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tl::type_var>()) {
-    return format("store_magic_if_not_bare(inner_magic%d);", arg_as_type_var->var_num);
+    return fmt_format("store_magic_if_not_bare(inner_magic{});", arg_as_type_var->var_num);
   }
   return "";
 }
 
-std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, const char *error_msg) {
-  // Здесь нельзя использовать format, так как в аргументы этой функции иногда уже приходит результат format
-  char buf[1000];
+std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, const std::string &error_msg) {
   if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
     if (is_magic_processing_needed(arg_as_type_expr)) {
-      sprintf(buf, R"(fetch_magic_if_not_bare(0x%08x, "%s");)",
-              static_cast<unsigned int>(type_of(arg_as_type_expr)->id), error_msg);
-      return buf;
+      return fmt_format(R"(fetch_magic_if_not_bare({:#010x}, "{}");)", static_cast<unsigned int>(type_of(arg_as_type_expr)->id), error_msg);
     }
   } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tl::type_var>()) {
     for (const auto &arg : cur_combinator->args) {
@@ -708,8 +704,7 @@ std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, cons
         }
       }
     }
-    sprintf(buf, R"(fetch_magic_if_not_bare(inner_magic%d, "%s");)", arg_as_type_var->var_num, error_msg);
-    return buf;
+    return fmt_format( R"(fetch_magic_if_not_bare(inner_magic{}, "{}");)", arg_as_type_var->var_num, error_msg);
   }
   return "";
 }
@@ -788,7 +783,7 @@ struct CombinatorStore {
     }
     W << "(void)tl_object;" << NL;
     if (combinator->is_function()) {
-      W << format("f$store_int(0x%08x);", static_cast<unsigned int>(combinator->id)) << NL;
+      W << fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
     }
     for (const auto &arg : combinator->args) {
       // Если аргумент является параметром типа (обрамлен в {}), пропускаем его
@@ -801,10 +796,10 @@ struct CombinatorStore {
         // 2 случая:
         //      1) Зависимость от значения, которым параметризуется тип (имеет смысл только для конструкторов)
         //      2) Зависимость от значения, которое получаем из явных аргументов
-        W << format("if (%s%s & (1 << %d)) ",
-                    var_num_access,
-                    combinator->get_var_num_arg(arg->exist_var_num)->name.c_str(),
-                    arg->exist_var_bit) << BEGIN;
+        W << fmt_format("if ({}{} & (1 << {})) ",
+                        var_num_access,
+                        combinator->get_var_num_arg(arg->exist_var_num)->name,
+                        arg->exist_var_bit) << BEGIN;
         // полиморфно обрабатываются, так как запоминаем их все либо в локальные переменны либо в поля структуры
         if (typed_mode) {
           // Проверяем, что не забыли проставить поле под филд маской
@@ -828,9 +823,9 @@ struct CombinatorStore {
         kphp_assert(as_type_var);
         if (!typed_mode) {
           W << "auto _cur_arg = "
-            << format("tl_arr_get(tl_object, %s, %d, %d)", register_tl_const_str(arg->name).c_str(), arg->idx, hash_tl_const_str(arg->name))
+            << fmt_format("tl_arr_get(tl_object, {}, {}, {})", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name))
             << ";" << NL;
-          W << "string target_f_name = " << format("tl_arr_get(_cur_arg, %s, 0, %d).as_string()", register_tl_const_str("_").c_str(), hash_tl_const_str("_"))
+          W << "string target_f_name = " << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}).as_string()", register_tl_const_str("_"), hash_tl_const_str("_"))
             << ";" << NL;
           W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
             << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
@@ -907,7 +902,7 @@ struct TypeExprFetch {
 
   inline void compile(CodeGenerator &W) const {
     const auto magic_fetching = get_magic_fetching(arg->type_expr.get(),
-                                                   format("Incorrect magic of arg: %s\\nin constructor: %s", arg->name.c_str(), cur_combinator->name.c_str()));
+                                                   fmt_format("Incorrect magic of arg: {}\\nin constructor: {}", arg->name, cur_combinator->name));
     if (!magic_fetching.empty()) {
       W << magic_fetching << NL;
     }
@@ -968,14 +963,13 @@ struct CombinatorFetch {
       // Для этого было введено поле original_result_constructor_id у функций, в котором хранится мэджик реального типа, если результат флатится, и 0 иначе.
       if (!combinator->original_result_constructor_id) {
         const auto &magic_fetching = get_magic_fetching(combinator->result.get(),
-                                                        format("Incorrect magic in result of function: %s", cur_combinator->name.c_str()));
+                                                        fmt_format("Incorrect magic in result of function: {}", cur_combinator->name));
         if (!magic_fetching.empty()) {
           W << magic_fetching << NL;
         }
       } else {
-        W << format("fetch_magic_if_not_bare(0x%08x, \"%s\");",
-                    combinator->original_result_constructor_id,
-                    ("Incorrect magic in result of function: " + cur_combinator->name).c_str())
+        W << fmt_format(R"(fetch_magic_if_not_bare({:#010x}, "Incorrect magic in result of function: {}");)",
+                        static_cast<uint32_t>(combinator->original_result_constructor_id), cur_combinator->name)
           << NL;
       }
       if (!typed_mode) {
@@ -1005,9 +999,9 @@ struct CombinatorFetch {
       }
       // Если поле необязательное и зависит от филд маски
       if (arg->is_fields_mask_optional()) {
-        W << format("if (%s & (1 << %d)) ",
-                    combinator->get_var_num_arg(arg->exist_var_num)->name.c_str(),
-                    arg->exist_var_bit) << BEGIN;
+        W << fmt_format("if ({} & (1 << {})) ",
+                        combinator->get_var_num_arg(arg->exist_var_num)->name,
+                        arg->exist_var_bit) << BEGIN;
       }
       W << TypeExprFetch(arg, typed_mode);
       if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
@@ -1239,13 +1233,13 @@ struct TlTypeDecl {
           if (arg->is_optional()) {
             W << "int " << arg->name << "{0};" << NL;
             constructor_params.emplace_back("int " + arg->name);
-            constructor_inits.emplace_back(format("%s(%s)", arg->name.c_str(), arg->name.c_str()));
+            constructor_inits.emplace_back(fmt_format("{}({})", arg->name, arg->name));
           }
         } else if (type_of(arg->type_expr)->name == T_TYPE) {
-          W << format("T%d %s;", arg->var_num, arg->name.c_str()) << NL;
+          W << fmt_format("T{} {};", arg->var_num, arg->name) << NL;
           kphp_assert(arg->is_optional());
-          constructor_params.emplace_back(format("T%d %s", arg->var_num, arg->name.c_str()));
-          constructor_inits.emplace_back(format("%s(std::move(%s))", arg->name.c_str(), arg->name.c_str()));
+          constructor_params.emplace_back(fmt_format("T{} {}", arg->var_num, arg->name));
+          constructor_inits.emplace_back(fmt_format("{}(std::move({}))", arg->name, arg->name));
         }
       }
     }
@@ -1556,16 +1550,16 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
     kphp_assert(as_type_array->args.size() == 1);
     if (auto casted = as_type_array->args[0]->type_expr->as<vk::tl::type_expr>()) {
       if (is_magic_processing_needed(casted)) {
-        inner_magic = format("0x%08x", static_cast<unsigned int>(type_of(casted)->id));
+        inner_magic = fmt_format("{:#010x}", static_cast<unsigned int>(type_of(casted)->id));
       }
     } else {
       kphp_error(false, "Too complicated tl array");
     }
     std::string array_item_type_name = cpp_tl_struct_name("t_", type_of(as_type_array->args[0]->type_expr)->name);
-    std::string type = format("tl_array<%s, %s>", array_item_type_name.c_str(), inner_magic.c_str());
-    return {type, type + format("(%s, %s())",
-                                get_full_value(as_type_array->multiplicity.get(), var_num_access).c_str(),
-                                array_item_type_name.c_str())};
+    std::string type = fmt_format("tl_array<{}, {}>", array_item_type_name, inner_magic);
+    return {type, type + fmt_format("({}, {}())",
+                                    get_full_value(as_type_array->multiplicity.get(), var_num_access),
+                                    array_item_type_name)};
   }
   auto as_type_expr = type_expr->as<vk::tl::type_expr>();
   kphp_assert(as_type_expr);
@@ -1582,13 +1576,13 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
       template_params.emplace_back(child_type_name);
       if (auto child_as_type_expr = child->as<vk::tl::type_expr>()) {
         if (is_magic_processing_needed(child_as_type_expr)) {
-          template_params.emplace_back(format("0x%08x", static_cast<unsigned int>(type_of(child_as_type_expr)->id)));
+          template_params.emplace_back(fmt_format("{:#010x}", static_cast<unsigned int>(type_of(child_as_type_expr)->id)));
         } else {
           template_params.emplace_back("0");
         }
       } else if (auto child_as_type_var = child->as<vk::tl::type_var>()) {
         if (vk::string_view(child_type_name).starts_with("T")) {
-          template_params.emplace_back(format("inner_magic%d", child_as_type_var->var_num));
+          template_params.emplace_back(fmt_format("inner_magic{}", child_as_type_var->var_num));
         } else {
           template_params.emplace_back("0");
         }
@@ -1620,7 +1614,7 @@ void check_type_expr(vk::tl::expr_base *expr_base) {
         return;
       }
       kphp_error(!type->is_polymorphic() || !type_expr->is_bare(),
-                 format("Polymorphic tl type %s can't be used as bare in tl scheme.", type->name.c_str()));
+                 fmt_format("Polymorphic tl type {} can't be used as bare in tl scheme.", type->name));
       for (const auto &child : type_expr->children) {
         check_type_expr(child.get());
       }
@@ -1655,7 +1649,7 @@ void check_constructor(const std::unique_ptr<vk::tl::combinator> &c) {
     idx += 1;
   }
   kphp_error(var_nums == params_order,
-             format("Strange tl scheme here: %s", c->name.c_str()));
+             fmt_format("Strange tl scheme here: {}", c->name));
   // Также проверяем, что индексы аргументов типовых переменных в конструкторе совпадают с порядковым (слева направо, начиная с 0)
   // номером соответстсвующей вершины-ребенка в типовом дереве
   std::vector<int> indices_in_constructor;
@@ -1673,7 +1667,7 @@ void check_constructor(const std::unique_ptr<vk::tl::combinator> &c) {
     ++i;
   }
   kphp_error(indices_in_constructor == indices_in_type_tree,
-             format("Strange tl scheme here: %s", c->name.c_str()));
+             fmt_format("Strange tl scheme here: {}", c->name));
 }
 
 /* Разбиваем все комбинаторы и типы на модули, вместе с тем собирая зависимости каждого модуля.
@@ -1710,7 +1704,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
 
   auto tl_ptr = vk::tl::parse_tlo(G->env().get_tl_schema_file().c_str(), false);
   kphp_error_return(tl_ptr.has_value(),
-                    format("Error while reading tlo: %s", tl_ptr.error().c_str()));
+                    fmt_format("Error while reading tlo: {}", tl_ptr.error()));
 
   tl = tl_ptr.value().get();
   replace_anonymous_args(*tl);

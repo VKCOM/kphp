@@ -16,7 +16,7 @@
 bool is_dir(const string &path) {
   struct stat s;
   int err = stat(path.c_str(), &s);
-  dl_passert (err == 0, format("Failed to stat [%s]", path.c_str()));
+  dl_passert (err == 0, fmt_format("Failed to stat [{}]", path).c_str());
   return S_ISDIR (s.st_mode);
 }
 
@@ -43,7 +43,7 @@ void File::set_mtime(long long mtime_value) {
   times[1].tv_sec = mtime_value / 1000000000ll;
   times[1].tv_nsec = mtime_value % 1000000000ll;
   if (utimensat(AT_FDCWD, path.c_str(), times, 0) < 0) {
-    kphp_warning(format("Can't set mtime for %s with error %m", path.c_str()));
+    kphp_warning(fmt_format("Can't set mtime for {} with error {}", path.c_str(), strerror(errno)));
   }
 }
 
@@ -78,12 +78,12 @@ void File::unlink() {
 
 void Index::set_dir(const string &new_dir) {
   bool res_mkdir = mkdir_recursive(new_dir.c_str(), 0777);
-  dl_assert(res_mkdir, format("Failed to mkdir [%s] (%s)", new_dir.c_str(), strerror(errno)));
+  dl_assert(res_mkdir, fmt_format("Failed to mkdir [{}] ({})", new_dir, strerror(errno)).c_str());
 
   dir = get_full_path(new_dir);
   kphp_assert (!dir.empty());
   if (!is_dir(dir)) {
-    kphp_error (0, format("[%s] is not a directory", dir.c_str()));
+    kphp_error (0, fmt_format("[{}] is not a directory", dir));
     kphp_fail();
   }
   if (dir[dir.size() - 1] != '/') {
@@ -117,7 +117,7 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
     }
     f->mtime = new_mtime;
   } else {
-    kphp_error (0, format("Failed to scan directory [fpath=%s]\n", fpath));
+    kphp_error (0, fmt_format("Failed to scan directory [fpath={}]\n", fpath));
     kphp_fail();
   }
   return 0;
@@ -130,7 +130,7 @@ void Index::sync_with_dir(const string &new_dir) {
   }
   current_index = this;
   int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
-  dl_passert (err == 0, format("ftw [%s] failed", dir.c_str()));
+  dl_passert (err == 0, fmt_format("ftw [{}] failed", dir).c_str());
 
   for (auto it = files.begin(); it != files.end();) {
     if (it->second->on_disk) {
@@ -152,7 +152,7 @@ void Index::del_extra_files() {
         }
         int err = unlink(file->path.c_str());
         if (err != 0) {
-          kphp_error (0, format("Failed to unlink file %s: %m", file->path.c_str()));
+          kphp_error (0, fmt_format("Failed to unlink file {}: {}", file->path, strerror(errno)));
           kphp_fail();
         }
       }
@@ -173,7 +173,7 @@ void Index::create_subdir(const string &subdir) {
   int ret = mkdir(full_path.c_str(), 0777);
   dl_passert (ret != -1 || errno == EEXIST, full_path.c_str());
   if (errno == EEXIST && !is_dir(full_path)) {
-    kphp_error (0, format("[%s] is not a directory", full_path.c_str()));
+    kphp_error (0, fmt_format("[{}] is not a directory", full_path.c_str()));
     kphp_fail();
   }
 }
@@ -227,7 +227,7 @@ void Index::save_into_index_file() {
   std::string index_file_tmp_name = index_file + "XXXXXX";
   const int tmp_index_file_fd = mkstemp(&index_file_tmp_name[0]);
   if (tmp_index_file_fd == -1) {
-    kphp_warning(format("Can't create tmp file for index file '%s': %s", index_file.c_str(), strerror(errno)));
+    kphp_warning(fmt_format("Can't create tmp file for index file '{}': {}", index_file, strerror(errno)));
     return;
   }
 
@@ -236,14 +236,14 @@ void Index::save_into_index_file() {
   auto file_deleter = vk::finally([&index_file_tmp_name]() { unlink(index_file_tmp_name.c_str()); });
 
   if (fprintf(f.get(), "%zu\n", files.size()) <= 0) {
-    kphp_warning(format("Can't write the number of files into tmp index file '%s'", index_file_tmp_name.c_str()));
+    kphp_warning(fmt_format("Can't write the number of files into tmp index file '{}'", index_file_tmp_name));
     return;
   }
 
   for (const auto &file : get_files()) {
     const std::string path = file->path.substr(dir.length());
     if (fprintf(f.get(), "%s %llu %llu\n", path.c_str(), file->crc64, file->crc64_with_comments) <= 0) {
-      kphp_warning (format("Can't write crc32 into tmp index file '%s'", index_file_tmp_name.c_str()));
+      kphp_warning (fmt_format("Can't write crc32 into tmp index file '{}'", index_file_tmp_name));
       return;
     }
   }
@@ -264,14 +264,14 @@ void Index::load_from_index_file() {
   }
   struct stat statbuf;
   if (fstat(fileno(f.get()), &statbuf) == -1) {
-    kphp_warning(format("Can't get stat from index file '%s': %s", index_file.c_str(), strerror(errno)));
+    kphp_warning(fmt_format("Can't get stat from index file '{}': {}", index_file, strerror(errno)));
     return;
   }
 
   const uint64_t file_index_mtime = get_mtime(statbuf);
   size_t files = 0;
   if (fscanf(f.get(), "%zu\n", &files) != 1) {
-    kphp_warning(format("Can't read the number of files from index file '%s:1'", index_file.c_str()));
+    kphp_warning(fmt_format("Can't read the number of files from index file '{}:1'", index_file));
     return;
   }
 
@@ -280,7 +280,7 @@ void Index::load_from_index_file() {
   unsigned long long crc64_with_comments = -1;
   for (size_t i = 0; i < files; i++) {
     if (fscanf(f.get(), "%500s %llu %llu", tmp, &crc64, &crc64_with_comments) != 3) {
-      kphp_warning(format("Can't read crc32 from index file '%s:%zu'", index_file.c_str(), i + 2));
+      kphp_warning(fmt_format("Can't read crc32 from index file '{}:{}'", index_file, i + 2));
       return;
     }
     File *file = get_file(tmp);

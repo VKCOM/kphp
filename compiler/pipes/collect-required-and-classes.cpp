@@ -135,7 +135,7 @@ public:
       string name = collect_string_concatenation(require->expr());
       kphp_error_act (!name.empty(), "Not a string in 'require' arguments", return root);
       auto file = require_file(name, true);
-      kphp_error_act (file, format("Cannot require [%s]\n", name.c_str()), return root);
+      kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
       VertexPtr call = VertexAdaptor<op_func_call>::create();
       call->set_string(file->main_func_name);
       call->location = root->location;

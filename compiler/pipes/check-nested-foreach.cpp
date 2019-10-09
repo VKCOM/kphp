@@ -12,8 +12,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     auto params = foreach_v->params();
     auto x = params->x();
     if (already_used(x->var_id)) {
-      kphp_warning (format("Foreach key %s shadows key or value of outer foreach",
-                           TermStringFormat::add_text_attribute("&$" + x->var_id->name, TermStringFormat::bold).c_str()));
+      kphp_warning (fmt_format("Foreach key {} shadows key or value of outer foreach",
+                               TermStringFormat::add_text_attribute("&$" + x->var_id->name, TermStringFormat::bold)));
     }
     foreach_vars.push_back(x->var_id);
     if (x->ref_flag) {
@@ -22,8 +22,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     if (params->has_key()) {
       auto key = params->key();
       if (already_used(key->var_id)) {
-        kphp_warning (format("Foreach key %s shadows key or value of outer foreach",
-                             TermStringFormat::add_text_attribute("&$" + key->var_id->name, TermStringFormat::bold).c_str()));
+        kphp_warning (fmt_format("Foreach key {} shadows key or value of outer foreach",
+                                 TermStringFormat::add_text_attribute("&$" + key->var_id->name, TermStringFormat::bold)));
       }
       foreach_key_vars.push_back(key->var_id);
     }
@@ -43,8 +43,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     if (var->is_foreach_reference) {
       if (!vk::contains(foreach_ref_vars, var) && !vk::contains(errored_vars, var)) {
         errored_vars.push_back(var);
-        kphp_error(0, format("Foreach reference variable %s used outside of loop",
-                             TermStringFormat::add_text_attribute("&$" + var->name, TermStringFormat::bold).c_str()));
+        kphp_error(0, fmt_format("Foreach reference variable {} used outside of loop",
+                                 TermStringFormat::add_text_attribute("&$" + var->name, TermStringFormat::bold)));
       }
     }
   }
