@@ -469,7 +469,9 @@ void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, 
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
-  if (!klass->need_instance_to_array_visitor && !klass->need_instance_cache_visitors) {
+  if (!klass->need_instance_to_array_visitor &&
+      !klass->need_instance_cache_visitors &&
+      !klass->need_instance_memory_estimate_visitor) {
     return;
   }
 
@@ -487,6 +489,11 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
   if (klass->need_instance_to_array_visitor) {
     W << NL;
     compile_accept_visitor(W, klass, "InstanceToArrayVisitor");
+  }
+
+  if (klass->need_instance_memory_estimate_visitor) {
+    W << NL;
+    compile_accept_visitor(W, klass, "InstanceMemoryEstimateVisitor");
   }
 
   if (klass->need_instance_cache_visitors) {

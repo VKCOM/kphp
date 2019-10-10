@@ -141,6 +141,7 @@ function memory_get_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_total_usage() ::: int;
 function memory_get_static_usage() ::: int;
+function estimate_memory_usage($value ::: Any) ::: int;
 
 function get_net_time() ::: float;
 function get_script_time() ::: float;

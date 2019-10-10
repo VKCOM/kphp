@@ -53,6 +53,15 @@ void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
   type->class_type()->deeply_require_instance_to_array_visitor();
 }
 
+void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
+  auto type = tinf::get_type(call->args()[0]);
+  std::unordered_set<ClassPtr> classes_inside;
+  type->get_all_class_types_inside(classes_inside);
+  for (auto klass: classes_inside) {
+    klass->deeply_require_instance_memory_estimate_visitor();
+  }
+}
+
 void check_func_call_params(VertexAdaptor<op_func_call> call) {
   FunctionPtr f = call->func_id;
   VertexRange func_params = f->get_params();
@@ -258,6 +267,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_instance_cache_store_call(call);
     } else if (function_name == "instance_to_array") {
       check_instance_to_array_call(call);
+    } else if (function_name == "estimate_memory_usage") {
+      check_estimate_memory_usage_call(call);
     } else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->get_real_ptype() == tp_var,

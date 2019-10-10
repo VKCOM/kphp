@@ -18,6 +18,7 @@
 #include "runtime/math_functions.h"
 #include "runtime/mbstring.h"
 #include "runtime/memcache.h"
+#include "runtime/memory_usage.h"
 #include "runtime/misc.h"
 #include "runtime/mysql.h"
 #include "runtime/net_events.h"
