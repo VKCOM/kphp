@@ -40,7 +40,7 @@ bool is_array_suitable_for_hashing(VertexPtr vertex) {
 
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   char tmp[50] {0};
-  const int l = snprintf(tmp, sizeof(tmp), "const_array$us%llx", ArrayHash::calc_hash(array));
+  const int l = snprintf(tmp, sizeof(tmp), "const_array$us%lx", ArrayHash::calc_hash(array));
   kphp_assert(l > 0 && l < sizeof(tmp));
   return {tmp, static_cast<size_t>(l)};
 }

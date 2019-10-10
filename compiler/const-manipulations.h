@@ -286,13 +286,13 @@ protected:
 
 struct ArrayHash final
   : ConstManipulations<void> {
-  static long long calc_hash(VertexPtr v) {
+  static uint64_t calc_hash(VertexPtr v) {
     ArrayHash array_hash;
     array_hash.visit(GenTree::get_actual_value(v));
     return array_hash.cur_hash;
   }
 
-  void feed_hash(long long val) {
+  void feed_hash(uint64_t val) {
     cur_hash = cur_hash * HASH_MULT + val;
   }
 
@@ -362,10 +362,10 @@ protected:
   }
 
 private:
-  long long cur_hash = 0;
-  static const long long HASH_MULT = 56235515617499LL;
-  static const long long MAGIC1 = 536536536536960LL;
-  static const long long MAGIC2 = 288288288288069LL;
+  uint64_t cur_hash = 0;
+  static const uint64_t HASH_MULT = 56235515617499ULL;
+  static const uint64_t MAGIC1 = 536536536536960ULL;
+  static const uint64_t MAGIC2 = 288288288288069ULL;
 };
 
 struct VertexPtrFormatter final
