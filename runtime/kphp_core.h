@@ -1498,7 +1498,7 @@ array<var> f$arrayval(var &&val) {
 
 template<class T>
 array<var> f$arrayval(const Optional<T> &val) {
-  switch (val.value_status()) {
+  switch (val.value_state()) {
     case OptionalState::has_value:
       return f$arrayval(val.val());
     case OptionalState::false_value:
@@ -1512,7 +1512,7 @@ array<var> f$arrayval(const Optional<T> &val) {
 
 template<class T>
 array<var> f$arrayval(Optional<T> &&val) {
-  switch (val.value_status()) {
+  switch (val.value_state()) {
     case OptionalState::has_value:
       return f$arrayval(std::move(val.val()));
     case OptionalState::false_value:
@@ -1632,7 +1632,7 @@ bool eq2(const Optional<T> &lhs, const Optional<T> &rhs) {
 
 template<class T1, class T2>
 bool equals(const Optional<T1> &lhs, const T2 &rhs) {
-  switch (lhs.value_status()) {
+  switch (lhs.value_state()) {
     case OptionalState::has_value:
       return equals(lhs.val(), rhs);
     case OptionalState::false_value:
@@ -1651,7 +1651,7 @@ bool equals(const T1 &lhs, const Optional<T2> &rhs) {
 
 template<class T1, class T2>
 bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  switch (lhs.value_status()) {
+  switch (lhs.value_state()) {
     case OptionalState::has_value:
       return equals(rhs, lhs.val());
     case OptionalState::false_value:
@@ -1665,7 +1665,7 @@ bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs) {
 
 template<class T>
 bool equals(const Optional<T> &lhs, const Optional<T> &rhs) {
-  switch (lhs.value_status()) {
+  switch (lhs.value_state()) {
     case OptionalState::has_value:
       return equals(rhs, lhs.val());
     case OptionalState::false_value:
@@ -1770,7 +1770,7 @@ int f$count(const var &v) {
 
 template<class T>
 int f$count(const Optional<T> &a) {
-  switch (a.value_status()) {
+  switch (a.value_state()) {
     case OptionalState::has_value:
       return f$count(a.val());
     case OptionalState::false_value:
@@ -1836,7 +1836,7 @@ bool f$is_null(const class_instance<T> &v) {
 
 template<class T>
 inline bool f$is_null(const Optional<T> &v) {
-  return v.has_value() ? f$is_null(v.val()) : v.value_status() == OptionalState::null_value;
+  return v.has_value() ? f$is_null(v.val()) : v.value_state() == OptionalState::null_value;
 }
 
 bool f$is_null(const var &v) {
@@ -1851,7 +1851,7 @@ bool f$is_bool(const T &) {
 
 template<class T>
 inline bool f$is_bool(const Optional<T> &v) {
-  return v.has_value() ? f$is_bool(v.val()) : v.value_status() == OptionalState::false_value;
+  return v.has_value() ? f$is_bool(v.val()) : v.value_state() == OptionalState::false_value;
 }
 
 bool f$is_bool(const var &v) {
@@ -1896,7 +1896,7 @@ bool f$is_scalar(const T &) {
 
 template<class T>
 inline bool f$is_scalar(const Optional<T> &v) {
-  switch (v.value_status()) {
+  switch (v.value_state()) {
     case OptionalState::has_value:
       return f$is_scalar(v.val());
     case OptionalState::false_value:

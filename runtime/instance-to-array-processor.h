@@ -24,7 +24,7 @@ private:
 
   template<typename T>
   void process_impl(const char *field_name, const Optional<T> &value) {
-    switch (value.value_status()) {
+    switch (value.value_state()) {
       case OptionalState::has_value:
         process_impl(field_name, value.val());
         return;

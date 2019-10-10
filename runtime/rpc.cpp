@@ -180,7 +180,7 @@ bool f$rpc_parse(const var &new_rpc_data) {
 }
 
 bool f$rpc_parse(const Optional<string> &new_rpc_data) {
-  switch (new_rpc_data.value_status()) {
+  switch (new_rpc_data.value_state()) {
     case OptionalState::has_value:
       return f$rpc_parse(new_rpc_data.val());
     case OptionalState::false_value:

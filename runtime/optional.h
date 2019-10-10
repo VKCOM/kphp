@@ -46,13 +46,13 @@ public:
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   Optional(const Optional<T1> &other) noexcept :
     value_(other.val()),
-    value_state_(other.value_status()) {
+    value_state_(other.value_state()) {
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   Optional(Optional<T1> &&other) noexcept :
     value_(std::move(other.val())),
-    value_state_(other.value_status()) {
+    value_state_(other.value_state()) {
   }
 
   Optional &operator=(bool x) noexcept {
@@ -65,14 +65,14 @@ public:
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   Optional &operator=(const Optional<T1> &other) noexcept {
     value_ = T(other.val());
-    value_state_ = other.value_status();
+    value_state_ = other.value_state();
     return *this;
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
   Optional &operator=(Optional<T1> &&other) noexcept {
     value_ = T(std::move(other.val()));
-    value_state_ = other.value_status();
+    value_state_ = other.value_state();
     return *this;
   }
 
@@ -112,7 +112,7 @@ public:
     return value_state_ == OptionalState::has_value;
   }
 
-  OptionalState value_status() const noexcept {
+  OptionalState value_state() const noexcept {
     return value_state_;
   }
 

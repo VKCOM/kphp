@@ -83,7 +83,7 @@ var::var(const char *s, int len) :
 
 template<typename T, typename>
 var::var(const Optional<T> &v) {
-  switch (v.value_status()) {
+  switch (v.value_state()) {
     case OptionalState::has_value:
       init_from(v.val());
       return;
@@ -99,7 +99,7 @@ var::var(const Optional<T> &v) {
 
 template<typename T, typename>
 var::var(Optional<T> &&v) {
-  switch (v.value_status()) {
+  switch (v.value_state()) {
     case OptionalState::has_value:
       init_from(std::move(v.val()));
       return;
@@ -144,7 +144,7 @@ var &var::operator=(T &&v) {
 
 template<typename T, typename>
 var &var::operator=(const Optional<T> &v) {
-  switch (v.value_status()) {
+  switch (v.value_state()) {
     case OptionalState::has_value:
       return assign_from(v.val());
     case OptionalState::false_value:
@@ -158,7 +158,7 @@ var &var::operator=(const Optional<T> &v) {
 
 template<typename T, typename>
 var &var::operator=(Optional<T> &&v) {
-  switch (v.value_status()) {
+  switch (v.value_state()) {
     case OptionalState::has_value:
       return assign_from(std::move(v.val()));
     case OptionalState::false_value:
@@ -2384,7 +2384,7 @@ bool equals(bool lhs, const class_instance<T> &rhs) {
 
 template<class T>
 string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
-  switch (v.value_status()) {
+  switch (v.value_state()) {
     case OptionalState::has_value:
       return sb << v.val();
     case OptionalState::false_value:

@@ -1668,7 +1668,7 @@ void array<T>::set_value(const var &v, const T &value) noexcept {
 template<class T>
 template<class OptionalT, class ...Args>
 void array<T>::emplace_value(const Optional<OptionalT> &key, Args &&... args) noexcept {
-  switch (key.value_status()) {
+  switch (key.value_state()) {
     case OptionalState::has_value:
       set_value(key.val(), std::forward<Args>(args)...);
       return;
