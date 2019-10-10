@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/kphp_core.h"
+#include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
 
 class C$mysqli : public refcountable_php_classes<C$mysqli> {
@@ -17,6 +18,14 @@ public:
   array<int> cur_pos;
   int field_cnt = 0;
   array<string> field_names;
+
+  void accept(InstanceMemoryEstimateVisitor &visitor) {
+    visitor("", error);
+    visitor("", query_results);
+    visitor("", last_query_id);
+    visitor("", cur_pos);
+    visitor("", field_names);
+  }
 };
 
 string f$mysqli_error(const class_instance<C$mysqli> &db);

@@ -690,7 +690,7 @@ string &string::assign(size_type n, bool b __attribute__((unused))) {
 
 
 void string::assign_raw(const char *s) {
-  php_assert (sizeof(string_inner) == 12u);
+  static_assert (sizeof(string_inner) == 12u, "need 12 bytes");
   p = const_cast <char *> (s + sizeof(string_inner));
 }
 
@@ -1002,6 +1002,10 @@ inline bool string::is_const_reference_counter() const {
 inline void string::set_reference_counter_to_cache() {
   php_assert(get_reference_counter() == 1);
   inner()->ref_count = REF_CNT_FOR_CACHE;
+}
+
+inline bool string::is_cache_reference_counter() const {
+  return inner()->ref_count == REF_CNT_FOR_CACHE;
 }
 
 inline void string::destroy_cached() {

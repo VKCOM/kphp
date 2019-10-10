@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/kphp_core.h"
+#include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
 
 array<array<string>> f$debug_backtrace();
@@ -12,6 +13,12 @@ struct C$Exception : refcountable_php_classes<C$Exception> {
   string file;
   int line = 0;
   array<array<string>> trace;
+
+  void accept(InstanceMemoryEstimateVisitor &visitor) {
+    visitor("", message);
+    visitor("", file);
+    visitor("", trace);
+  }
 };
 
 using Exception = class_instance<C$Exception>;

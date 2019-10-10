@@ -176,6 +176,7 @@ public:
   inline void set_reference_counter_to_const();
   inline bool is_const_reference_counter() const;
   inline void set_reference_counter_to_cache();
+  inline bool is_cache_reference_counter() const;
   inline void destroy_cached();
 
   inline size_type estimate_memory_usage() const;

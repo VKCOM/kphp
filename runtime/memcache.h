@@ -4,6 +4,7 @@
 
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
+#include "runtime/memory_usage.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
@@ -22,6 +23,8 @@ const int MEMCACHE_SERIALIZED = 1;
 const int MEMCACHE_COMPRESSED = 2;
 
 class C$Memcache : public abstract_refcountable_php_interface {
+public:
+  virtual void accept(InstanceMemoryEstimateVisitor &) = 0;
 };
 
 class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache> {
@@ -37,6 +40,14 @@ public:
     host(int host_num, int host_port, int host_weight, int timeout_ms);
   };
 
+  virtual void accept(InstanceMemoryEstimateVisitor &visitor) final {
+    visitor("", hosts);
+  }
+
+  friend inline int f$estimate_memory_usage(const C$McMemcache::host &) {
+    return 0;
+  }
+
   array<host> hosts{array_size{1, 0, true}};
 };
 
@@ -51,6 +62,15 @@ public:
     host() = default;
     explicit host(const rpc_connection &c): conn(c), host_weight(1) {}
   };
+
+  virtual void accept(InstanceMemoryEstimateVisitor &visitor) final {
+    visitor("", hosts);
+    visitor("", fake);
+  }
+
+  friend inline int f$estimate_memory_usage(const C$RpcMemcache::host &) {
+    return 0;
+  }
 
   array<host> hosts{array_size{1, 0, true}};
   bool fake{false};

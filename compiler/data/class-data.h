@@ -139,7 +139,6 @@ public:
     return nullptr;
   }
 
-  bool need_generate_accept_method() const;
   bool is_builtin() const;
   bool is_polymorphic_or_has_polymorphic_member() const;
   static bool does_need_codegen(ClassPtr c);

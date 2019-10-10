@@ -85,6 +85,11 @@ void class_instance<T>::set_reference_counter_to_cache() {
 }
 
 template<class T>
+bool class_instance<T>::is_cache_reference_counter() const {
+  return o->get_refcnt() == REF_CNT_FOR_CACHE;
+}
+
+template<class T>
 void class_instance<T>::destroy_cached() {
   if (o) {
     php_assert(o->get_refcnt() == REF_CNT_FOR_CACHE);

@@ -2712,6 +2712,11 @@ void array<T>::set_reference_counter_to_cache() {
 }
 
 template<class T>
+bool array<T>::is_cache_reference_counter() const {
+  return p->ref_cnt == REF_CNT_FOR_CACHE;
+}
+
+template<class T>
 void array<T>::destroy_cached() {
   if (p) {
     php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);

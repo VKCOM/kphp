@@ -4,6 +4,7 @@
 struct tl_func_base;
 
 class InstanceToArrayVisitor;
+class InstanceMemoryEstimateVisitor;
 
 // builtin-классы, которые описаны в functions.txt (связанные с типизированным TL)
 // увы, здесь жёстко зашито, что они лежат именно в папке/namespace \VK\TL,
@@ -14,6 +15,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
 
   virtual void accept(InstanceToArrayVisitor &) {}
+  virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual ~C$VK$TL$RpcFunction() = default;
   virtual std::unique_ptr<tl_func_base> store() const = 0;
@@ -25,6 +27,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunctionReturnResult"; }
 
   virtual void accept(InstanceToArrayVisitor &) {}
+  virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
 };
@@ -35,6 +38,7 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
   virtual void accept(InstanceToArrayVisitor &) {}
+  virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual const char *get_class() const { return "VK\\TL\\RpcResponse"; }
 

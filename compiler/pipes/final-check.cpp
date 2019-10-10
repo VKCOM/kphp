@@ -6,6 +6,7 @@
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vars-collector.h"
 #include "compiler/gentree.h"
 
 namespace {
@@ -62,6 +63,34 @@ void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
   }
 }
 
+void check_get_global_vars_memory_stats_call() {
+  kphp_error_return(G->env().get_enable_global_vars_memory_stats(),
+    "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
+}
+
+void mark_global_vars_for_memory_stats() {
+  if (!G->env().get_enable_global_vars_memory_stats()) {
+    return;
+  }
+
+  static std::atomic<bool> vars_marked{false};
+  if (vars_marked.exchange(true)) {
+    return;
+  }
+
+  std::unordered_set<ClassPtr> classes_inside;
+  VarsCollector vars_collector{0, [&classes_inside](VarPtr variable) {
+    tinf::get_type(variable)->get_all_class_types_inside(classes_inside);
+    return false;
+  }};
+  for (const auto &main_file : G->get_main_files()) {
+    vars_collector.collect_global_and_static_vars_from(main_file->main_function);
+  }
+  for (auto klass: classes_inside) {
+    klass->deeply_require_instance_memory_estimate_visitor();
+  }
+}
+
 void check_func_call_params(VertexAdaptor<op_func_call> call) {
   FunctionPtr f = call->func_id;
   VertexRange func_params = f->get_params();
@@ -107,6 +136,8 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function) || function->is_extern()) {
     return false;
   }
+
+  mark_global_vars_for_memory_stats();
 
   if (function->type == FunctionData::func_class_holder) {
     check_class_immutableness(function->class_id);
@@ -269,7 +300,9 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_instance_to_array_call(call);
     } else if (function_name == "estimate_memory_usage") {
       check_estimate_memory_usage_call(call);
-    } else if (function_name == "is_null") {
+    } else if (function_name == "get_global_vars_memory_stats") {
+      check_get_global_vars_memory_stats_call();
+    }else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->get_real_ptype() == tp_var,
                  fmt_format("is_null() will be always false for {}", type_out(arg_type)));

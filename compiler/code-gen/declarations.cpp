@@ -424,10 +424,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
   }
 
-  if (klass->need_generate_accept_method()) {
+  if (!klass->is_lambda()) {
     compile_get_class(W, klass);
-    compile_accept_visitor_methods(W, klass);
   }
+  compile_accept_visitor_methods(W, klass);
 
   // для rpc-функций генерим метод-член класса store(), который перевызывает сторилку из codegen tl2cpp
   if (tl_gen::is_php_class_a_tl_function(klass)) {

@@ -234,10 +234,6 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {
   return this_var;
 }
 
-bool ClassData::need_generate_accept_method() const {
-  return !is_lambda();
-}
-
 bool ClassData::is_builtin() const {
   return file_id && file_id->is_builtin();
 }

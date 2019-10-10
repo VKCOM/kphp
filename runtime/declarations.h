@@ -19,3 +19,11 @@ class string_buffer;
 
 template<typename T>
 class Optional;
+
+struct rpc_connection;
+
+class Long;
+
+class ULong;
+
+class UInt;

@@ -6,6 +6,7 @@
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/function-header.h"
 #include "compiler/code-gen/files/function-source.h"
+#include "compiler/code-gen/files/global_vars_memory_stats.h"
 #include "compiler/code-gen/files/init-scripts.h"
 #include "compiler/code-gen/files/lib-header.h"
 #include "compiler/code-gen/files/tl2cpp.h"
@@ -143,6 +144,10 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
 
   for (const auto &main_file : main_files) {
     W << Async(GlobalVarsReset(main_file));
+  }
+
+  if (G->env().get_enable_global_vars_memory_stats()) {
+    W << Async(GlobalVarsMemoryStats{main_files});
   }
   W << Async(InitScriptsCpp(std::move(main_files), std::move(all_functions)));
 

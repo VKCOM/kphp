@@ -385,6 +385,7 @@ public:
   iterator begin_no_mutate();
   iterator end_no_mutate();
   void set_reference_counter_to_cache();
+  bool is_cache_reference_counter() const;
   void destroy_cached();
 
   const T *get_const_vector_pointer() const; // unsafe
