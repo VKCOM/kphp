@@ -22,9 +22,7 @@ private:
   vector<string> includes_;
   string jobs_count_;
   int jobs_count_int_{0};
-  string use_make_;
   bool use_make_bool_{false};
-  string make_force_;
   bool make_force_bool_{false};
   string threads_count_;
   int threads_count_int_{0};
@@ -37,6 +35,7 @@ private:
   bool no_pch_{false};
   bool stop_on_type_error_{true};
   bool show_progress_{true};
+  bool enable_global_vars_memory_stats_{false};
 
   string cxx_;
   string cxx_flags_;
@@ -45,7 +44,6 @@ private:
   string ar_;
 
   string dest_dir_;
-  string use_auto_dest_;
   bool use_auto_dest_bool_{false};
   string dest_cpp_dir_;
   string dest_objs_dir_;
@@ -73,7 +71,7 @@ public:
   const string &get_base_dir() const;
   void set_dest_dir(const string &dest_dir);
   const string &get_dest_dir() const;
-  void set_use_auto_dest(const string &use_auto_dest);
+  void set_use_auto_dest();
   bool get_use_auto_dest() const;
   void set_functions(const string &functions);
   const string &get_functions() const;
@@ -85,9 +83,9 @@ public:
   const string &get_mode() const;
   void set_link_file(const string &link_file);
   const string &get_link_file() const;
-  void set_use_make(const string &use_make);
+  void set_use_make();
   bool get_use_make() const;
-  void set_make_force(const string &make_force);
+  void set_make_force();
   bool get_make_force() const;
   const string &get_binary_path() const;
   void set_static_lib_out_dir(string &&lib_dir);
@@ -119,6 +117,8 @@ public:
   bool get_no_index_file() const;
   bool get_stop_on_type_error() const;
   bool get_show_progress() const;
+  void set_enable_global_vars_memory_stats();
+  bool get_enable_global_vars_memory_stats() const;
   void add_main_file(const string &main_file);
   const vector<string> &get_main_files() const;
 

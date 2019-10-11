@@ -48,8 +48,12 @@ void env_str2int(int *dest, const string &src) {
   *dest = atoi(src.c_str());
 }
 
-void env_str2bool(bool *dest, const string &src) {
-  *dest = static_cast <bool> (atoi(src.c_str()));
+void get_bool_option_from_env(bool &option_value, const char *env, bool default_value) {
+  if (option_value == default_value) {
+    std::string env_value;
+    init_env_var(&env_value, env, default_value ? "1" : "0");
+    option_value = static_cast <bool> (atoi(env_value.c_str()));
+  }
 }
 
 const string &KphpEnviroment::get_home() const {
@@ -72,8 +76,8 @@ const string &KphpEnviroment::get_dest_dir() const {
   return dest_dir_;
 }
 
-void KphpEnviroment::set_use_auto_dest(const string &use_auto_dest) {
-  use_auto_dest_ = use_auto_dest;
+void KphpEnviroment::set_use_auto_dest() {
+  use_auto_dest_bool_ = true;
 }
 
 bool KphpEnviroment::get_use_auto_dest() const {
@@ -120,16 +124,16 @@ const string &KphpEnviroment::get_link_file() const {
   return link_file_;
 }
 
-void KphpEnviroment::set_use_make(const string &use_make) {
-  use_make_ = use_make;
+void KphpEnviroment::set_use_make() {
+  use_make_bool_ = true;
 }
 
 bool KphpEnviroment::get_use_make() const {
   return use_make_bool_;
 }
 
-void KphpEnviroment::set_make_force(const string &make_force) {
-  make_force_ = make_force;
+void KphpEnviroment::set_make_force() {
+  make_force_bool_ = true;
 }
 
 bool KphpEnviroment::get_make_force() const {
@@ -254,6 +258,14 @@ void KphpEnviroment::add_main_file(const string &main_file) {
 
 const vector<string> &KphpEnviroment::get_main_files() const {
   return main_files_;
+}
+
+void KphpEnviroment::set_enable_global_vars_memory_stats() {
+  enable_global_vars_memory_stats_ = true;
+}
+
+bool KphpEnviroment::get_enable_global_vars_memory_stats() const {
+  return enable_global_vars_memory_stats_;
 }
 
 const string &KphpEnviroment::get_dest_cpp_dir() const {
@@ -437,17 +449,12 @@ bool KphpEnviroment::init() {
   init_env_var(&base_dir_, "", "");
   as_dir(&base_dir_);
 
-  if (!no_index_file_) {
-    std::string no_index;
-    init_env_var(&no_index, "KPHP_NO_INDEX_FILE", "0");
-    env_str2bool(&no_index_file_, no_index);
-  }
-
-  if (!no_pch_) {
-    std::string no_pch;
-    init_env_var(&no_pch, "KPHP_NO_PCH", "0");
-    env_str2bool(&no_pch_, no_pch);
-  }
+  get_bool_option_from_env(no_index_file_, "KPHP_NO_INDEX_FILE", false);
+  get_bool_option_from_env(no_pch_, "KPHP_NO_PCH", false);
+  get_bool_option_from_env(use_make_bool_, "KPHP_USE_MAKE", false);
+  get_bool_option_from_env(stop_on_type_error_, "KPHP_STOP_ON_TYPE_ERROR", true);
+  get_bool_option_from_env(show_progress_, "KPHP_SHOW_PROGRESS", true);
+  get_bool_option_from_env(enable_global_vars_memory_stats_, "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", false);
 
   init_env_var(&jobs_count_, "KPHP_JOBS_COUNT", "100");
   env_str2int(&jobs_count_int_, jobs_count_);
@@ -456,26 +463,12 @@ bool KphpEnviroment::init() {
     return false;
   }
 
-  init_env_var(&use_make_, "KPHP_USE_MAKE", "0");
-  env_str2bool(&use_make_bool_, use_make_);
-
-  init_env_var(&make_force_, "", "0");
-  env_str2bool(&make_force_bool_, make_force_);
-
   init_env_var(&threads_count_, "KPHP_THREADS_COUNT", "16");
   env_str2int(&threads_count_int_, threads_count_);
   if (threads_count_int_ <= 0 || threads_count_int_ > 100) {
     fmt_print("Incorrect threads_count={}\n", threads_count_);
     return false;
   }
-
-  std::string stop_on_type_error;
-  init_env_var(&stop_on_type_error, "KPHP_STOP_ON_TYPE_ERROR", "1");
-  env_str2bool(&stop_on_type_error_, stop_on_type_error);
-
-  std::string show_progress;
-  init_env_var(&show_progress, "KPHP_SHOW_PROGRESS", "1");
-  env_str2bool(&show_progress_, show_progress);
 
   for (string &include : includes_) {
     as_dir(&include);
@@ -532,11 +525,10 @@ bool KphpEnviroment::init() {
   init_env_var(&ar_, "AR", "ar");
 
   //todo: use some hash???
+  get_bool_option_from_env(use_auto_dest_bool_, "KPHP_AUTO_DEST", false);
   init_env_var(&dest_dir_, "KPHP_DEST_DIR", get_path() + "PHP/tests/kphp_tmp/default/");
   as_dir(&dest_dir_);
-  init_env_var(&use_auto_dest_, "KPHP_AUTO_DEST", "0");
   init_env_var(&version_, "KPHP_VERSION_OVERRIDE", get_version_string());
-  env_str2bool(&use_auto_dest_bool_, use_auto_dest_);
 
   init_env_var(&verbosity_, "KPHP_VERBOSITY", "0");
   if (!verbosity_int_) {
@@ -584,6 +576,7 @@ void KphpEnviroment::debug() const {
             "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
             "KPHP_NO_INDEX_FILE=[" << get_no_index_file() << "]\n" <<
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
+            "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
             "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<

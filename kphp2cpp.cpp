@@ -34,7 +34,7 @@ int parse_args_f(int i) {
       env->set_dest_dir(optarg);
       break;
     case 'F':
-      env->set_make_force("1");
+      env->set_make_force();
       break;
     case 'f':
       env->set_functions(optarg);
@@ -55,7 +55,7 @@ int parse_args_f(int i) {
       env->set_link_file(optarg);
       break;
     case 'm':
-      env->set_use_make("1");
+      env->set_use_make();
       break;
     case 'o':
       env->set_user_binary_path(optarg);
@@ -76,7 +76,7 @@ int parse_args_f(int i) {
       env->set_path(optarg);
       break;
     case 'S':
-      env->set_use_auto_dest("1");
+      env->set_use_auto_dest();
       break;
     case 'v':
       env->inc_verbosity();
@@ -113,6 +113,9 @@ int parse_args_f(int i) {
       break;
     case 2007:
       env->set_no_index_file();
+      break;
+    case 2008:
+      env->set_enable_global_vars_memory_stats();
       break;
     default:
       return -1;
@@ -156,6 +159,7 @@ int main(int argc, char *argv[]) {
   parse_option("runtime-sha256", required_argument, 2005, "<file> will be use as kphp runtime sha256 hash. Equals to $KPHP_RUNTIME_SHA256. $KPHP_PATH/objs/PHP/php_lib_version.sha256 is used by default");
   parse_option("no-pch", no_argument, 2006, "Forbid to use precompile header");
   parse_option("no-index-file", no_argument, 2007, "Forbid to use index file");
+  parse_option("enable-global-vars-memory-stats", no_argument, 2008, "Enable an ability to get global vars memory stats");
   parse_engine_options_long(argc, argv, parse_args_f);
 
 
