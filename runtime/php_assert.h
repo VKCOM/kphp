@@ -15,6 +15,7 @@ extern int php_warning_level;
 void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
 void php_assert__(const char *msg, const char *file, int line) __attribute__((noreturn));
+void raise_php_assert_signal__();
 
 #define php_assert(EX) do {                          \
   if (!(EX)) {                                       \
@@ -24,7 +25,7 @@ void php_assert__(const char *msg, const char *file, int line) __attribute__((no
 
 #define php_critical_error(format, ...) do {                                                              \
   php_warning ("Critical error \"" format "\" in file %s on line %d", ##__VA_ARGS__, __FILE__, __LINE__); \
-  raise (SIGUSR2);                                                                                        \
+  raise_php_assert_signal__();                                                                            \
   fprintf (stderr, "_exiting in php_critical_error\n");                                                   \
   _exit (1);                                                                                              \
 } while(0)

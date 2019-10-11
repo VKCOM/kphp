@@ -1045,12 +1045,12 @@ void php_worker_run(php_worker *worker) {
   int f = 1;
   while (f) {
     if (worker->terminate_flag) {
-      php_script_terminate(php_script, worker->error_message, worker_terminate);
+      php_script_terminate(php_script, worker->error_message, script_error_t::worker_terminate);
     }
 
 //    fprintf (stderr, "state = %d, f = %d\n", php_script_get_state (php_script), f);
     switch (php_script_get_state(php_script)) {
-      case rst_ready: {
+      case run_state_t::ready: {
         running_server_status();
         if (worker->waiting) {
           f = 0;
@@ -1066,7 +1066,7 @@ void php_worker_run(php_worker *worker) {
         php_worker_wait(worker, 0); //check for net events
         break;
       }
-      case rst_query: {
+      case run_state_t::query: {
         if (worker->waiting) {
           f = 0;
           worker->paused = 1;
@@ -1081,14 +1081,14 @@ void php_worker_run(php_worker *worker) {
         php_worker_wait(worker, 0); //check for net events
         break;
       }
-      case rst_query_running: {
+      case run_state_t::query_running: {
         vkprintf (2, "paused due to query [req_id = %016llx]\n", worker->req_id);
         f = 0;
         worker->paused = 1;
         wait_net_server_status();
         break;
       }
-      case rst_error: {
+      case run_state_t::error: {
         vkprintf (2, "php script [req_id = %016llx]: ERROR (probably timeout)\n", worker->req_id);
         php_script_finish(php_script);
 
@@ -1106,7 +1106,7 @@ void php_worker_run(php_worker *worker) {
         f = 0;
         break;
       }
-      case rst_finished: {
+      case run_state_t::finished: {
         vkprintf (2, "php script [req_id = %016llx]: OK (still can return RPC_ERROR)\n", worker->req_id);
         script_result *res = php_script_get_res(php_script);
         php_worker_set_result(worker, res);

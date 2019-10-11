@@ -53,13 +53,13 @@ struct acc_stats_t {
   double a_idle_percent{0};
   long script_max_memory_used{0};
   long script_max_real_memory_used{0};
-  unsigned memory_limit_script_errors_cnt{0};
-  unsigned timeout_script_errors_cnt{0};
-  unsigned exception_script_errors_cnt{0};
-  unsigned worker_terminate_script_errors_cnt{0};
-  unsigned stack_overflow_script_errors_cnt{0};
-  unsigned php_assert_script_errors_cnt{0};
-  unsigned unclassified_script_errors_cnt{0};
+  uint32_t memory_limit_script_errors_cnt{0};
+  uint32_t timeout_script_errors_cnt{0};
+  uint32_t exception_script_errors_cnt{0};
+  uint32_t worker_terminate_script_errors_cnt{0};
+  uint32_t stack_overflow_script_errors_cnt{0};
+  uint32_t php_assert_script_errors_cnt{0};
+  uint32_t unclassified_script_errors_cnt{0};
   int cnt{0};
 };
 extern acc_stats_t worker_acc_stats;
@@ -133,6 +133,8 @@ extern long long memory_used_to_recreate_script;
 #define SIGTERM_WAIT_TIMEOUT 0.1
 
 #define SIGSTAT (SIGRTMIN)
+#define SIGPHPASSERT (SIGRTMIN + 1)
+#define SIGSTACKOVERFLOW (SIGRTMIN + 2)
 #define MAX_WORKERS 999
 
 /***

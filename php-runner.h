@@ -7,19 +7,19 @@
 #include "PHP/php-engine-vars.h"
 #include "PHP/php_script.h"
 
-enum run_state_t {
-  rst_finished,
-  rst_uncleared,
-  rst_query,
-  rst_error,
-  rst_ready,
-  rst_before_init,
-  rst_running,
-  rst_empty,
-  rst_query_running
+enum class run_state_t {
+  finished,
+  uncleared,
+  query,
+  error,
+  ready,
+  before_init,
+  running,
+  empty,
+  query_running,
 };
 
-enum script_error_t {
+enum class script_error_t {
   no_error,
   memory_limit,
   timeout,
@@ -27,7 +27,7 @@ enum script_error_t {
   worker_terminate,
   stack_overflow,
   php_assert,
-  unclassified_error
+  unclassified_error,
 };
 
 enum query_type {
@@ -63,8 +63,6 @@ extern query_stats_t query_stats;
 extern long long query_stats_id;
 
 void dump_query_stats();
-
-int msq(int x);
 
 void init_handlers();
 void php_script_finish(void *ptr);
@@ -154,8 +152,4 @@ public:
   int get_net_queries_count() const;
   long long memory_get_total_usage() const;
 };
-
-//TODO: sometimes I need to call old handlers
-void sigalrm_handler(int signum);
-void sigsegv_handler(int signum, siginfo_t *info, void *data);
 

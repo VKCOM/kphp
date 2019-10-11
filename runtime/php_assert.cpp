@@ -13,6 +13,7 @@
 
 #include "common/fast-backtrace.h"
 
+#include "PHP/php-engine-vars.h"
 #include "runtime/critical_section.h"
 #include "runtime/kphp_backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"
@@ -141,15 +142,19 @@ void php_warning(char const *message, ...) {
     OnKphpWarningCallback::get().invoke_callback(string(buf));
   }
   if (die_on_fail) {
+    raise(SIGPHPASSERT);
     fprintf(stderr, "_exiting in php_warning, since such option is enabled\n");
-    raise(SIGUSR2);
     _exit(1);
   }
 }
 
 void php_assert__(const char *msg, const char *file, int line) {
   php_warning("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
-  raise(SIGUSR2);
+  raise(SIGPHPASSERT);
   fprintf(stderr, "_exiting in php_assert\n");
   _exit(1);
+}
+
+void raise_php_assert_signal__() {
+  raise(SIGPHPASSERT);
 }

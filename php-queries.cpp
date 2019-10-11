@@ -982,7 +982,7 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
 }
 
 void script_error_() {
-  PHPScriptBase::error("script_error called", unclassified_error);
+  PHPScriptBase::error("script_error called", script_error_t::unclassified_error);
 }
 
 void http_set_result_(const char *headers, int headers_len, const char *body, int body_len, int exit_code) {
