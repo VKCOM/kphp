@@ -7,6 +7,7 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vars-collector.h"
 #include "compiler/vertex.h"
 
 GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
@@ -77,54 +78,20 @@ void GlobalVarsReset::compile_func(FunctionPtr func, int parts_n, CodeGenerator 
   W << CloseNamespace();
 }
 
-template<class It>
-void collect_vars(std::set<VarPtr> *used_vars, int used_vars_cnt, It begin, It end) {
-  for (; begin != end; begin++) {
-    VarPtr var_id = *begin;
-    size_t var_hash;
-    if (var_id->class_id) {
-      var_hash = vk::std_hash(var_id->class_id->file_id->main_func_name);
-    } else {
-      var_hash = vk::std_hash(var_id->name);
-    }
-    int bucket = var_hash % used_vars_cnt;
-    used_vars[bucket].insert(var_id);
-  }
-}
-
-void GlobalVarsReset::collect_used_funcs_and_vars(
-  FunctionPtr func, std::set<FunctionPtr> *visited_functions,
-  std::set<VarPtr> *used_vars, int used_vars_cnt) {
-  for (auto to : func->dep) {
-    if (visited_functions->insert(to).second) {
-      collect_used_funcs_and_vars(to, visited_functions, used_vars, used_vars_cnt);
-    }
-  }
-
-  collect_vars(used_vars, used_vars_cnt, func->global_var_ids.begin(), func->global_var_ids.end());
-  collect_vars(used_vars, used_vars_cnt, func->static_var_ids.begin(), func->static_var_ids.end());
-}
-
 void GlobalVarsReset::compile(CodeGenerator &W) const {
   FunctionPtr main_func = main_file_->main_function;
 
-  std::set<FunctionPtr> used_functions;
-
-  const int parts_n = 32;
-  std::set<VarPtr> used_vars[parts_n];
-  collect_used_funcs_and_vars(main_func, &used_functions, used_vars, parts_n);
-
-  auto last_part = std::remove_if(std::begin(used_vars), std::end(used_vars),
-                                  [](const std::set<VarPtr> &p) { return p.empty(); });
-  auto non_empty_parts = std::distance(std::begin(used_vars), last_part);
+  VarsCollector vars_collector{32};
+  vars_collector.collect_global_and_static_vars_from(main_func);
+  auto used_vars = vars_collector.flush();
 
   static const std::string vars_reset_src_prefix = "vars_reset.";
-  std::vector<std::string> src_names(non_empty_parts);
-  for (int i = 0; i < non_empty_parts; i++) {
+  std::vector<std::string> src_names(used_vars.size());
+  for (int i = 0; i < used_vars.size(); i++) {
     src_names[i] = vars_reset_src_prefix + std::to_string(i) + "." + main_func->src_name;
   }
 
-  for (int i = 0; i < non_empty_parts; i++) {
+  for (int i = 0; i < used_vars.size(); i++) {
     W << OpenFile(src_names[i], "o_vars_reset", false);
     W << ExternInclude("php_functions.h");
     compile_part(main_func, used_vars[i], i, W);
@@ -133,6 +100,6 @@ void GlobalVarsReset::compile(CodeGenerator &W) const {
 
   W << OpenFile(vars_reset_src_prefix + main_func->src_name, "", false);
   W << ExternInclude("php_functions.h");
-  compile_func(main_func, non_empty_parts, W);
+  compile_func(main_func, used_vars.size(), W);
   W << CloseFile();
 }

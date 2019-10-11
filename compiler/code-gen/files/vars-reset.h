@@ -13,10 +13,6 @@ struct GlobalVarsReset {
 
   static void compile_func(FunctionPtr func, int parts_n, CodeGenerator &W);
 
-  static void collect_used_funcs_and_vars(
-    FunctionPtr func, std::set<FunctionPtr> *visited_functions,
-    std::set<VarPtr> *used_vars, int used_vars_cnt);
-
   static void declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W);
 
 private:
