@@ -3,7 +3,10 @@
 #include "runtime/kphp_core.h"
 
 template<class T>
-array<var> f$instance_to_array(const class_instance<T> &c);
+std::enable_if_t<std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &);
+
+template<class T>
+std::enable_if_t<!std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &c);
 
 class InstanceToArrayVisitor {
 public:
@@ -88,7 +91,12 @@ private:
 };
 
 template<class T>
-array<var> f$instance_to_array(const class_instance<T> &c) {
+std::enable_if_t<std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &) {
+  return {};
+}
+
+template<class T>
+std::enable_if_t<!std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &c) {
   if (c.is_null()) {
     return {};
   }
