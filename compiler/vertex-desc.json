@@ -742,11 +742,6 @@
         0,
         -1
       ]
-    },
-    "extra_fields": {
-      "phpdoc_str": {
-        "type": "vk::string_view"
-      }
     }
   },
   {
@@ -1123,11 +1118,6 @@
       "cnst": "cnst_nonconst_func",
       "type": "binary_op",
       "str": "="
-    },
-    "extra_fields": {
-      "phpdoc_str": {
-        "type": "vk::string_view"
-      }
     }
   },
   {

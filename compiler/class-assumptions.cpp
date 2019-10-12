@@ -152,24 +152,11 @@ Assumption assumption_create_from_phpdoc(const PhpDocTagParseResult &result) {
 }
 
 /*
- * Анализ следующего паттерна. Если есть переменная $a, то при присваивании ей можно написать
- * / ** @var A * / $a = ...;
- * Т.е. имя класса есть, а название переменной может отсутствовать (но это в контексте конкретной переменной, это ок).
- */
-void analyze_phpdoc_with_type(FunctionPtr f, vk::string_view var_name, const vk::string_view &phpdoc_str) {
-  for (const auto &parsed : phpdoc_find_tag_multi(phpdoc_str, php_doc_tag::var, f)) {
-    if (!parsed.var_name.empty() || !var_name.empty()) {
-      assumption_add_for_var(f, parsed.var_name.empty() ? var_name : parsed.var_name, assumption_create_from_phpdoc(parsed));
-    }
-  }
-}
-
-/*
  * Если свойство класса является инстансом/массивом другого класса, оно обязательно должно быть помечено как phpdoc:
  * / ** @var A * / var $aInstance;
  * Распознаём такие phpdoc'и у объявления var'ов внутри классов.
  */
-void analyze_phpdoc_with_type(ClassPtr c, vk::string_view var_name, const vk::string_view &phpdoc_str) {
+void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, const vk::string_view &phpdoc_str) {
   FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
   if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
     if (parsed.var_name.empty() || var_name == parsed.var_name) {
@@ -226,21 +213,21 @@ void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
  */
 void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, VertexPtr root, size_t depth) {
   switch (root->type()) {
-    case op_set: {
-      auto set = root.as<op_set>();
-      if (set->lhs()->type() == op_var && set->lhs()->get_string() == var_name) {
-        if (!set->phpdoc_str.empty()) {
-          analyze_phpdoc_with_type(f, var_name, set->phpdoc_str);
-        } else {
-          analyze_set_to_var(f, var_name, set->rhs(), depth + 1);
+    case op_phpdoc_raw: { // assumptions вычисляются рано, и /** phpdoc'и с @var */ ещё не превращены в op_phpdoc_var
+      for (const auto &parsed : phpdoc_find_tag_multi(root.as<op_phpdoc_raw>()->phpdoc_str, php_doc_tag::var, f)) {
+        // умеем как в /** @var A $v */, так и в /** @var A */ $v ...
+        const std::string &var_name = parsed.var_name.empty() ? root.as<op_phpdoc_raw>()->next_var_name : parsed.var_name;
+        if (!var_name.empty()) {
+          assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(parsed));
         }
       }
       return;
     }
 
-    case op_list: {
-      if (!root.as<op_list>()->phpdoc_str.empty()) {
-        analyze_phpdoc_with_type(f, {}, root.as<op_list>()->phpdoc_str);
+    case op_set: {
+      auto set = root.as<op_set>();
+      if (set->lhs()->type() == op_var && set->lhs()->get_string() == var_name) {
+        analyze_set_to_var(f, var_name, set->rhs(), depth + 1);
       }
       return;
     }
@@ -414,19 +401,15 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
  * Это можно определить только по phpdoc @var Chat перед 'public $chat' декларации свойства.
  * Единожды на класс вызывается эта функция, которая парсит все phpdoc'и ко всем var'ам.
  */
-void init_assumptions_for_all_vars(ClassPtr c) {
+void init_assumptions_for_all_fields(ClassPtr c) {
   assert (c->assumptions_inited_vars == 1);
-//  printf("[%d] init_assumptions_for_all_vars of %s\n", get_thread_id(), c->name.c_str());
+//  printf("[%d] init_assumptions_for_all_fields of %s\n", get_thread_id(), c->name.c_str());
 
   c->members.for_each([&](ClassMemberInstanceField &f) {
-    if (!f.phpdoc_str.empty()) {
-      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_str);
-    }
+    analyze_phpdoc_of_class_field(c, f.local_name(), f.phpdoc_str);
   });
   c->members.for_each([&](ClassMemberStaticField &f) {
-    if (!f.phpdoc_str.empty()) {
-      analyze_phpdoc_with_type(c, f.local_name(), f.phpdoc_str);
-    }
+    analyze_phpdoc_of_class_field(c, f.local_name(), f.phpdoc_str);
   });
 }
 
@@ -520,7 +503,7 @@ Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call>
 Assumption calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
   if (c->assumptions_inited_vars == 0) {
     if (__sync_bool_compare_and_swap(&c->assumptions_inited_vars, 0, 1)) {
-      init_assumptions_for_all_vars(c);   // как инстанс-переменные, так и статические
+      init_assumptions_for_all_fields(c);   // как инстанс-переменные, так и статические
       __sync_synchronize();
       c->assumptions_inited_vars = 2;
     }

@@ -86,9 +86,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
   stage::set_line(root->location.line);
   if (auto set_op = root.try_as<op_set>()) {
     if (set_op->lhs()->type() == op_list_ce) {
-      auto list = VertexAdaptor<op_list>::create(set_op->lhs()->get_next(), set_op->rhs()).set_location(root);
-      list->phpdoc_str = root.as<op_set>()->phpdoc_str;
-      return list;
+      return VertexAdaptor<op_list>::create(set_op->lhs()->get_next(), set_op->rhs()).set_location(root);
     }
   }
   if (root->type() == op_list_ce) {

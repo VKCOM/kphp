@@ -2105,12 +2105,8 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
         }
       } else {
         res->type_rule = get_type_rule();
-        if (res->type() == op_set) {
-          res.as<op_set>()->phpdoc_str = phpdoc_str;
-        }
       }
       CE (check_statement_end());
-      //CE (expect (tok_semicolon, "';'"));
       return res;
   }
   kphp_fail();

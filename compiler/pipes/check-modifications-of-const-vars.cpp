@@ -15,7 +15,8 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
   if (auto set_op = v.try_as<op_set>()) {
     auto lvalue = set_op->lhs();
     if (auto var_inited = lvalue.try_as<op_var>()) {
-      bool const_var_initialization = var_inited->is_const || phpdoc_tag_exists(set_op->phpdoc_str, php_doc_tag::kphp_const);
+      // todo подумать, куда писать и как сохранять @kphp-const для обычных переменных
+      bool const_var_initialization = var_inited->is_const;
       if (const_var_initialization) {
         var_inited->var_id->marked_as_const = true;
         var_inited->var_id->is_read_only = false;
