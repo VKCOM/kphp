@@ -77,6 +77,8 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_noerr:
       rl_calc(root.as<op_noerr>()->expr(), expected_rl_type);
       break;
+    case op_phpdoc_var:
+      break;
     default:
       assert ("Unknown operation in rl_other_calc" && 0);
       break;

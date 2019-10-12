@@ -728,6 +728,12 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_start = *res_finish = res;
       break;
     }
+    case op_phpdoc_var: {
+      // пока не обращаем внимание на /** @var $v type */ — будто их вообще нет
+      Node res = new_node();
+      *res_start = *res_finish = res;
+      break;
+    }
     case op_if: {
       auto if_op = tree_node.as<op_if>();
       Node finish = new_node();

@@ -120,9 +120,13 @@ int GenTree::open_parent() {
 }
 
 inline void GenTree::skip_phpdoc_tokens() {
+  // считаем просто комментариями phpdoc-и в неожиданных местах — например, внутри массивов или return
+  // (обычно они содержат @see или просто текст, т.е. не значащие, @var'ов там нет)
   while (cur->type() == tok_phpdoc) {
+    //kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
     next_cur();
   }
+  // а вот обычные phpdoc'и как statement сюда не приходят: см. op_phpdoc_raw
 }
 
 template<Operation EmptyOp, class FuncT, class ResultType>
@@ -1989,10 +1993,28 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return get_foreach();
     case tok_switch:
       return get_switch();
-    case tok_phpdoc: {
-      const Token *token = &*cur;
+    case tok_phpdoc: {      // встречаем /** ... */
+      AutoLocation phpdoc_location(this);
+      vk::string_view tok_phpdoc_str = cur->str_val;
       next_cur();
-      return get_statement(token->str_val);
+      // может, это phpdoc над функцией/классом/полем
+      if (vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var)
+          || (cur->type() == tok_static && cur_function->type == FunctionData::func_class_holder)) {
+        return get_statement(tok_phpdoc_str);
+      }
+      // иначе это phpdoc-statement: может, там есть @var, понадобится для assumptions и tinf
+      // в общем, сохраняем — пока просто в виде raw-строки,
+      // а потом, в пайпе convert-local-phpdocs.php, оттуда вычленятся @var и превратятся в op_phpdoc_var
+      // (сейчас этого сделать нельзя, т.к. классов ещё нет)
+      auto op = VertexAdaptor<op_phpdoc_raw>::create();
+      set_location(op, phpdoc_location);
+      op->phpdoc_str = tok_phpdoc_str;
+      // распространённый паттерн — phpdoc перед присваиванием: /** @var int */ $v = ...,
+      // т.е. $v внутри нет, но он словно бы мнемонически имеется
+      if (cur->type() == tok_var_name) {
+        op->next_var_name = std::string(cur->str_val);
+      }
+      return op;
     }
     case tok_function:
       if (cur_class) {      // пропущен access modifier — значит, public

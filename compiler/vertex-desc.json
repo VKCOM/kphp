@@ -1722,5 +1722,39 @@
         "type": "ClassPtr"
       }
     }
+  },
+  {
+    "name": "op_phpdoc_raw",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_error",
+      "cnst": "cnst_not_func",
+      "type": "error_op",
+      "str": "phpdoc"
+    },
+    "extra_fields": {
+      "phpdoc_str": {
+        "type": "vk::string_view"
+      },
+      "next_var_name": {
+        "type": "std::string"
+      }
+    }
+  },
+  {
+    "sons": {
+      "var": {
+        "id": 0,
+        "type": "op_var"
+      }
+    },
+    "name": "op_phpdoc_var",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_other",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "@var"
+    }
   }
 ]

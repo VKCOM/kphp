@@ -1662,6 +1662,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_xset(root.as<meta_op_xset>(), W);
       break;
     case op_empty:
+    case op_phpdoc_var:
       break;
     case op_defined:
       compile_defined(root.as<op_defined>(), W);
