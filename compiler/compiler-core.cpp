@@ -4,6 +4,7 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "common/algorithms/contains.h"
 #include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/const-manipulations.h"

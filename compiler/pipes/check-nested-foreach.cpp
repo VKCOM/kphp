@@ -1,5 +1,6 @@
 #include "compiler/pipes/check-nested-foreach.h"
 
+#include "common/algorithms/contains.h"
 #include "common/termformat/termformat.h"
 
 #include "compiler/data/var-data.h"

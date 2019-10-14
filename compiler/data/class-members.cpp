@@ -1,5 +1,8 @@
 #include "compiler/data/class-members.h"
 
+#include "common/algorithms/contains.h"
+#include "common/algorithms/hashes.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
@@ -12,7 +15,6 @@
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "common/algorithms/hashes.h"
 
 vk::string_view ClassMemberStaticMethod::global_name() const & {
   return function->name;
