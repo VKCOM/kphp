@@ -236,6 +236,11 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return VertexAdaptor<op_type_expr_or_false>::create(parse_nested_one_type_rule());
       }
+      // аналогично Optional<T> — мы так не пишем, но модели так экспортят свой functions.txt; считаем |false
+      if (cur_tok->str_val == "Optional") {
+        cur_tok++;
+        return VertexAdaptor<op_type_expr_or_false>::create(parse_nested_one_type_rule());
+      }
       // (для functions.txt) instance<^2>
       if (cur_tok->str_val == "instance") {
         cur_tok++;
