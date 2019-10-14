@@ -30,7 +30,7 @@ bool get_demangled_backtrace(void **buffer, int nptrs, int num_shift, backtrace_
     }
 
     size_t copy_name_len = offset_begin - mangled_name;
-    char copy_name[1024], trace_str[1024];
+    char copy_name[1024], trace_str[2048];
     memcpy(copy_name, mangled_name + 1, copy_name_len - 1);
     copy_name[copy_name_len - 1] = 0;
 
@@ -39,7 +39,7 @@ bool get_demangled_backtrace(void **buffer, int nptrs, int num_shift, backtrace_
     if (status < 0) {
       real_name = copy_name;
     }
-    snprintf(trace_str, 1024, "(%d) %.*s : %s+%.*s%s\n", i + num_shift, (int)(mangled_name - strings[i]), strings[i], real_name, (int)(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
+    snprintf(trace_str, sizeof(trace_str), "(%d) %.*s : %s+%.*s%s\n", i + num_shift, (int)(mangled_name - strings[i]), strings[i], real_name, (int)(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
 
     callback(real_name, trace_str);
 
