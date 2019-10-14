@@ -1,33 +1,26 @@
-#include <arpa/inet.h>
-#include <assert.h>
-#include <cstddef>
+#include "PHP/php-engine.h"
+
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
-#include <signal.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 
+#include "auto/TL/constants.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
-#include "common/md5.h"
 #include "common/options.h"
 #include "common/precise-time.h"
 #include "common/resolver.h"
-#include "common/rpc-const.h"
+#include "common/rpc-error-codes.h"
 #include "common/server/limits.h"
 #include "common/server/relogin.h"
 #include "common/server/signals.h"
@@ -48,7 +41,6 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
-#include "PHP/php-engine.h"
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-lease.h"
 #include "PHP/php-master.h"
@@ -346,7 +338,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
   } else {
     auto d = (connection *)data;
     //assert (d->status == conn_ready);
-    send_rpc_query(d, RPC_INVOKE_REQ, slot_id, (int *)command->data, command->len);
+    send_rpc_query(d, TL_RPC_INVOKE_REQ, slot_id, (int *)command->data, command->len);
     d->last_query_sent_time = precise_now;
   }
 }
@@ -694,7 +686,7 @@ void php_worker_run_rpc_send_query(net_query_t *query) {
   connection *conn = get_target_connection(target, 0);
 
   if (conn != nullptr) {
-    send_rpc_query(conn, RPC_INVOKE_REQ, slot_id, (int *)query->request, query->request_size);
+    send_rpc_query(conn, TL_RPC_INVOKE_REQ, slot_id, (int *)query->request, query->request_size);
     conn->last_query_sent_time = precise_now;
   } else {
     int new_conn_cnt = create_new_connections(target);
@@ -763,7 +755,7 @@ void php_worker_run_rpc_answer_query(php_worker *worker, php_query_rpc_answer *a
     int qsize = ans->data_len;
 
     vkprintf (2, "going to send %d bytes as an answer [req_id = %016llx]\n", qsize, worker->req_id);
-    send_rpc_query(c, q[2] == 0 ? RPC_REQ_RESULT : RPC_REQ_ERROR, worker->req_id, q, qsize);
+    send_rpc_query(c, q[2] == 0 ? TL_RPC_REQ_RESULT : TL_RPC_REQ_ERROR, worker->req_id, q, qsize);
   }
   php_script_query_readed(php_script);
   php_script_query_answered(php_script);
@@ -980,7 +972,7 @@ void rpc_error(php_worker *worker, int code, const char *str) {
   connection *c = worker->conn;
   //fprintf (stderr, "RPC ERROR %s\n", str);
   static int q[10000];
-  q[2] = RPC_REQ_ERROR;
+  q[2] = TL_RPC_REQ_ERROR;
   *(long long *)(q + 3) = worker->req_id;
   q[5] = code;
   //TODO: write str
@@ -1715,7 +1707,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       do_rpc_stop_lease();
       break;
     case TL_KPHP_START_LEASE:
-    case RPC_INVOKE_REQ: {
+    case TL_RPC_INVOKE_REQ: {
 
       tl_fetch_init_tcp_raw_message(raw, len);
 
@@ -2505,8 +2497,8 @@ int php_rpcc_execute(connection *c, int op, raw_message *raw) {
   c->last_response_time = precise_now;
 
   switch (static_cast<unsigned int>(op)) {
-    case RPC_REQ_ERROR:
-    case RPC_REQ_RESULT: {
+    case TL_RPC_REQ_ERROR:
+    case TL_RPC_REQ_RESULT: {
       int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
       assert(result_len >= 0);
 
@@ -2516,7 +2508,7 @@ int php_rpcc_execute(connection *c, int op, raw_message *raw) {
       assert(op_from_tl == op);
 
       auto id = tl_fetch_long();
-      if (op == RPC_REQ_ERROR) {
+      if (op == TL_RPC_REQ_ERROR) {
         //FIXME: error code, error string
         //almost never happens
         event_status = create_rpc_error_event(id, -1, "unknown error", nullptr);
@@ -2532,7 +2524,7 @@ int php_rpcc_execute(connection *c, int op, raw_message *raw) {
 
       break;
     }
-    case RPC_PONG:
+    case TL_RPC_PONG:
       break;
   }
 
@@ -2820,7 +2812,7 @@ void start_server() {
 
     int q[6];
     int qsize = 6 * sizeof(int);
-    q[2] = RPC_INVOKE_REQ;
+    q[2] = TL_RPC_INVOKE_REQ;
     for (int i = 0; i < run_once_count; i++) {
       prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
       assert (write(write_fd, q, (size_t)qsize) == qsize);

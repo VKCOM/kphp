@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "auto/TL/constants.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/tlo-parsing/flat-optimization.h"
 #include "common/tlo-parsing/replace-anonymous-args.h"

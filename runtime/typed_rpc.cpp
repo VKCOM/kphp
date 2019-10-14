@@ -1,7 +1,7 @@
 #include "runtime/typed_rpc.h"
 
 #include "common/containers/final_action.h"
-#include "common/rpc-const.h"
+#include "common/rpc-error-codes.h"
 
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"

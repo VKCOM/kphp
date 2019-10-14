@@ -1,8 +1,8 @@
 #include "PHP/php-lease.h"
 
+#include "auto/TL/constants.h"
 #include "common/options.h"
 #include "common/precise-time.h"
-#include "common/rpc-const.h"
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 
@@ -122,7 +122,7 @@ static void rpc_send_ready(connection *c) {
     *reinterpret_cast<long long*>(&q[qn]) = rpc_client_actor;
     qn += 2;
     q[qn++] = magic;
-    magic = RPC_INVOKE_REQ;
+    magic = TL_RPC_INVOKE_REQ;
   }
   if (use_ready_v2) {
     q[qn++] = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;

@@ -3,7 +3,7 @@
 #include <cstdarg>
 
 #include "auto/TL/constants.h"
-#include "common/rpc-const.h"
+#include "common/rpc-error-codes.h"
 
 #include "PHP/common-net-functions.h"
 #include "runtime/critical_section.h"
@@ -1218,8 +1218,8 @@ static long long rpc_tl_results_last_query_num = -1;
 
 bool try_fetch_rpc_error(array<var> &out_if_error) {
   int x = rpc_lookup_int();
-  if (x == RPC_REQ_ERROR && CurException.is_null()) {
-    php_assert (tl_parse_int() == RPC_REQ_ERROR);
+  if (x == TL_RPC_REQ_ERROR && CurException.is_null()) {
+    php_assert (tl_parse_int() == TL_RPC_REQ_ERROR);
     if (CurException.is_null()) {
       tl_parse_long();
       if (CurException.is_null()) {
