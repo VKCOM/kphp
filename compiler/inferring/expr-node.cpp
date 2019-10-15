@@ -97,6 +97,22 @@ void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_ca
   VertexPtr callback_arg = call_args[callback_arg_id];
 
   if (auto ptr = callback_arg.try_as<op_func_ptr>()) {
+    if (auto rule = ptr->func_id->root->type_rule) {
+      VertexPtr son_rule = rule->rule();
+      while (son_rule->size() == 1) {
+        if (auto type_expr = son_rule.try_as<op_type_expr_type>()) {
+          son_rule = type_expr->args()[0];
+        } else {
+          recalc_ptype<tp_Error>();
+          break;
+        };
+      }
+      if (son_rule->type() == op_type_expr_type && son_rule->empty()) {
+        apply_type_rule(rule->rule(), expr);
+        return;
+      }
+      recalc_ptype<tp_Error>();
+    }
     set_lca(ptr->func_id, -1);
   } else {
     recalc_ptype<tp_Error>();

@@ -4,6 +4,8 @@
 #ifndef PHP_FUNCTONS_H
 #define PHP_FUNCTONS_H
 
+#include <utility>
+
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/curl.h"

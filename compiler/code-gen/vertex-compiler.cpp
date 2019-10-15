@@ -1,8 +1,7 @@
 #include "compiler/code-gen/vertex-compiler.h"
 
+#include <iterator>
 #include <unordered_map>
-
-#include "common/wrappers/field_getter.h"
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
@@ -16,6 +15,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
+#include "common/wrappers/field_getter.h"
 
 struct Operand {
   VertexPtr root;
@@ -1252,66 +1252,38 @@ void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
 }
 
 void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
-  if (root->str_val == "boolval") {
-    W << "(bool (*) (const var &))";
-  }
-  if (root->str_val == "intval") {
-    W << "(int (*) (const var &))";
-  }
-  if (root->str_val == "floatval") {
-    W << "(double (*) (const var &))";
-  }
-  if (root->str_val == "strval") {
-    W << "(string (*) (const var &))";
-  }
-  if (root->str_val == "is_numeric" ||
-      root->str_val == "is_null" ||
-      root->str_val == "is_bool" ||
-      root->str_val == "is_int" ||
-      root->str_val == "is_float" ||
-      root->str_val == "is_scalar" ||
-      root->str_val == "is_string" ||
-      root->str_val == "is_array" ||
-      root->str_val == "is_object" ||
-      root->str_val == "is_integer" ||
-      root->str_val == "is_long" ||
-      root->str_val == "is_double" ||
-      root->str_val == "is_real") {
-    W << "(bool (*) (const var &))";
-  }
+  /**
+   * KPHP code like this:
+   *   array_map(function ($x) { return $x; }, ['a', 'b']);
+   *
+   * Will be transformed to:
+   *   array_map([bound_class = anon$$__construct()] (string x) {
+   *       return anon$$__invoke(bound_class, std::move(x));
+   *   }), const_array);
+   */
+  vk::string_view name_bound_class;
   if (root->func_id->is_lambda()) {
-    /**
-     * KPHP code like this:
-     *   array_map(function ($x) { return $x; }, ['a', 'b']);
-     *
-     * Will be transformed to:
-     *   array_map([bound_class = anon$$__construct()] (string x) {
-     *       return anon$$__invoke(bound_class, std::move(x));
-     *   }), const_array);
-     */
-    FunctionPtr invoke_method = root->func_id;
-    VertexRange params = invoke_method->get_params();
-    kphp_assert(!params.empty());
-    VertexRange params_without_first(std::next(params.begin()), params.end());
-    W << "[bound_class = " << root->bound_class() << "] (" << FunctionParams(invoke_method, 1u, true) << ") " << BEGIN;
-    {
-      W << "return " << FunctionName(invoke_method) << "(bound_class";
-      for (auto param : params_without_first) {
-        W << ", std::move(" << VarName(param.as<op_func_param>()->var()->var_id) << ")";
-      }
-      W << ");" << NL;
-    }
-    W << END;
+    name_bound_class = "bound_class";
+    W << "[" << name_bound_class << " = " << root->bound_class() << "]";
   } else {
-    W << FunctionName(root->func_id);
+    W << "[]";
   }
+
+  W << "(auto &&... args) " << BEGIN;
+  {
+    W << "return " << FunctionName(root->func_id) << "(";
+    if (!name_bound_class.empty()) {
+      W << name_bound_class << ",";
+    }
+    W << "std::forward<decltype(args)>(args)...);";
+  }
+  W << END;
 }
 
 void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
   W << "false";
   //TODO: it is not CodeGen part
 }
-
 
 void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   if (auto set_value = root.try_as<op_set_value>()) {

@@ -102,7 +102,8 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
   }
 
   for (int i = 0; i < call_params_n; i++) {
-    if (func_params[i]->type() != op_func_param_callback) {
+    auto func_param = func_params[i].try_as<op_func_param_callback>();
+    if (!func_param) {
       kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
       continue;
     }
@@ -119,12 +120,27 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     VertexRange cur_params = func_ptr_of_callable->get_params();
 
     for (auto arg : cur_params) {
-      auto param_arg = arg.try_as<op_func_param>();
-      kphp_error_return(param_arg, "Callback function with callback parameter");
-      kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
+      if (auto param_arg = arg.try_as<op_func_param>()) {
+        kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
+      } else if (auto callback_arg = arg.try_as<op_func_param_callback>()) {
+        kphp_error_return(callback_arg->has_default_value(), "Callback function with callback parameter");
+      }
+    }
+    if (func_ptr_of_callable->local_name() == "instance_to_array") {
+      auto param_of_callback = func_param->params()->params()[0];
+      auto rule_meta = param_of_callback->type_rule->rule();
+      if (auto func_type_rule = rule_meta.try_as<op_index>()) {
+        auto arg_ref = func_type_rule->array().as<op_type_expr_arg_ref>();
+        if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
+          ClassPtr out_class;
+          infer_class_of_expr(stage::get_function(), arg, out_class);
+          kphp_error_return(out_class, "type of argument for instance_to_array has to be Class");
+          out_class->deeply_require_instance_to_array_visitor();
+        }
+      }
     }
 
-    auto expected_arguments_count = get_function_params(func_params[i].as<op_func_param_callback>()).size();
+    auto expected_arguments_count = get_function_params(func_param).size();
     if (!FunctionData::check_cnt_params(expected_arguments_count, func_ptr_of_callable)) {
       continue;
     }
