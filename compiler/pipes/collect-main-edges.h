@@ -18,7 +18,7 @@ private:
   void create_greater(const RValue &lhs, const RValue &rhs);
   void create_non_void(const RValue &lhs);
   void create_isset_check(const RValue &rvalue);
-  RValue as_set_value(VertexPtr v);
+  static RValue as_set_value(VertexPtr v);
 
 
   template<class A, class B>

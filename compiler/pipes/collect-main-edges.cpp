@@ -77,15 +77,11 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
     return as_rvalue(v.as<op_set>()->rhs());
   }
 
-  if (v->type() == op_prefix_inc ||
-      v->type() == op_prefix_dec ||
-      v->type() == op_postfix_dec ||
-      v->type() == op_postfix_inc) {
+  if (vk::any_of_equal(v->type(), op_prefix_inc, op_prefix_dec, op_postfix_dec, op_postfix_inc)) {
     auto unary = v.as<meta_op_unary>();
-    auto one = VertexAdaptor<op_int_const>::create();
-    auto res = VertexAdaptor<op_add>::create(unary->expr(), one);
-    set_location(one, stage::get_location());
-    set_location(res, stage::get_location());
+    auto location = stage::get_location();
+    auto one = VertexAdaptor<op_int_const>::create().set_location(location);
+    auto res = VertexAdaptor<op_add>::create(unary->expr(), one).set_location(location);
     return as_rvalue(res);
   }
 
