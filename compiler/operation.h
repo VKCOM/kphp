@@ -36,7 +36,6 @@ struct OpProperties {
   Operation base_op; // op_add for op_set_add
 
   int priority;
-  opp_arity_t arity;
   opp_fixity_t fixity;
 
   RLOperationType rl;
@@ -108,10 +107,6 @@ public:
 
   static inline opp_fixity_t fixity(Operation op) {
     return properties(op).fixity;
-  }
-
-  static inline opp_arity_t arity(Operation op) {
-    return properties(op).arity;
   }
 };
 

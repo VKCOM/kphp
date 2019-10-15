@@ -151,8 +151,7 @@ int RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType::get_priorit
   if (const tinf::ExprNode *expr_node = dynamic_cast<const tinf::ExprNode *>(to_node)) {
     VertexPtr expr_vertex = expr_node->get_expr();
 
-    if (OpInfo::arity(expr_vertex->type()) == binary_opp) {
-      auto binary_vertex = expr_vertex.as<meta_op_binary>();
+    if (auto binary_vertex = expr_vertex.try_as<meta_op_binary>()) {
       VertexPtr lhs = binary_vertex->lhs();
       VertexPtr rhs = binary_vertex->rhs();
 

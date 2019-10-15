@@ -12,14 +12,6 @@
             "left_opp"
           ]
         },
-        "arity": {
-          "enum": [
-            "oarity_none",
-            "unary_opp",
-            "binary_opp",
-            "ternary_opp"
-          ]
-        },
         "rl": {
           "title": "RLOperationType",
           "enum": [

@@ -13,8 +13,7 @@
     "name": "meta_op_unary",
     "base_name": "meta_op_base",
     "props": {
-      "fixity": "left_opp",
-      "arity": "unary_opp"
+      "fixity": "left_opp"
     }
   },
   {
@@ -25,8 +24,7 @@
     "name": "meta_op_binary",
     "base_name": "meta_op_base",
     "props": {
-      "fixity": "left_opp",
-      "arity": "binary_opp"
+      "fixity": "left_opp"
     }
   },
   {

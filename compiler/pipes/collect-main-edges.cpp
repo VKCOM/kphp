@@ -85,8 +85,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
     return as_rvalue(res);
   }
 
-  if (OpInfo::arity(v->type()) == binary_opp) {
-    auto binary = v.as<meta_op_binary>();
+  if (auto binary = v.try_as<meta_op_binary>()) {
     VertexPtr res = create_vertex(OpInfo::base_op(v->type()), binary->lhs(), binary->rhs());
     set_location(res, stage::get_location());
     return as_rvalue(res);
@@ -346,10 +345,10 @@ void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
 
 void CollectMainEdgesPass::on_set_op(VertexPtr v) {
   VertexPtr lval;
-  if (OpInfo::arity(v->type()) == binary_opp) {
-    lval = v.as<meta_op_binary>()->lhs();
-  } else if (OpInfo::arity(v->type()) == unary_opp) {
-    lval = v.as<meta_op_unary>()->expr();
+  if (auto binary_op = v.try_as<meta_op_binary>()) {
+    lval = binary_op->lhs();
+  } else if (auto unary_op = v.try_as<meta_op_unary>()) {
+    lval = unary_op->expr();
   } else {
     kphp_fail();
   }
