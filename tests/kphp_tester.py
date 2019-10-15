@@ -251,6 +251,7 @@ class TestRunner:
         asan_log_name = "kphp_build_asan_log"
         env, asan_glob_mask = self._prepare_asan_env(self._kphp_build_tmp_dir, asan_log_name)
         env["KPHP_THREADS_COUNT"] = "3"
+        env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
         if self._distcc_hosts:
             env["KPHP_JOBS_COUNT"] = "20"
             env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)
