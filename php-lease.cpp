@@ -1,6 +1,7 @@
 #include "PHP/php-lease.h"
 
-#include "auto/TL/constants.h"
+#include "auto/TL/constants/common.h"
+#include "auto/TL/constants/kphp.h"
 #include "common/options.h"
 #include "common/precise-time.h"
 #include "net/net-connections.h"

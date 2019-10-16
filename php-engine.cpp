@@ -12,7 +12,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "auto/TL/constants.h"
+#include "auto/TL/constants/common.h"
+#include "auto/TL/constants/kphp.h"
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"

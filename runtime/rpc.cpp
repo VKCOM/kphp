@@ -2,7 +2,7 @@
 
 #include <cstdarg>
 
-#include "auto/TL/constants.h"
+#include "auto/TL/constants/common.h"
 #include "common/rpc-error-codes.h"
 
 #include "PHP/common-net-functions.h"
