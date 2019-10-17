@@ -59,9 +59,13 @@ bool GenTree::test_expect(TokenType tp) {
   return cur->type() == tp;
 }
 
+#define expect_msg(msg) ({ \
+  fmt_format ("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str()); \
+})
+
 #define expect(tp, msg) ({ \
   bool res__;\
-  if (kphp_error (test_expect (tp), fmt_format ("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str()))) {\
+  if (kphp_error (test_expect (tp), expect_msg(msg))) {\
     res__ = false;\
   } else {\
     next_cur();\
@@ -71,7 +75,7 @@ bool GenTree::test_expect(TokenType tp) {
 })
 
 #define expect2(tp1, tp2, msg) ({ \
-  kphp_error (test_expect (tp1) || test_expect (tp2), fmt_format ("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str())); \
+  kphp_error (test_expect (tp1) || test_expect (tp2), expect_msg(msg)); \
   if (cur != end) {next_cur();} \
   1;\
 })
@@ -577,6 +581,10 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_isset:
       res = get_func_call<op_isset, op_err>();
+      break;
+    case tok_declare:
+      // см. GenTree::parse_declare_at_top_of_file
+      kphp_error(0, "strict_types declaration must be the very first statement in the script");
       break;
     case tok_array:
       res = get_func_call<op_array, op_none>();
@@ -1782,6 +1790,33 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
   }
 }
 
+void GenTree::parse_declare_at_top_of_file() {
+  kphp_assert(test_expect(tok_declare));
+
+  next_cur();
+  expect(tok_oppar, "(");
+
+  if (test_expect(tok_func_name)) {
+    // В declare могут быть следующие директивы: strict_types, encoding, ticks.
+    // Поддерживаем только strict_types.
+    kphp_error(cur->str_val == "strict_types", fmt_format("Unsupported declare '{}'", cur->str_val));
+    next_cur();
+  } else {
+    kphp_error(0, expect_msg("'tok_func_name'"));
+  }
+
+  expect(tok_eq1, "=");
+
+  if (test_expect(tok_int_const)) {
+    kphp_error(vk::any_of_equal(cur->str_val, "0", "1"), "strict_types declaration must have 0 or 1 as its value");
+    next_cur();
+  } else {
+    kphp_error(0, expect_msg("'tok_int_const'"));
+  }
+
+  expect(tok_clpar, ")");
+}
+
 VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
   cur--;      // он был $field_name, делаем перед, т.к. get_multi_call() делает next_cur()
   VertexPtr v = get_multi_call<op_static>(&GenTree::get_expression);
@@ -2113,6 +2148,9 @@ void GenTree::run() {
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_global));
   processing_file->main_function = cur_function;
 
+  if (test_expect(tok_declare)) {
+    parse_declare_at_top_of_file();
+  }
   if (test_expect(tok_namespace)) {
     parse_namespace_and_uses_at_top_of_file();
   }

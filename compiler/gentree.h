@@ -94,6 +94,7 @@ public:
   void get_seq(std::vector<VertexPtr> &seq_next);
   VertexPtr get_seq();
 
+  void parse_declare_at_top_of_file();
   void parse_namespace_and_uses_at_top_of_file();
   bool check_seq_end();
   bool check_statement_end();

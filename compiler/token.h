@@ -60,6 +60,7 @@ enum TokenType {
   tok_abstract,
   tok_goto,
   tok_isset,
+  tok_declare,
   tok_eq1,
   tok_eq2,
   tok_eq3,

@@ -66,6 +66,7 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_static] = "tok_static";
   TOKEN_TYPE_NAMES[tok_goto] = "tok_goto";
   TOKEN_TYPE_NAMES[tok_isset] = "tok_isset";
+  TOKEN_TYPE_NAMES[tok_declare] = "tok_declare";
   TOKEN_TYPE_NAMES[tok_eq1] = "tok_eq1";
   TOKEN_TYPE_NAMES[tok_eq2] = "tok_eq2";
   TOKEN_TYPE_NAMES[tok_eq3] = "tok_eq3";

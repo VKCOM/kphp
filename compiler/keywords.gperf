@@ -47,6 +47,7 @@ include_once, tok_require_once
 require, tok_require
 require_once, tok_require_once
 isset, tok_isset
+declare, tok_declare
 print, tok_print
 var_dump, tok_var_dump
 unset, tok_unset
