@@ -43,11 +43,11 @@ inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberStaticField &f) {
     bool allow_no_default_value = false;
     // если дефолтного значения нет — а вдруг оно не обязательно? для инстансов например
-    if (!f.init_val) {
+    if (!f.var->init_val) {
       allow_no_default_value = vk::any_of_equal(f.get_inferred_type()->ptype(), tp_Class);
     }
 
-    kphp_error(f.init_val || allow_no_default_value,
+    kphp_error(f.var->init_val || allow_no_default_value,
                fmt_format("static {}::${} is not inited at declaration (inferred {})",
                           klass->name, f.local_name(), colored_type_out(f.get_inferred_type())));
   });

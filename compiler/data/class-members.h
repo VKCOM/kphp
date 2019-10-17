@@ -51,14 +51,12 @@ struct ClassMemberInstanceMethod {
 
 struct ClassMemberStaticField {
   FieldModifiers modifiers;
-  std::string full_name;
   VertexAdaptor<op_var> root;
-  VertexPtr init_val;          // op_empty в случае отсутствия значения, или какое-то выражение
+  VarPtr var;
   vk::string_view phpdoc_str;
 
-  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
+  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
 
-  const std::string &global_name() const;
   vk::string_view local_name() const &;
   static std::string hash_name(vk::string_view name);
   std::string get_hash_name() const;
@@ -169,7 +167,7 @@ public:
 
   void add_static_method(FunctionPtr function);
   void add_instance_method(FunctionPtr function);
-  void add_static_field(VertexAdaptor<op_var> root, VertexPtr init_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
+  void add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
   void add_constant(const std::string &const_name, VertexPtr value);
 

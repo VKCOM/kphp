@@ -369,7 +369,11 @@ const vector<SrcFilePtr> &CompilerCore::get_main_files() {
 }
 
 vector<VarPtr> CompilerCore::get_global_vars() {
-  return global_vars_ht.get_all();
+  // статические переменные классов регистрируются как global'ы, но если они не используются,
+  // то реально их типы никогда не считались, и вообще не нужно их экспортировать в vars.cpp
+  return global_vars_ht.get_all_if([](VarPtr v) {
+    return v->tinf_node.get_recalc_cnt() != -1;
+  });
 }
 
 vector<ClassPtr> CompilerCore::get_classes() {

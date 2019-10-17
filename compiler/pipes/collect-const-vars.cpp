@@ -116,8 +116,8 @@ bool CollectConstVarsPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<Col
         }
       });
       c->members.for_each([&](ClassMemberStaticField &field) {
-        if (field.init_val) {
-          visit(field.init_val);
+        if (field.var->init_val) {
+          visit(field.var->init_val);
         }
       });
     }

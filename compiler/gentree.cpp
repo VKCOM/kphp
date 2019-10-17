@@ -1827,7 +1827,7 @@ VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, Fiel
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node.as<op_var>(), VertexAdaptor<op_empty>::create(), modifiers, phpdoc_str);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexPtr{}, modifiers, phpdoc_str);
         break;
       }
       case op_set: {

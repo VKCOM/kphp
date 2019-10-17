@@ -365,7 +365,7 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
     });
 
     traits[i]->members.for_each([&](const ClassMemberStaticField &f) {
-      ready_class->members.add_static_field(f.root.clone(), f.init_val.clone(), f.modifiers, f.phpdoc_str);
+      ready_class->members.add_static_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str);
     });
   }
 

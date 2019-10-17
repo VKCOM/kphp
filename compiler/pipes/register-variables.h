@@ -26,13 +26,11 @@ private:
   bool is_const(VertexPtr v);
   bool is_global_var(VertexPtr v);
   void register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value);
-  void register_class_static_var(ClassPtr class_id, ClassMemberStaticField &f);
   void register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value);
   void register_var(VertexAdaptor<op_var> var_vertex);
   void visit_global_vertex(VertexAdaptor<op_global> global);
   void visit_static_vertex(VertexAdaptor<op_static> stat);
   void visit_var(VertexAdaptor<op_var> var);
-  void visit_class(ClassPtr klass);
 
   template<class VisitT>
   void visit_func_param_list(VertexAdaptor<op_func_param_list> list, VisitT &visit) {
@@ -78,9 +76,6 @@ public:
     }
     global_function_flag = function->type == FunctionData::func_global ||
                            function->type == FunctionData::func_switch;
-    if (current_function->type == FunctionData::func_class_holder) {
-      visit_class(current_function->class_id);
-    }
     return true;
   }
 

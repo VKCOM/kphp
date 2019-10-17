@@ -70,4 +70,15 @@ public:
     }
     return res;
   }
+
+  template<class CondF>
+  std::vector<T> get_all_if(const CondF &callbackF) {
+    std::vector<T> res;
+    for (int i = 0; i < N; i++) {
+      if (nodes[i].hash != 0 && callbackF(nodes[i].data)) {
+        res.push_back(nodes[i].data);
+      }
+    }
+    return res;
+  }
 };

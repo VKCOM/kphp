@@ -54,8 +54,8 @@ private:
       c.value = run_function_pass(c.value, this, nullptr);
     });
     cur_class->members.for_each([&](ClassMemberStaticField &f) {
-      if (f.init_val) {
-        f.init_val = run_function_pass(f.init_val, this, nullptr);
+      if (f.var->init_val) {
+        f.var->init_val = run_function_pass(f.var->init_val, this, nullptr);
       }
       if (!f.phpdoc_str.empty()) {
         require_all_classes_in_phpdoc(f.phpdoc_str);

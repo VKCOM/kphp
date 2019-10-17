@@ -46,8 +46,8 @@ bool InlineDefinesUsagesPass::on_start(FunctionPtr function) {
 
   if (function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
-      if (f.init_val) {
-        f.init_val = run_function_pass(f.init_val, this, nullptr);
+      if (f.var->init_val) {
+        f.var->init_val = run_function_pass(f.var->init_val, this, nullptr);
       }
     });
     current_function->class_id->members.for_each([&](ClassMemberInstanceField &f) {
