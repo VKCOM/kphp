@@ -3,27 +3,38 @@
 #include "compiler/name-gen.h"
 
 VertexPtr ConvertListAssignmentsPass::process_list_assignment(VertexAdaptor<op_list> list) {
-  VertexPtr op_set_to_tmp_var;
-  if (list->array()->type() != op_var) {        // list(...) = $var не трогаем, только list(...) = f()
+  // save right part to temporary variable in cases:
+  //   list($x,) = call_fun();
+  //   list($x,) = $x;
+  // replace it with AST like this:
+  //   list($x,) = ({ auto tmp_var = call_fun(); <op_list>; tmp_var; });
+  auto same_var_on_lhs_and_rhs_sides = [list] {
+    for (auto list_item : list->list()) {
+      if (auto var_in_list = list_item.try_as<op_var>()) {
+        if (var_in_list->str_val == list->array().as<op_var>()->str_val) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  VertexAdaptor<op_seq_rval> result_seq;
+  bool is_not_var_on_right_side = (list->array()->type() != op_var);
+  if (is_not_var_on_right_side || same_var_on_lhs_and_rhs_sides()) {
     auto tmp_var = VertexAdaptor<op_var>::create();
     tmp_var->set_string(gen_unique_name("tmp_var"));
-    tmp_var->extra_type = op_ex_var_superlocal_inplace;        // отвечает требованиям: инициализируется 1 раз и внутри set
+    tmp_var->extra_type = op_ex_var_superlocal_inplace;
     auto set_var = VertexAdaptor<op_set>::create(tmp_var, list->array());
     list->array() = tmp_var.clone();
-    op_set_to_tmp_var = set_var;
+    result_seq = VertexAdaptor<op_seq_rval>::create(set_var, list, list->array().as<op_var>().clone());
+  } else {
+    result_seq = VertexAdaptor<op_seq_rval>::create(list, list->array().as<op_var>().clone());
   }
 
-  VertexPtr result_seq;
-  if (!op_set_to_tmp_var) {
-    auto seq = VertexAdaptor<op_seq_rval>::create(list, list->array().as<op_var>().clone());
-    result_seq = seq;
-  } else {
-    auto seq = VertexAdaptor<op_seq_rval>::create(op_set_to_tmp_var, list, list->array().as<op_var>().clone());
-    result_seq = seq;
-  }
-  set_location(result_seq, list->location);
-  return result_seq;
+  return result_seq.set_location(list);
 }
+
 VertexPtr ConvertListAssignmentsPass::on_exit_vertex(VertexPtr root, LocalT *local) {
   if (root->type() == op_list) {
     local->need_recursion_flag = false;

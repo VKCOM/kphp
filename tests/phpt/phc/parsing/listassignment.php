@@ -83,4 +83,12 @@
 	// $info[0], then later overwrites $info[2] with the value already copied
 	// from $info[2]
 	var_dump ($info);*/
+
+    $new_list = [1, 2];
+    list($new_list, $tmp2) = $new_list;
+    var_dump($new_list, $tmp2);
+
+    $new_list = [1, 2];
+    list($tmp1, $new_list) = $new_list;
+    var_dump($new_list, $tmp1);
 ?>
