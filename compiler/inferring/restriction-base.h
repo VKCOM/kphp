@@ -15,10 +15,11 @@ public:
 
   virtual bool check_broken_restriction();
 
+  virtual bool is_broken_restriction_an_error() { return false; }
+
 protected:
   Location location;
 
-  virtual bool is_broken_restriction_an_error() { return false; }
   virtual bool check_broken_restriction_impl() = 0;
 };
 
