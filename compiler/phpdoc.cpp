@@ -393,6 +393,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdo
   if (!parser.get_unknown_classes().empty()) {
     stage::set_location(current_function->root->location);
     kphp_error(0, fmt_format("Could not find class in phpdoc: {}", *parser.get_unknown_classes().begin()));
+    return {VertexPtr{}, std::move(var_name)};
   }
 
   if (var_name.empty()) {

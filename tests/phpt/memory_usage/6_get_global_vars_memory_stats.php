@@ -95,8 +95,8 @@ function test_get_global_vars_memory_stats() {
   $greater_than_8 = [
     "\$dynamic_array" => 48,
     "static_vars::\$dynamic_array" => 48,
-    "ClassWithStaticVars::\$ClassWithStaticVars\$\$dynamic_array" => 48,
-    "ClassWithStaticVars::\$ClassWithStaticVars\$\$dynamic_string" => 19,
+    "ClassWithStaticVars::\$dynamic_array" => 48,
+    "ClassWithStaticVars::\$dynamic_string" => 19,
     "\$dynamic_string" => 19,
     "static_vars::\$dynamic_string" => 19
   ];
@@ -104,13 +104,13 @@ function test_get_global_vars_memory_stats() {
   $non_empty_vars = $greater_than_8;
   $non_empty_vars["\$instance"] = 8;
   $non_empty_vars["static_vars::\$instance"] = 8;
-  $non_empty_vars["ClassWithStaticVars::\$ClassWithStaticVars\$\$instance"] = 8;
+  $non_empty_vars["ClassWithStaticVars::\$instance"] = 8;
 
   $all_vars = $non_empty_vars;
-  $all_vars["ClassWithStaticVars::\$ClassWithStaticVars\$\$const_array"] = 0;
-  $all_vars["ClassWithStaticVars::\$ClassWithStaticVars\$\$const_string"] = 0;
-  $all_vars["ClassWithStaticVars::\$ClassWithStaticVars\$\$null"] = 0;
-  $all_vars["ClassWithStaticVars::\$ClassWithStaticVars\$\$empty_instance"] = 0;
+  $all_vars["ClassWithStaticVars::\$const_array"] = 0;
+  $all_vars["ClassWithStaticVars::\$const_string"] = 0;
+  $all_vars["ClassWithStaticVars::\$null"] = 0;
+  $all_vars["ClassWithStaticVars::\$empty_instance"] = 0;
   $all_vars["\$const_string"] = 0;
   $all_vars["static_vars::\$const_string"] = 0;
   $all_vars["\$null"] = 0;

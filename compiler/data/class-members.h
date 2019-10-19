@@ -75,7 +75,6 @@ struct ClassMemberInstanceField {
   static std::string hash_name(vk::string_view name);
   std::string get_hash_name() const;
   const TypeData *get_inferred_type() const;
-  void process_phpdoc();
 };
 
 struct ClassMemberConstant {

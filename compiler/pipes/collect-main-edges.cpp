@@ -2,9 +2,11 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/phpdoc.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/lvalue.h"
@@ -380,12 +382,27 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
 }
 
 void CollectMainEdgesPass::on_class(ClassPtr klass) {
-  klass->members.for_each([&](ClassMemberInstanceField &field) {
-    on_var(field.var);
-    field.process_phpdoc();
-    if (field.root->type_rule) {
-      add_type_rule(field.root);
+  // если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc
+  // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
+  auto add_type_rule_from_field_phpdoc = [this](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
+    if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
+      auto klass = field_root->var_id->class_id;
+      auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, klass->file_id->main_function);
+      if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", field_root->var_id->get_human_readable_name()))) {
+        parsed.type_expr->location = field_root->location;
+        field_root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr).set_location(field_root->location);
+        add_type_rule(field_root);
+      }
     }
+  };
+
+  klass->members.for_each([&](ClassMemberInstanceField &f) {
+    on_var(f.var);
+    add_type_rule_from_field_phpdoc(f.phpdoc_str, f.root);
+  });
+  klass->members.for_each([&](ClassMemberStaticField &f) {
+    on_var(f.var);
+    add_type_rule_from_field_phpdoc(f.phpdoc_str, f.root);
   });
 }
 

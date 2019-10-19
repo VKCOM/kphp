@@ -210,12 +210,13 @@ string RestrictionLess::get_actual_error_message() {
   auto as_var_0 = stacktrace.size() > 0 ? dynamic_cast<tinf::VarNode *>(stacktrace[0]) : nullptr;
   auto as_var_1 = stacktrace.size() > 1 ? dynamic_cast<tinf::VarNode *>(stacktrace[1]) : nullptr;
   auto as_type_2 = stacktrace.size() > 2 ? dynamic_cast<tinf::TypeNode *>(stacktrace[2]) : nullptr;
+  auto var_0 = as_expr_0 ? as_expr_0->get_expr().try_as<op_var>() : VertexAdaptor<op_var>{};
 
   if (as_expr_0 &&
       (as_expr_0->get_expr()->type() == op_instance_prop ||
-      (as_expr_0->get_expr()->type() == op_var && as_expr_0->get_expr().as<op_var>()->var_id && as_expr_0->get_expr().as<op_var>()->var_id->is_class_instance_var())) &&
-       as_var_1 && as_var_1->is_variable()) {
-    return string("Incorrect type of the following class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
+       (var_0 && var_0->var_id && (var_0->var_id->is_class_instance_var() || var_0->var_id->is_class_static_var()))) &&
+      as_var_1 && as_var_1->is_variable()) {
+    return string("Incorrect type of class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
   }
 
   if (as_var_0 && as_var_0->is_argument_of_function()) {

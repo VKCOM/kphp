@@ -88,22 +88,6 @@ std::string ClassMemberInstanceField::get_hash_name() const {
   return hash_name(local_name());
 }
 
-/**
- * Если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc.
- * Это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка.
- * С инстансами это тоже работает, т.е. / ** @var \AnotherClass * / будет тоже проверяться при выводе типов.
- */
-void ClassMemberInstanceField::process_phpdoc() {
-  if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
-    auto klass = var->class_id;
-    auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, klass->file_id->main_function);
-    if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}::${}", klass->name, local_name()))) {
-      parsed.type_expr->location = root->location;
-      root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr);
-    }
-  }
-}
-
 ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) :
   modifiers(modifiers),
   root(root),

@@ -17,7 +17,7 @@ bool VarData::get_uninited_flag() {
 }
 
 std::string VarData::get_human_readable_name() const {
-  return (this->class_id ? (this->class_id->name + "::$" + this->name) : "$" + this->name);
+  return (this->class_id ? (this->class_id->name + "::$" + get_local_name_from_global_$$(this->name)) : "$" + this->name);
 }
 
 const ClassMemberStaticField *VarData::as_class_static_field() const {
