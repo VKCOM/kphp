@@ -306,10 +306,13 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   VertexRange params = root->params()->args();
   for (auto i : params.get_reversed_range()) {
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
-    if (!param->type_declaration.empty() && param->type_declaration != "array") {
-      ClassPtr klass = G->get_class(resolve_uses(f, param->type_declaration, '\\'));
-      kphp_error(klass && !klass->is_trait(), fmt_format("Class {} near ${} does not exist or never created", param->type_declaration, param->var()->get_string()));
-      assumption_add_for_var(f, assum_instance, param->var()->get_string(), klass);
+    if (!param->type_declaration.empty()) {
+      auto result = phpdoc_parse_type_and_var_name(param->type_declaration, f);
+      ClassPtr klass;
+      AssumType assum = assumption_create_from_phpdoc(result, klass);
+      if (assum != assum_not_instance) {
+        assumption_add_for_var(f, assum, param->var()->get_string(), klass);
+      }
     }
   }
 }

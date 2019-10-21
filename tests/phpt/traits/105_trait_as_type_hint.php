@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Class Tr/
+/You may not use trait as a type-hint/
 <?php
 
 trait Tr {

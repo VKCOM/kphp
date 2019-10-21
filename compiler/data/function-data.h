@@ -81,6 +81,7 @@ public:
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
+  std::string return_typehint;
 
   bool is_vararg = false;
   bool has_variadic_param = false;

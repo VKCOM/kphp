@@ -39,9 +39,15 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_str);
 
   std::unordered_map<std::string, int> name_to_function_param;
+  std::unordered_set<int> params_with_typehints;
   int param_i = 0;
   for (auto param : func_params) {
-    name_to_function_param.emplace(param.as<meta_op_func_param>()->var()->get_string(), param_i++);
+    auto op_func_param = param.as<meta_op_func_param>();
+    name_to_function_param.emplace(op_func_param->var()->get_string(), param_i);
+    if (!op_func_param->type_declaration.empty()) {
+      params_with_typehints.insert(param_i);
+    }
+    ++param_i;
   }
 
   // phpdoc класса может влиять на phpdoc функции
@@ -174,7 +180,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 
   if (infer_type) {             // при наличии @kphp-infer парсим все @param'ы
-    bool has_return_typehint = false;
+    bool has_return_php_doc = false;
 
     for (auto &tag : tags) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
       stage::set_line(tag.line_num);
@@ -189,7 +195,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_parsed.type_expr);
             f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
           }
-          has_return_typehint = true;
+          has_return_php_doc = true;
           // hint для return'а не делаем совсем, чтобы не грубить вывод типов, только check
           break;
         }
@@ -244,7 +250,17 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     if (f->has_implicit_this_arg()) {
       name_to_function_param.erase(name_to_function_param.find("this"));
     }
-    if (!name_to_function_param.empty()) {
+
+    // отсутствует typehint и phpdoc у одного из параметров
+    bool lack_of_typehint_and_phpdoc_for_param = false;
+    for (auto param: name_to_function_param) {
+      if (params_with_typehints.find(param.second) == params_with_typehints.end()) {
+        lack_of_typehint_and_phpdoc_for_param = true;
+        break;
+      }
+    }
+
+    if (lack_of_typehint_and_phpdoc_for_param) {
       std::string err_msg = "Specify @param for arguments: ";
       for (const auto &name_and_function_param : name_to_function_param) {
         err_msg += "$" + name_and_function_param.first + " ";
@@ -253,8 +269,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       kphp_error(0, err_msg.c_str());
     }
 
-    // если явного @return нет, то будто написано @return void
-    if (!has_return_typehint && !f->is_constructor()) {
+    // если нет явного @return и typehint'a на возвращаемое значение, считаем что будто написано @return void
+    if (!has_return_php_doc && !f->is_constructor() && f->return_typehint.empty()) {
       auto parsed = phpdoc_parse_type_and_var_name("void", f);
       auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
       f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
@@ -301,11 +317,17 @@ static void apply_function_typehints(FunctionPtr function) {
 
   for (int i = 0; i < func_params.size(); ++i) {
     auto param = func_params[i].try_as<op_func_param>();
-    if (param && param->type_declaration == "array") {
+    if (param && !param->type_declaration.empty()) {
       auto parsed = phpdoc_parse_type_and_var_name(param->type_declaration, function);
       auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
       function->add_kphp_infer_hint(infer_mask::check, i, type_rule);
     }
+  }
+
+  if (!function->return_typehint.empty()) {
+    auto parsed = phpdoc_parse_type_and_var_name(function->return_typehint, function);
+    auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
+    function->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
   }
 }
 

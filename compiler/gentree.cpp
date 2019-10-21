@@ -794,14 +794,22 @@ VertexPtr GenTree::get_def_value() {
 
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   AutoLocation st_location(this);
-  const Token *tok_type_declaration = nullptr;
-  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array, tok_callable)) {
-    tok_type_declaration = &*cur;
+
+  std::string type_declaration = get_typehint();
+  bool is_varg = false;
+
+  if (test_expect(tok_varg)) {
     next_cur();
+    is_varg = true;
+    if (!from_callback) {
+      kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
+      cur_function->has_variadic_param = true;
+    }
   }
 
   VertexAdaptor<op_var> name = get_var_name_ref();
   if (!name) {
+    kphp_error(type_declaration.empty(), "Syntax error: missing varname after typehint");
     return {};
   }
 
@@ -816,13 +824,21 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   VertexPtr def_val = get_def_value();
   VertexAdaptor<op_func_param> v;
   if (def_val) {
+    kphp_error(!is_varg, "Variadic argument can not have a default value");
     v = VertexAdaptor<op_func_param>::create(name, def_val);
   } else {
     v = VertexAdaptor<op_func_param>::create(name);
   }
   set_location(v, st_location);
-  if (tok_type_declaration != nullptr) {
-    v->type_declaration = static_cast<string>(tok_type_declaration->str_val);
+  if (!type_declaration.empty()) {
+    // аргумент nullable, когда явно указан nullability через тайпхинт (?type) или значение по-умолчанию = null
+    if (def_val && def_val->type() == op_null) {
+      type_declaration += "|null";
+    }
+    if (is_varg) {
+      type_declaration = "(" + type_declaration + ")[]";
+    }
+    v->type_declaration = std::move(type_declaration);
   }
 
   if (type_rule) {
@@ -871,13 +887,6 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
     set_location(v, st_location);
 
     return v;
-  } else if (test_expect(tok_varg)) {   // variadic param (can not be inside callback, as it modifies cur_function)
-    next_cur();
-    if (auto name_var_arg = get_var_name()) {
-      kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
-      cur_function->has_variadic_param = true;
-      return VertexAdaptor<op_func_param>::create(name_var_arg).set_location(name_var_arg);
-    }
   }
 
   return get_func_param_without_callbacks();
@@ -1528,6 +1537,12 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
     cur_function->modifiers.set_public();
   }
 
+  if (test_expect(tok_colon)) {
+    next_cur();
+    cur_function->return_typehint = get_typehint();
+    kphp_error(!cur_function->return_typehint.empty(), "Expected return typehint after :");
+  }
+
   // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
   if (test_expect(tok_opbrc)) {
     CE(!kphp_error(!cur_function->modifiers.is_abstract(), fmt_format("abstract methods must have empty body: {}", cur_function->get_human_readable_name())));
@@ -1854,6 +1869,25 @@ VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, Fiel
   }
 
   return VertexAdaptor<op_empty>::create();
+}
+
+std::string GenTree::get_typehint() {
+  std::string typehint;
+  bool is_nullable = false;
+
+  if (test_expect(tok_question)) {
+    is_nullable = true;
+    next_cur();
+  }
+
+  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array, tok_string, tok_int, tok_float, tok_bool, tok_callable, tok_void)) {
+    typehint = std::string(cur->str_val) + (is_nullable ? "|null" : "");
+    next_cur();
+  } else {
+    kphp_error(!is_nullable, "Syntax error: question token without type specifier");
+  }
+
+  return typehint;
 }
 
 VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {

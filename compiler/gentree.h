@@ -148,6 +148,8 @@ public:
   void parse_extends_implements();
 
 private:
+  std::string get_typehint();
+
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
   VertexPtr get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
