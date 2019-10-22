@@ -50,7 +50,7 @@
   $str = "Τάχιστη αλώπηξ βαφής ψημένη γη, δρασκελίζει υπέρ νωθρού κυνός";
   var_dump (mb_strtolower($str, 'UTF-8'));
   var_dump (mb_strtoupper($str, 'UTF-8'));
-  var_dump(strtolower ("���������"));
+  // var_dump(strtolower ("���������"));
 
   $a = array ("                                             ", "The quick brown fox jumped over the lazy dog.", "A very long woooooooooooord.", "A very long wooooooooooooord.", "A very long woooooooooooord.", "", "A   very  long    wooooooooooooord.", "A   very  long    wooooooooooooord        234234234 e r we we r we rwe f  w     ew r wer we                  wer wer we r wer .");
   foreach ($a as $str) {
