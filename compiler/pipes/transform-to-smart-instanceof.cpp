@@ -20,7 +20,7 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
   visit(if_vertex->cond());
   auto initial_state = variable_state;
 
-  visit_cmd(visit, if_vertex, name_of_derived_vertex, if_vertex->true_cmd_ref());
+  add_tmp_var_with_instance_cast(visit, if_vertex, name_of_derived_vertex, if_vertex->true_cmd_ref());
   variable_state = initial_state;
 
   if (!if_vertex->has_false_cmd()) {
@@ -43,7 +43,7 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
       auto derived_name_vertex = VertexAdaptor<op_string>::create();
       derived_name_vertex->set_string((*state.left_derived.begin())->name);
 
-      visit_cmd(visit, if_vertex, derived_name_vertex, if_vertex->false_cmd_ref());
+      add_tmp_var_with_instance_cast(visit, if_vertex, derived_name_vertex, if_vertex->false_cmd_ref());
       return true;
     }
   }
@@ -52,13 +52,14 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
   return true;
 }
 
-void TransformToSmartInstanceof::visit_cmd(VisitVertex<TransformToSmartInstanceof> &visit, VertexAdaptor<op_if> if_vertex, VertexPtr name_of_derived_vertex, VertexPtr &cmd) {
+void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VisitVertex<TransformToSmartInstanceof> &visit, VertexAdaptor<op_if> if_vertex, VertexPtr name_of_derived, VertexPtr &cmd) {
   auto condition = get_instanceof_from_if(if_vertex);
   auto instance_var = condition->lhs();
 
-  auto &state = variable_state[instance_var->get_string()];
+  auto set_instance_cast_to_tmp = generate_tmp_var_with_instance_cast(instance_var.clone(), name_of_derived);
+  auto &name_of_tmp_var = set_instance_cast_to_tmp->lhs().as<op_var>()->str_val;
+  variable_state[instance_var->get_string()] = NewNameAndLeftDerived{name_of_tmp_var, {}};
 
-  auto set_instance_cast_to_tmp = generate_tmp_var_with_instance_cast(instance_var.clone(), name_of_derived_vertex, state.new_name);
   cmd = VertexAdaptor<op_seq>::create(set_instance_cast_to_tmp, cmd.as<op_seq>()->args()).set_location(cmd);
   auto commands = cmd.as<op_seq>()->args();
 
@@ -70,6 +71,12 @@ VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassB
     return v;
   }
 
+  // here we use while because of nested instanceofs
+  // if ($x instanceof A) { $x->run_A();        if ($x        instanceof DerivedA) { $x->run_DA(); } }
+  // after first iteration
+  // if ($x instanceof A) { $tmp_var1->run_A(); if ($tmp_var1 instanceof DerivedA) { $tmp_var1->run_DA(); } }
+  // after second iteration
+  // if ($x instanceof A) { $tmp_var1->run_A(); if ($tmp_var1 instanceof DerivedA) { $tmp_var2->run_DA(); } }
   while (true) {
     auto replacement_it = variable_state.find(v->get_string());
     if (replacement_it == variable_state.end() || replacement_it->second.new_name.empty()) {
@@ -82,13 +89,12 @@ VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassB
   return v;
 }
 
-VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex, std::string &new_name) {
+VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex) {
   auto cast_to_derived = VertexAdaptor<op_func_call>::create(instance_var, derived_name_vertex);
   cast_to_derived->set_string("instance_cast");
 
   auto tmp_var = VertexAdaptor<op_var>::create();
-  new_name = gen_unique_name(instance_var->get_string());
-  tmp_var->set_string(new_name);
+  tmp_var->set_string(gen_unique_name(instance_var->get_string()));
   tmp_var->extra_type = op_ex_var_superlocal_inplace;
   tmp_var->is_const = true;
 
@@ -112,8 +118,10 @@ bool TransformToSmartInstanceof::fill_derived_classes(VertexAdaptor<op_var> inst
   if (state.left_derived.empty()) {
     InterfacePtr interface_class;
     auto assum = infer_class_of_expr(current_function, instance_var, interface_class);
-    kphp_error_act(assum == AssumType::assum_instance,
-      fmt_format("variable is not an instance: `{}`", instance_var->get_string()),return false);
+    if (assum != AssumType::assum_instance) {
+      kphp_error(false, fmt_format("variable is not an instance: `{}`", instance_var->get_string()));
+      return false;
+    }
     state.left_derived = {interface_class->derived_classes.begin(), interface_class->derived_classes.end()};
   }
 
