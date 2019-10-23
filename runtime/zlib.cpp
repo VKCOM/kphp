@@ -67,14 +67,15 @@ const char *gzuncompress_raw(const char *s, int s_len, string::size_type *result
   unsigned long res_len = PHP_BUF_LEN;
 
   dl::enter_critical_section();//OK
-  if (uncompress(reinterpret_cast <unsigned char *> (php_buf), &res_len, reinterpret_cast <const unsigned char *> (s), (unsigned long)s_len) == Z_OK) {
+  int uncompress_res = uncompress(reinterpret_cast <unsigned char *> (php_buf), &res_len, reinterpret_cast <const unsigned char *> (s), (unsigned long)s_len);
+  if (uncompress_res == Z_OK) {
     dl::leave_critical_section();
     *result_len = res_len;
     return php_buf;
   }
   dl::leave_critical_section();
 
-  php_warning("Error during unpack of string of length %d", (int)s_len);
+  php_warning("Error during unpack of string of length %d, msg: '%s'", (int)s_len, zError(uncompress_res));
   *result_len = 0;
   return "";
 }
