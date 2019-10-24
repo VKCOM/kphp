@@ -85,7 +85,7 @@ bool mb_UTF8_check(const char *s) {
 
     return false;
 #undef CHECK
-  } while (1);
+  } while (true);
 
   php_assert (0);
 }

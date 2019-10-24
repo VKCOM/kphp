@@ -561,7 +561,7 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimite
       answer.set_value(current_id++, var());
       break;
     }
-    first_field = 0;
+    first_field = false;
     /* 2. Read field, leaving bptr pointing at start of next field */
     if (inc_len != 0 && *bptr == enclosure_char) {
       int state = 0;

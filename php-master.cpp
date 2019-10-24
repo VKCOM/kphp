@@ -1964,7 +1964,7 @@ int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute_
   int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
   //fprintf (stderr, "B\n");
   if (s == -1) {
-    if (0 && errno == EAGAIN) {
+    if (false && errno == EAGAIN) {
       vkprintf(1, "strange... no signal found\n");
       return 0;
     }

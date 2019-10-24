@@ -93,7 +93,7 @@ template<class T>
 static inline T store_parse_number_hex(const string &v) {
   T result = 0;
   const char *s = v.c_str();
-  while (1) {
+  while (true) {
     T next = -1;
     if ('0' <= *s && *s <= '9') {
       next = *s - '0';

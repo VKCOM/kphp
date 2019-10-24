@@ -636,7 +636,7 @@ string f$vk_whitespace_pack(const string &str, bool html_opt) {
         write_buff_char(linebreak ? '\n' : ' ');
       }
     } else {
-      while (1) {
+      while (true) {
         while ((level || !is_space(*text)) && *text) {
           level += is_pre_tag(text);
           if (level < 0) {

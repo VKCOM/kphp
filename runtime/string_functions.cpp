@@ -1629,7 +1629,7 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
 
   ap = a;
   bp = b;
-  while (1) {
+  while (true) {
     ca = *ap;
     cb = *bp;
 
@@ -1940,7 +1940,7 @@ static string str_replace_char(char c, const string &replace, const string &subj
   if (!replace.empty()) {
     result.reserve_at_least(subject.size());
   }
-  while (1) {
+  while (true) {
     const char *pos = (const char *)memchr(piece, c, piece_end - piece);
     if (pos == nullptr) {
       if (count == 0) {
@@ -1974,7 +1974,7 @@ void str_replace_inplace(const string &search, const string &replace, string &su
   const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
   char *output = subject.buffer();
   bool length_no_change = search.size() == replace.size();
-  while (1) {
+  while (true) {
     const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
     if (pos == nullptr) {
       if (count == 0) {
@@ -2014,7 +2014,7 @@ string str_replace(const string &search, const string &replace, const string &su
   int count = 0;
   const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
   string result;
-  while (1) {
+  while (true) {
     const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
     if (pos == nullptr) {
       if (count == 0) {

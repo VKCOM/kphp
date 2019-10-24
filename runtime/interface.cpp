@@ -1045,7 +1045,7 @@ static int parse_multipart_one(post_reader &data, int i) {
       if (data.is_boundary(i) || (33 <= data[i] && data[i] <= 126) || (data[i] == '\r' && data[i + 1] == '\n') || data[i] == '\n') {
         break;
       }
-    } while (1);
+    } while (true);
     header_value = f$trim(header_value);
 
     if (!strcmp(header_name.c_str(), "content-disposition")) {
@@ -1053,7 +1053,7 @@ static int parse_multipart_one(post_reader &data, int i) {
         return i;
       }
       const char *p = header_value.c_str() + 10;
-      while (1) {
+      while (true) {
         while (*p && *p == ' ') {
           p++;
         }

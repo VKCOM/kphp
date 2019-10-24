@@ -1392,7 +1392,7 @@ void do_var_dump(const var &v, int depth) {
       *coub << shift << "string(" << (int)v.as_string().size() << ") \"" << v.as_string() << '"';
       break;
     case var::ARRAY_TYPE: {
-      *coub << shift << (0 && v.as_array().is_vector() ? "vector(" : "array(") << v.as_array().count() << ") {\n";
+      *coub << shift << (false && v.as_array().is_vector() ? "vector(" : "array(") << v.as_array().count() << ") {\n";
 
       for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         *coub << shift << "  [";
