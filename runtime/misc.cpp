@@ -7,7 +7,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "PHP/php-engine-vars.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/exception.h"
@@ -16,6 +15,7 @@
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 #include "runtime/vkext.h"
+#include "PHP/worker/php-engine-vars.h"
 
 string f$uniqid(const string &prefix, bool more_entropy) {
   if (!more_entropy) {

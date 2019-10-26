@@ -13,11 +13,11 @@
 
 #include "common/fast-backtrace.h"
 
-#include "PHP/php-engine-vars.h"
 #include "runtime/critical_section.h"
 #include "runtime/kphp_backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
+#include "PHP/worker/php-engine-vars.h"
 
 const char *engine_tag = "[";
 const char *engine_pid = "] ";

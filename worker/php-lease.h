@@ -2,7 +2,7 @@
 
 #include "common/pid.h"
 
-#include "PHP/php-worker.h"
+#include "PHP/worker/php-worker.h"
 
 void lease_on_worker_finish(php_worker *worker);
 void lease_set_ready();

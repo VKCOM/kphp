@@ -1,4 +1,4 @@
-#include "PHP/php_script.h"
+#include "PHP/worker/php-script.h"
 
 #include <cassert>
 #include <cstring>

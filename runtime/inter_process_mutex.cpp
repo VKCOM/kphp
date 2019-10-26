@@ -5,9 +5,9 @@
 #include <linux/futex.h>
 #include <syscall.h>
 
-#include "PHP/php-engine-vars.h"
 #include "runtime/critical_section.h"
 #include "runtime/php_assert.h"
+#include "PHP/worker/php-engine-vars.h"
 
 pid_t get_main_thread_id() noexcept {
   return pid;

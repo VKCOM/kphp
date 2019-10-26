@@ -1,4 +1,4 @@
-#include "PHP/php-master.h"
+#include "PHP/worker/php-master.h"
 
 #include <algorithm>
 #include <cassert>
@@ -41,8 +41,8 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
-#include "PHP/php-engine-vars.h"
 #include "runtime/instance_cache.h"
+#include "PHP/worker/php-engine-vars.h"
 
 extern const char *engine_tag;
 

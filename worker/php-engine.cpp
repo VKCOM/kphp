@@ -1,4 +1,4 @@
-#include "PHP/php-engine.h"
+#include "PHP/worker/php-engine.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -42,14 +42,14 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
-#include "PHP/php-engine-vars.h"
-#include "PHP/php-lease.h"
-#include "PHP/php-master.h"
-#include "PHP/php-queries.h"
-#include "PHP/php-runner.h"
-#include "PHP/php-sql-connections.h"
-#include "PHP/php-worker.h"
 #include "runtime/interface.h"
+#include "PHP/worker/php-engine-vars.h"
+#include "PHP/worker/php-lease.h"
+#include "PHP/worker/php-master.h"
+#include "PHP/worker/php-queries.h"
+#include "PHP/worker/php-runner.h"
+#include "PHP/worker/php-sql-connections.h"
+#include "PHP/worker/php-worker.h"
 
 static void turn_sigterm_on();
 

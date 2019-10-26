@@ -11,12 +11,12 @@
 #include "common/parallel/lock_accessible.h"
 #include "common/smart_ptrs/not_owner_ptr.h"
 
-#include "PHP/php-engine-vars.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/inter_process_mutex.h"
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/memory_resource/synchronized_pool_resource.h"
+#include "PHP/worker/php-engine-vars.h"
 
 namespace ic_impl_ {
 

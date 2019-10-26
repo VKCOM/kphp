@@ -1,4 +1,4 @@
-#include "PHP/php-query-data.h"
+#include "PHP/worker/php-query-data.h"
 
 #include <cassert>
 #include <cstdio>

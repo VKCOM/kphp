@@ -1,4 +1,4 @@
-#include "PHP/php-runner.h"
+#include "PHP/worker/php-runner.h"
 
 #include <cassert>
 #include <cerrno>
@@ -17,11 +17,11 @@
 #include "common/wrappers/madvise.h"
 #include "net/net-connections.h"
 
-#include "PHP/php-engine-vars.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "PHP/worker/php-engine-vars.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;

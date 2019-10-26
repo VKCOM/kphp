@@ -1,6 +1,6 @@
 #include "runtime/mysql.h"
 
-#include "PHP/php-queries.h"
+#include "PHP/worker/php-queries.h"
 
 static int mysql_callback_state;
 

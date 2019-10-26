@@ -1,4 +1,4 @@
-#include "PHP/php-queries.h"
+#include "PHP/worker/php-queries.h"
 
 #include <cassert>
 #include <cstdarg>
@@ -7,10 +7,10 @@
 
 #include "common/precise-time.h"
 
-#include "PHP/php-engine-vars.h"
-#include "PHP/php-runner.h"
-#include "PHP/php_script.h"
 #include "runtime/allocator.h"
+#include "PHP/worker/php-engine-vars.h"
+#include "PHP/worker/php-runner.h"
+#include "PHP/worker/php-script.h"
 
 #define MAX_NET_ERROR_LEN 128
 

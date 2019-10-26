@@ -8,9 +8,6 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#include "PHP/php-engine-vars.h"
-#include "PHP/php-queries.h"
-#include "PHP/php-query-data.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/critical_section.h"
@@ -33,6 +30,9 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+#include "PHP/worker/php-engine-vars.h"
+#include "PHP/worker/php-queries.h"
+#include "PHP/worker/php-query-data.h"
 
 static enum {
   QUERY_TYPE_NONE,
