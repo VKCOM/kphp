@@ -1,6 +1,6 @@
 #include "runtime/net_events.h"
 
-#include "PHP/common-net-functions.h"
+#include "PHP/php-queries.h"
 #include "runtime/allocator.h"
 #include "runtime/rpc.h"
 

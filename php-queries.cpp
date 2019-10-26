@@ -12,9 +12,6 @@
 #include "PHP/php_script.h"
 #include "runtime/allocator.h"
 
-extern long long cur_qres_id, first_qres_id;
-
-
 #define MAX_NET_ERROR_LEN 128
 
 static char last_net_error[MAX_NET_ERROR_LEN + 1];
@@ -51,7 +48,7 @@ php_query_http_load_post_answer_t *php_query_http_load(char *buf, int min_len, i
   return (php_query_http_load_post_answer_t *)q.base.ans;
 }
 
-int engine_http_load_long_query(char *buf, int min_len, int max_len) {
+int http_load_long_query(char *buf, int min_len, int max_len) {
   php_query_http_load_post_answer_t *ans = php_query_http_load(buf, min_len, max_len);
   assert (min_len <= ans->loaded_bytes && ans->loaded_bytes <= max_len);
   return ans->loaded_bytes;
@@ -328,17 +325,17 @@ php_query_connect_answer_t *php_query_connect(const char *host, int port, protoc
   return (php_query_connect_answer_t *)q.base.ans;
 }
 
-int engine_mc_connect_to(const char *host, int port) {
+int mc_connect_to(const char *host, int port) {
   php_query_connect_answer_t *ans = php_query_connect(host, port, p_memcached);
   return ans->connection_id;
 }
 
-int engine_db_proxy_connect() {
+int db_proxy_connect() {
   php_query_connect_answer_t *ans = php_query_connect("unknown", -1, p_sql);
   return ans->connection_id;
 }
 
-int engine_rpc_connect_to(const char *host, int port) {
+int rpc_connect_to(const char *host, int port) {
   php_query_connect_answer_t *ans = php_query_connect(host, port, p_rpc);
   return ans->connection_id;
 }
@@ -894,11 +891,11 @@ void free_net_query(net_query_t *query) {
 }
 
 /*** main functions ***/
-void engine_mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) {
+void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) {
   php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_memcached, query_type | (PNETF_IMMEDIATE * (callback == nullptr)));
   if (res->state == nq_error) {
     if (callback != nullptr) {
-      fprintf(stderr, "engine_mc_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
+      fprintf(stderr, "mc_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
     }
     save_last_net_error(res->res);
   } else {
@@ -909,10 +906,10 @@ void engine_mc_run_query(int host_num, const char *request, int request_len, int
   }
 }
 
-void engine_sql_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len)) {
+void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len)) {
   php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_sql, 0);
   if (res->state == nq_error) {
-    fprintf(stderr, "engine_sql_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
+    fprintf(stderr, "db_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
     save_last_net_error(res->res);
   } else {
     assert (res->chain != nullptr);
@@ -925,7 +922,7 @@ void engine_sql_run_query(int host_num, const char *request, int request_len, in
   }
 }
 
-static slot_id_t engine_rpc_send_query(int host_num, char *request, int request_size, int timeout_ms) {
+slot_id_t rpc_send_query(int host_num, char *request, int request_size, int timeout_ms) {
   net_query_t *query = create_net_query(nq_rpc_send);
   if (query == nullptr) {
     return -1; // memory limit
@@ -943,7 +940,7 @@ static slot_id_t engine_rpc_send_query(int host_num, char *request, int request_
   return query->slot_id;
 }
 
-static void engine_wait_net_events(int timeout_ms) {
+void wait_net_events(int timeout_ms) {
   assert (PHPScriptBase::is_running);
   php_query_wait_t q;
   q.base.type = PHPQ_WAIT;
@@ -952,11 +949,11 @@ static void engine_wait_net_events(int timeout_ms) {
   PHPScriptBase::current_script->ask_query((void *)&q);
 }
 
-static net_event_t *engine_pop_net_event() {
+net_event_t *pop_net_event() {
   return net_events.pop();
 }
 
-void rpc_answer_(const char *res, int res_len) {
+void rpc_answer(const char *res, int res_len) {
   assert (PHPScriptBase::is_running);
   php_query_rpc_answer q;
   q.base.type = PHPQ_RPC_ANSWER;
@@ -981,11 +978,11 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
   return (php_net_query_packet_answer_t *)q.base.ans;
 }
 
-void script_error_() {
+void script_error() {
   PHPScriptBase::error("script_error called", script_error_t::unclassified_error);
 }
 
-void http_set_result_(const char *headers, int headers_len, const char *body, int body_len, int exit_code) {
+void http_set_result(const char *headers, int headers_len, const char *body, int body_len, int exit_code) {
   script_result res;
   res.exit_code = exit_code;
   res.headers = headers;
@@ -996,7 +993,7 @@ void http_set_result_(const char *headers, int headers_len, const char *body, in
   PHPScriptBase::current_script->set_script_result(&res);
 }
 
-void rpc_set_result_(const char *body, int body_len, int exit_code) {
+void rpc_set_result(const char *body, int body_len, int exit_code) {
   script_result res;
   res.exit_code = exit_code;
   res.headers = nullptr;
@@ -1007,71 +1004,48 @@ void rpc_set_result_(const char *body, int body_len, int exit_code) {
   PHPScriptBase::current_script->set_script_result(&res);
 }
 
-void finish_script_(int exit_code __attribute__((unused))) {
+void finish_script(int exit_code __attribute__((unused))) {
   //TODO
   assert (0);
 }
 
-void engine_set_server_status(const char *status, int len) {
+void set_server_status(const char *status, int len) {
   custom_server_status(status, len);
 }
 
-void engine_set_server_status_rpc(int port, long long actor_id, double start_time) {
+void set_server_status_rpc(int port, long long actor_id, double start_time) {
   server_status_rpc(port, actor_id, start_time);
 }
 
-double engine_get_net_time() {
+double get_net_time() {
   return PHPScriptBase::current_script->get_net_time();
 }
 
-double engine_get_script_time() {
+double get_script_time() {
   return PHPScriptBase::current_script->get_script_time();
 }
 
-int engine_get_net_queries_count() {
+int get_net_queries_count() {
   return PHPScriptBase::current_script->get_net_queries_count();
 }
 
 
-int engine_get_uptime() {
+int get_engine_uptime() {
   return get_uptime();
 }
 
-const char *engine_get_version() {
+const char *get_engine_version() {
   return get_version_string();
 }
 
 
-int engine_query_x2(int x) {
+int query_x2(int x) {
   php_query_x2_answer_t *ans = php_query_x2(x);
   return ans->x2;
 }
 
 void init_drivers() {
   init_readers();
-  http_load_long_query = engine_http_load_long_query;
-  mc_connect_to = engine_mc_connect_to;
-  db_proxy_connect = engine_db_proxy_connect;
-  rpc_connect_to = engine_rpc_connect_to;
-  mc_run_query = engine_mc_run_query;
-  db_run_query = engine_sql_run_query;
-  rpc_send_query = engine_rpc_send_query;
-  wait_net_events = engine_wait_net_events;
-  pop_net_event = engine_pop_net_event;
-  rpc_answer = rpc_answer_;
-  rpc_set_result = rpc_set_result_;
-  script_error = script_error_;
-  http_set_result = http_set_result_;
-  finish_script = finish_script_;
-  set_server_status = engine_set_server_status;
-  set_server_status_rpc = engine_set_server_status_rpc;
-  get_net_time = engine_get_net_time;
-  get_script_time = engine_get_script_time;
-  get_net_queries_count = engine_get_net_queries_count;
-  get_engine_uptime = engine_get_uptime;
-  get_engine_version = engine_get_version;
-  query_x2 = engine_query_x2;
-
   init_slots();
 }
 

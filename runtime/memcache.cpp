@@ -7,7 +7,6 @@
 
 static_assert(TL_ENGINE_MC_GET_QUERY == ENGINE_MC_GET_QUERY, "bad ENGINE_MC_GET_QUERY constant");
 
-#include "PHP/common-net-functions.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/datetime.h"
@@ -18,6 +17,7 @@ static_assert(TL_ENGINE_MC_GET_QUERY == ENGINE_MC_GET_QUERY, "bad ENGINE_MC_GET_
 #include "runtime/regexp.h"
 #include "runtime/string_functions.h"
 #include "runtime/zlib.h"
+#include "PHP/php-queries.h"
 
 static string_buffer drivers_SB(1024);
 

@@ -4,6 +4,7 @@
 
 #include "drinkless/dl-utils-lite.h"
 
+#include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
 #include "PHP/php_script.h"
 

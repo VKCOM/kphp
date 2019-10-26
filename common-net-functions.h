@@ -82,36 +82,3 @@ struct net_query_t {
     };
   };
 };
-
-extern int (*mc_connect_to)(const char *host_name, int port);
-extern void (*mc_run_query)(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len));
-
-extern int (*db_proxy_connect)();
-extern void (*db_run_query)(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len));
-
-extern void (*set_server_status)(const char *status, int status_len);
-extern void (*set_server_status_rpc)(int port, long long actor_id, double start_time);
-
-extern double (*get_net_time)();
-extern double (*get_script_time)();
-extern int (*get_net_queries_count)();
-
-extern int (*get_engine_uptime)();
-
-extern const char *(*get_engine_version)();
-
-extern int (*http_load_long_query)(char *buf, int min_len, int max_len);
-extern void (*http_set_result)(const char *headers, int headers_len, const char *body, int body_len, int exit_code);
-
-extern void (*rpc_answer)(const char *res, int res_len);
-extern void (*rpc_set_result)(const char *body, int body_len, int exit_code);
-extern void (*script_error)();
-
-extern void (*finish_script)(int exit_code);
-
-extern int (*rpc_connect_to)(const char *host_name, int port);
-extern slot_id_t (*rpc_send_query)(int host_num, char *request, int request_len, int timeout_ms);
-extern void (*wait_net_events)(int timeout_ms);
-extern net_event_t *(*pop_net_event)();
-
-extern int (*query_x2)(int x);

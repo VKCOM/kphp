@@ -2,8 +2,6 @@
 
 #include <cstddef>
 
-#include "PHP/common-net-functions.h"
-
 /** script_t **/
 struct script_t {
   void (*run)();

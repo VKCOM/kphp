@@ -10,6 +10,7 @@
 
 #include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
+#include "PHP/php-queries.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/critical_section.h"
@@ -471,8 +472,6 @@ void f$fastcgi_finish_request(int exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
-      php_assert (http_set_result != nullptr);
-
       const string_buffer *compressed;
       if (is_head_query) {
         oub[first_not_empty_buffer].clean();
@@ -495,7 +494,6 @@ void f$fastcgi_finish_request(int exit_code) {
       break;
     }
     case QUERY_TYPE_RPC: {
-      php_assert (rpc_set_result != nullptr);
       rpc_set_result(oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), exit_code);
 
       break;

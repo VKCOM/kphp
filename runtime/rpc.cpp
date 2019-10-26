@@ -5,7 +5,7 @@
 #include "auto/TL/constants/common.h"
 #include "common/rpc-error-codes.h"
 
-#include "PHP/common-net-functions.h"
+#include "PHP/php-queries.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/memcache.h"

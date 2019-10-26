@@ -321,4 +321,28 @@ void php_queries_finish();
 
 void init_drivers();
 
+int mc_connect_to(const char *host_name, int port);
+void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len));
+int db_proxy_connect();
+void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len));
+void set_server_status(const char *status, int status_len);
+void set_server_status_rpc(int port, long long actor_id, double start_time);
+double get_net_time();
+double get_script_time();
+int get_net_queries_count();
+int get_engine_uptime();
+const char *get_engine_version();
+int http_load_long_query(char *buf, int min_len, int max_len);
+void http_set_result(const char *headers, int headers_len, const char *body, int body_len, int exit_code);
+void rpc_answer(const char *res, int res_len);
+void rpc_set_result(const char *body, int body_len, int exit_code);
+void script_error();
+void finish_script(int exit_code);
+int rpc_connect_to(const char *host_name, int port);
+slot_id_t rpc_send_query(int host_num, char *request, int request_len, int timeout_ms);
+void wait_net_events(int timeout_ms);
+net_event_t *pop_net_event();
+int query_x2(int x);
+
+
 #pragma pack(pop)
