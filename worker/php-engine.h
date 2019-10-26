@@ -32,3 +32,5 @@ data_reader_t *create_data_reader(connection *c, int data_len);
 void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time);
 void command_net_write_free(command_t *base_command);
 command_t *create_command_net_writer(const char *data, int data_len, command_t *base, long long extra);
+connection *get_target_connection_force(conn_target_t *S);
+int pnet_query_timeout(conn_query *q);
