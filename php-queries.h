@@ -1,8 +1,49 @@
 #pragma once
 
-#include <stddef.h>
+#include <cstddef>
 
-#include "PHP/common-net-functions.h"
+using slot_id_t = int;
+
+enum net_event_type_t {
+  ne_rpc_answer,
+  ne_rpc_error
+};
+
+struct net_event_t {
+  net_event_type_t type;
+  union {
+    slot_id_t slot_id;
+    slot_id_t rpc_id;
+  };
+  union {
+    struct { //ne_rpc_answer
+      int result_len;
+      //allocated via dl_malloc
+      char *result;
+    };
+    struct { //ne_rpc_error
+      int error_code;
+      const char *error_message;
+    };
+  };
+};
+
+enum net_query_type_t {
+  nq_rpc_send
+};
+
+struct net_query_t {
+  net_query_type_t type;
+  slot_id_t slot_id;
+  union {
+    struct { //nq_rpc_send
+      int host_num;
+      char *request;
+      int request_size;
+      int timeout_ms;
+    };
+  };
+};
 
 #pragma pack(push, 4)
 

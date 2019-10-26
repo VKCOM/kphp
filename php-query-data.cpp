@@ -1,4 +1,4 @@
-#include "PHP/common-net-functions.h"
+#include "PHP/php-query-data.h"
 
 #include <cassert>
 #include <cstdio>

@@ -8,9 +8,9 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
 #include "PHP/php-queries.h"
+#include "PHP/php-query-data.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/critical_section.h"

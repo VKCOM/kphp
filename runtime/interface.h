@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "PHP/common-net-functions.h"
+#include "PHP/php-query-data.h"
 #include "runtime/kphp_core.h"
 
 extern string_buffer *coub;//TODO static

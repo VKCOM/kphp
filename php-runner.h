@@ -4,8 +4,8 @@
 
 #include "drinkless/dl-utils-lite.h"
 
-#include "PHP/common-net-functions.h"
 #include "PHP/php-engine-vars.h"
+#include "PHP/php-query-data.h"
 #include "PHP/php_script.h"
 
 enum class run_state_t {
