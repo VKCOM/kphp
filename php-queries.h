@@ -121,8 +121,6 @@ enum protocol_t {
   p_memcached,
   p_sql,
   p_rpc,
-  p_get,
-  p_get_id
 };
 
 struct php_query_connect_t {
@@ -134,8 +132,6 @@ struct php_query_connect_t {
 };
 
 php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_t protocol);
-
-int engine_mc_connect_to(const char *host, int port, int timeout_ms);
 
 /** load long http post query **/
 struct php_query_http_load_post_answer_t {
@@ -313,30 +309,6 @@ struct net_send_ansgen_t {
 //  net_send_ansgen_state_t state;
   command_t *writer;
   long long qres_id;
-};
-
-
-net_send_ansgen_t *net_send_ansgen_create();
-
-/*** queue queries ***/
-struct php_query_queue_push_t {
-  php_query_base_t base;
-  long long queue_id;
-  const long long *request_ids;
-  int request_ids_len;
-};
-
-struct php_query_queue_push_answer_t {
-  long long queue_id;
-};
-
-struct php_query_queue_empty_t {
-  php_query_base_t base;
-  long long queue_id;
-};
-
-struct php_query_queue_empty_answer_t {
-  int empty;
 };
 
 
