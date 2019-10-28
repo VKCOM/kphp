@@ -19,7 +19,7 @@
     $j = 7;
   }
 
-  if($is_kphp) @var_dump ($a / $a); else var_dump (0.0);
+  @var_dump ($a / $a);
   if($is_kphp) @var_dump ($a / $b); else var_dump (0.0);
   if($is_kphp) @var_dump ($a / $c); else var_dump (0.0);
   @var_dump ($a / $d);
@@ -32,7 +32,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($b / $a); else var_dump (0.0);
+  @var_dump ($b / $a);
   if($is_kphp) @var_dump ($b / $b); else var_dump ((double) $b / $b);
   @var_dump ($b / $c);
   @var_dump ($b / $d);
@@ -45,7 +45,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($c / $a); else var_dump (0.0);
+  @var_dump ($c / $a);
   if($is_kphp) @var_dump ($c / $b); else var_dump ((double) $c / $b);
   if($is_kphp) @var_dump ($c / $c); else var_dump ((double) $c / $c);
   @var_dump ($c / $d);
@@ -58,7 +58,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($d / $a); else var_dump (0.0);
+  @var_dump ($d / $a);
   @var_dump ($d / $b);
   @var_dump ($d / $c);
   @var_dump ($d / $d);
@@ -71,7 +71,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($e / $a); else var_dump (0.0);
+  @var_dump ($e / $a);
   if($is_kphp) @var_dump ($e / $b); else @var_dump ((double) $e / $b);
   @var_dump ($e / $c);
   @var_dump ($e / $d);
@@ -84,7 +84,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($f / $a); else var_dump (0.0);
+  if($is_kphp) @var_dump ($f / $a); else var_dump (1 / 0.0);
   if($is_kphp) @var_dump ($f / $b); else var_dump (0.0);
   if($is_kphp) @var_dump ($f / $c); else var_dump (1.0 / $c);
   if($is_kphp) @var_dump ($f / $d); else var_dump (1.0 / $d);
@@ -97,7 +97,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($g / $a); else var_dump (0.0);
+  if($is_kphp) @var_dump ($g / $a); else var_dump (1 / 0.0);
   if($is_kphp) @var_dump ($g / $b); else var_dump (0.0);
   if($is_kphp) @var_dump ($g / $c); else var_dump (1.0 / $c);
   if($is_kphp) @var_dump ($g / $d); else var_dump (1.0 / $d);
@@ -110,7 +110,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($h / $a); else var_dump (0.0);
+  if($is_kphp) @var_dump ($h / $a); else var_dump (1 / 0.0);
   if($is_kphp) @var_dump ($h / $b); else var_dump (0.0);
   if($is_kphp) @var_dump ($h / $c); else var_dump (1.0 / $c);
   if($is_kphp) @var_dump ($h / $d); else var_dump (1.0 / $d);
@@ -123,7 +123,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($i / $a); else var_dump (0.0);
+  if($is_kphp) @var_dump ($i / $a); else var_dump (1 / 0.0);
   if($is_kphp) @var_dump ($i / $b); else var_dump (0.0);
   if($is_kphp) @var_dump ($i / $c); else var_dump (1.0 / $c);
   if($is_kphp) @var_dump ($i / $d); else var_dump (1.0 / $d);
@@ -136,7 +136,7 @@
 
   echo "\n";
 
-  if($is_kphp) @var_dump ($j / $a); else var_dump (0.0);
+  @var_dump ($j / $a);
   if($is_kphp) @var_dump ($j / $b); else var_dump ((double) $j / $b);
   @var_dump ($j / $c);
   @var_dump ($j / $d);
@@ -276,3 +276,11 @@
   @var_dump ($j % $h);
   @var_dump ($j % $i);
   @var_dump ($j % $j);
+
+  @var_dump( 0.0 / 0.0);
+  @var_dump( 1.0 / 0.0);
+  @var_dump(-1.0 / 0.0);
+
+  @var_dump( 0 / 0);
+  @var_dump( 1 / 0);
+  @var_dump(-1 / 0);

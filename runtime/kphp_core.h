@@ -1087,21 +1087,11 @@ bool geq(const Optional<T> &lhs, const bool &rhs) {
 
 
 double divide(int lhs, int rhs) {
-  if (rhs == 0) {
-    php_warning("Integer division by zero");
-    return 0;
-  }
-
-  return double(lhs) / rhs;
+  return divide(static_cast<double>(lhs), static_cast<double>(rhs));
 }
 
 double divide(double lhs, int rhs) {
-  if (rhs == 0) {
-    php_warning("Integer division by zero");
-    return 0;
-  }
-
-  return lhs / rhs;
+  return divide(lhs, static_cast<double>(rhs));
 }
 
 double divide(const string &lhs, int rhs) {
@@ -1114,18 +1104,12 @@ double divide(const var &lhs, int rhs) {
 
 
 double divide(int lhs, double rhs) {
-  if (rhs == 0) {
-    php_warning("Float division by zero");
-    return 0;
-  }
-
-  return lhs / rhs;
+  return divide(static_cast<double>(lhs), rhs);
 }
 
 double divide(double lhs, double rhs) {
   if (rhs == 0) {
     php_warning("Float division by zero");
-    return 0;
   }
 
   return lhs / rhs;
@@ -1170,7 +1154,7 @@ double divide(const string &lhs, const var &rhs) {
 }
 
 double divide(const var &lhs, const var &rhs) {
-  return f$floatval(lhs / rhs);
+  return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
 

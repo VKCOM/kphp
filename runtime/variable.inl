@@ -1660,60 +1660,6 @@ const var operator*(const var &lhs, const var &rhs) {
   }
 }
 
-const var operator/(const var &lhs, const var &rhs) {
-  if (likely (lhs.type == var::INTEGER_TYPE && rhs.type == var::INTEGER_TYPE)) {
-    if (rhs.as_int() == 0) {
-      php_warning("Integer division by zero");
-      return false;
-    }
-
-    if (lhs.as_int() % rhs.as_int() == 0) {
-      return lhs.as_int() / rhs.as_int();
-    }
-    return (double)lhs.as_int() / rhs.as_int();
-  }
-
-  const var arg1 = lhs.to_numeric();
-  const var arg2 = rhs.to_numeric();
-
-  if (arg2.type == var::INTEGER_TYPE) {
-    if (arg2.as_int() == 0) {
-      php_warning("Integer division by zero");
-      return false;
-    }
-
-    if (arg1.type == var::INTEGER_TYPE) {
-      if (arg1.as_int() % arg2.as_int() == 0) {
-        return arg1.as_int() / arg2.as_int();
-      }
-      return (double)arg1.as_int() / arg2.as_int();
-    } else {
-      return arg1.as_double() / arg2.as_int();
-    }
-  } else {
-    if (arg2.as_double() == 0.0) {
-      php_warning("Float division by zero");
-      return false;
-    }
-
-    if (arg1.type == var::INTEGER_TYPE) {
-      return arg1.as_int() / arg2.as_double();
-    } else {
-      return arg1.as_double() / arg2.as_double();
-    }
-  }
-}
-
-const var operator%(const var &lhs, const var &rhs) {
-  int div = rhs.to_int();
-  if (div == 0) {
-    php_warning("Modulo by zero");
-    return false;
-  }
-  return lhs.to_int() % div;
-}
-
-
 const var operator-(const string &lhs) {
   var arg1 = lhs.to_numeric();
 

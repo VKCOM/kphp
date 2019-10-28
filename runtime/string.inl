@@ -290,6 +290,10 @@ string::string(double f) {
   result[1] = '\0';
 
   char *begin = result + 2;
+  if (std::isnan(f)) {
+    // to prevent printing `-NAN` by snprintf
+    f = std::abs(f);
+ }
   int len = snprintf(begin, MAX_LEN, "%.14G", f);
   if (static_cast<uint32_t>(len) < MAX_LEN) {
     if (static_cast<uint32_t>(begin[len - 1] - '5') < 5 && begin[len - 2] == '0' && begin[len - 3] == '-') {
