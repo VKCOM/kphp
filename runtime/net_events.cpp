@@ -2,7 +2,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/rpc.h"
-#include "PHP/worker/php-queries.h"
+#include "server/php-queries.h"
 
 int timeout_convert_to_ms(double timeout) {
   int timeout_ms = (int)(timeout * 1000 + 1);

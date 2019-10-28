@@ -4,9 +4,9 @@
 
 #include "drinkless/dl-utils-lite.h"
 
-#include "PHP/worker/php-engine-vars.h"
-#include "PHP/worker/php-query-data.h"
-#include "PHP/worker/php-script.h"
+#include "server/php-engine-vars.h"
+#include "server/php-query-data.h"
+#include "server/php-script.h"
 
 enum class run_state_t {
   finished,

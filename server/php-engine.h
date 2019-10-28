@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PHP/worker/php-queries.h"
+#include "server/php-queries.h"
 
 struct conn_query;
 struct connection;

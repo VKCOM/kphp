@@ -1,4 +1,4 @@
-#include "PHP/worker/php-lease.h"
+#include "server/php-lease.h"
 
 #include "auto/TL/constants/common.h"
 #include "auto/TL/constants/kphp.h"
@@ -7,9 +7,9 @@
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 
-#include "PHP/worker/php-engine-vars.h"
-#include "PHP/worker/php-ready.h"
-#include "PHP/worker/php-worker.h"
+#include "server/php-engine-vars.h"
+#include "server/php-ready.h"
+#include "server/php-worker.h"
 
 static int rpc_main_target = -1;
 

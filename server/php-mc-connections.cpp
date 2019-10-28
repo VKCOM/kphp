@@ -1,12 +1,12 @@
-#include "PHP/worker/php-mc-connections.h"
+#include "server/php-mc-connections.h"
 
 #include "net/net-connections.h"
 #include "net/net-memcache-client.h"
 
-#include "PHP/worker/php-engine.h"
-#include "PHP/worker/php-queries.h"
-#include "PHP/worker/php-runner.h"
-#include "PHP/worker/php-worker.h"
+#include "server/php-engine.h"
+#include "server/php-queries.h"
+#include "server/php-runner.h"
+#include "server/php-worker.h"
 
 void data_read_conn(data_reader_t *reader, void *dest) {
   reader->readed = 1;

@@ -1,4 +1,4 @@
-#include "PHP/worker/php-engine-vars.h"
+#include "server/php-engine-vars.h"
 
 #include <limits.h>
 #include <stdlib.h>

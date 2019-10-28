@@ -2,7 +2,7 @@
 
 #include "runtime/datetime.h"
 #include "runtime/kphp_core.h"
-#include "PHP/worker/php-engine-vars.h"
+#include "server/php-engine-vars.h"
 
 void f$kphp_profiler_handle_call(string, double, double) __attribute__((weak));
 

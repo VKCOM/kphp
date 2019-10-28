@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PHP/worker/php-query-data.h"
+#include "server/php-query-data.h"
 
 enum php_worker_mode_t {
   http_worker,

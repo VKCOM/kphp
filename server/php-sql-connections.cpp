@@ -1,13 +1,13 @@
-#include "PHP/worker/php-sql-connections.h"
+#include "server/php-sql-connections.h"
 
 #include "common/allocators/zmalloc.h"
 #include "net/net-connections.h"
 #include "net/net-mysql-client.h"
 
-#include "PHP/worker/php-engine.h"
-#include "PHP/worker/php-queries.h"
-#include "PHP/worker/php-runner.h"
-#include "PHP/worker/php-worker.h"
+#include "server/php-engine.h"
+#include "server/php-queries.h"
+#include "server/php-runner.h"
+#include "server/php-worker.h"
 
 #define RESPONSE_FAIL_TIMEOUT 30.0
 

@@ -1,4 +1,4 @@
-#include "PHP/worker/php-runner.h"
+#include "server/php-runner.h"
 
 #include <cassert>
 #include <cerrno>
@@ -21,7 +21,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
-#include "PHP/worker/php-engine-vars.h"
+#include "server/php-engine-vars.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;

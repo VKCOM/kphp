@@ -30,9 +30,9 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "PHP/worker/php-engine-vars.h"
-#include "PHP/worker/php-queries.h"
-#include "PHP/worker/php-query-data.h"
+#include "server/php-engine-vars.h"
+#include "server/php-queries.h"
+#include "server/php-query-data.h"
 
 static enum {
   QUERY_TYPE_NONE,

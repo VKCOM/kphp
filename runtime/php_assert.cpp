@@ -17,7 +17,7 @@
 #include "runtime/kphp_backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
-#include "PHP/worker/php-engine-vars.h"
+#include "server/php-engine-vars.h"
 
 const char *engine_tag = "[";
 const char *engine_pid = "] ";

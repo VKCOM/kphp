@@ -3,7 +3,7 @@
 #include <functional>
 
 #include "runtime/kphp_core.h"
-#include "PHP/worker/php-query-data.h"
+#include "server/php-query-data.h"
 
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;

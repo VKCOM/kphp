@@ -15,7 +15,7 @@
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 #include "runtime/vkext.h"
-#include "PHP/worker/php-engine-vars.h"
+#include "server/php-engine-vars.h"
 
 string f$uniqid(const string &prefix, bool more_entropy) {
   if (!more_entropy) {

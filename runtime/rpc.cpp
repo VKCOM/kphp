@@ -17,7 +17,7 @@
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/zlib.h"
-#include "PHP/worker/php-queries.h"
+#include "server/php-queries.h"
 
 static const int GZIP_PACKED = 0x3072cfa1;
 

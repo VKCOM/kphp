@@ -137,7 +137,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
   W << ExternInclude("php_functions.h") <<
-    ExternInclude("worker/php-script.h");
+    ExternInclude("server/php-script.h");
 
   for (auto i : main_file_ids) {
     W << Include(i->main_function->header_full_name);

@@ -7,7 +7,7 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/php_assert.h"
-#include "PHP/worker/php-engine-vars.h"
+#include "server/php-engine-vars.h"
 
 pid_t get_main_thread_id() noexcept {
   return pid;
