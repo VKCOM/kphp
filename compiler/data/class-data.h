@@ -159,7 +159,7 @@ private:
 
   template<class MemberT>
   const MemberT *find_by_local_name(vk::string_view name) const {
-    for (auto klass = get_self(); klass; klass = klass->parent_class) {
+    for (auto klass = get_self(); klass; klass = klass->get_parent_or_interface()) {
       AutoLocker<Lockable *> locker(&(*klass));
       if (auto member = klass->members.find_by_local_name<MemberT>(name)) {
         return member;

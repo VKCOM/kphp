@@ -276,7 +276,7 @@ string resolve_define_name(string name) {
     ClassPtr klass = G->get_class(real_class_name);
     if (klass) {
       while (klass && !klass->members.has_constant(define_name)) {
-        klass = klass->parent_class;
+        klass = klass->get_parent_or_interface();
       }
       if (klass) {
         name = "c#" + replace_backslashes(klass->name) + "$$" + define_name;
