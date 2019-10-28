@@ -11,10 +11,6 @@ class TypeInfererEndF final : public SyncPipeF<FunctionAndCFG> {
 public:
   TypeInfererEndF() = default;
 
-  bool forward_to_next_pipe(const FunctionAndCFG &f_and_cfg) final {
-    return f_and_cfg.function->type != FunctionData::func_class_holder || f_and_cfg.function->class_id->really_used;
-  }
-
   void on_finish(DataStream<FunctionAndCFG> &os) final {
     tinf::get_inferer()->check_restrictions();
     tinf::get_inferer()->finish();
