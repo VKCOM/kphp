@@ -59,18 +59,18 @@ function global_vars() {
 
 function class_static_vars() {
   class ClassWithStaticVars {
-    static public $null;
-    static public $boolean;
-    static public $integer;
-    static public $double;
-    static public $const_string;
-    static public $const_array;
+    static public $null = null;
+    static public $boolean = false;
+    static public $integer = 0;
+    static public $double = 0.0;
+    static public $const_string = "";
+    static public $const_array = [];
 
-    static public $dynamic_string;
-    static public $dynamic_array;
+    static public $dynamic_string = "";
+    static public $dynamic_array = [];
 
-    static public $instance;
-    static public $empty_instance;
+    static public $instance = false;
+    static public $empty_instance = false;
   }
 
   ClassWithStaticVars::$null = null;

@@ -20,7 +20,6 @@ Zend/tests/bug26801.phpt
 Zend/tests/bug27598.phpt
 Zend/tests/bug27731.phpt
 Zend/tests/bug28072.phpt
-Zend/tests/bug28442.phpt
 Zend/tests/bug29944.phpt
 Zend/tests/bug30140.phpt
 Zend/tests/bug30407.phpt
@@ -118,7 +117,6 @@ Zend/tests/inter_03.phpt
 Zend/tests/line_const_in_array.phpt
 Zend/tests/loop_free_on_return.phpt
 Zend/tests/lsb_001.phpt
-Zend/tests/lsb_020.phpt
 Zend/tests/magic_methods_003.phpt
 Zend/tests/magic_methods_009.phpt
 Zend/tests/nowdoc_016.phpt
