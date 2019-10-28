@@ -50,6 +50,7 @@ void CalcRealDefinesValuesF::process_define(DefinePtr def) {
 
   if (unlikely(in_progress.find(&def->name) != in_progress.end())) {
     print_error_infinite_define(def);
+    stage::die_if_global_errors();
     return;
   }
 
