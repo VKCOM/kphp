@@ -72,9 +72,9 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
   if (need_fix) {
     long long mtime_before = 0;
     if (need_save_time) {
-      int upd_res = file->upd_mtime();
+      int res = file->read_stat();
       mtime_before = file->mtime;
-      if (upd_res <= 0) {
+      if (res <= 0) {
         need_save_time = false;
       }
     }
@@ -111,8 +111,8 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
     } else {
       file->is_changed = true;
     }
-    long long mtime = file->upd_mtime();
-    kphp_assert_msg(mtime > 0, "Stat failed");
+    long long res = file->read_stat();
+    kphp_assert_msg(res > 0, "Stat failed");
     kphp_error(!need_save_time || file->mtime == mtime_before, "Failed to set previous mtime\n");
   }
 }

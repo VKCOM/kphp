@@ -60,10 +60,10 @@ void Target::on_require() {
 }
 
 bool Target::after_run_success() {
-  long long mtime = file->upd_mtime();
-  if (mtime < 0) {
+  long long res = file->read_stat();
+  if (res < 0) {
     return false;
-  } else if (mtime == 0) {
+  } else if (res == 0) {
     fmt_print("Failed to generate target [{}]\n", file->path);
     return false;
   }

@@ -148,7 +148,7 @@ static std::forward_list<File> collect_imported_libs() {
   }
 
   for (File &file: imported_libs) {
-    kphp_error_act(file.upd_mtime() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
+    kphp_error_act(file.read_stat() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
     if (G->env().get_verbosity() >= 1) {
       fmt_fprintf(stderr, "Use static lib [{}]\n", file.path);
     }
@@ -182,14 +182,14 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviro
 
   MakeSetup make;
   File php_functions_h(kphp_env.get_path() + "PHP/" + header_filename);
-  kphp_error_act(php_functions_h.upd_mtime() > 0,
+  kphp_error_act(php_functions_h.read_stat() > 0,
                  fmt_format("Can't read mtime of '{}'", php_functions_h.path),
                  return {});
 
   File *php_functions_h_gch = obj_dir->insert_file(kphp_env.get_dest_objs_dir() + gch_filename);
   make.create_cpp2obj_target(&php_functions_h, php_functions_h_gch);
   File sha256_version_file(kphp_env.get_runtime_sha256_file());
-  kphp_assert(sha256_version_file.upd_mtime() > 0);
+  kphp_assert(sha256_version_file.read_stat() > 0);
   php_functions_h.target->force_changed(sha256_version_file.mtime);
   make.init_env(kphp_env);
   if (!make.make_target(php_functions_h_gch, 1)) {
@@ -363,7 +363,7 @@ void run_make() {
   obj_index.sync_with_dir(env.get_dest_objs_dir());
 
   File bin_file(env.get_binary_path());
-  kphp_assert (bin_file.upd_mtime() >= 0);
+  kphp_assert (bin_file.read_stat() >= 0);
 
   if (env.get_make_force()) {
     obj_index.del_extra_files();

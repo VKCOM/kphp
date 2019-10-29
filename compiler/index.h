@@ -23,6 +23,7 @@ public:
   std::string name_without_ext;
   std::string subdir;
   long long mtime{0};
+  long long file_size{0};
   unsigned long long crc64{static_cast<unsigned long long>(-1)};
   unsigned long long crc64_with_comments{static_cast<unsigned long long>(-1)};
   bool on_disk{false};
@@ -35,7 +36,7 @@ public:
   bool is_changed{false};
 
   explicit File(const std::string &path = {});
-  long long upd_mtime() __attribute__ ((warn_unused_result));
+  long long read_stat() __attribute__ ((warn_unused_result));
   void set_mtime(long long mtime_value);
   void unlink();
 };

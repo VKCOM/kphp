@@ -19,11 +19,13 @@ public:
 
     return ss.str();
   }
-  void compute_priority() {
-    struct stat st;
+
+  void compute_priority() final {
     priority = 0;
-    if (stat(get_name().c_str(), &st) == 0) {
-      priority = st.st_size;
+    for (auto dep : deps) {
+      if (File *dep_file = dep->get_file()) {
+        priority += dep_file->file_size;
+      }
     }
   }
 };

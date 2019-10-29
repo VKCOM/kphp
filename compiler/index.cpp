@@ -47,7 +47,7 @@ void File::set_mtime(long long mtime_value) {
   }
 }
 
-long long File::upd_mtime() {
+long long File::read_stat() {
   struct stat buf;
   int err = stat(path.c_str(), &buf);
   if (err == -1) {
@@ -62,6 +62,7 @@ long long File::upd_mtime() {
   on_disk = true;
   //TODO: check if it is file
   mtime = get_mtime(buf);
+  file_size = buf.st_size;
   //fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
   return 1;
 }

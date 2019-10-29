@@ -12,7 +12,6 @@ class Target : private vk::not_copyable {
   friend class MakeRunner;
 
 private:
-  std::vector<Target *> deps;
   std::vector<Target *> rdeps;
 
   long long mtime = 0;
@@ -26,6 +25,7 @@ protected:
   bool upd_mtime(long long new_mtime) __attribute__ ((warn_unused_result));
   void set_mtime(long long new_mtime);
 
+  std::vector<Target *> deps;
   const KphpMakeEnv *env = nullptr;
 public:
   long long priority;
