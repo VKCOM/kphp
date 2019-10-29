@@ -271,7 +271,7 @@ string stage::to_str(const Location &new_location) {
   std::stringstream ss;
 
   // Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
-  ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << " : " << get_line();
+  ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << ":" << get_line();
   std::string out = ss.str();
 
   // Убираем дублирование имени класса в пути до класса
