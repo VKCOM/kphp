@@ -38,10 +38,11 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVert
     auto false_cmd = if_vertex->false_cmd();
     auto condition_inside_false = false_cmd->size() == 1 ? get_instanceof_from_if(false_cmd->args()[0].try_as<op_if>()) : VertexAdaptor<op_instanceof>{};
     auto is_instanceof_the_same_variable = condition_inside_false && condition_inside_false->lhs()->get_string() == instance_var->str_val;
-    bool left_derived_is_abstract = !(*state.left_derived.begin())->parent_class || (*state.left_derived.begin())->parent_class->modifiers.is_abstract();
+    auto left_derived_class = *state.left_derived.begin();
+    bool left_derived_is_abstract = !left_derived_class->parent_class || left_derived_class->parent_class->modifiers.is_abstract();
     if (left_derived_is_abstract && !is_instanceof_the_same_variable) {
       auto derived_name_vertex = VertexAdaptor<op_string>::create();
-      derived_name_vertex->set_string((*state.left_derived.begin())->name);
+      derived_name_vertex->set_string(left_derived_class->name);
 
       add_tmp_var_with_instance_cast(visit, if_vertex, derived_name_vertex, if_vertex->false_cmd_ref());
       return true;
