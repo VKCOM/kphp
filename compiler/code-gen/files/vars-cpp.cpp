@@ -24,11 +24,10 @@ struct InitVar {
     if (init_val->type() == op_conv_regexp) {
       const auto &location = get_location(init_val);
       kphp_assert(location.function && location.file);
-      W << VarName(var) << ".init (" << var->init_val << ", ";
-      compile_string_raw(location.function->name, W);
-      W << ", ";
-      compile_string_raw(location.file->unified_file_name + ':' + std::to_string(location.line), W);
-      W << ");" << NL;
+      W << VarName(var) << ".init (" << var->init_val << ", "
+        << RawString(location.function->name) << ", "
+        << RawString(location.file->unified_file_name + ':' + std::to_string(location.line))
+        << ");" << NL;
     } else {
       W << VarName(var) << " = " << var->init_val << ";" << NL;
     }

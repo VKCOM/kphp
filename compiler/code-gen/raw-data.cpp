@@ -1,14 +1,16 @@
 #include "compiler/code-gen/raw-data.h"
 
+#include <sstream>
+
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/type-data.h"
 
-void compile_string_raw(const string &str, CodeGenerator &W) {
+void RawString::compile(CodeGenerator &W) const {
   W << "\"";
-  for (int i = 0; i < (int)str.size(); i++) {
+  for (size_t i = 0; i < str.size(); i++) {
     switch (str[i]) {
       case '\r':
         W << "\\r";

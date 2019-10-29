@@ -450,9 +450,7 @@ void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
   const char *final_kw = klass->has_no_derived_classes() ? "final " : "";
   W << "const char *get_class() const " << final_kw << BEGIN;
   {
-    W << "return ";
-    compile_string_raw(klass->name, W);
-    W << ";" << NL;
+    W << "return " << compile_string_raw(klass->name) << ";" << NL;
   }
   W << END << NL;
 }

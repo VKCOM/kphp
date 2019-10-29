@@ -1030,8 +1030,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   for (const auto &str_info : info) {
     W << ".append_unsafe (";
     if (str_info.str_flag) {
-      compile_string_raw(str_info.str, W);
-      W << ", " << str_info.len;
+      W << RawString(str_info.str) << ", " << str_info.len;
     } else if (str_info.var_flag) {
       W << str_info.str;
     } else {
@@ -1358,18 +1357,9 @@ void compile_push_back_return(VertexAdaptor<op_push_back_return> root, CodeGener
 }
 
 
-void compile_string_raw(VertexAdaptor<op_string> root, CodeGenerator &W) {
-  const string &str = root->str_val;
-  compile_string_raw(str, W);
-}
-
-
 void compile_string(VertexAdaptor<op_string> root, CodeGenerator &W) {
-  W << "string (";
-  compile_string_raw(root, W);
-  W << ", " << root->str_val.size() << ")";
+  W << "string (" << RawString(root->str_val) << ", " << root->str_val.size() << ")";
 }
-
 
 void compile_string_build(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
   compile_string_build_as_string(root, W);

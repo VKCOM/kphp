@@ -8,7 +8,18 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/vertex.h"
 
-void compile_string_raw(const string &str, CodeGenerator &W);
+class RawString {
+public:
+  explicit RawString(vk::string_view str) :
+    str(str) {
+  }
+
+  void compile(CodeGenerator &W) const;
+
+private:
+  std::string str;
+};
+
 std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W);
 bool can_generate_raw_representation(VertexAdaptor<op_array> vertex);
 
@@ -33,9 +44,7 @@ std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
     ii++;
   }
   if (!raw_data.empty()) {
-    W << "static const char *raw = ";
-    compile_string_raw(raw_data, W);
-    W << ";" << NL;
+    W << "static const char *raw = " << RawString(raw_data) << ";" << NL;
   }
   return const_string_shifts;
 }
