@@ -96,6 +96,7 @@ public:
 
   bool is_null() const { return !static_cast<bool>(o); }
   const char *get_class() const { return o ? o->get_class() : "null"; }
+  int get_hash() const { return o ? o->get_hash() : 0; }
 
   template<class D>
   bool is_a() const {

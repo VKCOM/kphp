@@ -658,6 +658,9 @@ inline string f$get_class(const array<T> &v);
 template<class T>
 inline string f$get_class(const class_instance<T> &v);
 
+template<class T>
+inline int f$get_hash_of_class(const class_instance<T> &klass);
+
 
 inline int f$count(const var &v);
 
@@ -2102,6 +2105,10 @@ string f$get_class(const class_instance<T> &v) {
   return string(result, (dl::size_type)strlen(result));
 }
 
+template<class T>
+inline int f$get_hash_of_class(const class_instance<T> &klass) {
+  return klass.get_hash();
+}
 
 string &append(string &dest, const string &from) {
   return dest.append(from);

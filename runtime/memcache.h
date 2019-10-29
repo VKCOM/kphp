@@ -8,6 +8,8 @@
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/string_view.h"
 
 void init_memcache_lib();
 void free_memcache_lib();
@@ -25,6 +27,8 @@ const int MEMCACHE_COMPRESSED = 2;
 class C$Memcache : public abstract_refcountable_php_interface {
 public:
   virtual void accept(InstanceMemoryEstimateVisitor &) = 0;
+  virtual const char *get_class() const = 0;
+  virtual int get_hash() const = 0;
 };
 
 class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache> {
@@ -40,8 +44,16 @@ public:
     host(int host_num, int host_port, int host_weight, int timeout_ms);
   };
 
-  virtual void accept(InstanceMemoryEstimateVisitor &visitor) final {
+  void accept(InstanceMemoryEstimateVisitor &visitor) final {
     visitor("", hosts);
+  }
+
+  const char *get_class() const final {
+    return "McMemcache";
+  }
+
+  int get_hash() const final {
+    return vk::std_hash(vk::string_view(C$McMemcache::get_class()));
   }
 
   friend inline int f$estimate_memory_usage(const C$McMemcache::host &) {
@@ -63,9 +75,17 @@ public:
     explicit host(const rpc_connection &c): conn(c), host_weight(1) {}
   };
 
-  virtual void accept(InstanceMemoryEstimateVisitor &visitor) final {
+  void accept(InstanceMemoryEstimateVisitor &visitor) final {
     visitor("", hosts);
     visitor("", fake);
+  }
+
+  const char *get_class() const final {
+    return "RpcMemcache";
+  }
+
+  int get_hash() const final {
+    return vk::std_hash(vk::string_view(C$RpcMemcache::get_class()));
   }
 
   friend inline int f$estimate_memory_usage(const C$RpcMemcache::host &) {

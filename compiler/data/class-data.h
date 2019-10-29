@@ -8,6 +8,7 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
 #include "compiler/vertex.h"
+#include "common/algorithms/hashes.h"
 
 enum class ClassType {
   klass,
@@ -125,6 +126,10 @@ public:
 
   virtual const char *get_name() const {
     return name.c_str();
+  }
+
+  int get_hash() const {
+    return static_cast<int>(vk::std_hash(name));
   }
 
   virtual std::string get_namespace() const;

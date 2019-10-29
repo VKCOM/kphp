@@ -324,8 +324,7 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
     W << *tl_dep_usings << NL;
   }
 
-  ClassDeclaration::compile_get_class(W, interface);
-  ClassDeclaration::compile_accept_visitor_methods(W, interface);
+  ClassDeclaration::compile_inner_methods(W, interface);
 
 
   W << END << ";" << NL;
@@ -425,9 +424,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   }
 
   if (!klass->is_lambda()) {
-    compile_get_class(W, klass);
+    compile_inner_methods(W, klass);
+  } else {
+    compile_accept_visitor_methods(W, klass);
   }
-  compile_accept_visitor_methods(W, klass);
 
   // для rpc-функций генерим метод-член класса store(), который перевызывает сторилку из codegen tl2cpp
   if (tl_gen::is_php_class_a_tl_function(klass)) {
@@ -446,10 +446,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(CodeGenerator &W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
   const char *final_override_kw{" "};
-  if (!klass->implements.empty() || klass->does_need_codegen(klass->parent_class)) {
+  if (klass->does_need_codegen(klass->get_parent_or_interface())) {
     if (klass->derived_classes.empty()) {
       final_override_kw = " final ";
-    } else if (klass->get_parent_or_interface()) {
+    } else {
       final_override_kw = " override ";
     }
   }
@@ -465,9 +465,19 @@ void ClassDeclaration::compile_class_method(CodeGenerator &W, ClassPtr klass, vk
   W << END << NL << NL;
 }
 
+void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
+  compile_get_class(W, klass);
+  compile_get_hash(W, klass);
+  compile_accept_visitor_methods(W, klass);
+}
+
 void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
   auto class_name_as_raw_string = "R\"(" + klass->name + ")\"";
   compile_class_method(W, klass, "const char *get_class() const", class_name_as_raw_string);
+}
+
+void ClassDeclaration::compile_get_hash(CodeGenerator &W, ClassPtr klass) {
+  compile_class_method(W, klass, "int get_hash() const", klass->get_hash());
 }
 
 void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type) {

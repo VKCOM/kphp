@@ -255,6 +255,7 @@ function is_string ($v ::: Any) ::: bool;
 function is_array ($v ::: Any) ::: bool;
 function is_object ($v ::: Any) ::: bool;
 function get_class ($v ::: Any) ::: string;
+function get_hash_of_class ($klass ::: Any) ::: int;
 function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
 function print ($v ::: string) ::: int;

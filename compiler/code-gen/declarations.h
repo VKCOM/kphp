@@ -97,7 +97,9 @@ struct ClassDeclaration {
   ClassPtr klass;
   explicit ClassDeclaration(ClassPtr klass);
   void compile(CodeGenerator &W) const;
+  static void compile_inner_methods(CodeGenerator &W, ClassPtr klass);
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
+  static void compile_get_hash(CodeGenerator &W, ClassPtr klass);
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
 private:
   template<class ReturnValueT>
