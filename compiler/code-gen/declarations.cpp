@@ -443,27 +443,35 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
+template<class ReturnValueT>
+void ClassDeclaration::compile_class_method(CodeGenerator &W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
+  const char *final_override_kw{" "};
+  if (!klass->implements.empty() || klass->does_need_codegen(klass->parent_class)) {
+    if (klass->derived_classes.empty()) {
+      final_override_kw = " final ";
+    } else if (klass->get_parent_or_interface()) {
+      final_override_kw = " override ";
+    }
+  }
+
   if (!klass->derived_classes.empty()) {
     W << "virtual ";
   }
-  const char *final_kw = klass->has_no_derived_classes() ? "final " : "";
-  W << "const char *get_class() const " << final_kw << BEGIN;
+
+  W << method_signature << final_override_kw << BEGIN;
   {
-    W << "return " << compile_string_raw(klass->name) << ";" << NL;
+    W << "return " << return_value << ";" << NL;
   }
-  W << END << NL;
+  W << END << NL << NL;
 }
 
-void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor) {
-  if (!klass->derived_classes.empty()) {
-    W << "virtual ";
-  }
-  W << "void accept(" << visitor << " &visitor) ";
-  const char *final_kw = klass->has_no_derived_classes() ? "final " : "";
-  W << final_kw << BEGIN
-    << "generic_accept(visitor);" << NL
-    << END << NL;
+void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
+  auto class_name_as_raw_string = "R\"(" + klass->name + ")\"";
+  compile_class_method(W, klass, "const char *get_class() const", class_name_as_raw_string);
+}
+
+void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type) {
+  compile_class_method(W, klass, fmt_format("void accept({} &visitor)", visitor_type), "generic_accept(visitor)");
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
