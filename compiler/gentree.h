@@ -46,6 +46,8 @@ public:
 
   static inline void set_location(VertexPtr v, const AutoLocation &location);
   VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, PrimitiveType tp = tp_Unknown);
+  static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function, PrimitiveType tp = tp_Unknown);
+  static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
   GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 

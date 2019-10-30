@@ -1279,6 +1279,10 @@ VertexPtr GenTree::get_do() {
 }
 
 VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, PrimitiveType tp) {
+  return create_superlocal_var(name_prefix, cur_function, tp);
+}
+
+VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function, PrimitiveType tp) {
   auto v = VertexAdaptor<op_var>::create();
   v->str_val = gen_unique_name(name_prefix, cur_function);
   v->extra_type = op_ex_var_superlocal;
@@ -1286,6 +1290,11 @@ VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_pre
   return v;
 }
 
+VertexAdaptor<op_switch> GenTree::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition,std::vector<VertexPtr> &&cases) {
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function, tp_var);
+  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function, tp_bool);
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
+}
 
 VertexPtr GenTree::get_switch() {
   AutoLocation switch_location(this);
@@ -1294,8 +1303,8 @@ VertexPtr GenTree::get_switch() {
   next_cur();
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
-  auto switch_val = get_expression();
-  CE (!kphp_error(switch_val, "Failed to parse 'switch' expression"));
+  auto switch_condition = get_expression();
+  CE (!kphp_error(switch_condition, "Failed to parse 'switch' expression"));
   CE (expect(tok_clpar, "')'"));
 
   CE (expect(tok_opbrc, "'{'"));
@@ -1336,9 +1345,7 @@ VertexPtr GenTree::get_switch() {
     set_location(switch_next.back(), case_location);
   }
 
-  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", tp_var);
-  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", tp_bool);
-  auto switch_vertex = VertexAdaptor<op_switch>::create(switch_val, temp_var_condition_on_switch, temp_var_matched_with_one_case, switch_next);
+  auto switch_vertex = create_switch_vertex(cur_function, switch_condition, std::move(switch_next));
   set_location(switch_vertex, switch_location);
 
   CE (expect(tok_clbrc, "'}'"));
