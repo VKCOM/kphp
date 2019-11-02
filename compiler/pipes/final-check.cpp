@@ -191,16 +191,6 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
       return;
     }
 
-    case op_eq3:
-    case op_neq3:
-      // TODO: === and !== between class instance and null works incorrect
-      if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
-        kphp_error(!lhs_type->or_null_flag() && !rhs_type->or_null_flag(),
-                   fmt_format("Got '{}' operation between {} and {} types",
-                              OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
-      }
-      return;
-
     default:
       return;
   }

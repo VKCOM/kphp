@@ -135,10 +135,10 @@ AssumType assumption_create_from_phpdoc(const PhpDocTagParseResult &result, Clas
 
   if (auto lca_rule = expr.try_as<op_type_expr_lca>()) {
     VertexRange or_rules = lca_rule->args();
-    if (or_rules[1]->type_help == tp_False) {
-      expr = or_rules[0];      // из 'A|false', 'A[]|false' достаём 'A' / 'A[]'
-    } else if (or_rules[0]->type_help == tp_False) {
-      expr = or_rules[1];      // аналогично, только false в начале
+    if (vk::any_of_equal(or_rules[1]->type_help, tp_False, tp_Null)) {
+      expr = or_rules[0];      // из 'A|false', 'A[]|null' достаём 'A' / 'A[]'
+    } else if (vk::any_of_equal(or_rules[0]->type_help, tp_False, tp_Null)) {
+      expr = or_rules[1];      // аналогично, только null в начале
     }
   }
 

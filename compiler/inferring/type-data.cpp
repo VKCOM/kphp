@@ -445,10 +445,6 @@ void TypeData::set_lca(const TypeData *rhs, bool save_optional) {
     lhs->set_ptype(tp_Error);
   }
 
-  // TODO: allow to mix class instance with null
-  if (new_ptype == tp_Class && (new_flags & or_null_flag_e)) {
-    lhs->set_ptype(tp_Error);
-  }
   if (rhs->ptype() == tp_Class) {
     lhs->set_class_type(rhs->class_type());
   }

@@ -43,7 +43,7 @@ bool can_store_false(PrimitiveType tp) {
 
 bool can_store_null(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_var, tp_Any);
+  return vk::any_of_equal(tp, tp_var, tp_Class, tp_RPC, tp_Any);
 }
 
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
