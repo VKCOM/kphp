@@ -35,7 +35,7 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
     }
 
     if (ok) {
-      auto isset = VertexAdaptor<op_isset>::create(not_null);
+      auto isset = VertexAdaptor<op_isset>::create(not_null).set_location(not_null->location);
       return eq_op->type() == op_neq3
              ? VertexPtr(isset)
              : VertexPtr(VertexAdaptor<op_log_not>::create(isset));
