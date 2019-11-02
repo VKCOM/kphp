@@ -430,6 +430,11 @@ rpc_connection::rpc_connection(bool value) :
   reconnect_timeout(-1) {
 }
 
+rpc_connection::rpc_connection(const Optional<bool> &null) :
+  rpc_connection(false) {
+  assert(null.value_state() == OptionalState::null_value);
+}
+
 rpc_connection::rpc_connection(bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout) :
   bool_value(value),
   host_num(host_num),
@@ -442,6 +447,12 @@ rpc_connection::rpc_connection(bool value, int host_num, int port, int timeout_m
 
 rpc_connection &rpc_connection::operator=(bool value) {
   bool_value = value;
+  return *this;
+}
+
+rpc_connection &rpc_connection::operator=(const Optional<bool> &null) {
+  assert(null.value_state() == OptionalState::null_value);
+  bool_value = false;
   return *this;
 }
 

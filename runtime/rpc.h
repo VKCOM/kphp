@@ -101,10 +101,12 @@ struct rpc_connection {
   rpc_connection();
 
   rpc_connection(bool value);
+  rpc_connection(const Optional<bool> &null);
 
   rpc_connection(bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout);
 
   rpc_connection &operator=(bool value);
+  rpc_connection &operator=(const Optional<bool> &null);
 };
 
 rpc_connection f$new_rpc_connection(const string& host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);

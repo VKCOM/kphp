@@ -11,6 +11,13 @@ class_instance<T> &class_instance<T>::operator=(bool) {
 }
 
 template<class T>
+class_instance<T> &class_instance<T>::operator=(const Optional<bool> &null) noexcept {
+  assert(null.value_state() == OptionalState::null_value);
+  o.reset();
+  return *this;
+}
+
+template<class T>
 class_instance<T> class_instance<T>::clone_impl(std::true_type /*is empty*/) const {
   return class_instance<T>{}.empty_alloc();
 }
