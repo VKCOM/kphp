@@ -356,37 +356,6 @@ template<class T>
 inline bool eq2(const array<T> &lhs, const string &rhs);
 
 
-template<class T>
-inline bool eq2(bool lhs, const class_instance<T> &rhs);
-
-template<class T>
-inline bool eq2(int lhs, const class_instance<T> &rhs);
-
-template<class T>
-inline bool eq2(double lhs, const class_instance<T> &rhs);
-
-template<class T>
-inline bool eq2(const string &lhs, const class_instance<T> &rhs);
-
-template<class T, class T1>
-inline bool eq2(const array<T1> &lhs, const class_instance<T> &rhs);
-
-template<class T>
-inline bool eq2(const class_instance<T> &lhs, bool rhs);
-
-template<class T>
-inline bool eq2(const class_instance<T> &lhs, int rhs);
-
-template<class T>
-inline bool eq2(const class_instance<T> &lhs, double rhs);
-
-template<class T>
-inline bool eq2(const class_instance<T> &lhs, const string &rhs);
-
-template<class T, class T1>
-inline bool eq2(const class_instance<T> &lhs, const array<T1> &rhs);
-
-
 inline bool eq2(bool lhs, const var &rhs);
 
 inline bool eq2(int lhs, const var &rhs);
@@ -398,9 +367,6 @@ inline bool eq2(const string &lhs, const var &rhs);
 template<class T>
 inline bool eq2(const array<T> &lhs, const var &rhs);
 
-template<class T>
-inline bool eq2(const class_instance<T> &lhs, const var &rhs);
-
 inline bool eq2(const var &lhs, bool rhs);
 
 inline bool eq2(const var &lhs, int rhs);
@@ -411,9 +377,6 @@ inline bool eq2(const var &lhs, const string &rhs);
 
 template<class T>
 inline bool eq2(const var &lhs, const array<T> &rhs);
-
-template<class T>
-inline bool eq2(const var &lhs, const class_instance<T> &rhs);
 
 
 template<class T1, class T2>
@@ -430,9 +393,6 @@ inline bool equals(const string &lhs, const var &rhs);
 
 template<class T>
 inline bool equals(const array<T> &lhs, const var &rhs);
-
-template<class T>
-inline bool equals(const class_instance<T> &lhs, bool rhs);
 
 inline bool equals(const var &lhs, bool rhs);
 
@@ -453,11 +413,4 @@ std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> e
 
 template<class T1, class T2>
 std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &);
-
-template<class T>
-inline bool equals(const var &lhs, const class_instance<T> &rhs);
-
-template<class T>
-inline bool equals(bool lhs, const class_instance<T> &rhs);
-
 

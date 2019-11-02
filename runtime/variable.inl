@@ -1987,76 +1987,15 @@ bool eq2(const array<T> &, const string &) {
   return false;
 }
 
-
-template<class T>
-bool eq2(bool lhs, const class_instance<T> &rhs) {
-  return lhs == !rhs.is_null();
-}
-
-template<class T>
-bool eq2(int lhs, const class_instance<T> &rhs) {
-  php_warning("Unsupported operand types for operator == (int and object)");
-  return (lhs == 0 && rhs.is_null()) || (lhs == 1 && !rhs.is_null());
-}
-
-template<class T>
-bool eq2(double lhs, const class_instance<T> &rhs) {
-  php_warning("Unsupported operand types for operator == (float and object)");
-  return (lhs == 0.0 && rhs.is_null()) || (lhs == 1.0 && !rhs.is_null());
-}
-
-template<class T>
-bool eq2(const string &lhs, const class_instance<T> &rhs) {
-  php_warning("Unsupported operand types for operator == (string and object)");
-  return lhs.empty() && rhs.is_null();
-}
-
-template<class T, class T1>
-bool eq2(const array<T1> &, const class_instance<T> &) {
-  php_warning("Unsupported operand types for operator == (array and object)");
-  return false;
-}
-
-template<class T>
-bool eq2(const class_instance<T> &lhs, bool rhs) {
-  return rhs == !lhs.is_null();
-}
-
 template<class T>
 inline bool eq2(const class_instance<T> &lhs, const class_instance<T> &rhs) {
-  php_warning("Using == on objects is bad, please use ===");
+  // can be called implicitly from in_array, for example
   return lhs.o == rhs.o;
 }
 
-template<class T1, class T2>
-bool eq2(const class_instance<T1> &, const class_instance<T2> &) {
-  php_warning("Using == on objects is bad, please use ===");
-  return false;
-}
+// no more specializations for class_instance == smth
+// (so, if someone writes 'in_array(int, instance[])', it will crash on gcc stage, but let it be
 
-template<class T>
-bool eq2(const class_instance<T> &lhs, int rhs) {
-  php_warning("Unsupported operand types for operator == (object and int)");
-  return (rhs == 0 && lhs.is_null()) || (rhs == 1 && !lhs.is_null());
-}
-
-template<class T>
-bool eq2(const class_instance<T> &lhs, double rhs) {
-  php_warning("Unsupported operand types for operator == (object and float)");
-  return (rhs == 0.0 && lhs.is_null()) || (rhs == 1.0 && !lhs.is_null());
-}
-
-template<class T>
-bool eq2(const class_instance<T> &lhs, const string &rhs) {
-  php_warning("Unsupported operand types for operator == (object and string)");
-  return rhs.empty() && lhs.is_null();
-}
-
-template<class T, class T1>
-bool eq2(const class_instance<T> &, const array<T1> &) {
-  php_warning("Unsupported operand types for operator == (object and array)");
-  return false;
-}
 
 
 bool eq2(bool lhs, const var &rhs) {
@@ -2121,16 +2060,6 @@ bool eq2(const array<T> &lhs, const var &rhs) {
   }
 
   php_warning("Unsupported operand types for operator == (array and %s)", rhs.get_type_c_str());
-  return false;
-}
-
-template<class T>
-bool eq2(const class_instance<T> &lhs, const var &rhs) {
-  if (rhs.is_null()) {
-    return lhs.is_null();
-  }
-
-  php_warning("Unsupported operand types for operator == (object and %s)", rhs.get_type_c_str());
   return false;
 }
 
@@ -2199,12 +2128,6 @@ bool eq2(const var &lhs, const array<T> &rhs) {
   return false;
 }
 
-template<class T>
-bool eq2(const var &lhs, const class_instance<T> &) {
-  php_warning("Unsupported operand types for operator == (%s and object)", lhs.get_type_c_str());
-  return false;
-}
-
 
 template<class T1, class T2>
 bool neq2(const T1 &lhs, const T2 &rhs) {
@@ -2231,16 +2154,6 @@ bool equals(const string &lhs, const var &rhs) {
 template<class T>
 bool equals(const array<T> &lhs, const var &rhs) {
   return rhs.is_array() && equals(lhs, rhs.as_array());
-}
-
-template<class T>
-bool equals(const class_instance<T> &, const var &) {
-  return false;
-}
-
-template<class T>
-bool equals(const class_instance<T> &lhs, bool rhs) {
-  return rhs ? false : lhs.is_null();
 }
 
 bool equals(const var &lhs, bool rhs) {
@@ -2277,16 +2190,6 @@ std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> e
 template<class T1, class T2>
 std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &) {
   return false;
-}
-
-template<class T>
-inline bool equals(const var &, const class_instance<T> &) {
-  return false;
-}
-
-template<class T>
-bool equals(bool lhs, const class_instance<T> &rhs) {
-  return equals(rhs, lhs);
 }
 
 template<class T>
