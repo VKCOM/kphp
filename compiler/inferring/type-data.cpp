@@ -153,10 +153,6 @@ TypeData *TypeData::at_force(const Key &key) {
   return value;
 }
 
-PrimitiveType TypeData::ptype() const {
-  return ptype_;
-}
-
 PrimitiveType TypeData::get_real_ptype() const {
   const PrimitiveType p = ptype();
   if (p == tp_Unknown && (or_null_flag() || or_false_flag())) {
