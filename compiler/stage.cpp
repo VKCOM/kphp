@@ -136,7 +136,7 @@ void stage::print_function(FILE *f) {
   if (should_be_colored(f)) {
     function_name_str = TermStringFormat::add_text_attribute(function_name_str, TermStringFormat::bold);
   }
-  fmt_fprintf(f, "[function = {}]\n", function_name_str);
+  fmt_fprintf(f, "[function = {}:{}]\n", function_name_str, get_line());
 }
 
 void stage::print_line(FILE *f) {
