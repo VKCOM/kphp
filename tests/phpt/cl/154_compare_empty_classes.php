@@ -16,5 +16,5 @@ $a2 = $a1;
 var_dump($a1 === $a2);
 
 $b = new B();
-var_dump($b == $a1);
+var_dump($b === $a1);
 var_dump($b === $a1);

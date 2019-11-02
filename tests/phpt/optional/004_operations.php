@@ -264,8 +264,8 @@ class A {
  * @param null|false $rhs
  */
 function test_cmp_operation_class_instance_null_false($lhs, $rhs) {
-  var_dump($lhs == $rhs);
-  var_dump($lhs != $rhs);
+  var_dump((bool)$lhs == $rhs);
+  var_dump((bool)$lhs != $rhs);
 }
 
 test_unary_operations_null(null);

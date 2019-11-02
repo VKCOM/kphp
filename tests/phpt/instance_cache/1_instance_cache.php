@@ -54,9 +54,9 @@ class VectorY {
 
 function test_empty_fetch() {
   $x = instance_cache_fetch(X::class, "key_x0");
-  var_dump($x == false);
+  var_dump(!$x);
   $y = instance_cache_fetch(Y::class, "key_x0");
-  var_dump($y == false);
+  var_dump(!$y);
 }
 
 function test_store_fetch() {
@@ -75,10 +75,10 @@ function test_mismatch_classes() {
   var_dump(instance_cache_store("key_y2", new Y(2, "test_mismatch_classes", "optional")));
 
   $x = instance_cache_fetch(Y::class, "key_x2");
-  var_dump($x == false);
+  var_dump(!$x);
 
   $y = instance_cache_fetch(X::class, "key_y2");
-  var_dump($y == false);
+  var_dump(!$y);
 }
 
 function test_delete() {
@@ -98,10 +98,10 @@ function test_delete() {
   var_dump(instance_cache_delete("key_y3"));
 
   $x = instance_cache_fetch(X::class, "key_x3");
-  var_dump($x == false);
+  var_dump(!$x);
 
   $y = instance_cache_fetch(Y::class, "key_y3");
-  var_dump($y == false);
+  var_dump(!$y);
 
   var_dump(instance_cache_delete("key_x3"));
   var_dump(instance_cache_delete("key_y3"));
@@ -120,10 +120,10 @@ function test_clear() {
   instance_cache_clear();
 
   $x = instance_cache_fetch(X::class, "key_x4");
-  var_dump($x == false);
+  var_dump(!$x);
 
   $y = instance_cache_fetch(Y::class, "key_y4");
-  var_dump($y == false);
+  var_dump(!$y);
 }
 
 function test_tree() {
@@ -167,7 +167,7 @@ function test_loop_in_tree() {
   var_dump(true);
   if (false)
 #endif
-  var_dump($cached_root1 == false);
+  var_dump(!$cached_root1);
 }
 
 function test_same_instance_in_array() {
@@ -200,7 +200,7 @@ function test_memory_limit_exceed() {
   if (false)
 #endif
   var_dump(instance_cache_store("large_vector", $vector));
-  var_dump(instance_cache_fetch(VectorY::class, "large_vector") == false);
+  var_dump(instance_cache_fetch(VectorY::class, "large_vector") ? false : true);
 }
 
 test_empty_fetch();
