@@ -1,6 +1,8 @@
 @ok
 <?php
 
+require_once("polyfills.php");
+
 function test_basic() {
     $records = [
         ['id' => 1, 'first_name' => 'John', 'last_name' => 'Doe'],
@@ -135,6 +137,10 @@ function test_class_instances() {
     $odd_a = array_column($as, 1);
 
     var_dump(array_map(function ($a) { return $a->x; }, $odd_a));
+
+    $optional_classinstance = [true ? ['id' => new A(0)] : false];
+    $cls = (array) array_column($optional_classinstance, 'id');
+    var_dump(array_map('instance_to_array', $cls));
 }
 
 function test_var_as_array() {

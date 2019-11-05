@@ -577,7 +577,7 @@ template<class T>
 Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>> &a, const var &column_key) {
   auto element_transformer = [] (array<class_instance<T>> &dest, const Optional<array<class_instance<T>>> &source, const var &column_key, const var &index_key) {
     if (source.has_value()) {
-      back_inserter_class_instance(dest, source.val(), column_key, index_key);
+      extract_array_column_instance(dest, source.val(), column_key, index_key);
     }
   };
 

@@ -132,9 +132,10 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       if (auto func_type_rule = rule_meta.try_as<op_index>()) {
         auto arg_ref = func_type_rule->array().as<op_type_expr_arg_ref>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
-          ClassPtr out_class;
-          infer_class_of_expr(stage::get_function(), arg, out_class);
-          kphp_error_return(out_class, "type of argument for instance_to_array has to be Class");
+          auto value_type = tinf::get_type(arg)->lookup_at(Key::any_key());
+          auto out_class = value_type->class_type();
+          kphp_error_return(out_class, "type of argument for instance_to_array has to be array of Classes");
+          
           out_class->deeply_require_instance_to_array_visitor();
         }
       }
