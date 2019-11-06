@@ -6,6 +6,7 @@
 #include "common/precise-time.h"
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
+#include "net/net-tcp-rpc-common.h"
 
 #include "server/php-engine-vars.h"
 #include "server/php-ready.h"
@@ -176,9 +177,11 @@ static void rpct_lease_stats(int target_fd) {
 
 int get_current_target() {
   if (lease_state == lst_off) {
+    // rpc-proxy
     return rpc_main_target;
   }
   if (lease_state == lst_on) {
+    // tasks
     return rpc_lease_target;
   }
   return -1;
@@ -337,4 +340,24 @@ void lease_on_stop() {
 
 void set_main_target(int target) {
   rpc_main_target = target;
+}
+
+connection *get_lease_connection() {
+  if (lease_state != lst_on || rpc_lease_target == -1) {
+    return nullptr;
+  }
+  return get_target_connection(&Targets[rpc_lease_target], 0);
+}
+
+process_id_t get_lease_pid() {
+  return lease_pid;
+}
+
+process_id_t get_rpc_main_target_pid() {
+  if (rpc_main_target != -1) {
+    if (auto c = get_target_connection(&Targets[rpc_main_target], 0)) {
+      return TCP_RPC_DATA(c)->remote_pid;
+    }
+  }
+  return {};
 }

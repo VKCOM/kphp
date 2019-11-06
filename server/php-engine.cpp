@@ -67,19 +67,20 @@ double rpc_ping_interval = RPC_DEFAULT_PING_INTERVAL;
 /***
   RPC-client
  ***/
-int php_rpcc_execute(connection *c, int op, raw_message *raw);
 int rpcc_send_query(connection *c);
 int rpcc_check_ready(connection *c);
 void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
+int rpcx_execute(connection *c, int op, raw_message *raw);
 
+// Принимает ответы от движков
 tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
   auto res = tcp_rpc_client_functions();
-  res.execute = php_rpcc_execute; //replaced
+  res.execute = rpcx_execute; //replaced
   res.check_ready = rpcc_check_ready; //replaced
   res.flush_packet = tcp_rpcc_flush_packet_later;
   res.rpc_check_perm = tcp_rpcc_default_check_perm;
   res.rpc_init_crypto = tcp_rpcc_init_crypto;
-  res.rpc_start_crypto = tcp_rpcc_start_crypto;;
+  res.rpc_start_crypto = tcp_rpcc_start_crypto;
   res.rpc_ready = rpcc_send_query; //replaced
 
   return res;
@@ -97,6 +98,7 @@ conn_type_t ct_tcp_rpc_client_read_all = [] {
   return res;
 }();
 
+// Таргет для взаимодействия с движками (rpc-ответы)
 conn_target_t rpc_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 2;
@@ -746,12 +748,10 @@ void php_worker_run_query(php_worker *worker) {
 
 extern int rpc_stored;
 
-void rpc_error(php_worker *worker, int code, const char *str) {
-  connection *c = worker->conn;
-  //fprintf (stderr, "RPC ERROR %s\n", str);
+static void send_rpc_error_raw(connection *c, long long req_id, int code, const char *str) {
   static int q[10000];
   q[2] = TL_RPC_REQ_ERROR;
-  *(long long *)(q + 3) = worker->req_id;
+  *(long long *)(q + 3) = req_id;
   q[5] = code;
   //TODO: write str
 
@@ -783,10 +783,18 @@ void rpc_error(php_worker *worker, int code, const char *str) {
     *buf++ = 0;
     all_len++;
   }
-
   tcp_rpc_conn_send_data(c, all_len, q + 2);
+}
 
+void server_rpc_error(php_worker *worker, int code, const char *str) {
+  connection *c = worker->conn;
+  send_rpc_error_raw(c, worker->req_id, code, str);
   TCP_RPCS_FUNC(c)->flush_packet(c);
+}
+
+void client_rpc_error(connection *c, long long req_id, int code, const char *str) {
+  send_rpc_error_raw(c, req_id, code, str);
+  TCP_RPCC_FUNC(c)->flush_packet(c);
 }
 
 void php_worker_set_result(php_worker *worker, script_result *res) {
@@ -800,7 +808,7 @@ void php_worker_set_result(php_worker *worker, script_result *res) {
       }
     } else if (worker->mode == rpc_worker) {
       if (!rpc_stored) {
-        rpc_error(worker, -505, "Nothing stored");
+        server_rpc_error(worker, -505, "Nothing stored");
       }
     } else if (worker->mode == once_worker) {
       assert (write(1, res->body, (size_t)res->body_len) == res->body_len);
@@ -874,7 +882,7 @@ void php_worker_run(php_worker *worker) {
             http_return(worker->conn, "ERROR", 5);
           } else if (worker->mode == rpc_worker) {
             if (!rpc_stored) {
-              rpc_error(worker, -504, php_script_get_error(php_script));
+              server_rpc_error(worker, -504, php_script_get_error(php_script));
             }
           }
         }
@@ -1343,7 +1351,6 @@ int rpcc_php_wakeup(connection *c) {
   return 0;
 }
 
-int rpcx_execute(connection *c, int op, raw_message *raw);
 int rpcx_func_wakeup(connection *c);
 int rpcx_func_close(connection *c, int who);
 
@@ -1363,6 +1370,7 @@ tcp_rpc_server_functions rpc_methods = [] {
   return res;
 }();
 
+// Для взаимодействия с тасками и rpc-proxy по поводу тасок
 tcp_rpc_client_functions rpc_client_methods = [] {
   auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
@@ -1379,6 +1387,7 @@ tcp_rpc_client_functions rpc_client_methods = [] {
   return res;
 }();
 
+// Таргет для взаимодействия с тасками
 conn_target_t rpc_client_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 1;
@@ -1463,11 +1472,18 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   return 0;
 }
 
+static bool check_tasks_invoker_pid(process_id_t tasks_invoker_pid) {
+  process_id_t lease_pid = get_lease_pid();
+  return matches_pid(&tasks_invoker_pid, &lease_pid) != no_pid_match;
+}
+
+static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
+  process_id_t rpc_main_target_pid = get_rpc_main_target_pid();
+  return matches_pid(&tasks_manager_pid, &rpc_main_target_pid) != no_pid_match;
+}
 
 int rpcx_execute(connection *c, int op, raw_message *raw) {
-  auto D = TCP_RPC_DATA(c);
-
-  vkprintf (1, "rpcs_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
+  vkprintf(1, "rpcx_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
   int len = raw->total_bytes;
 
@@ -1480,49 +1496,75 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
     return 0;
   }
 
-  switch (op) {
-    case TL_KPHP_STOP_LEASE:
+  int event_status = 0;
+  process_id remote_pid = TCP_RPC_DATA(c)->remote_pid;
+
+  switch (static_cast<unsigned int>(op)) {
+    case TL_KPHP_STOP_LEASE: {
       do_rpc_stop_lease();
       break;
-    case TL_KPHP_START_LEASE:
-    case TL_RPC_INVOKE_REQ: {
-
+    }
+    case TL_KPHP_START_LEASE: {
+      // Ответ от rpc-proxy с pid'ом тасок
+      if (!check_tasks_manager_pid(remote_pid)) {
+        return 0;
+      }
       tl_fetch_init_tcp_raw_message(raw, len);
-
       auto op_from_tl = tl_fetch_int();
       len -= sizeof(op_from_tl);
       assert(op_from_tl == op);
       assert(len % sizeof(int) == 0);
 
-      if (op == TL_KPHP_START_LEASE) {
-        static_assert(sizeof(process_id_t) == 12, "");
+      static_assert(sizeof(process_id_t) == 12, "");
 
-        if (len < sizeof(process_id_t) + sizeof(int)) {
-          return 0;
-        }
-
-        union {
-          std::array<char, sizeof(process_id_t)> buf;
-          process_id_t xpid;
-        };
-        auto fetched_bytes = tl_fetch_data(buf.data(), buf.size());
-        assert(fetched_bytes == buf.size());
-
-        int timeout = tl_fetch_int();
-
-        do_rpc_start_lease(xpid, precise_now + timeout);
+      if (len < sizeof(process_id_t) + sizeof(int)) {
         return 0;
       }
+
+      union {
+        std::array<char, sizeof(process_id_t)> buf;
+        process_id_t xpid;
+      };
+      auto fetched_bytes = tl_fetch_data(buf.data(), buf.size());
+      assert(fetched_bytes == buf.size());
+
+      int timeout = tl_fetch_int();
+
+      // Получаем по pid'у таргет тасок и посылаем по таргету kphp.readyV2 (по сути запрос на таску)
+      do_rpc_start_lease(xpid, precise_now + timeout);
+      return 0;
+    }
+    case TL_RPC_INVOKE_REQ: {
+      // Пришла задача от тасок
+      tl_fetch_init_tcp_raw_message(raw, len);
+      auto op_from_tl = tl_fetch_int();
+      len -= sizeof(op_from_tl);
+      assert(op_from_tl == op);
+      assert(len % sizeof(int) == 0);
 
       auto req_id = tl_fetch_long();
       len -= sizeof(req_id);
 
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
+
+      if (!check_tasks_invoker_pid(remote_pid)) {
+        client_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, "Task invoker is invalid");
+        return 0;
+      }
+      if (c->type != &ct_php_rpc_client && c->type != &ct_php_engine_rpc_server) {
+        connection *lease_connection = get_lease_connection();
+        if (lease_connection == nullptr || lease_connection->status != conn_expect_query) {
+          client_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, "Task connection is busy");
+          return 0;
+        }
+        c = lease_connection;
+      }
       set_connection_timeout(c, script_timeout);
 
       char buf[len];
       auto fetched_bytes = tl_fetch_data(buf, len);
       assert(fetched_bytes == len);
+      auto D = TCP_RPC_DATA(c);
       rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / sizeof(int),
                                                        req_id, D->remote_pid.ip, D->remote_pid.port,
                                                        D->remote_pid.pid, D->remote_pid.utime);
@@ -1532,9 +1574,44 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       c->status = conn_wait_net;
       rpcx_func_wakeup(c);
+      break;
     }
-  }
+    case TL_RPC_REQ_ERROR:
+    case TL_RPC_REQ_RESULT: {
+      // Ответ или ошибка от движка
+      c->last_response_time = precise_now;
+      int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
+      assert(result_len >= 0);
 
+      tl_fetch_init_tcp_raw_message(raw, raw->total_bytes);
+
+      auto op_from_tl = tl_fetch_int();
+      assert(op_from_tl == op);
+
+      auto id = tl_fetch_long();
+      if (op == TL_RPC_REQ_ERROR) {
+        //FIXME: error code, error string
+        //almost never happens
+        event_status = create_rpc_error_event(id, -1, "unknown error", nullptr);
+        break;
+      }
+
+      net_event_t *event = nullptr;
+      event_status = create_rpc_answer_event(id, result_len, &event);
+      if (event_status > 0) {
+        auto fetched_bytes = tl_fetch_data(event->result, result_len);
+        assert (fetched_bytes == result_len);
+      }
+
+      break;
+    }
+    case TL_RPC_PONG:
+      c->last_response_time = precise_now;
+      break;
+  }
+  if (event_status) {
+    on_net_event(event_status);
+  }
   return 0;
 }
 
@@ -1815,51 +1892,6 @@ int rpcc_send_query(connection *c) {
     delete_conn_query(q);
     zfree(q, sizeof(*q));
   }
-  return 0;
-}
-
-int php_rpcc_execute(connection *c, int op, raw_message *raw) {
-  vkprintf (1, "php_rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
-
-  int event_status = 0;
-  c->last_response_time = precise_now;
-
-  switch (static_cast<unsigned int>(op)) {
-    case TL_RPC_REQ_ERROR:
-    case TL_RPC_REQ_RESULT: {
-      int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
-      assert(result_len >= 0);
-
-      tl_fetch_init_tcp_raw_message(raw, raw->total_bytes);
-
-      auto op_from_tl = tl_fetch_int();
-      assert(op_from_tl == op);
-
-      auto id = tl_fetch_long();
-      if (op == TL_RPC_REQ_ERROR) {
-        //FIXME: error code, error string
-        //almost never happens
-        event_status = create_rpc_error_event(id, -1, "unknown error", nullptr);
-        break;
-      }
-
-      net_event_t *event = nullptr;
-      event_status = create_rpc_answer_event(id, result_len, &event);
-      if (event_status > 0) {
-        auto fetched_bytes = tl_fetch_data(event->result, result_len);
-        assert (fetched_bytes == result_len);
-      }
-
-      break;
-    }
-    case TL_RPC_PONG:
-      break;
-  }
-
-  if (event_status) {
-    on_net_event(event_status);
-  }
-
   return 0;
 }
 

@@ -68,7 +68,7 @@ extern acc_stats_t worker_acc_stats;
 extern int http_port;
 extern int http_sfd;
 
-/** rcp **/
+/** rpc **/
 extern long long rpc_failed, rpc_sent, rpc_received, rpc_received_news_subscr, rpc_received_news_redirect;
 extern int rpc_port;
 extern int rpc_sfd;

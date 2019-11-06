@@ -13,4 +13,6 @@ int do_rpc_start_lease(process_id_t pid, double timeout);
 void lease_cron();
 void set_main_target(int target);
 int get_current_target();
-
+connection *get_lease_connection();
+process_id_t get_lease_pid();
+process_id_t get_rpc_main_target_pid();
