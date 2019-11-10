@@ -64,7 +64,7 @@ public:
   FunctionPtr function_in_which_lambda_was_created;
   //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
 
-  std::vector<Assumption> assumptions_for_vars;
+  std::vector<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
   Assumption assumption_for_return;
   int assumptions_inited_args = 0;
   volatile int assumptions_inited_return = 0;
@@ -129,8 +129,8 @@ public:
   bool is_constructor() const;
 
   void update_location_in_body();
-  static std::string encode_template_arg_name(AssumType assum, int id, ClassPtr klass);
-  static FunctionPtr generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
+  static std::string encode_template_arg_name(const Assumption &assumption, int id);
+  static FunctionPtr generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;

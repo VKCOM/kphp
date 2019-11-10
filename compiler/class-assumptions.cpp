@@ -30,53 +30,52 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-AssumType calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class);
+Assumption calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name);
 
-AssumType assumption_get_for_var(FunctionPtr f, vk::string_view var_name, ClassPtr &out_class) {
-  for (const auto &a : f->assumptions_for_vars) {
-    if (a.var_name == var_name) {
-      out_class = a.klass;
-      return a.assum_type;
+const Assumption *assumption_get_for_var(FunctionPtr f, vk::string_view var_name) {
+  for (const auto &name_and_a : f->assumptions_for_vars) {
+    if (name_and_a.first == var_name) {
+      return &name_and_a.second;
     }
   }
 
-  return assum_unknown;
+  return nullptr;
 }
 
-AssumType assumption_get_for_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class) {
-  for (const auto &a : c->assumptions_for_vars) {
-    if (a.var_name == var_name) {
-      out_class = a.klass;
-      return a.assum_type;
+const Assumption *assumption_get_for_var(ClassPtr c, vk::string_view var_name) {
+  for (const auto &name_and_a : c->assumptions_for_vars) {
+    if (name_and_a.first == var_name) {
+      return &name_and_a.second;
     }
   }
 
-  return assum_unknown;
+  return nullptr;
 }
 
-std::string assumption_debug(const Assumption &assumption) {
+std::string assumption_debug(vk::string_view var_name, const Assumption &assumption) {
   switch (assumption.assum_type) {
     case assum_not_instance:
-      return "$" + assumption.var_name + " is not instance";
+      return "$" + var_name + " is not instance";
     case assum_instance:
-      return "$" + assumption.var_name + " is " + (assumption.klass ? assumption.klass->name : "null");
+      return "$" + var_name + " is " + (assumption.klass ? assumption.klass->name : "null");
     case assum_instance_array:
-      return "$" + assumption.var_name + " is " + (assumption.klass ? assumption.klass->name : "null") + "[]";
+      return "$" + var_name + " is " + (assumption.klass ? assumption.klass->name : "null") + "[]";
     default:
-      return "$" + assumption.var_name + " unknown";
+      return "$" + var_name + " unknown";
   }
 }
 
-void assumption_add_for_var(FunctionPtr f, AssumType assum, vk::string_view var_name, ClassPtr klass) {
+void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const Assumption &assumption) {
   bool exists = false;
 
-  for (auto &a : f->assumptions_for_vars) {
-    if (a.var_name == var_name) {
-      bool ok = a.assum_type == assum;
-      if (ok && (a.klass && !a.klass->is_parent_of(klass))) {
+  for (auto &name_and_a : f->assumptions_for_vars) {
+    if (name_and_a.first == var_name) {
+      Assumption &a = name_and_a.second;
+      bool ok = a.assum_type == assumption.assum_type;
+      if (ok && (a.klass && !a.klass->is_parent_of(assumption.klass))) {
         ok = false;
-        if (klass->is_interface() || a.klass->is_interface()) {
-          if (auto common_interface = klass->get_common_base_or_interface(a.klass)) {
+        if (assumption.klass->is_interface() || a.klass->is_interface()) {
+          if (auto common_interface = assumption.klass->get_common_base_or_interface(a.klass)) {
             a.klass = common_interface;
             ok = true;
           }
@@ -84,45 +83,46 @@ void assumption_add_for_var(FunctionPtr f, AssumType assum, vk::string_view var_
       }
       kphp_error(ok, fmt_format("{}()::${} is both {} and {}\n", f->get_human_readable_name(), var_name,
                                 a.klass ? a.klass->name : "[primitive]",
-                                  klass ?   klass->name : "[primitive]"));
+                                assumption.klass ? assumption.klass->name : "[primitive]"));
       exists = true;
     }
   }
 
   if (!exists) {
-    f->assumptions_for_vars.emplace_back(assum, std::string{var_name}, klass);
-    //printf("%s() %s\n", f->name.c_str(), assumption_debug(f->assumptions_for_vars.back()).c_str());
+    f->assumptions_for_vars.emplace_back(std::string(var_name), assumption);
+    //printf("%s() %s\n", f->name.c_str(), assumption_debug(var_name, assumption).c_str());
   }
 }
 
-void assumption_add_for_return(FunctionPtr f, AssumType assum, ClassPtr klass) {
-  const Assumption &a = f->assumption_for_return;
+void assumption_add_for_return(FunctionPtr f, const Assumption &assumption) {
+  Assumption &a = f->assumption_for_return;
 
   if (a.assum_type != assum_unknown) {
-    kphp_error(a.assum_type == assum && a.klass == klass,
+    kphp_error(a.assum_type == assumption.assum_type && a.klass == assumption.klass,
                fmt_format("{}() returns both {} and {}\n", f->get_human_readable_name(),
-                       a.klass ? a.klass->name : "[primitive]",
-                         klass ?   klass->name : "[primitive]"));
+                          a.klass ? a.klass->name : "[primitive]",
+                          assumption.klass ? assumption.klass->name : "[primitive]"));
   }
 
-  f->assumption_for_return = Assumption(assum, "", klass);
-  //printf("%s() returns %s\n", f->name.c_str(), assumption_debug(f->assumption_for_return).c_str());
+  f->assumption_for_return = assumption;
+  //printf("%s() returns %s\n", f->name.c_str(), assumption_debug("return", assumption).c_str());
 }
 
-void assumption_add_for_var(ClassPtr c, AssumType assum, vk::string_view var_name, ClassPtr klass) {
+void assumption_add_for_var(ClassPtr c, vk::string_view var_name, const Assumption &assumption) {
   bool exists = false;
 
-  for (const auto &a : c->assumptions_for_vars) {
-    if (a.var_name == var_name) {
-      kphp_error(a.assum_type == assum && a.klass == klass,
-                 fmt_format("{}::${} is both {} and {}\n", var_name, c->name, a.klass->name, klass->name));
+  for (auto &name_and_a : c->assumptions_for_vars) {
+    if (name_and_a.first == var_name) {
+      Assumption &a = name_and_a.second;
+      kphp_error(a.assum_type == assumption.assum_type && a.klass == assumption.klass,
+                 fmt_format("{}::${} is both {} and {}\n", c->name, var_name, a.klass->name, assumption.klass->name));
       exists = true;
     }
   }
 
   if (!exists) {
-    c->assumptions_for_vars.emplace_back(assum, std::string{var_name}, klass);
-    //printf("%s::%s\n", c->name.c_str(), assumption_debug(c->assumptions_for_vars.back()).c_str());
+    c->assumptions_for_vars.emplace_back(std::string(var_name), assumption);
+    //printf("%s::%s\n", c->name.c_str(), assumption_debug(var_name, assumption).c_str());
   }
 }
 
@@ -130,7 +130,7 @@ void assumption_add_for_var(ClassPtr c, AssumType assum, vk::string_view var_nam
  * Распарсив содержимое тега после @param/@return/@var в виде VertexPtr type_expr, пробуем найти там класс
  * Разбираем простые случаи: A|false, A[]; более сложные, когда класс внутри tuple — не интересуют
  */
-AssumType assumption_create_from_phpdoc(const PhpDocTagParseResult &result, ClassPtr &out_class) {
+Assumption assumption_create_from_phpdoc(const PhpDocTagParseResult &result) {
   VertexPtr expr = result.type_expr;
 
   if (auto lca_rule = expr.try_as<op_type_expr_lca>()) {
@@ -143,14 +143,12 @@ AssumType assumption_create_from_phpdoc(const PhpDocTagParseResult &result, Clas
   }
 
   if (expr->type_help == tp_Class) {
-    out_class = expr.as<op_type_expr_class>()->class_ptr;
-    return assum_instance;
+    return Assumption::instance(expr.as<op_type_expr_class>()->class_ptr);
   } else if (expr->type_help == tp_array && expr.as<op_type_expr_type>()->args()[0]->type_help == tp_Class) {
-    out_class = expr.as<op_type_expr_type>()->args()[0].as<op_type_expr_class>()->class_ptr;
-    return assum_instance_array;
+    return Assumption::array(expr.as<op_type_expr_type>()->args()[0].as<op_type_expr_class>()->class_ptr);
   }
 
-  return assum_not_instance;
+  return Assumption::not_instance();
 }
 
 /*
@@ -161,9 +159,7 @@ AssumType assumption_create_from_phpdoc(const PhpDocTagParseResult &result, Clas
 void analyze_phpdoc_with_type(FunctionPtr f, vk::string_view var_name, const vk::string_view &phpdoc_str) {
   for (const auto &parsed : phpdoc_find_tag_multi(phpdoc_str, php_doc_tag::var, f)) {
     if (!parsed.var_name.empty() || !var_name.empty()) {
-      ClassPtr klass;
-      AssumType assum = assumption_create_from_phpdoc(parsed, klass);
-      assumption_add_for_var(f, assum, parsed.var_name.empty() ? var_name : parsed.var_name, klass);
+      assumption_add_for_var(f, parsed.var_name.empty() ? var_name : parsed.var_name, assumption_create_from_phpdoc(parsed));
     }
   }
 }
@@ -176,11 +172,8 @@ void analyze_phpdoc_with_type(FunctionPtr f, vk::string_view var_name, const vk:
 void analyze_phpdoc_with_type(ClassPtr c, vk::string_view var_name, const vk::string_view &phpdoc_str) {
   FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
   if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
-    ClassPtr klass;
-    AssumType assum = assumption_create_from_phpdoc(parsed, klass);
-
-    if (klass && (parsed.var_name.empty() || var_name == parsed.var_name)) {
-      assumption_add_for_var(c, assum, var_name, klass);
+    if (parsed.var_name.empty() || var_name == parsed.var_name) {
+      assumption_add_for_var(c, var_name, assumption_create_from_phpdoc(parsed));
     }
   }
 }
@@ -190,11 +183,10 @@ void analyze_phpdoc_with_type(ClassPtr c, vk::string_view var_name, const vk::st
  * Из $a = ...rhs... определяем, что за тип присваивается $a
  */
 void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
-  ClassPtr klass;
-  AssumType assum = infer_class_of_expr(f, rhs, klass, depth + 1);
+  Assumption a = infer_class_of_expr(f, rhs, depth + 1);
 
-  if (assum != assum_unknown && klass) {
-    assumption_add_for_var(f, assum, var_name, klass);
+  if (a.assum_type != assum_unknown && a.klass) {
+    assumption_add_for_var(f, var_name, a);
   }
 }
 
@@ -203,18 +195,17 @@ void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr
  * Пользовательских классов исключений и наследования исключений у нас нет, и пока не планируется.
  */
 void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_try> root __attribute__((unused))) {
-  assumption_add_for_var(f, assum_instance, var_name, G->get_class("Exception"));
+  assumption_add_for_var(f, var_name, Assumption::instance(G->get_class("Exception")));
 }
 
 /*
  * Из foreach($arr as $a), если $arr это массив инстансов, делаем вывод, что $a это инстанс того же класса.
  */
 static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
-  ClassPtr klass;
-  AssumType iter_assum = infer_class_of_expr(f, root->xs(), klass, depth + 1);
+  Assumption a = infer_class_of_expr(f, root->xs(), depth + 1);
 
-  if (iter_assum == assum_instance_array) {
-    assumption_add_for_var(f, assum_instance, var_name, klass);
+  if (a.assum_type == assum_instance_array) {
+    assumption_add_for_var(f, var_name, Assumption::instance(a.klass));
   }
 }
 
@@ -224,7 +215,7 @@ static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdapt
  */
 void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
   if (vk::any_of_equal(var_name, "MC", "MC_Local", "MC_Ads", "MC_Log", "PMC", "mc_fast", "MC_Config", "MC_Stats")) {
-    assumption_add_for_var(f, assum_instance, var_name, G->get_memcache_class());
+    assumption_add_for_var(f, var_name, Assumption::instance(G->get_memcache_class()));
   }
 }
 
@@ -296,9 +287,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   if (!f->phpdoc_str.empty()) {
     for (const auto &parsed : phpdoc_find_tag_multi(f->phpdoc_str, php_doc_tag::param, f)) {
       if (!parsed.var_name.empty()) {
-        ClassPtr klass;
-        AssumType assum = assumption_create_from_phpdoc(parsed, klass);
-        assumption_add_for_var(f, assum, parsed.var_name, klass);
+        assumption_add_for_var(f, parsed.var_name, assumption_create_from_phpdoc(parsed));
       }
     }
   }
@@ -308,10 +297,9 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
     if (!param->type_declaration.empty()) {
       auto result = phpdoc_parse_type_and_var_name(param->type_declaration, f);
-      ClassPtr klass;
-      AssumType assum = assumption_create_from_phpdoc(result, klass);
-      if (assum != assum_not_instance) {
-        assumption_add_for_var(f, assum, param->var()->get_string(), klass);
+      Assumption a = assumption_create_from_phpdoc(result);
+      if (a.assum_type != assum_not_instance) {
+        assumption_add_for_var(f, param->var()->get_string(), a);
       }
     }
   }
@@ -357,20 +345,19 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     }
 
     if (return_type_eq_arg_type || return_type_arr_of_arg_type || return_type_element_of_arg_type) {
-      ClassPtr klass;
-      AssumType assum = assumption_get_for_var(f, template_arg_name, klass);
+      Assumption assumption = *assumption_get_for_var(f, template_arg_name);
 
       if (!field_name.empty()) {
-        kphp_error_act(klass, fmt_format("try to get type of field({}) of non-instance", field_name), return false);
-        assum = calc_assumption_for_class_var(klass, field_name, klass);
+        kphp_error_act(assumption.klass, fmt_format("try to get type of field({}) of non-instance", field_name), return false);
+        assumption = calc_assumption_for_class_var(assumption.klass, field_name);
       }
 
-      if (assum == assum_instance && return_type_arr_of_arg_type) {
-        assumption_add_for_return(f, assum_instance_array, klass);
-      } else if (assum == assum_instance_array && return_type_element_of_arg_type && field_name.empty()) {
-        assumption_add_for_return(f, assum_instance, klass);
+      if (assumption.assum_type == assum_instance && return_type_arr_of_arg_type) {
+        assumption_add_for_return(f, Assumption::array(assumption.klass));
+      } else if (assumption.assum_type == assum_instance_array && return_type_element_of_arg_type && field_name.empty()) {
+        assumption_add_for_return(f, Assumption::instance(assumption.klass));
       } else {
-        assumption_add_for_return(f, assum, klass);
+        assumption_add_for_return(f, assumption);
       }
       return true;
     }
@@ -391,9 +378,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
 
   if (!f->phpdoc_str.empty()) {
     if (auto parsed = phpdoc_find_tag(f->phpdoc_str, php_doc_tag::returns, f)) {
-      ClassPtr klass;
-      AssumType assum = assumption_create_from_phpdoc(parsed, klass);
-      assumption_add_for_return(f, assum, klass);       // 'self' тоже работает
+      assumption_add_for_return(f, assumption_create_from_phpdoc(parsed));
       return;
     }
 
@@ -409,15 +394,14 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       if (expr->type() == op_constructor_call) {
         ClassPtr klass = G->get_class(expr->get_string());
         kphp_assert(klass);
-        assumption_add_for_return(f, assum_instance, klass);        // return A
+        assumption_add_for_return(f, Assumption::instance(klass));        // return A
       } else if (expr->type() == op_var && expr->get_string() == "this" && f->modifiers.is_instance()) {
-        assumption_add_for_return(f, assum_instance, f->class_id);  // return this
+        assumption_add_for_return(f, Assumption::instance(f->class_id));  // return this
       } else if (auto call_vertex = expr.try_as<op_func_call>()) {
         if (auto fun = call_vertex->func_id) {
-          ClassPtr klass;
-          calc_assumption_for_return(fun, call_vertex, klass);
-          if (klass) {
-            assumption_add_for_return(f, assum_instance, klass);
+          Assumption return_a = calc_assumption_for_return(fun, call_vertex);
+          if (return_a.assum_type != assum_unknown) {
+            assumption_add_for_return(f, return_a);
           }
         }
       }
@@ -451,10 +435,9 @@ void init_assumptions_for_all_vars(ClassPtr c) {
  * Высокоуровневая функция, определяющая, что такое $a внутри f.
  * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
  */
-AssumType calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, ClassPtr &out_class, size_t depth) {
+Assumption calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
   if (f->modifiers.is_instance() && var_name == "this") {
-    out_class = f->class_id;
-    return assum_instance;
+    return Assumption::instance(f->class_id);
   }
 
   if (f->assumptions_inited_args == 0) {
@@ -462,9 +445,9 @@ AssumType calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, Class
     f->assumptions_inited_args = 2;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
   }
 
-  AssumType existing = assumption_get_for_var(f, var_name, out_class);
-  if (existing != assum_unknown) {
-    return existing;
+  const Assumption *existing = assumption_get_for_var(f, var_name);
+  if (existing) {
+    return *existing;
   }
 
 
@@ -476,46 +459,44 @@ AssumType calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, Class
     }
   }
 
-  AssumType calculated = assumption_get_for_var(f, var_name, out_class);
-  if (calculated != assum_unknown) {
-    return calculated;
+  const Assumption *calculated = assumption_get_for_var(f, var_name);
+  if (calculated) {
+    return *calculated;
   }
 
   auto pos = var_name.find("$$");
   if (pos != std::string::npos) {   // static переменная класса, просто используется внутри функции
     if (auto of_class = G->get_class(replace_characters(std::string{var_name.substr(0, pos)}, '$', '\\'))) {
-      return calc_assumption_for_class_var(of_class, var_name.substr(pos + 2), out_class);
+      return calc_assumption_for_class_var(of_class, var_name.substr(pos + 2));
     }
   }
 
-  f->assumptions_for_vars.emplace_back(assum_not_instance, std::string{var_name}, ClassPtr());
-  return assum_not_instance;
+  f->assumptions_for_vars.emplace_back(std::string{var_name}, Assumption::not_instance());
+  return Assumption::not_instance();
 }
 
 /*
  * Высокоуровневая функция, определяющая, что возвращает f.
  * Включает кеширование повторных вызовов и init на f при первом вызове.
  */
-AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr &out_class) {
+Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
   if (f->is_extern()) {
     if (f->root->type_rule) {
       auto rule_meta = f->root->type_rule->rule();
       if (auto class_type_rule = rule_meta.try_as<op_type_expr_class>()) {
-        out_class = class_type_rule->class_ptr;
-        return assum_instance;
+        return Assumption::instance(class_type_rule->class_ptr);
       } else if (auto func_type_rule = rule_meta.try_as<op_type_expr_instance>()) {
         auto arg_ref = func_type_rule->expr().as<op_type_expr_arg_ref>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
           if (auto class_name = GenTree::get_constexpr_string(arg)) {
             if (auto klass = G->get_class(*class_name)) {
-              out_class = klass;
-              return assum_instance;
+              return Assumption::instance(klass);
             }
           }
         }
       }
     }
-    return assum_unknown;
+    return Assumption::unknown();
   }
 
   if (f->assumptions_inited_return == 0) {
@@ -529,15 +510,14 @@ AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> 
     __sync_synchronize();
   }
 
-  out_class = f->assumption_for_return.klass;
-  return f->assumption_for_return.assum_type;
+  return f->assumption_for_return;
 }
 
 /*
  * Высокоуровневая функция, определяющая, что такое ->nested внутри инстанса $a класса c.
  * Выключает кеширование и единождый вызов init на класс.
  */
-AssumType calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class) {
+Assumption calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
   if (c->assumptions_inited_vars == 0) {
     if (__sync_bool_compare_and_swap(&c->assumptions_inited_vars, 0, 1)) {
       init_assumptions_for_all_vars(c);   // как инстанс-переменные, так и статические
@@ -549,32 +529,30 @@ AssumType calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name, Cl
     __sync_synchronize();
   }
 
-  return assumption_get_for_var(c, var_name, out_class);
+  const Assumption *a = assumption_get_for_var(c, var_name);
+  return a ? *a : Assumption::unknown();
 }
 
 
 // —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 
-inline AssumType infer_from_ctor(FunctionPtr f __attribute__ ((unused)),
-                                 VertexAdaptor<op_constructor_call> call,
-                                 ClassPtr &out_class) {
-  out_class = G->get_class(call->get_string());   // call->get_string() это полное имя класса после new
-  return assum_instance;
+inline Assumption infer_from_ctor(FunctionPtr f __attribute__ ((unused)),
+                                  VertexAdaptor<op_constructor_call> call) {
+  const std::string &class_name = call->get_string();     // это полное имя класса после new
+  return Assumption::instance(G->get_class(class_name));
 }
 
 
-inline AssumType infer_from_var(FunctionPtr f,
+inline Assumption infer_from_var(FunctionPtr f,
                                 VertexAdaptor<op_var> var,
-                                ClassPtr &out_class,
                                 size_t depth) {
-  return calc_assumption_for_var(f, var->str_val, out_class, depth + 1);
+  return calc_assumption_for_var(f, var->str_val, depth + 1);
 }
 
 
-inline AssumType infer_from_call(FunctionPtr f,
+inline Assumption infer_from_call(FunctionPtr f,
                                  VertexAdaptor<op_func_call> call,
-                                 ClassPtr &out_class,
                                  size_t depth) {
   const std::string &fname = call->extra_type == op_ex_func_call_arrow
                              ? resolve_instance_func_name(f, call)
@@ -583,94 +561,86 @@ inline AssumType infer_from_call(FunctionPtr f,
   const FunctionPtr ptr = G->get_function(fname);
   if (!ptr) {
     kphp_error(0, fmt_format("{}() is undefined, can not infer class", fname));
-    return assum_unknown;
+    return Assumption::unknown();
   }
 
   // для built-in функций по типу array_pop/array_filter/etc на массиве инстансов
   if (auto common_rule = ptr->root->type_rule.try_as<op_common_type_rule>()) {
     auto rule = common_rule->rule();
     if (auto arg_ref = rule.try_as<op_type_expr_arg_ref>()) {     // array_values ($a ::: array) ::: ^1
-      return infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), out_class, depth + 1);
+      return infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
     }
     if (auto index = rule.try_as<op_index>()) {         // array_shift (&$a ::: array) ::: ^1[]
       auto arr = index->array();
       if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
-        AssumType result = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), out_class, depth + 1);
-        if (result == assum_instance_array) {
-          result = assum_instance;
-        } else if (result == assum_instance) {
-          out_class = {};
-          result = assum_not_instance;
+        Assumption a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
+        if (a.assum_type == assum_instance_array) {
+          return Assumption::instance(a.klass);
         }
-        return result;
+        return Assumption::not_instance();
       }
     }
     if (auto array_rule = rule.try_as<op_type_expr_type>()) {  // create_vector ($n ::: int, $x ::: Any) ::: array <^2>
       if (array_rule->type_help == tp_array) {
         auto arr = array_rule->args()[0];
         if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
-          AssumType result = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), out_class, depth + 1);
-          if (result == assum_instance) {
-            result = assum_instance_array;
-          } else if (result == assum_instance_array) {
-            out_class = {};
-            result = assum_not_instance;
+          Assumption a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
+          if (a.assum_type == assum_instance) {
+            return Assumption::array(a.klass);
           }
-          return result;
+          return Assumption::not_instance();
         }
       }
     }
 
   }
 
-  return calc_assumption_for_return(ptr, call, out_class);
+  return calc_assumption_for_return(ptr, call);
 }
 
-inline AssumType infer_from_array(FunctionPtr f,
+inline Assumption infer_from_array(FunctionPtr f,
                                   VertexAdaptor<op_array> array,
-                                  ClassPtr &out_class,
                                   size_t depth) {
   kphp_assert(array);
   if (array->size() == 0) {
-    return assum_unknown;
+    return Assumption::unknown();
   }
 
+  ClassPtr klass;
   for (auto v : *array) {
     if (auto double_arrow = v.try_as<op_double_arrow>()) {
       v = double_arrow->value();
     }
-    ClassPtr inferred_class;
-    AssumType assum = infer_class_of_expr(f, v, inferred_class, depth + 1);
-    if (assum != assum_instance) {
-      return assum_not_instance;
+    Assumption a = infer_class_of_expr(f, v, depth + 1);
+    if (a.assum_type != assum_instance) {
+      return Assumption::not_instance();
     }
 
-    if (!out_class) {
-      out_class = inferred_class;
-    } else if (out_class->name != inferred_class->name) {
-      return assum_not_instance;
+    if (!klass) {
+      klass = a.klass;
+    } else if (klass != a.klass) {
+      return Assumption::not_instance();
     }
   }
 
-  return assum_instance_array;
+  return Assumption::array(klass);
 }
 
-AssumType infer_from_instance_prop(FunctionPtr f,
+Assumption infer_from_instance_prop(FunctionPtr f,
                                    VertexAdaptor<op_instance_prop> prop,
-                                   ClassPtr &out_class,
                                    size_t depth) {
-  ClassPtr lhs_class;
-  AssumType lhs_assum = infer_class_of_expr(f, prop->instance(), lhs_class, depth + 1);
+  Assumption lhs_a = infer_class_of_expr(f, prop->instance(), depth + 1);
+  ClassPtr lhs_class = lhs_a.klass;
 
-  if (lhs_assum != assum_instance) {
-    return assum_not_instance;
+  if (lhs_a.assum_type != assum_instance) {
+    return Assumption::not_instance();
   }
 
-  AssumType res_assum;
+  Assumption res_assum;
   do {
-    res_assum = calc_assumption_for_class_var(lhs_class, prop->str_val, out_class);
+    res_assum = calc_assumption_for_class_var(lhs_class, prop->str_val);
     lhs_class = lhs_class->parent_class;
-  } while (vk::any_of_equal(res_assum, assum_unknown, assum_not_instance) && lhs_class);
+  } while (vk::any_of_equal(res_assum.assum_type, assum_unknown, assum_not_instance) && lhs_class);
 
   return res_assum;
 }
@@ -678,38 +648,40 @@ AssumType infer_from_instance_prop(FunctionPtr f,
 /*
  * Главная функция, вызывающаяся извне: возвращает assumption для любого выражения root внутри f.
  */
-AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class, size_t depth /*= 0*/) {
+Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0*/) {
   if (depth > 10000) {
-    return assum_not_instance;
+    return Assumption::not_instance();
   }
   switch (root->type()) {
     case op_constructor_call:
-      return infer_from_ctor(f, root.as<op_constructor_call>(), out_class);
+      return infer_from_ctor(f, root.as<op_constructor_call>());
     case op_var:
-      return infer_from_var(f, root.as<op_var>(), out_class, depth + 1);
+      return infer_from_var(f, root.as<op_var>(), depth + 1);
     case op_instance_prop:
-      return infer_from_instance_prop(f, root.as<op_instance_prop>(), out_class, depth + 1);
+      return infer_from_instance_prop(f, root.as<op_instance_prop>(), depth + 1);
     case op_func_call:
-      return infer_from_call(f, root.as<op_func_call>(), out_class, depth + 1);
+      return infer_from_call(f, root.as<op_func_call>(), depth + 1);
     case op_index: {
       auto index = root.as<op_index>();
-      if (index->has_key() && assum_instance_array == infer_class_of_expr(f, index->array(), out_class, depth + 1)) {
-        return assum_instance;
-      } else {
-        return assum_not_instance;
+      if (index->has_key()) {
+        Assumption arr_a = infer_class_of_expr(f, index->array(), depth + 1);
+        if (arr_a.assum_type == assum_instance_array) {
+          return Assumption::instance(arr_a.klass);
+        }
       }
+      return Assumption::not_instance();
     }
     case op_array:
-      return infer_from_array(f, root.as<op_array>(), out_class, depth + 1);
+      return infer_from_array(f, root.as<op_array>(), depth + 1);
     case op_conv_array:
     case op_conv_array_l:
-      return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), out_class, depth + 1);
+      return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), depth + 1);
     case op_clone:
-      return infer_class_of_expr(f, root.as<op_clone>()->expr(), out_class, depth + 1);
+      return infer_class_of_expr(f, root.as<op_clone>()->expr(), depth + 1);
     case op_seq_rval:
-      return infer_class_of_expr(f, root.as<op_seq_rval>()->back(), out_class, depth + 1);
+      return infer_class_of_expr(f, root.as<op_seq_rval>()->back(), depth + 1);
     default:
-      return assum_not_instance;
+      return Assumption::not_instance();
   }
 }
 

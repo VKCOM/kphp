@@ -545,21 +545,17 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   }
 
   // для всех переменных-инстансов (локальные, параметры и т.п.) делаем restriction'ы, что классы те же что в phpdoc
-  ClassPtr cl;
-  AssumType assum = assum_unknown;
-  if (var->is_class_instance_var()) {
-    assum = assumption_get_for_var(var->class_id, var->name, cl);
-  } else if (!current_function->assumptions_for_vars.empty()) {
-    assum = assumption_get_for_var(current_function, var->name, cl);
-  }
-  if (assum == assum_instance) {                  // var == cl
-    create_less(var, cl->type_data);
+  const Assumption *a = var->is_class_instance_var()
+                        ? assumption_get_for_var(var->class_id, var->name)
+                        : assumption_get_for_var(current_function, var->name);
+  if (a && a->assum_type == assum_instance) {                  // var == cl
+    create_less(var, a->klass->type_data);
     // You could specify php-doc that some var is `Interface class` but always assign to that var only one class.
     // In this situation we will infer that type of this var is concrete class not Interface
     // create_less(cl->type_data, var);
-  } else if (assum == assum_instance_array) {     // cl[] <= var <= Optional<cl[]>
-    create_less(var, TypeData::create_array_type_data(cl->type_data, true));
-    create_less(TypeData::create_array_type_data(cl->type_data), var);
+  } else if (a && a->assum_type == assum_instance_array) {     // cl[] <= var <= Optional<cl[]>
+    create_less(var, TypeData::create_array_type_data(a->klass->type_data, true));
+    create_less(TypeData::create_array_type_data(a->klass->type_data), var);
   }
 }
 

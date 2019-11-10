@@ -14,28 +14,39 @@ enum AssumType {
 };
 
 class Assumption {
+  Assumption(AssumType type, ClassPtr klass) :
+    assum_type(type),
+    klass(klass) {}
+
 public:
-  AssumType assum_type;
-  std::string var_name;
+  Assumption() = default;
+
+  AssumType assum_type = assum_unknown;
   ClassPtr klass;
 
-  Assumption() :
-    assum_type(assum_unknown),
-    var_name(),
-    klass() {}
+  static Assumption not_instance() {
+    return {assum_not_instance, ClassPtr{}};
+  }
 
-  Assumption(AssumType type, std::string var_name, ClassPtr klass) :
-    assum_type(type),
-    var_name(std::move(var_name)),
-    klass(std::move(klass)) {}
+  static Assumption unknown() {
+    return {assum_unknown, {}};
+  }
+
+  static Assumption instance(ClassPtr klass) {
+    return {assum_instance, klass};
+  }
+
+  static Assumption array(ClassPtr klass) {
+    return {assum_instance_array, klass};
+  }
 };
 
 
-void assumption_add_for_var(FunctionPtr f, AssumType assum, vk::string_view var_name, ClassPtr klass);
-AssumType assumption_get_for_var(FunctionPtr f, vk::string_view var_name, ClassPtr &out_class);
-AssumType assumption_get_for_var(ClassPtr c, vk::string_view var_name, ClassPtr &out_class);
-AssumType infer_class_of_expr(FunctionPtr f, VertexPtr root, ClassPtr &out_class, size_t depth = 0);
-AssumType calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr &out_class);
-AssumType calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, ClassPtr &out_class, size_t depth = 0);
+void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const Assumption &assumption);
+const Assumption *assumption_get_for_var(FunctionPtr f, vk::string_view var_name);
+const Assumption *assumption_get_for_var(ClassPtr c, vk::string_view var_name);
+Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth = 0);
+Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call);
+Assumption calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth = 0);
 
 #endif //PHP_CLASS_ASSUMPTIONS_H

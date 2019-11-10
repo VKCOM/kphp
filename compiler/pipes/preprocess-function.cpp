@@ -28,19 +28,18 @@ public:
 
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
     if (auto clone_root = root.try_as<op_clone>()) {
-      ClassPtr klass;
-      auto assum = infer_class_of_expr(stage::get_function(), clone_root, klass);
-      kphp_error_act(assum == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
-      kphp_error_act(!klass->is_builtin(), fmt_format("`{}` class is forbidden for clonning", klass->name), return clone_root);
+      Assumption a = infer_class_of_expr(stage::get_function(), clone_root);
+      kphp_error_act(a.assum_type == assum_instance, "`clone` keyword could be used only with instances", return clone_root);
+      kphp_error_act(!a.klass->is_builtin(), fmt_format("`{}` class is forbidden for clonning", a.klass->name), return clone_root);
       bool clone_is_inside_virt_clone = vk::any_of_equal(current_function->local_name(),
                                                          ClassData::NAME_OF_VIRT_CLONE,
                                                          FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE));
-      if (!klass->derived_classes.empty() && !clone_is_inside_virt_clone) {
+      if (!a.klass->derived_classes.empty() && !clone_is_inside_virt_clone) {
         /**
          * clone of interfaces are replaced with call of virtual method
          * which automatic calls clone of derived class
          */
-        auto virt_clone = klass->members.get_instance_method(ClassData::NAME_OF_VIRT_CLONE);
+        auto virt_clone = a.klass->members.get_instance_method(ClassData::NAME_OF_VIRT_CLONE);
         kphp_assert(virt_clone);
         auto virt_clone_func = virt_clone->function;
         kphp_assert(virt_clone_func);
@@ -53,14 +52,14 @@ public:
         return call_function;
       }
 
-      if (klass->members.has_instance_method(ClassData::NAME_OF_CLONE)) {
+      if (a.klass->members.has_instance_method(ClassData::NAME_OF_CLONE)) {
         auto location = clone_root->get_location();
 
         auto tmp_var = VertexAdaptor<op_var>::create();
         tmp_var->set_string(gen_unique_name("tmp_for_clone"));
         tmp_var->extra_type = op_ex_var_superlocal_inplace;
 
-        assumption_add_for_var(stage::get_function(), assum_instance, tmp_var->get_string(), klass);
+        assumption_add_for_var(stage::get_function(), tmp_var->get_string(), Assumption::instance(a.klass));
 
         auto set_clone_to_tmp = VertexAdaptor<op_set>::create(tmp_var, clone_root);
 
@@ -105,7 +104,7 @@ public:
   }
 
 private:
-  FunctionPtr generate_instance_template_function_by_name(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
+  FunctionPtr generate_instance_template_function_by_name(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
                                                           FunctionPtr func,
                                                           const std::string &name_of_function_instance) {
     FunctionPtr instance;
@@ -149,7 +148,7 @@ private:
       std::string invoke_name;
 
       if (auto template_of_invoke_method = lambda_class->get_template_of_invoke_function()) {
-        std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
+        std::map<int, Assumption> template_type_id_to_ClassPtr;
         invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, &template_of_invoke_method);
 
         instance_of_template_invoke = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
@@ -173,7 +172,7 @@ private:
   VertexAdaptor<op_func_call> set_func_id_for_template(FunctionPtr func, VertexAdaptor<op_func_call> call) {
     kphp_assert(func->is_template);
 
-    std::map<int, std::pair<AssumType, ClassPtr>> template_type_id_to_ClassPtr;
+    std::map<int, Assumption> template_type_id_to_ClassPtr;
     std::string name_of_function_instance = func->name;
 
     VertexRange func_args = func->get_params();
@@ -190,23 +189,19 @@ private:
             call_arg = param->default_value();
           }
 
-          AssumType assum = infer_class_of_expr(stage::get_function(), call_arg, class_corresponding_to_parameter);
-          if (assum == assum_unknown) {
-            assum = assum_not_instance;
-          }
+          Assumption assumption = infer_class_of_expr(stage::get_function(), call_arg);
 
-          auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, std::make_pair(assum, class_corresponding_to_parameter));
+          auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, assumption);
           if (!insertion_result.second) {
-            const std::pair<AssumType, ClassPtr> &previous_assum_and_class = insertion_result.first->second;
-            auto wrap_if_array = [](ClassPtr c, AssumType assum) {
-              if (assum == assum_instance_array) return c->name + "[]";
-
-              return assum == assum_instance ? c->name : "not instance";
+            const Assumption &previous_assumption = insertion_result.first->second;
+            auto wrap_if_array = [](Assumption a) {
+              if (a.assum_type == assum_instance_array) return a.klass->name + "[]";
+              return a.assum_type == assum_instance ? a.klass->name : "not instance";
             };
 
-            auto prev_name = wrap_if_array(previous_assum_and_class.second, previous_assum_and_class.first);
-            auto new_name = wrap_if_array(class_corresponding_to_parameter, assum);
-            if (previous_assum_and_class.first != assum || prev_name != new_name) {
+            auto prev_name = wrap_if_array(previous_assumption);
+            auto new_name = wrap_if_array(assumption);
+            if (previous_assumption.assum_type != assumption.assum_type || prev_name != new_name) {
               std::string error_msg =
                 "argument $" + param->var()->get_string() + " of " + func->name +
                 " has a type: `" + prev_name + "` but expected type: `" + new_name + "`";
@@ -215,7 +210,7 @@ private:
             }
           }
 
-          name_of_function_instance += FunctionData::encode_template_arg_name(assum, i, class_corresponding_to_parameter);
+          name_of_function_instance += FunctionData::encode_template_arg_name(assumption, i);
         }
       }
     }
@@ -326,16 +321,15 @@ private:
       fmt_format("Call methods with prefix `__` are prohibited: `{}`", *name_of_class_method),
       return false);
 
-    ClassPtr captured_class;
-    AssumType assum = infer_class_of_expr(current_function, array_arg->args()[0], captured_class);
-    if (assum != AssumType::assum_instance) {
+    Assumption assumption = infer_class_of_expr(current_function, array_arg->args()[0]);
+    if (assumption.assum_type != assum_instance) {
       return false;
     }
 
-    auto called_method = captured_class->members.get_instance_method(*name_of_class_method);
+    auto called_method = assumption.klass->members.get_instance_method(*name_of_class_method);
     if (!called_method) {
       auto err_msg = "Can't find instance method: " +
-                     TermStringFormat::paint(FunctionData::get_human_readable_name(captured_class->name + "$$" + *name_of_class_method), TermStringFormat::green);
+                     TermStringFormat::paint(FunctionData::get_human_readable_name(assumption.klass->name + "$$" + *name_of_class_method), TermStringFormat::green);
       kphp_error(false, err_msg.c_str());
       return false;
     }
@@ -533,9 +527,8 @@ private:
         kphp_error(0, fmt_format("Class {} does not exist", call->get_string()));
       }
     } else if (call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow) {
-      ClassPtr klass;
-      infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0], klass);
-      kphp_error(0, fmt_format("Unknown function ->{}() of {}\n", call->get_string(), klass ? klass->name.c_str() : "Unknown class"));
+      Assumption a = infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0]);
+      kphp_error(0, fmt_format("Unknown function ->{}() of {}\n", call->get_string(), a.klass ? a.klass->name.c_str() : "Unknown class"));
     } else {
       kphp_error(0, fmt_format("Unknown function {}()\n", unexisting_func_name));
     }

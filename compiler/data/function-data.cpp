@@ -60,24 +60,24 @@ void FunctionData::update_location_in_body() {
   update_location(root);
 }
 
-std::string FunctionData::encode_template_arg_name(AssumType assum, int id, ClassPtr klass) {
-  switch (assum) {
+std::string FunctionData::encode_template_arg_name(const Assumption &assumption, int id) {
+  switch (assumption.assum_type) {
     case assum_not_instance:
     case assum_unknown:
       return "$" + std::to_string(id) + "not_instance";
 
     case assum_instance_array:
-      return "$arr$" + replace_backslashes(klass->name);
+      return "$arr$" + replace_backslashes(assumption.klass->name);
 
     case assum_instance:
-      return "$" + replace_backslashes(klass->name);
+      return "$" + replace_backslashes(assumption.klass->name);
       
     default:
       __builtin_unreachable();
   }
 }
 
-FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, std::pair<AssumType, ClassPtr>> &template_type_id_to_ClassPtr,
+FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
   kphp_assert_msg(func->is_template, "function must be template");
@@ -100,8 +100,8 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     }
     param->template_type_id = -1;
 
-    const std::pair<AssumType, ClassPtr> &assum_and_class = id_classPtr_it->second;
-    new_function->assumptions_for_vars.emplace_back(assum_and_class.first, param->var()->get_string(), assum_and_class.second);
+    const Assumption &assumption = id_classPtr_it->second;
+    new_function->assumptions_for_vars.emplace_back(param->var()->get_string(), assumption);
     new_function->assumptions_inited_args = 2;
   }
 

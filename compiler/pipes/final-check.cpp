@@ -135,7 +135,6 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
           auto value_type = tinf::get_type(arg)->lookup_at(Key::any_key());
           auto out_class = value_type->class_type();
           kphp_error_return(out_class, "type of argument for instance_to_array has to be array of Classes");
-          
           out_class->deeply_require_instance_to_array_visitor();
         }
       }

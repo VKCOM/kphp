@@ -117,13 +117,12 @@ VertexAdaptor<op_instanceof> TransformToSmartInstanceof::get_instanceof_from_if(
 
 bool TransformToSmartInstanceof::fill_derived_classes(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived_vertex, TransformToSmartInstanceof::NewNameAndLeftDerived &state) {
   if (state.left_derived.empty()) {
-    InterfacePtr interface_class;
-    auto assum = infer_class_of_expr(current_function, instance_var, interface_class);
-    if (assum != AssumType::assum_instance) {
+    Assumption a = infer_class_of_expr(current_function, instance_var);
+    if (a.assum_type != AssumType::assum_instance) {
       kphp_error(false, fmt_format("variable is not an instance: `{}`", instance_var->get_string()));
       return false;
     }
-    state.left_derived = {interface_class->derived_classes.begin(), interface_class->derived_classes.end()};
+    state.left_derived = {a.klass->derived_classes.begin(), a.klass->derived_classes.end()};
   }
 
   const auto &derived_class_name = GenTree::get_actual_value(name_of_derived_vertex)->get_string();

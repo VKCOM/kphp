@@ -110,7 +110,7 @@ FunctionPtr ClassData::add_virt_clone() {
   virt_clone_func_ptr->file_id = file_id;
   virt_clone_func_ptr->update_location_in_body();
   virt_clone_func_ptr->assumptions_inited_return = 2;
-  virt_clone_func_ptr->assumption_for_return = Assumption{AssumType::assum_instance, {}, ClassPtr{this}};
+  virt_clone_func_ptr->assumption_for_return = Assumption::instance(ClassPtr{this});
   virt_clone_func_ptr->is_inline = true;
   virt_clone_func_ptr->modifiers = FunctionModifiers::instance_public();
 
