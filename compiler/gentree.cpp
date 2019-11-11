@@ -125,11 +125,6 @@ inline void GenTree::skip_phpdoc_tokens() {
   }
 }
 
-#define close_parent(is_opened)\
-  if (is_opened) {\
-    CE (expect (tok_clpar, "')'"));\
-  }
-
 template<Operation EmptyOp, class FuncT, class ResultType>
 bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
   //Do not clear res. Result must be appended to it.
@@ -185,7 +180,9 @@ VertexPtr GenTree::get_require(bool once) {
   const bool is_opened = open_parent();
   auto require = VertexAdaptor<op_require>::create(GenTree::get_expression());
   require->once = once;
-  close_parent (is_opened);
+  if (is_opened) {
+    CE(expect(tok_clpar, "')'"));
+  }
   set_location(require, require_location);
   return require;
 }
@@ -1099,23 +1096,31 @@ VertexPtr GenTree::get_return() {
   return ret;
 }
 
-VertexPtr GenTree::get_exit() {
+VertexAdaptor<op_exit> GenTree::generate_exit_zero() {
+  auto zero = VertexAdaptor<op_int_const>::create();
+  zero->str_val = "0";
+  return VertexAdaptor<op_exit>::create(zero);
+}
+
+VertexAdaptor<op_exit> GenTree::get_exit() {
   AutoLocation exit_location(this);
   next_cur();
-  bool is_opened = open_parent();
-  VertexPtr exit_val;
-  if (is_opened) {
-    exit_val = get_expression();
-    close_parent (is_opened);
+
+  VertexAdaptor<op_exit> exit_v;
+  if (open_parent()) {
+    if (auto return_code = get_expression()) {
+      exit_v = VertexAdaptor<op_exit>::create(return_code);
+    }
+    CE(expect(tok_clpar, "')'"));
   }
-  if (!exit_val) {
-    auto tmp = VertexAdaptor<op_int_const>::create();
-    tmp->str_val = "0";
-    exit_val = tmp;
+
+  // exit; <- is a valid statement
+  if (!exit_v) {
+    exit_v = generate_exit_zero();
   }
-  auto v = VertexAdaptor<op_exit>::create(exit_val);
-  set_location(v, exit_location);
-  return v;
+  set_location(exit_v, exit_location);
+
+  return exit_v;
 }
 
 template<Operation Op>
