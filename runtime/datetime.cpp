@@ -637,10 +637,11 @@ Optional<int> f$strtotime(const string &time_str, int timestamp) {
 
     pos = -1;
     if (!strncmp(s.c_str(), "next ", 5) && sscanf(s.c_str() + 5, "%20s %n", str, &pos) == 1 && (d = day_of_week_by_full_name(str)) > 0 && pos != -1) {
+      d = (d + 6) % 7;
       if (d > t.tm_wday) {
-        t.tm_mday += d - 1 - t.tm_wday;
+        t.tm_mday += d - t.tm_wday;
       } else {
-        t.tm_mday += d + 6 - t.tm_wday;
+        t.tm_mday += d + 7 - t.tm_wday;
       }
 
       if (!time_set) {
