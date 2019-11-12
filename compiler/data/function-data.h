@@ -157,4 +157,5 @@ public:
   static bool check_cnt_params(int expected_cnt_params, FunctionPtr called_func);
 
   vk::string_view local_name() const & { return get_local_name_from_global_$$(name); }
+  vk::string_view local_name() const && = delete;
 };

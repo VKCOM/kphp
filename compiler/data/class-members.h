@@ -30,7 +30,10 @@ struct ClassMemberStaticMethod {
     function(std::move(function)) {}
 
   vk::string_view global_name() const &;
+  vk::string_view global_name() const && = delete;
+
   vk::string_view local_name() const &;
+  vk::string_view local_name() const && = delete;
 
   // не просто name из-за context-наследования, там коллизии
   static std::string hash_name(vk::string_view name);
@@ -72,6 +75,8 @@ struct ClassMemberInstanceField {
   ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
 
   vk::string_view local_name() const &;
+  vk::string_view local_name() const && = delete;
+
   static std::string hash_name(vk::string_view name);
   std::string get_hash_name() const;
   const TypeData *get_inferred_type() const;
@@ -85,7 +90,10 @@ struct ClassMemberConstant {
   ClassMemberConstant(ClassPtr klass, const std::string &const_name, VertexPtr value, AccessModifiers access);
 
   vk::string_view global_name() const &;
+  vk::string_view global_name() const && = delete;
+
   vk::string_view local_name() const &;
+  vk::string_view local_name() const && = delete;
   static vk::string_view hash_name(vk::string_view name);
   std::string get_hash_name() const;
 };
