@@ -727,7 +727,8 @@ inline int f$error_reporting();
 
 inline void f$warning(const string &message);
 
-inline void f$critical_error(const string &message);
+#define f$critical_error(message) \
+  php_critical_error("%s", message.c_str());
 
 inline int f$memory_get_static_usage();
 
@@ -2169,10 +2170,6 @@ int f$error_reporting() {
 
 void f$warning(const string &message) {
   php_warning("%s", message.c_str());
-}
-
-void f$critical_error(const string &message) {
-  php_critical_error("%s", message.c_str());
 }
 
 int f$memory_get_static_usage() {
