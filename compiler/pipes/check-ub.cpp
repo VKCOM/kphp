@@ -201,10 +201,8 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
     stage::set_location(save_location);
 
     if (res > 0) {
-      bool supported = true;
-      supported &= v->type() == op_set || v->type() == op_set_value || v->type() == op_push_back ||
-                   v->type() == op_push_back_return || v->type() == op_array || OpInfo::rl(v->type()) == rl_set ||
-                   v->type() == op_index;
+      bool supported = vk::any_of_equal(v->type(), op_set, op_set_value, op_push_back, op_push_back_return, op_array, op_index)
+                       || OpInfo::rl(v->type()) == rl_set;
       if (supported) {
         v->extra_type = op_ex_safe_version;
       } else {

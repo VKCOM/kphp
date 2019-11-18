@@ -107,11 +107,10 @@ FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_heade
 
 void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
   W << type << " ";
+  auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  }
-  auto var_ptr = var->var_id;
-  if (var_ptr->marked_as_const) {
+  } else if (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only)) {
     W << "const &";
   }
   W << VarName(var_ptr);

@@ -174,3 +174,8 @@ string f$long2ip(const T &v) {
 
 // for degug use only
 void f$raise_sigsegv();
+
+template<class T>
+T f$make_clone(const T &x) {
+  return x;
+}

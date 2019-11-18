@@ -1173,6 +1173,7 @@ function unimplemented_function ($a1 = "", $a2 = "", $a3 = "", $a4 = "", $a5 = "
 /** For local usage only **/
 function system ($query ::: string) ::: int;
 function raise_sigsegv () ::: void;
+function make_clone ($x ::: Any) ::: ^1;
 
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cast($instance ::: Any, $to_type ::: string) ::: instance<^2>;

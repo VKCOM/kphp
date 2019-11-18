@@ -26,6 +26,7 @@ public:
 
     for (VarPtr &var : function->param_ids) {
       G->stats.cnt_mixed_params += tinf::get_type(var)->ptype() == tp_var;
+      G->stats.cnt_const_mixed_params += (tinf::get_type(var)->ptype() == tp_var) && var->is_read_only;
     }
 
     return true;

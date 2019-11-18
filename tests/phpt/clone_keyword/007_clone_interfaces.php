@@ -51,17 +51,20 @@ function test(IPrintable $c, IPrintable $c_clone) {
     $c_clone->print_me();
 
     $c->check_refcnt(2);
-    $c_clone->check_refcnt(2);
+    $c_clone->check_refcnt(1);
 }
 
-/** @var IPrintable $c */
-$c = new A();
-$c_clone = clone $c;
-$c_clone->check_refcnt(1);
-test($c, $c_clone);
-$c_clone->check_refcnt(1);
+function run() {
+    /** @var IPrintable $c */
+    $c = new A();
+    $c_clone = clone $c;
+    $c_clone->check_refcnt(1);
+    test($c, $c_clone);
+    $c_clone->check_refcnt(1);
 
-$c = new B();
-$c_clone = clone $c;
-test($c, $c_clone);
+    $c = new B();
+    $c_clone = clone $c;
+    test($c, $c_clone);
+}
 
+run();

@@ -67,6 +67,7 @@ public:
           new_var->type() = VarData::var_param_t;
           new_var->param_i = var->param_i;
           new_var->init_val = var->init_val;
+          new_var->is_read_only = var->is_read_only;
           function->param_ids[var->param_i] = new_var;
         } else {
           new_var->type() = VarData::var_local_t;
@@ -121,6 +122,7 @@ public:
 
     int param_i = -1;
     for (auto var : vars) {
+      new_var->is_read_only &= var->is_read_only;
       if (var->type() == VarData::var_param_t) {
         param_i = var->param_i;
       } else if (var->type() == VarData::var_local_t) {

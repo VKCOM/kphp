@@ -18,6 +18,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
       bool const_var_initialization = var_inited->is_const || phpdoc_tag_exists(set_op->phpdoc_str, php_doc_tag::kphp_const);
       if (const_var_initialization) {
         var_inited->var_id->marked_as_const = true;
+        var_inited->var_id->is_read_only = false;
         return;
       }
     }
@@ -41,6 +42,11 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
       auto foreach_param = v.as<op_foreach>()->params();
       if (foreach_param->x()->ref_flag) {
         check_modifications(foreach_param->xs(), true);
+      }
+      check_modifications(foreach_param->x(), true);
+
+      if (foreach_param->has_key()) {
+        check_modifications(foreach_param->key(), true);
       }
       break;
     }
@@ -66,11 +72,21 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
     case op_index:
       return check_modifications(v.as<op_index>()->array(), write_flag);
 
+    case op_list: {
+      for (auto lhs_var_in_list : v.as<op_list>()->list()) {
+        check_modifications(lhs_var_in_list, true);
+      }
+      break;
+    }
+
     case op_var:
     case op_instance_prop: {
       if (write_flag) {
-        auto const_var = v->type() == op_var ? v.as<op_var>()->var_id : v.as<op_instance_prop>()->var_id;
-        if (const_var && const_var->marked_as_const) {
+        if (auto const_var = v->type() == op_var ? v.as<op_var>()->var_id : v.as<op_instance_prop>()->var_id) {
+          const_var->is_read_only = false;
+          if (!const_var->marked_as_const) {
+            return;
+          }
           const bool modification_allowed = const_var->class_id &&
                                             const_var->class_id->construct_function == current_function &&
                                             v->type() == op_instance_prop &&
@@ -80,6 +96,10 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
         }
       }
       break;
+    }
+
+    case op_unset: {
+      return check_modifications(v.as<op_unset>()->expr(), true);
     }
 
     default:

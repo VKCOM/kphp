@@ -33,6 +33,7 @@
 #include "compiler/pipes/check-requires.h"
 #include "compiler/pipes/check-tl-classes.h"
 #include "compiler/pipes/check-ub.h"
+#include "compiler/pipes/clone-strange-const-params.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
 #include "compiler/pipes/collect-main-edges.h"
@@ -265,6 +266,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
     >> SyncNode{}
+    >> PassC<CloneStrangeConstParams>{}
     >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
     >> SyncC<TypeInfererEndF>{}
