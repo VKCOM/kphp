@@ -39,5 +39,7 @@ void Stats::write_to(std::ostream &out) {
   out << "  param vars: " << param_vars_ << std::endl;
   out << "  static vars: " << static_vars_ << std::endl;
   out << "  instance vars: " << instance_vars_ << std::endl;
+  out << "  count mixed vars: " << cnt_mixed_vars << std::endl;
+  out << "  count mixed params: " << cnt_mixed_params << std::endl;
   out << std::endl;
 }

@@ -13,6 +13,8 @@ public:
 
   std::atomic<std::uint64_t> total_classes{0u};
   std::atomic<std::uint64_t> total_lambdas{0u};
+  std::atomic<std::uint64_t> cnt_mixed_params{0u};
+  std::atomic<std::uint64_t> cnt_mixed_vars{0u};
 
 private:
   std::atomic<std::uint64_t> local_vars_{0u};

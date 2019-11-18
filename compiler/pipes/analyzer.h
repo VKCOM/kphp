@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include "compiler/inferring/public.h"
+#include "compiler/compiler-core.h"
 #include "compiler/function-pass.h"
 
 class CommonAnalyzerPass : public FunctionPassBase {
@@ -14,7 +16,19 @@ public:
   }
 
   bool check_function(FunctionPtr function) {
-    return default_check_function(function) && !function->is_extern();
+    if (!default_check_function(function) || function->is_extern()) {
+      return false;
+    }
+
+    for (VarPtr &var : function->local_var_ids) {
+      G->stats.cnt_mixed_vars += tinf::get_type(var)->ptype() == tp_var;
+    }
+
+    for (VarPtr &var : function->param_ids) {
+      G->stats.cnt_mixed_params += tinf::get_type(var)->ptype() == tp_var;
+    }
+
+    return true;
   }
 
   struct LocalT : public FunctionPassBase::LocalT {

@@ -330,14 +330,17 @@ bool compiler_execute(KphpEnviroment *env) {
     }
   }
 
+  if (verbosity > 1) {
+    profiler_print_all();
+    G->stats.write_to(std::cerr);
+  }
+
   if (G->env().get_use_make()) {
     std::cerr << "\nStarting make...\n";
     run_make();
   }
   G->finish();
   if (verbosity > 1) {
-    profiler_print_all();
-    G->stats.write_to(std::cerr);
     double en = dl_time();
     double passed = en - st;
     std::cerr << "PASSED: " << passed << "\n";
