@@ -33,8 +33,6 @@ const, tok_const
 default, tok_default
 do, tok_do
 eval, tok_eval
-exit, tok_exit
-die, tok_exit
 global, tok_global
 static, tok_static
 final, tok_final

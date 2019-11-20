@@ -52,7 +52,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_default] = "tok_default";
   TOKEN_TYPE_NAMES[tok_do] = "tok_do";
   TOKEN_TYPE_NAMES[tok_eval] = "tok_eval";
-  TOKEN_TYPE_NAMES[tok_exit] = "tok_exit";
   TOKEN_TYPE_NAMES[tok_return] = "tok_return";
   TOKEN_TYPE_NAMES[tok_list] = "tok_list";
   TOKEN_TYPE_NAMES[tok_include] = "tok_include";

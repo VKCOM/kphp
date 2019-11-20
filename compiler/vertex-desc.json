@@ -1579,16 +1579,6 @@
     }
   },
   {
-    "name": "op_exit",
-    "base_name": "meta_op_unary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_nonconst_func",
-      "type": "conv_op",
-      "str": "f$exit"
-    }
-  },
-  {
     "name": "op_move",
     "base_name": "meta_op_unary",
     "props": {

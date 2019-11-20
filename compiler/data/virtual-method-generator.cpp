@@ -2,6 +2,8 @@
 
 #include <queue>
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
@@ -9,7 +11,6 @@
 #include "compiler/debug.h"
 #include "compiler/gentree.h"
 #include "compiler/stage.h"
-#include "common/termformat/termformat.h"
 
 namespace {
 
@@ -201,7 +202,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
     auto warn_on_default = VertexAdaptor<op_func_call>::create(message_that_class_is_empty);
     warn_on_default->str_val = "critical_error";
 
-    auto call_of_exit = VertexAdaptor<op_seq>::create(warn_on_default, GenTree::generate_exit_zero(), VertexAdaptor<op_return>::create());
+    auto call_of_exit = VertexAdaptor<op_seq>::create(warn_on_default);
     cases.emplace_back(VertexAdaptor<op_default>::create(call_of_exit));
   } else {
     // just keep empty body, when there is no inheritors for interface method

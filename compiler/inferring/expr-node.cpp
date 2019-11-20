@@ -455,9 +455,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_isset:
       recalc_ptype<tp_bool>();
       break;
-    case op_exit:
-      recalc_ptype<tp_void>();
-      break;
 
     case op_conv_string:
     case op_conv_string_l:

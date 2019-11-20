@@ -47,6 +47,9 @@ void finish(int exit_code);
 __attribute__((noreturn))
 void f$exit(const var &v = 0);
 
+__attribute__((noreturn))
+void f$die(const var &v = 0);
+
 Optional<int> f$ip2long(const string &ip);
 
 Optional<string> f$ip2ulong(const string &ip);

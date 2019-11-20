@@ -535,10 +535,6 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = print;
       break;
     }
-
-    case tok_exit:
-      res = get_exit();
-      break;
     case tok_require:
       res = get_require(false);
       break;
@@ -1105,32 +1101,6 @@ VertexPtr GenTree::get_return() {
   return ret;
 }
 
-VertexAdaptor<op_exit> GenTree::generate_exit_zero() {
-  auto zero = VertexAdaptor<op_int_const>::create();
-  zero->str_val = "0";
-  return VertexAdaptor<op_exit>::create(zero);
-}
-
-VertexAdaptor<op_exit> GenTree::get_exit() {
-  AutoLocation exit_location(this);
-  next_cur();
-
-  VertexAdaptor<op_exit> exit_v;
-  if (open_parent()) {
-    if (auto return_code = get_expression()) {
-      exit_v = VertexAdaptor<op_exit>::create(return_code);
-    }
-    CE(expect(tok_clpar, "')'"));
-  }
-
-  // exit; <- is a valid statement
-  if (!exit_v) {
-    exit_v = generate_exit_zero();
-  }
-  set_location(exit_v, exit_location);
-
-  return exit_v;
-}
 
 template<Operation Op>
 VertexPtr GenTree::get_break_continue() {

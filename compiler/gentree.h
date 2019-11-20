@@ -4,8 +4,8 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/class-member-modifiers.h"
-#include "compiler/data/function-modifiers.h"
 #include "compiler/data/field-modifiers.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/lambda-generator.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
@@ -118,8 +118,6 @@ public:
   template<Operation Op, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
   VertexPtr get_return();
-  static VertexAdaptor<op_exit> generate_exit_zero();
-  VertexAdaptor<op_exit> get_exit();
   template<Operation Op>
   VertexPtr get_break_continue();
   VertexPtr get_foreach();

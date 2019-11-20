@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "auto/compiler/keywords_set.hpp"
+#include "common/algorithms/find.h"
 
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
@@ -125,15 +126,8 @@ void LexerData::flush_str() {
   }
 }
 
-template<>
-bool LexerData::are_last_tokens(TokenType type1) {
-  return !tokens.empty() &&
-         tokens[tokens.size() - 1].type() == type1;
-}
-
-template<>
-bool LexerData::are_last_tokens(any_token_tag) {
-  return !tokens.empty();
+bool LexerData::are_last_tokens() {
+  return true;
 }
 
 template<typename ...Args>
@@ -148,6 +142,14 @@ bool LexerData::are_last_tokens(any_token_tag, Args ...args) {
   return tokens.size() >= (sizeof...(args) + 1) &&
          are_last_tokens(args...);
 }
+
+template<TokenType token, typename ...Args>
+bool LexerData::are_last_tokens(except_token_tag<token>, Args ...args) {
+  return tokens.size() >= (sizeof...(args) + 1) &&
+         tokens[tokens.size() - sizeof...(args) - 1].type() != token &&
+         are_last_tokens(args...);
+}
+
 
 void LexerData::hack_last_tokens() {
   if (dont_hack_last_tokens) {
@@ -210,8 +212,17 @@ void LexerData::hack_last_tokens() {
     }
   }
 
-  if (are_last_tokens(tok_new, tok_func_name, any_token_tag{})) {
-    if (tokens.back().type() != tok_oppar) {
+  if (are_last_tokens(tok_new, tok_func_name, except_token_tag<tok_oppar>{})) {
+    Token t = tokens.back();
+    tokens.pop_back();
+    tokens.emplace_back(tok_oppar);
+    tokens.emplace_back(tok_clpar);
+    tokens.push_back(t);
+    return;
+  }
+
+  if (are_last_tokens(tok_func_name, except_token_tag<tok_oppar>{})) {
+    if (vk::any_of_equal(tokens[tokens.size() - 2].str_val, "exit", "die")) {
       Token t = tokens.back();
       tokens.pop_back();
       tokens.emplace_back(tok_oppar);
@@ -221,8 +232,9 @@ void LexerData::hack_last_tokens() {
     }
   }
 
-  if (are_last_tokens(any_token_tag{}, tok_func_name, tok_oppar, any_token_tag{})) {
-    if (tokens[tokens.size() - 3].str_val == "err" && tokens[tokens.size() - 4].type() != tok_function) {
+
+  if (are_last_tokens(except_token_tag<tok_function>{}, tok_func_name, tok_oppar, any_token_tag{})) {
+    if (tokens[tokens.size() - 3].str_val == "err") {
       Token t = tokens.back();
       tokens.pop_back();
       tokens.emplace_back(tok_file_c);

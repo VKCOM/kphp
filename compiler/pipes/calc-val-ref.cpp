@@ -44,7 +44,6 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
     case op_postfix_inc:
     case op_postfix_dec:
 
-    case op_exit:
     case op_conv_int:
     case op_conv_int_l:
     case op_conv_float:

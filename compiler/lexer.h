@@ -24,10 +24,15 @@ struct LexerData : private vk::not_copyable {
   void set_dont_hack_last_tokens();
 
   struct any_token_tag{};
+  template<TokenType token>
+  struct except_token_tag{};
   template<typename ...Args>
   bool are_last_tokens(TokenType type1, Args ...args);
   template<typename ...Args>
   bool are_last_tokens(any_token_tag type1, Args ...args);
+  template<TokenType token, typename ...Args>
+  bool are_last_tokens(except_token_tag<token> type1, Args ...args);
+  bool are_last_tokens();
   int get_num_tokens() const { return tokens.size(); }
 
   std::vector<Token>&& move_tokens();

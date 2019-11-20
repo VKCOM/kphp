@@ -546,6 +546,9 @@ void f$exit(const var &v) {
   }
 }
 
+void f$die(const var &v) {
+  f$exit(v);
+}
 
 
 Optional<int> f$ip2long(const string &ip) {

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/no_return
+/no_return/
 <?php
 
 /**
