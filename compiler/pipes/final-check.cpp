@@ -321,6 +321,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_func_call) {
     check_op_func_call(vertex.as<op_func_call>());
   }
+  if (vertex->type() == op_return && current_function->is_no_return) {
+    kphp_error(false, "Return is done from no return function");
+  }
+  if (current_function->can_throw && current_function->is_no_return) {
+    kphp_error(false, "Exception is thrown from no return function");
+  }
   if (vertex->type() == op_instance_prop) {
     const TypeData *lhs_type = tinf::get_type(vertex.as<op_instance_prop>()->instance());
     kphp_error(lhs_type->ptype() == tp_Class,

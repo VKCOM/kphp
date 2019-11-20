@@ -3,6 +3,9 @@
 #include <map>
 #include <set>
 
+#include "auto/compiler/vertex/vertex-op_function.h"
+#include "common/mixin/not_copyable.h"
+
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
@@ -11,8 +14,6 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
-#include "auto/compiler/vertex/vertex-op_function.h"
-#include "common/mixin/not_copyable.h"
 
 class FunctionData {
   // внешний код должен использовать FunctionData::create_function()
@@ -96,6 +97,7 @@ public:
   bool is_resumable = false;
   bool is_virtual_method = false;
   bool is_overridden_method = false;
+  bool is_no_return = false;
 
   ClassPtr class_id;
   ClassPtr context_class;

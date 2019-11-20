@@ -30,6 +30,7 @@ struct php_doc_tag {
     kphp_immutable_class,
     kphp_tl_class,
     kphp_const,
+    kphp_noreturn,
   };
 
 public:

@@ -130,6 +130,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         break;
       }
 
+      case php_doc_tag::kphp_noreturn: {
+        f->is_no_return = true;
+        break;
+      }
+
       case php_doc_tag::kphp_lib_export: {
         f->kphp_lib_export = true;
         infer_type |= (infer_mask::check | infer_mask::hint);

@@ -72,12 +72,14 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
 
   switch (style) {
     case gen_out_style::tagger:
-    case gen_out_style::cpp:
+    case gen_out_style::cpp: {
       W << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
       break;
-    case gen_out_style::txt:
+    }
+    case gen_out_style::txt: {
       W << "function " << function->name << "(" << params_gen << ") ::: " << ret_type_gen;
       break;
+    }
   }
 }
 

@@ -656,7 +656,11 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
 
         ii++;
       }
-      *res_finish = start;
+      if (func->is_no_return) {
+        *res_finish = Node();
+      } else {
+        *res_finish = start;
+      }
 
       if (func->can_throw) {
         create_cfg_register_exception(*res_finish);

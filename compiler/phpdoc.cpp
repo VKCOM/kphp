@@ -36,6 +36,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-immutable-class",  kphp_immutable_class},
   {"@kphp-tl-class",         kphp_tl_class},
   {"@kphp-const",            kphp_const},
+  {"@kphp-no-return",        kphp_noreturn},
 };
 
 vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {

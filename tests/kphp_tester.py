@@ -157,7 +157,7 @@ class TestRunner:
         if self._test_file.is_php5():
             php_bin = shutil.which("php5.6") or shutil.which("php5")
         else:
-            php_bin = shutil.which("php7.2")
+            php_bin = shutil.which("php7.2") or shutil.which("php7.3")
 
         if php_bin is None:
             raise RuntimeError("Can't find php executable")
