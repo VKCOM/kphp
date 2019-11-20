@@ -119,8 +119,7 @@ private:
 
     inline array_inner *ref_copy() __attribute__ ((always_inline));
 
-    inline const var get_var(int int_key) const;
-    inline const T get_value(int int_key) const;
+    inline const T *find_value(int int_key) const;
 
     template<class ...Args>
     inline T &emplace_back_vector_value(Args &&... args) noexcept;
@@ -138,17 +137,13 @@ private:
     inline T &emplace_string_key_map_value(overwrite_element policy, int int_key, STRING &&string_key, Args &&... args) noexcept;
     inline T &set_map_value(overwrite_element policy, int int_key, const string &string_key, const T &v);
 
-    inline bool has_key(int int_key) const;
-    inline bool isset_value(int int_key) const;
     inline void unset_vector_value();
     inline void unset_map_value(int int_key);
 
-    inline const var get_var(int int_key, const string &string_key) const;
-    inline const T get_value(int int_key, const string &string_key) const;
+    inline const T *find_value(int int_key, const string &string_key) const;
+
     inline const T &get_vector_value(int int_key) const;//unsafe
     inline T &get_vector_value(int int_key);//unsafe
-    inline bool has_key(int int_key, const string &string_key) const;
-    inline bool isset_value(int int_key, const string &string_key) const;
     inline void unset_map_value(int int_key, const string &string_key);
 
     dl::size_type estimate_memory_usage() const;
@@ -181,10 +176,10 @@ public:
 
   class const_iterator {
   private:
-    const array_inner *self;
-    const list_hash_entry *entry;
+    const array_inner *self{nullptr};
+    const list_hash_entry *entry{nullptr};
   public:
-    inline const_iterator() __attribute__ ((always_inline));
+    inline const_iterator() = default;
     inline const_iterator(const array_inner *self, const list_hash_entry *entry) __attribute__ ((always_inline));
 
     inline const T &get_value() const __attribute__ ((always_inline));
@@ -200,10 +195,10 @@ public:
 
   class iterator {
   private:
-    array_inner *self;
-    list_hash_entry *entry;
+    array_inner *self{nullptr};
+    list_hash_entry *entry{nullptr};
   public:
-    inline iterator() __attribute__ ((always_inline));
+    inline iterator() = default;
     inline iterator(array_inner *self, list_hash_entry *entry) __attribute__ ((always_inline));
 
     inline T &get_value() __attribute__ ((always_inline));
@@ -295,16 +290,19 @@ public:
   // can be used only on empty arrays to receive logically const array
   void assign_raw(const char *s);
 
-  const var get_var(int int_key) const;
-  const var get_var(const string &s) const;
-  const var get_var(const var &v) const;
+  const T *find_value(int int_key) const;
+  const T *find_value(const string &s) const;
+  const T *find_value(const string &s, int precomuted_hash) const;
+  const T *find_value(const var &v) const;
+  const T *find_value(const const_iterator &it) const;
+  const T *find_value(const iterator &it) const;
 
-  const T get_value(int int_key) const;
-  const T get_value(const string &s) const;
-  const T get_value(const string &s, int precomuted_hash) const;
-  const T get_value(const var &v) const;
-  const T get_value(const const_iterator &it) const;
-  const T get_value(const iterator &it) const;
+  template<class K>
+  const var get_var(const K &key) const;
+
+  template<class K>
+  const T get_value(const K &key) const;
+  const T get_value(const string &string_key, int precomuted_hash) const;
 
   template<class ...Args>
   T &emplace_back(Args &&... args) noexcept;
@@ -322,19 +320,15 @@ public:
 
   inline int get_next_key() const __attribute__ ((always_inline));
 
-  bool has_key(int int_key) const;
-  bool has_key(const string &s) const;
-  bool has_key(const var &v) const;
-  bool has_key(const const_iterator &it) const;
-  bool has_key(const iterator &it) const;
+  template<class K>
+  bool has_key(const K &key) const;
 
-  bool isset(int int_key) const;
-  bool isset(const string &s) const;
-  bool isset(const var &v) const;
+  template<class K>
+  bool isset(const K &key) const;
 
   void unset(int int_key);
-  void unset(const string &s);
-  void unset(const var &v);
+  void unset(const string &string_key);
+  void unset(const var &var_key);
 
   inline bool empty() const __attribute__ ((always_inline));
   inline int count() const __attribute__ ((always_inline));

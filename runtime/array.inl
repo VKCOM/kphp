@@ -315,15 +315,10 @@ typename array<T>::array_inner *array<T>::array_inner::ref_copy() {
   return this;
 }
 
-
 template<class T>
-const var array<T>::array_inner::get_var(int int_key) const {
+const T *array<T>::array_inner::find_value(int int_key) const {
   if (is_vector()) {
-    if ((unsigned int)int_key < (unsigned int)int_size) {
-      return get_vector_value(int_key);
-    }
-
-    return var();
+    return static_cast<unsigned int>(int_key) < static_cast<unsigned int>(int_size) ? &get_vector_value(int_key) : nullptr;
   }
 
   int bucket = choose_bucket(int_key, int_buf_size);
@@ -333,36 +328,7 @@ const var array<T>::array_inner::get_var(int int_key) const {
     }
   }
 
-  if (int_entries[bucket].next == EMPTY_POINTER) {
-    return var();
-  }
-
-  return int_entries[bucket].value;
-}
-
-
-template<class T>
-const T array<T>::array_inner::get_value(int int_key) const {
-  if (is_vector()) {
-    if ((unsigned int)int_key < (unsigned int)int_size) {
-      return get_vector_value(int_key);
-    }
-
-    return empty_T;
-  }
-
-  int bucket = choose_bucket(int_key, int_buf_size);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
-    if (unlikely (++bucket == int_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  if (int_entries[bucket].next == EMPTY_POINTER) {
-    return empty_T;
-  }
-
-  return int_entries[bucket].value;
+  return int_entries[bucket].next != EMPTY_POINTER ? &int_entries[bucket].value : nullptr;
 }
 
 template<class T>
@@ -444,38 +410,6 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int int_key, c
 }
 
 template<class T>
-bool array<T>::array_inner::has_key(int int_key) const {
-  if (is_vector()) {
-    return ((unsigned int)int_key < (unsigned int)int_size);
-  }
-
-  int bucket = choose_bucket(int_key, int_buf_size);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
-    if (unlikely (++bucket == int_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  return int_entries[bucket].next != EMPTY_POINTER;
-}
-
-template<class T>
-inline bool array<T>::array_inner::isset_value(int int_key) const {
-  if (is_vector()) {
-    return ((unsigned int)int_key < (unsigned int)int_size && !f$is_null((((T *)int_entries)[int_key])));
-  }
-
-  int bucket = choose_bucket(int_key, int_buf_size);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
-    if (unlikely (++bucket == int_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  return int_entries[bucket].next != EMPTY_POINTER && !f$is_null(int_entries[bucket].value);
-}
-
-template<class T>
 void array<T>::array_inner::unset_vector_value() {
   ((T *)int_entries)[max_key].~T();
   max_key--;
@@ -533,47 +467,22 @@ void array<T>::array_inner::unset_map_value(int int_key) {
   }
 }
 
-
 template<class T>
-const var array<T>::array_inner::get_var(int int_key, const string &string_key) const {
+const T *array<T>::array_inner::find_value(int int_key, const string &string_key) const {
   if (is_vector()) {
-    return var();
+    return nullptr;
   }
 
   const string_hash_entry *string_entries = get_string_entries();
   int bucket = choose_bucket(int_key, string_buf_size);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
+  while (string_entries[bucket].next != EMPTY_POINTER &&
+         (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == string_buf_size)) {
       bucket = 0;
     }
   }
 
-  if (string_entries[bucket].next == EMPTY_POINTER) {
-    return var();
-  }
-
-  return string_entries[bucket].value;
-}
-
-template<class T>
-const T array<T>::array_inner::get_value(int int_key, const string &string_key) const {
-  if (is_vector()) {
-    return empty_T;
-  }
-
-  const string_hash_entry *string_entries = get_string_entries();
-  int bucket = choose_bucket(int_key, string_buf_size);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
-    if (unlikely (++bucket == string_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  if (string_entries[bucket].next == EMPTY_POINTER) {
-    return empty_T;
-  }
-
-  return string_entries[bucket].value;
+  return string_entries[bucket].next != EMPTY_POINTER ? &string_entries[bucket].value : nullptr;
 }
 
 template<class T>
@@ -612,40 +521,6 @@ T &array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy,
 template<class T>
 T &array<T>::array_inner::set_map_value(overwrite_element policy, int int_key, const string &string_key, const T &v) {
   return emplace_string_key_map_value(policy, int_key, string_key, v);
-}
-
-template<class T>
-bool array<T>::array_inner::has_key(int int_key, const string &string_key) const {
-  if (is_vector()) {
-    return false;
-  }
-
-  const string_hash_entry *string_entries = get_string_entries();
-  int bucket = choose_bucket(int_key, string_buf_size);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
-    if (unlikely (++bucket == string_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  return string_entries[bucket].next != EMPTY_POINTER;
-}
-
-template<class T>
-inline bool array<T>::array_inner::isset_value(int int_key, const string &string_key) const {
-  if (is_vector()) {
-    return false;
-  }
-
-  const string_hash_entry *string_entries = get_string_entries();
-  int bucket = choose_bucket(int_key, string_buf_size);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
-    if (unlikely (++bucket == string_buf_size)) {
-      bucket = 0;
-    }
-  }
-
-  return string_entries[bucket].next != EMPTY_POINTER && !f$is_null(string_entries[bucket].value);
 }
 
 template<class T>
@@ -893,12 +768,6 @@ void array<T>::push_back_values(Arg &&arg, Args &&... args) {
 }
 
 template<class T>
-array<T>::const_iterator::const_iterator():
-  self(NULL),
-  entry(NULL) {
-}
-
-template<class T>
 array<T>::const_iterator::const_iterator(const typename array<T>::array_inner *self, const list_hash_entry *entry):
   self(self),
   entry(entry) {
@@ -1035,13 +904,6 @@ typename array<T>::const_iterator array<T>::end() const {
   return cend();
 }
 
-
-
-template<class T>
-array<T>::iterator::iterator():
-  self(NULL),
-  entry(NULL) {
-}
 
 template<class T>
 array<T>::iterator::iterator(typename array<T>::array_inner *self, list_hash_entry *entry):
@@ -1794,226 +1656,95 @@ void array<T>::assign_raw(const char *s) {
 }
 
 template<class T>
-const var array<T>::get_var(int int_key) const {
-  return p->get_var(int_key);
+const T *array<T>::find_value(int int_key) const {
+  return p->find_value(int_key);
 }
 
 template<class T>
-const var array<T>::get_var(const string &string_key) const {
-  int int_val;
+const T *array<T>::find_value(const string &string_key) const {
+  int int_val = 0;
   if (try_as_int_key(string_key, int_val)) {
-    return p->get_var(int_val);
+    return p->find_value(int_val);
   }
 
-  return p->get_var(string_key.hash(), string_key);
+  return p->find_value(string_key.hash(), string_key);
 }
 
 template<class T>
-const var array<T>::get_var(const var &v) const {
+const T *array<T>::find_value(const string &string_key, int precomuted_hash) const {
+  return p->find_value(precomuted_hash, string_key);
+}
+
+template<class T>
+const T *array<T>::find_value(const var &v) const {
   switch (v.get_type()) {
     case var::type::NUL:
-      return get_var(string());
+      return find_value(string());
     case var::type::BOOLEAN:
-      return get_var(v.as_bool());
+      return find_value(v.as_bool());
     case var::type::INTEGER:
-      return get_var(v.as_int());
+      return find_value(v.as_int());
     case var::type::FLOAT:
-      return get_var((int)v.as_double());
+      return find_value((int)v.as_double());
     case var::type::STRING:
-      return get_var(v.as_string());
+      return find_value(v.as_string());
     case var::type::ARRAY:
       php_warning("Illegal offset type array");
-      return get_var(v.as_array().to_int());
+      return find_value(v.as_array().to_int());
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
-
 template<class T>
-const T array<T>::get_value(int int_key) const {
-  return p->get_value(int_key);
+const T *array<T>::find_value(const const_iterator &it) const {
+  if (it.self->is_vector()) {
+    const auto key = static_cast<int>(reinterpret_cast<const T *>(it.entry) - reinterpret_cast<const T *>(it.self->int_entries));
+    return p->find_value(key);
+  } else {
+    auto *entry = reinterpret_cast<const string_hash_entry *>(it.entry);
+    return it.self->is_string_hash_entry(entry)
+           ? p->find_value(entry->int_key, entry->string_key)
+           : p->find_value(entry->int_key);
+  }
 }
 
 template<class T>
-const T array<T>::get_value(const string &string_key) const {
-  int int_val;
-  if (try_as_int_key(string_key, int_val)) {
-    return p->get_value(int_val);
-  }
+const T *array<T>::find_value(const iterator &it) const {
+  return find_value(const_iterator{it.self, it.entry});
+}
 
-  return p->get_value(string_key.hash(), string_key);
+template<class T>
+template<class K>
+const var array<T>::get_var(const K &key) const {
+  auto *value = find_value(key);
+  return value ? var{*value} : var{};
+}
+
+template<class T>
+template<class K>
+const T array<T>::get_value(const K &key) const {
+  auto *value = find_value(key);
+  return value ? *value : array<T>::array_inner::empty_T;
 }
 
 template<class T>
 const T array<T>::get_value(const string &string_key, int precomuted_hash) const {
-  return p->get_value(precomuted_hash, string_key);
+  auto *value = find_value(string_key, precomuted_hash);
+  return value ? *value : array<T>::array_inner::empty_T;
 }
 
 template<class T>
-const T array<T>::get_value(const var &v) const {
-  switch (v.get_type()) {
-    case var::type::NUL:
-      return get_value(string());
-    case var::type::BOOLEAN:
-      return get_value(v.as_bool());
-    case var::type::INTEGER:
-      return get_value(v.as_int());
-    case var::type::FLOAT:
-      return get_value((int)v.as_double());
-    case var::type::STRING:
-      return get_value(v.as_string());
-    case var::type::ARRAY:
-      php_warning("Illegal offset type array");
-      return get_value(v.as_array().to_int());
-    default:
-      php_assert (0);
-      exit(1);
-  }
+template<class K>
+bool array<T>::has_key(const K &key) const {
+  return find_value(key) != nullptr;
 }
 
 template<class T>
-const T array<T>::get_value(const const_iterator &it) const {
-  if (it.self->is_vector()) {
-    int key = (int)((T *)it.entry - (T *)it.self->int_entries);
-
-    return p->get_value(key);
-  } else {
-    const string_hash_entry *entry = (const string_hash_entry *)it.entry;
-
-    if (it.self->is_string_hash_entry(entry)) {
-      return p->get_value(entry->int_key, entry->string_key);
-    } else {
-      return p->get_value(entry->int_key);
-    }
-  }
-}
-
-template<class T>
-const T array<T>::get_value(const iterator &it) const {
-  if (it.self->is_vector()) {
-    int key = (int)((T *)it.entry - (T *)it.self->int_entries);
-
-    return p->get_value(key);
-  } else {
-    const string_hash_entry *entry = (const string_hash_entry *)it.entry;
-
-    if (it.self->is_string_hash_entry(entry)) {
-      return p->get_value(entry->int_key, entry->string_key);
-    } else {
-      return p->get_value(entry->int_key);
-    }
-  }
-}
-
-
-template<class T>
-bool array<T>::has_key(int int_key) const {
-  return p->has_key(int_key);
-}
-
-template<class T>
-bool array<T>::has_key(const string &string_key) const {
-  int int_val;
-  if (try_as_int_key(string_key, int_val)) {
-    return p->has_key(int_val);
-  }
-
-  return p->has_key(string_key.hash(), string_key);
-}
-
-template<class T>
-bool array<T>::has_key(const var &v) const {
-  switch (v.get_type()) {
-    case var::type::NUL:
-      return has_key(string());
-    case var::type::BOOLEAN:
-      return has_key(v.as_bool());
-    case var::type::INTEGER:
-      return has_key(v.as_int());
-    case var::type::FLOAT:
-      return has_key((int)v.as_double());
-    case var::type::STRING:
-      return has_key(v.as_string());
-    case var::type::ARRAY:
-      php_warning("Illegal offset type array");
-      return has_key(v.as_array().to_int());
-    default:
-      php_assert (0);
-      exit(1);
-  }
-}
-
-template<class T>
-bool array<T>::has_key(const const_iterator &it) const {
-  if (it.self->is_vector()) {
-    int key = (int)((T *)it.entry - (T *)it.self->int_entries);
-
-    return p->has_key(key);
-  } else {
-    const string_hash_entry *entry = (const string_hash_entry *)it.entry;
-
-    if (it.self->is_string_hash_entry(entry)) {
-      return p->has_key(entry->int_key, entry->string_key);
-    } else {
-      return p->has_key(entry->int_key);
-    }
-  }
-}
-
-template<class T>
-bool array<T>::has_key(const iterator &it) const {
-  if (it.self->is_vector()) {
-    int key = (int)((T *)it.entry - (T *)it.self->int_entries);
-
-    return p->has_key(key);
-  } else {
-    const string_hash_entry *entry = (const string_hash_entry *)it.entry;
-
-    if (it.self->is_string_hash_entry(entry)) {
-      return p->has_key(entry->int_key, entry->string_key);
-    } else {
-      return p->has_key(entry->int_key);
-    }
-  }
-}
-
-template<class T>
-bool array<T>::isset(int int_key) const {
-  return p->isset_value(int_key);
-}
-
-template<class T>
-bool array<T>::isset(const string &string_key) const {
-  int int_val;
-  if (try_as_int_key(string_key, int_val)) {
-    return p->isset_value(int_val);
-  }
-
-  return p->isset_value(string_key.hash(), string_key);
-}
-
-template<class T>
-bool array<T>::isset(const var &v) const {
-  switch (v.get_type()) {
-    case var::type::NUL:
-      return isset(string());
-    case var::type::BOOLEAN:
-      return isset(v.as_bool());
-    case var::type::INTEGER:
-      return isset(v.as_int());
-    case var::type::FLOAT:
-      return isset((int)v.as_double());
-    case var::type::STRING:
-      return isset(v.as_string());
-    case var::type::ARRAY:
-      php_warning("Illegal offset type array");
-      return isset(v.as_array().to_int());
-    default:
-      php_assert (0);
-      exit(1);
-  }
+template<class K>
+bool array<T>::isset(const K &key) const {
+  auto *value = find_value(key);
+  return value ? !f$is_null(*value) : false;
 }
 
 template<class T>
