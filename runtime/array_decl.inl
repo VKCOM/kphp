@@ -407,8 +407,6 @@ private:
 
   template<class T1>
   friend class array;
-
-  friend class var;
 };
 
 template<class T>

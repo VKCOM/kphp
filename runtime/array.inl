@@ -1424,18 +1424,18 @@ T &array<T>::operator[](const string &string_key) {
 
 template<class T>
 T &array<T>::operator[](const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return (*this)[string()];
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return (*this)[v.as_bool()];
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return (*this)[v.as_int()];
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return (*this)[(int)v.as_double()];
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return (*this)[v.as_string()];
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return (*this)[v.as_array().to_int()];
     default:
@@ -1625,18 +1625,18 @@ void array<T>::set_value(const string &string_key, T &&v, int precomuted_hash) n
 template<class T>
 template<class ...Args>
 void array<T>::emplace_value(const var &var_key, Args &&... args) noexcept {
-  switch (var_key.type) {
-    case var::NULL_TYPE:
+  switch (var_key.get_type()) {
+    case var::type::NUL:
       return emplace_value(string(), std::forward<Args>(args)...);
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return emplace_value(static_cast<int>(var_key.as_bool()), std::forward<Args>(args)...);
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return emplace_value(var_key.as_int(), std::forward<Args>(args)...);
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return emplace_value(static_cast<int>(var_key.as_double()), std::forward<Args>(args)...);
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return emplace_value(var_key.as_string(), std::forward<Args>(args)...);
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return emplace_value(var_key.as_array().to_int(), std::forward<Args>(args)...);
     default:
@@ -1810,18 +1810,18 @@ const var array<T>::get_var(const string &string_key) const {
 
 template<class T>
 const var array<T>::get_var(const var &v) const {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return get_var(string());
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return get_var(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return get_var(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return get_var((int)v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return get_var(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return get_var(v.as_array().to_int());
     default:
@@ -1853,18 +1853,18 @@ const T array<T>::get_value(const string &string_key, int precomuted_hash) const
 
 template<class T>
 const T array<T>::get_value(const var &v) const {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return get_value(string());
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return get_value(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return get_value(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return get_value((int)v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return get_value(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return get_value(v.as_array().to_int());
     default:
@@ -1925,18 +1925,18 @@ bool array<T>::has_key(const string &string_key) const {
 
 template<class T>
 bool array<T>::has_key(const var &v) const {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return has_key(string());
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return has_key(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return has_key(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return has_key((int)v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return has_key(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return has_key(v.as_array().to_int());
     default:
@@ -1996,18 +1996,18 @@ bool array<T>::isset(const string &string_key) const {
 
 template<class T>
 bool array<T>::isset(const var &v) const {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return isset(string());
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return isset(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return isset(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return isset((int)v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return isset(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return isset(v.as_array().to_int());
     default:
@@ -2051,18 +2051,18 @@ void array<T>::unset(const string &string_key) {
 
 template<class T>
 void array<T>::unset(const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return unset(string());
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return unset(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return unset(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return unset((int)v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return unset(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type array");
       return unset(v.as_array().to_int());
     default:

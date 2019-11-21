@@ -14,13 +14,13 @@ struct is_type_acceptable_for_var<array<T>> : is_constructible_or_unknown<var, T
 
 class var {
 public:
-  enum var_type {
-    NULL_TYPE,
-    BOOLEAN_TYPE,
-    INTEGER_TYPE,
-    FLOAT_TYPE,
-    STRING_TYPE,
-    ARRAY_TYPE
+  enum class type {
+    NUL,
+    BOOLEAN,
+    INTEGER,
+    FLOAT,
+    STRING,
+    ARRAY,
   };
 
   var(const void *) = delete; // deprecate conversion from pointer to boolean
@@ -159,7 +159,7 @@ public:
   inline bool is_numeric() const;
   inline bool is_scalar() const;
 
-  inline var_type get_type() const;
+  inline type get_type() const;
   inline bool is_null() const;
   inline bool is_bool() const;
   inline bool is_int() const;
@@ -185,32 +185,6 @@ public:
   inline void set_reference_counter_to_const();
 
   inline dl::size_type estimate_memory_usage() const;
-
-  inline friend const var operator-(const string &lhs);
-
-  inline friend const var operator+(const var &lhs, const var &rhs);
-  inline friend const var operator-(const var &lhs, const var &rhs);
-  inline friend const var operator*(const var &lhs, const var &rhs);
-
-  inline friend bool operator<=(const var &lhs, const var &rhs);
-  inline friend bool operator>=(const var &lhs, const var &rhs);
-  inline friend bool operator<(const var &lhs, const var &rhs);
-  inline friend bool operator>(const var &lhs, const var &rhs);
-
-  friend void do_print_r(const var &v, int depth);
-  friend void do_var_dump(const var &v, int depth);
-  friend void do_var_export(const var &v, int depth, char endc);
-  friend void do_serialize(const var &v);
-  friend bool do_json_encode(const var &v, int options, bool simple_encode);
-  friend dl::size_type max_string_size(const var &v);
-
-  friend class string;
-
-  friend inline string_buffer &operator<<(string_buffer &sb, const var &v);
-
-  template<class T>
-  friend class array;
-
 private:
   inline void copy_from(const var &other);
   inline void copy_from(var &&other);
@@ -224,37 +198,13 @@ private:
   inline var &assign_from(var v) { return (*this = std::move(v)); }
 
   template<typename T>
-  auto get_type_and_value_ptr(const array<T> &) { return std::make_pair(ARRAY_TYPE  , &as_array());  }
-  auto get_type_and_value_ptr(const bool     &) { return std::make_pair(BOOLEAN_TYPE, &as_bool());   }
-  auto get_type_and_value_ptr(const int      &) { return std::make_pair(INTEGER_TYPE, &as_int());    }
-  auto get_type_and_value_ptr(const double   &) { return std::make_pair(FLOAT_TYPE  , &as_double()); }
-  auto get_type_and_value_ptr(const string   &) { return std::make_pair(STRING_TYPE , &as_string()); }
+  auto get_type_and_value_ptr(const array<T> &) { return std::make_pair(type::ARRAY  , &as_array());  }
+  auto get_type_and_value_ptr(const bool     &) { return std::make_pair(type::BOOLEAN, &as_bool());   }
+  auto get_type_and_value_ptr(const int      &) { return std::make_pair(type::INTEGER, &as_int());    }
+  auto get_type_and_value_ptr(const double   &) { return std::make_pair(type::FLOAT  , &as_double()); }
+  auto get_type_and_value_ptr(const string   &) { return std::make_pair(type::STRING , &as_string()); }
 
-  var_type type{NULL_TYPE};
-  uint64_t storage{0};
+  type type_{type::NUL};
+  uint64_t storage_{0};
 };
-
-void do_var_export(const var &v, int depth, char endc = 0);
-
-inline const var operator-(const string &lhs);
-inline const var operator+(const string &lhs);
-
-inline const var operator+(const var &lhs, const var &rhs);
-inline const var operator-(const var &lhs, const var &rhs);
-inline const var operator*(const var &lhs, const var &rhs);
-
-inline int operator&(const var &lhs, const var &rhs);
-inline int operator|(const var &lhs, const var &rhs);
-inline int operator^(const var &lhs, const var &rhs);
-inline int operator<<(const var &lhs, const var &rhs);
-inline int operator>>(const var &lhs, const var &rhs);
-
-inline bool operator<=(const var &lhs, const var &rhs);
-inline bool operator>=(const var &lhs, const var &rhs);
-inline bool operator<(const var &lhs, const var &rhs);
-inline bool operator>(const var &lhs, const var &rhs);
-
-
-inline void swap(var &lhs, var &rhs);
-
 

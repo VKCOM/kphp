@@ -508,21 +508,21 @@ string &string::append(double d) {
 }
 
 string &string::append(const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return *this;
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       if (v.as_bool()) {
         push_back('1');
       }
       return *this;
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return append(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return append(string(v.as_double()));
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return append(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Convertion from array to string");
       return append("Array", 5);
     default:
@@ -600,18 +600,18 @@ string &string::append_unsafe(const array<T> &a __attribute__((unused))) {
 }
 
 string &string::append_unsafe(const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return *this;
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return append_unsafe(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return append_unsafe(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return append_unsafe(v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return append_unsafe(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       return append_unsafe(v.as_array());
     default:
       php_assert (0);
@@ -970,18 +970,18 @@ const string string::get_value(const string &string_key) const {
 }
 
 const string string::get_value(const var &v) const {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return get_value(0);
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return get_value(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return get_value(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return get_value((int)v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return get_value(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return string();
     default:
@@ -1104,18 +1104,18 @@ dl::size_type max_string_size(const string &s) {
 }
 
 dl::size_type max_string_size(const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
+  switch (v.get_type()) {
+    case var::type::NUL:
       return 0;
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return max_string_size(v.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return max_string_size(v.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return max_string_size(v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return max_string_size(v.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       return max_string_size(v.as_array());
     default:
       php_assert (0);

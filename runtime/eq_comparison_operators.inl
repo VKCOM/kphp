@@ -231,17 +231,17 @@ inline bool eq2(const var &lhs, bool rhs) {
 
 inline bool eq2(double lhs, const var &rhs) {
   switch (rhs.get_type()) {
-    case var::NULL_TYPE:
+    case var::type::NUL:
       return eq2(lhs, 0.0);
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return eq2(lhs, rhs.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return eq2(lhs, rhs.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return eq2(lhs, rhs.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return eq2(lhs, rhs.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Unsupported operand types for operator == (float and array)");
       return false;
     default:
@@ -375,17 +375,17 @@ inline bool equals(const var &lhs, const var &rhs) {
   }
 
   switch (lhs.get_type()) {
-    case var::NULL_TYPE:
+    case var::type::NUL:
       return true;
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return equals(lhs.as_bool(), rhs.as_bool());
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return equals(lhs.as_int(), rhs.as_int());
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return equals(lhs.as_double(), rhs.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return equals(lhs.as_string(), rhs.as_string());
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       return equals(lhs.as_array(), rhs.as_array());
     default:
       __builtin_unreachable();

@@ -17,37 +17,37 @@ array<var> empty_array_var __attribute__ ((weak));
 var empty_var __attribute__ ((weak));
 
 void var::copy_from(const var &other) {
-  switch (other.type) {
-    case STRING_TYPE:
+  switch (other.get_type()) {
+    case type::STRING:
       new(&as_string()) string(other.as_string());
       break;
-    case ARRAY_TYPE:
+    case type::ARRAY:
       new(&as_array()) array<var>(other.as_array());
       break;
     default:
-      storage = other.storage;
+      storage_ = other.storage_;
   }
-  type = other.type;
+  type_ = other.get_type();
 }
 
 void var::copy_from(var &&other) {
-  switch (other.type) {
-    case STRING_TYPE:
+  switch (other.get_type()) {
+    case type::STRING:
       new(&as_string()) string(std::move(other.as_string()));
       break;
-    case ARRAY_TYPE:
+    case type::ARRAY:
       new(&as_array()) array<var>(std::move(other.as_array()));
       break;
     default:
-      storage = other.storage;
+      storage_ = other.storage_;
   }
-  type = other.type;
+  type_ = other.get_type();
 }
 
 template<typename T>
 void var::init_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
-  type = type_and_value_ref.first;
+  type_ = type_and_value_ref.first;
   auto *value_ptr = type_and_value_ref.second;
   using ValueType = std::decay_t<decltype(*value_ptr)>;
   new(value_ptr) ValueType(std::forward<T>(v));
@@ -56,7 +56,7 @@ void var::init_from(T &&v) {
 template<typename T>
 var &var::assign_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
-  if (type == type_and_value_ref.first) {
+  if (get_type() == type_and_value_ref.first) {
     *type_and_value_ref.second = std::forward<T>(v);
   } else {
     destroy();
@@ -132,11 +132,11 @@ var &var::operator=(Optional<T> &&v) {
 }
 
 var &var::assign(const char *other, int len) {
-  if (type == STRING_TYPE) {
+  if (get_type() == type::STRING) {
     as_string().assign(other, len);
   } else {
     destroy();
-    type = STRING_TYPE;
+    type_ = type::STRING;
     new(&as_string()) string(other, len);
   }
   return *this;
@@ -145,7 +145,7 @@ var &var::assign(const char *other, int len) {
 const var var::operator-() const {
   var arg1 = to_numeric();
 
-  if (arg1.type == INTEGER_TYPE) {
+  if (arg1.get_type() == type::INTEGER) {
     arg1.as_int() = -arg1.as_int();
   } else {
     arg1.as_double() = -arg1.as_double();
@@ -164,13 +164,13 @@ int var::operator~() const {
 
 
 var &var::operator+=(const var &other) {
-  if (likely (type == INTEGER_TYPE && other.type == INTEGER_TYPE)) {
+  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() += other.as_int();
     return *this;
   }
 
-  if (unlikely (type == ARRAY_TYPE || other.type == ARRAY_TYPE)) {
-    if (type == ARRAY_TYPE && other.type == ARRAY_TYPE) {
+  if (unlikely (get_type() == type::ARRAY || other.get_type() == type::ARRAY)) {
+    if (get_type() == type::ARRAY && other.get_type() == type::ARRAY) {
       as_array() += other.as_array();
     } else {
       php_warning("Unsupported operand types for operator += (%s and %s)", get_type_c_str(), other.get_type_c_str());
@@ -181,15 +181,15 @@ var &var::operator+=(const var &other) {
   convert_to_numeric();
   const var arg2 = other.to_numeric();
 
-  if (type == INTEGER_TYPE) {
-    if (arg2.type == INTEGER_TYPE) {
+  if (get_type() == type::INTEGER) {
+    if (arg2.get_type() == type::INTEGER) {
       as_int() += arg2.as_int();
     } else {
-      type = FLOAT_TYPE;
+      type_ = type::FLOAT;
       as_double() = as_int() + arg2.as_double();
     }
   } else {
-    if (arg2.type == INTEGER_TYPE) {
+    if (arg2.get_type() == type::INTEGER) {
       as_double() += arg2.as_int();
     } else {
       as_double() += arg2.as_double();
@@ -200,7 +200,7 @@ var &var::operator+=(const var &other) {
 }
 
 var &var::operator-=(const var &other) {
-  if (likely (type == INTEGER_TYPE && other.type == INTEGER_TYPE)) {
+  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() -= other.as_int();
     return *this;
   }
@@ -208,15 +208,15 @@ var &var::operator-=(const var &other) {
   convert_to_numeric();
   const var arg2 = other.to_numeric();
 
-  if (type == INTEGER_TYPE) {
-    if (arg2.type == INTEGER_TYPE) {
+  if (get_type() == type::INTEGER) {
+    if (arg2.get_type() == type::INTEGER) {
       as_int() -= arg2.as_int();
     } else {
-      type = FLOAT_TYPE;
+      type_ = type::FLOAT;
       as_double() = as_int() - arg2.as_double();
     }
   } else {
-    if (arg2.type == INTEGER_TYPE) {
+    if (arg2.get_type() == type::INTEGER) {
       as_double() -= arg2.as_int();
     } else {
       as_double() -= arg2.as_double();
@@ -227,7 +227,7 @@ var &var::operator-=(const var &other) {
 }
 
 var &var::operator*=(const var &other) {
-  if (likely (type == INTEGER_TYPE && other.type == INTEGER_TYPE)) {
+  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() *= other.as_int();
     return *this;
   }
@@ -235,15 +235,15 @@ var &var::operator*=(const var &other) {
   convert_to_numeric();
   const var arg2 = other.to_numeric();
 
-  if (type == INTEGER_TYPE) {
-    if (arg2.type == INTEGER_TYPE) {
+  if (get_type() == type::INTEGER) {
+    if (arg2.get_type() == type::INTEGER) {
       as_int() *= arg2.as_int();
     } else {
-      type = FLOAT_TYPE;
+      type_ = type::FLOAT;
       as_double() = as_int() * arg2.as_double();
     }
   } else {
-    if (arg2.type == INTEGER_TYPE) {
+    if (arg2.get_type() == type::INTEGER) {
       as_double() *= arg2.as_int();
     } else {
       as_double() *= arg2.as_double();
@@ -254,11 +254,11 @@ var &var::operator*=(const var &other) {
 }
 
 var &var::operator/=(const var &other) {
-  if (likely (type == INTEGER_TYPE && other.type == INTEGER_TYPE)) {
+  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     if (as_int() % other.as_int() == 0) {
       as_int() /= other.as_int();
     } else {
-      type = FLOAT_TYPE;
+      type_ = type::FLOAT;
       as_double() = (double)as_int() / other.as_int();
     }
     return *this;
@@ -267,19 +267,19 @@ var &var::operator/=(const var &other) {
   convert_to_numeric();
   const var arg2 = other.to_numeric();
 
-  if (arg2.type == INTEGER_TYPE) {
+  if (arg2.get_type() == type::INTEGER) {
     if (arg2.as_int() == 0) {
       php_warning("Integer division by zero");
-      type = BOOLEAN_TYPE;
+      type_ = type::BOOLEAN;
       as_bool() = false;
       return *this;
     }
 
-    if (type == INTEGER_TYPE) {
+    if (get_type() == type::INTEGER) {
       if (as_int() % arg2.as_int() == 0) {
         as_int() /= arg2.as_int();
       } else {
-        type = FLOAT_TYPE;
+        type_ = type::FLOAT;
         as_double() = (double)as_int() / other.as_int();
       }
     } else {
@@ -288,13 +288,13 @@ var &var::operator/=(const var &other) {
   } else {
     if (arg2.as_double() == 0) {
       php_warning("Float division by zero");
-      type = BOOLEAN_TYPE;
+      type_ = type::BOOLEAN;
       as_bool() = false;
       return *this;
     }
 
-    if (type == INTEGER_TYPE) {
-      type = FLOAT_TYPE;
+    if (get_type() == type::INTEGER) {
+      type_ = type::FLOAT;
       as_double() = as_int() / arg2.as_double();
     } else {
       as_double() /= arg2.as_double();
@@ -350,24 +350,24 @@ var &var::operator>>=(const var &other) {
 
 
 var &var::operator++() {
-  switch (type) {
-    case NULL_TYPE:
-      type = INTEGER_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::INTEGER;
       as_int() = 1;
       return *this;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       php_warning("Can't apply operator ++ to boolean");
       return *this;
-    case INTEGER_TYPE:
+    case type::INTEGER:
       ++as_int();
       return *this;
-    case FLOAT_TYPE:
+    case type::FLOAT:
       as_double() += 1;
       return *this;
-    case STRING_TYPE:
+    case type::STRING:
       *this = as_string().to_numeric();
       return ++(*this);
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Can't apply operator ++ to array");
       return *this;
     default:
@@ -376,31 +376,31 @@ var &var::operator++() {
 }
 
 const var var::operator++(int) {
-  switch (type) {
-    case NULL_TYPE:
-      type = INTEGER_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::INTEGER;
       as_int() = 1;
       return var();
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       php_warning("Can't apply operator ++ to boolean");
       return as_bool();
-    case INTEGER_TYPE: {
+    case type::INTEGER: {
       var res(as_int());
       ++as_int();
       return res;
     }
-    case FLOAT_TYPE: {
+    case type::FLOAT: {
       var res(as_double());
       as_double() += 1;
       return res;
     }
-    case STRING_TYPE: {
+    case type::STRING: {
       var res(as_string());
       *this = as_string().to_numeric();
       (*this)++;
       return res;
     }
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Can't apply operator ++ to array");
       return as_array();
     default:
@@ -409,28 +409,28 @@ const var var::operator++(int) {
 }
 
 var &var::operator--() {
-  if (likely (type == INTEGER_TYPE)) {
+  if (likely (get_type() == type::INTEGER)) {
     --as_int();
     return *this;
   }
 
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       php_warning("Can't apply operator -- to null");
       return *this;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       php_warning("Can't apply operator -- to boolean");
       return *this;
-    case INTEGER_TYPE:
+    case type::INTEGER:
       --as_int();
       return *this;
-    case FLOAT_TYPE:
+    case type::FLOAT:
       as_double() -= 1;
       return *this;
-    case STRING_TYPE:
+    case type::STRING:
       *this = as_string().to_numeric();
       return --(*this);
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Can't apply operator -- to array");
       return *this;
     default:
@@ -439,36 +439,36 @@ var &var::operator--() {
 }
 
 const var var::operator--(int) {
-  if (likely (type == INTEGER_TYPE)) {
+  if (likely (get_type() == type::INTEGER)) {
     var res(as_int());
     --as_int();
     return res;
   }
 
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       php_warning("Can't apply operator -- to null");
       return var();
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       php_warning("Can't apply operator -- to boolean");
       return as_bool();
-    case INTEGER_TYPE: {
+    case type::INTEGER: {
       var res(as_int());
       --as_int();
       return res;
     }
-    case FLOAT_TYPE: {
+    case type::FLOAT: {
       var res(as_double());
       as_double() -= 1;
       return res;
     }
-    case STRING_TYPE: {
+    case type::STRING: {
       var res(as_string());
       *this = as_string().to_numeric();
       (*this)--;
       return res;
     }
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Can't apply operator -- to array");
       return as_array();
     default:
@@ -483,7 +483,7 @@ bool var::operator!() const {
 
 
 var &var::append(const string &v) {
-  if (unlikely (type != STRING_TYPE)) {
+  if (unlikely (get_type() != type::STRING)) {
     convert_to_string();
   }
   as_string().append(v);
@@ -492,11 +492,11 @@ var &var::append(const string &v) {
 
 
 void var::destroy() {
-  switch (type) {
-    case STRING_TYPE:
+  switch (get_type()) {
+    case type::STRING:
       as_string().~string();
       break;
-    case ARRAY_TYPE:
+    case type::ARRAY:
       as_array().~array<var>();
       break;
     default: {
@@ -508,29 +508,29 @@ var::~var() {
   // do not remove copy-paste from clear.
   // It makes stacktraces unreadable
   destroy();
-  type = NULL_TYPE;
+  type_ = type::NUL;
 }
 
 
 void var::clear() {
   destroy();
-  type = NULL_TYPE;
+  type_ = type::NUL;
 }
 
 
 const var var::to_numeric() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return 0;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return (as_bool() ? 1 : 0);
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return as_int();
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return as_double();
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().to_numeric();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Wrong convertion from array to number");
       return as_array().to_int();
     default:
@@ -540,18 +540,18 @@ const var var::to_numeric() const {
 
 
 bool var::to_bool() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return false;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return as_bool();
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return (bool)as_int();
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return (bool)as_double();
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().to_bool();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return !as_array().empty();
     default:
       __builtin_unreachable();
@@ -559,18 +559,18 @@ bool var::to_bool() const {
 }
 
 int var::to_int() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return 0;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return (int)as_bool();
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return as_int();
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return (int)as_double();
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().to_int();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Wrong convertion from array to int");
       return as_array().to_int();
     default:
@@ -579,18 +579,18 @@ int var::to_int() const {
 }
 
 double var::to_float() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return 0.0;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return (as_bool() ? 1.0 : 0.0);
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return (double)as_int();
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return as_double();
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().to_float();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Wrong convertion from array to float");
       return as_array().to_float();
     default:
@@ -599,18 +599,18 @@ double var::to_float() const {
 }
 
 const string var::to_string() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return string();
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return (as_bool() ? string("1", 1) : string());
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return string(as_int());
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return string(as_double());
-    case STRING_TYPE:
+    case type::STRING:
       return as_string();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Convertion from array to string");
       return string("Array", 5);
     default:
@@ -619,56 +619,56 @@ const string var::to_string() const {
 }
 
 const array<var> var::to_array() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return array<var>();
-    case BOOLEAN_TYPE:
-    case INTEGER_TYPE:
-    case FLOAT_TYPE:
-    case STRING_TYPE: {
+    case type::BOOLEAN:
+    case type::INTEGER:
+    case type::FLOAT:
+    case type::STRING: {
       array<var> res(array_size(1, 0, true));
       res.push_back(*this);
       return res;
     }
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return as_array();
     default:
       __builtin_unreachable();
   }
 }
 
-bool &var::as_bool() { return *reinterpret_cast<bool *>(&storage); }
-const bool &var::as_bool() const { return *reinterpret_cast<const bool *>(&storage); }
+bool &var::as_bool() { return *reinterpret_cast<bool *>(&storage_); }
+const bool &var::as_bool() const { return *reinterpret_cast<const bool *>(&storage_); }
 
-int &var::as_int() { return *reinterpret_cast<int *>(&storage); }
-const int &var::as_int() const { return *reinterpret_cast<const int *>(&storage); }
+int &var::as_int() { return *reinterpret_cast<int *>(&storage_); }
+const int &var::as_int() const { return *reinterpret_cast<const int *>(&storage_); }
 
-double &var::as_double() { return *reinterpret_cast<double *>(&storage); }
-const double &var::as_double() const { return *reinterpret_cast<const double *>(&storage); }
+double &var::as_double() { return *reinterpret_cast<double *>(&storage_); }
+const double &var::as_double() const { return *reinterpret_cast<const double *>(&storage_); }
 
-string &var::as_string() { return *reinterpret_cast<string *>(&storage); }
-const string &var::as_string() const { return *reinterpret_cast<const string *>(&storage); }
+string &var::as_string() { return *reinterpret_cast<string *>(&storage_); }
+const string &var::as_string() const { return *reinterpret_cast<const string *>(&storage_); }
 
-array<var> &var::as_array() { return *reinterpret_cast<array<var> *>(&storage); }
-const array<var> &var::as_array() const { return *reinterpret_cast<const array<var> *>(&storage); }
+array<var> &var::as_array() { return *reinterpret_cast<array<var> *>(&storage_); }
+const array<var> &var::as_array() const { return *reinterpret_cast<const array<var> *>(&storage_); }
 
 
 int var::safe_to_int() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return 0;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return (int)as_bool();
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return as_int();
-    case FLOAT_TYPE:
+    case type::FLOAT:
       if (fabs(as_double()) > 2147483648) {
         php_warning("Wrong convertion from double %.6lf to int", as_double());
       }
       return (int)as_double();
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().safe_to_int();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Wrong convertion from array to int");
       return as_array().to_int();
     default:
@@ -678,26 +678,26 @@ int var::safe_to_int() const {
 
 
 void var::convert_to_numeric() {
-  switch (type) {
-    case NULL_TYPE:
-      type = INTEGER_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::INTEGER;
       as_int() = 0;
       return;
-    case BOOLEAN_TYPE:
-      type = INTEGER_TYPE;
+    case type::BOOLEAN:
+      type_ = type::INTEGER;
       as_int() = as_bool();
       return;
-    case INTEGER_TYPE:
-    case FLOAT_TYPE:
+    case type::INTEGER:
+    case type::FLOAT:
       return;
-    case STRING_TYPE:
+    case type::STRING:
       *this = as_string().to_numeric();
       return;
-    case ARRAY_TYPE: {
+    case type::ARRAY: {
       php_warning("Wrong convertion from array to number");
       const int int_val = as_array().to_int();
       as_array().~array<var>();
-      type = INTEGER_TYPE;
+      type_ = type::INTEGER;
       as_int() = int_val;
       return;
     }
@@ -707,32 +707,32 @@ void var::convert_to_numeric() {
 }
 
 void var::convert_to_bool() {
-  switch (type) {
-    case NULL_TYPE:
-      type = BOOLEAN_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::BOOLEAN;
       as_bool() = 0;
       return;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return;
-    case INTEGER_TYPE:
-      type = BOOLEAN_TYPE;
+    case type::INTEGER:
+      type_ = type::BOOLEAN;
       as_bool() = (bool)as_int();
       return;
-    case FLOAT_TYPE:
-      type = BOOLEAN_TYPE;
+    case type::FLOAT:
+      type_ = type::BOOLEAN;
       as_bool() = (bool)as_double();
       return;
-    case STRING_TYPE: {
+    case type::STRING: {
       const bool bool_val = as_string().to_bool();
       as_string().~string();
-      type = BOOLEAN_TYPE;
+      type_ = type::BOOLEAN;
       as_bool() = bool_val;
       return;
     }
-    case ARRAY_TYPE: {
+    case type::ARRAY: {
       const bool bool_val = as_array().to_bool();
       as_array().~array<var>();
-      type = BOOLEAN_TYPE;
+      type_ = type::BOOLEAN;
       as_bool() = bool_val;
       return;
     }
@@ -742,33 +742,33 @@ void var::convert_to_bool() {
 }
 
 void var::convert_to_int() {
-  switch (type) {
-    case NULL_TYPE:
-      type = INTEGER_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::INTEGER;
       as_int() = 0;
       return;
-    case BOOLEAN_TYPE:
-      type = INTEGER_TYPE;
+    case type::BOOLEAN:
+      type_ = type::INTEGER;
       as_int() = as_bool();
       return;
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return;
-    case FLOAT_TYPE:
-      type = INTEGER_TYPE;
+    case type::FLOAT:
+      type_ = type::INTEGER;
       as_int() = (int)as_double();
       return;
-    case STRING_TYPE: {
+    case type::STRING: {
       const int int_val = as_string().to_int();
       as_string().~string();
-      type = INTEGER_TYPE;
+      type_ = type::INTEGER;
       as_int() = int_val;
       return;
     }
-    case ARRAY_TYPE: {
+    case type::ARRAY: {
       php_warning("Wrong convertion from array to int");
       const int int_val = as_array().to_int();
       as_array().~array<var>();
-      type = INTEGER_TYPE;
+      type_ = type::INTEGER;
       as_int() = int_val;
       return;
     }
@@ -778,33 +778,33 @@ void var::convert_to_int() {
 }
 
 void var::convert_to_float() {
-  switch (type) {
-    case NULL_TYPE:
-      type = FLOAT_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::FLOAT;
       as_double() = 0.0;
       return;
-    case BOOLEAN_TYPE:
-      type = FLOAT_TYPE;
+    case type::BOOLEAN:
+      type_ = type::FLOAT;
       as_double() = as_bool();
       return;
-    case INTEGER_TYPE:
-      type = FLOAT_TYPE;
+    case type::INTEGER:
+      type_ = type::FLOAT;
       as_double() = (double)as_int();
       return;
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return;
-    case STRING_TYPE: {
+    case type::STRING: {
       const double float_val = as_string().to_float();
       as_string().~string();
-      type = FLOAT_TYPE;
+      type_ = type::FLOAT;
       as_double() = float_val;
       return;
     }
-    case ARRAY_TYPE: {
+    case type::ARRAY: {
       php_warning("Wrong convertion from array to float");
       const double float_val = as_array().to_float();
       as_array().~array<var>();
-      type = FLOAT_TYPE;
+      type_ = type::FLOAT;
       as_double() = float_val;
       return;
     }
@@ -814,33 +814,33 @@ void var::convert_to_float() {
 }
 
 void var::convert_to_string() {
-  switch (type) {
-    case NULL_TYPE:
-      type = STRING_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::STRING;
       new(&as_string()) string();
       return;
-    case BOOLEAN_TYPE:
-      type = STRING_TYPE;
+    case type::BOOLEAN:
+      type_ = type::STRING;
       if (as_bool()) {
         new(&as_string()) string("1", 1);
       } else {
         new(&as_string()) string();
       }
       return;
-    case INTEGER_TYPE:
-      type = STRING_TYPE;
+    case type::INTEGER:
+      type_ = type::STRING;
       new(&as_string()) string(as_int());
       return;
-    case FLOAT_TYPE:
-      type = STRING_TYPE;
+    case type::FLOAT:
+      type_ = type::STRING;
       new(&as_string()) string(as_double());
       return;
-    case STRING_TYPE:
+    case type::STRING:
       return;
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Converting from array to string");
       as_array().~array<var>();
-      type = STRING_TYPE;
+      type_ = type::STRING;
       new(&as_string()) string("Array", 5);
       return;
     default:
@@ -850,36 +850,36 @@ void var::convert_to_string() {
 
 
 void var::safe_convert_to_int() {
-  switch (type) {
-    case NULL_TYPE:
-      type = INTEGER_TYPE;
+  switch (get_type()) {
+    case type::NUL:
+      type_ = type::INTEGER;
       as_int() = 0;
       return;
-    case BOOLEAN_TYPE:
-      type = INTEGER_TYPE;
+    case type::BOOLEAN:
+      type_ = type::INTEGER;
       as_int() = (int)as_bool();
       return;
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return;
-    case FLOAT_TYPE:
-      type = INTEGER_TYPE;
+    case type::FLOAT:
+      type_ = type::INTEGER;
       if (fabs(as_double()) > 2147483648) {
         php_warning("Wrong convertion from double %.6lf to int", as_double());
       }
       as_int() = (int)as_double();
       return;
-    case STRING_TYPE: {
+    case type::STRING: {
       const int int_val = as_string().safe_to_int();
       as_string().~string();
-      type = INTEGER_TYPE;
+      type_ = type::INTEGER;
       as_int() = int_val;
       return;
     }
-    case ARRAY_TYPE: {
+    case type::ARRAY: {
       php_warning("Wrong convertion from array to int");
       const int int_val = as_array().to_int();
       as_array().~array<var>();
-      type = INTEGER_TYPE;
+      type_ = type::INTEGER;
       as_int() = int_val;
       return;
     }
@@ -890,8 +890,8 @@ void var::safe_convert_to_int() {
 
 
 const bool &var::as_bool(const char *function) const {
-  switch (type) {
-    case BOOLEAN_TYPE:
+  switch (get_type()) {
+    case type::BOOLEAN:
       return as_bool();
     default:
       php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_c_str());
@@ -901,8 +901,8 @@ const bool &var::as_bool(const char *function) const {
 }
 
 const int &var::as_int(const char *function) const {
-  switch (type) {
-    case INTEGER_TYPE:
+  switch (get_type()) {
+    case type::INTEGER:
       return as_int();
     default:
       php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
@@ -912,8 +912,8 @@ const int &var::as_int(const char *function) const {
 }
 
 const double &var::as_float(const char *function) const {
-  switch (type) {
-    case FLOAT_TYPE:
+  switch (get_type()) {
+    case type::FLOAT:
       return as_double();
     default:
       php_warning("%s() expects parameter to be float, %s is given", function, get_type_c_str());
@@ -923,8 +923,8 @@ const double &var::as_float(const char *function) const {
 }
 
 const string &var::as_string(const char *function) const {
-  switch (type) {
-    case STRING_TYPE:
+  switch (get_type()) {
+    case type::STRING:
       return as_string();
     default:
       php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
@@ -934,8 +934,8 @@ const string &var::as_string(const char *function) const {
 }
 
 const array<var> &var::as_array(const char *function) const {
-  switch (type) {
-    case ARRAY_TYPE:
+  switch (get_type()) {
+    case type::ARRAY:
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
@@ -946,10 +946,10 @@ const array<var> &var::as_array(const char *function) const {
 
 
 bool &var::as_bool(const char *function) {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       convert_to_bool();
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return as_bool();
     default:
       php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_c_str());
@@ -959,13 +959,13 @@ bool &var::as_bool(const char *function) {
 }
 
 int &var::as_int(const char *function) {
-  switch (type) {
-    case NULL_TYPE:
-    case BOOLEAN_TYPE:
-    case FLOAT_TYPE:
-    case STRING_TYPE:
+  switch (get_type()) {
+    case type::NUL:
+    case type::BOOLEAN:
+    case type::FLOAT:
+    case type::STRING:
       convert_to_int();
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return as_int();
     default:
       php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
@@ -975,13 +975,13 @@ int &var::as_int(const char *function) {
 }
 
 double &var::as_float(const char *function) {
-  switch (type) {
-    case NULL_TYPE:
-    case BOOLEAN_TYPE:
-    case INTEGER_TYPE:
-    case STRING_TYPE:
+  switch (get_type()) {
+    case type::NUL:
+    case type::BOOLEAN:
+    case type::INTEGER:
+    case type::STRING:
       convert_to_float();
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return as_double();
     default:
       php_warning("%s() expects parameter to be float, %s is given", function, get_type_c_str());
@@ -991,13 +991,13 @@ double &var::as_float(const char *function) {
 }
 
 string &var::as_string(const char *function) {
-  switch (type) {
-    case NULL_TYPE:
-    case BOOLEAN_TYPE:
-    case INTEGER_TYPE:
-    case FLOAT_TYPE:
+  switch (get_type()) {
+    case type::NUL:
+    case type::BOOLEAN:
+    case type::INTEGER:
+    case type::FLOAT:
       convert_to_string();
-    case STRING_TYPE:
+    case type::STRING:
       return as_string();
     default:
       php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
@@ -1007,8 +1007,8 @@ string &var::as_string(const char *function) {
 }
 
 array<var> &var::as_array(const char *function) {
-  switch (type) {
-    case ARRAY_TYPE:
+  switch (get_type()) {
+    case type::ARRAY:
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
@@ -1019,11 +1019,11 @@ array<var> &var::as_array(const char *function) {
 
 
 bool var::is_numeric() const {
-  switch (type) {
-    case INTEGER_TYPE:
-    case FLOAT_TYPE:
+  switch (get_type()) {
+    case type::INTEGER:
+    case type::FLOAT:
       return true;
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().is_numeric();
     default:
       return false;
@@ -1031,52 +1031,52 @@ bool var::is_numeric() const {
 }
 
 bool var::is_scalar() const {
-  return type != NULL_TYPE && type != ARRAY_TYPE;
+  return get_type() != type::NUL && get_type() != type::ARRAY;
 }
 
 
-var::var_type var::get_type() const {
-  return type;
+var::type var::get_type() const {
+  return type_;
 }
 
 bool var::is_null() const {
-  return type == NULL_TYPE;
+  return get_type() == type::NUL;
 }
 
 bool var::is_bool() const {
-  return type == BOOLEAN_TYPE;
+  return get_type() == type::BOOLEAN;
 }
 
 bool var::is_int() const {
-  return type == INTEGER_TYPE;
+  return get_type() == type::INTEGER;
 }
 
 bool var::is_float() const {
-  return type == FLOAT_TYPE;
+  return get_type() == type::FLOAT;
 }
 
 bool var::is_string() const {
-  return type == STRING_TYPE;
+  return get_type() == type::STRING;
 }
 
 bool var::is_array() const {
-  return type == ARRAY_TYPE;
+  return get_type() == type::ARRAY;
 }
 
 
 inline const char *var::get_type_c_str() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return "NULL";
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return "boolean";
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return "integer";
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return "double";
-    case STRING_TYPE:
+    case type::STRING:
       return "string";
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return "array";
     default:
       __builtin_unreachable();
@@ -1094,23 +1094,23 @@ bool var::empty() const {
 }
 
 int var::count() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       php_warning("count(): Parameter is null, but an array expected");
       return 0;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       php_warning("count(): Parameter is bool, but an array expected");
       return 1;
-    case INTEGER_TYPE:
+    case type::INTEGER:
       php_warning("count(): Parameter is int, but an array expected");
       return 1;
-    case FLOAT_TYPE:
+    case type::FLOAT:
       php_warning("count(): Parameter is float, but an array expected");
       return 1;
-    case STRING_TYPE:
+    case type::STRING:
       php_warning("count(): Parameter is string, but an array expected");
       return 1;
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return as_array().count();
     default:
       __builtin_unreachable();
@@ -1119,21 +1119,21 @@ int var::count() const {
 
 
 void var::swap(var &other) {
-  ::swap(type, other.type);
+  ::swap(type_, other.type_);
   ::swap(as_double(), other.as_double());
 }
 
 
 var &var::operator[](int int_key) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
       empty_var = var();
       return empty_var;
     }
 
-    if (type == NULL_TYPE || (type == BOOLEAN_TYPE && !as_bool())) {
-      type = ARRAY_TYPE;
+    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
@@ -1146,15 +1146,15 @@ var &var::operator[](int int_key) {
 }
 
 var &var::operator[](const string &string_key) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
       empty_var = var();
       return empty_var;
     }
 
-    if (type == NULL_TYPE || (type == BOOLEAN_TYPE && !as_bool())) {
-      type = ARRAY_TYPE;
+    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
@@ -1168,18 +1168,18 @@ var &var::operator[](const string &string_key) {
 }
 
 var &var::operator[](const var &v) {
-  switch (v.type) {
-    case NULL_TYPE:
+  switch (v.get_type()) {
+    case type::NUL:
       return (*this)[string()];
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return (*this)[v.as_bool()];
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return (*this)[v.as_int()];
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return (*this)[(int)v.as_double()];
-    case STRING_TYPE:
+    case type::STRING:
       return (*this)[v.as_string()];
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return (*this)[v.as_array().to_int()];
     default:
@@ -1197,8 +1197,8 @@ var &var::operator[](const array<var>::iterator &it) {
 
 
 void var::set_value(int int_key, const var &v) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       auto rhs_string = v.to_string();
       if (rhs_string.empty()) {
         php_warning("Cannot assign an empty string to a string offset, index = %d", int_key);
@@ -1222,8 +1222,8 @@ void var::set_value(int int_key, const var &v) {
       return;
     }
 
-    if (type == NULL_TYPE || (type == BOOLEAN_TYPE && !as_bool())) {
-      type = ARRAY_TYPE;
+    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
@@ -1234,8 +1234,8 @@ void var::set_value(int int_key, const var &v) {
 }
 
 void var::set_value(const string &string_key, const var &v) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       int int_val;
       if (!string_key.try_to_int(&int_val)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
@@ -1258,8 +1258,8 @@ void var::set_value(const string &string_key, const var &v) {
       return;
     }
 
-    if (type == NULL_TYPE || (type == BOOLEAN_TYPE && !as_bool())) {
-      type = ARRAY_TYPE;
+    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
@@ -1271,22 +1271,22 @@ void var::set_value(const string &string_key, const var &v) {
 }
 
 void var::set_value(const string &string_key, const var &v, int precomuted_hash) {
-  return type == ARRAY_TYPE ? as_array().set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
+  return get_type() == type::ARRAY ? as_array().set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
 }
 
 void var::set_value(const var &v, const var &value) {
-  switch (v.type) {
-    case NULL_TYPE:
+  switch (v.get_type()) {
+    case type::NUL:
       return set_value(string(), value);
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return set_value(v.as_bool(), value);
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return set_value(v.as_int(), value);
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return set_value((int)v.as_double(), value);
-    case STRING_TYPE:
+    case type::STRING:
       return set_value(v.as_string(), value);
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Illegal offset type array");
       return;
     default:
@@ -1304,15 +1304,15 @@ void var::set_value(const array<var>::iterator &it) {
 
 
 const var var::get_value(int int_key) const {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       if ((dl::size_type)int_key >= as_string().size()) {
         return string();
       }
       return string(1, as_string()[int_key]);
     }
 
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
+    if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
     }
     return var();
@@ -1322,8 +1322,8 @@ const var var::get_value(int int_key) const {
 }
 
 const var var::get_value(const string &string_key) const {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       int int_val;
       if (!string_key.try_to_int(&int_val)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
@@ -1335,7 +1335,7 @@ const var var::get_value(const string &string_key) const {
       return string(1, as_string()[int_val]);
     }
 
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
+    if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
     }
     return var();
@@ -1345,22 +1345,22 @@ const var var::get_value(const string &string_key) const {
 }
 
 const var var::get_value(const string &string_key, int precomuted_hash) const {
-  return type == ARRAY_TYPE ? as_array().get_value(string_key, precomuted_hash) : get_value(string_key);
+  return get_type() == type::ARRAY ? as_array().get_value(string_key, precomuted_hash) : get_value(string_key);
 }
 
 const var var::get_value(const var &v) const {
-  switch (v.type) {
-    case NULL_TYPE:
+  switch (v.get_type()) {
+    case type::NUL:
       return get_value(string());
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return get_value(v.as_bool());
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return get_value(v.as_int());
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return get_value((int)v.as_double());
-    case STRING_TYPE:
+    case type::STRING:
       return get_value(v.as_string());
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return var();
     default:
@@ -1378,9 +1378,9 @@ const var var::get_value(const array<var>::iterator &it) const {
 
 
 void var::push_back(const var &v) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == NULL_TYPE || (type == BOOLEAN_TYPE && !as_bool())) {
-      type = ARRAY_TYPE;
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
@@ -1392,9 +1392,9 @@ void var::push_back(const var &v) {
 }
 
 const var var::push_back_return(const var &v) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == NULL_TYPE || (type == BOOLEAN_TYPE && !as_bool())) {
-      type = ARRAY_TYPE;
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
@@ -1408,12 +1408,12 @@ const var var::push_back_return(const var &v) {
 
 
 bool var::isset(int int_key) const {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type == STRING_TYPE) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::STRING) {
       return as_string().get_correct_index(int_key) < as_string().size();
     }
 
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
+    if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in isset", get_type_c_str());
     }
     return false;
@@ -1423,10 +1423,10 @@ bool var::isset(int int_key) const {
 }
 
 bool var::isset(const string &string_key) const {
-  if (unlikely (type != ARRAY_TYPE)) {
+  if (unlikely (get_type() != type::ARRAY)) {
     int int_key{std::numeric_limits<int>::max()};
 
-    if (type == STRING_TYPE) {
+    if (get_type() == type::STRING) {
       if (!string_key.try_to_int(&int_key)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
         return false;
@@ -1440,18 +1440,18 @@ bool var::isset(const string &string_key) const {
 }
 
 bool var::isset(const var &v) const {
-  switch (v.type) {
-    case NULL_TYPE:
+  switch (v.get_type()) {
+    case type::NUL:
       return isset(string());
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return isset(static_cast<int>(v.as_bool()));
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return isset(v.as_int());
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return isset(static_cast<int>(v.as_double()));
-    case STRING_TYPE:
+    case type::STRING:
       return isset(v.as_string());
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Illegal offset type array");
       return false;
     default:
@@ -1460,8 +1460,8 @@ bool var::isset(const var &v) const {
 }
 
 void var::unset(int int_key) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
     }
     return;
@@ -1471,8 +1471,8 @@ void var::unset(int int_key) {
 }
 
 void var::unset(const string &string_key) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
     }
     return;
@@ -1482,25 +1482,25 @@ void var::unset(const string &string_key) {
 }
 
 void var::unset(const var &v) {
-  if (unlikely (type != ARRAY_TYPE)) {
-    if (type != NULL_TYPE && (type != BOOLEAN_TYPE || as_bool())) {
+  if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
     }
     return;
   }
 
-  switch (v.type) {
-    case NULL_TYPE:
+  switch (v.get_type()) {
+    case type::NUL:
       return as_array().unset(string());
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return as_array().unset(v.as_bool());
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return as_array().unset(v.as_int());
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return as_array().unset((int)v.as_double());
-    case STRING_TYPE:
+    case type::STRING:
       return as_array().unset(v.as_string());
-    case ARRAY_TYPE:
+    case type::ARRAY:
       php_warning("Illegal offset type array");
       return;
     default:
@@ -1509,7 +1509,7 @@ void var::unset(const var &v) {
 }
 
 array<var>::const_iterator var::begin() const {
-  if (likely (type == ARRAY_TYPE)) {
+  if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s \"%s\" is given", get_type_c_str(), to_string().c_str());
@@ -1517,7 +1517,7 @@ array<var>::const_iterator var::begin() const {
 }
 
 array<var>::const_iterator var::end() const {
-  if (likely (type == ARRAY_TYPE)) {
+  if (likely (get_type() == type::ARRAY)) {
     return as_array().end();
   }
   return array<var>::const_iterator();
@@ -1525,7 +1525,7 @@ array<var>::const_iterator var::end() const {
 
 
 array<var>::iterator var::begin() {
-  if (likely (type == ARRAY_TYPE)) {
+  if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s \"%s\" is given", get_type_c_str(), to_string().c_str());
@@ -1533,7 +1533,7 @@ array<var>::iterator var::begin() {
 }
 
 array<var>::iterator var::end() {
-  if (likely (type == ARRAY_TYPE)) {
+  if (likely (get_type() == type::ARRAY)) {
     return as_array().end();
   }
   return array<var>::iterator();
@@ -1541,18 +1541,18 @@ array<var>::iterator var::end() {
 
 
 int var::get_reference_counter() const {
-  switch (type) {
-    case NULL_TYPE:
+  switch (get_type()) {
+    case type::NUL:
       return -1;
-    case BOOLEAN_TYPE:
+    case type::BOOLEAN:
       return -2;
-    case INTEGER_TYPE:
+    case type::INTEGER:
       return -3;
-    case FLOAT_TYPE:
+    case type::FLOAT:
       return -4;
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().get_reference_counter();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return as_array().get_reference_counter();
     default:
       __builtin_unreachable();
@@ -1560,57 +1560,57 @@ int var::get_reference_counter() const {
 }
 
 void var::set_reference_counter_to_const() {
-  switch (type) {
-    case NULL_TYPE:
-    case BOOLEAN_TYPE:
-    case INTEGER_TYPE:
-    case FLOAT_TYPE:
+  switch (get_type()) {
+    case type::NUL:
+    case type::BOOLEAN:
+    case type::INTEGER:
+    case type::FLOAT:
       return;
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().set_reference_counter_to_const();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return as_array().set_reference_counter_to_const();
     default:
       __builtin_unreachable();
   }
 }
 
-inline dl::size_type var::estimate_memory_usage() const {
-  switch (type) {
-    case NULL_TYPE:
-    case BOOLEAN_TYPE:
-    case INTEGER_TYPE:
-    case FLOAT_TYPE:
+dl::size_type var::estimate_memory_usage() const {
+  switch (get_type()) {
+    case type::NUL:
+    case type::BOOLEAN:
+    case type::INTEGER:
+    case type::FLOAT:
       return 0;
-    case STRING_TYPE:
+    case type::STRING:
       return as_string().estimate_memory_usage();
-    case ARRAY_TYPE:
+    case type::ARRAY:
       return as_array().estimate_memory_usage();
     default:
       __builtin_unreachable();
   }
 }
 
-const var operator+(const var &lhs, const var &rhs) {
-  if (likely (lhs.type == var::INTEGER_TYPE && rhs.type == var::INTEGER_TYPE)) {
+inline const var operator+(const var &lhs, const var &rhs) {
+  if (likely (lhs.is_int() && rhs.is_int())) {
     return lhs.as_int() + rhs.as_int();
   }
 
-  if (lhs.type == var::ARRAY_TYPE && rhs.type == var::ARRAY_TYPE) {
+  if (lhs.is_array() && rhs.is_array()) {
     return lhs.as_array() + rhs.as_array();
   }
 
   const var arg1 = lhs.to_numeric();
   const var arg2 = rhs.to_numeric();
 
-  if (arg1.type == var::INTEGER_TYPE) {
-    if (arg2.type == var::INTEGER_TYPE) {
+  if (arg1.is_int()) {
+    if (arg2.is_int()) {
       return arg1.as_int() + arg2.as_int();
     } else {
       return arg1.as_int() + arg2.as_double();
     }
   } else {
-    if (arg2.type == var::INTEGER_TYPE) {
+    if (arg2.is_int()) {
       return arg1.as_double() + arg2.as_int();
     } else {
       return arg1.as_double() + arg2.as_double();
@@ -1618,22 +1618,22 @@ const var operator+(const var &lhs, const var &rhs) {
   }
 }
 
-const var operator-(const var &lhs, const var &rhs) {
-  if (likely (lhs.type == var::INTEGER_TYPE && rhs.type == var::INTEGER_TYPE)) {
+inline const var operator-(const var &lhs, const var &rhs) {
+  if (likely (lhs.is_int() && rhs.is_int())) {
     return lhs.as_int() - rhs.as_int();
   }
 
   const var arg1 = lhs.to_numeric();
   const var arg2 = rhs.to_numeric();
 
-  if (arg1.type == var::INTEGER_TYPE) {
-    if (arg2.type == var::INTEGER_TYPE) {
+  if (arg1.is_int()) {
+    if (arg2.is_int()) {
       return arg1.as_int() - arg2.as_int();
     } else {
       return arg1.as_int() - arg2.as_double();
     }
   } else {
-    if (arg2.type == var::INTEGER_TYPE) {
+    if (arg2.is_int()) {
       return arg1.as_double() - arg2.as_int();
     } else {
       return arg1.as_double() - arg2.as_double();
@@ -1641,22 +1641,22 @@ const var operator-(const var &lhs, const var &rhs) {
   }
 }
 
-const var operator*(const var &lhs, const var &rhs) {
-  if (likely (lhs.type == var::INTEGER_TYPE && rhs.type == var::INTEGER_TYPE)) {
+inline const var operator*(const var &lhs, const var &rhs) {
+  if (likely (lhs.is_int() && rhs.is_int())) {
     return lhs.as_int() * rhs.as_int();
   }
 
   const var arg1 = lhs.to_numeric();
   const var arg2 = rhs.to_numeric();
 
-  if (arg1.type == var::INTEGER_TYPE) {
-    if (arg2.type == var::INTEGER_TYPE) {
+  if (arg1.is_int()) {
+    if (arg2.is_int()) {
       return arg1.as_int() * arg2.as_int();
     } else {
       return arg1.as_int() * arg2.as_double();
     }
   } else {
-    if (arg2.type == var::INTEGER_TYPE) {
+    if (arg2.is_int()) {
       return arg1.as_double() * arg2.as_int();
     } else {
       return arg1.as_double() * arg2.as_double();
@@ -1664,10 +1664,10 @@ const var operator*(const var &lhs, const var &rhs) {
   }
 }
 
-const var operator-(const string &lhs) {
+inline const var operator-(const string &lhs) {
   var arg1 = lhs.to_numeric();
 
-  if (arg1.type == var::INTEGER_TYPE) {
+  if (arg1.is_int()) {
     arg1.as_int() = -arg1.as_int();
   } else {
     arg1.as_double() = -arg1.as_double();
@@ -1675,166 +1675,118 @@ const var operator-(const string &lhs) {
   return arg1;
 }
 
-const var operator+(const string &lhs) {
+inline const var operator+(const string &lhs) {
   return lhs.to_numeric();
 }
 
 
-int operator&(const var &lhs, const var &rhs) {
+inline int operator&(const var &lhs, const var &rhs) {
   return lhs.to_int() & rhs.to_int();
 }
 
-int operator|(const var &lhs, const var &rhs) {
+inline int operator|(const var &lhs, const var &rhs) {
   return lhs.to_int() | rhs.to_int();
 }
 
-int operator^(const var &lhs, const var &rhs) {
+inline int operator^(const var &lhs, const var &rhs) {
   return lhs.to_int() ^ rhs.to_int();
 }
 
-int operator<<(const var &lhs, const var &rhs) {
+inline int operator<<(const var &lhs, const var &rhs) {
   return lhs.to_int() << rhs.to_int();
 }
 
-int operator>>(const var &lhs, const var &rhs) {
+inline int operator>>(const var &lhs, const var &rhs) {
   return lhs.to_int() >> rhs.to_int();
 }
 
-bool operator<=(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.type == var::STRING_TYPE)) {
-    if (likely (rhs.type == var::STRING_TYPE)) {
+inline bool operator<=(const var &lhs, const var &rhs) {
+  if (unlikely (lhs.is_string())) {
+    if (likely (rhs.is_string())) {
       return compare_strings_php_order(lhs.as_string(), rhs.as_string()) <= 0;
-    } else if (unlikely (rhs.type == var::NULL_TYPE)) {
-      return lhs.as_string().size() == 0;
+    } else if (unlikely (rhs.is_null())) {
+      return lhs.as_string().empty();
     }
-  } else if (unlikely (rhs.type == var::STRING_TYPE)) {
-    if (unlikely (lhs.type == var::NULL_TYPE)) {
+  } else if (unlikely (rhs.is_string())) {
+    if (unlikely (lhs.is_null())) {
       return true;
     }
   }
-  if (lhs.type == var::BOOLEAN_TYPE || rhs.type == var::BOOLEAN_TYPE || lhs.type == var::NULL_TYPE || rhs.type == var::NULL_TYPE) {
+  if (lhs.is_bool() || rhs.is_bool() || lhs.is_null() || rhs.is_null()) {
     return lhs.to_bool() <= rhs.to_bool();
   }
 
-  if (unlikely (lhs.type == var::ARRAY_TYPE || rhs.type == var::ARRAY_TYPE)) {
-    if (likely (lhs.type == var::ARRAY_TYPE && rhs.type == var::ARRAY_TYPE)) {
+  if (unlikely (lhs.is_array() || rhs.is_array())) {
+    if (likely (lhs.is_array() && rhs.is_array())) {
       return lhs.as_array().count() <= rhs.as_array().count();
     }
 
     php_warning("Unsupported operand types for operator <= (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return rhs.type == var::ARRAY_TYPE;
+    return rhs.is_array();
   }
 
   return lhs.to_float() <= rhs.to_float();
 }
 
-bool operator>=(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.type == var::STRING_TYPE)) {
-    if (likely (rhs.type == var::STRING_TYPE)) {
-      return compare_strings_php_order(lhs.as_string(), rhs.as_string()) >= 0;
-    } else if (unlikely (rhs.type == var::NULL_TYPE)) {
-      return true;
-    }
-  } else if (unlikely (rhs.type == var::STRING_TYPE)) {
-    if (unlikely (lhs.type == var::NULL_TYPE)) {
-      return rhs.as_string().size() == 0;
-    }
-  }
-  if (lhs.type == var::BOOLEAN_TYPE || rhs.type == var::BOOLEAN_TYPE || lhs.type == var::NULL_TYPE || rhs.type == var::NULL_TYPE) {
-    return lhs.to_bool() >= rhs.to_bool();
-  }
-
-  if (unlikely (lhs.type == var::ARRAY_TYPE || rhs.type == var::ARRAY_TYPE)) {
-    if (likely (lhs.type == var::ARRAY_TYPE && rhs.type == var::ARRAY_TYPE)) {
-      return lhs.as_array().count() >= rhs.as_array().count();
-    }
-
-    php_warning("Unsupported operand types for operator >= (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return lhs.type == var::ARRAY_TYPE;
-  }
-
-  return lhs.to_float() >= rhs.to_float();
+inline bool operator>=(const var &lhs, const var &rhs) {
+  return rhs <= lhs;
 }
 
-bool operator<(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.type == var::STRING_TYPE)) {
-    if (likely (rhs.type == var::STRING_TYPE)) {
+inline bool operator<(const var &lhs, const var &rhs) {
+  if (unlikely (lhs.is_string())) {
+    if (likely (rhs.is_string())) {
       return compare_strings_php_order(lhs.as_string(), rhs.as_string()) < 0;
-    } else if (unlikely (rhs.type == var::NULL_TYPE)) {
+    } else if (unlikely (rhs.is_null())) {
       return false;
     }
-  } else if (unlikely (rhs.type == var::STRING_TYPE)) {
-    if (unlikely (lhs.type == var::NULL_TYPE)) {
-      return rhs.as_string().size() != 0;
+  } else if (unlikely (rhs.is_string())) {
+    if (unlikely (lhs.is_null())) {
+      return !rhs.as_string().empty();
     }
   }
-  if (lhs.type == var::BOOLEAN_TYPE || rhs.type == var::BOOLEAN_TYPE || lhs.type == var::NULL_TYPE || rhs.type == var::NULL_TYPE) {
+  if (lhs.is_bool() || rhs.is_bool() || lhs.is_null() || rhs.is_null()) {
     return lhs.to_bool() < rhs.to_bool();
   }
 
-  if (unlikely (lhs.type == var::ARRAY_TYPE || rhs.type == var::ARRAY_TYPE)) {
-    if (likely (lhs.type == var::ARRAY_TYPE && rhs.type == var::ARRAY_TYPE)) {
+  if (unlikely (lhs.is_array() || rhs.is_array())) {
+    if (likely (lhs.is_array() && rhs.is_array())) {
       return lhs.as_array().count() < rhs.as_array().count();
     }
 
     php_warning("Unsupported operand types for operator < (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return lhs.type != var::ARRAY_TYPE;
+    return lhs.is_array();
   }
 
   return lhs.to_float() < rhs.to_float();
 }
 
-bool operator>(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.type == var::STRING_TYPE)) {
-    if (likely (rhs.type == var::STRING_TYPE)) {
-      return compare_strings_php_order(lhs.as_string(), rhs.as_string()) > 0;
-    } else if (unlikely (rhs.type == var::NULL_TYPE)) {
-      return lhs.as_string().size() != 0;
-    }
-  } else if (unlikely (rhs.type == var::STRING_TYPE)) {
-    if (unlikely (lhs.type == var::NULL_TYPE)) {
-      return false;
-    }
-  }
-  if (lhs.type == var::BOOLEAN_TYPE || rhs.type == var::BOOLEAN_TYPE || lhs.type == var::NULL_TYPE || rhs.type == var::NULL_TYPE) {
-    return lhs.to_bool() > rhs.to_bool();
-  }
-
-  if (unlikely (lhs.type == var::ARRAY_TYPE || rhs.type == var::ARRAY_TYPE)) {
-    if (likely (lhs.type == var::ARRAY_TYPE && rhs.type == var::ARRAY_TYPE)) {
-      return lhs.as_array().count() > rhs.as_array().count();
-    }
-
-    php_warning("Unsupported operand types for operator > (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return rhs.type != var::ARRAY_TYPE;
-  }
-
-  return lhs.to_float() > rhs.to_float();
+inline bool operator>(const var &lhs, const var &rhs) {
+  return rhs < lhs;
 }
 
-void swap(var &lhs, var &rhs) {
+inline void swap(var &lhs, var &rhs) {
   lhs.swap(rhs);
 }
 
 template<class T>
-string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
+inline string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
   auto write_lambda = [&sb](const auto &v) -> string_buffer& { return sb << v; };
   return call_fun_on_optional_value(write_lambda, v);
 }
 
-string_buffer &operator<<(string_buffer &sb, const var &v) {
-  switch (v.type) {
-    case var::NULL_TYPE:
+inline string_buffer &operator<<(string_buffer &sb, const var &v) {
+  switch (v.get_type()) {
+    case var::type::NUL:
       return sb;
-    case var::BOOLEAN_TYPE:
+    case var::type::BOOLEAN:
       return sb << v.as_bool();
-    case var::INTEGER_TYPE:
+    case var::type::INTEGER:
       return sb << v.as_int();
-    case var::FLOAT_TYPE:
+    case var::type::FLOAT:
       return sb << string(v.as_double());
-    case var::STRING_TYPE:
+    case var::type::STRING:
       return sb << v.as_string();
-    case var::ARRAY_TYPE:
+    case var::type::ARRAY:
       php_warning("Convertion from array to string");
       return sb.append("Array", 5);
     default:

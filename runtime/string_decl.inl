@@ -182,11 +182,6 @@ public:
   inline size_type estimate_memory_usage() const;
 
   inline void destroy() __attribute__((always_inline));
-
-  friend class var;
-
-  template<class T>
-  friend class array;
 };
 
 inline bool operator==(const string &lhs, const string &rhs);
