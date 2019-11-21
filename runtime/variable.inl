@@ -1117,6 +1117,41 @@ int var::count() const {
   }
 }
 
+template<class T1, class T2>
+inline bool eq2(const array<T1> &lhs, const array<T2> &rhs);
+
+int var::compare(const var &rhs) const {
+  if (unlikely(is_string())) {
+    if (likely(rhs.is_string())) {
+      return compare_strings_php_order(as_string(), rhs.as_string());
+    } else if (unlikely(rhs.is_null())) {
+      return as_string().empty() ? 0 : 1;
+    }
+  } else if (unlikely(rhs.is_string())) {
+    if (unlikely(is_null())) {
+      return rhs.as_string().empty() ? 0 : -1;
+    }
+  }
+  if (is_bool() || rhs.is_bool() || is_null() || rhs.is_null()) {
+    return three_way_comparison(to_bool(), rhs.to_bool());
+  }
+
+  if (unlikely(is_array() || rhs.is_array())) {
+    if (likely(is_array() && rhs.is_array())) {
+      if (eq2(as_array(), rhs.as_array())) {
+        return 0;
+      }
+
+      // TODO: Here is bug, but it was before. Fix it later
+      return three_way_comparison(as_array().count(), rhs.as_array().count());
+    }
+
+    php_warning("Unsupported operand types for operator < or <= (%s and %s)", get_type_c_str(), rhs.get_type_c_str());
+    return is_array() ? 1 : -1;
+  }
+
+  return three_way_comparison(to_float(), rhs.to_float());
+}
 
 void var::swap(var &other) {
   ::swap(type_, other.type_);
@@ -1591,80 +1626,51 @@ dl::size_type var::estimate_memory_usage() const {
   }
 }
 
-inline const var operator+(const var &lhs, const var &rhs) {
-  if (likely (lhs.is_int() && rhs.is_int())) {
-    return lhs.as_int() + rhs.as_int();
+namespace {
+
+template<class MathOperation>
+inline var do_math_op_on_vars(const var &lhs, const var &rhs, MathOperation &&math_op) {
+  if (likely(lhs.is_int() && rhs.is_int())) {
+    return math_op(lhs.as_int(), rhs.as_int());
   }
 
+  const var arg1 = lhs.to_numeric();
+  const var arg2 = rhs.to_numeric();
+
+  if (arg1.is_int()) {
+    if (arg2.is_int()) {
+      return math_op(arg1.as_int(), arg2.as_int());
+    } else {
+      return math_op(arg1.as_int(), arg2.as_double());
+    }
+  } else {
+    if (arg2.is_int()) {
+      return math_op(arg1.as_double(), arg2.as_int());
+    } else {
+      return math_op(arg1.as_double(), arg2.as_double());
+    }
+  }
+}
+
+} // namespace
+
+inline var operator+(const var &lhs, const var &rhs) {
   if (lhs.is_array() && rhs.is_array()) {
     return lhs.as_array() + rhs.as_array();
   }
 
-  const var arg1 = lhs.to_numeric();
-  const var arg2 = rhs.to_numeric();
-
-  if (arg1.is_int()) {
-    if (arg2.is_int()) {
-      return arg1.as_int() + arg2.as_int();
-    } else {
-      return arg1.as_int() + arg2.as_double();
-    }
-  } else {
-    if (arg2.is_int()) {
-      return arg1.as_double() + arg2.as_int();
-    } else {
-      return arg1.as_double() + arg2.as_double();
-    }
-  }
+  return do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
 }
 
-inline const var operator-(const var &lhs, const var &rhs) {
-  if (likely (lhs.is_int() && rhs.is_int())) {
-    return lhs.as_int() - rhs.as_int();
-  }
-
-  const var arg1 = lhs.to_numeric();
-  const var arg2 = rhs.to_numeric();
-
-  if (arg1.is_int()) {
-    if (arg2.is_int()) {
-      return arg1.as_int() - arg2.as_int();
-    } else {
-      return arg1.as_int() - arg2.as_double();
-    }
-  } else {
-    if (arg2.is_int()) {
-      return arg1.as_double() - arg2.as_int();
-    } else {
-      return arg1.as_double() - arg2.as_double();
-    }
-  }
+inline var operator-(const var &lhs, const var &rhs) {
+  return do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
 }
 
-inline const var operator*(const var &lhs, const var &rhs) {
-  if (likely (lhs.is_int() && rhs.is_int())) {
-    return lhs.as_int() * rhs.as_int();
-  }
-
-  const var arg1 = lhs.to_numeric();
-  const var arg2 = rhs.to_numeric();
-
-  if (arg1.is_int()) {
-    if (arg2.is_int()) {
-      return arg1.as_int() * arg2.as_int();
-    } else {
-      return arg1.as_int() * arg2.as_double();
-    }
-  } else {
-    if (arg2.is_int()) {
-      return arg1.as_double() * arg2.as_int();
-    } else {
-      return arg1.as_double() * arg2.as_double();
-    }
-  }
+inline var operator*(const var &lhs, const var &rhs) {
+  return do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
 }
 
-inline const var operator-(const string &lhs) {
+inline var operator-(const string &lhs) {
   var arg1 = lhs.to_numeric();
 
   if (arg1.is_int()) {
@@ -1675,10 +1681,9 @@ inline const var operator-(const string &lhs) {
   return arg1;
 }
 
-inline const var operator+(const string &lhs) {
+inline var operator+(const string &lhs) {
   return lhs.to_numeric();
 }
-
 
 inline int operator&(const var &lhs, const var &rhs) {
   return lhs.to_int() & rhs.to_int();
@@ -1700,68 +1705,20 @@ inline int operator>>(const var &lhs, const var &rhs) {
   return lhs.to_int() >> rhs.to_int();
 }
 
-inline bool operator<=(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.is_string())) {
-    if (likely (rhs.is_string())) {
-      return compare_strings_php_order(lhs.as_string(), rhs.as_string()) <= 0;
-    } else if (unlikely (rhs.is_null())) {
-      return lhs.as_string().empty();
-    }
-  } else if (unlikely (rhs.is_string())) {
-    if (unlikely (lhs.is_null())) {
-      return true;
-    }
-  }
-  if (lhs.is_bool() || rhs.is_bool() || lhs.is_null() || rhs.is_null()) {
-    return lhs.to_bool() <= rhs.to_bool();
-  }
-
-  if (unlikely (lhs.is_array() || rhs.is_array())) {
-    if (likely (lhs.is_array() && rhs.is_array())) {
-      return lhs.as_array().count() <= rhs.as_array().count();
-    }
-
-    php_warning("Unsupported operand types for operator <= (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return rhs.is_array();
-  }
-
-  return lhs.to_float() <= rhs.to_float();
-}
-
-inline bool operator>=(const var &lhs, const var &rhs) {
-  return rhs <= lhs;
-}
-
 inline bool operator<(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.is_string())) {
-    if (likely (rhs.is_string())) {
-      return compare_strings_php_order(lhs.as_string(), rhs.as_string()) < 0;
-    } else if (unlikely (rhs.is_null())) {
-      return false;
-    }
-  } else if (unlikely (rhs.is_string())) {
-    if (unlikely (lhs.is_null())) {
-      return !rhs.as_string().empty();
-    }
-  }
-  if (lhs.is_bool() || rhs.is_bool() || lhs.is_null() || rhs.is_null()) {
-    return lhs.to_bool() < rhs.to_bool();
-  }
-
-  if (unlikely (lhs.is_array() || rhs.is_array())) {
-    if (likely (lhs.is_array() && rhs.is_array())) {
-      return lhs.as_array().count() < rhs.as_array().count();
-    }
-
-    php_warning("Unsupported operand types for operator < (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return lhs.is_array();
-  }
-
-  return lhs.to_float() < rhs.to_float();
+  return lhs.compare(rhs) < 0;
 }
 
 inline bool operator>(const var &lhs, const var &rhs) {
   return rhs < lhs;
+}
+
+inline bool operator<=(const var &lhs, const var &rhs) {
+  return !(rhs < lhs);
+}
+
+inline bool operator>=(const var &lhs, const var &rhs) {
+  return rhs <= lhs;
 }
 
 inline void swap(var &lhs, var &rhs) {

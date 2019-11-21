@@ -38,46 +38,9 @@ inline bool eq2(double lhs, double rhs) {
 inline bool eq2(const string &lhs, const string &rhs) {
   return compare_strings_php_order(lhs, rhs) == 0;
 }
-template<class T>
-inline bool eq2(const array<T> &lhs, const array<T> &rhs) {
-  if (rhs.count() != lhs.count()) {
-    return false;
-  }
 
-  for (typename array<T>::const_iterator rhs_it = rhs.begin(); rhs_it != rhs.end(); ++rhs_it) {
-    if (!lhs.has_key(rhs_it) || !eq2(lhs.get_value(rhs_it), rhs_it.get_value())) {
-      return false;
-    }
-  }
-
-  return true;
-}
 inline bool eq2(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.is_string())) {
-    if (likely (rhs.is_string())) {
-      return eq2(lhs.as_string(), rhs.as_string());
-    } else if (unlikely (rhs.is_null())) {
-      return lhs.as_string().empty();
-    }
-  } else if (unlikely (rhs.is_string())) {
-    if (unlikely (lhs.is_null())) {
-      return rhs.as_string().empty();
-    }
-  }
-  if (lhs.is_bool() || lhs.is_null() || rhs.is_bool() || rhs.is_null()) {
-    return lhs.to_bool() == rhs.to_bool();
-  }
-
-  if (unlikely (lhs.is_array() || rhs.is_array())) {
-    if (likely (lhs.is_array() && rhs.is_array())) {
-      return eq2(lhs.as_array(), rhs.as_array());
-    }
-
-    php_warning("Unsupported operand types for operator == (%s and %s)", lhs.get_type_c_str(), rhs.get_type_c_str());
-    return false;
-  }
-
-  return lhs.to_float() == rhs.to_float();
+  return lhs.compare(rhs) == 0;
 }
 
 inline bool eq2(bool lhs, int rhs) {

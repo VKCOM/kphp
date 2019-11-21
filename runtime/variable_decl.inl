@@ -172,6 +172,7 @@ public:
 
   inline bool empty() const;
   inline int count() const;
+  inline int compare(const var &rhs) const;
 
   inline array<var>::const_iterator begin() const;
   inline array<var>::const_iterator end() const;
