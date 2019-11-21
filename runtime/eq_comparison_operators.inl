@@ -26,7 +26,6 @@ inline enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {
   return false;
 }
 
-
 inline bool eq2(bool lhs, bool rhs) {
   return lhs == rhs;
 }
@@ -58,11 +57,11 @@ inline bool eq2(const var &lhs, const var &rhs) {
     if (likely (rhs.type == var::STRING_TYPE)) {
       return eq2(lhs.as_string(), rhs.as_string());
     } else if (unlikely (rhs.type == var::NULL_TYPE)) {
-      return lhs.as_string().size() == 0;
+      return lhs.as_string().empty();
     }
   } else if (unlikely (rhs.type == var::STRING_TYPE)) {
     if (unlikely (lhs.type == var::NULL_TYPE)) {
-      return rhs.as_string().size() == 0;
+      return rhs.as_string().empty();
     }
   }
   if (lhs.type == var::BOOLEAN_TYPE || rhs.type == var::BOOLEAN_TYPE || lhs.type == var::NULL_TYPE || rhs.type == var::NULL_TYPE) {
@@ -85,42 +84,42 @@ inline bool eq2(bool lhs, int rhs) {
   return lhs != !rhs;
 }
 inline bool eq2(int lhs, bool rhs) {
-  return rhs != !lhs;
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(bool lhs, double rhs) {
   return lhs != (rhs == 0.0);
 }
 inline bool eq2(double lhs, bool rhs) {
-  return rhs != (lhs == 0.0);
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(int lhs, double rhs) {
   return lhs == rhs;
 }
 inline bool eq2(double lhs, int rhs) {
-  return lhs == rhs;
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(bool lhs, const string &rhs) {
   return lhs == rhs.to_bool();
 }
 inline bool eq2(const string &lhs, bool rhs) {
-  return rhs == lhs.to_bool();
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(int lhs, const string &rhs) {
   return lhs == rhs.to_float();
 }
 inline bool eq2(const string &lhs, int rhs) {
-  return rhs == lhs.to_float();
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(double lhs, const string &rhs) {
   return lhs == rhs.to_float();
 }
 inline bool eq2(const string &lhs, double rhs) {
-  return rhs == lhs.to_float();
+  return eq2(rhs, lhs);
 }
 
 template<class T>
@@ -129,7 +128,7 @@ inline bool eq2(bool lhs, const array<T> &rhs) {
 }
 template<class T>
 inline bool eq2(const array<T> &lhs, bool rhs) {
-  return rhs == !lhs.empty();
+  return eq2(rhs, lhs);
 }
 
 template<class T>
@@ -138,9 +137,8 @@ inline bool eq2(int, const array<T> &) {
   return false;
 }
 template<class T>
-inline bool eq2(const array<T> &, int) {
-  php_warning("Unsupported operand types for operator == (array and int)");
-  return false;
+inline bool eq2(const array<T> &lhs, int rhs) {
+  return eq2(rhs, lhs);
 }
 
 template<class T>
@@ -149,9 +147,8 @@ inline bool eq2(double, const array<T> &) {
   return false;
 }
 template<class T>
-inline bool eq2(const array<T> &, double) {
-  php_warning("Unsupported operand types for operator == (array and float)");
-  return false;
+inline bool eq2(const array<T> &lhs, double rhs) {
+  return eq2(rhs, lhs);
 }
 
 template<class T>
@@ -160,9 +157,8 @@ inline bool eq2(const string &, const array<T> &) {
   return false;
 }
 template<class T>
-inline bool eq2(const array<T> &, const string &) {
-  php_warning("Unsupported operand types for operator == (array and string)");
-  return false;
+inline bool eq2(const array<T> &lhs, const string &rhs) {
+  return eq2(rhs, lhs);
 }
 
 template<class TupleLhsT, class TupleRhsT, size_t ...Indices>
@@ -207,8 +203,8 @@ inline bool eq2(bool lhs, const std::tuple<Args...> &) {
   return lhs;
 }
 template<class ...Args>
-inline bool eq2(const std::tuple<Args...> &, bool rhs) {
-  return rhs;
+inline bool eq2(const std::tuple<Args...> &lhs, bool rhs) {
+  return eq2(rhs, lhs);
 }
 
 template<class T, class ...Args>
@@ -216,8 +212,8 @@ inline bool eq2(const T &, const std::tuple<Args...> &) {
   return false;
 }
 template<class T, class ...Args>
-inline bool eq2(const std::tuple<Args...> &, const T &) {
-  return false;
+inline bool eq2(const std::tuple<Args...> &lhs, const T &rhs) {
+  return eq2(rhs, lhs);
 }
 
 template<class T>
@@ -230,60 +226,21 @@ inline bool eq2(bool lhs, const var &rhs) {
   return lhs == rhs.to_bool();
 }
 inline bool eq2(const var &lhs, bool rhs) {
-  return rhs == lhs.to_bool();
-}
-
-inline bool eq2(int lhs, const var &rhs) {
-  switch (rhs.type) {
-    case var::NULL_TYPE:
-      return lhs == 0;
-    case var::BOOLEAN_TYPE:
-      return !!lhs == rhs.as_bool();
-    case var::INTEGER_TYPE:
-      return lhs == rhs.as_int();
-    case var::FLOAT_TYPE:
-      return lhs == rhs.as_double();
-    case var::STRING_TYPE:
-      return lhs == rhs.as_string().to_float();
-    case var::ARRAY_TYPE:
-      php_warning("Unsupported operand types for operator == (int and array)");
-      return false;
-    default:
-      __builtin_unreachable();
-  }
-}
-inline bool eq2(const var &lhs, int rhs) {
-  switch (lhs.type) {
-    case var::NULL_TYPE:
-      return rhs == 0;
-    case var::BOOLEAN_TYPE:
-      return !!rhs == lhs.as_bool();
-    case var::INTEGER_TYPE:
-      return rhs == lhs.as_int();
-    case var::FLOAT_TYPE:
-      return rhs == lhs.as_double();
-    case var::STRING_TYPE:
-      return rhs == lhs.as_string().to_float();
-    case var::ARRAY_TYPE:
-      php_warning("Unsupported operand types for operator == (array and int)");
-      return false;
-    default:
-      __builtin_unreachable();
-  }
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(double lhs, const var &rhs) {
   switch (rhs.type) {
     case var::NULL_TYPE:
-      return lhs == 0.0;
+      return eq2(lhs, 0.0);
     case var::BOOLEAN_TYPE:
-      return (lhs != 0.0) == rhs.as_bool();
+      return eq2(lhs, rhs.as_bool());
     case var::INTEGER_TYPE:
-      return lhs == rhs.as_int();
+      return eq2(lhs, rhs.as_int());
     case var::FLOAT_TYPE:
-      return lhs == rhs.as_double();
+      return eq2(lhs, rhs.as_double());
     case var::STRING_TYPE:
-      return lhs == rhs.as_string().to_float();
+      return eq2(lhs, rhs.as_string());
     case var::ARRAY_TYPE:
       php_warning("Unsupported operand types for operator == (float and array)");
       return false;
@@ -292,30 +249,21 @@ inline bool eq2(double lhs, const var &rhs) {
   }
 }
 inline bool eq2(const var &lhs, double rhs) {
-  switch (lhs.type) {
-    case var::NULL_TYPE:
-      return rhs == 0.0;
-    case var::BOOLEAN_TYPE:
-      return (rhs != 0.0) == lhs.as_bool();
-    case var::INTEGER_TYPE:
-      return rhs == lhs.as_int();
-    case var::FLOAT_TYPE:
-      return rhs == lhs.as_double();
-    case var::STRING_TYPE:
-      return rhs == lhs.as_string().to_float();
-    case var::ARRAY_TYPE:
-      php_warning("Unsupported operand types for operator == (array and float)");
-      return false;
-    default:
-      __builtin_unreachable();
-  }
+  return eq2(rhs, lhs);
+}
+
+inline bool eq2(int lhs, const var &rhs) {
+  return eq2(static_cast<double>(lhs), rhs);
+}
+inline bool eq2(const var &lhs, int rhs) {
+  return eq2(rhs, lhs);
 }
 
 inline bool eq2(const string &lhs, const var &rhs) {
   return eq2(var(lhs), rhs);
 }
 inline bool eq2(const var &lhs, const string &rhs) {
-  return eq2(var(rhs), lhs);
+  return eq2(rhs, lhs);
 }
 
 template<class T>
@@ -336,19 +284,7 @@ inline bool eq2(const array<T> &lhs, const var &rhs) {
 }
 template<class T>
 inline bool eq2(const var &lhs, const array<T> &rhs) {
-  if (likely (lhs.is_array())) {
-    return eq2(lhs.as_array(), rhs);
-  }
-
-  if (lhs.is_bool()) {
-    return rhs.empty() != lhs.as_bool();
-  }
-  if (lhs.is_null()) {
-    return rhs.empty();
-  }
-
-  php_warning("Unsupported operand types for operator == (%s and array)", lhs.get_type_c_str());
-  return false;
+  return eq2(rhs, lhs);
 }
 
 template<class T1, class T2>
@@ -357,7 +293,7 @@ inline bool eq2(const Optional<T1> &lhs, const T2 &rhs) {
 }
 template<class T1, class T2>
 inline bool eq2(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_eq2_impl(rhs, lhs);
+  return eq2(rhs, lhs);
 }
 
 template<class T1, class T2>
@@ -442,13 +378,13 @@ inline bool equals(const var &lhs, const var &rhs) {
     case var::NULL_TYPE:
       return true;
     case var::BOOLEAN_TYPE:
-      return lhs.as_bool() == rhs.as_bool();
+      return equals(lhs.as_bool(), rhs.as_bool());
     case var::INTEGER_TYPE:
-      return lhs.as_int() == rhs.as_int();
+      return equals(lhs.as_int(), rhs.as_int());
     case var::FLOAT_TYPE:
-      return lhs.as_double() == rhs.as_double();
+      return equals(lhs.as_double(), rhs.as_double());
     case var::STRING_TYPE:
-      return lhs.as_string() == rhs.as_string();
+      return equals(lhs.as_string(), rhs.as_string());
     case var::ARRAY_TYPE:
       return equals(lhs.as_array(), rhs.as_array());
     default:
@@ -460,28 +396,28 @@ inline bool equals(bool lhs, const var &rhs) {
   return rhs.is_bool() && equals(lhs, rhs.as_bool());
 }
 inline bool equals(const var &lhs, bool rhs) {
-  return lhs.is_bool() && equals(rhs, lhs.as_bool());
+  return equals(rhs, lhs);
 }
 
 inline bool equals(int lhs, const var &rhs) {
   return rhs.is_int() && equals(lhs, rhs.as_int());
 }
 inline bool equals(const var &lhs, int rhs) {
-  return lhs.is_int() && equals(rhs, lhs.as_int());
+  return equals(rhs, lhs);
 }
 
 inline bool equals(double lhs, const var &rhs) {
   return rhs.is_float() && equals(lhs, rhs.as_double());
 }
 inline bool equals(const var &lhs, double rhs) {
-  return lhs.is_float() && equals(rhs, lhs.as_double());
+  return equals(rhs, lhs);
 }
 
 inline bool equals(const string &lhs, const var &rhs) {
   return rhs.is_string() && equals(lhs, rhs.as_string());
 }
 inline bool equals(const var &lhs, const string &rhs) {
-  return lhs.is_string() && equals(rhs, lhs.as_string());
+  return equals(rhs, lhs);
 }
 
 template<class T>
@@ -490,7 +426,7 @@ inline bool equals(const array<T> &lhs, const var &rhs) {
 }
 template<class T>
 inline bool equals(const var &lhs, const array<T> &rhs) {
-  return lhs.is_array() && equals(rhs, lhs.as_array());
+  return equals(rhs, lhs);
 }
 
 template<class T>
@@ -563,7 +499,7 @@ inline bool equals(const Optional<T1> &lhs, const T2 &rhs) {
 }
 template<class T1, class T2>
 inline bool equals(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_equals_impl(rhs, lhs);
+  return equals(rhs, lhs);
 }
 
 template<class T1, class T2>
