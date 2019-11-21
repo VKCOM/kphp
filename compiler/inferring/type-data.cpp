@@ -811,6 +811,12 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
   if (type1->can_store_null() && type2->can_store_null()) {
     return true;
   }
+
+  auto is_array_or_tuple = [](const TypeData *type) { return vk::any_of_equal(type->ptype(), tp_array, tp_tuple); };
+  if (is_array_or_tuple(type1) && is_array_or_tuple(type2)) {
+    return true;
+  }
+
   return type1->ptype() == type2->ptype();
 }
 

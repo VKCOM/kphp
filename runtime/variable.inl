@@ -1936,11 +1936,6 @@ bool eq2(bool lhs, const array<T> &rhs) {
   return lhs == !rhs.empty();
 }
 
-template<class ...Args>
-bool eq2(bool lhs, const std::tuple<Args...> &) {
-  return lhs;
-}
-
 template<class T>
 bool eq2(int, const array<T> &) {
   php_warning("Unsupported operand types for operator == (int and array)");
@@ -1964,9 +1959,62 @@ bool eq2(const array<T> &lhs, bool rhs) {
   return rhs == !lhs.empty();
 }
 
+template<class TupleLhsT, class TupleRhsT, size_t ...Indices>
+bool eq2(const TupleLhsT &lhs, const TupleRhsT &rhs, std::index_sequence<Indices...>) {
+  return vk::all_of_equal(true, eq2(std::get<Indices>(lhs), std::get<Indices>(rhs))...);
+}
+
+template<class ...Args>
+bool eq2(const std::tuple<Args...> &lhs, const std::tuple<Args...> &rhs) {
+  return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<class ...Args, class ...Args2>
+std::enable_if_t<sizeof...(Args) == sizeof...(Args2), bool> eq2(const std::tuple<Args...> &lhs, const std::tuple<Args2...> &rhs) {
+  return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<class ...Args, class ...Args2>
+std::enable_if_t<sizeof...(Args) != sizeof...(Args2), bool> eq2(const std::tuple<Args...> &, const std::tuple<Args2...> &) {
+  return false;
+}
+
+template<class TupleT, class Arg, size_t ...Indices>
+bool eq2(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<Indices...>) {
+  return vk::all_of_equal(true, eq2(std::get<Indices>(lhs), rhs.get_value(Indices))...);
+}
+
+template<class Arg, class ...Args>
+bool eq2(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
+  if (!rhs.is_vector() || sizeof...(Args) != rhs.size().int_size) {
+    return false;
+  }
+  return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<class Arg, class ...Args>
+bool eq2(const array<Arg> &lhs, const std::tuple<Args...> &rhs) {
+  return eq2(rhs, lhs);
+}
+
+template<class ...Args>
+bool eq2(bool lhs, const std::tuple<Args...> &) {
+  return lhs;
+}
+
 template<class ...Args>
 bool eq2(const std::tuple<Args...> &, bool rhs) {
   return rhs;
+}
+
+template<class T, class ...Args>
+bool eq2(const T &, const std::tuple<Args...> &) {
+  return false;
+}
+
+template<class T, class ...Args>
+bool eq2(const std::tuple<Args...> &, const T &) {
+  return false;
 }
 
 template<class T>
@@ -2180,6 +2228,40 @@ bool equals(const var &lhs, const array<T> &rhs) {
 template<class T>
 bool equals(const class_instance<T> &lhs, const class_instance<T> &rhs) {
   return lhs.o == rhs.o;
+}
+
+template<class TupleLhsT, class TupleRhsT, size_t ...Indices>
+bool equals(const TupleLhsT &lhs, const TupleRhsT &rhs, std::index_sequence<Indices...>) {
+  return vk::all_of_equal(true, equals(std::get<Indices>(lhs), std::get<Indices>(rhs))...);
+}
+
+template<class ...Args>
+bool equals(const std::tuple<Args...> &lhs, const std::tuple<Args...> &rhs) {
+  return equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<class ...Args, class ...Args2>
+bool equals(const std::tuple<Args...> &lhs, const std::tuple<Args2...> &rhs) {
+  return sizeof...(Args) == sizeof...(Args2) &&
+         equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<class TupleT, class Arg, size_t ...Indices>
+bool equals(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<Indices...>) {
+  return vk::all_of_equal(true, equals(std::get<Indices>(lhs), rhs.get_value(Indices))...);
+}
+
+template<class Arg, class ...Args>
+bool equals(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
+  if (!rhs.is_vector() || sizeof...(Args) != rhs.size().int_size) {
+    return false;
+  }
+  return equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<class Arg, class ...Args>
+bool equals(const array<Arg> &lhs, const std::tuple<Args...> &rhs) {
+  return equals(rhs, lhs);
 }
 
 template<class T1, class T2>
