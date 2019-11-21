@@ -2061,7 +2061,7 @@ T0 &append(T0 &dest, const T &from) {
 
 
 string f$gettype(const var &v) {
-  return v.get_type();
+  return v.get_type_str();
 }
 
 template<class T>

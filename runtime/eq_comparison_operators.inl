@@ -53,23 +53,23 @@ inline bool eq2(const array<T> &lhs, const array<T> &rhs) {
   return true;
 }
 inline bool eq2(const var &lhs, const var &rhs) {
-  if (unlikely (lhs.type == var::STRING_TYPE)) {
-    if (likely (rhs.type == var::STRING_TYPE)) {
+  if (unlikely (lhs.is_string())) {
+    if (likely (rhs.is_string())) {
       return eq2(lhs.as_string(), rhs.as_string());
-    } else if (unlikely (rhs.type == var::NULL_TYPE)) {
+    } else if (unlikely (rhs.is_null())) {
       return lhs.as_string().empty();
     }
-  } else if (unlikely (rhs.type == var::STRING_TYPE)) {
-    if (unlikely (lhs.type == var::NULL_TYPE)) {
+  } else if (unlikely (rhs.is_string())) {
+    if (unlikely (lhs.is_null())) {
       return rhs.as_string().empty();
     }
   }
-  if (lhs.type == var::BOOLEAN_TYPE || rhs.type == var::BOOLEAN_TYPE || lhs.type == var::NULL_TYPE || rhs.type == var::NULL_TYPE) {
+  if (lhs.is_bool() || lhs.is_null() || rhs.is_bool() || rhs.is_null()) {
     return lhs.to_bool() == rhs.to_bool();
   }
 
-  if (unlikely (lhs.type == var::ARRAY_TYPE || rhs.type == var::ARRAY_TYPE)) {
-    if (likely (lhs.type == var::ARRAY_TYPE && rhs.type == var::ARRAY_TYPE)) {
+  if (unlikely (lhs.is_array() || rhs.is_array())) {
+    if (likely (lhs.is_array() && rhs.is_array())) {
       return eq2(lhs.as_array(), rhs.as_array());
     }
 
@@ -230,7 +230,7 @@ inline bool eq2(const var &lhs, bool rhs) {
 }
 
 inline bool eq2(double lhs, const var &rhs) {
-  switch (rhs.type) {
+  switch (rhs.get_type()) {
     case var::NULL_TYPE:
       return eq2(lhs, 0.0);
     case var::BOOLEAN_TYPE:
@@ -370,11 +370,11 @@ inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
 
 
 inline bool equals(const var &lhs, const var &rhs) {
-  if (lhs.type != rhs.type) {
+  if (lhs.get_type() != rhs.get_type()) {
     return false;
   }
 
-  switch (lhs.type) {
+  switch (lhs.get_type()) {
     case var::NULL_TYPE:
       return true;
     case var::BOOLEAN_TYPE:

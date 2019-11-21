@@ -23,27 +23,6 @@ public:
     ARRAY_TYPE
   };
 
-  var_type type{NULL_TYPE};
-  uint64_t storage{0};
-
-  inline void copy_from(const var &other);
-  inline void copy_from(var &&other);
-
-  template<typename T>
-  inline void init_from(T &&v);
-  inline void init_from(var v) { copy_from(std::move(v)); }
-
-  template<typename T>
-  inline var &assign_from(T &&v);
-  inline var &assign_from(var v) { return (*this = std::move(v)); }
-
-  template<typename T>
-  auto get_type_and_value_ptr(const array<T> &) { return std::make_pair(ARRAY_TYPE  , &as_array());  }
-  auto get_type_and_value_ptr(const bool     &) { return std::make_pair(BOOLEAN_TYPE, &as_bool());   }
-  auto get_type_and_value_ptr(const int      &) { return std::make_pair(INTEGER_TYPE, &as_int());    }
-  auto get_type_and_value_ptr(const double   &) { return std::make_pair(FLOAT_TYPE  , &as_double()); }
-  auto get_type_and_value_ptr(const string   &) { return std::make_pair(STRING_TYPE , &as_string()); }
-
   var(const void *) = delete; // deprecate conversion from pointer to boolean
   inline var() = default;
   inline var(const Unknown &u);
@@ -180,6 +159,7 @@ public:
   inline bool is_numeric() const;
   inline bool is_scalar() const;
 
+  inline var_type get_type() const;
   inline bool is_null() const;
   inline bool is_bool() const;
   inline bool is_int() const;
@@ -187,7 +167,7 @@ public:
   inline bool is_string() const;
   inline bool is_array() const;
 
-  inline const string get_type() const;
+  inline const string get_type_str() const;
   inline const char *get_type_c_str() const;
 
   inline bool empty() const;
@@ -230,6 +210,28 @@ public:
 
   template<class T>
   friend class array;
+
+private:
+  inline void copy_from(const var &other);
+  inline void copy_from(var &&other);
+
+  template<typename T>
+  inline void init_from(T &&v);
+  inline void init_from(var v) { copy_from(std::move(v)); }
+
+  template<typename T>
+  inline var &assign_from(T &&v);
+  inline var &assign_from(var v) { return (*this = std::move(v)); }
+
+  template<typename T>
+  auto get_type_and_value_ptr(const array<T> &) { return std::make_pair(ARRAY_TYPE  , &as_array());  }
+  auto get_type_and_value_ptr(const bool     &) { return std::make_pair(BOOLEAN_TYPE, &as_bool());   }
+  auto get_type_and_value_ptr(const int      &) { return std::make_pair(INTEGER_TYPE, &as_int());    }
+  auto get_type_and_value_ptr(const double   &) { return std::make_pair(FLOAT_TYPE  , &as_double()); }
+  auto get_type_and_value_ptr(const string   &) { return std::make_pair(STRING_TYPE , &as_string()); }
+
+  var_type type{NULL_TYPE};
+  uint64_t storage{0};
 };
 
 void do_var_export(const var &v, int depth, char endc = 0);

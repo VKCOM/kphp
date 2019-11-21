@@ -1035,6 +1035,10 @@ bool var::is_scalar() const {
 }
 
 
+var::var_type var::get_type() const {
+  return type;
+}
+
 bool var::is_null() const {
   return type == NULL_TYPE;
 }
@@ -1079,7 +1083,7 @@ inline const char *var::get_type_c_str() const {
   }
 }
 
-inline const string var::get_type() const {
+inline const string var::get_type_str() const {
   const char *result = get_type_c_str();
   return string(result, (dl::size_type)strlen(result));
 }
