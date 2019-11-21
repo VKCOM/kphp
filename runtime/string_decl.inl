@@ -200,10 +200,6 @@ inline bool is_ok_float(double v);
 
 inline int compare_strings_php_order(const string &lhs, const string &rhs);
 
-inline bool eq2(const string &lhs, const string &rhs);
-
-inline bool neq2(const string &lhs, const string &rhs);
-
 inline void swap(string &lhs, string &rhs);
 
 

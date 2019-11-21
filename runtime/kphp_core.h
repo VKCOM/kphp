@@ -25,6 +25,7 @@
 #include "class_instance.inl"
 #include "variable.inl"
 #include "string_buffer.inl"
+#include "eq_comparison_operators.inl"
 
 #undef INCLUDED_FROM_KPHP_CORE
 
@@ -523,30 +524,6 @@ inline const array<var> &arrayval_ref(const var &val, const char *function);
 
 template<class T>
 inline const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function);
-
-template<class T1, class T2>
-bool eq2(const Optional<T1> &lhs, const T2 &rhs);
-
-template<class T1, class T2>
-bool eq2(const T1 &lhs, const Optional<T2> &rhs);
-
-template<class T1, class T2>
-bool eq2(const Optional<T1> &lhs, const Optional<T2> &rhs);
-
-template<class T>
-bool eq2(const Optional<T> &lhs, const Optional<T> &rhs);
-
-template<class T1, class T2>
-bool equals(const Optional<T1> &lhs, const T2 &rhs);
-
-template<class T1, class T2>
-bool equals(const T1 &lhs, const Optional<T2> &rhs);
-
-template<class T1, class T2>
-bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs);
-
-template<class T>
-bool equals(const Optional<T> &lhs, const Optional<T> &rhs);
 
 template<class T, class = enable_for_bool_int_double<T>>
 inline bool f$empty(const T &v);
@@ -1695,62 +1672,6 @@ const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function
     php_warning("%s() expects parameter to be array, null or false is given", function);
   }
   return val.val();
-}
-
-namespace {
-
-template<class T1, class T2>
-bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto eq2_lambda = [](const auto &l, const auto &r) { return eq2(r, l);};
-  return call_fun_on_optional_value(eq2_lambda, lhs, rhs);
-}
-
-template<class T1, class T2>
-bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto equals_lambda = [](const auto &l, const auto &r) { return equals(r, l);};
-  return call_fun_on_optional_value(equals_lambda, lhs, rhs);
-}
-
-} // namespace
-
-template<class T1, class T2>
-bool eq2(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_eq2_impl(lhs, rhs);
-}
-
-template<class T1, class T2>
-bool eq2(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_eq2_impl(rhs, lhs);
-}
-
-template<class T1, class T2>
-bool eq2(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_eq2_impl(lhs, rhs);
-}
-
-template<class T>
-bool eq2(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_eq2_impl(lhs, rhs);
-}
-
-template<class T1, class T2>
-bool equals(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_equals_impl(lhs, rhs);
-}
-
-template<class T1, class T2>
-bool equals(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_equals_impl(rhs, lhs);
-}
-
-template<class T1, class T2>
-bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_equals_impl(lhs, rhs);
-}
-
-template<class T>
-bool equals(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_equals_impl(lhs, rhs);
 }
 
 template<class T>

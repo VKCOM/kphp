@@ -1082,15 +1082,6 @@ int compare_strings_php_order(const string &lhs, const string &rhs) {
   return lhs.compare(rhs);
 }
 
-inline bool eq2(const string &lhs, const string &rhs) {
-  return compare_strings_php_order(lhs, rhs) == 0;
-}
-
-bool neq2(const string &lhs, const string &rhs) {
-  return !eq2(lhs, rhs);
-}
-
-
 void swap(string &lhs, string &rhs) {
   lhs.swap(rhs);
 }

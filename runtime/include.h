@@ -31,41 +31,6 @@ public:
   static inline T convert(T1 &&val);
 };
 
-template<class T, class U>
-struct one_of_is_unknown
-  : std::integral_constant<bool, std::is_same<T, Unknown>::value || std::is_same<U, Unknown>::value> {
-};
-
-template<class T, class U>
-using enable_if_one_of_types_is_unknown = typename std::enable_if<one_of_is_unknown<T, U>::value, bool>::type;
-
-template<typename>
-struct is_class_instance;
-
-template<class T, class U>
-using disable_if_one_of_types_is_unknown = typename std::enable_if<!one_of_is_unknown<T, U>::value && !(is_class_instance<T>{} && is_class_instance<U>{}), bool>::type;
-
-template<class T, class U>
-enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {
-  php_assert ("Comparison of Unknown" && 0);
-  return false;
-}
-
-template<class T, class U>
-enable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
-  return eq2(lhs, rhs);
-}
-
-template<class T, class U>
-disable_if_one_of_types_is_unknown<T, U> equals(const T &, const U &) {
-  return false;
-}
-
-template<class T>
-disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
-  return lhs == rhs;
-}
-
 template<class T>
 inline bool f$is_null(const T &v);
 template<class T>

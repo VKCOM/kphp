@@ -120,11 +120,9 @@ public:
     return res;
   }
 
-  template<class T1>
-  friend inline bool eq2(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
-
-  template<class T1>
-  friend inline bool equals(const class_instance<T1> &lhs, const class_instance<T1> &rhs);
+  inline bool operator==(const class_instance<T> &rhs) const {
+    return o == rhs.o;
+  }
 
   template<class Derived>
   friend class class_instance;

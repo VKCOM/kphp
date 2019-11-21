@@ -417,14 +417,3 @@ inline void swap(array<T> &lhs, array<T> &rhs);
 template<class T>
 inline const array<T> array_add(array<T> a1, const array<T> &a2);
 
-template<class T>
-inline bool eq2(const array<T> &lhs, const array<T> &rhs);
-
-template<class T1, class T2>
-inline bool eq2(const array<T1> &lhs, const array<T2> &rhs);
-
-template<class T, class TT>
-inline bool equals(const array<T> &lhs, const array<T> &rhs);
-
-template<class T1, class T2>
-inline bool equals(const array<T1> &lhs, const array<T2> &rhs);

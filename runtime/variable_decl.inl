@@ -13,6 +13,7 @@ struct is_type_acceptable_for_var<array<T>> : is_constructible_or_unknown<var, T
 };
 
 class var {
+public:
   enum var_type {
     NULL_TYPE,
     BOOLEAN_TYPE,
@@ -43,7 +44,6 @@ class var {
   auto get_type_and_value_ptr(const double   &) { return std::make_pair(FLOAT_TYPE  , &as_double()); }
   auto get_type_and_value_ptr(const string   &) { return std::make_pair(STRING_TYPE , &as_string()); }
 
-public:
   var(const void *) = delete; // deprecate conversion from pointer to boolean
   inline var() = default;
   inline var(const Unknown &u);
@@ -211,44 +211,11 @@ public:
   inline friend const var operator+(const var &lhs, const var &rhs);
   inline friend const var operator-(const var &lhs, const var &rhs);
   inline friend const var operator*(const var &lhs, const var &rhs);
-  inline friend const var operator/(const var &lhs, const var &rhs);
-  inline friend const var operator%(const var &lhs, const var &rhs);
 
-  inline friend bool eq2(const var &lhs, const var &rhs);
-  inline friend bool neq2(const var &lhs, const var &rhs);
   inline friend bool operator<=(const var &lhs, const var &rhs);
   inline friend bool operator>=(const var &lhs, const var &rhs);
   inline friend bool operator<(const var &lhs, const var &rhs);
   inline friend bool operator>(const var &lhs, const var &rhs);
-  inline friend bool equals(const var &lhs, const var &rhs);
-
-  inline friend bool eq2(bool lhs, const var &rhs);
-  inline friend bool eq2(int lhs, const var &rhs);
-  inline friend bool eq2(double lhs, const var &rhs);
-  inline friend bool eq2(const string &lhs, const var &rhs);
-  template<class T>
-  inline friend bool eq2(const array<T> &lhs, const var &rhs);
-  template<class T>
-  inline friend bool eq2(const var &lhs, bool rhs);
-  inline friend bool eq2(const var &lhs, int rhs);
-  inline friend bool eq2(const var &lhs, double rhs);
-  inline friend bool eq2(const var &lhs, const string &rhs);
-  template<class T>
-  inline friend bool eq2(const var &lhs, const array<T> &rhs);
-
-  inline friend bool equals(bool lhs, const var &rhs);
-  inline friend bool equals(int lhs, const var &rhs);
-  inline friend bool equals(double lhs, const var &rhs);
-  inline friend bool equals(const string &lhs, const var &rhs);
-  template<class T>
-  inline friend bool equals(const array<T> &lhs, const var &rhs);
-  inline friend bool equals(const var &lhs, bool rhs);
-  inline friend bool equals(const var &lhs, int rhs);
-  inline friend bool equals(const var &lhs, double rhs);
-  inline friend bool equals(const var &lhs, const string &rhs);
-  template<class T>
-  inline friend bool equals(const var &lhs, const array<T> &rhs);
-
 
   friend void do_print_r(const var &v, int depth);
   friend void do_var_dump(const var &v, int depth);
@@ -273,8 +240,6 @@ inline const var operator+(const string &lhs);
 inline const var operator+(const var &lhs, const var &rhs);
 inline const var operator-(const var &lhs, const var &rhs);
 inline const var operator*(const var &lhs, const var &rhs);
-inline const var operator/(const var &lhs, const var &rhs);
-inline const var operator%(const var &lhs, const var &rhs);
 
 inline int operator&(const var &lhs, const var &rhs);
 inline int operator|(const var &lhs, const var &rhs);
@@ -282,129 +247,12 @@ inline int operator^(const var &lhs, const var &rhs);
 inline int operator<<(const var &lhs, const var &rhs);
 inline int operator>>(const var &lhs, const var &rhs);
 
-inline bool eq2(const var &lhs, const var &rhs);
-inline bool neq2(const var &lhs, const var &rhs);
 inline bool operator<=(const var &lhs, const var &rhs);
 inline bool operator>=(const var &lhs, const var &rhs);
 inline bool operator<(const var &lhs, const var &rhs);
 inline bool operator>(const var &lhs, const var &rhs);
-inline bool equals(const var &lhs, const var &rhs);
 
 
 inline void swap(var &lhs, var &rhs);
 
-
-inline bool eq2(bool lhs, bool rhs);
-
-inline bool eq2(int lhs, int rhs);
-
-inline bool eq2(double lhs, double rhs);
-
-inline bool eq2(bool lhs, int rhs);
-
-inline bool eq2(bool lhs, double rhs);
-
-inline bool eq2(int lhs, bool rhs);
-
-inline bool eq2(double lhs, bool rhs);
-
-inline bool eq2(int lhs, double rhs);
-
-inline bool eq2(double lhs, int rhs);
-
-
-inline bool eq2(bool lhs, const string &rhs);
-
-inline bool eq2(int lhs, const string &rhs);
-
-inline bool eq2(double lhs, const string &rhs);
-
-inline bool eq2(const string &lhs, bool rhs);
-
-inline bool eq2(const string &lhs, int rhs);
-
-inline bool eq2(const string &lhs, double rhs);
-
-template<class T>
-inline bool eq2(bool lhs, const array<T> &rhs);
-
-template<class T>
-inline bool eq2(int lhs, const array<T> &rhs);
-
-template<class T>
-inline bool eq2(double lhs, const array<T> &rhs);
-
-template<class T>
-inline bool eq2(const string &lhs, const array<T> &rhs);
-
-template<class T>
-inline bool eq2(const array<T> &lhs, bool rhs);
-
-template<class T>
-inline bool eq2(const array<T> &lhs, int rhs);
-
-template<class T>
-inline bool eq2(const array<T> &lhs, double rhs);
-
-template<class T>
-inline bool eq2(const array<T> &lhs, const string &rhs);
-
-
-inline bool eq2(bool lhs, const var &rhs);
-
-inline bool eq2(int lhs, const var &rhs);
-
-inline bool eq2(double lhs, const var &rhs);
-
-inline bool eq2(const string &lhs, const var &rhs);
-
-template<class T>
-inline bool eq2(const array<T> &lhs, const var &rhs);
-
-inline bool eq2(const var &lhs, bool rhs);
-
-inline bool eq2(const var &lhs, int rhs);
-
-inline bool eq2(const var &lhs, double rhs);
-
-inline bool eq2(const var &lhs, const string &rhs);
-
-template<class T>
-inline bool eq2(const var &lhs, const array<T> &rhs);
-
-
-template<class T1, class T2>
-inline bool neq2(const T1 &lhs, const T2 &rhs);
-
-
-inline bool equals(bool lhs, const var &rhs);
-
-inline bool equals(int lhs, const var &rhs);
-
-inline bool equals(double lhs, const var &rhs);
-
-inline bool equals(const string &lhs, const var &rhs);
-
-template<class T>
-inline bool equals(const array<T> &lhs, const var &rhs);
-
-inline bool equals(const var &lhs, bool rhs);
-
-inline bool equals(const var &lhs, int rhs);
-
-inline bool equals(const var &lhs, double rhs);
-
-inline bool equals(const var &lhs, const string &rhs);
-
-template<class T>
-inline bool equals(const var &lhs, const array<T> &rhs);
-
-template<class T>
-inline bool equals(const class_instance<T> &lhs, const class_instance<T> &rhs);
-
-template<class T1, class T2>
-std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> equals(const class_instance<T1> &lhs, const class_instance<T2> &rhs);
-
-template<class T1, class T2>
-std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &);
 
